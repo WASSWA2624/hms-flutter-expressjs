@@ -8431,6 +8431,43 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get clinicalRemoveDiagnosisAction => 'Remove';
+
+  @override
+  String get clinicalRemoveDiagnosisDialogTitle => 'Remove diagnosis';
+
+  @override
+  String get clinicalRemoveDiagnosisDialogBody =>
+      'Remove this diagnosis from the active patient record?';
+
+  @override
+  String get clinicalRemoveSelectedDiagnosesAction => 'Remove selected';
+
+  @override
+  String get clinicalRemoveSelectedDiagnosesDialogTitle =>
+      'Remove selected diagnoses';
+
+  @override
+  String clinicalRemoveSelectedDiagnosesDialogBody(int count) {
+    return 'Remove $count diagnoses from the active patient record?';
+  }
+
+  @override
+  String clinicalEditDiagnosisSelectionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Editing $count diagnoses',
+      one: 'Editing 1 diagnosis',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get clinicalDiagnosisDuplicateOnEncounterMessage =>
+      'This diagnosis is already on the encounter. Choose a different diagnosis.';
+
+  @override
   String get clinicalCancelSelectedLabOrdersDialogTitle =>
       'Cancel selected lab orders';
 

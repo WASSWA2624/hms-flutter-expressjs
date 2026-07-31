@@ -174,7 +174,7 @@ final class ClinicalRelatedRecordDto {
     }
 
     return ClinicalRelatedRecord(
-      id: kind == 'clinical_note'
+      id: kind == 'clinical_note' || kind == 'diagnosis'
           ? (_string(json['id']) ??
                 _string(json['human_friendly_id']) ??
                 '')
@@ -194,12 +194,18 @@ final class ClinicalRelatedRecordDto {
           _string(json['title']) ??
           _string(json['human_friendly_id']) ??
           _string(json['id']),
-      subtitle: _joinDisplay(<String?>[
-        _string(json['diagnosis_type']),
-        _string(json['code']),
-        _string(json['external_facility_name']),
-        _string(json['referral_reason_code']),
-      ]),
+      subtitle: kind == 'diagnosis'
+          ? null
+          : _joinDisplay(<String?>[
+              _string(json['diagnosis_type']),
+              _string(json['code']),
+              _string(json['external_facility_name']),
+              _string(json['referral_reason_code']),
+            ]),
+      diagnosisType: kind == 'diagnosis'
+          ? _string(json['diagnosis_type'])
+          : null,
+      code: kind == 'diagnosis' ? _string(json['code']) : null,
       occurredAt: kind == 'clinical_note'
           ? (_date(json['updated_at']) ??
                 _date(json['created_at']) ??

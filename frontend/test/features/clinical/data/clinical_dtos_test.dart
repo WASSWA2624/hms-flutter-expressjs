@@ -3,6 +3,27 @@ import 'package:hosspi_hms/features/clinical/data/dtos/clinical_dtos.dart';
 
 void main() {
   group('decodeRelatedRecords', () {
+    test('prefers diagnosis UUID over human_friendly_id for mutations', () {
+      final records = decodeRelatedRecords(<String, Object?>{
+        'data': <Object?>[
+          <String, Object?>{
+            'id': 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
+            'human_friendly_id': 'DX0000042',
+            'description': 'Malaria',
+            'diagnosis_type': 'PRIMARY',
+            'code': 'B54',
+            'status': 'ACTIVE',
+          },
+        ],
+      }, 'diagnosis');
+
+      expect(records, hasLength(1));
+      expect(records.single.id, 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee');
+      expect(records.single.title, 'Malaria');
+      expect(records.single.diagnosisType, 'PRIMARY');
+      expect(records.single.code, 'B54');
+    });
+
     test('keeps lab order items when backend hides internal item ids', () {
       final records = decodeRelatedRecords(<String, Object?>{
         'data': <Object?>[

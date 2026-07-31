@@ -10396,7 +10396,7 @@
   },
   "clinicalEditDiagnosisDialogTitle": "Edit diagnosis",
   "@clinicalEditDiagnosisDialogTitle": {
-    "description": "Title for the edit diagnosis catalog term dialog in Clinical Services setup."
+    "description": "Title for edit-diagnosis dialogs (encounter type and catalog term)."
   },
   "clinicalDiagnosisSearchLabel": "Search diagnosis",
   "@clinicalDiagnosisSearchLabel": {
@@ -10710,32 +10710,74 @@
   },
   "clinicalDeleteDiagnosisAction": "Delete",
   "@clinicalDeleteDiagnosisAction": {
-    "description": "Delete a patient diagnosis from the clinical encounter."
+    "description": "Legacy delete label for a patient diagnosis; prefer Remove."
   },
   "clinicalDeleteDiagnosisDialogTitle": "Delete diagnosis",
   "@clinicalDeleteDiagnosisDialogTitle": {
-    "description": "Confirmation title for deleting a diagnosis."
+    "description": "Legacy confirmation title for deleting a diagnosis."
   },
   "clinicalDeleteDiagnosisDialogBody": "Delete this diagnosis from the active patient record?",
   "@clinicalDeleteDiagnosisDialogBody": {
-    "description": "Confirmation body for deleting a diagnosis."
+    "description": "Legacy confirmation body for deleting a diagnosis."
   },
   "clinicalDeleteSelectedDiagnosesAction": "Delete selected",
   "@clinicalDeleteSelectedDiagnosesAction": {
-    "description": "Delete multiple selected diagnoses."
+    "description": "Legacy label for deleting selected diagnoses."
   },
   "clinicalDeleteSelectedDiagnosesDialogTitle": "Delete selected diagnoses",
   "@clinicalDeleteSelectedDiagnosesDialogTitle": {
-    "description": "Confirmation title for deleting selected diagnoses."
+    "description": "Legacy confirmation title for deleting selected diagnoses."
   },
   "clinicalDeleteSelectedDiagnosesDialogBody": "Delete {count} diagnoses from the active patient record?",
   "@clinicalDeleteSelectedDiagnosesDialogBody": {
-    "description": "Confirmation body for deleting selected diagnoses.",
+    "description": "Legacy confirmation body for deleting selected diagnoses.",
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
+  },
+  "clinicalRemoveDiagnosisAction": "Remove",
+  "@clinicalRemoveDiagnosisAction": {
+    "description": "Remove a patient diagnosis from the active encounter."
+  },
+  "clinicalRemoveDiagnosisDialogTitle": "Remove diagnosis",
+  "@clinicalRemoveDiagnosisDialogTitle": {
+    "description": "Confirmation title for removing a diagnosis from the encounter."
+  },
+  "clinicalRemoveDiagnosisDialogBody": "Remove this diagnosis from the active patient record?",
+  "@clinicalRemoveDiagnosisDialogBody": {
+    "description": "Confirmation body for removing a diagnosis from the encounter."
+  },
+  "clinicalRemoveSelectedDiagnosesAction": "Remove selected",
+  "@clinicalRemoveSelectedDiagnosesAction": {
+    "description": "Remove multiple selected diagnoses from the encounter."
+  },
+  "clinicalRemoveSelectedDiagnosesDialogTitle": "Remove selected diagnoses",
+  "@clinicalRemoveSelectedDiagnosesDialogTitle": {
+    "description": "Confirmation title for removing selected diagnoses."
+  },
+  "clinicalRemoveSelectedDiagnosesDialogBody": "Remove {count} diagnoses from the active patient record?",
+  "@clinicalRemoveSelectedDiagnosesDialogBody": {
+    "description": "Confirmation body for removing selected diagnoses.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalEditDiagnosisSelectionCount": "{count, plural, one{Editing 1 diagnosis} other{Editing {count} diagnoses}}",
+  "@clinicalEditDiagnosisSelectionCount": {
+    "description": "Shows how many diagnoses are being edited.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalDiagnosisDuplicateOnEncounterMessage": "This diagnosis is already on the encounter. Choose a different diagnosis.",
+  "@clinicalDiagnosisDuplicateOnEncounterMessage": {
+    "description": "Shown when adding a diagnosis that already exists on the encounter."
   },
   "clinicalCancelSelectedLabOrdersDialogTitle": "Cancel selected lab orders",
   "@clinicalCancelSelectedLabOrdersDialogTitle": {

@@ -419,9 +419,29 @@ final class ClinicalWorkspaceController
     }
 
     return _mutateSelectedEncounter(() async {
+      final Set<String> existingDiagnosisKeys =
+          (_currentState?.selectedBundle?.diagnoses ??
+                  const <ClinicalRelatedRecord>[])
+              .map(_diagnosisRecordDedupKey)
+              .where((String key) => key.isNotEmpty)
+              .toSet();
+
       for (final ClinicalCatalogOption diagnosis in normalizedDiagnoses) {
         final String description = _diagnosisDescription(diagnosis);
         final String? code = _normalizedOptionalText(diagnosis.code);
+        final String dedupeKey = _diagnosisOptionDedupKey(
+          code: code,
+          description: description,
+          fallbackId: diagnosis.id,
+        );
+        if (existingDiagnosisKeys.contains(dedupeKey)) {
+          return Result<void>.failure(
+            AppFailure.validation(
+              validationFields: const <String>{'diagnosis'},
+            ),
+          );
+        }
+
         final Result<void> diagnosisResult = await _repository
             .createDiagnosis(<String, Object?>{
               'encounter_id': _selectedEntry!.encounterId,
@@ -433,6 +453,8 @@ final class ClinicalWorkspaceController
         if (diagnosisFailure != null) {
           return Result<void>.failure(diagnosisFailure);
         }
+
+        existingDiagnosisKeys.add(dedupeKey);
 
         await _recordCatalogFavorite(
           termType: 'DIAGNOSIS',
@@ -449,6 +471,59 @@ final class ClinicalWorkspaceController
     return _mutateSelectedEncounter(
       () => _repository.deleteDiagnosis(diagnosisId),
     );
+  }
+
+  Future<AppFailure?> updateDiagnosis({
+    required String diagnosisId,
+    required String diagnosisType,
+    String? description,
+    String? code,
+  }) {
+    final String normalizedType = diagnosisType.trim().toUpperCase();
+    if (normalizedType.isEmpty) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+
+    return _mutateSelectedEncounter(() {
+      return _repository.updateDiagnosis(diagnosisId, <String, Object?>{
+        'diagnosis_type': normalizedType,
+        if (description != null) 'description': description,
+        if (code != null) 'code': code,
+      });
+    });
+  }
+
+  Future<AppFailure?> updateDiagnosesType({
+    required List<ClinicalRelatedRecord> diagnoses,
+    required String diagnosisType,
+  }) {
+    final String normalizedType = diagnosisType.trim().toUpperCase();
+    final List<ClinicalRelatedRecord> targets = diagnoses
+        .where((ClinicalRelatedRecord item) => item.id.trim().isNotEmpty)
+        .toList(growable: false);
+    if (normalizedType.isEmpty || targets.isEmpty) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+
+    return _mutateSelectedEncounter(() async {
+      for (final ClinicalRelatedRecord diagnosis in targets) {
+        final Result<void> result = await _repository.updateDiagnosis(
+          diagnosis.id,
+          <String, Object?>{
+            'diagnosis_type': normalizedType,
+            if ((diagnosis.title ?? '').trim().isNotEmpty)
+              'description': diagnosis.title!.trim(),
+            if ((diagnosis.code ?? '').trim().isNotEmpty)
+              'code': diagnosis.code!.trim(),
+          },
+        );
+        final AppFailure? failure = _failureOrNull(result);
+        if (failure != null) {
+          return Result<void>.failure(failure);
+        }
+      }
+      return const Result<void>.success(null);
+    });
   }
 
   Future<AppFailure?> addProcedure({
@@ -1811,6 +1886,29 @@ final class ClinicalWorkspaceController
     return _normalizedOptionalText(diagnosis.name) ??
         _normalizedOptionalText(diagnosis.displayTitle) ??
         '';
+  }
+
+  String _diagnosisRecordDedupKey(ClinicalRelatedRecord diagnosis) {
+    return _diagnosisOptionDedupKey(
+      code: diagnosis.code,
+      description: diagnosis.title,
+      fallbackId: diagnosis.id,
+    );
+  }
+
+  String _diagnosisOptionDedupKey({
+    required String? code,
+    required String? description,
+    required String? fallbackId,
+  }) {
+    final String normalizedCode =
+        _normalizedOptionalText(code)?.toUpperCase() ?? '';
+    final String normalizedTitle =
+        _normalizedOptionalText(description)?.toUpperCase() ?? '';
+    if (normalizedCode.isNotEmpty || normalizedTitle.isNotEmpty) {
+      return '$normalizedCode::$normalizedTitle';
+    }
+    return (fallbackId ?? '').trim().toUpperCase();
   }
 
   Future<void> _recordCatalogFavorite({

@@ -12,6 +12,7 @@ import 'package:hosspi_hms/features/ipd/domain/repositories/ipd_repository.dart'
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -113,6 +114,13 @@ void main() {
               (invocation.positionalArguments.single as OpdTriageQueueQuery)
                   .pageRequest,
           totalItemCount: 0,
+        ),
+      ),
+    );
+    when(() => opd.getOpdFlow(any())).thenAnswer(
+      (_) async => const Result<OpdFlowDetail>.success(
+        OpdFlowDetail(
+          summary: OpdFlowSummary(id: 'flow-stub', publicId: 'OPD-STUB'),
         ),
       ),
     );
@@ -394,4 +402,86 @@ void main() {
       isTrue,
     );
   });
+
+  test(
+    'addDiagnosis blocks encounter duplicates and updateDiagnosis uses UUID',
+    () async {
+      final _MockClinicalRepository clinical = _MockClinicalRepository();
+      final _MockOpdRepository opd = _MockOpdRepository();
+      final _MockIpdRepository ipd = _MockIpdRepository();
+
+      const ClinicalWorklistEntry entry = ClinicalWorklistEntry(
+        id: 'enc-1',
+        sourceQueue: 'ENCOUNTER',
+        encounterId: 'enc-uuid-1',
+        patientId: 'pat-1',
+        status: 'IN_CONSULTATION',
+      );
+
+      when(() => clinical.createDiagnosis(any())).thenAnswer(
+        (_) async => const Result<void>.success(null),
+      );
+      when(() => clinical.updateDiagnosis(any(), any())).thenAnswer(
+        (_) async => const Result<void>.success(null),
+      );
+      when(() => clinical.createClinicalTermFavorite(any())).thenAnswer(
+        (_) async => const Result<void>.success(null),
+      );
+
+      final ProviderContainer container = buildContainer(
+        clinical: clinical,
+        opd: opd,
+        ipd: ipd,
+        encounters: const <ClinicalWorklistEntry>[entry],
+      );
+
+      when(() => clinical.loadEncounterBundle(any())).thenAnswer((_) async {
+        return const Result<ClinicalEncounterBundle>.success(
+          ClinicalEncounterBundle(
+            entry: entry,
+            diagnoses: <ClinicalRelatedRecord>[
+              ClinicalRelatedRecord(
+                id: 'dx-uuid-existing',
+                kind: 'diagnosis',
+                title: 'Malaria',
+                diagnosisType: 'PRIMARY',
+                code: 'B54',
+              ),
+            ],
+          ),
+        );
+      });
+
+      await container.read(clinicalWorkspaceControllerProvider.future);
+      final ClinicalWorkspaceController controller = container.read(
+        clinicalWorkspaceControllerProvider.notifier,
+      );
+      await controller.selectEntry(entry);
+
+      final AppFailure? duplicateFailure = await controller.addDiagnosis(
+        diagnosisType: 'SECONDARY',
+        diagnoses: const <ClinicalCatalogOption>[
+          ClinicalActionCatalogOption(
+            id: 'catalog-malaria',
+            name: 'Malaria',
+            code: 'B54',
+          ),
+        ],
+      );
+      expect(duplicateFailure, isA<AppFailure>());
+      verifyNever(() => clinical.createDiagnosis(any()));
+
+      final AppFailure? updateFailure = await controller.updateDiagnosis(
+        diagnosisId: 'dx-uuid-existing',
+        diagnosisType: 'DIFFERENTIAL',
+      );
+      expect(updateFailure, isNull);
+      verify(
+        () => clinical.updateDiagnosis(
+          'dx-uuid-existing',
+          any(that: containsPair('diagnosis_type', 'DIFFERENTIAL')),
+        ),
+      ).called(1);
+    },
+  );
 }

@@ -1371,25 +1371,25 @@ class _ClinicalDetailPanel extends ConsumerWidget {
       if (bundle.diagnoses.isNotEmpty)
         ClinicalDiagnosesTablePanel(
           diagnoses: bundle.diagnoses,
-          onDelete: (BuildContext context, ClinicalRelatedRecord diagnosis) =>
+          onRemove: (BuildContext context, ClinicalRelatedRecord diagnosis) =>
               _confirmLabOrderMutation(
                 context: context,
-                title: l10n.clinicalDeleteDiagnosisDialogTitle,
-                body: l10n.clinicalDeleteDiagnosisDialogBody,
-                confirmLabel: l10n.clinicalDeleteDiagnosisAction,
+                title: l10n.clinicalRemoveDiagnosisDialogTitle,
+                body: l10n.clinicalRemoveDiagnosisDialogBody,
+                confirmLabel: l10n.clinicalRemoveDiagnosisAction,
                 action: () => ref
                     .read(clinicalWorkspaceControllerProvider.notifier)
                     .deleteDiagnosis(diagnosis.id),
               ),
-          onDeleteSelected:
+          onRemoveSelected:
               (BuildContext context, List<ClinicalRelatedRecord> diagnoses) =>
                   _confirmLabOrderMutation(
                     context: context,
-                    title: l10n.clinicalDeleteSelectedDiagnosesDialogTitle,
-                    body: l10n.clinicalDeleteSelectedDiagnosesDialogBody(
+                    title: l10n.clinicalRemoveSelectedDiagnosesDialogTitle,
+                    body: l10n.clinicalRemoveSelectedDiagnosesDialogBody(
                       diagnoses.length,
                     ),
-                    confirmLabel: l10n.clinicalDeleteSelectedDiagnosesAction,
+                    confirmLabel: l10n.clinicalRemoveSelectedDiagnosesAction,
                     action: () async {
                       AppFailure? failure;
                       for (final ClinicalRelatedRecord diagnosis
@@ -1403,6 +1403,13 @@ class _ClinicalDetailPanel extends ConsumerWidget {
                       }
                       return null;
                     },
+                  ),
+          onEditSelected:
+              (BuildContext context, List<ClinicalRelatedRecord> diagnoses) =>
+                  _openEditDiagnosisDialog(
+                    context,
+                    ref.read(clinicalWorkspaceControllerProvider.notifier),
+                    diagnoses,
                   ),
         ),
       if (canViewLabResults && bundle.labOrders.isNotEmpty)
@@ -2081,7 +2088,11 @@ class _ClinicalActionBar extends ConsumerWidget {
         AppActionItem(
           label: l10n.clinicalAddDiagnosisAction,
           leadingIcon: AppActionIcons.triage,
-          onPressed: () => _openDiagnosisDialog(context, controller),
+          onPressed: () => _openDiagnosisDialog(
+            context,
+            controller,
+            existingDiagnoses: bundle.diagnoses,
+          ),
         ),
       if (canLab)
         AppActionItem(
@@ -2795,14 +2806,27 @@ Future<void> _openCompleteDispositionDialog(
 
 Future<void> _openDiagnosisDialog(
   BuildContext context,
-  ClinicalWorkspaceController controller,
-) async {
+  ClinicalWorkspaceController controller, {
+  List<ClinicalRelatedRecord> existingDiagnoses = const <ClinicalRelatedRecord>[],
+}) async {
+  final Set<String> existingKeys = existingDiagnoses
+      .map(
+        (ClinicalRelatedRecord diagnosis) => clinicalDiagnosisDedupKey(
+          code: diagnosis.code,
+          description: diagnosis.title,
+          fallbackId: diagnosis.id,
+        ),
+      )
+      .where((String key) => key.isNotEmpty)
+      .toSet();
+
   await _showActionResult(
     context,
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => ClinicalDiagnosisActionDialog(
+        existingDiagnosisKeys: existingKeys,
         onSearchClinicalTerms:
             ({
               required String termType,
@@ -2818,6 +2842,27 @@ Future<void> _openDiagnosisDialog(
               );
             },
         onSubmit: controller.addDiagnosis,
+      ),
+    ),
+  );
+}
+
+Future<void> _openEditDiagnosisDialog(
+  BuildContext context,
+  ClinicalWorkspaceController controller,
+  List<ClinicalRelatedRecord> diagnoses,
+) async {
+  if (diagnoses.isEmpty) {
+    return;
+  }
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalEditDiagnosisActionDialog(
+        diagnoses: diagnoses,
+        onSubmit: controller.updateDiagnosesType,
       ),
     ),
   );

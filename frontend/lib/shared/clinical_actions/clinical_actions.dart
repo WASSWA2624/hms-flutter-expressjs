@@ -13,6 +13,7 @@ export 'dialogs/clinical_admission_action_dialog.dart';
 export 'dialogs/clinical_add_notes_action_dialog.dart';
 export 'dialogs/clinical_diagnosis_action_dialog.dart';
 export 'dialogs/clinical_disposition_action_dialog.dart';
+export 'dialogs/clinical_edit_diagnosis_action_dialog.dart';
 export 'dialogs/clinical_edit_notes_action_dialog.dart';
 export 'dialogs/clinical_follow_up_action_dialog.dart';
 export 'dialogs/clinical_free_text_action_dialog.dart';

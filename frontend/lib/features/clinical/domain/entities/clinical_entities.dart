@@ -544,6 +544,8 @@ final class ClinicalRelatedRecord {
     this.title,
     this.subtitle,
     this.occurredAt,
+    this.diagnosisType,
+    this.code,
     this.labOrderItems = const <ClinicalLabOrderItem>[],
     this.radiologyOrderItems = const <ClinicalRadiologyOrderItem>[],
     this.pharmacyOrderItems = const <ClinicalPharmacyOrderItem>[],
@@ -564,6 +566,12 @@ final class ClinicalRelatedRecord {
   final String? title;
   final String? subtitle;
   final DateTime? occurredAt;
+
+  /// Encounter diagnosis type (`PRIMARY` / `SECONDARY` / `DIFFERENTIAL`).
+  final String? diagnosisType;
+
+  /// Optional diagnosis / order code for display and dedupe.
+  final String? code;
   final List<ClinicalLabOrderItem> labOrderItems;
   final List<ClinicalRadiologyOrderItem> radiologyOrderItems;
   final List<ClinicalPharmacyOrderItem> pharmacyOrderItems;

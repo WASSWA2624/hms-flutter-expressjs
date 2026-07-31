@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_diagnosis_action_dialog.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -32,44 +35,56 @@ void main() {
     })?
     onSubmit,
     List<String>? searchedSources,
+    Set<String> existingDiagnosisKeys = const <String>{},
   }) async {
-    await pumpLocalizedWidget(
-      tester,
-      Builder(
-        builder: (BuildContext context) {
-          return AppButton.primary(
-            label: 'Open diagnosis dialog',
-            onPressed: () {
-              showAppDialog<bool>(
-                context: context,
-                builder: (_) => ClinicalDiagnosisActionDialog(
-                  onSearchClinicalTerms:
-                      ({
-                        required String termType,
-                        String? query,
-                        int? limit,
-                        String source = 'ALL',
-                      }) async {
-                        searchedSources?.add(source);
-                        return Result<
-                          List<ClinicalActionCatalogOption>
-                        >.success(catalog);
-                      },
-                  onSubmit:
-                      onSubmit ??
-                      ({
-                        required String diagnosisType,
-                        required List<ClinicalActionCatalogOption> diagnoses,
-                      }) async {
-                        return null;
-                      },
-                ),
-              );
-            },
-          );
-        },
+    setTestViewport(tester, const Size(1280, 900));
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: Scaffold(
+            body: Builder(
+              builder: (BuildContext context) {
+                return AppButton.primary(
+                  label: 'Open diagnosis dialog',
+                  onPressed: () {
+                    showAppDialog<bool>(
+                      context: context,
+                      builder: (_) => ClinicalDiagnosisActionDialog(
+                        existingDiagnosisKeys: existingDiagnosisKeys,
+                        onSearchClinicalTerms:
+                            ({
+                              required String termType,
+                              String? query,
+                              int? limit,
+                              String source = 'ALL',
+                            }) async {
+                              searchedSources?.add(source);
+                              return Result<
+                                List<ClinicalActionCatalogOption>
+                              >.success(catalog);
+                            },
+                        onSubmit:
+                            onSubmit ??
+                            ({
+                              required String diagnosisType,
+                              required List<ClinicalActionCatalogOption>
+                              diagnoses,
+                            }) async {
+                              return null;
+                            },
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ),
       ),
-      size: const Size(1280, 900),
     );
     await tester.tap(find.text('Open diagnosis dialog'));
     await tester.pumpAndSettle();
@@ -183,4 +198,17 @@ void main() {
 
     expect(find.text('No diagnoses selected'), findsOneWidget);
   });
+
+  testWidgets(
+    'hides diagnoses already on the encounter from available selections',
+    (WidgetTester tester) async {
+      await openDialog(
+        tester,
+        existingDiagnosisKeys: <String>{'B54::MALARIA'},
+      );
+
+      expect(find.text('Malaria'), findsNothing);
+      expect(find.text('Typhoid fever'), findsOneWidget);
+    },
+  );
 }

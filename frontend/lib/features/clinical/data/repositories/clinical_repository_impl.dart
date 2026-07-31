@@ -325,6 +325,18 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   }
 
   @override
+  Future<Result<void>> updateDiagnosis(
+    String diagnosisId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<void>(
+      ApiEndpoints.byId(HmsApiResource.diagnoses, diagnosisId),
+      data: _withoutEmpty(payload),
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<void>> deleteDiagnosis(String diagnosisId) {
     return _apiClient.delete<void>(
       ApiEndpoints.byId(HmsApiResource.diagnoses, diagnosisId),

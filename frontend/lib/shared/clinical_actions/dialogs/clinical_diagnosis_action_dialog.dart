@@ -16,6 +16,7 @@ class ClinicalDiagnosisActionDialog extends StatefulWidget {
   const ClinicalDiagnosisActionDialog({
     required this.onSearchClinicalTerms,
     required this.onSubmit,
+    this.existingDiagnosisKeys = const <String>{},
     super.key,
   });
 
@@ -31,6 +32,9 @@ class ClinicalDiagnosisActionDialog extends StatefulWidget {
     required List<ClinicalActionCatalogOption> diagnoses,
   })
   onSubmit;
+
+  /// Dedup keys (`CODE::TITLE`) already on the encounter.
+  final Set<String> existingDiagnosisKeys;
 
   @override
   State<ClinicalDiagnosisActionDialog> createState() => _DiagnosisDialogState();
@@ -642,6 +646,9 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
 
   bool _isDuplicateSelection(ClinicalActionCatalogOption option) {
     final String key = _diagnosisDedupKey(option);
+    if (widget.existingDiagnosisKeys.contains(key)) {
+      return true;
+    }
     return _selectedDiagnoses.any(
       (ClinicalActionCatalogOption item) => _diagnosisDedupKey(item) == key,
     );
@@ -654,6 +661,24 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
           validationFields: const <String>{'diagnosis'},
         ),
       );
+      return;
+    }
+    final bool hasEncounterDuplicate = _selectedDiagnoses.any(
+      (ClinicalActionCatalogOption option) =>
+          widget.existingDiagnosisKeys.contains(_diagnosisDedupKey(option)),
+    );
+    if (hasEncounterDuplicate) {
+      setState(() {
+        _failure = AppFailure.validation(
+          detailMessage:
+              context.l10n.clinicalDiagnosisDuplicateOnEncounterMessage,
+          validationFields: const <String>{'diagnosis'},
+          fieldMessages: <String, String>{
+            'diagnosis':
+                context.l10n.clinicalDiagnosisDuplicateOnEncounterMessage,
+          },
+        );
+      });
       return;
     }
     setState(() {

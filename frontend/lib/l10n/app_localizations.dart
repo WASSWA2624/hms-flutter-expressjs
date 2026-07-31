@@ -15082,7 +15082,7 @@ abstract class AppLocalizations {
   /// **'Create diagnosis'**
   String get clinicalCreateDiagnosisAction;
 
-  /// Title for the edit diagnosis catalog term dialog in Clinical Services setup.
+  /// Title for edit-diagnosis dialogs (encounter type and catalog term).
   ///
   /// In en, this message translates to:
   /// **'Edit diagnosis'**
@@ -15484,41 +15484,89 @@ abstract class AppLocalizations {
   /// **'Delete {count} radiology orders from the active patient record?'**
   String clinicalDeleteSelectedRadiologyOrdersDialogBody(int count);
 
-  /// Delete a patient diagnosis from the clinical encounter.
+  /// Legacy delete label for a patient diagnosis; prefer Remove.
   ///
   /// In en, this message translates to:
   /// **'Delete'**
   String get clinicalDeleteDiagnosisAction;
 
-  /// Confirmation title for deleting a diagnosis.
+  /// Legacy confirmation title for deleting a diagnosis.
   ///
   /// In en, this message translates to:
   /// **'Delete diagnosis'**
   String get clinicalDeleteDiagnosisDialogTitle;
 
-  /// Confirmation body for deleting a diagnosis.
+  /// Legacy confirmation body for deleting a diagnosis.
   ///
   /// In en, this message translates to:
   /// **'Delete this diagnosis from the active patient record?'**
   String get clinicalDeleteDiagnosisDialogBody;
 
-  /// Delete multiple selected diagnoses.
+  /// Legacy label for deleting selected diagnoses.
   ///
   /// In en, this message translates to:
   /// **'Delete selected'**
   String get clinicalDeleteSelectedDiagnosesAction;
 
-  /// Confirmation title for deleting selected diagnoses.
+  /// Legacy confirmation title for deleting selected diagnoses.
   ///
   /// In en, this message translates to:
   /// **'Delete selected diagnoses'**
   String get clinicalDeleteSelectedDiagnosesDialogTitle;
 
-  /// Confirmation body for deleting selected diagnoses.
+  /// Legacy confirmation body for deleting selected diagnoses.
   ///
   /// In en, this message translates to:
   /// **'Delete {count} diagnoses from the active patient record?'**
   String clinicalDeleteSelectedDiagnosesDialogBody(int count);
+
+  /// Remove a patient diagnosis from the active encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get clinicalRemoveDiagnosisAction;
+
+  /// Confirmation title for removing a diagnosis from the encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove diagnosis'**
+  String get clinicalRemoveDiagnosisDialogTitle;
+
+  /// Confirmation body for removing a diagnosis from the encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this diagnosis from the active patient record?'**
+  String get clinicalRemoveDiagnosisDialogBody;
+
+  /// Remove multiple selected diagnoses from the encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove selected'**
+  String get clinicalRemoveSelectedDiagnosesAction;
+
+  /// Confirmation title for removing selected diagnoses.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove selected diagnoses'**
+  String get clinicalRemoveSelectedDiagnosesDialogTitle;
+
+  /// Confirmation body for removing selected diagnoses.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {count} diagnoses from the active patient record?'**
+  String clinicalRemoveSelectedDiagnosesDialogBody(int count);
+
+  /// Shows how many diagnoses are being edited.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Editing 1 diagnosis} other{Editing {count} diagnoses}}'**
+  String clinicalEditDiagnosisSelectionCount(int count);
+
+  /// Shown when adding a diagnosis that already exists on the encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'This diagnosis is already on the encounter. Choose a different diagnosis.'**
+  String get clinicalDiagnosisDuplicateOnEncounterMessage;
 
   /// Confirmation title for cancelling selected lab orders.
   ///
