@@ -33,6 +33,8 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
         'status': query.status,
         'location': query.location,
         'pending_payment': query.pendingPayment == true ? true : null,
+        'payment_cleared': query.pendingPayment == false ? true : null,
+        'today_only': query.todayOnly == true ? true : null,
         'partial_stock': query.partialStock == true ? true : null,
         'urgent': query.urgent == true ? true : null,
         'priority': query.priority,

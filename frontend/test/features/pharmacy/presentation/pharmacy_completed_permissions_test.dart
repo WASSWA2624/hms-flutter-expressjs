@@ -683,7 +683,7 @@ void main() {
           accessPolicy: reader,
         );
 
-        expect(_tab('Completed'), findsOneWidget);
+        expect(_tab('Completed orders'), findsOneWidget);
         expect(_catalogAction(), findsOneWidget);
         expect(find.text('Dana Done'), findsOneWidget);
         expect(find.text('Return'), findsNothing);
@@ -920,7 +920,7 @@ void main() {
           ),
         );
 
-        expect(_tab('Completed'), findsOneWidget);
+        expect(_tab('Completed orders'), findsOneWidget);
         expect(find.text('Dana Done'), findsOneWidget);
         expect(find.text('Return'), findsNothing);
         expect(_catalogAction(), findsNothing);
@@ -986,7 +986,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
         await tester.pumpAndSettle();
 
-        expect(_tab('Completed'), findsOneWidget);
+        expect(_tab('Completed orders'), findsOneWidget);
         expect(find.text('No pharmacy orders'), findsOneWidget);
         expect(find.textContaining('no access'), findsNothing);
       },

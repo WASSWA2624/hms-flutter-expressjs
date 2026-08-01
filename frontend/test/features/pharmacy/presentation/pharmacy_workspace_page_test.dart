@@ -28,6 +28,18 @@ class _MockPharmacyRepository extends Mock implements PharmacyRepository {}
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
+Finder _moreTabsButton() => find.descendant(
+  of: find.byType(AppTabStrip),
+  matching: find.byIcon(Icons.more_vert),
+);
+
+// With the full order + stock tab set, trailing tabs (e.g. All orders) overflow
+// into the "More tabs" menu at the data-heavy max width; open it to reach them.
+Future<void> _openMoreTabs(WidgetTester tester) async {
+  await tester.tap(_moreTabsButton());
+  await tester.pumpAndSettle();
+}
+
 Finder _toolbarPrimary(String label) => find.descendant(
   of: find.byType(AppTabToolbarPrimary),
   matching: find.text(label),
@@ -336,8 +348,9 @@ void main() {
     expect(_tab('New orders'), findsOneWidget);
     expect(_tab('Partial'), findsOneWidget);
     expect(_tab('Pending payment'), findsOneWidget);
-    expect(_tab('Completed'), findsOneWidget);
-    expect(_tab('All orders'), findsOneWidget);
+    expect(_tab('Completed orders'), findsOneWidget);
+    // "All orders" and the stock tabs overflow into the More tabs menu here.
+    expect(_moreTabsButton(), findsOneWidget);
     expect(find.text('Noah Ready'), findsOneWidget);
     expect(find.text('Amina Partial'), findsNothing);
     expect(_catalogAction(), findsOneWidget);
@@ -366,7 +379,7 @@ void main() {
     expect(_catalogAction(), findsOneWidget);
     expect(_toolbarAction('Refresh'), findsNothing);
 
-    await tester.tap(_tab('Completed'));
+    await tester.tap(_tab('Completed orders'));
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'completed');
@@ -632,7 +645,8 @@ void main() {
       repository: repository,
     );
 
-    await tester.tap(_tab('All orders'));
+    await _openMoreTabs(tester);
+    await tester.tap(find.textContaining('All orders').last);
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'all');

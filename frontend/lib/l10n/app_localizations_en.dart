@@ -11607,6 +11607,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyDeskNewOrdersLabel => 'New orders';
 
   @override
+  String get pharmacyDeskCompletedOrdersLabel => 'Completed orders';
+
+  @override
+  String get pharmacyDeskCancelledOrdersLabel => 'Cancelled orders';
+
+  @override
   String get pharmacyDeskNearExpiryLabel => 'Near expiry';
 
   @override

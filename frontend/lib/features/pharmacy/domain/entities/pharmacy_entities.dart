@@ -555,6 +555,7 @@ final class PharmacyWorkbenchQuery {
     this.status,
     this.location,
     this.pendingPayment,
+    this.todayOnly,
     this.partialStock,
     this.urgent,
     this.priority,
@@ -566,7 +567,14 @@ final class PharmacyWorkbenchQuery {
   final String search;
   final String? status;
   final String? location;
+
+  /// Tri-state payment gate: `true` = only orders awaiting payment (Pending
+  /// payment), `false` = only payment-cleared orders (New orders / Partial),
+  /// `null` = no payment constraint.
   final bool? pendingPayment;
+
+  /// Scopes Completed / Cancelled to the current server day.
+  final bool? todayOnly;
   final bool? partialStock;
   final bool? urgent;
   final String? priority;
@@ -577,7 +585,8 @@ final class PharmacyWorkbenchQuery {
   bool get isDefaultFilters {
     return status == null &&
         location == null &&
-        pendingPayment != true &&
+        pendingPayment == null &&
+        todayOnly != true &&
         partialStock != true &&
         urgent != true &&
         priority == null &&
@@ -590,6 +599,7 @@ final class PharmacyWorkbenchQuery {
     String? status,
     String? location,
     bool? pendingPayment,
+    bool? todayOnly,
     bool? partialStock,
     bool? urgent,
     String? priority,
@@ -599,6 +609,7 @@ final class PharmacyWorkbenchQuery {
     bool clearStatus = false,
     bool clearLocation = false,
     bool clearPendingPayment = false,
+    bool clearTodayOnly = false,
     bool clearPartialStock = false,
     bool clearUrgent = false,
     bool clearPriority = false,
@@ -612,6 +623,7 @@ final class PharmacyWorkbenchQuery {
       pendingPayment: clearPendingPayment
           ? null
           : pendingPayment ?? this.pendingPayment,
+      todayOnly: clearTodayOnly ? null : todayOnly ?? this.todayOnly,
       partialStock: clearPartialStock
           ? null
           : partialStock ?? this.partialStock,
@@ -626,17 +638,24 @@ final class PharmacyWorkbenchQuery {
   static PharmacyWorkbenchQuery fromChip(PharmacyOrderFilter filter) {
     return switch (filter) {
       PharmacyOrderFilter.all => const PharmacyWorkbenchQuery(),
+      // New orders: unattended, payment-cleared open orders (Pending payment
+      // claims those still awaiting payment).
       PharmacyOrderFilter.ready => const PharmacyWorkbenchQuery(
         status: 'ORDERED',
+        pendingPayment: false,
       ),
       PharmacyOrderFilter.partial => const PharmacyWorkbenchQuery(
         status: 'PARTIALLY_DISPENSED',
+        pendingPayment: false,
       ),
+      // Completed / Cancelled orders are scoped to the current day.
       PharmacyOrderFilter.completed => const PharmacyWorkbenchQuery(
         status: 'DISPENSED',
+        todayOnly: true,
       ),
       PharmacyOrderFilter.cancelled => const PharmacyWorkbenchQuery(
         status: 'CANCELLED',
+        todayOnly: true,
       ),
       PharmacyOrderFilter.pendingPayment => const PharmacyWorkbenchQuery(
         pendingPayment: true,

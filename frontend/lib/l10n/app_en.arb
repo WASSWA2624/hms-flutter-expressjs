@@ -14815,6 +14815,14 @@
   "@pharmacyDeskNewOrdersLabel": {
     "description": "Pharmacy desk tab label for new, unattended orders."
   },
+  "pharmacyDeskCompletedOrdersLabel": "Completed orders",
+  "@pharmacyDeskCompletedOrdersLabel": {
+    "description": "Pharmacy desk tab label for orders completed today."
+  },
+  "pharmacyDeskCancelledOrdersLabel": "Cancelled orders",
+  "@pharmacyDeskCancelledOrdersLabel": {
+    "description": "Pharmacy desk tab label for orders cancelled today."
+  },
   "pharmacyDeskNearExpiryLabel": "Near expiry",
   "@pharmacyDeskNearExpiryLabel": {
     "description": "Pharmacy desk tab label for stock nearing its expiry date."

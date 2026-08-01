@@ -623,6 +623,35 @@ const buildPendingPaymentStatusClause = () => ({
   OR: PHARMACY_PENDING_PAYMENT_STATUSES.map((paymentStatus) => ({
     billing_snapshot: { path: '$.payment_status', equals: paymentStatus }}))});
 
+// Orders that are NOT awaiting payment (paid, no-charge, not required, or no
+// billing snapshot). Used so New orders / Partial exclude payment-gated orders.
+const buildNotPendingPaymentClause = () => ({
+  NOT: buildPendingPaymentStatusClause()});
+
+// Start of the current server/facility day, for day-scoped Completed / Cancelled.
+const startOfServerDay = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+};
+
+// Shallow-clones a where object, including its AND array, so appendAnd does not
+// mutate a base shared across independent summary buckets.
+const cloneOrderWhere = (base = {}) => ({
+  ...base,
+  ...(Array.isArray(base.AND) ? { AND: [...base.AND] } : {})});
+
+// Builds an independent summary bucket: a fresh status plus an optional clause,
+// keeping the tenant/facility/global scope from base without inheriting the
+// active tab's status, payment, or day filters.
+const buildSummaryBucketWhere = (base, status, clause) => {
+  const where = cloneOrderWhere(base);
+  where.status = status;
+  if (clause) {
+    appendAnd(where, clause);
+  }
+  return where;
+};
+
 const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
   const includeSearch = options.includeSearch !== false;
   const where = {
@@ -658,10 +687,21 @@ const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
   }
 
   if (filters.pending_payment === true) {
+    // Pending payment claims open orders awaiting payment; it takes precedence
+    // over New orders / Partial, so scope to open statuses when none is set.
     appendAnd(where, buildPendingPaymentStatusClause());
+    if (!filters.status) {
+      appendAnd(where, { status: { in: PHARMACY_OPEN_ORDER_STATUSES } });
+    }
+  } else if (filters.payment_cleared === true) {
+    appendAnd(where, buildNotPendingPaymentClause());
   }
 
   applyDateRangeFilter(where, 'ordered_at', filters.from, filters.to);
+
+  if (filters.today_only === true) {
+    appendAnd(where, { updated_at: { gte: startOfServerDay() } });
+  }
 
   if (filters.partial_stock === true) {
     appendAnd(where, {
@@ -842,8 +882,9 @@ const buildDischargeSummaryWhere = (summaryWhere) => {
 };
 
 const buildPendingPaymentWhere = (baseWhere) => {
-  const where = { ...baseWhere };
+  const where = cloneOrderWhere(baseWhere);
   appendAnd(where, buildPendingPaymentStatusClause());
+  appendAnd(where, { status: { in: PHARMACY_OPEN_ORDER_STATUSES } });
   return where;
 };
 
@@ -869,11 +910,29 @@ const buildWorkbenchSummary = async (summaryWhere, summaryBaseWhere = summaryWhe
     pendingPaymentQueue,
     preparedAttestations,
     completedAttestations] = await Promise.all([
-    pharmacyWorkspaceRepository.countOrders(summaryWhere),
-    pharmacyWorkspaceRepository.countOrders({ ...summaryWhere, status: 'ORDERED' }),
-    pharmacyWorkspaceRepository.countOrders({ ...summaryWhere, status: 'PARTIALLY_DISPENSED' }),
-    pharmacyWorkspaceRepository.countOrders({ ...summaryWhere, status: 'DISPENSED' }),
-    pharmacyWorkspaceRepository.countOrders({ ...summaryWhere, status: 'CANCELLED' }),
+    pharmacyWorkspaceRepository.countOrders(summaryBaseWhere),
+    pharmacyWorkspaceRepository.countOrders(
+      buildSummaryBucketWhere(
+        summaryBaseWhere,
+        'ORDERED',
+        buildNotPendingPaymentClause()
+      )
+    ),
+    pharmacyWorkspaceRepository.countOrders(
+      buildSummaryBucketWhere(
+        summaryBaseWhere,
+        'PARTIALLY_DISPENSED',
+        buildNotPendingPaymentClause()
+      )
+    ),
+    pharmacyWorkspaceRepository.countOrders(
+      buildSummaryBucketWhere(summaryBaseWhere, 'DISPENSED', {
+        updated_at: { gte: startOfServerDay() }})
+    ),
+    pharmacyWorkspaceRepository.countOrders(
+      buildSummaryBucketWhere(summaryBaseWhere, 'CANCELLED', {
+        updated_at: { gte: startOfServerDay() }})
+    ),
     pharmacyWorkspaceRepository.countOrders(buildDischargeSummaryWhere(summaryBaseWhere)),
     pharmacyWorkspaceRepository.countOrders(
       buildLocationScopedWhere(summaryBaseWhere, 'OUTPATIENT')
@@ -916,7 +975,13 @@ const getPharmacyWorkbench = async (filters, page, limit, sortBy, order, user = 
       buildWorkbenchOrderWhere(filters, scope, { includeSearch: true }),
       buildWorkbenchOrderWhere(filters, scope, { includeSearch: false }),
       buildWorkbenchOrderWhere(
-        { ...filters, location: undefined, pending_payment: undefined },
+        {
+          ...filters,
+          status: undefined,
+          location: undefined,
+          pending_payment: undefined,
+          payment_cleared: undefined,
+          today_only: undefined},
         scope,
         { includeSearch: false }
       )]);

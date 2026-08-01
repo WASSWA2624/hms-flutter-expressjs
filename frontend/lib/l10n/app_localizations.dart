@@ -21424,6 +21424,18 @@ abstract class AppLocalizations {
   /// **'New orders'**
   String get pharmacyDeskNewOrdersLabel;
 
+  /// Pharmacy desk tab label for orders completed today.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed orders'**
+  String get pharmacyDeskCompletedOrdersLabel;
+
+  /// Pharmacy desk tab label for orders cancelled today.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled orders'**
+  String get pharmacyDeskCancelledOrdersLabel;
+
   /// Pharmacy desk tab label for stock nearing its expiry date.
   ///
   /// In en, this message translates to:

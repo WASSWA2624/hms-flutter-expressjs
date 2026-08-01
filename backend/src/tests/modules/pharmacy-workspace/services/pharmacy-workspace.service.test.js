@@ -298,7 +298,7 @@ describe('pharmacy-workspace.service', () => {
     expect(serialized).toContain('encounter_type');
   });
 
-  it('getPharmacyWorkbench pending payment filter matches PENDING, PARTIAL, and UNPAID', async () => {
+  it('getPharmacyWorkbench pending payment filter matches unsettled billing and scopes to open orders', async () => {
     pharmacyWorkspaceRepository.findManyOrders.mockResolvedValue([]);
     pharmacyWorkspaceRepository.countOrders.mockResolvedValue(0);
     pharmacyWorkspaceRepository.countDispenseAttestations.mockResolvedValue(0);
@@ -317,6 +317,47 @@ describe('pharmacy-workspace.service', () => {
     expect(serialized).toContain('PENDING');
     expect(serialized).toContain('PARTIAL');
     expect(serialized).toContain('UNPAID');
+    // Pending payment claims only open orders.
+    expect(serialized).toContain('PARTIALLY_DISPENSED');
+    expect(serialized).toContain('ORDERED');
+  });
+
+  it('getPharmacyWorkbench New orders exclude payment-gated orders', async () => {
+    pharmacyWorkspaceRepository.findManyOrders.mockResolvedValue([]);
+    pharmacyWorkspaceRepository.countOrders.mockResolvedValue(0);
+    pharmacyWorkspaceRepository.countDispenseAttestations.mockResolvedValue(0);
+
+    await pharmacyWorkspaceService.getPharmacyWorkbench(
+      { status: 'ORDERED', payment_cleared: true },
+      1,
+      20,
+      null,
+      'desc',
+      mockUser
+    );
+
+    const [whereArg] = pharmacyWorkspaceRepository.findManyOrders.mock.calls[0];
+    expect(whereArg.status).toBe('ORDERED');
+    expect(JSON.stringify(whereArg)).toContain('NOT');
+  });
+
+  it('getPharmacyWorkbench Completed orders are scoped to the current day', async () => {
+    pharmacyWorkspaceRepository.findManyOrders.mockResolvedValue([]);
+    pharmacyWorkspaceRepository.countOrders.mockResolvedValue(0);
+    pharmacyWorkspaceRepository.countDispenseAttestations.mockResolvedValue(0);
+
+    await pharmacyWorkspaceService.getPharmacyWorkbench(
+      { status: 'DISPENSED', today_only: true },
+      1,
+      20,
+      null,
+      'desc',
+      mockUser
+    );
+
+    const [whereArg] = pharmacyWorkspaceRepository.findManyOrders.mock.calls[0];
+    expect(whereArg.status).toBe('DISPENSED');
+    expect(JSON.stringify(whereArg)).toContain('updated_at');
   });
 
   it('getPharmacyWorkbench partial stock filter scopes to depleted or partially dispensed orders', async () => {
