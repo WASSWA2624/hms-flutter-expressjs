@@ -465,7 +465,7 @@ void main() {
     expect(find.byTooltip('Request imaging'), findsOneWidget);
   });
 
-  testWidgets('released row opens final report directly with actions', (
+  testWidgets('released row opens print dialog with section picker', (
     WidgetTester tester,
   ) async {
     await _pumpRadiologyWorkspace(tester, repository: repository);
@@ -477,16 +477,15 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Finn Finalized'));
+    await tester.tap(find.text('View report').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('No acute intracranial abnormality.'), findsOneWidget);
+    expect(find.textContaining('PRINT RADIOLOGY REPORT'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Print'), findsOneWidget);
+    expect(find.textContaining('Choose report sections'), findsOneWidget);
     expect(find.text('Procedures'), findsNothing);
     expect(find.text('Procedure details'), findsNothing);
-
-    await tester.tap(find.widgetWithText(AppButton, 'Actions'));
-    await tester.pumpAndSettle();
-    expect(find.text('Print report'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Actions'), findsNothing);
   });
 
   testWidgets('deep link section=reporting selects Reporting tab', (

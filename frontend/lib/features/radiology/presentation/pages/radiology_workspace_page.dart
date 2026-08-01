@@ -824,7 +824,7 @@ Future<void> _openRadiologyDetailDialog(
 
   final _ProcedureWorkbenchStatus status = _procedureWorkbenchStatus(workflow);
   if (status == _ProcedureWorkbenchStatus.reported) {
-    await _showReleasedRadiologyReport(context, workflow);
+    await _showRadiologyPrintDialog(context, workflow);
     return;
   }
   if (canWork && status == _ProcedureWorkbenchStatus.waitingForReport) {
@@ -932,6 +932,11 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
                   _showReportDialog(context, ref, liveWorkflow);
                 }
               : null,
+          onPrintReport: () {
+            final RadiologyWorkflow liveWorkflow =
+                _readState(ref)?.selectedWorkflow ?? widget.workflow;
+            _showRadiologyPrintDialog(context, liveWorkflow);
+          },
           onUndo: widget.canWork
               ? () {
                   final RadiologyWorkflow liveWorkflow =
@@ -1116,6 +1121,7 @@ class _ProcedureWorkbenchSection extends StatefulWidget {
     required this.canWork,
     this.onMarkDone,
     this.onMarkReportDone,
+    this.onPrintReport,
     this.onUndo,
     this.onCancel,
   });
@@ -1125,6 +1131,7 @@ class _ProcedureWorkbenchSection extends StatefulWidget {
   final bool canWork;
   final VoidCallback? onMarkDone;
   final VoidCallback? onMarkReportDone;
+  final VoidCallback? onPrintReport;
   final VoidCallback? onUndo;
   final VoidCallback? onCancel;
 
@@ -1210,8 +1217,7 @@ class _ProcedureWorkbenchSectionState
         canWork: widget.canWork,
         onMarkDone: widget.onMarkDone,
         onMarkReportDone: widget.onMarkReportDone,
-        onViewReport: () => _showReleasedRadiologyReport(context, workflow),
-        onPrintReport: () => _showRadiologyPrintDialog(context, workflow),
+        onPrintReport: widget.onPrintReport,
         onUndo: widget.onUndo,
         onCancel: widget.onCancel,
       ),
@@ -1242,7 +1248,7 @@ class _ProcedureWorkbenchSectionState
         pendingLike;
     final bool canMarkReportDone =
         widget.onMarkReportDone != null && waitingForReport;
-    final bool canViewReport = widget.onMarkReportDone != null && reported;
+    final bool canPrintReport = widget.onPrintReport != null && reported;
     final bool canUndo =
         widget.canWork &&
         widget.onUndo != null &&
@@ -1501,15 +1507,25 @@ class _ProcedureWorkbenchSectionState
                                           ? null
                                           : widget.onMarkReportDone,
                                     ),
-                                  if (canViewReport)
-                                    AppButton.primary(
-                                      dense: true,
-                                      label: l10n.radiologyViewReportAction,
-                                      leadingIcon: Icons.description_outlined,
-                                      isLoading: state.isMutating,
-                                      onPressed: state.isMutating
-                                          ? null
-                                          : widget.onMarkReportDone,
+                                  if (canPrintReport)
+                                    AppAccessActionGate(
+                                      requirement:
+                                          radiologyPrintReportRequirement,
+                                      builder:
+                                          (BuildContext context, bool isAllowed) {
+                                        return AppButton.primary(
+                                          dense: true,
+                                          label: l10n.radiologyViewReportAction,
+                                          leadingIcon:
+                                              Icons.description_outlined,
+                                          enabled:
+                                              isAllowed && !state.isMutating,
+                                          onPressed:
+                                              !isAllowed || state.isMutating
+                                              ? null
+                                              : widget.onPrintReport,
+                                        );
+                                      },
                                     ),
                                   if (canUndo)
                                     AppButton.tertiary(
@@ -1556,7 +1572,6 @@ class _ProcedureDetailsDialog extends StatelessWidget {
     required this.canWork,
     this.onMarkDone,
     this.onMarkReportDone,
-    this.onViewReport,
     this.onPrintReport,
     this.onUndo,
     this.onCancel,
@@ -1568,7 +1583,6 @@ class _ProcedureDetailsDialog extends StatelessWidget {
   final bool canWork;
   final VoidCallback? onMarkDone;
   final VoidCallback? onMarkReportDone;
-  final VoidCallback? onViewReport;
   final VoidCallback? onPrintReport;
   final VoidCallback? onUndo;
   final VoidCallback? onCancel;
@@ -1592,7 +1606,7 @@ class _ProcedureDetailsDialog extends StatelessWidget {
     final bool canRunProcedureDone =
         canWork && onMarkDone != null && next.canCreateStudy && pendingLike;
     final bool canMarkReportDone = onMarkReportDone != null && waitingForReport;
-    final bool canOpenReport = onViewReport != null && reported;
+    final bool canPrintReport = onPrintReport != null && reported;
     final bool canUndo =
         canWork &&
         onUndo != null &&
@@ -1731,74 +1745,28 @@ class _ProcedureDetailsDialog extends StatelessWidget {
             isLoading: state.isMutating,
             onPressed: state.isMutating ? null : () => runAndClose(onMarkDone),
           ),
-        if (canMarkReportDone || canOpenReport)
-          _ProcedureReportActionsMenu(
-            enabled: !state.isMutating,
-            primaryLabel: canMarkReportDone
-                ? (order.hasDraftResult
-                      ? l10n.radiologyContinueReportAction
-                      : l10n.radiologyCreateReportAction)
-                : l10n.radiologyViewReportAction,
-            onOpenReport: () => runAndClose(
-              canMarkReportDone ? onMarkReportDone : onViewReport,
-            ),
-            onPrintReport: canOpenReport && onPrintReport != null
-                ? () => runAndClose(onPrintReport)
-                : null,
+        if (canMarkReportDone)
+          AppButton.primary(
+            label: order.hasDraftResult
+                ? l10n.radiologyContinueReportAction
+                : l10n.radiologyCreateReportAction,
+            leadingIcon: Icons.edit_note_outlined,
+            isLoading: state.isMutating,
+            onPressed: state.isMutating
+                ? null
+                : () => runAndClose(onMarkReportDone),
           ),
-      ],
-    );
-  }
-}
-
-class _ProcedureReportActionsMenu extends StatelessWidget {
-  const _ProcedureReportActionsMenu({
-    required this.enabled,
-    required this.primaryLabel,
-    required this.onOpenReport,
-    this.onPrintReport,
-  });
-
-  final bool enabled;
-  final String primaryLabel;
-  final VoidCallback onOpenReport;
-  final VoidCallback? onPrintReport;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return MenuAnchor(
-      builder:
-          (BuildContext context, MenuController controller, Widget? child) {
-            return AppButton.primary(
-              label: l10n.radiologyProcedureActionsColumnLabel,
-              leadingIcon: Icons.more_horiz,
-              enabled: enabled,
-              onPressed: !enabled
-                  ? null
-                  : () {
-                      if (controller.isOpen) {
-                        controller.close();
-                      } else {
-                        controller.open();
-                      }
-                    },
-            );
-          },
-      menuChildren: <Widget>[
-        MenuItemButton(
-          leadingIcon: const Icon(Icons.description_outlined),
-          onPressed: enabled ? onOpenReport : null,
-          child: Text(primaryLabel),
-        ),
-        if (onPrintReport != null)
+        if (canPrintReport)
           AppAccessActionGate(
             requirement: radiologyPrintReportRequirement,
             builder: (BuildContext context, bool isAllowed) {
-              return MenuItemButton(
-                leadingIcon: const Icon(Icons.print_outlined),
-                onPressed: enabled && isAllowed ? onPrintReport : null,
-                child: Text(l10n.radiologyPrintReportAction),
+              return AppButton.primary(
+                label: l10n.radiologyPrintReportAction,
+                leadingIcon: Icons.print_outlined,
+                enabled: isAllowed && !state.isMutating,
+                onPressed: !isAllowed || state.isMutating
+                    ? null
+                    : () => runAndClose(onPrintReport),
               );
             },
           ),
@@ -2545,121 +2513,6 @@ String _studyModalityForOrder(RadiologyOrder order) {
     }
   }
   return 'OTHER';
-}
-
-Future<void> _showReleasedRadiologyReport(
-  BuildContext context,
-  RadiologyWorkflow workflow,
-) async {
-  final RadiologyOrder order = workflow.order;
-  RadiologyResult? released = order.latestReleasedResult;
-  if (released == null) {
-    for (final RadiologyResult result in workflow.results) {
-      if (result.isReleased) {
-        released = result;
-        break;
-      }
-    }
-  }
-  final String reportText = (released?.reportText ?? '').trim();
-
-  await showAppDialog<void>(
-    context: context,
-    builder: (BuildContext dialogContext) {
-      final AppLocalizations l10n = dialogContext.l10n;
-      final ThemeData theme = Theme.of(dialogContext);
-      return AppDialog(
-        title: Text(l10n.radiologyViewReportAction),
-        icon: const Icon(Icons.description_outlined),
-        scrollable: true,
-        pinActionsToBottom: true,
-        maxWidth: 760,
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            AppPatientDetails(
-              patientName: order.patientDisplayName ?? l10n.profileUnknownValue,
-              patientNumber: order.patientId ?? '',
-              patientNumberLabel: l10n.radiologyPatientIdLabel,
-              copyPatientNumberTooltip: l10n.copyIdentifierAction,
-              copyPatientNumberMessage: l10n.identifierCopiedMessage,
-              semanticLabel: l10n.radiologyPatientContextLabel,
-              showAvatar: false,
-              showActionLabels: false,
-              status: released == null
-                  ? null
-                  : _resultStatus(dialogContext, released),
-              expandedFields: <AppWorkspacePatientContextField>[
-                AppWorkspacePatientContextField(
-                  label: l10n.radiologyStudyLabel,
-                  value: order.testDisplayName ?? l10n.profileUnknownValue,
-                ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.lg),
-            AppReportPreviewPanel(
-              title: l10n.radiologyViewReportAction,
-              selectable: true,
-              child: Text(
-                reportText.isEmpty ? l10n.radiologyEmptyReportBody : reportText,
-              ),
-            ),
-          ],
-        ),
-        actions: <Widget>[
-          AppButton.tertiary(
-            label: l10n.commonCloseActionLabel,
-            onPressed: () => Navigator.of(dialogContext).pop(),
-          ),
-          _ReleasedReportActionsMenu(
-            onPrint: () {
-              Navigator.of(dialogContext).pop();
-              _showRadiologyPrintDialog(context, workflow);
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
-
-class _ReleasedReportActionsMenu extends StatelessWidget {
-  const _ReleasedReportActionsMenu({required this.onPrint});
-
-  final VoidCallback onPrint;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return MenuAnchor(
-      builder:
-          (BuildContext context, MenuController controller, Widget? child) {
-            return AppButton.primary(
-              label: l10n.radiologyProcedureActionsColumnLabel,
-              leadingIcon: Icons.more_horiz,
-              onPressed: () {
-                if (controller.isOpen) {
-                  controller.close();
-                } else {
-                  controller.open();
-                }
-              },
-            );
-          },
-      menuChildren: <Widget>[
-        AppAccessActionGate(
-          requirement: radiologyPrintReportRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return MenuItemButton(
-              leadingIcon: const Icon(Icons.print_outlined),
-              onPressed: isAllowed ? onPrint : null,
-              child: Text(l10n.radiologyPrintReportAction),
-            );
-          },
-        ),
-      ],
-    );
-  }
 }
 
 Future<void> _showReportDialog(
