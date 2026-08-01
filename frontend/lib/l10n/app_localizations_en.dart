@@ -21635,19 +21635,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyPrintReportDialogTitle => 'Print radiology report';
 
   @override
-  String get radiologyPrintReportDialogBody =>
-      'Choose report sections. Patient, findings, impression, and signer are included by default.';
-
-  @override
-  String get radiologyPrintPreviewTitle => 'Print preview';
-
-  @override
-  String get radiologyPrintPreviewMaximizeAction => 'Maximize preview';
-
-  @override
-  String get radiologyPrintPreviewRestoreAction => 'Restore preview';
-
-  @override
   String get radiologyPrintAction => 'Print';
 
   @override
@@ -21670,9 +21657,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyPrintIncludeSignerLabel => 'Signer/reporter';
-
-  @override
-  String get radiologyPrintIncludeMetadataLabel => 'Technical metadata';
 
   @override
   String get radiologyPrintFooterNote =>

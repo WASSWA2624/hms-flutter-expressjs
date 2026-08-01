@@ -2,10 +2,6 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
-void printCurrentWindow() {
-  web.window.print();
-}
-
 void printHtmlDocument(String html, {String title = 'Print document'}) {
   final String escapedTitle = _escapeHtml(title);
   final String baseHref = _escapeHtml(web.window.location.href);

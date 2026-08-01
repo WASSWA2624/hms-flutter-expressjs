@@ -40018,30 +40018,6 @@ abstract class AppLocalizations {
   /// **'Print radiology report'**
   String get radiologyPrintReportDialogTitle;
 
-  /// Radiology print dialog body.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose report sections. Patient, findings, impression, and signer are included by default.'**
-  String get radiologyPrintReportDialogBody;
-
-  /// Radiology print preview title.
-  ///
-  /// In en, this message translates to:
-  /// **'Print preview'**
-  String get radiologyPrintPreviewTitle;
-
-  /// Action to expand the radiology print preview pane.
-  ///
-  /// In en, this message translates to:
-  /// **'Maximize preview'**
-  String get radiologyPrintPreviewMaximizeAction;
-
-  /// Action to restore the radiology print preview pane size.
-  ///
-  /// In en, this message translates to:
-  /// **'Restore preview'**
-  String get radiologyPrintPreviewRestoreAction;
-
   /// Radiology print action.
   ///
   /// In en, this message translates to:
@@ -40089,12 +40065,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Signer/reporter'**
   String get radiologyPrintIncludeSignerLabel;
-
-  /// Radiology print include technical metadata label.
-  ///
-  /// In en, this message translates to:
-  /// **'Technical metadata'**
-  String get radiologyPrintIncludeMetadataLabel;
 
   /// Radiology print footer note.
   ///

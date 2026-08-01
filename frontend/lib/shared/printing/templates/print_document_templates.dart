@@ -40,6 +40,10 @@ enum PrintDocumentTemplateKind {
 }
 
 /// Typed print entry points that reuse the shared empty template chrome.
+///
+/// Every call opens [showAppPrintPreviewDialog] before printing unless
+/// [showPreview] is false because the caller already embeds
+/// [AppPrintPreviewPanel] / [AppPrintPreviewWorkspace].
 abstract final class PrintDocumentTemplates {
   /// Clinical diagnostic result report (lab, radiology).
   static Future<void> clinicalResult({
@@ -482,6 +486,7 @@ abstract final class PrintDocumentTemplates {
     }
 
     if (!showPreview) {
+      // Caller already embeds AppPrintPreviewPanel / Workspace.
       return doPrint();
     }
 

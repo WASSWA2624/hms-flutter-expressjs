@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
@@ -62,12 +62,11 @@ class PrintOpdSummaryDialog extends ConsumerStatefulWidget {
 }
 
 class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
-  static const double _previewHeight = 420;
-
   late Set<OpdPrintSection> _selectedSections;
   bool _isCopying = false;
   bool _isPrinting = false;
-  bool _previewMaximized = false;
+  AppPrintPreviewPaneMode _paneMode = AppPrintPreviewPaneMode.split;
+  double _scale = 1;
   AppFailure? _failure;
 
   bool get _isBusy => _isCopying || _isPrinting;
@@ -128,70 +127,106 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
       includeSignatures: true,
     );
     final bool canExport = selected.isNotEmpty && !_isBusy;
-    final double viewportHeight = MediaQuery.sizeOf(context).height;
-    final double maximizedPreviewHeight = (viewportHeight * 0.72).clamp(
-      360.0,
-      900.0,
-    );
+    final double workspaceHeight = (MediaQuery.sizeOf(context).height * 0.72)
+        .clamp(400.0, 860.0);
+    final bool previewMaximized =
+        _paneMode == AppPrintPreviewPaneMode.preview;
 
     return AppDialog(
       title: Text(l10n.opdPrintSummaryAction),
       icon: const Icon(AppActionIcons.print),
-      maxWidth: 1040,
-      scrollable: !_previewMaximized,
+      maxWidth: 1120,
+      scrollable: false,
       pinActionsToBottom: true,
       closeEnabled: !_isBusy,
-      content: AppFormSection(
-        density: AppFormSectionDensity.compact,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          if (_failure != null)
+          if (_failure != null) ...<Widget>[
             AppFormInformationBanner.failure(
               context: context,
               failure: _failure!,
             ),
-          if (!_previewMaximized) OpdActionContextPanel(flow: flow, showTitle: false),
-          AppPrintPreviewLayout(
-            previewMaximized: _previewMaximized,
-            buildSectionPicker:
-                (BuildContext context, {required bool sideBySide}) {
-                  return AppFormSection(
-                    title: l10n.patientsReportSectionsLabel,
-                    density: AppFormSectionDensity.compact,
-                    children: <Widget>[
-                      AppReportSectionPicker(
-                        sections: tiles,
-                        selectedIds: selected,
-                        maxColumns: sideBySide ? 1 : 3,
-                        onSelectionChanged: _isBusy
-                            ? (_) {}
-                            : (Set<Object> next) {
-                                setState(() {
-                                  _selectedSections =
-                                      sanitizeReportSectionSelection(
-                                        selectedIds: next,
-                                        sections: availabilities,
-                                      ).cast<OpdPrintSection>().toSet();
-                                });
-                              },
-                      ),
-                    ],
-                  );
-                },
-            preview: AppPrintPreviewPanel(
-              html: documentHtml,
-              title: l10n.printPreviewTitle,
-              height: _previewMaximized
-                  ? maximizedPreviewHeight
-                  : _previewHeight,
-              maximized: _previewMaximized,
-              maximizeEnabled: !_isBusy,
-              onMaximizeToggle: () {
-                setState(() => _previewMaximized = !_previewMaximized);
+            SizedBox(height: theme.spacing.sm),
+          ],
+          if (_paneMode != AppPrintPreviewPaneMode.preview) ...<Widget>[
+            OpdActionContextPanel(flow: flow, showTitle: false),
+            SizedBox(height: theme.spacing.sm),
+          ],
+          AppPrintPreviewWorkspace(
+            height: workspaceHeight,
+            paneMode: _paneMode,
+            paneModeEnabled: !_isBusy,
+            onPaneModeChanged: (AppPrintPreviewPaneMode next) {
+              setState(() => _paneMode = next);
+            },
+            sectionPicker: AppReportSectionPicker(
+              sections: tiles,
+              selectedIds: selected,
+              compact: true,
+              minTileWidth: 140,
+              onSelectionChanged: _isBusy
+                  ? (_) {}
+                  : (Set<Object> next) {
+                      setState(() {
+                        _selectedSections = sanitizeReportSectionSelection(
+                          selectedIds: next,
+                          sections: availabilities,
+                        ).cast<OpdPrintSection>().toSet();
+                      });
+                    },
+            ),
+            preview: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                return AppPrintPreviewPanel(
+                  html: documentHtml,
+                  title: l10n.printPreviewTitle,
+                  height: constraints.maxHeight.isFinite
+                      ? constraints.maxHeight
+                      : workspaceHeight,
+                  scale: _scale,
+                  maximized: previewMaximized,
+                  maximizeEnabled: !_isBusy,
+                  onZoomIn: () {
+                    setState(
+                      () => _scale = AppPrintPreviewZoom.zoomIn(_scale),
+                    );
+                  },
+                  onZoomOut: () {
+                    setState(
+                      () => _scale = AppPrintPreviewZoom.zoomOut(_scale),
+                    );
+                  },
+                  onZoomIncrease: () {
+                    setState(
+                      () => _scale = AppPrintPreviewZoom.increase(_scale),
+                    );
+                  },
+                  onZoomDecrease: () {
+                    setState(
+                      () => _scale = AppPrintPreviewZoom.decrease(_scale),
+                    );
+                  },
+                  onFitPage: () {
+                    setState(() {
+                      _scale = AppPrintPreviewZoom.fitPage(
+                        constraints.maxWidth - theme.spacing.lg * 2,
+                      );
+                    });
+                  },
+                  onMaximizeToggle: () {
+                    setState(() {
+                      _paneMode = previewMaximized
+                          ? AppPrintPreviewPaneMode.split
+                          : AppPrintPreviewPaneMode.preview;
+                    });
+                  },
+                  fallbackChild: SelectableText(
+                    summaryText,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                );
               },
-              fallbackChild: SelectableText(
-                summaryText,
-                style: theme.textTheme.bodyMedium,
-              ),
             ),
           ),
         ],
@@ -278,6 +313,7 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
           selectedSections: selected,
         ),
         includeSignatures: true,
+        // Dialog already embeds [AppPrintPreviewPanel].
         showPreview: false,
       );
       if (!mounted) {

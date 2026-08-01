@@ -1,53 +1,5 @@
 part of 'radiology_workspace_page.dart';
 
-class _RadiologyReportReference {
-  const _RadiologyReportReference({
-    required this.label,
-    required this.text,
-    required this.icon,
-  });
-
-  final String label;
-  final String text;
-  final IconData icon;
-}
-
-List<_RadiologyReportReference> _radiologyReportReferences(
-  AppLocalizations l10n,
-  RadiologyOrder order,
-) {
-  final List<_RadiologyReportReference> references =
-      <_RadiologyReportReference>[];
-  for (final ImagingStudy study in order.imagingStudies) {
-    for (final ImagingAsset asset in study.assets) {
-      final String label =
-          asset.fileName ??
-          asset.displayId ??
-          asset.storageKey ??
-          study.effectiveDisplayId;
-      references.add(
-        _RadiologyReportReference(
-          label: l10n.radiologyInsertAssetReferenceAction(label),
-          text: '${l10n.radiologyAssetReferencePrefix}: $label',
-          icon: Icons.image_outlined,
-        ),
-      );
-    }
-    for (final PacsLink link in study.pacsLinks) {
-      final String label =
-          link.url ?? link.displayId ?? study.effectiveDisplayId;
-      references.add(
-        _RadiologyReportReference(
-          label: l10n.radiologyInsertPacsReferenceAction(label),
-          text: '${l10n.radiologyPacsReferencePrefix}: $label',
-          icon: Icons.cloud_outlined,
-        ),
-      );
-    }
-  }
-  return references;
-}
-
 Future<void> _showRadiologyPrintDialog(
   BuildContext context,
   RadiologyWorkflow workflow,
@@ -810,23 +762,4 @@ String _printParagraph(String text) {
     text.trim(),
   ).replaceAll('\n', '<br>');
   return '<p>$escaped</p>';
-}
-
-Future<void> _showFinalizeDialog(
-  BuildContext context,
-  WidgetRef ref,
-  RadiologyResult result,
-) async {
-  final bool? saved = await showAppDialog<bool>(
-    context: context,
-    builder: (_) => _FinalizeReportDialog(
-      result: result,
-      onSubmit: (Map<String, Object?> payload) => ref
-          .read(radiologyWorkspaceControllerProvider.notifier)
-          .finalizeResult(result, payload),
-    ),
-  );
-  if (saved == true && context.mounted) {
-    _showMutationResult(context, null);
-  }
 }

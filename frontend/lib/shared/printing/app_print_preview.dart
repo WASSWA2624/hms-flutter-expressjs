@@ -308,6 +308,7 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
     this.sideBySideBreakpoint = 720,
     this.sectionsFlex = 2,
     this.previewFlex = 3,
+    this.sectionsScrollable = true,
     super.key,
   });
 
@@ -321,6 +322,9 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
   final double sideBySideBreakpoint;
   final int sectionsFlex;
   final int previewFlex;
+
+  /// When false, the sections column fills height and lets its child scroll.
+  final bool sectionsScrollable;
 
   @override
   Widget build(BuildContext context) {
@@ -366,6 +370,7 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
                 final Widget? sectionsPane = showSections
                     ? _ScrollPane(
                         semanticLabel: l10n.printPreviewSectionsPaneLabel,
+                        scrollable: sectionsScrollable,
                         child: sectionPicker!,
                       )
                     : null;
@@ -450,81 +455,6 @@ class _ScrollPane extends StatelessWidget {
         ),
         child: ClipRect(child: body),
       ),
-    );
-  }
-}
-
-/// Side-by-side / stacked layout used by simpler print dialogs.
-///
-/// Prefer [AppPrintPreviewWorkspace] for section-picker print flows.
-class AppPrintPreviewLayout extends StatelessWidget {
-  const AppPrintPreviewLayout({
-    required this.preview,
-    this.leading,
-    this.sectionPicker,
-    this.buildSectionPicker,
-    this.previewMaximized = false,
-    this.sideBySideBreakpoint = 640,
-    super.key,
-  }) : assert(
-         sectionPicker == null || buildSectionPicker == null,
-         'Provide sectionPicker or buildSectionPicker, not both.',
-       );
-
-  final Widget preview;
-  final Widget? leading;
-  final Widget? sectionPicker;
-  final Widget Function(BuildContext context, {required bool sideBySide})?
-  buildSectionPicker;
-  final bool previewMaximized;
-  final double sideBySideBreakpoint;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    if (previewMaximized) {
-      return preview;
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        if (leading != null) ...<Widget>[
-          leading!,
-          SizedBox(height: theme.spacing.md),
-        ],
-        if (sectionPicker == null && buildSectionPicker == null)
-          preview
-        else
-          LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final bool sideBySide =
-                  constraints.maxWidth >= sideBySideBreakpoint;
-              final Widget picker =
-                  sectionPicker ??
-                  buildSectionPicker!(context, sideBySide: sideBySide);
-              if (!sideBySide) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    picker,
-                    SizedBox(height: theme.spacing.md),
-                    preview,
-                  ],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(flex: 2, child: picker),
-                  SizedBox(width: theme.spacing.md),
-                  Expanded(flex: 3, child: preview),
-                ],
-              );
-            },
-          ),
-      ],
     );
   }
 }

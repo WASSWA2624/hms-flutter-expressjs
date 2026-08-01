@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -20,10 +21,9 @@ class NursingPrintSummaryDialog extends ConsumerStatefulWidget {
 
 class _NursingPrintSummaryDialogState
     extends ConsumerState<NursingPrintSummaryDialog> {
-  static const double _previewHeight = 420;
-
   bool _isPrinting = false;
   bool _previewMaximized = false;
+  double _scale = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -50,36 +50,55 @@ class _NursingPrintSummaryDialogState
       footerNote: l10n.nursingReportFooter,
       includeSignatures: true,
     );
-    final double viewportHeight = MediaQuery.sizeOf(context).height;
-    final double maximizedPreviewHeight = (viewportHeight * 0.72).clamp(
-      360.0,
-      900.0,
-    );
+    final double workspaceHeight = (MediaQuery.sizeOf(context).height * 0.72)
+        .clamp(400.0, 860.0);
 
     return AppDialog(
       title: Text(l10n.nursingActionPrintSummary),
       icon: const Icon(Icons.print_outlined),
       maxWidth: 960,
-      scrollable: !_previewMaximized,
+      scrollable: false,
       pinActionsToBottom: true,
       closeEnabled: !_isPrinting,
-      content: AppPrintPreviewLayout(
-        previewMaximized: _previewMaximized,
-        preview: AppPrintPreviewPanel(
-          html: documentHtml,
-          title: l10n.printPreviewTitle,
-          height: _previewMaximized
-              ? maximizedPreviewHeight
-              : _previewHeight,
-          maximized: _previewMaximized,
-          maximizeEnabled: !_isPrinting,
-          onMaximizeToggle: () {
-            setState(() => _previewMaximized = !_previewMaximized);
+      content: SizedBox(
+        height: workspaceHeight,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            return AppPrintPreviewPanel(
+              html: documentHtml,
+              title: l10n.printPreviewTitle,
+              height: constraints.maxHeight,
+              scale: _scale,
+              maximized: _previewMaximized,
+              maximizeEnabled: !_isPrinting,
+              onZoomIn: () {
+                setState(() => _scale = AppPrintPreviewZoom.zoomIn(_scale));
+              },
+              onZoomOut: () {
+                setState(() => _scale = AppPrintPreviewZoom.zoomOut(_scale));
+              },
+              onZoomIncrease: () {
+                setState(() => _scale = AppPrintPreviewZoom.increase(_scale));
+              },
+              onZoomDecrease: () {
+                setState(() => _scale = AppPrintPreviewZoom.decrease(_scale));
+              },
+              onFitPage: () {
+                setState(() {
+                  _scale = AppPrintPreviewZoom.fitPage(
+                    constraints.maxWidth - theme.spacing.lg * 2,
+                  );
+                });
+              },
+              onMaximizeToggle: () {
+                setState(() => _previewMaximized = !_previewMaximized);
+              },
+              fallbackChild: SelectableText(
+                preview,
+                style: theme.textTheme.bodyMedium,
+              ),
+            );
           },
-          fallbackChild: SelectableText(
-            preview,
-            style: theme.textTheme.bodyMedium,
-          ),
         ),
       ),
       actions: <Widget>[
@@ -120,7 +139,7 @@ class _NursingPrintSummaryDialogState
         ),
         bodyHtml: nursingSummaryHtml(context, widget.detail),
         footerNote: l10n.nursingReportFooter,
-        includeSignatures: true,
+        // Dialog already embeds [AppPrintPreviewPanel].
         showPreview: false,
       );
     } finally {

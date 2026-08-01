@@ -2457,8 +2457,6 @@ class _PatientReportPrintPreviewDialog extends ConsumerStatefulWidget {
 
 class _PatientReportPrintPreviewDialogState
     extends ConsumerState<_PatientReportPrintPreviewDialog> {
-  static const double _previewHeight = 420;
-
   late final DateTime _generatedAt;
   _PatientReportPeriodMode _periodMode = _PatientReportPeriodMode.allDates;
   DateTime? _singleDate;
@@ -2466,7 +2464,8 @@ class _PatientReportPrintPreviewDialogState
   DateTime? _endDate;
   late Set<_PatientReportSection> _selectedSections;
   bool _isPrinting = false;
-  bool _previewMaximized = false;
+  AppPrintPreviewPaneMode _paneMode = AppPrintPreviewPaneMode.split;
+  double _scale = 1;
 
   @override
   void initState() {
@@ -2491,6 +2490,7 @@ class _PatientReportPrintPreviewDialogState
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final PatientDetail? liveDetail = _livePatientDetail(
       ref,
       widget.patient.id,
@@ -2514,11 +2514,10 @@ class _PatientReportPrintPreviewDialogState
     );
     final bool periodIsValid = _periodRangeIsValid;
     final bool canPrint = periodIsValid && selection.sections.isNotEmpty;
-    final double viewportHeight = MediaQuery.sizeOf(context).height;
-    final double maximizedPreviewHeight = (viewportHeight * 0.72).clamp(
-      360.0,
-      900.0,
-    );
+    final double workspaceHeight = (MediaQuery.sizeOf(context).height * 0.72)
+        .clamp(400.0, 860.0);
+    final bool previewMaximized =
+        _paneMode == AppPrintPreviewPaneMode.preview;
     final String documentHtml = PrintDocumentTemplates.buildDocumentHtml(
       kind: PrintDocumentTemplateKind.patientChart,
       ref: ref,
@@ -2539,13 +2538,18 @@ class _PatientReportPrintPreviewDialogState
     return AppDialog(
       title: Text(l10n.patientsReportPreviewDialogTitle),
       icon: const Icon(Icons.preview_outlined),
-      scrollable: !_previewMaximized,
+      scrollable: false,
       pinActionsToBottom: true,
-      maxWidth: 1080,
+      maxWidth: 1120,
       closeEnabled: !_isPrinting,
-      content: AppPrintPreviewLayout(
-        previewMaximized: _previewMaximized,
-        leading: _PatientReportPreviewControls(
+      content: AppPrintPreviewWorkspace(
+        height: workspaceHeight,
+        paneMode: _paneMode,
+        paneModeEnabled: !_isPrinting,
+        onPaneModeChanged: (AppPrintPreviewPaneMode next) {
+          setState(() => _paneMode = next);
+        },
+        sectionPicker: _PatientReportPreviewControls(
           selection: selection,
           availabilities: availabilities,
           periodIsValid: periodIsValid,
@@ -2582,18 +2586,46 @@ class _PatientReportPrintPreviewDialogState
             });
           },
         ),
-        preview: AppPrintPreviewPanel(
-          html: documentHtml,
-          title: l10n.printPreviewTitle,
-          height: _previewMaximized
-              ? maximizedPreviewHeight
-              : _previewHeight,
-          maximized: _previewMaximized,
-          maximizeEnabled: !_isPrinting,
-          onMaximizeToggle: () {
-            setState(() => _previewMaximized = !_previewMaximized);
+        preview: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            return AppPrintPreviewPanel(
+              html: documentHtml,
+              title: l10n.printPreviewTitle,
+              height: constraints.maxHeight.isFinite
+                  ? constraints.maxHeight
+                  : workspaceHeight,
+              scale: _scale,
+              maximized: previewMaximized,
+              maximizeEnabled: !_isPrinting,
+              onZoomIn: () {
+                setState(() => _scale = AppPrintPreviewZoom.zoomIn(_scale));
+              },
+              onZoomOut: () {
+                setState(() => _scale = AppPrintPreviewZoom.zoomOut(_scale));
+              },
+              onZoomIncrease: () {
+                setState(() => _scale = AppPrintPreviewZoom.increase(_scale));
+              },
+              onZoomDecrease: () {
+                setState(() => _scale = AppPrintPreviewZoom.decrease(_scale));
+              },
+              onFitPage: () {
+                setState(() {
+                  _scale = AppPrintPreviewZoom.fitPage(
+                    constraints.maxWidth - theme.spacing.lg * 2,
+                  );
+                });
+              },
+              onMaximizeToggle: () {
+                setState(() {
+                  _paneMode = previewMaximized
+                      ? AppPrintPreviewPaneMode.split
+                      : AppPrintPreviewPaneMode.preview;
+                });
+              },
+              fallbackChild: _PatientReportPreviewPages(document: document),
+            );
           },
-          fallbackChild: _PatientReportPreviewPages(document: document),
         ),
       ),
       actions: <Widget>[

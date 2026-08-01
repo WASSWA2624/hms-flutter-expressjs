@@ -1690,6 +1690,8 @@ class _LabReportPreviewDialogState
   _columnVisibilityController;
   LabReportPreviewSettings _settings = LabReportPreviewSettings.defaults;
   bool _isPrinting = false;
+  AppPrintPreviewPaneMode _paneMode = AppPrintPreviewPaneMode.split;
+  double _scale = 1;
 
   @override
   void initState() {
@@ -1714,9 +1716,62 @@ class _LabReportPreviewDialogState
 
   List<LabOrderItem> get _allReportItems => _reportItems(widget.workflows);
 
+  ({List<LabOrderWorkflow> workflows, Set<String> itemIds}) _printSelection() {
+    final List<LabOrderItem> printableItems = _printableReleasedReportItems(
+      _allReportItems,
+    );
+    final Set<String> printableKeys = <String>{
+      for (final LabOrderItem item in printableItems) _itemSelectionKey(item),
+    };
+    final Set<String> selectedPrintableKeys = _selectedItemIds.intersection(
+      printableKeys,
+    );
+    final Set<String> itemIdsToPrint = selectedPrintableKeys.isEmpty
+        ? printableKeys
+        : selectedPrintableKeys;
+    final List<LabOrderWorkflow> workflows = widget.workflows
+        .where((LabOrderWorkflow workflow) {
+          return workflow.order.items.any(
+            (LabOrderItem item) =>
+                itemIdsToPrint.contains(_itemSelectionKey(item)),
+          );
+        })
+        .toList(growable: false);
+    return (workflows: workflows, itemIds: itemIdsToPrint);
+  }
+
+  String? _documentHtml(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final selection = _printSelection();
+    final List<LabOrderWorkflow> workflows = selection.workflows;
+    final Set<String> itemIds = selection.itemIds;
+    if (workflows.isEmpty) {
+      return null;
+    }
+    return PrintDocumentTemplates.buildDocumentHtml(
+      kind: PrintDocumentTemplateKind.clinicalResult,
+      ref: ref,
+      context: context,
+      title: l10n.labReportTitle,
+      patientContext: _reportPatientContext(context, workflows, _settings),
+      contextReference: _reportContextReference(context, workflows, _settings),
+      metadata: _reportMetadata(context, workflows, _settings),
+      pages: _reportPages(
+        context,
+        workflows,
+        itemIds,
+        _visibleReportColumnKeys(),
+        _settings,
+      ),
+      footerNote: l10n.labReportFooter,
+      includeSignatures: true,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final List<LabOrderItem> printableItems = _printableReleasedReportItems(
       _allReportItems,
     );
@@ -1726,30 +1781,96 @@ class _LabReportPreviewDialogState
       authorized: printAuthorized,
       hasPrintableReleasedContent: printableItems.isNotEmpty,
     );
+    final double workspaceHeight = (MediaQuery.sizeOf(context).height * 0.72)
+        .clamp(400.0, 860.0);
+    final bool previewMaximized =
+        _paneMode == AppPrintPreviewPaneMode.preview;
+    final String? documentHtml = _documentHtml(context);
+
     return AppDialog(
       title: Text(l10n.labReportPreviewTitle),
       icon: const Icon(Icons.print_outlined),
-      scrollable: true,
-      maxWidth: 1040,
+      scrollable: false,
+      pinActionsToBottom: true,
+      maxWidth: 1120,
       closeEnabled: !_isPrinting,
-      content: AppClinicalResultsPreview(
-        mode: AppClinicalResultsPreviewMode.modal,
-        semanticLabel: l10n.labReportPreviewTitle,
-        isEmpty: _allReportItems.isEmpty,
-        emptyTitle: l10n.labNoOrderItemsEntryTitle,
-        emptyBody: l10n.labNoOrderItemsEntryBody,
-        printEligible: printEligible,
-        child: _LabReportPreview(
-          workflows: widget.workflows,
-          items: _allReportItems,
-          selectedItemIds: _selectedItemIds,
-          searchController: _searchController,
-          settings: _settings,
-          columnVisibilityController: _columnVisibilityController,
-          columns: _reportPreviewColumns(context),
-          columnChoices: _reportPreviewColumnChoices(context),
-          onToggleItem: _toggleReportItem,
-          onOpenSettings: _openReportSettings,
+      content: AppPrintPreviewWorkspace(
+        height: workspaceHeight,
+        paneMode: _paneMode,
+        paneModeEnabled: !_isPrinting,
+        sectionsScrollable: false,
+        onPaneModeChanged: (AppPrintPreviewPaneMode next) {
+          setState(() => _paneMode = next);
+        },
+        sectionPicker: AppClinicalResultsPreview(
+          mode: AppClinicalResultsPreviewMode.modal,
+          semanticLabel: l10n.labReportPreviewTitle,
+          isEmpty: _allReportItems.isEmpty,
+          emptyTitle: l10n.labNoOrderItemsEntryTitle,
+          emptyBody: l10n.labNoOrderItemsEntryBody,
+          printEligible: printEligible,
+          child: _LabReportPreview(
+            workflows: widget.workflows,
+            items: _allReportItems,
+            selectedItemIds: _selectedItemIds,
+            searchController: _searchController,
+            settings: _settings,
+            columnVisibilityController: _columnVisibilityController,
+            columns: _reportPreviewColumns(context),
+            columnChoices: _reportPreviewColumnChoices(context),
+            onToggleItem: _toggleReportItem,
+            onOpenSettings: _openReportSettings,
+          ),
+        ),
+        preview: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final String html =
+                documentHtml ??
+                PrintDocumentTemplates.emptyBodyHtml(
+                  kind: PrintDocumentTemplateKind.clinicalResult,
+                  sectionTitles: <String>[l10n.labReportTitle],
+                );
+            return AppPrintPreviewPanel(
+              html: html,
+              title: l10n.printPreviewTitle,
+              height: constraints.maxHeight.isFinite
+                  ? constraints.maxHeight
+                  : workspaceHeight,
+              scale: _scale,
+              maximized: previewMaximized,
+              maximizeEnabled: !_isPrinting,
+              onZoomIn: () {
+                setState(() => _scale = AppPrintPreviewZoom.zoomIn(_scale));
+              },
+              onZoomOut: () {
+                setState(() => _scale = AppPrintPreviewZoom.zoomOut(_scale));
+              },
+              onZoomIncrease: () {
+                setState(() => _scale = AppPrintPreviewZoom.increase(_scale));
+              },
+              onZoomDecrease: () {
+                setState(() => _scale = AppPrintPreviewZoom.decrease(_scale));
+              },
+              onFitPage: () {
+                setState(() {
+                  _scale = AppPrintPreviewZoom.fitPage(
+                    constraints.maxWidth - theme.spacing.lg * 2,
+                  );
+                });
+              },
+              onMaximizeToggle: () {
+                setState(() {
+                  _paneMode = previewMaximized
+                      ? AppPrintPreviewPaneMode.split
+                      : AppPrintPreviewPaneMode.preview;
+                });
+              },
+              fallbackChild: Text(
+                l10n.labReportPreviewTitle,
+                style: theme.textTheme.bodyMedium,
+              ),
+            );
+          },
         ),
       ),
       actions: <Widget>[
@@ -1762,8 +1883,10 @@ class _LabReportPreviewDialogState
         AppReportActionButton.print(
           label: l10n.labPrintReportAction,
           isLoading: _isPrinting,
-          enabled: printEligible && !_isPrinting,
-          onPressed: printEligible ? () => _printSelectedReport() : null,
+          enabled: printEligible && !_isPrinting && documentHtml != null,
+          onPressed: printEligible && documentHtml != null
+              ? () => _printSelectedReport()
+              : null,
         ),
       ],
     );
@@ -2027,31 +2150,9 @@ class _LabReportPreviewDialogState
 
   Future<void> _printSelectedReport() async {
     final AppLocalizations l10n = context.l10n;
-    final List<LabOrderItem> printableItems = _printableReleasedReportItems(
-      _allReportItems,
-    );
-    if (printableItems.isEmpty) {
-      return;
-    }
-
-    final Set<String> printableKeys = <String>{
-      for (final LabOrderItem item in printableItems) _itemSelectionKey(item),
-    };
-    final Set<String> selectedPrintableKeys = _selectedItemIds.intersection(
-      printableKeys,
-    );
-    final Set<String> itemIdsToPrint = selectedPrintableKeys.isEmpty
-        ? printableKeys
-        : selectedPrintableKeys;
-
-    final List<LabOrderWorkflow> workflows = widget.workflows
-        .where((LabOrderWorkflow workflow) {
-          return workflow.order.items.any(
-            (LabOrderItem item) =>
-                itemIdsToPrint.contains(_itemSelectionKey(item)),
-          );
-        })
-        .toList(growable: false);
+    final selection = _printSelection();
+    final List<LabOrderWorkflow> workflows = selection.workflows;
+    final Set<String> itemIds = selection.itemIds;
     if (workflows.isEmpty) {
       return;
     }
@@ -2066,12 +2167,12 @@ class _LabReportPreviewDialogState
       pages: _reportPages(
         context,
         workflows,
-        itemIdsToPrint,
+        itemIds,
         _visibleReportColumnKeys(),
         _settings,
       ),
       footerNote: l10n.labReportFooter,
-      includeSignatures: true,
+      // Dialog already embeds [AppPrintPreviewPanel].
       showPreview: false,
     );
     if (mounted) {
