@@ -154,9 +154,14 @@ List<PharmacyCatalogTabDescriptor> pharmacyCatalogTabDescriptors(
       label: l10n.pharmacyCatalogTabInventory,
     ),
     PharmacyCatalogTabDescriptor(
-      tab: PharmacyCatalogTab.storage,
+      tab: PharmacyCatalogTab.storageLayout,
       icon: Icons.warehouse_outlined,
       label: l10n.pharmacyCatalogTabStorage,
+    ),
+    PharmacyCatalogTabDescriptor(
+      tab: PharmacyCatalogTab.shelves,
+      icon: Icons.view_week_outlined,
+      label: l10n.pharmacyCatalogTabShelves,
     ),
   ];
 }

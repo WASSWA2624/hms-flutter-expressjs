@@ -120,7 +120,7 @@ class _PharmacyDrugEditDialogState
     await openPharmacyCatalogDialog(
       context,
       ref,
-      initialTab: PharmacyCatalogTab.storage,
+      initialTab: PharmacyCatalogTab.storageLayout,
     );
   }
 

@@ -22018,11 +22018,35 @@ abstract class AppLocalizations {
   /// **'Storage layout'**
   String get pharmacyCatalogTabStorage;
 
+  /// Pharmacy catalog shelves nested tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Shelves'**
+  String get pharmacyCatalogTabShelves;
+
   /// Pharmacy catalog panel dialog title.
   ///
   /// In en, this message translates to:
   /// **'Catalog and stock'**
   String get pharmacyCatalogPanelTitle;
+
+  /// Pharmacy desk strip label for the inline catalog and stock section.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog and stock'**
+  String get pharmacyDeskCatalogLabel;
+
+  /// Pharmacy storage layout table column header for the number of shelves in a room.
+  ///
+  /// In en, this message translates to:
+  /// **'Shelves'**
+  String get pharmacyStorageShelvesCountColumnLabel;
+
+  /// Pharmacy storage table column header for the active/inactive status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get pharmacyStorageStatusColumnLabel;
 
   /// Pharmacy add drug action label.
   ///
@@ -22353,6 +22377,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add a storage room to assign shelf locations when receiving stock.'**
   String get pharmacyNoStorageRoomsBody;
+
+  /// Empty pharmacy storage shelves title.
+  ///
+  /// In en, this message translates to:
+  /// **'No shelves'**
+  String get pharmacyNoStorageShelvesTitle;
 
   /// Empty pharmacy storage shelves message.
   ///
@@ -37272,6 +37302,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete'**
   String get commonDeleteActionLabel;
+
+  /// Shared short adjust action label for section headers and toolbars.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust'**
+  String get commonAdjustActionLabel;
+
+  /// Shared short clear action label for section headers and toolbars.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get commonClearActionLabel;
 
   /// Shared short record action label for section headers and toolbars.
   ///

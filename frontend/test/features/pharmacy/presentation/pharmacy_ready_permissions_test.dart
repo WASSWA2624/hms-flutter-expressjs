@@ -241,7 +241,14 @@ void _stubPharmacyRepository(
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
-Finder _catalogAction() => find.byTooltip('Catalog and stock');
+/// Catalog browse is now the "Catalog and stock" desk tab. It can render as a
+/// visible tab or, on a crowded strip, as an overflow menu entry, so we assert
+/// presence against the strip's tab model rather than a specific rendered chip.
+Finder _catalogAction() => find.byWidgetPredicate(
+  (Widget widget) =>
+      widget is AppTabStrip &&
+      widget.tabs.any((AppTabItem tab) => tab.label == 'Catalog and stock'),
+);
 
 /// Ready worklist has a "Dispense" progress column; action labels live on
 /// [AppButton] only.

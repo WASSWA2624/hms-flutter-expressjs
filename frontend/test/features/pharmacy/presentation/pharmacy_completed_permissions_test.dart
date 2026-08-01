@@ -199,7 +199,13 @@ void _stubPharmacyRepository(
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
-Finder _catalogAction() => find.byTooltip('Catalog and stock');
+/// Catalog browse is now the "Catalog and stock" desk tab (visible chip or
+/// overflow entry); assert against the strip's tab model to stay overflow-safe.
+Finder _catalogAction() => find.byWidgetPredicate(
+  (Widget widget) =>
+      widget is AppTabStrip &&
+      widget.tabs.any((AppTabItem tab) => tab.label == 'Catalog and stock'),
+);
 
 Future<void> _pumpCompletedTab(
   WidgetTester tester, {

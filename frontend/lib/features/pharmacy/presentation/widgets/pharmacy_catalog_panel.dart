@@ -79,11 +79,15 @@ class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
         writeRequirement: pharmacyCatalogWriteRequirement,
         fillHeight: widget.fillHeight,
       ),
-      PharmacyCatalogTab.storage => PharmacyStoragePanel(
+      PharmacyCatalogTab.storageLayout => _StorageLayoutCatalogTab(
         state: state,
         writeRequirement: pharmacyCatalogWriteRequirement,
-        showHeaderActions: false,
-        compact: true,
+        fillHeight: widget.fillHeight,
+      ),
+      PharmacyCatalogTab.shelves => _ShelvesCatalogTab(
+        state: state,
+        writeRequirement: pharmacyCatalogWriteRequirement,
+        fillHeight: widget.fillHeight,
       ),
     };
 
@@ -163,7 +167,8 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
                   : () => _confirmDeleteSelectedDrugs(context),
             )
           : null,
-      addLabel: l10n.pharmacyAddDrugAction,
+      addLabel: l10n.commonAddActionLabel,
+      addSemanticLabel: l10n.pharmacyAddDrugAction,
       onAdd: () => _openDrugDialog(context),
     );
 
@@ -299,8 +304,10 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
               context: context,
               writeRequirement: widget.writeRequirement,
               isBusy: isBusy,
-              editLabel: l10n.pharmacyEditDrugAction,
-              deleteLabel: l10n.pharmacyDeleteDrugAction,
+              editLabel: l10n.commonEditActionLabel,
+              deleteLabel: l10n.commonDeleteActionLabel,
+              editSemanticLabel: l10n.pharmacyEditDrugAction,
+              deleteSemanticLabel: l10n.pharmacyDeleteDrugAction,
               onEdit: () => _openDrugDialog(context, drug: item),
               onDelete: () => _confirmDeleteDrug(context, item),
             );
@@ -506,7 +513,8 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
                   : () => _confirmDeleteSelectedFormulary(context),
             )
           : null,
-      addLabel: l10n.pharmacyAddFormularyAction,
+      addLabel: l10n.commonAddActionLabel,
+      addSemanticLabel: l10n.pharmacyAddFormularyAction,
       onAdd: () => _openFormularyDialog(context),
     );
 
@@ -601,8 +609,10 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
               context: context,
               writeRequirement: widget.writeRequirement,
               isBusy: isBusy,
-              editLabel: l10n.pharmacyEditFormularyAction,
-              deleteLabel: l10n.pharmacyDeleteFormularyAction,
+              editLabel: l10n.commonEditActionLabel,
+              deleteLabel: l10n.commonDeleteActionLabel,
+              editSemanticLabel: l10n.pharmacyEditFormularyAction,
+              deleteSemanticLabel: l10n.pharmacyDeleteFormularyAction,
               onEdit: () => _openFormularyDialog(context, item: item),
               onDelete: () => _confirmDeleteFormulary(context, item),
             );
@@ -1155,8 +1165,10 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
               context: context,
               writeRequirement: widget.writeRequirement,
               isBusy: isBusy,
-              editLabel: l10n.pharmacyAdjustStockAction,
-              deleteLabel: l10n.pharmacyDeleteInventoryStockAction,
+              editLabel: l10n.commonAdjustActionLabel,
+              deleteLabel: l10n.commonClearActionLabel,
+              editSemanticLabel: l10n.pharmacyAdjustStockAction,
+              deleteSemanticLabel: l10n.pharmacyDeleteInventoryStockAction,
               onEdit: () => _openAdjustDialog(context, item),
               onDelete: () => _confirmClearInventoryStock(context, item),
             );
@@ -1590,6 +1602,388 @@ class _InventoryAdjustDialogState
   }
 }
 
+/// Storage layout tab: renders storage rooms as a table with per-room Add
+/// shelf / Edit / Delete actions. Reuses the shared storage dialogs and
+/// controller CRUD so behavior matches the legacy expansion panel.
+class _StorageLayoutCatalogTab extends ConsumerWidget {
+  const _StorageLayoutCatalogTab({
+    required this.state,
+    required this.writeRequirement,
+    this.fillHeight = false,
+  });
+
+  final PharmacyWorkspaceState state;
+  final AccessRequirement writeRequirement;
+  final bool fillHeight;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final List<PharmacyStorageRoom> rooms = state.storageLayout.rooms;
+    final AppPage<PharmacyStorageRoom> page = AppPage<PharmacyStorageRoom>(
+      items: rooms,
+      request: AppPageRequest(pageSize: rooms.isEmpty ? 10 : rooms.length),
+    );
+    final bool isBusy = state.isRefreshingStorage;
+
+    final Widget? toolbar = _catalogToolbar(
+      theme: theme,
+      ref: ref,
+      writeRequirement: writeRequirement,
+      isBusy: isBusy,
+      hasSelection: false,
+      addLabel: l10n.commonAddActionLabel,
+      addSemanticLabel: l10n.pharmacyAddStorageRoomAction,
+      onAdd: () => openPharmacyStorageRoomDialog(context, ref),
+    );
+
+    final Widget table = AppListTable<PharmacyStorageRoom>(
+      page: page,
+      isLoading: isBusy,
+      shrinkWrap: !fillHeight,
+      physics: fillHeight ? null : const NeverScrollableScrollPhysics(),
+      columnVisibilityStorageKey: 'pharmacy_catalog_storage_rooms',
+      emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+        variant: AppStateViewVariant.empty,
+        title: l10n.pharmacyNoStorageRoomsTitle,
+        body: l10n.pharmacyNoStorageRoomsBody,
+        icon: Icons.warehouse_outlined,
+      ),
+      columns: <AppListTableColumn<PharmacyStorageRoom>>[
+        AppListTableColumn<PharmacyStorageRoom>(
+          label: l10n.pharmacyStorageRoomNameLabel,
+          cellBuilder: (_, PharmacyStorageRoom item) =>
+              Text(item.name ?? item.id),
+        ),
+        AppListTableColumn<PharmacyStorageRoom>(
+          label: l10n.pharmacyStorageRoomCodeLabel,
+          cellBuilder: (_, PharmacyStorageRoom item) =>
+              Text((item.code ?? '').isEmpty ? '—' : item.code!),
+        ),
+        AppListTableColumn<PharmacyStorageRoom>(
+          label: l10n.pharmacyStorageShelvesCountColumnLabel,
+          numeric: true,
+          cellBuilder: (_, PharmacyStorageRoom item) =>
+              Text(item.shelves.length.toString()),
+        ),
+        AppListTableColumn<PharmacyStorageRoom>(
+          label: l10n.pharmacyStorageStatusColumnLabel,
+          cellBuilder: (BuildContext context, PharmacyStorageRoom item) {
+            return AppWorkspaceStatusBadge(
+              status: AppWorkspaceStatus(
+                label: item.isActive
+                    ? l10n.pharmacyStorageActiveLabel
+                    : l10n.pharmacyStorageInactiveLabel,
+                tone: item.isActive
+                    ? AppWorkspaceStatusTone.success
+                    : AppWorkspaceStatusTone.neutral,
+              ),
+            );
+          },
+        ),
+        AppListTableColumn<PharmacyStorageRoom>(
+          label: '',
+          alwaysVisible: true,
+          cellBuilder: (BuildContext context, PharmacyStorageRoom item) {
+            return AppAccessActionGate(
+              requirement: writeRequirement,
+              builder: (BuildContext context, bool isAllowed) => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  AppButton.tertiary(
+                    leadingIcon: Icons.add,
+                    label: l10n.commonAddActionLabel,
+                    semanticLabel: l10n.pharmacyAddStorageShelfAction,
+                    tooltip: l10n.pharmacyAddStorageShelfAction,
+                    enabled: isAllowed && !isBusy && item.isActive,
+                    onPressed: isAllowed && !isBusy && item.isActive
+                        ? () => openPharmacyStorageShelfDialog(
+                            context,
+                            ref,
+                            room: item,
+                          )
+                        : null,
+                  ),
+                  SizedBox(width: theme.spacing.xs),
+                  AppButton.tertiary(
+                    leadingIcon: Icons.edit_outlined,
+                    label: l10n.commonEditActionLabel,
+                    semanticLabel: l10n.pharmacyEditStorageRoomAction,
+                    tooltip: l10n.pharmacyEditStorageRoomAction,
+                    enabled: isAllowed && !isBusy,
+                    onPressed: isAllowed && !isBusy
+                        ? () => openPharmacyStorageRoomDialog(
+                            context,
+                            ref,
+                            room: item,
+                          )
+                        : null,
+                  ),
+                  SizedBox(width: theme.spacing.xs),
+                  AppButton.tertiary(
+                    leadingIcon: Icons.delete_outline,
+                    label: l10n.commonDeleteActionLabel,
+                    semanticLabel: l10n.pharmacyDeleteStorageRoomAction,
+                    tooltip: l10n.pharmacyDeleteStorageRoomAction,
+                    color: theme.colorScheme.error,
+                    enabled: isAllowed && !isBusy,
+                    onPressed: isAllowed && !isBusy
+                        ? () => confirmDeletePharmacyStorageRoom(
+                            context,
+                            ref,
+                            item,
+                          )
+                        : null,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+      mobileItemBuilder: (BuildContext context, PharmacyStorageRoom item) {
+        return AppListTableMobileItem(
+          title: item.name ?? item.id,
+          caption: item.code,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label:
+                  '${item.shelves.length} · ${l10n.pharmacyStorageShelvesCountColumnLabel}',
+              icon: Icons.view_week_outlined,
+            ),
+            AppListTableMobileMeta(
+              label: item.isActive
+                  ? l10n.pharmacyStorageActiveLabel
+                  : l10n.pharmacyStorageInactiveLabel,
+            ),
+          ],
+          showAvatar: false,
+        );
+      },
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        ?toolbar,
+        if (fillHeight) Expanded(child: table) else table,
+      ],
+    );
+  }
+}
+
+/// Shelves tab: flattens shelves across all rooms into a single table with
+/// Add / Edit / Delete actions. Adding a shelf prompts for the parent room.
+class _ShelvesCatalogTab extends ConsumerWidget {
+  const _ShelvesCatalogTab({
+    required this.state,
+    required this.writeRequirement,
+    this.fillHeight = false,
+  });
+
+  final PharmacyWorkspaceState state;
+  final AccessRequirement writeRequirement;
+  final bool fillHeight;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final List<PharmacyStorageRoom> rooms = state.storageLayout.rooms;
+    final List<_ShelfRow> shelfRows = <_ShelfRow>[
+      for (final PharmacyStorageRoom room in rooms)
+        for (final PharmacyStorageShelf shelf in room.shelves)
+          _ShelfRow(room: room, shelf: shelf),
+    ];
+    final AppPage<_ShelfRow> page = AppPage<_ShelfRow>(
+      items: shelfRows,
+      request: AppPageRequest(
+        pageSize: shelfRows.isEmpty ? 10 : shelfRows.length,
+      ),
+    );
+    final bool isBusy = state.isRefreshingStorage;
+    final List<PharmacyStorageRoom> activeRooms = _activeStorageRooms(
+      state.storageLayout,
+    );
+
+    final Widget? toolbar = _catalogToolbar(
+      theme: theme,
+      ref: ref,
+      writeRequirement: writeRequirement,
+      isBusy: isBusy,
+      hasSelection: false,
+      addLabel: l10n.commonAddActionLabel,
+      addSemanticLabel: l10n.pharmacyAddStorageShelfAction,
+      onAdd: activeRooms.isEmpty
+          ? null
+          : () => _promptAddShelf(context, ref, activeRooms),
+    );
+
+    final Widget table = AppListTable<_ShelfRow>(
+      page: page,
+      isLoading: isBusy,
+      shrinkWrap: !fillHeight,
+      physics: fillHeight ? null : const NeverScrollableScrollPhysics(),
+      columnVisibilityStorageKey: 'pharmacy_catalog_shelves',
+      emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+        variant: AppStateViewVariant.empty,
+        title: l10n.pharmacyNoStorageShelvesTitle,
+        body: l10n.pharmacyNoStorageShelvesBody,
+        icon: Icons.view_week_outlined,
+      ),
+      columns: <AppListTableColumn<_ShelfRow>>[
+        AppListTableColumn<_ShelfRow>(
+          label: l10n.pharmacyStorageShelfCodeLabel,
+          cellBuilder: (_, _ShelfRow row) =>
+              Text(row.shelf.shelfCode ?? row.shelf.displayLabel),
+        ),
+        AppListTableColumn<_ShelfRow>(
+          label: l10n.pharmacyStorageShelfLabelField,
+          cellBuilder: (_, _ShelfRow row) {
+            final String label = (row.shelf.label ?? '').trim();
+            return Text(label.isEmpty ? '—' : label);
+          },
+        ),
+        AppListTableColumn<_ShelfRow>(
+          label: l10n.pharmacyStorageRoomLabel,
+          cellBuilder: (_, _ShelfRow row) => Text(row.room.name ?? row.room.id),
+        ),
+        AppListTableColumn<_ShelfRow>(
+          label: l10n.pharmacyStorageStatusColumnLabel,
+          cellBuilder: (BuildContext context, _ShelfRow row) {
+            return AppWorkspaceStatusBadge(
+              status: AppWorkspaceStatus(
+                label: row.shelf.isActive
+                    ? l10n.pharmacyStorageActiveLabel
+                    : l10n.pharmacyStorageInactiveLabel,
+                tone: row.shelf.isActive
+                    ? AppWorkspaceStatusTone.success
+                    : AppWorkspaceStatusTone.neutral,
+              ),
+            );
+          },
+        ),
+        AppListTableColumn<_ShelfRow>(
+          label: '',
+          alwaysVisible: true,
+          cellBuilder: (BuildContext context, _ShelfRow row) {
+            return _catalogRowActions(
+              context: context,
+              writeRequirement: writeRequirement,
+              isBusy: isBusy,
+              editLabel: l10n.commonEditActionLabel,
+              deleteLabel: l10n.commonDeleteActionLabel,
+              editSemanticLabel: l10n.pharmacyEditStorageShelfAction,
+              deleteSemanticLabel: l10n.pharmacyDeleteStorageShelfAction,
+              onEdit: () => openPharmacyStorageShelfDialog(
+                context,
+                ref,
+                room: row.room,
+                shelf: row.shelf,
+              ),
+              onDelete: () =>
+                  confirmDeletePharmacyStorageShelf(context, ref, row.shelf),
+            );
+          },
+        ),
+      ],
+      mobileItemBuilder: (BuildContext context, _ShelfRow row) {
+        return AppListTableMobileItem(
+          title: row.shelf.displayLabel,
+          caption: row.room.name,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: row.shelf.isActive
+                  ? l10n.pharmacyStorageActiveLabel
+                  : l10n.pharmacyStorageInactiveLabel,
+            ),
+          ],
+          showAvatar: false,
+        );
+      },
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        ?toolbar,
+        if (fillHeight) Expanded(child: table) else table,
+      ],
+    );
+  }
+
+  Future<void> _promptAddShelf(
+    BuildContext context,
+    WidgetRef ref,
+    List<PharmacyStorageRoom> activeRooms,
+  ) async {
+    final AppLocalizations l10n = context.l10n;
+    PharmacyStorageRoom? selectedRoom = activeRooms.length == 1
+        ? activeRooms.first
+        : null;
+    if (activeRooms.length > 1) {
+      selectedRoom = await showAppDialog<PharmacyStorageRoom>(
+        context: context,
+        builder: (BuildContext dialogContext) {
+          PharmacyStorageRoom? choice = activeRooms.first;
+          return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setDialogState) {
+              return AppDialog(
+                title: Text(l10n.pharmacyAddStorageShelfAction),
+                icon: const Icon(Icons.view_week_outlined),
+                content: AppSelectField<String>(
+                  value: choice?.id,
+                  labelText: l10n.pharmacyStorageRoomLabel,
+                  options: activeRooms
+                      .map(
+                        (PharmacyStorageRoom room) => AppSelectOption<String>(
+                          value: room.id,
+                          label: room.name ?? room.id,
+                        ),
+                      )
+                      .toList(growable: false),
+                  onChanged: (String? value) => setDialogState(() {
+                    choice = activeRooms.firstWhere(
+                      (PharmacyStorageRoom room) => room.id == value,
+                      orElse: () => activeRooms.first,
+                    );
+                  }),
+                ),
+                actions: <Widget>[
+                  AppButton.tertiary(
+                    label: l10n.commonCancelActionLabel,
+                    leadingIcon: Icons.close,
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                  ),
+                  AppButton.primary(
+                    label: l10n.commonNextActionLabel,
+                    leadingIcon: Icons.arrow_forward,
+                    onPressed: () =>
+                        Navigator.of(dialogContext).pop(choice),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
+    if (selectedRoom == null || !context.mounted) {
+      return;
+    }
+    await openPharmacyStorageShelfDialog(context, ref, room: selectedRoom);
+  }
+}
+
+@immutable
+class _ShelfRow {
+  const _ShelfRow({required this.room, required this.shelf});
+
+  final PharmacyStorageRoom room;
+  final PharmacyStorageShelf shelf;
+}
+
 AppListTableColumn<T> _selectionColumn<T>({
   required List<T> visibleItems,
   required Set<String> selectedKeys,
@@ -1643,8 +2037,13 @@ Widget _catalogRowActions({
   required String deleteLabel,
   required VoidCallback onEdit,
   required VoidCallback onDelete,
+  String? editSemanticLabel,
+  String? deleteSemanticLabel,
 }) {
-  final ColorScheme colorScheme = Theme.of(context).colorScheme;
+  final ThemeData theme = Theme.of(context);
+  final ColorScheme colorScheme = theme.colorScheme;
+  final String editSemantic = editSemanticLabel ?? editLabel;
+  final String deleteSemantic = deleteSemanticLabel ?? deleteLabel;
   return AppAccessActionGate(
     requirement: writeRequirement,
     builder: (BuildContext context, bool isAllowed) => Row(
@@ -1653,16 +2052,17 @@ Widget _catalogRowActions({
         AppButton.tertiary(
           leadingIcon: Icons.edit_outlined,
           label: editLabel,
-          semanticLabel: editLabel,
-          tooltip: editLabel,
+          semanticLabel: editSemantic,
+          tooltip: editSemantic,
           enabled: isAllowed && !isBusy,
           onPressed: isAllowed && !isBusy ? onEdit : null,
         ),
+        SizedBox(width: theme.spacing.xs),
         AppButton.tertiary(
           leadingIcon: Icons.delete_outline,
           label: deleteLabel,
-          semanticLabel: deleteLabel,
-          tooltip: deleteLabel,
+          semanticLabel: deleteSemantic,
+          tooltip: deleteSemantic,
           color: colorScheme.error,
           enabled: isAllowed && !isBusy,
           onPressed: isAllowed && !isBusy ? onDelete : null,
@@ -1761,6 +2161,7 @@ Widget? _catalogToolbar({
   required bool hasSelection,
   Widget? selectionAction,
   String? addLabel,
+  String? addSemanticLabel,
   VoidCallback? onAdd,
 }) {
   final bool showSelection = hasSelection && selectionAction != null;
@@ -1773,6 +2174,8 @@ Widget? _catalogToolbar({
   if (!showSelection && !showAdd) {
     return null;
   }
+
+  final String addSemantic = addSemanticLabel ?? addLabel ?? '';
 
   return Padding(
     padding: EdgeInsets.only(bottom: theme.spacing.sm),
@@ -1787,8 +2190,8 @@ Widget? _catalogToolbar({
           AppTabToolbarPrimary(
             label: addLabel,
             icon: Icons.add,
-            tooltip: addLabel,
-            semanticLabel: addLabel,
+            tooltip: addSemantic,
+            semanticLabel: addSemantic,
             enabled: !isBusy,
             onPressed: isBusy ? null : onAdd,
           ),

@@ -22,6 +22,7 @@ import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_billing_helpe
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_catalog_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_instructions_print_helpers.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_order_item_pricing_helpers.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -110,20 +111,6 @@ class _PharmacyWorkspaceContentState
           context,
         ).uri.queryParameters['section']?.trim().toLowerCase() ??
         '';
-    if (section == 'inventory' || section == 'stock') {
-      _handledSectionDeepLink = true;
-      // Defer dialog open so prepareCatalogTab does not run mid-build.
-      await Future<void>.delayed(Duration.zero);
-      if (!mounted) {
-        return;
-      }
-      await openPharmacyCatalogDialog(
-        context,
-        ref,
-        initialTab: PharmacyCatalogTab.inventory,
-      );
-      return;
-    }
     final PharmacyDeskSection? parsed = _sectionFromQuery(section);
     if (parsed != null) {
       _handledSectionDeepLink = true;
@@ -133,6 +120,11 @@ class _PharmacyWorkspaceContentState
       final PharmacyWorkspaceController controller = ref.read(
         pharmacyWorkspaceControllerProvider.notifier,
       );
+      // Legacy inventory/stock deep links land on the catalog Inventory tab.
+      if (parsed.isCatalogSection &&
+          (section == 'inventory' || section == 'stock')) {
+        controller.prepareCatalogTab(PharmacyCatalogTab.inventory);
+      }
       await _applySectionData(controller, parsed);
     }
   }
@@ -250,6 +242,7 @@ class _PharmacyWorkspaceContentState
       PharmacyDeskSection.completed => 'completed',
       PharmacyDeskSection.cancelled => 'cancelled',
       PharmacyDeskSection.allOrders => 'all',
+      PharmacyDeskSection.catalog => 'catalog',
       PharmacyDeskSection.nearExpiry => 'near-expiry',
       PharmacyDeskSection.expired => 'expired',
       PharmacyDeskSection.lowStock => 'low-stock',
@@ -282,6 +275,11 @@ class _PharmacyWorkspaceContentState
       case 'all':
       case 'all-orders':
         return PharmacyDeskSection.allOrders;
+      case 'catalog':
+      case 'catalog-and-stock':
+      case 'inventory':
+      case 'stock':
+        return PharmacyDeskSection.catalog;
       case 'near-expiry':
       case 'expiring':
       case 'expiring-soon':
@@ -307,7 +305,9 @@ class _PharmacyWorkspaceContentState
       PharmacyDeskSection.completed => PharmacyOrderFilter.completed,
       PharmacyDeskSection.cancelled => PharmacyOrderFilter.cancelled,
       PharmacyDeskSection.allOrders => PharmacyOrderFilter.all,
-      // Stock sections do not use an order filter (see [_applySectionData]).
+      // Catalog and stock sections do not use an order filter (see
+      // [_applySectionData]).
+      PharmacyDeskSection.catalog ||
       PharmacyDeskSection.nearExpiry ||
       PharmacyDeskSection.expired ||
       PharmacyDeskSection.lowStock ||
@@ -321,11 +321,28 @@ class _PharmacyWorkspaceContentState
     PharmacyWorkspaceController controller,
     PharmacyDeskSection section,
   ) {
+    if (section.isCatalogSection) {
+      // Inline catalog section: hydrate the active nested catalog tab's data.
+      controller.prepareCatalogTab(controller.currentCatalogTab);
+      return Future<AppFailure?>.value();
+    }
     final PharmacyInventoryStockQuery? stockQuery = section.stockQuery;
     if (section.isStockSection && stockQuery != null) {
       return controller.applyDeskStockFilter(stockQuery);
     }
     return controller.applyFilter(_filterForSection(section));
+  }
+
+  /// Switches to the inline Catalog and stock section and selects [tab].
+  void _goToCatalogTab(
+    PharmacyWorkspaceController controller,
+    PharmacyCatalogTab tab,
+  ) {
+    controller.prepareCatalogTab(tab);
+    if (_section != PharmacyDeskSection.catalog) {
+      setState(() => _section = PharmacyDeskSection.catalog);
+      _updateUrlForSection(PharmacyDeskSection.catalog);
+    }
   }
 
   static int _sectionCount(
@@ -341,6 +358,8 @@ class _PharmacyWorkspaceContentState
       PharmacyDeskSection.completed => summary.dispensedOrders,
       PharmacyDeskSection.cancelled => summary.cancelledOrders,
       PharmacyDeskSection.allOrders => summary.totalOrders,
+      // Catalog is a management hub, not a counted worklist.
+      PharmacyDeskSection.catalog => 0,
       PharmacyDeskSection.nearExpiry => stock.expiringSoonRows,
       PharmacyDeskSection.expired => stock.expiredRows,
       PharmacyDeskSection.lowStock => stock.lowStockRows,
@@ -359,6 +378,7 @@ class _PharmacyWorkspaceContentState
       PharmacyDeskSection.expired ||
       PharmacyDeskSection.outOfStock => AppTabCountTone.danger,
       PharmacyDeskSection.completed ||
+      PharmacyDeskSection.catalog ||
       PharmacyDeskSection.allOrders => AppTabCountTone.info,
     };
   }
@@ -370,7 +390,8 @@ class _PharmacyWorkspaceContentState
       PharmacyDeskSection.pendingPayment => Icons.payments_outlined,
       PharmacyDeskSection.completed => Icons.done_all_outlined,
       PharmacyDeskSection.cancelled => Icons.cancel_outlined,
-      PharmacyDeskSection.allOrders => Icons.inventory_2_outlined,
+      PharmacyDeskSection.allOrders => Icons.receipt_long_outlined,
+      PharmacyDeskSection.catalog => Icons.inventory_2_outlined,
       PharmacyDeskSection.nearExpiry => Icons.hourglass_bottom_outlined,
       PharmacyDeskSection.expired => Icons.event_busy_outlined,
       PharmacyDeskSection.lowStock => Icons.trending_down_outlined,
@@ -389,6 +410,7 @@ class _PharmacyWorkspaceContentState
       PharmacyDeskSection.completed => l10n.pharmacyDeskCompletedOrdersLabel,
       PharmacyDeskSection.cancelled => l10n.pharmacyDeskCancelledOrdersLabel,
       PharmacyDeskSection.allOrders => l10n.pharmacyFilterAll,
+      PharmacyDeskSection.catalog => l10n.pharmacyDeskCatalogLabel,
       PharmacyDeskSection.nearExpiry => l10n.pharmacyDeskNearExpiryLabel,
       PharmacyDeskSection.expired => l10n.pharmacyDeskExpiredLabel,
       PharmacyDeskSection.lowStock => l10n.pharmacyDeskLowStockLabel,
@@ -440,7 +462,10 @@ class _PharmacyWorkspaceContentState
                       id: section.name,
                       icon: _sectionIcon(section),
                       label: _sectionLabel(l10n, section),
-                      count: _sectionCount(state, section),
+                      // Catalog is a management hub with no worklist count.
+                      count: section.isCatalogSection
+                          ? null
+                          : _sectionCount(state, section),
                       countTone: _sectionCountTone(section),
                     ),
                 ],
@@ -463,10 +488,14 @@ class _PharmacyWorkspaceContentState
                 body: l10n.pharmacyNoOrdersBody,
                 icon: Icons.medication_liquid_outlined,
               )
+            else if (effectiveSection.isCatalogSection)
+              PharmacyCatalogPanel(state: state)
             else if (effectiveSection.isStockSection)
               _PharmacyStockPanel(
                 state: state,
                 section: effectiveSection,
+                onOpenCatalogInventory: () =>
+                    _goToCatalogTab(controller, PharmacyCatalogTab.inventory),
               )
             else
               _PharmacyQueuePanel(
@@ -489,10 +518,17 @@ class _PharmacyWorkspaceContentState
 /// inventory workbench filtered by the active section; badge counts stay on
 /// [PharmacyWorkspaceState.stockAlertSummary].
 class _PharmacyStockPanel extends ConsumerStatefulWidget {
-  const _PharmacyStockPanel({required this.state, required this.section});
+  const _PharmacyStockPanel({
+    required this.state,
+    required this.section,
+    required this.onOpenCatalogInventory,
+  });
 
   final PharmacyWorkspaceState state;
   final PharmacyDeskSection section;
+
+  /// Navigates to the inline Catalog and stock section's Inventory tab.
+  final VoidCallback onOpenCatalogInventory;
 
   @override
   ConsumerState<_PharmacyStockPanel> createState() =>
@@ -535,15 +571,7 @@ class _PharmacyStockPanelState extends ConsumerState<_PharmacyStockPanel> {
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final bool canBrowseCatalog = canBrowsePharmacyCatalog(policy);
 
-    void openInventoryCatalog() {
-      unawaited(
-        openPharmacyCatalogDialog(
-          context,
-          ref,
-          initialTab: PharmacyCatalogTab.inventory,
-        ),
-      );
-    }
+    void openInventoryCatalog() => widget.onOpenCatalogInventory();
 
     return AppListTable<PharmacyInventoryStock>(
       page: widget.state.inventoryWorkbench.stocks,
@@ -771,19 +799,6 @@ class _PharmacyQueuePanel extends ConsumerWidget {
             ),
           );
         },
-        // Catalog browse stays on every worklist tab; CRUD is gated inside the
-        // dialog via [pharmacyCatalogWriteRequirement]. Renders after Settings
-        // and Export (AppListTable merges caller trailing actions last).
-        trailingActions: <AppSearchBarAction>[
-          if (canBrowsePharmacyCatalog(policy))
-            AppSearchBarAction(
-              icon: Icons.inventory_2_outlined,
-              label: l10n.pharmacyCatalogPanelTitle,
-              tooltip: l10n.pharmacyCatalogPanelTitle,
-              onPressed: () =>
-                  unawaited(openPharmacyCatalogDialog(context, ref)),
-            ),
-        ],
       ),
       previousPageLabel: l10n.opdPreviousPageLabel,
       nextPageLabel: l10n.opdNextPageLabel,
@@ -1494,10 +1509,17 @@ class _MedicationPrimaryLineAction extends ConsumerWidget {
       if (!canWrite) {
         return const SizedBox.shrink();
       }
+      // Stock mapping is invoked from within the order-detail dialog, so it
+      // reuses the catalog dialog on the Inventory tab rather than switching
+      // the desk strip underneath the open modal.
       return AppButton.tertiary(
         label: l10n.pharmacyMapStockAction,
         leadingIcon: Icons.inventory_2_outlined,
-        onPressed: () => openPharmacyCatalogDialog(context, ref),
+        onPressed: () => openPharmacyCatalogDialog(
+          context,
+          ref,
+          initialTab: PharmacyCatalogTab.inventory,
+        ),
       );
     }
 
@@ -2621,7 +2643,9 @@ List<AppListTableColumn<PharmacyOrder>> _columnsForSection(
         writeRequirement: writeRequirement,
       ),
     ],
-    // Stock-alert sections render inventory rows via [_PharmacyStockPanel].
+    // Catalog renders nested catalog tables; stock-alert sections render
+    // inventory rows via [_PharmacyStockPanel]. Neither uses order columns.
+    PharmacyDeskSection.catalog ||
     PharmacyDeskSection.nearExpiry ||
     PharmacyDeskSection.expired ||
     PharmacyDeskSection.lowStock ||

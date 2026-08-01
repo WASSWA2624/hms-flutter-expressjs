@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -16,6 +15,7 @@ import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_reposito
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/repositories/pharmacy_repository.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -50,7 +50,25 @@ Finder _toolbarAction(String label) => find.descendant(
   matching: find.text(label),
 );
 
-Finder _catalogAction() => find.byTooltip('Catalog and stock');
+/// Catalog browse is now the "Catalog and stock" desk tab. Presence is asserted
+/// against the strip's tab model so it holds whether the tab renders as a
+/// visible chip or an overflow menu entry.
+Finder _catalogAction() => find.byWidgetPredicate(
+  (Widget widget) =>
+      widget is AppTabStrip &&
+      widget.tabs.any((AppTabItem tab) => tab.label == 'Catalog and stock'),
+);
+
+/// Switches the workspace to the inline Catalog and stock section by driving the
+/// desk tab callback directly (overflow-safe; the chip may be in the menu).
+Future<void> _openCatalogSection(WidgetTester tester) async {
+  final AppTabStrip strip = tester.widget<AppTabStrip>(find.byType(AppTabStrip));
+  final AppTabItem catalogTab = strip.tabs.firstWhere(
+    (AppTabItem tab) => tab.label == 'Catalog and stock',
+  );
+  strip.onTabTapped(catalogTab.id);
+  await tester.pumpAndSettle();
+}
 
 const PharmacyOrder _readyOrder = PharmacyOrder(
   id: 'order-ready',
@@ -438,10 +456,10 @@ void main() {
     },
   );
 
-  testWidgets('deep link section=inventory opens catalog dialog', (
+  testWidgets('deep link section=inventory lands on inline catalog section', (
     WidgetTester tester,
   ) async {
-    await _pumpPharmacyWorkspace(
+    final _Harness harness = await _pumpPharmacyWorkspace(
       tester,
       repository: repository,
       initialLocation: '/pharmacy?section=inventory',
@@ -450,14 +468,12 @@ void main() {
       ),
     );
 
-    expect(find.byType(AppDialog), findsOneWidget);
-    expect(find.text('CATALOG AND STOCK'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-
-    await tester.tap(find.byTooltip('Close'));
-    await tester.pumpAndSettle();
-
+    // Legacy inventory deep link routes to the inline catalog section (no
+    // dialog) on its nested Inventory tab.
     expect(find.byType(AppDialog), findsNothing);
+    expect(find.byType(PharmacyCatalogPanel), findsOneWidget);
+    expect(harness.router, isNotNull);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('deep link orderId opens prescription detail dialog', (
@@ -481,45 +497,44 @@ void main() {
     expect(find.byType(AppDialog), findsNothing);
   });
 
-  testWidgets('PharmacyWorkspacePage opens catalog from search toolbar', (
+  testWidgets('PharmacyWorkspacePage opens inline catalog from desk tab', (
     WidgetTester tester,
   ) async {
     await _pumpPharmacyWorkspace(tester, repository: repository);
 
     expect(find.text('Noah Ready'), findsOneWidget);
     expect(find.byType(AppWorkspaceToolbar), findsNothing);
+    // Catalog is a desk tab now; the old search-bar toolbar action is gone.
     expect(_catalogAction(), findsOneWidget);
     expect(_toolbarPrimary('Catalog and stock'), findsNothing);
+    expect(find.byType(PharmacyCatalogPanel), findsNothing);
 
-    await tester.tap(_catalogAction());
-    await tester.pumpAndSettle();
+    await _openCatalogSection(tester);
 
-    expect(find.text('CATALOG AND STOCK'), findsOneWidget);
-    expect(find.byType(AppDialog), findsOneWidget);
-    expect(tester.takeException(), isNull);
-
-    await tester.tap(find.byTooltip('Close'));
-    await tester.pumpAndSettle();
-
+    // Renders inline (no dialog) and shows the nested catalog tables.
     expect(find.byType(AppDialog), findsNothing);
-    expect(find.text('Noah Ready'), findsOneWidget);
+    expect(find.byType(PharmacyCatalogPanel), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('PharmacyWorkspacePage catalog dialog closes with escape', (
+  testWidgets('PharmacyWorkspacePage returns from catalog to orders', (
     WidgetTester tester,
   ) async {
     await _pumpPharmacyWorkspace(tester, repository: repository);
 
-    await tester.tap(_catalogAction());
-    await tester.pumpAndSettle();
-    expect(find.byType(AppDialog), findsOneWidget);
+    await _openCatalogSection(tester);
+    expect(find.byType(PharmacyCatalogPanel), findsOneWidget);
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    final AppTabStrip strip = tester.widget<AppTabStrip>(
+      find.byType(AppTabStrip),
+    );
+    final AppTabItem newOrdersTab = strip.tabs.firstWhere(
+      (AppTabItem tab) => tab.label == 'New orders',
+    );
+    strip.onTabTapped(newOrdersTab.id);
     await tester.pumpAndSettle();
 
-    expect(find.byType(AppDialog), findsNothing);
-    expect(_tab('New orders'), findsOneWidget);
+    expect(find.byType(PharmacyCatalogPanel), findsNothing);
     expect(find.text('Noah Ready'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

@@ -11927,7 +11927,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyCatalogTabStorage => 'Storage layout';
 
   @override
+  String get pharmacyCatalogTabShelves => 'Shelves';
+
+  @override
   String get pharmacyCatalogPanelTitle => 'Catalog and stock';
+
+  @override
+  String get pharmacyDeskCatalogLabel => 'Catalog and stock';
+
+  @override
+  String get pharmacyStorageShelvesCountColumnLabel => 'Shelves';
+
+  @override
+  String get pharmacyStorageStatusColumnLabel => 'Status';
 
   @override
   String get pharmacyAddDrugAction => 'Add drug';
@@ -12113,6 +12125,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pharmacyNoStorageRoomsBody =>
       'Add a storage room to assign shelf locations when receiving stock.';
+
+  @override
+  String get pharmacyNoStorageShelvesTitle => 'No shelves';
 
   @override
   String get pharmacyNoStorageShelvesBody => 'No shelves in this room yet.';
@@ -20033,6 +20048,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonDeleteActionLabel => 'Delete';
+
+  @override
+  String get commonAdjustActionLabel => 'Adjust';
+
+  @override
+  String get commonClearActionLabel => 'Clear';
 
   @override
   String get commonRecordActionLabel => 'Record';

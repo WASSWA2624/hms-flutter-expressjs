@@ -26,6 +26,7 @@ enum PharmacyDeskSection {
   completed,
   cancelled,
   allOrders,
+  catalog,
   nearExpiry,
   expired,
   lowStock,
@@ -46,9 +47,14 @@ extension PharmacyDeskSectionX on PharmacyDeskSection {
       PharmacyDeskSection.pendingPayment ||
       PharmacyDeskSection.completed ||
       PharmacyDeskSection.cancelled ||
+      PharmacyDeskSection.catalog ||
       PharmacyDeskSection.allOrders => false,
     };
   }
+
+  /// True for the inline catalog-and-stock management section that hosts the
+  /// nested Drugs / Formulary / Inventory / Storage layout / Shelves tabs.
+  bool get isCatalogSection => this == PharmacyDeskSection.catalog;
 
   /// Inventory stock query backing a stock section, or null for order sections.
   PharmacyInventoryStockQuery? get stockQuery {
@@ -133,7 +139,7 @@ extension PharmacyOrderFilterX on PharmacyOrderFilter {
   }
 }
 
-enum PharmacyCatalogTab { drugs, formulary, inventory, storage }
+enum PharmacyCatalogTab { drugs, formulary, inventory, storageLayout, shelves }
 
 enum PharmacyInventoryFilter {
   lowStock,

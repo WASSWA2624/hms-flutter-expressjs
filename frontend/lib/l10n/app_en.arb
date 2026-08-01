@@ -15216,9 +15216,25 @@
   "@pharmacyCatalogTabStorage": {
     "description": "Pharmacy catalog storage layout tab label."
   },
+  "pharmacyCatalogTabShelves": "Shelves",
+  "@pharmacyCatalogTabShelves": {
+    "description": "Pharmacy catalog shelves nested tab label."
+  },
   "pharmacyCatalogPanelTitle": "Catalog and stock",
   "@pharmacyCatalogPanelTitle": {
     "description": "Pharmacy catalog panel dialog title."
+  },
+  "pharmacyDeskCatalogLabel": "Catalog and stock",
+  "@pharmacyDeskCatalogLabel": {
+    "description": "Pharmacy desk strip label for the inline catalog and stock section."
+  },
+  "pharmacyStorageShelvesCountColumnLabel": "Shelves",
+  "@pharmacyStorageShelvesCountColumnLabel": {
+    "description": "Pharmacy storage layout table column header for the number of shelves in a room."
+  },
+  "pharmacyStorageStatusColumnLabel": "Status",
+  "@pharmacyStorageStatusColumnLabel": {
+    "description": "Pharmacy storage table column header for the active/inactive status."
   },
   "pharmacyAddDrugAction": "Add drug",
   "@pharmacyAddDrugAction": {
@@ -15456,6 +15472,10 @@
   "pharmacyNoStorageRoomsBody": "Add a storage room to assign shelf locations when receiving stock.",
   "@pharmacyNoStorageRoomsBody": {
     "description": "Empty pharmacy storage rooms body."
+  },
+  "pharmacyNoStorageShelvesTitle": "No shelves",
+  "@pharmacyNoStorageShelvesTitle": {
+    "description": "Empty pharmacy storage shelves title."
   },
   "pharmacyNoStorageShelvesBody": "No shelves in this room yet.",
   "@pharmacyNoStorageShelvesBody": {
@@ -25667,6 +25687,14 @@
   "commonDeleteActionLabel": "Delete",
   "@commonDeleteActionLabel": {
     "description": "Shared short delete action label for section headers and toolbars."
+  },
+  "commonAdjustActionLabel": "Adjust",
+  "@commonAdjustActionLabel": {
+    "description": "Shared short adjust action label for section headers and toolbars."
+  },
+  "commonClearActionLabel": "Clear",
+  "@commonClearActionLabel": {
+    "description": "Shared short clear action label for section headers and toolbars."
   },
   "commonRecordActionLabel": "Record",
   "@commonRecordActionLabel": {

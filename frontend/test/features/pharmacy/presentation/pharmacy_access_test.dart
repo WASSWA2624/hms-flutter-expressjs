@@ -229,7 +229,14 @@ void _stubPharmacyRepository(_MockPharmacyRepository repository) {
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
-Finder _catalogAction() => find.byTooltip('Catalog and stock');
+/// Catalog browse is now surfaced as the "Catalog and stock" desk tab (it used
+/// to be a search-bar trailing action). It can render as a visible chip or an
+/// overflow menu entry, so presence is asserted against the strip's tab model.
+Finder _catalogAction() => find.byWidgetPredicate(
+  (Widget widget) =>
+      widget is AppTabStrip &&
+      widget.tabs.any((AppTabItem tab) => tab.label == 'Catalog and stock'),
+);
 
 /// Next-action / quick-action labels live on [AppButton]; table column headers
 /// such as the Partial/Ready "Dispense" progress column do not.

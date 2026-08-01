@@ -643,6 +643,10 @@ final class PharmacyWorkspaceController
     return _refreshInventory(showLoading: true);
   }
 
+  /// Currently selected nested catalog tab, defaulting to Drugs before load.
+  PharmacyCatalogTab get currentCatalogTab =>
+      _currentState?.catalogTab ?? PharmacyCatalogTab.drugs;
+
   void setCatalogTab(PharmacyCatalogTab tab) {
     final PharmacyWorkspaceState? current = _currentState;
     if (current == null || current.catalogTab == tab) {
@@ -680,7 +684,8 @@ final class PharmacyWorkspaceController
             showLoading: current.inventoryWorkbench.stocks.items.isEmpty,
           ),
         );
-      case PharmacyCatalogTab.storage:
+      case PharmacyCatalogTab.storageLayout:
+      case PharmacyCatalogTab.shelves:
         unawaited(
           _refreshStorageLayout(
             showLoading: current.storageLayout.rooms.isEmpty,

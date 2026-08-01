@@ -70,8 +70,8 @@ void main() {
   });
 
   group('PharmacyDeskSection', () {
-    test('exposes order and stock desk worklist sections', () {
-      expect(PharmacyDeskSection.values, hasLength(10));
+    test('exposes order, catalog, and stock desk worklist sections', () {
+      expect(PharmacyDeskSection.values, hasLength(11));
       expect(
         PharmacyDeskSection.values,
         containsAll(<PharmacyDeskSection>[
@@ -81,6 +81,7 @@ void main() {
           PharmacyDeskSection.completed,
           PharmacyDeskSection.cancelled,
           PharmacyDeskSection.allOrders,
+          PharmacyDeskSection.catalog,
           PharmacyDeskSection.nearExpiry,
           PharmacyDeskSection.expired,
           PharmacyDeskSection.lowStock,
@@ -101,6 +102,13 @@ void main() {
         PharmacyDeskSection.outOfStock.stockQuery?.stockStatus,
         'OUT_OF_STOCK',
       );
+    });
+
+    test('catalog section is neither an order nor a stock-alert worklist', () {
+      expect(PharmacyDeskSection.catalog.isCatalogSection, isTrue);
+      expect(PharmacyDeskSection.catalog.isStockSection, isFalse);
+      expect(PharmacyDeskSection.catalog.stockQuery, isNull);
+      expect(PharmacyDeskSection.queue.isCatalogSection, isFalse);
     });
   });
 }

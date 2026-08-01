@@ -132,6 +132,9 @@ AccessRequirement pharmacySectionTabRequirement(PharmacyDeskSection section) {
     PharmacyDeskSection.completed => PharmacyCompletedAtomPermissions.tab,
     // Cancelled is a read-only history view; reuse the All orders read atom.
     PharmacyDeskSection.cancelled => PharmacyAllOrdersAtomPermissions.tab,
+    // Catalog and stock management tab surfaces catalog CRUD chrome; gate on
+    // catalog/inventory browse (write actions gate on catalog write inside).
+    PharmacyDeskSection.catalog => pharmacyCatalogBrowseRequirement,
     // Stock-alert tabs surface inventory; gate on catalog/inventory browse.
     PharmacyDeskSection.nearExpiry ||
     PharmacyDeskSection.expired ||
@@ -194,6 +197,7 @@ AccessRequirement pharmacySectionWriteRequirement(PharmacyDeskSection section) {
     PharmacyDeskSection.inProgress => PharmacyPartialAtomPermissions.write,
     PharmacyDeskSection.completed => PharmacyCompletedAtomPermissions.write,
     PharmacyDeskSection.cancelled => PharmacyAllOrdersAtomPermissions.write,
+    PharmacyDeskSection.catalog ||
     PharmacyDeskSection.nearExpiry ||
     PharmacyDeskSection.expired ||
     PharmacyDeskSection.lowStock ||
@@ -222,8 +226,15 @@ List<PharmacyDeskSection> pharmacyAllowedSections(AppAccessPolicy policy) {
   if (!canEnterPharmacyWorkspace(policy)) {
     return const <PharmacyDeskSection>[];
   }
-  // Route ∪ without pharmacy:read: keep worklist tabs read-only.
-  return PharmacyDeskSection.values.toList(growable: false);
+  // Route ∪ without pharmacy:read: keep the order worklist tabs read-only, but
+  // never expose the catalog or stock-alert sections — those require catalog
+  // browse (∩ pharmacy:read), which this operations-only entrant lacks.
+  return PharmacyDeskSection.values
+      .where(
+        (PharmacyDeskSection section) =>
+            !section.isCatalogSection && !section.isStockSection,
+      )
+      .toList(growable: false);
 }
 
 PharmacyDeskSection? pharmacyFallbackSection(AppAccessPolicy policy) {
