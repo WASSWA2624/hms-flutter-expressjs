@@ -15212,9 +15212,9 @@
   "@pharmacyCatalogTabInventory": {
     "description": "Pharmacy catalog inventory tab label."
   },
-  "pharmacyCatalogTabStorage": "Storage layout",
+  "pharmacyCatalogTabStorage": "Room",
   "@pharmacyCatalogTabStorage": {
-    "description": "Pharmacy catalog storage layout tab label."
+    "description": "Pharmacy catalog Room nested-tab label (storage rooms)."
   },
   "pharmacyCatalogTabShelves": "Shelves",
   "@pharmacyCatalogTabShelves": {

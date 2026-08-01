@@ -11924,7 +11924,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyCatalogTabInventory => 'Inventory';
 
   @override
-  String get pharmacyCatalogTabStorage => 'Storage layout';
+  String get pharmacyCatalogTabStorage => 'Room';
 
   @override
   String get pharmacyCatalogTabShelves => 'Shelves';

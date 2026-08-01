@@ -514,6 +514,11 @@ void main() {
     // Renders inline (no dialog) and shows the nested catalog tables.
     expect(find.byType(AppDialog), findsNothing);
     expect(find.byType(PharmacyCatalogPanel), findsOneWidget);
+    expect(find.text('Drugs'), findsWidgets);
+    expect(find.text('Room'), findsOneWidget);
+    expect(find.text('Storage layout'), findsNothing);
+    // Add lives in the search trailing cluster (not an above-table toolbar).
+    expect(find.byTooltip('Add drug'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

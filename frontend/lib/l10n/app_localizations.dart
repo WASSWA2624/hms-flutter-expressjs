@@ -22012,10 +22012,10 @@ abstract class AppLocalizations {
   /// **'Inventory'**
   String get pharmacyCatalogTabInventory;
 
-  /// Pharmacy catalog storage layout tab label.
+  /// Pharmacy catalog Room nested-tab label (storage rooms).
   ///
   /// In en, this message translates to:
-  /// **'Storage layout'**
+  /// **'Room'**
   String get pharmacyCatalogTabStorage;
 
   /// Pharmacy catalog shelves nested tab label.
