@@ -130,6 +130,13 @@ AccessRequirement pharmacySectionTabRequirement(PharmacyDeskSection section) {
     PharmacyDeskSection.allOrders => PharmacyAllOrdersAtomPermissions.tab,
     PharmacyDeskSection.inProgress => PharmacyPartialAtomPermissions.tab,
     PharmacyDeskSection.completed => PharmacyCompletedAtomPermissions.tab,
+    // Cancelled is a read-only history view; reuse the All orders read atom.
+    PharmacyDeskSection.cancelled => PharmacyAllOrdersAtomPermissions.tab,
+    // Stock-alert tabs surface inventory; gate on catalog/inventory browse.
+    PharmacyDeskSection.nearExpiry ||
+    PharmacyDeskSection.expired ||
+    PharmacyDeskSection.lowStock ||
+    PharmacyDeskSection.outOfStock => pharmacyCatalogBrowseRequirement,
     PharmacyDeskSection.pendingPayment =>
       PharmacyPendingPaymentAtomPermissions.tab,
   };
@@ -186,6 +193,11 @@ AccessRequirement pharmacySectionWriteRequirement(PharmacyDeskSection section) {
     PharmacyDeskSection.allOrders => PharmacyAllOrdersAtomPermissions.write,
     PharmacyDeskSection.inProgress => PharmacyPartialAtomPermissions.write,
     PharmacyDeskSection.completed => PharmacyCompletedAtomPermissions.write,
+    PharmacyDeskSection.cancelled => PharmacyAllOrdersAtomPermissions.write,
+    PharmacyDeskSection.nearExpiry ||
+    PharmacyDeskSection.expired ||
+    PharmacyDeskSection.lowStock ||
+    PharmacyDeskSection.outOfStock => pharmacyCatalogWriteRequirement,
     PharmacyDeskSection.pendingPayment =>
       PharmacyPendingPaymentAtomPermissions.write,
   };

@@ -21418,6 +21418,48 @@ abstract class AppLocalizations {
   /// **'Ready'**
   String get pharmacySummaryReadyLabel;
 
+  /// Pharmacy desk tab label for new, unattended orders.
+  ///
+  /// In en, this message translates to:
+  /// **'New orders'**
+  String get pharmacyDeskNewOrdersLabel;
+
+  /// Pharmacy desk tab label for stock nearing its expiry date.
+  ///
+  /// In en, this message translates to:
+  /// **'Near expiry'**
+  String get pharmacyDeskNearExpiryLabel;
+
+  /// Pharmacy desk tab label for expired stock.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get pharmacyDeskExpiredLabel;
+
+  /// Pharmacy desk tab label for stock at or below the reorder level.
+  ///
+  /// In en, this message translates to:
+  /// **'Low stock'**
+  String get pharmacyDeskLowStockLabel;
+
+  /// Pharmacy desk tab label for depleted stock.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get pharmacyDeskOutOfStockLabel;
+
+  /// Pharmacy stock alert tab empty state title.
+  ///
+  /// In en, this message translates to:
+  /// **'No stock alerts'**
+  String get pharmacyStockTabEmptyTitle;
+
+  /// Pharmacy stock alert tab empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Items matching this stock filter will appear here.'**
+  String get pharmacyStockTabEmptyBody;
+
   /// Pharmacy summary label for partially dispensed orders.
   ///
   /// In en, this message translates to:
@@ -21993,6 +22035,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drug name'**
   String get pharmacyDrugNameLabel;
+
+  /// Pharmacy drug brand name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand name'**
+  String get pharmacyDrugBrandNameLabel;
+
+  /// Pharmacy drug generic or scientific name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Generic (scientific) name'**
+  String get pharmacyDrugGenericNameLabel;
 
   /// Pharmacy drug code field label.
   ///

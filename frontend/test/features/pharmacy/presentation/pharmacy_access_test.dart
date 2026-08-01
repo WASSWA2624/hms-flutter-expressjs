@@ -964,7 +964,7 @@ void main() {
           ),
         );
 
-        expect(_tab('Ready'), findsOneWidget);
+        expect(_tab('New orders'), findsOneWidget);
         expect(_catalogAction(), findsOneWidget);
         expect(find.text('Noah Ready'), findsOneWidget);
         expect(_actionLabel('Dispense'), findsNothing);
@@ -985,7 +985,7 @@ void main() {
           ),
         );
 
-        expect(_tab('Ready'), findsOneWidget);
+        expect(_tab('New orders'), findsOneWidget);
         expect(find.text('Noah Ready'), findsOneWidget);
         expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
       },
@@ -1064,7 +1064,7 @@ void main() {
           ),
         );
 
-        expect(_tab('Ready'), findsOneWidget);
+        expect(_tab('New orders'), findsOneWidget);
         expect(_catalogAction(), findsNothing);
         expect(_actionLabel('Dispense'), findsNothing);
       },
@@ -1144,7 +1144,7 @@ void main() {
         );
 
         expect(_tab('Pending payment'), findsNothing);
-        expect(_tab('Ready'), findsOneWidget);
+        expect(_tab('New orders'), findsOneWidget);
         // Payment column is Pending-payment chrome; not a Ready primary column.
         expect(find.text('Payment'), findsNothing);
       },

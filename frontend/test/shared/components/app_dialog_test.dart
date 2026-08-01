@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
@@ -10,6 +11,62 @@ import 'package:hosspi_hms/shared/layout/app_dialog_insets.dart';
 import 'component_test_app.dart';
 
 void main() {
+  testWidgets(
+    'showAppDialog dismisses only via close or Escape, not barrier tap',
+    (WidgetTester tester) async {
+      await pumpComponent(
+        tester,
+        Builder(
+          builder: (BuildContext context) {
+            return TextButton(
+              onPressed: () {
+                unawaited(
+                  showAppDialog<void>(
+                    context: context,
+                    builder: (BuildContext dialogContext) {
+                      return const AppDialog(
+                        title: Text('Confirm action'),
+                        content: SizedBox(height: 80, child: Text('Body')),
+                      );
+                    },
+                  ),
+                );
+              },
+              child: const Text('Open dialog'),
+            );
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Open dialog'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(
+        tester
+            .widgetList<ModalBarrier>(find.byType(ModalBarrier))
+            .any((ModalBarrier barrier) => barrier.dismissible),
+        isFalse,
+      );
+
+      await tester.tapAt(Offset.zero);
+      await tester.pump();
+      expect(find.byType(AppDialog), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(AppDialog), findsNothing);
+
+      await tester.tap(find.text('Open dialog'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AppDialog), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+      expect(find.byType(AppDialog), findsNothing);
+    },
+  );
+
   testWidgets('showAppDialog restores focus to the opener after closing', (
     WidgetTester tester,
   ) async {

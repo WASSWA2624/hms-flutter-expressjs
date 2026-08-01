@@ -230,6 +230,8 @@ const mapDrugRecord = (record) => {
     display_id: publicId,
     tenant_id: toPublicIdentifier(record.tenant?.human_friendly_id, record.tenant_id),
     name: toText(record.name) || null,
+    brand_name: toText(record.brand_name) || null,
+    generic_name: toText(record.generic_name) || null,
     code: toText(record.code) || null,
     form: toText(record.form) || null,
     strength: toText(record.strength) || null,

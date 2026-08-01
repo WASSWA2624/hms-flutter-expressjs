@@ -133,7 +133,7 @@ class _PharmacyWorkspaceContentState
       final PharmacyWorkspaceController controller = ref.read(
         pharmacyWorkspaceControllerProvider.notifier,
       );
-      await controller.applyFilter(_filterForSection(parsed));
+      await _applySectionData(controller, parsed);
     }
   }
 
@@ -159,7 +159,7 @@ class _PharmacyWorkspaceContentState
         }
         // Skip if deep-link handler already synced this desk section.
         if (!_handledSectionDeepLink) {
-          unawaited(controller.applyFilter(_filterForSection(parsed)));
+          unawaited(_applySectionData(controller, parsed));
         }
       }
     }
@@ -195,7 +195,7 @@ class _PharmacyWorkspaceContentState
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
-    await controller.applyFilter(_filterForSection(_section));
+    await _applySectionData(controller, _section);
   }
 
   PharmacyOrder? _findOrderByQuery(PharmacyWorkspaceQuery query) {
@@ -248,7 +248,12 @@ class _PharmacyWorkspaceContentState
       PharmacyDeskSection.inProgress => 'in-progress',
       PharmacyDeskSection.pendingPayment => 'pending-payment',
       PharmacyDeskSection.completed => 'completed',
+      PharmacyDeskSection.cancelled => 'cancelled',
       PharmacyDeskSection.allOrders => 'all',
+      PharmacyDeskSection.nearExpiry => 'near-expiry',
+      PharmacyDeskSection.expired => 'expired',
+      PharmacyDeskSection.lowStock => 'low-stock',
+      PharmacyDeskSection.outOfStock => 'out-of-stock',
     };
   }
 
@@ -256,6 +261,8 @@ class _PharmacyWorkspaceContentState
     switch (raw.trim().toLowerCase()) {
       case 'queue':
       case 'ready':
+      case 'new':
+      case 'new-orders':
       case 'dispense':
         return PharmacyDeskSection.queue;
       case 'in-progress':
@@ -269,9 +276,24 @@ class _PharmacyWorkspaceContentState
       case 'completed':
       case 'dispensed':
         return PharmacyDeskSection.completed;
+      case 'cancelled':
+      case 'canceled':
+        return PharmacyDeskSection.cancelled;
       case 'all':
       case 'all-orders':
         return PharmacyDeskSection.allOrders;
+      case 'near-expiry':
+      case 'expiring':
+      case 'expiring-soon':
+        return PharmacyDeskSection.nearExpiry;
+      case 'expired':
+        return PharmacyDeskSection.expired;
+      case 'low-stock':
+      case 'low':
+        return PharmacyDeskSection.lowStock;
+      case 'out-of-stock':
+      case 'out':
+        return PharmacyDeskSection.outOfStock;
       default:
         return null;
     }
@@ -283,20 +305,46 @@ class _PharmacyWorkspaceContentState
       PharmacyDeskSection.inProgress => PharmacyOrderFilter.partial,
       PharmacyDeskSection.pendingPayment => PharmacyOrderFilter.pendingPayment,
       PharmacyDeskSection.completed => PharmacyOrderFilter.completed,
+      PharmacyDeskSection.cancelled => PharmacyOrderFilter.cancelled,
       PharmacyDeskSection.allOrders => PharmacyOrderFilter.all,
+      // Stock sections do not use an order filter (see [_applySectionData]).
+      PharmacyDeskSection.nearExpiry ||
+      PharmacyDeskSection.expired ||
+      PharmacyDeskSection.lowStock ||
+      PharmacyDeskSection.outOfStock => PharmacyOrderFilter.all,
     };
   }
 
-  static int _sectionCount(
-    PharmacyWorkbenchSummary summary,
+  /// Applies the data source for a section: an order filter for order tabs, or
+  /// an inventory stock query for stock-alert tabs.
+  Future<AppFailure?> _applySectionData(
+    PharmacyWorkspaceController controller,
     PharmacyDeskSection section,
   ) {
+    final PharmacyInventoryStockQuery? stockQuery = section.stockQuery;
+    if (section.isStockSection && stockQuery != null) {
+      return controller.applyDeskStockFilter(stockQuery);
+    }
+    return controller.applyFilter(_filterForSection(section));
+  }
+
+  static int _sectionCount(
+    PharmacyWorkspaceState state,
+    PharmacyDeskSection section,
+  ) {
+    final PharmacyWorkbenchSummary summary = state.workbench.summary;
+    final PharmacyInventoryStockSummary stock = state.stockAlertSummary;
     return switch (section) {
       PharmacyDeskSection.queue => summary.orderedQueue,
       PharmacyDeskSection.inProgress => summary.partiallyDispensedQueue,
       PharmacyDeskSection.pendingPayment => summary.pendingPaymentQueue,
       PharmacyDeskSection.completed => summary.dispensedOrders,
+      PharmacyDeskSection.cancelled => summary.cancelledOrders,
       PharmacyDeskSection.allOrders => summary.totalOrders,
+      PharmacyDeskSection.nearExpiry => stock.expiringSoonRows,
+      PharmacyDeskSection.expired => stock.expiredRows,
+      PharmacyDeskSection.lowStock => stock.lowStockRows,
+      PharmacyDeskSection.outOfStock => stock.outOfStockRows,
     };
   }
 
@@ -304,7 +352,12 @@ class _PharmacyWorkspaceContentState
     return switch (section) {
       PharmacyDeskSection.queue ||
       PharmacyDeskSection.inProgress ||
-      PharmacyDeskSection.pendingPayment => AppTabCountTone.warning,
+      PharmacyDeskSection.pendingPayment ||
+      PharmacyDeskSection.nearExpiry ||
+      PharmacyDeskSection.lowStock => AppTabCountTone.warning,
+      PharmacyDeskSection.cancelled ||
+      PharmacyDeskSection.expired ||
+      PharmacyDeskSection.outOfStock => AppTabCountTone.danger,
       PharmacyDeskSection.completed ||
       PharmacyDeskSection.allOrders => AppTabCountTone.info,
     };
@@ -316,7 +369,12 @@ class _PharmacyWorkspaceContentState
       PharmacyDeskSection.inProgress => Icons.pending_actions_outlined,
       PharmacyDeskSection.pendingPayment => Icons.payments_outlined,
       PharmacyDeskSection.completed => Icons.done_all_outlined,
+      PharmacyDeskSection.cancelled => Icons.cancel_outlined,
       PharmacyDeskSection.allOrders => Icons.inventory_2_outlined,
+      PharmacyDeskSection.nearExpiry => Icons.hourglass_bottom_outlined,
+      PharmacyDeskSection.expired => Icons.event_busy_outlined,
+      PharmacyDeskSection.lowStock => Icons.trending_down_outlined,
+      PharmacyDeskSection.outOfStock => Icons.remove_shopping_cart_outlined,
     };
   }
 
@@ -325,11 +383,16 @@ class _PharmacyWorkspaceContentState
     PharmacyDeskSection section,
   ) {
     return switch (section) {
-      PharmacyDeskSection.queue => l10n.pharmacySummaryReadyLabel,
+      PharmacyDeskSection.queue => l10n.pharmacyDeskNewOrdersLabel,
       PharmacyDeskSection.inProgress => l10n.pharmacySummaryPartialLabel,
       PharmacyDeskSection.pendingPayment => l10n.pharmacyFilterPendingPayment,
       PharmacyDeskSection.completed => l10n.pharmacySummaryCompletedLabel,
+      PharmacyDeskSection.cancelled => l10n.pharmacyFilterCancelled,
       PharmacyDeskSection.allOrders => l10n.pharmacyFilterAll,
+      PharmacyDeskSection.nearExpiry => l10n.pharmacyDeskNearExpiryLabel,
+      PharmacyDeskSection.expired => l10n.pharmacyDeskExpiredLabel,
+      PharmacyDeskSection.lowStock => l10n.pharmacyDeskLowStockLabel,
+      PharmacyDeskSection.outOfStock => l10n.pharmacyDeskOutOfStockLabel,
     };
   }
 
@@ -358,7 +421,7 @@ class _PharmacyWorkspaceContentState
         }
         setState(() => _section = effectiveSection);
         _updateUrlForSection(effectiveSection);
-        unawaited(controller.applyFilter(_filterForSection(effectiveSection)));
+        unawaited(_applySectionData(controller, effectiveSection));
       });
     }
 
@@ -377,7 +440,7 @@ class _PharmacyWorkspaceContentState
                       id: section.name,
                       icon: _sectionIcon(section),
                       label: _sectionLabel(l10n, section),
-                      count: _sectionCount(state.workbench.summary, section),
+                      count: _sectionCount(state, section),
                       countTone: _sectionCountTone(section),
                     ),
                 ],
@@ -387,9 +450,7 @@ class _PharmacyWorkspaceContentState
                     if (section.name == tabId) {
                       setState(() => _section = section);
                       _updateUrlForSection(section);
-                      unawaited(
-                        controller.applyFilter(_filterForSection(section)),
-                      );
+                      unawaited(_applySectionData(controller, section));
                       break;
                     }
                   }
@@ -401,6 +462,11 @@ class _PharmacyWorkspaceContentState
                 title: l10n.pharmacyNoOrdersTitle,
                 body: l10n.pharmacyNoOrdersBody,
                 icon: Icons.medication_liquid_outlined,
+              )
+            else if (effectiveSection.isStockSection)
+              _PharmacyStockPanel(
+                state: state,
+                section: effectiveSection,
               )
             else
               _PharmacyQueuePanel(
@@ -416,6 +482,205 @@ class _PharmacyWorkspaceContentState
       ),
     );
   }
+}
+
+/// Renders the inventory stock rows for a stock-alert desk section (Near
+/// expiry, Expired, Low stock, Out of stock). Rows come from the shared
+/// inventory workbench filtered by the active section; badge counts stay on
+/// [PharmacyWorkspaceState.stockAlertSummary].
+class _PharmacyStockPanel extends ConsumerStatefulWidget {
+  const _PharmacyStockPanel({required this.state, required this.section});
+
+  final PharmacyWorkspaceState state;
+  final PharmacyDeskSection section;
+
+  @override
+  ConsumerState<_PharmacyStockPanel> createState() =>
+      _PharmacyStockPanelState();
+}
+
+class _PharmacyStockPanelState extends ConsumerState<_PharmacyStockPanel> {
+  late final TextEditingController _stockSearchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _stockSearchController = TextEditingController(
+      text: widget.state.inventoryQuery.search,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _PharmacyStockPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final String search = widget.state.inventoryQuery.search;
+    if (oldWidget.state.inventoryQuery.search != search &&
+        _stockSearchController.text != search) {
+      _stockSearchController.text = search;
+    }
+  }
+
+  @override
+  void dispose() {
+    _stockSearchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final PharmacyWorkspaceController controller = ref.read(
+      pharmacyWorkspaceControllerProvider.notifier,
+    );
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canBrowseCatalog = canBrowsePharmacyCatalog(policy);
+
+    void openInventoryCatalog() {
+      unawaited(
+        openPharmacyCatalogDialog(
+          context,
+          ref,
+          initialTab: PharmacyCatalogTab.inventory,
+        ),
+      );
+    }
+
+    return AppListTable<PharmacyInventoryStock>(
+      page: widget.state.inventoryWorkbench.stocks,
+      isLoading: widget.state.isRefreshingInventory,
+      search: AppListTableSearch<PharmacyInventoryStock>(
+        controller: _stockSearchController,
+        semanticLabel: l10n.pharmacySearchLabel,
+        hintText: l10n.pharmacySearchHint,
+        matcher: (_, _) => true,
+        onSubmitted: controller.applyInventorySearch,
+        onClear: () => unawaited(controller.applyInventorySearch('')),
+        trailingActions: <AppSearchBarAction>[
+          if (canBrowseCatalog)
+            AppSearchBarAction(
+              icon: Icons.inventory_2_outlined,
+              label: l10n.pharmacyCatalogPanelTitle,
+              tooltip: l10n.pharmacyCatalogPanelTitle,
+              onPressed: openInventoryCatalog,
+            ),
+        ],
+      ),
+      onPageChanged: controller.changeInventoryPage,
+      onRowSelected: canBrowseCatalog
+          ? (PharmacyInventoryStock _) => openInventoryCatalog()
+          : null,
+      emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+        variant: AppStateViewVariant.empty,
+        title: l10n.pharmacyStockTabEmptyTitle,
+        body: l10n.pharmacyStockTabEmptyBody,
+        icon: _PharmacyWorkspaceContentState._sectionIcon(widget.section),
+      ),
+      columns: <AppListTableColumn<PharmacyInventoryStock>>[
+        AppListTableColumn<PharmacyInventoryStock>(
+          label: l10n.pharmacyInventoryItemLabel,
+          cellBuilder: (_, PharmacyInventoryStock item) =>
+              Text(item.inventoryItem?.displayTitle ?? item.displayId ?? '—'),
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          label: l10n.pharmacyStorageLocationColumnLabel,
+          cellBuilder: (_, PharmacyInventoryStock item) =>
+              Text(item.storageLocationLabel ?? '—'),
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          label: l10n.pharmacyInventoryQuantityColumnLabel,
+          numeric: true,
+          cellBuilder: (_, PharmacyInventoryStock item) =>
+              Text(item.quantity.toString()),
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          label: l10n.pharmacyReorderLevelColumnLabel,
+          numeric: true,
+          cellBuilder: (_, PharmacyInventoryStock item) =>
+              Text(item.reorderLevel.toString()),
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          label: l10n.pharmacyNextExpiryColumnLabel,
+          cellBuilder: (BuildContext context, PharmacyInventoryStock item) =>
+              _pharmacyStockExpiryCell(context, item),
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          label: l10n.pharmacyStockStatusFilterLabel,
+          cellBuilder: (BuildContext context, PharmacyInventoryStock item) =>
+              AppWorkspaceStatusBadge(
+                status: _pharmacyStockStatus(context, item.stockStatus),
+              ),
+        ),
+      ],
+      mobileItemBuilder: (BuildContext context, PharmacyInventoryStock item) {
+        return AppListTableMobileItem(
+          title: item.inventoryItem?.displayTitle ?? item.displayId ?? '—',
+          caption: item.storageLocationLabel,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label:
+                  '${item.quantity} · ${l10n.pharmacyReorderLevelColumnLabel}: ${item.reorderLevel}',
+            ),
+            AppListTableMobileMeta(
+              label: _pharmacyStockStatus(context, item.stockStatus).label,
+            ),
+          ],
+          showAvatar: false,
+        );
+      },
+    );
+  }
+}
+
+AppWorkspaceStatus _pharmacyStockStatus(BuildContext context, String? value) {
+  final AppLocalizations l10n = context.l10n;
+  final String normalized = (value ?? '').toUpperCase();
+  final String label = switch (normalized) {
+    'IN_STOCK' => l10n.pharmacyStockInStock,
+    'ALMOST_OUT_OF_STOCK' => l10n.pharmacyStockAlmostOut,
+    'LOW_STOCK' => l10n.pharmacyStockLow,
+    'OUT_OF_STOCK' => l10n.pharmacyStockOut,
+    _ => l10n.pharmacyStockUnknown,
+  };
+  return AppWorkspaceStatus(
+    label: label,
+    tone: switch (normalized) {
+      'IN_STOCK' => AppWorkspaceStatusTone.success,
+      'ALMOST_OUT_OF_STOCK' => AppWorkspaceStatusTone.warning,
+      'LOW_STOCK' || 'OUT_OF_STOCK' => AppWorkspaceStatusTone.error,
+      _ => AppWorkspaceStatusTone.neutral,
+    },
+  );
+}
+
+Widget _pharmacyStockExpiryCell(
+  BuildContext context,
+  PharmacyInventoryStock item,
+) {
+  final AppLocalizations l10n = context.l10n;
+  if (item.nextExpiry == null) {
+    return const Text('—');
+  }
+  final String formatted = AppFormatters.dateTime(
+    item.nextExpiry!,
+    Localizations.localeOf(context),
+  );
+  if (item.expiryAlertStatus == 'EXPIRED') {
+    return AppWorkspaceStatusBadge(
+      status: AppWorkspaceStatus(
+        label: '$formatted · ${l10n.pharmacyStockExpiredLabel}',
+        tone: AppWorkspaceStatusTone.error,
+      ),
+    );
+  }
+  if (item.expiryAlertStatus == 'EXPIRING_SOON') {
+    return AppWorkspaceStatusBadge(
+      status: AppWorkspaceStatus(
+        label: '$formatted · ${l10n.pharmacyStockExpiringSoonLabel}',
+        tone: AppWorkspaceStatusTone.warning,
+      ),
+    );
+  }
+  return Text(formatted);
 }
 
 class _PharmacyQueuePanel extends ConsumerWidget {
@@ -2331,7 +2596,8 @@ List<AppListTableColumn<PharmacyOrder>> _columnsForSection(
         writeRequirement: writeRequirement,
       ),
     ],
-    PharmacyDeskSection.allOrders => <AppListTableColumn<PharmacyOrder>>[
+    PharmacyDeskSection.allOrders ||
+    PharmacyDeskSection.cancelled => <AppListTableColumn<PharmacyOrder>>[
       _pharmacyPatientColumn(context),
       _pharmacyLocationColumn(context),
       _pharmacyItemsColumn(context),
@@ -2355,6 +2621,11 @@ List<AppListTableColumn<PharmacyOrder>> _columnsForSection(
         writeRequirement: writeRequirement,
       ),
     ],
+    // Stock-alert sections render inventory rows via [_PharmacyStockPanel].
+    PharmacyDeskSection.nearExpiry ||
+    PharmacyDeskSection.expired ||
+    PharmacyDeskSection.lowStock ||
+    PharmacyDeskSection.outOfStock => const <AppListTableColumn<PharmacyOrder>>[],
   };
 }
 

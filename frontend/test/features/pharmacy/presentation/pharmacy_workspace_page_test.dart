@@ -333,7 +333,7 @@ void main() {
 
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.byType(AppWorkspaceToolbar), findsNothing);
-    expect(_tab('Ready'), findsOneWidget);
+    expect(_tab('New orders'), findsOneWidget);
     expect(_tab('Partial'), findsOneWidget);
     expect(_tab('Pending payment'), findsOneWidget);
     expect(_tab('Completed'), findsOneWidget);
@@ -506,7 +506,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsNothing);
-    expect(_tab('Ready'), findsOneWidget);
+    expect(_tab('New orders'), findsOneWidget);
     expect(find.text('Noah Ready'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

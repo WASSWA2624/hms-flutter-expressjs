@@ -233,7 +233,26 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         ),
         AppListTableColumn<PharmacyDrug>(
           label: l10n.pharmacyDrugNameLabel,
-          cellBuilder: (_, PharmacyDrug item) => Text(item.displayTitle),
+          cellBuilder: (BuildContext context, PharmacyDrug item) {
+            final String? generic = item.genericSubtitle;
+            if (generic == null) {
+              return Text(item.displayTitle);
+            }
+            final ThemeData theme = Theme.of(context);
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(item.displayTitle),
+                Text(
+                  generic,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
         AppListTableColumn<PharmacyDrug>(
           label: l10n.pharmacyDrugCodeLabel,
@@ -306,7 +325,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
             visualDensity: VisualDensity.compact,
           ),
           title: item.displayTitle,
-          caption: item.code,
+          caption: item.genericSubtitle ?? item.code,
           showAvatar: false,
         );
       },

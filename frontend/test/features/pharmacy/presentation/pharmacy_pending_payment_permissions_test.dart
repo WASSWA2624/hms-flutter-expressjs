@@ -732,7 +732,7 @@ void main() {
         );
 
         expect(_tab('Pending payment'), findsNothing);
-        expect(_tab('Ready'), findsOneWidget);
+        expect(_tab('New orders'), findsOneWidget);
         expect(find.text('Payment'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
       },
@@ -845,7 +845,7 @@ void main() {
         );
 
         expect(_tab('Pending payment'), findsNothing);
-        expect(_tab('Ready'), findsOneWidget);
+        expect(_tab('New orders'), findsOneWidget);
         expect(find.textContaining('no access'), findsNothing);
       },
     );

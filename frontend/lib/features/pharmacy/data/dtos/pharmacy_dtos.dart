@@ -406,6 +406,8 @@ final class PharmacyDrugDto {
       id: _string(json['id']) ?? _string(json['display_id']) ?? '',
       displayId: _string(json['display_id']),
       name: _string(json['name']),
+      brandName: _string(json['brand_name']),
+      genericName: _string(json['generic_name']),
       code: _string(json['code']),
       form: _string(json['form']),
       strength: _string(json['strength']),
@@ -491,6 +493,7 @@ final class PharmacyInventoryStockSummaryDto {
       outOfStockRows: _int(json['out_of_stock_rows']) ?? 0,
       pendingStockRows: _int(json['pending_stock_rows']) ?? 0,
       expiringSoonRows: _int(json['expiring_soon_rows']) ?? 0,
+      expiredRows: _int(json['expired_rows']) ?? 0,
     );
   }
 }

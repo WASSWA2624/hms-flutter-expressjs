@@ -11604,6 +11604,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacySummaryReadyLabel => 'Ready';
 
   @override
+  String get pharmacyDeskNewOrdersLabel => 'New orders';
+
+  @override
+  String get pharmacyDeskNearExpiryLabel => 'Near expiry';
+
+  @override
+  String get pharmacyDeskExpiredLabel => 'Expired';
+
+  @override
+  String get pharmacyDeskLowStockLabel => 'Low stock';
+
+  @override
+  String get pharmacyDeskOutOfStockLabel => 'Out of stock';
+
+  @override
+  String get pharmacyStockTabEmptyTitle => 'No stock alerts';
+
+  @override
+  String get pharmacyStockTabEmptyBody =>
+      'Items matching this stock filter will appear here.';
+
+  @override
   String get pharmacySummaryPartialLabel => 'Partial';
 
   @override
@@ -11912,6 +11934,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyDrugNameLabel => 'Drug name';
+
+  @override
+  String get pharmacyDrugBrandNameLabel => 'Brand name';
+
+  @override
+  String get pharmacyDrugGenericNameLabel => 'Generic (scientific) name';
 
   @override
   String get pharmacyDrugCodeLabel => 'Drug code';

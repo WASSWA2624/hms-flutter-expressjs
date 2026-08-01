@@ -70,8 +70,8 @@ void main() {
   });
 
   group('PharmacyDeskSection', () {
-    test('exposes five desk worklist sections', () {
-      expect(PharmacyDeskSection.values, hasLength(5));
+    test('exposes order and stock desk worklist sections', () {
+      expect(PharmacyDeskSection.values, hasLength(10));
       expect(
         PharmacyDeskSection.values,
         containsAll(<PharmacyDeskSection>[
@@ -79,8 +79,27 @@ void main() {
           PharmacyDeskSection.inProgress,
           PharmacyDeskSection.pendingPayment,
           PharmacyDeskSection.completed,
+          PharmacyDeskSection.cancelled,
           PharmacyDeskSection.allOrders,
+          PharmacyDeskSection.nearExpiry,
+          PharmacyDeskSection.expired,
+          PharmacyDeskSection.lowStock,
+          PharmacyDeskSection.outOfStock,
         ]),
+      );
+    });
+
+    test('maps stock sections to inventory queries and order sections to null', () {
+      expect(PharmacyDeskSection.queue.isStockSection, isFalse);
+      expect(PharmacyDeskSection.nearExpiry.isStockSection, isTrue);
+      expect(PharmacyDeskSection.queue.stockQuery, isNull);
+      expect(
+        PharmacyDeskSection.expired.stockQuery?.expiredOnly,
+        isTrue,
+      );
+      expect(
+        PharmacyDeskSection.outOfStock.stockQuery?.stockStatus,
+        'OUT_OF_STOCK',
       );
     });
   });

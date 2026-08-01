@@ -853,7 +853,8 @@ class _DialogActions extends StatelessWidget {
 Future<T?> showAppDialog<T>({
   required BuildContext context,
   required WidgetBuilder builder,
-  bool barrierDismissible = true,
+  /// Outside taps never dismiss; only the dialog close control or Escape do.
+  bool barrierDismissible = false,
   TraversalEdgeBehavior traversalEdgeBehavior =
       TraversalEdgeBehavior.closedLoop,
   bool requestFocus = true,

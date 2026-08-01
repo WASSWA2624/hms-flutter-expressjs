@@ -179,7 +179,8 @@ const summarizeStockMetrics = (records = [], extra = {}) =>
       almost_out_of_stock_rows: 0,
       pending_stock_rows: 0,
       out_of_stock_rows: 0,
-      expiring_soon_rows: Number(extra.expiring_soon_rows || 0)}
+      expiring_soon_rows: Number(extra.expiring_soon_rows || 0),
+      expired_rows: Number(extra.expired_rows || 0)}
   );
 
 const needsPostStockStatusFilter = (filters = {}) => {
@@ -610,6 +611,18 @@ const listPendingAttestationBatchRefs = (orderRecord) => {
     .map(([batchRef]) => batchRef);
 };
 
+// Billing writes `PENDING` for auto-built pharmacy billing, while older records
+// may carry `UNPAID`; treat all unsettled states as pending payment so the tab,
+// filter, and summary counter stay consistent.
+const PHARMACY_PENDING_PAYMENT_STATUSES = Object.freeze([
+  'PENDING',
+  'PARTIAL',
+  'UNPAID']);
+
+const buildPendingPaymentStatusClause = () => ({
+  OR: PHARMACY_PENDING_PAYMENT_STATUSES.map((paymentStatus) => ({
+    billing_snapshot: { path: '$.payment_status', equals: paymentStatus }}))});
+
 const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
   const includeSearch = options.includeSearch !== false;
   const where = {
@@ -645,10 +658,7 @@ const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
   }
 
   if (filters.pending_payment === true) {
-    appendAnd(where, {
-      OR: [
-        { billing_snapshot: { path: '$.payment_status', equals: 'UNPAID' } },
-        { billing_snapshot: { path: '$.payment_status', equals: 'PARTIAL' } }]});
+    appendAnd(where, buildPendingPaymentStatusClause());
   }
 
   applyDateRangeFilter(where, 'ordered_at', filters.from, filters.to);
@@ -813,6 +823,8 @@ const buildDrugWhere = (filters = {}, scope, options = {}) => {
       OR: [
         { human_friendly_id: { contains: searchTerm.upper } },
         { name: { contains: searchTerm.raw } },
+        { brand_name: { contains: searchTerm.raw } },
+        { generic_name: { contains: searchTerm.raw } },
         { code: { contains: searchTerm.raw } },
         { form: { contains: searchTerm.raw } },
         { strength: { contains: searchTerm.raw } }]});
@@ -831,10 +843,7 @@ const buildDischargeSummaryWhere = (summaryWhere) => {
 
 const buildPendingPaymentWhere = (baseWhere) => {
   const where = { ...baseWhere };
-  appendAnd(where, {
-    OR: [
-      { billing_snapshot: { path: '$.payment_status', equals: 'UNPAID' } },
-      { billing_snapshot: { path: '$.payment_status', equals: 'PARTIAL' } }]});
+  appendAnd(where, buildPendingPaymentStatusClause());
   return where;
 };
 
@@ -1728,15 +1737,20 @@ const getInventoryStock = async (filters, page, limit, sortBy, order, user = {})
         ? await resolveScopedFacilityId(filters.facility_id, scope)
         : null);
 
-    const [expiringSoonRows, stockMetrics] = await Promise.all([
+    const [expiringSoonRows, expiredRows, stockMetrics] = await Promise.all([
       pharmacyWorkspaceRepository.countInventoryRowsWithExpiringBatches(
         scope.tenant_id,
         facilityId,
         EXPIRING_SOON_DAYS
       ),
+      pharmacyWorkspaceRepository.countInventoryRowsWithExpiredBatches(
+        scope.tenant_id,
+        facilityId
+      ),
       pharmacyWorkspaceRepository.findInventoryStockMetrics(summaryWhere)]);
     const stockSummary = summarizeStockMetrics(stockMetrics, {
-      expiring_soon_rows: expiringSoonRows});
+      expiring_soon_rows: expiringSoonRows,
+      expired_rows: expiredRows});
 
     if (needsPostStockStatusFilter(filters)) {
       const allRecords = await pharmacyWorkspaceRepository.findManyInventoryStocks(
@@ -1972,6 +1986,8 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
       const drug = await pharmacyWorkspaceRepository.txCreateDrug(tx, {
         tenant_id: tenantId,
         name: payload.name,
+        brand_name: payload.brand_name || null,
+        generic_name: payload.generic_name || null,
         code: payload.code || null,
         form: payload.form || null,
         strength: payload.strength || null,

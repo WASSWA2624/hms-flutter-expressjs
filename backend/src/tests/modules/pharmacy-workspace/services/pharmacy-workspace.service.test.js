@@ -298,6 +298,47 @@ describe('pharmacy-workspace.service', () => {
     expect(serialized).toContain('encounter_type');
   });
 
+  it('getPharmacyWorkbench pending payment filter matches PENDING, PARTIAL, and UNPAID', async () => {
+    pharmacyWorkspaceRepository.findManyOrders.mockResolvedValue([]);
+    pharmacyWorkspaceRepository.countOrders.mockResolvedValue(0);
+    pharmacyWorkspaceRepository.countDispenseAttestations.mockResolvedValue(0);
+
+    await pharmacyWorkspaceService.getPharmacyWorkbench(
+      { pending_payment: true },
+      1,
+      20,
+      null,
+      'desc',
+      mockUser
+    );
+
+    const [whereArg] = pharmacyWorkspaceRepository.findManyOrders.mock.calls[0];
+    const serialized = JSON.stringify(whereArg);
+    expect(serialized).toContain('PENDING');
+    expect(serialized).toContain('PARTIAL');
+    expect(serialized).toContain('UNPAID');
+  });
+
+  it('getPharmacyWorkbench partial stock filter scopes to depleted or partially dispensed orders', async () => {
+    pharmacyWorkspaceRepository.findManyOrders.mockResolvedValue([]);
+    pharmacyWorkspaceRepository.countOrders.mockResolvedValue(0);
+    pharmacyWorkspaceRepository.countDispenseAttestations.mockResolvedValue(0);
+
+    await pharmacyWorkspaceService.getPharmacyWorkbench(
+      { partial_stock: true, urgent: true },
+      1,
+      20,
+      null,
+      'desc',
+      mockUser
+    );
+
+    const [whereArg] = pharmacyWorkspaceRepository.findManyOrders.mock.calls[0];
+    const serialized = JSON.stringify(whereArg);
+    expect(serialized).toContain('PARTIALLY_DISPENSED');
+    expect(serialized).toContain('STAT');
+  });
+
   it('attestDispense rejects same-user second attestation', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
     pharmacyWorkspaceRepository.withTransaction.mockImplementation(async (callback) => callback({}));

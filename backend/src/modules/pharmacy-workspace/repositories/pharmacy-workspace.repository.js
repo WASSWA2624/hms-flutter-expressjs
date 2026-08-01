@@ -289,6 +289,37 @@ const countInventoryRowsWithExpiringBatches = async (tenantId, facilityId, days 
         ...(facilityId ? { facility_id: facilityId } : {})}});
   });
 
+const countInventoryRowsWithExpiredBatches = async (tenantId, facilityId) =>
+  withDbErrorHandling(async () => {
+    const now = new Date();
+
+    const batches = await prisma.drug_batch.findMany({
+      where: {
+        deleted_at: null,
+        quantity: { gt: 0 },
+        expiry_date: { lt: now }},
+      select: { drug_id: true }});
+    const drugIds = Array.from(new Set(batches.map((row) => row.drug_id).filter(Boolean)));
+    if (!drugIds.length) return 0;
+
+    const maps = await prisma.drug_inventory_map.findMany({
+      where: {
+        deleted_at: null,
+        tenant_id: tenantId,
+        drug_id: { in: drugIds }},
+      select: { inventory_item_id: true }});
+    const inventoryItemIds = Array.from(
+      new Set(maps.map((row) => row.inventory_item_id).filter(Boolean))
+    );
+    if (!inventoryItemIds.length) return 0;
+
+    return prisma.inventory_stock.count({
+      where: {
+        deleted_at: null,
+        inventory_item_id: { in: inventoryItemIds },
+        ...(facilityId ? { facility_id: facilityId } : {})}});
+  });
+
 const txCreateDrug = async (tx, data) => tx.drug.create({ data });
 
 const txCreateInventoryItem = async (tx, data) => tx.inventory_item.create({ data });
@@ -347,6 +378,7 @@ module.exports = {
   findDrugBatchesByDrugIds,
   findInventoryItemIdsByBatchFilters,
   countInventoryRowsWithExpiringBatches,
+  countInventoryRowsWithExpiredBatches,
   txCreateDrug,
   txCreateInventoryItem,
   txCreateDrugInventoryMap,

@@ -16,12 +16,58 @@ enum PharmacyOrderFilter {
 }
 
 /// Desk worklist sections for the pharmacy workspace tab strip.
+///
+/// Order queues come first, followed by the stock-alert sections that surface
+/// inventory health (`GET /inventory/stock`).
 enum PharmacyDeskSection {
   queue,
   inProgress,
   pendingPayment,
   completed,
+  cancelled,
   allOrders,
+  nearExpiry,
+  expired,
+  lowStock,
+  outOfStock,
+}
+
+extension PharmacyDeskSectionX on PharmacyDeskSection {
+  /// True for the stock-alert sections that render inventory rows instead of
+  /// order rows.
+  bool get isStockSection {
+    return switch (this) {
+      PharmacyDeskSection.nearExpiry ||
+      PharmacyDeskSection.expired ||
+      PharmacyDeskSection.lowStock ||
+      PharmacyDeskSection.outOfStock => true,
+      PharmacyDeskSection.queue ||
+      PharmacyDeskSection.inProgress ||
+      PharmacyDeskSection.pendingPayment ||
+      PharmacyDeskSection.completed ||
+      PharmacyDeskSection.cancelled ||
+      PharmacyDeskSection.allOrders => false,
+    };
+  }
+
+  /// Inventory stock query backing a stock section, or null for order sections.
+  PharmacyInventoryStockQuery? get stockQuery {
+    return switch (this) {
+      PharmacyDeskSection.nearExpiry => const PharmacyInventoryStockQuery(
+        expiringWithinDays: 30,
+      ),
+      PharmacyDeskSection.expired => const PharmacyInventoryStockQuery(
+        expiredOnly: true,
+      ),
+      PharmacyDeskSection.lowStock => const PharmacyInventoryStockQuery(
+        stockStatus: 'LOW_STOCK',
+      ),
+      PharmacyDeskSection.outOfStock => const PharmacyInventoryStockQuery(
+        stockStatus: 'OUT_OF_STOCK',
+      ),
+      _ => null,
+    };
+  }
 }
 
 extension PharmacyOrderFilterX on PharmacyOrderFilter {
@@ -214,6 +260,7 @@ final class PharmacyInventoryStockSummary {
     this.outOfStockRows = 0,
     this.pendingStockRows = 0,
     this.expiringSoonRows = 0,
+    this.expiredRows = 0,
   });
 
   final int totalStockRows;
@@ -222,6 +269,7 @@ final class PharmacyInventoryStockSummary {
   final int outOfStockRows;
   final int pendingStockRows;
   final int expiringSoonRows;
+  final int expiredRows;
 
   int get criticalStockRows => lowStockRows + outOfStockRows;
 }
@@ -273,6 +321,8 @@ final class PharmacyDrugInput {
   const PharmacyDrugInput({
     required this.tenantId,
     required this.name,
+    this.brandName,
+    this.genericName,
     this.code,
     this.form,
     this.strength,
@@ -293,6 +343,8 @@ final class PharmacyDrugInput {
 
   final String tenantId;
   final String name;
+  final String? brandName;
+  final String? genericName;
   final String? code;
   final String? form;
   final String? strength;
@@ -321,6 +373,10 @@ final class PharmacyDrugInput {
     return <String, Object?>{
       'tenant_id': tenantId,
       'name': name,
+      if (brandName != null && brandName!.trim().isNotEmpty)
+        'brand_name': brandName!.trim(),
+      if (genericName != null && genericName!.trim().isNotEmpty)
+        'generic_name': genericName!.trim(),
       'code': code,
       'form': form,
       'strength': strength,
@@ -356,6 +412,8 @@ final class PharmacyDrugInput {
 final class PharmacyDrugUpdateInput {
   const PharmacyDrugUpdateInput({
     this.name,
+    this.brandName,
+    this.genericName,
     this.code,
     this.form,
     this.strength,
@@ -364,6 +422,8 @@ final class PharmacyDrugUpdateInput {
   });
 
   final String? name;
+  final String? brandName;
+  final String? genericName;
   final String? code;
   final String? form;
   final String? strength;
@@ -373,6 +433,8 @@ final class PharmacyDrugUpdateInput {
   Map<String, Object?> toJson() {
     return <String, Object?>{
       if (name != null) 'name': name,
+      if (brandName != null) 'brand_name': brandName,
+      if (genericName != null) 'generic_name': genericName,
       if (code != null) 'code': code,
       if (form != null) 'form': form,
       if (strength != null) 'strength': strength,
@@ -1222,6 +1284,8 @@ final class PharmacyDrug {
     required this.id,
     this.displayId,
     this.name,
+    this.brandName,
+    this.genericName,
     this.code,
     this.form,
     this.strength,
@@ -1253,6 +1317,8 @@ final class PharmacyDrug {
   final String id;
   final String? displayId;
   final String? name;
+  final String? brandName;
+  final String? genericName;
   final String? code;
   final String? form;
   final String? strength;
@@ -1280,10 +1346,33 @@ final class PharmacyDrug {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  /// Primary display name: prefer the brand, then the generic, then [name].
+  String get primaryName {
+    final String brand = (brandName ?? '').trim();
+    if (brand.isNotEmpty) {
+      return brand;
+    }
+    final String generic = (genericName ?? '').trim();
+    if (generic.isNotEmpty) {
+      return generic;
+    }
+    return (name ?? '').trim();
+  }
+
+  /// Generic/scientific subtitle shown when a distinct brand name exists.
+  String? get genericSubtitle {
+    final String generic = (genericName ?? '').trim();
+    final String brand = (brandName ?? '').trim();
+    if (generic.isEmpty || generic == brand) {
+      return null;
+    }
+    return generic;
+  }
+
   String get displayTitle {
-    return _joinDisplay(<String?>[name, strength, form]).isNotEmpty
-        ? _joinDisplay(<String?>[name, strength, form])
-        : id;
+    final String base = primaryName.isNotEmpty ? primaryName : (name ?? '');
+    final String joined = _joinDisplay(<String?>[base, strength, form]);
+    return joined.isNotEmpty ? joined : id;
   }
 }
 
@@ -1618,6 +1707,7 @@ final class PharmacyWorkspaceState {
     this.catalogTab = PharmacyCatalogTab.drugs,
     this.storageLayout = const PharmacyStorageLayout(),
     this.isRefreshingStorage = false,
+    this.stockAlertSummary = const PharmacyInventoryStockSummary(),
   });
 
   final PharmacyWorkbenchQuery query;
@@ -1628,6 +1718,10 @@ final class PharmacyWorkspaceState {
   final AppPage<PharmacyFormularyItem> formularyItems;
   final PharmacyInventoryStockQuery inventoryQuery;
   final PharmacyInventoryWorkbench inventoryWorkbench;
+
+  /// Unfiltered stock-alert counters used for the desk stock tab badges,
+  /// kept independent of the catalog inventory filter.
+  final PharmacyInventoryStockSummary stockAlertSummary;
   final PharmacyOrderWorkflow? selectedWorkflow;
   final Object? lastFailure;
   final bool isRefreshingOrders;
@@ -1666,6 +1760,7 @@ final class PharmacyWorkspaceState {
     PharmacyCatalogTab? catalogTab,
     PharmacyStorageLayout? storageLayout,
     bool? isRefreshingStorage,
+    PharmacyInventoryStockSummary? stockAlertSummary,
     bool clearSelectedWorkflow = false,
     bool clearLastFailure = false,
   }) {
@@ -1693,6 +1788,7 @@ final class PharmacyWorkspaceState {
       catalogTab: catalogTab ?? this.catalogTab,
       storageLayout: storageLayout ?? this.storageLayout,
       isRefreshingStorage: isRefreshingStorage ?? this.isRefreshingStorage,
+      stockAlertSummary: stockAlertSummary ?? this.stockAlertSummary,
     );
   }
 }

@@ -14811,6 +14811,34 @@
   "@pharmacySummaryReadyLabel": {
     "description": "Pharmacy summary label for ready orders."
   },
+  "pharmacyDeskNewOrdersLabel": "New orders",
+  "@pharmacyDeskNewOrdersLabel": {
+    "description": "Pharmacy desk tab label for new, unattended orders."
+  },
+  "pharmacyDeskNearExpiryLabel": "Near expiry",
+  "@pharmacyDeskNearExpiryLabel": {
+    "description": "Pharmacy desk tab label for stock nearing its expiry date."
+  },
+  "pharmacyDeskExpiredLabel": "Expired",
+  "@pharmacyDeskExpiredLabel": {
+    "description": "Pharmacy desk tab label for expired stock."
+  },
+  "pharmacyDeskLowStockLabel": "Low stock",
+  "@pharmacyDeskLowStockLabel": {
+    "description": "Pharmacy desk tab label for stock at or below the reorder level."
+  },
+  "pharmacyDeskOutOfStockLabel": "Out of stock",
+  "@pharmacyDeskOutOfStockLabel": {
+    "description": "Pharmacy desk tab label for depleted stock."
+  },
+  "pharmacyStockTabEmptyTitle": "No stock alerts",
+  "@pharmacyStockTabEmptyTitle": {
+    "description": "Pharmacy stock alert tab empty state title."
+  },
+  "pharmacyStockTabEmptyBody": "Items matching this stock filter will appear here.",
+  "@pharmacyStockTabEmptyBody": {
+    "description": "Pharmacy stock alert tab empty state body."
+  },
   "pharmacySummaryPartialLabel": "Partial",
   "@pharmacySummaryPartialLabel": {
     "description": "Pharmacy summary label for partially dispensed orders."
@@ -15199,6 +15227,14 @@
   "pharmacyDrugNameLabel": "Drug name",
   "@pharmacyDrugNameLabel": {
     "description": "Pharmacy drug name field label."
+  },
+  "pharmacyDrugBrandNameLabel": "Brand name",
+  "@pharmacyDrugBrandNameLabel": {
+    "description": "Pharmacy drug brand name field label."
+  },
+  "pharmacyDrugGenericNameLabel": "Generic (scientific) name",
+  "@pharmacyDrugGenericNameLabel": {
+    "description": "Pharmacy drug generic or scientific name field label."
   },
   "pharmacyDrugCodeLabel": "Drug code",
   "@pharmacyDrugCodeLabel": {

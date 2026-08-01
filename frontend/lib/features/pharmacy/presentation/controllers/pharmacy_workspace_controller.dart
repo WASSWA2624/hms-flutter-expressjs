@@ -33,9 +33,12 @@ final class PharmacyWorkspaceController
   final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
   final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
   bool _isSyncing = false;
+  bool _disposed = false;
 
   @override
   Future<Result<PharmacyWorkspaceState>> build() async {
+    _disposed = false;
+    ref.onDispose(() => _disposed = true);
     watchSessionEpoch(ref);
     listenForRealtimeRefresh(
       ref: ref,
@@ -532,6 +535,29 @@ final class PharmacyWorkspaceController
     return _refreshInventory(showLoading: true);
   }
 
+  /// Loads the inventory rows for a stock desk tab (Near expiry, Expired, Low
+  /// stock, Out of stock). Reuses the inventory workbench for rows; badge counts
+  /// stay on [PharmacyWorkspaceState.stockAlertSummary].
+  Future<AppFailure?> applyDeskStockFilter(
+    PharmacyInventoryStockQuery query,
+  ) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        inventoryQuery: query.copyWith(facilityId: resolveFacilityId()),
+        isRefreshingInventory: true,
+        clearLastFailure: true,
+      ),
+    );
+    final AppFailure? failure = await _refreshInventory(showLoading: true);
+    unawaited(_refreshStockAlertSummary());
+    return failure;
+  }
+
   Future<AppFailure?> applyInventoryStockStatus(String? stockStatus) async {
     final PharmacyWorkspaceState? current = _currentState;
     if (current == null) {
@@ -945,6 +971,7 @@ final class PharmacyWorkspaceController
     return result.when(
       success: (_) async {
         final AppFailure? failure = await _refreshInventory(showLoading: false);
+        unawaited(_refreshStockAlertSummary());
         final PharmacyWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(latest.copyWith(isSaving: false));
@@ -1150,6 +1177,7 @@ final class PharmacyWorkspaceController
         ),
         inventoryQuery: inventoryQuery,
         inventoryWorkbench: inventoryWorkbench,
+        stockAlertSummary: inventoryWorkbench.summary,
         storageLayout: storageLayout,
       ),
     );
@@ -1220,6 +1248,7 @@ final class PharmacyWorkspaceController
       }
       if (refreshInventory) {
         await _refreshInventory(showLoading: showLoading);
+        unawaited(_refreshStockAlertSummary());
       }
 
       if (refreshDetail) {
@@ -1397,6 +1426,31 @@ final class PharmacyWorkspaceController
         }
         return failure;
       },
+    );
+  }
+
+  /// Refreshes the unfiltered stock-alert counters used for the desk stock tab
+  /// badges, independent of the active inventory filter.
+  Future<void> _refreshStockAlertSummary() async {
+    if (_disposed || _currentState == null) {
+      return;
+    }
+    final Result<PharmacyInventoryWorkbench> result = await _repository
+        .getInventoryStock(
+          PharmacyInventoryStockQuery(facilityId: resolveFacilityId()),
+        );
+    if (_disposed) {
+      return;
+    }
+    final PharmacyWorkspaceState? latest = _currentState;
+    if (latest == null) {
+      return;
+    }
+    result.when(
+      success: (PharmacyInventoryWorkbench workbench) {
+        _emit(latest.copyWith(stockAlertSummary: workbench.summary));
+      },
+      failure: (_) {},
     );
   }
 

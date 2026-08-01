@@ -23,6 +23,8 @@ const {
 const createDrugSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema,
   name: z.string().trim().min(1).max(255),
+  brand_name: z.string().trim().max(255).optional().nullable(),
+  generic_name: z.string().trim().max(255).optional().nullable(),
   code: z.string().trim().max(80).optional().nullable(),
   form: z.string().trim().max(80).optional().nullable(),
   strength: z.string().trim().max(80).optional().nullable(),
@@ -37,6 +39,8 @@ const createDrugSchema = z.object({
  */
 const updateDrugSchema = z.object({
   name: z.string().trim().min(1).max(255).optional(),
+  brand_name: z.string().trim().max(255).optional().nullable(),
+  generic_name: z.string().trim().max(255).optional().nullable(),
   code: z.string().trim().max(80).optional().nullable(),
   form: z.string().trim().max(80).optional().nullable(),
   strength: z.string().trim().max(80).optional().nullable(),

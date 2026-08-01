@@ -3761,6 +3761,8 @@ model drug {
   human_friendly_id String?   @db.VarChar(32)
   tenant_id         String    @db.VarChar(36)
   name              String    @db.VarChar(255)
+  brand_name        String?   @db.VarChar(255)
+  generic_name      String?   @db.VarChar(255)
   code              String?   @db.VarChar(80)
   form              String?   @db.VarChar(80)
   strength          String?   @db.VarChar(80)

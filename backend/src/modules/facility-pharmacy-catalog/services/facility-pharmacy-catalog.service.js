@@ -54,6 +54,8 @@ const buildDrugSearchWhere = (tenantId, searchTerm) => {
     ...where,
     OR: [
       { name: { contains: searchTerm.raw } },
+      { brand_name: { contains: searchTerm.raw } },
+      { generic_name: { contains: searchTerm.raw } },
       { code: { contains: searchTerm.raw } },
       { form: { contains: searchTerm.raw } },
       { strength: { contains: searchTerm.raw } },
@@ -83,6 +85,8 @@ const listFacilityPharmacyDrugs = async (filters, page, limit, sortBy, order, co
               deleted_at: null,
               OR: [
                 { name: { contains: searchTerm.raw } },
+                { brand_name: { contains: searchTerm.raw } },
+                { generic_name: { contains: searchTerm.raw } },
                 { code: { contains: searchTerm.raw } },
                 { form: { contains: searchTerm.raw } },
                 { strength: { contains: searchTerm.raw } },
