@@ -1687,6 +1687,7 @@ class _LabReportPreviewDialogState
   ];
 
   late Set<String> _selectedItemIds;
+  late Set<Object> _selectedFacilitySections;
   late final AppListTableColumnVisibilityController<LabOrderItem>
   _columnVisibilityController;
   LabReportPreviewSettings _settings = LabReportPreviewSettings.defaults;
@@ -1705,7 +1706,24 @@ class _LabReportPreviewDialogState
     _settings = LabReportPreviewPreferences.read(
       ref.read(sharedPreferencesProvider),
     );
+    _selectedFacilitySections = resolveDefaultReportSectionSelection(
+      _facilitySectionAvailabilities(),
+    );
     _resetSelection();
+  }
+
+  PrintFormBranding _effectiveBranding() {
+    final PrintFormTemplateContext branding = ref.read(
+      printFormTemplateContextProvider,
+    );
+    return effectivePrintBranding(
+      appBranding: branding.appBranding,
+      facilityBranding: branding.facilityBranding,
+    );
+  }
+
+  List<ReportSectionAvailability> _facilitySectionAvailabilities() {
+    return buildFacilityPrintSectionAvailabilities(_effectiveBranding());
   }
 
   @override
@@ -1742,7 +1760,10 @@ class _LabReportPreviewDialogState
     return (workflows: workflows, itemIds: itemIdsToPrint);
   }
 
-  String? _documentHtml(BuildContext context) {
+  String? _documentHtml(
+    BuildContext context, {
+    required PrintFormBrandingOptions brandingOptions,
+  }) {
     final AppLocalizations l10n = context.l10n;
     final selection = _printSelection();
     final List<LabOrderWorkflow> workflows = selection.workflows;
@@ -1755,6 +1776,7 @@ class _LabReportPreviewDialogState
       ref: ref,
       context: context,
       title: l10n.labReportTitle,
+      brandingOptions: brandingOptions,
       patientContext: _reportPatientContext(context, workflows, _settings),
       contextReference: _reportContextReference(context, workflows, _settings),
       metadata: _reportMetadata(context, workflows, _settings),
@@ -1781,7 +1803,27 @@ class _LabReportPreviewDialogState
       authorized: printAuthorized,
       hasPrintableReleasedContent: _selectedItemIds.isNotEmpty,
     );
-    final String? documentHtml = _documentHtml(context);
+    final List<ReportSectionAvailability> facilitySections =
+        _facilitySectionAvailabilities();
+    final Set<Object> selectedFacilitySections = sanitizeReportSectionSelection(
+      selectedIds: _selectedFacilitySections,
+      sections: facilitySections,
+      requireAtLeastOne: false,
+    );
+    final PrintFormBrandingOptions brandingOptions =
+        brandingOptionsFromFacilitySections(selectedFacilitySections);
+    final List<AppReportSectionData> facilityTiles = buildReportSectionTiles(
+      sections: facilitySections,
+      titleFor: (Object id) =>
+          printFacilitySectionLabel(l10n, id as PrintFacilitySection),
+      iconFor: (Object id) =>
+          printFacilitySectionIcon(id as PrintFacilitySection),
+      emptyDisabledReason: l10n.reportSectionEmptyDisabledReason,
+    );
+    final String? documentHtml = _documentHtml(
+      context,
+      brandingOptions: brandingOptions,
+    );
     final String resolvedHtml =
         documentHtml ??
         PrintDocumentTemplates.emptyBodyHtml(
@@ -1863,6 +1905,18 @@ class _LabReportPreviewDialogState
             items: selectableItems,
             selectedItemIds: _selectedItemIds,
             decimalPlaces: _settings.decimalPlaces,
+            facilityTiles: facilityTiles,
+            selectedFacilitySections: selectedFacilitySections,
+            onFacilitySelectionChanged: (Set<Object> next) {
+              setState(() {
+                _selectedFacilitySections = sanitizeReportSectionSelection(
+                  selectedIds: next,
+                  sections: facilitySections,
+                  requireAtLeastOne: false,
+                );
+                _currentPage = 1;
+              });
+            },
             onToggleItem: _toggleReportItem,
             onSelectAll: () {
               setState(() {
@@ -2034,11 +2088,19 @@ class _LabReportPreviewDialogState
     if (workflows.isEmpty || itemIds.isEmpty) {
       return;
     }
+    final Set<Object> selectedFacilitySections = sanitizeReportSectionSelection(
+      selectedIds: _selectedFacilitySections,
+      sections: _facilitySectionAvailabilities(),
+      requireAtLeastOne: false,
+    );
     setState(() => _isPrinting = true);
     await PrintDocumentTemplates.clinicalResult(
       ref: ref,
       context: context,
       title: l10n.labReportTitle,
+      brandingOptions: brandingOptionsFromFacilitySections(
+        selectedFacilitySections,
+      ),
       patientContext: _reportPatientContext(context, workflows, _settings),
       orderReference: _reportContextReference(context, workflows, _settings),
       metadata: _reportMetadata(context, workflows, _settings),
@@ -2064,6 +2126,9 @@ class _LabReportTestSelectionPane extends StatelessWidget {
     required this.items,
     required this.selectedItemIds,
     required this.decimalPlaces,
+    required this.facilityTiles,
+    required this.selectedFacilitySections,
+    required this.onFacilitySelectionChanged,
     required this.onToggleItem,
     required this.onSelectAll,
     required this.onSelectNone,
@@ -2073,6 +2138,9 @@ class _LabReportTestSelectionPane extends StatelessWidget {
   final List<LabOrderItem> items;
   final Set<String> selectedItemIds;
   final int decimalPlaces;
+  final List<AppReportSectionData> facilityTiles;
+  final Set<Object> selectedFacilitySections;
+  final ValueChanged<Set<Object>> onFacilitySelectionChanged;
   final void Function(LabOrderItem item, {required bool selected}) onToggleItem;
   final VoidCallback onSelectAll;
   final VoidCallback onSelectNone;
@@ -2092,6 +2160,20 @@ class _LabReportTestSelectionPane extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        if (facilityTiles.isNotEmpty) ...<Widget>[
+          AppFormSection(
+            title: l10n.printFacilityDetailsSectionsLabel,
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              AppReportSectionPicker(
+                sections: facilityTiles,
+                selectedIds: selectedFacilitySections,
+                onSelectionChanged: onFacilitySelectionChanged,
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.lg),
+        ],
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
