@@ -2463,10 +2463,33 @@ class _PatientReportPrintPreviewDialogState
   DateTime? _startDate;
   DateTime? _endDate;
   late Set<Object> _selectedSections;
+  bool _facilityTouched = false;
   bool _isPrinting = false;
   AppPrintPreviewPaneMode _paneMode = AppPrintPreviewPaneMode.split;
   double _scale = 1;
   int _currentPage = 1;
+
+  /// Keeps every available facility-header field selected until the user edits
+  /// the facility checkboxes, so facility details that load after the dialog
+  /// opened are still included by default.
+  Set<Object> _effectiveSelection(
+    List<ReportSectionAvailability> availabilities,
+  ) {
+    if (_facilityTouched) {
+      return sanitizeReportSectionSelection(
+        selectedIds: _selectedSections,
+        sections: availabilities,
+      );
+    }
+    final Set<Object> facilityDefaults = <Object>{
+      for (final ReportSectionAvailability section in availabilities)
+        if (section.id is PrintFacilitySection && section.enabled) section.id,
+    };
+    return sanitizeReportSectionSelection(
+      selectedIds: <Object>{..._selectedSections, ...facilityDefaults},
+      sections: availabilities,
+    );
+  }
 
   @override
   void initState() {
@@ -2520,10 +2543,7 @@ class _PatientReportPrintPreviewDialogState
           ),
           branding: branding,
         );
-    final Set<Object> selected = sanitizeReportSectionSelection(
-      selectedIds: _selectedSections,
-      sections: availabilities,
-    );
+    final Set<Object> selected = _effectiveSelection(availabilities);
     final PrintFormBrandingOptions brandingOptions =
         brandingOptionsFromFacilitySections(selected);
     final _PatientReportSelection selection = _PatientReportSelection(
@@ -2664,6 +2684,7 @@ class _PatientReportPrintPreviewDialogState
                 selectedIds: next,
                 sections: availabilities,
               );
+              _facilityTouched = true;
               _currentPage = 1;
             });
           },
@@ -2697,7 +2718,8 @@ class _PatientReportPrintPreviewDialogState
           enabled: canPrint && !_isPrinting,
           isLoading: _isPrinting,
           onPressed: canPrint && !_isPrinting
-              ? () => _printDocument(context, document, selection)
+              ? () =>
+                    _printDocument(context, document, selection, brandingOptions)
               : null,
         ),
       ],
@@ -2708,6 +2730,7 @@ class _PatientReportPrintPreviewDialogState
     BuildContext context,
     _PatientReportDocument document,
     _PatientReportSelection selection,
+    PrintFormBrandingOptions brandingOptions,
   ) async {
     final l10n = context.l10n;
     setState(() => _isPrinting = true);
@@ -2728,7 +2751,7 @@ class _PatientReportPrintPreviewDialogState
         context: context,
         title: document.title,
         subtitle: document.periodLabel,
-        brandingOptions: brandingOptionsFromFacilitySections(_selectedSections),
+        brandingOptions: brandingOptions,
         patientContext: buildPrintFormPatientContext(
           l10n,
           patientName: document.patientName,

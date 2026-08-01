@@ -502,9 +502,20 @@ abstract final class PrintDocumentTemplates {
       return doPrint();
     }
 
-    final PrintFormTemplateContext branding = ref.read(
-      printFormTemplateContextProvider,
-    );
+    // Prefer the fully-loaded facility branding so facility contacts, address,
+    // type, and ID are available for the checkboxes and header. Falls back to
+    // the sync snapshot so the preview never blocks forever.
+    PrintFormTemplateContext branding;
+    try {
+      branding = await ref
+          .read(printFormTemplateContextReadyProvider.future)
+          .timeout(const Duration(seconds: 5));
+    } catch (_) {
+      branding = ref.read(printFormTemplateContextProvider);
+    }
+    if (!context.mounted) {
+      return;
+    }
     final PrintFormBranding facilitySectionBranding = effectivePrintBranding(
       appBranding: branding.appBranding,
       facilityBranding: branding.facilityBranding,

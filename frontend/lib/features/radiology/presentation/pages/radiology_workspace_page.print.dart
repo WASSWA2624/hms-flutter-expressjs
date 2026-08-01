@@ -34,10 +34,35 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
   static const double _dialogMaxWidth = 1120;
 
   late Set<Object> _selectedSections;
+  bool _facilityTouched = false;
   bool _isPrinting = false;
   AppPrintPreviewPaneMode _paneMode = AppPrintPreviewPaneMode.split;
   double _scale = 1;
   int _currentPage = 1;
+
+  /// Merges the current section selection with facility-header defaults.
+  ///
+  /// Facility contacts/address load asynchronously, so until the user edits the
+  /// facility checkboxes we keep every available facility field selected even
+  /// when its data arrives after the dialog first built.
+  Set<Object> _effectiveSelection(
+    List<ReportSectionAvailability> availabilities,
+  ) {
+    if (_facilityTouched) {
+      return sanitizeReportSectionSelection(
+        selectedIds: _selectedSections,
+        sections: availabilities,
+      );
+    }
+    final Set<Object> facilityDefaults = <Object>{
+      for (final ReportSectionAvailability section in availabilities)
+        if (section.id is PrintFacilitySection && section.enabled) section.id,
+    };
+    return sanitizeReportSectionSelection(
+      selectedIds: <Object>{..._selectedSections, ...facilityDefaults},
+      sections: availabilities,
+    );
+  }
 
   @override
   void initState() {
@@ -122,8 +147,9 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
     );
     final List<ReportSectionAvailability> availabilities =
         _radiologyPrintAvailabilities(widget.workflow, branding);
+    final Set<Object> selectedSections = _effectiveSelection(availabilities);
     final _RadiologyPrintSettings settings = _settingsFromSelection(
-      _selectedSections,
+      selectedSections,
     );
     final List<AppReportSectionData> tiles = buildReportSectionTiles(
       sections: availabilities,
@@ -195,7 +221,7 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
         ),
         sectionPicker: AppReportSectionPicker(
           sections: tiles,
-          selectedIds: _selectedSections,
+          selectedIds: selectedSections,
           compact: true,
           minTileWidth: 140,
           onSelectionChanged: (Set<Object> next) {
@@ -204,6 +230,7 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
                 selectedIds: next,
                 sections: availabilities,
               );
+              _facilityTouched = true;
               _currentPage = 1;
             });
           },
@@ -230,16 +257,21 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
           label: l10n.radiologyPrintAction,
           leadingIcon: Icons.print_outlined,
           isLoading: _isPrinting,
-          enabled: !_isPrinting && _selectedSections.isNotEmpty,
-          onPressed: _isPrinting || _selectedSections.isEmpty ? null : _print,
+          enabled: !_isPrinting && selectedSections.isNotEmpty,
+          onPressed: _isPrinting || selectedSections.isEmpty ? null : _print,
         ),
       ],
     );
   }
 
   Future<void> _print() async {
+    final PrintFormTemplateContext branding = ref.read(
+      printFormTemplateContextProvider,
+    );
     final _RadiologyPrintSettings settings = _settingsFromSelection(
-      _selectedSections,
+      _effectiveSelection(
+        _radiologyPrintAvailabilities(widget.workflow, branding),
+      ),
     );
     setState(() => _isPrinting = true);
     await PrintDocumentTemplates.clinicalResult(

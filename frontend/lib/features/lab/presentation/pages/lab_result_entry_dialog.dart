@@ -1688,6 +1688,7 @@ class _LabReportPreviewDialogState
 
   late Set<String> _selectedItemIds;
   late Set<Object> _selectedFacilitySections;
+  bool _facilityTouched = false;
   late final AppListTableColumnVisibilityController<LabOrderItem>
   _columnVisibilityController;
   LabReportPreviewSettings _settings = LabReportPreviewSettings.defaults;
@@ -1724,6 +1725,22 @@ class _LabReportPreviewDialogState
 
   List<ReportSectionAvailability> _facilitySectionAvailabilities() {
     return buildFacilityPrintSectionAvailabilities(_effectiveBranding());
+  }
+
+  /// Keeps every available facility field selected until the user edits the
+  /// facility checkboxes, so facility details that load after the dialog opened
+  /// are still included by default.
+  Set<Object> _effectiveFacilitySelection(
+    List<ReportSectionAvailability> availabilities,
+  ) {
+    if (_facilityTouched) {
+      return sanitizeReportSectionSelection(
+        selectedIds: _selectedFacilitySections,
+        sections: availabilities,
+        requireAtLeastOne: false,
+      );
+    }
+    return resolveDefaultReportSectionSelection(availabilities);
   }
 
   @override
@@ -1803,12 +1820,12 @@ class _LabReportPreviewDialogState
       authorized: printAuthorized,
       hasPrintableReleasedContent: _selectedItemIds.isNotEmpty,
     );
+    // Watch so the dialog rebuilds once facility setup finishes loading.
+    ref.watch(printFormTemplateContextProvider);
     final List<ReportSectionAvailability> facilitySections =
         _facilitySectionAvailabilities();
-    final Set<Object> selectedFacilitySections = sanitizeReportSectionSelection(
-      selectedIds: _selectedFacilitySections,
-      sections: facilitySections,
-      requireAtLeastOne: false,
+    final Set<Object> selectedFacilitySections = _effectiveFacilitySelection(
+      facilitySections,
     );
     final PrintFormBrandingOptions brandingOptions =
         brandingOptionsFromFacilitySections(selectedFacilitySections);
@@ -1914,6 +1931,7 @@ class _LabReportPreviewDialogState
                   sections: facilitySections,
                   requireAtLeastOne: false,
                 );
+                _facilityTouched = true;
                 _currentPage = 1;
               });
             },
@@ -2088,10 +2106,8 @@ class _LabReportPreviewDialogState
     if (workflows.isEmpty || itemIds.isEmpty) {
       return;
     }
-    final Set<Object> selectedFacilitySections = sanitizeReportSectionSelection(
-      selectedIds: _selectedFacilitySections,
-      sections: _facilitySectionAvailabilities(),
-      requireAtLeastOne: false,
+    final Set<Object> selectedFacilitySections = _effectiveFacilitySelection(
+      _facilitySectionAvailabilities(),
     );
     setState(() => _isPrinting = true);
     await PrintDocumentTemplates.clinicalResult(

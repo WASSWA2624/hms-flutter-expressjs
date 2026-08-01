@@ -63,6 +63,7 @@ class PrintOpdSummaryDialog extends ConsumerStatefulWidget {
 
 class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
   late Set<Object> _selectedSections;
+  bool _facilityTouched = false;
   bool _isCopying = false;
   bool _isPrinting = false;
   AppPrintPreviewPaneMode _paneMode = AppPrintPreviewPaneMode.split;
@@ -71,6 +72,28 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
   AppFailure? _failure;
 
   bool get _isBusy => _isCopying || _isPrinting;
+
+  /// Keeps every available facility-header field selected until the user edits
+  /// the facility checkboxes, so facility contacts/address that load after the
+  /// dialog opened are still included by default.
+  Set<Object> _effectiveSelection(
+    List<ReportSectionAvailability> availabilities,
+  ) {
+    if (_facilityTouched) {
+      return sanitizeReportSectionSelection(
+        selectedIds: _selectedSections,
+        sections: availabilities,
+      );
+    }
+    final Set<Object> facilityDefaults = <Object>{
+      for (final ReportSectionAvailability section in availabilities)
+        if (section.id is PrintFacilitySection && section.enabled) section.id,
+    };
+    return sanitizeReportSectionSelection(
+      selectedIds: <Object>{..._selectedSections, ...facilityDefaults},
+      sections: availabilities,
+    );
+  }
 
   @override
   void initState() {
@@ -101,10 +124,7 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
           detail: widget.detail,
           branding: branding,
         );
-    final Set<Object> selected = sanitizeReportSectionSelection(
-      selectedIds: _selectedSections,
-      sections: availabilities,
-    );
+    final Set<Object> selected = _effectiveSelection(availabilities);
     final List<AppReportSectionData> tiles = buildReportSectionTiles(
       sections: availabilities,
       titleFor: (Object id) => opdPrintSectionLabel(l10n, id),
@@ -245,6 +265,7 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
                             selectedIds: next,
                             sections: availabilities,
                           );
+                          _facilityTouched = true;
                           _currentPage = 1;
                         });
                       },
