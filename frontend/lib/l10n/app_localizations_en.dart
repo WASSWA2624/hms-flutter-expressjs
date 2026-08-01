@@ -13992,6 +13992,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get printFormPrintedByLabel => 'Printed by';
 
   @override
+  String get printPreviewTitle => 'Print preview';
+
+  @override
+  String get printPreviewMaximizeAction => 'Maximize preview';
+
+  @override
+  String get printPreviewRestoreAction => 'Restore preview';
+
+  @override
+  String get printPreviewDialogBody => 'Review the document, then print.';
+
+  @override
+  String get commonPrintActionLabel => 'Print';
+
+  @override
   String get printFormVerifiedByLabel => 'Entered by';
 
   @override

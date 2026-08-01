@@ -2072,6 +2072,7 @@ class _LabReportPreviewDialogState
       ),
       footerNote: l10n.labReportFooter,
       includeSignatures: true,
+      showPreview: false,
     );
     if (mounted) {
       setState(() => _isPrinting = false);

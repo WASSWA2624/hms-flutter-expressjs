@@ -25832,6 +25832,36 @@ abstract class AppLocalizations {
   /// **'Printed by'**
   String get printFormPrintedByLabel;
 
+  /// Title for the shared print preview panel
+  ///
+  /// In en, this message translates to:
+  /// **'Print preview'**
+  String get printPreviewTitle;
+
+  /// Action to expand the shared print preview pane
+  ///
+  /// In en, this message translates to:
+  /// **'Maximize preview'**
+  String get printPreviewMaximizeAction;
+
+  /// Action to restore the shared print preview pane size
+  ///
+  /// In en, this message translates to:
+  /// **'Restore preview'**
+  String get printPreviewRestoreAction;
+
+  /// Default body copy for the shared print preview dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Review the document, then print.'**
+  String get printPreviewDialogBody;
+
+  /// Generic print action label
+  ///
+  /// In en, this message translates to:
+  /// **'Print'**
+  String get commonPrintActionLabel;
+
   /// Signature label for the user who verified a report.
   ///
   /// In en, this message translates to:

@@ -2457,6 +2457,8 @@ class _PatientReportPrintPreviewDialog extends ConsumerStatefulWidget {
 
 class _PatientReportPrintPreviewDialogState
     extends ConsumerState<_PatientReportPrintPreviewDialog> {
+  static const double _previewHeight = 420;
+
   late final DateTime _generatedAt;
   _PatientReportPeriodMode _periodMode = _PatientReportPeriodMode.allDates;
   DateTime? _singleDate;
@@ -2464,6 +2466,7 @@ class _PatientReportPrintPreviewDialogState
   DateTime? _endDate;
   late Set<_PatientReportSection> _selectedSections;
   bool _isPrinting = false;
+  bool _previewMaximized = false;
 
   @override
   void initState() {
@@ -2487,7 +2490,6 @@ class _PatientReportPrintPreviewDialogState
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     final l10n = context.l10n;
     final PatientDetail? liveDetail = _livePatientDetail(
       ref,
@@ -2512,59 +2514,87 @@ class _PatientReportPrintPreviewDialogState
     );
     final bool periodIsValid = _periodRangeIsValid;
     final bool canPrint = periodIsValid && selection.sections.isNotEmpty;
+    final double viewportHeight = MediaQuery.sizeOf(context).height;
+    final double maximizedPreviewHeight = (viewportHeight * 0.72).clamp(
+      360.0,
+      900.0,
+    );
+    final String documentHtml = PrintDocumentTemplates.buildDocumentHtml(
+      kind: PrintDocumentTemplateKind.patientChart,
+      ref: ref,
+      context: context,
+      title: document.title,
+      subtitle: document.periodLabel,
+      patientContext: buildPrintFormPatientContext(
+        l10n,
+        patientName: document.patientName,
+        patientId: document.patientIdentifier,
+        patientNameLabel: l10n.labReportPatientLabel,
+        patientIdLabel: l10n.patientsIdentifierLabel,
+      ),
+      pages: _patientReportPrintPages(document),
+      includeSignatures: true,
+    );
 
     return AppDialog(
       title: Text(l10n.patientsReportPreviewDialogTitle),
       icon: const Icon(Icons.preview_outlined),
-      scrollable: true,
+      scrollable: !_previewMaximized,
+      pinActionsToBottom: true,
       maxWidth: 1080,
       closeEnabled: !_isPrinting,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _PatientReportPreviewControls(
-            selection: selection,
-            availabilities: availabilities,
-            periodIsValid: periodIsValid,
-            onPeriodModeChanged: (_PatientReportPeriodMode? value) {
-              setState(() {
-                _periodMode = value ?? _PatientReportPeriodMode.allDates;
-                _resyncSelection(effectiveDetail);
-              });
-            },
-            onSingleDateChanged: (DateTime? value) {
-              setState(() {
-                _singleDate = value;
-                _resyncSelection(effectiveDetail);
-              });
-            },
-            onStartDateChanged: (DateTime? value) {
-              setState(() {
-                _startDate = value;
-                _resyncSelection(effectiveDetail);
-              });
-            },
-            onEndDateChanged: (DateTime? value) {
-              setState(() {
-                _endDate = value;
-                _resyncSelection(effectiveDetail);
-              });
-            },
-            onSelectionChanged: (Set<Object> next) {
-              setState(() {
-                _selectedSections = sanitizeReportSectionSelection(
-                  selectedIds: next,
-                  sections: availabilities,
-                ).cast<_PatientReportSection>().toSet();
-              });
-            },
-          ),
-          SizedBox(height: theme.spacing.lg),
-          AppCollapsibleSection(
-            title: l10n.patientsReportPreviewSectionTitle,
-            child: _PatientReportPreviewPages(document: document),
-          ),
-        ],
+      content: AppPrintPreviewLayout(
+        previewMaximized: _previewMaximized,
+        leading: _PatientReportPreviewControls(
+          selection: selection,
+          availabilities: availabilities,
+          periodIsValid: periodIsValid,
+          onPeriodModeChanged: (_PatientReportPeriodMode? value) {
+            setState(() {
+              _periodMode = value ?? _PatientReportPeriodMode.allDates;
+              _resyncSelection(effectiveDetail);
+            });
+          },
+          onSingleDateChanged: (DateTime? value) {
+            setState(() {
+              _singleDate = value;
+              _resyncSelection(effectiveDetail);
+            });
+          },
+          onStartDateChanged: (DateTime? value) {
+            setState(() {
+              _startDate = value;
+              _resyncSelection(effectiveDetail);
+            });
+          },
+          onEndDateChanged: (DateTime? value) {
+            setState(() {
+              _endDate = value;
+              _resyncSelection(effectiveDetail);
+            });
+          },
+          onSelectionChanged: (Set<Object> next) {
+            setState(() {
+              _selectedSections = sanitizeReportSectionSelection(
+                selectedIds: next,
+                sections: availabilities,
+              ).cast<_PatientReportSection>().toSet();
+            });
+          },
+        ),
+        preview: AppPrintPreviewPanel(
+          html: documentHtml,
+          title: l10n.printPreviewTitle,
+          height: _previewMaximized
+              ? maximizedPreviewHeight
+              : _previewHeight,
+          maximized: _previewMaximized,
+          maximizeEnabled: !_isPrinting,
+          onMaximizeToggle: () {
+            setState(() => _previewMaximized = !_previewMaximized);
+          },
+          fallbackChild: _PatientReportPreviewPages(document: document),
+        ),
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -2619,6 +2649,7 @@ class _PatientReportPrintPreviewDialogState
         ),
         pages: _patientReportPrintPages(document),
         includeSignatures: true,
+        showPreview: false,
       );
     } finally {
       if (mounted) {

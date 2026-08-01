@@ -17941,6 +17941,26 @@
   "@printFormPrintedByLabel": {
     "description": "Signature label for the user who printed a report."
   },
+  "printPreviewTitle": "Print preview",
+  "@printPreviewTitle": {
+    "description": "Title for the shared print preview panel"
+  },
+  "printPreviewMaximizeAction": "Maximize preview",
+  "@printPreviewMaximizeAction": {
+    "description": "Action to expand the shared print preview pane"
+  },
+  "printPreviewRestoreAction": "Restore preview",
+  "@printPreviewRestoreAction": {
+    "description": "Action to restore the shared print preview pane size"
+  },
+  "printPreviewDialogBody": "Review the document, then print.",
+  "@printPreviewDialogBody": {
+    "description": "Default body copy for the shared print preview dialog"
+  },
+  "commonPrintActionLabel": "Print",
+  "@commonPrintActionLabel": {
+    "description": "Generic print action label"
+  },
   "printFormVerifiedByLabel": "Entered by",
   "@printFormVerifiedByLabel": {
     "description": "Signature label for the user who verified a report."

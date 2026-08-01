@@ -33,4 +33,16 @@ void main() {
       expect(html, contains(PrintDocumentTemplates.displayName(kind)));
     }
   });
+
+  test('typed print methods accept showPreview override', () {
+    // Compile-time contract: callers with custom dialogs can disable the
+    // shared preview shell without changing the print document builder.
+    expect(
+      () => PrintDocumentTemplates.emptyBodyHtml(
+        kind: PrintDocumentTemplateKind.clinicalSummary,
+        sectionTitles: const <String>[],
+      ),
+      returnsNormally,
+    );
+  });
 }

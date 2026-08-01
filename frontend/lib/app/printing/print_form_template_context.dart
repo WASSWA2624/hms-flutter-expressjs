@@ -63,6 +63,63 @@ PrintFormPatientContext buildPrintFormPatientContext(
   );
 }
 
+/// Builds the same HTML document that [printFormTemplateDocument] prints.
+///
+/// Prefer the ready branding provider when available; falls back to the sync
+/// snapshot so print previews never block forever.
+String buildPrintFormTemplateHtml({
+  required WidgetRef ref,
+  required BuildContext context,
+  required String title,
+  String? subtitle,
+  String? bodyHtml,
+  List<PrintFormPage> pages = const <PrintFormPage>[],
+  List<PrintFormMetadataItem> metadata = const <PrintFormMetadataItem>[],
+  PrintFormPatientContext? patientContext,
+  PrintFormContextReference? contextReference,
+  PrintFormSignatures? signatures,
+  bool includeSignatures = false,
+  String? verifiedByName,
+  DateTime? printedAt,
+  String? footerNote,
+  PrintFormTemplateContext? templateContext,
+}) {
+  final PrintFormTemplateContext branding =
+      templateContext ?? ref.read(printFormTemplateContextProvider);
+  final AppLocalizations l10n = context.l10n;
+  final AuthSession? session = ref.read(
+    sessionStateProvider.select((state) => state.session),
+  );
+  final PrintFormSignatures? effectiveSignatures =
+      signatures ??
+      (includeSignatures
+          ? buildPrintFormSignatures(
+              l10n,
+              printedByName: session?.user?.displayName,
+              verifiedByName: verifiedByName,
+            )
+          : null);
+
+  return PrintFormTemplate.build(
+    context: context,
+    title: title,
+    subtitle: subtitle,
+    bodyHtml: bodyHtml,
+    pages: pages,
+    metadata: metadata,
+    patientContext: patientContext,
+    contextReference: contextReference,
+    signatures: effectiveSignatures,
+    printedAt: printedAt,
+    printedLabel: l10n.printFormPrintedLabel,
+    printedOnLabel: l10n.printFormPrintedOnLabel,
+    printedAtLabel: l10n.printFormPrintedAtLabel,
+    footerNote: footerNote,
+    appBranding: branding.appBranding,
+    facilityBranding: branding.facilityBranding,
+  );
+}
+
 Future<void> printFormTemplateDocument({
   required WidgetRef ref,
   required BuildContext context,
@@ -92,22 +149,9 @@ Future<void> printFormTemplateDocument({
     return;
   }
 
-  final AppLocalizations l10n = context.l10n;
-  final AuthSession? session = ref.read(
-    sessionStateProvider.select((state) => state.session),
-  );
-  final PrintFormSignatures? effectiveSignatures =
-      signatures ??
-      (includeSignatures
-          ? buildPrintFormSignatures(
-              l10n,
-              printedByName: session?.user?.displayName,
-              verifiedByName: verifiedByName,
-            )
-          : null);
-
   printHtmlDocument(
-    PrintFormTemplate.build(
+    buildPrintFormTemplateHtml(
+      ref: ref,
       context: context,
       title: title,
       subtitle: subtitle,
@@ -116,14 +160,12 @@ Future<void> printFormTemplateDocument({
       metadata: metadata,
       patientContext: patientContext,
       contextReference: contextReference,
-      signatures: effectiveSignatures,
+      signatures: signatures,
+      includeSignatures: includeSignatures,
+      verifiedByName: verifiedByName,
       printedAt: printedAt,
-      printedLabel: l10n.printFormPrintedLabel,
-      printedOnLabel: l10n.printFormPrintedOnLabel,
-      printedAtLabel: l10n.printFormPrintedAtLabel,
       footerNote: footerNote,
-      appBranding: templateContext.appBranding,
-      facilityBranding: templateContext.facilityBranding,
+      templateContext: templateContext,
     ),
     title: title,
   );

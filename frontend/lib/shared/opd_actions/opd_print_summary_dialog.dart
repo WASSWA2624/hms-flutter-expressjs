@@ -62,9 +62,12 @@ class PrintOpdSummaryDialog extends ConsumerStatefulWidget {
 }
 
 class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
+  static const double _previewHeight = 420;
+
   late Set<OpdPrintSection> _selectedSections;
   bool _isCopying = false;
   bool _isPrinting = false;
+  bool _previewMaximized = false;
   AppFailure? _failure;
 
   bool get _isBusy => _isCopying || _isPrinting;
@@ -83,6 +86,7 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final OpdFlowSummary flow = widget.flow;
     final List<ReportSectionAvailability> availabilities =
         buildOpdPrintSectionAvailabilities(flow: flow, detail: widget.detail);
@@ -104,13 +108,37 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
       detail: widget.detail,
       selectedSections: selected,
     );
+    final String documentHtml = PrintDocumentTemplates.buildDocumentHtml(
+      kind: PrintDocumentTemplateKind.clinicalSummary,
+      ref: ref,
+      context: context,
+      title: l10n.opdPrintSummaryAction,
+      patientContext: buildPrintFormPatientContext(
+        l10n,
+        patientName: flow.patientDisplayName ?? flow.displayTitle,
+        patientId: flow.patientDisplayId,
+        encounterId: flow.publicId,
+      ),
+      bodyHtml: buildOpdPrintSummaryHtml(
+        context: context,
+        flow: flow,
+        detail: widget.detail,
+        selectedSections: selected,
+      ),
+      includeSignatures: true,
+    );
     final bool canExport = selected.isNotEmpty && !_isBusy;
+    final double viewportHeight = MediaQuery.sizeOf(context).height;
+    final double maximizedPreviewHeight = (viewportHeight * 0.72).clamp(
+      360.0,
+      900.0,
+    );
 
     return AppDialog(
       title: Text(l10n.opdPrintSummaryAction),
       icon: const Icon(AppActionIcons.print),
-      maxWidth: 860,
-      scrollable: true,
+      maxWidth: 1040,
+      scrollable: !_previewMaximized,
       pinActionsToBottom: true,
       closeEnabled: !_isBusy,
       content: AppFormSection(
@@ -121,34 +149,49 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
               context: context,
               failure: _failure!,
             ),
-          OpdActionContextPanel(flow: flow, showTitle: false),
-          AppFormSection(
-            title: l10n.patientsReportSectionsLabel,
-            density: AppFormSectionDensity.compact,
-            children: <Widget>[
-              AppReportSectionPicker(
-                sections: tiles,
-                selectedIds: selected,
-                onSelectionChanged: _isBusy
-                    ? (_) {}
-                    : (Set<Object> next) {
-                        setState(() {
-                          _selectedSections = sanitizeReportSectionSelection(
-                            selectedIds: next,
-                            sections: availabilities,
-                          ).cast<OpdPrintSection>().toSet();
-                        });
-                      },
+          if (!_previewMaximized) OpdActionContextPanel(flow: flow, showTitle: false),
+          AppPrintPreviewLayout(
+            previewMaximized: _previewMaximized,
+            buildSectionPicker:
+                (BuildContext context, {required bool sideBySide}) {
+                  return AppFormSection(
+                    title: l10n.patientsReportSectionsLabel,
+                    density: AppFormSectionDensity.compact,
+                    children: <Widget>[
+                      AppReportSectionPicker(
+                        sections: tiles,
+                        selectedIds: selected,
+                        maxColumns: sideBySide ? 1 : 3,
+                        onSelectionChanged: _isBusy
+                            ? (_) {}
+                            : (Set<Object> next) {
+                                setState(() {
+                                  _selectedSections =
+                                      sanitizeReportSectionSelection(
+                                        selectedIds: next,
+                                        sections: availabilities,
+                                      ).cast<OpdPrintSection>().toSet();
+                                });
+                              },
+                      ),
+                    ],
+                  );
+                },
+            preview: AppPrintPreviewPanel(
+              html: documentHtml,
+              title: l10n.printPreviewTitle,
+              height: _previewMaximized
+                  ? maximizedPreviewHeight
+                  : _previewHeight,
+              maximized: _previewMaximized,
+              maximizeEnabled: !_isBusy,
+              onMaximizeToggle: () {
+                setState(() => _previewMaximized = !_previewMaximized);
+              },
+              fallbackChild: SelectableText(
+                summaryText,
+                style: theme.textTheme.bodyMedium,
               ),
-            ],
-          ),
-          AppReportPreviewPanel(
-            selectable: true,
-            title: l10n.patientsReportPreviewSectionTitle,
-            semanticLabel: l10n.opdPrintSummaryAction,
-            child: Text(
-              summaryText,
-              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
         ],
@@ -235,6 +278,7 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
           selectedSections: selected,
         ),
         includeSignatures: true,
+        showPreview: false,
       );
       if (!mounted) {
         return;

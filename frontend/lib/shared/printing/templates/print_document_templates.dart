@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/printing/app_print_preview.dart';
 import 'package:hosspi_hms/shared/printing/print_form_template.dart';
 
 /// Named reusable print documents built on the empty [PrintFormTemplate] chrome.
@@ -53,6 +55,10 @@ abstract final class PrintDocumentTemplates {
     String? footerNote,
     PrintFormSignatures? signatures,
     bool includeSignatures = true,
+    bool showPreview = true,
+    String? previewDialogTitle,
+    String? previewDialogBody,
+    String? fallbackText,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.clinicalResult,
@@ -68,6 +74,10 @@ abstract final class PrintDocumentTemplates {
       signatures: signatures,
       includeSignatures: includeSignatures,
       footerNote: footerNote,
+      showPreview: showPreview,
+      previewDialogTitle: previewDialogTitle,
+      previewDialogBody: previewDialogBody,
+      fallbackText: fallbackText,
     );
   }
 
@@ -84,6 +94,10 @@ abstract final class PrintDocumentTemplates {
     String? footerNote,
     PrintFormSignatures? signatures,
     bool includeSignatures = true,
+    bool showPreview = true,
+    String? previewDialogTitle,
+    String? previewDialogBody,
+    String? fallbackText,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.clinicalSummary,
@@ -98,6 +112,10 @@ abstract final class PrintDocumentTemplates {
       signatures: signatures,
       includeSignatures: includeSignatures,
       footerNote: footerNote,
+      showPreview: showPreview,
+      previewDialogTitle: previewDialogTitle,
+      previewDialogBody: previewDialogBody,
+      fallbackText: fallbackText,
     );
   }
 
@@ -112,6 +130,10 @@ abstract final class PrintDocumentTemplates {
     required String bodyHtml,
     String? footerNote,
     bool includeSignatures = true,
+    bool showPreview = true,
+    String? previewDialogTitle,
+    String? previewDialogBody,
+    String? fallbackText,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.invoice,
@@ -124,6 +146,10 @@ abstract final class PrintDocumentTemplates {
       contextReference: invoiceReference,
       includeSignatures: includeSignatures,
       footerNote: footerNote,
+      showPreview: showPreview,
+      previewDialogTitle: previewDialogTitle,
+      previewDialogBody: previewDialogBody,
+      fallbackText: fallbackText,
     );
   }
 
@@ -137,6 +163,10 @@ abstract final class PrintDocumentTemplates {
     required String bodyHtml,
     String? footerNote,
     bool includeSignatures = true,
+    bool showPreview = true,
+    String? previewDialogTitle,
+    String? previewDialogBody,
+    String? fallbackText,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.medicationInstructions,
@@ -148,6 +178,10 @@ abstract final class PrintDocumentTemplates {
       contextReference: orderReference,
       includeSignatures: includeSignatures,
       footerNote: footerNote,
+      showPreview: showPreview,
+      previewDialogTitle: previewDialogTitle,
+      previewDialogBody: previewDialogBody,
+      fallbackText: fallbackText,
     );
   }
 
@@ -161,6 +195,10 @@ abstract final class PrintDocumentTemplates {
     required String bodyHtml,
     String? footerNote,
     bool includeSignatures = true,
+    bool showPreview = true,
+    String? previewDialogTitle,
+    String? previewDialogBody,
+    String? fallbackText,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.carePlan,
@@ -172,6 +210,10 @@ abstract final class PrintDocumentTemplates {
       contextReference: referralReference,
       includeSignatures: includeSignatures,
       footerNote: footerNote,
+      showPreview: showPreview,
+      previewDialogTitle: previewDialogTitle,
+      previewDialogBody: previewDialogBody,
+      fallbackText: fallbackText,
     );
   }
 
@@ -185,6 +227,10 @@ abstract final class PrintDocumentTemplates {
     required String bodyHtml,
     String? footerNote,
     bool includeSignatures = true,
+    bool showPreview = true,
+    String? previewDialogTitle,
+    String? previewDialogBody,
+    String? fallbackText,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.claimStatement,
@@ -196,6 +242,10 @@ abstract final class PrintDocumentTemplates {
       contextReference: claimReference,
       includeSignatures: includeSignatures,
       footerNote: footerNote,
+      showPreview: showPreview,
+      previewDialogTitle: previewDialogTitle,
+      previewDialogBody: previewDialogBody,
+      fallbackText: fallbackText,
     );
   }
 
@@ -209,6 +259,10 @@ abstract final class PrintDocumentTemplates {
     required List<PrintFormPage> pages,
     String? footerNote,
     bool includeSignatures = true,
+    bool showPreview = true,
+    String? previewDialogTitle,
+    String? previewDialogBody,
+    String? fallbackText,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.patientChart,
@@ -220,6 +274,10 @@ abstract final class PrintDocumentTemplates {
       patientContext: patientContext,
       includeSignatures: includeSignatures,
       footerNote: footerNote,
+      showPreview: showPreview,
+      previewDialogTitle: previewDialogTitle,
+      previewDialogBody: previewDialogBody,
+      fallbackText: fallbackText,
     );
   }
 
@@ -232,6 +290,10 @@ abstract final class PrintDocumentTemplates {
     String? subtitle,
     required String bodyHtml,
     String? footerNote,
+    bool showPreview = true,
+    String? previewDialogTitle,
+    String? previewDialogBody,
+    String? fallbackText,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.registry,
@@ -243,6 +305,10 @@ abstract final class PrintDocumentTemplates {
       contextReference: recordReference,
       includeSignatures: false,
       footerNote: footerNote,
+      showPreview: showPreview,
+      previewDialogTitle: previewDialogTitle,
+      previewDialogBody: previewDialogBody,
+      fallbackText: fallbackText,
     );
   }
 
@@ -256,6 +322,10 @@ abstract final class PrintDocumentTemplates {
     required String bodyHtml,
     String? footerNote,
     bool includeSignatures = true,
+    bool showPreview = true,
+    String? previewDialogTitle,
+    String? previewDialogBody,
+    String? fallbackText,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.mortuaryCase,
@@ -267,6 +337,47 @@ abstract final class PrintDocumentTemplates {
       contextReference: caseReference,
       includeSignatures: includeSignatures,
       footerNote: footerNote,
+      showPreview: showPreview,
+      previewDialogTitle: previewDialogTitle,
+      previewDialogBody: previewDialogBody,
+      fallbackText: fallbackText,
+    );
+  }
+
+  /// Builds the full print-template HTML for live previews.
+  static String buildDocumentHtml({
+    required PrintDocumentTemplateKind kind,
+    required WidgetRef ref,
+    required BuildContext context,
+    required String title,
+    String? subtitle,
+    String? bodyHtml,
+    List<PrintFormPage> pages = const <PrintFormPage>[],
+    List<PrintFormMetadataItem> metadata = const <PrintFormMetadataItem>[],
+    PrintFormPatientContext? patientContext,
+    PrintFormContextReference? contextReference,
+    PrintFormSignatures? signatures,
+    bool includeSignatures = false,
+    String? footerNote,
+  }) {
+    assert(
+      bodyHtml != null || pages.isNotEmpty,
+      'PrintDocumentTemplates.buildDocumentHtml requires bodyHtml or pages.',
+    );
+    return buildPrintFormTemplateHtml(
+      ref: ref,
+      context: context,
+      title: title,
+      subtitle: subtitle,
+      bodyHtml: bodyHtml,
+      pages: pages,
+      metadata: metadata,
+      patientContext: patientContext,
+      contextReference: contextReference,
+      signatures: signatures,
+      includeSignatures: includeSignatures,
+      footerNote:
+          footerNote ?? 'Generated from ${displayName(kind).toLowerCase()}.',
     );
   }
 
@@ -341,15 +452,41 @@ abstract final class PrintDocumentTemplates {
     PrintFormSignatures? signatures,
     bool includeSignatures = false,
     String? footerNote,
-  }) {
+    bool showPreview = true,
+    String? previewDialogTitle,
+    String? previewDialogBody,
+    String? fallbackText,
+  }) async {
     assert(
       bodyHtml != null || pages.isNotEmpty,
       'PrintDocumentTemplates.${kind.name} requires bodyHtml or pages.',
     );
-    // kind is part of the public contract for call-site clarity and future
-    // per-template chrome; the shared empty template currently renders all
-    // kinds through the same PrintFormTemplate layout.
-    return printFormTemplateDocument(
+    final String resolvedFooter =
+        footerNote ?? 'Generated from ${displayName(kind).toLowerCase()}.';
+
+    Future<void> doPrint() {
+      return printFormTemplateDocument(
+        ref: ref,
+        context: context,
+        title: title,
+        subtitle: subtitle,
+        bodyHtml: bodyHtml,
+        pages: pages,
+        metadata: metadata,
+        patientContext: patientContext,
+        contextReference: contextReference,
+        signatures: signatures,
+        includeSignatures: includeSignatures,
+        footerNote: resolvedFooter,
+      );
+    }
+
+    if (!showPreview) {
+      return doPrint();
+    }
+
+    final String html = buildDocumentHtml(
+      kind: kind,
       ref: ref,
       context: context,
       title: title,
@@ -361,8 +498,16 @@ abstract final class PrintDocumentTemplates {
       contextReference: contextReference,
       signatures: signatures,
       includeSignatures: includeSignatures,
-      footerNote:
-          footerNote ?? 'Generated from ${displayName(kind).toLowerCase()}.',
+      footerNote: resolvedFooter,
+    );
+
+    await showAppPrintPreviewDialog(
+      context: context,
+      title: previewDialogTitle ?? title,
+      body: previewDialogBody ?? context.l10n.printPreviewDialogBody,
+      documentHtml: html,
+      fallbackText: fallbackText ?? title,
+      onPrint: doPrint,
     );
   }
 }

@@ -80,7 +80,6 @@ enum _RadiologyPrintSection {
 }
 
 class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
-  static const double _sideBySideBreakpoint = 640;
   static const double _dialogMaxWidth = 1040;
   static const double _previewHeight = 420;
 
@@ -166,37 +165,17 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
     required double height,
   }) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final bool maximized = _previewMaximized;
-    final String maximizeLabel = maximized
-        ? l10n.radiologyPrintPreviewRestoreAction
-        : l10n.radiologyPrintPreviewMaximizeAction;
-
-    return AppReportPreviewPanel(
-      title: l10n.radiologyPrintPreviewTitle,
-      collapsible: false,
-      maxBodyHeight: height,
-      scrollBody: false,
-      contentPadding: EdgeInsets.all(theme.spacing.sm),
-      headerActions: <Widget>[
-        AppButton(
-          iconOnly: true,
-          leadingIcon: maximized ? Icons.fullscreen_exit : Icons.fullscreen,
-          label: maximizeLabel,
-          semanticLabel: maximizeLabel,
-          tooltip: maximizeLabel,
-          onPressed: _isPrinting
-              ? null
-              : () {
-                  setState(() => _previewMaximized = !maximized);
-                },
-        ),
-      ],
-      child: AppPrintHtmlPreview(
-        html: _documentHtml(context, settings),
-        fallbackChild: SelectableText(
-          _radiologyPrintPreviewText(context, widget.workflow, settings),
-        ),
+    return AppPrintPreviewPanel(
+      html: _documentHtml(context, settings),
+      title: l10n.printPreviewTitle,
+      height: height,
+      maximized: _previewMaximized,
+      maximizeEnabled: !_isPrinting,
+      onMaximizeToggle: () {
+        setState(() => _previewMaximized = !_previewMaximized);
+      },
+      fallbackChild: SelectableText(
+        _radiologyPrintPreviewText(context, widget.workflow, settings),
       ),
     );
   }
@@ -231,68 +210,36 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
       pinActionsToBottom: true,
       maxWidth: _dialogMaxWidth,
       closeEnabled: !_isPrinting,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (!_previewMaximized) ...<Widget>[
-            Text(
-              l10n.radiologyPrintReportDialogBody,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            SizedBox(height: theme.spacing.md),
-            LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final bool sideBySide =
-                    constraints.maxWidth >= _sideBySideBreakpoint;
-                final Widget picker = AppReportSectionPicker(
-                  sections: tiles,
-                  selectedIds: _selectedSections,
-                  maxColumns: sideBySide ? 1 : 3,
-                  onSelectionChanged: (Set<Object> next) {
-                    setState(() {
-                      _selectedSections = sanitizeReportSectionSelection(
-                        selectedIds: next,
-                        sections: availabilities,
-                      ).cast<_RadiologyPrintSection>().toSet();
-                    });
-                  },
-                );
-                final Widget preview = _buildPreview(
-                  context,
-                  settings: settings,
-                  height: _previewHeight,
-                );
-
-                if (!sideBySide) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      picker,
-                      SizedBox(height: theme.spacing.md),
-                      preview,
-                    ],
-                  );
-                }
-
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(flex: 2, child: picker),
-                    SizedBox(width: theme.spacing.md),
-                    Expanded(flex: 3, child: preview),
-                  ],
-                );
-              },
-            ),
-          ] else
-            _buildPreview(
-              context,
-              settings: settings,
-              height: maximizedPreviewHeight,
-            ),
-        ],
+      content: AppPrintPreviewLayout(
+        previewMaximized: _previewMaximized,
+        leading: Text(
+          l10n.radiologyPrintReportDialogBody,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        buildSectionPicker: (BuildContext context, {required bool sideBySide}) {
+          return AppReportSectionPicker(
+            sections: tiles,
+            selectedIds: _selectedSections,
+            maxColumns: sideBySide ? 1 : 3,
+            onSelectionChanged: (Set<Object> next) {
+              setState(() {
+                _selectedSections = sanitizeReportSectionSelection(
+                  selectedIds: next,
+                  sections: availabilities,
+                ).cast<_RadiologyPrintSection>().toSet();
+              });
+            },
+          );
+        },
+        preview: _buildPreview(
+          context,
+          settings: settings,
+          height: _previewMaximized
+              ? maximizedPreviewHeight
+              : _previewHeight,
+        ),
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -342,6 +289,7 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
       bodyHtml: _radiologyPrintBodyHtml(context, widget.workflow, settings),
       footerNote: context.l10n.radiologyPrintFooterNote,
       includeSignatures: settings.includeSigner,
+      showPreview: false,
     );
     if (mounted) {
       setState(() => _isPrinting = false);
