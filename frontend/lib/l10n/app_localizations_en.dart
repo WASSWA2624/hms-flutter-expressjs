@@ -14001,6 +14001,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get printPreviewRestoreAction => 'Restore preview';
 
   @override
+  String get printPreviewZoomInAction => 'Zoom in';
+
+  @override
+  String get printPreviewZoomOutAction => 'Zoom out';
+
+  @override
+  String get printPreviewIncreaseAction => 'Increase size';
+
+  @override
+  String get printPreviewDecreaseAction => 'Decrease size';
+
+  @override
+  String get printPreviewFitPageAction => 'Fit page';
+
+  @override
+  String printPreviewZoomPercentLabel(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get printPreviewSplitViewAction => 'Split view';
+
+  @override
+  String get printPreviewSectionsOnlyAction => 'Sections';
+
+  @override
+  String get printPreviewPreviewOnlyAction => 'Preview';
+
+  @override
+  String get printPreviewSectionsPaneLabel => 'Report sections';
+
+  @override
+  String get printPreviewPreviewPaneLabel => 'Print preview pane';
+
+  @override
   String get printPreviewDialogBody => 'Review the document, then print.';
 
   @override

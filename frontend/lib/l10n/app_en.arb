@@ -17953,6 +17953,56 @@
   "@printPreviewRestoreAction": {
     "description": "Action to restore the shared print preview pane size"
   },
+  "printPreviewZoomInAction": "Zoom in",
+  "@printPreviewZoomInAction": {
+    "description": "Increase print preview zoom by a small step"
+  },
+  "printPreviewZoomOutAction": "Zoom out",
+  "@printPreviewZoomOutAction": {
+    "description": "Decrease print preview zoom by a small step"
+  },
+  "printPreviewIncreaseAction": "Increase size",
+  "@printPreviewIncreaseAction": {
+    "description": "Increase print preview zoom by a larger step"
+  },
+  "printPreviewDecreaseAction": "Decrease size",
+  "@printPreviewDecreaseAction": {
+    "description": "Decrease print preview zoom by a larger step"
+  },
+  "printPreviewFitPageAction": "Fit page",
+  "@printPreviewFitPageAction": {
+    "description": "Scale print preview to fit the available page width"
+  },
+  "printPreviewZoomPercentLabel": "{percent}%",
+  "@printPreviewZoomPercentLabel": {
+    "description": "Current print preview zoom percentage",
+    "placeholders": {
+      "percent": {
+        "type": "int",
+        "example": "100"
+      }
+    }
+  },
+  "printPreviewSplitViewAction": "Split view",
+  "@printPreviewSplitViewAction": {
+    "description": "Show section selector and print preview together"
+  },
+  "printPreviewSectionsOnlyAction": "Sections",
+  "@printPreviewSectionsOnlyAction": {
+    "description": "Show only the print section selector"
+  },
+  "printPreviewPreviewOnlyAction": "Preview",
+  "@printPreviewPreviewOnlyAction": {
+    "description": "Show only the print preview"
+  },
+  "printPreviewSectionsPaneLabel": "Report sections",
+  "@printPreviewSectionsPaneLabel": {
+    "description": "Semantics label for the print section selector column"
+  },
+  "printPreviewPreviewPaneLabel": "Print preview pane",
+  "@printPreviewPreviewPaneLabel": {
+    "description": "Semantics label for the print preview column"
+  },
   "printPreviewDialogBody": "Review the document, then print.",
   "@printPreviewDialogBody": {
     "description": "Default body copy for the shared print preview dialog"

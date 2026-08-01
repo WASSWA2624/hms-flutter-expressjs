@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_report_section.dart';
@@ -10,6 +12,7 @@ class AppReportSectionPicker extends StatelessWidget {
     required this.onSelectionChanged,
     this.minTileWidth = 220,
     this.maxColumns = 3,
+    this.compact = false,
     super.key,
   });
 
@@ -19,19 +22,26 @@ class AppReportSectionPicker extends StatelessWidget {
   final double minTileWidth;
   final int maxColumns;
 
+  /// Smaller tiles for dense print dialogs (typically 2 columns).
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final double resolvedMinWidth = compact
+        ? math.min(minTileWidth, 148)
+        : minTileWidth;
+    final int resolvedMaxColumns = compact ? math.min(maxColumns, 2) : maxColumns;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final int columns = _columnCount(
           constraints.maxWidth,
           sections.length,
-          maxColumns,
-          minTileWidth,
+          resolvedMaxColumns,
+          resolvedMinWidth,
         );
-        final double gap = theme.spacing.sm;
+        final double gap = compact ? theme.spacing.xs : theme.spacing.sm;
         final double tileWidth =
             (constraints.maxWidth - (gap * (columns - 1))) / columns;
 
@@ -44,6 +54,7 @@ class AppReportSectionPicker extends StatelessWidget {
                 width: tileWidth.clamp(0, double.infinity),
                 child: AppReportSectionTile(
                   section: section,
+                  compact: compact,
                   selected: selectedIds.contains(section.id),
                   onChanged: section.enabled
                       ? (bool selected) {

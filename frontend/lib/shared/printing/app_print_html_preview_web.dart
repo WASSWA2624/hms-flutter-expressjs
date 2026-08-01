@@ -9,9 +9,11 @@ Widget buildAppPrintHtmlPreview({
   required String html,
   required Widget fallbackChild,
   required String viewTypePrefix,
+  double scale = 1,
 }) {
   return _AppPrintHtmlPreviewWeb(
     html: html,
+    scale: scale,
     viewTypePrefix: viewTypePrefix,
   );
 }
@@ -19,10 +21,12 @@ Widget buildAppPrintHtmlPreview({
 class _AppPrintHtmlPreviewWeb extends StatefulWidget {
   const _AppPrintHtmlPreviewWeb({
     required this.html,
+    required this.scale,
     required this.viewTypePrefix,
   });
 
   final String html;
+  final double scale;
   final String viewTypePrefix;
 
   @override
@@ -46,14 +50,14 @@ class _AppPrintHtmlPreviewWebState extends State<_AppPrintHtmlPreviewWeb> {
       ..style.backgroundColor = '#f3f4f6'
       ..setAttribute('sandbox', 'allow-same-origin');
     _registerFactory();
-    _writeHtml(widget.html);
+    _writeHtml(widget.html, widget.scale);
   }
 
   @override
   void didUpdateWidget(covariant _AppPrintHtmlPreviewWeb oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.html != widget.html) {
-      _writeHtml(widget.html);
+    if (oldWidget.html != widget.html || oldWidget.scale != widget.scale) {
+      _writeHtml(widget.html, widget.scale);
     }
   }
 
@@ -68,8 +72,9 @@ class _AppPrintHtmlPreviewWebState extends State<_AppPrintHtmlPreviewWeb> {
     _factoryRegistered = true;
   }
 
-  void _writeHtml(String html) {
+  void _writeHtml(String html, double scale) {
     final String baseHref = _escapeHtml(web.window.location.href);
+    final String zoom = scale.clamp(0.4, 2.5).toStringAsFixed(3);
     final String documentHtml =
         '''
 <!doctype html>
@@ -82,6 +87,9 @@ class _AppPrintHtmlPreviewWebState extends State<_AppPrintHtmlPreviewWeb> {
       margin: 0;
       padding: 0;
       background: #f3f4f6;
+    }
+    body {
+      zoom: $zoom;
     }
   </style>
 </head>

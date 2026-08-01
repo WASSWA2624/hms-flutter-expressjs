@@ -42,24 +42,35 @@ void main() {
       },
     );
 
-    test('maximized desktop padding clears only the shell header', () {
-      expect(
-        AppDialogInsets.paddingFor(
-          AppBreakpoint.lg,
-          designTokens: tokens,
-          maximized: true,
-        ),
-        const EdgeInsets.only(top: AppShellLayout.headerHeight),
-      );
-      expect(
-        AppDialogInsets.paddingFor(
-          AppBreakpoint.xl,
-          designTokens: tokens,
-          maximized: true,
-        ),
-        const EdgeInsets.only(top: AppShellLayout.headerHeight),
-      );
-    });
+    test(
+      'maximized desktop padding clears shell header and keeps side gutters',
+      () {
+        expect(
+          AppDialogInsets.paddingFor(
+            AppBreakpoint.lg,
+            designTokens: tokens,
+            maximized: true,
+          ),
+          EdgeInsets.only(
+            left: tokens.dialogInsetMobile,
+            top: AppShellLayout.headerHeight,
+            right: tokens.dialogInsetMobile,
+          ),
+        );
+        expect(
+          AppDialogInsets.paddingFor(
+            AppBreakpoint.xl,
+            designTokens: tokens,
+            maximized: true,
+          ),
+          EdgeInsets.only(
+            left: tokens.dialogInsetMobile,
+            top: AppShellLayout.headerHeight,
+            right: tokens.dialogInsetMobile,
+          ),
+        );
+      },
+    );
 
     test('available size uses full viewport on mobile when maximized', () {
       final Size available = AppDialogInsets.availableSizeFor(
@@ -73,16 +84,19 @@ void main() {
       expect(available.height, 700);
     });
 
-    test('available size clears shell header when maximized on desktop', () {
-      final Size available = AppDialogInsets.availableSizeFor(
-        const Size(1000, 700),
-        AppBreakpoint.lg,
-        designTokens: tokens,
-        maximized: true,
-      );
+    test(
+      'available size clears shell header and side gutters when maximized',
+      () {
+        final Size available = AppDialogInsets.availableSizeFor(
+          const Size(1000, 700),
+          AppBreakpoint.lg,
+          designTokens: tokens,
+          maximized: true,
+        );
 
-      expect(available.width, 1000);
-      expect(available.height, 700 - AppShellLayout.headerHeight);
-    });
+        expect(available.width, 1000 - tokens.dialogInsetMobile * 2);
+        expect(available.height, 700 - AppShellLayout.headerHeight);
+      },
+    );
   });
 }

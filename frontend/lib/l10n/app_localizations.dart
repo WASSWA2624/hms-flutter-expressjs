@@ -25850,6 +25850,72 @@ abstract class AppLocalizations {
   /// **'Restore preview'**
   String get printPreviewRestoreAction;
 
+  /// Increase print preview zoom by a small step
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get printPreviewZoomInAction;
+
+  /// Decrease print preview zoom by a small step
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get printPreviewZoomOutAction;
+
+  /// Increase print preview zoom by a larger step
+  ///
+  /// In en, this message translates to:
+  /// **'Increase size'**
+  String get printPreviewIncreaseAction;
+
+  /// Decrease print preview zoom by a larger step
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease size'**
+  String get printPreviewDecreaseAction;
+
+  /// Scale print preview to fit the available page width
+  ///
+  /// In en, this message translates to:
+  /// **'Fit page'**
+  String get printPreviewFitPageAction;
+
+  /// Current print preview zoom percentage
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String printPreviewZoomPercentLabel(int percent);
+
+  /// Show section selector and print preview together
+  ///
+  /// In en, this message translates to:
+  /// **'Split view'**
+  String get printPreviewSplitViewAction;
+
+  /// Show only the print section selector
+  ///
+  /// In en, this message translates to:
+  /// **'Sections'**
+  String get printPreviewSectionsOnlyAction;
+
+  /// Show only the print preview
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get printPreviewPreviewOnlyAction;
+
+  /// Semantics label for the print section selector column
+  ///
+  /// In en, this message translates to:
+  /// **'Report sections'**
+  String get printPreviewSectionsPaneLabel;
+
+  /// Semantics label for the print preview column
+  ///
+  /// In en, this message translates to:
+  /// **'Print preview pane'**
+  String get printPreviewPreviewPaneLabel;
+
   /// Default body copy for the shared print preview dialog
   ///
   /// In en, this message translates to:

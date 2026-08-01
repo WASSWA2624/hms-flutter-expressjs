@@ -10,7 +10,7 @@ abstract final class AppDialogInsets {
     required bool maximized,
   }) {
     if (maximized) {
-      return _maximizedPaddingFor(breakpoint);
+      return _maximizedPaddingFor(breakpoint, designTokens: designTokens);
     }
 
     final double inset = _normalInsetFor(
@@ -60,12 +60,22 @@ abstract final class AppDialogInsets {
     );
   }
 
-  static EdgeInsets _maximizedPaddingFor(AppBreakpoint breakpoint) {
+  static EdgeInsets _maximizedPaddingFor(
+    AppBreakpoint breakpoint, {
+    required AppDesignTokens designTokens,
+  }) {
     if (breakpoint.index < AppBreakpoint.md.index) {
       return EdgeInsets.zero;
     }
 
-    return const EdgeInsets.only(top: AppShellLayout.headerHeight);
+    // Keep a slim side gutter so maximized shells do not flush to the
+    // viewport edges; top still clears the app shell header.
+    final double horizontal = designTokens.dialogInsetMobile;
+    return EdgeInsets.only(
+      left: horizontal,
+      top: AppShellLayout.headerHeight,
+      right: horizontal,
+    );
   }
 
   static double _normalInsetFor(

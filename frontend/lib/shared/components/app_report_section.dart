@@ -29,6 +29,7 @@ class AppReportSectionTile extends StatelessWidget {
     required this.section,
     required this.selected,
     required this.onChanged,
+    this.compact = false,
     super.key,
   });
 
@@ -36,12 +37,22 @@ class AppReportSectionTile extends StatelessWidget {
   final bool selected;
   final ValueChanged<bool>? onChanged;
 
+  /// Smaller padding/typography for dense multi-column pickers.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final bool interactive = section.enabled && onChanged != null;
     final bool isSelected = selected && section.enabled;
+    final double iconSize = compact
+        ? theme.appTokens.listIconSize * 0.85
+        : theme.appTokens.listIconSize;
+    final EdgeInsetsGeometry padding = EdgeInsets.symmetric(
+      horizontal: compact ? theme.spacing.xs : theme.spacing.sm,
+      vertical: compact ? 2 : theme.spacing.xs,
+    );
 
     return Semantics(
       button: interactive,
@@ -65,15 +76,13 @@ class AppReportSectionTile extends StatelessWidget {
             ),
           ),
           child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.sm,
-              vertical: theme.spacing.xs,
-            ),
+            padding: padding,
             child: Row(
               children: <Widget>[
                 Checkbox(
                   value: isSelected,
                   visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   onChanged: interactive
                       ? (bool? value) => onChanged!(value ?? false)
                       : null,
@@ -83,9 +92,9 @@ class AppReportSectionTile extends StatelessWidget {
                   color: isSelected
                       ? colorScheme.primary
                       : colorScheme.onSurfaceVariant,
-                  size: theme.appTokens.listIconSize,
+                  size: iconSize,
                 ),
-                SizedBox(width: theme.spacing.sm),
+                SizedBox(width: compact ? theme.spacing.xs : theme.spacing.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,14 +102,19 @@ class AppReportSectionTile extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         section.title,
-                        maxLines: 1,
+                        maxLines: compact ? 2 : 1,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: section.enabled
-                              ? null
-                              : colorScheme.onSurfaceVariant,
-                        ),
+                        style:
+                            (compact
+                                    ? theme.textTheme.labelMedium
+                                    : theme.textTheme.bodyMedium)
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: section.enabled
+                                      ? null
+                                      : colorScheme.onSurfaceVariant,
+                                  height: compact ? 1.15 : null,
+                                ),
                       ),
                       if (!section.enabled &&
                           (section.disabledReason?.trim().isNotEmpty ?? false))
@@ -115,14 +129,16 @@ class AppReportSectionTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                SizedBox(width: theme.spacing.sm),
-                Text(
-                  section.count.toString(),
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
+                if (!compact || section.count > 0) ...<Widget>[
+                  SizedBox(width: theme.spacing.xs),
+                  Text(
+                    section.count.toString(),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

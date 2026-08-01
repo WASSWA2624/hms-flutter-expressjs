@@ -80,12 +80,12 @@ enum _RadiologyPrintSection {
 }
 
 class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
-  static const double _dialogMaxWidth = 1040;
-  static const double _previewHeight = 420;
+  static const double _dialogMaxWidth = 1120;
 
   late Set<_RadiologyPrintSection> _selectedSections;
   bool _isPrinting = false;
-  bool _previewMaximized = false;
+  AppPrintPreviewPaneMode _paneMode = AppPrintPreviewPaneMode.split;
+  double _scale = 1;
 
   @override
   void initState() {
@@ -159,27 +159,6 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
     );
   }
 
-  Widget _buildPreview(
-    BuildContext context, {
-    required _RadiologyPrintSettings settings,
-    required double height,
-  }) {
-    final AppLocalizations l10n = context.l10n;
-    return AppPrintPreviewPanel(
-      html: _documentHtml(context, settings),
-      title: l10n.printPreviewTitle,
-      height: height,
-      maximized: _previewMaximized,
-      maximizeEnabled: !_isPrinting,
-      onMaximizeToggle: () {
-        setState(() => _previewMaximized = !_previewMaximized);
-      },
-      fallbackChild: SelectableText(
-        _radiologyPrintPreviewText(context, widget.workflow, settings),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -198,47 +177,80 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
       emptyDisabledReason: l10n.reportSectionEmptyDisabledReason,
     );
     final double viewportHeight = MediaQuery.sizeOf(context).height;
-    final double maximizedPreviewHeight = (viewportHeight * 0.72).clamp(
-      360.0,
-      900.0,
-    );
+    final double workspaceHeight = (viewportHeight * 0.72).clamp(400.0, 860.0);
+    final bool previewMaximized =
+        _paneMode == AppPrintPreviewPaneMode.preview;
 
     return AppDialog(
       title: Text(l10n.radiologyPrintReportDialogTitle),
       icon: const Icon(Icons.print_outlined),
-      scrollable: !_previewMaximized,
+      scrollable: false,
       pinActionsToBottom: true,
       maxWidth: _dialogMaxWidth,
       closeEnabled: !_isPrinting,
-      content: AppPrintPreviewLayout(
-        previewMaximized: _previewMaximized,
-        leading: Text(
-          l10n.radiologyPrintReportDialogBody,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        buildSectionPicker: (BuildContext context, {required bool sideBySide}) {
-          return AppReportSectionPicker(
-            sections: tiles,
-            selectedIds: _selectedSections,
-            maxColumns: sideBySide ? 1 : 3,
-            onSelectionChanged: (Set<Object> next) {
-              setState(() {
-                _selectedSections = sanitizeReportSectionSelection(
-                  selectedIds: next,
-                  sections: availabilities,
-                ).cast<_RadiologyPrintSection>().toSet();
-              });
-            },
-          );
+      content: AppPrintPreviewWorkspace(
+        height: workspaceHeight,
+        paneMode: _paneMode,
+        paneModeEnabled: !_isPrinting,
+        onPaneModeChanged: (AppPrintPreviewPaneMode next) {
+          setState(() => _paneMode = next);
         },
-        preview: _buildPreview(
-          context,
-          settings: settings,
-          height: _previewMaximized
-              ? maximizedPreviewHeight
-              : _previewHeight,
+        sectionPicker: AppReportSectionPicker(
+          sections: tiles,
+          selectedIds: _selectedSections,
+          compact: true,
+          minTileWidth: 140,
+          onSelectionChanged: (Set<Object> next) {
+            setState(() {
+              _selectedSections = sanitizeReportSectionSelection(
+                selectedIds: next,
+                sections: availabilities,
+              ).cast<_RadiologyPrintSection>().toSet();
+            });
+          },
+        ),
+        preview: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            return AppPrintPreviewPanel(
+              html: _documentHtml(context, settings),
+              title: l10n.printPreviewTitle,
+              height: constraints.maxHeight.isFinite
+                  ? constraints.maxHeight
+                  : workspaceHeight,
+              scale: _scale,
+              maximized: previewMaximized,
+              maximizeEnabled: !_isPrinting,
+              onZoomIn: () {
+                setState(() => _scale = AppPrintPreviewZoom.zoomIn(_scale));
+              },
+              onZoomOut: () {
+                setState(() => _scale = AppPrintPreviewZoom.zoomOut(_scale));
+              },
+              onZoomIncrease: () {
+                setState(() => _scale = AppPrintPreviewZoom.increase(_scale));
+              },
+              onZoomDecrease: () {
+                setState(() => _scale = AppPrintPreviewZoom.decrease(_scale));
+              },
+              onFitPage: () {
+                setState(() {
+                  _scale = AppPrintPreviewZoom.fitPage(
+                    constraints.maxWidth - theme.spacing.lg * 2,
+                  );
+                });
+              },
+              onMaximizeToggle: () {
+                setState(() {
+                  _paneMode = previewMaximized
+                      ? AppPrintPreviewPaneMode.split
+                      : AppPrintPreviewPaneMode.preview;
+                });
+              },
+              fallbackChild: SelectableText(
+                _radiologyPrintPreviewText(context, widget.workflow, settings),
+              ),
+            );
+          },
         ),
       ),
       actions: <Widget>[

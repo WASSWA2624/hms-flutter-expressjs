@@ -10,12 +10,14 @@ class AppPrintHtmlPreview extends StatelessWidget {
   const AppPrintHtmlPreview({
     required this.html,
     required this.fallbackChild,
+    this.scale = 1,
     this.viewTypePrefix = 'app-print-html-preview',
     super.key,
   });
 
   final String html;
   final Widget fallbackChild;
+  final double scale;
   final String viewTypePrefix;
 
   @override
@@ -24,6 +26,7 @@ class AppPrintHtmlPreview extends StatelessWidget {
       context: context,
       html: html,
       fallbackChild: fallbackChild,
+      scale: scale,
       viewTypePrefix: viewTypePrefix,
     );
   }
