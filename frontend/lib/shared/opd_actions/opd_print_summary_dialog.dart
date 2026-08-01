@@ -127,8 +127,6 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
       includeSignatures: true,
     );
     final bool canExport = selected.isNotEmpty && !_isBusy;
-    final double workspaceHeight = (MediaQuery.sizeOf(context).height * 0.72)
-        .clamp(400.0, 860.0);
     final bool previewMaximized =
         _paneMode == AppPrintPreviewPaneMode.preview;
 
@@ -138,95 +136,105 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
       maxWidth: 1120,
       scrollable: false,
       pinActionsToBottom: true,
+      contentPadding: EdgeInsets.zero,
       closeEnabled: !_isBusy,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (_failure != null) ...<Widget>[
-            AppFormInformationBanner.failure(
-              context: context,
-              failure: _failure!,
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                theme.spacing.sm,
+                theme.spacing.sm,
+                theme.spacing.sm,
+                0,
+              ),
+              child: AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             ),
             SizedBox(height: theme.spacing.sm),
           ],
           if (_paneMode != AppPrintPreviewPaneMode.preview) ...<Widget>[
-            OpdActionContextPanel(flow: flow, showTitle: false),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
+              child: OpdActionContextPanel(flow: flow, showTitle: false),
+            ),
             SizedBox(height: theme.spacing.sm),
           ],
-          AppPrintPreviewWorkspace(
-            height: workspaceHeight,
-            paneMode: _paneMode,
-            paneModeEnabled: !_isBusy,
-            onPaneModeChanged: (AppPrintPreviewPaneMode next) {
-              setState(() => _paneMode = next);
-            },
-            sectionPicker: AppReportSectionPicker(
-              sections: tiles,
-              selectedIds: selected,
-              compact: true,
-              minTileWidth: 140,
-              onSelectionChanged: _isBusy
-                  ? (_) {}
-                  : (Set<Object> next) {
+          Expanded(
+            child: AppPrintPreviewWorkspace(
+              paneMode: _paneMode,
+              paneModeEnabled: !_isBusy,
+              onPaneModeChanged: (AppPrintPreviewPaneMode next) {
+                setState(() => _paneMode = next);
+              },
+              sectionPicker: AppReportSectionPicker(
+                sections: tiles,
+                selectedIds: selected,
+                compact: true,
+                minTileWidth: 140,
+                onSelectionChanged: _isBusy
+                    ? (_) {}
+                    : (Set<Object> next) {
+                        setState(() {
+                          _selectedSections = sanitizeReportSectionSelection(
+                            selectedIds: next,
+                            sections: availabilities,
+                          ).cast<OpdPrintSection>().toSet();
+                        });
+                      },
+              ),
+              preview: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  return AppPrintPreviewPanel(
+                    html: documentHtml,
+                    height: constraints.maxHeight,
+                    scale: _scale,
+                    maximized: previewMaximized,
+                    maximizeEnabled: !_isBusy,
+                    onZoomIn: () {
+                      setState(
+                        () => _scale = AppPrintPreviewZoom.zoomIn(_scale),
+                      );
+                    },
+                    onZoomOut: () {
+                      setState(
+                        () => _scale = AppPrintPreviewZoom.zoomOut(_scale),
+                      );
+                    },
+                    onZoomIncrease: () {
+                      setState(
+                        () => _scale = AppPrintPreviewZoom.increase(_scale),
+                      );
+                    },
+                    onZoomDecrease: () {
+                      setState(
+                        () => _scale = AppPrintPreviewZoom.decrease(_scale),
+                      );
+                    },
+                    onFitPage: () {
                       setState(() {
-                        _selectedSections = sanitizeReportSectionSelection(
-                          selectedIds: next,
-                          sections: availabilities,
-                        ).cast<OpdPrintSection>().toSet();
+                        _scale = AppPrintPreviewZoom.fitPage(
+                          constraints.maxWidth - theme.spacing.lg * 2,
+                        );
                       });
                     },
-            ),
-            preview: LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                return AppPrintPreviewPanel(
-                  html: documentHtml,
-                  title: l10n.printPreviewTitle,
-                  height: constraints.maxHeight.isFinite
-                      ? constraints.maxHeight
-                      : workspaceHeight,
-                  scale: _scale,
-                  maximized: previewMaximized,
-                  maximizeEnabled: !_isBusy,
-                  onZoomIn: () {
-                    setState(
-                      () => _scale = AppPrintPreviewZoom.zoomIn(_scale),
-                    );
-                  },
-                  onZoomOut: () {
-                    setState(
-                      () => _scale = AppPrintPreviewZoom.zoomOut(_scale),
-                    );
-                  },
-                  onZoomIncrease: () {
-                    setState(
-                      () => _scale = AppPrintPreviewZoom.increase(_scale),
-                    );
-                  },
-                  onZoomDecrease: () {
-                    setState(
-                      () => _scale = AppPrintPreviewZoom.decrease(_scale),
-                    );
-                  },
-                  onFitPage: () {
-                    setState(() {
-                      _scale = AppPrintPreviewZoom.fitPage(
-                        constraints.maxWidth - theme.spacing.lg * 2,
-                      );
-                    });
-                  },
-                  onMaximizeToggle: () {
-                    setState(() {
-                      _paneMode = previewMaximized
-                          ? AppPrintPreviewPaneMode.split
-                          : AppPrintPreviewPaneMode.preview;
-                    });
-                  },
-                  fallbackChild: SelectableText(
-                    summaryText,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                );
-              },
+                    onMaximizeToggle: () {
+                      setState(() {
+                        _paneMode = previewMaximized
+                            ? AppPrintPreviewPaneMode.split
+                            : AppPrintPreviewPaneMode.preview;
+                      });
+                    },
+                    fallbackChild: SelectableText(
+                      summaryText,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],

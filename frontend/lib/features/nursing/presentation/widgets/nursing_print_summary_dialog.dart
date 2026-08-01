@@ -50,56 +50,50 @@ class _NursingPrintSummaryDialogState
       footerNote: l10n.nursingReportFooter,
       includeSignatures: true,
     );
-    final double workspaceHeight = (MediaQuery.sizeOf(context).height * 0.72)
-        .clamp(400.0, 860.0);
-
     return AppDialog(
       title: Text(l10n.nursingActionPrintSummary),
       icon: const Icon(Icons.print_outlined),
       maxWidth: 960,
       scrollable: false,
       pinActionsToBottom: true,
+      contentPadding: EdgeInsets.zero,
       closeEnabled: !_isPrinting,
-      content: SizedBox(
-        height: workspaceHeight,
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            return AppPrintPreviewPanel(
-              html: documentHtml,
-              title: l10n.printPreviewTitle,
-              height: constraints.maxHeight,
-              scale: _scale,
-              maximized: _previewMaximized,
-              maximizeEnabled: !_isPrinting,
-              onZoomIn: () {
-                setState(() => _scale = AppPrintPreviewZoom.zoomIn(_scale));
-              },
-              onZoomOut: () {
-                setState(() => _scale = AppPrintPreviewZoom.zoomOut(_scale));
-              },
-              onZoomIncrease: () {
-                setState(() => _scale = AppPrintPreviewZoom.increase(_scale));
-              },
-              onZoomDecrease: () {
-                setState(() => _scale = AppPrintPreviewZoom.decrease(_scale));
-              },
-              onFitPage: () {
-                setState(() {
-                  _scale = AppPrintPreviewZoom.fitPage(
-                    constraints.maxWidth - theme.spacing.lg * 2,
-                  );
-                });
-              },
-              onMaximizeToggle: () {
-                setState(() => _previewMaximized = !_previewMaximized);
-              },
-              fallbackChild: SelectableText(
-                preview,
-                style: theme.textTheme.bodyMedium,
-              ),
-            );
-          },
-        ),
+      content: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          return AppPrintPreviewPanel(
+            html: documentHtml,
+            height: constraints.maxHeight,
+            scale: _scale,
+            maximized: _previewMaximized,
+            maximizeEnabled: !_isPrinting,
+            onZoomIn: () {
+              setState(() => _scale = AppPrintPreviewZoom.zoomIn(_scale));
+            },
+            onZoomOut: () {
+              setState(() => _scale = AppPrintPreviewZoom.zoomOut(_scale));
+            },
+            onZoomIncrease: () {
+              setState(() => _scale = AppPrintPreviewZoom.increase(_scale));
+            },
+            onZoomDecrease: () {
+              setState(() => _scale = AppPrintPreviewZoom.decrease(_scale));
+            },
+            onFitPage: () {
+              setState(() {
+                _scale = AppPrintPreviewZoom.fitPage(
+                  constraints.maxWidth - theme.spacing.lg * 2,
+                );
+              });
+            },
+            onMaximizeToggle: () {
+              setState(() => _previewMaximized = !_previewMaximized);
+            },
+            fallbackChild: SelectableText(
+              preview,
+              style: theme.textTheme.bodyMedium,
+            ),
+          );
+        },
       ),
       actions: <Widget>[
         AppButton.tertiary(

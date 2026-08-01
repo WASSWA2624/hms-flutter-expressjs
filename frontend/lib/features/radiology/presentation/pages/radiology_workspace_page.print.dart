@@ -128,8 +128,6 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
           _radiologyPrintSectionIcon(id as _RadiologyPrintSection),
       emptyDisabledReason: l10n.reportSectionEmptyDisabledReason,
     );
-    final double viewportHeight = MediaQuery.sizeOf(context).height;
-    final double workspaceHeight = (viewportHeight * 0.72).clamp(400.0, 860.0);
     final bool previewMaximized =
         _paneMode == AppPrintPreviewPaneMode.preview;
 
@@ -138,10 +136,10 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
       icon: const Icon(Icons.print_outlined),
       scrollable: false,
       pinActionsToBottom: true,
+      contentPadding: EdgeInsets.zero,
       maxWidth: _dialogMaxWidth,
       closeEnabled: !_isPrinting,
       content: AppPrintPreviewWorkspace(
-        height: workspaceHeight,
         paneMode: _paneMode,
         paneModeEnabled: !_isPrinting,
         onPaneModeChanged: (AppPrintPreviewPaneMode next) {
@@ -165,10 +163,7 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
           builder: (BuildContext context, BoxConstraints constraints) {
             return AppPrintPreviewPanel(
               html: _documentHtml(context, settings),
-              title: l10n.printPreviewTitle,
-              height: constraints.maxHeight.isFinite
-                  ? constraints.maxHeight
-                  : workspaceHeight,
+              height: constraints.maxHeight,
               scale: _scale,
               maximized: previewMaximized,
               maximizeEnabled: !_isPrinting,

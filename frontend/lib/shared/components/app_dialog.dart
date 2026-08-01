@@ -27,6 +27,7 @@ class AppDialog extends StatefulWidget {
     this.initialMaximized = true,
     this.maxWidth = _defaultMaxWidth,
     this.cornerRadius,
+    this.contentPadding,
     super.key,
   });
 
@@ -41,6 +42,11 @@ class AppDialog extends StatefulWidget {
   final String? semanticLabel;
   final bool scrollable;
   final bool pinActionsToBottom;
+
+  /// Overrides default body inset around [content].
+  ///
+  /// Use [EdgeInsets.zero] for dense full-bleed surfaces (e.g. print preview).
+  final EdgeInsetsGeometry? contentPadding;
 
   /// When true (default), compact/mobile footers stack actions full-width.
   /// Set false to keep a horizontal action row on phones (e.g. Preview + Save).
@@ -147,6 +153,7 @@ class _AppDialogState extends State<AppDialog> {
         showMaximizeButton: widget.showMaximizeButton && desktopInteractive,
         isMaximized: _isMaximized,
         closeEnabled: widget.closeEnabled,
+        contentPadding: widget.contentPadding,
         chromeBorderRadius: widget.cornerRadius,
         onMaximizeToggle: desktopInteractive ? _toggleMaximize : null,
         onHeaderDragUpdate: desktopInteractive && !_isMaximized
@@ -479,6 +486,7 @@ class _DialogBody extends StatelessWidget {
     this.content,
     this.icon,
     this.chromeBorderRadius,
+    this.contentPadding,
   });
 
   final Widget? title;
@@ -496,14 +504,15 @@ class _DialogBody extends StatelessWidget {
   final VoidCallback? onMaximizeToggle;
   final ValueChanged<DragUpdateDetails>? onHeaderDragUpdate;
   final double? chromeBorderRadius;
+  final EdgeInsetsGeometry? contentPadding;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final EdgeInsets bodyPadding = EdgeInsets.all(
-      compact ? theme.spacing.md : theme.spacing.lg,
-    );
+    final EdgeInsetsGeometry bodyPadding =
+        contentPadding ??
+        EdgeInsets.all(compact ? theme.spacing.md : theme.spacing.lg);
     final TextStyle titleStyle =
         ((compact ? theme.textTheme.titleMedium : theme.textTheme.titleLarge) ??
                 TextStyle(
@@ -560,7 +569,7 @@ class _DialogBody extends StatelessWidget {
   /// edge of the dialog body (outside section chrome).
   static Widget _dialogBodyContent({
     required bool scrollable,
-    required EdgeInsets bodyPadding,
+    required EdgeInsetsGeometry bodyPadding,
     required Widget child,
   }) {
     if (!scrollable) {

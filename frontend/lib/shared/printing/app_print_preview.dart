@@ -18,6 +18,9 @@ enum AppPrintPreviewPaneMode {
 }
 
 /// Shared HTML print-preview surface with a print-style toolbar.
+///
+/// Renders without a titled header strip. Zoom toolbar and document scroll
+/// together inside [height]. Maximize (when provided) lives on the toolbar.
 class AppPrintPreviewPanel extends StatelessWidget {
   const AppPrintPreviewPanel({
     required this.html,
@@ -41,6 +44,8 @@ class AppPrintPreviewPanel extends StatelessWidget {
 
   final String html;
   final Widget fallbackChild;
+
+  /// Unused; retained for call-site compatibility. Title chrome was removed.
   final String? title;
   final double height;
   final double scale;
@@ -58,58 +63,71 @@ class AppPrintPreviewPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final String maximizeLabel = maximized
-        ? l10n.printPreviewRestoreAction
-        : l10n.printPreviewMaximizeAction;
+    final ColorScheme colorScheme = theme.colorScheme;
+    final AppLocalizations l10n = context.l10n;
 
-    return AppReportPreviewPanel(
-      title: title ?? l10n.printPreviewTitle,
-      collapsible: false,
-      maxBodyHeight: height,
-      scrollBody: false,
-      contentPadding: EdgeInsets.all(theme.spacing.sm),
-      headerActions: <Widget>[
-        if (onMaximizeToggle != null)
-          AppButton(
-            iconOnly: true,
-            leadingIcon: maximized
-                ? Icons.fullscreen_exit
-                : Icons.fullscreen,
-            label: maximizeLabel,
-            semanticLabel: maximizeLabel,
-            tooltip: maximizeLabel,
-            onPressed: maximizeEnabled ? onMaximizeToggle : null,
+    final Widget document = SizedBox(
+      height: height,
+      width: double.infinity,
+      child: AppPrintHtmlPreview(
+        html: html,
+        scale: scale,
+        fallbackChild: fallbackChild,
+        viewTypePrefix: viewTypePrefix,
+      ),
+    );
+
+    final Widget body = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (toolbarEnabled) ...<Widget>[
+          AppPrintPreviewToolbar(
+            scale: scale,
+            maximized: maximized,
+            enabled: maximizeEnabled,
+            showMaximize: onMaximizeToggle != null,
+            onZoomIn: onZoomIn,
+            onZoomOut: onZoomOut,
+            onZoomIncrease: onZoomIncrease,
+            onZoomDecrease: onZoomDecrease,
+            onFitPage: onFitPage,
+            onMaximizeToggle: onMaximizeToggle,
           ),
-        ...headerActions,
-      ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (toolbarEnabled) ...<Widget>[
-            AppPrintPreviewToolbar(
-              scale: scale,
-              maximized: maximized,
-              enabled: maximizeEnabled,
-              showMaximize: false,
-              onZoomIn: onZoomIn,
-              onZoomOut: onZoomOut,
-              onZoomIncrease: onZoomIncrease,
-              onZoomDecrease: onZoomDecrease,
-              onFitPage: onFitPage,
+          if (headerActions.isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.xs),
+            Wrap(
+              spacing: theme.spacing.xs,
+              runSpacing: theme.spacing.xs,
+              children: headerActions,
             ),
-            SizedBox(height: theme.spacing.sm),
           ],
-          Expanded(
-            child: AppPrintHtmlPreview(
-              html: html,
-              scale: scale,
-              fallbackChild: fallbackChild,
-              viewTypePrefix: viewTypePrefix,
+          SizedBox(height: theme.spacing.sm),
+        ],
+        document,
+      ],
+    );
+
+    return Semantics(
+      container: true,
+      label: title ?? l10n.printPreviewPreviewPaneLabel,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLowest,
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        child: SizedBox(
+          height: height,
+          width: double.infinity,
+          child: Scrollbar(
+            child: SingleChildScrollView(
+              primary: false,
+              padding: EdgeInsets.all(theme.spacing.xs),
+              child: body,
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -218,7 +236,7 @@ class AppPrintPreviewToolbar extends StatelessWidget {
   }
 }
 
-/// Toggle between split / sections-only / preview-only layouts.
+/// Toggle between split / sections-only / preview-only layouts via [AppTabStrip].
 class AppPrintPreviewPaneModeBar extends StatelessWidget {
   const AppPrintPreviewPaneModeBar({
     required this.mode,
@@ -234,72 +252,58 @@ class AppPrintPreviewPaneModeBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
 
-    Widget modeButton({
-      required AppPrintPreviewPaneMode value,
-      required IconData icon,
-      required String label,
-    }) {
-      final bool selected = mode == value;
-      return AppButton(
-        iconOnly: true,
-        leadingIcon: icon,
-        label: label,
-        semanticLabel: label,
-        tooltip: label,
-        variant: selected
-            ? AppButtonVariant.secondary
-            : AppButtonVariant.tertiary,
-        onPressed: !enabled
-            ? null
-            : () {
-                if (!selected) {
-                  onChanged(value);
-                }
-              },
-      );
-    }
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.xs),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            modeButton(
-              value: AppPrintPreviewPaneMode.split,
-              icon: Icons.view_column_outlined,
-              label: l10n.printPreviewSplitViewAction,
-            ),
-            modeButton(
-              value: AppPrintPreviewPaneMode.sections,
-              icon: Icons.checklist_outlined,
-              label: l10n.printPreviewSectionsOnlyAction,
-            ),
-            modeButton(
-              value: AppPrintPreviewPaneMode.preview,
-              icon: Icons.article_outlined,
-              label: l10n.printPreviewPreviewOnlyAction,
-            ),
-          ],
+    final Widget strip = AppTabStrip(
+      variant: AppTabStripVariant.nested,
+      tabs: <AppTabItem>[
+        AppTabItem(
+          id: AppPrintPreviewPaneMode.split.name,
+          icon: Icons.view_column_outlined,
+          label: l10n.printPreviewSplitViewAction,
         ),
-      ),
+        AppTabItem(
+          id: AppPrintPreviewPaneMode.sections.name,
+          icon: Icons.checklist_outlined,
+          label: l10n.printPreviewSectionsOnlyAction,
+        ),
+        AppTabItem(
+          id: AppPrintPreviewPaneMode.preview.name,
+          icon: Icons.article_outlined,
+          label: l10n.printPreviewPreviewOnlyAction,
+        ),
+      ],
+      selectedId: mode.name,
+      onTabTapped: (String id) {
+        if (!enabled) {
+          return;
+        }
+        final AppPrintPreviewPaneMode next = AppPrintPreviewPaneMode.values
+            .byName(id);
+        if (next != mode) {
+          onChanged(next);
+        }
+      },
     );
+
+    if (enabled) {
+      return strip;
+    }
+    return Opacity(opacity: 0.6, child: strip);
   }
 }
 
 /// Two-column print workspace with independently scrollable panes.
 ///
 /// The parent dialog should set `scrollable: false` so only these columns
-/// scroll — never the dialog shell and columns together.
+/// scroll — never the dialog shell and columns together. Prefer
+/// `contentPadding: EdgeInsets.zero` on the host [AppDialog].
+///
+/// Pane-mode tabs sit with the sections column only. In preview-only mode a
+/// compact strip remains so the user can switch back.
 class AppPrintPreviewWorkspace extends StatelessWidget {
   const AppPrintPreviewWorkspace({
-    required this.height,
     required this.preview,
+    this.height,
     this.sectionPicker,
     this.leading,
     this.paneMode = AppPrintPreviewPaneMode.split,
@@ -312,7 +316,9 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
     super.key,
   });
 
-  final double height;
+  /// When null, expands to the parent's max height (use inside an [Expanded]
+  /// or dialog body with finite constraints).
+  final double? height;
   final Widget preview;
   final Widget? sectionPicker;
   final Widget? leading;
@@ -328,6 +334,29 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (height != null) {
+      return SizedBox(
+        height: height,
+        width: double.infinity,
+        child: _buildBody(context),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double resolvedHeight = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : 420;
+        return SizedBox(
+          height: resolvedHeight,
+          width: double.infinity,
+          child: _buildBody(context),
+        );
+      },
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final bool showSections =
@@ -338,80 +367,116 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
         paneMode == AppPrintPreviewPaneMode.split ||
         paneMode == AppPrintPreviewPaneMode.preview;
 
-    return SizedBox(
-      height: height,
-      width: double.infinity,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
+    Widget? modeStrip;
+    if (onPaneModeChanged != null) {
+      modeStrip = AppPrintPreviewPaneModeBar(
+        mode: paneMode,
+        enabled: paneModeEnabled,
+        onChanged: onPaneModeChanged!,
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool sideBySide =
+            constraints.maxWidth >= sideBySideBreakpoint &&
+            showSections &&
+            showPreview;
+
+        final Widget? sectionsPane = showSections
+            ? _buildSectionsColumn(
+                context: context,
+                theme: theme,
+                l10n: l10n,
+                modeStrip: modeStrip,
+              )
+            : null;
+        final Widget? previewPane = showPreview
+            ? _buildPreviewColumn(
+                context: context,
+                theme: theme,
+                l10n: l10n,
+                // Compact return path when sections are hidden.
+                modeStrip: showSections ? null : modeStrip,
+              )
+            : null;
+
+        if (sideBySide) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              if (leading != null) Expanded(child: leading!),
-              if (onPaneModeChanged != null) ...<Widget>[
-                if (leading != null) SizedBox(width: theme.spacing.sm),
-                AppPrintPreviewPaneModeBar(
-                  mode: paneMode,
-                  enabled: paneModeEnabled,
-                  onChanged: onPaneModeChanged!,
-                ),
-              ],
+              Expanded(flex: sectionsFlex, child: sectionsPane!),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(flex: previewFlex, child: previewPane!),
             ],
-          ),
-          if (leading != null || onPaneModeChanged != null)
-            SizedBox(height: theme.spacing.sm),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final bool sideBySide =
-                    constraints.maxWidth >= sideBySideBreakpoint &&
-                    showSections &&
-                    showPreview;
+          );
+        }
 
-                final Widget? sectionsPane = showSections
-                    ? _ScrollPane(
-                        semanticLabel: l10n.printPreviewSectionsPaneLabel,
-                        scrollable: sectionsScrollable,
-                        child: sectionPicker!,
-                      )
-                    : null;
-                final Widget? previewPane = showPreview
-                    ? _ScrollPane(
-                        semanticLabel: l10n.printPreviewPreviewPaneLabel,
-                        // Preview HTML scrolls inside the iframe; keep Flutter
-                        // pane non-nested by expanding to fill.
-                        scrollable: false,
-                        child: preview,
-                      )
-                    : null;
+        if (sectionsPane != null && previewPane != null) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Expanded(flex: 2, child: sectionsPane),
+              SizedBox(height: theme.spacing.sm),
+              Expanded(flex: 3, child: previewPane),
+            ],
+          );
+        }
 
-                if (sideBySide) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Expanded(flex: sectionsFlex, child: sectionsPane!),
-                      SizedBox(width: theme.spacing.md),
-                      Expanded(flex: previewFlex, child: previewPane!),
-                    ],
-                  );
-                }
+        return sectionsPane ?? previewPane ?? const SizedBox.shrink();
+      },
+    );
+  }
 
-                if (sectionsPane != null && previewPane != null) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Expanded(flex: 2, child: sectionsPane),
-                      SizedBox(height: theme.spacing.md),
-                      Expanded(flex: 3, child: previewPane),
-                    ],
-                  );
-                }
-
-                return sectionsPane ?? previewPane ?? const SizedBox.shrink();
-              },
-            ),
-          ),
+  Widget _buildSectionsColumn({
+    required BuildContext context,
+    required ThemeData theme,
+    required AppLocalizations l10n,
+    required Widget? modeStrip,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        ?modeStrip,
+        if (leading != null) ...<Widget>[
+          if (modeStrip != null) SizedBox(height: theme.spacing.xs),
+          leading!,
         ],
-      ),
+        if (modeStrip != null || leading != null)
+          SizedBox(height: theme.spacing.xs),
+        Expanded(
+          child: _ScrollPane(
+            semanticLabel: l10n.printPreviewSectionsPaneLabel,
+            scrollable: sectionsScrollable,
+            child: sectionPicker!,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPreviewColumn({
+    required BuildContext context,
+    required ThemeData theme,
+    required AppLocalizations l10n,
+    required Widget? modeStrip,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (modeStrip != null) ...<Widget>[
+          modeStrip,
+          SizedBox(height: theme.spacing.xs),
+        ],
+        Expanded(
+          // Preview panel owns chrome + scrolling (toolbar + document).
+          child: Semantics(
+            container: true,
+            label: l10n.printPreviewPreviewPaneLabel,
+            child: preview,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -431,17 +496,18 @@ class _ScrollPane extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final EdgeInsets resolvedPadding = EdgeInsets.all(theme.spacing.xs);
 
     final Widget body = scrollable
         ? Scrollbar(
             child: SingleChildScrollView(
               primary: false,
-              padding: EdgeInsets.all(theme.spacing.sm),
+              padding: resolvedPadding,
               child: child,
             ),
           )
         : Padding(
-            padding: EdgeInsets.all(theme.spacing.sm),
+            padding: resolvedPadding,
             child: SizedBox.expand(child: child),
           );
 
@@ -559,30 +625,35 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final double viewportHeight = MediaQuery.sizeOf(context).height;
-    final double workspaceHeight = (viewportHeight * 0.68).clamp(360.0, 820.0);
     final String printLabel = widget.printLabel ?? l10n.commonPrintActionLabel;
 
     return AppDialog(
       title: Text(widget.title),
       icon: Icon(widget.icon),
-      scrollable: false,
       pinActionsToBottom: true,
+      contentPadding: EdgeInsets.zero,
       maxWidth: widget.maxWidth,
       closeEnabled: !_isPrinting,
-      content: SizedBox(
-        height: workspaceHeight,
+      content: Padding(
+        padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             if (!_previewMaximized && widget.body != null) ...<Widget>[
-              Text(
-                widget.body!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  theme.spacing.sm,
+                  theme.spacing.sm,
+                  theme.spacing.sm,
+                  0,
+                ),
+                child: Text(
+                  widget.body!,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
-              SizedBox(height: theme.spacing.sm),
             ],
             Expanded(
               child: LayoutBuilder(

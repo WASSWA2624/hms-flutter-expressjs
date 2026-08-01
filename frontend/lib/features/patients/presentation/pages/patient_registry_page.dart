@@ -2514,8 +2514,6 @@ class _PatientReportPrintPreviewDialogState
     );
     final bool periodIsValid = _periodRangeIsValid;
     final bool canPrint = periodIsValid && selection.sections.isNotEmpty;
-    final double workspaceHeight = (MediaQuery.sizeOf(context).height * 0.72)
-        .clamp(400.0, 860.0);
     final bool previewMaximized =
         _paneMode == AppPrintPreviewPaneMode.preview;
     final String documentHtml = PrintDocumentTemplates.buildDocumentHtml(
@@ -2540,10 +2538,10 @@ class _PatientReportPrintPreviewDialogState
       icon: const Icon(Icons.preview_outlined),
       scrollable: false,
       pinActionsToBottom: true,
+      contentPadding: EdgeInsets.zero,
       maxWidth: 1120,
       closeEnabled: !_isPrinting,
       content: AppPrintPreviewWorkspace(
-        height: workspaceHeight,
         paneMode: _paneMode,
         paneModeEnabled: !_isPrinting,
         onPaneModeChanged: (AppPrintPreviewPaneMode next) {
@@ -2590,10 +2588,7 @@ class _PatientReportPrintPreviewDialogState
           builder: (BuildContext context, BoxConstraints constraints) {
             return AppPrintPreviewPanel(
               html: documentHtml,
-              title: l10n.printPreviewTitle,
-              height: constraints.maxHeight.isFinite
-                  ? constraints.maxHeight
-                  : workspaceHeight,
+              height: constraints.maxHeight,
               scale: _scale,
               maximized: previewMaximized,
               maximizeEnabled: !_isPrinting,

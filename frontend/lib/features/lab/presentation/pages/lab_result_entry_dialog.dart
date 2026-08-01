@@ -1781,8 +1781,6 @@ class _LabReportPreviewDialogState
       authorized: printAuthorized,
       hasPrintableReleasedContent: printableItems.isNotEmpty,
     );
-    final double workspaceHeight = (MediaQuery.sizeOf(context).height * 0.72)
-        .clamp(400.0, 860.0);
     final bool previewMaximized =
         _paneMode == AppPrintPreviewPaneMode.preview;
     final String? documentHtml = _documentHtml(context);
@@ -1792,10 +1790,10 @@ class _LabReportPreviewDialogState
       icon: const Icon(Icons.print_outlined),
       scrollable: false,
       pinActionsToBottom: true,
+      contentPadding: EdgeInsets.zero,
       maxWidth: 1120,
       closeEnabled: !_isPrinting,
       content: AppPrintPreviewWorkspace(
-        height: workspaceHeight,
         paneMode: _paneMode,
         paneModeEnabled: !_isPrinting,
         sectionsScrollable: false,
@@ -1832,10 +1830,7 @@ class _LabReportPreviewDialogState
                 );
             return AppPrintPreviewPanel(
               html: html,
-              title: l10n.printPreviewTitle,
-              height: constraints.maxHeight.isFinite
-                  ? constraints.maxHeight
-                  : workspaceHeight,
+              height: constraints.maxHeight,
               scale: _scale,
               maximized: previewMaximized,
               maximizeEnabled: !_isPrinting,
