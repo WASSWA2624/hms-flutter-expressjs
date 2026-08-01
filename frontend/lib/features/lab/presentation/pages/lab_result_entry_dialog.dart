@@ -1692,6 +1692,7 @@ class _LabReportPreviewDialogState
   bool _isPrinting = false;
   AppPrintPreviewPaneMode _paneMode = AppPrintPreviewPaneMode.split;
   double _scale = 1;
+  int _currentPage = 1;
 
   @override
   void initState() {
@@ -1784,6 +1785,17 @@ class _LabReportPreviewDialogState
     final bool previewMaximized =
         _paneMode == AppPrintPreviewPaneMode.preview;
     final String? documentHtml = _documentHtml(context);
+    final String resolvedHtml =
+        documentHtml ??
+        PrintDocumentTemplates.emptyBodyHtml(
+          kind: PrintDocumentTemplateKind.clinicalResult,
+          sectionTitles: <String>[l10n.labReportTitle],
+        );
+    final int pageCount = AppPrintPreviewPages.countFromHtml(resolvedHtml);
+    final int currentPage = AppPrintPreviewPages.clampPage(
+      _currentPage,
+      pageCount,
+    );
 
     return AppDialog(
       title: Text(l10n.labReportPreviewTitle),
@@ -1800,6 +1812,55 @@ class _LabReportPreviewDialogState
         onPaneModeChanged: (AppPrintPreviewPaneMode next) {
           setState(() => _paneMode = next);
         },
+        toolbar: AppPrintPreviewToolbar(
+          scale: _scale,
+          maximized: previewMaximized,
+          enabled: !_isPrinting,
+          currentPage: currentPage,
+          pageCount: pageCount,
+          onZoomIn: () {
+            setState(() => _scale = AppPrintPreviewZoom.zoomIn(_scale));
+          },
+          onZoomOut: () {
+            setState(() => _scale = AppPrintPreviewZoom.zoomOut(_scale));
+          },
+          onZoomIncrease: () {
+            setState(() => _scale = AppPrintPreviewZoom.increase(_scale));
+          },
+          onZoomDecrease: () {
+            setState(() => _scale = AppPrintPreviewZoom.decrease(_scale));
+          },
+          onFitPage: () {
+            setState(() {
+              _scale = AppPrintPreviewZoom.fitPage(
+                1120 * 0.55 - theme.spacing.lg * 2,
+              );
+            });
+          },
+          onMaximizeToggle: () {
+            setState(() {
+              _paneMode = previewMaximized
+                  ? AppPrintPreviewPaneMode.split
+                  : AppPrintPreviewPaneMode.preview;
+            });
+          },
+          onPagePrevious: () {
+            setState(() {
+              _currentPage = AppPrintPreviewPages.clampPage(
+                currentPage - 1,
+                pageCount,
+              );
+            });
+          },
+          onPageNext: () {
+            setState(() {
+              _currentPage = AppPrintPreviewPages.clampPage(
+                currentPage + 1,
+                pageCount,
+              );
+            });
+          },
+        ),
         sectionPicker: AppClinicalResultsPreview(
           mode: AppClinicalResultsPreviewMode.modal,
           semanticLabel: l10n.labReportPreviewTitle,
@@ -1822,44 +1883,16 @@ class _LabReportPreviewDialogState
         ),
         preview: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            final String html =
-                documentHtml ??
-                PrintDocumentTemplates.emptyBodyHtml(
-                  kind: PrintDocumentTemplateKind.clinicalResult,
-                  sectionTitles: <String>[l10n.labReportTitle],
-                );
             return AppPrintPreviewPanel(
-              html: html,
+              html: resolvedHtml,
               height: constraints.maxHeight,
               scale: _scale,
               maximized: previewMaximized,
+              toolbarEnabled: false,
+              focusedPage: currentPage,
+              currentPage: currentPage,
+              pageCount: pageCount,
               maximizeEnabled: !_isPrinting,
-              onZoomIn: () {
-                setState(() => _scale = AppPrintPreviewZoom.zoomIn(_scale));
-              },
-              onZoomOut: () {
-                setState(() => _scale = AppPrintPreviewZoom.zoomOut(_scale));
-              },
-              onZoomIncrease: () {
-                setState(() => _scale = AppPrintPreviewZoom.increase(_scale));
-              },
-              onZoomDecrease: () {
-                setState(() => _scale = AppPrintPreviewZoom.decrease(_scale));
-              },
-              onFitPage: () {
-                setState(() {
-                  _scale = AppPrintPreviewZoom.fitPage(
-                    constraints.maxWidth - theme.spacing.lg * 2,
-                  );
-                });
-              },
-              onMaximizeToggle: () {
-                setState(() {
-                  _paneMode = previewMaximized
-                      ? AppPrintPreviewPaneMode.split
-                      : AppPrintPreviewPaneMode.preview;
-                });
-              },
               fallbackChild: Text(
                 l10n.labReportPreviewTitle,
                 style: theme.textTheme.bodyMedium,

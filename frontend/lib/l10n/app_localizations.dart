@@ -25886,6 +25886,24 @@ abstract class AppLocalizations {
   /// **'{percent}%'**
   String printPreviewZoomPercentLabel(int percent);
 
+  /// Go to the previous page in the print preview
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get printPreviewPreviousPageAction;
+
+  /// Go to the next page in the print preview
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get printPreviewNextPageAction;
+
+  /// Current and total page numbers in the print preview toolbar
+  ///
+  /// In en, this message translates to:
+  /// **'Page {current} of {total}'**
+  String printPreviewPageOfLabel(int current, int total);
+
   /// Show section selector and print preview together
   ///
   /// In en, this message translates to:

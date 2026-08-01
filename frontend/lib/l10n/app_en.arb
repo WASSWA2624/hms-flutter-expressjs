@@ -17983,6 +17983,28 @@
       }
     }
   },
+  "printPreviewPreviousPageAction": "Previous page",
+  "@printPreviewPreviousPageAction": {
+    "description": "Go to the previous page in the print preview"
+  },
+  "printPreviewNextPageAction": "Next page",
+  "@printPreviewNextPageAction": {
+    "description": "Go to the next page in the print preview"
+  },
+  "printPreviewPageOfLabel": "Page {current} of {total}",
+  "@printPreviewPageOfLabel": {
+    "description": "Current and total page numbers in the print preview toolbar",
+    "placeholders": {
+      "current": {
+        "type": "int",
+        "example": "1"
+      },
+      "total": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
   "printPreviewSplitViewAction": "Split view",
   "@printPreviewSplitViewAction": {
     "description": "Show section selector and print preview together"

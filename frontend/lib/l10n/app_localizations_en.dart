@@ -14021,6 +14021,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get printPreviewPreviousPageAction => 'Previous page';
+
+  @override
+  String get printPreviewNextPageAction => 'Next page';
+
+  @override
+  String printPreviewPageOfLabel(int current, int total) {
+    return 'Page $current of $total';
+  }
+
+  @override
   String get printPreviewSplitViewAction => 'Split view';
 
   @override

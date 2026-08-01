@@ -11,6 +11,7 @@ class AppPrintHtmlPreview extends StatelessWidget {
     required this.html,
     required this.fallbackChild,
     this.scale = 1,
+    this.focusedPage,
     this.viewTypePrefix = 'app-print-html-preview',
     super.key,
   });
@@ -18,6 +19,10 @@ class AppPrintHtmlPreview extends StatelessWidget {
   final String html;
   final Widget fallbackChild;
   final double scale;
+
+  /// 1-based page to scroll into view inside the HTML document, when pages
+  /// are marked with `article.print-template-page`.
+  final int? focusedPage;
   final String viewTypePrefix;
 
   @override
@@ -27,6 +32,7 @@ class AppPrintHtmlPreview extends StatelessWidget {
       html: html,
       fallbackChild: fallbackChild,
       scale: scale,
+      focusedPage: focusedPage,
       viewTypePrefix: viewTypePrefix,
     );
   }

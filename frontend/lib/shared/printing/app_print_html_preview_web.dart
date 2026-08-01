@@ -10,10 +10,12 @@ Widget buildAppPrintHtmlPreview({
   required Widget fallbackChild,
   required String viewTypePrefix,
   double scale = 1,
+  int? focusedPage,
 }) {
   return _AppPrintHtmlPreviewWeb(
     html: html,
     scale: scale,
+    focusedPage: focusedPage,
     viewTypePrefix: viewTypePrefix,
   );
 }
@@ -23,10 +25,12 @@ class _AppPrintHtmlPreviewWeb extends StatefulWidget {
     required this.html,
     required this.scale,
     required this.viewTypePrefix,
+    this.focusedPage,
   });
 
   final String html;
   final double scale;
+  final int? focusedPage;
   final String viewTypePrefix;
 
   @override
@@ -38,6 +42,7 @@ class _AppPrintHtmlPreviewWebState extends State<_AppPrintHtmlPreviewWeb> {
   late final String _viewType;
   late final web.HTMLIFrameElement _iframe;
   bool _factoryRegistered = false;
+  web.EventListener? _loadListener;
 
   @override
   void initState() {
@@ -49,15 +54,35 @@ class _AppPrintHtmlPreviewWebState extends State<_AppPrintHtmlPreviewWeb> {
       ..style.height = '100%'
       ..style.backgroundColor = '#f3f4f6'
       ..setAttribute('sandbox', 'allow-same-origin');
+    _loadListener = ((web.Event _) {
+      _scrollToFocusedPage();
+    }).toJS;
+    _iframe.addEventListener('load', _loadListener!);
     _registerFactory();
     _writeHtml(widget.html, widget.scale);
   }
 
   @override
+  void dispose() {
+    final web.EventListener? listener = _loadListener;
+    if (listener != null) {
+      _iframe.removeEventListener('load', listener);
+    }
+    super.dispose();
+  }
+
+  @override
   void didUpdateWidget(covariant _AppPrintHtmlPreviewWeb oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.html != widget.html || oldWidget.scale != widget.scale) {
+    if (oldWidget.html != widget.html) {
       _writeHtml(widget.html, widget.scale);
+      return;
+    }
+    if (oldWidget.scale != widget.scale) {
+      _applyZoom(widget.scale);
+    }
+    if (oldWidget.focusedPage != widget.focusedPage) {
+      _scrollToFocusedPage();
     }
   }
 
@@ -99,6 +124,35 @@ $html
 </html>
 ''';
     _iframe.srcdoc = documentHtml.toJS;
+  }
+
+  void _applyZoom(double scale) {
+    final web.Document? doc = _iframe.contentDocument;
+    final web.HTMLElement? body = doc?.body;
+    if (body == null) {
+      return;
+    }
+    body.style.zoom = scale.clamp(0.4, 2.5).toStringAsFixed(3);
+  }
+
+  void _scrollToFocusedPage() {
+    final int? page = widget.focusedPage;
+    if (page == null || page < 1) {
+      return;
+    }
+    final web.Document? doc = _iframe.contentDocument;
+    if (doc == null) {
+      return;
+    }
+    final web.NodeList pages = doc.querySelectorAll(
+      'article.print-template-page',
+    );
+    final int index = page - 1;
+    if (index < 0 || index >= pages.length) {
+      return;
+    }
+    final web.Element? target = pages.item(index) as web.Element?;
+    target?.scrollIntoView();
   }
 
   @override

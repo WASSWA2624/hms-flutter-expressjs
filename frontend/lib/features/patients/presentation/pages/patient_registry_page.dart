@@ -2466,6 +2466,7 @@ class _PatientReportPrintPreviewDialogState
   bool _isPrinting = false;
   AppPrintPreviewPaneMode _paneMode = AppPrintPreviewPaneMode.split;
   double _scale = 1;
+  int _currentPage = 1;
 
   @override
   void initState() {
@@ -2547,6 +2548,64 @@ class _PatientReportPrintPreviewDialogState
         onPaneModeChanged: (AppPrintPreviewPaneMode next) {
           setState(() => _paneMode = next);
         },
+        toolbar: AppPrintPreviewToolbar(
+          scale: _scale,
+          maximized: previewMaximized,
+          enabled: !_isPrinting,
+          currentPage: AppPrintPreviewPages.clampPage(
+            _currentPage,
+            AppPrintPreviewPages.countFromHtml(documentHtml),
+          ),
+          pageCount: AppPrintPreviewPages.countFromHtml(documentHtml),
+          onZoomIn: () {
+            setState(() => _scale = AppPrintPreviewZoom.zoomIn(_scale));
+          },
+          onZoomOut: () {
+            setState(() => _scale = AppPrintPreviewZoom.zoomOut(_scale));
+          },
+          onZoomIncrease: () {
+            setState(() => _scale = AppPrintPreviewZoom.increase(_scale));
+          },
+          onZoomDecrease: () {
+            setState(() => _scale = AppPrintPreviewZoom.decrease(_scale));
+          },
+          onFitPage: () {
+            setState(() {
+              _scale = AppPrintPreviewZoom.fitPage(
+                1120 * 0.55 - theme.spacing.lg * 2,
+              );
+            });
+          },
+          onMaximizeToggle: () {
+            setState(() {
+              _paneMode = previewMaximized
+                  ? AppPrintPreviewPaneMode.split
+                  : AppPrintPreviewPaneMode.preview;
+            });
+          },
+          onPagePrevious: () {
+            final int pageCount = AppPrintPreviewPages.countFromHtml(
+              documentHtml,
+            );
+            setState(() {
+              _currentPage = AppPrintPreviewPages.clampPage(
+                _currentPage - 1,
+                pageCount,
+              );
+            });
+          },
+          onPageNext: () {
+            final int pageCount = AppPrintPreviewPages.countFromHtml(
+              documentHtml,
+            );
+            setState(() {
+              _currentPage = AppPrintPreviewPages.clampPage(
+                _currentPage + 1,
+                pageCount,
+              );
+            });
+          },
+        ),
         sectionPicker: _PatientReportPreviewControls(
           selection: selection,
           availabilities: availabilities,
@@ -2554,24 +2613,28 @@ class _PatientReportPrintPreviewDialogState
           onPeriodModeChanged: (_PatientReportPeriodMode? value) {
             setState(() {
               _periodMode = value ?? _PatientReportPeriodMode.allDates;
+              _currentPage = 1;
               _resyncSelection(effectiveDetail);
             });
           },
           onSingleDateChanged: (DateTime? value) {
             setState(() {
               _singleDate = value;
+              _currentPage = 1;
               _resyncSelection(effectiveDetail);
             });
           },
           onStartDateChanged: (DateTime? value) {
             setState(() {
               _startDate = value;
+              _currentPage = 1;
               _resyncSelection(effectiveDetail);
             });
           },
           onEndDateChanged: (DateTime? value) {
             setState(() {
               _endDate = value;
+              _currentPage = 1;
               _resyncSelection(effectiveDetail);
             });
           },
@@ -2581,43 +2644,29 @@ class _PatientReportPrintPreviewDialogState
                 selectedIds: next,
                 sections: availabilities,
               ).cast<_PatientReportSection>().toSet();
+              _currentPage = 1;
             });
           },
         ),
         preview: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
+            final int pageCount = AppPrintPreviewPages.countFromHtml(
+              documentHtml,
+            );
+            final int currentPage = AppPrintPreviewPages.clampPage(
+              _currentPage,
+              pageCount,
+            );
             return AppPrintPreviewPanel(
               html: documentHtml,
               height: constraints.maxHeight,
               scale: _scale,
               maximized: previewMaximized,
+              toolbarEnabled: false,
+              focusedPage: currentPage,
+              currentPage: currentPage,
+              pageCount: pageCount,
               maximizeEnabled: !_isPrinting,
-              onZoomIn: () {
-                setState(() => _scale = AppPrintPreviewZoom.zoomIn(_scale));
-              },
-              onZoomOut: () {
-                setState(() => _scale = AppPrintPreviewZoom.zoomOut(_scale));
-              },
-              onZoomIncrease: () {
-                setState(() => _scale = AppPrintPreviewZoom.increase(_scale));
-              },
-              onZoomDecrease: () {
-                setState(() => _scale = AppPrintPreviewZoom.decrease(_scale));
-              },
-              onFitPage: () {
-                setState(() {
-                  _scale = AppPrintPreviewZoom.fitPage(
-                    constraints.maxWidth - theme.spacing.lg * 2,
-                  );
-                });
-              },
-              onMaximizeToggle: () {
-                setState(() {
-                  _paneMode = previewMaximized
-                      ? AppPrintPreviewPaneMode.split
-                      : AppPrintPreviewPaneMode.preview;
-                });
-              },
               fallbackChild: _PatientReportPreviewPages(document: document),
             );
           },
