@@ -36,7 +36,7 @@ class NursingPrintSummaryDialog extends ConsumerWidget {
         AppReportActionButton.print(
           label: l10n.nursingActionPrintSummary,
           onPressed: () async {
-            await printFormTemplateDocument(
+            await PrintDocumentTemplates.clinicalSummary(
               ref: ref,
               context: context,
               title: l10n.nursingReportTitle,
@@ -46,7 +46,7 @@ class NursingPrintSummaryDialog extends ConsumerWidget {
                 patientId: summary.patientId ?? summary.patientDisplayId,
                 encounterId: summary.encounterDisplayId,
               ),
-              contextReference: PrintFormContextReference(
+              visitReference: PrintFormContextReference(
                 label: l10n.nursingAdmissionLabel,
                 value: summary.displayId ?? l10n.profileUnknownValue,
               ),

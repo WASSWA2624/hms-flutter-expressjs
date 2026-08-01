@@ -218,7 +218,7 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
       _failure = null;
     });
     try {
-      await printFormTemplateDocument(
+      await PrintDocumentTemplates.clinicalSummary(
         ref: ref,
         context: context,
         title: l10n.opdPrintSummaryAction,
@@ -391,7 +391,7 @@ String buildOpdPrintSummaryText({
   return lines.where((String line) => line.trim().isNotEmpty).join('\n');
 }
 
-/// Builds formatted HTML body sections for [printFormTemplateDocument].
+/// Builds formatted HTML body sections for [PrintDocumentTemplates.clinicalSummary].
 @visibleForTesting
 String buildOpdPrintSummaryHtml({
   required BuildContext context,

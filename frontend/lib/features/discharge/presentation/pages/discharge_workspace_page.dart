@@ -1934,7 +1934,7 @@ Future<void> _printDischargeSummary(
   DischargeAdmissionDetail detail,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  await printFormTemplateDocument(
+  await PrintDocumentTemplates.clinicalSummary(
     ref: ref,
     context: context,
     title: l10n.dischargeReportTitle,
@@ -1946,7 +1946,7 @@ Future<void> _printDischargeSummary(
       patientNameLabel: l10n.dischargeReportPatientLabel,
       patientIdLabel: l10n.dischargeReportPatientNoLabel,
     ),
-    contextReference: PrintFormContextReference(
+    visitReference: PrintFormContextReference(
       label: l10n.dischargeReportAdmissionLabel,
       value: detail.summary.displayId ?? l10n.profileUnknownValue,
     ),

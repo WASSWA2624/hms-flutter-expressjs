@@ -1788,17 +1788,17 @@ Future<void> _printItem(
   MortuaryWorkspaceItem item,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  await printFormTemplateDocument(
+  await PrintDocumentTemplates.mortuaryCase(
     ref: ref,
     context: context,
     title: l10n.mortuaryReportTitle,
-    patientContext: buildPrintFormPatientContext(
+    deceasedContext: buildPrintFormPatientContext(
       l10n,
       patientName:
           item.effectiveDeceasedLabel ?? l10n.mortuaryUnknownDeceasedLabel,
       patientNameLabel: l10n.mortuaryDeceasedFieldLabel,
     ),
-    contextReference: PrintFormContextReference(
+    caseReference: PrintFormContextReference(
       label: l10n.mortuaryCaseFieldLabel,
       value: _mortuaryCaseIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
     ),

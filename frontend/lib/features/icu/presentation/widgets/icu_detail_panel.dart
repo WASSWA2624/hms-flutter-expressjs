@@ -323,7 +323,7 @@ class IcuActionPanel extends ConsumerWidget {
             return AppReportActionButton.print(
               label: l10n.icuPrintSummaryLabel,
               onPressed: () async {
-                await printFormTemplateDocument(
+                await PrintDocumentTemplates.clinicalSummary(
                   ref: ref,
                   context: context,
                   title: l10n.icuStayDialogTitle,
@@ -333,7 +333,7 @@ class IcuActionPanel extends ConsumerWidget {
                     patientId: detail.summary.patientId,
                     encounterId: detail.summary.encounterId,
                   ),
-                  contextReference: PrintFormContextReference(
+                  visitReference: PrintFormContextReference(
                     label: l10n.icuAdmissionLabel,
                     value:
                         detail.summary.displayId ??

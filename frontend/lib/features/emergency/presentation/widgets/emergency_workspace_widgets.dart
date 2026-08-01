@@ -1271,7 +1271,7 @@ class EmergencyActionPanel extends ConsumerWidget {
             return AppReportActionButton.print(
               label: EmergencyText.printSummary,
               onPressed: () async {
-                await printFormTemplateDocument(
+                await PrintDocumentTemplates.clinicalSummary(
                   ref: ref,
                   context: context,
                   title: 'Emergency summary',
@@ -1281,7 +1281,7 @@ class EmergencyActionPanel extends ConsumerWidget {
                     patientId: detail.summary.patientId ??
                         detail.summary.patientDisplayId,
                   ),
-                  contextReference: PrintFormContextReference(
+                  visitReference: PrintFormContextReference(
                     label: EmergencyText.caseLabel,
                     value: detail.summary.caseLabel,
                   ),

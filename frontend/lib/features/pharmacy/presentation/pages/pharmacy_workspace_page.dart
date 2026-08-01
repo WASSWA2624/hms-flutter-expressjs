@@ -862,7 +862,7 @@ class _PharmacyActionPanel extends ConsumerWidget {
             label: l10n.pharmacyPrintInstructionsAction,
             variant: AppButtonVariant.secondary,
             onPressed: () async {
-              await printFormTemplateDocument(
+              await PrintDocumentTemplates.medicationInstructions(
                 ref: ref,
                 context: context,
                 title: l10n.pharmacyReportTitle,
@@ -872,7 +872,7 @@ class _PharmacyActionPanel extends ConsumerWidget {
                   patientId: workflow.order.patientId,
                   encounterId: workflow.order.encounterId,
                 ),
-                contextReference: PrintFormContextReference(
+                orderReference: PrintFormContextReference(
                   label: l10n.pharmacyReportOrderLabel,
                   value: workflow.order.displayId ?? l10n.profileUnknownValue,
                 ),

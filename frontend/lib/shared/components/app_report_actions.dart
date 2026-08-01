@@ -183,6 +183,10 @@ class AppReportPreviewPanel extends StatelessWidget {
     this.selectable = false,
     this.collapsible = true,
     this.initiallyExpanded = true,
+    this.headerActions = const <Widget>[],
+    this.maxBodyHeight,
+    this.scrollBody = true,
+    this.contentPadding,
     super.key,
   });
 
@@ -192,6 +196,15 @@ class AppReportPreviewPanel extends StatelessWidget {
   final bool selectable;
   final bool collapsible;
   final bool initiallyExpanded;
+  final List<Widget> headerActions;
+
+  /// When set, the preview body is constrained to this height.
+  final double? maxBodyHeight;
+
+  /// When true (default), the constrained body scrolls in Flutter.
+  /// Set false for embedded HTML previews that scroll inside an iframe.
+  final bool scrollBody;
+  final EdgeInsetsGeometry? contentPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -206,6 +219,26 @@ class AppReportPreviewPanel extends StatelessWidget {
       content = SelectionArea(child: content);
     }
 
+    final EdgeInsetsGeometry padding =
+        contentPadding ?? EdgeInsets.all(theme.spacing.md);
+    if (maxBodyHeight != null) {
+      final Widget padded = scrollBody
+          ? Padding(padding: padding, child: content)
+          : Padding(
+              padding: padding,
+              child: SizedBox.expand(child: content),
+            );
+      content = SizedBox(
+        height: maxBodyHeight,
+        width: double.infinity,
+        child: scrollBody
+            ? ClipRect(child: SingleChildScrollView(child: padded))
+            : padded,
+      );
+    } else {
+      content = Padding(padding: padding, child: content);
+    }
+
     if (resolvedTitle != null) {
       return Semantics(
         container: true,
@@ -214,6 +247,8 @@ class AppReportPreviewPanel extends StatelessWidget {
           title: resolvedTitle,
           collapsible: collapsible,
           initiallyExpanded: initiallyExpanded,
+          headerActions: headerActions,
+          contentPadding: EdgeInsets.zero,
           child: content,
         ),
       );
@@ -227,10 +262,7 @@ class AppReportPreviewPanel extends StatelessWidget {
           color: colorScheme.surfaceContainerLowest,
           border: Border.all(color: colorScheme.outlineVariant),
         ),
-        child: Padding(
-          padding: EdgeInsets.all(theme.spacing.md),
-          child: content,
-        ),
+        child: content,
       ),
     );
   }

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -997,12 +996,12 @@ Future<void> _printBiomedicalReport(
   BiomedicalAsset asset,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  await printFormTemplateDocument(
+  await PrintDocumentTemplates.registry(
     ref: ref,
     context: context,
     title: '${l10n.biomedicalPrintReportDialogTitle} - ${asset.displayId}',
     subtitle: asset.displayTitle,
-    contextReference: PrintFormContextReference(
+    recordReference: PrintFormContextReference(
       label: l10n.biomedicalAssetTagLabel,
       value: asset.displayId,
     ),

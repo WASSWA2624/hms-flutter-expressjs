@@ -80,8 +80,13 @@ enum _RadiologyPrintSection {
 }
 
 class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
+  static const double _sideBySideBreakpoint = 640;
+  static const double _dialogMaxWidth = 1040;
+  static const double _previewHeight = 420;
+
   late Set<_RadiologyPrintSection> _selectedSections;
   bool _isPrinting = false;
+  bool _previewMaximized = false;
 
   @override
   void initState() {
@@ -106,6 +111,96 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
     }.intersection(available);
   }
 
+  String _documentHtml(
+    BuildContext context,
+    _RadiologyPrintSettings settings,
+  ) {
+    final AppLocalizations l10n = context.l10n;
+    final PrintFormTemplateContext templateContext = ref.read(
+      printFormTemplateContextProvider,
+    );
+    final AuthSession? session = ref.read(
+      sessionStateProvider.select((state) => state.session),
+    );
+    return PrintFormTemplate.build(
+      context: context,
+      title: l10n.radiologyPrintReportTitle,
+      patientContext: settings.includePatient
+          ? buildPrintFormPatientContext(
+              l10n,
+              patientName:
+                  widget.workflow.order.patientDisplayName ??
+                  l10n.profileUnknownValue,
+              patientId: widget.workflow.order.patientId,
+              encounterId: widget.workflow.order.encounterId,
+              patientNameLabel: l10n.radiologyPatientLabel,
+              patientIdLabel: l10n.radiologyPatientIdLabel,
+              encounterIdLabel: l10n.radiologyEncounterLabel,
+            )
+          : null,
+      contextReference: settings.includeOrder
+          ? PrintFormContextReference(
+              label: l10n.radiologyOrderColumnLabel,
+              value: widget.workflow.order.effectiveDisplayId,
+            )
+          : null,
+      bodyHtml: _radiologyPrintBodyHtml(context, widget.workflow, settings),
+      signatures: settings.includeSigner
+          ? buildPrintFormSignatures(
+              l10n,
+              printedByName: session?.user?.displayName,
+            )
+          : null,
+      printedLabel: l10n.printFormPrintedLabel,
+      printedOnLabel: l10n.printFormPrintedOnLabel,
+      printedAtLabel: l10n.printFormPrintedAtLabel,
+      footerNote: l10n.radiologyPrintFooterNote,
+      appBranding: templateContext.appBranding,
+      facilityBranding: templateContext.facilityBranding,
+    );
+  }
+
+  Widget _buildPreview(
+    BuildContext context, {
+    required _RadiologyPrintSettings settings,
+    required double height,
+  }) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final bool maximized = _previewMaximized;
+    final String maximizeLabel = maximized
+        ? l10n.radiologyPrintPreviewRestoreAction
+        : l10n.radiologyPrintPreviewMaximizeAction;
+
+    return AppReportPreviewPanel(
+      title: l10n.radiologyPrintPreviewTitle,
+      collapsible: false,
+      maxBodyHeight: height,
+      scrollBody: false,
+      contentPadding: EdgeInsets.all(theme.spacing.sm),
+      headerActions: <Widget>[
+        AppButton(
+          iconOnly: true,
+          leadingIcon: maximized ? Icons.fullscreen_exit : Icons.fullscreen,
+          label: maximizeLabel,
+          semanticLabel: maximizeLabel,
+          tooltip: maximizeLabel,
+          onPressed: _isPrinting
+              ? null
+              : () {
+                  setState(() => _previewMaximized = !maximized);
+                },
+        ),
+      ],
+      child: AppPrintHtmlPreview(
+        html: _documentHtml(context, settings),
+        fallbackChild: SelectableText(
+          _radiologyPrintPreviewText(context, widget.workflow, settings),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -123,44 +218,80 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
           _radiologyPrintSectionIcon(id as _RadiologyPrintSection),
       emptyDisabledReason: l10n.reportSectionEmptyDisabledReason,
     );
+    final double viewportHeight = MediaQuery.sizeOf(context).height;
+    final double maximizedPreviewHeight = (viewportHeight * 0.72).clamp(
+      360.0,
+      900.0,
+    );
 
     return AppDialog(
       title: Text(l10n.radiologyPrintReportDialogTitle),
       icon: const Icon(Icons.print_outlined),
-      scrollable: true,
+      scrollable: !_previewMaximized,
       pinActionsToBottom: true,
-      maxWidth: 860,
+      maxWidth: _dialogMaxWidth,
       closeEnabled: !_isPrinting,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(
-            l10n.radiologyPrintReportDialogBody,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          if (!_previewMaximized) ...<Widget>[
+            Text(
+              l10n.radiologyPrintReportDialogBody,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-          SizedBox(height: theme.spacing.md),
-          AppReportSectionPicker(
-            sections: tiles,
-            selectedIds: _selectedSections,
-            onSelectionChanged: (Set<Object> next) {
-              setState(() {
-                _selectedSections = sanitizeReportSectionSelection(
-                  selectedIds: next,
-                  sections: availabilities,
-                ).cast<_RadiologyPrintSection>().toSet();
-              });
-            },
-          ),
-          SizedBox(height: theme.spacing.md),
-          AppReportPreviewPanel(
-            title: l10n.radiologyPrintPreviewTitle,
-            selectable: true,
-            child: Text(
-              _radiologyPrintPreviewText(context, widget.workflow, settings),
+            SizedBox(height: theme.spacing.md),
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final bool sideBySide =
+                    constraints.maxWidth >= _sideBySideBreakpoint;
+                final Widget picker = AppReportSectionPicker(
+                  sections: tiles,
+                  selectedIds: _selectedSections,
+                  maxColumns: sideBySide ? 1 : 3,
+                  onSelectionChanged: (Set<Object> next) {
+                    setState(() {
+                      _selectedSections = sanitizeReportSectionSelection(
+                        selectedIds: next,
+                        sections: availabilities,
+                      ).cast<_RadiologyPrintSection>().toSet();
+                    });
+                  },
+                );
+                final Widget preview = _buildPreview(
+                  context,
+                  settings: settings,
+                  height: _previewHeight,
+                );
+
+                if (!sideBySide) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      picker,
+                      SizedBox(height: theme.spacing.md),
+                      preview,
+                    ],
+                  );
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(flex: 2, child: picker),
+                    SizedBox(width: theme.spacing.md),
+                    Expanded(flex: 3, child: preview),
+                  ],
+                );
+              },
             ),
-          ),
+          ] else
+            _buildPreview(
+              context,
+              settings: settings,
+              height: maximizedPreviewHeight,
+            ),
         ],
       ),
       actions: <Widget>[
@@ -185,7 +316,7 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
       _selectedSections,
     );
     setState(() => _isPrinting = true);
-    await printFormTemplateDocument(
+    await PrintDocumentTemplates.clinicalResult(
       ref: ref,
       context: context,
       title: context.l10n.radiologyPrintReportTitle,
@@ -202,7 +333,7 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
               encounterIdLabel: context.l10n.radiologyEncounterLabel,
             )
           : null,
-      contextReference: settings.includeOrder
+      orderReference: settings.includeOrder
           ? PrintFormContextReference(
               label: context.l10n.radiologyOrderColumnLabel,
               value: widget.workflow.order.effectiveDisplayId,

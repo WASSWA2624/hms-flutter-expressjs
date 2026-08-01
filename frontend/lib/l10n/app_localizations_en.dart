@@ -21592,6 +21592,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyPrintPreviewTitle => 'Print preview';
 
   @override
+  String get radiologyPrintPreviewMaximizeAction => 'Maximize preview';
+
+  @override
+  String get radiologyPrintPreviewRestoreAction => 'Restore preview';
+
+  @override
   String get radiologyPrintAction => 'Print';
 
   @override

@@ -2605,7 +2605,7 @@ class _PatientReportPrintPreviewDialogState
       if (!context.mounted) {
         return;
       }
-      await printFormTemplateDocument(
+      await PrintDocumentTemplates.patientChart(
         ref: ref,
         context: context,
         title: document.title,

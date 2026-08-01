@@ -2056,12 +2056,12 @@ class _LabReportPreviewDialogState
       return;
     }
     setState(() => _isPrinting = true);
-    await printFormTemplateDocument(
+    await PrintDocumentTemplates.clinicalResult(
       ref: ref,
       context: context,
       title: l10n.labReportTitle,
       patientContext: _reportPatientContext(context, workflows, _settings),
-      contextReference: _reportContextReference(context, workflows, _settings),
+      orderReference: _reportContextReference(context, workflows, _settings),
       metadata: _reportMetadata(context, workflows, _settings),
       pages: _reportPages(
         context,

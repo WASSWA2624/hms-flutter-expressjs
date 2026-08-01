@@ -2139,7 +2139,7 @@ class _ClinicalActionBar extends ConsumerWidget {
           label: l10n.clinicalPrintSummaryAction,
           leadingIcon: AppActionIcons.print,
           onPressed: () async {
-            await printFormTemplateDocument(
+            await PrintDocumentTemplates.clinicalSummary(
               ref: ref,
               context: context,
               title: l10n.clinicalConsultationSummaryTitle,

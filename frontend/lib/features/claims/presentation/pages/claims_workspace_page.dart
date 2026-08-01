@@ -1345,7 +1345,7 @@ Future<void> _openClaimsDetailDialog(
               final String title = detail.isAuthorization
                   ? l10n.claimsAuthorizationStatementTitle
                   : l10n.claimsClaimStatementTitle;
-              await printFormTemplateDocument(
+              await PrintDocumentTemplates.claimStatement(
                 ref: ref,
                 context: context,
                 title: title,
@@ -1356,7 +1356,7 @@ Future<void> _openClaimsDetailDialog(
                         patientName: detail.item.patientDisplayId!,
                         patientId: detail.item.patientDisplayId,
                       ),
-                contextReference: PrintFormContextReference(
+                claimReference: PrintFormContextReference(
                   label: detail.isAuthorization
                       ? l10n.claimsAuthorizationStatementTitle
                       : l10n.claimsClaimStatementTitle,

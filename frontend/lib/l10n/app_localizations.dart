@@ -39934,6 +39934,18 @@ abstract class AppLocalizations {
   /// **'Print preview'**
   String get radiologyPrintPreviewTitle;
 
+  /// Action to expand the radiology print preview pane.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximize preview'**
+  String get radiologyPrintPreviewMaximizeAction;
+
+  /// Action to restore the radiology print preview pane size.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore preview'**
+  String get radiologyPrintPreviewRestoreAction;
+
   /// Radiology print action.
   ///
   /// In en, this message translates to:

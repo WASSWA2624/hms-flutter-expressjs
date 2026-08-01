@@ -2349,7 +2349,7 @@ Future<void> _printInstructions(
     ),
   ].join();
 
-  await printFormTemplateDocument(
+  await PrintDocumentTemplates.carePlan(
     ref: ref,
     context: context,
     title: l10n.physiotherapyInstructionsReportTitle,

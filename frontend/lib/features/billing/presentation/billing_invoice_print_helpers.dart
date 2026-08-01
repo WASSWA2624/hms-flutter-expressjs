@@ -14,7 +14,7 @@ Future<void> printBillingInvoice({
   required BillingWorkItem item,
 }) async {
   final AppLocalizations l10n = context.l10n;
-  await printFormTemplateDocument(
+  await PrintDocumentTemplates.invoice(
     ref: ref,
     context: context,
     title: l10n.billingInvoiceLabel,
@@ -25,7 +25,7 @@ Future<void> printBillingInvoice({
       patientId: item.effectivePatientNumber,
       encounterId: item.encounterDisplayId ?? item.encounterId,
     ),
-    contextReference: PrintFormContextReference(
+    invoiceReference: PrintFormContextReference(
       label: l10n.billingInvoiceLabel,
       value: item.effectiveDisplayId,
     ),

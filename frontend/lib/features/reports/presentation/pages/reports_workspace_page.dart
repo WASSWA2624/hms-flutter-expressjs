@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -1580,12 +1579,12 @@ Future<void> _printReportItem(
     return;
   }
   final AppLocalizations l10n = context.l10n;
-  await printFormTemplateDocument(
+  await PrintDocumentTemplates.registry(
     ref: ref,
     context: context,
     title: item.title,
     subtitle: l10n.reportsPrintSubtitle,
-    contextReference: PrintFormContextReference(
+    recordReference: PrintFormContextReference(
       label: l10n.reportsReferenceLabel,
       value: _valueOrUnknown(context, item.reference),
     ),
@@ -1604,12 +1603,12 @@ Future<void> _printComplianceItem(
     return;
   }
   final AppLocalizations l10n = context.l10n;
-  await printFormTemplateDocument(
+  await PrintDocumentTemplates.registry(
     ref: ref,
     context: context,
     title: item.title,
     subtitle: l10n.reportsEvidenceSubtitle,
-    contextReference: PrintFormContextReference(
+    recordReference: PrintFormContextReference(
       label: l10n.reportsReferenceLabel,
       value: item.id,
     ),

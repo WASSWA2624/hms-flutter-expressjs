@@ -27712,6 +27712,14 @@
   "@radiologyPrintPreviewTitle": {
     "description": "Radiology print preview title."
   },
+  "radiologyPrintPreviewMaximizeAction": "Maximize preview",
+  "@radiologyPrintPreviewMaximizeAction": {
+    "description": "Action to expand the radiology print preview pane."
+  },
+  "radiologyPrintPreviewRestoreAction": "Restore preview",
+  "@radiologyPrintPreviewRestoreAction": {
+    "description": "Action to restore the radiology print preview pane size."
+  },
   "radiologyPrintAction": "Print",
   "@radiologyPrintAction": {
     "description": "Radiology print action."
