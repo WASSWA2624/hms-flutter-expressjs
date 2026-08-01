@@ -160,7 +160,7 @@ void main() {
   });
 
   testWidgets(
-    'AppPrintPreviewWorkspace keeps tabs and toolbar in the preview column',
+    'AppPrintPreviewWorkspace keeps tabs and toolbar in the left column only',
     (WidgetTester tester) async {
       var mode = AppPrintPreviewPaneMode.split;
       var scale = 1.0;
@@ -177,8 +177,8 @@ void main() {
                 builder: (BuildContext context, StateSetter setState) {
                   return AppPrintPreviewWorkspace(
                     height: 480,
-                    sectionsFlex: 2,
-                    previewFlex: 3,
+                    sectionsFlex: 3,
+                    previewFlex: 2,
                     paneMode: mode,
                     onPaneModeChanged: (AppPrintPreviewPaneMode next) {
                       setState(() => mode = next);
@@ -215,6 +215,7 @@ void main() {
       expect(find.byTooltip('Maximize preview'), findsNothing);
       expect(find.text('Print preview'), findsNothing);
 
+      // In split view, chrome lives in the left column — not inside the panel.
       final Finder panel = find.byType(AppPrintPreviewPanel);
       expect(
         find.descendant(
@@ -235,7 +236,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.checklist_outlined));
       await tester.pumpAndSettle();
       expect(mode, AppPrintPreviewPaneMode.sections);
-      // Sections-only hides zoom/page toolbar; tabs remain for navigation.
+      // Sections-only keeps tabs on the left; zoom toolbar hides (no preview).
       expect(find.byType(AppPrintPreviewToolbar), findsNothing);
       expect(find.byType(AppTabStrip), findsOneWidget);
     },

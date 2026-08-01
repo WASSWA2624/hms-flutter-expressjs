@@ -377,9 +377,9 @@ class AppPrintPreviewPaneModeBar extends StatelessWidget {
 /// scroll — never the dialog shell and columns together. Prefer
 /// `contentPadding: EdgeInsets.zero` on the host [AppDialog].
 ///
-/// The preview column owns pane tabs + [toolbar] + document so that section
-/// fills available height. Sections-only mode keeps a compact tab strip above
-/// the picker so the user can switch back.
+/// Pane-mode tabs and optional [toolbar] sit in the left (sections) column
+/// only, so the preview document can use the full right-pane height.
+/// Preview-only mode keeps a compact tabs + toolbar strip above the document.
 class AppPrintPreviewWorkspace extends StatelessWidget {
   const AppPrintPreviewWorkspace({
     required this.preview,
@@ -404,7 +404,7 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
   final Widget? sectionPicker;
   final Widget? leading;
 
-  /// Zoom/page chrome under the pane tabs inside the preview column.
+  /// Zoom/page chrome under the pane tabs in the left column.
   final Widget? toolbar;
   final AppPrintPreviewPaneMode paneMode;
   final ValueChanged<AppPrintPreviewPaneMode>? onPaneModeChanged;
@@ -473,7 +473,8 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
                 context: context,
                 theme: theme,
                 l10n: l10n,
-                modeStrip: showPreview ? null : modeStrip,
+                modeStrip: modeStrip,
+                showToolbar: showToolbar,
               )
             : null;
         final Widget? previewPane = showPreview
@@ -481,8 +482,9 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
                 context: context,
                 theme: theme,
                 l10n: l10n,
-                modeStrip: modeStrip,
-                showToolbar: showToolbar,
+                // Compact return path when sections are hidden.
+                modeStrip: showSections ? null : modeStrip,
+                showToolbar: showSections ? false : showToolbar,
               )
             : null;
 
@@ -498,8 +500,6 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
         }
 
         if (sectionsPane != null && previewPane != null) {
-          // Stacked: keep mode/toolbar with the preview block so it still
-          // fills its flex height including chrome.
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -520,12 +520,18 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
     required ThemeData theme,
     required AppLocalizations l10n,
     required Widget? modeStrip,
+    required bool showToolbar,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         ?modeStrip,
-        if (modeStrip != null) SizedBox(height: theme.spacing.xs),
+        if (modeStrip != null && showToolbar) SizedBox(height: theme.spacing.xs),
+        if (showToolbar) ...<Widget>[
+          toolbar!,
+          SizedBox(height: theme.spacing.xs),
+        ] else if (modeStrip != null || leading != null)
+          SizedBox(height: theme.spacing.xs),
         if (leading != null) ...<Widget>[
           leading!,
           SizedBox(height: theme.spacing.xs),
