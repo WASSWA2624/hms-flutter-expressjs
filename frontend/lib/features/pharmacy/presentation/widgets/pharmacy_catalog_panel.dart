@@ -176,8 +176,8 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         textFilters: <AppSearchBarTextFilter>[
           AppSearchBarTextFilter(
             key: _drugNameFilterKey,
-            label: l10n.pharmacyDrugNameLabel,
-            hintText: l10n.pharmacyDrugBrandNameLabel,
+            label: l10n.pharmacyDrugGenericNameLabel,
+            hintText: l10n.pharmacyDrugGenericNameLabel,
             icon: Icons.medication_outlined,
           ),
           AppSearchBarTextFilter(
@@ -211,7 +211,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
           writeRequirement: widget.writeRequirement,
           isBusy: isBusy,
           hasSelection: hasSelection,
-          addLabel: l10n.commonAddActionLabel,
+          addLabel: l10n.commonCreateActionLabel,
           addSemanticLabel: l10n.pharmacyAddDrugAction,
           onAdd: () => _openDrugDialog(context),
           selectionLabel: l10n.pharmacyDeleteSelectedDrugsAction,
@@ -255,31 +255,6 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
           },
         ),
         AppListTableColumn<PharmacyDrug>(
-          id: 'drug_name',
-          label: l10n.pharmacyDrugNameLabel,
-          cellBuilder: (BuildContext context, PharmacyDrug item) {
-            final String? generic = item.genericSubtitle;
-            if (generic == null) {
-              return Text(item.displayTitle);
-            }
-            final ThemeData theme = Theme.of(context);
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(item.displayTitle),
-                Text(
-                  generic,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            );
-          },
-          exportValue: (PharmacyDrug item) => item.displayTitle,
-        ),
-        AppListTableColumn<PharmacyDrug>(
           id: 'brand_name',
           label: l10n.pharmacyDrugBrandNameLabel,
           cellBuilder: (_, PharmacyDrug item) =>
@@ -291,11 +266,22 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         AppListTableColumn<PharmacyDrug>(
           id: 'generic_name',
           label: l10n.pharmacyDrugGenericNameLabel,
-          cellBuilder: (_, PharmacyDrug item) =>
-              Text((item.genericName ?? '').trim().isEmpty
-                  ? '—'
-                  : item.genericName!.trim()),
-          exportValue: (PharmacyDrug item) => item.genericName ?? '',
+          cellBuilder: (_, PharmacyDrug item) {
+            final String generic = (item.genericName ?? '').trim();
+            if (generic.isNotEmpty) {
+              return Text(generic);
+            }
+            // Legacy rows stored the scientific name in `name`.
+            final String legacy = (item.name ?? '').trim();
+            return Text(legacy.isEmpty ? '—' : legacy);
+          },
+          exportValue: (PharmacyDrug item) {
+            final String generic = (item.genericName ?? '').trim();
+            if (generic.isNotEmpty) {
+              return generic;
+            }
+            return item.name ?? '';
+          },
         ),
         AppListTableColumn<PharmacyDrug>(
           id: 'code',
@@ -393,7 +379,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           title: item.displayTitle,
-          caption: item.genericSubtitle ?? item.code,
+          caption: item.code,
           showAvatar: false,
         );
       },
@@ -582,7 +568,7 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
           writeRequirement: widget.writeRequirement,
           isBusy: isBusy,
           hasSelection: hasSelection,
-          addLabel: l10n.commonAddActionLabel,
+          addLabel: l10n.commonCreateActionLabel,
           addSemanticLabel: l10n.pharmacyAddFormularyAction,
           onAdd: () => _openFormularyDialog(context),
           selectionLabel: l10n.pharmacyDeleteSelectedFormularyAction,
@@ -1710,7 +1696,7 @@ class _StorageLayoutCatalogTabState
           writeRequirement: widget.writeRequirement,
           isBusy: isBusy,
           hasSelection: false,
-          addLabel: l10n.commonAddActionLabel,
+          addLabel: l10n.commonCreateActionLabel,
           addSemanticLabel: l10n.pharmacyAddStorageRoomAction,
           onAdd: () => openPharmacyStorageRoomDialog(context, ref),
         ),
@@ -1761,7 +1747,6 @@ class _StorageLayoutCatalogTabState
           id: 'actions',
           label: '',
           alwaysVisible: true,
-          fixedWidth: 132,
           cellBuilder: (BuildContext context, PharmacyStorageRoom item) {
             return _catalogRowActions(
               context: context,
@@ -1781,7 +1766,7 @@ class _StorageLayoutCatalogTabState
                 ref,
                 item,
               ),
-              addLabel: l10n.commonAddActionLabel,
+              addLabel: l10n.commonCreateActionLabel,
               addSemanticLabel: l10n.pharmacyAddStorageShelfAction,
               addEnabled: item.isActive,
               onAdd: () => openPharmacyStorageShelfDialog(
@@ -1894,7 +1879,7 @@ class _ShelvesCatalogTabState extends ConsumerState<_ShelvesCatalogTab> {
           writeRequirement: widget.writeRequirement,
           isBusy: isBusy,
           hasSelection: false,
-          addLabel: l10n.commonAddActionLabel,
+          addLabel: l10n.commonCreateActionLabel,
           addSemanticLabel: l10n.pharmacyAddStorageShelfAction,
           onAdd: activeRooms.isEmpty
               ? null
@@ -1947,7 +1932,6 @@ class _ShelvesCatalogTabState extends ConsumerState<_ShelvesCatalogTab> {
           id: 'actions',
           label: '',
           alwaysVisible: true,
-          fixedWidth: 96,
           cellBuilder: (BuildContext context, _ShelfRow row) {
             return _catalogRowActions(
               context: context,
@@ -2127,8 +2111,7 @@ Widget _catalogRowActions({
   final ColorScheme colorScheme = theme.colorScheme;
   final String editSemantic = editSemanticLabel ?? editLabel;
   final String deleteSemantic = deleteSemanticLabel ?? deleteLabel;
-  final String? addSemantic =
-      addSemanticLabel ?? addLabel;
+  final String? addSemantic = addSemanticLabel ?? addLabel;
   return AppAccessActionGate(
     requirement: writeRequirement,
     builder: (BuildContext context, bool isAllowed) => Row(
@@ -2136,7 +2119,7 @@ Widget _catalogRowActions({
       children: <Widget>[
         if (onAdd != null && addLabel != null) ...<Widget>[
           AppButton.tertiary(
-            iconOnly: true,
+            dense: true,
             leadingIcon: addIcon,
             label: addLabel,
             semanticLabel: addSemantic,
@@ -2147,7 +2130,7 @@ Widget _catalogRowActions({
           SizedBox(width: theme.spacing.xs),
         ],
         AppButton.tertiary(
-          iconOnly: true,
+          dense: true,
           leadingIcon: editIcon,
           label: editLabel,
           semanticLabel: editSemantic,
@@ -2157,7 +2140,7 @@ Widget _catalogRowActions({
         ),
         SizedBox(width: theme.spacing.xs),
         AppButton.tertiary(
-          iconOnly: true,
+          dense: true,
           leadingIcon: deleteIcon,
           label: deleteLabel,
           semanticLabel: deleteSemantic,

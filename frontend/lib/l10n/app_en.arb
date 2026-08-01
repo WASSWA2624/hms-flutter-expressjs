@@ -15236,9 +15236,9 @@
   "@pharmacyStorageStatusColumnLabel": {
     "description": "Pharmacy storage table column header for the active/inactive status."
   },
-  "pharmacyAddDrugAction": "Add drug",
+  "pharmacyAddDrugAction": "Create drug",
   "@pharmacyAddDrugAction": {
-    "description": "Pharmacy add drug action label."
+    "description": "Pharmacy create drug action label."
   },
   "pharmacyEditDrugAction": "Edit drug",
   "@pharmacyEditDrugAction": {
@@ -15357,9 +15357,9 @@
       "count": { "type": "int" }
     }
   },
-  "pharmacyAddFormularyAction": "Add formulary item",
+  "pharmacyAddFormularyAction": "Create formulary item",
   "@pharmacyAddFormularyAction": {
-    "description": "Pharmacy add formulary item action label."
+    "description": "Pharmacy create formulary item action label."
   },
   "pharmacyFormularyDrugLabel": "Drug",
   "@pharmacyFormularyDrugLabel": {
@@ -15389,17 +15389,17 @@
   "@pharmacyStoragePanelDescription": {
     "description": "Pharmacy storage layout panel description."
   },
-  "pharmacyAddStorageRoomAction": "Add room",
+  "pharmacyAddStorageRoomAction": "Create room",
   "@pharmacyAddStorageRoomAction": {
-    "description": "Pharmacy add storage room action."
+    "description": "Pharmacy create storage room action."
   },
   "pharmacyEditStorageRoomAction": "Edit room",
   "@pharmacyEditStorageRoomAction": {
     "description": "Pharmacy edit storage room action."
   },
-  "pharmacyAddStorageShelfAction": "Add shelf",
+  "pharmacyAddStorageShelfAction": "Create shelf",
   "@pharmacyAddStorageShelfAction": {
-    "description": "Pharmacy add storage shelf action."
+    "description": "Pharmacy create storage shelf action."
   },
   "pharmacyEditStorageShelfAction": "Edit shelf",
   "@pharmacyEditStorageShelfAction": {
@@ -25683,6 +25683,10 @@
   "commonAddActionLabel": "Add",
   "@commonAddActionLabel": {
     "description": "Shared short add action label for section headers and toolbars."
+  },
+  "commonCreateActionLabel": "Create",
+  "@commonCreateActionLabel": {
+    "description": "Shared short create action label for section headers and toolbars."
   },
   "commonDeleteActionLabel": "Delete",
   "@commonDeleteActionLabel": {

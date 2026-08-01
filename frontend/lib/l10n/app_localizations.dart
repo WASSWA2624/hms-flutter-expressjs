@@ -22048,10 +22048,10 @@ abstract class AppLocalizations {
   /// **'Status'**
   String get pharmacyStorageStatusColumnLabel;
 
-  /// Pharmacy add drug action label.
+  /// Pharmacy create drug action label.
   ///
   /// In en, this message translates to:
-  /// **'Add drug'**
+  /// **'Create drug'**
   String get pharmacyAddDrugAction;
 
   /// Pharmacy edit drug action label.
@@ -22204,10 +22204,10 @@ abstract class AppLocalizations {
   /// **'{count} months'**
   String pharmacyExpiryAlertLeadMonths(int count);
 
-  /// Pharmacy add formulary item action label.
+  /// Pharmacy create formulary item action label.
   ///
   /// In en, this message translates to:
-  /// **'Add formulary item'**
+  /// **'Create formulary item'**
   String get pharmacyAddFormularyAction;
 
   /// Pharmacy formulary drug selector label.
@@ -22252,10 +22252,10 @@ abstract class AppLocalizations {
   /// **'Storage rooms and shelf codes for medication stock.'**
   String get pharmacyStoragePanelDescription;
 
-  /// Pharmacy add storage room action.
+  /// Pharmacy create storage room action.
   ///
   /// In en, this message translates to:
-  /// **'Add room'**
+  /// **'Create room'**
   String get pharmacyAddStorageRoomAction;
 
   /// Pharmacy edit storage room action.
@@ -22264,10 +22264,10 @@ abstract class AppLocalizations {
   /// **'Edit room'**
   String get pharmacyEditStorageRoomAction;
 
-  /// Pharmacy add storage shelf action.
+  /// Pharmacy create storage shelf action.
   ///
   /// In en, this message translates to:
-  /// **'Add shelf'**
+  /// **'Create shelf'**
   String get pharmacyAddStorageShelfAction;
 
   /// Pharmacy edit storage shelf action.
@@ -37296,6 +37296,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add'**
   String get commonAddActionLabel;
+
+  /// Shared short create action label for section headers and toolbars.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get commonCreateActionLabel;
 
   /// Shared short delete action label for section headers and toolbars.
   ///

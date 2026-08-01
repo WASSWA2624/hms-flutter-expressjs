@@ -518,7 +518,7 @@ void main() {
     expect(find.text('Room'), findsOneWidget);
     expect(find.text('Storage layout'), findsNothing);
     // Add lives in the search trailing cluster (not an above-table toolbar).
-    expect(find.byTooltip('Add drug'), findsOneWidget);
+    expect(find.byTooltip('Create drug'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

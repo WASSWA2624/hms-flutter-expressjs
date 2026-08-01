@@ -25,7 +25,6 @@ class PharmacyDrugEditDialog extends ConsumerStatefulWidget {
 class _PharmacyDrugEditDialogState
     extends ConsumerState<PharmacyDrugEditDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nameController;
   late final TextEditingController _brandNameController;
   late final TextEditingController _genericNameController;
   late final TextEditingController _codeController;
@@ -52,10 +51,11 @@ class _PharmacyDrugEditDialogState
   void initState() {
     super.initState();
     final PharmacyDrug? drug = widget.drug;
-    _nameController = TextEditingController(text: drug?.name ?? '');
     _brandNameController = TextEditingController(text: drug?.brandName ?? '');
+    final String generic = (drug?.genericName ?? '').trim();
+    final String legacyName = (drug?.name ?? '').trim();
     _genericNameController = TextEditingController(
-      text: drug?.genericName ?? '',
+      text: generic.isNotEmpty ? generic : legacyName,
     );
     _codeController = TextEditingController(text: drug?.code ?? '');
     _form = _emptyToNull(drug?.form ?? '');
@@ -86,7 +86,6 @@ class _PharmacyDrugEditDialogState
 
   @override
   void dispose() {
-    _nameController.dispose();
     _brandNameController.dispose();
     _genericNameController.dispose();
     _codeController.dispose();
@@ -298,8 +297,8 @@ class _PharmacyDrugEditDialogState
               AppResponsiveFieldRow.two(
                 gap: AppResponsiveFieldRowGap.form,
                 left: AppTextField(
-                  controller: _nameController,
-                  labelText: l10n.pharmacyDrugNameLabel,
+                  controller: _genericNameController,
+                  labelText: l10n.pharmacyDrugGenericNameLabel,
                   isRequired: true,
                   validator: AppValidators.requiredText(
                     l10n.validationRequired,
@@ -310,16 +309,9 @@ class _PharmacyDrugEditDialogState
                   labelText: l10n.pharmacyDrugCodeLabel,
                 ),
               ),
-              AppResponsiveFieldRow.two(
-                gap: AppResponsiveFieldRowGap.form,
-                left: AppTextField(
-                  controller: _brandNameController,
-                  labelText: l10n.pharmacyDrugBrandNameLabel,
-                ),
-                right: AppTextField(
-                  controller: _genericNameController,
-                  labelText: l10n.pharmacyDrugGenericNameLabel,
-                ),
+              AppTextField(
+                controller: _brandNameController,
+                labelText: l10n.pharmacyDrugBrandNameLabel,
               ),
             ],
           ),
@@ -548,6 +540,7 @@ class _PharmacyDrugEditDialogState
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
+    final String genericName = _genericNameController.text.trim();
     final num? pharmacyPrice = _parsePrice(_pharmacyPriceController.text);
     final num? facilityPrice = _parsePrice(_facilityPriceController.text);
     final String? pharmacyCurrency = pharmacyPrice == null
@@ -564,9 +557,10 @@ class _PharmacyDrugEditDialogState
         failure = await controller.createDrug(
           PharmacyDrugInput(
             tenantId: tenantId,
-            name: _nameController.text.trim(),
+            // Backend still requires `name`; keep it aligned with generic.
+            name: genericName,
             brandName: _emptyToNull(_brandNameController.text),
-            genericName: _emptyToNull(_genericNameController.text),
+            genericName: genericName,
             code: _emptyToNull(_codeController.text),
             form: _form,
             strength: _strength,
@@ -590,9 +584,9 @@ class _PharmacyDrugEditDialogState
       failure = await controller.updateDrug(
         widget.drug!.id,
         PharmacyDrugUpdateInput(
-          name: _nameController.text.trim(),
+          name: genericName,
           brandName: _brandNameController.text.trim(),
-          genericName: _genericNameController.text.trim(),
+          genericName: genericName,
           code: _emptyToNull(_codeController.text),
           form: _form,
           strength: _strength,
