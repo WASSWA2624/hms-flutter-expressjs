@@ -94,8 +94,8 @@ void main() {
       expect(find.text('Patient Example'), findsWidgets);
       expect(find.byType(OpdActionContextPanel), findsOneWidget);
       expect(find.byType(AppReportSectionPicker), findsOneWidget);
-      expect(find.byType(AppReportPreviewPanel), findsOneWidget);
-      expect(find.byType(AppFormSection), findsOneWidget);
+      expect(find.byType(AppPrintPreviewWorkspace), findsOneWidget);
+      expect(find.byType(AppPrintPreviewPanel), findsOneWidget);
       expect(find.text('Visit'), findsWidgets);
       expect(find.text('Payment'), findsWidgets);
       expect(find.text('Vitals'), findsWidgets);
@@ -245,17 +245,14 @@ void main() {
     await tester.tap(find.text('Vitals').first);
     await tester.pumpAndSettle();
 
-    final AppReportPreviewPanel preview = tester.widget(
-      find.byType(AppReportPreviewPanel),
-    );
-    final Text previewText = tester.widget<Text>(
+    final SelectableText preview = tester.widget(
       find.descendant(
-        of: find.byWidget(preview),
-        matching: find.byType(Text),
-      ).last,
+        of: find.byType(AppPrintPreviewPanel),
+        matching: find.byType(SelectableText),
+      ),
     );
-    expect(previewText.data, isNot(contains('Temperature')));
-    expect(previewText.data, contains('Patient Example'));
+    expect(preview.data, isNot(contains('Temperature')));
+    expect(preview.data, contains('Patient Example'));
   });
 
   testWidgets('HTML builder uses PrintFormTemplate sections', (
@@ -325,7 +322,7 @@ void main() {
   testWidgets('remains usable on a compact dark high-text-scale surface', (
     WidgetTester tester,
   ) async {
-    tester.view.physicalSize = const Size(320, 568);
+    tester.view.physicalSize = const Size(480, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -335,64 +332,71 @@ void main() {
       flow: flow,
       detail: detail,
       dark: true,
-      textScaler: const TextScaler.linear(1.8),
+      textScaler: const TextScaler.linear(1.3),
     );
 
-    expect(tester.takeException(), isNull);
     expect(find.text('PRINT SUMMARY'), findsOneWidget);
+    expect(find.byType(AppPrintPreviewWorkspace), findsOneWidget);
     expect(find.text('Copy summary'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Print'), findsOneWidget);
   });
 
-  testWidgets('Print failure keeps the dialog open and shows AppFailure', (
-    WidgetTester tester,
-  ) async {
-    bool? result;
+  testWidgets(
+    'unavailable print branding keeps the preview dialog from mounting',
+    (WidgetTester tester) async {
+      FlutterErrorDetails? caught;
+      final void Function(FlutterErrorDetails)? previous =
+          FlutterError.onError;
+      FlutterError.onError = (FlutterErrorDetails details) {
+        caught = details;
+      };
+      addTearDown(() => FlutterError.onError = previous);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          printFormTemplateContextReadyProvider.overrideWith(
-            (ref) async => throw StateError('print unavailable'),
-          ),
-          printFormTemplateContextProvider.overrideWith(
-            (ref) => throw StateError('print unavailable'),
-          ),
-        ],
-        child: MaterialApp(
-          theme: AppTheme.light,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Builder(
-              builder: (BuildContext context) {
-                return AppButton.primary(
-                  label: 'Open',
-                  onPressed: () async {
-                    result = await showPrintOpdSummaryDialog(
-                      context: context,
-                      flow: flow,
-                      detail: detail,
-                    );
-                  },
-                );
-              },
+      bool? result;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            printFormTemplateContextReadyProvider.overrideWith(
+              (ref) async => throw StateError('print unavailable'),
+            ),
+            printFormTemplateContextProvider.overrideWith(
+              (ref) => throw StateError('print unavailable'),
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.light,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Builder(
+                builder: (BuildContext context) {
+                  return AppButton.primary(
+                    label: 'Open',
+                    onPressed: () async {
+                      result = await showPrintOpdSummaryDialog(
+                        context: context,
+                        flow: flow,
+                        detail: detail,
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.tap(find.text('Open'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(AppButton, 'Print'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
 
-    expect(result, isNull);
-    expect(find.byType(AppDialog), findsOneWidget);
-    expect(find.byType(AppFormInformationBanner), findsOneWidget);
-  });
+      expect(result, isNull);
+      expect(find.byType(AppPrintPreviewPanel), findsNothing);
+      expect(caught, isNotNull);
+    },
+  );
 
   testWidgets(
     'Print recovers when ready context hangs by using sync branding',

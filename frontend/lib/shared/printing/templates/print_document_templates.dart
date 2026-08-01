@@ -486,7 +486,8 @@ abstract final class PrintDocumentTemplates {
     }
 
     if (!showPreview) {
-      // Caller already embeds AppPrintPreviewPanel / Workspace.
+      // Caller must already embed AppPrintPreviewPanel / Workspace in its
+      // own dialog. Never pass false from a flow that prints immediately.
       return doPrint();
     }
 

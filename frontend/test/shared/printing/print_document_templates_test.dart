@@ -37,6 +37,7 @@ void main() {
   test('typed print methods accept showPreview override', () {
     // Compile-time contract: callers with custom dialogs can disable the
     // shared preview shell without changing the print document builder.
+    // Runtime routing coverage lives in print_preview_routing_test.dart.
     expect(
       () => PrintDocumentTemplates.emptyBodyHtml(
         kind: PrintDocumentTemplateKind.clinicalSummary,

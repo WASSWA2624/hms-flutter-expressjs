@@ -340,7 +340,7 @@ class _NursingActionBar extends ConsumerWidget {
           requirement: NursingAllAtomPermissions.printSummary,
           label: l10n.nursingActionPrintSummary,
           icon: Icons.print_outlined,
-          onPressed: () => _openPrintSummaryDialog(context, detail),
+          onPressed: () => _openPrintSummaryDialog(context, ref, detail),
         ),
         for (final NursingHandover handover in detail.handovers)
           if (handover.isPending)
@@ -597,15 +597,13 @@ Future<void> _openTransferDialog(
 
 Future<void> _openPrintSummaryDialog(
   BuildContext context,
+  WidgetRef ref,
   NursingPatientDetail detail,
-) async {
-  await nursingShowActionResult(
-    context,
-    showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => NursingPrintSummaryDialog(detail: detail),
-    ),
+) {
+  return showNursingPrintSummary(
+    ref: ref,
+    context: context,
+    detail: detail,
   );
 }
 
