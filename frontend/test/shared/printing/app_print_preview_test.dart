@@ -20,9 +20,8 @@ void main() {
   });
 
   testWidgets(
-    'AppPrintPreviewPanel has no title header; zoom and maximize on toolbar',
+    'AppPrintPreviewPanel has no title header; zoom on toolbar without maximize',
     (WidgetTester tester) async {
-      var maximized = false;
       var scale = 1.0;
 
       await tester.pumpWidget(
@@ -36,7 +35,6 @@ void main() {
                   html: '<html><body><p>Preview body</p></body></html>',
                   height: 240,
                   scale: scale,
-                  maximized: maximized,
                   onZoomIn: () => setState(() {
                     scale = AppPrintPreviewZoom.zoomIn(scale);
                   }),
@@ -46,9 +44,6 @@ void main() {
                   onFitPage: () => setState(() {
                     scale = AppPrintPreviewZoom.fitPage(400);
                   }),
-                  onMaximizeToggle: () {
-                    setState(() => maximized = !maximized);
-                  },
                   fallbackChild: const Text('Fallback preview'),
                 );
               },
@@ -60,16 +55,13 @@ void main() {
       expect(find.text('Print preview'), findsNothing);
       expect(find.text('100%'), findsOneWidget);
       expect(find.text('Page 1 of 1'), findsOneWidget);
+      expect(find.byTooltip('Maximize preview'), findsNothing);
       expect(find.text('Fallback preview'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       await tester.tap(find.byTooltip('Zoom in'));
       await tester.pump();
       expect(find.text('110%'), findsOneWidget);
-
-      await tester.tap(find.byTooltip('Maximize preview'));
-      await tester.pump();
-      expect(find.byTooltip('Restore preview'), findsOneWidget);
     },
   );
 
@@ -90,7 +82,6 @@ void main() {
                 scale: 1,
                 currentPage: page,
                 pageCount: total,
-                showMaximize: false,
                 onPagePrevious: () => setState(() => page = page - 1),
                 onPageNext: () => setState(() => page = page + 1),
               );
@@ -111,6 +102,7 @@ void main() {
     }
 
     expect(pageTool('Previous page').onPressed, isNull);
+    expect(find.byTooltip('Maximize preview'), findsNothing);
 
     await tester.tap(find.byTooltip('Next page'));
     await tester.pump();
@@ -168,7 +160,7 @@ void main() {
   });
 
   testWidgets(
-    'AppPrintPreviewWorkspace places tabs and toolbar above panes; panel has no nested toolbar',
+    'AppPrintPreviewWorkspace keeps tabs and toolbar in the preview column',
     (WidgetTester tester) async {
       var mode = AppPrintPreviewPaneMode.split;
       var scale = 1.0;
@@ -185,15 +177,14 @@ void main() {
                 builder: (BuildContext context, StateSetter setState) {
                   return AppPrintPreviewWorkspace(
                     height: 480,
-                    sectionsFlex: 3,
-                    previewFlex: 2,
+                    sectionsFlex: 2,
+                    previewFlex: 3,
                     paneMode: mode,
                     onPaneModeChanged: (AppPrintPreviewPaneMode next) {
                       setState(() => mode = next);
                     },
                     toolbar: AppPrintPreviewToolbar(
                       scale: scale,
-                      showMaximize: false,
                       currentPage: 1,
                       pageCount: 2,
                       onZoomIn: () => setState(() {
@@ -205,7 +196,6 @@ void main() {
                       html:
                           '<article class="print-template-page">a</article>'
                           '<article class="print-template-page">b</article>',
-                      height: 400,
                       toolbarEnabled: false,
                       fallbackChild: Text('Preview content'),
                     ),
@@ -222,9 +212,9 @@ void main() {
       expect(find.text('Page 1 of 2'), findsOneWidget);
       expect(find.text('Sections content'), findsOneWidget);
       expect(find.text('Preview content'), findsOneWidget);
+      expect(find.byTooltip('Maximize preview'), findsNothing);
       expect(find.text('Print preview'), findsNothing);
 
-      // Toolbar is owned by the workspace, not nested inside the panel scroll.
       final Finder panel = find.byType(AppPrintPreviewPanel);
       expect(
         find.descendant(
@@ -235,18 +225,19 @@ void main() {
       );
       expect(tester.takeException(), isNull);
 
-      await tester.tap(find.text('Preview'));
+      await tester.tap(find.byIcon(Icons.article_outlined));
       await tester.pumpAndSettle();
       expect(mode, AppPrintPreviewPaneMode.preview);
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.byType(AppPrintPreviewToolbar), findsOneWidget);
       expect(find.text('Sections content'), findsNothing);
 
-      await tester.tap(find.text('Sections'));
+      await tester.tap(find.byIcon(Icons.checklist_outlined));
       await tester.pumpAndSettle();
       expect(mode, AppPrintPreviewPaneMode.sections);
-      // Sections-only hides the zoom/page toolbar (no preview pane).
+      // Sections-only hides zoom/page toolbar; tabs remain for navigation.
       expect(find.byType(AppPrintPreviewToolbar), findsNothing);
+      expect(find.byType(AppTabStrip), findsOneWidget);
     },
   );
 }

@@ -129,8 +129,6 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
           _radiologyPrintSectionIcon(id as _RadiologyPrintSection),
       emptyDisabledReason: l10n.reportSectionEmptyDisabledReason,
     );
-    final bool previewMaximized =
-        _paneMode == AppPrintPreviewPaneMode.preview;
     final String documentHtml = _documentHtml(context, settings);
     final int pageCount = AppPrintPreviewPages.countFromHtml(documentHtml);
     final int currentPage = AppPrintPreviewPages.clampPage(
@@ -154,7 +152,6 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
         },
         toolbar: AppPrintPreviewToolbar(
           scale: _scale,
-          maximized: previewMaximized,
           enabled: !_isPrinting,
           currentPage: currentPage,
           pageCount: pageCount,
@@ -175,13 +172,6 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
               _scale = AppPrintPreviewZoom.fitPage(
                 _dialogMaxWidth * 0.55 - theme.spacing.lg * 2,
               );
-            });
-          },
-          onMaximizeToggle: () {
-            setState(() {
-              _paneMode = previewMaximized
-                  ? AppPrintPreviewPaneMode.split
-                  : AppPrintPreviewPaneMode.preview;
             });
           },
           onPagePrevious: () {
@@ -216,23 +206,16 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
             });
           },
         ),
-        preview: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            return AppPrintPreviewPanel(
-              html: documentHtml,
-              height: constraints.maxHeight,
-              scale: _scale,
-              maximized: previewMaximized,
-              toolbarEnabled: false,
-              focusedPage: currentPage,
-              currentPage: currentPage,
-              pageCount: pageCount,
-              maximizeEnabled: !_isPrinting,
-              fallbackChild: SelectableText(
-                _radiologyPrintPreviewText(context, widget.workflow, settings),
-              ),
-            );
-          },
+        preview: AppPrintPreviewPanel(
+          html: documentHtml,
+          scale: _scale,
+          toolbarEnabled: false,
+          focusedPage: currentPage,
+          currentPage: currentPage,
+          pageCount: pageCount,
+          fallbackChild: SelectableText(
+            _radiologyPrintPreviewText(context, widget.workflow, settings),
+          ),
         ),
       ),
       actions: <Widget>[

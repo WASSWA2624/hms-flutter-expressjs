@@ -1782,8 +1782,6 @@ class _LabReportPreviewDialogState
       authorized: printAuthorized,
       hasPrintableReleasedContent: printableItems.isNotEmpty,
     );
-    final bool previewMaximized =
-        _paneMode == AppPrintPreviewPaneMode.preview;
     final String? documentHtml = _documentHtml(context);
     final String resolvedHtml =
         documentHtml ??
@@ -1814,7 +1812,6 @@ class _LabReportPreviewDialogState
         },
         toolbar: AppPrintPreviewToolbar(
           scale: _scale,
-          maximized: previewMaximized,
           enabled: !_isPrinting,
           currentPage: currentPage,
           pageCount: pageCount,
@@ -1835,13 +1832,6 @@ class _LabReportPreviewDialogState
               _scale = AppPrintPreviewZoom.fitPage(
                 1120 * 0.55 - theme.spacing.lg * 2,
               );
-            });
-          },
-          onMaximizeToggle: () {
-            setState(() {
-              _paneMode = previewMaximized
-                  ? AppPrintPreviewPaneMode.split
-                  : AppPrintPreviewPaneMode.preview;
             });
           },
           onPagePrevious: () {
@@ -1881,24 +1871,17 @@ class _LabReportPreviewDialogState
             onOpenSettings: _openReportSettings,
           ),
         ),
-        preview: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            return AppPrintPreviewPanel(
-              html: resolvedHtml,
-              height: constraints.maxHeight,
-              scale: _scale,
-              maximized: previewMaximized,
-              toolbarEnabled: false,
-              focusedPage: currentPage,
-              currentPage: currentPage,
-              pageCount: pageCount,
-              maximizeEnabled: !_isPrinting,
-              fallbackChild: Text(
-                l10n.labReportPreviewTitle,
-                style: theme.textTheme.bodyMedium,
-              ),
-            );
-          },
+        preview: AppPrintPreviewPanel(
+          html: resolvedHtml,
+          scale: _scale,
+          toolbarEnabled: false,
+          focusedPage: currentPage,
+          currentPage: currentPage,
+          pageCount: pageCount,
+          fallbackChild: Text(
+            l10n.labReportPreviewTitle,
+            style: theme.textTheme.bodyMedium,
+          ),
         ),
       ),
       actions: <Widget>[

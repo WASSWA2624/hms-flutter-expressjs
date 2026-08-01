@@ -45,18 +45,15 @@ abstract final class AppPrintPreviewPages {
 /// Shared HTML print-preview document surface.
 ///
 /// Prefer [toolbarEnabled] `false` when the parent owns [AppPrintPreviewToolbar]
-/// (workspace strip or simple dialog chrome). Maximize (when provided) lives on
-/// that shared toolbar.
+/// (workspace strip or simple dialog chrome).
 class AppPrintPreviewPanel extends StatelessWidget {
   const AppPrintPreviewPanel({
     required this.html,
     required this.fallbackChild,
     this.title,
-    this.height = 420,
+    this.height,
     this.scale = 1,
-    this.maximized = false,
     this.focusedPage,
-    this.onMaximizeToggle,
     this.onZoomIn,
     this.onZoomOut,
     this.onZoomIncrease,
@@ -66,7 +63,6 @@ class AppPrintPreviewPanel extends StatelessWidget {
     this.pageCount = 1,
     this.onPagePrevious,
     this.onPageNext,
-    this.maximizeEnabled = true,
     this.toolbarEnabled = true,
     this.headerActions = const <Widget>[],
     this.viewTypePrefix = 'app-print-html-preview',
@@ -78,13 +74,14 @@ class AppPrintPreviewPanel extends StatelessWidget {
 
   /// Unused; retained for call-site compatibility. Title chrome was removed.
   final String? title;
-  final double height;
+
+  /// Fixed preview height. When null and [toolbarEnabled] is false, the panel
+  /// expands to fill its parent (preferred in workspace layouts).
+  final double? height;
   final double scale;
-  final bool maximized;
 
   /// 1-based page to focus in the HTML preview.
   final int? focusedPage;
-  final VoidCallback? onMaximizeToggle;
   final VoidCallback? onZoomIn;
   final VoidCallback? onZoomOut;
   final VoidCallback? onZoomIncrease;
@@ -94,7 +91,6 @@ class AppPrintPreviewPanel extends StatelessWidget {
   final int pageCount;
   final VoidCallback? onPagePrevious;
   final VoidCallback? onPageNext;
-  final bool maximizeEnabled;
   final bool toolbarEnabled;
   final List<Widget> headerActions;
   final String viewTypePrefix;
@@ -115,7 +111,7 @@ class AppPrintPreviewPanel extends StatelessWidget {
       viewTypePrefix: viewTypePrefix,
     );
 
-    if (!toolbarEnabled) {
+    Widget framed(Widget child) {
       return Semantics(
         container: true,
         label: title ?? l10n.printPreviewPreviewPaneLabel,
@@ -124,27 +120,31 @@ class AppPrintPreviewPanel extends StatelessWidget {
             color: colorScheme.surfaceContainerLowest,
             border: Border.all(color: colorScheme.outlineVariant),
           ),
-          child: SizedBox(
-            height: height,
-            width: double.infinity,
-            child: Padding(
-              padding: EdgeInsets.all(theme.spacing.xs),
-              child: document,
-            ),
-          ),
+          child: child,
         ),
       );
     }
 
+    if (!toolbarEnabled) {
+      final Widget padded = Padding(
+        padding: EdgeInsets.all(theme.spacing.xs),
+        child: document,
+      );
+      if (height != null) {
+        return framed(
+          SizedBox(height: height, width: double.infinity, child: padded),
+        );
+      }
+      return framed(SizedBox.expand(child: padded));
+    }
+
+    final double resolvedHeight = height ?? 420;
     final Widget body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         AppPrintPreviewToolbar(
           scale: scale,
-          maximized: maximized,
-          enabled: maximizeEnabled,
-          showMaximize: onMaximizeToggle != null,
           currentPage: currentPage,
           pageCount: pageCount,
           onZoomIn: onZoomIn,
@@ -152,7 +152,6 @@ class AppPrintPreviewPanel extends StatelessWidget {
           onZoomIncrease: onZoomIncrease,
           onZoomDecrease: onZoomDecrease,
           onFitPage: onFitPage,
-          onMaximizeToggle: onMaximizeToggle,
           onPagePrevious: onPagePrevious,
           onPageNext: onPageNext,
         ),
@@ -166,30 +165,22 @@ class AppPrintPreviewPanel extends StatelessWidget {
         ],
         SizedBox(height: theme.spacing.sm),
         SizedBox(
-          height: height,
+          height: resolvedHeight,
           width: double.infinity,
           child: document,
         ),
       ],
     );
 
-    return Semantics(
-      container: true,
-      label: title ?? l10n.printPreviewPreviewPaneLabel,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLowest,
-          border: Border.all(color: colorScheme.outlineVariant),
-        ),
-        child: SizedBox(
-          height: height,
-          width: double.infinity,
-          child: Scrollbar(
-            child: SingleChildScrollView(
-              primary: false,
-              padding: EdgeInsets.all(theme.spacing.xs),
-              child: body,
-            ),
+    return framed(
+      SizedBox(
+        height: resolvedHeight,
+        width: double.infinity,
+        child: Scrollbar(
+          child: SingleChildScrollView(
+            primary: false,
+            padding: EdgeInsets.all(theme.spacing.xs),
+            child: body,
           ),
         ),
       ),
@@ -197,13 +188,15 @@ class AppPrintPreviewPanel extends StatelessWidget {
   }
 }
 
-/// Zoom / page / fit / maximize controls for print previews.
+/// Zoom / page / fit controls for print previews.
+///
+/// Dialog/window maximize stays on [AppDialog] chrome. Use the Preview pane
+/// tab for a preview-only layout — this toolbar does not include a maximize
+/// control.
 class AppPrintPreviewToolbar extends StatelessWidget {
   const AppPrintPreviewToolbar({
     required this.scale,
-    this.maximized = false,
     this.enabled = true,
-    this.showMaximize = true,
     this.showPageControls = true,
     this.currentPage = 1,
     this.pageCount = 1,
@@ -212,16 +205,13 @@ class AppPrintPreviewToolbar extends StatelessWidget {
     this.onZoomDecrease,
     this.onZoomIncrease,
     this.onFitPage,
-    this.onMaximizeToggle,
     this.onPagePrevious,
     this.onPageNext,
     super.key,
   });
 
   final double scale;
-  final bool maximized;
   final bool enabled;
-  final bool showMaximize;
   final bool showPageControls;
   final int currentPage;
   final int pageCount;
@@ -230,7 +220,6 @@ class AppPrintPreviewToolbar extends StatelessWidget {
   final VoidCallback? onZoomDecrease;
   final VoidCallback? onZoomIncrease;
   final VoidCallback? onFitPage;
-  final VoidCallback? onMaximizeToggle;
   final VoidCallback? onPagePrevious;
   final VoidCallback? onPageNext;
 
@@ -238,9 +227,6 @@ class AppPrintPreviewToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final String maximizeLabel = maximized
-        ? l10n.printPreviewRestoreAction
-        : l10n.printPreviewMaximizeAction;
     final String zoomLabel = l10n.printPreviewZoomPercentLabel(
       (scale * 100).round(),
     );
@@ -324,12 +310,6 @@ class AppPrintPreviewToolbar extends StatelessWidget {
             onPressed: page >= total ? null : onPageNext,
           ),
         ],
-        if (showMaximize && onMaximizeToggle != null)
-          tool(
-            icon: maximized ? Icons.fullscreen_exit : Icons.fullscreen,
-            label: maximizeLabel,
-            onPressed: onMaximizeToggle,
-          ),
       ],
     );
   }
@@ -397,8 +377,9 @@ class AppPrintPreviewPaneModeBar extends StatelessWidget {
 /// scroll — never the dialog shell and columns together. Prefer
 /// `contentPadding: EdgeInsets.zero` on the host [AppDialog].
 ///
-/// Pane-mode tabs and optional [toolbar] sit in a shared strip above the panes
-/// so the document preview can use the remaining height.
+/// The preview column owns pane tabs + [toolbar] + document so that section
+/// fills available height. Sections-only mode keeps a compact tab strip above
+/// the picker so the user can switch back.
 class AppPrintPreviewWorkspace extends StatelessWidget {
   const AppPrintPreviewWorkspace({
     required this.preview,
@@ -423,8 +404,7 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
   final Widget? sectionPicker;
   final Widget? leading;
 
-  /// Shared zoom/page chrome placed under the pane-mode tabs when the preview
-  /// pane is visible. Prefer this over an in-panel toolbar.
+  /// Zoom/page chrome under the pane tabs inside the preview column.
   final Widget? toolbar;
   final AppPrintPreviewPaneMode paneMode;
   final ValueChanged<AppPrintPreviewPaneMode>? onPaneModeChanged;
@@ -493,6 +473,7 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
                 context: context,
                 theme: theme,
                 l10n: l10n,
+                modeStrip: showPreview ? null : modeStrip,
               )
             : null;
         final Widget? previewPane = showPreview
@@ -500,12 +481,13 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
                 context: context,
                 theme: theme,
                 l10n: l10n,
+                modeStrip: modeStrip,
+                showToolbar: showToolbar,
               )
             : null;
 
-        Widget panes;
         if (sideBySide) {
-          panes = Row(
+          return Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Expanded(flex: sectionsFlex, child: sectionsPane!),
@@ -513,8 +495,12 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
               Expanded(flex: previewFlex, child: previewPane!),
             ],
           );
-        } else if (sectionsPane != null && previewPane != null) {
-          panes = Column(
+        }
+
+        if (sectionsPane != null && previewPane != null) {
+          // Stacked: keep mode/toolbar with the preview block so it still
+          // fills its flex height including chrome.
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Expanded(flex: 2, child: sectionsPane),
@@ -522,24 +508,9 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
               Expanded(flex: 3, child: previewPane),
             ],
           );
-        } else {
-          panes = sectionsPane ?? previewPane ?? const SizedBox.shrink();
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            ?modeStrip,
-            if (modeStrip != null && showToolbar)
-              SizedBox(height: theme.spacing.xs),
-            if (showToolbar) ...<Widget>[
-              toolbar!,
-              SizedBox(height: theme.spacing.xs),
-            ] else if (modeStrip != null)
-              SizedBox(height: theme.spacing.xs),
-            Expanded(child: panes),
-          ],
-        );
+        return sectionsPane ?? previewPane ?? const SizedBox.shrink();
       },
     );
   }
@@ -548,10 +519,13 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
     required BuildContext context,
     required ThemeData theme,
     required AppLocalizations l10n,
+    required Widget? modeStrip,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        ?modeStrip,
+        if (modeStrip != null) SizedBox(height: theme.spacing.xs),
         if (leading != null) ...<Widget>[
           leading!,
           SizedBox(height: theme.spacing.xs),
@@ -571,11 +545,27 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
     required BuildContext context,
     required ThemeData theme,
     required AppLocalizations l10n,
+    required Widget? modeStrip,
+    required bool showToolbar,
   }) {
-    return Semantics(
-      container: true,
-      label: l10n.printPreviewPreviewPaneLabel,
-      child: preview,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        ?modeStrip,
+        if (modeStrip != null && showToolbar) SizedBox(height: theme.spacing.xs),
+        if (showToolbar) ...<Widget>[
+          toolbar!,
+          SizedBox(height: theme.spacing.xs),
+        ] else if (modeStrip != null)
+          SizedBox(height: theme.spacing.xs),
+        Expanded(
+          child: Semantics(
+            container: true,
+            label: l10n.printPreviewPreviewPaneLabel,
+            child: preview,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -717,7 +707,6 @@ class _AppPrintPreviewDialog extends StatefulWidget {
 
 class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
   bool _isPrinting = false;
-  bool _previewMaximized = false;
   double _scale = 1;
   int _currentPage = 1;
 
@@ -746,7 +735,7 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (!_previewMaximized && widget.body != null) ...<Widget>[
+            if (widget.body != null) ...<Widget>[
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   theme.spacing.sm,
@@ -771,7 +760,6 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
               ),
               child: AppPrintPreviewToolbar(
                 scale: _scale,
-                maximized: _previewMaximized,
                 enabled: !_isPrinting,
                 currentPage: currentPage,
                 pageCount: pageCount,
@@ -794,9 +782,6 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
                     );
                   });
                 },
-                onMaximizeToggle: () {
-                  setState(() => _previewMaximized = !_previewMaximized);
-                },
                 onPagePrevious: () {
                   setState(() {
                     _currentPage = AppPrintPreviewPages.clampPage(
@@ -817,27 +802,20 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
             ),
             SizedBox(height: theme.spacing.xs),
             Expanded(
-              child: LayoutBuilder(
-                builder: (BuildContext context, BoxConstraints constraints) {
-                  return AppPrintPreviewPanel(
-                    html: widget.documentHtml,
-                    title: widget.previewTitle,
-                    height: constraints.maxHeight,
-                    scale: _scale,
-                    maximized: _previewMaximized,
-                    toolbarEnabled: false,
-                    focusedPage: currentPage,
-                    currentPage: currentPage,
-                    pageCount: pageCount,
-                    maximizeEnabled: !_isPrinting,
-                    fallbackChild:
-                        widget.fallbackChild ??
-                        SelectableText(
-                          widget.fallbackText ?? widget.title,
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                  );
-                },
+              child: AppPrintPreviewPanel(
+                html: widget.documentHtml,
+                title: widget.previewTitle,
+                scale: _scale,
+                toolbarEnabled: false,
+                focusedPage: currentPage,
+                currentPage: currentPage,
+                pageCount: pageCount,
+                fallbackChild:
+                    widget.fallbackChild ??
+                    SelectableText(
+                      widget.fallbackText ?? widget.title,
+                      style: theme.textTheme.bodyMedium,
+                    ),
               ),
             ),
           ],

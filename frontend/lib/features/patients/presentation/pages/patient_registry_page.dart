@@ -2515,8 +2515,6 @@ class _PatientReportPrintPreviewDialogState
     );
     final bool periodIsValid = _periodRangeIsValid;
     final bool canPrint = periodIsValid && selection.sections.isNotEmpty;
-    final bool previewMaximized =
-        _paneMode == AppPrintPreviewPaneMode.preview;
     final String documentHtml = PrintDocumentTemplates.buildDocumentHtml(
       kind: PrintDocumentTemplateKind.patientChart,
       ref: ref,
@@ -2550,7 +2548,6 @@ class _PatientReportPrintPreviewDialogState
         },
         toolbar: AppPrintPreviewToolbar(
           scale: _scale,
-          maximized: previewMaximized,
           enabled: !_isPrinting,
           currentPage: AppPrintPreviewPages.clampPage(
             _currentPage,
@@ -2574,13 +2571,6 @@ class _PatientReportPrintPreviewDialogState
               _scale = AppPrintPreviewZoom.fitPage(
                 1120 * 0.55 - theme.spacing.lg * 2,
               );
-            });
-          },
-          onMaximizeToggle: () {
-            setState(() {
-              _paneMode = previewMaximized
-                  ? AppPrintPreviewPaneMode.split
-                  : AppPrintPreviewPaneMode.preview;
             });
           },
           onPagePrevious: () {
@@ -2648,28 +2638,20 @@ class _PatientReportPrintPreviewDialogState
             });
           },
         ),
-        preview: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final int pageCount = AppPrintPreviewPages.countFromHtml(
-              documentHtml,
-            );
-            final int currentPage = AppPrintPreviewPages.clampPage(
-              _currentPage,
-              pageCount,
-            );
-            return AppPrintPreviewPanel(
-              html: documentHtml,
-              height: constraints.maxHeight,
-              scale: _scale,
-              maximized: previewMaximized,
-              toolbarEnabled: false,
-              focusedPage: currentPage,
-              currentPage: currentPage,
-              pageCount: pageCount,
-              maximizeEnabled: !_isPrinting,
-              fallbackChild: _PatientReportPreviewPages(document: document),
-            );
-          },
+        preview: AppPrintPreviewPanel(
+          html: documentHtml,
+          scale: _scale,
+          toolbarEnabled: false,
+          focusedPage: AppPrintPreviewPages.clampPage(
+            _currentPage,
+            AppPrintPreviewPages.countFromHtml(documentHtml),
+          ),
+          currentPage: AppPrintPreviewPages.clampPage(
+            _currentPage,
+            AppPrintPreviewPages.countFromHtml(documentHtml),
+          ),
+          pageCount: AppPrintPreviewPages.countFromHtml(documentHtml),
+          fallbackChild: _PatientReportPreviewPages(document: document),
         ),
       ),
       actions: <Widget>[

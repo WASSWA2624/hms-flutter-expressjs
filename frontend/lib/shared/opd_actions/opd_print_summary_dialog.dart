@@ -128,8 +128,6 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
       includeSignatures: true,
     );
     final bool canExport = selected.isNotEmpty && !_isBusy;
-    final bool previewMaximized =
-        _paneMode == AppPrintPreviewPaneMode.preview;
     final int pageCount = AppPrintPreviewPages.countFromHtml(documentHtml);
     final int currentPage = AppPrintPreviewPages.clampPage(
       _currentPage,
@@ -178,7 +176,6 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
               },
               toolbar: AppPrintPreviewToolbar(
                 scale: _scale,
-                maximized: previewMaximized,
                 enabled: !_isBusy,
                 currentPage: currentPage,
                 pageCount: pageCount,
@@ -203,13 +200,6 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
                     _scale = AppPrintPreviewZoom.fitPage(
                       1120 * 0.55 - theme.spacing.lg * 2,
                     );
-                  });
-                },
-                onMaximizeToggle: () {
-                  setState(() {
-                    _paneMode = previewMaximized
-                        ? AppPrintPreviewPaneMode.split
-                        : AppPrintPreviewPaneMode.preview;
                   });
                 },
                 onPagePrevious: () {
@@ -246,24 +236,17 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
                         });
                       },
               ),
-              preview: LayoutBuilder(
-                builder: (BuildContext context, BoxConstraints constraints) {
-                  return AppPrintPreviewPanel(
-                    html: documentHtml,
-                    height: constraints.maxHeight,
-                    scale: _scale,
-                    maximized: previewMaximized,
-                    toolbarEnabled: false,
-                    focusedPage: currentPage,
-                    currentPage: currentPage,
-                    pageCount: pageCount,
-                    maximizeEnabled: !_isBusy,
-                    fallbackChild: SelectableText(
-                      summaryText,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  );
-                },
+              preview: AppPrintPreviewPanel(
+                html: documentHtml,
+                scale: _scale,
+                toolbarEnabled: false,
+                focusedPage: currentPage,
+                currentPage: currentPage,
+                pageCount: pageCount,
+                fallbackChild: SelectableText(
+                  summaryText,
+                  style: theme.textTheme.bodyMedium,
+                ),
               ),
             ),
           ),
