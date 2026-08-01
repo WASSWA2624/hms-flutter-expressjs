@@ -69,7 +69,8 @@ void main() {
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.byType(AppPrintPreviewPanel), findsOneWidget);
       expect(find.text('Clinical summary'), findsWidgets);
-      expect(find.text('Review the document, then print.'), findsOneWidget);
+      expect(find.text('Facility details'), findsOneWidget);
+      expect(find.text('Facility name and logo'), findsOneWidget);
       expect(find.text('Print'), findsOneWidget);
 
       await tester.tap(find.widgetWithText(AppButton, 'Print'));

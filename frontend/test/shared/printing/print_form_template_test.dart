@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
+import 'package:hosspi_hms/shared/reporting/report_section_selection.dart';
 
 void main() {
   test('builds facility header details with profile fallbacks', () {
@@ -254,6 +255,97 @@ void main() {
     expect(html, contains('Phone: +2567001000, Email: info@democare.ug'));
     expect(html, isNot(contains('Type:')));
     expect(html, isNot(contains('Tenant:')));
+  });
+
+  testWidgets('filters facility header fields by branding options', (
+    tester,
+  ) async {
+    late String html;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (BuildContext context) {
+            html = PrintFormTemplate.build(
+              context: context,
+              title: 'Laboratory result report',
+              appBranding: const PrintFormBranding(
+                name: 'HOSSPI',
+                kind: PrintFormBrandingKind.app,
+              ),
+              facilityBranding: const PrintFormBranding(
+                name: 'DemoCare General Hospital',
+                kind: PrintFormBrandingKind.facility,
+                contacts: <String>[
+                  'Phone: +2567001000',
+                  'Email: info@democare.ug',
+                ],
+                addressLines: <String>[
+                  '1 Demo Hospital Avenue, Kampala, Uganda',
+                ],
+                details: <String>[
+                  'Type: Hospital',
+                  'Facility ID: FAC0001',
+                ],
+              ),
+              brandingOptions: const PrintFormBrandingOptions(
+                includeBrand: true,
+                includeAddress: true,
+                includePhone: true,
+                includeEmail: false,
+                includeFacilityType: false,
+                includeFacilityId: true,
+              ),
+              bodyHtml: '<p>Results</p>',
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    expect(html, contains('DemoCare General Hospital'));
+    expect(html, contains('1 Demo Hospital Avenue, Kampala, Uganda'));
+    expect(html, contains('Phone: +2567001000'));
+    expect(html, isNot(contains('Email: info@democare.ug')));
+    expect(html, contains('Facility ID: FAC0001'));
+    expect(html, isNot(contains('Type: Hospital')));
+  });
+
+  test('builds facility section availabilities from branding fields', () {
+    final List<ReportSectionAvailability> sections =
+        buildFacilityPrintSectionAvailabilities(
+      const PrintFormBranding(
+        name: 'DemoCare General Hospital',
+        kind: PrintFormBrandingKind.facility,
+        contacts: <String>[
+          'Phone: +2567001000',
+          'Email: info@democare.ug',
+        ],
+        addressLines: <String>['Kampala, Uganda'],
+        details: <String>['Type: Hospital', 'Facility ID: FAC0001'],
+      ),
+    );
+
+    expect(
+      sections.map((ReportSectionAvailability s) => s.id).toList(),
+      <Object>[
+        PrintFacilitySection.brand,
+        PrintFacilitySection.address,
+        PrintFacilitySection.phone,
+        PrintFacilitySection.email,
+        PrintFacilitySection.facilityType,
+        PrintFacilitySection.facilityId,
+      ],
+    );
+    expect(sections.every((ReportSectionAvailability s) => s.enabled), isTrue);
+    expect(
+      brandingOptionsFromFacilitySections(<Object>{
+        PrintFacilitySection.brand,
+        PrintFacilitySection.phone,
+      }).includeEmail,
+      isFalse,
+    );
   });
 
   testWidgets('anchors signature footer and reserves name space', (

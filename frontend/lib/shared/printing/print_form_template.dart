@@ -106,6 +106,45 @@ final class PrintFormBranding {
   bool get canBrandDocument => isSubscribed && name.trim().isNotEmpty;
 }
 
+/// Which facility/app header fields to render on printed documents.
+@immutable
+final class PrintFormBrandingOptions {
+  const PrintFormBrandingOptions({
+    this.includeBrand = true,
+    this.includeAddress = true,
+    this.includePhone = true,
+    this.includeEmail = true,
+    this.includeFacilityType = true,
+    this.includeFacilityId = true,
+  });
+
+  static const PrintFormBrandingOptions all = PrintFormBrandingOptions();
+
+  static const PrintFormBrandingOptions none = PrintFormBrandingOptions(
+    includeBrand: false,
+    includeAddress: false,
+    includePhone: false,
+    includeEmail: false,
+    includeFacilityType: false,
+    includeFacilityId: false,
+  );
+
+  final bool includeBrand;
+  final bool includeAddress;
+  final bool includePhone;
+  final bool includeEmail;
+  final bool includeFacilityType;
+  final bool includeFacilityId;
+
+  bool get includeHeader =>
+      includeBrand ||
+      includeAddress ||
+      includePhone ||
+      includeEmail ||
+      includeFacilityType ||
+      includeFacilityId;
+}
+
 @immutable
 final class PrintFormPage {
   const PrintFormPage({required this.bodyHtml, this.title});
@@ -120,6 +159,7 @@ abstract final class PrintFormTemplate {
     required String title,
     required PrintFormBranding appBranding,
     PrintFormBranding? facilityBranding,
+    PrintFormBrandingOptions brandingOptions = PrintFormBrandingOptions.all,
     String? subtitle,
     String? bodyHtml,
     List<PrintFormPage> pages = const <PrintFormPage>[],
@@ -180,6 +220,7 @@ abstract final class PrintFormTemplate {
           ? _standardPage(
               context: context,
               branding: branding,
+              brandingOptions: brandingOptions,
               title: page.title ?? title,
               subtitle: subtitle,
               patientContext: patientContext,
@@ -196,6 +237,7 @@ abstract final class PrintFormTemplate {
             )
           : _legacyPage(
               branding: branding,
+              brandingOptions: brandingOptions,
               title: page.title ?? title,
               subtitle: subtitle,
               metadata: effectiveMetadata,
@@ -328,6 +370,7 @@ $renderedPages
   static String _standardPage({
     required BuildContext context,
     required PrintFormBranding branding,
+    required PrintFormBrandingOptions brandingOptions,
     required String title,
     required String? subtitle,
     required PrintFormPatientContext? patientContext,
@@ -345,7 +388,7 @@ $renderedPages
     final bool isFirstPage = pageNumber == 1;
     final String pageBody =
         '''
-  ${isFirstPage ? _header(branding) : _compactHeader(patientContext)}
+  ${isFirstPage ? _header(branding, brandingOptions) : _compactHeader(patientContext)}
   ${isFirstPage ? _patientContextSection(patientContext) : ''}
   <section class="print-template-title print-template-title--standard">
     <h1>${escape(title)}</h1>
@@ -388,6 +431,7 @@ $pageFooter
 
   static String _legacyPage({
     required PrintFormBranding branding,
+    required PrintFormBrandingOptions brandingOptions,
     required String title,
     required String? subtitle,
     required List<PrintFormMetadataItem> metadata,
@@ -401,7 +445,7 @@ $pageFooter
   }) {
     return '''
 <article class="print-template-page">
-  ${showHeader ? _header(branding) : ''}
+  ${showHeader ? _header(branding, brandingOptions) : ''}
   <section class="print-template-title">
     <div>
       <h1>${escape(title)}</h1>
@@ -503,11 +547,46 @@ $pageFooter
 ''';
   }
 
-  static String _header(PrintFormBranding branding) {
-    final String? logoUrl = _normalizedImageUrl(branding.logoUrl);
-    final List<String> contacts = _normalizedLines(branding.contacts);
-    final List<String> addressLines = _normalizedLines(branding.addressLines);
-    final List<String> details = _normalizedLines(branding.details);
+  static String _header(
+    PrintFormBranding branding,
+    PrintFormBrandingOptions options,
+  ) {
+    if (!options.includeHeader) {
+      return '';
+    }
+
+    final String? logoUrl = options.includeBrand
+        ? _normalizedImageUrl(branding.logoUrl)
+        : null;
+    final List<String> contacts = _normalizedLines(branding.contacts).where((
+      String line,
+    ) {
+      final String lower = line.toLowerCase();
+      if (lower.startsWith('phone:')) {
+        return options.includePhone;
+      }
+      if (lower.startsWith('email:')) {
+        return options.includeEmail;
+      }
+      // Administrator / other contact lines follow the brand toggle.
+      return options.includeBrand;
+    }).toList(growable: false);
+    final List<String> addressLines = options.includeAddress
+        ? _normalizedLines(branding.addressLines)
+        : const <String>[];
+    final List<String> details = _normalizedLines(branding.details).where((
+      String line,
+    ) {
+      final String lower = line.toLowerCase();
+      if (lower.startsWith('type:')) {
+        return options.includeFacilityType;
+      }
+      if (lower.startsWith('facility id:')) {
+        return options.includeFacilityId;
+      }
+      // Support / environment lines follow the brand toggle.
+      return options.includeBrand;
+    }).toList(growable: false);
     final String? addressLine = addressLines.isEmpty
         ? null
         : addressLines.join(', ');
@@ -517,14 +596,28 @@ $pageFooter
       ?contactLine,
       ...details,
     ];
+    final bool showLogo = options.includeBrand;
+    final bool showName = options.includeBrand && branding.name.trim().isNotEmpty;
+    if (!showLogo && !showName && secondaryLines.isEmpty) {
+      return '';
+    }
 
-    return '''
-<header class="print-template-header">
+    final String logoHtml = !showLogo
+        ? ''
+        : '''
   <div class="print-template-logo">
     ${logoUrl == null ? '<span>${escape(_initials(branding.name))}</span>' : '<img src="${escape(logoUrl)}" alt="${escape(branding.name)} logo">'}
   </div>
+''';
+    final String nameHtml = showName
+        ? '<strong>${escape(branding.name)}</strong>'
+        : '';
+
+    return '''
+<header class="print-template-header">
+$logoHtml
   <div class="print-template-brand">
-    <strong>${escape(branding.name)}</strong>
+    $nameHtml
     ${secondaryLines.map((String line) => '<span>${escape(line)}</span>').join()}
   </div>
 </header>

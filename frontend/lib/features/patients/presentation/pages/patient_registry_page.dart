@@ -2462,7 +2462,7 @@ class _PatientReportPrintPreviewDialogState
   DateTime? _singleDate;
   DateTime? _startDate;
   DateTime? _endDate;
-  late Set<_PatientReportSection> _selectedSections;
+  late Set<Object> _selectedSections;
   bool _isPrinting = false;
   AppPrintPreviewPaneMode _paneMode = AppPrintPreviewPaneMode.split;
   double _scale = 1;
@@ -2483,9 +2483,16 @@ class _PatientReportPrintPreviewDialogState
       endDate: _endDate,
       sections: const <_PatientReportSection>{},
     );
+    final PrintFormTemplateContext branding = ref.read(
+      printFormTemplateContextProvider,
+    );
     _selectedSections = resolveDefaultReportSectionSelection(
-      _patientReportAvailabilities(initialDetail, initialSelection),
-    ).cast<_PatientReportSection>().toSet();
+      _patientReportAvailabilities(
+        initialDetail,
+        initialSelection,
+        branding: branding,
+      ),
+    );
   }
 
   @override
@@ -2498,15 +2505,36 @@ class _PatientReportPrintPreviewDialogState
     );
     final PatientDetail effectiveDetail =
         liveDetail ?? _effectivePatientDetail(widget.patient, widget.detail);
+    final PrintFormTemplateContext branding = ref.watch(
+      printFormTemplateContextProvider,
+    );
+    final List<ReportSectionAvailability> availabilities =
+        _patientReportAvailabilities(
+          effectiveDetail,
+          _PatientReportSelection(
+            periodMode: _periodMode,
+            singleDate: _singleDate,
+            startDate: _startDate,
+            endDate: _endDate,
+            sections: const <_PatientReportSection>{},
+          ),
+          branding: branding,
+        );
+    final Set<Object> selected = sanitizeReportSectionSelection(
+      selectedIds: _selectedSections,
+      sections: availabilities,
+    );
+    final PrintFormBrandingOptions brandingOptions =
+        brandingOptionsFromFacilitySections(selected);
     final _PatientReportSelection selection = _PatientReportSelection(
       periodMode: _periodMode,
       singleDate: _singleDate,
       startDate: _startDate,
       endDate: _endDate,
-      sections: Set<_PatientReportSection>.unmodifiable(_selectedSections),
+      sections: Set<_PatientReportSection>.unmodifiable(
+        selected.whereType<_PatientReportSection>(),
+      ),
     );
-    final List<ReportSectionAvailability> availabilities =
-        _patientReportAvailabilities(effectiveDetail, selection);
     final _PatientReportDocument document = _buildPatientReportDocument(
       context,
       detail: effectiveDetail,
@@ -2521,6 +2549,7 @@ class _PatientReportPrintPreviewDialogState
       context: context,
       title: document.title,
       subtitle: document.periodLabel,
+      brandingOptions: brandingOptions,
       patientContext: buildPrintFormPatientContext(
         l10n,
         patientName: document.patientName,
@@ -2598,6 +2627,7 @@ class _PatientReportPrintPreviewDialogState
         ),
         sectionPicker: _PatientReportPreviewControls(
           selection: selection,
+          selectedIds: selected,
           availabilities: availabilities,
           periodIsValid: periodIsValid,
           onPeriodModeChanged: (_PatientReportPeriodMode? value) {
@@ -2633,7 +2663,7 @@ class _PatientReportPrintPreviewDialogState
               _selectedSections = sanitizeReportSectionSelection(
                 selectedIds: next,
                 sections: availabilities,
-              ).cast<_PatientReportSection>().toSet();
+              );
               _currentPage = 1;
             });
           },
@@ -2698,6 +2728,7 @@ class _PatientReportPrintPreviewDialogState
         context: context,
         title: document.title,
         subtitle: document.periodLabel,
+        brandingOptions: brandingOptionsFromFacilitySections(_selectedSections),
         patientContext: buildPrintFormPatientContext(
           l10n,
           patientName: document.patientName,
@@ -2726,23 +2757,29 @@ class _PatientReportPrintPreviewDialogState
   }
 
   void _resyncSelection(PatientDetail detail) {
+    final PrintFormTemplateContext branding = ref.read(
+      printFormTemplateContextProvider,
+    );
     final _PatientReportSelection draft = _PatientReportSelection(
       periodMode: _periodMode,
       singleDate: _singleDate,
       startDate: _startDate,
       endDate: _endDate,
-      sections: Set<_PatientReportSection>.unmodifiable(_selectedSections),
+      sections: Set<_PatientReportSection>.unmodifiable(
+        _selectedSections.whereType<_PatientReportSection>(),
+      ),
     );
     _selectedSections = sanitizeReportSectionSelection(
       selectedIds: _selectedSections,
-      sections: _patientReportAvailabilities(detail, draft),
-    ).cast<_PatientReportSection>().toSet();
+      sections: _patientReportAvailabilities(detail, draft, branding: branding),
+    );
   }
 }
 
 class _PatientReportPreviewControls extends StatelessWidget {
   const _PatientReportPreviewControls({
     required this.selection,
+    required this.selectedIds,
     required this.availabilities,
     required this.periodIsValid,
     required this.onPeriodModeChanged,
@@ -2753,6 +2790,7 @@ class _PatientReportPreviewControls extends StatelessWidget {
   });
 
   final _PatientReportSelection selection;
+  final Set<Object> selectedIds;
   final List<ReportSectionAvailability> availabilities;
   final bool periodIsValid;
   final ValueChanged<_PatientReportPeriodMode?> onPeriodModeChanged;
@@ -2767,10 +2805,8 @@ class _PatientReportPreviewControls extends StatelessWidget {
     final l10n = context.l10n;
     final List<AppReportSectionData> tiles = buildReportSectionTiles(
       sections: availabilities,
-      titleFor: (Object id) =>
-          _patientReportSectionLabel(l10n, id as _PatientReportSection),
-      iconFor: (Object id) =>
-          _patientReportSectionIcon(id as _PatientReportSection),
+      titleFor: (Object id) => _patientReportSectionLabel(l10n, id),
+      iconFor: (Object id) => _patientReportSectionIcon(id),
       emptyDisabledReason: l10n.reportSectionEmptyDisabledReason,
     );
 
@@ -2827,7 +2863,7 @@ class _PatientReportPreviewControls extends StatelessWidget {
           children: <Widget>[
             AppReportSectionPicker(
               sections: tiles,
-              selectedIds: selection.sections,
+              selectedIds: selectedIds,
               onSelectionChanged: onSelectionChanged,
             ),
           ],
@@ -3878,9 +3914,19 @@ int _patientReportSectionCount(
 
 List<ReportSectionAvailability> _patientReportAvailabilities(
   PatientDetail detail,
-  _PatientReportSelection selection,
-) {
+  _PatientReportSelection selection, {
+  PrintFormTemplateContext? branding,
+}) {
+  final List<ReportSectionAvailability> facilitySections = branding == null
+      ? const <ReportSectionAvailability>[]
+      : buildFacilityPrintSectionAvailabilities(
+          effectivePrintBranding(
+            appBranding: branding.appBranding,
+            facilityBranding: branding.facilityBranding,
+          ),
+        );
   return <ReportSectionAvailability>[
+    ...facilitySections,
     for (final _PatientReportSection section in _patientReportSections)
       ReportSectionAvailability(
         id: section,
@@ -3912,9 +3958,12 @@ String _patientReportSectionApiId(_PatientReportSection section) {
 
 String _patientReportSectionLabel(
   AppLocalizations l10n,
-  _PatientReportSection section,
+  Object section,
 ) {
-  return switch (section) {
+  if (section is PrintFacilitySection) {
+    return printFacilitySectionLabel(l10n, section);
+  }
+  return switch (section as _PatientReportSection) {
     _PatientReportSection.summary => l10n.patientsReportSummarySectionTitle,
     _PatientReportSection.timeline => l10n.patientsTimelineSectionTitle,
     _PatientReportSection.vitalSigns => l10n.patientsReportVitalsSectionTitle,
@@ -3934,8 +3983,11 @@ String _patientReportSectionLabel(
   };
 }
 
-IconData _patientReportSectionIcon(_PatientReportSection section) {
-  return switch (section) {
+IconData _patientReportSectionIcon(Object section) {
+  if (section is PrintFacilitySection) {
+    return printFacilitySectionIcon(section);
+  }
+  return switch (section as _PatientReportSection) {
     _PatientReportSection.summary => Icons.summarize_outlined,
     _PatientReportSection.timeline => Icons.timeline_outlined,
     _PatientReportSection.vitalSigns => Icons.monitor_heart_outlined,

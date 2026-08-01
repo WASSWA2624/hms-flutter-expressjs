@@ -14050,6 +14050,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get printPreviewDialogBody => 'Review the document, then print.';
 
   @override
+  String get printFacilityDetailsSectionsLabel => 'Facility details';
+
+  @override
+  String get printFacilityBrandSectionLabel => 'Facility name and logo';
+
+  @override
+  String get printFacilityAddressSectionLabel => 'Facility address';
+
+  @override
+  String get printFacilityPhoneSectionLabel => 'Facility phone';
+
+  @override
+  String get printFacilityEmailSectionLabel => 'Facility email';
+
+  @override
+  String get printFacilityTypeSectionLabel => 'Facility type';
+
+  @override
+  String get printFacilityIdSectionLabel => 'Facility ID';
+
+  @override
   String get commonPrintActionLabel => 'Print';
 
   @override
@@ -20841,7 +20862,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labReportSelectionHint =>
-      'Use checkboxes on each result row to choose what to print.';
+      'Select which tests to include. Completed results print with values; pending tests print blank.';
 
   @override
   String get labReportOrderDetailsToggleLabel => 'Include order details';

@@ -3,7 +3,10 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/printing/app_print_html_preview.dart';
+import 'package:hosspi_hms/shared/printing/print_facility_sections.dart';
+import 'package:hosspi_hms/shared/printing/print_form_template.dart';
 
 /// Which panes are visible in a print workspace.
 enum AppPrintPreviewPaneMode {
@@ -660,6 +663,11 @@ Future<void> showAppPrintPreviewDialog({
   IconData icon = Icons.print_outlined,
   double maxWidth = 960,
   bool popAfterPrint = true,
+  PrintFormBranding? facilitySectionBranding,
+  PrintFormBrandingOptions initialBrandingOptions =
+      PrintFormBrandingOptions.all,
+  String Function(PrintFormBrandingOptions options)? documentHtmlBuilder,
+  Future<void> Function(PrintFormBrandingOptions options)? onPrintWithBranding,
 }) {
   return showAppDialog<void>(
     context: context,
@@ -676,6 +684,10 @@ Future<void> showAppPrintPreviewDialog({
       maxWidth: maxWidth,
       popAfterPrint: popAfterPrint,
       onPrint: onPrint,
+      facilitySectionBranding: facilitySectionBranding,
+      initialBrandingOptions: initialBrandingOptions,
+      documentHtmlBuilder: documentHtmlBuilder,
+      onPrintWithBranding: onPrintWithBranding,
     ),
   );
 }
@@ -693,6 +705,10 @@ class _AppPrintPreviewDialog extends StatefulWidget {
     this.icon = Icons.print_outlined,
     this.maxWidth = 960,
     this.popAfterPrint = true,
+    this.facilitySectionBranding,
+    this.initialBrandingOptions = PrintFormBrandingOptions.all,
+    this.documentHtmlBuilder,
+    this.onPrintWithBranding,
   });
 
   final String title;
@@ -706,6 +722,11 @@ class _AppPrintPreviewDialog extends StatefulWidget {
   final double maxWidth;
   final bool popAfterPrint;
   final Future<void> Function() onPrint;
+  final PrintFormBranding? facilitySectionBranding;
+  final PrintFormBrandingOptions initialBrandingOptions;
+  final String Function(PrintFormBrandingOptions options)? documentHtmlBuilder;
+  final Future<void> Function(PrintFormBrandingOptions options)?
+      onPrintWithBranding;
 
   @override
   State<_AppPrintPreviewDialog> createState() => _AppPrintPreviewDialogState();
@@ -715,28 +736,182 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
   bool _isPrinting = false;
   double _scale = 1;
   int _currentPage = 1;
+  AppPrintPreviewPaneMode _paneMode = AppPrintPreviewPaneMode.split;
+  late Set<Object> _selectedFacilitySections;
+
+  bool get _facilitySectionsEnabled =>
+      widget.facilitySectionBranding != null &&
+      widget.documentHtmlBuilder != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_facilitySectionsEnabled) {
+      final List<ReportSectionAvailability> availabilities =
+          buildFacilityPrintSectionAvailabilities(
+        widget.facilitySectionBranding!,
+      );
+      final Set<Object> defaults =
+          resolveDefaultReportSectionSelection(availabilities);
+      final PrintFormBrandingOptions initial = widget.initialBrandingOptions;
+      _selectedFacilitySections = <Object>{
+        if (initial.includeBrand &&
+            defaults.contains(PrintFacilitySection.brand))
+          PrintFacilitySection.brand,
+        if (initial.includeAddress &&
+            defaults.contains(PrintFacilitySection.address))
+          PrintFacilitySection.address,
+        if (initial.includePhone &&
+            defaults.contains(PrintFacilitySection.phone))
+          PrintFacilitySection.phone,
+        if (initial.includeEmail &&
+            defaults.contains(PrintFacilitySection.email))
+          PrintFacilitySection.email,
+        if (initial.includeFacilityType &&
+            defaults.contains(PrintFacilitySection.facilityType))
+          PrintFacilitySection.facilityType,
+        if (initial.includeFacilityId &&
+            defaults.contains(PrintFacilitySection.facilityId))
+          PrintFacilitySection.facilityId,
+      };
+      if (_selectedFacilitySections.isEmpty) {
+        _selectedFacilitySections = defaults;
+      }
+    } else {
+      _selectedFacilitySections = const <Object>{};
+    }
+  }
+
+  PrintFormBrandingOptions get _brandingOptions =>
+      brandingOptionsFromFacilitySections(_selectedFacilitySections);
+
+  String get _documentHtml {
+    if (!_facilitySectionsEnabled) {
+      return widget.documentHtml;
+    }
+    return widget.documentHtmlBuilder!(_brandingOptions);
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final String printLabel = widget.printLabel ?? l10n.commonPrintActionLabel;
-    final int pageCount = AppPrintPreviewPages.countFromHtml(
-      widget.documentHtml,
-    );
+    final String documentHtml = _documentHtml;
+    final int pageCount = AppPrintPreviewPages.countFromHtml(documentHtml);
     final int currentPage = AppPrintPreviewPages.clampPage(
       _currentPage,
       pageCount,
     );
+    final double dialogMaxWidth =
+        _facilitySectionsEnabled ? 1120 : widget.maxWidth;
 
-    return AppDialog(
-      title: Text(widget.title),
-      icon: Icon(widget.icon),
-      pinActionsToBottom: true,
-      contentPadding: EdgeInsets.zero,
-      maxWidth: widget.maxWidth,
-      closeEnabled: !_isPrinting,
-      content: Padding(
+    final Widget previewPanel = AppPrintPreviewPanel(
+      html: documentHtml,
+      title: widget.previewTitle,
+      scale: _scale,
+      toolbarEnabled: false,
+      focusedPage: currentPage,
+      currentPage: currentPage,
+      pageCount: pageCount,
+      fallbackChild:
+          widget.fallbackChild ??
+          SelectableText(
+            widget.fallbackText ?? widget.title,
+            style: theme.textTheme.bodyMedium,
+          ),
+    );
+
+    final Widget toolbar = AppPrintPreviewToolbar(
+      scale: _scale,
+      enabled: !_isPrinting,
+      currentPage: currentPage,
+      pageCount: pageCount,
+      onZoomIn: () {
+        setState(() => _scale = AppPrintPreviewZoom.zoomIn(_scale));
+      },
+      onZoomOut: () {
+        setState(() => _scale = AppPrintPreviewZoom.zoomOut(_scale));
+      },
+      onZoomIncrease: () {
+        setState(() => _scale = AppPrintPreviewZoom.increase(_scale));
+      },
+      onZoomDecrease: () {
+        setState(() => _scale = AppPrintPreviewZoom.decrease(_scale));
+      },
+      onFitPage: () {
+        setState(() {
+          _scale = AppPrintPreviewZoom.fitPage(
+            dialogMaxWidth - theme.spacing.lg * 2,
+          );
+        });
+      },
+      onPagePrevious: () {
+        setState(() {
+          _currentPage = AppPrintPreviewPages.clampPage(
+            currentPage - 1,
+            pageCount,
+          );
+        });
+      },
+      onPageNext: () {
+        setState(() {
+          _currentPage = AppPrintPreviewPages.clampPage(
+            currentPage + 1,
+            pageCount,
+          );
+        });
+      },
+    );
+
+    final Widget content;
+    if (_facilitySectionsEnabled) {
+      final List<ReportSectionAvailability> availabilities =
+          buildFacilityPrintSectionAvailabilities(
+        widget.facilitySectionBranding!,
+      );
+      final Set<Object> selected = sanitizeReportSectionSelection(
+        selectedIds: _selectedFacilitySections,
+        sections: availabilities,
+      );
+      final List<AppReportSectionData> tiles = buildReportSectionTiles(
+        sections: availabilities,
+        titleFor: (Object id) =>
+            printFacilitySectionLabel(l10n, id as PrintFacilitySection),
+        iconFor: (Object id) =>
+            printFacilitySectionIcon(id as PrintFacilitySection),
+        emptyDisabledReason: l10n.reportSectionEmptyDisabledReason,
+      );
+      content = AppPrintPreviewWorkspace(
+        paneMode: _paneMode,
+        paneModeEnabled: !_isPrinting,
+        onPaneModeChanged: (AppPrintPreviewPaneMode next) {
+          setState(() => _paneMode = next);
+        },
+        toolbar: toolbar,
+        sectionPicker: AppFormSection(
+          title: l10n.printFacilityDetailsSectionsLabel,
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            AppReportSectionPicker(
+              sections: tiles,
+              selectedIds: selected,
+              onSelectionChanged: (Set<Object> next) {
+                setState(() {
+                  _selectedFacilitySections = sanitizeReportSectionSelection(
+                    selectedIds: next,
+                    sections: availabilities,
+                  );
+                  _currentPage = 1;
+                });
+              },
+            ),
+          ],
+        ),
+        preview: previewPanel,
+      );
+    } else {
+      content = Padding(
         padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -764,69 +939,23 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
                 theme.spacing.xs,
                 0,
               ),
-              child: AppPrintPreviewToolbar(
-                scale: _scale,
-                enabled: !_isPrinting,
-                currentPage: currentPage,
-                pageCount: pageCount,
-                onZoomIn: () {
-                  setState(() => _scale = AppPrintPreviewZoom.zoomIn(_scale));
-                },
-                onZoomOut: () {
-                  setState(() => _scale = AppPrintPreviewZoom.zoomOut(_scale));
-                },
-                onZoomIncrease: () {
-                  setState(() => _scale = AppPrintPreviewZoom.increase(_scale));
-                },
-                onZoomDecrease: () {
-                  setState(() => _scale = AppPrintPreviewZoom.decrease(_scale));
-                },
-                onFitPage: () {
-                  setState(() {
-                    _scale = AppPrintPreviewZoom.fitPage(
-                      widget.maxWidth - theme.spacing.lg * 2,
-                    );
-                  });
-                },
-                onPagePrevious: () {
-                  setState(() {
-                    _currentPage = AppPrintPreviewPages.clampPage(
-                      currentPage - 1,
-                      pageCount,
-                    );
-                  });
-                },
-                onPageNext: () {
-                  setState(() {
-                    _currentPage = AppPrintPreviewPages.clampPage(
-                      currentPage + 1,
-                      pageCount,
-                    );
-                  });
-                },
-              ),
+              child: toolbar,
             ),
             SizedBox(height: theme.spacing.xs),
-            Expanded(
-              child: AppPrintPreviewPanel(
-                html: widget.documentHtml,
-                title: widget.previewTitle,
-                scale: _scale,
-                toolbarEnabled: false,
-                focusedPage: currentPage,
-                currentPage: currentPage,
-                pageCount: pageCount,
-                fallbackChild:
-                    widget.fallbackChild ??
-                    SelectableText(
-                      widget.fallbackText ?? widget.title,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-              ),
-            ),
+            Expanded(child: previewPanel),
           ],
         ),
-      ),
+      );
+    }
+
+    return AppDialog(
+      title: Text(widget.title),
+      icon: Icon(widget.icon),
+      pinActionsToBottom: true,
+      contentPadding: EdgeInsets.zero,
+      maxWidth: dialogMaxWidth,
+      closeEnabled: !_isPrinting,
+      content: content,
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCloseActionLabel,
@@ -846,7 +975,11 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
   Future<void> _print() async {
     setState(() => _isPrinting = true);
     try {
-      await widget.onPrint();
+      if (_facilitySectionsEnabled && widget.onPrintWithBranding != null) {
+        await widget.onPrintWithBranding!(_brandingOptions);
+      } else {
+        await widget.onPrint();
+      }
       if (!mounted) {
         return;
       }

@@ -21,7 +21,6 @@ class _RadiologyPrintDialog extends ConsumerStatefulWidget {
 }
 
 enum _RadiologyPrintSection {
-  header,
   patient,
   order,
   studies,
@@ -34,7 +33,7 @@ enum _RadiologyPrintSection {
 class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
   static const double _dialogMaxWidth = 1120;
 
-  late Set<_RadiologyPrintSection> _selectedSections;
+  late Set<Object> _selectedSections;
   bool _isPrinting = false;
   AppPrintPreviewPaneMode _paneMode = AppPrintPreviewPaneMode.split;
   double _scale = 1;
@@ -43,24 +42,25 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
   @override
   void initState() {
     super.initState();
-    final Set<_RadiologyPrintSection> available =
-        _radiologyPrintAvailabilities(widget.workflow)
-            .where((ReportSectionAvailability section) => section.enabled)
-            .map(
-              (ReportSectionAvailability section) =>
-                  section.id as _RadiologyPrintSection,
-            )
-            .toSet();
+    final PrintFormTemplateContext branding = ref.read(
+      printFormTemplateContextProvider,
+    );
+    final List<ReportSectionAvailability> availabilities =
+        _radiologyPrintAvailabilities(widget.workflow, branding);
+    final Set<Object> enabledIds = resolveDefaultReportSectionSelection(
+      availabilities,
+    );
     // A standard clinical report contains patient context, order details,
     // findings/conclusion, and signatures. Studies, images, and references are
     // optional attachments and must not repeat the same procedure by default.
-    _selectedSections = <_RadiologyPrintSection>{
-      _RadiologyPrintSection.header,
+    // Facility header fields that have data are included by default.
+    _selectedSections = <Object>{
+      ...enabledIds.whereType<PrintFacilitySection>(),
       _RadiologyPrintSection.patient,
       _RadiologyPrintSection.order,
       _RadiologyPrintSection.report,
       _RadiologyPrintSection.signer,
-    }.intersection(available);
+    }.intersection(enabledIds);
   }
 
   String _documentHtml(
@@ -77,6 +77,7 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
     return PrintFormTemplate.build(
       context: context,
       title: l10n.radiologyPrintReportTitle,
+      brandingOptions: settings.brandingOptions,
       patientContext: settings.includePatient
           ? buildPrintFormPatientContext(
               l10n,
@@ -116,17 +117,18 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final PrintFormTemplateContext branding = ref.watch(
+      printFormTemplateContextProvider,
+    );
     final List<ReportSectionAvailability> availabilities =
-        _radiologyPrintAvailabilities(widget.workflow);
+        _radiologyPrintAvailabilities(widget.workflow, branding);
     final _RadiologyPrintSettings settings = _settingsFromSelection(
       _selectedSections,
     );
     final List<AppReportSectionData> tiles = buildReportSectionTiles(
       sections: availabilities,
-      titleFor: (Object id) =>
-          _radiologyPrintSectionLabel(l10n, id as _RadiologyPrintSection),
-      iconFor: (Object id) =>
-          _radiologyPrintSectionIcon(id as _RadiologyPrintSection),
+      titleFor: (Object id) => _radiologyPrintSectionLabel(l10n, id),
+      iconFor: (Object id) => _radiologyPrintSectionIcon(id),
       emptyDisabledReason: l10n.reportSectionEmptyDisabledReason,
     );
     final String documentHtml = _documentHtml(context, settings);
@@ -201,7 +203,7 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
               _selectedSections = sanitizeReportSectionSelection(
                 selectedIds: next,
                 sections: availabilities,
-              ).cast<_RadiologyPrintSection>().toSet();
+              );
               _currentPage = 1;
             });
           },
@@ -244,6 +246,7 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
       ref: ref,
       context: context,
       title: context.l10n.radiologyPrintReportTitle,
+      brandingOptions: settings.brandingOptions,
       patientContext: settings.includePatient
           ? buildPrintFormPatientContext(
               context.l10n,
@@ -276,6 +279,7 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
 
 List<ReportSectionAvailability> _radiologyPrintAvailabilities(
   RadiologyWorkflow workflow,
+  PrintFormTemplateContext branding,
 ) {
   final int imageCount = workflow.studies.fold<int>(
     0,
@@ -293,13 +297,13 @@ List<ReportSectionAvailability> _radiologyPrintAvailabilities(
   final bool hasPatient =
       (workflow.order.patientId?.trim().isNotEmpty ?? false) ||
       (workflow.order.patientDisplayName?.trim().isNotEmpty ?? false);
+  final PrintFormBranding effectiveBranding = effectivePrintBranding(
+    appBranding: branding.appBranding,
+    facilityBranding: branding.facilityBranding,
+  );
 
   return <ReportSectionAvailability>[
-    const ReportSectionAvailability(
-      id: _RadiologyPrintSection.header,
-      count: 1,
-      alwaysAvailable: true,
-    ),
+    ...buildFacilityPrintSectionAvailabilities(effectiveBranding),
     ReportSectionAvailability(
       id: _RadiologyPrintSection.patient,
       count: hasPatient ? 1 : 0,
@@ -334,10 +338,9 @@ List<ReportSectionAvailability> _radiologyPrintAvailabilities(
   ];
 }
 
-_RadiologyPrintSettings _settingsFromSelection(
-  Set<_RadiologyPrintSection> selected,
-) {
+_RadiologyPrintSettings _settingsFromSelection(Set<Object> selected) {
   return _RadiologyPrintSettings(
+    brandingOptions: brandingOptionsFromFacilitySections(selected),
     includePatient: selected.contains(_RadiologyPrintSection.patient),
     includeOrder: selected.contains(_RadiologyPrintSection.order),
     includeStudies: selected.contains(_RadiologyPrintSection.studies),
@@ -348,12 +351,11 @@ _RadiologyPrintSettings _settingsFromSelection(
   );
 }
 
-String _radiologyPrintSectionLabel(
-  AppLocalizations l10n,
-  _RadiologyPrintSection section,
-) {
-  return switch (section) {
-    _RadiologyPrintSection.header => l10n.radiologyPrintIncludeHeaderLabel,
+String _radiologyPrintSectionLabel(AppLocalizations l10n, Object section) {
+  if (section is PrintFacilitySection) {
+    return printFacilitySectionLabel(l10n, section);
+  }
+  return switch (section as _RadiologyPrintSection) {
     _RadiologyPrintSection.patient => l10n.radiologyPrintIncludePatientLabel,
     _RadiologyPrintSection.order => l10n.radiologyPrintIncludeOrderLabel,
     _RadiologyPrintSection.studies => l10n.radiologyPrintIncludeStudiesLabel,
@@ -365,9 +367,11 @@ String _radiologyPrintSectionLabel(
   };
 }
 
-IconData _radiologyPrintSectionIcon(_RadiologyPrintSection section) {
-  return switch (section) {
-    _RadiologyPrintSection.header => Icons.apartment_outlined,
+IconData _radiologyPrintSectionIcon(Object section) {
+  if (section is PrintFacilitySection) {
+    return printFacilitySectionIcon(section);
+  }
+  return switch (section as _RadiologyPrintSection) {
     _RadiologyPrintSection.patient => Icons.person_outline,
     _RadiologyPrintSection.order => Icons.receipt_long_outlined,
     _RadiologyPrintSection.studies => Icons.biotech_outlined,
@@ -381,6 +385,7 @@ IconData _radiologyPrintSectionIcon(_RadiologyPrintSection section) {
 @immutable
 final class _RadiologyPrintSettings {
   const _RadiologyPrintSettings({
+    this.brandingOptions = PrintFormBrandingOptions.all,
     this.includePatient = true,
     this.includeOrder = true,
     this.includeStudies = true,
@@ -390,6 +395,7 @@ final class _RadiologyPrintSettings {
     this.includeImages = false,
   });
 
+  final PrintFormBrandingOptions brandingOptions;
   final bool includePatient;
   final bool includeOrder;
   final bool includeStudies;
@@ -397,26 +403,6 @@ final class _RadiologyPrintSettings {
   final bool includeReferences;
   final bool includeSigner;
   final bool includeImages;
-
-  _RadiologyPrintSettings copyWith({
-    bool? includePatient,
-    bool? includeOrder,
-    bool? includeStudies,
-    bool? includeReport,
-    bool? includeReferences,
-    bool? includeSigner,
-    bool? includeImages,
-  }) {
-    return _RadiologyPrintSettings(
-      includePatient: includePatient ?? this.includePatient,
-      includeOrder: includeOrder ?? this.includeOrder,
-      includeStudies: includeStudies ?? this.includeStudies,
-      includeReport: includeReport ?? this.includeReport,
-      includeReferences: includeReferences ?? this.includeReferences,
-      includeSigner: includeSigner ?? this.includeSigner,
-      includeImages: includeImages ?? this.includeImages,
-    );
-  }
 }
 
 String _radiologyPrintBodyHtml(

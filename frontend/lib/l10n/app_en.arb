@@ -18029,6 +18029,34 @@
   "@printPreviewDialogBody": {
     "description": "Default body copy for the shared print preview dialog"
   },
+  "printFacilityDetailsSectionsLabel": "Facility details",
+  "@printFacilityDetailsSectionsLabel": {
+    "description": "Section heading for facility header field checkboxes in print preview"
+  },
+  "printFacilityBrandSectionLabel": "Facility name and logo",
+  "@printFacilityBrandSectionLabel": {
+    "description": "Print section checkbox for facility or app name and logo"
+  },
+  "printFacilityAddressSectionLabel": "Facility address",
+  "@printFacilityAddressSectionLabel": {
+    "description": "Print section checkbox for facility address or location"
+  },
+  "printFacilityPhoneSectionLabel": "Facility phone",
+  "@printFacilityPhoneSectionLabel": {
+    "description": "Print section checkbox for facility phone contact"
+  },
+  "printFacilityEmailSectionLabel": "Facility email",
+  "@printFacilityEmailSectionLabel": {
+    "description": "Print section checkbox for facility email contact"
+  },
+  "printFacilityTypeSectionLabel": "Facility type",
+  "@printFacilityTypeSectionLabel": {
+    "description": "Print section checkbox for facility type"
+  },
+  "printFacilityIdSectionLabel": "Facility ID",
+  "@printFacilityIdSectionLabel": {
+    "description": "Print section checkbox for facility display ID"
+  },
   "commonPrintActionLabel": "Print",
   "@commonPrintActionLabel": {
     "description": "Generic print action label"
@@ -26727,7 +26755,7 @@
   "@labReportSelectionTitle": {
     "description": "Title for the lab report print preview selection controls."
   },
-  "labReportSelectionHint": "Use checkboxes on each result row to choose what to print.",
+  "labReportSelectionHint": "Select which tests to include. Completed results print with values; pending tests print blank.",
   "@labReportSelectionHint": {
     "description": "Hint explaining how to select lab report content."
   },

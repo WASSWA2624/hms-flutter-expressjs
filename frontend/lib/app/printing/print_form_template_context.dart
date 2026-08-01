@@ -83,6 +83,7 @@ String buildPrintFormTemplateHtml({
   DateTime? printedAt,
   String? footerNote,
   PrintFormTemplateContext? templateContext,
+  PrintFormBrandingOptions brandingOptions = PrintFormBrandingOptions.all,
 }) {
   final PrintFormTemplateContext branding =
       templateContext ?? ref.read(printFormTemplateContextProvider);
@@ -117,6 +118,7 @@ String buildPrintFormTemplateHtml({
     footerNote: footerNote,
     appBranding: branding.appBranding,
     facilityBranding: branding.facilityBranding,
+    brandingOptions: brandingOptions,
   );
 }
 
@@ -135,6 +137,7 @@ Future<void> printFormTemplateDocument({
   String? verifiedByName,
   DateTime? printedAt,
   String? footerNote,
+  PrintFormBrandingOptions brandingOptions = PrintFormBrandingOptions.all,
 }) async {
   // Prefer branded facility context, but never hang Print/Copy busy forever.
   PrintFormTemplateContext templateContext;
@@ -166,6 +169,7 @@ Future<void> printFormTemplateDocument({
       printedAt: printedAt,
       footerNote: footerNote,
       templateContext: templateContext,
+      brandingOptions: brandingOptions,
     ),
     title: title,
   );

@@ -25940,6 +25940,48 @@ abstract class AppLocalizations {
   /// **'Review the document, then print.'**
   String get printPreviewDialogBody;
 
+  /// Section heading for facility header field checkboxes in print preview
+  ///
+  /// In en, this message translates to:
+  /// **'Facility details'**
+  String get printFacilityDetailsSectionsLabel;
+
+  /// Print section checkbox for facility or app name and logo
+  ///
+  /// In en, this message translates to:
+  /// **'Facility name and logo'**
+  String get printFacilityBrandSectionLabel;
+
+  /// Print section checkbox for facility address or location
+  ///
+  /// In en, this message translates to:
+  /// **'Facility address'**
+  String get printFacilityAddressSectionLabel;
+
+  /// Print section checkbox for facility phone contact
+  ///
+  /// In en, this message translates to:
+  /// **'Facility phone'**
+  String get printFacilityPhoneSectionLabel;
+
+  /// Print section checkbox for facility email contact
+  ///
+  /// In en, this message translates to:
+  /// **'Facility email'**
+  String get printFacilityEmailSectionLabel;
+
+  /// Print section checkbox for facility type
+  ///
+  /// In en, this message translates to:
+  /// **'Facility type'**
+  String get printFacilityTypeSectionLabel;
+
+  /// Print section checkbox for facility display ID
+  ///
+  /// In en, this message translates to:
+  /// **'Facility ID'**
+  String get printFacilityIdSectionLabel;
+
   /// Generic print action label
   ///
   /// In en, this message translates to:
@@ -38698,7 +38740,7 @@ abstract class AppLocalizations {
   /// Hint explaining how to select lab report content.
   ///
   /// In en, this message translates to:
-  /// **'Use checkboxes on each result row to choose what to print.'**
+  /// **'Select which tests to include. Completed results print with values; pending tests print blank.'**
   String get labReportSelectionHint;
 
   /// Toggle label for including order metadata in a lab report preview.

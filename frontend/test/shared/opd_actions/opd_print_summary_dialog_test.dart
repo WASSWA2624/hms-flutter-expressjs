@@ -242,7 +242,9 @@ void main() {
 
     expect(find.textContaining('Temperature'), findsWidgets);
 
-    await tester.tap(find.text('Vitals').first);
+    final Finder vitalsTile = find.text('Vitals');
+    await tester.ensureVisible(vitalsTile.first);
+    await tester.tap(vitalsTile.first);
     await tester.pumpAndSettle();
 
     final SelectableText preview = tester.widget(

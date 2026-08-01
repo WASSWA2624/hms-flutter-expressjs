@@ -62,7 +62,7 @@ class PrintOpdSummaryDialog extends ConsumerStatefulWidget {
 }
 
 class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
-  late Set<OpdPrintSection> _selectedSections;
+  late Set<Object> _selectedSections;
   bool _isCopying = false;
   bool _isPrinting = false;
   AppPrintPreviewPaneMode _paneMode = AppPrintPreviewPaneMode.split;
@@ -75,12 +75,16 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
   @override
   void initState() {
     super.initState();
+    final PrintFormTemplateContext branding = ref.read(
+      printFormTemplateContextProvider,
+    );
     _selectedSections = resolveDefaultReportSectionSelection(
       buildOpdPrintSectionAvailabilities(
         flow: widget.flow,
         detail: widget.detail,
+        branding: branding,
       ),
-    ).cast<OpdPrintSection>().toSet();
+    );
   }
 
   @override
@@ -88,17 +92,23 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final OpdFlowSummary flow = widget.flow;
+    final PrintFormTemplateContext branding = ref.watch(
+      printFormTemplateContextProvider,
+    );
     final List<ReportSectionAvailability> availabilities =
-        buildOpdPrintSectionAvailabilities(flow: flow, detail: widget.detail);
-    final Set<OpdPrintSection> selected = sanitizeReportSectionSelection(
+        buildOpdPrintSectionAvailabilities(
+          flow: flow,
+          detail: widget.detail,
+          branding: branding,
+        );
+    final Set<Object> selected = sanitizeReportSectionSelection(
       selectedIds: _selectedSections,
       sections: availabilities,
-    ).cast<OpdPrintSection>().toSet();
+    );
     final List<AppReportSectionData> tiles = buildReportSectionTiles(
       sections: availabilities,
-      titleFor: (Object id) =>
-          opdPrintSectionLabel(l10n, id as OpdPrintSection),
-      iconFor: (Object id) => opdPrintSectionIcon(id as OpdPrintSection),
+      titleFor: (Object id) => opdPrintSectionLabel(l10n, id),
+      iconFor: (Object id) => opdPrintSectionIcon(id),
       emptyDisabledReason: l10n.reportSectionEmptyDisabledReason,
       unauthorizedDisabledReason: l10n.reportSectionUnauthorizedDisabledReason,
     );
@@ -108,11 +118,14 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
       detail: widget.detail,
       selectedSections: selected,
     );
+    final PrintFormBrandingOptions brandingOptions =
+        brandingOptionsFromFacilitySections(selected);
     final String documentHtml = PrintDocumentTemplates.buildDocumentHtml(
       kind: PrintDocumentTemplateKind.clinicalSummary,
       ref: ref,
       context: context,
       title: l10n.opdPrintSummaryAction,
+      brandingOptions: brandingOptions,
       patientContext: buildPrintFormPatientContext(
         l10n,
         patientName: flow.patientDisplayName ?? flow.displayTitle,
@@ -231,7 +244,7 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
                           _selectedSections = sanitizeReportSectionSelection(
                             selectedIds: next,
                             sections: availabilities,
-                          ).cast<OpdPrintSection>().toSet();
+                          );
                           _currentPage = 1;
                         });
                       },
@@ -306,7 +319,7 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
     }
   }
 
-  Future<void> _printSummaryDocument(Set<OpdPrintSection> selected) async {
+  Future<void> _printSummaryDocument(Set<Object> selected) async {
     if (_isBusy || selected.isEmpty) {
       return;
     }
@@ -321,6 +334,7 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
         ref: ref,
         context: context,
         title: l10n.opdPrintSummaryAction,
+        brandingOptions: brandingOptionsFromFacilitySections(selected),
         patientContext: buildPrintFormPatientContext(
           l10n,
           patientName: flow.patientDisplayName ?? flow.displayTitle,
@@ -361,6 +375,7 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
 List<ReportSectionAvailability> buildOpdPrintSectionAvailabilities({
   required OpdFlowSummary flow,
   OpdFlowDetail? detail,
+  PrintFormTemplateContext? branding,
 }) {
   final OpdFlowDetail value = detail ?? OpdFlowDetail(summary: flow);
   final int referralFollowUpCount =
@@ -372,8 +387,17 @@ List<ReportSectionAvailability> buildOpdPrintSectionAvailabilities({
   final int vitalsCount = value.vitalMeasurements.isNotEmpty
       ? value.vitalMeasurements.length
       : value.vitalSigns.length;
+  final List<ReportSectionAvailability> facilitySections = branding == null
+      ? const <ReportSectionAvailability>[]
+      : buildFacilityPrintSectionAvailabilities(
+          effectivePrintBranding(
+            appBranding: branding.appBranding,
+            facilityBranding: branding.facilityBranding,
+          ),
+        );
 
   return <ReportSectionAvailability>[
+    ...facilitySections,
     const ReportSectionAvailability(
       id: OpdPrintSection.visit,
       count: 1,
@@ -413,8 +437,11 @@ List<ReportSectionAvailability> buildOpdPrintSectionAvailabilities({
 }
 
 @visibleForTesting
-String opdPrintSectionLabel(AppLocalizations l10n, OpdPrintSection section) {
-  return switch (section) {
+String opdPrintSectionLabel(AppLocalizations l10n, Object section) {
+  if (section is PrintFacilitySection) {
+    return printFacilitySectionLabel(l10n, section);
+  }
+  return switch (section as OpdPrintSection) {
     OpdPrintSection.visit => l10n.patientsVisitColumnLabel,
     OpdPrintSection.payment => l10n.opdPaymentStatusLabel,
     OpdPrintSection.vitals => l10n.opdVitalsSummaryLabel,
@@ -431,8 +458,11 @@ String opdPrintSectionLabel(AppLocalizations l10n, OpdPrintSection section) {
 }
 
 @visibleForTesting
-IconData opdPrintSectionIcon(OpdPrintSection section) {
-  return switch (section) {
+IconData opdPrintSectionIcon(Object section) {
+  if (section is PrintFacilitySection) {
+    return printFacilitySectionIcon(section);
+  }
+  return switch (section as OpdPrintSection) {
     OpdPrintSection.visit => Icons.badge_outlined,
     OpdPrintSection.payment => AppActionIcons.payment,
     OpdPrintSection.vitals => Icons.monitor_heart_outlined,
@@ -451,14 +481,14 @@ String buildOpdPrintSummaryText({
   required BuildContext context,
   required OpdFlowSummary flow,
   OpdFlowDetail? detail,
-  Set<OpdPrintSection>? selectedSections,
+  Set<Object>? selectedSections,
 }) {
   final AppLocalizations l10n = context.l10n;
-  final Set<OpdPrintSection> selected =
+  final Set<Object> selected =
       selectedSections ??
       resolveDefaultReportSectionSelection(
         buildOpdPrintSectionAvailabilities(flow: flow, detail: detail),
-      ).cast<OpdPrintSection>().toSet();
+      );
   final List<String> lines = <String>[
     if (selected.contains(OpdPrintSection.visit)) ..._visitTextLines(l10n, flow),
     if (selected.contains(OpdPrintSection.payment))
@@ -498,7 +528,7 @@ String buildOpdPrintSummaryHtml({
   required BuildContext context,
   required OpdFlowSummary flow,
   OpdFlowDetail? detail,
-  required Set<OpdPrintSection> selectedSections,
+  required Set<Object> selectedSections,
 }) {
   final AppLocalizations l10n = context.l10n;
   final List<String> sections = <String>[];

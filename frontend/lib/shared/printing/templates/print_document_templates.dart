@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/printing/app_print_preview.dart';
+import 'package:hosspi_hms/shared/printing/print_facility_sections.dart';
 import 'package:hosspi_hms/shared/printing/print_form_template.dart';
 
 /// Named reusable print documents built on the empty [PrintFormTemplate] chrome.
@@ -63,6 +64,7 @@ abstract final class PrintDocumentTemplates {
     String? previewDialogTitle,
     String? previewDialogBody,
     String? fallbackText,
+    PrintFormBrandingOptions brandingOptions = PrintFormBrandingOptions.all,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.clinicalResult,
@@ -82,6 +84,7 @@ abstract final class PrintDocumentTemplates {
       previewDialogTitle: previewDialogTitle,
       previewDialogBody: previewDialogBody,
       fallbackText: fallbackText,
+      brandingOptions: brandingOptions,
     );
   }
 
@@ -102,6 +105,7 @@ abstract final class PrintDocumentTemplates {
     String? previewDialogTitle,
     String? previewDialogBody,
     String? fallbackText,
+    PrintFormBrandingOptions brandingOptions = PrintFormBrandingOptions.all,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.clinicalSummary,
@@ -120,6 +124,7 @@ abstract final class PrintDocumentTemplates {
       previewDialogTitle: previewDialogTitle,
       previewDialogBody: previewDialogBody,
       fallbackText: fallbackText,
+      brandingOptions: brandingOptions,
     );
   }
 
@@ -267,6 +272,7 @@ abstract final class PrintDocumentTemplates {
     String? previewDialogTitle,
     String? previewDialogBody,
     String? fallbackText,
+    PrintFormBrandingOptions brandingOptions = PrintFormBrandingOptions.all,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.patientChart,
@@ -282,6 +288,7 @@ abstract final class PrintDocumentTemplates {
       previewDialogTitle: previewDialogTitle,
       previewDialogBody: previewDialogBody,
       fallbackText: fallbackText,
+      brandingOptions: brandingOptions,
     );
   }
 
@@ -363,6 +370,7 @@ abstract final class PrintDocumentTemplates {
     PrintFormSignatures? signatures,
     bool includeSignatures = false,
     String? footerNote,
+    PrintFormBrandingOptions brandingOptions = PrintFormBrandingOptions.all,
   }) {
     assert(
       bodyHtml != null || pages.isNotEmpty,
@@ -382,6 +390,7 @@ abstract final class PrintDocumentTemplates {
       includeSignatures: includeSignatures,
       footerNote:
           footerNote ?? 'Generated from ${displayName(kind).toLowerCase()}.',
+      brandingOptions: brandingOptions,
     );
   }
 
@@ -460,6 +469,7 @@ abstract final class PrintDocumentTemplates {
     String? previewDialogTitle,
     String? previewDialogBody,
     String? fallbackText,
+    PrintFormBrandingOptions brandingOptions = PrintFormBrandingOptions.all,
   }) async {
     assert(
       bodyHtml != null || pages.isNotEmpty,
@@ -482,6 +492,7 @@ abstract final class PrintDocumentTemplates {
         signatures: signatures,
         includeSignatures: includeSignatures,
         footerNote: resolvedFooter,
+        brandingOptions: brandingOptions,
       );
     }
 
@@ -491,29 +502,60 @@ abstract final class PrintDocumentTemplates {
       return doPrint();
     }
 
-    final String html = buildDocumentHtml(
-      kind: kind,
-      ref: ref,
-      context: context,
-      title: title,
-      subtitle: subtitle,
-      bodyHtml: bodyHtml,
-      pages: pages,
-      metadata: metadata,
-      patientContext: patientContext,
-      contextReference: contextReference,
-      signatures: signatures,
-      includeSignatures: includeSignatures,
-      footerNote: resolvedFooter,
+    final PrintFormTemplateContext branding = ref.read(
+      printFormTemplateContextProvider,
     );
+    final PrintFormBranding facilitySectionBranding = effectivePrintBranding(
+      appBranding: branding.appBranding,
+      facilityBranding: branding.facilityBranding,
+    );
+
+    String htmlFor(PrintFormBrandingOptions options) {
+      return buildDocumentHtml(
+        kind: kind,
+        ref: ref,
+        context: context,
+        title: title,
+        subtitle: subtitle,
+        bodyHtml: bodyHtml,
+        pages: pages,
+        metadata: metadata,
+        patientContext: patientContext,
+        contextReference: contextReference,
+        signatures: signatures,
+        includeSignatures: includeSignatures,
+        footerNote: resolvedFooter,
+        brandingOptions: options,
+      );
+    }
 
     await showAppPrintPreviewDialog(
       context: context,
       title: previewDialogTitle ?? title,
       body: previewDialogBody ?? context.l10n.printPreviewDialogBody,
-      documentHtml: html,
+      documentHtml: htmlFor(brandingOptions),
       fallbackText: fallbackText ?? title,
+      facilitySectionBranding: facilitySectionBranding,
+      initialBrandingOptions: brandingOptions,
+      documentHtmlBuilder: htmlFor,
       onPrint: doPrint,
+      onPrintWithBranding: (PrintFormBrandingOptions options) {
+        return printFormTemplateDocument(
+          ref: ref,
+          context: context,
+          title: title,
+          subtitle: subtitle,
+          bodyHtml: bodyHtml,
+          pages: pages,
+          metadata: metadata,
+          patientContext: patientContext,
+          contextReference: contextReference,
+          signatures: signatures,
+          includeSignatures: includeSignatures,
+          footerNote: resolvedFooter,
+          brandingOptions: options,
+        );
+      },
     );
   }
 }
