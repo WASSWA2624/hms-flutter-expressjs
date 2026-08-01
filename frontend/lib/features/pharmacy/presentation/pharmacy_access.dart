@@ -237,7 +237,7 @@ PharmacyDeskSection? pharmacyFallbackSection(AppAccessPolicy policy) {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Ready strip tab / count | navigate | read ∩ `pharmacy:read` |
-/// | Catalog and stock (primary) | navigate / read | browse ∩ `pharmacy:read` |
+/// | Catalog and stock (search trailing) | navigate / read | browse ∩ `pharmacy:read` |
 /// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
 /// | Dispense progress column | read | read ∩ |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
@@ -325,7 +325,7 @@ bool canViewPharmacyReadyTab(AppAccessPolicy policy) {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | All orders strip tab / count | navigate | read ∩ `pharmacy:read` |
-/// | Catalog and stock (primary) | navigate / read | browse ∩ `pharmacy:read` |
+/// | Catalog and stock (search trailing) | navigate / read | browse ∩ `pharmacy:read` |
 /// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
 /// | Items / status columns | read | read ∩ |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
@@ -412,7 +412,7 @@ bool canViewPharmacyAllOrdersTab(AppAccessPolicy policy) {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Partial strip tab / count | navigate | read ∩ `pharmacy:read` |
-/// | Catalog and stock (primary) | navigate / read | browse ∩ `pharmacy:read` |
+/// | Catalog and stock (search trailing) | navigate / read | browse ∩ `pharmacy:read` |
 /// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
 /// | Dispense progress column | read | read ∩ |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
@@ -502,7 +502,7 @@ bool canViewPharmacyPartialTab(AppAccessPolicy policy) {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Completed strip tab / count | navigate | read ∩ `pharmacy:read` |
-/// | Catalog and stock (primary) | navigate / read | browse ∩ `pharmacy:read` |
+/// | Catalog and stock (search trailing) | navigate / read | browse ∩ `pharmacy:read` |
 /// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
 /// | Dispense progress column | read | read ∩ |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
@@ -592,7 +592,7 @@ bool canViewPharmacyCompletedTab(AppAccessPolicy policy) {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Pending payment strip tab / count | navigate | read ∩ pharmacy:read + billing:read |
-/// | Catalog and stock (primary) | navigate / read | browse ∩ `pharmacy:read` |
+/// | Catalog and stock (search trailing) | navigate / read | browse ∩ `pharmacy:read` |
 /// | Search / Clear / Filters / Settings / pagination | read chrome | tab read ∩ |
 /// | Payment status column | read | billing status ∩ `billing:read` |
 /// | Empty / loading / error / retry | read chrome | tab read ∩ |

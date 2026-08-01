@@ -244,10 +244,7 @@ void _stubPharmacyRepository(
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _catalogAction() => find.byTooltip('Catalog and stock');
 
 /// Next-action labels live on [AppButton]; Partial "Dispense" progress column
 /// headers do not.
@@ -705,7 +702,7 @@ void main() {
         );
 
         expect(_tab('Partial'), findsOneWidget);
-        expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+        expect(_catalogAction(), findsOneWidget);
         expect(find.text('Amina Partial'), findsOneWidget);
         expect(_actionLabel('Dispense'), findsNothing);
         expect(_actionLabel('Cancel order'), findsNothing);
@@ -872,7 +869,7 @@ void main() {
         expect(_tab('Partial'), findsOneWidget);
         expect(find.text('Amina Partial'), findsOneWidget);
         expect(_actionLabel('Dispense'), findsNothing);
-        expect(_toolbarPrimary('Catalog and stock'), findsNothing);
+        expect(_catalogAction(), findsNothing);
       },
     );
 
@@ -1004,7 +1001,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.byType(DataTable), findsOneWidget);
-      expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+      expect(_catalogAction(), findsOneWidget);
       expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
     });
 

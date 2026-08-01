@@ -199,10 +199,7 @@ void _stubPharmacyRepository(
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _catalogAction() => find.byTooltip('Catalog and stock');
 
 Future<void> _pumpCompletedTab(
   WidgetTester tester, {
@@ -687,7 +684,7 @@ void main() {
         );
 
         expect(_tab('Completed'), findsOneWidget);
-        expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+        expect(_catalogAction(), findsOneWidget);
         expect(find.text('Dana Done'), findsOneWidget);
         expect(find.text('Return'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
@@ -926,7 +923,7 @@ void main() {
         expect(_tab('Completed'), findsOneWidget);
         expect(find.text('Dana Done'), findsOneWidget);
         expect(find.text('Return'), findsNothing);
-        expect(_toolbarPrimary('Catalog and stock'), findsNothing);
+        expect(_catalogAction(), findsNothing);
       },
     );
 
@@ -1138,7 +1135,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.byType(DataTable), findsOneWidget);
-      expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+      expect(_catalogAction(), findsOneWidget);
       expect(find.text('Return'), findsAtLeastNWidgets(1));
     });
 

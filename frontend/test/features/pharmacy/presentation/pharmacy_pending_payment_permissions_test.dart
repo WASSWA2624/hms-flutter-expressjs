@@ -257,10 +257,7 @@ void _stubPharmacyRepository(
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _catalogAction() => find.byTooltip('Catalog and stock');
 
 Finder _actionLabel(String label) => find.descendant(
   of: find.byType(AppButton),
@@ -758,7 +755,7 @@ void main() {
         );
 
         expect(_tab('Pending payment'), findsOneWidget);
-        expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+        expect(_catalogAction(), findsOneWidget);
         expect(find.text('Cathy Payment'), findsOneWidget);
         expect(find.text('Payment'), findsAtLeastNWidgets(1));
         expect(_actionLabel('Record payment'), findsNothing);
@@ -878,7 +875,7 @@ void main() {
         expect(_tab('Pending payment'), findsOneWidget);
         expect(find.text('Cathy Payment'), findsOneWidget);
         expect(_actionLabel('Record payment'), findsNothing);
-        expect(_toolbarPrimary('Catalog and stock'), findsNothing);
+        expect(_catalogAction(), findsNothing);
         // Payment column is billing-status chrome; absent without billing:read.
         expect(find.text('Payment'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
@@ -950,7 +947,7 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.byType(AppTabStrip), findsOneWidget);
         expect(find.byType(DataTable), findsOneWidget);
-        expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+        expect(_catalogAction(), findsOneWidget);
         expect(find.text('Payment'), findsAtLeastNWidgets(1));
         expect(_actionLabel('Record payment'), findsAtLeastNWidgets(1));
       },

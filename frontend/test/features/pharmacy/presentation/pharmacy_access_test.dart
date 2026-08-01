@@ -229,10 +229,7 @@ void _stubPharmacyRepository(_MockPharmacyRepository repository) {
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _catalogAction() => find.byTooltip('Catalog and stock');
 
 /// Next-action / quick-action labels live on [AppButton]; table column headers
 /// such as the Partial/Ready "Dispense" progress column do not.
@@ -968,7 +965,7 @@ void main() {
         );
 
         expect(_tab('Ready'), findsOneWidget);
-        expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+        expect(_catalogAction(), findsOneWidget);
         expect(find.text('Noah Ready'), findsOneWidget);
         expect(_actionLabel('Dispense'), findsNothing);
       },
@@ -1068,7 +1065,7 @@ void main() {
         );
 
         expect(_tab('Ready'), findsOneWidget);
-        expect(_toolbarPrimary('Catalog and stock'), findsNothing);
+        expect(_catalogAction(), findsNothing);
         expect(_actionLabel('Dispense'), findsNothing);
       },
     );
@@ -1092,7 +1089,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.byType(DataTable), findsOneWidget);
-      expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+      expect(_catalogAction(), findsOneWidget);
       expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
     });
 
@@ -1164,7 +1161,7 @@ void main() {
         );
 
         expect(_tab('Pending payment'), findsOneWidget);
-        expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+        expect(_catalogAction(), findsOneWidget);
         expect(find.text('Cathy Payment'), findsOneWidget);
         expect(find.text('Payment'), findsAtLeastNWidgets(1));
         expect(_actionLabel('Record payment'), findsNothing);
@@ -1228,7 +1225,7 @@ void main() {
         );
 
         expect(_tab('Pending payment'), findsOneWidget);
-        expect(_toolbarPrimary('Catalog and stock'), findsNothing);
+        expect(_catalogAction(), findsNothing);
         expect(_actionLabel('Record payment'), findsNothing);
         expect(find.text('Payment'), findsNothing);
       },
@@ -1248,7 +1245,7 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.byType(AppTabStrip), findsOneWidget);
         expect(find.byType(DataTable), findsOneWidget);
-        expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+        expect(_catalogAction(), findsOneWidget);
         expect(find.text('Payment'), findsAtLeastNWidgets(1));
         expect(_actionLabel('Record payment'), findsAtLeastNWidgets(1));
       },

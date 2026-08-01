@@ -494,6 +494,12 @@ class _AppSearchBarState extends State<AppSearchBar> {
                           showLabel: showActionLabels,
                           enabled: widget.enabled && !widget.isLoading,
                         ),
+                      // End inset so the last chrome action is not flush against
+                      // the search bar border on any breakpoint.
+                      if (showFilters ||
+                          inlineTrailingActions.isNotEmpty ||
+                          overflowTrailingActions.isNotEmpty)
+                        SizedBox(width: theme.spacing.sm),
                     ],
                   ),
                 ),

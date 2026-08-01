@@ -38,6 +38,8 @@ Finder _toolbarAction(String label) => find.descendant(
   matching: find.text(label),
 );
 
+Finder _catalogAction() => find.byTooltip('Catalog and stock');
+
 const PharmacyOrder _readyOrder = PharmacyOrder(
   id: 'order-ready',
   displayId: 'PHO-READY',
@@ -324,7 +326,7 @@ void main() {
     registerFallbackValue(const PharmacyInventoryStockQuery());
   });
 
-  testWidgets('renders tab strip with stable catalog primary and no refresh', (
+  testWidgets('renders tab strip with catalog search action and no refresh', (
     WidgetTester tester,
   ) async {
     await _pumpPharmacyWorkspace(tester, repository: repository);
@@ -338,7 +340,7 @@ void main() {
     expect(_tab('All orders'), findsOneWidget);
     expect(find.text('Noah Ready'), findsOneWidget);
     expect(find.text('Amina Partial'), findsNothing);
-    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+    expect(_catalogAction(), findsOneWidget);
     expect(_toolbarAction('Refresh'), findsNothing);
     expect(_toolbarAction('Low stock'), findsNothing);
     expect(_toolbarAction('Almost out'), findsNothing);
@@ -347,7 +349,7 @@ void main() {
     expect(_toolbarAction('Billing'), findsNothing);
   });
 
-  testWidgets('switching tabs keeps catalog primary and omits refresh', (
+  testWidgets('switching tabs keeps catalog search action and omits refresh', (
     WidgetTester tester,
   ) async {
     final _Harness harness = await _pumpPharmacyWorkspace(
@@ -361,7 +363,7 @@ void main() {
     expect(harness.router.state.uri.queryParameters['section'], 'in-progress');
     expect(find.text('Amina Partial'), findsOneWidget);
     expect(find.text('Noah Ready'), findsNothing);
-    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+    expect(_catalogAction(), findsOneWidget);
     expect(_toolbarAction('Refresh'), findsNothing);
 
     await tester.tap(_tab('Completed'));
@@ -369,7 +371,7 @@ void main() {
 
     expect(harness.router.state.uri.queryParameters['section'], 'completed');
     expect(find.text('Brian Done'), findsOneWidget);
-    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+    expect(_catalogAction(), findsOneWidget);
     expect(_toolbarAction('Refresh'), findsNothing);
   });
 
@@ -388,7 +390,7 @@ void main() {
     expect(find.text('Amina Partial'), findsOneWidget);
     expect(find.text('Noah Ready'), findsNothing);
     expect(find.text('Brian Done'), findsNothing);
-    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+    expect(_catalogAction(), findsOneWidget);
 
     final List<Object?> captured = verify(
       () => repository.loadWorkbench(captureAny()),
@@ -403,7 +405,7 @@ void main() {
   });
 
   testWidgets(
-    'deep link section=pending-payment keeps catalog primary (not Billing)',
+    'deep link section=pending-payment keeps catalog search action (not Billing)',
     (WidgetTester tester) async {
       await _pumpPharmacyWorkspace(
         tester,
@@ -415,7 +417,8 @@ void main() {
       );
 
       expect(find.text('Cathy Payment'), findsOneWidget);
-      expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+      expect(_catalogAction(), findsOneWidget);
+      expect(_toolbarPrimary('Catalog and stock'), findsNothing);
       expect(_toolbarPrimary('Billing'), findsNothing);
       expect(_toolbarAction('Catalog and stock'), findsNothing);
       expect(_toolbarAction('Refresh'), findsNothing);
@@ -465,16 +468,17 @@ void main() {
     expect(find.byType(AppDialog), findsNothing);
   });
 
-  testWidgets('PharmacyWorkspacePage opens catalog from tab toolbar', (
+  testWidgets('PharmacyWorkspacePage opens catalog from search toolbar', (
     WidgetTester tester,
   ) async {
     await _pumpPharmacyWorkspace(tester, repository: repository);
 
     expect(find.text('Noah Ready'), findsOneWidget);
     expect(find.byType(AppWorkspaceToolbar), findsNothing);
-    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+    expect(_catalogAction(), findsOneWidget);
+    expect(_toolbarPrimary('Catalog and stock'), findsNothing);
 
-    await tester.tap(_toolbarPrimary('Catalog and stock'));
+    await tester.tap(_catalogAction());
     await tester.pumpAndSettle();
 
     expect(find.text('CATALOG AND STOCK'), findsOneWidget);
@@ -494,7 +498,7 @@ void main() {
   ) async {
     await _pumpPharmacyWorkspace(tester, repository: repository);
 
-    await tester.tap(_toolbarPrimary('Catalog and stock'));
+    await tester.tap(_catalogAction());
     await tester.pumpAndSettle();
     expect(find.byType(AppDialog), findsOneWidget);
 
@@ -522,7 +526,7 @@ void main() {
       harness.router.state.uri.queryParameters['section'],
       'pending-payment',
     );
-    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+    expect(_catalogAction(), findsOneWidget);
     final Finder table = find.byType(DataTable);
     expect(
       find.descendant(of: table, matching: find.text('Ordered at')),
@@ -592,7 +596,7 @@ void main() {
       accessPolicy: _pharmacyReadOnlyPolicy(),
     );
 
-    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+    expect(_catalogAction(), findsOneWidget);
     expect(_toolbarAction('Refresh'), findsNothing);
     expect(
       find.descendant(
@@ -620,7 +624,7 @@ void main() {
     expect(find.text('Cancel order'), findsAtLeastNWidgets(1));
   });
 
-  testWidgets('All orders tab shows every order and catalog primary action', (
+  testWidgets('All orders tab shows every order and catalog search action', (
     WidgetTester tester,
   ) async {
     final _Harness harness = await _pumpPharmacyWorkspace(
@@ -635,7 +639,7 @@ void main() {
     expect(find.text('Noah Ready'), findsOneWidget);
     expect(find.text('Amina Partial'), findsOneWidget);
     expect(find.text('Brian Done'), findsOneWidget);
-    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+    expect(_catalogAction(), findsOneWidget);
     expect(_toolbarAction('Refresh'), findsNothing);
   });
 

@@ -333,16 +333,6 @@ class _PharmacyWorkspaceContentState
     };
   }
 
-  Widget _catalogPrimaryAction(AppLocalizations l10n) {
-    // Catalog browse stays on every worklist tab; CRUD is gated inside the
-    // dialog via [pharmacyCatalogWriteRequirement].
-    return AppTabToolbarPrimary(
-      label: l10n.pharmacyCatalogPanelTitle,
-      icon: Icons.inventory_2_outlined,
-      onPressed: () => unawaited(openPharmacyCatalogDialog(context, ref)),
-    );
-  }
-
   // ─── End tab helpers ──────────────────────────────────────────────────
 
   @override
@@ -404,9 +394,6 @@ class _PharmacyWorkspaceContentState
                     }
                   }
                 },
-                primaryAction: canBrowsePharmacyCatalog(policy)
-                    ? _catalogPrimaryAction(l10n)
-                    : null,
               ),
             SizedBox(height: theme.spacing.sm),
             if (allowedSections.isEmpty)
@@ -519,6 +506,19 @@ class _PharmacyQueuePanel extends ConsumerWidget {
             ),
           );
         },
+        // Catalog browse stays on every worklist tab; CRUD is gated inside the
+        // dialog via [pharmacyCatalogWriteRequirement]. Renders after Settings
+        // and Export (AppListTable merges caller trailing actions last).
+        trailingActions: <AppSearchBarAction>[
+          if (canBrowsePharmacyCatalog(policy))
+            AppSearchBarAction(
+              icon: Icons.inventory_2_outlined,
+              label: l10n.pharmacyCatalogPanelTitle,
+              tooltip: l10n.pharmacyCatalogPanelTitle,
+              onPressed: () =>
+                  unawaited(openPharmacyCatalogDialog(context, ref)),
+            ),
+        ],
       ),
       previousPageLabel: l10n.opdPreviousPageLabel,
       nextPageLabel: l10n.opdNextPageLabel,
