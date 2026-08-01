@@ -9,7 +9,9 @@ import 'package:hosspi_hms/core/platform/app_print.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/utils/app_media_url.dart';
+import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
+import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -175,6 +177,61 @@ Future<void> printFormTemplateDocument({
   );
 }
 
+/// Loads the current user's facility setup for print branding.
+///
+/// The generic setup controller resolves with `facilityId: null`, which for
+/// facility-scoped users returns a snapshot without the facility profile or
+/// its contact address (so previews showed "No data available"). Here we load
+/// the user's own facility explicitly - mirroring what the Facility Details
+/// admin page does - so contacts, address, type and ID are always populated.
+final facilityPrintSetupProvider = FutureProvider<FacilitySetupSnapshot?>((
+  ref,
+) async {
+  final AuthSession? session = ref.watch(
+    sessionStateProvider.select((state) => state.session),
+  );
+  final TenantFacilityRepository repository = ref.watch(
+    tenantFacilityRepositoryProvider,
+  );
+
+  final String? tenantId = _trimmedOrNull(session?.user?.tenantId);
+  String? facilityId = _trimmedOrNull(session?.user?.facilityId);
+
+  // Tenant-level accounts may not carry a facility id on the session. Fall back
+  // to whatever facility the generic setup controller could resolve.
+  if (facilityId == null) {
+    FacilitySetupSnapshot? snapshot;
+    try {
+      final Result<FacilitySetupSnapshot> controllerResult = await ref.watch(
+        tenantFacilitySetupControllerProvider.future,
+      );
+      snapshot = controllerResult.when(
+        success: (FacilitySetupSnapshot value) => value,
+        failure: (_) => null,
+      );
+    } catch (_) {
+      snapshot = null;
+    }
+    facilityId =
+        _trimmedOrNull(snapshot?.facility?.id) ??
+        (snapshot != null && snapshot.facilities.isNotEmpty
+            ? _trimmedOrNull(snapshot.facilities.first.id)
+            : null);
+    if (facilityId == null) {
+      return snapshot;
+    }
+  }
+
+  final Result<FacilitySetupSnapshot> result = await repository.loadSetup(
+    facilityId: facilityId,
+    tenantId: tenantId,
+  );
+  return result.when(
+    success: (FacilitySetupSnapshot value) => value,
+    failure: (_) => null,
+  );
+});
+
 final printFormTemplateContextProvider = Provider<PrintFormTemplateContext>((
   ref,
 ) {
@@ -182,9 +239,12 @@ final printFormTemplateContextProvider = Provider<PrintFormTemplateContext>((
   final AuthSession? session = ref.watch(
     sessionStateProvider.select((state) => state.session),
   );
-  final FacilitySetupSnapshot? setup = _setupSnapshot(
-    ref.watch(tenantFacilitySetupControllerProvider),
-  );
+  // Prefer the resolved facility setup; fall back to the generic controller
+  // snapshot (name only) while the facility load is still in flight so the
+  // preview never blocks. The provider rebuilds when the load completes.
+  final FacilitySetupSnapshot? setup =
+      ref.watch(facilityPrintSetupProvider).value ??
+      _setupSnapshot(ref.watch(tenantFacilitySetupControllerProvider));
 
   return PrintFormTemplateContext(
     appBranding: _appBranding(config),
@@ -205,13 +265,7 @@ final printFormTemplateContextReadyProvider =
       FacilitySetupSnapshot? setup;
 
       try {
-        final Result<FacilitySetupSnapshot> result = await ref.watch(
-          tenantFacilitySetupControllerProvider.future,
-        );
-        setup = result.when(
-          success: (FacilitySetupSnapshot snapshot) => snapshot,
-          failure: (_) => null,
-        );
+        setup = await ref.watch(facilityPrintSetupProvider.future);
       } catch (_) {
         setup = null;
       }
@@ -326,6 +380,11 @@ bool _hasFacilitySubscription(AuthSession? session) {
 
 bool _hasText(String? value) {
   return value != null && value.trim().isNotEmpty;
+}
+
+String? _trimmedOrNull(String? value) {
+  final String trimmed = value?.trim() ?? '';
+  return trimmed.isEmpty ? null : trimmed;
 }
 
 String? _firstText(Iterable<String?> values) {
