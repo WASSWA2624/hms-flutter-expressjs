@@ -25,6 +25,7 @@ const {
   createPharmacyStorageShelfSchema,
   updatePharmacyStorageShelfSchema,
   checkPharmacyStorageShelfSimilaritySchema,
+  checkPharmacyDrugSimilaritySchema,
   pharmacyStorageShelfParamsSchema} = require('@validations/pharmacy-workspace/pharmacy-workspace.schema');
 
 const router = express.Router();
@@ -55,6 +56,14 @@ router.post(
   authenticate(),
   authorize(INVENTORY_WRITE_SCOPES, 'permission'),
   pharmacyWorkspaceController.setupPharmacyDrug
+);
+
+router.post(
+  '/drugs/similarity-check',
+  validateRequest({ body: checkPharmacyDrugSimilaritySchema }),
+  authenticate(),
+  authorize(INVENTORY_WRITE_SCOPES, 'permission'),
+  pharmacyWorkspaceController.checkPharmacyDrugSimilarity
 );
 
 router.post(

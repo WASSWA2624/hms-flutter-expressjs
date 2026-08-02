@@ -30,6 +30,7 @@ const createDrugSchema = z.object({
   strength: z.string().trim().max(80).optional().nullable(),
   unit_price: z.coerce.number().min(0).optional().nullable(),
   currency: z.string().trim().max(10).optional().nullable(),
+  confirm_similar: z.coerce.boolean().optional(),
 });
 
 /**

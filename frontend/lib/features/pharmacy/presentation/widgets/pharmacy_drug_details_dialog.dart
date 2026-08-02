@@ -219,7 +219,7 @@ class _PharmacyDrugDetailsDialog extends ConsumerWidget {
               leadingIcon: Icons.edit_outlined,
               semanticLabel: l10n.pharmacyEditDrugAction,
               onPressed: () async {
-                await showAppDialog<bool>(
+                await showAppDialog<PharmacyDrugFormResult>(
                   context: context,
                   builder: (_) => PharmacyDrugEditDialog(drug: current),
                 );

@@ -15310,6 +15310,168 @@
   "@pharmacyAddDrugAction": {
     "description": "Pharmacy create drug action label."
   },
+  "pharmacyDrugScanPackAction": "Scan pack",
+  "@pharmacyDrugScanPackAction": {
+    "description": "Action to barcode/OCR-scan a drug pack for create prefill."
+  },
+  "pharmacyDrugScanPackTitle": "Scan pack",
+  "@pharmacyDrugScanPackTitle": {
+    "description": "Title for the drug pack scan assist dialog."
+  },
+  "pharmacyDrugScanPackBody": "Enter or decode a barcode first. If that fails, capture pack photo(s) for free OCR prefill. Images are discarded after parsing.",
+  "@pharmacyDrugScanPackBody": {
+    "description": "Helper body for the drug pack scan assist dialog."
+  },
+  "pharmacyDrugBarcodeLabel": "Barcode",
+  "@pharmacyDrugBarcodeLabel": {
+    "description": "Barcode entry field on drug pack scan."
+  },
+  "pharmacyDrugBarcodeApplyAction": "Use barcode",
+  "@pharmacyDrugBarcodeApplyAction": {
+    "description": "Apply typed/scanned barcode to prefill candidates."
+  },
+  "pharmacyDrugCapturePackPhotoAction": "Capture pack photo",
+  "@pharmacyDrugCapturePackPhotoAction": {
+    "description": "Pick/capture an ephemeral pack photo for OCR."
+  },
+  "pharmacyDrugPastePackTextAction": "Paste pack text",
+  "@pharmacyDrugPastePackTextAction": {
+    "description": "Fallback: paste OCR or pack text when camera OCR is unavailable."
+  },
+  "pharmacyDrugPackTextLabel": "Pack text",
+  "@pharmacyDrugPackTextLabel": {
+    "description": "Multiline pack/OCR text field."
+  },
+  "pharmacyDrugScanSkipAction": "Skip scan",
+  "@pharmacyDrugScanSkipAction": {
+    "description": "Skip assistive scan and continue with a blank create form."
+  },
+  "pharmacyDrugScanApplyAction": "Prefill form",
+  "@pharmacyDrugScanApplyAction": {
+    "description": "Apply parsed pack candidates to the create form."
+  },
+  "pharmacyDrugScanNoDataBody": "No pack details could be parsed. You can still create the drug manually.",
+  "@pharmacyDrugScanNoDataBody": {
+    "description": "Shown when barcode/OCR yield no useful field candidates."
+  },
+  "pharmacyDrugSuggestedBannerTitle": "Confirm suggested values",
+  "@pharmacyDrugSuggestedBannerTitle": {
+    "description": "Banner title when scan/OCR prefilled fields need confirmation."
+  },
+  "pharmacyDrugSuggestedBannerBody": "Highlighted fields came from scan/OCR. Accept each field, edit it, or accept all before creating.",
+  "@pharmacyDrugSuggestedBannerBody": {
+    "description": "Banner body for suggested-field confirmation."
+  },
+  "pharmacyDrugAcceptSuggestionAction": "Accept",
+  "@pharmacyDrugAcceptSuggestionAction": {
+    "description": "Accept one suggested drug field."
+  },
+  "pharmacyDrugEditSuggestionAction": "Edit",
+  "@pharmacyDrugEditSuggestionAction": {
+    "description": "Edit a suggested drug field and clear suggested state."
+  },
+  "pharmacyDrugAcceptAllSuggestionsAction": "Accept all",
+  "@pharmacyDrugAcceptAllSuggestionsAction": {
+    "description": "Accept all remaining suggested drug fields."
+  },
+  "pharmacyDrugSuggestionsPendingBody": "Accept or edit suggested fields before creating this drug.",
+  "@pharmacyDrugSuggestionsPendingBody": {
+    "description": "Validation message when create is blocked by unconfirmed suggestions."
+  },
+  "pharmacyDrugDuplicateDialogTitle": "Duplicate drug",
+  "@pharmacyDrugDuplicateDialogTitle": {
+    "description": "Title when drug similarity finds an exact conflict."
+  },
+  "pharmacyDrugDuplicateDialogBody": "An exact match already exists. Change identity fields or use the existing drug.",
+  "@pharmacyDrugDuplicateDialogBody": {
+    "description": "Body when drug similarity finds an exact conflict."
+  },
+  "pharmacyDrugSimilarDialogTitle": "Similar drugs found",
+  "@pharmacyDrugSimilarDialogTitle": {
+    "description": "Title when drug similarity finds near matches."
+  },
+  "pharmacyDrugSimilarDialogBody": "Closest match similarity: {score}%. Review matches before continuing.",
+  "@pharmacyDrugSimilarDialogBody": {
+    "description": "Body when drug similarity finds near matches.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "pharmacyDrugNoSimilarDialogTitle": "No similar drugs",
+  "@pharmacyDrugNoSimilarDialogTitle": {
+    "description": "Title when drug similarity finds no matches."
+  },
+  "pharmacyDrugNoSimilarDialogBody": "No close matches found. Continue to create this drug.",
+  "@pharmacyDrugNoSimilarDialogBody": {
+    "description": "Body when drug similarity finds no matches."
+  },
+  "pharmacyDrugCreateAnywayAction": "Create anyway",
+  "@pharmacyDrugCreateAnywayAction": {
+    "description": "Continue creating a drug after similarity review."
+  },
+  "pharmacyDrugUseExistingAction": "Use this drug",
+  "@pharmacyDrugUseExistingAction": {
+    "description": "Use an existing drug from similarity review."
+  },
+  "pharmacyDrugProposedHeading": "Proposed drug",
+  "@pharmacyDrugProposedHeading": {
+    "description": "Heading for proposed values in drug similarity review."
+  },
+  "pharmacyDrugMatchesHeading": "Similar drugs",
+  "@pharmacyDrugMatchesHeading": {
+    "description": "Heading for drug similarity matches."
+  },
+  "pharmacyDrugExactMatchLabel": "Exact match",
+  "@pharmacyDrugExactMatchLabel": {
+    "description": "Badge for an exact drug match."
+  },
+  "pharmacyDrugNearMatchLabel": "Near match",
+  "@pharmacyDrugNearMatchLabel": {
+    "description": "Badge for a near drug match."
+  },
+  "pharmacyDrugExistingHeading": "Existing",
+  "@pharmacyDrugExistingHeading": {
+    "description": "Heading for existing drug values in similarity comparison."
+  },
+  "pharmacyDrugExactBannerTitle": "Exact match found",
+  "@pharmacyDrugExactBannerTitle": {
+    "description": "Banner title for exact drug conflict."
+  },
+  "pharmacyDrugSimilarBannerTitle": "Review similar drugs",
+  "@pharmacyDrugSimilarBannerTitle": {
+    "description": "Banner title for near drug matches."
+  },
+  "pharmacyDrugNoSimilarBannerTitle": "Ready to continue",
+  "@pharmacyDrugNoSimilarBannerTitle": {
+    "description": "Banner title when drug similarity is clean."
+  },
+  "pharmacyDrugFieldProposedLabel": "Proposed",
+  "@pharmacyDrugFieldProposedLabel": {
+    "description": "Column header for proposed drug field value."
+  },
+  "pharmacyDrugFieldExistingLabel": "Existing",
+  "@pharmacyDrugFieldExistingLabel": {
+    "description": "Column header for existing drug field value."
+  },
+  "pharmacyDrugFieldColumnLabel": "Field",
+  "@pharmacyDrugFieldColumnLabel": {
+    "description": "Column header for field name in drug similarity comparison."
+  },
+  "pharmacyDrugOverallSimilarityLabel": "Overall similarity",
+  "@pharmacyDrugOverallSimilarityLabel": {
+    "description": "Label for closest drug similarity score."
+  },
+  "pharmacyDrugNoMatchScoreLabel": "No matches · {score}% similarity",
+  "@pharmacyDrugNoMatchScoreLabel": {
+    "description": "Fallback similarity score label when no drug match is selected.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
   "pharmacyDrugDetailsTitle": "Drug Details",
   "@pharmacyDrugDetailsTitle": {
     "description": "Pharmacy catalog drug details dialog title."

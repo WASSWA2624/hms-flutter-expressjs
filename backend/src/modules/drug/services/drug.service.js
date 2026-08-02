@@ -18,6 +18,9 @@ const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
 } = require('@lib/identifiers/service-identifier-resolution');
+const {
+  checkPharmacyDrugDuplicates,
+} = require('@lib/pharmacy/pharmacy-drug-similarity');
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
 
@@ -189,7 +192,9 @@ const getDrugById = async (id, userId, ipAddress, user = {}) => {
 const createDrug = async (data, userId, ipAddress, user = {}) => {
   try {
     const scope = resolveScopedUserContext(user);
-    const payload = { ...data };
+    const confirmSimilar = data?.confirm_similar === true;
+    const { confirm_similar: _confirmSimilar, ...rawPayload } = data || {};
+    const payload = { ...rawPayload };
     if (!scope.can_manage_all_tenants) {
       payload.tenant_id = scope.tenant_id;
     } else {
@@ -200,6 +205,45 @@ const createDrug = async (data, userId, ipAddress, user = {}) => {
         where: { deleted_at: null },
       });
     }
+
+    const existing = await drugRepository.findMany(
+      { tenant_id: payload.tenant_id },
+      0,
+      500,
+      { updated_at: 'desc' }
+    );
+    const duplicateCheck = checkPharmacyDrugDuplicates({
+      name: payload.name,
+      genericName: payload.generic_name,
+      brandName: payload.brand_name,
+      code: payload.code,
+      form: payload.form,
+      strength: payload.strength,
+      existing,
+    });
+    if (duplicateCheck.exactIdentityConflict) {
+      throw new HttpError('errors.pharmacy_drug.duplicate_identity', 409, [
+        { field: 'generic_name' },
+      ]);
+    }
+    if (duplicateCheck.exactCodeConflict) {
+      throw new HttpError('errors.pharmacy_drug.duplicate_code', 409, [
+        { field: 'code' },
+      ]);
+    }
+    const reviewMatches = duplicateCheck.similarMatches
+      .filter((match) => !match.is_exact)
+      .slice(0, 8);
+    if (!confirmSimilar && reviewMatches.length > 0) {
+      throw new HttpError('errors.pharmacy_drug.similar_exists', 409, [
+        {
+          field: 'generic_name',
+          matches: reviewMatches,
+          closest_score: duplicateCheck.closestScore,
+        },
+      ]);
+    }
+
     const drug = await drugRepository.create(payload);
 
     // Create audit log (non-blocking)

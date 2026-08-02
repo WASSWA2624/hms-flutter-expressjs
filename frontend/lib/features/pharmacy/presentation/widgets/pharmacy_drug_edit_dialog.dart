@@ -3,14 +3,38 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_catalog_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_drug_catalog_options.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_pack_scan_dialog.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_similarity_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/scan/scan.dart';
+
+final class PharmacyDrugFormResult {
+  const PharmacyDrugFormResult._({
+    required this.saved,
+    required this.useExisting,
+    this.drug,
+  });
+
+  const PharmacyDrugFormResult.cancelled()
+    : this._(saved: false, useExisting: false);
+
+  const PharmacyDrugFormResult.saved() : this._(saved: true, useExisting: false);
+
+  const PharmacyDrugFormResult.useExisting(PharmacyDrug drug)
+    : this._(saved: false, useExisting: true, drug: drug);
+
+  final bool saved;
+  final bool useExisting;
+  final PharmacyDrug? drug;
+}
 
 class PharmacyDrugEditDialog extends ConsumerStatefulWidget {
   const PharmacyDrugEditDialog({this.drug, super.key});
@@ -44,6 +68,7 @@ class _PharmacyDrugEditDialogState
   DateTime? _manufacturedAt;
   DateTime? _expiryDate;
   bool _isSaving = false;
+  final AppSuggestedFieldSet _suggestions = AppSuggestedFieldSet();
 
   bool get _isEdit => widget.drug != null;
 
@@ -100,6 +125,9 @@ class _PharmacyDrugEditDialogState
   void _onFormChanged(String? value) {
     setState(() {
       _form = value;
+      if (_suggestions.isSuggested(PharmacyDrugSuggestedFields.form)) {
+        _suggestions.edit(PharmacyDrugSuggestedFields.form);
+      }
       if (_form == null) {
         _strength = null;
         return;
@@ -120,6 +148,105 @@ class _PharmacyDrugEditDialogState
       context,
       ref,
       initialTab: PharmacyCatalogTab.storageLayout,
+    );
+  }
+
+  Future<void> _openPackScan() async {
+    final DrugPackFieldCandidates? candidates =
+        await showPharmacyDrugPackScanDialog(context);
+    if (!mounted || candidates == null || !candidates.hasAnyIdentityField) {
+      return;
+    }
+    setState(() {
+      final List<String> suggested = <String>[];
+      if ((candidates.genericName ?? '').trim().isNotEmpty) {
+        _genericNameController.text = candidates.genericName!.trim();
+        suggested.add(PharmacyDrugSuggestedFields.genericName);
+      }
+      if ((candidates.brandName ?? '').trim().isNotEmpty) {
+        _brandNameController.text = candidates.brandName!.trim();
+        suggested.add(PharmacyDrugSuggestedFields.brandName);
+      }
+      if ((candidates.code ?? '').trim().isNotEmpty) {
+        _codeController.text = candidates.code!.trim();
+        suggested.add(PharmacyDrugSuggestedFields.code);
+      }
+      if ((candidates.form ?? '').trim().isNotEmpty) {
+        _form = candidates.form!.trim();
+        suggested.add(PharmacyDrugSuggestedFields.form);
+        final String? defaultUnit = pharmacyDefaultInventoryUnitForForm(_form);
+        if (defaultUnit != null) {
+          _inventoryUnit = defaultUnit;
+        }
+      }
+      if ((candidates.strength ?? '').trim().isNotEmpty) {
+        _strength = candidates.strength!.trim();
+        suggested.add(PharmacyDrugSuggestedFields.strength);
+      }
+      if ((candidates.batchNumber ?? '').trim().isNotEmpty) {
+        _batchNumberController.text = candidates.batchNumber!.trim();
+        suggested.add(PharmacyDrugSuggestedFields.batchNumber);
+      }
+      if (candidates.manufacturedAt != null) {
+        _manufacturedAt = candidates.manufacturedAt;
+        suggested.add(PharmacyDrugSuggestedFields.manufacturedAt);
+      }
+      if (candidates.expiryDate != null) {
+        _expiryDate = candidates.expiryDate;
+        suggested.add(PharmacyDrugSuggestedFields.expiryDate);
+      }
+      _suggestions.markAll(suggested);
+    });
+  }
+
+  Widget _suggestedChrome({
+    required String fieldKey,
+    required AppLocalizations l10n,
+    required ThemeData theme,
+    required Widget child,
+  }) {
+    final bool suggested = _suggestions.isSuggested(fieldKey);
+    if (!suggested) {
+      return child;
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(theme.radius.md),
+            border: Border.all(
+              color: theme.colorScheme.tertiary.withValues(alpha: 0.7),
+              width: 1.5,
+            ),
+            color: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.35),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(theme.spacing.xs),
+            child: child,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Wrap(
+          spacing: theme.spacing.xs,
+          children: <Widget>[
+            AppButton.tertiary(
+              label: l10n.pharmacyDrugAcceptSuggestionAction,
+              leadingIcon: Icons.check,
+              dense: true,
+              enabled: !_isSaving,
+              onPressed: () => setState(() => _suggestions.accept(fieldKey)),
+            ),
+            AppButton.tertiary(
+              label: l10n.pharmacyDrugEditSuggestionAction,
+              leadingIcon: Icons.edit_outlined,
+              dense: true,
+              enabled: !_isSaving,
+              onPressed: () => setState(() => _suggestions.edit(fieldKey)),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -291,27 +418,103 @@ class _PharmacyDrugEditDialogState
         formKey: _formKey,
         enabled: !_isSaving,
         children: <Widget>[
+          if (!_isEdit) ...<Widget>[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: AppButton.secondary(
+                label: l10n.pharmacyDrugScanPackAction,
+                leadingIcon: Icons.qr_code_scanner_outlined,
+                enabled: !_isSaving,
+                onPressed: _openPackScan,
+              ),
+            ),
+            if (_suggestions.hasPending) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              AppFormInformationBanner(
+                title: l10n.pharmacyDrugSuggestedBannerTitle,
+                message: l10n.pharmacyDrugSuggestedBannerBody,
+                variant: AppFormInformationVariant.warning,
+                children: <Widget>[
+                  AppButton.secondary(
+                    label: l10n.pharmacyDrugAcceptAllSuggestionsAction,
+                    leadingIcon: Icons.done_all,
+                    dense: true,
+                    enabled: !_isSaving,
+                    onPressed: () => setState(_suggestions.acceptAll),
+                  ),
+                ],
+              ),
+            ],
+            SizedBox(height: theme.spacing.md),
+          ],
           AppFormSection(
             title: l10n.pharmacyDrugIdentitySectionTitle,
             children: <Widget>[
               AppResponsiveFieldRow.two(
                 gap: AppResponsiveFieldRowGap.form,
-                left: AppTextField(
-                  controller: _genericNameController,
-                  labelText: l10n.pharmacyDrugGenericNameLabel,
-                  isRequired: true,
-                  validator: AppValidators.requiredText(
-                    l10n.validationRequired,
+                left: _suggestedChrome(
+                  fieldKey: PharmacyDrugSuggestedFields.genericName,
+                  l10n: l10n,
+                  theme: theme,
+                  child: AppTextField(
+                    controller: _genericNameController,
+                    labelText: l10n.pharmacyDrugGenericNameLabel,
+                    isRequired: true,
+                    validator: AppValidators.requiredText(
+                      l10n.validationRequired,
+                    ),
+                    onChanged: (_) {
+                      if (_suggestions.isSuggested(
+                        PharmacyDrugSuggestedFields.genericName,
+                      )) {
+                        setState(
+                          () => _suggestions.edit(
+                            PharmacyDrugSuggestedFields.genericName,
+                          ),
+                        );
+                      }
+                    },
                   ),
                 ),
-                right: AppTextField(
-                  controller: _codeController,
-                  labelText: l10n.pharmacyDrugCodeLabel,
+                right: _suggestedChrome(
+                  fieldKey: PharmacyDrugSuggestedFields.code,
+                  l10n: l10n,
+                  theme: theme,
+                  child: AppTextField(
+                    controller: _codeController,
+                    labelText: l10n.pharmacyDrugCodeLabel,
+                    onChanged: (_) {
+                      if (_suggestions.isSuggested(
+                        PharmacyDrugSuggestedFields.code,
+                      )) {
+                        setState(
+                          () =>
+                              _suggestions.edit(PharmacyDrugSuggestedFields.code),
+                        );
+                      }
+                    },
+                  ),
                 ),
               ),
-              AppTextField(
-                controller: _brandNameController,
-                labelText: l10n.pharmacyDrugBrandNameLabel,
+              _suggestedChrome(
+                fieldKey: PharmacyDrugSuggestedFields.brandName,
+                l10n: l10n,
+                theme: theme,
+                child: AppTextField(
+                  controller: _brandNameController,
+                  labelText: l10n.pharmacyDrugBrandNameLabel,
+                  onChanged: (_) {
+                    if (_suggestions.isSuggested(
+                      PharmacyDrugSuggestedFields.brandName,
+                    )) {
+                      setState(
+                        () => _suggestions.edit(
+                          PharmacyDrugSuggestedFields.brandName,
+                        ),
+                      );
+                    }
+                  },
+                ),
               ),
             ],
           ),
@@ -321,20 +524,40 @@ class _PharmacyDrugEditDialogState
             children: <Widget>[
               AppResponsiveFieldRow.two(
                 gap: AppResponsiveFieldRowGap.form,
-                left: AppSelectField<String>.searchable(
-                  value: _form,
-                  labelText: l10n.pharmacyDrugFormLabel,
-                  enabled: !_isSaving,
-                  options: formOptions,
-                  onChanged: _onFormChanged,
+                left: _suggestedChrome(
+                  fieldKey: PharmacyDrugSuggestedFields.form,
+                  l10n: l10n,
+                  theme: theme,
+                  child: AppSelectField<String>.searchable(
+                    value: _form,
+                    labelText: l10n.pharmacyDrugFormLabel,
+                    enabled: !_isSaving,
+                    options: formOptions,
+                    onChanged: _onFormChanged,
+                  ),
                 ),
-                right: AppSelectField<String>.searchable(
-                  value: _strength,
-                  labelText: l10n.pharmacyDrugStrengthLabel,
-                  enabled: !_isSaving && _form != null,
-                  options: strengthOptions,
-                  onChanged: (String? value) =>
-                      setState(() => _strength = value),
+                right: _suggestedChrome(
+                  fieldKey: PharmacyDrugSuggestedFields.strength,
+                  l10n: l10n,
+                  theme: theme,
+                  child: AppSelectField<String>.searchable(
+                    value: _strength,
+                    labelText: l10n.pharmacyDrugStrengthLabel,
+                    enabled: !_isSaving && _form != null,
+                    options: strengthOptions,
+                    onChanged: (String? value) {
+                      setState(() {
+                        _strength = value;
+                        if (_suggestions.isSuggested(
+                          PharmacyDrugSuggestedFields.strength,
+                        )) {
+                          _suggestions.edit(
+                            PharmacyDrugSuggestedFields.strength,
+                          );
+                        }
+                      });
+                    },
+                  ),
                 ),
               ),
             ],
@@ -447,41 +670,87 @@ class _PharmacyDrugEditDialogState
               children: <Widget>[
                 AppResponsiveFieldRow.two(
                   gap: AppResponsiveFieldRowGap.form,
-                  left: AppTextField(
-                    controller: _batchNumberController,
-                    labelText: l10n.pharmacyBatchNumberLabel,
-                    isRequired: _expiryDate != null,
-                    validator: (String? value) {
-                      if (_expiryDate != null && (value ?? '').trim().isEmpty) {
-                        return l10n.validationRequired;
-                      }
-                      return null;
-                    },
+                  left: _suggestedChrome(
+                    fieldKey: PharmacyDrugSuggestedFields.batchNumber,
+                    l10n: l10n,
+                    theme: theme,
+                    child: AppTextField(
+                      controller: _batchNumberController,
+                      labelText: l10n.pharmacyBatchNumberLabel,
+                      isRequired: _expiryDate != null,
+                      validator: (String? value) {
+                        if (_expiryDate != null &&
+                            (value ?? '').trim().isEmpty) {
+                          return l10n.validationRequired;
+                        }
+                        return null;
+                      },
+                      onChanged: (_) {
+                        if (_suggestions.isSuggested(
+                          PharmacyDrugSuggestedFields.batchNumber,
+                        )) {
+                          setState(
+                            () => _suggestions.edit(
+                              PharmacyDrugSuggestedFields.batchNumber,
+                            ),
+                          );
+                        }
+                      },
+                    ),
                   ),
-                  right: AppDateField(
-                    labelText: l10n.pharmacyManufacturingDateLabel,
-                    value: _manufacturedAt,
-                    pickerButtonLabel: l10n.housekeepingPickDateAction,
-                    invalidDateMessage: l10n.pharmacyManufacturingDateLabel,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                    onChanged: (DateTime? value) =>
-                        setState(() => _manufacturedAt = value),
+                  right: _suggestedChrome(
+                    fieldKey: PharmacyDrugSuggestedFields.manufacturedAt,
+                    l10n: l10n,
+                    theme: theme,
+                    child: AppDateField(
+                      labelText: l10n.pharmacyManufacturingDateLabel,
+                      value: _manufacturedAt,
+                      pickerButtonLabel: l10n.housekeepingPickDateAction,
+                      invalidDateMessage: l10n.pharmacyManufacturingDateLabel,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                      onChanged: (DateTime? value) {
+                        setState(() {
+                          _manufacturedAt = value;
+                          if (_suggestions.isSuggested(
+                            PharmacyDrugSuggestedFields.manufacturedAt,
+                          )) {
+                            _suggestions.edit(
+                              PharmacyDrugSuggestedFields.manufacturedAt,
+                            );
+                          }
+                        });
+                      },
+                    ),
                   ),
                 ),
                 AppResponsiveFieldRow.two(
                   gap: AppResponsiveFieldRowGap.form,
-                  left: AppDateField(
-                    labelText: l10n.pharmacyExpiryDateLabel,
-                    value: _expiryDate,
-                    pickerButtonLabel: l10n.housekeepingPickDateAction,
-                    invalidDateMessage: l10n.pharmacyExpiryDateLabel,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                    onChanged: (DateTime? value) {
-                      setState(() => _expiryDate = value);
-                      _formKey.currentState?.validate();
-                    },
+                  left: _suggestedChrome(
+                    fieldKey: PharmacyDrugSuggestedFields.expiryDate,
+                    l10n: l10n,
+                    theme: theme,
+                    child: AppDateField(
+                      labelText: l10n.pharmacyExpiryDateLabel,
+                      value: _expiryDate,
+                      pickerButtonLabel: l10n.housekeepingPickDateAction,
+                      invalidDateMessage: l10n.pharmacyExpiryDateLabel,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                      onChanged: (DateTime? value) {
+                        setState(() {
+                          _expiryDate = value;
+                          if (_suggestions.isSuggested(
+                            PharmacyDrugSuggestedFields.expiryDate,
+                          )) {
+                            _suggestions.edit(
+                              PharmacyDrugSuggestedFields.expiryDate,
+                            );
+                          }
+                        });
+                        _formKey.currentState?.validate();
+                      },
+                    ),
                   ),
                   right: AppSelectField<int>(
                     value: _expiryAlertLeadDays,
@@ -518,7 +787,8 @@ class _PharmacyDrugEditDialogState
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
           enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () =>
+              Navigator.of(context).pop(const PharmacyDrugFormResult.cancelled()),
         ),
         AppButton.primary(
           label: _isEdit
@@ -536,11 +806,21 @@ class _PharmacyDrugEditDialogState
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
+    if (!_isEdit && _suggestions.hasPending) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.pharmacyDrugSuggestionsPendingBody)),
+      );
+      return;
+    }
     setState(() => _isSaving = true);
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
-    final String genericName = _genericNameController.text.trim();
+    String genericName = _genericNameController.text.trim();
+    String? brandName = _emptyToNull(_brandNameController.text);
+    String? code = _emptyToNull(_codeController.text);
+    String? form = _form;
+    String? strength = _strength;
     final num? pharmacyPrice = _parsePrice(_pharmacyPriceController.text);
     final num? facilityPrice = _parsePrice(_facilityPriceController.text);
     final String? pharmacyCurrency = pharmacyPrice == null
@@ -554,16 +834,122 @@ class _PharmacyDrugEditDialogState
       if (tenantId == null) {
         failure = AppFailure.validation();
       } else {
+        while (mounted) {
+          final Result<PharmacyDrugSimilarityResult> similarityResult =
+              await controller.checkDrugSimilarity(
+                genericName: genericName,
+                name: genericName,
+                brandName: brandName,
+                code: code,
+                form: form,
+                strength: strength,
+                tenantId: tenantId,
+              );
+          final PharmacyDrugSimilarityResult? check = similarityResult.when(
+            success: (PharmacyDrugSimilarityResult value) => value,
+            failure: (AppFailure error) {
+              failure = error;
+              return null;
+            },
+          );
+          if (check == null) {
+            break;
+          }
+
+          if (!mounted) {
+            return;
+          }
+
+          final PharmacyDrugSimilarityDialogResult similarityDecision =
+              await showPharmacyDrugSimilarityDialog(
+                context,
+                proposed: PharmacyDrugSimilarityProposedValues(
+                  genericName: genericName,
+                  brandName: brandName,
+                  code: code,
+                  form: form,
+                  strength: strength,
+                ),
+                check: check,
+              );
+
+          if (similarityDecision.action == PharmacyDrugSimilarityAction.cancel) {
+            if (mounted) {
+              setState(() => _isSaving = false);
+            }
+            return;
+          }
+
+          if (similarityDecision.action == PharmacyDrugSimilarityAction.retry) {
+            final PharmacyDrugSimilarityProposedValues? proposed =
+                similarityDecision.proposed;
+            if (proposed != null) {
+              genericName = proposed.genericName;
+              brandName = proposed.brandName;
+              code = proposed.code;
+              form = proposed.form;
+              strength = proposed.strength;
+              _genericNameController.text = genericName;
+              _brandNameController.text = brandName ?? '';
+              _codeController.text = code ?? '';
+              setState(() {
+                _form = form;
+                _strength = strength;
+              });
+            }
+            continue;
+          }
+
+          if (similarityDecision.action ==
+              PharmacyDrugSimilarityAction.useExisting) {
+            final PharmacyDrug? existing = similarityDecision.selectedDrug;
+            if (!mounted) {
+              return;
+            }
+            setState(() => _isSaving = false);
+            if (existing != null) {
+              Navigator.of(
+                context,
+              ).pop(PharmacyDrugFormResult.useExisting(existing));
+            }
+            return;
+          }
+
+          final PharmacyDrugSimilarityProposedValues? confirmed =
+              similarityDecision.proposed;
+          if (confirmed != null) {
+            genericName = confirmed.genericName;
+            brandName = confirmed.brandName;
+            code = confirmed.code;
+            form = confirmed.form;
+            strength = confirmed.strength;
+            _genericNameController.text = genericName;
+            _brandNameController.text = brandName ?? '';
+            _codeController.text = code ?? '';
+            setState(() {
+              _form = form;
+              _strength = strength;
+            });
+          }
+          break;
+        }
+
+        if (failure != null) {
+          if (mounted) {
+            setState(() => _isSaving = false);
+          }
+          return;
+        }
+
         failure = await controller.createDrug(
           PharmacyDrugInput(
             tenantId: tenantId,
-            // Backend still requires `name`; keep it aligned with generic.
             name: genericName,
-            brandName: _emptyToNull(_brandNameController.text),
+            brandName: brandName,
             genericName: genericName,
-            code: _emptyToNull(_codeController.text),
-            form: _form,
-            strength: _strength,
+            code: code,
+            form: form,
+            strength: strength,
             unitPrice: pharmacyPrice,
             currency: pharmacyCurrency,
             inventoryUnit: _inventoryUnit,
@@ -576,6 +962,7 @@ class _PharmacyDrugEditDialogState
             storageRoomId: _storageRoomId,
             storageShelfId: _storageShelfId,
             facilityId: controller.resolveFacilityId(),
+            confirmSimilar: true,
           ),
           facilityOffering: facilityOffering,
         );
@@ -616,7 +1003,7 @@ class _PharmacyDrugEditDialogState
       return;
     }
     if (failure == null) {
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(const PharmacyDrugFormResult.saved());
       return;
     }
     setState(() => _isSaving = false);

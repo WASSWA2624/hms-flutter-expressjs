@@ -345,6 +345,7 @@ final class PharmacyDrugInput {
     this.storageShelfId,
     this.defaultStorageShelfId,
     this.facilityId,
+    this.confirmSimilar = false,
   });
 
   final String tenantId;
@@ -367,6 +368,7 @@ final class PharmacyDrugInput {
   final String? storageShelfId;
   final String? defaultStorageShelfId;
   final String? facilityId;
+  final bool confirmSimilar;
 
   bool get hasStockSetup =>
       (initialStock != null && initialStock! > 0) ||
@@ -388,6 +390,7 @@ final class PharmacyDrugInput {
       'strength': strength,
       if (unitPrice != null) 'unit_price': unitPrice,
       if (currency != null) 'currency': currency,
+      if (confirmSimilar) 'confirm_similar': true,
     };
   }
 
@@ -1710,6 +1713,73 @@ final class PharmacyStorageShelfSimilarityResult {
   final List<PharmacyStorageShelfSimilarityMatch> matches;
 
   bool get hasExactConflict => exactLabelConflict || exactCodeConflict;
+}
+
+@immutable
+final class PharmacyDrugFieldComparison {
+  const PharmacyDrugFieldComparison({
+    required this.field,
+    this.inputValue,
+    this.candidateValue,
+    this.score,
+    this.status,
+  });
+
+  final String field;
+  final String? inputValue;
+  final String? candidateValue;
+  final int? score;
+  final String? status;
+
+  bool get isExact => status == 'MATCH' || score == 100;
+}
+
+@immutable
+final class PharmacyDrugSimilarityMatch {
+  const PharmacyDrugSimilarityMatch({
+    required this.drug,
+    required this.score,
+    this.isExact = false,
+    this.exactIdentityConflict = false,
+    this.exactCodeConflict = false,
+    this.genericScore,
+    this.brandScore,
+    this.codeScore,
+    this.formScore,
+    this.strengthScore,
+    this.fieldComparisons = const <PharmacyDrugFieldComparison>[],
+  });
+
+  final PharmacyDrug drug;
+  final int score;
+  final bool isExact;
+  final bool exactIdentityConflict;
+  final bool exactCodeConflict;
+  final int? genericScore;
+  final int? brandScore;
+  final int? codeScore;
+  final int? formScore;
+  final int? strengthScore;
+  final List<PharmacyDrugFieldComparison> fieldComparisons;
+
+  bool get hasExactConflict => exactIdentityConflict || exactCodeConflict;
+}
+
+@immutable
+final class PharmacyDrugSimilarityResult {
+  const PharmacyDrugSimilarityResult({
+    this.exactIdentityConflict = false,
+    this.exactCodeConflict = false,
+    this.closestScore = 0,
+    this.matches = const <PharmacyDrugSimilarityMatch>[],
+  });
+
+  final bool exactIdentityConflict;
+  final bool exactCodeConflict;
+  final int closestScore;
+  final List<PharmacyDrugSimilarityMatch> matches;
+
+  bool get hasExactConflict => exactIdentityConflict || exactCodeConflict;
 }
 
 @immutable

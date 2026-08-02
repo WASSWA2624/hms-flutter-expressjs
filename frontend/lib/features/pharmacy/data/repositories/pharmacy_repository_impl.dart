@@ -530,6 +530,75 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
   }
 
   @override
+  Future<Result<PharmacyDrugSimilarityResult>> checkDrugSimilarity({
+    required String genericName,
+    String? name,
+    String? brandName,
+    String? code,
+    String? form,
+    String? strength,
+    String? tenantId,
+    String? excludeDrugId,
+  }) {
+    return _apiClient.post<PharmacyDrugSimilarityResult>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'drugs',
+        'similarity-check',
+      ]),
+      data: _withoutEmpty(<String, Object?>{
+        'generic_name': genericName,
+        'name': name ?? genericName,
+        'brand_name': brandName,
+        'code': code,
+        'form': form,
+        'strength': strength,
+        'tenant_id': tenantId,
+        'exclude_drug_id': excludeDrugId,
+      }),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        final PharmacyJsonMap payload = _map(response['data']);
+        final List<PharmacyDrugSimilarityMatch> matches =
+            _list(payload['matches']).map((Object? raw) {
+              final PharmacyJsonMap match = _map(raw);
+              final PharmacyJsonMap drugJson = _map(match['drug']);
+              final List<PharmacyDrugFieldComparison> comparisons =
+                  _list(match['field_comparisons']).map((Object? entry) {
+                    final PharmacyJsonMap comparison = _map(entry);
+                    return PharmacyDrugFieldComparison(
+                      field: _string(comparison['field']) ?? '',
+                      inputValue: _string(comparison['input_value']),
+                      candidateValue: _string(comparison['candidate_value']),
+                      score: _int(comparison['score']),
+                      status: _string(comparison['status']),
+                    );
+                  }).toList(growable: false);
+              return PharmacyDrugSimilarityMatch(
+                drug: PharmacyDrugDto(drugJson).toEntity(),
+                score: _int(match['score']) ?? 0,
+                isExact: _bool(match['is_exact']),
+                exactIdentityConflict: _bool(match['exact_identity_conflict']),
+                exactCodeConflict: _bool(match['exact_code_conflict']),
+                genericScore: _int(match['generic_score']),
+                brandScore: _int(match['brand_score']),
+                codeScore: _int(match['code_score']),
+                formScore: _int(match['form_score']),
+                strengthScore: _int(match['strength_score']),
+                fieldComparisons: comparisons,
+              );
+            }).toList(growable: false);
+        return PharmacyDrugSimilarityResult(
+          exactIdentityConflict: _bool(payload['exact_identity_conflict']),
+          exactCodeConflict: _bool(payload['exact_code_conflict']),
+          closestScore: _int(payload['closest_score']) ?? 0,
+          matches: matches,
+        );
+      },
+    );
+  }
+
+  @override
   Future<Result<PharmacyStorageRoom>> createStorageRoom(
     PharmacyStorageRoomInput input,
   ) {

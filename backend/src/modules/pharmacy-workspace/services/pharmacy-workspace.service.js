@@ -64,6 +64,138 @@ const {
   deletePharmacyStorageShelf} = require('@services/pharmacy-workspace/pharmacy-storage.service');
 const { resolveIdentifierForPayload } = require('@lib/identifiers/service-identifier-resolution');
 const { resolveOperationalFacilityId } = require('@lib/facility-context');
+const {
+  checkPharmacyDrugDuplicates} = require('@lib/pharmacy/pharmacy-drug-similarity');
+const drugRepository = require('@repositories/drug/drug.repository');
+
+const DRUG_SIMILARITY_LOOKUP_LIMIT = 500;
+
+const stripDrugSimilarityPayloadFields = (data = {}) => {
+  const { confirm_similar: _confirmSimilar, ...payload } = data;
+  return payload;
+};
+
+const assertPharmacyDrugUniqueness = async ({
+  tenantId,
+  name,
+  genericName,
+  brandName,
+  code,
+  form,
+  strength,
+  confirmSimilar = false,
+  excludeDrugId = null}) => {
+  if (!tenantId) {
+    return null;
+  }
+
+  const existing = await pharmacyWorkspaceRepository.findManyDrugs(
+    { tenant_id: tenantId },
+    0,
+    DRUG_SIMILARITY_LOOKUP_LIMIT,
+    { updated_at: 'desc' }
+  );
+
+  const duplicateCheck = checkPharmacyDrugDuplicates({
+    name,
+    genericName,
+    brandName,
+    code,
+    form,
+    strength,
+    existing,
+    excludeDrugId});
+
+  if (duplicateCheck.exactIdentityConflict) {
+    throw new HttpError('errors.pharmacy_drug.duplicate_identity', 409, [
+      {
+        field: 'generic_name',
+        matches: duplicateCheck.similarMatches
+          .filter((match) => match.exact_identity_conflict)
+          .slice(0, 5)}]);
+  }
+
+  if (duplicateCheck.exactCodeConflict) {
+    throw new HttpError('errors.pharmacy_drug.duplicate_code', 409, [
+      {
+        field: 'code',
+        matches: duplicateCheck.similarMatches
+          .filter((match) => match.exact_code_conflict)
+          .slice(0, 5)}]);
+  }
+
+  const reviewMatches = duplicateCheck.similarMatches
+    .filter((match) => !match.is_exact)
+    .slice(0, 8);
+
+  if (!confirmSimilar && reviewMatches.length > 0) {
+    throw new HttpError('errors.pharmacy_drug.similar_exists', 409, [
+      {
+        field: 'generic_name',
+        matches: reviewMatches,
+        closest_score: duplicateCheck.closestScore}]);
+  }
+
+  return duplicateCheck;
+};
+
+const checkPharmacyDrugSimilarity = async (payload = {}, user = {}) => {
+  const scope = resolveScopedUserContext(user);
+  let tenantId = scope.tenant_id;
+  if (scope.can_manage_all_tenants && payload.tenant_id) {
+    tenantId = await resolveIdentifierForPayload({
+      value: payload.tenant_id,
+      field: 'tenant_id',
+      model: 'tenant',
+      where: { deleted_at: null }});
+  }
+  if (!tenantId) {
+    throw new HttpError('errors.validation.required', 400, [{ field: 'tenant_id' }]);
+  }
+
+  const name = String(payload.name || payload.generic_name || '').trim();
+  const genericName = String(payload.generic_name || payload.name || '').trim() || null;
+  const brandName = String(payload.brand_name || '').trim() || null;
+  const code = String(payload.code || '').trim() || null;
+  const form = String(payload.form || '').trim() || null;
+  const strength = String(payload.strength || '').trim() || null;
+  const excludeDrugId = String(payload.exclude_drug_id || '').trim() || null;
+
+  if (!name && !genericName) {
+    throw new HttpError('errors.validation.required', 400, [{ field: 'generic_name' }]);
+  }
+
+  const existing = await pharmacyWorkspaceRepository.findManyDrugs(
+    { tenant_id: tenantId },
+    0,
+    DRUG_SIMILARITY_LOOKUP_LIMIT,
+    { updated_at: 'desc' }
+  );
+
+  let excludeInternalId = null;
+  if (excludeDrugId) {
+    const existingDrug = await drugRepository.findById(excludeDrugId);
+    excludeInternalId = existingDrug?.id || excludeDrugId;
+  }
+
+  const duplicateCheck = checkPharmacyDrugDuplicates({
+    name: name || genericName,
+    genericName,
+    brandName,
+    code,
+    form,
+    strength,
+    existing,
+    excludeDrugId: excludeInternalId});
+
+  return {
+    exact_identity_conflict: duplicateCheck.exactIdentityConflict,
+    exact_code_conflict: duplicateCheck.exactCodeConflict,
+    closest_score: duplicateCheck.closestScore,
+    matches: duplicateCheck.similarMatches.slice(0, 8).map((match) => ({
+      ...match,
+      drug: mapDrugRecord(match.drug) || match.drug}))};
+};
 
 const PHARMACY_RECIPIENT_ROLES = [
   ROLES.SUPER_ADMIN,
@@ -2030,50 +2162,62 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
 const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => {
   try {
     const scope = resolveScopedUserContext(user);
+    const confirmSimilar = payload?.confirm_similar === true;
+    const data = stripDrugSimilarityPayloadFields(payload);
     let tenantId = scope.tenant_id;
     if (scope.can_manage_all_tenants) {
       tenantId = await resolveIdentifierForPayload({
-        value: payload.tenant_id,
+        value: data.tenant_id,
         field: 'tenant_id',
         model: 'tenant',
         where: { deleted_at: null }});
     }
 
-    const facilityId = await resolveScopedFacilityId(payload.facility_id || null, scope, true);
-    const storageAssignment = await resolveStorageAssignment(payload, scope, facilityId);
-    const initialStock = Number(payload.initial_stock || 0);
-    const reorderLevel = Number(payload.reorder_level || 0);
-    const batchNumber = String(payload.batch_number || '').trim();
-    const manufacturedAt = toDateOrNull(payload.manufactured_at, null);
-    const expiryDate = toDateOrNull(payload.expiry_date, null);
+    await assertPharmacyDrugUniqueness({
+      tenantId,
+      name: data.name,
+      genericName: data.generic_name,
+      brandName: data.brand_name,
+      code: data.code,
+      form: data.form,
+      strength: data.strength,
+      confirmSimilar});
+
+    const facilityId = await resolveScopedFacilityId(data.facility_id || null, scope, true);
+    const storageAssignment = await resolveStorageAssignment(data, scope, facilityId);
+    const initialStock = Number(data.initial_stock || 0);
+    const reorderLevel = Number(data.reorder_level || 0);
+    const batchNumber = String(data.batch_number || '').trim();
+    const manufacturedAt = toDateOrNull(data.manufactured_at, null);
+    const expiryDate = toDateOrNull(data.expiry_date, null);
     const expiryAlertLeadDays =
-      payload.expiry_alert_lead_days == null
+      data.expiry_alert_lead_days == null
         ? null
-        : Number(payload.expiry_alert_lead_days);
+        : Number(data.expiry_alert_lead_days);
 
     const mutation = await pharmacyWorkspaceRepository.withTransaction(async (tx) => {
       const drug = await pharmacyWorkspaceRepository.txCreateDrug(tx, {
         tenant_id: tenantId,
-        name: payload.name,
-        brand_name: payload.brand_name || null,
-        generic_name: payload.generic_name || null,
-        code: payload.code || null,
-        form: payload.form || null,
-        strength: payload.strength || null,
-        unit_price: payload.unit_price ?? null,
-        currency: payload.currency || null});
+        name: data.name,
+        brand_name: data.brand_name || null,
+        generic_name: data.generic_name || null,
+        code: data.code || null,
+        form: data.form || null,
+        strength: data.strength || null,
+        unit_price: data.unit_price ?? null,
+        currency: data.currency || null});
 
-      const inventoryName = [payload.name, payload.strength, payload.form]
+      const inventoryName = [data.name, data.strength, data.form]
         .map((value) => String(value || '').trim())
         .filter(Boolean)
         .join(' ');
 
       const inventoryItem = await pharmacyWorkspaceRepository.txCreateInventoryItem(tx, {
         tenant_id: tenantId,
-        name: inventoryName || payload.name,
+        name: inventoryName || data.name,
         category: 'MEDICATION',
-        sku: payload.code || null,
-        unit: payload.inventory_unit || 'unit'});
+        sku: data.code || null,
+        unit: data.inventory_unit || 'unit'});
 
       await pharmacyWorkspaceRepository.txCreateDrugInventoryMap(tx, {
         tenant_id: tenantId,
@@ -2116,7 +2260,7 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
     });
 
     const defaultShelfIdentifier =
-      payload.default_storage_shelf_id || payload.storage_shelf_id || null;
+      data.default_storage_shelf_id || data.storage_shelf_id || null;
     if (defaultShelfIdentifier && facilityId) {
       const defaultStorageShelfId = await resolveDefaultStorageShelfId(
         defaultShelfIdentifier,
@@ -2137,8 +2281,8 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
           drug_id: mutation.id,
           is_active: false,
           sort_order: 0,
-          unit_price: payload.unit_price ?? 0,
-          currency: payload.currency || null,
+          unit_price: data.unit_price ?? 0,
+          currency: data.currency || null,
           default_storage_shelf_id: defaultStorageShelfId});
       }
     }
@@ -2340,6 +2484,7 @@ module.exports = {
   getPharmacyStorageLayout,
   checkPharmacyStorageRoomSimilarity,
   checkPharmacyStorageShelfSimilarity,
+  checkPharmacyDrugSimilarity,
   createPharmacyStorageRoom,
   updatePharmacyStorageRoom,
   createPharmacyStorageShelf,

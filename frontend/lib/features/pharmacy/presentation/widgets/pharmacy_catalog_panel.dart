@@ -409,11 +409,24 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
     return table;
   }
 
-  Future<void> _openDrugDialog(BuildContext context, {PharmacyDrug? drug}) {
-    return showAppDialog<bool>(
-      context: context,
-      builder: (_) => PharmacyDrugEditDialog(drug: drug),
-    );
+  Future<void> _openDrugDialog(BuildContext context, {PharmacyDrug? drug}) async {
+    final PharmacyDrugFormResult? result =
+        await showAppDialog<PharmacyDrugFormResult>(
+          context: context,
+          builder: (_) => PharmacyDrugEditDialog(drug: drug),
+        );
+    if (!context.mounted || result == null) {
+      return;
+    }
+    if (result.useExisting && result.drug != null) {
+      await openPharmacyDrugDetailsDialog(
+        context,
+        ref,
+        drug: result.drug!,
+        writeRequirement: widget.writeRequirement,
+        onDelete: (PharmacyDrug item) => _confirmDeleteDrug(context, item),
+      );
+    }
   }
 
   Future<bool> _confirmDeleteDrug(

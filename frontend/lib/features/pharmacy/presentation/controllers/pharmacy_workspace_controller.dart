@@ -768,6 +768,28 @@ final class PharmacyWorkspaceController
     );
   }
 
+  Future<Result<PharmacyDrugSimilarityResult>> checkDrugSimilarity({
+    required String genericName,
+    String? name,
+    String? brandName,
+    String? code,
+    String? form,
+    String? strength,
+    String? tenantId,
+    String? excludeDrugId,
+  }) {
+    return _repository.checkDrugSimilarity(
+      genericName: genericName,
+      name: name,
+      brandName: brandName,
+      code: code,
+      form: form,
+      strength: strength,
+      tenantId: tenantId ?? resolveTenantId(),
+      excludeDrugId: excludeDrugId,
+    );
+  }
+
   Future<Result<PharmacyStorageRoom>> createStorageRoom(
     PharmacyStorageRoomInput input,
   ) async {

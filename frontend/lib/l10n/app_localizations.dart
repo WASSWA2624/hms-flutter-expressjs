@@ -22144,6 +22144,234 @@ abstract class AppLocalizations {
   /// **'Create drug'**
   String get pharmacyAddDrugAction;
 
+  /// Action to barcode/OCR-scan a drug pack for create prefill.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan pack'**
+  String get pharmacyDrugScanPackAction;
+
+  /// Title for the drug pack scan assist dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan pack'**
+  String get pharmacyDrugScanPackTitle;
+
+  /// Helper body for the drug pack scan assist dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter or decode a barcode first. If that fails, capture pack photo(s) for free OCR prefill. Images are discarded after parsing.'**
+  String get pharmacyDrugScanPackBody;
+
+  /// Barcode entry field on drug pack scan.
+  ///
+  /// In en, this message translates to:
+  /// **'Barcode'**
+  String get pharmacyDrugBarcodeLabel;
+
+  /// Apply typed/scanned barcode to prefill candidates.
+  ///
+  /// In en, this message translates to:
+  /// **'Use barcode'**
+  String get pharmacyDrugBarcodeApplyAction;
+
+  /// Pick/capture an ephemeral pack photo for OCR.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture pack photo'**
+  String get pharmacyDrugCapturePackPhotoAction;
+
+  /// Fallback: paste OCR or pack text when camera OCR is unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste pack text'**
+  String get pharmacyDrugPastePackTextAction;
+
+  /// Multiline pack/OCR text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Pack text'**
+  String get pharmacyDrugPackTextLabel;
+
+  /// Skip assistive scan and continue with a blank create form.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip scan'**
+  String get pharmacyDrugScanSkipAction;
+
+  /// Apply parsed pack candidates to the create form.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefill form'**
+  String get pharmacyDrugScanApplyAction;
+
+  /// Shown when barcode/OCR yield no useful field candidates.
+  ///
+  /// In en, this message translates to:
+  /// **'No pack details could be parsed. You can still create the drug manually.'**
+  String get pharmacyDrugScanNoDataBody;
+
+  /// Banner title when scan/OCR prefilled fields need confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm suggested values'**
+  String get pharmacyDrugSuggestedBannerTitle;
+
+  /// Banner body for suggested-field confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlighted fields came from scan/OCR. Accept each field, edit it, or accept all before creating.'**
+  String get pharmacyDrugSuggestedBannerBody;
+
+  /// Accept one suggested drug field.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get pharmacyDrugAcceptSuggestionAction;
+
+  /// Edit a suggested drug field and clear suggested state.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get pharmacyDrugEditSuggestionAction;
+
+  /// Accept all remaining suggested drug fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept all'**
+  String get pharmacyDrugAcceptAllSuggestionsAction;
+
+  /// Validation message when create is blocked by unconfirmed suggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept or edit suggested fields before creating this drug.'**
+  String get pharmacyDrugSuggestionsPendingBody;
+
+  /// Title when drug similarity finds an exact conflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate drug'**
+  String get pharmacyDrugDuplicateDialogTitle;
+
+  /// Body when drug similarity finds an exact conflict.
+  ///
+  /// In en, this message translates to:
+  /// **'An exact match already exists. Change identity fields or use the existing drug.'**
+  String get pharmacyDrugDuplicateDialogBody;
+
+  /// Title when drug similarity finds near matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar drugs found'**
+  String get pharmacyDrugSimilarDialogTitle;
+
+  /// Body when drug similarity finds near matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest match similarity: {score}%. Review matches before continuing.'**
+  String pharmacyDrugSimilarDialogBody(int score);
+
+  /// Title when drug similarity finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar drugs'**
+  String get pharmacyDrugNoSimilarDialogTitle;
+
+  /// Body when drug similarity finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No close matches found. Continue to create this drug.'**
+  String get pharmacyDrugNoSimilarDialogBody;
+
+  /// Continue creating a drug after similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get pharmacyDrugCreateAnywayAction;
+
+  /// Use an existing drug from similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this drug'**
+  String get pharmacyDrugUseExistingAction;
+
+  /// Heading for proposed values in drug similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed drug'**
+  String get pharmacyDrugProposedHeading;
+
+  /// Heading for drug similarity matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar drugs'**
+  String get pharmacyDrugMatchesHeading;
+
+  /// Badge for an exact drug match.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact match'**
+  String get pharmacyDrugExactMatchLabel;
+
+  /// Badge for a near drug match.
+  ///
+  /// In en, this message translates to:
+  /// **'Near match'**
+  String get pharmacyDrugNearMatchLabel;
+
+  /// Heading for existing drug values in similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing'**
+  String get pharmacyDrugExistingHeading;
+
+  /// Banner title for exact drug conflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact match found'**
+  String get pharmacyDrugExactBannerTitle;
+
+  /// Banner title for near drug matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Review similar drugs'**
+  String get pharmacyDrugSimilarBannerTitle;
+
+  /// Banner title when drug similarity is clean.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to continue'**
+  String get pharmacyDrugNoSimilarBannerTitle;
+
+  /// Column header for proposed drug field value.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed'**
+  String get pharmacyDrugFieldProposedLabel;
+
+  /// Column header for existing drug field value.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing'**
+  String get pharmacyDrugFieldExistingLabel;
+
+  /// Column header for field name in drug similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Field'**
+  String get pharmacyDrugFieldColumnLabel;
+
+  /// Label for closest drug similarity score.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall similarity'**
+  String get pharmacyDrugOverallSimilarityLabel;
+
+  /// Fallback similarity score label when no drug match is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches · {score}% similarity'**
+  String pharmacyDrugNoMatchScoreLabel(int score);
+
   /// Pharmacy catalog drug details dialog title.
   ///
   /// In en, this message translates to:

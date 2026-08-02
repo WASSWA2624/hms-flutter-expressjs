@@ -212,6 +212,19 @@ const setupPharmacyDrug = asyncHandler(async (req, res) => {
   return sendSuccess(res, 201, 'messages.pharmacy_workspace.drug.setup.success', data);
 });
 
+const checkPharmacyDrugSimilarity = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.checkPharmacyDrugSimilarity(
+    req.body,
+    req.user || {}
+  );
+  return sendSuccess(
+    res,
+    200,
+    'messages.pharmacy_workspace.drug.similarity.success',
+    data
+  );
+});
+
 const resolveLegacyRoute = asyncHandler(async (req, res) => {
   const data = await pharmacyWorkspaceService.resolveLegacyRouteIdentifier(
     req.params.resource,
@@ -357,6 +370,7 @@ module.exports = {
   getInventoryStock,
   adjustInventoryStock,
   setupPharmacyDrug,
+  checkPharmacyDrugSimilarity,
   resolveLegacyRoute,
   getPharmacyStorageLayout,
   createPharmacyStorageRoom,

@@ -158,7 +158,8 @@ const setupPharmacyDrugSchema = z
     storage_room_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     default_storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-    facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable()})
+    facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+    confirm_similar: z.coerce.boolean().optional()})
   .superRefine((data, ctx) => {
     if (data.expiry_date && !data.batch_number) {
       ctx.addIssue({
@@ -229,6 +230,16 @@ const checkPharmacyStorageShelfSimilaritySchema = z.object({
   label: z.string().trim().min(1).max(120),
   exclude_shelf_id: uuidOrFriendlyIdentifierSchema.optional().nullable()});
 
+const checkPharmacyDrugSimilaritySchema = z.object({
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
+  name: z.string().trim().max(255).optional().nullable(),
+  generic_name: z.string().trim().min(1).max(255),
+  brand_name: z.string().trim().max(255).optional().nullable(),
+  code: z.string().trim().max(80).optional().nullable(),
+  form: z.string().trim().max(80).optional().nullable(),
+  strength: z.string().trim().max(80).optional().nullable(),
+  exclude_drug_id: uuidOrFriendlyIdentifierSchema.optional().nullable()});
+
 const pharmacyStorageShelfParamsSchema = z.object({
   shelfId: uuidOrFriendlyIdentifierSchema});
 
@@ -257,4 +268,5 @@ module.exports = {
   createPharmacyStorageShelfSchema,
   updatePharmacyStorageShelfSchema,
   checkPharmacyStorageShelfSimilaritySchema,
+  checkPharmacyDrugSimilaritySchema,
   pharmacyStorageShelfParamsSchema};

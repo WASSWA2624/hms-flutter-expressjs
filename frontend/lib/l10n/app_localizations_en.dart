@@ -11994,6 +11994,130 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyAddDrugAction => 'Create drug';
 
   @override
+  String get pharmacyDrugScanPackAction => 'Scan pack';
+
+  @override
+  String get pharmacyDrugScanPackTitle => 'Scan pack';
+
+  @override
+  String get pharmacyDrugScanPackBody =>
+      'Enter or decode a barcode first. If that fails, capture pack photo(s) for free OCR prefill. Images are discarded after parsing.';
+
+  @override
+  String get pharmacyDrugBarcodeLabel => 'Barcode';
+
+  @override
+  String get pharmacyDrugBarcodeApplyAction => 'Use barcode';
+
+  @override
+  String get pharmacyDrugCapturePackPhotoAction => 'Capture pack photo';
+
+  @override
+  String get pharmacyDrugPastePackTextAction => 'Paste pack text';
+
+  @override
+  String get pharmacyDrugPackTextLabel => 'Pack text';
+
+  @override
+  String get pharmacyDrugScanSkipAction => 'Skip scan';
+
+  @override
+  String get pharmacyDrugScanApplyAction => 'Prefill form';
+
+  @override
+  String get pharmacyDrugScanNoDataBody =>
+      'No pack details could be parsed. You can still create the drug manually.';
+
+  @override
+  String get pharmacyDrugSuggestedBannerTitle => 'Confirm suggested values';
+
+  @override
+  String get pharmacyDrugSuggestedBannerBody =>
+      'Highlighted fields came from scan/OCR. Accept each field, edit it, or accept all before creating.';
+
+  @override
+  String get pharmacyDrugAcceptSuggestionAction => 'Accept';
+
+  @override
+  String get pharmacyDrugEditSuggestionAction => 'Edit';
+
+  @override
+  String get pharmacyDrugAcceptAllSuggestionsAction => 'Accept all';
+
+  @override
+  String get pharmacyDrugSuggestionsPendingBody =>
+      'Accept or edit suggested fields before creating this drug.';
+
+  @override
+  String get pharmacyDrugDuplicateDialogTitle => 'Duplicate drug';
+
+  @override
+  String get pharmacyDrugDuplicateDialogBody =>
+      'An exact match already exists. Change identity fields or use the existing drug.';
+
+  @override
+  String get pharmacyDrugSimilarDialogTitle => 'Similar drugs found';
+
+  @override
+  String pharmacyDrugSimilarDialogBody(int score) {
+    return 'Closest match similarity: $score%. Review matches before continuing.';
+  }
+
+  @override
+  String get pharmacyDrugNoSimilarDialogTitle => 'No similar drugs';
+
+  @override
+  String get pharmacyDrugNoSimilarDialogBody =>
+      'No close matches found. Continue to create this drug.';
+
+  @override
+  String get pharmacyDrugCreateAnywayAction => 'Create anyway';
+
+  @override
+  String get pharmacyDrugUseExistingAction => 'Use this drug';
+
+  @override
+  String get pharmacyDrugProposedHeading => 'Proposed drug';
+
+  @override
+  String get pharmacyDrugMatchesHeading => 'Similar drugs';
+
+  @override
+  String get pharmacyDrugExactMatchLabel => 'Exact match';
+
+  @override
+  String get pharmacyDrugNearMatchLabel => 'Near match';
+
+  @override
+  String get pharmacyDrugExistingHeading => 'Existing';
+
+  @override
+  String get pharmacyDrugExactBannerTitle => 'Exact match found';
+
+  @override
+  String get pharmacyDrugSimilarBannerTitle => 'Review similar drugs';
+
+  @override
+  String get pharmacyDrugNoSimilarBannerTitle => 'Ready to continue';
+
+  @override
+  String get pharmacyDrugFieldProposedLabel => 'Proposed';
+
+  @override
+  String get pharmacyDrugFieldExistingLabel => 'Existing';
+
+  @override
+  String get pharmacyDrugFieldColumnLabel => 'Field';
+
+  @override
+  String get pharmacyDrugOverallSimilarityLabel => 'Overall similarity';
+
+  @override
+  String pharmacyDrugNoMatchScoreLabel(int score) {
+    return 'No matches · $score% similarity';
+  }
+
+  @override
   String get pharmacyDrugDetailsTitle => 'Drug Details';
 
   @override

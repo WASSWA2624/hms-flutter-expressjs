@@ -104,6 +104,17 @@ abstract interface class PharmacyRepository {
     String? excludeShelfId,
   });
 
+  Future<Result<PharmacyDrugSimilarityResult>> checkDrugSimilarity({
+    required String genericName,
+    String? name,
+    String? brandName,
+    String? code,
+    String? form,
+    String? strength,
+    String? tenantId,
+    String? excludeDrugId,
+  });
+
   Future<Result<PharmacyStorageRoom>> createStorageRoom(
     PharmacyStorageRoomInput input,
   );
