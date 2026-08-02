@@ -12216,6 +12216,79 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyStorageRoomNoSimilarBannerTitle => 'Ready to continue';
 
   @override
+  String get pharmacyStorageShelfDuplicateDialogTitle => 'Duplicate shelf';
+
+  @override
+  String get pharmacyStorageShelfDuplicateDialogBody =>
+      'An exact match already exists in this room. Change the label or code before creating.';
+
+  @override
+  String get pharmacyStorageShelfSimilarDialogTitle => 'Similar shelves found';
+
+  @override
+  String pharmacyStorageShelfSimilarDialogBody(int score) {
+    return 'Closest match similarity: $score%. Review matches before continuing.';
+  }
+
+  @override
+  String get pharmacyStorageShelfNoSimilarDialogTitle => 'No similar shelves';
+
+  @override
+  String get pharmacyStorageShelfNoSimilarDialogBody =>
+      'No close matches found in this room. Continue to create this shelf.';
+
+  @override
+  String get pharmacyStorageShelfCreateAnywayAction => 'Create anyway';
+
+  @override
+  String get pharmacyStorageShelfUseExistingAction => 'Use this shelf';
+
+  @override
+  String get pharmacyStorageShelfProposedHeading => 'Proposed shelf';
+
+  @override
+  String get pharmacyStorageShelfMatchesHeading => 'Matches in this room';
+
+  @override
+  String get pharmacyStorageShelfExactMatchLabel => 'Exact match';
+
+  @override
+  String get pharmacyStorageShelfNearMatchLabel => 'Near match';
+
+  @override
+  String get pharmacyStorageShelfExistingHeading => 'Existing';
+
+  @override
+  String get pharmacyStorageShelfExactBannerTitle => 'Exact match found';
+
+  @override
+  String get pharmacyStorageShelfSimilarBannerTitle => 'Review similar shelves';
+
+  @override
+  String get pharmacyStorageShelfNoSimilarBannerTitle => 'Ready to continue';
+
+  @override
+  String get pharmacyStorageShelfFieldProposedLabel => 'Proposed';
+
+  @override
+  String get pharmacyStorageShelfFieldExistingLabel => 'Existing';
+
+  @override
+  String get pharmacyStorageShelfFieldColumnLabel => 'Field';
+
+  @override
+  String get pharmacyStorageShelfOverallSimilarityLabel => 'Closest match';
+
+  @override
+  String pharmacyStorageShelfNoMatchScoreLabel(int score) {
+    return 'Similarity $score%';
+  }
+
+  @override
+  String get pharmacyStorageShelfCodeOptionalHint =>
+      'Leave blank to auto-generate a shelf code.';
+
+  @override
   String get pharmacyStorageRoomFieldProposedLabel => 'Proposed';
 
   @override

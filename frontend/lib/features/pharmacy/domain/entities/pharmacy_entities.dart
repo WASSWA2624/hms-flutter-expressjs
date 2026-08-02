@@ -1652,21 +1652,86 @@ final class PharmacyStorageRoomSimilarityResult {
 }
 
 @immutable
-final class PharmacyStorageShelfInput {
-  const PharmacyStorageShelfInput({
-    required this.shelfCode,
-    this.label,
-    this.isActive = true,
+final class PharmacyStorageShelfFieldComparison {
+  const PharmacyStorageShelfFieldComparison({
+    required this.field,
+    this.inputValue,
+    this.candidateValue,
+    this.score,
+    this.status,
   });
 
-  final String shelfCode;
-  final String? label;
+  final String field;
+  final String? inputValue;
+  final String? candidateValue;
+  final int? score;
+  final String? status;
+
+  bool get isExact => status == 'MATCH' || score == 100;
+}
+
+@immutable
+final class PharmacyStorageShelfSimilarityMatch {
+  const PharmacyStorageShelfSimilarityMatch({
+    required this.shelf,
+    required this.score,
+    this.isExact = false,
+    this.exactLabelConflict = false,
+    this.exactCodeConflict = false,
+    this.labelScore,
+    this.codeScore,
+    this.fieldComparisons = const <PharmacyStorageShelfFieldComparison>[],
+  });
+
+  final PharmacyStorageShelf shelf;
+  final int score;
+  final bool isExact;
+  final bool exactLabelConflict;
+  final bool exactCodeConflict;
+  final int? labelScore;
+  final int? codeScore;
+  final List<PharmacyStorageShelfFieldComparison> fieldComparisons;
+
+  bool get hasExactConflict => exactLabelConflict || exactCodeConflict;
+}
+
+@immutable
+final class PharmacyStorageShelfSimilarityResult {
+  const PharmacyStorageShelfSimilarityResult({
+    this.exactLabelConflict = false,
+    this.exactCodeConflict = false,
+    this.closestScore = 0,
+    this.matches = const <PharmacyStorageShelfSimilarityMatch>[],
+  });
+
+  final bool exactLabelConflict;
+  final bool exactCodeConflict;
+  final int closestScore;
+  final List<PharmacyStorageShelfSimilarityMatch> matches;
+
+  bool get hasExactConflict => exactLabelConflict || exactCodeConflict;
+}
+
+@immutable
+final class PharmacyStorageShelfInput {
+  const PharmacyStorageShelfInput({
+    this.shelfCode,
+    required this.label,
+    this.isActive = true,
+    this.confirmSimilar = false,
+  });
+
+  final String? shelfCode;
+  final String label;
   final bool isActive;
+  final bool confirmSimilar;
 
   Map<String, Object?> toJson() => <String, Object?>{
-    'shelf_code': shelfCode,
-    if (label != null) 'label': label,
+    if (shelfCode != null && shelfCode!.trim().isNotEmpty)
+      'shelf_code': shelfCode!.trim(),
+    'label': label,
     'is_active': isActive,
+    if (confirmSimilar) 'confirm_similar': true,
   };
 }
 
@@ -1676,16 +1741,19 @@ final class PharmacyStorageShelfUpdateInput {
     this.shelfCode,
     this.label,
     this.isActive,
+    this.confirmSimilar = false,
   });
 
   final String? shelfCode;
   final String? label;
   final bool? isActive;
+  final bool confirmSimilar;
 
   Map<String, Object?> toJson() => <String, Object?>{
     if (shelfCode != null) 'shelf_code': shelfCode,
     if (label != null) 'label': label,
     if (isActive != null) 'is_active': isActive,
+    if (confirmSimilar) 'confirm_similar': true,
   };
 }
 

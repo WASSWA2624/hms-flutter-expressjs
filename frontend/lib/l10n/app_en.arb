@@ -15602,6 +15602,104 @@
   "@pharmacyStorageRoomNoSimilarBannerTitle": {
     "description": "Banner title when no similar storage rooms are found."
   },
+  "pharmacyStorageShelfDuplicateDialogTitle": "Duplicate shelf",
+  "@pharmacyStorageShelfDuplicateDialogTitle": {
+    "description": "Title when pharmacy storage shelf label or code already exists in the room."
+  },
+  "pharmacyStorageShelfDuplicateDialogBody": "An exact match already exists in this room. Change the label or code before creating.",
+  "@pharmacyStorageShelfDuplicateDialogBody": {
+    "description": "Body when pharmacy storage shelf is an exact duplicate in the room."
+  },
+  "pharmacyStorageShelfSimilarDialogTitle": "Similar shelves found",
+  "@pharmacyStorageShelfSimilarDialogTitle": {
+    "description": "Title when similar pharmacy storage shelves are found in the room."
+  },
+  "pharmacyStorageShelfSimilarDialogBody": "Closest match similarity: {score}%. Review matches before continuing.",
+  "@pharmacyStorageShelfSimilarDialogBody": {
+    "description": "Body when similar pharmacy storage shelves are found.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "pharmacyStorageShelfNoSimilarDialogTitle": "No similar shelves",
+  "@pharmacyStorageShelfNoSimilarDialogTitle": {
+    "description": "Title when pharmacy storage shelf similarity finds no matches."
+  },
+  "pharmacyStorageShelfNoSimilarDialogBody": "No close matches found in this room. Continue to create this shelf.",
+  "@pharmacyStorageShelfNoSimilarDialogBody": {
+    "description": "Body when pharmacy storage shelf similarity finds no matches."
+  },
+  "pharmacyStorageShelfCreateAnywayAction": "Create anyway",
+  "@pharmacyStorageShelfCreateAnywayAction": {
+    "description": "Continue creating a pharmacy storage shelf after similarity review."
+  },
+  "pharmacyStorageShelfUseExistingAction": "Use this shelf",
+  "@pharmacyStorageShelfUseExistingAction": {
+    "description": "Use an existing pharmacy storage shelf from similarity review."
+  },
+  "pharmacyStorageShelfProposedHeading": "Proposed shelf",
+  "@pharmacyStorageShelfProposedHeading": {
+    "description": "Heading for proposed shelf values in similarity review."
+  },
+  "pharmacyStorageShelfMatchesHeading": "Matches in this room",
+  "@pharmacyStorageShelfMatchesHeading": {
+    "description": "Heading for shelf similarity matches scoped to the room."
+  },
+  "pharmacyStorageShelfExactMatchLabel": "Exact match",
+  "@pharmacyStorageShelfExactMatchLabel": {
+    "description": "Badge for an exact storage-shelf match."
+  },
+  "pharmacyStorageShelfNearMatchLabel": "Near match",
+  "@pharmacyStorageShelfNearMatchLabel": {
+    "description": "Badge for a near storage-shelf match."
+  },
+  "pharmacyStorageShelfExistingHeading": "Existing",
+  "@pharmacyStorageShelfExistingHeading": {
+    "description": "Heading for existing shelf values in similarity comparison."
+  },
+  "pharmacyStorageShelfExactBannerTitle": "Exact match found",
+  "@pharmacyStorageShelfExactBannerTitle": {
+    "description": "Banner title when an exact storage-shelf duplicate exists in the room."
+  },
+  "pharmacyStorageShelfSimilarBannerTitle": "Review similar shelves",
+  "@pharmacyStorageShelfSimilarBannerTitle": {
+    "description": "Banner title when near storage-shelf matches exist in the room."
+  },
+  "pharmacyStorageShelfNoSimilarBannerTitle": "Ready to continue",
+  "@pharmacyStorageShelfNoSimilarBannerTitle": {
+    "description": "Banner title when no similar storage shelves are found in the room."
+  },
+  "pharmacyStorageShelfFieldProposedLabel": "Proposed",
+  "@pharmacyStorageShelfFieldProposedLabel": {
+    "description": "Column header for proposed shelf field value in similarity comparison."
+  },
+  "pharmacyStorageShelfFieldExistingLabel": "Existing",
+  "@pharmacyStorageShelfFieldExistingLabel": {
+    "description": "Column header for existing shelf field value in similarity comparison."
+  },
+  "pharmacyStorageShelfFieldColumnLabel": "Field",
+  "@pharmacyStorageShelfFieldColumnLabel": {
+    "description": "Column header for field name in storage-shelf similarity comparison."
+  },
+  "pharmacyStorageShelfOverallSimilarityLabel": "Closest match",
+  "@pharmacyStorageShelfOverallSimilarityLabel": {
+    "description": "Label for closest shelf similarity score."
+  },
+  "pharmacyStorageShelfNoMatchScoreLabel": "Similarity {score}%",
+  "@pharmacyStorageShelfNoMatchScoreLabel": {
+    "description": "Fallback similarity score label when no shelf match is selected.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "pharmacyStorageShelfCodeOptionalHint": "Leave blank to auto-generate a shelf code.",
+  "@pharmacyStorageShelfCodeOptionalHint": {
+    "description": "Hint that blank shelf code is auto-generated on create."
+  },
   "pharmacyStorageRoomFieldProposedLabel": "Proposed",
   "@pharmacyStorageRoomFieldProposedLabel": {
     "description": "Column header for proposed field value in similarity comparison."

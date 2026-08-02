@@ -753,6 +753,21 @@ final class PharmacyWorkspaceController
     );
   }
 
+  Future<Result<PharmacyStorageShelfSimilarityResult>>
+  checkStorageShelfSimilarity({
+    required String roomId,
+    required String label,
+    String? shelfCode,
+    String? excludeShelfId,
+  }) {
+    return _repository.checkStorageShelfSimilarity(
+      roomId: roomId,
+      label: label,
+      shelfCode: shelfCode,
+      excludeShelfId: excludeShelfId,
+    );
+  }
+
   Future<Result<PharmacyStorageRoom>> createStorageRoom(
     PharmacyStorageRoomInput input,
   ) async {
@@ -776,34 +791,28 @@ final class PharmacyWorkspaceController
     return result;
   }
 
-  Future<AppFailure?> createStorageShelf(
+  Future<Result<PharmacyStorageShelf>> createStorageShelf(
     String roomId,
     PharmacyStorageShelfInput input,
   ) async {
     final Result<PharmacyStorageShelf> result = await _repository
         .createStorageShelf(roomId, input);
-    return result.when(
-      success: (_) async {
-        await _refreshStorageLayout();
-        return null;
-      },
-      failure: (AppFailure failure) => failure,
-    );
+    if (result.isSuccess) {
+      await _refreshStorageLayout();
+    }
+    return result;
   }
 
-  Future<AppFailure?> updateStorageShelf(
+  Future<Result<PharmacyStorageShelf>> updateStorageShelf(
     String shelfId,
     PharmacyStorageShelfUpdateInput input,
   ) async {
     final Result<PharmacyStorageShelf> result = await _repository
         .updateStorageShelf(shelfId, input);
-    return result.when(
-      success: (_) async {
-        await _refreshStorageLayout();
-        return null;
-      },
-      failure: (AppFailure failure) => failure,
-    );
+    if (result.isSuccess) {
+      await _refreshStorageLayout();
+    }
+    return result;
   }
 
   Future<AppFailure?> deleteStorageRoom(String roomId) async {

@@ -4,6 +4,8 @@ const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const { resolveIdentifierForPayload } = require('@lib/identifiers/service-identifier-resolution');
 const {
   checkPharmacyStorageRoomDuplicates} = require('@lib/pharmacy/pharmacy-storage-room-similarity');
+const {
+  checkPharmacyStorageShelfDuplicates} = require('@lib/pharmacy/pharmacy-storage-shelf-similarity');
 const pharmacyStorageRepository = require('@repositories/pharmacy-workspace/pharmacy-storage.repository');
 const pharmacyWorkspaceRepository = require('@repositories/pharmacy-workspace/pharmacy-workspace.repository');
 const {
@@ -12,6 +14,7 @@ const {
   resolveModelRecordOrThrow} = require('@services/pharmacy-workspace/pharmacy.shared');
 
 const STORAGE_ROOM_SIMILARITY_LOOKUP_LIMIT = 500;
+const STORAGE_SHELF_SIMILARITY_LOOKUP_LIMIT = 500;
 
 const toText = (value) => (value == null ? '' : String(value).trim());
 
@@ -463,6 +466,111 @@ const updatePharmacyStorageRoom = async (identifier, payload = {}, userId, ipAdd
   return mapStorageRoomRecord({ ...updated, shelves: existingLookup.shelves || [] });
 };
 
+const assertPharmacyStorageShelfUniqueness = async ({
+  label,
+  shelfCode,
+  storageRoomId,
+  confirmSimilar = false,
+  excludeShelfId = null}) => {
+  if (!storageRoomId) {
+    return null;
+  }
+
+  const existing = await pharmacyStorageRepository.findManyStorageShelves(
+    storageRoomId,
+    { includeDeleted: false },
+    0,
+    STORAGE_SHELF_SIMILARITY_LOOKUP_LIMIT
+  );
+
+  const duplicateCheck = checkPharmacyStorageShelfDuplicates({
+    label,
+    shelfCode,
+    existing,
+    excludeShelfId});
+
+  if (duplicateCheck.exactLabelConflict) {
+    throw new HttpError('errors.pharmacy_storage_shelf.duplicate_label', 409, [
+      {
+        field: 'label',
+        matches: duplicateCheck.similarMatches
+          .filter((match) => match.exact_label_conflict)
+          .slice(0, 5)}]);
+  }
+
+  if (duplicateCheck.exactCodeConflict) {
+    throw new HttpError('errors.pharmacy_storage_shelf.duplicate_code', 409, [
+      {
+        field: 'shelf_code',
+        matches: duplicateCheck.similarMatches
+          .filter((match) => match.exact_code_conflict)
+          .slice(0, 5)}]);
+  }
+
+  const reviewMatches = duplicateCheck.similarMatches
+    .filter((match) => !match.is_exact)
+    .slice(0, 8);
+
+  if (!confirmSimilar && reviewMatches.length > 0) {
+    throw new HttpError('errors.pharmacy_storage_shelf.similar_exists', 409, [
+      {
+        field: 'label',
+        matches: reviewMatches,
+        closest_score: duplicateCheck.closestScore}]);
+  }
+
+  return duplicateCheck;
+};
+
+const checkPharmacyStorageShelfSimilarity = async (
+  roomIdentifier,
+  payload = {},
+  user = {}
+) => {
+  const scope = resolveScopedUserContext(user);
+  const roomId = roomIdentifier || payload.room_id;
+  const room = await pharmacyStorageRepository.findStorageRoomById(roomId, true);
+  if (!room || !matchesTenantScope(room, scope)) {
+    throw new HttpError('errors.resource.not_found', 404);
+  }
+
+  const label = String(payload.label || '').trim();
+  const shelfCode = toText(payload.shelf_code) || null;
+  const excludeShelfId = toText(payload.exclude_shelf_id) || null;
+
+  const existing = await pharmacyStorageRepository.findManyStorageShelves(
+    room.id,
+    { includeDeleted: false },
+    0,
+    STORAGE_SHELF_SIMILARITY_LOOKUP_LIMIT
+  );
+
+  let excludeInternalId = null;
+  if (excludeShelfId) {
+    const existingShelf = await pharmacyStorageRepository.findStorageShelfById(
+      excludeShelfId,
+      true
+    );
+    excludeInternalId = existingShelf?.id || excludeShelfId;
+  }
+
+  const duplicateCheck = checkPharmacyStorageShelfDuplicates({
+    label,
+    shelfCode,
+    existing,
+    excludeShelfId: excludeInternalId});
+
+  return {
+    exact_label_conflict: duplicateCheck.exactLabelConflict,
+    exact_code_conflict: duplicateCheck.exactCodeConflict,
+    closest_score: duplicateCheck.closestScore,
+    matches: duplicateCheck.similarMatches.slice(0, 8).map((match) => ({
+      ...match,
+      shelf: mapStorageShelfRecord({
+        ...match.shelf,
+        storage_room: room}) || match.shelf}))};
+};
+
 const createPharmacyStorageShelf = async (
   roomIdentifier,
   payload = {},
@@ -471,20 +579,58 @@ const createPharmacyStorageShelf = async (
   user = {}
 ) => {
   const scope = resolveScopedUserContext(user);
+  const confirmSimilar = payload?.confirm_similar === true;
+  const data = stripSimilarityPayloadFields(payload);
   const room = await pharmacyStorageRepository.findStorageRoomById(roomIdentifier, true);
   if (!room || !matchesTenantScope(room, scope)) {
     throw new HttpError('errors.resource.not_found', 404);
   }
 
-  const shelf = await pharmacyWorkspaceRepository.withTransaction((tx) =>
+  const label = String(data.label || '').trim();
+  if (!label) {
+    throw new HttpError('errors.validation.required', 400, [{ field: 'label' }]);
+  }
+  const requestedCode = toText(data.shelf_code) || null;
+
+  await assertPharmacyStorageShelfUniqueness({
+    label,
+    shelfCode: requestedCode,
+    storageRoomId: room.id,
+    confirmSimilar});
+
+  if (requestedCode) {
+    const collision = await pharmacyStorageRepository.findStorageShelfByCode(
+      room.id,
+      requestedCode
+    );
+    if (collision) {
+      throw new HttpError('errors.pharmacy_storage_shelf.duplicate_code', 409, [
+        { field: 'shelf_code' }]);
+    }
+  }
+
+  let shelf = await pharmacyWorkspaceRepository.withTransaction((tx) =>
     pharmacyStorageRepository.txCreateStorageShelf(tx, {
       tenant_id: room.tenant_id,
       facility_id: room.facility_id,
       storage_room_id: room.id,
-      shelf_code: String(payload.shelf_code || '').trim(),
-      label: toText(payload.label) || null,
-      is_active: payload.is_active !== false})
+      // shelf_code is NOT NULL; use a temp unique value when auto-generating.
+      shelf_code:
+        requestedCode ||
+        `TMP-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      label,
+      is_active: data.is_active !== false})
   );
+
+  if (!requestedCode) {
+    const generatedCode =
+      toPublicIdentifier(shelf.human_friendly_id, shelf.id) ||
+      `SH-${shelf.id.slice(0, 8)}`;
+    shelf = await pharmacyWorkspaceRepository.withTransaction((tx) =>
+      pharmacyStorageRepository.txUpdateStorageShelf(tx, shelf.id, {
+        shelf_code: generatedCode})
+    );
+  }
 
   createAuditLog({
     tenant_id: room.tenant_id,
@@ -499,18 +645,47 @@ const createPharmacyStorageShelf = async (
 
 const updatePharmacyStorageShelf = async (identifier, payload = {}, userId, ipAddress, user = {}) => {
   const scope = resolveScopedUserContext(user);
+  const confirmSimilar = payload?.confirm_similar === true;
+  const data = stripSimilarityPayloadFields(payload);
   const existing = await pharmacyStorageRepository.findStorageShelfById(identifier, true);
   if (!existing || !matchesTenantScope(existing, scope)) {
     throw new HttpError('errors.resource.not_found', 404);
   }
 
+  const nextLabel =
+    data.label !== undefined ? String(data.label || '').trim() : toText(existing.label);
+  if (!nextLabel) {
+    throw new HttpError('errors.validation.required', 400, [{ field: 'label' }]);
+  }
+  const nextCode =
+    data.shelf_code !== undefined
+      ? toText(data.shelf_code) || null
+      : toText(existing.shelf_code) || null;
+
+  await assertPharmacyStorageShelfUniqueness({
+    label: nextLabel,
+    shelfCode: nextCode,
+    storageRoomId: existing.storage_room_id,
+    confirmSimilar,
+    excludeShelfId: existing.id});
+
+  if (nextCode) {
+    const collision = await pharmacyStorageRepository.findStorageShelfByCode(
+      existing.storage_room_id,
+      nextCode,
+      { excludeShelfId: existing.id }
+    );
+    if (collision) {
+      throw new HttpError('errors.pharmacy_storage_shelf.duplicate_code', 409, [
+        { field: 'shelf_code' }]);
+    }
+  }
+
   const updated = await pharmacyWorkspaceRepository.withTransaction((tx) =>
     pharmacyStorageRepository.txUpdateStorageShelf(tx, existing.id, {
-      ...(payload.shelf_code !== undefined
-        ? { shelf_code: String(payload.shelf_code || '').trim() }
-        : {}),
-      ...(payload.label !== undefined ? { label: toText(payload.label) || null } : {}),
-      ...(payload.is_active !== undefined ? { is_active: Boolean(payload.is_active) } : {})})
+      ...(data.shelf_code !== undefined ? { shelf_code: nextCode } : {}),
+      ...(data.label !== undefined ? { label: nextLabel } : {}),
+      ...(data.is_active !== undefined ? { is_active: Boolean(data.is_active) } : {})})
   );
 
   createAuditLog({
@@ -658,6 +833,7 @@ module.exports = {
   attachDrugStorageSummaries,
   getPharmacyStorageLayout,
   checkPharmacyStorageRoomSimilarity,
+  checkPharmacyStorageShelfSimilarity,
   createPharmacyStorageRoom,
   updatePharmacyStorageRoom,
   createPharmacyStorageShelf,

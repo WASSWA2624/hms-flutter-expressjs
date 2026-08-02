@@ -2008,7 +2008,7 @@ class _StorageLayoutCatalogTabState
 }
 
 /// Shelves tab: flattens shelves across all rooms into a single table with
-/// Add / Edit / Delete actions. Adding a shelf prompts for the parent room.
+/// Add / Edit / Delete actions. Create opens one dialog with room + shelf fields.
 class _ShelvesCatalogTab extends ConsumerStatefulWidget {
   const _ShelvesCatalogTab({
     required this.state,
@@ -2089,7 +2089,13 @@ class _ShelvesCatalogTabState extends ConsumerState<_ShelvesCatalogTab> {
           addSemanticLabel: l10n.pharmacyAddStorageShelfAction,
           onAdd: activeRooms.isEmpty
               ? null
-              : () => _promptAddShelf(context, ref, activeRooms),
+              : () => unawaited(
+                  openPharmacyStorageShelfDialog(
+                    context,
+                    ref,
+                    availableRooms: activeRooms,
+                  ),
+                ),
         ),
       ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.state(
@@ -2173,11 +2179,13 @@ class _ShelvesCatalogTabState extends ConsumerState<_ShelvesCatalogTab> {
               deleteLabel: l10n.commonDeleteActionLabel,
               editSemanticLabel: l10n.pharmacyEditStorageShelfAction,
               deleteSemanticLabel: l10n.pharmacyDeleteStorageShelfAction,
-              onEdit: () => openPharmacyStorageShelfDialog(
-                context,
-                ref,
-                room: row.room,
-                shelf: row.shelf,
+              onEdit: () => unawaited(
+                openPharmacyStorageShelfDialog(
+                  context,
+                  ref,
+                  room: row.room,
+                  shelf: row.shelf,
+                ),
               ),
               onDelete: () =>
                   confirmDeletePharmacyStorageShelf(context, ref, row.shelf),
@@ -2185,6 +2193,17 @@ class _ShelvesCatalogTabState extends ConsumerState<_ShelvesCatalogTab> {
           },
         ),
       ],
+      onRowSelected: (_ShelfRow row) {
+        unawaited(
+          openPharmacyStorageShelfDetailsDialog(
+            context,
+            ref,
+            room: row.room,
+            shelf: row.shelf,
+            writeRequirement: widget.writeRequirement,
+          ),
+        );
+      },
       mobileItemBuilder: (BuildContext context, _ShelfRow row) {
         return AppListTableMobileItem(
           title: row.shelf.displayLabel,
@@ -2200,68 +2219,6 @@ class _ShelvesCatalogTabState extends ConsumerState<_ShelvesCatalogTab> {
         );
       },
     );
-  }
-
-  Future<void> _promptAddShelf(
-    BuildContext context,
-    WidgetRef ref,
-    List<PharmacyStorageRoom> activeRooms,
-  ) async {
-    final AppLocalizations l10n = context.l10n;
-    PharmacyStorageRoom? selectedRoom = activeRooms.length == 1
-        ? activeRooms.first
-        : null;
-    if (activeRooms.length > 1) {
-      selectedRoom = await showAppDialog<PharmacyStorageRoom>(
-        context: context,
-        builder: (BuildContext dialogContext) {
-          PharmacyStorageRoom? choice = activeRooms.first;
-          return StatefulBuilder(
-            builder: (BuildContext context, StateSetter setDialogState) {
-              return AppDialog(
-                title: Text(l10n.pharmacyAddStorageShelfAction),
-                icon: const Icon(Icons.view_week_outlined),
-                content: AppSelectField<String>(
-                  value: choice?.id,
-                  labelText: l10n.pharmacyStorageRoomLabel,
-                  options: activeRooms
-                      .map(
-                        (PharmacyStorageRoom room) => AppSelectOption<String>(
-                          value: room.id,
-                          label: room.name ?? room.id,
-                        ),
-                      )
-                      .toList(growable: false),
-                  onChanged: (String? value) => setDialogState(() {
-                    choice = activeRooms.firstWhere(
-                      (PharmacyStorageRoom room) => room.id == value,
-                      orElse: () => activeRooms.first,
-                    );
-                  }),
-                ),
-                actions: <Widget>[
-                  AppButton.tertiary(
-                    label: l10n.commonCancelActionLabel,
-                    leadingIcon: Icons.close,
-                    onPressed: () => Navigator.of(dialogContext).pop(),
-                  ),
-                  AppButton.primary(
-                    label: l10n.commonNextActionLabel,
-                    leadingIcon: Icons.arrow_forward,
-                    onPressed: () =>
-                        Navigator.of(dialogContext).pop(choice),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-      );
-    }
-    if (selectedRoom == null || !context.mounted) {
-      return;
-    }
-    await openPharmacyStorageShelfDialog(context, ref, room: selectedRoom);
   }
 }
 

@@ -469,6 +469,67 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
   }
 
   @override
+  Future<Result<PharmacyStorageShelfSimilarityResult>>
+  checkStorageShelfSimilarity({
+    required String roomId,
+    required String label,
+    String? shelfCode,
+    String? excludeShelfId,
+  }) {
+    return _apiClient.post<PharmacyStorageShelfSimilarityResult>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'storage',
+        'rooms',
+        roomId,
+        'shelves',
+        'similarity-check',
+      ]),
+      data: _withoutEmpty(<String, Object?>{
+        'label': label,
+        'shelf_code': shelfCode,
+        'exclude_shelf_id': excludeShelfId,
+      }),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        final PharmacyJsonMap payload = _map(response['data']);
+        final List<PharmacyStorageShelfSimilarityMatch> matches =
+            _list(payload['matches']).map((Object? raw) {
+              final PharmacyJsonMap match = _map(raw);
+              final PharmacyJsonMap shelfJson = _map(match['shelf']);
+              final List<PharmacyStorageShelfFieldComparison> comparisons =
+                  _list(match['field_comparisons']).map((Object? entry) {
+                    final PharmacyJsonMap comparison = _map(entry);
+                    return PharmacyStorageShelfFieldComparison(
+                      field: _string(comparison['field']) ?? '',
+                      inputValue: _string(comparison['input_value']),
+                      candidateValue: _string(comparison['candidate_value']),
+                      score: _int(comparison['score']),
+                      status: _string(comparison['status']),
+                    );
+                  }).toList(growable: false);
+              return PharmacyStorageShelfSimilarityMatch(
+                shelf: PharmacyStorageShelfDto(shelfJson).toEntity(),
+                score: _int(match['score']) ?? 0,
+                isExact: _bool(match['is_exact']),
+                exactLabelConflict: _bool(match['exact_label_conflict']),
+                exactCodeConflict: _bool(match['exact_code_conflict']),
+                labelScore: _int(match['label_score']),
+                codeScore: _int(match['code_score']),
+                fieldComparisons: comparisons,
+              );
+            }).toList(growable: false);
+        return PharmacyStorageShelfSimilarityResult(
+          exactLabelConflict: _bool(payload['exact_label_conflict']),
+          exactCodeConflict: _bool(payload['exact_code_conflict']),
+          closestScore: _int(payload['closest_score']) ?? 0,
+          matches: matches,
+        );
+      },
+    );
+  }
+
+  @override
   Future<Result<PharmacyStorageRoom>> createStorageRoom(
     PharmacyStorageRoomInput input,
   ) {

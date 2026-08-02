@@ -274,6 +274,20 @@ const createPharmacyStorageShelf = asyncHandler(async (req, res) => {
   return sendSuccess(res, 201, 'messages.pharmacy_workspace.storage.shelf.create.success', data);
 });
 
+const checkPharmacyStorageShelfSimilarity = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.checkPharmacyStorageShelfSimilarity(
+    req.params.roomId,
+    req.body,
+    req.user || {}
+  );
+  return sendSuccess(
+    res,
+    200,
+    'messages.pharmacy_workspace.storage.shelf.similarity.success',
+    data
+  );
+});
+
 const updatePharmacyStorageShelf = asyncHandler(async (req, res) => {
   const data = await pharmacyWorkspaceService.updatePharmacyStorageShelf(
     req.params.shelfId,
@@ -347,6 +361,7 @@ module.exports = {
   getPharmacyStorageLayout,
   createPharmacyStorageRoom,
   checkPharmacyStorageRoomSimilarity,
+  checkPharmacyStorageShelfSimilarity,
   updatePharmacyStorageRoom,
   createPharmacyStorageShelf,
   updatePharmacyStorageShelf,

@@ -103,6 +103,54 @@ const findStorageShelfById = async (id, includeInactive = false) =>
         storage_room: true}})
   );
 
+const findManyStorageShelves = async (
+  storageRoomId,
+  { includeDeleted = false } = {},
+  skip = 0,
+  take = 500
+) => {
+  if (!storageRoomId) {
+    return [];
+  }
+  return withDbErrorHandling(() =>
+    prisma.pharmacy_storage_shelf.findMany({
+      where: {
+        storage_room_id: storageRoomId,
+        ...(includeDeleted ? {} : { deleted_at: null })},
+      orderBy: { shelf_code: 'asc' },
+      skip,
+      take})
+  );
+};
+
+const findStorageShelfByCode = async (
+  storageRoomId,
+  shelfCode,
+  { excludeShelfId = null } = {}
+) =>
+  withDbErrorHandling(async () => {
+    const normalized = String(shelfCode || '')
+      .trim()
+      .toLowerCase();
+    if (!storageRoomId || !normalized) {
+      return null;
+    }
+    const shelves = await prisma.pharmacy_storage_shelf.findMany({
+      where: {
+        storage_room_id: storageRoomId,
+        deleted_at: null,
+        ...(excludeShelfId ? { id: { not: excludeShelfId } } : {})},
+      take: 200});
+    return (
+      shelves.find(
+        (shelf) =>
+          String(shelf.shelf_code || '')
+            .trim()
+            .toLowerCase() === normalized
+      ) || null
+    );
+  });
+
 const txCreateStorageRoom = async (tx, data) => tx.pharmacy_storage_room.create({ data });
 
 const txUpdateStorageRoom = async (tx, id, data) =>
@@ -244,6 +292,8 @@ module.exports = {
   findStorageRoomById,
   findStorageRoomByCode,
   findStorageShelfById,
+  findManyStorageShelves,
+  findStorageShelfByCode,
   txCreateStorageRoom,
   txUpdateStorageRoom,
   txCreateStorageShelf,

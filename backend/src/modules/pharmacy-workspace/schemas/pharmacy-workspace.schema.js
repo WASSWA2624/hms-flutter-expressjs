@@ -212,14 +212,22 @@ const pharmacyStorageRoomParamsSchema = z.object({
   roomId: uuidOrFriendlyIdentifierSchema});
 
 const createPharmacyStorageShelfSchema = z.object({
-  shelf_code: z.string().trim().min(1).max(80),
-  label: z.string().trim().max(120).optional().nullable(),
-  is_active: z.coerce.boolean().optional()});
+  shelf_code: z.string().trim().max(80).optional().nullable(),
+  label: z.string().trim().min(1).max(120),
+  is_active: z.coerce.boolean().optional(),
+  confirm_similar: z.coerce.boolean().optional()});
 
 const updatePharmacyStorageShelfSchema = z.object({
-  shelf_code: z.string().trim().min(1).max(80).optional(),
-  label: z.string().trim().max(120).optional().nullable(),
-  is_active: z.coerce.boolean().optional()});
+  shelf_code: z.string().trim().max(80).optional().nullable(),
+  label: z.string().trim().min(1).max(120).optional(),
+  is_active: z.coerce.boolean().optional(),
+  confirm_similar: z.coerce.boolean().optional()});
+
+const checkPharmacyStorageShelfSimilaritySchema = z.object({
+  room_id: uuidOrFriendlyIdentifierSchema.optional(),
+  shelf_code: z.string().trim().max(80).optional().nullable(),
+  label: z.string().trim().min(1).max(120),
+  exclude_shelf_id: uuidOrFriendlyIdentifierSchema.optional().nullable()});
 
 const pharmacyStorageShelfParamsSchema = z.object({
   shelfId: uuidOrFriendlyIdentifierSchema});
@@ -248,4 +256,5 @@ module.exports = {
   pharmacyStorageRoomParamsSchema,
   createPharmacyStorageShelfSchema,
   updatePharmacyStorageShelfSchema,
+  checkPharmacyStorageShelfSimilaritySchema,
   pharmacyStorageShelfParamsSchema};

@@ -1,89 +1,71 @@
-# Shared Similarity Card + Dialog: Reusable Review Flow
+# Pharmacy Catalog Shelves: Details, Unified Create, and Room-Scoped Similarity
 
-**Objective:** Extract a shared, elegant similarity **match card** and **review dialog** under `frontend/lib/shared/components` (composed from existing collapsible / panel / banner primitives) so features can reuse one pattern — field-level proposed vs existing comparison, overall %, color-coded Exact/Near, right-aligned **Use this**, editable proposed values with **Retry**, and footer **Save anyway** / **Cancel** — then migrate the pharmacy storage-room Duplicate Room flow to it without regressing create/update, exact-block, soft-delete, or details routing.
+**Objective:** Keep the Catalog → Shelves table as-is for listing, then add a polished shelf **details** dialog on row select, replace the Create **Next** room-picker wizard with a **single** Add shelf dialog (room + fields together), require shelf label, allow optional blank shelf code with backend auto-generation, and run create/edit **similarity review scoped to shelves in the selected room** using the shared `AppSimilarity` components and the existing Rooms similarity flow as the pattern.
 
 ## Context
 
-Screenshots show the live pharmacy Catalog **Duplicate Room** dialog (`?section=catalog` → Rooms → Create). That UI already works end-to-end but is feature-private and incomplete relative to the intended shared design:
+Screenshots and code show Catalog and stock → **Shelves** (`?section=catalog`, `_ShelvesCatalogTab` in `pharmacy_catalog_panel.dart`):
 
 | Surface | Current behavior |
 | --- | --- |
-| Pharmacy dialog | `pharmacy_storage_room_similarity_dialog.dart` — `AppFormInformationBanner` + read-only proposed `AppSectionPanel` + match `AppContentPanel` cards with Field / Proposed / Existing / % table + **Use this room** (left-aligned) + Cancel / Create anyway |
-| Exact conflict | Banner “Exact match found”; Create anyway hidden; Use this + Cancel only |
-| Near / none | Create anyway / Continue available; 0% panel when no matches |
-| Proposed values | Display-only; user must Cancel back to the create form to edit — **no in-dialog edit / Retry** |
-| Details routing | Not inside the similarity dialog; callers (`openPharmacyStorageRoomDialogForDetails` / catalog Create) open details after save or Use existing |
-| Shared folder | **No** similarity widgets under `frontend/lib/shared/components` |
-| Duplicated clones | Tenant-facility `*_similarity_dialog.dart`, lab/radiology catalog similarity dialogs, access-admin role/user — same skeleton, copy-pasted |
+| Shelves table | Looks correct: Shelf code, Shelf label, Storage room, Status, Actions (Edit / Delete); toolbar **+ Create**; room column visible |
+| Create | Two-step: dialog picks **Storage room** then **Next** → separate `_StorageShelfDialog` with code (required) + label (optional) + **Create shelf** |
+| Row click | No details dialog — only Edit / Delete in the Actions column |
+| Edit | Opens `_StorageShelfDialog` for that shelf’s room; no similarity |
+| Delete | Confirm + soft delete via `confirmDeletePharmacyStorageShelf` |
+| Similarity | **None** for shelves; Rooms already use `checkStorageRoomSimilarity` + `showAppSimilarityReviewDialog` / pharmacy adapter |
+| Room details path | Room details already has **Add shelf** in the shelves body (pre-scoped room) — keep that entry working |
 
-Existing chrome to compose (do not reinvent):
-
-- `AppCollapsibleSection` / `AppSectionPanel` — proposed block; prefer collapsible for editable proposed + header actions (Retry)
-- `AppContentPanel` — toned match cards (error / warning / success)
-- `AppFormInformationBanner` — top status message
-- `AppDialog` / `AppButton` — shell and footer actions
-- Lab/radiology field-comparison layout (`lab_catalog_similarity_dialog.dart` / `radiology_catalog_similarity_dialog.dart`) — richer table + **Use this** right-aligned; good visual seed for the shared card
-
-Raw intent: one reusable **card** + one reusable **dialog** under shared; elegant and simple; dialog owns banner, editable proposed + retry, match list, Save anyway / Cancel, and routes to the entry’s details when appropriate.
+Raw intent: table display is fine; clicking a shelf opens a well-designed **details** dialog with Edit/Delete in the footer; Create is one dialog (search/select room + shelf form, no Next); code may be blank → system generates human-friendly id; **label is required**; similarity compares against shelves **in that room only** (same code/label allowed in a different room); reuse shared similarity + existing pharmacy storage flows.
 
 ## Requirements
 
-1. **Shared similarity match card (`AppSimilarityMatchCard` or equivalent name).** Under `frontend/lib/shared/components`, build a generic, domain-agnostic card (prefer composing `AppContentPanel` + optional collapsible chrome only where it helps density):
-   - Shows the **parameters** under review (field labels supplied by the caller).
-   - For each parameter: **entered (proposed)** value, **existing** value, and **per-field %** (nullable when not scored).
-   - Shows **overall %** and Exact / Near (or equivalent) badge, color-coded via theme tokens / `AppWorkspaceStatusTone` / `AppFormInformationVariant` — no one-off hard-coded brand colors.
-   - **Use this** action **right-aligned** on the card (screenshots today left-align pharmacy; intended is right-aligned, matching lab/facility room patterns).
-   - Caller supplies title/subtitle (e.g. existing room name/code), field rows, scores, tone, and `onUseThis` — no pharmacy/facility entity imports inside shared.
+1. **Preserve the Shelves table chrome.** Do not redesign columns, search, filters, Settings, Export, or generic Action labels (Create / Edit / Delete). Keep `pharmacyCatalogWriteRequirement` gating. Primary toolbar Create remains the entry for Add shelf from the tab.
 
-2. **Shared similarity review dialog (`showAppSimilarityReviewDialog` or equivalent).** Same shared folder; compose card + chrome into one dialog with:
-   - **Top:** color-coded status card/banner with an appropriate title + message (exact / similar / none) driven by caller flags or a small result model.
-   - **Proposed section:** **editable** collapsible (`AppCollapsibleSection`) listing the entered parameters; include a **Retry** (or “Check again”) action that returns edited proposed values to the caller (or invokes a caller-provided `onRetry`) so similarity can be re-run **without** forcing Cancel → reopen create form.
-   - **Matches section:** list of shared match cards (or empty / “no close matches” score panel).
-   - **Footer:** **Cancel**; **Save anyway** (or Continue when no matches) — label injectable; hide/disable Save anyway when the caller marks the result as a hard exact block (preserve pharmacy’s exact-duplicate rule).
-   - Result type mirrors existing patterns: `cancel` | `useExisting` (payload) | `proceed` | optionally `retry` with updated proposed map — keep the API small.
+2. **Open shelf details on row select.** On `onRowSelected` (and mobile item tap if applicable), open a polished **shelf details** dialog (mirror the improved room details pattern): summary header (code, label, status, parent room), info tiles, footer **Close**, **Edit**, **Delete** (write-gated; hide mutate actions when not allowed / soft-deleted if applicable). Edit opens the shelf form; Delete reuses `confirmDeletePharmacyStorageShelf`. After successful edit/delete, refresh storage layout state so the table and open details stay in sync.
 
-3. **Details routing after successful create path.** Keep behavior simple and explicit:
-   - **Use this** / **Save anyway → create success** should land on the **details** surface for that entity, as today for pharmacy Rooms (create → details; Use existing → details).
-   - Prefer a thin **caller callback** (`onResolved` / parent already opens details) over the shared dialog importing feature details dialogs. Document the contract: dialog returns the chosen entity or “proceed”; feature opens details. If a shared helper wrapper is cleaner for pharmacy only, keep it in the pharmacy layer.
+3. **Single Add shelf dialog (no Next).** Replace `_promptAddShelf`’s room-only + Next wizard with one `AppDialog` that includes:
+   - Searchable/select **Storage room** (required for create from the Shelves tab; when opened from room details / a known room, room is fixed/read-only).
+   - **Shelf code** and **Shelf label** fields on the **same** dialog.
+   - Footer **Cancel** + primary **Add shelf** (not Next). If no room is selected, still show the field shell; block submit with validation until room + required fields are valid.
 
-4. **Migrate pharmacy storage-room flow first.** Replace `pharmacy_storage_room_similarity_dialog.dart` internals (or delete and call shared) from `_StorageRoomDialog._submit` so Duplicate Room / Similar rooms screenshots use the shared card + dialog. Preserve:
-   - Exact name/code → hard stop (no Save anyway)
-   - Near matches → Save anyway / Create anyway with `confirm_similar`
-   - Use this → no create; open existing room details
-   - Auto-code, soft/hard delete, filters/export, RBAC unchanged
+4. **Field rules.** **Shelf label is required.** **Shelf code** may be left blank on create: backend assigns the human-friendly / display id (same contract style as storage rooms). On edit, preserve existing code unless the user changes it; keep Active switch on edit. Align frontend validators with these rules (do not require a non-empty code when auto-generate is allowed).
 
-5. **Out of scope for this pass (unless trivial).** Mass-migrating every tenant-facility / lab / radiology / access-admin dialog in one PR. After pharmacy proves the API, other modules may adopt later. Do not change Drugs / Formulary / Inventory / Shelves semantics beyond similarity UX. Do not invent new backend scoring fields; consume existing `field_comparisons` / scores already returned.
+5. **Room-scoped similarity on create and edit.** Before persist, run a similarity check against **only shelves in the selected/parent room** (exclude self on edit). Exact code or label conflict in that room blocks proceed (Cancel / Use this shelf); near matches allow **Save anyway** / **Add anyway** with `confirm_similar`. Reuse `showAppSimilarityReviewDialog` via a thin pharmacy shelf adapter (like `pharmacy_storage_room_similarity_dialog.dart`), including editable proposed + **Check again** when the create/edit loop supports retry. Do **not** treat shelves in other rooms as conflicts.
 
-6. **Elegance and simplicity.** Prefer one small public model for field rows + one card + one dialog function; avoid a parallel design system. Light + dark theme tokens; responsive match list; no cluttered chrome.
+6. **Backend similarity + auto-code.** Add shelf similarity-check (and wire create/update to enforce it) under pharmacy storage APIs, scoped by `storage_room_id`, modeled on `storage/rooms/similarity-check` and room create/update `confirm_similar`. Support blank code → generate friendly id. Return field comparisons suitable for the shared similarity UI.
+
+7. **Reuse and sync.** Prefer existing `openPharmacyStorageShelfDialog`, controller create/update/delete shelf methods, and storage layout reload. Keep Drugs / Formulary / Inventory / Rooms semantics unchanged except shared helpers needed for shelves.
 
 ## Constraints
 
-- Place reusable widgets under `frontend/lib/shared/components` and export via `components.dart` if that is the repo convention.
-- Build from existing collapsible/panel/banner primitives; do not fork a second dialog framework.
-- Shared layer stays **domain-agnostic** (strings, field rows, callbacks, tones) — pharmacy maps `PharmacyStorageRoomSimilarity*` → shared models at the call site.
-- Preserve pharmacy exact-block semantics and create → details / Use existing → details behavior.
-- No unrelated module refactors; no DB migrations.
+- Shared similarity stays domain-agnostic; pharmacy maps shelf models at the call site.
+- Similarity peers = shelves in the **current room only**.
+- No disabled “no access” chrome; unauthorized shelf write controls must not render.
+- Light + dark; mobile/tablet/desktop without clipping the details/create dialogs.
+- No unrelated catalog refactors or DB migrations beyond what shelf similarity / auto-code require.
 
 ## Acceptance Criteria
 
-- (R1) Shared match card shows parameters, proposed, existing, per-field %, overall %, color-coded status, and **right-aligned Use this**.
-- (R2) Shared dialog shows banner, **editable** proposed collapsible with **Retry**, match cards section, **Save anyway** (when allowed) + **Cancel**.
-- (R3) Pharmacy Rooms create/edit similarity uses the shared dialog/card; exact duplicates cannot Save anyway; near matches can; Use this opens existing room details without creating a duplicate.
-- (R4) Successful create (Save anyway → persist) still opens room details as today.
-- (R5) Retry re-checks similarity with edited proposed values without a full Cancel → reopen create-form cycle (or documented equivalent that meets the same UX).
-- (R6) Other catalog tabs and prior Room CRUD (codes, soft/hard delete, filters) remain intact.
-- (R7) Light + dark; no Actions/table regressions from unrelated edits.
+- (R1) Shelves table columns, Create/Edit/Delete, and room display remain intact.
+- (R2) Selecting a shelf opens details with room/code/label/status and footer Edit/Delete/Close; Edit/Delete work and refresh the list.
+- (R3) Toolbar Create opens one dialog with room selector + code + label and **Add shelf** (no Next step).
+- (R4) Blank code on create succeeds with a generated friendly code; empty label fails validation.
+- (R5) Duplicate/near shelf code or label **in the same room** shows shared similarity review; exact blocks Save anyway; near allows confirm; other rooms do not conflict.
+- (R6) Edit path runs the same room-scoped similarity rules; Use this opens/uses the existing shelf without creating a duplicate.
+- (R7) Add shelf from room details still works with room pre-selected and similarity scoped to that room.
+- (R8) Unauthorized users do not see Create/Edit/Delete/Add shelf; authorized flows still work.
 
 ## Verification
 
-- Widget tests for shared card/dialog: exact blocks Save anyway; near allows Save anyway; Use this / Cancel / Retry callbacks fire; Use this is right-aligned.
-- Pharmacy: existing `pharmacy_storage_room_similarity_dialog_test.dart` updated to shared API (or replaced); create → similarity → details / Use this → details still covered.
-- Manual: `?section=catalog` → Rooms — exact duplicate (banner + cards + Use this + Cancel only); near match (Save anyway); edit proposed + Retry; Use this → details; light + dark.
+- Widget/source tests: single-dialog create (no Next); details on row select; label required / code optional; similarity adapter maps cancel / proceed / useExisting / retry.
+- Backend tests: room-scoped similarity; blank code generation; `confirm_similar` on create/update; exclude self on edit.
+- Manual: `?section=catalog` → Shelves — Create (pick room, blank code, required label, similar/exact); row → details → Edit/Delete; Add shelf from Room details; light + dark; mobile width.
 
 ## Relevant Files
 
-- New: `frontend/lib/shared/components/app_similarity_*.dart` (card + dialog + small models) + export in `components.dart`
-- Reference UI: `frontend/lib/shared/lab_catalog/lab_catalog_similarity_dialog.dart`, `frontend/lib/features/tenant_facility/presentation/widgets/room_similarity_dialog.dart`
-- Migrate: `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_storage_room_similarity_dialog.dart`, `pharmacy_storage_panel.dart` (`_StorageRoomDialog._submit`)
-- Primitives: `app_collapsible_section.dart` / `app_content_panel.dart` / `app_form_information_banner.dart` / `app_dialog.dart`
-- Tests: new shared similarity widget tests; update `frontend/test/features/pharmacy/presentation/pharmacy_storage_room_similarity_dialog_test.dart`
+- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart` (`_ShelvesCatalogTab`, `_promptAddShelf`)
+- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_storage_panel.dart` (`_StorageShelfDialog`, room details Add shelf, delete confirms)
+- Shared similarity: `frontend/lib/shared/components/app_similarity.dart`; rooms adapter `pharmacy_storage_room_similarity_dialog.dart`
+- Backend: `backend/src/modules/pharmacy-workspace/**`, `@lib/pharmacy/pharmacy-storage-room-similarity` (pattern for shelf similarity)
+- Tests: pharmacy shelf / storage tests; new shared or shelf similarity widget tests as needed

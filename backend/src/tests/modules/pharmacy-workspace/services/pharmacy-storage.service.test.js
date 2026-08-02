@@ -319,3 +319,162 @@ describe('pharmacy-storage.service room uniqueness and lifecycle', () => {
     });
   });
 });
+
+describe('pharmacy-storage.service shelf similarity and create', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    pharmacyWorkspaceRepository.withTransaction.mockImplementation((cb) => cb({}));
+  });
+
+  it('checks shelf similarity only within the room', async () => {
+    pharmacyStorageRepository.findStorageRoomById.mockResolvedValue({
+      id: 'room-internal-1',
+      human_friendly_id: 'ROOM-1',
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1'});
+    pharmacyStorageRepository.findManyStorageShelves.mockResolvedValue([
+      {
+        id: 'shelf-1',
+        human_friendly_id: 'SHELF-1',
+        storage_room_id: 'room-internal-1',
+        shelf_code: 'A1',
+        label: 'Antibiotics'},
+      {
+        id: 'shelf-2',
+        human_friendly_id: 'SHELF-2',
+        storage_room_id: 'room-internal-1',
+        shelf_code: 'B2',
+        label: 'Bandages'}]);
+
+    const result = await pharmacyStorageService.checkPharmacyStorageShelfSimilarity(
+      'ROOM-1',
+      { label: 'Antibiotic', shelf_code: 'A2' },
+      user
+    );
+
+    expect(pharmacyStorageRepository.findManyStorageShelves).toHaveBeenCalledWith(
+      'room-internal-1',
+      expect.any(Object),
+      0,
+      expect.any(Number)
+    );
+    expect(result.matches.length).toBeGreaterThan(0);
+    expect(result.exact_label_conflict).toBe(false);
+  });
+
+  it('creates a shelf with blank code using generated friendly id', async () => {
+    pharmacyStorageRepository.findStorageRoomById.mockResolvedValue({
+      id: 'room-internal-1',
+      human_friendly_id: 'ROOM-1',
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1'});
+    pharmacyStorageRepository.findManyStorageShelves.mockResolvedValue([]);
+    pharmacyStorageRepository.txCreateStorageShelf.mockResolvedValue({
+      id: 'shelf-internal-1',
+      human_friendly_id: 'PSS-1001',
+      storage_room_id: 'room-internal-1',
+      shelf_code: 'TMP-abc',
+      label: 'Vaccines',
+      is_active: true,
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1'});
+    pharmacyStorageRepository.txUpdateStorageShelf.mockResolvedValue({
+      id: 'shelf-internal-1',
+      human_friendly_id: 'PSS-1001',
+      storage_room_id: 'room-internal-1',
+      shelf_code: 'PSS-1001',
+      label: 'Vaccines',
+      is_active: true,
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1'});
+
+    const created = await pharmacyStorageService.createPharmacyStorageShelf(
+      'ROOM-1',
+      { label: 'Vaccines', confirm_similar: true },
+      user.id,
+      '127.0.0.1',
+      user
+    );
+
+    expect(pharmacyStorageRepository.txCreateStorageShelf).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        label: 'Vaccines',
+        shelf_code: expect.stringMatching(/^TMP-/),
+        storage_room_id: 'room-internal-1'})
+    );
+    expect(pharmacyStorageRepository.txUpdateStorageShelf).toHaveBeenCalledWith(
+      expect.anything(),
+      'shelf-internal-1',
+      expect.objectContaining({ shelf_code: 'PSS-1001' })
+    );
+    expect(created.shelf_code).toBe('PSS-1001');
+  });
+
+  it('rejects similar shelves without confirm_similar', async () => {
+    pharmacyStorageRepository.findStorageRoomById.mockResolvedValue({
+      id: 'room-internal-1',
+      human_friendly_id: 'ROOM-1',
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1'});
+    pharmacyStorageRepository.findManyStorageShelves.mockResolvedValue([
+      {
+        id: 'shelf-1',
+        human_friendly_id: 'SHELF-1',
+        storage_room_id: 'room-internal-1',
+        shelf_code: 'A1',
+        label: 'Antibiotics'}]);
+
+    await expect(
+      pharmacyStorageService.createPharmacyStorageShelf(
+        'ROOM-1',
+        { label: 'Antibiotic', shelf_code: 'A9' },
+        user.id,
+        '127.0.0.1',
+        user
+      )
+    ).rejects.toMatchObject({
+      message: 'errors.pharmacy_storage_shelf.similar_exists'});
+  });
+
+  it('excludes self when checking uniqueness on update', async () => {
+    pharmacyStorageRepository.findStorageShelfById.mockResolvedValue({
+      id: 'shelf-1',
+      human_friendly_id: 'SHELF-1',
+      storage_room_id: 'room-internal-1',
+      shelf_code: 'A1',
+      label: 'Antibiotics',
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1',
+      storage_room: {
+        id: 'room-internal-1',
+        human_friendly_id: 'ROOM-1'}});
+    pharmacyStorageRepository.findManyStorageShelves.mockResolvedValue([
+      {
+        id: 'shelf-1',
+        human_friendly_id: 'SHELF-1',
+        storage_room_id: 'room-internal-1',
+        shelf_code: 'A1',
+        label: 'Antibiotics'}]);
+    pharmacyStorageRepository.findStorageShelfByCode.mockResolvedValue(null);
+    pharmacyStorageRepository.txUpdateStorageShelf.mockResolvedValue({
+      id: 'shelf-1',
+      human_friendly_id: 'SHELF-1',
+      storage_room_id: 'room-internal-1',
+      shelf_code: 'A1',
+      label: 'Antibiotics Updated',
+      is_active: true,
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1'});
+
+    const updated = await pharmacyStorageService.updatePharmacyStorageShelf(
+      'SHELF-1',
+      { label: 'Antibiotics Updated', confirm_similar: true },
+      user.id,
+      '127.0.0.1',
+      user
+    );
+
+    expect(updated.label).toBe('Antibiotics Updated');
+  });
+});

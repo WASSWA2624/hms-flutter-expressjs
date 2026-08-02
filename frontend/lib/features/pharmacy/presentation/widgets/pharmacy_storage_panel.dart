@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_storage_room_similarity_dialog.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_storage_shelf_similarity_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -36,6 +37,28 @@ final class PharmacyStorageRoomFormResult {
   final bool useExisting;
 
   bool get hasRoom => room != null;
+}
+
+/// Result of the create/edit storage-shelf form (saved shelf or Use existing).
+final class PharmacyStorageShelfFormResult {
+  const PharmacyStorageShelfFormResult._({
+    required this.useExisting,
+    this.shelf,
+  });
+
+  const PharmacyStorageShelfFormResult.cancelled()
+    : this._(useExisting: false);
+
+  const PharmacyStorageShelfFormResult.saved(PharmacyStorageShelf shelf)
+    : this._(useExisting: false, shelf: shelf);
+
+  const PharmacyStorageShelfFormResult.useExisting(PharmacyStorageShelf shelf)
+    : this._(useExisting: true, shelf: shelf);
+
+  final PharmacyStorageShelf? shelf;
+  final bool useExisting;
+
+  bool get hasShelf => shelf != null;
 }
 
 Future<PharmacyStorageRoomFormResult> openPharmacyStorageRoomDialog(
@@ -95,18 +118,116 @@ Future<void> openPharmacyStorageRoomDetailsDialog(
   );
 }
 
-/// Opens the create/edit shelf dialog for [room]. Reused by the Storage layout
-/// and Shelves catalog tables so shelf CRUD flows stay identical.
-Future<void> openPharmacyStorageShelfDialog(
+/// Opens the create/edit shelf dialog. When [room] is null, [availableRooms]
+/// must be provided so the user can pick a parent room in the same dialog.
+Future<PharmacyStorageShelfFormResult> openPharmacyStorageShelfDialog(
+  BuildContext context,
+  WidgetRef ref, {
+  PharmacyStorageRoom? room,
+  PharmacyStorageShelf? shelf,
+  List<PharmacyStorageRoom> availableRooms = const <PharmacyStorageRoom>[],
+}) async {
+  final Object? result = await showAppDialog<Object?>(
+    context: context,
+    builder: (_) => _StorageShelfDialog(
+      room: room,
+      shelf: shelf,
+      availableRooms: availableRooms,
+    ),
+  );
+  if (result is PharmacyStorageShelfFormResult) {
+    return result;
+  }
+  if (result is PharmacyStorageShelf) {
+    return PharmacyStorageShelfFormResult.saved(result);
+  }
+  return const PharmacyStorageShelfFormResult.cancelled();
+}
+
+/// Opens create/edit and then shelf details when a shelf was saved or chosen.
+Future<PharmacyStorageShelf?> openPharmacyStorageShelfDialogForDetails(
+  BuildContext context,
+  WidgetRef ref, {
+  PharmacyStorageRoom? room,
+  PharmacyStorageShelf? shelf,
+  List<PharmacyStorageRoom> availableRooms = const <PharmacyStorageRoom>[],
+  required AccessRequirement writeRequirement,
+}) async {
+  final PharmacyStorageShelfFormResult result =
+      await openPharmacyStorageShelfDialog(
+        context,
+        ref,
+        room: room,
+        shelf: shelf,
+        availableRooms: availableRooms,
+      );
+  final PharmacyStorageShelf? selected = result.shelf;
+  if (selected == null || !context.mounted) {
+    return null;
+  }
+  PharmacyStorageRoom? parent = room;
+  if (parent == null || parent.id != selected.storageRoomId) {
+    parent = _findShelfParentRoom(ref, selected) ?? room;
+  }
+  if (parent == null || !context.mounted) {
+    return selected;
+  }
+  await openPharmacyStorageShelfDetailsDialog(
+    context,
+    ref,
+    room: parent,
+    shelf: selected,
+    writeRequirement: writeRequirement,
+  );
+  return selected;
+}
+
+/// Opens a read/manage details dialog for [shelf].
+Future<void> openPharmacyStorageShelfDetailsDialog(
   BuildContext context,
   WidgetRef ref, {
   required PharmacyStorageRoom room,
-  PharmacyStorageShelf? shelf,
+  required PharmacyStorageShelf shelf,
+  required AccessRequirement writeRequirement,
 }) {
-  return showAppDialog<bool>(
+  return showAppDialog<void>(
     context: context,
-    builder: (_) => _StorageShelfDialog(room: room, shelf: shelf),
+    builder: (_) => _StorageShelfDetailsDialog(
+      room: room,
+      shelf: shelf,
+      writeRequirement: writeRequirement,
+    ),
   );
+}
+
+PharmacyStorageRoom? _findShelfParentRoom(
+  WidgetRef ref,
+  PharmacyStorageShelf shelf,
+) {
+  final asyncState = ref.read(pharmacyWorkspaceControllerProvider);
+  if (!asyncState.hasValue) {
+    return null;
+  }
+  PharmacyWorkspaceState? state;
+  asyncState.requireValue.when(
+    success: (PharmacyWorkspaceState value) => state = value,
+    failure: (_) {},
+  );
+  if (state == null) {
+    return null;
+  }
+  final String? roomId = shelf.storageRoomId;
+  for (final PharmacyStorageRoom item in state!.storageLayout.rooms) {
+    if (roomId != null && item.id == roomId) {
+      return item;
+    }
+    for (final PharmacyStorageShelf candidate in item.shelves) {
+      if (candidate.id == shelf.id) {
+        return item;
+      }
+    }
+  }
+  return null;
 }
 
 /// Soft-deletes a storage room (cascades shelves).
@@ -441,9 +562,11 @@ class PharmacyStoragePanel extends ConsumerWidget {
     PharmacyStorageRoom room, {
     PharmacyStorageShelf? shelf,
   }) {
-    return showAppDialog<bool>(
-      context: context,
-      builder: (_) => _StorageShelfDialog(room: room, shelf: shelf),
+    return openPharmacyStorageShelfDialog(
+      context,
+      ref,
+      room: room,
+      shelf: shelf,
     );
   }
 
@@ -1252,10 +1375,15 @@ class _StorageRoomShelfRow extends StatelessWidget {
 }
 
 class _StorageShelfDialog extends ConsumerStatefulWidget {
-  const _StorageShelfDialog({required this.room, this.shelf});
+  const _StorageShelfDialog({
+    this.room,
+    this.shelf,
+    this.availableRooms = const <PharmacyStorageRoom>[],
+  });
 
-  final PharmacyStorageRoom room;
+  final PharmacyStorageRoom? room;
   final PharmacyStorageShelf? shelf;
+  final List<PharmacyStorageRoom> availableRooms;
 
   @override
   ConsumerState<_StorageShelfDialog> createState() =>
@@ -1266,8 +1394,12 @@ class _StorageShelfDialogState extends ConsumerState<_StorageShelfDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _codeController;
   late final TextEditingController _labelController;
+  late PharmacyStorageRoom? _selectedRoom;
   late bool _isActive;
   bool _isSaving = false;
+
+  bool get _isEdit => widget.shelf != null;
+  bool get _roomLocked => widget.room != null || _isEdit;
 
   @override
   void initState() {
@@ -1277,6 +1409,10 @@ class _StorageShelfDialogState extends ConsumerState<_StorageShelfDialog> {
     );
     _labelController = TextEditingController(text: widget.shelf?.label ?? '');
     _isActive = widget.shelf?.isActive ?? true;
+    _selectedRoom = widget.room;
+    if (_selectedRoom == null && widget.availableRooms.length == 1) {
+      _selectedRoom = widget.availableRooms.first;
+    }
   }
 
   @override
@@ -1289,10 +1425,14 @@ class _StorageShelfDialogState extends ConsumerState<_StorageShelfDialog> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final bool isEdit = widget.shelf != null;
+    final List<PharmacyStorageRoom> roomOptions = _roomLocked
+        ? <PharmacyStorageRoom>[
+            ?_selectedRoom,
+          ]
+        : widget.availableRooms;
     return AppDialog(
       title: Text(
-        isEdit
+        _isEdit
             ? l10n.pharmacyEditStorageShelfAction
             : l10n.pharmacyAddStorageShelfAction,
       ),
@@ -1301,18 +1441,55 @@ class _StorageShelfDialogState extends ConsumerState<_StorageShelfDialog> {
         formKey: _formKey,
         enabled: !_isSaving,
         children: <Widget>[
+          AppSelectField<String>.searchable(
+            value: _selectedRoom?.id,
+            labelText: l10n.pharmacyStorageRoomLabel,
+            isRequired: true,
+            enabled: !_roomLocked && !_isSaving,
+            allowClear: !_roomLocked,
+            options: roomOptions
+                .map(
+                  (PharmacyStorageRoom room) => AppSelectOption<String>(
+                    value: room.id,
+                    label: room.name ?? room.id,
+                    searchText: '${room.name ?? ''} ${room.code ?? ''} ${room.id}',
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: _roomLocked
+                ? null
+                : (String? value) {
+                    PharmacyStorageRoom? next;
+                    if (value != null) {
+                      for (final PharmacyStorageRoom room
+                          in widget.availableRooms) {
+                        if (room.id == value) {
+                          next = room;
+                          break;
+                        }
+                      }
+                    }
+                    setState(() => _selectedRoom = next);
+                  },
+            validator: (String? value) => (value ?? '').trim().isEmpty
+                ? l10n.validationRequired
+                : null,
+          ),
           AppTextField(
             controller: _codeController,
             labelText: l10n.pharmacyStorageShelfCodeLabel,
-            isRequired: true,
-            validator: (String? value) =>
-                (value ?? '').trim().isEmpty ? l10n.validationRequired : null,
+            helperText: _isEdit
+                ? null
+                : l10n.pharmacyStorageShelfCodeOptionalHint,
           ),
           AppTextField(
             controller: _labelController,
             labelText: l10n.pharmacyStorageShelfLabelField,
+            isRequired: true,
+            validator: (String? value) =>
+                (value ?? '').trim().isEmpty ? l10n.validationRequired : null,
           ),
-          if (isEdit)
+          if (_isEdit)
             AppSwitchField(
               title: l10n.pharmacyStorageActiveLabel,
               value: _isActive,
@@ -1328,10 +1505,10 @@ class _StorageShelfDialogState extends ConsumerState<_StorageShelfDialog> {
           onPressed: () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
-          label: isEdit
+          label: _isEdit
               ? l10n.commonSaveActionLabel
               : l10n.pharmacyAddStorageShelfAction,
-          leadingIcon: isEdit ? Icons.save_outlined : Icons.add,
+          leadingIcon: _isEdit ? Icons.save_outlined : Icons.add,
           isLoading: _isSaving,
           onPressed: _submit,
         ),
@@ -1343,37 +1520,429 @@ class _StorageShelfDialogState extends ConsumerState<_StorageShelfDialog> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
+    final PharmacyStorageRoom? room = _selectedRoom;
+    if (room == null) {
+      return;
+    }
     setState(() => _isSaving = true);
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
-    final AppFailure? failure;
-    if (widget.shelf == null) {
-      failure = await controller.createStorageShelf(
-        widget.room.id,
-        PharmacyStorageShelfInput(
-          shelfCode: _codeController.text.trim(),
-          label: _emptyToNull(_labelController.text),
-        ),
+    final AppLocalizations l10n = context.l10n;
+    String label = _labelController.text.trim();
+    String? shelfCode = _emptyToNull(_codeController.text);
+
+    while (mounted) {
+      final Result<PharmacyStorageShelfSimilarityResult> similarityResult =
+          await controller.checkStorageShelfSimilarity(
+            roomId: room.id,
+            label: label,
+            shelfCode: shelfCode,
+            excludeShelfId: widget.shelf?.id,
+          );
+      if (!mounted) {
+        return;
+      }
+
+      PharmacyStorageShelfSimilarityResult? review;
+      final AppFailure? similarityFailure = similarityResult.when(
+        success: (PharmacyStorageShelfSimilarityResult value) {
+          review = value;
+          return null;
+        },
+        failure: (AppFailure failure) => failure,
       );
-    } else {
-      failure = await controller.updateStorageShelf(
-        widget.shelf!.id,
-        PharmacyStorageShelfUpdateInput(
-          shelfCode: _codeController.text.trim(),
-          label: _emptyToNull(_labelController.text),
-          isActive: _isActive,
-        ),
-      );
+      if (similarityFailure != null) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
+        );
+        return;
+      }
+
+      final PharmacyStorageShelfSimilarityResult check =
+          review ?? const PharmacyStorageShelfSimilarityResult();
+      final PharmacyStorageShelfSimilarityDialogResult similarityDecision =
+          await showPharmacyStorageShelfSimilarityDialog(
+            context,
+            proposed: PharmacyStorageShelfSimilarityProposedValues(
+              label: label,
+              shelfCode: shelfCode,
+              isActive: widget.shelf == null ? null : _isActive,
+            ),
+            check: check,
+            isEdit: widget.shelf != null,
+          );
+      if (!mounted) {
+        return;
+      }
+
+      if (similarityDecision.action ==
+          PharmacyStorageShelfSimilarityAction.cancel) {
+        setState(() => _isSaving = false);
+        return;
+      }
+
+      if (similarityDecision.action ==
+          PharmacyStorageShelfSimilarityAction.retry) {
+        final PharmacyStorageShelfSimilarityProposedValues? next =
+            similarityDecision.proposed;
+        if (next == null || next.label.trim().isEmpty) {
+          setState(() => _isSaving = false);
+          return;
+        }
+        label = next.label.trim();
+        shelfCode = next.shelfCode;
+        _labelController.text = label;
+        _codeController.text = shelfCode ?? '';
+        continue;
+      }
+
+      if (similarityDecision.action ==
+          PharmacyStorageShelfSimilarityAction.useExisting) {
+        final PharmacyStorageShelf? existing = similarityDecision.selectedShelf;
+        setState(() => _isSaving = false);
+        if (existing != null) {
+          Navigator.of(
+            context,
+          ).pop(PharmacyStorageShelfFormResult.useExisting(existing));
+        }
+        return;
+      }
+
+      final PharmacyStorageShelfSimilarityProposedValues? confirmed =
+          similarityDecision.proposed;
+      if (confirmed != null) {
+        label = confirmed.label.trim().isEmpty
+            ? label
+            : confirmed.label.trim();
+        shelfCode = confirmed.shelfCode;
+        _labelController.text = label;
+        _codeController.text = shelfCode ?? '';
+      }
+      break;
     }
+
     if (!mounted) {
       return;
     }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
+
+    if (widget.shelf == null) {
+      final Result<PharmacyStorageShelf> createResult = await controller
+          .createStorageShelf(
+            room.id,
+            PharmacyStorageShelfInput(
+              shelfCode: shelfCode,
+              label: label,
+              confirmSimilar: true,
+            ),
+          );
+      if (!mounted) {
+        return;
+      }
+      createResult.when(
+        success: (PharmacyStorageShelf created) {
+          Navigator.of(
+            context,
+          ).pop(PharmacyStorageShelfFormResult.saved(created));
+        },
+        failure: (_) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
+          );
+        },
+      );
       return;
     }
-    setState(() => _isSaving = false);
+
+    final Result<PharmacyStorageShelf> updateResult = await controller
+        .updateStorageShelf(
+          widget.shelf!.id,
+          PharmacyStorageShelfUpdateInput(
+            shelfCode: shelfCode,
+            label: label,
+            isActive: _isActive,
+            confirmSimilar: true,
+          ),
+        );
+    if (!mounted) {
+      return;
+    }
+    updateResult.when(
+      success: (PharmacyStorageShelf updated) {
+        Navigator.of(
+          context,
+        ).pop(PharmacyStorageShelfFormResult.saved(updated));
+      },
+      failure: (_) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
+        );
+      },
+    );
+  }
+}
+
+class _StorageShelfDetailsDialog extends ConsumerWidget {
+  const _StorageShelfDetailsDialog({
+    required this.room,
+    required this.shelf,
+    required this.writeRequirement,
+  });
+
+  final PharmacyStorageRoom room;
+  final PharmacyStorageShelf shelf;
+  final AccessRequirement writeRequirement;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final AppStatusColors statusColors = theme.statusColors;
+    PharmacyWorkspaceState? state;
+    final asyncState = ref.watch(pharmacyWorkspaceControllerProvider);
+    if (asyncState.hasValue) {
+      asyncState.requireValue.when(
+        success: (PharmacyWorkspaceState value) => state = value,
+        failure: (_) {},
+      );
+    }
+
+    PharmacyStorageRoom currentRoom = room;
+    PharmacyStorageShelf current = shelf;
+    if (state != null) {
+      for (final PharmacyStorageRoom item in state!.storageLayout.rooms) {
+        if (item.id == room.id) {
+          currentRoom = item;
+        }
+        for (final PharmacyStorageShelf candidate in item.shelves) {
+          if (candidate.id == shelf.id) {
+            current = candidate;
+            currentRoom = item;
+          }
+        }
+      }
+    }
+
+    final String empty = l10n.clinicalOrderEmptyValueLabel;
+    final String shelfLabel = (current.label ?? '').trim().isEmpty
+        ? empty
+        : current.label!.trim();
+    final String codeValue = (current.shelfCode ?? '').trim().isEmpty
+        ? empty
+        : current.shelfCode!.trim();
+    final String roomName = (currentRoom.name ?? '').trim().isEmpty
+        ? currentRoom.id
+        : currentRoom.name!.trim();
+    final String statusLabel = current.isActive
+        ? l10n.pharmacyStorageActiveLabel
+        : l10n.pharmacyStorageInactiveLabel;
+    final Color accent = current.isActive
+        ? statusColors.success
+        : statusColors.warning;
+    final String? displayId = (current.displayId ?? '').trim().isEmpty
+        ? null
+        : current.displayId!.trim();
+
+    return AppDialog(
+      title: Text(l10n.pharmacyStorageShelfLabel),
+      icon: const Icon(Icons.inventory_2_outlined),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.45,
+              ),
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(theme.spacing.md),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Icon(
+                    Icons.inventory_2_outlined,
+                    color: colorScheme.primary,
+                    size: theme.appTokens.listIconSize * 1.4,
+                  ),
+                  SizedBox(width: theme.spacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          shelfLabel,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: theme.spacing.xs),
+                        Wrap(
+                          spacing: theme.spacing.sm,
+                          runSpacing: theme.spacing.xs,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: <Widget>[
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: theme.spacing.sm,
+                                vertical: theme.spacing.xs / 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: accent.withValues(alpha: 0.12),
+                                border: Border.all(
+                                  color: accent.withValues(alpha: 0.4),
+                                ),
+                              ),
+                              child: Text(
+                                statusLabel,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: accent,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              codeValue,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              roomName,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: theme.spacing.md),
+          AppCollapsibleSection(
+            title: l10n.pharmacyStorageShelfLabel,
+            titleIcon: Icons.info_outline,
+            contentPadding: EdgeInsets.all(theme.spacing.md),
+            child: AppInfoTileGrid(
+              maxColumns: 3,
+              emptyValue: empty,
+              items: <AppInfoTileData>[
+                AppInfoTileData(
+                  label: l10n.pharmacyStorageShelfCodeLabel,
+                  value: current.shelfCode,
+                  icon: Icons.qr_code_2_outlined,
+                  copyable: (current.shelfCode ?? '').trim().isNotEmpty,
+                ),
+                AppInfoTileData(
+                  label: l10n.pharmacyStorageShelfLabelField,
+                  value: current.label,
+                  icon: Icons.label_outline,
+                  copyable: (current.label ?? '').trim().isNotEmpty,
+                ),
+                AppInfoTileData(
+                  label: l10n.pharmacyStorageRoomLabel,
+                  value: roomName,
+                  icon: Icons.warehouse_outlined,
+                ),
+                AppInfoTileData(
+                  label: l10n.pharmacyStorageStatusColumnLabel,
+                  value: statusLabel,
+                  icon: Icons.flag_outlined,
+                ),
+                if (displayId != null)
+                  AppInfoTileData(
+                    label: l10n.accessAdminColumnDetails,
+                    value: displayId,
+                    icon: Icons.badge_outlined,
+                    copyable: true,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCloseActionLabel,
+          leadingIcon: Icons.close,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppAccessActionGate(
+          requirement: writeRequirement,
+          builder: (BuildContext context, bool allowed) {
+            if (!allowed) {
+              return const SizedBox.shrink();
+            }
+            return AppButton.tertiary(
+              label: l10n.commonDeleteActionLabel,
+              leadingIcon: Icons.delete_outline,
+              semanticLabel: l10n.pharmacyDeleteStorageShelfAction,
+              onPressed: () async {
+                await confirmDeletePharmacyStorageShelf(
+                  context,
+                  ref,
+                  current,
+                );
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
+              },
+            );
+          },
+        ),
+        AppAccessActionGate(
+          requirement: writeRequirement,
+          builder: (BuildContext context, bool allowed) {
+            if (!allowed) {
+              return const SizedBox.shrink();
+            }
+            return AppButton.primary(
+              label: l10n.commonEditActionLabel,
+              leadingIcon: Icons.edit_outlined,
+              onPressed: () async {
+                final PharmacyStorageShelfFormResult result =
+                    await openPharmacyStorageShelfDialog(
+                      context,
+                      ref,
+                      room: currentRoom,
+                      shelf: current,
+                    );
+                if (!context.mounted || result.shelf == null) {
+                  return;
+                }
+                if (result.useExisting) {
+                  Navigator.of(context).pop();
+                  if (!context.mounted) {
+                    return;
+                  }
+                  final PharmacyStorageRoom parent =
+                      _findShelfParentRoom(ref, result.shelf!) ?? currentRoom;
+                  await openPharmacyStorageShelfDetailsDialog(
+                    context,
+                    ref,
+                    room: parent,
+                    shelf: result.shelf!,
+                    writeRequirement: writeRequirement,
+                  );
+                }
+              },
+            );
+          },
+        ),
+      ],
+    );
   }
 }
 

@@ -22354,10 +22354,10 @@ abstract class AppLocalizations {
   /// **'Edit room'**
   String get pharmacyEditStorageRoomAction;
 
-  /// Pharmacy create storage shelf action.
+  /// Pharmacy add storage shelf action for the current room.
   ///
   /// In en, this message translates to:
-  /// **'Create shelf'**
+  /// **'Add shelf'**
   String get pharmacyAddStorageShelfAction;
 
   /// Pharmacy edit storage shelf action.
@@ -22533,6 +22533,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ready to continue'**
   String get pharmacyStorageRoomNoSimilarBannerTitle;
+
+  /// Title when pharmacy storage shelf label or code already exists in the room.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate shelf'**
+  String get pharmacyStorageShelfDuplicateDialogTitle;
+
+  /// Body when pharmacy storage shelf is an exact duplicate in the room.
+  ///
+  /// In en, this message translates to:
+  /// **'An exact match already exists in this room. Change the label or code before creating.'**
+  String get pharmacyStorageShelfDuplicateDialogBody;
+
+  /// Title when similar pharmacy storage shelves are found in the room.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar shelves found'**
+  String get pharmacyStorageShelfSimilarDialogTitle;
+
+  /// Body when similar pharmacy storage shelves are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest match similarity: {score}%. Review matches before continuing.'**
+  String pharmacyStorageShelfSimilarDialogBody(int score);
+
+  /// Title when pharmacy storage shelf similarity finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar shelves'**
+  String get pharmacyStorageShelfNoSimilarDialogTitle;
+
+  /// Body when pharmacy storage shelf similarity finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No close matches found in this room. Continue to create this shelf.'**
+  String get pharmacyStorageShelfNoSimilarDialogBody;
+
+  /// Continue creating a pharmacy storage shelf after similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get pharmacyStorageShelfCreateAnywayAction;
+
+  /// Use an existing pharmacy storage shelf from similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this shelf'**
+  String get pharmacyStorageShelfUseExistingAction;
+
+  /// Heading for proposed shelf values in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed shelf'**
+  String get pharmacyStorageShelfProposedHeading;
+
+  /// Heading for shelf similarity matches scoped to the room.
+  ///
+  /// In en, this message translates to:
+  /// **'Matches in this room'**
+  String get pharmacyStorageShelfMatchesHeading;
+
+  /// Badge for an exact storage-shelf match.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact match'**
+  String get pharmacyStorageShelfExactMatchLabel;
+
+  /// Badge for a near storage-shelf match.
+  ///
+  /// In en, this message translates to:
+  /// **'Near match'**
+  String get pharmacyStorageShelfNearMatchLabel;
+
+  /// Heading for existing shelf values in similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing'**
+  String get pharmacyStorageShelfExistingHeading;
+
+  /// Banner title when an exact storage-shelf duplicate exists in the room.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact match found'**
+  String get pharmacyStorageShelfExactBannerTitle;
+
+  /// Banner title when near storage-shelf matches exist in the room.
+  ///
+  /// In en, this message translates to:
+  /// **'Review similar shelves'**
+  String get pharmacyStorageShelfSimilarBannerTitle;
+
+  /// Banner title when no similar storage shelves are found in the room.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to continue'**
+  String get pharmacyStorageShelfNoSimilarBannerTitle;
+
+  /// Column header for proposed shelf field value in similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed'**
+  String get pharmacyStorageShelfFieldProposedLabel;
+
+  /// Column header for existing shelf field value in similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing'**
+  String get pharmacyStorageShelfFieldExistingLabel;
+
+  /// Column header for field name in storage-shelf similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Field'**
+  String get pharmacyStorageShelfFieldColumnLabel;
+
+  /// Label for closest shelf similarity score.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest match'**
+  String get pharmacyStorageShelfOverallSimilarityLabel;
+
+  /// Fallback similarity score label when no shelf match is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Similarity {score}%'**
+  String pharmacyStorageShelfNoMatchScoreLabel(int score);
+
+  /// Hint that blank shelf code is auto-generated on create.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to auto-generate a shelf code.'**
+  String get pharmacyStorageShelfCodeOptionalHint;
 
   /// Column header for proposed field value in similarity comparison.
   ///
