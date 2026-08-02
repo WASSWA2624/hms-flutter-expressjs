@@ -30,6 +30,7 @@ class AppCollapsibleSection extends StatefulWidget {
     this.borderColor,
     this.accentColor,
     this.titleColor,
+    this.headerMetaInline = false,
     super.key,
   });
 
@@ -74,6 +75,10 @@ class AppCollapsibleSection extends StatefulWidget {
   final Color? borderColor;
   final Color? accentColor;
   final Color? titleColor;
+
+  /// When true, [eyebrow], [title], and [subtitle] render on one horizontal row
+  /// to keep the header compact.
+  final bool headerMetaInline;
 
   @override
   State<AppCollapsibleSection> createState() => _AppCollapsibleSectionState();
@@ -162,17 +167,28 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                       vertical: theme.spacing.xs / 2,
                     ),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: widget.headerMetaInline
+                          ? CrossAxisAlignment.center
+                          : CrossAxisAlignment.start,
                       children: <Widget>[
                         if (widget.titleIcon != null) ...<Widget>[
-                          Padding(
-                            padding: EdgeInsets.only(top: theme.spacing.xs / 2),
-                            child: Icon(
+                          if (!widget.headerMetaInline)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: theme.spacing.xs / 2,
+                              ),
+                              child: Icon(
+                                widget.titleIcon,
+                                size: theme.appTokens.listIconSize,
+                                color: accent,
+                              ),
+                            )
+                          else
+                            Icon(
                               widget.titleIcon,
                               size: theme.appTokens.listIconSize,
                               color: accent,
                             ),
-                          ),
                           SizedBox(width: theme.spacing.sm),
                         ],
                         Expanded(
@@ -183,6 +199,7 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                                 subtitle: subtitle,
                                 titleColor: onContainer,
                                 secondaryColor: secondaryText,
+                                inline: widget.headerMetaInline,
                               ),
                         ),
                         if (widget.headerActions.isNotEmpty) ...<Widget>[
@@ -213,9 +230,24 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                         ],
                         if (widget.collapsible) ...<Widget>[
                           SizedBox(width: theme.spacing.xs),
-                          Padding(
-                            padding: EdgeInsets.only(top: theme.spacing.xs / 2),
-                            child: Icon(
+                          if (!widget.headerMetaInline)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: theme.spacing.xs / 2,
+                              ),
+                              child: Icon(
+                                _resolvedExpanded
+                                    ? Icons.expand_less
+                                    : Icons.expand_more,
+                                size: theme.appTokens.listIconSize,
+                                color: chevron,
+                                semanticLabel: _resolvedExpanded
+                                    ? context.l10n.commonShowLessActionLabel
+                                    : context.l10n.commonShowMoreActionLabel,
+                              ),
+                            )
+                          else
+                            Icon(
                               _resolvedExpanded
                                   ? Icons.expand_less
                                   : Icons.expand_more,
@@ -225,7 +257,6 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                                   ? context.l10n.commonShowLessActionLabel
                                   : context.l10n.commonShowMoreActionLabel,
                             ),
-                          ),
                         ],
                       ],
                     ),
@@ -302,6 +333,7 @@ class _AppCollapsibleHeaderTitle extends StatelessWidget {
     required this.subtitle,
     required this.titleColor,
     required this.secondaryColor,
+    this.inline = false,
   });
 
   final String? eyebrow;
@@ -309,10 +341,15 @@ class _AppCollapsibleHeaderTitle extends StatelessWidget {
   final String? subtitle;
   final Color titleColor;
   final Color secondaryColor;
+  final bool inline;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+
+    if (inline) {
+      return _buildInline(theme);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,6 +391,50 @@ class _AppCollapsibleHeaderTitle extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildInline(ThemeData theme) {
+    final TextStyle separatorStyle = theme.textTheme.bodyMedium!.copyWith(
+      color: secondaryColor.withValues(alpha: 0.55),
+      fontWeight: FontWeight.w500,
+    );
+    final TextStyle eyebrowStyle = theme.textTheme.labelMedium!.copyWith(
+      color: secondaryColor,
+      fontWeight: FontWeight.w600,
+    );
+    final TextStyle titleStyle = theme.textTheme.titleSmall!.copyWith(
+      fontWeight: FontWeight.w700,
+      color: titleColor,
+    );
+    final TextStyle subtitleStyle = theme.textTheme.bodySmall!.copyWith(
+      color: secondaryColor,
+      fontWeight: FontWeight.w500,
+    );
+
+    final List<InlineSpan> spans = <InlineSpan>[];
+    void addSegment(String text, TextStyle style) {
+      if (spans.isNotEmpty) {
+        spans.add(TextSpan(text: ' · ', style: separatorStyle));
+      }
+      spans.add(TextSpan(text: text, style: style));
+    }
+
+    if (eyebrow != null) {
+      addSegment(eyebrow!, eyebrowStyle);
+    }
+    if (title != null) {
+      addSegment(title!, titleStyle);
+    }
+    if (subtitle != null) {
+      addSegment(subtitle!, subtitleStyle);
+    }
+
+    return Text.rich(
+      TextSpan(children: spans),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      softWrap: false,
     );
   }
 }

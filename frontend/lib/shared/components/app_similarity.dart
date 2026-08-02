@@ -169,6 +169,7 @@ class AppSimilarityMatchCard<T> extends StatelessWidget {
       eyebrow: existingHeading ?? l10n.appSimilarityExistingHeading,
       title: match.title,
       subtitle: (match.subtitle ?? '').trim().isEmpty ? null : match.subtitle,
+      headerMetaInline: true,
       contentPadding: EdgeInsets.all(theme.spacing.md),
       headerActions: <Widget>[
         Container(
