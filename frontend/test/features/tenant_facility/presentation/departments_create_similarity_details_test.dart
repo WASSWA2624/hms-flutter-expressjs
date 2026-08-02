@@ -87,7 +87,11 @@ void main() {
         isTrue,
       );
       expect(
-        similarityDialogSource.contains('Alignment.centerRight'),
+        similarityDialogSource.contains('showAppSimilarityReviewDialog'),
+        isTrue,
+      );
+      expect(
+        similarityDialogSource.contains('proposedReadOnly: true'),
         isTrue,
       );
       expect(
@@ -97,7 +101,9 @@ void main() {
         isTrue,
       );
       expect(
-        similarityDialogSource.contains('_NoMatchScorePanel'),
+        similarityDialogSource.contains(
+          'tenantFacilityDepartmentNoMatchScoreLabel',
+        ),
         isTrue,
       );
       expect(

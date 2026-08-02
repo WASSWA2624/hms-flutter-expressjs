@@ -101,9 +101,14 @@ void main() {
       isTrue,
     );
     expect(similarityDialogSource.contains('match.fieldComparisons'), isTrue);
-    expect(similarityDialogSource.contains('_StatusChip'), isTrue);
     expect(
-      similarityDialogSource.contains('allowProceed && !hasExactConflict'),
+      similarityDialogSource.contains('showAppSimilarityReviewDialog'),
+      isTrue,
+    );
+    expect(
+      similarityDialogSource.contains(
+        'blockProceed: !allowProceed || hasExactConflict',
+      ),
       isTrue,
     );
     expect(

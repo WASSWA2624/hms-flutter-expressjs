@@ -114,6 +114,7 @@ class AppSimilarityMatchCard<T> extends StatelessWidget {
     required this.onUseThis,
     this.existingHeading,
     this.useThisLabel,
+    this.useThisIcon,
     this.exactBadgeLabel,
     this.nearBadgeLabel,
     this.fieldColumnLabel,
@@ -127,6 +128,7 @@ class AppSimilarityMatchCard<T> extends StatelessWidget {
   final VoidCallback onUseThis;
   final String? existingHeading;
   final String? useThisLabel;
+  final IconData? useThisIcon;
   final String? exactBadgeLabel;
   final String? nearBadgeLabel;
   final String? fieldColumnLabel;
@@ -239,7 +241,7 @@ class AppSimilarityMatchCard<T> extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: AppButton.secondary(
               label: useThisLabel ?? l10n.appSimilarityUseThisAction,
-              leadingIcon: Icons.check,
+              leadingIcon: useThisIcon ?? Icons.check,
               onPressed: onUseThis,
             ),
           ),
@@ -249,7 +251,10 @@ class AppSimilarityMatchCard<T> extends StatelessWidget {
   }
 }
 
-/// Shared similarity review dialog: banner, editable proposed + Retry, matches.
+/// Shared similarity review dialog: banner, proposed values, matches.
+///
+/// Set [enableRetry] false when the caller cannot re-check after edits.
+/// Set [proposedReadOnly] true to show proposed values without text fields.
 Future<AppSimilarityReviewResult<T>> showAppSimilarityReviewDialog<T>(
   BuildContext context, {
   required String title,
@@ -260,6 +265,8 @@ Future<AppSimilarityReviewResult<T>> showAppSimilarityReviewDialog<T>(
   required List<AppSimilarityMatch<T>> matches,
   required int overallScore,
   bool blockProceed = false,
+  bool enableRetry = true,
+  bool proposedReadOnly = false,
   String? proceedLabel,
   String? continueLabel,
   String? useThisLabel,
@@ -276,6 +283,7 @@ Future<AppSimilarityReviewResult<T>> showAppSimilarityReviewDialog<T>(
   String? existingColumnLabel,
   String? emptyValueLabel,
   IconData? dialogIcon,
+  IconData? useThisIcon,
 }) {
   return showAppDialog<AppSimilarityReviewResult<T>>(
     context: context,
@@ -288,6 +296,8 @@ Future<AppSimilarityReviewResult<T>> showAppSimilarityReviewDialog<T>(
       matches: matches,
       overallScore: overallScore,
       blockProceed: blockProceed,
+      enableRetry: enableRetry,
+      proposedReadOnly: proposedReadOnly,
       proceedLabel: proceedLabel,
       continueLabel: continueLabel,
       useThisLabel: useThisLabel,
@@ -304,6 +314,7 @@ Future<AppSimilarityReviewResult<T>> showAppSimilarityReviewDialog<T>(
       existingColumnLabel: existingColumnLabel,
       emptyValueLabel: emptyValueLabel,
       dialogIcon: dialogIcon,
+      useThisIcon: useThisIcon,
     ),
   ).then(
     (AppSimilarityReviewResult<T>? value) =>
@@ -321,6 +332,8 @@ class _AppSimilarityReviewDialog<T> extends StatefulWidget {
     required this.matches,
     required this.overallScore,
     required this.blockProceed,
+    this.enableRetry = true,
+    this.proposedReadOnly = false,
     this.proceedLabel,
     this.continueLabel,
     this.useThisLabel,
@@ -337,6 +350,7 @@ class _AppSimilarityReviewDialog<T> extends StatefulWidget {
     this.existingColumnLabel,
     this.emptyValueLabel,
     this.dialogIcon,
+    this.useThisIcon,
   });
 
   final String title;
@@ -347,6 +361,8 @@ class _AppSimilarityReviewDialog<T> extends StatefulWidget {
   final List<AppSimilarityMatch<T>> matches;
   final int overallScore;
   final bool blockProceed;
+  final bool enableRetry;
+  final bool proposedReadOnly;
   final String? proceedLabel;
   final String? continueLabel;
   final String? useThisLabel;
@@ -363,6 +379,7 @@ class _AppSimilarityReviewDialog<T> extends StatefulWidget {
   final String? existingColumnLabel;
   final String? emptyValueLabel;
   final IconData? dialogIcon;
+  final IconData? useThisIcon;
 
   @override
   State<_AppSimilarityReviewDialog<T>> createState() =>
@@ -435,19 +452,23 @@ class _AppSimilarityReviewDialogState<T>
           SizedBox(height: theme.spacing.md),
           AppCollapsibleSection(
             title: widget.proposedHeading ?? l10n.appSimilarityProposedHeading,
-            titleIcon: Icons.edit_note_outlined,
-            headerActions: <Widget>[
-              AppButton.tertiary(
-                dense: true,
-                label: widget.retryLabel ?? l10n.appSimilarityRetryAction,
-                leadingIcon: Icons.refresh,
-                onPressed: () => Navigator.of(context).pop(
-                  AppSimilarityReviewResult<T>.retry(
-                    proposedValues: _readProposedValues(),
-                  ),
-                ),
-              ),
-            ],
+            titleIcon: widget.proposedReadOnly
+                ? Icons.list_alt_outlined
+                : Icons.edit_note_outlined,
+            headerActions: widget.enableRetry
+                ? <Widget>[
+                    AppButton.tertiary(
+                      dense: true,
+                      label: widget.retryLabel ?? l10n.appSimilarityRetryAction,
+                      leadingIcon: Icons.refresh,
+                      onPressed: () => Navigator.of(context).pop(
+                        AppSimilarityReviewResult<T>.retry(
+                          proposedValues: _readProposedValues(),
+                        ),
+                      ),
+                    ),
+                  ]
+                : const <Widget>[],
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
@@ -457,12 +478,21 @@ class _AppSimilarityReviewDialogState<T>
                   index += 1
                 ) ...<Widget>[
                   if (index > 0) SizedBox(height: theme.spacing.sm),
-                  AppTextField(
-                    controller: _controllers[widget.proposedFields[index].key]!,
-                    labelText: widget.proposedFields[index].label,
-                    isRequired: widget.proposedFields[index].isRequired,
-                    enableSpeechToText: false,
-                  ),
+                  if (widget.proposedReadOnly)
+                    _AppSimilarityReadOnlyField(
+                      label: widget.proposedFields[index].label,
+                      value: widget.proposedFields[index].initialValue,
+                      emptyValueLabel: emptyLabel,
+                      isRequired: widget.proposedFields[index].isRequired,
+                    )
+                  else
+                    AppTextField(
+                      controller:
+                          _controllers[widget.proposedFields[index].key]!,
+                      labelText: widget.proposedFields[index].label,
+                      isRequired: widget.proposedFields[index].isRequired,
+                      enableSpeechToText: false,
+                    ),
                 ],
                 SizedBox(height: theme.spacing.sm),
                 Align(
@@ -514,6 +544,7 @@ class _AppSimilarityReviewDialogState<T>
                 match: widget.matches[index],
                 existingHeading: widget.existingHeading,
                 useThisLabel: widget.useThisLabel,
+                useThisIcon: widget.useThisIcon,
                 exactBadgeLabel: widget.exactBadgeLabel,
                 nearBadgeLabel: widget.nearBadgeLabel,
                 fieldColumnLabel: widget.fieldColumnLabel,
@@ -557,6 +588,65 @@ class _AppSimilarityReviewDialogState<T>
               ),
             ),
           ),
+      ],
+    );
+  }
+}
+
+class _AppSimilarityReadOnlyField extends StatelessWidget {
+  const _AppSimilarityReadOnlyField({
+    required this.label,
+    required this.value,
+    required this.emptyValueLabel,
+    this.isRequired = false,
+  });
+
+  final String label;
+  final String value;
+  final String emptyValueLabel;
+  final bool isRequired;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String trimmed = value.trim();
+    final String display = trimmed.isEmpty ? emptyValueLabel : trimmed;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text.rich(
+          TextSpan(
+            children: <InlineSpan>[
+              TextSpan(
+                text: label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (isRequired)
+                TextSpan(
+                  text: ' *',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.statusColors.error,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs / 2),
+        Text(
+          display,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+            color: trimmed.isEmpty
+                ? theme.colorScheme.onSurfaceVariant
+                : theme.colorScheme.onSurface,
+          ),
+          textAlign: TextAlign.start,
+        ),
       ],
     );
   }

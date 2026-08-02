@@ -63,11 +63,13 @@ void main() {
       isTrue,
     );
     expect(
-      similarityDialogSource.contains('_StatusChip'),
+      similarityDialogSource.contains('showAppSimilarityReviewDialog'),
       isTrue,
     );
     expect(
-      similarityDialogSource.contains('allowProceed && !hasExactNameConflict'),
+      similarityDialogSource.contains(
+        'blockProceed: !allowProceed || hasExactNameConflict',
+      ),
       isTrue,
     );
   });

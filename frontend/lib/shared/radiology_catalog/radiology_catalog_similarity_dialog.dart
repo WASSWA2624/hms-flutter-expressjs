@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_catalog_similarity.dart';
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/layout/layout.dart';
 
 enum RadiologyCatalogSimilarityAction { cancel, useExisting, proceed }
 
@@ -44,6 +42,7 @@ final class RadiologyCatalogSimilarityDialogResult {
   final RadiologyCatalogProcedure? selectedProcedure;
 }
 
+/// Radiology catalog adapter over [showAppSimilarityReviewDialog].
 Future<RadiologyCatalogSimilarityDialogResult>
 showRadiologyCatalogSimilarityDialog(
   BuildContext context, {
@@ -51,7 +50,7 @@ showRadiologyCatalogSimilarityDialog(
   required List<RadiologyCatalogSimilarityMatch> matches,
   bool allowProceed = true,
   bool isEditing = false,
-}) {
+}) async {
   final AppLocalizations l10n = context.l10n;
   final List<RadiologyCatalogSimilarityMatch> visibleMatches = matches
       .take(5)
@@ -62,9 +61,9 @@ showRadiologyCatalogSimilarityDialog(
   final bool hasMatches = visibleMatches.isNotEmpty;
   // Create/Save anyway stays available even for exact name/code clashes;
   // the caller sends confirm_similar after proceed.
-  final bool canProceed = allowProceed;
   final RadiologyCatalogSimilarityMatch? topMatch =
       visibleMatches.isEmpty ? null : visibleMatches.first;
+  final int overallScore = topMatch?.score ?? 0;
   final _SimilarityBannerCopy banner = _similarityBannerCopy(
     l10n: l10n,
     proposed: proposed,
@@ -76,451 +75,107 @@ showRadiologyCatalogSimilarityDialog(
       : hasMatches || hasExactMatch
       ? l10n.radiologyProceedCreateProcedureAction
       : l10n.radiologyContinueSaveProcedureAction;
-  final IconData proceedIcon =
-      isEditing || !(hasMatches || hasExactMatch)
-      ? Icons.save_outlined
-      : Icons.add_circle_outline;
+  final AppFormInformationVariant bannerVariant = hasExactMatch
+      ? AppFormInformationVariant.error
+      : hasMatches
+      ? AppFormInformationVariant.warning
+      : AppFormInformationVariant.success;
+  final String dialogTitle = l10n.radiologySimilarProcedureDialogTitle;
 
-  return showAppDialog<RadiologyCatalogSimilarityDialogResult>(
-    context: context,
-    builder: (BuildContext dialogContext) {
-      final ThemeData theme = Theme.of(dialogContext);
-      final AppFormInformationVariant bannerVariant = hasExactMatch
-          ? AppFormInformationVariant.error
-          : hasMatches
-          ? AppFormInformationVariant.warning
-          : AppFormInformationVariant.success;
-
-      return AppDialog(
-        title: Text(l10n.radiologySimilarProcedureDialogTitle),
-        icon: Icon(
-          hasExactMatch
-              ? Icons.gpp_bad_outlined
-              : hasMatches
-              ? Icons.warning_amber_outlined
-              : Icons.verified_outlined,
-        ),
-        scrollable: true,
-        maxWidth: 760,
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            AppFormInformationBanner(
-              title: banner.title,
-              message: banner.message,
-              variant: bannerVariant,
-              icon: hasExactMatch
-                  ? Icons.gpp_bad_outlined
-                  : hasMatches
-                  ? Icons.manage_search_outlined
-                  : Icons.verified_outlined,
-            ),
-            SizedBox(height: theme.spacing.md),
-            _ProposedTestCard(proposed: proposed),
-            SizedBox(height: theme.spacing.lg),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    l10n.radiologySimilarProcedureMatchesHeading,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Text(
-                  l10n.radiologySimilarProcedureMatchCountLabel(
-                    visibleMatches.length,
-                  ),
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.sm),
-            if (!hasMatches)
-              AppFormInformationBanner(
-                title: l10n.radiologySimilarProcedureScoreLabel(0),
-                message: l10n.radiologyNoSimilarProcedureDialogBody,
-                variant: AppFormInformationVariant.success,
-                icon: Icons.percent_outlined,
-              )
-            else
-              for (int index = 0; index < visibleMatches.length; index += 1) ...<
-                Widget
-              >[
-                if (index > 0) SizedBox(height: theme.spacing.md),
-                _SimilarityMatchCard(
-                  proposed: proposed,
-                  match: visibleMatches[index],
-                  onUseThis: () => Navigator.of(dialogContext).pop(
-                    RadiologyCatalogSimilarityDialogResult.useExisting(
-                      visibleMatches[index].procedure,
-                    ),
-                  ),
-                ),
-              ],
-          ],
-        ),
-        actions: <Widget>[
-          AppButton.tertiary(
-            label: l10n.commonCancelActionLabel,
-            leadingIcon: Icons.close,
-            onPressed: () => Navigator.of(dialogContext).pop(
-              const RadiologyCatalogSimilarityDialogResult.cancel(),
-            ),
+  final List<AppSimilarityMatch<RadiologyCatalogProcedure>> appMatches =
+      visibleMatches.map((RadiologyCatalogSimilarityMatch match) {
+        final RadiologyCatalogProcedure procedure = match.procedure;
+        return AppSimilarityMatch<RadiologyCatalogProcedure>(
+          item: procedure,
+          title: procedure.name,
+          subtitle: <String>[
+            if (procedure.effectiveId.trim().isNotEmpty) procedure.effectiveId,
+            if (procedure.isStandard) l10n.radiologyStandardCatalogBadge,
+          ].join(' · '),
+          overallScore: match.score,
+          isExact: match.isExact,
+          fields: _buildFieldRows(
+            l10n: l10n,
+            proposed: proposed,
+            match: match,
           ),
-          if (canProceed)
-            AppButton.primary(
-              label: proceedLabel,
-              leadingIcon: proceedIcon,
-              onPressed: () => Navigator.of(dialogContext).pop(
-                const RadiologyCatalogSimilarityDialogResult.proceed(),
-              ),
-            ),
-        ],
+        );
+      }).toList(growable: false);
+
+  final AppSimilarityReviewResult<RadiologyCatalogProcedure> result =
+      await showAppSimilarityReviewDialog<RadiologyCatalogProcedure>(
+        context,
+        title: dialogTitle,
+        bannerTitle: banner.title,
+        bannerMessage: banner.message,
+        bannerVariant: bannerVariant,
+        proposedFields: _proposedFields(l10n: l10n, proposed: proposed),
+        matches: appMatches,
+        overallScore: overallScore,
+        blockProceed: !allowProceed,
+        enableRetry: false,
+        proposedReadOnly: true,
+        proceedLabel: proceedLabel,
+        useThisLabel: l10n.radiologyUseThisProcedureAction,
+        useThisIcon: Icons.check_circle_outline,
+        proposedHeading: l10n.radiologySimilarProcedureProposedHeading,
+        matchesHeading: l10n.radiologySimilarProcedureMatchesHeading,
+        exactBadgeLabel: l10n.radiologySimilarProcedureExactMatchLabel,
+        nearBadgeLabel: l10n.radiologySimilarProcedureNearMatchLabel,
+        existingHeading: l10n.radiologySimilarProcedureExistingHeading,
+        fieldColumnLabel: l10n.radiologySimilarProcedureFieldColumnLabel,
+        proposedColumnLabel: l10n.radiologySimilarProcedureYourEntryLabel,
+        existingColumnLabel: l10n.radiologySimilarProcedureExistingValueLabel,
+        noMatchLabel: l10n.radiologyNoSimilarProcedureDialogBody,
+        emptyValueLabel: l10n.clinicalOrderEmptyValueLabel,
+        dialogIcon: hasExactMatch
+            ? Icons.gpp_bad_outlined
+            : hasMatches
+            ? Icons.warning_amber_outlined
+            : Icons.verified_outlined,
       );
-    },
-  ).then(
-    (RadiologyCatalogSimilarityDialogResult? value) =>
-        value ?? const RadiologyCatalogSimilarityDialogResult.cancel(),
-  );
-}
 
-class _ProposedTestCard extends StatelessWidget {
-  const _ProposedTestCard({required this.proposed});
-
-  final RadiologyCatalogProposedTest proposed;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppSectionPanel(
-      tone: AppWorkspaceStatusTone.info,
-      density: AppContentPanelDensity.compact,
-      leadingIcon: Icons.edit_note_outlined,
-      title: l10n.radiologySimilarProcedureProposedHeading,
-      children: <Widget>[
-        _ProposedFactGrid(
-          facts: <(String, String)>[
-            (l10n.radiologyProcedureNameLabel, proposed.name),
-            (
-              l10n.radiologyProcedureCodeOptionalLabel,
-              _displayValue(proposed.code),
-            ),
-            (
-              l10n.radiologyModalityLabel,
-              _displayValue(proposed.modality),
-            ),
-          ],
-        ),
-      ],
-    );
+  switch (result.action) {
+    case AppSimilarityReviewAction.cancel:
+    case AppSimilarityReviewAction.retry:
+      return const RadiologyCatalogSimilarityDialogResult.cancel();
+    case AppSimilarityReviewAction.proceed:
+      return const RadiologyCatalogSimilarityDialogResult.proceed();
+    case AppSimilarityReviewAction.useExisting:
+      final RadiologyCatalogProcedure? procedure = result.selected;
+      if (procedure == null) {
+        return const RadiologyCatalogSimilarityDialogResult.cancel();
+      }
+      return RadiologyCatalogSimilarityDialogResult.useExisting(procedure);
   }
 }
 
-class _ProposedFactGrid extends StatelessWidget {
-  const _ProposedFactGrid({required this.facts});
-
-  final List<(String, String)> facts;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Wrap(
-      spacing: theme.spacing.md,
-      runSpacing: theme.spacing.sm,
-      children: <Widget>[
-        for (final (String label, String value) in facts)
-          SizedBox(
-            width: 220,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(height: theme.spacing.xs / 2),
-                Text(
-                  value,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
+List<AppSimilarityProposedField> _proposedFields({
+  required AppLocalizations l10n,
+  required RadiologyCatalogProposedTest proposed,
+}) {
+  return <AppSimilarityProposedField>[
+    AppSimilarityProposedField(
+      key: 'name',
+      label: l10n.radiologyProcedureNameLabel,
+      initialValue: proposed.name,
+      isRequired: true,
+    ),
+    AppSimilarityProposedField(
+      key: 'code',
+      label: l10n.radiologyProcedureCodeOptionalLabel,
+      initialValue: proposed.code ?? '',
+    ),
+    AppSimilarityProposedField(
+      key: 'modality',
+      label: l10n.radiologyModalityLabel,
+      initialValue: proposed.modality ?? '',
+    ),
+  ];
 }
 
-class _SimilarityMatchCard extends StatelessWidget {
-  const _SimilarityMatchCard({
-    required this.proposed,
-    required this.match,
-    required this.onUseThis,
-  });
-
-  final RadiologyCatalogProposedTest proposed;
-  final RadiologyCatalogSimilarityMatch match;
-  final VoidCallback onUseThis;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final RadiologyCatalogProcedure test = match.procedure;
-    final AppStatusColors statusColors = theme.statusColors;
-    final AppWorkspaceStatusTone tone = match.isExact
-        ? AppWorkspaceStatusTone.error
-        : AppWorkspaceStatusTone.warning;
-    final Color accent = match.isExact
-        ? statusColors.error
-        : statusColors.warning;
-    final Color badgeContainer = match.isExact
-        ? statusColors.errorContainer
-        : statusColors.warningContainer;
-    final Color badgeOnContainer = match.isExact
-        ? statusColors.onErrorContainer
-        : statusColors.onWarningContainer;
-    final List<_FieldComparison> comparisons = _buildFieldComparisons(
-      proposed: proposed,
-      match: match,
-    );
-
-    return AppContentPanel(
-      tone: tone,
-      density: AppContentPanelDensity.compact,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Icon(
-                match.isExact
-                    ? Icons.copy_all_outlined
-                    : Icons.find_replace_outlined,
-                color: accent,
-                size: theme.appTokens.listIconSize,
-              ),
-              SizedBox(width: theme.spacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      l10n.radiologySimilarProcedureExistingHeading,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: accent,
-                      ),
-                    ),
-                    SizedBox(height: theme.spacing.xs / 2),
-                    Text(
-                      test.name,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (test.effectiveId.trim().isNotEmpty ||
-                        test.isStandard) ...<Widget>[
-                      SizedBox(height: theme.spacing.xs / 2),
-                      Text(
-                        <String>[
-                          if (test.effectiveId.trim().isNotEmpty)
-                            test.effectiveId,
-                          if (test.isStandard)
-                            l10n.radiologyStandardCatalogBadge,
-                        ].join(' · '),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              SizedBox(width: theme.spacing.sm),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: theme.spacing.sm,
-                  vertical: theme.spacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: badgeContainer,
-                  borderRadius: BorderRadius.circular(theme.radius.md),
-                  border: Border.all(color: accent.withValues(alpha: 0.55)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: <Widget>[
-                    Text(
-                      l10n.radiologySimilarProcedureScoreLabel(match.score),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: badgeOnContainer,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      match.isExact
-                          ? (match.score >= 100
-                                ? l10n.radiologySimilarProcedureExactMatchLabel
-                                : l10n.radiologySimilarProcedureExactFieldMatchLabel)
-                          : _isPartialMatch(proposed, match)
-                          ? l10n.radiologySimilarProcedurePartialMatchLabel
-                          : l10n.radiologySimilarProcedureNearMatchLabel,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: badgeOnContainer,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.md),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface.withValues(alpha: 0.72),
-              borderRadius: BorderRadius.circular(theme.radius.sm),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(theme.spacing.sm),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text(
-                    l10n.radiologySimilarProcedureComparisonHeading,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.sm),
-                  LayoutBuilder(
-                    builder: (BuildContext context, BoxConstraints constraints) {
-                      final bool compact = constraints.maxWidth < 560;
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          if (!compact) ...<Widget>[
-                            _ComparisonTableHeader(),
-                            SizedBox(height: theme.spacing.xs),
-                          ],
-                          for (
-                            int index = 0;
-                            index < comparisons.length;
-                            index += 1
-                          ) ...<Widget>[
-                            if (index > 0 || !compact)
-                              Divider(
-                                height: theme.spacing.md,
-                                color: theme.colorScheme.outlineVariant
-                                    .withValues(alpha: 0.55),
-                              ),
-                            if (compact)
-                              _FieldComparisonStacked(comparison: comparisons[index])
-                            else
-                              _FieldComparisonRow(comparison: comparisons[index]),
-                          ],
-                        ],
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: theme.spacing.md),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: AppButton.secondary(
-              label: l10n.radiologyUseThisProcedureAction,
-              leadingIcon: Icons.check_circle_outline,
-              onPressed: onUseThis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ComparisonTableHeader extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final TextStyle? style = theme.textTheme.labelSmall?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w600,
-    );
-
-    return Row(
-      children: <Widget>[
-        SizedBox(
-          width: 88,
-          child: Text(l10n.radiologySimilarProcedureFieldColumnLabel, style: style),
-        ),
-        Expanded(
-          child: Text(
-            l10n.radiologySimilarProcedureYourEntryLabel,
-            style: style,
-          ),
-        ),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(
-          child: Text(
-            l10n.radiologySimilarProcedureExistingValueLabel,
-            style: style,
-          ),
-        ),
-        SizedBox(
-          width: 96,
-          child: Text(
-            l10n.radiologySimilarProcedureStatusColumnLabel,
-            style: style,
-            textAlign: TextAlign.end,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-enum _FieldCompareStatus { match, similar, conflict, onlyExisting }
-
-final class _FieldComparison {
-  const _FieldComparison({
-    required this.label,
-    required this.proposedValue,
-    required this.existingValue,
-    required this.status,
-    this.similarityPercent,
-  });
-
-  final String label;
-  final String proposedValue;
-  final String existingValue;
-  final _FieldCompareStatus status;
-  final int? similarityPercent;
-}
-
-List<_FieldComparison> _buildFieldComparisons({
+List<AppSimilarityFieldRow> _buildFieldRows({
+  required AppLocalizations l10n,
   required RadiologyCatalogProposedTest proposed,
   required RadiologyCatalogSimilarityMatch match,
 }) {
@@ -542,6 +197,10 @@ List<_FieldComparison> _buildFieldComparisons({
       normalizeRadiologyCatalogCodeForSimilarity(proposedCode);
   final String normalizedExistingCode =
       normalizeRadiologyCatalogCodeForSimilarity(existingCode);
+  final String normalizedProposedModality =
+      normalizeRadiologyCatalogModality(proposedModality);
+  final String normalizedExistingModality =
+      normalizeRadiologyCatalogModality(existingModality);
 
   final bool nameExact =
       normalizedProposedName.isNotEmpty &&
@@ -550,289 +209,73 @@ List<_FieldComparison> _buildFieldComparisons({
       normalizedProposedCode.isNotEmpty &&
       normalizedExistingCode.isNotEmpty &&
       normalizedProposedCode == normalizedExistingCode;
-  final String normalizedProposedModality =
-      normalizeRadiologyCatalogModality(proposedModality);
-  final String normalizedExistingModality =
-      normalizeRadiologyCatalogModality(existingModality);
   final bool modalityExact =
       normalizedProposedModality.isNotEmpty &&
-      normalizedExistingModality.isNotEmpty &&
-      normalizedProposedModality == normalizedExistingModality;
+      normalizedExistingModality == normalizedExistingModality;
 
-  final bool nameReason = match.reasons.contains('name');
-  final bool codeReason = match.reasons.contains('code');
-  final bool modalityReason = match.reasons.contains('modality');
   final int? nameScore = match.nameScore;
   final int? codeScore = match.codeScore;
   final int? modalityScore = match.modalityScore;
 
-  _FieldCompareStatus codeStatus() {
+  int? codePercent() {
     if (codeExact || (proposedCode.isEmpty && existingCode.isEmpty)) {
-      return _FieldCompareStatus.match;
+      return 100;
     }
-    if (codeReason ||
-        (codeScore != null &&
-            codeScore >= radiologyCatalogSimilarityThreshold)) {
-      return _FieldCompareStatus.similar;
-    }
-    if (proposedCode.isEmpty && existingCode.isNotEmpty) {
-      return _FieldCompareStatus.onlyExisting;
-    }
-    return _FieldCompareStatus.conflict;
+    return codeScore;
   }
 
-  _FieldCompareStatus modalityStatus() {
-    if (modalityExact) {
-      return _FieldCompareStatus.match;
-    }
-    if (proposedModality.isEmpty && existingModality.isNotEmpty) {
-      return _FieldCompareStatus.onlyExisting;
-    }
-    if (modalityReason ||
-        (modalityScore != null &&
-            modalityScore >= radiologyCatalogSimilarityThreshold)) {
-      return _FieldCompareStatus.similar;
-    }
-    return _FieldCompareStatus.conflict;
-  }
+  int? modalityPercent() => modalityExact ? 100 : modalityScore;
 
-  return <_FieldComparison>[
-    _FieldComparison(
-      label: 'id',
+  return <AppSimilarityFieldRow>[
+    AppSimilarityFieldRow(
+      key: 'id',
+      label: _fieldLabel(l10n, 'id'),
       proposedValue: _displayValue(null),
       existingValue: _displayValue(test.effectiveId),
-      status: _FieldCompareStatus.onlyExisting,
-      similarityPercent: null,
     ),
-    _FieldComparison(
-      label: 'name',
+    AppSimilarityFieldRow(
+      key: 'name',
+      label: _fieldLabel(l10n, 'name'),
       proposedValue: _displayValue(proposedName),
       existingValue: _displayValue(existingName),
-      status: nameExact
-          ? _FieldCompareStatus.match
-          : nameReason ||
-                (nameScore != null &&
-                    nameScore >= radiologyCatalogSimilarityThreshold)
-          ? _FieldCompareStatus.similar
-          : _FieldCompareStatus.conflict,
-      similarityPercent: nameExact ? 100 : nameScore,
+      score: nameExact ? 100 : nameScore,
     ),
-    _FieldComparison(
-      label: 'code',
+    AppSimilarityFieldRow(
+      key: 'code',
+      label: _fieldLabel(l10n, 'code'),
       proposedValue: _displayValue(proposedCode),
       existingValue: _displayValue(existingCode),
-      status: codeStatus(),
-      similarityPercent: codeExact
-          ? 100
-          : (proposedCode.isEmpty && existingCode.isEmpty)
-          ? 100
-          : codeScore,
+      score: codePercent(),
     ),
-    _FieldComparison(
-      label: 'modality',
+    AppSimilarityFieldRow(
+      key: 'modality',
+      label: _fieldLabel(l10n, 'modality'),
       proposedValue: _displayValue(proposedModality),
       existingValue: _displayValue(existingModality),
-      status: modalityStatus(),
-      similarityPercent: modalityExact ? 100 : modalityScore,
+      score: modalityPercent(),
     ),
     if ((test.bodyRegion ?? '').trim().isNotEmpty)
-      _FieldComparison(
-        label: 'bodyRegion',
+      AppSimilarityFieldRow(
+        key: 'bodyRegion',
+        label: _fieldLabel(l10n, 'bodyRegion'),
         proposedValue: _displayValue(null),
         existingValue: _displayValue(test.bodyRegion),
-        status: _FieldCompareStatus.onlyExisting,
-        similarityPercent: null,
       ),
     if ((test.laterality ?? '').trim().isNotEmpty)
-      _FieldComparison(
-        label: 'laterality',
+      AppSimilarityFieldRow(
+        key: 'laterality',
+        label: _fieldLabel(l10n, 'laterality'),
         proposedValue: _displayValue(null),
         existingValue: _displayValue(test.laterality),
-        status: _FieldCompareStatus.onlyExisting,
-        similarityPercent: null,
       ),
     if ((test.equipment ?? '').trim().isNotEmpty)
-      _FieldComparison(
-        label: 'equipment',
+      AppSimilarityFieldRow(
+        key: 'equipment',
+        label: _fieldLabel(l10n, 'equipment'),
         proposedValue: _displayValue(null),
         existingValue: _displayValue(test.equipment),
-        status: _FieldCompareStatus.onlyExisting,
-        similarityPercent: null,
       ),
   ];
-}
-
-class _FieldComparisonRow extends StatelessWidget {
-  const _FieldComparisonRow({required this.comparison});
-
-  final _FieldComparison comparison;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final _StatusVisual status = _statusVisual(theme, l10n, comparison);
-    final String fieldLabel = _fieldLabel(l10n, comparison.label);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        SizedBox(
-          width: 88,
-          child: Row(
-            children: <Widget>[
-              Icon(status.icon, size: 18, color: status.color),
-              SizedBox(width: theme.spacing.xs),
-              Expanded(
-                child: Text(
-                  fieldLabel,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: Text(
-            comparison.proposedValue,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(
-          child: Text(
-            comparison.existingValue,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: comparison.status == _FieldCompareStatus.match
-                  ? theme.colorScheme.onSurface
-                  : status.color,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        SizedBox(
-          width: 96,
-          child: Text(
-            status.label,
-            textAlign: TextAlign.end,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: status.color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _FieldComparisonStacked extends StatelessWidget {
-  const _FieldComparisonStacked({required this.comparison});
-
-  final _FieldComparison comparison;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final _StatusVisual status = _statusVisual(theme, l10n, comparison);
-    final String fieldLabel = _fieldLabel(l10n, comparison.label);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Icon(status.icon, size: 18, color: status.color),
-            SizedBox(width: theme.spacing.xs),
-            Expanded(
-              child: Text(
-                fieldLabel,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Text(
-              status.label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: status.color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.xs),
-        Text(
-          '${l10n.radiologySimilarProcedureYourEntryLabel}: '
-          '${comparison.proposedValue}',
-          style: theme.textTheme.bodySmall,
-        ),
-        Text(
-          '${l10n.radiologySimilarProcedureExistingValueLabel}: '
-          '${comparison.existingValue}',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: comparison.status == _FieldCompareStatus.match
-                ? theme.colorScheme.onSurface
-                : status.color,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-final class _StatusVisual {
-  const _StatusVisual({
-    required this.label,
-    required this.icon,
-    required this.color,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color color;
-}
-
-_StatusVisual _statusVisual(
-  ThemeData theme,
-  AppLocalizations l10n,
-  _FieldComparison comparison,
-) {
-  final AppStatusColors statusColors = theme.statusColors;
-  return switch (comparison.status) {
-    _FieldCompareStatus.match => _StatusVisual(
-      label: l10n.patientsDuplicateStatusMatchLabel,
-      icon: Icons.check_circle_outline,
-      color: statusColors.success,
-    ),
-    _FieldCompareStatus.similar => _StatusVisual(
-      label: comparison.similarityPercent == null
-          ? l10n.patientsDuplicateStatusSimilarLabel
-          : '${l10n.patientsDuplicateStatusSimilarLabel} · '
-                '${comparison.similarityPercent}%',
-      icon: Icons.change_circle_outlined,
-      color: statusColors.warning,
-    ),
-    _FieldCompareStatus.conflict => _StatusVisual(
-      label: comparison.similarityPercent == null
-          ? l10n.patientsDuplicateStatusConflictLabel
-          : '${l10n.patientsDuplicateStatusConflictLabel} · '
-                '${comparison.similarityPercent}%',
-      icon: Icons.cancel_outlined,
-      color: statusColors.error,
-    ),
-    _FieldCompareStatus.onlyExisting => _StatusVisual(
-      label: l10n.radiologySimilarProcedureOnlyExistingLabel,
-      icon: Icons.info_outline,
-      color: theme.colorScheme.onSurfaceVariant,
-    ),
-  };
 }
 
 String _fieldLabel(AppLocalizations l10n, String label) {
@@ -881,16 +324,17 @@ _SimilarityBannerCopy _similarityBannerCopy({
     );
   }
 
-  final List<_FieldComparison> comparisons = _buildFieldComparisons(
+  final List<AppSimilarityFieldRow> comparisons = _buildFieldRows(
+    l10n: l10n,
     proposed: proposed,
     match: topMatch,
   );
   final String fieldSummary = comparisons
       .map(
-        (_FieldComparison comparison) =>
+        (AppSimilarityFieldRow row) =>
             l10n.radiologySimilarProcedureFieldStatusPart(
-              _fieldLabel(l10n, comparison.label),
-              _fieldStatusPlainLabel(l10n, comparison),
+              row.label,
+              _fieldStatusPlainLabel(l10n, row),
             ),
       )
       .join(' · ');
@@ -906,43 +350,20 @@ _SimilarityBannerCopy _similarityBannerCopy({
 
 String _fieldStatusPlainLabel(
   AppLocalizations l10n,
-  _FieldComparison comparison,
+  AppSimilarityFieldRow row,
 ) {
-  return switch (comparison.status) {
-    _FieldCompareStatus.match => l10n.patientsDuplicateStatusMatchLabel,
-    _FieldCompareStatus.similar => comparison.similarityPercent == null
-        ? l10n.patientsDuplicateStatusSimilarLabel
-        : '${l10n.patientsDuplicateStatusSimilarLabel} · '
-              '${comparison.similarityPercent}%',
-    _FieldCompareStatus.conflict => comparison.similarityPercent == null
-        ? l10n.patientsDuplicateStatusConflictLabel
-        : '${l10n.patientsDuplicateStatusConflictLabel} · '
-              '${comparison.similarityPercent}%',
-    _FieldCompareStatus.onlyExisting =>
-      l10n.radiologySimilarProcedureOnlyExistingLabel,
-  };
-}
-
-bool _isPartialMatch(
-  RadiologyCatalogProposedTest proposed,
-  RadiologyCatalogSimilarityMatch match,
-) {
-  if (match.isExact) {
-    return false;
+  if (row.isExact) {
+    return l10n.patientsDuplicateStatusMatchLabel;
   }
-  final List<_FieldComparison> comparisons = _buildFieldComparisons(
-    proposed: proposed,
-    match: match,
-  );
-  final bool hasExactField = comparisons.any(
-    (_FieldComparison comparison) =>
-        comparison.status == _FieldCompareStatus.match,
-  );
-  final bool hasConflictOrSimilar = comparisons.any(
-    (_FieldComparison comparison) =>
-        comparison.status == _FieldCompareStatus.conflict ||
-        comparison.status == _FieldCompareStatus.similar ||
-        comparison.status == _FieldCompareStatus.onlyExisting,
-  );
-  return hasExactField && hasConflictOrSimilar;
+  if ((row.proposedValue ?? '—') == '—' && (row.existingValue ?? '—') != '—') {
+    return l10n.radiologySimilarProcedureOnlyExistingLabel;
+  }
+  if (row.score != null && row.score! >= radiologyCatalogSimilarityThreshold) {
+    return row.score == null
+        ? l10n.patientsDuplicateStatusSimilarLabel
+        : '${l10n.patientsDuplicateStatusSimilarLabel} · ${row.score}%';
+  }
+  return row.score == null
+      ? l10n.patientsDuplicateStatusConflictLabel
+      : '${l10n.patientsDuplicateStatusConflictLabel} · ${row.score}%';
 }

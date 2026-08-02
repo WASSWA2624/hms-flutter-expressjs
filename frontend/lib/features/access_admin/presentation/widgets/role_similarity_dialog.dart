@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/role_similarity.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/layout/layout.dart';
 
 enum RoleSimilarityAction { cancel, useExisting, proceed }
 
@@ -28,12 +26,13 @@ final class RoleSimilarityDialogResult {
   final RoleSimilarityMatch? selectedRole;
 }
 
+/// Access-admin role adapter over [showAppSimilarityReviewDialog].
 Future<RoleSimilarityDialogResult> showRoleSimilarityDialog(
   BuildContext context, {
   required RoleSimilarityProposedValues proposed,
   required List<RoleSimilarityMatch> matches,
   bool allowProceed = true,
-}) {
+}) async {
   final AppLocalizations l10n = context.l10n;
   final List<RoleSimilarityMatch> visibleMatches = matches
       .take(5)
@@ -43,670 +42,155 @@ Future<RoleSimilarityDialogResult> showRoleSimilarityDialog(
         match.exactNameConflict || match.exactDisplayNameConflict,
   );
   final bool hasMatches = visibleMatches.isNotEmpty;
-  final bool canProceed = allowProceed && !hasExactNameConflict;
   final int overallScore = hasMatches
       ? visibleMatches
             .map((RoleSimilarityMatch match) => match.score)
             .reduce((int a, int b) => a > b ? a : b)
       : 0;
-  final RoleSimilarityMatch? topMatch = visibleMatches.isEmpty
-      ? null
-      : visibleMatches.first;
+  final RoleSimilarityMatch? topMatch =
+      visibleMatches.isEmpty ? null : visibleMatches.first;
 
-  return showAppDialog<RoleSimilarityDialogResult>(
-    context: context,
-    builder: (BuildContext dialogContext) {
-      final ThemeData theme = Theme.of(dialogContext);
-      return AppDialog(
-        title: Text(
-          hasExactNameConflict || hasMatches
-              ? l10n.accessAdminSimilarRoleDialogTitle
-              : l10n.accessAdminNoSimilarRoleDialogTitle,
-        ),
-        icon: Icon(
-          hasExactNameConflict
-              ? Icons.gpp_bad_outlined
-              : hasMatches
-              ? Icons.warning_amber_outlined
-              : Icons.verified_outlined,
-        ),
-        scrollable: true,
-        maxWidth: 820,
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            AppFormInformationBanner(
-              title: hasExactNameConflict
-                  ? l10n.accessAdminRoleNameAlreadyInUse
-                  : hasMatches
-                  ? l10n.accessAdminSimilarRoleWarningTitle
-                  : l10n.accessAdminNoSimilarRoleBannerTitle,
-              message: hasExactNameConflict
-                  ? l10n.accessAdminSimilarRoleWarningBody
-                  : hasMatches
-                  ? l10n.accessAdminSimilarRoleReviewBannerBody(
-                      topMatch?.score ?? overallScore,
-                    )
-                  : l10n.accessAdminNoSimilarRoleDialogBody,
-              variant: hasExactNameConflict
-                  ? AppFormInformationVariant.error
-                  : hasMatches
-                  ? AppFormInformationVariant.warning
-                  : AppFormInformationVariant.success,
-              icon: hasExactNameConflict
-                  ? Icons.gpp_bad_outlined
-                  : hasMatches
-                  ? Icons.manage_search_outlined
-                  : Icons.verified_outlined,
-            ),
-            SizedBox(height: theme.spacing.md),
-            _ProposedRoleCard(
-              proposed: proposed,
-              overallScore: overallScore,
-              hasExactNameConflict: hasExactNameConflict,
-              hasMatches: hasMatches,
-            ),
-            if (hasMatches) ...<Widget>[
-              SizedBox(height: theme.spacing.lg),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      l10n.tenantFacilitySimilarTenantMatchesHeading,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    l10n.tenantFacilitySimilarTenantMatchCountLabel(
-                      visibleMatches.length,
-                    ),
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: theme.spacing.sm),
-              for (int index = 0; index < visibleMatches.length; index += 1) ...<
-                Widget
-              >[
-                if (index > 0) SizedBox(height: theme.spacing.md),
-                _RoleSimilarityMatchCard(
-                  match: visibleMatches[index],
-                  onUseExisting: () => Navigator.of(dialogContext).pop(
-                    RoleSimilarityDialogResult.useExisting(
-                      visibleMatches[index],
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ],
-        ),
-        actions: <Widget>[
-          AppButton.tertiary(
-            label: l10n.commonCancelActionLabel,
-            leadingIcon: Icons.close,
-            onPressed: () => Navigator.of(dialogContext).pop(
-              const RoleSimilarityDialogResult.cancel(),
-            ),
-          ),
-          if (canProceed)
-            AppButton.primary(
-              label: hasMatches
-                  ? l10n.accessAdminProceedCreateRoleAction
-                  : l10n.accessAdminContinueCreateRoleAction,
-              leadingIcon: hasMatches
-                  ? Icons.add_moderator_outlined
-                  : Icons.check_circle_outline,
-              onPressed: () => Navigator.of(dialogContext).pop(
-                const RoleSimilarityDialogResult.proceed(),
-              ),
-            ),
-        ],
-      );
-    },
-  ).then(
-    (RoleSimilarityDialogResult? value) =>
-        value ?? const RoleSimilarityDialogResult.cancel(),
-  );
-}
+  final String dialogTitle = hasExactNameConflict || hasMatches
+      ? l10n.accessAdminSimilarRoleDialogTitle
+      : l10n.accessAdminNoSimilarRoleDialogTitle;
+  final String proceedLabel = hasMatches
+      ? l10n.accessAdminProceedCreateRoleAction
+      : l10n.accessAdminContinueCreateRoleAction;
+  final AppFormInformationVariant bannerVariant = hasExactNameConflict
+      ? AppFormInformationVariant.error
+      : hasMatches
+      ? AppFormInformationVariant.warning
+      : AppFormInformationVariant.success;
 
-class _ProposedRoleCard extends StatelessWidget {
-  const _ProposedRoleCard({
-    required this.proposed,
-    required this.overallScore,
-    required this.hasExactNameConflict,
-    required this.hasMatches,
-  });
+  final List<AppSimilarityMatch<RoleSimilarityMatch>> appMatches =
+      visibleMatches.map((RoleSimilarityMatch match) {
+        final bool hardConflict =
+            match.exactNameConflict || match.exactDisplayNameConflict;
+        return AppSimilarityMatch<RoleSimilarityMatch>(
+          item: match,
+          title: match.role.title,
+          subtitle: match.role.effectiveDisplayId,
+          overallScore: match.score,
+          isExact: hardConflict,
+          fields: _fieldRows(l10n: l10n, comparisons: match.fieldComparisons),
+        );
+      }).toList(growable: false);
 
-  final RoleSimilarityProposedValues proposed;
-  final int overallScore;
-  final bool hasExactNameConflict;
-  final bool hasMatches;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final AppStatusColors statusColors = theme.statusColors;
-    final Color badgeContainer = hasExactNameConflict
-        ? statusColors.errorContainer
-        : hasMatches
-        ? statusColors.warningContainer
-        : statusColors.successContainer;
-    final Color badgeOnContainer = hasExactNameConflict
-        ? statusColors.onErrorContainer
-        : hasMatches
-        ? statusColors.onWarningContainer
-        : statusColors.onSuccessContainer;
-    final Color accent = hasExactNameConflict
-        ? statusColors.error
-        : hasMatches
-        ? statusColors.warning
-        : statusColors.success;
-
-    final List<(String, String)> facts = <(String, String)>[
-      (l10n.accessAdminRoleNameLabel, _display(proposed.name, l10n)),
-      (
-        l10n.accessAdminRoleDisplayNameLabel,
-        _display(proposed.displayName, l10n),
-      ),
-      (
-        l10n.accessAdminRoleScopeLabel,
-        _display(_proposedScopeLabel(proposed, l10n), l10n),
-      ),
-      if ((proposed.description ?? '').trim().isNotEmpty)
-        (
-          l10n.accessAdminRoleDescriptionLabel,
-          _display(proposed.description, l10n),
-        ),
-    ];
-
-    return AppSectionPanel(
-      tone: AppWorkspaceStatusTone.info,
-      density: AppContentPanelDensity.compact,
-      leadingIcon: Icons.edit_note_outlined,
-      title: l10n.accessAdminSimilarRoleProposedHeading,
-      trailing: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
-        ),
-        decoration: BoxDecoration(
-          color: badgeContainer,
-          borderRadius: BorderRadius.circular(theme.radius.md),
-          border: Border.all(color: accent.withValues(alpha: 0.55)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: <Widget>[
-            Text(
-              l10n.accessAdminSimilarRoleOverallSimilarityLabel,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: badgeOnContainer,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              '$overallScore%',
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: badgeOnContainer,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-      children: <Widget>[
-        Wrap(
-          spacing: theme.spacing.md,
-          runSpacing: theme.spacing.sm,
-          children: <Widget>[
-            for (final (String label, String value) in facts)
-              SizedBox(
-                width: 220,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      label,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: theme.spacing.xs / 2),
-                    Text(
-                      value,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _RoleSimilarityMatchCard extends StatelessWidget {
-  const _RoleSimilarityMatchCard({
-    required this.match,
-    required this.onUseExisting,
-  });
-
-  final RoleSimilarityMatch match;
-  final VoidCallback onUseExisting;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final AppStatusColors statusColors = theme.statusColors;
-    final bool hardConflict =
-        match.exactNameConflict || match.exactDisplayNameConflict;
-    final Color accent = hardConflict
-        ? statusColors.error
-        : statusColors.warning;
-    final Color badgeContainer = hardConflict
-        ? statusColors.errorContainer
-        : statusColors.warningContainer;
-    final Color badgeOnContainer = hardConflict
-        ? statusColors.onErrorContainer
-        : statusColors.onWarningContainer;
-    final List<RoleFieldComparison> comparisons = _sortedComparisons(
-      match.fieldComparisons,
-    );
-
-    return AppContentPanel(
-      tone: hardConflict
-          ? AppWorkspaceStatusTone.error
-          : AppWorkspaceStatusTone.neutral,
-      density: AppContentPanelDensity.compact,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Icon(
-                hardConflict ? Icons.gpp_bad_outlined : Icons.badge_outlined,
-                color: accent,
-                size: theme.appTokens.listIconSize,
-              ),
-              SizedBox(width: theme.spacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      l10n.accessAdminSimilarRoleExistingHeading,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: accent,
-                      ),
-                    ),
-                    SizedBox(height: theme.spacing.xs / 2),
-                    Text(
-                      match.role.title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: theme.spacing.xs / 2),
-                    Text(
-                      match.role.effectiveDisplayId,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: theme.spacing.sm),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: theme.spacing.sm,
-                  vertical: theme.spacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: badgeContainer,
-                  borderRadius: BorderRadius.circular(theme.radius.md),
-                  border: Border.all(color: accent.withValues(alpha: 0.55)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: <Widget>[
-                    Text(
-                      '${match.score}%',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: badgeOnContainer,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      hardConflict
-                          ? l10n.accessAdminSimilarRoleExactConflictLabel
-                          : match.score >= roleSimilarityThreshold
-                          ? l10n.accessAdminSimilarRoleNearMatchLabel
-                          : l10n.accessAdminSimilarRolePartialMatchLabel,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: badgeOnContainer,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (comparisons.isNotEmpty) ...<Widget>[
-            SizedBox(height: theme.spacing.md),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface.withValues(alpha: 0.72),
-                borderRadius: BorderRadius.circular(theme.radius.sm),
-                border: Border.all(
-                  color: theme.colorScheme.outlineVariant.withValues(
-                    alpha: 0.7,
-                  ),
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.all(theme.spacing.sm),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Text(
-                      l10n.accessAdminSimilarRoleComparisonHeading,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: theme.spacing.sm),
-                    LayoutBuilder(
-                      builder:
-                          (BuildContext context, BoxConstraints constraints) {
-                            final bool compact = constraints.maxWidth < 620;
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: <Widget>[
-                                if (!compact) ...<Widget>[
-                                  _ComparisonTableHeader(),
-                                  SizedBox(height: theme.spacing.xs),
-                                ],
-                                for (
-                                  int index = 0;
-                                  index < comparisons.length;
-                                  index += 1
-                                ) ...<Widget>[
-                                  if (index > 0 || !compact)
-                                    Divider(
-                                      height: theme.spacing.md,
-                                      color: theme.colorScheme.outlineVariant
-                                          .withValues(alpha: 0.55),
-                                    ),
-                                  if (compact)
-                                    _FieldComparisonStacked(
-                                      comparison: comparisons[index],
-                                    )
-                                  else
-                                    _FieldComparisonRow(
-                                      comparison: comparisons[index],
-                                    ),
-                                ],
-                              ],
-                            );
-                          },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-          SizedBox(height: theme.spacing.md),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: AppButton.secondary(
-              label: l10n.accessAdminUseExistingRoleAction,
-              leadingIcon: Icons.open_in_new,
-              onPressed: onUseExisting,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ComparisonTableHeader extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final TextStyle style = theme.textTheme.labelSmall!.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w600,
-    );
-
-    return Row(
-      children: <Widget>[
-        SizedBox(
-          width: 128,
-          child: Text(l10n.tenantFacilitySimilarTenantFieldLabel, style: style),
-        ),
-        Expanded(
-          child: Text(
-            l10n.tenantFacilitySimilarTenantProposedValueLabel,
-            style: style,
-          ),
-        ),
-        Expanded(
-          child: Text(
+  final AppSimilarityReviewResult<RoleSimilarityMatch> result =
+      await showAppSimilarityReviewDialog<RoleSimilarityMatch>(
+        context,
+        title: dialogTitle,
+        bannerTitle: hasExactNameConflict
+            ? l10n.accessAdminRoleNameAlreadyInUse
+            : hasMatches
+            ? l10n.accessAdminSimilarRoleWarningTitle
+            : l10n.accessAdminNoSimilarRoleBannerTitle,
+        bannerMessage: hasExactNameConflict
+            ? l10n.accessAdminSimilarRoleWarningBody
+            : hasMatches
+            ? l10n.accessAdminSimilarRoleReviewBannerBody(
+                topMatch?.score ?? overallScore,
+              )
+            : l10n.accessAdminNoSimilarRoleDialogBody,
+        bannerVariant: bannerVariant,
+        proposedFields: _proposedFields(l10n: l10n, proposed: proposed),
+        matches: appMatches,
+        overallScore: overallScore,
+        blockProceed: !allowProceed || hasExactNameConflict,
+        enableRetry: false,
+        proposedReadOnly: true,
+        proceedLabel: proceedLabel,
+        useThisLabel: l10n.accessAdminUseExistingRoleAction,
+        useThisIcon: Icons.open_in_new,
+        proposedHeading: l10n.accessAdminSimilarRoleProposedHeading,
+        matchesHeading: l10n.tenantFacilitySimilarTenantMatchesHeading,
+        exactBadgeLabel: l10n.accessAdminSimilarRoleExactConflictLabel,
+        nearBadgeLabel: l10n.accessAdminSimilarRoleNearMatchLabel,
+        existingHeading: l10n.accessAdminSimilarRoleExistingHeading,
+        fieldColumnLabel: l10n.tenantFacilitySimilarTenantFieldLabel,
+        proposedColumnLabel: l10n.tenantFacilitySimilarTenantProposedValueLabel,
+        existingColumnLabel:
             l10n.tenantFacilitySimilarTenantExistingValueLabel,
-            style: style,
-          ),
-        ),
-        SizedBox(
-          width: 108,
-          child: Text(
-            l10n.tenantFacilitySimilarTenantStatusLabel,
-            style: style,
-            textAlign: TextAlign.end,
-          ),
-        ),
-      ],
-    );
+        closestMatchLabel: l10n.accessAdminSimilarRoleOverallSimilarityLabel,
+        noMatchLabel: l10n.accessAdminNoSimilarRoleDialogBody,
+        emptyValueLabel: l10n.clinicalOrderEmptyValueLabel,
+        dialogIcon: hasExactNameConflict
+            ? Icons.gpp_bad_outlined
+            : hasMatches
+            ? Icons.warning_amber_outlined
+            : Icons.verified_outlined,
+      );
+
+  switch (result.action) {
+    case AppSimilarityReviewAction.cancel:
+    case AppSimilarityReviewAction.retry:
+      return const RoleSimilarityDialogResult.cancel();
+    case AppSimilarityReviewAction.proceed:
+      return const RoleSimilarityDialogResult.proceed();
+    case AppSimilarityReviewAction.useExisting:
+      final RoleSimilarityMatch? selected = result.selected;
+      if (selected == null) {
+        return const RoleSimilarityDialogResult.cancel();
+      }
+      return RoleSimilarityDialogResult.useExisting(selected);
   }
 }
 
-class _FieldComparisonRow extends StatelessWidget {
-  const _FieldComparisonRow({required this.comparison});
-
-  final RoleFieldComparison comparison;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        SizedBox(
-          width: 128,
-          child: Text(
-            _fieldLabel(l10n, comparison.field),
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            _display(comparison.inputValue, l10n),
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            _display(comparison.candidateValue, l10n),
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        SizedBox(
-          width: 108,
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: _StatusChip(comparison: comparison),
-          ),
-        ),
-      ],
-    );
-  }
+List<AppSimilarityProposedField> _proposedFields({
+  required AppLocalizations l10n,
+  required RoleSimilarityProposedValues proposed,
+}) {
+  return <AppSimilarityProposedField>[
+    AppSimilarityProposedField(
+      key: 'name',
+      label: l10n.accessAdminRoleNameLabel,
+      initialValue: proposed.name,
+      isRequired: true,
+    ),
+    AppSimilarityProposedField(
+      key: 'display_name',
+      label: l10n.accessAdminRoleDisplayNameLabel,
+      initialValue: proposed.displayName,
+      isRequired: true,
+    ),
+    AppSimilarityProposedField(
+      key: 'scope',
+      label: l10n.accessAdminRoleScopeLabel,
+      initialValue: _proposedScopeLabel(proposed, l10n),
+    ),
+    if ((proposed.description ?? '').trim().isNotEmpty)
+      AppSimilarityProposedField(
+        key: 'description',
+        label: l10n.accessAdminRoleDescriptionLabel,
+        initialValue: proposed.description!.trim(),
+      ),
+  ];
 }
 
-class _FieldComparisonStacked extends StatelessWidget {
-  const _FieldComparisonStacked({required this.comparison});
-
-  final RoleFieldComparison comparison;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                _fieldLabel(l10n, comparison.field),
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            _StatusChip(comparison: comparison),
-          ],
+List<AppSimilarityFieldRow> _fieldRows({
+  required AppLocalizations l10n,
+  required List<RoleFieldComparison> comparisons,
+}) {
+  return _sortedComparisons(comparisons)
+      .map(
+        (RoleFieldComparison comparison) => AppSimilarityFieldRow(
+          key: comparison.field,
+          label: _fieldLabel(l10n, comparison.field),
+          proposedValue: _display(comparison.inputValue, l10n),
+          existingValue: _display(comparison.candidateValue, l10n),
+          score: _comparisonScore(comparison),
         ),
-        SizedBox(height: theme.spacing.xs),
-        _StackedValue(
-          label: l10n.tenantFacilitySimilarTenantProposedValueLabel,
-          value: _display(comparison.inputValue, l10n),
-        ),
-        SizedBox(height: theme.spacing.xs / 2),
-        _StackedValue(
-          label: l10n.tenantFacilitySimilarTenantExistingValueLabel,
-          value: _display(comparison.candidateValue, l10n),
-        ),
-      ],
-    );
-  }
+      )
+      .toList(growable: false);
 }
 
-class _StackedValue extends StatelessWidget {
-  const _StackedValue({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        Text(
-          value,
-          style: theme.textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.comparison});
-
-  final RoleFieldComparison comparison;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final AppStatusColors statusColors = theme.statusColors;
-    final (Color bg, Color fg, Color border) = switch (comparison.status) {
-      RoleFieldComparisonStatus.match => (
-        statusColors.successContainer,
-        statusColors.onSuccessContainer,
-        statusColors.success.withValues(alpha: 0.45),
-      ),
-      RoleFieldComparisonStatus.similar => (
-        statusColors.warningContainer,
-        statusColors.onWarningContainer,
-        statusColors.warning.withValues(alpha: 0.45),
-      ),
-      RoleFieldComparisonStatus.different => (
-        statusColors.errorContainer,
-        statusColors.onErrorContainer,
-        statusColors.error.withValues(alpha: 0.4),
-      ),
-      RoleFieldComparisonStatus.missing => (
-        theme.colorScheme.surfaceContainerHighest,
-        theme.colorScheme.onSurfaceVariant,
-        theme.colorScheme.outlineVariant,
-      ),
-    };
-
-    final String label = _statusLabel(l10n, comparison.status);
-    final String? score = comparison.score == null
-        ? null
-        : '${comparison.score}%';
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs / 2,
-      ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: Border.all(color: border),
-      ),
-      child: Text(
-        score == null ? label : '$label · $score',
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: fg,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
+int? _comparisonScore(RoleFieldComparison comparison) {
+  return switch (comparison.status) {
+    RoleFieldComparisonStatus.match => 100,
+    RoleFieldComparisonStatus.similar ||
+    RoleFieldComparisonStatus.different => comparison.score,
+    RoleFieldComparisonStatus.missing => null,
+  };
 }
 
 List<RoleFieldComparison> _sortedComparisons(
@@ -777,17 +261,4 @@ String _proposedScopeLabel(
     return l10n.accessAdminRoleScopeTenantBadge;
   }
   return l10n.accessAdminRoleScopePlatformLabel;
-}
-
-String _statusLabel(AppLocalizations l10n, RoleFieldComparisonStatus status) {
-  return switch (status) {
-    RoleFieldComparisonStatus.match =>
-      l10n.tenantFacilitySimilarFieldStatusMatch,
-    RoleFieldComparisonStatus.similar =>
-      l10n.tenantFacilitySimilarFieldStatusSimilar,
-    RoleFieldComparisonStatus.different =>
-      l10n.tenantFacilitySimilarFieldStatusDifferent,
-    RoleFieldComparisonStatus.missing =>
-      l10n.tenantFacilitySimilarFieldStatusMissing,
-  };
 }

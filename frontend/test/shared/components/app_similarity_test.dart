@@ -161,4 +161,71 @@ void main() {
     expect(result?.action, AppSimilarityReviewAction.retry);
     expect(result?.proposedValues['name'], 'Room Alpha');
   });
+
+  testWidgets('read-only mode hides Check again and text fields', (
+    WidgetTester tester,
+  ) async {
+    await setLargeSurface(tester);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (BuildContext context) {
+            return Scaffold(
+              body: TextButton(
+                onPressed: () async {
+                  await showAppSimilarityReviewDialog<String>(
+                    context,
+                    title: 'Similar',
+                    bannerTitle: 'Review similar',
+                    bannerMessage: 'Closest match 80%.',
+                    bannerVariant: AppFormInformationVariant.warning,
+                    proposedFields: const <AppSimilarityProposedField>[
+                      AppSimilarityProposedField(
+                        key: 'name',
+                        label: 'Name',
+                        initialValue: 'Room 01',
+                        isRequired: true,
+                      ),
+                    ],
+                    matches: const <AppSimilarityMatch<String>>[
+                      AppSimilarityMatch<String>(
+                        item: 'room-1',
+                        title: 'Room 1',
+                        overallScore: 80,
+                        fields: <AppSimilarityFieldRow>[
+                          AppSimilarityFieldRow(
+                            key: 'name',
+                            label: 'Name',
+                            proposedValue: 'Room 01',
+                            existingValue: 'Room 1',
+                            score: 80,
+                          ),
+                        ],
+                      ),
+                    ],
+                    overallScore: 80,
+                    enableRetry: false,
+                    proposedReadOnly: true,
+                    proceedLabel: 'Save anyway',
+                  );
+                },
+                child: const Text('open'),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Check again'), findsNothing);
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('Room 01'), findsWidgets);
+    expect(find.text('Save anyway'), findsOneWidget);
+  });
 }

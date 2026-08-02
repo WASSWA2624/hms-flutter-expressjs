@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_catalog_similarity.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/layout/layout.dart';
 
 enum LabCatalogSimilarityAction { cancel, useExisting, proceed }
 
@@ -58,14 +56,14 @@ final class LabCatalogSimilarityDialogResult {
   final LabCatalogItem? selectedItem;
 }
 
-Future<LabCatalogSimilarityDialogResult>
-showLabCatalogSimilarityDialog(
+/// Lab catalog adapter over [showAppSimilarityReviewDialog].
+Future<LabCatalogSimilarityDialogResult> showLabCatalogSimilarityDialog(
   BuildContext context, {
   required LabCatalogProposedTest proposed,
   required List<LabCatalogSimilarityMatch> matches,
   bool allowProceed = true,
   bool isEditing = false,
-}) {
+}) async {
   final AppLocalizations l10n = context.l10n;
   final bool isPanel = proposed.isPanel;
   final List<LabCatalogSimilarityMatch> visibleMatches = matches
@@ -77,9 +75,9 @@ showLabCatalogSimilarityDialog(
   final bool hasMatches = visibleMatches.isNotEmpty;
   // Create/Save anyway stays available even for exact name/code clashes;
   // the caller sends confirm_similar after proceed.
-  final bool canProceed = allowProceed;
   final LabCatalogSimilarityMatch? topMatch =
       visibleMatches.isEmpty ? null : visibleMatches.first;
+  final int overallScore = topMatch?.score ?? 0;
   final _SimilarityBannerCopy banner = _similarityBannerCopy(
     l10n: l10n,
     proposed: proposed,
@@ -104,527 +102,160 @@ showLabCatalogSimilarityDialog(
       : (isPanel
             ? l10n.labContinueSavePanelAction
             : l10n.labContinueSaveTestAction);
-  final IconData proceedIcon = isEditing || !(hasMatches || hasExactMatch)
-      ? Icons.save_outlined
-      : Icons.add_circle_outline;
+  final AppFormInformationVariant bannerVariant = hasExactMatch
+      ? AppFormInformationVariant.error
+      : hasMatches
+      ? AppFormInformationVariant.warning
+      : AppFormInformationVariant.success;
 
-  return showAppDialog<LabCatalogSimilarityDialogResult>(
-    context: context,
-    builder: (BuildContext dialogContext) {
-      final ThemeData theme = Theme.of(dialogContext);
-      final AppFormInformationVariant bannerVariant = hasExactMatch
-          ? AppFormInformationVariant.error
-          : hasMatches
-          ? AppFormInformationVariant.warning
-          : AppFormInformationVariant.success;
-
-      return AppDialog(
-        title: Text(dialogTitle),
-        icon: Icon(
-          hasExactMatch
-              ? Icons.gpp_bad_outlined
-              : hasMatches
-              ? Icons.warning_amber_outlined
-              : Icons.verified_outlined,
-        ),
-        scrollable: true,
-        maxWidth: 760,
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            // One status banner only — skip the duplicate empty-state banner
-            // that previously repeated the same 0% copy under "Closest matches".
-            AppFormInformationBanner(
-              title: banner.title,
-              message: banner.message,
-              variant: bannerVariant,
-              icon: hasExactMatch
-                  ? Icons.gpp_bad_outlined
-                  : hasMatches
-                  ? Icons.manage_search_outlined
-                  : Icons.verified_outlined,
-            ),
-            SizedBox(height: theme.spacing.md),
-            _ProposedTestCard(proposed: proposed),
-            if (hasMatches) ...<Widget>[
-              SizedBox(height: theme.spacing.lg),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      l10n.labSimilarTestMatchesHeading,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    l10n.labSimilarTestMatchCountLabel(
-                      visibleMatches.length,
-                    ),
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: theme.spacing.sm),
-              for (int index = 0; index < visibleMatches.length; index += 1) ...<
-                Widget
-              >[
-                if (index > 0) SizedBox(height: theme.spacing.md),
-                _SimilarityMatchCard(
-                  proposed: proposed,
-                  match: visibleMatches[index],
-                  useExistingLabel: isPanel
-                      ? l10n.labUseThisPanelAction
-                      : l10n.labUseThisTestAction,
-                  onUseThis: () => Navigator.of(dialogContext).pop(
-                    LabCatalogSimilarityDialogResult.useExisting(
-                      visibleMatches[index].item,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ],
-        ),
-        actions: <Widget>[
-          AppButton.tertiary(
-            label: l10n.commonCancelActionLabel,
-            leadingIcon: Icons.close,
-            onPressed: () => Navigator.of(dialogContext).pop(
-              const LabCatalogSimilarityDialogResult.cancel(),
-            ),
+  final List<AppSimilarityMatch<LabCatalogItem>> appMatches = visibleMatches
+      .map((LabCatalogSimilarityMatch match) {
+        final LabCatalogItem test = match.item;
+        return AppSimilarityMatch<LabCatalogItem>(
+          item: test,
+          title: test.name ?? test.apiId,
+          subtitle: <String>[
+            if (test.apiId.trim().isNotEmpty) test.apiId,
+            if ((test.code ?? '').trim().isNotEmpty) test.code!.trim(),
+            if ((test.category ?? '').trim().isNotEmpty) test.category!.trim(),
+            if ((test.specimenType ?? '').trim().isNotEmpty)
+              test.specimenType!.trim(),
+            if ((test.resultKind ?? '').trim().isNotEmpty)
+              test.resultKind!.trim(),
+            if (test.isStandard) l10n.labStandardCatalogBadge,
+          ].join(' · '),
+          overallScore: match.score,
+          isExact: match.isExact,
+          fields: _buildFieldRows(
+            l10n: l10n,
+            proposed: proposed,
+            match: match,
           ),
-          if (canProceed)
-            AppButton.primary(
-              label: proceedLabel,
-              leadingIcon: proceedIcon,
-              onPressed: () => Navigator.of(dialogContext).pop(
-                const LabCatalogSimilarityDialogResult.proceed(),
-              ),
-            ),
-        ],
+        );
+      })
+      .toList(growable: false);
+
+  final AppSimilarityReviewResult<LabCatalogItem> result =
+      await showAppSimilarityReviewDialog<LabCatalogItem>(
+        context,
+        title: dialogTitle,
+        bannerTitle: banner.title,
+        bannerMessage: banner.message,
+        bannerVariant: bannerVariant,
+        proposedFields: _proposedFields(l10n: l10n, proposed: proposed),
+        matches: appMatches,
+        overallScore: overallScore,
+        blockProceed: !allowProceed,
+        enableRetry: false,
+        proposedReadOnly: true,
+        proceedLabel: proceedLabel,
+        useThisLabel: isPanel
+            ? l10n.labUseThisPanelAction
+            : l10n.labUseThisTestAction,
+        useThisIcon: Icons.check_circle_outline,
+        proposedHeading: isPanel
+            ? l10n.labSimilarPanelProposedHeading
+            : l10n.labSimilarTestProposedHeading,
+        matchesHeading: l10n.labSimilarTestMatchesHeading,
+        exactBadgeLabel: l10n.labSimilarTestExactMatchLabel,
+        nearBadgeLabel: l10n.labSimilarTestNearMatchLabel,
+        existingHeading: isPanel
+            ? l10n.labSimilarPanelExistingHeading
+            : l10n.labSimilarTestExistingHeading,
+        fieldColumnLabel: l10n.labSimilarTestFieldColumnLabel,
+        proposedColumnLabel: l10n.labSimilarTestYourEntryLabel,
+        existingColumnLabel: l10n.labSimilarTestExistingValueLabel,
+        noMatchLabel: isPanel
+            ? l10n.labNoSimilarPanelDialogBody
+            : l10n.labNoSimilarTestDialogBody,
+        emptyValueLabel: l10n.clinicalOrderEmptyValueLabel,
+        dialogIcon: hasExactMatch
+            ? Icons.gpp_bad_outlined
+            : hasMatches
+            ? Icons.warning_amber_outlined
+            : Icons.verified_outlined,
       );
-    },
-  ).then(
-    (LabCatalogSimilarityDialogResult? value) =>
-        value ?? const LabCatalogSimilarityDialogResult.cancel(),
-  );
-}
 
-class _ProposedTestCard extends StatelessWidget {
-  const _ProposedTestCard({required this.proposed});
-
-  final LabCatalogProposedTest proposed;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final bool isPanel = proposed.isPanel;
-    final List<String> memberTests = (proposed.memberTestsSummary ?? '')
-        .split(',')
-        .map((String value) => value.trim())
-        .where((String value) => value.isNotEmpty)
-        .toList(growable: false);
-
-    return AppSectionPanel(
-      tone: AppWorkspaceStatusTone.info,
-      density: AppContentPanelDensity.compact,
-      leadingIcon: Icons.edit_note_outlined,
-      title: isPanel
-          ? l10n.labSimilarPanelProposedHeading
-          : l10n.labSimilarTestProposedHeading,
-      children: <Widget>[
-        _ProposedFactGrid(
-          facts: <(String, String)>[
-            (
-              isPanel ? l10n.labPanelNameLabel : l10n.labTestNameLabel,
-              proposed.name,
-            ),
-            (
-              isPanel ? l10n.labPanelCodeLabel : l10n.labTestCodeLabel,
-              _displayValue(proposed.code),
-            ),
-            (l10n.labCategoryLabel, _displayValue(proposed.category)),
-            if (!isPanel) ...<(String, String)>[
-              (
-                l10n.labSpecimenTypeLabel,
-                _displayValue(proposed.specimenType),
-              ),
-              (l10n.labResultKindLabel, _displayValue(proposed.resultKind)),
-              (l10n.labDefaultUnitLabel, _displayValue(proposed.unit)),
-              (
-                l10n.labTestDescriptionLabel,
-                _displayValue(proposed.description),
-              ),
-              (
-                l10n.labTestRangesSectionTitle,
-                _displayValue(proposed.referenceRangeSummary),
-              ),
-            ] else
-              (
-                l10n.labPanelDescriptionLabel,
-                _displayValue(proposed.description),
-              ),
-          ],
-        ),
-        if (isPanel) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
-          Text(
-            l10n.labPanelTestsLabel,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: theme.spacing.xs),
-          if (memberTests.isEmpty)
-            Text(
-              _displayValue(null),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-            )
-          else
-            for (final String member in memberTests)
-              Padding(
-                padding: EdgeInsets.only(bottom: theme.spacing.xs / 2),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      '• ',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        member,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-        ],
-      ],
-    );
+  switch (result.action) {
+    case AppSimilarityReviewAction.cancel:
+    case AppSimilarityReviewAction.retry:
+      return const LabCatalogSimilarityDialogResult.cancel();
+    case AppSimilarityReviewAction.proceed:
+      return const LabCatalogSimilarityDialogResult.proceed();
+    case AppSimilarityReviewAction.useExisting:
+      final LabCatalogItem? item = result.selected;
+      if (item == null) {
+        return const LabCatalogSimilarityDialogResult.cancel();
+      }
+      return LabCatalogSimilarityDialogResult.useExisting(item);
   }
 }
 
-class _ProposedFactGrid extends StatelessWidget {
-  const _ProposedFactGrid({required this.facts});
-
-  final List<(String, String)> facts;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Wrap(
-      spacing: theme.spacing.md,
-      runSpacing: theme.spacing.sm,
-      children: <Widget>[
-        for (final (String label, String value) in facts)
-          SizedBox(
-            width: 220,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(height: theme.spacing.xs / 2),
-                Text(
-                  value,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _SimilarityMatchCard extends StatelessWidget {
-  const _SimilarityMatchCard({
-    required this.proposed,
-    required this.match,
-    required this.onUseThis,
-    required this.useExistingLabel,
-  });
-
-  final LabCatalogProposedTest proposed;
-  final LabCatalogSimilarityMatch match;
-  final VoidCallback onUseThis;
-  final String useExistingLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final LabCatalogItem test = match.item;
-    final AppStatusColors statusColors = theme.statusColors;
-    final AppWorkspaceStatusTone tone = match.isExact
-        ? AppWorkspaceStatusTone.error
-        : AppWorkspaceStatusTone.warning;
-    final Color accent = match.isExact
-        ? statusColors.error
-        : statusColors.warning;
-    final Color badgeContainer = match.isExact
-        ? statusColors.errorContainer
-        : statusColors.warningContainer;
-    final Color badgeOnContainer = match.isExact
-        ? statusColors.onErrorContainer
-        : statusColors.onWarningContainer;
-    final List<_FieldComparison> comparisons = _buildFieldComparisons(
-      proposed: proposed,
-      match: match,
-    );
-
-    return AppContentPanel(
-      tone: tone,
-      density: AppContentPanelDensity.compact,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Icon(
-                match.isExact
-                    ? Icons.copy_all_outlined
-                    : Icons.find_replace_outlined,
-                color: accent,
-                size: theme.appTokens.listIconSize,
-              ),
-              SizedBox(width: theme.spacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      proposed.isPanel
-                          ? l10n.labSimilarPanelExistingHeading
-                          : l10n.labSimilarTestExistingHeading,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: accent,
-                      ),
-                    ),
-                    SizedBox(height: theme.spacing.xs / 2),
-                    Text(
-                      test.name ?? test.apiId,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: theme.spacing.xs / 2),
-                    Text(
-                      <String>[
-                        if (test.apiId.trim().isNotEmpty) test.apiId,
-                        if ((test.code ?? '').trim().isNotEmpty)
-                          test.code!.trim(),
-                        if ((test.category ?? '').trim().isNotEmpty)
-                          test.category!.trim(),
-                        if ((test.specimenType ?? '').trim().isNotEmpty)
-                          test.specimenType!.trim(),
-                        if ((test.resultKind ?? '').trim().isNotEmpty)
-                          test.resultKind!.trim(),
-                        if (test.isStandard) l10n.labStandardCatalogBadge,
-                      ].join(' · '),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: theme.spacing.sm),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: theme.spacing.sm,
-                  vertical: theme.spacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: badgeContainer,
-                  borderRadius: BorderRadius.circular(theme.radius.md),
-                  border: Border.all(color: accent.withValues(alpha: 0.55)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: <Widget>[
-                    Text(
-                      l10n.labSimilarTestScoreLabel(match.score),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: badgeOnContainer,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      match.isExact
-                          ? (match.score >= 100
-                                ? l10n.labSimilarTestExactMatchLabel
-                                : l10n.labSimilarTestExactFieldMatchLabel)
-                          : _isPartialMatch(proposed, match)
-                          ? l10n.labSimilarTestPartialMatchLabel
-                          : l10n.labSimilarTestNearMatchLabel,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: badgeOnContainer,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.md),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface.withValues(alpha: 0.72),
-              borderRadius: BorderRadius.circular(theme.radius.sm),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(theme.spacing.sm),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text(
-                    l10n.labSimilarTestComparisonHeading,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.sm),
-                  LayoutBuilder(
-                    builder: (BuildContext context, BoxConstraints constraints) {
-                      final bool compact = constraints.maxWidth < 560;
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          if (!compact) ...<Widget>[
-                            _ComparisonTableHeader(),
-                            SizedBox(height: theme.spacing.xs),
-                          ],
-                          for (
-                            int index = 0;
-                            index < comparisons.length;
-                            index += 1
-                          ) ...<Widget>[
-                            if (index > 0 || !compact)
-                              Divider(
-                                height: theme.spacing.md,
-                                color: theme.colorScheme.outlineVariant
-                                    .withValues(alpha: 0.55),
-                              ),
-                            if (compact)
-                              _FieldComparisonStacked(comparison: comparisons[index])
-                            else
-                              _FieldComparisonRow(comparison: comparisons[index]),
-                          ],
-                        ],
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: theme.spacing.md),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: AppButton.secondary(
-              label: useExistingLabel,
-              leadingIcon: Icons.check_circle_outline,
-              onPressed: onUseThis,
-            ),
-          ),
-        ],
+List<AppSimilarityProposedField> _proposedFields({
+  required AppLocalizations l10n,
+  required LabCatalogProposedTest proposed,
+}) {
+  final bool isPanel = proposed.isPanel;
+  return <AppSimilarityProposedField>[
+    AppSimilarityProposedField(
+      key: 'name',
+      label: isPanel ? l10n.labPanelNameLabel : l10n.labTestNameLabel,
+      initialValue: proposed.name,
+      isRequired: true,
+    ),
+    AppSimilarityProposedField(
+      key: 'code',
+      label: isPanel ? l10n.labPanelCodeLabel : l10n.labTestCodeLabel,
+      initialValue: proposed.code ?? '',
+    ),
+    AppSimilarityProposedField(
+      key: 'category',
+      label: l10n.labCategoryLabel,
+      initialValue: proposed.category ?? '',
+    ),
+    if (!isPanel) ...<AppSimilarityProposedField>[
+      AppSimilarityProposedField(
+        key: 'specimenType',
+        label: l10n.labSpecimenTypeLabel,
+        initialValue: proposed.specimenType ?? '',
       ),
-    );
-  }
+      AppSimilarityProposedField(
+        key: 'resultKind',
+        label: l10n.labResultKindLabel,
+        initialValue: proposed.resultKind ?? '',
+      ),
+      AppSimilarityProposedField(
+        key: 'unit',
+        label: l10n.labDefaultUnitLabel,
+        initialValue: proposed.unit ?? '',
+      ),
+      AppSimilarityProposedField(
+        key: 'description',
+        label: l10n.labTestDescriptionLabel,
+        initialValue: proposed.description ?? '',
+      ),
+      AppSimilarityProposedField(
+        key: 'referenceRangeSummary',
+        label: l10n.labTestRangesSectionTitle,
+        initialValue: proposed.referenceRangeSummary ?? '',
+      ),
+    ] else ...<AppSimilarityProposedField>[
+      AppSimilarityProposedField(
+        key: 'description',
+        label: l10n.labPanelDescriptionLabel,
+        initialValue: proposed.description ?? '',
+      ),
+      AppSimilarityProposedField(
+        key: 'memberTestsSummary',
+        label: l10n.labPanelTestsLabel,
+        initialValue: proposed.memberTestsSummary ?? '',
+      ),
+    ],
+  ];
 }
 
-class _ComparisonTableHeader extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final TextStyle? style = theme.textTheme.labelSmall?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w600,
-    );
-
-    return Row(
-      children: <Widget>[
-        SizedBox(
-          width: 88,
-          child: Text(l10n.labSimilarTestFieldColumnLabel, style: style),
-        ),
-        Expanded(
-          child: Text(
-            l10n.labSimilarTestYourEntryLabel,
-            style: style,
-          ),
-        ),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(
-          child: Text(
-            l10n.labSimilarTestExistingValueLabel,
-            style: style,
-          ),
-        ),
-        SizedBox(
-          width: 96,
-          child: Text(
-            l10n.labSimilarTestStatusColumnLabel,
-            style: style,
-            textAlign: TextAlign.end,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-enum _FieldCompareStatus { match, similar, conflict, onlyExisting }
-
-final class _FieldComparison {
-  const _FieldComparison({
-    required this.label,
-    required this.proposedValue,
-    required this.existingValue,
-    required this.status,
-    this.similarityPercent,
-  });
-
-  final String label;
-  final String proposedValue;
-  final String existingValue;
-  final _FieldCompareStatus status;
-  final int? similarityPercent;
-}
-
-List<_FieldComparison> _buildFieldComparisons({
+List<AppSimilarityFieldRow> _buildFieldRows({
+  required AppLocalizations l10n,
   required LabCatalogProposedTest proposed,
   required LabCatalogSimilarityMatch match,
 }) {
@@ -635,8 +266,9 @@ List<_FieldComparison> _buildFieldComparisons({
       .where((String value) => value.trim().isNotEmpty)
       .join(', ');
 
-  return <_FieldComparison>[
+  return <AppSimilarityFieldRow>[
     _compareScoredField(
+      l10n: l10n,
       label: 'id',
       proposedValue: '',
       existingValue: test.apiId,
@@ -645,6 +277,7 @@ List<_FieldComparison> _buildFieldComparisons({
       normalize: (String value) => value.trim().toUpperCase(),
     ),
     _compareScoredField(
+      l10n: l10n,
       label: 'name',
       proposedValue: proposed.name,
       existingValue: test.name,
@@ -653,6 +286,7 @@ List<_FieldComparison> _buildFieldComparisons({
       normalize: normalizeLabCatalogName,
     ),
     _compareScoredField(
+      l10n: l10n,
       label: 'code',
       proposedValue: proposed.code,
       existingValue: test.code,
@@ -661,6 +295,7 @@ List<_FieldComparison> _buildFieldComparisons({
       normalize: normalizeLabCatalogCodeForSimilarity,
     ),
     _compareScoredField(
+      l10n: l10n,
       label: 'category',
       proposedValue: proposed.category,
       existingValue: test.category,
@@ -670,6 +305,7 @@ List<_FieldComparison> _buildFieldComparisons({
     ),
     if (proposed.isPanel)
       _compareScoredField(
+        l10n: l10n,
         label: 'composition',
         proposedValue: proposed.memberTestsSummary,
         existingValue: existingMembership,
@@ -677,8 +313,9 @@ List<_FieldComparison> _buildFieldComparisons({
         strongReason: match.reasons.contains('composition'),
         normalize: normalizeLabCatalogName,
       )
-    else ...<_FieldComparison>[
+    else ...<AppSimilarityFieldRow>[
       _compareScoredField(
+        l10n: l10n,
         label: 'specimen',
         proposedValue: proposed.specimenType,
         existingValue: test.specimenType,
@@ -687,6 +324,7 @@ List<_FieldComparison> _buildFieldComparisons({
         normalize: normalizeLabCatalogName,
       ),
       _compareScoredField(
+        l10n: l10n,
         label: 'resultKind',
         proposedValue: proposed.resultKind,
         existingValue: test.resultKind,
@@ -695,6 +333,7 @@ List<_FieldComparison> _buildFieldComparisons({
         normalize: (String value) => value.trim().toUpperCase(),
       ),
       _compareScoredField(
+        l10n: l10n,
         label: 'unit',
         proposedValue: proposed.unit,
         existingValue: test.unit,
@@ -703,6 +342,7 @@ List<_FieldComparison> _buildFieldComparisons({
         normalize: normalizeLabCatalogName,
       ),
       _compareScoredField(
+        l10n: l10n,
         label: 'description',
         proposedValue: proposed.description,
         existingValue: test.description,
@@ -711,6 +351,7 @@ List<_FieldComparison> _buildFieldComparisons({
         normalize: normalizeLabCatalogName,
       ),
       _compareScoredField(
+        l10n: l10n,
         label: 'ranges',
         proposedValue: proposed.referenceRangeSummary,
         existingValue: existingRanges,
@@ -721,6 +362,7 @@ List<_FieldComparison> _buildFieldComparisons({
     ],
     if (proposed.isPanel)
       _compareScoredField(
+        l10n: l10n,
         label: 'description',
         proposedValue: proposed.description,
         existingValue: test.description,
@@ -730,6 +372,7 @@ List<_FieldComparison> _buildFieldComparisons({
       ),
     if (test.isStandard)
       _compareScoredField(
+        l10n: l10n,
         label: 'source',
         proposedValue: '',
         existingValue: 'STANDARD',
@@ -740,7 +383,8 @@ List<_FieldComparison> _buildFieldComparisons({
   ];
 }
 
-_FieldComparison _compareScoredField({
+AppSimilarityFieldRow _compareScoredField({
+  required AppLocalizations l10n,
   required String label,
   required String? proposedValue,
   required String? existingValue,
@@ -771,26 +415,12 @@ _FieldComparison _compareScoredField({
     percent = 100;
   }
 
-  final _FieldCompareStatus status;
-  if (exact) {
-    status = _FieldCompareStatus.match;
-  } else if (proposed.isEmpty && existing.isNotEmpty) {
-    status = _FieldCompareStatus.onlyExisting;
-  } else if (proposed.isNotEmpty && existing.isEmpty) {
-    status = _FieldCompareStatus.conflict;
-  } else if (strongReason ||
-      (percent != null && percent >= labCatalogSimilarityThreshold)) {
-    status = _FieldCompareStatus.similar;
-  } else {
-    status = _FieldCompareStatus.conflict;
-  }
-
-  return _FieldComparison(
-    label: label,
+  return AppSimilarityFieldRow(
+    key: label,
+    label: _fieldLabel(l10n, label),
     proposedValue: _displayValue(proposed),
     existingValue: _displayValue(existing),
-    status: status,
-    similarityPercent: percent,
+    score: percent,
   );
 }
 
@@ -808,179 +438,6 @@ String _existingReferenceRangeSummary(LabCatalogItem item) {
     return '${item.referenceRangeCount}';
   }
   return '';
-}
-
-class _FieldComparisonRow extends StatelessWidget {
-  const _FieldComparisonRow({required this.comparison});
-
-  final _FieldComparison comparison;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final _StatusVisual status = _statusVisual(theme, l10n, comparison);
-    final String fieldLabel = _fieldLabel(l10n, comparison.label);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        SizedBox(
-          width: 88,
-          child: Row(
-            children: <Widget>[
-              Icon(status.icon, size: 18, color: status.color),
-              SizedBox(width: theme.spacing.xs),
-              Expanded(
-                child: Text(
-                  fieldLabel,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: Text(
-            comparison.proposedValue,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(
-          child: Text(
-            comparison.existingValue,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: comparison.status == _FieldCompareStatus.match
-                  ? theme.colorScheme.onSurface
-                  : status.color,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        SizedBox(
-          width: 96,
-          child: Text(
-            status.label,
-            textAlign: TextAlign.end,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: status.color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _FieldComparisonStacked extends StatelessWidget {
-  const _FieldComparisonStacked({required this.comparison});
-
-  final _FieldComparison comparison;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final _StatusVisual status = _statusVisual(theme, l10n, comparison);
-    final String fieldLabel = _fieldLabel(l10n, comparison.label);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Icon(status.icon, size: 18, color: status.color),
-            SizedBox(width: theme.spacing.xs),
-            Expanded(
-              child: Text(
-                fieldLabel,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Text(
-              status.label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: status.color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.xs),
-        Text(
-          '${l10n.labSimilarTestYourEntryLabel}: '
-          '${comparison.proposedValue}',
-          style: theme.textTheme.bodySmall,
-        ),
-        Text(
-          '${l10n.labSimilarTestExistingValueLabel}: '
-          '${comparison.existingValue}',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: comparison.status == _FieldCompareStatus.match
-                ? theme.colorScheme.onSurface
-                : status.color,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-final class _StatusVisual {
-  const _StatusVisual({
-    required this.label,
-    required this.icon,
-    required this.color,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color color;
-}
-
-_StatusVisual _statusVisual(
-  ThemeData theme,
-  AppLocalizations l10n,
-  _FieldComparison comparison,
-) {
-  final AppStatusColors statusColors = theme.statusColors;
-  return switch (comparison.status) {
-    _FieldCompareStatus.match => _StatusVisual(
-      label: l10n.patientsDuplicateStatusMatchLabel,
-      icon: Icons.check_circle_outline,
-      color: statusColors.success,
-    ),
-    _FieldCompareStatus.similar => _StatusVisual(
-      label: comparison.similarityPercent == null
-          ? l10n.patientsDuplicateStatusSimilarLabel
-          : '${l10n.patientsDuplicateStatusSimilarLabel} · '
-                '${comparison.similarityPercent}%',
-      icon: Icons.change_circle_outlined,
-      color: statusColors.warning,
-    ),
-    _FieldCompareStatus.conflict => _StatusVisual(
-      label: comparison.similarityPercent == null
-          ? l10n.patientsDuplicateStatusConflictLabel
-          : '${l10n.patientsDuplicateStatusConflictLabel} · '
-                '${comparison.similarityPercent}%',
-      icon: Icons.cancel_outlined,
-      color: statusColors.error,
-    ),
-    _FieldCompareStatus.onlyExisting => _StatusVisual(
-      label: l10n.labSimilarTestOnlyExistingLabel,
-      icon: Icons.info_outline,
-      color: theme.colorScheme.onSurfaceVariant,
-    ),
-  };
 }
 
 String _fieldLabel(AppLocalizations l10n, String label) {
@@ -1040,17 +497,17 @@ _SimilarityBannerCopy _similarityBannerCopy({
     );
   }
 
-  final List<_FieldComparison> comparisons = _buildFieldComparisons(
+  final List<AppSimilarityFieldRow> comparisons = _buildFieldRows(
+    l10n: l10n,
     proposed: proposed,
     match: topMatch,
   );
   final String fieldSummary = comparisons
       .map(
-        (_FieldComparison comparison) =>
-            l10n.labSimilarTestFieldStatusPart(
-              _fieldLabel(l10n, comparison.label),
-              _fieldStatusPlainLabel(l10n, comparison),
-            ),
+        (AppSimilarityFieldRow row) => l10n.labSimilarTestFieldStatusPart(
+          row.label,
+          _fieldStatusPlainLabel(l10n, row),
+        ),
       )
       .join(' · ');
 
@@ -1064,43 +521,20 @@ _SimilarityBannerCopy _similarityBannerCopy({
 
 String _fieldStatusPlainLabel(
   AppLocalizations l10n,
-  _FieldComparison comparison,
+  AppSimilarityFieldRow row,
 ) {
-  return switch (comparison.status) {
-    _FieldCompareStatus.match => l10n.patientsDuplicateStatusMatchLabel,
-    _FieldCompareStatus.similar => comparison.similarityPercent == null
-        ? l10n.patientsDuplicateStatusSimilarLabel
-        : '${l10n.patientsDuplicateStatusSimilarLabel} · '
-              '${comparison.similarityPercent}%',
-    _FieldCompareStatus.conflict => comparison.similarityPercent == null
-        ? l10n.patientsDuplicateStatusConflictLabel
-        : '${l10n.patientsDuplicateStatusConflictLabel} · '
-              '${comparison.similarityPercent}%',
-    _FieldCompareStatus.onlyExisting =>
-      l10n.labSimilarTestOnlyExistingLabel,
-  };
-}
-
-bool _isPartialMatch(
-  LabCatalogProposedTest proposed,
-  LabCatalogSimilarityMatch match,
-) {
-  if (match.isExact) {
-    return false;
+  if (row.isExact) {
+    return l10n.patientsDuplicateStatusMatchLabel;
   }
-  final List<_FieldComparison> comparisons = _buildFieldComparisons(
-    proposed: proposed,
-    match: match,
-  );
-  final bool hasExactField = comparisons.any(
-    (_FieldComparison comparison) =>
-        comparison.status == _FieldCompareStatus.match,
-  );
-  final bool hasConflictOrSimilar = comparisons.any(
-    (_FieldComparison comparison) =>
-        comparison.status == _FieldCompareStatus.conflict ||
-        comparison.status == _FieldCompareStatus.similar ||
-        comparison.status == _FieldCompareStatus.onlyExisting,
-  );
-  return hasExactField && hasConflictOrSimilar;
+  if ((row.proposedValue ?? '—') == '—' && (row.existingValue ?? '—') != '—') {
+    return l10n.labSimilarTestOnlyExistingLabel;
+  }
+  if (row.score != null && row.score! >= labCatalogSimilarityThreshold) {
+    return row.score == null
+        ? l10n.patientsDuplicateStatusSimilarLabel
+        : '${l10n.patientsDuplicateStatusSimilarLabel} · ${row.score}%';
+  }
+  return row.score == null
+      ? l10n.patientsDuplicateStatusConflictLabel
+      : '${l10n.patientsDuplicateStatusConflictLabel} · ${row.score}%';
 }
