@@ -602,8 +602,11 @@ void main() {
   ) async {
     await _pumpPharmacyWorkspace(tester, repository: repository);
 
-    final DataTable table = tester.widget<DataTable>(find.byType(AppListTableGrid));
-    expect(table.columns.length, lessThanOrEqualTo(6));
+    final AppListTable<PharmacyOrder> table = tester
+        .widget<AppListTable<PharmacyOrder>>(
+          find.byType(AppListTable<PharmacyOrder>),
+        );
+    expect(table.columns.length, lessThanOrEqualTo(5));
   });
 
   testWidgets('ready queue shows next action for ordered worklist row', (

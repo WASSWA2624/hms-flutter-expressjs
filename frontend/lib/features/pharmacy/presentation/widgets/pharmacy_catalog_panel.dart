@@ -299,7 +299,9 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
           id: 'actions',
           label: l10n.pharmacyLineActionsColumnLabel,
           alwaysVisible: true,
-          fixedWidth: 200,
+          // Wide enough for the dense Edit + Delete buttons; narrower widths
+          // make the actions row overflow now that grid columns are fixed.
+          fixedWidth: 240,
           cellBuilder: (BuildContext context, PharmacyDrug item) {
             return _catalogRowActions(
               context: context,
