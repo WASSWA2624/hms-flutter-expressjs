@@ -22018,10 +22018,10 @@ abstract class AppLocalizations {
   /// **'Inventory'**
   String get pharmacyCatalogTabInventory;
 
-  /// Pharmacy catalog Room nested-tab label (storage rooms).
+  /// Pharmacy catalog Rooms nested-tab label (storage rooms).
   ///
   /// In en, this message translates to:
-  /// **'Room'**
+  /// **'Rooms'**
   String get pharmacyCatalogTabStorage;
 
   /// Pharmacy catalog shelves nested tab label.
@@ -22371,6 +22371,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create anyway'**
   String get pharmacyStorageRoomCreateAnywayAction;
+
+  /// Search hint for the Catalog Rooms table.
+  ///
+  /// In en, this message translates to:
+  /// **'Search room name, code, or id'**
+  String get pharmacyStorageRoomsSearchHint;
+
+  /// Heading for proposed values in storage-room similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed room'**
+  String get pharmacyStorageRoomProposedHeading;
+
+  /// Heading for an existing match in storage-room similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing room'**
+  String get pharmacyStorageRoomExistingHeading;
+
+  /// Label for overall similarity percentage on the proposed card.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest match'**
+  String get pharmacyStorageRoomOverallSimilarityLabel;
+
+  /// Shown when storage-room similarity finds no near matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No close matches ({score}%)'**
+  String pharmacyStorageRoomNoMatchScoreLabel(int score);
+
+  /// Select an existing storage room instead of creating a new one.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this room'**
+  String get pharmacyStorageRoomUseExistingAction;
+
+  /// Heading above the list of similar storage rooms.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar rooms'**
+  String get pharmacyStorageRoomMatchesHeading;
+
+  /// Count of similar storage-room matches.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} matches'**
+  String pharmacyStorageRoomMatchCountLabel(int count);
+
+  /// Badge for an exact name or code conflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact match'**
+  String get pharmacyStorageRoomExactMatchLabel;
+
+  /// Badge for a near storage-room match.
+  ///
+  /// In en, this message translates to:
+  /// **'Near match'**
+  String get pharmacyStorageRoomNearMatchLabel;
+
+  /// Banner title when an exact storage-room duplicate exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact match found'**
+  String get pharmacyStorageRoomExactBannerTitle;
+
+  /// Banner title when near storage-room matches exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Review similar rooms'**
+  String get pharmacyStorageRoomSimilarBannerTitle;
+
+  /// Banner title when no similar storage rooms are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to continue'**
+  String get pharmacyStorageRoomNoSimilarBannerTitle;
+
+  /// Column header for proposed field value in similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed'**
+  String get pharmacyStorageRoomFieldProposedLabel;
+
+  /// Column header for existing field value in similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing'**
+  String get pharmacyStorageRoomFieldExistingLabel;
+
+  /// Column header for field name in storage-room similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Field'**
+  String get pharmacyStorageRoomFieldColumnLabel;
 
   /// Room table filter to include soft-deleted rooms.
   ///

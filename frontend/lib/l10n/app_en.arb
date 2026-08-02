@@ -15216,9 +15216,9 @@
   "@pharmacyCatalogTabInventory": {
     "description": "Pharmacy catalog inventory tab label."
   },
-  "pharmacyCatalogTabStorage": "Room",
+  "pharmacyCatalogTabStorage": "Rooms",
   "@pharmacyCatalogTabStorage": {
-    "description": "Pharmacy catalog Room nested-tab label (storage rooms)."
+    "description": "Pharmacy catalog Rooms nested-tab label (storage rooms)."
   },
   "pharmacyCatalogTabShelves": "Shelves",
   "@pharmacyCatalogTabShelves": {
@@ -15473,6 +15473,80 @@
   "pharmacyStorageRoomCreateAnywayAction": "Create anyway",
   "@pharmacyStorageRoomCreateAnywayAction": {
     "description": "Continue creating a pharmacy storage room after similarity review."
+  },
+  "pharmacyStorageRoomsSearchHint": "Search room name, code, or id",
+  "@pharmacyStorageRoomsSearchHint": {
+    "description": "Search hint for the Catalog Rooms table."
+  },
+  "pharmacyStorageRoomProposedHeading": "Proposed room",
+  "@pharmacyStorageRoomProposedHeading": {
+    "description": "Heading for proposed values in storage-room similarity review."
+  },
+  "pharmacyStorageRoomExistingHeading": "Existing room",
+  "@pharmacyStorageRoomExistingHeading": {
+    "description": "Heading for an existing match in storage-room similarity review."
+  },
+  "pharmacyStorageRoomOverallSimilarityLabel": "Closest match",
+  "@pharmacyStorageRoomOverallSimilarityLabel": {
+    "description": "Label for overall similarity percentage on the proposed card."
+  },
+  "pharmacyStorageRoomNoMatchScoreLabel": "No close matches ({score}%)",
+  "@pharmacyStorageRoomNoMatchScoreLabel": {
+    "description": "Shown when storage-room similarity finds no near matches.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "pharmacyStorageRoomUseExistingAction": "Use this room",
+  "@pharmacyStorageRoomUseExistingAction": {
+    "description": "Select an existing storage room instead of creating a new one."
+  },
+  "pharmacyStorageRoomMatchesHeading": "Similar rooms",
+  "@pharmacyStorageRoomMatchesHeading": {
+    "description": "Heading above the list of similar storage rooms."
+  },
+  "pharmacyStorageRoomMatchCountLabel": "{count} matches",
+  "@pharmacyStorageRoomMatchCountLabel": {
+    "description": "Count of similar storage-room matches.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pharmacyStorageRoomExactMatchLabel": "Exact match",
+  "@pharmacyStorageRoomExactMatchLabel": {
+    "description": "Badge for an exact name or code conflict."
+  },
+  "pharmacyStorageRoomNearMatchLabel": "Near match",
+  "@pharmacyStorageRoomNearMatchLabel": {
+    "description": "Badge for a near storage-room match."
+  },
+  "pharmacyStorageRoomExactBannerTitle": "Exact match found",
+  "@pharmacyStorageRoomExactBannerTitle": {
+    "description": "Banner title when an exact storage-room duplicate exists."
+  },
+  "pharmacyStorageRoomSimilarBannerTitle": "Review similar rooms",
+  "@pharmacyStorageRoomSimilarBannerTitle": {
+    "description": "Banner title when near storage-room matches exist."
+  },
+  "pharmacyStorageRoomNoSimilarBannerTitle": "Ready to continue",
+  "@pharmacyStorageRoomNoSimilarBannerTitle": {
+    "description": "Banner title when no similar storage rooms are found."
+  },
+  "pharmacyStorageRoomFieldProposedLabel": "Proposed",
+  "@pharmacyStorageRoomFieldProposedLabel": {
+    "description": "Column header for proposed field value in similarity comparison."
+  },
+  "pharmacyStorageRoomFieldExistingLabel": "Existing",
+  "@pharmacyStorageRoomFieldExistingLabel": {
+    "description": "Column header for existing field value in similarity comparison."
+  },
+  "pharmacyStorageRoomFieldColumnLabel": "Field",
+  "@pharmacyStorageRoomFieldColumnLabel": {
+    "description": "Column header for field name in storage-room similarity comparison."
   },
   "pharmacyStorageIncludeDeletedFilterLabel": "Include deleted",
   "@pharmacyStorageIncludeDeletedFilterLabel": {

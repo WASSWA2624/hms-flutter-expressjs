@@ -436,12 +436,26 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
             _list(payload['matches']).map((Object? raw) {
               final PharmacyJsonMap match = _map(raw);
               final PharmacyJsonMap roomJson = _map(match['room']);
+              final List<PharmacyStorageRoomFieldComparison> comparisons =
+                  _list(match['field_comparisons']).map((Object? entry) {
+                    final PharmacyJsonMap comparison = _map(entry);
+                    return PharmacyStorageRoomFieldComparison(
+                      field: _string(comparison['field']) ?? '',
+                      inputValue: _string(comparison['input_value']),
+                      candidateValue: _string(comparison['candidate_value']),
+                      score: _int(comparison['score']),
+                      status: _string(comparison['status']),
+                    );
+                  }).toList(growable: false);
               return PharmacyStorageRoomSimilarityMatch(
                 room: PharmacyStorageRoomDto(roomJson).toEntity(),
                 score: _int(match['score']) ?? 0,
                 isExact: _bool(match['is_exact']),
                 exactNameConflict: _bool(match['exact_name_conflict']),
                 exactCodeConflict: _bool(match['exact_code_conflict']),
+                nameScore: _int(match['name_score']),
+                codeScore: _int(match['code_score']),
+                fieldComparisons: comparisons,
               );
             }).toList(growable: false);
         return PharmacyStorageRoomSimilarityResult(
@@ -620,6 +634,14 @@ int? _int(Object? value) {
     return int.tryParse(value);
   }
   return null;
+}
+
+String? _string(Object? value) {
+  if (value == null) {
+    return null;
+  }
+  final String text = value.toString().trim();
+  return text.isEmpty ? null : text;
 }
 
 bool _bool(Object? value, {bool fallback = false}) {

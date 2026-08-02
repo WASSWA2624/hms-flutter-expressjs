@@ -1740,7 +1740,7 @@ class _StorageLayoutCatalogTabState
       search: AppListTableSearch<PharmacyStorageRoom>(
         controller: _searchController,
         semanticLabel: l10n.pharmacySearchLabel,
-        hintText: l10n.pharmacySearchHint,
+        hintText: l10n.pharmacyStorageRoomsSearchHint,
         matcher: (PharmacyStorageRoom item, String query) {
           final String needle = query.trim().toLowerCase();
           if (needle.isEmpty) {
@@ -1802,15 +1802,15 @@ class _StorageLayoutCatalogTabState
           addLabel: l10n.commonCreateActionLabel,
           addSemanticLabel: l10n.pharmacyAddStorageRoomAction,
           onAdd: () async {
-            final PharmacyStorageRoom? created =
+            final PharmacyStorageRoomFormResult result =
                 await openPharmacyStorageRoomDialog(context, ref);
-            if (!context.mounted || created == null) {
+            if (!context.mounted || result.room == null) {
               return;
             }
             await openPharmacyStorageRoomDetailsDialog(
               context,
               ref,
-              room: created,
+              room: result.room!,
               writeRequirement: widget.writeRequirement,
             );
           },
@@ -1826,30 +1826,43 @@ class _StorageLayoutCatalogTabState
         AppListTableColumn<PharmacyStorageRoom>(
           id: 'name',
           label: l10n.pharmacyStorageRoomNameLabel,
-          preferredWidth: 180,
-          cellBuilder: (_, PharmacyStorageRoom item) =>
-              Text(item.name ?? item.id),
+          preferredWidth: 200,
+          cellBuilder: (_, PharmacyStorageRoom item) => Align(
+            alignment: Alignment.centerLeft,
+            child: Text(item.name ?? item.id, textAlign: TextAlign.start),
+          ),
           exportValue: (PharmacyStorageRoom item) => item.name ?? '',
         ),
         AppListTableColumn<PharmacyStorageRoom>(
           id: 'code',
           label: l10n.pharmacyStorageRoomCodeLabel,
-          preferredWidth: 120,
-          cellBuilder: (_, PharmacyStorageRoom item) =>
-              Text((item.code ?? '').isEmpty ? '—' : item.code!),
+          preferredWidth: 110,
+          cellBuilder: (_, PharmacyStorageRoom item) => Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              (item.code ?? '').isEmpty ? '—' : item.code!,
+              textAlign: TextAlign.start,
+            ),
+          ),
           exportValue: (PharmacyStorageRoom item) => item.code ?? '',
         ),
         AppListTableColumn<PharmacyStorageRoom>(
           id: 'shelves_count',
           label: l10n.pharmacyStorageShelvesCountColumnLabel,
-          numeric: true,
-          cellBuilder: (_, PharmacyStorageRoom item) =>
-              Text(item.shelves.length.toString()),
+          fixedWidth: 88,
+          cellBuilder: (_, PharmacyStorageRoom item) => Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              item.shelves.length.toString(),
+              textAlign: TextAlign.start,
+            ),
+          ),
           exportValue: (PharmacyStorageRoom item) => item.shelves.length,
         ),
         AppListTableColumn<PharmacyStorageRoom>(
           id: 'status',
           label: l10n.pharmacyStorageStatusColumnLabel,
+          fixedWidth: 110,
           cellBuilder: (BuildContext context, PharmacyStorageRoom item) {
             final String label = item.isSoftDeleted
                 ? l10n.pharmacyStorageDeletedLabel
@@ -1861,8 +1874,11 @@ class _StorageLayoutCatalogTabState
                 : item.isActive
                 ? AppWorkspaceStatusTone.success
                 : AppWorkspaceStatusTone.neutral;
-            return AppWorkspaceStatusBadge(
-              status: AppWorkspaceStatus(label: label, tone: tone),
+            return Align(
+              alignment: Alignment.centerLeft,
+              child: AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(label: label, tone: tone),
+              ),
             );
           },
           exportValue: (PharmacyStorageRoom item) => item.isSoftDeleted
@@ -1874,14 +1890,22 @@ class _StorageLayoutCatalogTabState
         AppListTableColumn<PharmacyStorageRoom>(
           id: 'created_at',
           label: l10n.pharmacyStorageCreatedAtColumnLabel,
+          preferredWidth: 160,
           cellBuilder: (BuildContext context, PharmacyStorageRoom item) {
             if (item.createdAt == null) {
-              return const Text('—');
+              return const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('—', textAlign: TextAlign.start),
+              );
             }
-            return Text(
-              AppFormatters.dateTime(
-                item.createdAt!,
-                Localizations.localeOf(context),
+            return Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                AppFormatters.dateTime(
+                  item.createdAt!,
+                  Localizations.localeOf(context),
+                ),
+                textAlign: TextAlign.start,
               ),
             );
           },
@@ -1892,13 +1916,14 @@ class _StorageLayoutCatalogTabState
           id: 'actions',
           label: l10n.pharmacyLineActionsColumnLabel,
           alwaysVisible: true,
-          fixedWidth: 220,
+          fixedWidth: 320,
           cellBuilder: (BuildContext context, PharmacyStorageRoom item) {
             if (item.isSoftDeleted) {
               return _catalogRowActions(
                 context: context,
                 writeRequirement: widget.writeRequirement,
                 isBusy: isBusy,
+                alignStart: true,
                 editLabel: l10n.pharmacyRestoreStorageRoomAction,
                 deleteLabel: l10n.pharmacyPermanentDeleteStorageRoomAction,
                 editSemanticLabel: l10n.pharmacyRestoreStorageRoomAction,
@@ -1919,24 +1944,25 @@ class _StorageLayoutCatalogTabState
               context: context,
               writeRequirement: widget.writeRequirement,
               isBusy: isBusy,
+              alignStart: true,
               editLabel: l10n.commonEditActionLabel,
               deleteLabel: l10n.commonDeleteActionLabel,
               editSemanticLabel: l10n.pharmacyEditStorageRoomAction,
               deleteSemanticLabel: l10n.pharmacyDeleteStorageRoomAction,
               onEdit: () async {
-                final PharmacyStorageRoom? updated =
+                final PharmacyStorageRoomFormResult result =
                     await openPharmacyStorageRoomDialog(
                       context,
                       ref,
                       room: item,
                     );
-                if (!context.mounted || updated == null) {
+                if (!context.mounted || result.room == null) {
                   return;
                 }
                 await openPharmacyStorageRoomDetailsDialog(
                   context,
                   ref,
-                  room: updated,
+                  room: result.room!,
                   writeRequirement: widget.writeRequirement,
                 );
               },
@@ -2076,34 +2102,58 @@ class _ShelvesCatalogTabState extends ConsumerState<_ShelvesCatalogTab> {
         AppListTableColumn<_ShelfRow>(
           id: 'shelf_code',
           label: l10n.pharmacyStorageShelfCodeLabel,
-          cellBuilder: (_, _ShelfRow row) =>
-              Text(row.shelf.shelfCode ?? row.shelf.displayLabel),
+          preferredWidth: 120,
+          cellBuilder: (_, _ShelfRow row) => Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              row.shelf.shelfCode ?? row.shelf.displayLabel,
+              textAlign: TextAlign.start,
+            ),
+          ),
         ),
         AppListTableColumn<_ShelfRow>(
           id: 'label',
           label: l10n.pharmacyStorageShelfLabelField,
+          preferredWidth: 160,
           cellBuilder: (_, _ShelfRow row) {
             final String label = (row.shelf.label ?? '').trim();
-            return Text(label.isEmpty ? '—' : label);
+            return Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                label.isEmpty ? '—' : label,
+                textAlign: TextAlign.start,
+              ),
+            );
           },
         ),
         AppListTableColumn<_ShelfRow>(
           id: 'room',
           label: l10n.pharmacyStorageRoomLabel,
-          cellBuilder: (_, _ShelfRow row) => Text(row.room.name ?? row.room.id),
+          preferredWidth: 160,
+          cellBuilder: (_, _ShelfRow row) => Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              row.room.name ?? row.room.id,
+              textAlign: TextAlign.start,
+            ),
+          ),
         ),
         AppListTableColumn<_ShelfRow>(
           id: 'status',
           label: l10n.pharmacyStorageStatusColumnLabel,
+          fixedWidth: 110,
           cellBuilder: (BuildContext context, _ShelfRow row) {
-            return AppWorkspaceStatusBadge(
-              status: AppWorkspaceStatus(
-                label: row.shelf.isActive
-                    ? l10n.pharmacyStorageActiveLabel
-                    : l10n.pharmacyStorageInactiveLabel,
-                tone: row.shelf.isActive
-                    ? AppWorkspaceStatusTone.success
-                    : AppWorkspaceStatusTone.neutral,
+            return Align(
+              alignment: Alignment.centerLeft,
+              child: AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(
+                  label: row.shelf.isActive
+                      ? l10n.pharmacyStorageActiveLabel
+                      : l10n.pharmacyStorageInactiveLabel,
+                  tone: row.shelf.isActive
+                      ? AppWorkspaceStatusTone.success
+                      : AppWorkspaceStatusTone.neutral,
+                ),
               ),
             );
           },
@@ -2112,11 +2162,13 @@ class _ShelvesCatalogTabState extends ConsumerState<_ShelvesCatalogTab> {
           id: 'actions',
           label: l10n.pharmacyLineActionsColumnLabel,
           alwaysVisible: true,
+          fixedWidth: 240,
           cellBuilder: (BuildContext context, _ShelfRow row) {
             return _catalogRowActions(
               context: context,
               writeRequirement: widget.writeRequirement,
               isBusy: isBusy,
+              alignStart: true,
               editLabel: l10n.commonEditActionLabel,
               deleteLabel: l10n.commonDeleteActionLabel,
               editSemanticLabel: l10n.pharmacyEditStorageShelfAction,
@@ -2286,56 +2338,56 @@ Widget _catalogRowActions({
   VoidCallback? onAdd,
   bool addEnabled = true,
   IconData addIcon = Icons.add,
+  bool alignStart = false,
 }) {
   final ThemeData theme = Theme.of(context);
   final ColorScheme colorScheme = theme.colorScheme;
   final String editSemantic = editSemanticLabel ?? editLabel;
   final String deleteSemantic = deleteSemanticLabel ?? deleteLabel;
   final String? addSemantic = addSemanticLabel ?? addLabel;
+  final Alignment alignment = alignStart
+      ? Alignment.centerLeft
+      : Alignment.centerRight;
   return AppAccessActionGate(
     requirement: writeRequirement,
     builder: (BuildContext context, bool isAllowed) => Align(
-      alignment: Alignment.centerRight,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.centerRight,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            if (onAdd != null && addLabel != null) ...<Widget>[
-              AppButton.tertiary(
-                dense: true,
-                leadingIcon: addIcon,
-                label: addLabel,
-                semanticLabel: addSemantic,
-                tooltip: addSemantic,
-                enabled: isAllowed && !isBusy && addEnabled,
-                onPressed: isAllowed && !isBusy && addEnabled ? onAdd : null,
-              ),
-              SizedBox(width: theme.spacing.xs),
-            ],
+      alignment: alignment,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (onAdd != null && addLabel != null) ...<Widget>[
             AppButton.tertiary(
               dense: true,
-              leadingIcon: editIcon,
-              label: editLabel,
-              semanticLabel: editSemantic,
-              tooltip: editSemantic,
-              enabled: isAllowed && !isBusy,
-              onPressed: isAllowed && !isBusy ? onEdit : null,
+              leadingIcon: addIcon,
+              label: addLabel,
+              semanticLabel: addSemantic,
+              tooltip: addSemantic,
+              enabled: isAllowed && !isBusy && addEnabled,
+              onPressed: isAllowed && !isBusy && addEnabled ? onAdd : null,
             ),
             SizedBox(width: theme.spacing.xs),
-            AppButton.tertiary(
-              dense: true,
-              leadingIcon: deleteIcon,
-              label: deleteLabel,
-              semanticLabel: deleteSemantic,
-              tooltip: deleteSemantic,
-              color: colorScheme.error,
-              enabled: isAllowed && !isBusy,
-              onPressed: isAllowed && !isBusy ? onDelete : null,
-            ),
           ],
-        ),
+          AppButton.tertiary(
+            dense: true,
+            leadingIcon: editIcon,
+            label: editLabel,
+            semanticLabel: editSemantic,
+            tooltip: editSemantic,
+            enabled: isAllowed && !isBusy,
+            onPressed: isAllowed && !isBusy ? onEdit : null,
+          ),
+          SizedBox(width: theme.spacing.xs),
+          AppButton.tertiary(
+            dense: true,
+            leadingIcon: deleteIcon,
+            label: deleteLabel,
+            semanticLabel: deleteSemantic,
+            tooltip: deleteSemantic,
+            color: colorScheme.error,
+            enabled: isAllowed && !isBusy,
+            onPressed: isAllowed && !isBusy ? onDelete : null,
+          ),
+        ],
       ),
     ),
   );

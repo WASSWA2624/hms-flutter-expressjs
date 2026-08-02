@@ -1590,6 +1590,26 @@ final class PharmacyStorageRoomUpdateInput {
 }
 
 @immutable
+final class PharmacyStorageRoomFieldComparison {
+  const PharmacyStorageRoomFieldComparison({
+    required this.field,
+    this.inputValue,
+    this.candidateValue,
+    this.score,
+    this.status,
+  });
+
+  final String field;
+  final String? inputValue;
+  final String? candidateValue;
+  final int? score;
+  final String? status;
+
+  bool get isExact =>
+      status == 'MATCH' || score == 100;
+}
+
+@immutable
 final class PharmacyStorageRoomSimilarityMatch {
   const PharmacyStorageRoomSimilarityMatch({
     required this.room,
@@ -1597,6 +1617,9 @@ final class PharmacyStorageRoomSimilarityMatch {
     this.isExact = false,
     this.exactNameConflict = false,
     this.exactCodeConflict = false,
+    this.nameScore,
+    this.codeScore,
+    this.fieldComparisons = const <PharmacyStorageRoomFieldComparison>[],
   });
 
   final PharmacyStorageRoom room;
@@ -1604,6 +1627,11 @@ final class PharmacyStorageRoomSimilarityMatch {
   final bool isExact;
   final bool exactNameConflict;
   final bool exactCodeConflict;
+  final int? nameScore;
+  final int? codeScore;
+  final List<PharmacyStorageRoomFieldComparison> fieldComparisons;
+
+  bool get hasExactConflict => exactNameConflict || exactCodeConflict;
 }
 
 @immutable

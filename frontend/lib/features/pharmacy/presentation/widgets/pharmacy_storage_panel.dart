@@ -8,13 +8,36 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_storage_room_similarity_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
-Future<PharmacyStorageRoom?> openPharmacyStorageRoomDialog(
+/// Result of the create/edit storage-room form (saved room or Use existing).
+final class PharmacyStorageRoomFormResult {
+  const PharmacyStorageRoomFormResult._({
+    required this.useExisting,
+    this.room,
+  });
+
+  const PharmacyStorageRoomFormResult.cancelled()
+    : this._(useExisting: false);
+
+  const PharmacyStorageRoomFormResult.saved(PharmacyStorageRoom room)
+    : this._(useExisting: false, room: room);
+
+  const PharmacyStorageRoomFormResult.useExisting(PharmacyStorageRoom room)
+    : this._(useExisting: true, room: room);
+
+  final PharmacyStorageRoom? room;
+  final bool useExisting;
+
+  bool get hasRoom => room != null;
+}
+
+Future<PharmacyStorageRoomFormResult> openPharmacyStorageRoomDialog(
   BuildContext context,
   WidgetRef ref, {
   PharmacyStorageRoom? room,
@@ -23,10 +46,36 @@ Future<PharmacyStorageRoom?> openPharmacyStorageRoomDialog(
     context: context,
     builder: (_) => _StorageRoomDialog(room: room),
   );
-  if (result is PharmacyStorageRoom) {
+  if (result is PharmacyStorageRoomFormResult) {
     return result;
   }
-  return null;
+  if (result is PharmacyStorageRoom) {
+    return PharmacyStorageRoomFormResult.saved(result);
+  }
+  return const PharmacyStorageRoomFormResult.cancelled();
+}
+
+/// Opens create/edit and, when the user picks Use existing or saves, returns
+/// the room that should be shown in details (if any).
+Future<PharmacyStorageRoom?> openPharmacyStorageRoomDialogForDetails(
+  BuildContext context,
+  WidgetRef ref, {
+  PharmacyStorageRoom? room,
+  required AccessRequirement writeRequirement,
+}) async {
+  final PharmacyStorageRoomFormResult result =
+      await openPharmacyStorageRoomDialog(context, ref, room: room);
+  final PharmacyStorageRoom? selected = result.room;
+  if (selected == null || !context.mounted) {
+    return null;
+  }
+  await openPharmacyStorageRoomDetailsDialog(
+    context,
+    ref,
+    room: selected,
+    writeRequirement: writeRequirement,
+  );
+  return selected;
 }
 
 /// Opens a read/manage details dialog for [room].
@@ -587,77 +636,33 @@ class _StorageRoomDialogState extends ConsumerState<_StorageRoomDialog> {
 
     final PharmacyStorageRoomSimilarityResult check =
         review ?? const PharmacyStorageRoomSimilarityResult();
-    final bool? proceed = await showAppDialog<bool>(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        final bool blocked = check.hasExactConflict;
-        final bool hasMatches = check.matches.isNotEmpty;
-        return AppDialog(
-          title: Text(
-            blocked
-                ? l10n.pharmacyStorageRoomDuplicateDialogTitle
-                : hasMatches
-                ? l10n.pharmacyStorageRoomSimilarDialogTitle
-                : l10n.pharmacyStorageRoomNoSimilarDialogTitle,
+    final PharmacyStorageRoomSimilarityDialogResult similarityDecision =
+        await showPharmacyStorageRoomSimilarityDialog(
+          context,
+          proposed: PharmacyStorageRoomSimilarityProposedValues(
+            name: name,
+            code: code,
           ),
-          icon: Icon(
-            blocked
-                ? Icons.gpp_bad_outlined
-                : hasMatches
-                ? Icons.warning_amber_outlined
-                : Icons.verified_outlined,
-          ),
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                blocked
-                    ? l10n.pharmacyStorageRoomDuplicateDialogBody
-                    : hasMatches
-                    ? l10n.pharmacyStorageRoomSimilarDialogBody(
-                        check.closestScore,
-                      )
-                    : l10n.pharmacyStorageRoomNoSimilarDialogBody,
-              ),
-              if (hasMatches) ...<Widget>[
-                SizedBox(height: Theme.of(dialogContext).spacing.md),
-                for (final PharmacyStorageRoomSimilarityMatch match
-                    in check.matches.take(5))
-                  ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(match.room.name ?? match.room.id),
-                    subtitle: Text(
-                      [
-                        if ((match.room.code ?? '').isNotEmpty) match.room.code!,
-                        '${match.score}%',
-                      ].join(' · '),
-                    ),
-                  ),
-              ],
-            ],
-          ),
-          actions: <Widget>[
-            AppButton.tertiary(
-              label: l10n.commonCancelActionLabel,
-              leadingIcon: Icons.close,
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-            ),
-            if (!blocked)
-              AppButton.primary(
-                label: hasMatches
-                    ? l10n.pharmacyStorageRoomCreateAnywayAction
-                    : l10n.commonContinueActionLabel,
-                leadingIcon: Icons.check,
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-              ),
-          ],
+          check: check,
+          isEdit: widget.room != null,
         );
-      },
-    );
-    if (proceed != true || !mounted) {
+    if (!mounted) {
+      return;
+    }
+    if (similarityDecision.action ==
+        PharmacyStorageRoomSimilarityAction.cancel) {
       setState(() => _isSaving = false);
+      return;
+    }
+    if (similarityDecision.action ==
+        PharmacyStorageRoomSimilarityAction.useExisting) {
+      final PharmacyStorageRoom? existing = similarityDecision.selectedRoom;
+      setState(() => _isSaving = false);
+      if (existing != null) {
+        Navigator.of(
+          context,
+        ).pop(PharmacyStorageRoomFormResult.useExisting(existing));
+      }
       return;
     }
 
@@ -677,7 +682,9 @@ class _StorageRoomDialogState extends ConsumerState<_StorageRoomDialog> {
       }
       createResult.when(
         success: (PharmacyStorageRoom created) {
-          Navigator.of(context).pop(created);
+          Navigator.of(
+            context,
+          ).pop(PharmacyStorageRoomFormResult.saved(created));
         },
         failure: (_) {
           setState(() => _isSaving = false);
@@ -704,7 +711,9 @@ class _StorageRoomDialogState extends ConsumerState<_StorageRoomDialog> {
     }
     updateResult.when(
       success: (PharmacyStorageRoom updated) {
-        Navigator.of(context).pop(updated);
+        Navigator.of(
+          context,
+        ).pop(PharmacyStorageRoomFormResult.saved(updated));
       },
       failure: (_) {
         setState(() => _isSaving = false);
@@ -846,14 +855,26 @@ class _StorageRoomDetailsDialog extends ConsumerWidget {
               label: l10n.commonEditActionLabel,
               leadingIcon: Icons.edit_outlined,
               onPressed: () async {
-                final PharmacyStorageRoom? updated =
+                final PharmacyStorageRoomFormResult result =
                     await openPharmacyStorageRoomDialog(
                       context,
                       ref,
                       room: current,
                     );
-                if (updated != null && context.mounted) {
-                  // Keep details open; parent will refresh via controller.
+                if (!context.mounted || result.room == null) {
+                  return;
+                }
+                if (result.useExisting) {
+                  Navigator.of(context).pop();
+                  if (!context.mounted) {
+                    return;
+                  }
+                  await openPharmacyStorageRoomDetailsDialog(
+                    context,
+                    ref,
+                    room: result.room!,
+                    writeRequirement: writeRequirement,
+                  );
                 }
               },
             );

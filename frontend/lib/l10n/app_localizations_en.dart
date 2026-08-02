@@ -11927,7 +11927,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyCatalogTabInventory => 'Inventory';
 
   @override
-  String get pharmacyCatalogTabStorage => 'Room';
+  String get pharmacyCatalogTabStorage => 'Rooms';
 
   @override
   String get pharmacyCatalogTabShelves => 'Shelves';
@@ -12125,6 +12125,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyStorageRoomCreateAnywayAction => 'Create anyway';
+
+  @override
+  String get pharmacyStorageRoomsSearchHint => 'Search room name, code, or id';
+
+  @override
+  String get pharmacyStorageRoomProposedHeading => 'Proposed room';
+
+  @override
+  String get pharmacyStorageRoomExistingHeading => 'Existing room';
+
+  @override
+  String get pharmacyStorageRoomOverallSimilarityLabel => 'Closest match';
+
+  @override
+  String pharmacyStorageRoomNoMatchScoreLabel(int score) {
+    return 'No close matches ($score%)';
+  }
+
+  @override
+  String get pharmacyStorageRoomUseExistingAction => 'Use this room';
+
+  @override
+  String get pharmacyStorageRoomMatchesHeading => 'Similar rooms';
+
+  @override
+  String pharmacyStorageRoomMatchCountLabel(int count) {
+    return '$count matches';
+  }
+
+  @override
+  String get pharmacyStorageRoomExactMatchLabel => 'Exact match';
+
+  @override
+  String get pharmacyStorageRoomNearMatchLabel => 'Near match';
+
+  @override
+  String get pharmacyStorageRoomExactBannerTitle => 'Exact match found';
+
+  @override
+  String get pharmacyStorageRoomSimilarBannerTitle => 'Review similar rooms';
+
+  @override
+  String get pharmacyStorageRoomNoSimilarBannerTitle => 'Ready to continue';
+
+  @override
+  String get pharmacyStorageRoomFieldProposedLabel => 'Proposed';
+
+  @override
+  String get pharmacyStorageRoomFieldExistingLabel => 'Existing';
+
+  @override
+  String get pharmacyStorageRoomFieldColumnLabel => 'Field';
 
   @override
   String get pharmacyStorageIncludeDeletedFilterLabel => 'Include deleted';
