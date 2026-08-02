@@ -27,6 +27,24 @@ const TENANT_FACILITY_WORKSPACE_SCOPES = [
   PERMISSIONS.HR_WRITE,
 ];
 
+/**
+ * Read-only setup (facility identity + contacts) powers printed document headers.
+ * Operational roles that print invoices/clinical docs must reach this without
+ * facility-admin privileges. Mutations (logo upload/delete) stay admin/HR only.
+ */
+const TENANT_FACILITY_SETUP_READ_SCOPES = [
+  ...TENANT_FACILITY_WORKSPACE_SCOPES,
+  PERMISSIONS.BILLING_READ,
+  PERMISSIONS.CLINICAL_READ,
+  PERMISSIONS.PHARMACY_READ,
+  PERMISSIONS.LAB_READ,
+  PERMISSIONS.RADIOLOGY_READ,
+  PERMISSIONS.PATIENT_READ,
+  PERMISSIONS.PATIENTS_READ,
+  PERMISSIONS.REPORTS_READ,
+  PERMISSIONS.OPERATIONS_READ,
+];
+
 const requireTenantFacilityWorkspaceV1 = (_req, _res, next) => {
   if (!isFeatureEnabled('tenant_facility_workspace_v1')) {
     return next(new HttpError('errors.tenant_facility.workspace_not_enabled', 404));
@@ -39,7 +57,7 @@ router.use(requireTenantFacilityWorkspaceV1);
 router.get(
   '/setup',
   validateRequest({ query: setupQuerySchema }),
-  authorize(TENANT_FACILITY_WORKSPACE_SCOPES, 'permission'),
+  authorize(TENANT_FACILITY_SETUP_READ_SCOPES, 'permission'),
   tenantFacilityWorkspaceController.getSetup
 );
 

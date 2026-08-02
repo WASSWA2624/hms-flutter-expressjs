@@ -346,7 +346,10 @@ PrintFormBranding? buildFacilityPrintBranding({
     ],
     addressLines: addressLines,
     details: <String>[
-      if (facility != null) 'Type: ${_facilityTypeLabel(facility.type)}',
+      if (facility != null)
+        'Type: ${_facilityTypeLabel(facility.type)}'
+      else if (_hasText(user?.facilityType))
+        'Type: ${_facilityTypeLabel(FacilitySetupTypeX.fromApiValue(user!.facilityType))}',
       if (_hasText(facility?.displayId))
         'Facility ID: ${facility!.displayId!.trim()}',
     ],

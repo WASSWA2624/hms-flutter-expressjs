@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 import 'package:hosspi_hms/shared/reporting/report_section_selection.dart';
@@ -62,6 +64,24 @@ void main() {
 
     expect(branding!.contacts, <String>['Phone: configured-phone']);
     expect(branding.addressLines, <String>['Configured City']);
+  });
+
+  test('falls back to session facility type when setup facility is missing', () {
+    final PrintFormBranding? branding = buildFacilityPrintBranding(
+      setup: null,
+      session: AuthSession(
+        tokens: SessionTokens(accessToken: 'token'),
+        user: const AuthUserProfile(
+          facilityName: 'DemoCare General Hospital',
+          facilityType: 'HOSPITAL',
+        ),
+      ),
+      apiBaseUrl: Uri.parse('https://api.example.com'),
+    );
+
+    expect(branding, isNotNull);
+    expect(branding!.name, 'DemoCare General Hospital');
+    expect(branding.details, <String>['Type: Hospital']);
   });
 
   testWidgets('falls back to app branding when facility is unavailable', (
