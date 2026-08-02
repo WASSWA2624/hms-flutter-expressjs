@@ -1,108 +1,79 @@
-# Create Drug Flow: Scan Assist → Confirm Prefill → Similarity → Save
+# Create Drug Pack Scan UX
 
-**Objective:** Make Catalog → Drugs **Create drug** (`PharmacyDrugEditDialog` in create mode) as fast and accurate as possible by adding an assistive **barcode-first, OCR-fallback** capture path that **prefills** identity / formulation / batch fields, requires staff to **confirm** suggested values (highlighted; accept / edit / accept all), then runs a **drug similarity check** via the existing `AppSimilarity` pattern **before** `createDrug`. Do not persist pack photos. Keep pricing, stock, storage, and the existing save/API contract unless a change is required for similarity or prefill.
+## Objective
+
+Simplify the Create Drug **Scan pack** assistive flow so barcode, multi-photo OCR, and optional AI text parse feed a clear preview, then prefill the existing Create Drug form—without changing create/save, similarity checks, or suggested-field confirmation.
 
 ## Context
 
-Codebase status (no screenshots attached — current `PharmacyDrugEditDialog` + pharmacy catalog create path):
+**Current (Create Drug + Scan pack)**
 
-| Surface | Current behavior |
-| --- | --- |
-| Entry | Catalog → Drugs → Create (`_DrugCatalogTab._openDrugDialog` → `PharmacyDrugEditDialog` with `drug == null`) |
-| Dialog | Manual form only: Identity (generic, code, brand), Formulation (form, strength), Pricing, Initial stock + unit + reorder, Batch (batch #, MFG, EXP, alert lead), Storage room/shelf |
-| Scan / OCR / barcode | **None.** No scanner packages in `frontend/pubspec.yaml`; no pack-scan CTA on the dialog |
-| Prefill confirmation | **None.** Fields are typed; no “suggested / accept” chrome |
-| Images | Shared `AppImageUploadField` / `pickAppImageFile` exist for **persisted** uploads elsewhere — **not** used by drug create; pack images must stay ephemeral |
-| Similarity before save | Storage **room** / **shelf** create already: API check → `showAppSimilarityReviewDialog` adapter → proceed / use existing / retry / cancel. **Drugs have no equivalent** (no `checkDrugSimilarity` API, lib, or dialog) |
-| Save | `_submit` → `controller.createDrug(PharmacyDrugInput…)` (+ optional facility offering); edit path is separate and stays available |
+- Create Drug (`PharmacyDrugEditDialog`) exposes **Scan pack**, which opens `_PharmacyDrugPackScanDialog`.
+- Scan pack is barcode-first with a separate **Use barcode** button beside the field, **Capture pack photo** (single shot), **Paste pack text**, a large **Pack text** area, instructional body copy, then **Skip scan** / **Prefill form**.
+- Parse path: ephemeral image → barcode decode + free OCR (`AppOcrService`) → `DrugPackFieldParser` → `DrugPackFieldCandidates` → prefill + `AppSuggestedFieldSet` chrome on the create form.
+- Images are never persisted; staff must confirm before save. Similarity check on create remains unchanged.
 
-Raw intent: barcode scan when possible; if that fails, capture pack photo(s) → OCR → prefill → discard images → highlight prefilled fields and confirm (per-field accept/edit or accept all) → then similarity review using shared infrastructure → then existing create. Prefer **free / no paid OCR or drug-data subscriptions**. Assistive entry only — staff remains source of truth.
+**Intended**
+
+- Declutter Scan pack: less instructional text; scan-focused layout.
+- Put **Use barcode** inside the barcode field suffix (right of mic): icon+label on large viewports, icon-only on small (tooltip/semantics retain full label).
+- Support **multiple pack photos**; after capture(s), extract and map into candidates, then show a preview before Prefill.
+- Replace free-form “paste pack text” as a primary paste dump with an **AI/parser text** input: user pastes or types pack text → parser maps to the same candidate DTO used by OCR/barcode.
+- **Skip scan** / dialog close returns to Create Drug only (nested dialog); do not dismiss the whole create flow.
+- Entry action on Create Drug should read as scan/AI capture (e.g. “Scan pack or use AI capture”), not a vague “Scan pack” alone.
 
 ## Requirements
 
-### A. Reusable capture / parse infrastructure (required foundation)
+1. **Preserve create pipeline.** Keep Create Drug sections, validation, create/update APIs, similarity dialog, suggested accept/edit chrome, and `DrugPackFieldCandidates` → form mapping unless a field mapping bug is found.
+2. **Declutter Scan pack UI.** Remove or drastically shorten the long instructional body. Keep hierarchy: barcode → photo capture → optional parser text → status/error → preview → footer actions. No duplicate competing CTAs.
+3. **Inline barcode apply.** Move **Use barcode** into the barcode `AppTextField` suffix trail (after speech mic via existing `suffixIcon` composition). Responsive: show label+icon when space allows; icon-only below the compact breakpoint used by `AppButton`/label scope. Keep speech-to-text on the barcode field.
+4. **Multi-photo capture.** Allow capturing/adding more than one pack photo in one scan session. Run barcode+OCR per image (or batched), merge into one `DrugPackFieldCandidates` (existing `merge` semantics). Discard all image bytes after parse. Show lightweight capture progress/count (e.g. “2 photos processed”) without storing thumbnails long-term.
+5. **Parser text input (not paste dump).** Replace **Paste pack text** + large always-on dump UX with a single optional **Parse pack text** (AI/heuristic parser) control: multiline or compact expand-on-demand field + explicit parse action that calls the same `DrugPackFieldParser` (and any existing assistive mapping) to produce/update candidates. Do not introduce a paid drug-data subscription; stay on free heuristics/OCR already in `shared/scan`.
+6. **Preview then Prefill.** After barcode apply, photo parse, or text parse succeeds with identity fields, show a clear preview of mapped candidates (brand, generic, form, strength, code, batch, dates as available). **Prefill form** stays disabled until preview has usable identity fields; on press, pop candidates and apply existing create-form prefill + suggestion marks.
+7. **Nested navigation.** **Skip scan**, dialog X, and Cancel-equivalent must `pop` only the scan dialog and leave Create Drug open and unchanged. Do not clear create-form state on skip.
+8. **Entry labeling.** Update Create Drug scan entry copy/iconography so intent is “scan pack or use AI/OCR capture.” Localize via `app_en.arb` (+ generated l10n). Keep icon consistent with scan/AI capture.
+9. **States.** Cover loading (busy while OCR/decode/parse), empty (no candidates yet), error (no parseable data—reuse/adapt `pharmacyDrugScanNoDataBody`), success preview, and disabled Prefill when preview is empty. Unauthorized pharmacy create remains governed by existing catalog permissions (no new “no access” chrome).
+10. **Responsive + theme.** Layout must work mobile/tablet/desktop without clipping overflow of suffix actions; use theme tokens; support light/dark.
 
-1. **Build shared, reusable scan + OCR plumbing** (not a one-off buried only inside the drug dialog). Prefer `frontend/lib/shared/…` services/widgets that pharmacy (and later peers) can call:
-   - **Barcode capture** (camera or upload/decode) returning a normalized code string when found.
-   - **Ephemeral image capture** (camera and/or gallery / file picker — web-capable first given current web usage) returning in-memory bytes only.
-   - **OCR** over those bytes → raw text (+ optional structured line candidates). Use a **free** stack (e.g. on-device / WASM / backend-local OCR). **No** paid Cloud Vision / Lexicomp / First Databank subscription for v1.
-   - **Drug-field parser** mapping barcode + OCR text (+ optional free public enrichment such as OpenFDA / RxNorm / DailyMed / local formulary when a code or name is known) into candidate values for: `brandName`, `genericName`, `form`, `strength`, `code`, `batchNumber`, `expiryDate`, `manufacturedAt` when present on pack.
-2. **Do not persist pack photos or OCR images** to media storage, DB, or the drug record. After parse/prefill (or cancel), drop in-memory buffers. No attachment field on `PharmacyDrug`.
-3. **Graceful degradation:** if barcode is missing/unreadable, offer photo OCR; if OCR yields nothing useful, fall back to the existing empty manual form without blocking create.
+### Optional enhancements
 
-### B. Create-drug UX: Scan → Prefill → Confirm
-
-4. **Create mode only for the automated path** (primary scope). Keep **Edit drug** behavior as today unless wiring a read-only “Scan to fill empty fields” later is trivial; do not regress edit/save/reorder/storage.
-5. Add a clear **Scan pack** (or equivalent) entry on create: barcode-first. On barcode success, resolve candidates (local catalog + optional free lookup). On barcode failure / skip, allow **one or more pack photos** → OCR → parse.
-6. **Prefill** the existing form fields that can be inferred. **Do not** invent selling prices, stock qty, reorder, room/shelf from OCR — those stay manual (or empty) as today.
-7. **Confirmation step before treating values as accepted:**
-   - Every field filled by scan/OCR must be **visually highlighted** as suggested (distinct from manually typed values).
-   - Per suggested field: **Accept** or **Edit** (edit clears “suggested” once the user owns the value).
-   - Global **Accept all** for remaining suggestions.
-   - User may discard suggestions and type manually.
-   - Until accepted (individually or via accept all), do not treat suggested values as confirmed for the similarity/save step — or equivalently: require an explicit confirm pass so staff cannot accidentally save unreviewed OCR text. Prefer staying on the same dialog with highlighted chrome rather than inventing a disconnected wizard unless clarity demands a short review panel.
-8. After confirmation, continue with the **same** form sections (pricing, stock, batch leftovers, storage) and validation rules already on `PharmacyDrugEditDialog`.
-
-### C. Similarity check before create (mirror storage pattern)
-
-9. **Before** calling `createDrug`, run a **drug similarity check** modeled on storage room/shelf:
-   - Backend: similarity helper (e.g. under `backend/src/lib/pharmacy/`) using shared tenant similarity primitives; compare at least generic/brand/name, code, form, strength (weights/thresholds aligned with existing `SIMILARITY_THRESHOLD` style). Exact code or exact identity conflicts should surface as hard/exact matches.
-   - API + schema + service/controller/route following pharmacy-workspace storage similarity.
-   - Frontend: repository/controller method + `showPharmacyDrugSimilarityDialog` adapter over `showAppSimilarityReviewDialog` (cancel / proceed / use existing / retry), same decision loop as `_StorageRoom` / shelf create.
-10. **Use existing:** if staff chooses an existing drug, close create (or open that drug’s details/edit) without creating a duplicate — mirror shelf/room “use existing” UX.
-11. **Retry:** return edited proposed identity fields into the form and re-check when the user retries from the similarity dialog.
-12. If the check returns no material matches, allow proceed to create as storage does today.
-
-### D. Preserve existing functionality
-
-13. Keep create payload shape (`PharmacyDrugInput`, facility offering, inventory unit / initial stock / batch / storage) unless similarity needs extra read-only display fields.
-14. Keep write gating, catalog table Create entry, l10n patterns, light/dark, and dialog width/scroll behavior.
-15. Do not redesign Catalog Drugs worklist, drug details dialog, or formulary/inventory tabs except for wiring Create → new flow.
+- Compact photo strip (ephemeral count chips only) with “Add photo” vs “Retake/clear session photos.”
+- Collapse parser text behind progressive disclosure (“Have pack text?”) to keep the default scan path barcode + photos only.
 
 ## Constraints
 
-- **Free stack only for v1:** no paid OCR SaaS or commercial drug DB subscription required to ship. Optional free public APIs are fine; document rate-limit/offline behavior.
-- **Web must work** for capture/OCR path (app is often run on web); native mobile enhancements are welcome if they reuse the same shared API.
-- Prefer extending `PharmacyDrugEditDialog` + small shared modules over a parallel create screen.
-- Reuse `AppSimilarity` / storage similarity adapters as the template for drug similarity UI and control flow.
-- Images are ephemeral; never upload pack scans as drug media.
-- OCR/barcode is **assistive** — never auto-save without confirm + similarity gate.
-- Scope creep: no full formulary sync product, no mandatory internet for offline-capable barcode→manual, no change to pharmacy pricing rules.
+- Reuse `showPharmacyDrugPackScanDialog`, `DrugPackFieldParser`, `AppOcrService`, `AppBarcodeDecoder`, `captureEphemeralImage`, `AppTextField`/`AppButton`/`AppDialog`, and create-form suggestion flow; do not reinvent parallel parsers or media upload.
+- Do not persist pack images to media APIs or disk beyond the in-memory parse session.
+- Do not change backend drug create contracts or similarity RBAC unless required for a bug in existing assistive mapping.
+- No unrelated pharmacy catalog refactors.
+- Follow project prompt/UI rules: theme tokens, responsive actions, no unauthorized control stubs.
 
 ## Acceptance Criteria
 
-- (R1) Create drug offers **Scan pack** with **barcode-first**; OCR photo path available when barcode fails or is skipped.
-- (R2) Successful scan/OCR **prefills** brand / generic / form / strength / code / batch / dates when parsed; price/stock/storage remain manual.
-- (R3) Pack images are **discarded** after prefill/cancel and are **not** stored on the drug or media API.
-- (R4) Prefilled fields are **highlighted**; user can **Accept**, **Edit**, or **Accept all** before continuing.
-- (R5) On Create submit (after confirm), a **drug similarity** review runs via shared `AppSimilarity` pattern; cancel / proceed / use existing / retry behave like storage shelf/room.
-- (R6) Proceed still calls existing `createDrug` with validated form data; duplicates can be avoided via use-existing.
-- (R7) Manual-only create still works if the user never scans.
-- (R8) Edit drug path and non-drug catalog surfaces remain behaviorally unchanged unless explicitly touched for shared infra.
-- (R9) No paid OCR/drug-data subscription is required for the happy path.
-
-## Verification
-
-- Unit/widget tests: parser maps sample OCR/barcode fixtures → field candidates; suggested-field accept/accept-all clears highlight state; create submit invokes similarity before `createDrug`; use-existing / retry / cancel branches.
-- Backend tests: drug similarity scoring (exact code, near generic/brand, threshold filtering) mirrors shelf/room test style.
-- Manual: Catalog → Drugs → Create → scan barcode → confirm highlights → similarity → save; barcode fail → photo OCR → same; skip scan → manual create; ensure no pack image left in network tab/media; light + dark; web width.
+- [ ] AC1 (Req 1): Create Drug still saves, runs similarity, and applies suggestion accept/edit after prefill as today.
+- [ ] AC2 (Req 2–3): Scan pack has no long instruction paragraph; barcode field contains Use barcode in the suffix after mic; large viewport shows icon+label, small shows icon-only with accessible label.
+- [ ] AC3 (Req 4): User can process ≥2 pack photos in one session; candidates merge; images discarded after parse; busy/error feedback visible.
+- [ ] AC4 (Req 5): Primary paste-dump CTA is gone; optional parser text produces the same candidate shape via `DrugPackFieldParser`.
+- [ ] AC5 (Req 6): Preview appears when candidates exist; Prefill enabled only then; Prefill returns to Create Drug with fields filled and suggestion chrome.
+- [ ] AC6 (Req 7): Skip scan / close scan returns to Create Drug without closing create or wiping form values.
+- [ ] AC7 (Req 8): Create Drug entry label communicates scan or AI/OCR capture; strings localized.
+- [ ] AC8 (Req 9–10): Loading/empty/error/success states work; UI OK on narrow and wide viewports in light and dark.
 
 ## Relevant Files
 
-- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_drug_edit_dialog.dart` — create/edit form; primary UX integration point
-- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart` — `_openDrugDialog` entry
-- `frontend/lib/shared/components/app_similarity.dart` — shared similarity review dialog
-- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_storage_shelf_similarity_dialog.dart` (+ room peer) — adapter pattern to copy for drugs
-- `frontend/lib/shared/components/app_image_upload_field.dart` / `app_image_crop_dialog.dart` — reference for picking bytes only (do **not** persist)
-- `frontend/lib/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart` — `createDrug`; add similarity check API
-- `backend/src/lib/pharmacy/pharmacy-storage-shelf-similarity.js` (+ room) — pattern for new `pharmacy-drug-similarity`
-- `backend/src/modules/pharmacy-workspace/` — routes, schemas, service, controller for similarity endpoint
-- `frontend/lib/l10n/app_en.arb` — Scan pack, suggested field, accept all, similarity copy
-- Tests under `frontend/test/features/pharmacy/` and backend pharmacy similarity tests as needed
+- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_drug_pack_scan_dialog.dart`
+- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_drug_edit_dialog.dart`
+- `frontend/lib/shared/scan/drug_pack_field_parser.dart`
+- `frontend/lib/shared/scan/app_ephemeral_image_capture.dart`
+- `frontend/lib/shared/scan/app_ocr_service.dart`
+- `frontend/lib/shared/scan/app_barcode_decoder.dart`
+- `frontend/lib/shared/components/app_text_field.dart`
+- `frontend/lib/l10n/app_en.arb`
+- `frontend/test/shared/scan/drug_pack_field_parser_test.dart`
 
-## Out of scope
+## Verification
 
-- Paying for commercial drug databases or cloud OCR
-- Persisting packaging photos on the drug record
-- Auto-filling pharmacy/facility price or stock levels from the internet
-- Redesigning edit-drug, drug details, or unrelated catalog tabs
+- Widget/unit: barcode suffix action layout (or golden/responsive smoke); multi-photo merge → candidates; parser text → candidates; Prefill disabled/enabled; skip leaves create route/dialog open.
+- Extend/adjust `drug_pack_field_parser_test.dart` if merge/parse behavior changes; add pack-scan dialog tests for skip vs prefill navigation where practical.
+- Manual: Create Drug → Scan → barcode apply; multi-photo OCR; parser text; preview → Prefill; Skip/X back to create; narrow + wide; light + dark.
+- Confirm no media upload network calls for pack images; pharmacy create permission behavior unchanged.
