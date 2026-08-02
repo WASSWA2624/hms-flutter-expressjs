@@ -12118,6 +12118,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyAddStorageShelfAction => 'Add shelf';
 
   @override
+  String get pharmacyStorageRoomDetailsTitle => 'Room Details';
+
+  @override
+  String get pharmacyStorageShelvesSearchHint => 'Search shelf code or label';
+
+  @override
   String get pharmacyEditStorageShelfAction => 'Edit shelf';
 
   @override

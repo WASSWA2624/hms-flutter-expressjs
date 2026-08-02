@@ -15471,6 +15471,14 @@
   "@pharmacyAddStorageShelfAction": {
     "description": "Pharmacy add storage shelf action for the current room."
   },
+  "pharmacyStorageRoomDetailsTitle": "Room Details",
+  "@pharmacyStorageRoomDetailsTitle": {
+    "description": "Pharmacy storage room details dialog title."
+  },
+  "pharmacyStorageShelvesSearchHint": "Search shelf code or label",
+  "@pharmacyStorageShelvesSearchHint": {
+    "description": "Search hint for shelves table inside room details."
+  },
   "pharmacyEditStorageShelfAction": "Edit shelf",
   "@pharmacyEditStorageShelfAction": {
     "description": "Pharmacy edit storage shelf action."

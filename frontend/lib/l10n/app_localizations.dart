@@ -22360,6 +22360,18 @@ abstract class AppLocalizations {
   /// **'Add shelf'**
   String get pharmacyAddStorageShelfAction;
 
+  /// Pharmacy storage room details dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Room Details'**
+  String get pharmacyStorageRoomDetailsTitle;
+
+  /// Search hint for shelves table inside room details.
+  ///
+  /// In en, this message translates to:
+  /// **'Search shelf code or label'**
+  String get pharmacyStorageShelvesSearchHint;
+
   /// Pharmacy edit storage shelf action.
   ///
   /// In en, this message translates to:
