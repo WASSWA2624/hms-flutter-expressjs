@@ -23332,6 +23332,30 @@ abstract class AppLocalizations {
   /// **'Matching inventory stock rows will appear here.'**
   String get pharmacyNoInventoryBody;
 
+  /// Pharmacy inventory catalog search hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search item, SKU, or stock ID'**
+  String get pharmacyInventorySearchHint;
+
+  /// Pharmacy inventory SKU column label.
+  ///
+  /// In en, this message translates to:
+  /// **'SKU'**
+  String get pharmacyInventorySkuColumnLabel;
+
+  /// Pharmacy inventory pending stock column and filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending stock'**
+  String get pharmacyInventoryPendingStockColumnLabel;
+
+  /// Pharmacy inventory stock identifier column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock ID'**
+  String get pharmacyInventoryStockIdColumnLabel;
+
   /// Pharmacy inventory quantity column label.
   ///
   /// In en, this message translates to:

@@ -87,6 +87,14 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
     PharmacyInventoryStockQuery query,
   ) {
     final AppPageRequest request = query.pageRequest;
+    final String baseSearch = query.search.trim();
+    final String nameSearch = (query.itemName ?? '').trim();
+    final String skuSearch = (query.sku ?? '').trim();
+    final String combinedSearch = <String>[
+      if (baseSearch.isNotEmpty) baseSearch,
+      if (nameSearch.isNotEmpty) nameSearch,
+      if (skuSearch.isNotEmpty) skuSearch,
+    ].join(' ');
     return _apiClient.get<PharmacyInventoryWorkbench>(
       ApiEndpoints.apiV1(<String>[
         HmsApiResource.pharmacy.path,
@@ -96,7 +104,7 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
       queryParameters: _withoutEmpty(<String, Object?>{
         'page': request.pageIndex + 1,
         'limit': request.pageSize,
-        'search': query.search,
+        'search': combinedSearch.isEmpty ? null : combinedSearch,
         'facility_id': query.facilityId,
         'inventory_item_id': query.inventoryItemId,
         'low_stock_only': query.lowStockOnly ? true : null,

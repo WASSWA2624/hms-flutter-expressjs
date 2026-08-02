@@ -16164,6 +16164,22 @@
   "@pharmacyNoInventoryBody": {
     "description": "Empty pharmacy inventory list body."
   },
+  "pharmacyInventorySearchHint": "Search item, SKU, or stock ID",
+  "@pharmacyInventorySearchHint": {
+    "description": "Pharmacy inventory catalog search hint."
+  },
+  "pharmacyInventorySkuColumnLabel": "SKU",
+  "@pharmacyInventorySkuColumnLabel": {
+    "description": "Pharmacy inventory SKU column label."
+  },
+  "pharmacyInventoryPendingStockColumnLabel": "Pending stock",
+  "@pharmacyInventoryPendingStockColumnLabel": {
+    "description": "Pharmacy inventory pending stock column and filter label."
+  },
+  "pharmacyInventoryStockIdColumnLabel": "Stock ID",
+  "@pharmacyInventoryStockIdColumnLabel": {
+    "description": "Pharmacy inventory stock identifier column label."
+  },
   "pharmacyInventoryQuantityColumnLabel": "On hand",
   "@pharmacyInventoryQuantityColumnLabel": {
     "description": "Pharmacy inventory quantity column label."

@@ -939,6 +939,20 @@ const buildInventoryStockWhere = async (filters = {}, scope, options = {}) => {
         { quantity: { gt: 0 } },
         { reorder_level: { gt: 0 } },
         { quantity: { lte: prisma.inventory_stock.fields.reorder_level } }]});
+  } else if (stockStatus === STOCK_STATUS.ALMOST_OUT_OF_STOCK) {
+    appendAnd(where, {
+      AND: [
+        { quantity: { gt: 0 } },
+        { reorder_level: { gt: 0 } },
+        { quantity: { gt: prisma.inventory_stock.fields.reorder_level } }]});
+  } else if (stockStatus === STOCK_STATUS.IN_STOCK) {
+    appendAnd(where, {
+      AND: [
+        { quantity: { gt: 0 } },
+        {
+          OR: [
+            { reorder_level: { lte: 0 } },
+            { quantity: { gt: prisma.inventory_stock.fields.reorder_level } }]}]});
   }
 
   if (filters.expired_only === true || filters.expiring_within_days) {

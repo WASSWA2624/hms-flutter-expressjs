@@ -12666,6 +12666,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Matching inventory stock rows will appear here.';
 
   @override
+  String get pharmacyInventorySearchHint => 'Search item, SKU, or stock ID';
+
+  @override
+  String get pharmacyInventorySkuColumnLabel => 'SKU';
+
+  @override
+  String get pharmacyInventoryPendingStockColumnLabel => 'Pending stock';
+
+  @override
+  String get pharmacyInventoryStockIdColumnLabel => 'Stock ID';
+
+  @override
   String get pharmacyInventoryQuantityColumnLabel => 'On hand';
 
   @override

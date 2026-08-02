@@ -198,10 +198,14 @@ final class PharmacyFormularyQuery {
 final class PharmacyInventoryStockQuery {
   const PharmacyInventoryStockQuery({
     this.search = '',
+    this.itemName,
+    this.sku,
+    this.facilityName,
     this.lowStockOnly = false,
     this.stockStatus,
     this.expiringWithinDays,
     this.expiredOnly = false,
+    this.pendingStockOnly,
     this.storageRoomId,
     this.storageShelfId,
     this.facilityId,
@@ -210,10 +214,14 @@ final class PharmacyInventoryStockQuery {
   });
 
   final String search;
+  final String? itemName;
+  final String? sku;
+  final String? facilityName;
   final bool lowStockOnly;
   final String? stockStatus;
   final int? expiringWithinDays;
   final bool expiredOnly;
+  final bool? pendingStockOnly;
   final String? storageRoomId;
   final String? storageShelfId;
   final String? facilityId;
@@ -222,17 +230,25 @@ final class PharmacyInventoryStockQuery {
 
   PharmacyInventoryStockQuery copyWith({
     String? search,
+    String? itemName,
+    String? sku,
+    String? facilityName,
     bool? lowStockOnly,
     String? stockStatus,
     int? expiringWithinDays,
     bool? expiredOnly,
+    bool? pendingStockOnly,
     String? storageRoomId,
     String? storageShelfId,
     String? facilityId,
     String? inventoryItemId,
     AppPageRequest? pageRequest,
+    bool clearItemName = false,
+    bool clearSku = false,
+    bool clearFacilityName = false,
     bool clearStockStatus = false,
     bool clearExpiringWithinDays = false,
+    bool clearPendingStockOnly = false,
     bool clearStorageRoomId = false,
     bool clearStorageShelfId = false,
     bool clearFacilityId = false,
@@ -240,12 +256,20 @@ final class PharmacyInventoryStockQuery {
   }) {
     return PharmacyInventoryStockQuery(
       search: search ?? this.search,
+      itemName: clearItemName ? null : itemName ?? this.itemName,
+      sku: clearSku ? null : sku ?? this.sku,
+      facilityName: clearFacilityName
+          ? null
+          : facilityName ?? this.facilityName,
       lowStockOnly: lowStockOnly ?? this.lowStockOnly,
       stockStatus: clearStockStatus ? null : stockStatus ?? this.stockStatus,
       expiringWithinDays: clearExpiringWithinDays
           ? null
           : expiringWithinDays ?? this.expiringWithinDays,
       expiredOnly: expiredOnly ?? this.expiredOnly,
+      pendingStockOnly: clearPendingStockOnly
+          ? null
+          : pendingStockOnly ?? this.pendingStockOnly,
       storageRoomId: clearStorageRoomId
           ? null
           : storageRoomId ?? this.storageRoomId,

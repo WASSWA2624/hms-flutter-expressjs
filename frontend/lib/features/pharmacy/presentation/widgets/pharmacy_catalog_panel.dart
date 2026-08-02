@@ -32,6 +32,10 @@ const String _drugNameFilterKey = 'name';
 const String _drugCodeFilterKey = 'code';
 const String _drugFormFilterKey = 'form';
 const String _drugStrengthFilterKey = 'strength';
+const String _inventoryItemNameFilterKey = 'item_name';
+const String _inventorySkuFilterKey = 'sku';
+const String _inventoryFacilityFilterKey = 'facility';
+const String _inventoryPendingFilterKey = 'pending_stock';
 
 class PharmacyCatalogPanel extends ConsumerStatefulWidget {
   const PharmacyCatalogPanel({
@@ -1320,21 +1324,47 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
       page: widget.state.inventoryWorkbench.stocks,
       isLoading: isBusy,
       columnVisibilityStorageKey: 'pharmacy_catalog_inventory',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
       shrinkWrap: !widget.fillHeight,
+      exportConfig: AppListTableExportConfig<PharmacyInventoryStock>(
+        fileNameStem: 'pharmacy_inventory',
+        dateOf: (PharmacyInventoryStock item) => item.nextExpiry ?? item.createdAt,
+        rowFilter: (PharmacyInventoryStock item, AppSearchBarFilterValue filters) {
+          return _matchesInventoryExportFilters(item, filters);
+        },
+      ),
       search: AppListTableSearch<PharmacyInventoryStock>(
         controller: _searchController,
-        semanticLabel: l10n.pharmacySearchLabel,
-        hintText: l10n.pharmacySearchHint,
+        semanticLabel: l10n.pharmacyInventoryFiltersSemanticLabel,
+        hintText: l10n.pharmacyInventorySearchHint,
         matcher: (_, _) => true,
         onSubmitted: controller.applyInventorySearch,
         onClear: () => unawaited(controller.applyInventorySearch('')),
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.pharmacyQueueFilterLabel,
-        advancedFilterTitle: l10n.pharmacyFiltersSemanticLabel,
+        advancedFilterTitle: l10n.pharmacyInventoryFiltersSemanticLabel,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
-        enableDateFilter: false,
         allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+        textFilters: <AppSearchBarTextFilter>[
+          AppSearchBarTextFilter(
+            key: _inventoryItemNameFilterKey,
+            label: l10n.pharmacyInventoryItemLabel,
+            hintText: l10n.pharmacyInventoryItemLabel,
+            icon: Icons.inventory_2_outlined,
+          ),
+          AppSearchBarTextFilter(
+            key: _inventorySkuFilterKey,
+            label: l10n.pharmacyInventorySkuColumnLabel,
+            icon: Icons.qr_code_2_outlined,
+          ),
+          AppSearchBarTextFilter(
+            key: _inventoryFacilityFilterKey,
+            label: l10n.pharmacyInventoryFacilityColumnLabel,
+            icon: Icons.apartment_outlined,
+          ),
+        ],
         filterGroups: _inventoryCatalogFilterGroups(
           l10n: l10n,
           layout: widget.state.storageLayout,
@@ -1395,64 +1425,85 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
         AppListTableColumn<PharmacyInventoryStock>(
           id: 'item',
           label: l10n.pharmacyInventoryItemLabel,
+          preferredWidth: 260,
+          alwaysVisible: true,
           cellBuilder: (_, PharmacyInventoryStock item) {
             return Text(
               item.inventoryItem?.displayTitle ?? item.displayId ?? '',
             );
           },
+          exportValue: (PharmacyInventoryStock item) =>
+              item.inventoryItem?.displayTitle ?? item.displayId ?? '',
         ),
         AppListTableColumn<PharmacyInventoryStock>(
           id: 'quantity',
           label: l10n.pharmacyInventoryQuantityColumnLabel,
           numeric: true,
+          fixedWidth: 96,
+          alwaysVisible: true,
           cellBuilder: (_, PharmacyInventoryStock item) =>
               Text(item.quantity.toString()),
+          exportValue: (PharmacyInventoryStock item) => item.quantity,
         ),
         AppListTableColumn<PharmacyInventoryStock>(
           id: 'reorder_level',
           label: l10n.pharmacyReorderLevelColumnLabel,
           numeric: true,
+          fixedWidth: 110,
           cellBuilder: (_, PharmacyInventoryStock item) =>
               Text(item.reorderLevel.toString()),
+          exportValue: (PharmacyInventoryStock item) => item.reorderLevel,
         ),
         AppListTableColumn<PharmacyInventoryStock>(
           id: 'storage_location',
           label: l10n.pharmacyStorageLocationColumnLabel,
+          preferredWidth: 200,
           cellBuilder: (_, PharmacyInventoryStock item) =>
               Text(item.storageLocationLabel ?? '—'),
+          exportValue: (PharmacyInventoryStock item) =>
+              item.storageLocationLabel ?? '',
         ),
         AppListTableColumn<PharmacyInventoryStock>(
           id: 'next_expiry',
           label: l10n.pharmacyNextExpiryColumnLabel,
+          preferredWidth: 170,
           cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
             return _expiryCell(context, item);
           },
+          exportValue: (PharmacyInventoryStock item) => item.nextExpiry,
         ),
         AppListTableColumn<PharmacyInventoryStock>(
           id: 'batch_count',
           label: l10n.pharmacyBatchCountColumnLabel,
           numeric: true,
+          fixedWidth: 88,
           cellBuilder: (_, PharmacyInventoryStock item) =>
               Text(item.batchCount.toString()),
+          exportValue: (PharmacyInventoryStock item) => item.batchCount,
         ),
         AppListTableColumn<PharmacyInventoryStock>(
           id: 'stock_status',
           label: l10n.pharmacyStockStatusFilterLabel,
+          preferredWidth: 130,
           cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
             return AppWorkspaceStatusBadge(
               status: _stockStatus(context, item.stockStatus),
             );
           },
+          exportValue: (PharmacyInventoryStock item) =>
+              _stockStatus(context, item.stockStatus).label,
         ),
         AppListTableColumn<PharmacyInventoryStock>(
           id: 'actions',
           label: l10n.pharmacyLineActionsColumnLabel,
           alwaysVisible: true,
+          fixedWidth: 240,
           cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
             return _catalogRowActions(
               context: context,
               writeRequirement: widget.writeRequirement,
               isBusy: isBusy,
+              alignStart: true,
               editLabel: l10n.commonAdjustActionLabel,
               deleteLabel: l10n.commonClearActionLabel,
               editSemanticLabel: l10n.pharmacyAdjustStockAction,
@@ -1462,6 +1513,117 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
               onDelete: () => _confirmClearInventoryStock(context, item),
             );
           },
+        ),
+      ],
+      columnChoices: <AppListTableColumn<PharmacyInventoryStock>>[
+        AppListTableColumn<PharmacyInventoryStock>(
+          id: 'sku',
+          label: l10n.pharmacyInventorySkuColumnLabel,
+          preferredWidth: 120,
+          cellBuilder: (_, PharmacyInventoryStock item) => Text(
+            (item.inventoryItem?.sku ?? '').trim().isEmpty
+                ? '—'
+                : item.inventoryItem!.sku!.trim(),
+          ),
+          exportValue: (PharmacyInventoryStock item) =>
+              item.inventoryItem?.sku ?? '',
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          id: 'unit',
+          label: l10n.pharmacyInventoryUnitLabel,
+          preferredWidth: 110,
+          cellBuilder: (_, PharmacyInventoryStock item) => Text(
+            (item.inventoryItem?.unit ?? '').trim().isEmpty
+                ? '—'
+                : item.inventoryItem!.unit!.trim(),
+          ),
+          exportValue: (PharmacyInventoryStock item) =>
+              item.inventoryItem?.unit ?? '',
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          id: 'facility',
+          label: l10n.pharmacyInventoryFacilityColumnLabel,
+          preferredWidth: 160,
+          cellBuilder: (_, PharmacyInventoryStock item) =>
+              Text((item.facilityName ?? '').trim().isEmpty
+                  ? '—'
+                  : item.facilityName!.trim()),
+          exportValue: (PharmacyInventoryStock item) => item.facilityName ?? '',
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          id: 'storage_room',
+          label: l10n.pharmacyStorageRoomLabel,
+          preferredWidth: 140,
+          cellBuilder: (_, PharmacyInventoryStock item) =>
+              Text((item.storageRoomLabel ?? '').trim().isEmpty
+                  ? '—'
+                  : item.storageRoomLabel!.trim()),
+          exportValue: (PharmacyInventoryStock item) =>
+              item.storageRoomLabel ?? '',
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          id: 'storage_shelf',
+          label: l10n.pharmacyStorageShelfLabel,
+          preferredWidth: 120,
+          cellBuilder: (_, PharmacyInventoryStock item) =>
+              Text((item.storageShelfCode ?? '').trim().isEmpty
+                  ? '—'
+                  : item.storageShelfCode!.trim()),
+          exportValue: (PharmacyInventoryStock item) =>
+              item.storageShelfCode ?? '',
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          id: 'pending_stock',
+          label: l10n.pharmacyInventoryPendingStockColumnLabel,
+          fixedWidth: 120,
+          cellBuilder: (_, PharmacyInventoryStock item) => Text(
+            item.pendingStock ? l10n.commonYesLabel : l10n.commonNoLabel,
+          ),
+          exportValue: (PharmacyInventoryStock item) =>
+              item.pendingStock ? l10n.commonYesLabel : l10n.commonNoLabel,
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          id: 'stock_id',
+          label: l10n.pharmacyInventoryStockIdColumnLabel,
+          preferredWidth: 140,
+          cellBuilder: (_, PharmacyInventoryStock item) =>
+              Text(item.displayId ?? item.id),
+          exportValue: (PharmacyInventoryStock item) =>
+              item.displayId ?? item.id,
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          id: 'created_at',
+          label: l10n.pharmacyStorageCreatedAtColumnLabel,
+          preferredWidth: 160,
+          cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
+            if (item.createdAt == null) {
+              return const Text('—');
+            }
+            return Text(
+              AppFormatters.dateTime(
+                item.createdAt!,
+                Localizations.localeOf(context),
+              ),
+            );
+          },
+          exportValue: (PharmacyInventoryStock item) => item.createdAt,
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          id: 'updated_at',
+          label: l10n.tenantFacilityUpdatedAtLabel,
+          preferredWidth: 160,
+          cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
+            if (item.updatedAt == null) {
+              return const Text('—');
+            }
+            return Text(
+              AppFormatters.dateTime(
+                item.updatedAt!,
+                Localizations.localeOf(context),
+              ),
+            );
+          },
+          exportValue: (PharmacyInventoryStock item) => item.updatedAt,
         ),
       ],
       mobileItemBuilder: (BuildContext context, PharmacyInventoryStock item) {
@@ -2889,9 +3051,24 @@ List<AppSearchBarFilterGroup> _inventoryCatalogFilterGroups({
       allLabel: l10n.opdAllFieldsFilterLabel,
       choices: <AppSearchBarFilterChoice>[
         AppSearchBarFilterChoice(
+          value: 'IN_STOCK',
+          label: l10n.pharmacyStockInStock,
+          icon: Icons.check_circle_outline,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'ALMOST_OUT_OF_STOCK',
+          label: l10n.pharmacyStockAlmostOut,
+          icon: Icons.warning_amber_outlined,
+        ),
+        AppSearchBarFilterChoice(
           value: 'LOW_STOCK',
-          label: l10n.pharmacyLowStockOnlyFilterLabel,
+          label: l10n.pharmacyStockLow,
           icon: Icons.trending_down,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'OUT_OF_STOCK',
+          label: l10n.pharmacyStockOut,
+          icon: Icons.remove_shopping_cart_outlined,
         ),
         AppSearchBarFilterChoice(
           value: 'EXPIRING_SOON',
@@ -2902,6 +3079,23 @@ List<AppSearchBarFilterGroup> _inventoryCatalogFilterGroups({
           value: 'EXPIRED',
           label: l10n.pharmacyExpiredOnlyFilterLabel,
           icon: Icons.event_busy,
+        ),
+      ],
+    ),
+    AppSearchBarFilterGroup(
+      key: _inventoryPendingFilterKey,
+      label: l10n.pharmacyInventoryPendingStockColumnLabel,
+      allLabel: l10n.opdAllFieldsFilterLabel,
+      choices: <AppSearchBarFilterChoice>[
+        AppSearchBarFilterChoice(
+          value: 'true',
+          label: l10n.commonYesLabel,
+          icon: Icons.hourglass_top_outlined,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'false',
+          label: l10n.commonNoLabel,
+          icon: Icons.hourglass_empty,
         ),
       ],
     ),
@@ -2979,23 +3173,38 @@ AppSearchBarFilterValue _inventoryCatalogFilterValue(
   );
 
   final String? stockChoice;
-  if (query.lowStockOnly) {
-    stockChoice = 'LOW_STOCK';
-  } else if (query.expiredOnly) {
+  if (query.expiredOnly) {
     stockChoice = 'EXPIRED';
   } else if (query.expiringWithinDays != null) {
     stockChoice = 'EXPIRING_SOON';
+  } else if (query.lowStockOnly) {
+    stockChoice = 'LOW_STOCK';
+  } else if (query.stockStatus != null && query.stockStatus!.isNotEmpty) {
+    stockChoice = query.stockStatus;
   } else {
     stockChoice = null;
   }
   if (stockChoice != null) {
     options[_inventoryStockStatusFilterKey] = stockChoice;
   }
+  if (query.pendingStockOnly != null) {
+    options[_inventoryPendingFilterKey] =
+        query.pendingStockOnly! ? 'true' : 'false';
+  }
 
-  if (options.isEmpty) {
+  final Map<String, String> texts = <String, String>{
+    if ((query.itemName ?? '').trim().isNotEmpty)
+      _inventoryItemNameFilterKey: query.itemName!,
+    if ((query.sku ?? '').trim().isNotEmpty)
+      _inventorySkuFilterKey: query.sku!,
+    if ((query.facilityName ?? '').trim().isNotEmpty)
+      _inventoryFacilityFilterKey: query.facilityName!,
+  };
+
+  if (options.isEmpty && texts.isEmpty) {
     return AppSearchBarFilterValue.empty;
   }
-  return AppSearchBarFilterValue(options: options);
+  return AppSearchBarFilterValue(options: options, texts: texts);
 }
 
 bool _hasDrugCatalogFilters(PharmacyDrugQuery query) {
@@ -3021,7 +3230,12 @@ bool _hasInventoryCatalogFilters(PharmacyInventoryStockQuery query) {
       query.storageShelfId != null ||
       query.lowStockOnly ||
       query.expiredOnly ||
-      query.expiringWithinDays != null;
+      query.expiringWithinDays != null ||
+      (query.stockStatus != null && query.stockStatus!.isNotEmpty) ||
+      query.pendingStockOnly != null ||
+      (query.itemName ?? '').trim().isNotEmpty ||
+      (query.sku ?? '').trim().isNotEmpty ||
+      (query.facilityName ?? '').trim().isNotEmpty;
 }
 
 Future<void> _applyDrugCatalogFilter(
@@ -3103,11 +3317,84 @@ Future<void> _applyInventoryCatalogFilter(
     return;
   }
 
+  final String? pendingChoice = value.option(_inventoryPendingFilterKey);
   await controller.applyInventoryCatalogFilters(
     stockStatusChoice: value.option(_inventoryStockStatusFilterKey),
     storageRoomId: value.option(_storageRoomFilterKey),
     storageShelfId: value.option(_storageShelfFilterKey),
+    itemName: value.text(_inventoryItemNameFilterKey),
+    sku: value.text(_inventorySkuFilterKey),
+    facilityName: value.text(_inventoryFacilityFilterKey),
+    pendingStockOnly: switch (pendingChoice) {
+      'true' => true,
+      'false' => false,
+      _ => null,
+    },
+    clearPendingStockOnly: pendingChoice == null,
   );
+}
+
+bool _matchesInventoryExportFilters(
+  PharmacyInventoryStock item,
+  AppSearchBarFilterValue filters,
+) {
+  bool containsText(String? haystack, String? needle) {
+    final String query = (needle ?? '').trim().toLowerCase();
+    if (query.isEmpty) {
+      return true;
+    }
+    return (haystack ?? '').toLowerCase().contains(query);
+  }
+
+  if (!containsText(
+    item.inventoryItem?.name ?? item.inventoryItem?.displayTitle,
+    filters.text(_inventoryItemNameFilterKey),
+  )) {
+    return false;
+  }
+  if (!containsText(item.inventoryItem?.sku, filters.text(_inventorySkuFilterKey))) {
+    return false;
+  }
+  if (!containsText(
+    item.facilityName,
+    filters.text(_inventoryFacilityFilterKey),
+  )) {
+    return false;
+  }
+
+  final String? pendingChoice = filters.option(_inventoryPendingFilterKey);
+  if (pendingChoice == 'true' && !item.pendingStock) {
+    return false;
+  }
+  if (pendingChoice == 'false' && item.pendingStock) {
+    return false;
+  }
+
+  final String? roomId = filters.option(_storageRoomFilterKey);
+  if (roomId != null && roomId.isNotEmpty && item.storageRoomId != roomId) {
+    return false;
+  }
+  final String? shelfId = filters.option(_storageShelfFilterKey);
+  if (shelfId != null &&
+      shelfId.isNotEmpty &&
+      item.storageShelfId != shelfId) {
+    return false;
+  }
+
+  final String? stockChoice = filters.option(_inventoryStockStatusFilterKey);
+  if (stockChoice == null || stockChoice.isEmpty) {
+    return true;
+  }
+  final String status = (item.stockStatus ?? '').toUpperCase();
+  return switch (stockChoice) {
+    'EXPIRED' => item.expiryAlertStatus == 'EXPIRED',
+    'EXPIRING_SOON' => item.expiryAlertStatus == 'EXPIRING_SOON',
+    'LOW_STOCK' => status == 'LOW_STOCK' || item.lowStock,
+    'OUT_OF_STOCK' => status == 'OUT_OF_STOCK',
+    'ALMOST_OUT_OF_STOCK' => status == 'ALMOST_OUT_OF_STOCK',
+    'IN_STOCK' => status == 'IN_STOCK',
+    _ => true,
+  };
 }
 
 extension _CatalogAccessRequirement on AccessRequirement {

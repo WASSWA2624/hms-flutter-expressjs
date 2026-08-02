@@ -477,6 +477,11 @@ final class PharmacyWorkspaceController
     String? stockStatusChoice,
     String? storageRoomId,
     String? storageShelfId,
+    String? itemName,
+    String? sku,
+    String? facilityName,
+    bool? pendingStockOnly,
+    bool clearPendingStockOnly = false,
     bool clearAll = false,
   }) async {
     final PharmacyWorkspaceState? current = _currentState;
@@ -499,17 +504,34 @@ final class PharmacyWorkspaceController
       resolvedShelfId = null;
     }
 
+    final String? normalizedStatus = stockStatusChoice?.trim().toUpperCase();
+    final bool isStockStatusFilter =
+        normalizedStatus == 'IN_STOCK' ||
+        normalizedStatus == 'ALMOST_OUT_OF_STOCK' ||
+        normalizedStatus == 'LOW_STOCK' ||
+        normalizedStatus == 'OUT_OF_STOCK';
+
     final PharmacyInventoryStockQuery nextQuery = current.inventoryQuery
         .copyWith(
           storageRoomId: storageRoomId,
           storageShelfId: resolvedShelfId,
           clearStorageRoomId: storageRoomId == null,
           clearStorageShelfId: resolvedShelfId == null,
-          lowStockOnly: stockStatusChoice == 'LOW_STOCK',
-          expiredOnly: stockStatusChoice == 'EXPIRED',
-          expiringWithinDays: stockStatusChoice == 'EXPIRING_SOON' ? 30 : null,
-          clearStockStatus: stockStatusChoice == null,
-          clearExpiringWithinDays: stockStatusChoice != 'EXPIRING_SOON',
+          itemName: itemName,
+          sku: sku,
+          facilityName: facilityName,
+          clearItemName: itemName == null,
+          clearSku: sku == null,
+          clearFacilityName: facilityName == null,
+          pendingStockOnly: pendingStockOnly,
+          clearPendingStockOnly:
+              clearPendingStockOnly || pendingStockOnly == null,
+          lowStockOnly: false,
+          expiredOnly: normalizedStatus == 'EXPIRED',
+          expiringWithinDays: normalizedStatus == 'EXPIRING_SOON' ? 30 : null,
+          stockStatus: isStockStatusFilter ? normalizedStatus : null,
+          clearStockStatus: !isStockStatusFilter,
+          clearExpiringWithinDays: normalizedStatus != 'EXPIRING_SOON',
           pageRequest: current.inventoryQuery.pageRequest.first(),
         );
 
