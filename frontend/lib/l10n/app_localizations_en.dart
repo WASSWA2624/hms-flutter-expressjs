@@ -12013,10 +12013,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyDrugScanPackBody =>
-      'Barcode, photos, or pack text — images are discarded after parsing.';
+      'Type a barcode, take or upload pack photos, then process them. Or paste label wording.';
 
   @override
-  String get pharmacyDrugBarcodeLabel => 'Barcode';
+  String get pharmacyDrugBarcodeLabel => 'Package barcode';
+
+  @override
+  String get pharmacyDrugBarcodeHelper =>
+      'Type or paste the barcode number from the pack. Photos are separate below.';
 
   @override
   String get pharmacyDrugBarcodeApplyAction => 'Use barcode';
@@ -12028,7 +12032,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyDrugTakePackPhotoAction => 'Take photo';
 
   @override
-  String get pharmacyDrugUploadPackPhotoAction => 'Upload photo';
+  String get pharmacyDrugUploadPackPhotoAction => 'Upload photos';
+
+  @override
+  String get pharmacyDrugProcessPackPhotosAction => 'Process photos';
 
   @override
   String get pharmacyDrugClearPackPhotosAction => 'Clear photos';
@@ -12038,6 +12045,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyDrugEditPackPhotoAction => 'Edit photo';
+
+  @override
+  String pharmacyDrugPhotosReadyBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count photos ready — process when finished',
+      one: '1 photo ready — process when finished',
+    );
+    return '$_temp0';
+  }
 
   @override
   String pharmacyDrugPhotosProcessedBody(int count) {
@@ -12051,13 +12069,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get pharmacyDrugPastePackTextAction => 'Parse pack text';
+  String get pharmacyDrugPastePackTextAction => 'Parse text';
 
   @override
   String get pharmacyDrugParsePackTextExpandAction => 'Have pack text?';
 
   @override
-  String get pharmacyDrugPackTextLabel => 'Pack text';
+  String get pharmacyDrugPackTextLabel => 'Paste label wording';
+
+  @override
+  String get pharmacyDrugPackTextHelper =>
+      'Paste wording from the pack if you already have it. Click Parse text to map fields.';
 
   @override
   String get pharmacyDrugScanSkipAction => 'Skip scan';
@@ -12068,6 +12090,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pharmacyDrugScanNoDataBody =>
       'No pack details could be parsed. You can still create the drug manually.';
+
+  @override
+  String get pharmacyDrugScanProcessingPhotosBody => 'Reading all pack photos…';
 
   @override
   String get pharmacyDrugSuggestedBannerTitle => 'Confirm suggested values';

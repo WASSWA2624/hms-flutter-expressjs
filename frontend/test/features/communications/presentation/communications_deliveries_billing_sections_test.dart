@@ -134,7 +134,7 @@ void _stubWorkspace(
 }
 
 Finder _tableRowInkWell() => find.byWidgetPredicate(
-  (Widget widget) => widget.runtimeType.toString() == 'TableRowInkWell',
+  (Widget widget) => widget.runtimeType.toString() == 'AppListTableRowInkWell',
 );
 
 Future<void> _openDeliveryDetail(WidgetTester tester) async {

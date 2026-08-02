@@ -921,7 +921,7 @@ void main() {
         await tester.tap(_actionLabel('Record payment').first);
         await tester.pumpAndSettle();
 
-        expect(find.text('Request billing'), findsAtLeastNWidgets(1));
+        expect(find.text('REQUEST BILLING'), findsAtLeastNWidgets(1));
 
         await tester.tap(
           find.descendant(

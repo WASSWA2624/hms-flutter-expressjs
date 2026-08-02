@@ -3037,6 +3037,19 @@ class _SelectableMobileDataRow<T> extends StatelessWidget {
   }
 }
 
+/// Tap target wrapping each selectable data row of [AppListTableGrid].
+///
+/// Public marker so tests can find and tap table rows, replacing the
+/// DataTable-era `TableRowInkWell` target.
+class AppListTableRowInkWell extends InkWell {
+  const AppListTableRowInkWell({
+    super.key,
+    super.onTap,
+    super.hoverColor,
+    super.child,
+  });
+}
+
 /// Rendered table (grid) presentation of [AppListTable].
 ///
 /// Non-generic marker widget wrapping the header and rows of the table
@@ -3612,7 +3625,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     );
 
     if (onRowSelected != null) {
-      row = InkWell(
+      row = AppListTableRowInkWell(
         onTap: () {
           onRowSelected(item);
         },

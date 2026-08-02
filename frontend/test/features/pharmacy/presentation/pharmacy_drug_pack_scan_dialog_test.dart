@@ -60,14 +60,11 @@ void main() {
       closedWith = r;
     });
 
-    expect(
-      find.text('SCAN PACK OR USE AI CAPTURE'),
-      findsOneWidget,
-    );
-    expect(find.textContaining('Enter or decode a barcode first'), findsNothing);
+    expect(find.text('SCAN PACK OR USE AI CAPTURE'), findsOneWidget);
     expect(find.text('Take photo'), findsOneWidget);
-    expect(find.text('Upload photo'), findsOneWidget);
-    expect(find.text('Have pack text?'), findsOneWidget);
+    expect(find.text('Upload photos'), findsOneWidget);
+    expect(find.text('Paste label wording'), findsOneWidget);
+    expect(find.text('Process photos'), findsNothing);
     expect(find.text('Prefill form'), findsOneWidget);
 
     await tester.tap(find.text('Skip scan'));
@@ -85,14 +82,11 @@ void main() {
       closedWith = r;
     });
 
-    await tester.tap(find.text('Have pack text?'));
-    await tester.pumpAndSettle();
-
     await tester.enterText(
       find.byType(TextField).last,
       'Amoxil\nAmoxicillin\nCapsule 500mg\nBatch: LOT-1\n',
     );
-    await tester.tap(find.text('Parse pack text'));
+    await tester.tap(find.byTooltip('Parse text'));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Capsule'), findsWidgets);
@@ -108,6 +102,10 @@ void main() {
   testWidgets('barcode apply merges into field preview', (WidgetTester tester) async {
     await pumpScan(tester, onClosed: (_) {});
 
+    expect(
+      find.textContaining('Type or paste the barcode number'),
+      findsOneWidget,
+    );
     await tester.enterText(find.byType(TextField).first, '8901234567890');
     await tester.tap(find.byTooltip('Use barcode'));
     await tester.pumpAndSettle();

@@ -31,7 +31,7 @@ Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
 Finder _tableRowInkWell() => find.byWidgetPredicate(
-  (Widget widget) => widget.runtimeType.toString() == 'TableRowInkWell',
+  (Widget widget) => widget.runtimeType.toString() == 'AppListTableRowInkWell',
 );
 
 const NotificationItem _notification = NotificationItem(

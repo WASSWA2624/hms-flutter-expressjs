@@ -32,7 +32,7 @@ class _MockCommunicationsRepository extends Mock
     implements CommunicationsRepository {}
 
 Finder _tableRowInkWell() => find.byWidgetPredicate(
-  (Widget widget) => widget.runtimeType.toString() == 'TableRowInkWell',
+  (Widget widget) => widget.runtimeType.toString() == 'AppListTableRowInkWell',
 );
 
 const NotificationItem _notification = NotificationItem(

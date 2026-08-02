@@ -15334,13 +15334,17 @@
   "@pharmacyDrugScanPackTitle": {
     "description": "Title for the drug pack scan assist dialog."
   },
-  "pharmacyDrugScanPackBody": "Barcode, photos, or pack text — images are discarded after parsing.",
+  "pharmacyDrugScanPackBody": "Type a barcode, take or upload pack photos, then process them. Or paste label wording.",
   "@pharmacyDrugScanPackBody": {
     "description": "Short helper for the drug pack scan assist dialog."
   },
-  "pharmacyDrugBarcodeLabel": "Barcode",
+  "pharmacyDrugBarcodeLabel": "Package barcode",
   "@pharmacyDrugBarcodeLabel": {
     "description": "Barcode entry field on drug pack scan."
+  },
+  "pharmacyDrugBarcodeHelper": "Type or paste the barcode number from the pack. Photos are separate below.",
+  "@pharmacyDrugBarcodeHelper": {
+    "description": "Explains that barcode is typed text, not a photo."
   },
   "pharmacyDrugBarcodeApplyAction": "Use barcode",
   "@pharmacyDrugBarcodeApplyAction": {
@@ -15354,9 +15358,13 @@
   "@pharmacyDrugTakePackPhotoAction": {
     "description": "Capture a pack photo with the camera for OCR."
   },
-  "pharmacyDrugUploadPackPhotoAction": "Upload photo",
+  "pharmacyDrugUploadPackPhotoAction": "Upload photos",
   "@pharmacyDrugUploadPackPhotoAction": {
-    "description": "Upload a pack photo from gallery/files for OCR."
+    "description": "Upload one or more pack photos from gallery/files for OCR."
+  },
+  "pharmacyDrugProcessPackPhotosAction": "Process photos",
+  "@pharmacyDrugProcessPackPhotosAction": {
+    "description": "Run OCR on all collected pack photos and map drug fields."
   },
   "pharmacyDrugClearPackPhotosAction": "Clear photos",
   "@pharmacyDrugClearPackPhotosAction": {
@@ -15370,26 +15378,39 @@
   "@pharmacyDrugEditPackPhotoAction": {
     "description": "Re-open crop/rotate for an ephemeral pack photo."
   },
-  "pharmacyDrugPhotosProcessedBody": "{count, plural, =1{1 photo processed} other{{count} photos processed}}",
-  "@pharmacyDrugPhotosProcessedBody": {
-    "description": "Status count for ephemeral pack photos processed in the scan session.",
+  "pharmacyDrugPhotosReadyBody": "{count, plural, =1{1 photo ready — process when finished} other{{count} photos ready — process when finished}}",
+  "@pharmacyDrugPhotosReadyBody": {
+    "description": "Status for collected pack photos waiting for OCR.",
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "pharmacyDrugPastePackTextAction": "Parse pack text",
+  "pharmacyDrugPhotosProcessedBody": "{count, plural, =1{1 photo processed} other{{count} photos processed}}",
+  "@pharmacyDrugPhotosProcessedBody": {
+    "description": "Status count after OCR finishes on pack photos.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pharmacyDrugPastePackTextAction": "Parse text",
   "@pharmacyDrugPastePackTextAction": {
-    "description": "Parse pasted/typed pack text into drug field candidates."
+    "description": "Parse pasted/typed pack wording into drug field candidates."
   },
   "pharmacyDrugParsePackTextExpandAction": "Have pack text?",
   "@pharmacyDrugParsePackTextExpandAction": {
     "description": "Progressive disclosure control that reveals the pack text parser."
   },
-  "pharmacyDrugPackTextLabel": "Pack text",
+  "pharmacyDrugPackTextLabel": "Paste label wording",
   "@pharmacyDrugPackTextLabel": {
-    "description": "Multiline pack/OCR text field for heuristic parsing."
+    "description": "Multiline field for pasted drug-pack label text."
+  },
+  "pharmacyDrugPackTextHelper": "Paste wording from the pack if you already have it. Click Parse text to map fields.",
+  "@pharmacyDrugPackTextHelper": {
+    "description": "Helper for the pack wording parser field."
   },
   "pharmacyDrugScanSkipAction": "Skip scan",
   "@pharmacyDrugScanSkipAction": {
@@ -15402,6 +15423,10 @@
   "pharmacyDrugScanNoDataBody": "No pack details could be parsed. You can still create the drug manually.",
   "@pharmacyDrugScanNoDataBody": {
     "description": "Shown when barcode/OCR yield no useful field candidates."
+  },
+  "pharmacyDrugScanProcessingPhotosBody": "Reading all pack photos…",
+  "@pharmacyDrugScanProcessingPhotosBody": {
+    "description": "Busy status while OCR runs across collected pack photos."
   },
   "pharmacyDrugSuggestedBannerTitle": "Confirm suggested values",
   "@pharmacyDrugSuggestedBannerTitle": {

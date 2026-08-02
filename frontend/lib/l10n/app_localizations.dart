@@ -22183,14 +22183,20 @@ abstract class AppLocalizations {
   /// Short helper for the drug pack scan assist dialog.
   ///
   /// In en, this message translates to:
-  /// **'Barcode, photos, or pack text — images are discarded after parsing.'**
+  /// **'Type a barcode, take or upload pack photos, then process them. Or paste label wording.'**
   String get pharmacyDrugScanPackBody;
 
   /// Barcode entry field on drug pack scan.
   ///
   /// In en, this message translates to:
-  /// **'Barcode'**
+  /// **'Package barcode'**
   String get pharmacyDrugBarcodeLabel;
+
+  /// Explains that barcode is typed text, not a photo.
+  ///
+  /// In en, this message translates to:
+  /// **'Type or paste the barcode number from the pack. Photos are separate below.'**
+  String get pharmacyDrugBarcodeHelper;
 
   /// Apply typed/scanned barcode to prefill candidates.
   ///
@@ -22210,11 +22216,17 @@ abstract class AppLocalizations {
   /// **'Take photo'**
   String get pharmacyDrugTakePackPhotoAction;
 
-  /// Upload a pack photo from gallery/files for OCR.
+  /// Upload one or more pack photos from gallery/files for OCR.
   ///
   /// In en, this message translates to:
-  /// **'Upload photo'**
+  /// **'Upload photos'**
   String get pharmacyDrugUploadPackPhotoAction;
+
+  /// Run OCR on all collected pack photos and map drug fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Process photos'**
+  String get pharmacyDrugProcessPackPhotosAction;
 
   /// Remove all ephemeral pack photos from the scan session.
   ///
@@ -22234,16 +22246,22 @@ abstract class AppLocalizations {
   /// **'Edit photo'**
   String get pharmacyDrugEditPackPhotoAction;
 
-  /// Status count for ephemeral pack photos processed in the scan session.
+  /// Status for collected pack photos waiting for OCR.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo ready — process when finished} other{{count} photos ready — process when finished}}'**
+  String pharmacyDrugPhotosReadyBody(int count);
+
+  /// Status count after OCR finishes on pack photos.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 photo processed} other{{count} photos processed}}'**
   String pharmacyDrugPhotosProcessedBody(int count);
 
-  /// Parse pasted/typed pack text into drug field candidates.
+  /// Parse pasted/typed pack wording into drug field candidates.
   ///
   /// In en, this message translates to:
-  /// **'Parse pack text'**
+  /// **'Parse text'**
   String get pharmacyDrugPastePackTextAction;
 
   /// Progressive disclosure control that reveals the pack text parser.
@@ -22252,11 +22270,17 @@ abstract class AppLocalizations {
   /// **'Have pack text?'**
   String get pharmacyDrugParsePackTextExpandAction;
 
-  /// Multiline pack/OCR text field for heuristic parsing.
+  /// Multiline field for pasted drug-pack label text.
   ///
   /// In en, this message translates to:
-  /// **'Pack text'**
+  /// **'Paste label wording'**
   String get pharmacyDrugPackTextLabel;
+
+  /// Helper for the pack wording parser field.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste wording from the pack if you already have it. Click Parse text to map fields.'**
+  String get pharmacyDrugPackTextHelper;
 
   /// Skip assistive scan and continue with a blank create form.
   ///
@@ -22275,6 +22299,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No pack details could be parsed. You can still create the drug manually.'**
   String get pharmacyDrugScanNoDataBody;
+
+  /// Busy status while OCR runs across collected pack photos.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading all pack photos…'**
+  String get pharmacyDrugScanProcessingPhotosBody;
 
   /// Banner title when scan/OCR prefilled fields need confirmation.
   ///

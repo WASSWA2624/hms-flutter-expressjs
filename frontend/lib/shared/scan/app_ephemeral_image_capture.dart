@@ -29,6 +29,18 @@ Future<AppImageUploadPendingItem?> uploadEphemeralImage(
   );
 }
 
+/// Multi-select gallery / file upload into memory. Optionally crops each image.
+Future<List<AppImageUploadPendingItem>> uploadEphemeralImages(
+  BuildContext context, {
+  bool enableCrop = true,
+}) {
+  return pickAppImageFiles(
+    context.l10n,
+    context: context,
+    enableCrop: enableCrop,
+  );
+}
+
 /// Camera-preferring capture into memory. Falls back to file upload when the
 /// platform has no capture input. Optionally opens the crop editor.
 Future<AppImageUploadPendingItem?> takeEphemeralImage(

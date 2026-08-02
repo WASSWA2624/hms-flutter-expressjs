@@ -7,7 +7,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/scan/scan.dart';
 
-/// Assistive pack scan: barcode-first, multi-photo OCR, optional text parse.
+/// Assistive pack scan: barcode entry, multi-photo OCR, optional text parse.
 /// Returns candidates or null when skipped/cancelled. Never persists images.
 Future<DrugPackFieldCandidates?> showPharmacyDrugPackScanDialog(
   BuildContext context, {
@@ -54,7 +54,8 @@ class _PharmacyDrugPackScanDialogState
   final TextEditingController _packTextController = TextEditingController();
   final List<_SessionPhoto> _photos = <_SessionPhoto>[];
   bool _busy = false;
-  bool _showPackText = false;
+  bool _photosNeedProcessing = false;
+  int _lastProcessedPhotoCount = 0;
   String? _statusMessage;
   DrugPackFieldCandidates? _preview;
 
@@ -71,6 +72,9 @@ class _PharmacyDrugPackScanDialogState
     return code.isEmpty ? null : code;
   }
 
+  bool get _canProcessPhotos =>
+      !_busy && _photos.isNotEmpty && _photosNeedProcessing;
+
   Future<void> _applyBarcode() async {
     final String? code = _barcodeOrNull;
     if (code == null) {
@@ -81,7 +85,10 @@ class _PharmacyDrugPackScanDialogState
       _statusMessage = null;
     });
     try {
-      await _recomputeCandidates(preferBarcode: code);
+      await _recomputeCandidates(
+        preferBarcode: code,
+        includePhotos: !_photosNeedProcessing && _photos.isNotEmpty,
+      );
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -89,24 +96,94 @@ class _PharmacyDrugPackScanDialogState
     }
   }
 
-  Future<void> _addPhoto({required bool fromCamera}) async {
+  Future<void> _takePhoto() async {
     setState(() {
       _busy = true;
       _statusMessage = null;
     });
     try {
-      final AppImageUploadPendingItem? item = fromCamera
-          ? await takeEphemeralImage(context)
-          : await uploadEphemeralImage(context);
+      final AppImageUploadPendingItem? item = await takeEphemeralImage(context);
       if (!mounted || item == null) {
         return;
       }
-      final _SessionPhoto photo = _SessionPhoto(
-        bytes: Uint8List.fromList(item.bytes),
-        mimeType: item.mimeType,
-      );
-      _photos.add(photo);
-      await _recomputeCandidates();
+      setState(() {
+        _photos.add(
+          _SessionPhoto(
+            bytes: Uint8List.fromList(item.bytes),
+            mimeType: item.mimeType,
+          ),
+        );
+        _photosNeedProcessing = true;
+        _statusMessage = null;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _statusMessage = context.l10n.pharmacyDrugScanNoDataBody;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  Future<void> _uploadPhotos() async {
+    setState(() {
+      _busy = true;
+      _statusMessage = null;
+    });
+    try {
+      // Multi-select first; crop/edit from the strip afterward so batch pick
+      // is not blocked by per-file crop cancels.
+      final List<AppImageUploadPendingItem> items =
+          await uploadEphemeralImages(context, enableCrop: false);
+      if (!mounted || items.isEmpty) {
+        return;
+      }
+      setState(() {
+        for (final AppImageUploadPendingItem item in items) {
+          _photos.add(
+            _SessionPhoto(
+              bytes: Uint8List.fromList(item.bytes),
+              mimeType: item.mimeType,
+            ),
+          );
+        }
+        _photosNeedProcessing = true;
+        _statusMessage = null;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _statusMessage = context.l10n.pharmacyDrugScanNoDataBody;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  Future<void> _processAllPhotos() async {
+    if (_photos.isEmpty) {
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _statusMessage = context.l10n.pharmacyDrugScanProcessingPhotosBody;
+    });
+    try {
+      await _recomputeCandidates(includePhotos: true);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _photosNeedProcessing = false;
+        _lastProcessedPhotoCount = _photos.length;
+      });
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -137,10 +214,12 @@ class _PharmacyDrugPackScanDialogState
       if (!mounted || edited == null) {
         return;
       }
-      _photos[index]
-        ..bytes = edited
-        ..mimeType = 'image/png';
-      await _recomputeCandidates();
+      setState(() {
+        _photos[index]
+          ..bytes = edited
+          ..mimeType = 'image/png';
+        _photosNeedProcessing = true;
+      });
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -154,39 +233,41 @@ class _PharmacyDrugPackScanDialogState
     }
   }
 
-  Future<void> _removePhoto(int index) async {
+  void _removePhoto(int index) {
     if (index < 0 || index >= _photos.length) {
       return;
     }
     setState(() {
       _photos.removeAt(index);
-      _busy = true;
+      _photosNeedProcessing = _photos.isNotEmpty;
+      if (_photos.isEmpty) {
+        _lastProcessedPhotoCount = 0;
+      }
       _statusMessage = null;
     });
-    try {
-      await _recomputeCandidates();
-    } finally {
-      if (mounted) {
-        setState(() => _busy = false);
-      }
-    }
   }
 
   void _clearPhotos() {
     setState(() {
       _photos.clear();
+      _photosNeedProcessing = false;
+      _lastProcessedPhotoCount = 0;
       _statusMessage = null;
     });
-    _recomputeCandidates();
   }
 
   Future<void> _parsePackText() async {
+    if (_packTextController.text.trim().isEmpty) {
+      return;
+    }
     setState(() {
       _busy = true;
       _statusMessage = null;
     });
     try {
-      await _recomputeCandidates();
+      await _recomputeCandidates(
+        includePhotos: !_photosNeedProcessing && _photos.isNotEmpty,
+      );
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -194,31 +275,36 @@ class _PharmacyDrugPackScanDialogState
     }
   }
 
-  Future<void> _recomputeCandidates({String? preferBarcode}) async {
+  Future<void> _recomputeCandidates({
+    String? preferBarcode,
+    bool includePhotos = false,
+  }) async {
     DrugPackFieldCandidates? merged;
     final List<String> ocrChunks = <String>[];
     final List<String> ocrLines = <String>[];
 
-    for (final _SessionPhoto photo in _photos) {
-      final AppBarcodeCaptureResult? barcode = await widget.barcodeDecoder
-          .decodeFromImage(photo.bytes, mimeType: photo.mimeType);
-      final AppOcrResult ocr = await widget.ocrService.recognize(
-        photo.bytes,
-        mimeType: photo.mimeType,
-      );
-      if (ocr.hasText) {
-        ocrChunks.add(ocr.text);
-        ocrLines.addAll(ocr.lines);
+    if (includePhotos) {
+      for (final _SessionPhoto photo in _photos) {
+        final AppBarcodeCaptureResult? barcode = await widget.barcodeDecoder
+            .decodeFromImage(photo.bytes, mimeType: photo.mimeType);
+        final AppOcrResult ocr = await widget.ocrService.recognize(
+          photo.bytes,
+          mimeType: photo.mimeType,
+        );
+        if (ocr.hasText) {
+          ocrChunks.add(ocr.text);
+          ocrLines.addAll(ocr.lines);
+        }
+        if (barcode?.code != null && _barcodeController.text.trim().isEmpty) {
+          _barcodeController.text = barcode!.code;
+        }
+        final DrugPackFieldCandidates parsed = widget.parser.parse(
+          barcode: barcode?.code ?? preferBarcode ?? _barcodeOrNull,
+          ocrText: ocr.text,
+          ocrLines: ocr.lines,
+        );
+        merged = merged == null ? parsed : merged.merge(parsed);
       }
-      if (barcode?.code != null && _barcodeController.text.trim().isEmpty) {
-        _barcodeController.text = barcode!.code;
-      }
-      final DrugPackFieldCandidates parsed = widget.parser.parse(
-        barcode: barcode?.code ?? preferBarcode ?? _barcodeOrNull,
-        ocrText: ocr.text,
-        ocrLines: ocr.lines,
-      );
-      merged = merged == null ? parsed : merged.merge(parsed);
     }
 
     final String packText = _packTextController.text.trim();
@@ -227,7 +313,9 @@ class _PharmacyDrugPackScanDialogState
       if (packText.isNotEmpty) packText,
     ].join('\n').trim();
 
-    if (combinedOcr.isNotEmpty || preferBarcode != null || _barcodeOrNull != null) {
+    if (combinedOcr.isNotEmpty ||
+        preferBarcode != null ||
+        _barcodeOrNull != null) {
       final DrugPackFieldCandidates fromText = widget.parser.parse(
         barcode: preferBarcode ?? _barcodeOrNull,
         ocrText: combinedOcr.isEmpty ? packText : combinedOcr,
@@ -245,14 +333,41 @@ class _PharmacyDrugPackScanDialogState
         _statusMessage = null;
       } else {
         _preview = null;
-        if (_photos.isNotEmpty ||
+        final bool attempted = includePhotos ||
             packText.isNotEmpty ||
             preferBarcode != null ||
-            _barcodeOrNull != null) {
+            _barcodeOrNull != null;
+        if (attempted) {
           _statusMessage = context.l10n.pharmacyDrugScanNoDataBody;
         }
       }
     });
+  }
+
+  Widget _fieldSuffixAction({
+    required String label,
+    required IconData icon,
+    required bool iconOnly,
+    required VoidCallback? onPressed,
+  }) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: 40,
+        maxWidth: iconOnly ? 48 : 168,
+      ),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: AppButton.secondary(
+          label: label,
+          leadingIcon: icon,
+          iconOnly: iconOnly,
+          dense: true,
+          enabled: !_busy && onPressed != null,
+          tooltip: label,
+          onPressed: onPressed,
+        ),
+      ),
+    );
   }
 
   @override
@@ -263,7 +378,12 @@ class _PharmacyDrugPackScanDialogState
     final bool canPrefill =
         !_busy && preview != null && preview.hasAnyIdentityField;
     final double viewportWidth = MediaQuery.sizeOf(context).width;
-    final bool barcodeActionIconOnly = viewportWidth < 600;
+    final bool compactFieldActions = viewportWidth < 600;
+    final String? photoStatus = _photos.isEmpty
+        ? null
+        : _photosNeedProcessing
+        ? l10n.pharmacyDrugPhotosReadyBody(_photos.length)
+        : l10n.pharmacyDrugPhotosProcessedBody(_lastProcessedPhotoCount);
 
     return AppDialog(
       title: Text(l10n.pharmacyDrugScanPackTitle),
@@ -277,27 +397,16 @@ class _PharmacyDrugPackScanDialogState
           AppTextField(
             controller: _barcodeController,
             labelText: l10n.pharmacyDrugBarcodeLabel,
+            helperText: l10n.pharmacyDrugBarcodeHelper,
             enabled: !_busy,
-            suffixIcon: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: 40,
-                maxWidth: barcodeActionIconOnly ? 48 : 168,
-              ),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: AppButton.secondary(
-                  label: l10n.pharmacyDrugBarcodeApplyAction,
-                  leadingIcon: Icons.qr_code_2_outlined,
-                  iconOnly: barcodeActionIconOnly,
-                  dense: true,
-                  enabled: !_busy,
-                  tooltip: l10n.pharmacyDrugBarcodeApplyAction,
-                  onPressed: _applyBarcode,
-                ),
-              ),
+            suffixIcon: _fieldSuffixAction(
+              label: l10n.pharmacyDrugBarcodeApplyAction,
+              icon: Icons.qr_code_2_outlined,
+              iconOnly: compactFieldActions,
+              onPressed: _applyBarcode,
             ),
           ),
-          SizedBox(height: theme.spacing.sm),
+          SizedBox(height: theme.spacing.md),
           Wrap(
             spacing: theme.spacing.sm,
             runSpacing: theme.spacing.sm,
@@ -306,15 +415,22 @@ class _PharmacyDrugPackScanDialogState
                 label: l10n.pharmacyDrugTakePackPhotoAction,
                 leadingIcon: Icons.photo_camera_outlined,
                 enabled: !_busy,
-                isLoading: _busy,
-                onPressed: () => _addPhoto(fromCamera: true),
+                onPressed: _takePhoto,
               ),
               AppButton.secondary(
                 label: l10n.pharmacyDrugUploadPackPhotoAction,
                 leadingIcon: Icons.upload_file_outlined,
                 enabled: !_busy,
-                onPressed: () => _addPhoto(fromCamera: false),
+                onPressed: _uploadPhotos,
               ),
+              if (_photos.isNotEmpty)
+                AppButton.primary(
+                  label: l10n.pharmacyDrugProcessPackPhotosAction,
+                  leadingIcon: Icons.document_scanner_outlined,
+                  enabled: _canProcessPhotos,
+                  isLoading: _busy && _photosNeedProcessing,
+                  onPressed: _processAllPhotos,
+                ),
               if (_photos.isNotEmpty)
                 AppButton.tertiary(
                   label: l10n.pharmacyDrugClearPackPhotosAction,
@@ -326,12 +442,13 @@ class _PharmacyDrugPackScanDialogState
           ),
           if (_photos.isNotEmpty) ...<Widget>[
             SizedBox(height: theme.spacing.sm),
-            Text(
-              l10n.pharmacyDrugPhotosProcessedBody(_photos.length),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            if (photoStatus != null)
+              Text(
+                photoStatus,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
             SizedBox(height: theme.spacing.sm),
             SizedBox(
               height: 88,
@@ -353,42 +470,29 @@ class _PharmacyDrugPackScanDialogState
               ),
             ),
           ],
-          SizedBox(height: theme.spacing.sm),
-          if (!_showPackText)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: AppButton.tertiary(
-                label: l10n.pharmacyDrugParsePackTextExpandAction,
-                leadingIcon: Icons.notes_outlined,
-                enabled: !_busy,
-                onPressed: () => setState(() => _showPackText = true),
-              ),
-            )
-          else ...<Widget>[
-            AppTextField(
-              controller: _packTextController,
-              labelText: l10n.pharmacyDrugPackTextLabel,
-              enabled: !_busy,
-              maxLines: 5,
-              minLines: 3,
+          SizedBox(height: theme.spacing.md),
+          AppTextField(
+            controller: _packTextController,
+            labelText: l10n.pharmacyDrugPackTextLabel,
+            helperText: l10n.pharmacyDrugPackTextHelper,
+            enabled: !_busy,
+            maxLines: 5,
+            minLines: 3,
+            suffixIcon: _fieldSuffixAction(
+              label: l10n.pharmacyDrugPastePackTextAction,
+              icon: Icons.notes_outlined,
+              iconOnly: compactFieldActions,
+              onPressed: _parsePackText,
             ),
-            SizedBox(height: theme.spacing.sm),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: AppButton.secondary(
-                label: l10n.pharmacyDrugPastePackTextAction,
-                leadingIcon: Icons.notes_outlined,
-                enabled: !_busy,
-                onPressed: _parsePackText,
-              ),
-            ),
-          ],
+          ),
           if (_statusMessage != null) ...<Widget>[
             SizedBox(height: theme.spacing.sm),
             Text(
               _statusMessage!,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
+                color: _busy
+                    ? theme.colorScheme.onSurfaceVariant
+                    : theme.colorScheme.error,
               ),
             ),
           ],

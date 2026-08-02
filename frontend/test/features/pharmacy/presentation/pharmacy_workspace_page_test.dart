@@ -529,7 +529,7 @@ void main() {
     expect(find.byType(AppDialog), findsNothing);
     expect(find.byType(PharmacyCatalogPanel), findsOneWidget);
     expect(find.text('Drugs'), findsWidgets);
-    expect(find.text('Room'), findsOneWidget);
+    expect(find.text('Rooms'), findsOneWidget);
     expect(find.text('Storage layout'), findsNothing);
     expect(find.text('Generic name'), findsWidgets);
     expect(find.text('Generic (scientific) name'), findsNothing);

@@ -473,6 +473,64 @@ Future<AppImageUploadPendingItem?> pickAppImageFile(
   );
 }
 
+/// Picks one or more images from disk into memory. Optionally crops each file
+/// through the shared crop editor. Never uploads to media APIs.
+Future<List<AppImageUploadPendingItem>> pickAppImageFiles(
+  AppLocalizations l10n, {
+  required BuildContext context,
+  List<String> extensions = const <String>['jpg', 'jpeg', 'png', 'webp'],
+  String typeGroupLabel = 'image',
+  bool enableCrop = true,
+  double? cropAspectRatio,
+  bool? showCropAspectPresets,
+}) async {
+  final XTypeGroup typeGroup = XTypeGroup(
+    label: typeGroupLabel,
+    extensions: extensions,
+  );
+  final List<XFile> files = await openFiles(
+    acceptedTypeGroups: <XTypeGroup>[typeGroup],
+  );
+  if (files.isEmpty) {
+    return const <AppImageUploadPendingItem>[];
+  }
+
+  final List<AppImageUploadPendingItem> items = <AppImageUploadPendingItem>[];
+  for (final XFile file in files) {
+    if (!context.mounted) {
+      break;
+    }
+    List<int> bytes = await file.readAsBytes();
+    String fileName = file.name;
+    String? mimeType = file.mimeType;
+
+    if (enableCrop && context.mounted) {
+      final Uint8List? croppedBytes = await showAppImageCropDialog(
+        context: context,
+        imageBytes: Uint8List.fromList(bytes),
+        aspectRatio: cropAspectRatio,
+        showAspectPresets: showCropAspectPresets ?? cropAspectRatio == null,
+      );
+      if (croppedBytes == null) {
+        // User skipped this image; continue with remaining selections.
+        continue;
+      }
+      bytes = croppedBytes;
+      fileName = _croppedFileName(fileName);
+      mimeType = 'image/png';
+    }
+
+    items.add(
+      AppImageUploadPendingItem(
+        fileName: fileName,
+        bytes: bytes,
+        mimeType: mimeType,
+      ),
+    );
+  }
+  return items;
+}
+
 String _croppedFileName(String originalFileName) {
   final int dotIndex = originalFileName.lastIndexOf('.');
   final String baseName = dotIndex > 0

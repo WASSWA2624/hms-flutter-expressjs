@@ -323,7 +323,7 @@ void main() {
     'full ∩ read: detail with path shows Open linked once in body; no footer mutations',
     (WidgetTester tester) async {
       Finder tableRowInkWell() => find.byWidgetPredicate(
-        (Widget widget) => widget.runtimeType.toString() == 'TableRowInkWell',
+        (Widget widget) => widget.runtimeType.toString() == 'AppListTableRowInkWell',
       );
 
       await _pumpDeliveriesTab(

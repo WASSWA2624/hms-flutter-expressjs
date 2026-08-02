@@ -88,7 +88,7 @@ Finder _toolbarPrimary(String label) => find.descendant(
 );
 
 Finder _tableRowInkWell() => find.byWidgetPredicate(
-  (Widget widget) => widget.runtimeType.toString() == 'TableRowInkWell',
+  (Widget widget) => widget.runtimeType.toString() == 'AppListTableRowInkWell',
 );
 
 AppAccessPolicy _policy({
