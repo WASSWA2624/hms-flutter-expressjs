@@ -1140,11 +1140,13 @@ const syncClinicalOrderBillingSnapshotsFromInvoiceTx = async (tx, invoiceId) => 
     });
   }
 
+  // MySQL JsonFilter.path must be a JSONPath string (e.g. '$.billing.invoice_id'),
+  // not a Postgres-style path array — array paths abort the payment transaction.
   const radiologyOrders = await tx.radiology_order.findMany({
     where: {
       deleted_at: null,
       request_details: {
-        path: ['billing', 'invoice_id'],
+        path: '$.billing.invoice_id',
         equals: normalizedInvoiceId,
       },
     },

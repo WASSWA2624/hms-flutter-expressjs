@@ -138,6 +138,16 @@ const reconcilePayment = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.billing.payment.reconcile.success', data);
 });
 
+const receiveInvoicePayment = asyncHandler(async (req, res) => {
+  const data = await billingService.receiveInvoicePayment(
+    req.params.invoiceIdentifier,
+    req.body,
+    req.user,
+    req.ip
+  );
+  return sendSuccess(res, 200, 'messages.billing.payment.receive.success', data);
+});
+
 const requestPaymentRefund = asyncHandler(async (req, res) => {
   const data = await billingService.requestPaymentRefund(
     req.params.paymentIdentifier,
@@ -197,6 +207,7 @@ module.exports = {
   sendInvoice,
   requestInvoiceVoid,
   reconcilePayment,
+  receiveInvoicePayment,
   requestPaymentRefund,
   requestAdjustment,
   approveApproval,

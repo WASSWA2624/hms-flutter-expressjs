@@ -18,6 +18,7 @@ const {
   sendInvoiceSchema,
   voidRequestSchema,
   reconcilePaymentSchema,
+  receiveInvoicePaymentSchema,
   refundRequestSchema,
   adjustmentRequestSchema,
   approveApprovalSchema,
@@ -86,6 +87,13 @@ router.post(
   validateRequest({ params: invoiceIdentifierParamsSchema, body: voidRequestSchema }),
   authorize(BILLING_WRITE_SCOPES, 'permission'),
   billingController.requestInvoiceVoid
+);
+
+router.post(
+  '/invoices/:invoiceIdentifier/receive-payment',
+  validateRequest({ params: invoiceIdentifierParamsSchema, body: receiveInvoicePaymentSchema }),
+  authorize(BILLING_WRITE_SCOPES, 'permission'),
+  billingController.receiveInvoicePayment
 );
 
 router.post(

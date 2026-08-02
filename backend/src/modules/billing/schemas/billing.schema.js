@@ -84,6 +84,27 @@ const reconcilePaymentSchema = z.object({
   notes: z.string().trim().max(10000).optional().nullable(),
 });
 
+const receiveInvoicePaymentSchema = z.object({
+  amount: decimalStringSchema,
+  method: z.enum([
+    'CASH',
+    'CREDIT_CARD',
+    'DEBIT_CARD',
+    'PREPAID_CARD',
+    'GIFT_CARD',
+    'VOUCHER',
+    'BANK_CHECK',
+    'MOBILE_MONEY',
+    'BANK_TRANSFER',
+    'INSURANCE',
+    'OTHER',
+  ]),
+  transaction_ref: z.string().trim().max(120).optional().nullable(),
+  paid_at: z.string().datetime().optional().nullable(),
+  notes: z.string().trim().max(10000).optional().nullable(),
+  payer: z.string().trim().max(255).optional().nullable(),
+});
+
 const refundRequestSchema = z.object({
   amount: decimalStringSchema.optional(),
   reason: z.string().trim().min(2).max(255),
@@ -121,6 +142,7 @@ module.exports = {
   sendInvoiceSchema,
   voidRequestSchema,
   reconcilePaymentSchema,
+  receiveInvoicePaymentSchema,
   refundRequestSchema,
   adjustmentRequestSchema,
   approveApprovalSchema,

@@ -904,10 +904,23 @@ const reconcilePayment = async (paymentIdentifier, payload = {}, user = {}, ip =
   assertEnabled();
   assertBillingWrite(user);
   const scope = await resolveScope({}, user);
+  // Facility-scoped users must still reconcile payments created with a null
+  // facility_id (common when invoice.facility_id was missing on the client).
   const payment = await resolveScopedByIdentifier({
     model: 'payment',
     identifier: paymentIdentifier,
-    where: { tenant_id: scope.tenant_id, ...(scope.facility_id ? { facility_id: scope.facility_id } : {}) },
+    where: {
+      tenant_id: scope.tenant_id,
+      ...(scope.facility_id
+        ? {
+            OR: [
+              { facility_id: scope.facility_id },
+              { facility_id: null },
+              { invoice: { is: { facility_id: scope.facility_id } } },
+            ],
+          }
+        : {}),
+    },
     include: PAYMENT_INCLUDE,
     errorKey: 'errors.payment.not_found',
   });
@@ -953,6 +966,17 @@ const reconcilePayment = async (paymentIdentifier, payload = {}, user = {}, ip =
       if (paymentAmount > toDecimalNumber(financials.balance_due) + 0.009) {
         throw new HttpError('errors.payment.amount_exceeds_balance', 400);
       }
+
+      // Collapse duplicate pending receive attempts for this invoice.
+      await tx.payment.updateMany({
+        where: {
+          invoice_id: payment.invoice_id,
+          deleted_at: null,
+          status: 'PENDING',
+          id: { not: payment.id },
+        },
+        data: { status: 'FAILED' },
+      });
     }
 
     const updatedPayment = await tx.payment.update({
@@ -1020,6 +1044,148 @@ const reconcilePayment = async (paymentIdentifier, payload = {}, user = {}, ip =
   } catch (_err) {
     // OPD consultation sync must never fail payment reconcile.
   }
+  return {
+    payment: mapPayment(updatedPayment || mutation.payment),
+    invoice: updatedInvoice ? mapInvoice(updatedInvoice, true) : null,
+    financials: mutation.invoiceState?.financials || null,
+  };
+};
+
+/**
+ * Atomic receive-payment for an invoice: create COMPLETED payment + recalculate
+ * in one transaction. Also collapses orphan PENDING receive attempts.
+ */
+const receiveInvoicePayment = async (invoiceIdentifier, payload = {}, user = {}, ip = null) => {
+  assertEnabled();
+  assertBillingWrite(user);
+  const scope = await resolveScope({}, user);
+  // Allow invoices with null facility_id for facility-scoped cashiers (same
+  // class of mismatch that previously blocked reconcile after PENDING create).
+  const invoice = await resolveScopedByIdentifier({
+    model: 'invoice',
+    identifier: invoiceIdentifier,
+    where: {
+      tenant_id: scope.tenant_id,
+      ...(scope.facility_id
+        ? {
+            OR: [{ facility_id: scope.facility_id }, { facility_id: null }],
+          }
+        : {}),
+    },
+    include: INVOICE_INCLUDE,
+    errorKey: 'errors.invoice.not_found',
+  });
+
+  if (
+    ['CANCELLED'].includes(clean(invoice.status).toUpperCase()) ||
+    ['CANCELLED'].includes(clean(invoice.billing_status).toUpperCase())
+  ) {
+    throw new HttpError('errors.invoice.invalid_status', 400);
+  }
+  if (['DRAFT'].includes(clean(invoice.billing_status).toUpperCase())) {
+    throw new HttpError('errors.invoice.invalid_status', 400);
+  }
+
+  const amount = toDecimalNumber(payload.amount);
+  if (amount <= 0) {
+    throw new HttpError('errors.payment.invalid_amount', 400);
+  }
+  const method = clean(payload.method || 'CASH').toUpperCase() || 'CASH';
+  const financials = computeInvoiceFinancials(invoice);
+  if (amount > toDecimalNumber(financials.balance_due) + 0.009) {
+    throw new HttpError('errors.payment.amount_exceeds_balance', 400);
+  }
+
+  const mutation = await billingRepository.withTransaction(async (tx) => {
+    await tx.payment.updateMany({
+      where: {
+        invoice_id: invoice.id,
+        deleted_at: null,
+        status: 'PENDING',
+      },
+      data: { status: 'FAILED' },
+    });
+
+    const payment = await tx.payment.create({
+      data: {
+        tenant_id: invoice.tenant_id,
+        facility_id: invoice.facility_id || scope.facility_id || null,
+        patient_id: invoice.patient_id || null,
+        invoice_id: invoice.id,
+        status: 'COMPLETED',
+        method,
+        amount,
+        paid_at: payload.paid_at ? new Date(payload.paid_at) : new Date(),
+        transaction_ref: clean(payload.transaction_ref) || null,
+      },
+    });
+    const invoiceState = await recalculateInvoiceStateTx(tx, invoice.id);
+    const clinicalSync = await syncClinicalOrderBillingSnapshotsFromInvoiceTx(tx, invoice.id);
+    return { payment, invoiceState, clinicalSync };
+  });
+
+  auditCreate(user, ip, 'payment', mutation.payment.id, {
+    transition: 'RECEIVE_PAYMENT',
+    amount,
+    method,
+    notes: payload.notes || null,
+    payer: payload.payer || null,
+  });
+
+  const [updatedPayment, updatedInvoice] = await Promise.all([
+    billingRepository.findPaymentById(mutation.payment.id, PAYMENT_INCLUDE),
+    billingRepository.findInvoiceById(invoice.id, INVOICE_INCLUDE),
+  ]);
+
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.BILLING_PAYMENT_RECEIVED,
+    action: 'PAYMENT_RECEIVED',
+    invoice: updatedInvoice,
+    payment: updatedPayment || mutation.payment,
+    actorUserId: user?.id || null,
+  });
+  await publishBillingRealtimeUpdate({
+    event: PAYMENT_EVENTS.PAYMENT_RECONCILED,
+    action: 'PAYMENT_RECEIVED',
+    invoice: updatedInvoice,
+    payment: updatedPayment || mutation.payment,
+    actorUserId: user?.id || null,
+  });
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.INVOICE_UPDATED,
+    action: 'PAYMENT_RECEIVED',
+    invoice: updatedInvoice,
+    payment: updatedPayment || mutation.payment,
+    actorUserId: user?.id || null,
+  });
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.BILLING_BALANCE_UPDATED,
+    action: 'BALANCE_UPDATED',
+    invoice: updatedInvoice,
+    payment: updatedPayment || mutation.payment,
+    actorUserId: user?.id || null,
+  });
+  await notifyLabOrdersBillingUpdated(mutation.clinicalSync?.labOrderIds || [], user?.id || null);
+  await notifyRadiologyOrdersBillingUpdated(
+    mutation.clinicalSync?.radiologyOrderIds || [],
+    null
+  );
+  try {
+    const opdFlowService = require('@services/opd-flow/opd-flow.service');
+    await opdFlowService.syncConsultationBillingFromInvoicePayment({
+      invoiceId: invoice.id,
+      payment: updatedPayment || mutation.payment,
+      context: {
+        user_id: user?.id || null,
+        tenant_id: scope.tenant_id || invoice.tenant_id || null,
+        facility_id: scope.facility_id || invoice.facility_id || null,
+        ip_address: ip,
+      },
+    });
+  } catch (_err) {
+    // OPD consultation sync must never fail payment receive.
+  }
+
   return {
     payment: mapPayment(updatedPayment || mutation.payment),
     invoice: updatedInvoice ? mapInvoice(updatedInvoice, true) : null,
@@ -1386,6 +1552,7 @@ module.exports = {
   sendInvoice,
   requestInvoiceVoid,
   reconcilePayment,
+  receiveInvoicePayment,
   requestPaymentRefund,
   requestAdjustment,
   approveApproval,

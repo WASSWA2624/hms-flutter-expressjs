@@ -104,46 +104,25 @@ final class BillingRepositoryImpl implements BillingRepository {
       );
     }
 
-    final Result<String> createdPayment = await _apiClient.post<String>(
-      ApiEndpoints.collection(HmsApiResource.payments),
+    // Prefer atomic billing receive-payment so we never leave orphan PENDING
+    // rows when reconcile fails after create.
+    return _apiClient.post<BillingMutationResult>(
+      ApiEndpoints.apiV1(<String>[
+        'billing',
+        'invoices',
+        invoice.id,
+        'receive-payment',
+      ]),
       data: _withoutEmpty(<String, Object?>{
-        'tenant_id': tenantId,
-        'facility_id': invoice.facilityId,
-        'patient_id': invoice.patientId,
-        'invoice_id': invoice.id,
-        'status': 'PENDING',
-        'method': draft.method,
         'amount': _decimalString(draft.amount),
-        'paid_at': DateTime.now().toUtc().toIso8601String(),
+        'method': draft.method,
         'transaction_ref': draft.reference,
+        'payer': draft.payer,
+        'paid_at': DateTime.now().toUtc().toIso8601String(),
       }),
       options: _idempotentOptions(idempotencyKey),
-      decoder: decodeBillingRecordId,
-    );
-
-    return createdPayment.when<Future<Result<BillingMutationResult>>>(
-      success: (String paymentId) {
-        if (paymentId.isEmpty) {
-          return Future<Result<BillingMutationResult>>.value(
-            Result<BillingMutationResult>.failure(
-              AppFailure.validation(validationFields: <String>{'payment_id'}),
-            ),
-          );
-        }
-        return _apiClient.post<BillingMutationResult>(
-          ApiEndpoints.apiV1(<String>[
-            'billing',
-            'payments',
-            paymentId,
-            'reconcile',
-          ]),
-          data: const <String, Object?>{'status': 'COMPLETED'},
-          decoder: (Object? data) =>
-              BillingMutationResultDto.fromResponse(data).toEntity(),
-        );
-      },
-      failure: (AppFailure failure) async =>
-          Result<BillingMutationResult>.failure(failure),
+      decoder: (Object? data) =>
+          BillingMutationResultDto.fromResponse(data).toEntity(),
     );
   }
 

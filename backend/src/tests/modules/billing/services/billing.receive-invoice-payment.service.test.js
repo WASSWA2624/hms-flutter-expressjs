@@ -39,18 +39,18 @@ jest.mock('@lib/billing/financials', () => ({
       facility_id: 'facility-1',
       billing_status: 'PAID',
       status: 'SENT',
-      total_amount: '100.00',
+      total_amount: '210000.00',
       currency: 'UGX',
     },
     financials: {
       balance_due: 0,
-      net_paid_total: 100,
-      effective_total: 100,
-      gross_paid_total: 100,
+      net_paid_total: 210000,
+      effective_total: 210000,
+      gross_paid_total: 210000,
     },
   })),
   computeInvoiceFinancials: jest.fn((invoice = {}) => {
-    const total = Number(invoice.total_amount || 100);
+    const total = Number(invoice.total_amount || 0);
     const paid = (invoice.payments || [])
       .filter((p) => String(p.status || '').toUpperCase() === 'COMPLETED')
       .reduce((sum, p) => sum + Number(p.amount || 0), 0);
@@ -106,108 +106,91 @@ jest.mock('@services/opd-flow/opd-flow.service', () => ({
 const billingRepository = require('@repositories/billing/billing.repository');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { publishBillingRealtimeUpdate } = require('@lib/billing/realtime');
+const { recalculateInvoiceStateTx } = require('@lib/billing/financials');
 const billingService = require('@services/billing/billing.service');
 
-describe('billing.service reconcilePayment', () => {
+describe('billing.service receiveInvoicePayment', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('persists payment, fails sibling PENDING rows, emits billing events, and syncs OPD', async () => {
-    resolveModelRecordByIdentifier.mockImplementation(async ({ model }) => {
-      if (model === 'payment') {
-        return {
-          id: 'pay-1',
-          human_friendly_id: 'PAY0001',
-          tenant_id: 'tenant-1',
-          facility_id: 'facility-1',
-          invoice_id: 'inv-1',
-          amount: '100.00',
-          status: 'PENDING',
-          paid_at: null,
-          invoice: {
-            id: 'inv-1',
-            tenant_id: 'tenant-1',
-            facility_id: 'facility-1',
-            patient_id: 'patient-1',
-            encounter_id: 'encounter-1',
-          },
-        };
-      }
-      return null;
+  it('creates COMPLETED payment, fails orphan PENDING rows, and marks invoice PAID', async () => {
+    resolveModelRecordByIdentifier.mockResolvedValue({
+      id: 'inv-1',
+      human_friendly_id: 'INV0000021',
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1',
+      patient_id: 'patient-1',
+      encounter_id: 'encounter-1',
+      billing_status: 'ISSUED',
+      status: 'SENT',
+      total_amount: '210000.00',
+      currency: 'UGX',
+      payments: [
+        { id: 'pay-orphan-1', status: 'PENDING', amount: '210000.00' },
+        { id: 'pay-orphan-2', status: 'PENDING', amount: '210000.00' },
+        { id: 'pay-orphan-3', status: 'PENDING', amount: '210000.00' },
+      ],
+      adjustments: [],
     });
 
-    const updateMany = jest.fn(async () => ({ count: 2 }));
-    const paymentUpdate = jest.fn(async () => ({
-      id: 'pay-1',
+    const updateMany = jest.fn(async () => ({ count: 3 }));
+    const paymentCreate = jest.fn(async () => ({
+      id: 'pay-new',
+      human_friendly_id: 'PAY0000019',
       invoice_id: 'inv-1',
       status: 'COMPLETED',
-      amount: '100.00',
-      paid_at: new Date('2026-07-21T06:00:00.000Z'),
+      method: 'CASH',
+      amount: 210000,
+      paid_at: new Date('2026-08-02T18:00:00.000Z'),
     }));
 
     billingRepository.withTransaction.mockImplementation(async (callback) => {
       const tx = {
-        invoice: {
-          findFirst: jest.fn(async () => ({
-            id: 'inv-1',
-            tenant_id: 'tenant-1',
-            facility_id: 'facility-1',
-            billing_status: 'ISSUED',
-            status: 'SENT',
-            total_amount: '100.00',
-            payments: [],
-            billing_adjustments: [],
-          })),
-        },
         payment: {
           updateMany,
-          update: paymentUpdate,
+          create: paymentCreate,
         },
       };
       return callback(tx);
     });
 
     billingRepository.findPaymentById.mockResolvedValue({
-      id: 'pay-1',
-      human_friendly_id: 'PAY0001',
+      id: 'pay-new',
+      human_friendly_id: 'PAY0000019',
       tenant_id: 'tenant-1',
       facility_id: 'facility-1',
       invoice_id: 'inv-1',
       status: 'COMPLETED',
-      amount: '100.00',
       method: 'CASH',
-      paid_at: new Date('2026-07-21T06:00:00.000Z'),
+      amount: '210000.00',
+      paid_at: new Date('2026-08-02T18:00:00.000Z'),
       invoice: {
         id: 'inv-1',
-        tenant_id: 'tenant-1',
-        facility_id: 'facility-1',
         billing_status: 'PAID',
         status: 'SENT',
-        total_amount: '100.00',
-        currency: 'UGX',
-        patient_id: 'patient-1',
-        encounter_id: 'encounter-1',
       },
     });
     billingRepository.findInvoiceById.mockResolvedValue({
       id: 'inv-1',
-      human_friendly_id: 'INV0001',
+      human_friendly_id: 'INV0000021',
       tenant_id: 'tenant-1',
       facility_id: 'facility-1',
       billing_status: 'PAID',
       status: 'SENT',
-      total_amount: '100.00',
+      total_amount: '210000.00',
       currency: 'UGX',
       patient_id: 'patient-1',
       encounter_id: 'encounter-1',
-      payments: [],
+      payments: [
+        { id: 'pay-new', status: 'COMPLETED', amount: '210000.00' },
+      ],
       adjustments: [],
     });
 
-    const result = await billingService.reconcilePayment(
-      'PAY0001',
-      { status: 'COMPLETED' },
+    const result = await billingService.receiveInvoicePayment(
+      'INV0000021',
+      { amount: 210000, method: 'CASH' },
       {
         id: 'user-billing',
         tenant_id: 'tenant-1',
@@ -217,86 +200,32 @@ describe('billing.service reconcilePayment', () => {
       '127.0.0.1'
     );
 
-    expect(result.payment.status).toBe('COMPLETED');
-    expect(result.invoice.billing_status).toBe('PAID');
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           invoice_id: 'inv-1',
           status: 'PENDING',
-          id: { not: 'pay-1' },
         }),
         data: { status: 'FAILED' },
       })
     );
-    expect(publishBillingRealtimeUpdate).toHaveBeenCalled();
-    expect(mockSyncConsultationBillingFromInvoicePayment).toHaveBeenCalledWith(
+    expect(paymentCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        invoiceId: 'inv-1',
-        context: expect.objectContaining({
-          user_id: 'user-billing',
-          tenant_id: 'tenant-1',
+        data: expect.objectContaining({
+          invoice_id: 'inv-1',
+          status: 'COMPLETED',
+          method: 'CASH',
+          amount: 210000,
         }),
       })
     );
-  });
-
-  it('finds payments with null facility_id when user is facility-scoped', async () => {
-    resolveModelRecordByIdentifier.mockImplementation(async ({ where }) => {
-      expect(where.OR).toEqual(
-        expect.arrayContaining([
-          { facility_id: 'facility-1' },
-          { facility_id: null },
-          { invoice: { is: { facility_id: 'facility-1' } } },
-        ])
-      );
-      return {
-        id: 'pay-null-facility',
-        human_friendly_id: 'PAY0099',
-        tenant_id: 'tenant-1',
-        facility_id: null,
-        invoice_id: 'inv-1',
-        amount: '50.00',
-        status: 'COMPLETED',
-        paid_at: new Date('2026-07-21T06:00:00.000Z'),
-        invoice: {
-          id: 'inv-1',
-          tenant_id: 'tenant-1',
-          facility_id: 'facility-1',
-          patient_id: 'patient-1',
-        },
-      };
-    });
-
-    billingRepository.findPaymentById.mockResolvedValue({
-      id: 'pay-null-facility',
-      status: 'COMPLETED',
-      amount: '50.00',
-      method: 'CASH',
-      invoice: { id: 'inv-1', billing_status: 'PARTIALLY_PAID', status: 'SENT' },
-    });
-    billingRepository.findInvoiceById.mockResolvedValue({
-      id: 'inv-1',
-      billing_status: 'PARTIALLY_PAID',
-      status: 'SENT',
-      total_amount: '100.00',
-      payments: [{ status: 'COMPLETED', amount: '50.00' }],
-      adjustments: [],
-    });
-
-    const result = await billingService.reconcilePayment(
-      'PAY0099',
-      { status: 'COMPLETED' },
-      {
-        id: 'user-billing',
-        tenant_id: 'tenant-1',
-        facility_id: 'facility-1',
-        permissions: ['billing:read', 'billing:write'],
-      },
-      '127.0.0.1'
-    );
-
+    expect(recalculateInvoiceStateTx).toHaveBeenCalled();
     expect(result.payment.status).toBe('COMPLETED');
-    expect(billingRepository.withTransaction).not.toHaveBeenCalled();
+    expect(result.invoice.billing_status).toBe('PAID');
+    expect(result.financials.balance_due).toBe(0);
+    expect(publishBillingRealtimeUpdate).toHaveBeenCalled();
+    expect(mockSyncConsultationBillingFromInvoicePayment).toHaveBeenCalledWith(
+      expect.objectContaining({ invoiceId: 'inv-1' })
+    );
   });
 });

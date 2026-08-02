@@ -117,6 +117,16 @@ describe('clinical-request-billing helpers', () => {
       'invoice-1'
     );
 
+    expect(tx.radiology_order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          request_details: {
+            path: '$.billing.invoice_id',
+            equals: 'invoice-1',
+          },
+        }),
+      })
+    );
     expect(result.radiologyOrderIds).toEqual(['radiology-order-1']);
     expect(tx.radiology_order.update).toHaveBeenCalledWith({
       where: { id: 'radiology-order-1' },
