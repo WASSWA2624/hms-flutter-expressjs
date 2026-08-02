@@ -22462,6 +22462,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalPrescriptionEditLineDialogTitle => 'Edit medicine';
 
   @override
+  String get clinicalPrescriptionEditDetailsAction => 'Edit details';
+
+  @override
+  String get clinicalPrescriptionCompleteDetailsHint =>
+      'Set dose and duration to finish this prescription';
+
+  @override
+  String get clinicalPrescriptionInlineEditorsLabel => 'Prescription details';
+
+  @override
   String get clinicalPrescriptionNoMedicinesLabel => 'No medicines added yet';
 
   @override
@@ -22480,6 +22490,36 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clinicalPrescriptionEmptySearchLabel =>
       'No medicines match your search or filters';
+
+  @override
+  String get clinicalPrescriptionCatalogPickerTitle => 'Choose medicines';
+
+  @override
+  String get clinicalPrescriptionCatalogSearchLabel =>
+      'Search available medicines';
+
+  @override
+  String get clinicalPrescriptionCatalogSearchHint =>
+      'Search by medicine name or code';
+
+  @override
+  String get clinicalPrescriptionCatalogNoOptions => 'No matching medicines';
+
+  @override
+  String clinicalPrescriptionCatalogSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get clinicalPrescriptionCatalogConfirmAction =>
+      'Add selected medicines';
+
+  @override
+  String get clinicalPrescriptionCatalogColumnsTitle =>
+      'Medicine catalog columns';
+
+  @override
+  String get clinicalPrescriptionCatalogCodeLabel => 'Code';
 
   @override
   String get clinicalRequestBillingNoItemsLabel => 'Add items to see pricing.';

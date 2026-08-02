@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
@@ -61,18 +61,72 @@ void main() {
       expect(find.text('Request billing'), findsNothing);
     });
 
-    testWidgets('adds a medicine row and removes it via remove selected', (
+    testWidgets('add medicine opens catalog table picker', (
       WidgetTester tester,
     ) async {
       await _pumpPrescribeDialog(tester);
 
-      await _addAmoxicillinLine(tester);
+      await tester.tap(find.text('Add medicine').first);
+      await tester.pumpAndSettle();
 
-      expect(find.text('Amoxicillin 500mg'), findsWidgets);
-      expect(find.text('500 mg'), findsWidgets);
-      expect(find.text('Oral · twice daily'), findsWidgets);
+      expect(find.text('CHOOSE MEDICINES'), findsOneWidget);
+      expect(find.text('Available drug'), findsNothing);
+      expect(find.text('Amoxicillin'), findsWidgets);
+      expect(find.text('Ibuprofen'), findsWidgets);
+      expect(find.text('Add selected medicines'), findsOneWidget);
+    });
 
-      // Select the row via its checkbox (row tap does not toggle selection).
+    testWidgets('cancel on catalog picker adds nothing', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPrescribeDialog(tester);
+
+      await tester.tap(find.text('Add medicine').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Amoxicillin').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(AppButton, 'Cancel').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('No medicines added yet'), findsOneWidget);
+      expect(find.textContaining('Amoxicillin'), findsNothing);
+    });
+
+    testWidgets('shows paper-style prescription lines with inline editors', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPrescribeDialog(tester);
+
+      await _addMedicinesFromCatalog(tester, <String>[
+        'Amoxicillin',
+        'Ibuprofen',
+      ]);
+
+      expect(find.text('Amoxicillin 500 mg'), findsWidgets);
+      expect(find.text('Ibuprofen 200 mg'), findsWidgets);
+      expect(
+        find.textContaining('Take by mouth twice daily'),
+        findsWidgets,
+      );
+      expect(find.textContaining('Qty 1'), findsWidgets);
+      expect(find.text('Prescription details'), findsWidgets);
+      expect(find.text('Dose amount'), findsWidgets);
+      expect(find.text('Medication route'), findsWidgets);
+    });
+
+    testWidgets('adds selected medicines from catalog and removes them', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPrescribeDialog(tester);
+
+      await _addMedicinesFromCatalog(tester, <String>[
+        'Amoxicillin',
+        'Ibuprofen',
+      ]);
+
+      expect(find.textContaining('Amoxicillin'), findsWidgets);
+      expect(find.textContaining('Ibuprofen'), findsWidgets);
+
       await tester.tap(find.byType(Checkbox).last);
       await tester.pumpAndSettle();
 
@@ -83,15 +137,58 @@ void main() {
       await tester.tap(find.widgetWithText(AppButton, 'Remove'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Amoxicillin 500mg'), findsNothing);
-      expect(find.text('No medicines added yet'), findsOneWidget);
+      expect(find.textContaining('Ibuprofen'), findsNothing);
+      expect(find.textContaining('Amoxicillin'), findsWidgets);
     });
 
-    testWidgets('submit sends items with null billing by default', (
+    testWidgets('does not add a duplicate medicine already on the list', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPrescribeDialog(tester);
+
+      await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
+      expect(find.textContaining('Amoxicillin'), findsWidgets);
+
+      await tester.tap(find.text('Add medicine').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('CHOOSE MEDICINES'), findsOneWidget);
+      expect(find.text('Amoxicillin'), findsNothing);
+      expect(find.text('Ibuprofen'), findsWidgets);
+
+      await tester.tap(find.widgetWithText(AppButton, 'Cancel').last);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('blocks prescribe when dose details are incomplete', (
+      WidgetTester tester,
+    ) async {
+      var submitted = false;
+      await _pumpPrescribeDialog(
+        tester,
+        onSubmit:
+            ({
+              required List<Map<String, Object?>> items,
+              ClinicalRequestBillingSubmit? billing,
+            }) async {
+              submitted = true;
+              return null;
+            },
+      );
+
+      await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
+      await tester.tap(find.widgetWithIcon(AppButton, Icons.send_outlined));
+      await tester.pumpAndSettle();
+
+      expect(submitted, isFalse);
+      expect(find.text('CHOOSE MEDICINES'), findsNothing);
+      expect(find.textContaining('Amoxicillin'), findsWidgets);
+    });
+
+    testWidgets('inline dose edit allows prescribe submit', (
       WidgetTester tester,
     ) async {
       List<Map<String, Object?>>? submittedItems;
-      ClinicalRequestBillingSubmit? submittedBilling;
 
       await _pumpPrescribeDialog(
         tester,
@@ -101,56 +198,154 @@ void main() {
               ClinicalRequestBillingSubmit? billing,
             }) async {
               submittedItems = items;
-              submittedBilling = billing;
               return null;
             },
       );
 
-      await _addAmoxicillinLine(tester);
+      await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
+      await _editDoseInline(
+        tester,
+        doseAmount: '500',
+        doseUnit: 'mg',
+      );
+
+      expect(
+        find.textContaining('Take 500 mg by mouth twice daily'),
+        findsWidgets,
+      );
+
       await tester.tap(find.widgetWithIcon(AppButton, Icons.send_outlined));
       await tester.pumpAndSettle();
 
       expect(submittedItems, isNotNull);
       expect(submittedItems!.single['drug_id'], 'DRG-AMOX');
-      expect(submittedBilling, isNull);
+      expect(submittedItems!.single['dose_amount'], 500);
+      expect(submittedItems!.single['dose_unit'], 'mg');
+    });
+
+    testWidgets('edit details dialog remains available for full form', (
+      WidgetTester tester,
+    ) async {
+      List<Map<String, Object?>>? submittedItems;
+
+      await _pumpPrescribeDialog(
+        tester,
+        onSubmit:
+            ({
+              required List<Map<String, Object?>> items,
+              ClinicalRequestBillingSubmit? billing,
+            }) async {
+              submittedItems = items;
+              return null;
+            },
+      );
+
+      await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
+      await _editDetailsDialog(
+        tester,
+        doseAmount: '250',
+        doseUnit: 'mg',
+      );
+
+      await tester.tap(find.widgetWithIcon(AppButton, Icons.send_outlined));
+      await tester.pumpAndSettle();
+
+      expect(submittedItems, isNotNull);
+      expect(submittedItems!.single['dose_amount'], 250);
+      expect(submittedItems!.single['dose_unit'], 'mg');
     });
   });
 }
 
-Future<void> _addAmoxicillinLine(WidgetTester tester) async {
+Future<void> _addMedicinesFromCatalog(
+  WidgetTester tester,
+  List<String> medicineNames,
+) async {
   await tester.tap(find.text('Add medicine').first);
   await tester.pumpAndSettle();
 
-  expect(find.text('ADD MEDICINE'), findsOneWidget);
+  expect(find.text('CHOOSE MEDICINES'), findsOneWidget);
 
-  final Finder lineDialog = find.byType(AppDialog).last;
-  final Finder drugField = find.descendant(
-    of: lineDialog,
-    matching: find.byType(EditableText),
+  for (final String name in medicineNames) {
+    await tester.ensureVisible(find.text(name).last);
+    await tester.tap(find.text(name).last);
+    await tester.pumpAndSettle();
+  }
+
+  final Finder confirm = find.widgetWithText(
+    AppButton,
+    'Add selected medicines',
   );
-
-  await tester.ensureVisible(drugField.first);
-  await tester.tap(drugField.first);
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('Amoxicillin 500mg').last);
+  expect(confirm, findsOneWidget);
+  await tester.tap(confirm);
   await tester.pumpAndSettle();
 
-  final Finder doseAmount = find.byWidgetPredicate(
+  expect(find.text('CHOOSE MEDICINES'), findsNothing);
+}
+
+Future<void> _editDoseInline(
+  WidgetTester tester, {
+  required String doseAmount,
+  required String doseUnit,
+}) async {
+  final Finder doseAmountField = find.byWidgetPredicate(
     (Widget widget) =>
         widget is AppTextField && widget.labelText == 'Dose amount',
   );
-  await tester.ensureVisible(doseAmount);
-  await tester.enterText(doseAmount, '500');
+  expect(doseAmountField, findsWidgets);
+  await tester.ensureVisible(doseAmountField.first);
+  await tester.enterText(doseAmountField.first, doseAmount);
   await tester.pumpAndSettle();
 
-  final Finder doseUnit = find.byWidgetPredicate(
+  final Finder doseUnitField = find.byWidgetPredicate(
     (Widget widget) =>
         widget is AppSelectField<String> && widget.labelText == 'Dose unit',
   );
-  await tester.ensureVisible(doseUnit);
-  await tester.tap(find.descendant(of: doseUnit, matching: find.byType(EditableText)));
+  await tester.ensureVisible(doseUnitField.first);
+  await tester.tap(
+    find.descendant(
+      of: doseUnitField.first,
+      matching: find.byType(EditableText),
+    ),
+  );
   await tester.pumpAndSettle();
-  await tester.tap(find.text('mg').last);
+  await tester.tap(find.text(doseUnit).last);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _editDetailsDialog(
+  WidgetTester tester, {
+  required String doseAmount,
+  required String doseUnit,
+}) async {
+  final Finder editAction = find.byTooltip('Edit details');
+  expect(editAction, findsWidgets);
+  await tester.tap(editAction.first);
+  await tester.pumpAndSettle();
+
+  expect(find.text('EDIT MEDICINE'), findsOneWidget);
+
+  final Finder doseAmountField = find.byWidgetPredicate(
+    (Widget widget) =>
+        widget is AppTextField && widget.labelText == 'Dose amount',
+  );
+  await tester.ensureVisible(doseAmountField.last);
+  await tester.enterText(doseAmountField.last, doseAmount);
+  await tester.pumpAndSettle();
+
+  final Finder doseUnitField = find.byWidgetPredicate(
+    (Widget widget) =>
+        widget is AppSelectField<String> && widget.labelText == 'Dose unit',
+  );
+  await tester.ensureVisible(doseUnitField.last);
+  await tester.tap(
+    find.descendant(
+      of: doseUnitField.last,
+      matching: find.byType(EditableText),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(doseUnit).last);
   await tester.pumpAndSettle();
 
   await tester.tap(find.widgetWithText(AppButton, 'Done'));
@@ -179,14 +374,31 @@ Future<void> _pumpPrescribeDialog(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         home: Scaffold(
           body: ClinicalPrescriptionActionDialog(
-            referenceData: ClinicalActionReferenceData(
+            referenceData: const ClinicalActionReferenceData(
               drugs: <ClinicalActionCatalogOption>[
-                const ClinicalActionCatalogOption(
+                ClinicalActionCatalogOption(
                   id: 'amox',
                   publicId: 'DRG-AMOX',
-                  name: 'Amoxicillin 500mg',
+                  name: 'Amoxicillin',
+                  code: 'AMOX',
                   unitPrice: 12,
                   currency: 'USD',
+                  metadata: <String, Object?>{
+                    'generic_name': 'Amoxicillin',
+                    'strength': '500 mg',
+                  },
+                ),
+                ClinicalActionCatalogOption(
+                  id: 'ibu',
+                  publicId: 'DRG-IBU',
+                  name: 'Ibuprofen',
+                  code: 'IBU',
+                  unitPrice: 8,
+                  currency: 'USD',
+                  metadata: <String, Object?>{
+                    'generic_name': 'Ibuprofen',
+                    'strength': '200 mg',
+                  },
                 ),
               ],
             ),

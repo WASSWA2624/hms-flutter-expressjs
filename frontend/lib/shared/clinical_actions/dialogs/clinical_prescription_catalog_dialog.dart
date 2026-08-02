@@ -1,0 +1,427 @@
+import 'package:flutter/material.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
+
+Future<List<ClinicalActionCatalogOption>?>
+showClinicalPrescriptionCatalogDialog({
+  required BuildContext context,
+  required List<ClinicalActionCatalogOption> drugs,
+  Set<String> alreadySelectedDrugIds = const <String>{},
+}) {
+  return showAppDialog<List<ClinicalActionCatalogOption>>(
+    context: context,
+    builder: (BuildContext context) => ClinicalPrescriptionCatalogDialog(
+      drugs: drugs,
+      alreadySelectedDrugIds: alreadySelectedDrugIds,
+    ),
+  );
+}
+
+class ClinicalPrescriptionCatalogDialog extends StatefulWidget {
+  const ClinicalPrescriptionCatalogDialog({
+    required this.drugs,
+    this.alreadySelectedDrugIds = const <String>{},
+    super.key,
+  });
+
+  final List<ClinicalActionCatalogOption> drugs;
+  final Set<String> alreadySelectedDrugIds;
+
+  @override
+  State<ClinicalPrescriptionCatalogDialog> createState() =>
+      _ClinicalPrescriptionCatalogDialogState();
+}
+
+class _ClinicalPrescriptionCatalogDialogState
+    extends State<ClinicalPrescriptionCatalogDialog> {
+  static const String _selectColumnKey = 'select';
+  static const String _nameColumnKey = 'name';
+  static const String _codeColumnKey = 'code';
+  static const String _priceColumnKey = 'price';
+  static const String _columnVisibilityStorageKey =
+      'clinical_prescription_catalog_columns';
+
+  late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<ClinicalActionCatalogOption>
+  _columnVisibilityController;
+  final Set<String> _stagedIds = <String>{};
+  final List<ClinicalActionCatalogOption> _stagedOptions =
+      <ClinicalActionCatalogOption>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    _columnVisibilityController =
+        AppListTableColumnVisibilityController<ClinicalActionCatalogOption>();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _columnVisibilityController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<ClinicalActionCatalogOption> catalog = _availableDrugs();
+    final List<AppListTableColumn<ClinicalActionCatalogOption>> columns =
+        _catalogColumns(context);
+    final List<AppListTableColumn<ClinicalActionCatalogOption>> columnChoices =
+        columns
+            .where(
+              (AppListTableColumn<ClinicalActionCatalogOption> column) =>
+                  column.key != _selectColumnKey,
+            )
+            .toList(growable: false);
+
+    return AppDialog(
+      title: Text(l10n.clinicalPrescriptionCatalogPickerTitle),
+      icon: const Icon(Icons.manage_search_outlined),
+      maxWidth: 980,
+      pinActionsToBottom: true,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              l10n.clinicalPrescriptionCatalogSelectedCount(_stagedIds.length),
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.primary,
+              ),
+            ),
+          ),
+          SizedBox(height: theme.spacing.sm),
+          Expanded(
+            child: AppListTable<ClinicalActionCatalogOption>(
+              items: catalog,
+              columns: columns,
+              columnChoices: columnChoices,
+              columnVisibilityController: _columnVisibilityController,
+              columnVisibilityStorageKey: _columnVisibilityStorageKey,
+              columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+              columnVisibilityTitle:
+                  l10n.clinicalPrescriptionCatalogColumnsTitle,
+              columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
+              columnVisibilityResetLabel: l10n.labResetColumnsAction,
+              displayMode: AppListTableDisplayMode.table,
+              tableHorizontalMargin: 0,
+              showRowNumbers: false,
+              onRowSelected: (ClinicalActionCatalogOption item) {
+                _toggleSelection(
+                  item,
+                  selected: !_stagedIds.contains(item.apiId),
+                );
+              },
+              rowColorBuilder:
+                  (BuildContext context, ClinicalActionCatalogOption item) {
+                    if (!_stagedIds.contains(item.apiId)) {
+                      return null;
+                    }
+                    return colorScheme.primaryContainer.withValues(alpha: 0.35);
+                  },
+              itemKeyBuilder: (ClinicalActionCatalogOption item) =>
+                  ValueKey<String>(item.apiId),
+              search: AppListTableSearch<ClinicalActionCatalogOption>(
+                controller: _searchController,
+                semanticLabel: l10n.clinicalPrescriptionCatalogSearchLabel,
+                hintText: l10n.clinicalPrescriptionCatalogSearchHint,
+                matcher: _matchesCatalogSearch,
+              ),
+              emptyBuilder: (_) =>
+                  AppMutedText(l10n.clinicalPrescriptionCatalogNoOptions),
+              mobileItemBuilder:
+                  (BuildContext context, ClinicalActionCatalogOption item) {
+                    final bool selected = _stagedIds.contains(item.apiId);
+                    return InkWell(
+                      onTap: () =>
+                          _toggleSelection(item, selected: !selected),
+                      child: AppListTableMobileItem(
+                        leading: IgnorePointer(
+                          child: Checkbox(
+                            value: selected,
+                            onChanged: (_) {},
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                        title: item.name ?? item.displayTitle,
+                        caption: item.code,
+                        meta: <AppListTableMobileMeta>[
+                          if ((item.displaySubtitle ?? '').isNotEmpty)
+                            AppListTableMobileMeta(label: item.displaySubtitle!),
+                        ],
+                        showAvatar: false,
+                      ),
+                    );
+                  },
+            ),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppButton.primary(
+          label: l10n.clinicalPrescriptionCatalogConfirmAction,
+          leadingIcon: Icons.playlist_add_check,
+          enabled: _stagedOptions.isNotEmpty,
+          onPressed: _stagedOptions.isEmpty
+              ? null
+              : () => Navigator.of(context).pop(
+                  List<ClinicalActionCatalogOption>.from(_stagedOptions),
+                ),
+        ),
+      ],
+    );
+  }
+
+  List<ClinicalActionCatalogOption> _availableDrugs() {
+    final Set<String> excluded = widget.alreadySelectedDrugIds
+        .map((String id) => id.trim().toLowerCase())
+        .where((String id) => id.isNotEmpty)
+        .toSet();
+    final List<ClinicalActionCatalogOption> available =
+        <ClinicalActionCatalogOption>[];
+    for (final ClinicalActionCatalogOption option in widget.drugs) {
+      final String apiId = option.apiId.trim();
+      if (apiId.isEmpty) {
+        continue;
+      }
+      if (excluded.contains(apiId.toLowerCase())) {
+        continue;
+      }
+      available.add(option);
+    }
+    available.sort(
+      (ClinicalActionCatalogOption left, ClinicalActionCatalogOption right) {
+        final int bySelected =
+            (_stagedIds.contains(right.apiId) ? 1 : 0) -
+            (_stagedIds.contains(left.apiId) ? 1 : 0);
+        if (bySelected != 0) {
+          return bySelected;
+        }
+        return appListTableCompareText(
+          left.name ?? left.displayTitle,
+          right.name ?? right.displayTitle,
+        );
+      },
+    );
+    return available;
+  }
+
+  List<AppListTableColumn<ClinicalActionCatalogOption>> _catalogColumns(
+    BuildContext context,
+  ) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    return <AppListTableColumn<ClinicalActionCatalogOption>>[
+      _selectionColumn(context),
+      AppListTableColumn<ClinicalActionCatalogOption>(
+        id: _nameColumnKey,
+        label: l10n.clinicalPrescriptionMedicineLabel,
+        sortComparator:
+            (
+              ClinicalActionCatalogOption left,
+              ClinicalActionCatalogOption right,
+            ) => appListTableCompareText(
+              left.name ?? left.displayTitle,
+              right.name ?? right.displayTitle,
+            ),
+        cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
+          return Text(item.name ?? item.displayTitle);
+        },
+      ),
+      AppListTableColumn<ClinicalActionCatalogOption>(
+        id: _codeColumnKey,
+        label: l10n.clinicalPrescriptionCatalogCodeLabel,
+        sortComparator:
+            (
+              ClinicalActionCatalogOption left,
+              ClinicalActionCatalogOption right,
+            ) => appListTableCompareText(left.code, right.code),
+        cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
+          return Text(item.code ?? l10n.profileUnknownValue);
+        },
+      ),
+      AppListTableColumn<ClinicalActionCatalogOption>(
+        id: _priceColumnKey,
+        label: l10n.clinicalRequestUnitPriceLabel,
+        numeric: true,
+        sortComparator:
+            (
+              ClinicalActionCatalogOption left,
+              ClinicalActionCatalogOption right,
+            ) {
+              return (left.unitPrice ?? 0).compareTo(right.unitPrice ?? 0);
+            },
+        cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
+          return Padding(
+            padding: EdgeInsetsDirectional.only(end: theme.spacing.md),
+            child: Text(
+              clinicalRequestPriceLabel(
+                context,
+                item.unitPrice,
+                clinicalCatalogOptionCurrency(item),
+              ),
+              textAlign: TextAlign.end,
+            ),
+          );
+        },
+      ),
+    ];
+  }
+
+  AppListTableColumn<ClinicalActionCatalogOption> _selectionColumn(
+    BuildContext context,
+  ) {
+    return AppListTableColumn<ClinicalActionCatalogOption>(
+      id: _selectColumnKey,
+      label: '',
+      alwaysVisible: true,
+      fixedWidth: 40,
+      headerBuilder: (BuildContext context) {
+        return ValueListenableBuilder<TextEditingValue>(
+          valueListenable: _searchController,
+          builder: (BuildContext context, TextEditingValue value, Widget? _) {
+            final List<ClinicalActionCatalogOption> visibleItems =
+                _availableDrugs()
+                    .where(
+                      (ClinicalActionCatalogOption item) =>
+                          _matchesCatalogSearch(item, value.text),
+                    )
+                    .toList(growable: false);
+            final bool allSelected =
+                visibleItems.isNotEmpty &&
+                visibleItems.every(
+                  (ClinicalActionCatalogOption item) =>
+                      _stagedIds.contains(item.apiId),
+                );
+            final bool someSelected = visibleItems.any(
+              (ClinicalActionCatalogOption item) =>
+                  _stagedIds.contains(item.apiId),
+            );
+            return Center(
+              child: Checkbox(
+                tristate: true,
+                value: allSelected
+                    ? true
+                    : someSelected
+                    ? null
+                    : false,
+                onChanged: visibleItems.isEmpty
+                    ? null
+                    : (bool? checked) {
+                        _toggleFilteredItems(
+                          visibleItems,
+                          selected: checked ?? false,
+                        );
+                      },
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            );
+          },
+        );
+      },
+      cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
+        return Center(
+          child: IgnorePointer(
+            child: Checkbox(
+              value: _stagedIds.contains(item.apiId),
+              onChanged: (_) {},
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  bool _matchesCatalogSearch(ClinicalActionCatalogOption item, String query) {
+    final String normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return true;
+    }
+    final String haystack = clinicalActionJoinDisplay(<String?>[
+      item.name,
+      item.code,
+      item.category,
+      item.secondaryText,
+      item.status,
+      item.searchText,
+      item.displayTitle,
+      item.displaySubtitle,
+    ], separator: ' ').toLowerCase();
+    return haystack.contains(normalized);
+  }
+
+  void _toggleSelection(
+    ClinicalActionCatalogOption option, {
+    required bool selected,
+  }) {
+    final String apiId = option.apiId;
+    final bool currentlySelected = _stagedIds.contains(apiId);
+    if (currentlySelected == selected) {
+      return;
+    }
+    setState(() {
+      if (selected) {
+        _stagedIds.add(apiId);
+        if (!_stagedOptions.any(
+          (ClinicalActionCatalogOption item) => item.apiId == apiId,
+        )) {
+          _stagedOptions.add(option);
+        }
+        return;
+      }
+      _stagedIds.remove(apiId);
+      _stagedOptions.removeWhere(
+        (ClinicalActionCatalogOption item) => item.apiId == apiId,
+      );
+    });
+  }
+
+  void _toggleFilteredItems(
+    List<ClinicalActionCatalogOption> items, {
+    required bool selected,
+  }) {
+    setState(() {
+      for (final ClinicalActionCatalogOption item in items) {
+        final String apiId = item.apiId;
+        final bool currentlySelected = _stagedIds.contains(apiId);
+        if (currentlySelected == selected) {
+          continue;
+        }
+        if (selected) {
+          _stagedIds.add(apiId);
+          if (!_stagedOptions.any(
+            (ClinicalActionCatalogOption option) => option.apiId == apiId,
+          )) {
+            _stagedOptions.add(item);
+          }
+          continue;
+        }
+        _stagedIds.remove(apiId);
+        _stagedOptions.removeWhere(
+          (ClinicalActionCatalogOption option) => option.apiId == apiId,
+        );
+      }
+    });
+  }
+}

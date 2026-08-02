@@ -20,6 +20,7 @@ export 'dialogs/clinical_free_text_action_dialog.dart';
 export 'dialogs/clinical_lab_order_action_dialog.dart';
 export 'dialogs/clinical_lab_request_catalog_dialog.dart';
 export 'dialogs/clinical_prescription_action_dialog.dart';
+export 'dialogs/clinical_prescription_catalog_dialog.dart';
 export 'dialogs/clinical_procedure_action_dialog.dart';
 export 'dialogs/clinical_procedure_catalog_dialog.dart';
 export 'dialogs/clinical_radiology_order_action_dialog.dart';

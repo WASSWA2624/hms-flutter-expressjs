@@ -28850,6 +28850,19 @@
   "@clinicalPrescriptionEditLineDialogTitle": {
     "description": "Nested prescription line editor title when editing."
   },
+  "clinicalPrescriptionEditDetailsAction": "Edit details",
+  "@clinicalPrescriptionEditDetailsAction": {
+    "description": "Opens the detailed prescription form for a selected medicine."
+  },
+  "clinicalPrescriptionCompleteDetailsHint": "Set dose and duration to finish this prescription",
+  "@clinicalPrescriptionCompleteDetailsHint": {
+    "description": "Hint shown on a prescribe line before dose details are completed."
+  },
+  "clinicalPrescriptionInlineEditorsLabel": "Prescription details",
+  "@clinicalPrescriptionInlineEditorsLabel": {
+    "description": "Section label above inline prescription editors on the prescribe list."
+  },
+
   "clinicalPrescriptionNoMedicinesLabel": "No medicines added yet",
   "@clinicalPrescriptionNoMedicinesLabel": {
     "description": "Empty prescription selection state."
@@ -28873,6 +28886,43 @@
   "clinicalPrescriptionEmptySearchLabel": "No medicines match your search or filters",
   "@clinicalPrescriptionEmptySearchLabel": {
     "description": "Empty state when prescribe table search or filters match nothing."
+  },
+  "clinicalPrescriptionCatalogPickerTitle": "Choose medicines",
+  "@clinicalPrescriptionCatalogPickerTitle": {
+    "description": "Nested prescribe catalog picker dialog title."
+  },
+  "clinicalPrescriptionCatalogSearchLabel": "Search available medicines",
+  "@clinicalPrescriptionCatalogSearchLabel": {
+    "description": "Semantic label for the prescribe catalog picker search field."
+  },
+  "clinicalPrescriptionCatalogSearchHint": "Search by medicine name or code",
+  "@clinicalPrescriptionCatalogSearchHint": {
+    "description": "Hint for the prescribe catalog picker search field."
+  },
+  "clinicalPrescriptionCatalogNoOptions": "No matching medicines",
+  "@clinicalPrescriptionCatalogNoOptions": {
+    "description": "Empty state when prescribe catalog picker search matches nothing."
+  },
+  "clinicalPrescriptionCatalogSelectedCount": "{count} selected",
+  "@clinicalPrescriptionCatalogSelectedCount": {
+    "description": "Selected medicine count in the prescribe catalog picker.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalPrescriptionCatalogConfirmAction": "Add selected medicines",
+  "@clinicalPrescriptionCatalogConfirmAction": {
+    "description": "Confirm action for the prescribe catalog picker."
+  },
+  "clinicalPrescriptionCatalogColumnsTitle": "Medicine catalog columns",
+  "@clinicalPrescriptionCatalogColumnsTitle": {
+    "description": "Title for prescribe catalog picker column visibility settings."
+  },
+  "clinicalPrescriptionCatalogCodeLabel": "Code",
+  "@clinicalPrescriptionCatalogCodeLabel": {
+    "description": "Prescribe catalog picker column for drug code."
   },
   "clinicalRequestBillingNoItemsLabel": "Add items to see pricing.",
   "@clinicalRequestBillingNoItemsLabel": {

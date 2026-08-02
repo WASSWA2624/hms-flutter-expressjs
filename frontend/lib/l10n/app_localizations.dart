@@ -41482,6 +41482,24 @@ abstract class AppLocalizations {
   /// **'Edit medicine'**
   String get clinicalPrescriptionEditLineDialogTitle;
 
+  /// Opens the detailed prescription form for a selected medicine.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit details'**
+  String get clinicalPrescriptionEditDetailsAction;
+
+  /// Hint shown on a prescribe line before dose details are completed.
+  ///
+  /// In en, this message translates to:
+  /// **'Set dose and duration to finish this prescription'**
+  String get clinicalPrescriptionCompleteDetailsHint;
+
+  /// Section label above inline prescription editors on the prescribe list.
+  ///
+  /// In en, this message translates to:
+  /// **'Prescription details'**
+  String get clinicalPrescriptionInlineEditorsLabel;
+
   /// Empty prescription selection state.
   ///
   /// In en, this message translates to:
@@ -41517,6 +41535,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No medicines match your search or filters'**
   String get clinicalPrescriptionEmptySearchLabel;
+
+  /// Nested prescribe catalog picker dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose medicines'**
+  String get clinicalPrescriptionCatalogPickerTitle;
+
+  /// Semantic label for the prescribe catalog picker search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search available medicines'**
+  String get clinicalPrescriptionCatalogSearchLabel;
+
+  /// Hint for the prescribe catalog picker search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by medicine name or code'**
+  String get clinicalPrescriptionCatalogSearchHint;
+
+  /// Empty state when prescribe catalog picker search matches nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching medicines'**
+  String get clinicalPrescriptionCatalogNoOptions;
+
+  /// Selected medicine count in the prescribe catalog picker.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String clinicalPrescriptionCatalogSelectedCount(int count);
+
+  /// Confirm action for the prescribe catalog picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Add selected medicines'**
+  String get clinicalPrescriptionCatalogConfirmAction;
+
+  /// Title for prescribe catalog picker column visibility settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicine catalog columns'**
+  String get clinicalPrescriptionCatalogColumnsTitle;
+
+  /// Prescribe catalog picker column for drug code.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get clinicalPrescriptionCatalogCodeLabel;
 
   /// Empty billing panel message.
   ///
