@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
-import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_prescription_display.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_prescription_dosing.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_resolve.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
@@ -175,9 +175,14 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
                       onSelectedChanged: (bool selected) =>
                           _toggleKey(_lineKey(line), selected),
                       onChanged: () => setState(() {}),
-                      onOpenDetails: () => unawaited(
-                        _openLineDialog(editIndex: _lineIndex(line)),
-                      ),
+                      onFieldEdited: (ClinicalPrescriptionDosingField field) {
+                        _applyLineDosingSync(line, edited: field);
+                        setState(() {});
+                      },
+                      onExpandedChanged: (bool expanded) {
+                        line.expanded = expanded;
+                        setState(() {});
+                      },
                       onRemove: () => unawaited(_confirmAndDeleteLine(line)),
                     );
                   },
@@ -660,7 +665,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       }
       existingIds.add(drugId.toLowerCase());
       final _PrescriptionLineFormState line = _createLine();
-      line.drugId = drugId;
+      _seedLineFromDrug(line, option);
       toAdd.add(line);
     }
     if (toAdd.isEmpty) {
@@ -851,7 +856,15 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
 
   Future<void> _submit() async {
     if (_lines.isEmpty || !_linesAreValid()) {
-      setState(() => _failure = AppFailure.validation());
+      setState(() {
+        _failure = AppFailure.validation();
+        for (final _PrescriptionLineFormState line in _lines) {
+          if (!_lineIsComplete(line) || line.consistencyError != null) {
+            line.expanded = true;
+            break;
+          }
+        }
+      });
       return;
     }
     setState(() {
@@ -888,22 +901,149 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
 
   bool _linesAreValid() {
     for (final _PrescriptionLineFormState line in _lines) {
-      final String? drugId = line.drugId?.trim();
-      if (drugId == null || drugId.isEmpty) {
-        return false;
-      }
-      final int? quantity = int.tryParse(line.quantityController.text.trim());
-      if (quantity == null || quantity <= 0) {
-        return false;
-      }
-      final num? doseAmount = num.tryParse(
-        line.doseAmountController.text.trim(),
-      );
-      if (doseAmount == null || doseAmount <= 0) {
+      _refreshLineConsistency(line);
+      if (!_lineIsComplete(line) || line.consistencyError != null) {
         return false;
       }
     }
     return true;
+  }
+
+  bool _lineIsComplete(_PrescriptionLineFormState line) {
+    final String? drugId = line.drugId?.trim();
+    if (drugId == null || drugId.isEmpty) {
+      return false;
+    }
+    final int? quantity = int.tryParse(line.quantityController.text.trim());
+    if (quantity == null || quantity <= 0) {
+      return false;
+    }
+    final num? doseAmount = num.tryParse(line.doseAmountController.text.trim());
+    if (doseAmount == null || doseAmount <= 0) {
+      return false;
+    }
+    if ((line.doseUnit ?? '').trim().isEmpty) {
+      return false;
+    }
+    if ((line.route ?? '').trim().isEmpty) {
+      return false;
+    }
+    if ((line.frequency ?? '').trim().isEmpty) {
+      return false;
+    }
+    if (!clinicalPrescriptionDurationOptional(line.frequency)) {
+      final int? duration = int.tryParse(line.durationController.text.trim());
+      if (duration == null || duration <= 0) {
+        return false;
+      }
+      if ((line.durationUnit ?? '').trim().isEmpty) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _seedLineFromDrug(
+    _PrescriptionLineFormState line,
+    ClinicalActionCatalogOption option,
+  ) {
+    line.drugId = option.apiId.trim();
+    final ClinicalParsedStrength? strength = clinicalParseDrugStrength(
+      clinicalPrescriptionDrugStrength(option),
+    );
+    if (strength != null) {
+      final bool doseEmpty = line.doseAmountController.text.trim().isEmpty;
+      final bool unitEmpty = (line.doseUnit ?? '').trim().isEmpty;
+      if (doseEmpty) {
+        line.doseAmountController.text = _formatDoseAmount(strength.amount);
+      }
+      if (unitEmpty) {
+        line.doseUnit = strength.unit;
+      }
+    }
+    line.quantityAutoDerived = true;
+    line.consistencyError = null;
+  }
+
+  void _applyLineDosingSync(
+    _PrescriptionLineFormState line, {
+    required ClinicalPrescriptionDosingField edited,
+  }) {
+    line.lastEditedField = edited;
+    if (edited == ClinicalPrescriptionDosingField.quantity) {
+      line.quantityAutoDerived = false;
+    }
+    _refreshLineConsistency(line, edited: edited, applyDerivedValues: true);
+  }
+
+  void _refreshLineConsistency(
+    _PrescriptionLineFormState line, {
+    ClinicalPrescriptionDosingField? edited,
+    bool applyDerivedValues = false,
+  }) {
+    final ClinicalActionCatalogOption? drug = _drugOption(line);
+    final ClinicalParsedStrength? strength = clinicalParseDrugStrength(
+      clinicalPrescriptionDrugStrength(drug),
+    );
+    final ClinicalPrescriptionDosingField lastEdited =
+        edited ??
+        line.lastEditedField ??
+        ClinicalPrescriptionDosingField.durationValue;
+    final ClinicalPrescriptionDosingSyncResult sync =
+        clinicalSyncPrescriptionDosing(
+          lastEdited: lastEdited,
+          doseAmount: num.tryParse(line.doseAmountController.text.trim()),
+          doseUnit: line.doseUnit,
+          frequency: line.frequency,
+          durationValue: num.tryParse(line.durationController.text.trim()),
+          durationUnit: line.durationUnit,
+          quantity: int.tryParse(line.quantityController.text.trim()),
+          strengthAmount: strength?.amount,
+          strengthUnit: strength?.unit,
+          quantityWasAutoDerived: line.quantityAutoDerived,
+        );
+
+    if (applyDerivedValues) {
+      if (sync.quantity != null &&
+          (line.quantityAutoDerived ||
+              lastEdited != ClinicalPrescriptionDosingField.quantity)) {
+        final String nextQty = sync.quantity!.toString();
+        if (line.quantityController.text.trim() != nextQty) {
+          line.quantityController.text = nextQty;
+        }
+        if (lastEdited != ClinicalPrescriptionDosingField.quantity) {
+          line.quantityAutoDerived = true;
+        }
+      }
+      if (lastEdited == ClinicalPrescriptionDosingField.quantity &&
+          sync.durationValue != null) {
+        final String nextDuration = sync.durationValue!.toString();
+        if (line.durationController.text.trim() != nextDuration) {
+          line.durationController.text = nextDuration;
+        }
+        if (sync.durationUnit != null) {
+          line.durationUnit = sync.durationUnit;
+        }
+      }
+    }
+
+    final AppLocalizations l10n = context.l10n;
+    line.consistencyError = switch (sync.inconsistency) {
+      ClinicalPrescriptionDosingInconsistency.unitMismatch =>
+        l10n.clinicalPrescriptionDosingUnitMismatchMessage(
+          strength?.unit ?? line.doseUnit ?? '',
+        ),
+      ClinicalPrescriptionDosingInconsistency.quantityMismatch =>
+        l10n.clinicalPrescriptionDosingQuantityMismatchMessage,
+      null => null,
+    };
+  }
+
+  String _formatDoseAmount(num amount) {
+    if (amount == amount.roundToDouble()) {
+      return amount.round().toString();
+    }
+    return amount.toString();
   }
 
   ClinicalRequestBillingSubmit? _pendingBillingSubmit() {
@@ -971,7 +1111,8 @@ class _PrescriptionRxListTile extends StatelessWidget {
     required this.enabled,
     required this.onSelectedChanged,
     required this.onChanged,
-    required this.onOpenDetails,
+    required this.onFieldEdited,
+    required this.onExpandedChanged,
     required this.onRemove,
   });
 
@@ -981,7 +1122,8 @@ class _PrescriptionRxListTile extends StatelessWidget {
   final bool enabled;
   final ValueChanged<bool> onSelectedChanged;
   final VoidCallback onChanged;
-  final VoidCallback onOpenDetails;
+  final ValueChanged<ClinicalPrescriptionDosingField> onFieldEdited;
+  final ValueChanged<bool> onExpandedChanged;
   final VoidCallback onRemove;
 
   @override
@@ -989,10 +1131,7 @@ class _PrescriptionRxListTile extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool showActionLabels = breakpoint.showsToolbarActionLabels;
-    final String heading =
-        clinicalPrescriptionDrugHeading(drug).isEmpty
+    final String heading = clinicalPrescriptionDrugHeading(drug).isEmpty
         ? (drug?.displayTitle ?? l10n.clinicalPrescriptionMedicineLabel)
         : clinicalPrescriptionDrugHeading(drug);
     final String headerMeta = clinicalPrescriptionCompactHeaderMeta(
@@ -1000,9 +1139,6 @@ class _PrescriptionRxListTile extends StatelessWidget {
       frequency: line.frequency,
       quantity: clinicalActionTrimmedOrNull(line.quantityController.text),
       quantityUnit: line.quantityUnit,
-    );
-    final String? notes = clinicalActionTrimmedOrNull(
-      line.instructionsController.text,
     );
     final TextStyle? titleStyle = theme.textTheme.titleMedium?.copyWith(
       fontWeight: FontWeight.w700,
@@ -1014,219 +1150,200 @@ class _PrescriptionRxListTile extends StatelessWidget {
     );
 
     return Padding(
-      // Match the search toolbar width: no extra horizontal inset on the card.
       padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: selected
-              ? colorScheme.primaryContainer.withValues(alpha: 0.28)
-              : colorScheme.surfaceContainerLowest,
-          border: Border.all(
-            color: selected
-                ? colorScheme.primary.withValues(alpha: 0.45)
-                : colorScheme.outlineVariant,
-          ),
+      child: AppCollapsibleSection(
+        expanded: line.expanded,
+        onExpandedChanged: onExpandedChanged,
+        initiallyExpanded: false,
+        backgroundColor: selected
+            ? colorScheme.primaryContainer.withValues(alpha: 0.28)
+            : colorScheme.surfaceContainerLowest,
+        borderColor: selected
+            ? colorScheme.primary.withValues(alpha: 0.45)
+            : colorScheme.outlineVariant,
+        contentPadding: EdgeInsets.fromLTRB(
+          theme.spacing.md,
+          theme.spacing.sm,
+          theme.spacing.md,
+          theme.spacing.md,
         ),
-        child: Padding(
-          padding: EdgeInsets.all(theme.spacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  Checkbox(
-                    value: selected,
-                    onChanged: enabled
-                        ? (bool? value) => onSelectedChanged(value ?? false)
-                        : null,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  SizedBox(width: theme.spacing.xs),
-                  Expanded(
-                    child: Text.rich(
-                      TextSpan(
-                        children: <InlineSpan>[
-                          TextSpan(text: heading, style: titleStyle),
-                          if (headerMeta.isNotEmpty)
-                            TextSpan(
-                              text: ' · $headerMeta',
-                              style: metaStyle,
-                            ),
-                        ],
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  SizedBox(width: theme.spacing.sm),
-                  AppActionLabelScope(
-                    showLabels: showActionLabels,
-                    forceIconOnly: !showActionLabels,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        AppButton(
-                          dense: true,
-                          leadingIcon: Icons.edit_note_outlined,
-                          label: l10n.clinicalPrescriptionEditDetailsAction,
-                          semanticLabel:
-                              l10n.clinicalPrescriptionEditDetailsAction,
-                          tooltip: l10n.clinicalPrescriptionEditDetailsAction,
-                          enabled: enabled,
-                          onPressed: enabled ? onOpenDetails : null,
-                        ),
-                        SizedBox(width: theme.spacing.sm),
-                        AppButton(
-                          dense: true,
-                          leadingIcon: Icons.delete_outline,
-                          label: l10n.clinicalRequestRemoveItemAction,
-                          semanticLabel: l10n.clinicalRequestRemoveItemAction,
-                          tooltip: l10n.clinicalRequestRemoveItemAction,
-                          enabled: enabled,
-                          color: colorScheme.error,
-                          onPressed: enabled ? onRemove : null,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+        titleWidget: Row(
+          children: <Widget>[
+            Checkbox(
+              value: selected,
+              onChanged: enabled
+                  ? (bool? value) => onSelectedChanged(value ?? false)
+                  : null,
+              visualDensity: VisualDensity.compact,
+            ),
+            SizedBox(width: theme.spacing.xs),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  children: <InlineSpan>[
+                    TextSpan(text: heading, style: titleStyle),
+                    if (headerMeta.isNotEmpty)
+                      TextSpan(text: ' · $headerMeta', style: metaStyle),
+                  ],
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              if (notes != null) ...<Widget>[
-                SizedBox(height: theme.spacing.xs),
-                Padding(
-                  padding: EdgeInsetsDirectional.only(
-                    start:
-                        theme.appTokens.minInteractiveDimension +
-                        theme.spacing.xs,
-                  ),
-                  child: Text(
-                    notes,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
+            ),
+          ],
+        ),
+        headerActions: <Widget>[
+          AppButton(
+            dense: true,
+            leadingIcon: Icons.delete_outline,
+            label: l10n.clinicalRequestRemoveItemAction,
+            semanticLabel: l10n.clinicalRequestRemoveItemAction,
+            tooltip: l10n.clinicalRequestRemoveItemAction,
+            enabled: enabled,
+            color: colorScheme.error,
+            onPressed: enabled ? onRemove : null,
+          ),
+        ],
+        child: AppFormSection(
+          framed: false,
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            AppResponsiveFieldRow(
+              gap: AppResponsiveFieldRowGap.form,
+              children: <Widget>[
+                AppTextField(
+                  controller: line.quantityController,
+                  labelText: l10n.opdDrugQuantityLabel,
+                  prefixIcon: const Icon(Icons.inventory_2_outlined),
+                  enabled: enabled,
+                  isDense: true,
+                  isRequired: true,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: _integerFormatters,
+                  errorText: line.consistencyError,
+                  onChanged: (_) =>
+                      onFieldEdited(ClinicalPrescriptionDosingField.quantity),
+                ),
+                AppSelectField<String>.searchable(
+                  value: line.quantityUnit,
+                  labelText: l10n.clinicalPrescriptionQuantityUnitLabel,
+                  enabled: enabled,
+                  isDense: true,
+                  options: _unitOptions(_quantityUnits),
+                  onChanged: (String? value) {
+                    line.quantityUnit = value;
+                    onChanged();
+                  },
                 ),
               ],
-              SizedBox(height: theme.spacing.md),
-              AppFormSection(
-                title: l10n.clinicalPrescriptionInlineEditorsLabel,
-                framed: false,
-                collapsible: false,
-                density: AppFormSectionDensity.compact,
-                children: <Widget>[
-                  AppResponsiveFieldRow(
-                    gap: AppResponsiveFieldRowGap.form,
-                    children: <Widget>[
-                      AppTextField(
-                        controller: line.quantityController,
-                        labelText: l10n.opdDrugQuantityLabel,
-                        prefixIcon: const Icon(Icons.inventory_2_outlined),
-                        enabled: enabled,
-                        isDense: true,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: _integerFormatters,
-                        onChanged: (_) => onChanged(),
-                      ),
-                      AppSelectField<String>.searchable(
-                        value: line.quantityUnit,
-                        labelText: l10n.clinicalPrescriptionQuantityUnitLabel,
-                        enabled: enabled,
-                        isDense: true,
-                        options: _unitOptions(_quantityUnits),
-                        onChanged: (String? value) {
-                          line.quantityUnit = value;
-                          onChanged();
-                        },
-                      ),
-                    ],
+            ),
+            AppResponsiveFieldRow(
+              gap: AppResponsiveFieldRowGap.form,
+              children: <Widget>[
+                AppTextField(
+                  controller: line.doseAmountController,
+                  labelText: l10n.clinicalDoseAmountLabel,
+                  prefixIcon: const Icon(Icons.science_outlined),
+                  enabled: enabled,
+                  isDense: true,
+                  isRequired: true,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
                   ),
-                  AppResponsiveFieldRow(
-                    gap: AppResponsiveFieldRowGap.form,
-                    children: <Widget>[
-                      AppTextField(
-                        controller: line.doseAmountController,
-                        labelText: l10n.clinicalDoseAmountLabel,
-                        prefixIcon: const Icon(Icons.science_outlined),
-                        enabled: enabled,
-                        isDense: true,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        inputFormatters: _decimalFormatters,
-                        onChanged: (_) => onChanged(),
-                      ),
-                      AppSelectField<String>.searchable(
-                        value: line.doseUnit,
-                        labelText: l10n.clinicalDoseUnitLabel,
-                        enabled: enabled,
-                        isDense: true,
-                        options: _unitOptions(_doseUnits),
-                        onChanged: (String? value) {
-                          line.doseUnit = value;
-                          onChanged();
-                        },
-                      ),
-                    ],
+                  inputFormatters: _decimalFormatters,
+                  onChanged: (_) => onFieldEdited(
+                    ClinicalPrescriptionDosingField.doseAmount,
                   ),
-                  AppResponsiveFieldRow(
-                    gap: AppResponsiveFieldRowGap.form,
-                    children: <Widget>[
-                      AppSelectField<String>.searchable(
-                        value: line.route,
-                        labelText: l10n.opdMedicationRouteLabel,
-                        enabled: enabled,
-                        isDense: true,
-                        options: _medicationRouteOptions(),
-                        onChanged: (String? value) {
-                          line.route = value;
-                          onChanged();
-                        },
-                      ),
-                      AppSelectField<String>.searchable(
-                        value: line.frequency,
-                        labelText: l10n.opdFrequencyLabel,
-                        enabled: enabled,
-                        isDense: true,
-                        options: _medicationFrequencyOptions(),
-                        onChanged: (String? value) {
-                          line.frequency = value;
-                          onChanged();
-                        },
-                      ),
-                    ],
+                ),
+                AppSelectField<String>.searchable(
+                  value: line.doseUnit,
+                  labelText: l10n.clinicalDoseUnitLabel,
+                  enabled: enabled,
+                  isDense: true,
+                  isRequired: true,
+                  options: _unitOptions(_doseUnits),
+                  onChanged: (String? value) {
+                    line.doseUnit = value;
+                    onFieldEdited(ClinicalPrescriptionDosingField.doseUnit);
+                  },
+                ),
+              ],
+            ),
+            AppResponsiveFieldRow(
+              gap: AppResponsiveFieldRowGap.form,
+              children: <Widget>[
+                AppSelectField<String>.searchable(
+                  value: line.route,
+                  labelText: l10n.opdMedicationRouteLabel,
+                  enabled: enabled,
+                  isDense: true,
+                  isRequired: true,
+                  options: _medicationRouteOptions(),
+                  onChanged: (String? value) {
+                    line.route = value;
+                    onChanged();
+                  },
+                ),
+                AppSelectField<String>.searchable(
+                  value: line.frequency,
+                  labelText: l10n.opdFrequencyLabel,
+                  enabled: enabled,
+                  isDense: true,
+                  isRequired: true,
+                  options: _medicationFrequencyOptions(),
+                  onChanged: (String? value) {
+                    line.frequency = value;
+                    onFieldEdited(ClinicalPrescriptionDosingField.frequency);
+                  },
+                ),
+              ],
+            ),
+            AppResponsiveFieldRow(
+              gap: AppResponsiveFieldRowGap.form,
+              children: <Widget>[
+                AppTextField(
+                  controller: line.durationController,
+                  labelText: l10n.clinicalDurationValueLabel,
+                  prefixIcon: const Icon(Icons.timer_outlined),
+                  enabled: enabled,
+                  isDense: true,
+                  isRequired: !clinicalPrescriptionDurationOptional(
+                    line.frequency,
                   ),
-                  AppResponsiveFieldRow(
-                    gap: AppResponsiveFieldRowGap.form,
-                    children: <Widget>[
-                      AppTextField(
-                        controller: line.durationController,
-                        labelText: l10n.clinicalDurationValueLabel,
-                        prefixIcon: const Icon(Icons.timer_outlined),
-                        enabled: enabled,
-                        isDense: true,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: _integerFormatters,
-                        onChanged: (_) => onChanged(),
-                      ),
-                      AppSelectField<String>.searchable(
-                        value: line.durationUnit,
-                        labelText: l10n.clinicalDurationUnitLabel,
-                        enabled: enabled,
-                        isDense: true,
-                        options: _durationUnitOptions(),
-                        onChanged: (String? value) {
-                          line.durationUnit = value;
-                          onChanged();
-                        },
-                      ),
-                    ],
+                  keyboardType: TextInputType.number,
+                  inputFormatters: _integerFormatters,
+                  onChanged: (_) => onFieldEdited(
+                    ClinicalPrescriptionDosingField.durationValue,
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+                AppSelectField<String>.searchable(
+                  value: line.durationUnit,
+                  labelText: l10n.clinicalDurationUnitLabel,
+                  enabled: enabled,
+                  isDense: true,
+                  isRequired: !clinicalPrescriptionDurationOptional(
+                    line.frequency,
+                  ),
+                  options: _durationUnitOptions(),
+                  onChanged: (String? value) {
+                    line.durationUnit = value;
+                    onFieldEdited(
+                      ClinicalPrescriptionDosingField.durationUnit,
+                    );
+                  },
+                ),
+              ],
+            ),
+            AppTextField(
+              controller: line.instructionsController,
+              labelText: l10n.clinicalInstructionsLabel,
+              prefixIcon: const Icon(Icons.notes_outlined),
+              enabled: enabled,
+              maxLines: 3,
+              textCapitalization: TextCapitalization.sentences,
+              onChanged: (_) => onChanged(),
+            ),
+          ],
         ),
       ),
     );
@@ -1251,6 +1368,10 @@ class _PrescriptionLineFormState {
   String? route = 'ORAL';
   String? frequency = 'BID';
   String? durationUnit = 'days';
+  bool expanded = false;
+  bool quantityAutoDerived = true;
+  ClinicalPrescriptionDosingField? lastEditedField;
+  String? consistencyError;
 
   void dispose() {
     quantityController.dispose();
@@ -1329,6 +1450,7 @@ class _PrescriptionLineCard extends StatelessWidget {
                   isDense: true,
                   keyboardType: TextInputType.number,
                   inputFormatters: _integerFormatters,
+                  errorText: line.consistencyError,
                   validator: (String? value) =>
                       _requiredPositiveIntegerValidator(l10n, value),
                 ),
@@ -1367,7 +1489,9 @@ class _PrescriptionLineCard extends StatelessWidget {
                   labelText: l10n.clinicalDoseUnitLabel,
                   enabled: enabled,
                   isDense: true,
+                  isRequired: true,
                   options: _unitOptions(_doseUnits),
+                  validator: AppValidators.requiredValue(l10n.validationRequired),
                   onChanged: (String? value) {
                     line.doseUnit = value;
                     onChanged();
@@ -1382,7 +1506,9 @@ class _PrescriptionLineCard extends StatelessWidget {
                   value: line.route,
                   labelText: l10n.opdMedicationRouteLabel,
                   enabled: enabled,
+                  isRequired: true,
                   options: _medicationRouteOptions(),
+                  validator: AppValidators.requiredValue(l10n.validationRequired),
                   onChanged: (String? value) {
                     line.route = value;
                     onChanged();
@@ -1392,7 +1518,9 @@ class _PrescriptionLineCard extends StatelessWidget {
                   value: line.frequency,
                   labelText: l10n.opdFrequencyLabel,
                   enabled: enabled,
+                  isRequired: true,
                   options: _medicationFrequencyOptions(),
+                  validator: AppValidators.requiredValue(l10n.validationRequired),
                   onChanged: (String? value) {
                     line.frequency = value;
                     onChanged();
@@ -1569,24 +1697,37 @@ class _PrescriptionDurationField extends StatelessWidget {
                   prefixIcon: const Icon(Icons.timer_outlined),
                   enabled: enabled,
                   isDense: true,
+                  isRequired: !clinicalPrescriptionDurationOptional(
+                    line.frequency,
+                  ),
                   keyboardType: TextInputType.number,
                   inputFormatters: _integerFormatters,
-                  validator: (String? value) =>
-                      _optionalPositiveIntegerValidator(l10n, value),
+                  validator: (String? value) {
+                    if (clinicalPrescriptionDurationOptional(line.frequency)) {
+                      return _optionalPositiveIntegerValidator(l10n, value);
+                    }
+                    return _requiredPositiveIntegerValidator(l10n, value);
+                  },
                 ),
                 AppSelectField<String>.searchable(
                   value: line.durationUnit,
                   labelText: l10n.clinicalDurationUnitLabel,
                   enabled: enabled,
                   isDense: true,
+                  isRequired: !clinicalPrescriptionDurationOptional(
+                    line.frequency,
+                  ),
                   options: _durationUnitOptions(),
                   validator: (String? value) {
-                    final bool hasDuration = line.durationController.text
-                        .trim()
-                        .isNotEmpty;
-                    return hasDuration && value == null
-                        ? l10n.validationRequired
-                        : null;
+                    if (clinicalPrescriptionDurationOptional(line.frequency)) {
+                      final bool hasDuration = line.durationController.text
+                          .trim()
+                          .isNotEmpty;
+                      return hasDuration && value == null
+                          ? l10n.validationRequired
+                          : null;
+                    }
+                    return value == null ? l10n.validationRequired : null;
                   },
                   onChanged: (String? value) {
                     line.durationUnit = value;

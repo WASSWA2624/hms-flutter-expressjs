@@ -28862,6 +28862,20 @@
   "@clinicalPrescriptionInlineEditorsLabel": {
     "description": "Section label above inline prescription editors on the prescribe list."
   },
+  "clinicalPrescriptionDosingQuantityMismatchMessage": "Quantity does not match dose, frequency, and duration.",
+  "@clinicalPrescriptionDosingQuantityMismatchMessage": {
+    "description": "Inline validation when prescribe quantity is inconsistent with dosing math."
+  },
+  "clinicalPrescriptionDosingUnitMismatchMessage": "Dose unit must match the medicine strength unit ({unit}).",
+  "@clinicalPrescriptionDosingUnitMismatchMessage": {
+    "description": "Inline validation when dose unit conflicts with catalog strength unit.",
+    "placeholders": {
+      "unit": {
+        "type": "String",
+        "example": "mg"
+      }
+    }
+  },
 
   "clinicalPrescriptionNoMedicinesLabel": "No medicines added yet",
   "@clinicalPrescriptionNoMedicinesLabel": {

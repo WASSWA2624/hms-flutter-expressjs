@@ -22472,6 +22472,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalPrescriptionInlineEditorsLabel => 'Prescription details';
 
   @override
+  String get clinicalPrescriptionDosingQuantityMismatchMessage =>
+      'Quantity does not match dose, frequency, and duration.';
+
+  @override
+  String clinicalPrescriptionDosingUnitMismatchMessage(String unit) {
+    return 'Dose unit must match the medicine strength unit ($unit).';
+  }
+
+  @override
   String get clinicalPrescriptionNoMedicinesLabel => 'No medicines added yet';
 
   @override

@@ -92,7 +92,7 @@ void main() {
       expect(find.textContaining('Amoxicillin'), findsNothing);
     });
 
-    testWidgets('shows paper-style prescription lines with inline editors', (
+    testWidgets('adds collapsed collapsible cards with prescription summary', (
       WidgetTester tester,
     ) async {
       await _pumpPrescribeDialog(tester);
@@ -102,14 +102,44 @@ void main() {
         'Ibuprofen',
       ]);
 
+      expect(find.byType(AppCollapsibleSection), findsNWidgets(2));
       expect(find.textContaining('Amoxicillin 500 mg'), findsWidgets);
       expect(find.textContaining('Ibuprofen 200 mg'), findsWidgets);
       expect(find.textContaining('Oral · BID · Qty 1'), findsWidgets);
-      expect(find.text('Prescription details'), findsWidgets);
-      expect(find.text('Dose amount'), findsWidgets);
-      expect(find.text('Medication route'), findsWidgets);
-      expect(find.text('Edit details'), findsWidgets);
+      expect(find.text('Prescription details'), findsNothing);
+      expect(find.text('Edit details'), findsNothing);
+      expect(_fieldWithLabel('Dose amount'), findsNothing);
       expect(find.text('Remove item'), findsWidgets);
+    });
+
+    testWidgets('expanding a card reveals dosing fields without section title', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPrescribeDialog(tester);
+      await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
+
+      await _expandFirstMedicineCard(tester);
+
+      expect(find.text('Prescription details'), findsNothing);
+      expect(_fieldWithLabel('Dose amount'), findsWidgets);
+      expect(_selectWithLabel('Medication route'), findsWidgets);
+      expect(_fieldWithLabel('Duration'), findsWidgets);
+      expect(_fieldWithLabel('Instructions'), findsWidgets);
+    });
+
+    testWidgets('seeds dose amount and unit from catalog strength', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPrescribeDialog(tester);
+      await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
+      await _expandFirstMedicineCard(tester);
+
+      final Finder doseAmountField = _fieldWithLabel('Dose amount');
+      final AppTextField field = tester.widget<AppTextField>(
+        doseAmountField.first,
+      );
+      expect(field.controller?.text, '500');
+      expect(find.text('mg'), findsWidgets);
     });
 
     testWidgets('adds selected medicines from catalog and removes them', (
@@ -158,7 +188,7 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('blocks prescribe when dose details are incomplete', (
+    testWidgets('blocks prescribe when duration is incomplete', (
       WidgetTester tester,
     ) async {
       var submitted = false;
@@ -181,9 +211,10 @@ void main() {
       expect(submitted, isFalse);
       expect(find.text('CHOOSE MEDICINES'), findsNothing);
       expect(find.textContaining('Amoxicillin'), findsWidgets);
+      expect(_fieldWithLabel('Dose amount'), findsWidgets);
     });
 
-    testWidgets('inline dose edit allows prescribe submit', (
+    testWidgets('duration edit updates quantity and allows prescribe', (
       WidgetTester tester,
     ) async {
       List<Map<String, Object?>>? submittedItems;
@@ -201,17 +232,10 @@ void main() {
       );
 
       await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
-      await _editDoseInline(
-        tester,
-        doseAmount: '500',
-        doseUnit: 'mg',
-      );
+      await _expandFirstMedicineCard(tester);
+      await _setDurationInline(tester, duration: '7');
 
-      expect(
-        find.textContaining('Amoxicillin 500 mg · Oral · BID · Qty 1'),
-        findsWidgets,
-      );
-      expect(find.text('Dose amount'), findsWidgets);
+      expect(find.textContaining('Qty 14'), findsWidgets);
 
       await tester.tap(find.widgetWithIcon(AppButton, Icons.send_outlined));
       await tester.pumpAndSettle();
@@ -220,38 +244,8 @@ void main() {
       expect(submittedItems!.single['drug_id'], 'DRG-AMOX');
       expect(submittedItems!.single['dose_amount'], 500);
       expect(submittedItems!.single['dose_unit'], 'mg');
-    });
-
-    testWidgets('edit details dialog remains available for full form', (
-      WidgetTester tester,
-    ) async {
-      List<Map<String, Object?>>? submittedItems;
-
-      await _pumpPrescribeDialog(
-        tester,
-        onSubmit:
-            ({
-              required List<Map<String, Object?>> items,
-              ClinicalRequestBillingSubmit? billing,
-            }) async {
-              submittedItems = items;
-              return null;
-            },
-      );
-
-      await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
-      await _editDetailsDialog(
-        tester,
-        doseAmount: '250',
-        doseUnit: 'mg',
-      );
-
-      await tester.tap(find.widgetWithIcon(AppButton, Icons.send_outlined));
-      await tester.pumpAndSettle();
-
-      expect(submittedItems, isNotNull);
-      expect(submittedItems!.single['dose_amount'], 250);
-      expect(submittedItems!.single['dose_unit'], 'mg');
+      expect(submittedItems!.single['quantity'], 14);
+      expect(submittedItems!.single['duration_value'], 7);
     });
   });
 }
@@ -282,72 +276,34 @@ Future<void> _addMedicinesFromCatalog(
   expect(find.text('CHOOSE MEDICINES'), findsNothing);
 }
 
-Future<void> _editDoseInline(
-  WidgetTester tester, {
-  required String doseAmount,
-  required String doseUnit,
-}) async {
-  final Finder doseAmountField = find.byWidgetPredicate(
-    (Widget widget) =>
-        widget is AppTextField && widget.labelText == 'Dose amount',
-  );
-  expect(doseAmountField, findsWidgets);
-  await tester.ensureVisible(doseAmountField.first);
-  await tester.enterText(doseAmountField.first, doseAmount);
-  await tester.pumpAndSettle();
-
-  final Finder doseUnitField = find.byWidgetPredicate(
-    (Widget widget) =>
-        widget is AppSelectField<String> && widget.labelText == 'Dose unit',
-  );
-  await tester.ensureVisible(doseUnitField.first);
-  await tester.tap(
-    find.descendant(
-      of: doseUnitField.first,
-      matching: find.byType(EditableText),
-    ),
-  );
-  await tester.pumpAndSettle();
-  await tester.tap(find.text(doseUnit).last);
+Future<void> _expandFirstMedicineCard(WidgetTester tester) async {
+  final Finder section = find.byType(AppCollapsibleSection).first;
+  await tester.ensureVisible(section);
+  await tester.tap(section);
   await tester.pumpAndSettle();
 }
 
-Future<void> _editDetailsDialog(
+Finder _fieldWithLabel(String label) {
+  return find.byWidgetPredicate(
+    (Widget widget) => widget is AppTextField && widget.labelText == label,
+  );
+}
+
+Finder _selectWithLabel(String label) {
+  return find.byWidgetPredicate(
+    (Widget widget) =>
+        widget is AppSelectField<String> && widget.labelText == label,
+  );
+}
+
+Future<void> _setDurationInline(
   WidgetTester tester, {
-  required String doseAmount,
-  required String doseUnit,
+  required String duration,
 }) async {
-  final Finder editAction = find.byTooltip('Edit details');
-  expect(editAction, findsWidgets);
-  await tester.tap(editAction.first);
-  await tester.pumpAndSettle();
-
-  expect(find.text('EDIT MEDICINE'), findsOneWidget);
-
-  final Finder doseAmountField = find.byWidgetPredicate(
-    (Widget widget) =>
-        widget is AppTextField && widget.labelText == 'Dose amount',
-  );
-  await tester.ensureVisible(doseAmountField.last);
-  await tester.enterText(doseAmountField.last, doseAmount);
-  await tester.pumpAndSettle();
-
-  final Finder doseUnitField = find.byWidgetPredicate(
-    (Widget widget) =>
-        widget is AppSelectField<String> && widget.labelText == 'Dose unit',
-  );
-  await tester.ensureVisible(doseUnitField.last);
-  await tester.tap(
-    find.descendant(
-      of: doseUnitField.last,
-      matching: find.byType(EditableText),
-    ),
-  );
-  await tester.pumpAndSettle();
-  await tester.tap(find.text(doseUnit).last);
-  await tester.pumpAndSettle();
-
-  await tester.tap(find.widgetWithText(AppButton, 'Done'));
+  final Finder durationField = _fieldWithLabel('Duration');
+  expect(durationField, findsWidgets);
+  await tester.ensureVisible(durationField.first);
+  await tester.enterText(durationField.first, duration);
   await tester.pumpAndSettle();
 }
 

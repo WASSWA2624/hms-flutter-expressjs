@@ -41500,6 +41500,18 @@ abstract class AppLocalizations {
   /// **'Prescription details'**
   String get clinicalPrescriptionInlineEditorsLabel;
 
+  /// Inline validation when prescribe quantity is inconsistent with dosing math.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity does not match dose, frequency, and duration.'**
+  String get clinicalPrescriptionDosingQuantityMismatchMessage;
+
+  /// Inline validation when dose unit conflicts with catalog strength unit.
+  ///
+  /// In en, this message translates to:
+  /// **'Dose unit must match the medicine strength unit ({unit}).'**
+  String clinicalPrescriptionDosingUnitMismatchMessage(String unit);
+
   /// Empty prescription selection state.
   ///
   /// In en, this message translates to:
