@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_storage_room_similarity_dialog.dart';
@@ -772,6 +773,8 @@ class _StorageRoomDetailsDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final AppStatusColors statusColors = theme.statusColors;
     PharmacyWorkspaceState? state;
     final asyncState = ref.watch(pharmacyWorkspaceControllerProvider);
     if (asyncState.hasValue) {
@@ -790,36 +793,258 @@ class _StorageRoomDetailsDialog extends ConsumerWidget {
       }
     }
 
+    final String empty = l10n.clinicalOrderEmptyValueLabel;
+    final String roomName =
+        (current.name ?? '').trim().isEmpty
+            ? l10n.pharmacyStorageRoomLabel
+            : current.name!.trim();
+    final String statusLabel = current.isSoftDeleted
+        ? l10n.pharmacyStorageDeletedLabel
+        : current.isActive
+        ? l10n.pharmacyStorageActiveLabel
+        : l10n.pharmacyStorageInactiveLabel;
+    final AppWorkspaceStatusTone statusTone = current.isSoftDeleted
+        ? AppWorkspaceStatusTone.error
+        : current.isActive
+        ? AppWorkspaceStatusTone.success
+        : AppWorkspaceStatusTone.warning;
+    final Color statusAccent = switch (statusTone) {
+      AppWorkspaceStatusTone.error => statusColors.error,
+      AppWorkspaceStatusTone.warning => statusColors.warning,
+      AppWorkspaceStatusTone.success => statusColors.success,
+      _ => colorScheme.primary,
+    };
+    final Color statusContainer = switch (statusTone) {
+      AppWorkspaceStatusTone.error => statusColors.errorContainer,
+      AppWorkspaceStatusTone.warning => statusColors.warningContainer,
+      AppWorkspaceStatusTone.success => statusColors.successContainer,
+      _ => colorScheme.primaryContainer,
+    };
+    final String? displayId = (current.displayId ?? '').trim().isEmpty
+        ? null
+        : current.displayId!.trim();
+    final String codeValue = (current.code ?? '').trim().isEmpty
+        ? empty
+        : current.code!.trim();
+    final List<PharmacyStorageShelf> shelves = current.shelves;
+
     return AppDialog(
-      title: Text(current.name ?? l10n.pharmacyStorageRoomLabel),
+      title: Text(roomName),
       icon: const Icon(Icons.warehouse_outlined),
+      scrollable: true,
+      maxWidth: 720,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text('${l10n.pharmacyStorageRoomCodeLabel}: ${current.code ?? '—'}'),
-          SizedBox(height: theme.spacing.sm),
-          Text(
-            '${l10n.pharmacyStorageStatusColumnLabel}: ${current.isSoftDeleted
-                ? l10n.pharmacyStorageDeletedLabel
-                : current.isActive
-                ? l10n.pharmacyStorageActiveLabel
-                : l10n.pharmacyStorageInactiveLabel}',
-          ),
-          SizedBox(height: theme.spacing.sm),
-          Text(
-            '${l10n.pharmacyStorageShelvesCountColumnLabel}: ${current.shelves.length}',
-          ),
-          if (current.shelves.isNotEmpty) ...<Widget>[
-            SizedBox(height: theme.spacing.md),
-            for (final PharmacyStorageShelf shelf in current.shelves.take(8))
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                title: Text(shelf.shelfCode ?? shelf.id),
-                subtitle: Text(shelf.label ?? '—'),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer.withValues(alpha: 0.35),
+              border: Border.all(
+                color: colorScheme.primary.withValues(alpha: 0.18),
               ),
-          ],
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(theme.spacing.md),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      border: Border.all(color: colorScheme.outlineVariant),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(theme.spacing.sm),
+                      child: Icon(
+                        Icons.warehouse_outlined,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: theme.spacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          roomName,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            height: 1.15,
+                          ),
+                          textAlign: TextAlign.start,
+                        ),
+                        SizedBox(height: theme.spacing.xs),
+                        Wrap(
+                          spacing: theme.spacing.sm,
+                          runSpacing: theme.spacing.xs,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: <Widget>[
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: theme.spacing.sm,
+                                vertical: theme.spacing.xs / 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: statusContainer,
+                                border: Border.all(
+                                  color: statusAccent.withValues(alpha: 0.45),
+                                ),
+                              ),
+                              child: Text(
+                                statusLabel,
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: statusAccent,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              codeValue,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (displayId != null)
+                              Text(
+                                displayId,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: theme.spacing.md),
+          AppCollapsibleSection(
+            title: l10n.pharmacyStorageRoomLabel,
+            titleIcon: Icons.info_outline,
+            contentPadding: EdgeInsets.all(theme.spacing.md),
+            child: AppInfoTileGrid(
+              maxColumns: 3,
+              emptyValue: empty,
+              items: <AppInfoTileData>[
+                AppInfoTileData(
+                  label: l10n.pharmacyStorageRoomCodeLabel,
+                  value: current.code,
+                  icon: Icons.qr_code_2_outlined,
+                  copyable: (current.code ?? '').trim().isNotEmpty,
+                ),
+                AppInfoTileData(
+                  label: l10n.pharmacyStorageStatusColumnLabel,
+                  value: statusLabel,
+                  icon: Icons.flag_outlined,
+                ),
+                AppInfoTileData(
+                  label: l10n.pharmacyStorageShelvesCountColumnLabel,
+                  value: '${shelves.length}',
+                  icon: Icons.inventory_2_outlined,
+                ),
+                if (displayId != null)
+                  AppInfoTileData(
+                    label: l10n.accessAdminColumnDetails,
+                    value: displayId,
+                    icon: Icons.badge_outlined,
+                    copyable: true,
+                  ),
+                if (current.createdAt != null)
+                  AppInfoTileData(
+                    label: l10n.pharmacyStorageCreatedAtColumnLabel,
+                    value: AppFormatters.dateTime(
+                      current.createdAt!,
+                      Localizations.localeOf(context),
+                    ),
+                    icon: Icons.event_outlined,
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(height: theme.spacing.md),
+          AppCollapsibleSection(
+            title: l10n.pharmacyStorageShelvesCountColumnLabel,
+            titleIcon: Icons.inventory_2_outlined,
+            subtitle: '${shelves.length}',
+            headerMetaInline: true,
+            contentPadding: EdgeInsets.all(theme.spacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                AppAccessActionGate(
+                  requirement: writeRequirement,
+                  builder: (BuildContext context, bool allowed) {
+                    if (!allowed || current.isSoftDeleted) {
+                      return const SizedBox.shrink();
+                    }
+                    return Align(
+                      alignment: Alignment.centerRight,
+                      child: AppButton.secondary(
+                        dense: true,
+                        label: l10n.pharmacyAddStorageShelfAction,
+                        leadingIcon: Icons.add,
+                        onPressed: () async {
+                          await openPharmacyStorageShelfDialog(
+                            context,
+                            ref,
+                            room: current,
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+                if (shelves.isEmpty) ...<Widget>[
+                  SizedBox(height: theme.spacing.sm),
+                  AppContentPanel(
+                    tone: AppWorkspaceStatusTone.info,
+                    borderRadius: BorderRadius.zero,
+                    child: Text(
+                      l10n.pharmacyStoragePanelDescription,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.start,
+                    ),
+                  ),
+                ] else ...<Widget>[
+                  SizedBox(height: theme.spacing.sm),
+                  for (int index = 0; index < shelves.length; index += 1) ...<
+                    Widget
+                  >[
+                    if (index > 0) SizedBox(height: theme.spacing.sm),
+                    _StorageRoomShelfRow(
+                      shelf: shelves[index],
+                      emptyValue: empty,
+                      writeRequirement: writeRequirement,
+                      canMutate: !current.isSoftDeleted,
+                      onEdit: () async {
+                        await openPharmacyStorageShelfDialog(
+                          context,
+                          ref,
+                          room: current,
+                          shelf: shelves[index],
+                        );
+                      },
+                      onDelete: () async {
+                        await confirmDeletePharmacyStorageShelf(
+                          context,
+                          ref,
+                          shelves[index],
+                        );
+                      },
+                    ),
+                  ],
+                ],
+              ],
+            ),
+          ),
         ],
       ),
       actions: <Widget>[
@@ -835,34 +1060,15 @@ class _StorageRoomDetailsDialog extends ConsumerWidget {
               return const SizedBox.shrink();
             }
             if (current.isSoftDeleted) {
-              return const SizedBox.shrink();
-            }
-            return AppButton.tertiary(
-              label: l10n.commonCreateActionLabel,
-              leadingIcon: Icons.add,
-              semanticLabel: l10n.pharmacyAddStorageShelfAction,
-              onPressed: () async {
-                await openPharmacyStorageShelfDialog(
-                  context,
-                  ref,
-                  room: current,
-                );
-              },
-            );
-          },
-        ),
-        AppAccessActionGate(
-          requirement: writeRequirement,
-          builder: (BuildContext context, bool allowed) {
-            if (!allowed) {
-              return const SizedBox.shrink();
-            }
-            if (current.isSoftDeleted) {
               return AppButton.tertiary(
                 label: l10n.pharmacyRestoreStorageRoomAction,
                 leadingIcon: Icons.restore_outlined,
                 onPressed: () async {
-                  await confirmRestorePharmacyStorageRoom(context, ref, current);
+                  await confirmRestorePharmacyStorageRoom(
+                    context,
+                    ref,
+                    current,
+                  );
                 },
               );
             }
@@ -915,6 +1121,132 @@ class _StorageRoomDetailsDialog extends ConsumerWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+class _StorageRoomShelfRow extends StatelessWidget {
+  const _StorageRoomShelfRow({
+    required this.shelf,
+    required this.emptyValue,
+    required this.writeRequirement,
+    required this.canMutate,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final PharmacyStorageShelf shelf;
+  final String emptyValue;
+  final AccessRequirement writeRequirement;
+  final bool canMutate;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final AppStatusColors statusColors = theme.statusColors;
+    final String code = (shelf.shelfCode ?? '').trim().isEmpty
+        ? emptyValue
+        : shelf.shelfCode!.trim();
+    final String label = (shelf.label ?? '').trim().isEmpty
+        ? emptyValue
+        : shelf.label!.trim();
+    final bool active = shelf.isActive;
+    final Color accent = active ? statusColors.success : statusColors.warning;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.sm,
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(
+              Icons.inventory_2_outlined,
+              color: colorScheme.primary,
+              size: theme.appTokens.listIconSize,
+            ),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    code,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                    textAlign: TextAlign.start,
+                  ),
+                  SizedBox(height: theme.spacing.xs / 2),
+                  Text(
+                    label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.start,
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: theme.spacing.sm,
+                vertical: theme.spacing.xs / 2,
+              ),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.12),
+                border: Border.all(color: accent.withValues(alpha: 0.4)),
+              ),
+              child: Text(
+                active
+                    ? l10n.pharmacyStorageActiveLabel
+                    : l10n.pharmacyStorageInactiveLabel,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: accent,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            AppAccessActionGate(
+              requirement: writeRequirement,
+              builder: (BuildContext context, bool allowed) {
+                if (!allowed || !canMutate) {
+                  return const SizedBox.shrink();
+                }
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    SizedBox(width: theme.spacing.xs),
+                    AppButton.tertiary(
+                      dense: true,
+                      label: l10n.commonEditActionLabel,
+                      leadingIcon: Icons.edit_outlined,
+                      semanticLabel: l10n.pharmacyEditStorageShelfAction,
+                      onPressed: onEdit,
+                    ),
+                    AppButton.tertiary(
+                      dense: true,
+                      label: l10n.commonDeleteActionLabel,
+                      leadingIcon: Icons.delete_outline,
+                      semanticLabel: l10n.pharmacyDeleteStorageShelfAction,
+                      onPressed: onDelete,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

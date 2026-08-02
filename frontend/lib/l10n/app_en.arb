@@ -15467,9 +15467,9 @@
   "@pharmacyEditStorageRoomAction": {
     "description": "Pharmacy edit storage room action."
   },
-  "pharmacyAddStorageShelfAction": "Create shelf",
+  "pharmacyAddStorageShelfAction": "Add shelf",
   "@pharmacyAddStorageShelfAction": {
-    "description": "Pharmacy create storage shelf action."
+    "description": "Pharmacy add storage shelf action for the current room."
   },
   "pharmacyEditStorageShelfAction": "Edit shelf",
   "@pharmacyEditStorageShelfAction": {

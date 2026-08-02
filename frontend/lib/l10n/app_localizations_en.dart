@@ -12115,7 +12115,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyEditStorageRoomAction => 'Edit room';
 
   @override
-  String get pharmacyAddStorageShelfAction => 'Create shelf';
+  String get pharmacyAddStorageShelfAction => 'Add shelf';
 
   @override
   String get pharmacyEditStorageShelfAction => 'Edit shelf';
