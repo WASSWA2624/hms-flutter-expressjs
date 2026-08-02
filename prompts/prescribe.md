@@ -1,156 +1,184 @@
-# Implementation prompt: Prescribe — Add medicine via catalog table
+# Implementation prompt: Prescribe medication cards — Collapsible + smart dosing
 
 ## Goal
 
-Change the clinical **Prescribe** flow so **Add medicine** opens a **catalog table** of available drugs for selection (not a single-drug detail form). Selected medicines are added to the existing prescribe list; prescription details (quantity, dose, route, frequency, duration, instructions) are completed afterward on the prescribe dialog (via the existing edit path).
+Replace each medication line card in the Prescribe dialog with the shared **`AppCollapsibleSection`** chrome, collapsed by default, with a patient-prescription-style header and an expanded inline dosing form that stays synchronized with the selected drug and interrelated fields (dose, frequency, duration, quantity). Block prescribe when lines are incomplete or internally inconsistent.
 
-Primary surface: `frontend/lib/shared/clinical_actions/dialogs/clinical_prescription_action_dialog.dart`.
-
-Closest UX precedent: lab / radiology / procedure request flows that open a catalog picker table, then manage selected items on the parent request dialog (`clinical_lab_request_catalog_dialog.dart`, `clinical_radiology_request_catalog_dialog.dart`, `clinical_procedure_catalog_dialog.dart`).
+Primary surface: `frontend/lib/shared/clinical_actions/dialogs/clinical_prescription_action_dialog.dart` (`_PrescriptionRxListTile` / list mobile item builder). Supporting display helpers: `frontend/lib/shared/clinical_actions/clinical_prescription_display.dart`. Shared chrome: `frontend/lib/shared/components/app_collapsible_section.dart`.
 
 ## Current behavior (as implemented)
 
-Screenshots and code agree on this flow today:
+Screenshot / code status today:
 
-### Prescribe dialog (`ClinicalPrescriptionActionDialog`)
-
-| Area | Behavior |
+| Area | Current |
 | --- | --- |
-| Shell | `AppDialog` titled **Prescribe**, max width ~880, pin actions |
-| Body | `AppListTable` of pending prescription lines |
-| Empty state | “No medicines added yet” |
-| Search / tools | Search by medicine/dose/route/frequency; Filters; Settings (column visibility); Export; **Remove selected**; **Add medicine**; **Review billing** |
-| Footer | Cancel · Prescribe (enabled when `_lines` is non-empty) |
-| Billing | Optional review; submit still attaches bill-later billing when not reviewed |
+| Card chrome | Custom `DecoratedBox` + padded column (`_PrescriptionRxListTile`), **not** `AppCollapsibleSection` |
+| Expansion | Inline dosing fields are **always visible**; no collapse |
+| Header | Checkbox + compact summary (`clinicalPrescriptionDrugHeading` + `clinicalPrescriptionCompactHeaderMeta`, e.g. `Acyclovir 400 mg · Oral · BID · Qty 1`) |
+| Header actions | **Edit details** + **Remove item** as dense `AppButton`s (resting outline/fill chrome) |
+| Expanded body title | Nested `AppFormSection` titled **Prescription details** (`clinicalPrescriptionInlineEditorsLabel`) |
+| Field sync | Controllers are independent; adding a drug only sets `drugId` (qty defaults to `1`, route `ORAL`, frequency `BID`). Dose is **not** seeded from catalog strength |
+| Submit gate | `_linesAreValid()` requires drug id, quantity &gt; 0, dose amount &gt; 0. Does **not** require dose unit, route, frequency, duration, or cross-field consistency |
+| Dialog shell | Search, filters, settings/columns, export, remove selected, add medicine, review billing, Cancel / Prescribe — unchanged and out of redesign scope |
 
-### Add medicine (current)
+Related pieces that must keep working:
 
-Tapping **Add medicine** calls `_openLineDialog()` with no `editIndex`, which opens a nested **Add medicine** dialog containing `_PrescriptionLineCard`:
-
-1. **Available drug** — searchable `AppSelectField` over `referenceData.drugs` (required)
-2. Quantity + quantity unit
-3. Dose amount + dose unit (dose amount required)
-4. Route (default `ORAL`) + frequency (default `BID`)
-5. Duration + duration unit (default days)
-6. Instructions
-
-**Done** validates the form, then appends that single line to `_lines`. One medicine per open.
-
-### Edit medicine (current)
-
-Row **Edit** reuses the same nested form dialog (`clinicalPrescriptionEditLineDialogTitle`) against an existing line. This path must remain available for completing/changing prescription details.
-
-### Submit payload (preserve)
-
-Each line still submits roughly:
-
-- `drug_id`, `quantity`, `quantity_unit`, `dose_amount`, `dose_unit`, `route`, `frequency`, `duration_value`, `duration_unit`, `instructions`
-
-Do not change the API contract unless a field is already optional today and remains optional.
+- Catalog multi-add (`showClinicalPrescriptionCatalogDialog`) and duplicate exclusion
+- Bulk select + **Remove selected**
+- Optional **Edit medicine** full-line dialog (`_openLineDialog` / `_PrescriptionLineCard`) for fields not on the card (drug swap, instructions) unless folded into the expanded body in the same change
+- Billing review / submit payload keys (`drug_id`, `quantity`, `quantity_unit`, `dose_amount`, `dose_unit`, `route`, `frequency`, `duration_value`, `duration_unit`, `instructions`)
+- Existing tests in `frontend/test/shared/clinical_actions/clinical_prescription_action_dialog_test.dart`
 
 ## Intended behavior
 
-Split **drug selection** from **prescription detail entry**:
+### 1. Card = `AppCollapsibleSection`
 
-1. User opens **Prescribe** (unchanged list shell).
-2. User taps **Add medicine**.
-3. A nested dialog opens as a **table of available / prescribable medicines** (from the same drug catalog the form dropdown uses today: `widget.referenceData.drugs`), with search/select patterns consistent with other clinical catalog pickers.
-4. User selects one or more medicines and confirms (e.g. **Done**).
-5. Selected drugs are **appended as rows** on the prescribe list (with existing line defaults: quantity `1`, route `ORAL`, frequency `BID`, empty dose until edited).
-6. On the prescribe dialog, the user completes prescription details — primarily via the existing **Edit medicine** dialog (form fields for quantity/dose/route/frequency/duration/instructions). Changing the drug in edit may remain allowed if it already is; selection of *new* drugs for the list happens only through the catalog table.
-7. **Prescribe** / **Review billing** / **Remove selected** / filters / column settings / submit semantics stay as today, except validation must cover lines that were added without completing required dose fields in the old Add form.
+Replace the custom card shell with **`AppCollapsibleSection`** (prefer it directly over nesting a titled `AppFormSection` solely for chrome).
+
+- **`initiallyExpanded: false`** (collapsed by default when a medicine is added).
+- Tapping the **header** toggles expand/collapse (built-in `InkWell` on `AppCollapsibleSection`). Header actions must remain independently tappable without stealing the toggle (existing `headerActions` pattern).
+- Preserve list selection: keep the **checkbox** for bulk remove (e.g. via `titleWidget` / leading content). Do not drop multi-select.
+
+### 2. Collapsed header = patient-prescription summary
+
+Header title content should read like the line on a patient prescription, driven by live form + catalog values, for example:
+
+**`{generic name} {strength} · {route} · {frequency} · Qty {quantity}[{unit}]`**
+
+Reuse / extend helpers in `clinical_prescription_display.dart` (`clinicalPrescriptionDrugHeading`, `clinicalPrescriptionCompactHeaderMeta`, paper summary helpers) so table cells and card headers stay consistent. Update the summary whenever related fields change.
+
+Do **not** invent a second competing summary format if an existing helper already covers this; extend rather than duplicate.
+
+### 3. Remove action placement and chrome
+
+- Place **Remove** in `headerActions` (immediately **left of the chevron**).
+- Style: icon + label only — **no resting fill, no border** (use `AppCollapsibleSection`’s plain header action chrome / `AppActionLabelScope(plainChrome: true)` already applied to `headerActions`).
+- Keep confirm-before-delete behavior consistent with today’s remove flow.
+- **Remove “Edit details” from the always-visible card header.** Expansion replaces that affordance for the inline dosing fields. Keep the full-line **Edit medicine** dialog only if instructions / drug change still need a separate surface; otherwise move those fields into the expanded body and retire the redundant CTA.
+
+### 4. Expanded body = dosing form without section title
+
+When expanded, show the existing inline editors (quantity, quantity unit, dose amount, dose unit, route, frequency, duration, duration unit) **without** the **Prescription details** / `clinicalPrescriptionInlineEditorsLabel` section title.
+
+- Prefer untitled / unframed field layout inside the collapsible body (compact density, same `AppResponsiveFieldRow` patterns).
+- Do not nest a second collapsible titled “Prescription details”.
+
+### 5. Form synchronized with drug catalog
+
+When a medicine is added (or drug id changes), seed and bind from the selected `ClinicalActionCatalogOption`:
+
+| Form concern | Source |
+| --- | --- |
+| Display name / heading | Generic name + strength (`clinicalPrescriptionDrugHeading` / metadata) |
+| Default dose amount / unit | Parsed from catalog **strength** when present and parseable |
+| Sensible defaults already in use | Keep route / frequency defaults unless catalog metadata supplies better defaults |
+
+The form must “know” which drug it is editing: changing catalog-derived strength context should refresh defaults **only when the user has not already customized** that field (or when the drug id itself changes). Do not wipe user edits on every rebuild.
+
+### 6. Intelligent field interconnection
+
+Implement a deterministic dosing consistency model so related numeric fields stay coherent for common solid/oral prescribe paths. Minimum expected behavior:
+
+1. **Frequency → doses/day** map (e.g. OD=1, BID=2, TID=3, QID=4, Q6H≈4, Q8H≈3, Q12H=2, ONCE/STAT=1; PRN does not auto-drive quantity).
+2. When **dose amount**, **dose unit**, **strength**, **frequency**, and **duration** are known and units are compatible, **derive / update quantity** (ceiling to whole dispense units when quantity is integer).
+3. When the user edits **quantity** (or duration) with enough other fields known, **recompute the dependent field** that was not the last edited control (last-edited wins; avoid feedback loops).
+4. If the user enters a combination that **cannot tally** (e.g. dose unit incompatible with strength unit, or quantity that cannot cover frequency × duration at the stated dose), surface a clear **inline validation** error on the offending field(s) and treat the line as invalid for submit.
+5. Changing dose amount should refresh dependent derived values when the previous values were auto-derived or still match the prior derivation; do not fight an explicit user override of quantity/duration until inputs become inconsistent again.
+
+Document the formula in code comments briefly (e.g. `quantity ≈ dosesPerDay × durationInDays × (doseAmount / strengthAmount)` when units match). Prefer a small pure helper (testable) over ad-hoc `setState` math scattered in the widget.
+
+Out of scope for v1 unless already available in catalog metadata: complex liquid reconstitutions, tapering schedules, multi-ingredient strengths.
+
+### 7. Do not allow prescribe with errors or insufficient entries
+
+Tighten `_linesAreValid()` / submit gating (and mirror rules in the edit-line dialog if it remains):
+
+**Required per line (minimum):**
+
+- Drug selected
+- Quantity &gt; 0
+- Dose amount &gt; 0
+- Dose unit
+- Route
+- Frequency
+- Duration value &gt; 0 and duration unit (unless frequency is STAT/ONCE where product rules already allow omitting duration — if so, encode that exception explicitly)
+
+**Also block when:**
+
+- Cross-field consistency validation fails (from §6)
+- Any visible field validator fails
+
+On block: keep the existing validation failure banner pattern; prefer expanding / focusing the first invalid line so the user can fix it. Do not submit partial or silently coerced payloads.
 
 ## Gap to close
 
 | Area | Gap |
 | --- | --- |
-| Add medicine entry | Opens detail form + drug dropdown instead of a catalog **table** picker |
-| Multi-add | Only one medicine can be configured per Add open |
-| Separation of concerns | Drug pick and sig/qty entry are coupled in one dialog on add |
-| Validation timing | Required dose is enforced on Add Done today; after the change it must be enforced before Prescribe (and/or when leaving Edit) |
-| Tests | `_addAmoxicillinLine` assumes Add medicine → drug field → dose → Done |
+| Card chrome | Custom tile vs `AppCollapsibleSection` |
+| Default state | Always expanded vs collapsed by default |
+| Header actions | Edit + bordered Remove vs plain Remove left of chevron |
+| Body title | “Prescription details” still shown |
+| Drug seeding | `drugId` only; strength not applied to dose |
+| Field linkage | No dose ↔ frequency ↔ duration ↔ quantity sync |
+| Validation | Incomplete required set; no consistency checks |
+| Tests | Assert always-open “Prescription details” / Edit details; need collapse + sync + stricter submit coverage |
 
 ## Requirements
 
-### 1. Catalog picker for Add medicine
+### UI (`clinical_prescription_action_dialog.dart`)
 
-Replace the **create** path of `_openLineDialog()` (when `editIndex == null`) with a medicine catalog picker dialog:
+1. Rebuild `_PrescriptionRxListTile` (or replace it) on **`AppCollapsibleSection`** with collapsed default, live prescription-style title, checkbox preserved, Remove in `headerActions`.
+2. Expanded child = inline dosing fields **without** “Prescription details” title.
+3. Wire `onChanged` so header summary and derived fields update immediately.
+4. Preserve dialog toolbar, catalog add, bulk remove, billing review, and submit payload shape unless a field becomes newly required (still send the same keys; requiredness is client-side gate).
+5. Do **not** redesign the Prescribe dialog shell, search bar, or catalog picker in this ticket.
 
-1. Present available drugs as an `AppListTable` (or the same table/list pattern used by lab/radiology catalog pickers), not as a lone searchable dropdown form.
-2. Support search over drug display fields (name / subtitle / code if present on `ClinicalActionCatalogOption`).
-3. Support **multi-select** so several medicines can be added in one Done.
-4. Confirming selection creates one `_PrescriptionLineFormState` per newly selected drug, sets `drugId` from `option.apiId`, applies existing defaults, and appends to `_lines`.
-5. Prefer excluding (or disabling) drugs already present on the prescribe list (`drug_id` already in `_lines`) to avoid accidental duplicates; if a duplicate is still possible, skip re-add rather than creating a second identical row.
-6. Cancel / dismiss leaves `_lines` unchanged.
-7. Reuse shared catalog picker chrome where practical (`AppDialog`, `AppListTable`, selection column, Done / Cancel, existing l10n such as `clinicalRequestCatalogPickerDoneAction`). A dedicated `showClinicalPrescriptionCatalogDialog` (or inline private dialog in the same file) is fine; do not invent a parallel design system.
+### Display helpers (`clinical_prescription_display.dart`)
 
-### 2. Prescribe list after selection
-
-- Newly added rows appear immediately on the prescribe table with medicine name resolved from catalog.
-- Dose / sig / quantity cells may show defaults or placeholders until the user edits (quantity already defaults to `1`; dose may be empty/`—` until set).
-- Do **not** require opening the detail form before the row is listed.
-
-### 3. Edit medicine (preserve, still the detail editor)
-
-- Keep **Edit medicine** as the nested `_PrescriptionLineCard` form for completing quantity, dose, route, frequency, duration, and instructions.
-- On edit, drug may remain selectable as today **or** be locked to the already-chosen catalog drug if that better matches “pick first, then prescribe” — prefer locking only if it simplifies UX without blocking legitimate corrections; default to preserving current edit-time drug changeability unless product clearly wants lock.
-- Edit Cancel must not discard unrelated lines; same dispose rules as today for failed create no longer apply to the new create path.
-
-### 4. Validation before Prescribe
-
-Because Add no longer validates dose amount:
-
-1. **Prescribe** must not submit incomplete required fields. At minimum, each line needs a `drug_id` and a valid positive dose amount (same rules as today’s form validators). Quantity remains required positive integer (default `1` already satisfies this).
-2. On validation failure: show the existing failure banner / validation failure pattern; do not close the dialog; optionally focus or mark the first incomplete line.
-3. Edit **Done** should keep its current form validation.
-
-### 5. Preserve unrelated prescribe behavior
-
-Do not regress:
-
-- Search, filters (route/frequency), column visibility, export, remove selected (+ confirm), review billing resolve + dialog, bill-later default on submit, mobile row layout, empty/search-empty copy, save loading/`closeEnabled` while saving.
+- Prefer extending existing summary helpers for the collapsible title.
+- Add pure helpers for strength parsing / doses-per-day / quantity derivation as needed; keep them unit-testable without Flutter where practical.
 
 ### Localization
 
-- Prefer existing keys (`clinicalPrescriptionAddMedicineAction`, `clinicalPrescriptionLineDialogTitle`, catalog Done, etc.).
-- Add new arb keys only where needed (e.g. picker title/search empty “No medicines match…”, “Select medicines to prescribe”). No hard-coded user-facing English in widgets beyond existing repo patterns.
-- Regenerate l10n the way this repo already does.
+- Reuse existing remove / field labels.
+- Do not hard-code new user-facing English in widgets; add `app_en.arb` keys only for new validation messages (e.g. inconsistent quantity vs duration).
+- “Prescription details” title should no longer appear on the card; unused key can remain until a cleanup pass.
 
 ### Tests
 
-Update `frontend/test/shared/clinical_actions/clinical_prescription_action_dialog_test.dart`:
+Update `clinical_prescription_action_dialog_test.dart`:
 
-- **Add medicine** opens a catalog **table** picker (not the old single-card “Available drug” form as the primary add UI).
-- Selecting one or more catalog rows and confirming adds those medicines to the prescribe list.
-- Cancel on picker adds nothing.
-- Duplicate / already-listed drug is not added twice (per chosen duplicate policy).
-- Edit medicine still opens the detail form and can set dose/quantity.
-- Prescribe is blocked (or shows validation) when a listed line lacks required dose.
-- Submit payload still includes `drug_id` and detail fields after edit.
-- Existing toolbar / empty-state / remove-selected / review-billing-disabled-when-empty coverage remains green.
+- Added medicine card is **collapsed** by default (inline dose labels hidden until expand).
+- Header shows prescription-style summary; Remove is available; **Edit details** is not in the card header (unless explicitly kept for the full dialog — assert the chosen behavior).
+- Expanding reveals dose/route/frequency fields **without** “Prescription details”.
+- Catalog strength seeds dose when applicable.
+- Changing frequency/duration updates quantity (or shows inconsistency) per the sync rules.
+- Prescribe remains blocked on incomplete **and** inconsistent lines; succeeds on a coherent complete line.
+- Existing catalog add / remove-selected / billing-disabled-when-empty behaviors still pass.
 
 ## Non-goals / preserve
 
-- Do not redesign the outer Prescribe dialog chrome or billing flow.
-- Do not change pharmacy dispense / instructions print / backend prescribe APIs.
-- Do not move prescription detail entry to fully inline table editors unless already supported by shared table components; nested Edit dialog is the intended detail surface.
-- Do not require live remote drug search unless `referenceData.drugs` is already insufficient and another clinical catalog in this app already does remote search for drugs — default to the in-memory `referenceData.drugs` list used today.
-- Do not change non-prescription clinical action dialogs.
+- Do not change backend prescribe APIs or billing resolve beyond client validation.
+- Do not remove search, filters, column settings, export, add medicine, or review billing.
+- Do not force-expand all cards; default remains collapsed.
+- Do not redesign `AppCollapsibleSection` itself unless a missing affordance (e.g. leading checkbox slot) truly cannot be done via `titleWidget` / `headerActions`.
+- Do not invent a full clinical decision-support / interaction-checking system; scope is dosing arithmetic + required fields only.
 
 ## Acceptance criteria
 
-- [ ] **Add medicine** opens a selectable **table** of available drugs.
-- [ ] Confirming selection adds those medicines as rows on the Prescribe list without forcing detail entry first.
-- [ ] Multi-select add works in one picker session.
-- [ ] Prescription details are completed on the prescribe side via **Edit medicine** (existing form fields).
-- [ ] Prescribe validates required line fields before submit.
-- [ ] Remove selected, filters, billing review, and submit payload shape remain intact.
-- [ ] Widget tests cover picker add, edit details, validation, and submit.
+- [ ] Each medicine line uses `AppCollapsibleSection`, **collapsed by default**.
+- [ ] Header shows live generic + strength + route + frequency + quantity summary; tapping header toggles expand/collapse.
+- [ ] Remove sits left of the chevron with plain icon+label chrome (no fill/border).
+- [ ] Expanded form has **no** “Prescription details” title; fields remain editable inline.
+- [ ] Form seeds from drug catalog (name/strength) and keeps dose/frequency/duration/quantity interconnected with last-edit-safe updates.
+- [ ] Prescribe is blocked for missing required fields or inconsistent dosing; allowed only for complete, consistent lines.
+- [ ] Checkbox multi-select + dialog shell + submit payload shape preserved.
+- [ ] Widget tests updated for collapse, header, sync, and stricter validation.
 
 ## Implementation notes
 
-- Mirror lab order’s split: parent dialog owns selected lines; nested catalog dialog only returns selected `ClinicalActionCatalogOption`s (or ids), then parent materializes `_PrescriptionLineFormState`.
-- Keep `_openLineDialog(editIndex: …)` for edit; introduce `_openCatalogPicker()` (name flexible) for add.
-- When creating lines from catalog options, set `drugId` immediately; leave dose empty until edit unless catalog metadata already supplies a safe default (today’s catalog option does not require inventing dose).
-- Dispose any temporary line state only for abandoned create flows; catalog add should create lines only after Done.
-- Prefer extracting a small private/catalog dialog file next to the prescription dialog if the picker grows past ~200 lines, matching `clinical_*_catalog_dialog.dart` layout.
+- `AppCollapsibleSection.headerActions` already applies plain chrome and stops toggle when those actions are pressed — use that for Remove.
+- Selection highlight: if the old selected fill on the custom `DecoratedBox` is still desired, pass `backgroundColor` / `borderColor` on the section when selected rather than wrapping another card.
+- Prefer one small `_PrescriptionDosingSync` (or similar) helper with an explicit `lastEditedField` enum to prevent oscillation.
+- When seeding from strength strings like `400 mg`, parse amount + unit defensively; if unparsable, leave dose blank and rely on required-field validation.
+- Match existing `AppButton` / l10n / form field patterns; no new visual language.
