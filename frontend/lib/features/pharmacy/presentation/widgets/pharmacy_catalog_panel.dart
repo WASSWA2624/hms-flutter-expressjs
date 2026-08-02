@@ -787,7 +787,7 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
               writeRequirement: widget.writeRequirement,
               isBusy: isBusy,
               editLabel: l10n.commonEditActionLabel,
-              deleteLabel: l10n.commonDeleteActionLabel,
+              deleteLabel: l10n.commonRemoveActionLabel,
               editSemanticLabel: l10n.pharmacyEditFormularyAction,
               deleteSemanticLabel: l10n.pharmacyDeleteFormularyAction,
               onEdit: () => _openFormularyDialog(context, item: item),
@@ -1072,32 +1072,51 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
                   alwaysVisible: true,
                   exportable: false,
                   headerBuilder: (BuildContext context) {
-                    return Checkbox(
-                      tristate: true,
-                      value: allVisibleSelected
-                          ? true
-                          : someVisibleSelected
-                          ? null
-                          : false,
-                      onChanged: _isSaving || visibleDrugs.isEmpty
-                          ? null
-                          : (_) => _toggleAllVisible(
-                              visibleDrugs,
-                              !allVisibleSelected,
-                            ),
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    final AppLocalizations headerL10n = context.l10n;
+                    final String tooltip = allVisibleSelected
+                        ? headerL10n.commonClearSelectionActionLabel
+                        : headerL10n.commonSelectAllActionLabel;
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: Tooltip(
+                        message: tooltip,
+                        child: Semantics(
+                          label: tooltip,
+                          checked: allVisibleSelected,
+                          mixed: someVisibleSelected && !allVisibleSelected,
+                          child: Checkbox(
+                            tristate: true,
+                            value: allVisibleSelected
+                                ? true
+                                : someVisibleSelected
+                                ? null
+                                : false,
+                            onChanged: _isSaving || visibleDrugs.isEmpty
+                                ? null
+                                : (bool? checked) => _toggleAllVisible(
+                                    visibleDrugs,
+                                    checked ?? false,
+                                  ),
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ),
                     );
                   },
                   cellBuilder: (BuildContext context, PharmacyDrug drug) {
-                    return Checkbox(
-                      value: _selectedDrugIds.contains(drug.id),
-                      onChanged: _isSaving
-                          ? null
-                          : (bool? value) =>
-                                _toggleDrug(drug.id, value ?? false),
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: Checkbox(
+                        value: _selectedDrugIds.contains(drug.id),
+                        onChanged: _isSaving
+                            ? null
+                            : (bool? value) =>
+                                  _toggleDrug(drug.id, value ?? false),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                     );
                   },
                 ),
@@ -2478,6 +2497,11 @@ AppListTableColumn<T> _selectionColumn<T>({
   final bool someSelected = visibleItems.any(
     (T item) => selectedKeys.contains(itemKey(item)),
   );
+  final bool? checkboxValue = allSelected
+      ? true
+      : someSelected
+      ? null
+      : false;
 
   return AppListTableColumn<T>(
     id: 'select',
@@ -2486,28 +2510,43 @@ AppListTableColumn<T> _selectionColumn<T>({
     exportable: false,
     fixedWidth: 48,
     headerBuilder: (BuildContext context) {
-      return Checkbox(
-        tristate: true,
-        value: allSelected
-            ? true
-            : someSelected
-            ? null
-            : false,
-        onChanged: !isBusy && visibleItems.isNotEmpty
-            ? (_) => onToggleAll(visibleItems, !allSelected)
-            : null,
-        visualDensity: VisualDensity.compact,
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      final AppLocalizations l10n = context.l10n;
+      final String tooltip = allSelected
+          ? l10n.commonClearSelectionActionLabel
+          : l10n.commonSelectAllActionLabel;
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Tooltip(
+          message: tooltip,
+          child: Semantics(
+            label: tooltip,
+            checked: allSelected,
+            mixed: someSelected && !allSelected,
+            child: Checkbox(
+              tristate: true,
+              value: checkboxValue,
+              onChanged: !isBusy && visibleItems.isNotEmpty
+                  ? (bool? checked) =>
+                        onToggleAll(visibleItems, checked ?? false)
+                  : null,
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ),
       );
     },
     cellBuilder: (BuildContext context, T item) {
-      return Checkbox(
-        value: selectedKeys.contains(itemKey(item)),
-        onChanged: isBusy
-            ? null
-            : (bool? value) => onToggle(item, value ?? false),
-        visualDensity: VisualDensity.compact,
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Checkbox(
+          value: selectedKeys.contains(itemKey(item)),
+          onChanged: isBusy
+              ? null
+              : (bool? value) => onToggle(item, value ?? false),
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
       );
     },
   );

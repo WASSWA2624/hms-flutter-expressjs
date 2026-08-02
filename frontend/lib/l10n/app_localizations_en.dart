@@ -12745,10 +12745,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyEditFormularyAction => 'Edit formulary item';
 
   @override
-  String get pharmacyDeleteFormularyAction => 'Delete formulary item';
+  String get pharmacyDeleteFormularyAction => 'Remove from formulary';
 
   @override
-  String get pharmacyDeleteFormularyDialogTitle => 'Delete formulary item';
+  String get pharmacyDeleteFormularyDialogTitle => 'Remove from formulary';
 
   @override
   String get pharmacyDeleteFormularyDialogBody =>
@@ -12772,11 +12772,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get pharmacyDeleteSelectedFormularyAction => 'Delete selected';
+  String get pharmacyDeleteSelectedFormularyAction => 'Remove selected';
 
   @override
   String get pharmacyDeleteSelectedFormularyDialogTitle =>
-      'Delete selected formulary items?';
+      'Remove selected formulary items?';
 
   @override
   String pharmacyDeleteSelectedFormularyDialogBody(int count) {
@@ -20494,6 +20494,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonSelectActionLabel => 'Select';
+
+  @override
+  String get commonSelectAllActionLabel => 'Select all';
+
+  @override
+  String get commonClearSelectionActionLabel => 'Clear selection';
 
   @override
   String get commonSaveActionLabel => 'Save';

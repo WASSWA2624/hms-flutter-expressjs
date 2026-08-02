@@ -16268,17 +16268,17 @@
   "@pharmacyEditFormularyAction": {
     "description": "Pharmacy edit formulary item action label."
   },
-  "pharmacyDeleteFormularyAction": "Delete formulary item",
+  "pharmacyDeleteFormularyAction": "Remove from formulary",
   "@pharmacyDeleteFormularyAction": {
-    "description": "Pharmacy delete formulary item action label."
+    "description": "Pharmacy remove formulary item action label."
   },
-  "pharmacyDeleteFormularyDialogTitle": "Delete formulary item",
+  "pharmacyDeleteFormularyDialogTitle": "Remove from formulary",
   "@pharmacyDeleteFormularyDialogTitle": {
-    "description": "Pharmacy delete formulary confirmation title."
+    "description": "Pharmacy remove formulary confirmation title."
   },
   "pharmacyDeleteFormularyDialogBody": "Remove this drug from the facility formulary?",
   "@pharmacyDeleteFormularyDialogBody": {
-    "description": "Pharmacy delete formulary confirmation body."
+    "description": "Pharmacy remove formulary confirmation body."
   },
   "pharmacyDeleteSelectedDrugsAction": "Delete selected",
   "@pharmacyDeleteSelectedDrugsAction": {
@@ -16297,17 +16297,17 @@
       }
     }
   },
-  "pharmacyDeleteSelectedFormularyAction": "Delete selected",
+  "pharmacyDeleteSelectedFormularyAction": "Remove selected",
   "@pharmacyDeleteSelectedFormularyAction": {
-    "description": "Pharmacy bulk delete formulary items action label."
+    "description": "Pharmacy bulk remove formulary items action label."
   },
-  "pharmacyDeleteSelectedFormularyDialogTitle": "Delete selected formulary items?",
+  "pharmacyDeleteSelectedFormularyDialogTitle": "Remove selected formulary items?",
   "@pharmacyDeleteSelectedFormularyDialogTitle": {
-    "description": "Pharmacy bulk delete formulary confirmation title."
+    "description": "Pharmacy bulk remove formulary confirmation title."
   },
   "pharmacyDeleteSelectedFormularyDialogBody": "Remove {count, plural, =1{1 formulary item} other{{count} formulary items}}?",
   "@pharmacyDeleteSelectedFormularyDialogBody": {
-    "description": "Pharmacy bulk delete formulary confirmation body.",
+    "description": "Pharmacy bulk remove formulary confirmation body.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -26266,6 +26266,14 @@
   "commonSelectActionLabel": "Select",
   "@commonSelectActionLabel": {
     "description": "Localized text for commonSelectActionLabel."
+  },
+  "commonSelectAllActionLabel": "Select all",
+  "@commonSelectAllActionLabel": {
+    "description": "Shared select-all checkbox / action label for multi-select tables."
+  },
+  "commonClearSelectionActionLabel": "Clear selection",
+  "@commonClearSelectionActionLabel": {
+    "description": "Shared clear-selection checkbox / action label for multi-select tables."
   },
   "commonSaveActionLabel": "Save",
   "@commonSaveActionLabel": {

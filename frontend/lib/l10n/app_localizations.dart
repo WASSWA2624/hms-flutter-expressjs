@@ -23488,19 +23488,19 @@ abstract class AppLocalizations {
   /// **'Edit formulary item'**
   String get pharmacyEditFormularyAction;
 
-  /// Pharmacy delete formulary item action label.
+  /// Pharmacy remove formulary item action label.
   ///
   /// In en, this message translates to:
-  /// **'Delete formulary item'**
+  /// **'Remove from formulary'**
   String get pharmacyDeleteFormularyAction;
 
-  /// Pharmacy delete formulary confirmation title.
+  /// Pharmacy remove formulary confirmation title.
   ///
   /// In en, this message translates to:
-  /// **'Delete formulary item'**
+  /// **'Remove from formulary'**
   String get pharmacyDeleteFormularyDialogTitle;
 
-  /// Pharmacy delete formulary confirmation body.
+  /// Pharmacy remove formulary confirmation body.
   ///
   /// In en, this message translates to:
   /// **'Remove this drug from the facility formulary?'**
@@ -23524,19 +23524,19 @@ abstract class AppLocalizations {
   /// **'Remove {count, plural, =1{1 drug} other{{count} drugs}} from the catalog?'**
   String pharmacyDeleteSelectedDrugsDialogBody(int count);
 
-  /// Pharmacy bulk delete formulary items action label.
+  /// Pharmacy bulk remove formulary items action label.
   ///
   /// In en, this message translates to:
-  /// **'Delete selected'**
+  /// **'Remove selected'**
   String get pharmacyDeleteSelectedFormularyAction;
 
-  /// Pharmacy bulk delete formulary confirmation title.
+  /// Pharmacy bulk remove formulary confirmation title.
   ///
   /// In en, this message translates to:
-  /// **'Delete selected formulary items?'**
+  /// **'Remove selected formulary items?'**
   String get pharmacyDeleteSelectedFormularyDialogTitle;
 
-  /// Pharmacy bulk delete formulary confirmation body.
+  /// Pharmacy bulk remove formulary confirmation body.
   ///
   /// In en, this message translates to:
   /// **'Remove {count, plural, =1{1 formulary item} other{{count} formulary items}}?'**
@@ -38088,6 +38088,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select'**
   String get commonSelectActionLabel;
+
+  /// Shared select-all checkbox / action label for multi-select tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get commonSelectAllActionLabel;
+
+  /// Shared clear-selection checkbox / action label for multi-select tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selection'**
+  String get commonClearSelectionActionLabel;
 
   /// Shared short save action label for section headers and toolbars.
   ///
