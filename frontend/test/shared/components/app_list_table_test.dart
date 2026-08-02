@@ -1161,6 +1161,125 @@ void main() {
     expect(find.text('Item 3'), findsNothing);
   });
 
+  test('appListTableProgressiveBatchSize uses viewport and maxVisibleItems', () {
+    expect(
+      appListTableProgressiveBatchSize(maxVisibleItems: 3),
+      3,
+    );
+    expect(
+      appListTableProgressiveBatchSize(
+        availableHeight: 280,
+        headingHeight: 48,
+        rowMinHeight: 52,
+        fallbackBatch: 16,
+      ),
+      greaterThanOrEqualTo(16),
+    );
+    expect(
+      appListTableProgressiveBatchSize(fallbackBatch: 16),
+      16,
+    );
+  });
+
+  testWidgets(
+    'AppListTable progressively reveals rows by default without mounting all',
+    (WidgetTester tester) async {
+      final List<_RowItem> manyItems = List<_RowItem>.generate(
+        80,
+        (int index) => _RowItem(
+          id: 'item-$index',
+          title: 'Item $index',
+          status: 'Active',
+        ),
+      );
+
+      await pumpComponent(
+        tester,
+        SizedBox(
+          height: 280,
+          width: 960,
+          child: AppListTable<_RowItem>(
+            items: manyItems,
+            columns: _columns,
+            displayMode: AppListTableDisplayMode.table,
+            mobileItemBuilder: (BuildContext context, _RowItem item) {
+              return ListTile(title: Text(item.title));
+            },
+          ),
+        ),
+        size: const Size(960, 600),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Item 0'), findsOneWidget);
+      expect(find.text('Item 40'), findsNothing);
+      expect(find.text('Item 79'), findsNothing);
+
+      final ScrollableState scrollable = tester.state<ScrollableState>(
+        find.byWidgetPredicate(_isVerticalScrollable).first,
+      );
+      for (var i = 0; i < 12; i += 1) {
+        if (scrollable.position.maxScrollExtent > 0) {
+          scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+        }
+        await tester.pump();
+        await tester.pump();
+      }
+
+      expect(find.text('Item 40'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'AppListTable can progressively reveal all rows when total is at most 100',
+    (WidgetTester tester) async {
+      final List<_RowItem> manyItems = List<_RowItem>.generate(
+        100,
+        (int index) => _RowItem(
+          id: 'item-$index',
+          title: 'Item $index',
+          status: 'Active',
+        ),
+      );
+
+      await pumpComponent(
+        tester,
+        SizedBox(
+          height: 300,
+          width: 960,
+          child: AppListTable<_RowItem>(
+            items: manyItems,
+            columns: _columns,
+            displayMode: AppListTableDisplayMode.table,
+            mobileItemBuilder: (BuildContext context, _RowItem item) {
+              return ListTile(title: Text(item.title));
+            },
+          ),
+        ),
+        size: const Size(960, 600),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Item 0'), findsOneWidget);
+      expect(find.text('Item 99'), findsNothing);
+
+      final ScrollableState scrollable = tester.state<ScrollableState>(
+        find.byWidgetPredicate(_isVerticalScrollable).first,
+      );
+      for (var i = 0; i < 20; i += 1) {
+        if (scrollable.position.maxScrollExtent > 0) {
+          scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+        }
+        await tester.pump();
+        await tester.pump();
+      }
+
+      expect(find.text('Item 99'), findsOneWidget);
+    },
+  );
+
   testWidgets(
     'AppListTable shows go-to-top after header scrolls away and returns to top',
     (WidgetTester tester) async {

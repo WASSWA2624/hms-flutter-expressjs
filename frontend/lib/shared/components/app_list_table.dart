@@ -53,6 +53,15 @@ const double _defaultCompactColumnWidth = 144;
 const double _columnResizeHandleWidth = 8;
 const double _infiniteScrollLoadExtent = 240;
 
+/// Preferred first-page size for paged [AppListTable] callers (backend max).
+const int appListTablePreferredPageSize = AppPageRequest.maxPageSize;
+
+/// Extra rows beyond the visible viewport kept mounted for smooth scrolling.
+const int _progressiveRenderBufferRows = 4;
+
+/// Used before the first layout pass measures the table body height.
+const int _fallbackProgressiveBatch = 16;
+
 LocalKey appListTableUniqueRowKey<T>({
   required int index,
   required AppListTableItemKeyBuilder<T>? itemKeyBuilder,
@@ -174,6 +183,33 @@ bool appListTableShowsInitialLoading({
   required List<dynamic> visibleItems,
 }) {
   return isLoading && visibleItems.isEmpty;
+}
+
+/// Rows to mount for the first paint / each progressive reveal batch.
+///
+/// When [maxVisibleItems] is set it is the batch size override. Otherwise the
+/// batch is viewport rows (from [availableHeight]) plus a small buffer, falling
+/// back to [_fallbackProgressiveBatch] when height is unknown.
+int appListTableProgressiveBatchSize({
+  int? maxVisibleItems,
+  double? availableHeight,
+  double headingHeight = 48,
+  double rowMinHeight = 52,
+  int bufferRows = _progressiveRenderBufferRows,
+  int fallbackBatch = _fallbackProgressiveBatch,
+}) {
+  if (maxVisibleItems != null && maxVisibleItems > 0) {
+    return maxVisibleItems;
+  }
+  if (availableHeight == null ||
+      !availableHeight.isFinite ||
+      availableHeight <= 0 ||
+      rowMinHeight <= 0) {
+    return fallbackBatch;
+  }
+  final double bodyHeight = math.max(0.0, availableHeight - headingHeight);
+  final int viewportRows = math.max(1, (bodyHeight / rowMinHeight).ceil());
+  return math.max(fallbackBatch, viewportRows + bufferRows);
 }
 
 class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
@@ -846,6 +882,13 @@ class _AppListTableMobileMetaRow extends StatelessWidget {
   }
 }
 
+/// Shared worklist table with viewport-aware progressive row mounting.
+///
+/// Large [items] / [page] lists are not painted in one frame: the first paint
+/// mounts roughly a viewport of rows (plus a buffer), then reveals more as the
+/// user scrolls. For paged backends, prefer
+/// `AppPageRequest(pageSize: appListTablePreferredPageSize)` (100 / max page
+/// size); smaller explicit [AppPageRequest.pageSize] values are left alone.
 class AppListTable<T> extends StatefulWidget {
   const AppListTable({
     required this.columns,
@@ -946,6 +989,14 @@ class AppListTable<T> extends StatefulWidget {
   final AppListTableRowColorBuilder<T>? rowColorBuilder;
   final String? initialSortColumnKey;
   final bool initialSortAscending;
+
+  /// Progressive reveal batch size override.
+  ///
+  /// When null (default), [AppListTable] mounts roughly a viewport of rows plus
+  /// a small buffer and reveals more as the user scrolls — avoiding a full-list
+  /// paint freeze. When set, that value is the initial and per-scroll batch
+  /// size. Prefer [appListTablePreferredPageSize] (`AppPageRequest.maxPageSize`)
+  /// for paged data requests; this field only controls client-side mounting.
   final int? maxVisibleItems;
   final bool isLoading;
   final Object? error;
@@ -1019,6 +1070,9 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   String? _sortColumnKey;
   bool _sortAscending = true;
   int? _renderLimit;
+  int? _viewportBatchSize;
+  bool _viewportSyncScheduled = false;
+  bool _revealScheduled = false;
   String _trackedQuery = '';
   int _trackedSortedItemCount = 0;
   List<T> _accumulatedItems = <T>[];
@@ -1255,11 +1309,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 
   void _reattachAncestorScrollListener() {
-    if (!_usesInfinitePagination && widget.maxVisibleItems == null) {
-      _detachAncestorScrollListener();
-      return;
-    }
-
+    // Progressive reveal and infinite pagination both need ancestor scroll.
     final ScrollableState? scrollable = Scrollable.maybeOf(context);
     final ScrollPosition? position = scrollable?.position;
     if (identical(position, _ancestorScrollPosition)) {
@@ -1293,7 +1343,21 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     _onNearScrollEnd();
   }
 
-  void _onNearScrollEnd() {
+  void _scheduleRevealIfNeeded({bool allowPageRequest = true}) {
+    if (_revealScheduled) {
+      return;
+    }
+    _revealScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _revealScheduled = false;
+      if (!mounted) {
+        return;
+      }
+      _onNearScrollEnd(allowPageRequest: allowPageRequest);
+    });
+  }
+
+  void _onNearScrollEnd({bool allowPageRequest = true}) {
     final String query = _currentQuery();
     final AppPage<T>? sourcePage = widget.page;
     final List<T> sourceItems = _usesInfinitePagination
@@ -1312,8 +1376,16 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     final int totalSortedCount = visibleItems.length;
     if (_canRevealMoreItems(totalSortedCount)) {
       _revealMoreItems(totalSortedCount);
+      // Keep revealing across frames while the user remains near the end so a
+      // single scroll gesture does not stall after one batch.
+      if (allowPageRequest) {
+        _scheduleRevealIfNeeded(allowPageRequest: true);
+      }
+      return;
     }
-    _maybeRequestNextPage();
+    if (allowPageRequest) {
+      _maybeRequestNextPage();
+    }
   }
 
   String _currentQuery() {
@@ -1579,46 +1651,99 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 
   void _syncRenderLimit(String query, int sortedItemCount) {
-    final int? cap = widget.maxVisibleItems;
-    if (cap == null || cap <= 0) {
-      _renderLimit = null;
-      return;
-    }
+    final int batch = _effectiveRevealBatch;
     if (query != _trackedQuery || sortedItemCount != _trackedSortedItemCount) {
       _trackedQuery = query;
       _trackedSortedItemCount = sortedItemCount;
-      _renderLimit = cap;
+      _renderLimit = math.min(batch, sortedItemCount);
+      return;
     }
+    _renderLimit ??= math.min(batch, sortedItemCount);
+  }
+
+  /// Progressive mount/reveal batch: [maxVisibleItems] override or viewport estimate.
+  int get _effectiveRevealBatch {
+    final int? override = widget.maxVisibleItems;
+    if (override != null && override > 0) {
+      return override;
+    }
+    return _viewportBatchSize ?? _fallbackProgressiveBatch;
   }
 
   List<T> _limitedVisibleItems(List<T> items) {
-    final int? limit = widget.maxVisibleItems;
-    if (limit == null || limit <= 0 || items.length <= limit) {
+    if (items.isEmpty) {
       return items;
     }
-    final int renderCount = math.min(_renderLimit ?? limit, items.length);
+    final int batch = _effectiveRevealBatch;
+    final int renderCount = math.min(_renderLimit ?? batch, items.length);
+    if (renderCount >= items.length) {
+      return items;
+    }
     return items.take(renderCount).toList(growable: false);
   }
 
   bool _canRevealMoreItems(int totalSortedCount) {
-    final int? limit = widget.maxVisibleItems;
-    if (limit == null || limit <= 0 || totalSortedCount <= limit) {
+    if (totalSortedCount <= 0) {
       return false;
     }
-    return (_renderLimit ?? limit) < totalSortedCount;
+    final int batch = _effectiveRevealBatch;
+    return (_renderLimit ?? batch) < totalSortedCount;
   }
 
   void _revealMoreItems(int totalSortedCount) {
-    final int? batch = widget.maxVisibleItems;
-    if (batch == null || batch <= 0) {
-      return;
-    }
+    final int batch = _effectiveRevealBatch;
     final int current = _renderLimit ?? batch;
     if (current >= totalSortedCount) {
       return;
     }
     setState(() {
       _renderLimit = math.min(current + batch, totalSortedCount);
+    });
+  }
+
+  void _syncViewportBatchFromConstraints({
+    required BoxConstraints constraints,
+    required bool compact,
+    required bool dense,
+  }) {
+    if (!constraints.hasBoundedHeight) {
+      return;
+    }
+    final double headingHeight = dense
+        ? 32
+        : compact
+        ? 44
+        : 48;
+    final double rowMinHeight = dense
+        ? 44
+        : compact
+        ? 48
+        : 52;
+    final int nextBatch = appListTableProgressiveBatchSize(
+      maxVisibleItems: widget.maxVisibleItems,
+      availableHeight: constraints.maxHeight,
+      headingHeight: headingHeight,
+      rowMinHeight: rowMinHeight,
+    );
+    if (_viewportBatchSize == nextBatch || _viewportSyncScheduled) {
+      return;
+    }
+    _viewportSyncScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _viewportSyncScheduled = false;
+      if (!mounted || _viewportBatchSize == nextBatch) {
+        return;
+      }
+      setState(() {
+        _viewportBatchSize = nextBatch;
+        final int current = _renderLimit ?? _fallbackProgressiveBatch;
+        if (current < nextBatch) {
+          final int cap = _trackedSortedItemCount > 0
+              ? _trackedSortedItemCount
+              : nextBatch;
+          _renderLimit = math.min(math.max(current, nextBatch), cap);
+        }
+      });
     });
   }
 
@@ -1740,6 +1865,11 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         final List<AppListTableColumn<T>> visibleColumns = _visibleColumns;
         final bool compact =
             widget.forceCompact || _usesCompactTableLayout(constraints);
+        _syncViewportBatchFromConstraints(
+          constraints: constraints,
+          compact: compact,
+          dense: widget.forceCompact,
+        );
         final Map<String, double> resolvedWidths = _resolvedColumnWidths(
           constraints: constraints,
           visibleColumns: visibleColumns,
