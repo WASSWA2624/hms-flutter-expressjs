@@ -1032,229 +1032,217 @@ class _StorageRoomDetailsDialogState
             child: _RoomDetailMetaWrap(items: metaItems),
           ),
           SizedBox(height: theme.spacing.md),
-          AppCollapsibleSection(
-            title: l10n.pharmacyStorageShelvesCountColumnLabel,
-            titleIcon: Icons.inventory_2_outlined,
-            subtitle: '${allShelves.length}',
-            headerMetaInline: true,
-            contentPadding: EdgeInsets.all(theme.spacing.md),
-            headerActions: <Widget>[
-              AppAccessActionGate(
-                requirement: writeRequirement,
-                builder: (BuildContext context, bool allowed) {
-                  if (!allowed || current.isSoftDeleted) {
-                    return const SizedBox.shrink();
+          SizedBox(
+            height: 320,
+            child: AppListTable<PharmacyStorageShelf>(
+              items: shelves,
+              forceCompact: true,
+              padEmptyRows: false,
+              enableExport: false,
+              columnVisibilityStorageKey:
+                  'pharmacy_room_details_shelves_${current.id}',
+              search: AppListTableSearch<PharmacyStorageShelf>(
+                controller: _shelfSearchController,
+                semanticLabel: l10n.pharmacySearchLabel,
+                hintText: l10n.pharmacyStorageShelvesSearchHint,
+                enableDateFilter: false,
+                showAdvancedFilterButton: true,
+                matcher: (PharmacyStorageShelf shelf, String query) {
+                  final String needle = query.trim().toLowerCase();
+                  if (needle.isEmpty) {
+                    return true;
                   }
-                  return AppButton.secondary(
-                    dense: true,
-                    label: l10n.pharmacyAddStorageShelfAction,
-                    leadingIcon: Icons.add,
-                    onPressed: () {
-                      unawaited(
-                        openPharmacyStorageShelfDialog(
-                          context,
-                          ref,
-                          room: current,
-                        ),
-                      );
-                    },
-                  );
+                  return shelf.displayLabel.toLowerCase().contains(needle) ||
+                      (shelf.shelfCode ?? '').toLowerCase().contains(needle) ||
+                      (shelf.label ?? '').toLowerCase().contains(needle) ||
+                      (shelf.displayId ?? '').toLowerCase().contains(needle) ||
+                      shelf.id.toLowerCase().contains(needle);
                 },
-              ),
-            ],
-            child: SizedBox(
-              height: 320,
-              child: AppListTable<PharmacyStorageShelf>(
-                items: shelves,
-                forceCompact: true,
-                padEmptyRows: false,
-                enableExport: false,
-                columnVisibilityStorageKey:
-                    'pharmacy_room_details_shelves_${current.id}',
-                search: AppListTableSearch<PharmacyStorageShelf>(
-                  controller: _shelfSearchController,
-                  semanticLabel: l10n.pharmacySearchLabel,
-                  hintText: l10n.pharmacyStorageShelvesSearchHint,
-                  enableDateFilter: false,
-                  showAdvancedFilterButton: true,
-                  matcher: (PharmacyStorageShelf shelf, String query) {
-                    final String needle = query.trim().toLowerCase();
-                    if (needle.isEmpty) {
-                      return true;
-                    }
-                    return shelf.displayLabel.toLowerCase().contains(needle) ||
-                        (shelf.shelfCode ?? '').toLowerCase().contains(needle) ||
-                        (shelf.label ?? '').toLowerCase().contains(needle) ||
-                        (shelf.displayId ?? '').toLowerCase().contains(needle) ||
-                        shelf.id.toLowerCase().contains(needle);
-                  },
-                  filterGroups: <AppSearchBarFilterGroup>[
-                    AppSearchBarFilterGroup(
-                      key: 'shelf_status',
-                      label: l10n.pharmacyStorageStatusColumnLabel,
-                      choices: <AppSearchBarFilterChoice>[
-                        AppSearchBarFilterChoice(
-                          value: 'active',
-                          label: l10n.pharmacyStorageActiveLabel,
-                        ),
-                        AppSearchBarFilterChoice(
-                          value: 'inactive',
-                          label: l10n.pharmacyStorageInactiveLabel,
-                        ),
-                      ],
-                    ),
-                  ],
-                  filterValue: AppSearchBarFilterValue(
-                    options: <String, String>{
-                      if (_shelfStatusFilter case final String status)
-                        'shelf_status': status,
-                    },
-                  ),
-                  hasActiveFilters: _shelfStatusFilter != null,
-                  onFilterChanged: (AppSearchBarFilterValue value) {
-                    setState(() {
-                      _shelfStatusFilter = value.options['shelf_status'];
-                    });
-                  },
-                ),
-                emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-                  variant: AppStateViewVariant.empty,
-                  title: l10n.pharmacyNoStorageShelvesTitle,
-                  body: l10n.pharmacyNoStorageShelvesBody,
-                  icon: Icons.view_week_outlined,
-                ),
-                columns: <AppListTableColumn<PharmacyStorageShelf>>[
-                  AppListTableColumn<PharmacyStorageShelf>(
-                    id: 'shelf_code',
-                    label: l10n.pharmacyStorageShelfCodeLabel,
-                    preferredWidth: 120,
-                    cellBuilder: (_, PharmacyStorageShelf shelf) => Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        (shelf.shelfCode ?? '').trim().isEmpty
-                            ? empty
-                            : shelf.shelfCode!.trim(),
-                        textAlign: TextAlign.start,
-                      ),
-                    ),
-                  ),
-                  AppListTableColumn<PharmacyStorageShelf>(
-                    id: 'label',
-                    label: l10n.pharmacyStorageShelfLabelField,
-                    preferredWidth: 160,
-                    cellBuilder: (_, PharmacyStorageShelf shelf) {
-                      final String label = (shelf.label ?? '').trim();
-                      return Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          label.isEmpty ? empty : label,
-                          textAlign: TextAlign.start,
-                        ),
-                      );
-                    },
-                  ),
-                  AppListTableColumn<PharmacyStorageShelf>(
-                    id: 'status',
+                filterGroups: <AppSearchBarFilterGroup>[
+                  AppSearchBarFilterGroup(
+                    key: 'shelf_status',
                     label: l10n.pharmacyStorageStatusColumnLabel,
-                    fixedWidth: 110,
-                    cellBuilder:
-                        (BuildContext context, PharmacyStorageShelf shelf) {
-                      return Align(
-                        alignment: Alignment.centerLeft,
-                        child: AppWorkspaceStatusBadge(
-                          status: AppWorkspaceStatus(
-                            label: shelf.isActive
-                                ? l10n.pharmacyStorageActiveLabel
-                                : l10n.pharmacyStorageInactiveLabel,
-                            tone: shelf.isActive
-                                ? AppWorkspaceStatusTone.success
-                                : AppWorkspaceStatusTone.neutral,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  AppListTableColumn<PharmacyStorageShelf>(
-                    id: 'actions',
-                    label: l10n.pharmacyLineActionsColumnLabel,
-                    alwaysVisible: true,
-                    fixedWidth: 240,
-                    cellBuilder:
-                        (BuildContext context, PharmacyStorageShelf shelf) {
-                      return AppAccessActionGate(
-                        requirement: writeRequirement,
-                        builder: (BuildContext context, bool allowed) {
-                          if (!allowed || current.isSoftDeleted) {
-                            return const SizedBox.shrink();
-                          }
-                          return Align(
-                            alignment: Alignment.centerLeft,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                AppButton.tertiary(
-                                  dense: true,
-                                  leadingIcon: Icons.edit_outlined,
-                                  label: l10n.commonEditActionLabel,
-                                  semanticLabel:
-                                      l10n.pharmacyEditStorageShelfAction,
-                                  onPressed: () {
-                                    unawaited(
-                                      openPharmacyStorageShelfDialog(
-                                        context,
-                                        ref,
-                                        room: current,
-                                        shelf: shelf,
-                                      ),
-                                    );
-                                  },
-                                ),
-                                SizedBox(width: theme.spacing.xs),
-                                AppButton.tertiary(
-                                  dense: true,
-                                  leadingIcon: Icons.delete_outline,
-                                  label: l10n.commonDeleteActionLabel,
-                                  semanticLabel:
-                                      l10n.pharmacyDeleteStorageShelfAction,
-                                  color: colorScheme.error,
-                                  onPressed: () {
-                                    unawaited(
-                                      confirmDeletePharmacyStorageShelf(
-                                        context,
-                                        ref,
-                                        shelf,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ],
-                mobileItemBuilder:
-                    (BuildContext context, PharmacyStorageShelf shelf) {
-                  return AppListTableMobileItem(
-                    title: (shelf.shelfCode ?? '').trim().isEmpty
-                        ? shelf.displayLabel
-                        : shelf.shelfCode!.trim(),
-                    caption: (shelf.label ?? '').trim().isEmpty
-                        ? null
-                        : shelf.label!.trim(),
-                    meta: <AppListTableMobileMeta>[
-                      AppListTableMobileMeta(
-                        label: shelf.isActive
-                            ? l10n.pharmacyStorageActiveLabel
-                            : l10n.pharmacyStorageInactiveLabel,
-                        icon: Icons.flag_outlined,
+                    choices: <AppSearchBarFilterChoice>[
+                      AppSearchBarFilterChoice(
+                        value: 'active',
+                        label: l10n.pharmacyStorageActiveLabel,
+                      ),
+                      AppSearchBarFilterChoice(
+                        value: 'inactive',
+                        label: l10n.pharmacyStorageInactiveLabel,
                       ),
                     ],
-                  );
+                  ),
+                ],
+                filterValue: AppSearchBarFilterValue(
+                  options: <String, String>{
+                    if (_shelfStatusFilter case final String status)
+                      'shelf_status': status,
+                  },
+                ),
+                hasActiveFilters: _shelfStatusFilter != null,
+                onFilterChanged: (AppSearchBarFilterValue value) {
+                  setState(() {
+                    _shelfStatusFilter = value.options['shelf_status'];
+                  });
                 },
+                trailingActions:
+                    writeRequirement.allows(ref) && !current.isSoftDeleted
+                    ? <AppSearchBarAction>[
+                        AppSearchBarAction(
+                          icon: Icons.add,
+                          label: l10n.pharmacyAddStorageShelfAction,
+                          tooltip: l10n.pharmacyAddStorageShelfAction,
+                          onPressed: () {
+                            unawaited(
+                              openPharmacyStorageShelfDialog(
+                                context,
+                                ref,
+                                room: current,
+                              ),
+                            );
+                          },
+                        ),
+                      ]
+                    : const <AppSearchBarAction>[],
               ),
+              emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+                variant: AppStateViewVariant.empty,
+                title: l10n.pharmacyNoStorageShelvesTitle,
+                body: l10n.pharmacyNoStorageShelvesBody,
+                icon: Icons.view_week_outlined,
+              ),
+              columns: <AppListTableColumn<PharmacyStorageShelf>>[
+                AppListTableColumn<PharmacyStorageShelf>(
+                  id: 'shelf_code',
+                  label: l10n.pharmacyStorageShelfCodeLabel,
+                  preferredWidth: 120,
+                  cellBuilder: (_, PharmacyStorageShelf shelf) => Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      (shelf.shelfCode ?? '').trim().isEmpty
+                          ? empty
+                          : shelf.shelfCode!.trim(),
+                      textAlign: TextAlign.start,
+                    ),
+                  ),
+                ),
+                AppListTableColumn<PharmacyStorageShelf>(
+                  id: 'label',
+                  label: l10n.pharmacyStorageShelfLabelField,
+                  preferredWidth: 160,
+                  cellBuilder: (_, PharmacyStorageShelf shelf) {
+                    final String label = (shelf.label ?? '').trim();
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        label.isEmpty ? empty : label,
+                        textAlign: TextAlign.start,
+                      ),
+                    );
+                  },
+                ),
+                AppListTableColumn<PharmacyStorageShelf>(
+                  id: 'status',
+                  label: l10n.pharmacyStorageStatusColumnLabel,
+                  fixedWidth: 110,
+                  cellBuilder:
+                      (BuildContext context, PharmacyStorageShelf shelf) {
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: AppWorkspaceStatusBadge(
+                        status: AppWorkspaceStatus(
+                          label: shelf.isActive
+                              ? l10n.pharmacyStorageActiveLabel
+                              : l10n.pharmacyStorageInactiveLabel,
+                          tone: shelf.isActive
+                              ? AppWorkspaceStatusTone.success
+                              : AppWorkspaceStatusTone.neutral,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                AppListTableColumn<PharmacyStorageShelf>(
+                  id: 'actions',
+                  label: l10n.pharmacyLineActionsColumnLabel,
+                  alwaysVisible: true,
+                  fixedWidth: 240,
+                  cellBuilder:
+                      (BuildContext context, PharmacyStorageShelf shelf) {
+                    return AppAccessActionGate(
+                      requirement: writeRequirement,
+                      builder: (BuildContext context, bool allowed) {
+                        if (!allowed || current.isSoftDeleted) {
+                          return const SizedBox.shrink();
+                        }
+                        return Align(
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              AppButton.tertiary(
+                                dense: true,
+                                leadingIcon: Icons.edit_outlined,
+                                label: l10n.commonEditActionLabel,
+                                semanticLabel:
+                                    l10n.pharmacyEditStorageShelfAction,
+                                onPressed: () {
+                                  unawaited(
+                                    openPharmacyStorageShelfDialog(
+                                      context,
+                                      ref,
+                                      room: current,
+                                      shelf: shelf,
+                                    ),
+                                  );
+                                },
+                              ),
+                              SizedBox(width: theme.spacing.xs),
+                              AppButton.tertiary(
+                                dense: true,
+                                leadingIcon: Icons.delete_outline,
+                                label: l10n.commonDeleteActionLabel,
+                                semanticLabel:
+                                    l10n.pharmacyDeleteStorageShelfAction,
+                                color: colorScheme.error,
+                                onPressed: () {
+                                  unawaited(
+                                    confirmDeletePharmacyStorageShelf(
+                                      context,
+                                      ref,
+                                      shelf,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
+              mobileItemBuilder:
+                  (BuildContext context, PharmacyStorageShelf shelf) {
+                return AppListTableMobileItem(
+                  title: (shelf.shelfCode ?? '').trim().isEmpty
+                      ? shelf.displayLabel
+                      : shelf.shelfCode!.trim(),
+                  caption: (shelf.label ?? '').trim().isEmpty
+                      ? null
+                      : shelf.label!.trim(),
+                  meta: <AppListTableMobileMeta>[
+                    AppListTableMobileMeta(
+                      label: shelf.isActive
+                          ? l10n.pharmacyStorageActiveLabel
+                          : l10n.pharmacyStorageInactiveLabel,
+                      icon: Icons.flag_outlined,
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],
