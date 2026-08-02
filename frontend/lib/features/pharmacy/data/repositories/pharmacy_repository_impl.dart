@@ -387,6 +387,7 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
   @override
   Future<Result<PharmacyStorageLayout>> loadStorageLayout({
     bool includeInactive = false,
+    bool includeDeleted = false,
     String? facilityId,
   }) {
     return _apiClient.get<PharmacyStorageLayout>(
@@ -397,11 +398,58 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
       ]),
       queryParameters: _withoutEmpty(<String, Object?>{
         'include_inactive': includeInactive ? true : null,
+        'include_deleted': includeDeleted ? true : null,
         'facility_id': facilityId,
       }),
       decoder: (Object? data) {
         final PharmacyJsonMap response = _expectMap(data);
         return PharmacyStorageLayoutDto(_map(response['data'])).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<PharmacyStorageRoomSimilarityResult>>
+  checkStorageRoomSimilarity({
+    required String name,
+    String? code,
+    String? facilityId,
+    String? excludeRoomId,
+  }) {
+    return _apiClient.post<PharmacyStorageRoomSimilarityResult>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'storage',
+        'rooms',
+        'similarity-check',
+      ]),
+      data: _withoutEmpty(<String, Object?>{
+        'name': name,
+        'code': code,
+        'facility_id': facilityId,
+        'exclude_room_id': excludeRoomId,
+      }),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        final PharmacyJsonMap payload = _map(response['data']);
+        final List<PharmacyStorageRoomSimilarityMatch> matches =
+            _list(payload['matches']).map((Object? raw) {
+              final PharmacyJsonMap match = _map(raw);
+              final PharmacyJsonMap roomJson = _map(match['room']);
+              return PharmacyStorageRoomSimilarityMatch(
+                room: PharmacyStorageRoomDto(roomJson).toEntity(),
+                score: _int(match['score']) ?? 0,
+                isExact: _bool(match['is_exact']),
+                exactNameConflict: _bool(match['exact_name_conflict']),
+                exactCodeConflict: _bool(match['exact_code_conflict']),
+              );
+            }).toList(growable: false);
+        return PharmacyStorageRoomSimilarityResult(
+          exactNameConflict: _bool(payload['exact_name_conflict']),
+          exactCodeConflict: _bool(payload['exact_code_conflict']),
+          closestScore: _int(payload['closest_score']) ?? 0,
+          matches: matches,
+        );
       },
     );
   }
@@ -499,6 +547,37 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
   }
 
   @override
+  Future<Result<PharmacyStorageRoom>> restoreStorageRoom(String roomId) {
+    return _apiClient.post<PharmacyStorageRoom>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'storage',
+        'rooms',
+        roomId,
+        'restore',
+      ]),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        return PharmacyStorageRoomDto(_map(response['data'])).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<void>> permanentDeleteStorageRoom(String roomId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'storage',
+        'rooms',
+        roomId,
+        'permanent',
+      ]),
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<void>> deleteStorageShelf(String shelfId) {
     return _apiClient.delete<void>(
       ApiEndpoints.apiV1(<String>[
@@ -521,6 +600,45 @@ PharmacyJsonMap _expectMap(Object? value) {
 
 PharmacyJsonMap _map(Object? value) {
   return value is PharmacyJsonMap ? value : <String, Object?>{};
+}
+
+List<Object?> _list(Object? value) {
+  if (value is! List) {
+    return const <Object?>[];
+  }
+  return value;
+}
+
+int? _int(Object? value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value);
+  }
+  return null;
+}
+
+bool _bool(Object? value, {bool fallback = false}) {
+  if (value is bool) {
+    return value;
+  }
+  if (value is num) {
+    return value != 0;
+  }
+  if (value is String) {
+    final String normalized = value.trim().toLowerCase();
+    if (<String>['true', '1', 'yes'].contains(normalized)) {
+      return true;
+    }
+    if (<String>['false', '0', 'no'].contains(normalized)) {
+      return false;
+    }
+  }
+  return fallback;
 }
 
 Map<String, Object?> _withoutEmpty(Map<String, Object?> payload) {

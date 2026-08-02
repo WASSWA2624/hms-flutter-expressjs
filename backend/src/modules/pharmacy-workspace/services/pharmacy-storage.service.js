@@ -2,12 +2,16 @@ const { HttpError } = require('@lib/errors');
 const { createAuditLog } = require('@lib/audit');
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const { resolveIdentifierForPayload } = require('@lib/identifiers/service-identifier-resolution');
+const {
+  checkPharmacyStorageRoomDuplicates} = require('@lib/pharmacy/pharmacy-storage-room-similarity');
 const pharmacyStorageRepository = require('@repositories/pharmacy-workspace/pharmacy-storage.repository');
 const pharmacyWorkspaceRepository = require('@repositories/pharmacy-workspace/pharmacy-workspace.repository');
 const {
   resolveScopedUserContext,
   buildTenantScopeWhere,
   resolveModelRecordOrThrow} = require('@services/pharmacy-workspace/pharmacy.shared');
+
+const STORAGE_ROOM_SIMILARITY_LOOKUP_LIMIT = 500;
 
 const toText = (value) => (value == null ? '' : String(value).trim());
 
@@ -32,6 +36,9 @@ const mapStorageRoomRecord = (record) => {
     name: toText(record.name) || null,
     code: toText(record.code) || null,
     is_active: Boolean(record.is_active),
+    created_at: record.created_at || null,
+    updated_at: record.updated_at || null,
+    deleted_at: record.deleted_at || null,
     shelves: Array.isArray(record.shelves)
       ? record.shelves.map(mapStorageShelfRecord).filter(Boolean)
       : []};
@@ -175,21 +182,25 @@ const getPharmacyStorageLayout = async (filters = {}, user = {}) => {
   }
 
   const includeInactive = filters.include_inactive === true;
+  const includeDeleted = filters.include_deleted === true;
   const rooms = await pharmacyStorageRepository.findManyStorageRooms(
     {
       ...buildTenantScopeWhere(scope),
       facility_id: facilityId,
-      ...(includeInactive ? {} : { is_active: true })},
+      ...(includeInactive || includeDeleted ? {} : { is_active: true })},
     0,
     500,
-    { name: 'asc' }
+    { name: 'asc' },
+    {
+      includeDeleted,
+      includeDeletedShelves: includeDeleted}
   );
 
   const mappedRooms = rooms
     .map((room) => {
       const mapped = mapStorageRoomRecord(room);
       if (!mapped) return null;
-      if (!includeInactive) {
+      if (!includeInactive && !includeDeleted) {
         mapped.shelves = mapped.shelves.filter((shelf) => shelf.is_active);
       }
       return mapped;
@@ -208,7 +219,69 @@ const getPharmacyStorageLayout = async (filters = {}, user = {}) => {
       shelf_count: shelfCount}};
 };
 
-const createPharmacyStorageRoom = async (payload = {}, userId, ipAddress, user = {}) => {
+const stripSimilarityPayloadFields = (data = {}) => {
+  const { confirm_similar: _confirmSimilar, ...payload } = data;
+  return payload;
+};
+
+const assertPharmacyStorageRoomUniqueness = async ({
+  name,
+  code,
+  facilityId,
+  confirmSimilar = false,
+  excludeRoomId = null}) => {
+  if (!facilityId) {
+    return null;
+  }
+
+  const existing = await pharmacyStorageRepository.findManyStorageRooms(
+    { facility_id: facilityId },
+    0,
+    STORAGE_ROOM_SIMILARITY_LOOKUP_LIMIT,
+    { name: 'asc' },
+    { includeDeleted: false }
+  );
+
+  const duplicateCheck = checkPharmacyStorageRoomDuplicates({
+    name,
+    code,
+    existing,
+    excludeRoomId});
+
+  if (duplicateCheck.exactNameConflict) {
+    throw new HttpError('errors.pharmacy_storage_room.duplicate_name', 409, [
+      {
+        field: 'name',
+        matches: duplicateCheck.similarMatches
+          .filter((match) => match.exact_name_conflict)
+          .slice(0, 5)}]);
+  }
+
+  if (duplicateCheck.exactCodeConflict) {
+    throw new HttpError('errors.pharmacy_storage_room.duplicate_code', 409, [
+      {
+        field: 'code',
+        matches: duplicateCheck.similarMatches
+          .filter((match) => match.exact_code_conflict)
+          .slice(0, 5)}]);
+  }
+
+  const reviewMatches = duplicateCheck.similarMatches
+    .filter((match) => !match.is_exact)
+    .slice(0, 8);
+
+  if (!confirmSimilar && reviewMatches.length > 0) {
+    throw new HttpError('errors.pharmacy_storage_room.similar_exists', 409, [
+      {
+        field: 'name',
+        matches: reviewMatches,
+        closest_score: duplicateCheck.closestScore}]);
+  }
+
+  return duplicateCheck;
+};
+
+const checkPharmacyStorageRoomSimilarity = async (payload = {}, user = {}) => {
   const scope = resolveScopedUserContext(user);
   const facilityId = await resolveIdentifierForPayload({
     value: payload.facility_id || scope.facility_id,
@@ -216,10 +289,59 @@ const createPharmacyStorageRoom = async (payload = {}, userId, ipAddress, user =
     model: 'facility',
     where: { deleted_at: null, ...buildTenantScopeWhere(scope) }});
 
+  const name = String(payload.name || '').trim();
+  const code = toText(payload.code) || null;
+  const excludeRoomId = toText(payload.exclude_room_id) || null;
+
+  const existing = await pharmacyStorageRepository.findManyStorageRooms(
+    {
+      ...buildTenantScopeWhere(scope),
+      facility_id: facilityId},
+    0,
+    STORAGE_ROOM_SIMILARITY_LOOKUP_LIMIT,
+    { name: 'asc' },
+    { includeDeleted: false }
+  );
+
+  let excludeInternalId = null;
+  if (excludeRoomId) {
+    const existingRoom = await pharmacyStorageRepository.findStorageRoomById(excludeRoomId, {
+      includeInactive: true,
+      includeDeleted: true});
+    excludeInternalId = existingRoom?.id || excludeRoomId;
+  }
+
+  const duplicateCheck = checkPharmacyStorageRoomDuplicates({
+    name,
+    code,
+    existing,
+    excludeRoomId: excludeInternalId});
+
+  return {
+    exact_name_conflict: duplicateCheck.exactNameConflict,
+    exact_code_conflict: duplicateCheck.exactCodeConflict,
+    closest_score: duplicateCheck.closestScore,
+    matches: duplicateCheck.similarMatches.slice(0, 8).map((match) => ({
+      ...match,
+      room: mapStorageRoomRecord({
+        ...match.room,
+        shelves: []}) || match.room}))};
+};
+
+const createPharmacyStorageRoom = async (payload = {}, userId, ipAddress, user = {}) => {
+  const scope = resolveScopedUserContext(user);
+  const confirmSimilar = payload?.confirm_similar === true;
+  const data = stripSimilarityPayloadFields(payload);
+  const facilityId = await resolveIdentifierForPayload({
+    value: data.facility_id || scope.facility_id,
+    field: 'facility_id',
+    model: 'facility',
+    where: { deleted_at: null, ...buildTenantScopeWhere(scope) }});
+
   let tenantId = scope.tenant_id;
-  if (scope.can_manage_all_tenants && payload.tenant_id) {
+  if (scope.can_manage_all_tenants && data.tenant_id) {
     tenantId = await resolveIdentifierForPayload({
-      value: payload.tenant_id,
+      value: data.tenant_id,
       field: 'tenant_id',
       model: 'tenant',
       where: { deleted_at: null }});
@@ -239,14 +361,44 @@ const createPharmacyStorageRoom = async (payload = {}, userId, ipAddress, user =
     throw new HttpError('errors.validation.required', 400, [{ field: 'tenant_id' }]);
   }
 
-  const room = await pharmacyWorkspaceRepository.withTransaction((tx) =>
+  const name = String(data.name || '').trim();
+  const requestedCode = toText(data.code) || null;
+
+  await assertPharmacyStorageRoomUniqueness({
+    name,
+    code: requestedCode,
+    facilityId,
+    confirmSimilar});
+
+  if (requestedCode) {
+    const collision = await pharmacyStorageRepository.findStorageRoomByCode(
+      facilityId,
+      requestedCode
+    );
+    if (collision) {
+      throw new HttpError('errors.pharmacy_storage_room.duplicate_code', 409, [
+        { field: 'code' }]);
+    }
+  }
+
+  let room = await pharmacyWorkspaceRepository.withTransaction((tx) =>
     pharmacyStorageRepository.txCreateStorageRoom(tx, {
       tenant_id: tenantId,
       facility_id: facilityId,
-      name: String(payload.name || '').trim(),
-      code: toText(payload.code) || null,
-      is_active: payload.is_active !== false})
+      name,
+      code: requestedCode,
+      is_active: data.is_active !== false})
   );
+
+  // When the caller omits code, adopt the auto-assigned HFID as the unique room code.
+  if (!requestedCode) {
+    const generatedCode =
+      toPublicIdentifier(room.human_friendly_id, room.id) || `SR-${room.id.slice(0, 8)}`;
+    room = await pharmacyWorkspaceRepository.withTransaction((tx) =>
+      pharmacyStorageRepository.txUpdateStorageRoom(tx, room.id, {
+        code: generatedCode})
+    );
+  }
 
   createAuditLog({
     tenant_id: tenantId,
@@ -261,17 +413,43 @@ const createPharmacyStorageRoom = async (payload = {}, userId, ipAddress, user =
 
 const updatePharmacyStorageRoom = async (identifier, payload = {}, userId, ipAddress, user = {}) => {
   const scope = resolveScopedUserContext(user);
+  const confirmSimilar = payload?.confirm_similar === true;
+  const data = stripSimilarityPayloadFields(payload);
   const existingLookup = await pharmacyStorageRepository.findStorageRoomById(identifier, true);
   if (!existingLookup || !matchesTenantScope(existingLookup, scope)) {
     throw new HttpError('errors.resource.not_found', 404);
   }
   const roomId = existingLookup.id;
 
+  const nextName =
+    data.name !== undefined ? String(data.name || '').trim() : existingLookup.name;
+  const nextCode =
+    data.code !== undefined ? toText(data.code) || null : toText(existingLookup.code) || null;
+
+  await assertPharmacyStorageRoomUniqueness({
+    name: nextName,
+    code: nextCode,
+    facilityId: existingLookup.facility_id,
+    confirmSimilar,
+    excludeRoomId: roomId});
+
+  if (nextCode) {
+    const collision = await pharmacyStorageRepository.findStorageRoomByCode(
+      existingLookup.facility_id,
+      nextCode,
+      { excludeRoomId: roomId }
+    );
+    if (collision) {
+      throw new HttpError('errors.pharmacy_storage_room.duplicate_code', 409, [
+        { field: 'code' }]);
+    }
+  }
+
   const updated = await pharmacyWorkspaceRepository.withTransaction((tx) =>
     pharmacyStorageRepository.txUpdateStorageRoom(tx, roomId, {
-      ...(payload.name !== undefined ? { name: String(payload.name || '').trim() } : {}),
-      ...(payload.code !== undefined ? { code: toText(payload.code) || null } : {}),
-      ...(payload.is_active !== undefined ? { is_active: Boolean(payload.is_active) } : {})})
+      ...(data.name !== undefined ? { name: nextName } : {}),
+      ...(data.code !== undefined ? { code: nextCode } : {}),
+      ...(data.is_active !== undefined ? { is_active: Boolean(data.is_active) } : {})})
   );
 
   createAuditLog({
@@ -370,6 +548,78 @@ const deletePharmacyStorageRoom = async (identifier, userId, ipAddress, user = {
   return { id: toPublicIdentifier(existing.human_friendly_id, existing.id), deleted: true };
 };
 
+const restorePharmacyStorageRoom = async (identifier, userId, ipAddress, user = {}) => {
+  const scope = resolveScopedUserContext(user);
+  const existing = await pharmacyStorageRepository.findStorageRoomById(identifier, {
+    includeInactive: true,
+    includeDeleted: true,
+    includeDeletedShelves: true});
+  if (!existing || !matchesTenantScope(existing, scope)) {
+    throw new HttpError('errors.resource.not_found', 404);
+  }
+  if (!existing.deleted_at) {
+    throw new HttpError('errors.pharmacy_storage_room.restore_requires_soft_delete', 400);
+  }
+
+  const restored = await pharmacyWorkspaceRepository.withTransaction(async (tx) => {
+    await pharmacyStorageRepository.txRestoreShelvesForRoom(tx, existing.id);
+    return pharmacyStorageRepository.txRestoreStorageRoom(tx, existing.id);
+  });
+
+  createAuditLog({
+    tenant_id: existing.tenant_id,
+    user_id: userId,
+    action: 'RESTORE',
+    entity: 'pharmacy_storage_room',
+    entity_id: existing.id,
+    ip_address: ipAddress}).catch(() => {});
+
+  const fresh = await pharmacyStorageRepository.findStorageRoomById(existing.id, true);
+  return mapStorageRoomRecord(fresh || { ...restored, shelves: existing.shelves || [] });
+};
+
+const permanentDeletePharmacyStorageRoom = async (
+  identifier,
+  userId,
+  ipAddress,
+  user = {}
+) => {
+  const scope = resolveScopedUserContext(user);
+  const existing = await pharmacyStorageRepository.findStorageRoomById(identifier, {
+    includeInactive: true,
+    includeDeleted: true,
+    includeDeletedShelves: true});
+  if (!existing || !matchesTenantScope(existing, scope)) {
+    throw new HttpError('errors.resource.not_found', 404);
+  }
+  if (!existing.deleted_at) {
+    throw new HttpError(
+      'errors.pharmacy_storage_room.permanent_delete_requires_soft_delete',
+      400
+    );
+  }
+
+  // Batches reference storage via nullable FKs (ON DELETE SET NULL). Clear them
+  // explicitly first, then hard-delete shelves and the room.
+  await pharmacyWorkspaceRepository.withTransaction(async (tx) => {
+    await pharmacyStorageRepository.txClearBatchStorageForRoom(tx, existing.id);
+    await pharmacyStorageRepository.txHardDeleteShelvesForRoom(tx, existing.id);
+    await pharmacyStorageRepository.txHardDeleteStorageRoom(tx, existing.id);
+  });
+
+  createAuditLog({
+    tenant_id: existing.tenant_id,
+    user_id: userId,
+    action: 'PERMANENT_DELETE',
+    entity: 'pharmacy_storage_room',
+    entity_id: existing.id,
+    ip_address: ipAddress}).catch(() => {});
+
+  return {
+    id: toPublicIdentifier(existing.human_friendly_id, existing.id),
+    permanently_deleted: true};
+};
+
 const deletePharmacyStorageShelf = async (identifier, userId, ipAddress, user = {}) => {
   const scope = resolveScopedUserContext(user);
   const existing = await pharmacyStorageRepository.findStorageShelfById(identifier, true);
@@ -407,9 +657,12 @@ module.exports = {
   buildPrimaryBatchStorageSummary,
   attachDrugStorageSummaries,
   getPharmacyStorageLayout,
+  checkPharmacyStorageRoomSimilarity,
   createPharmacyStorageRoom,
   updatePharmacyStorageRoom,
   createPharmacyStorageShelf,
   updatePharmacyStorageShelf,
   deletePharmacyStorageRoom,
+  restorePharmacyStorageRoom,
+  permanentDeletePharmacyStorageRoom,
   deletePharmacyStorageShelf};

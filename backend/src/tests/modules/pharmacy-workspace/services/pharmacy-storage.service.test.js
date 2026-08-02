@@ -110,3 +110,212 @@ describe('pharmacy-storage.service delete operations', () => {
     });
   });
 });
+
+describe('pharmacy-storage.service room uniqueness and lifecycle', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    pharmacyWorkspaceRepository.withTransaction.mockImplementation((cb) => cb({}));
+  });
+
+  describe('createPharmacyStorageRoom', () => {
+    it('auto-assigns a unique code from HFID when code is omitted', async () => {
+      pharmacyStorageRepository.findManyStorageRooms.mockResolvedValue([]);
+      pharmacyStorageRepository.txCreateStorageRoom.mockResolvedValue({
+        id: 'room-uuid-1',
+        human_friendly_id: 'PSR-1001',
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+        name: 'Main store',
+        code: null,
+        is_active: true});
+      pharmacyStorageRepository.txUpdateStorageRoom.mockResolvedValue({
+        id: 'room-uuid-1',
+        human_friendly_id: 'PSR-1001',
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+        name: 'Main store',
+        code: 'PSR-1001',
+        is_active: true});
+
+      const result = await pharmacyStorageService.createPharmacyStorageRoom(
+        {
+          name: 'Main store',
+          facility_id: 'facility-1',
+          confirm_similar: true},
+        user.id,
+        '127.0.0.1',
+        user
+      );
+
+      expect(pharmacyStorageRepository.txCreateStorageRoom).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ name: 'Main store', code: null })
+      );
+      expect(pharmacyStorageRepository.txUpdateStorageRoom).toHaveBeenCalledWith(
+        expect.anything(),
+        'room-uuid-1',
+        { code: 'PSR-1001' }
+      );
+      expect(result.code).toBe('PSR-1001');
+    });
+
+    it('rejects duplicate supplied codes', async () => {
+      pharmacyStorageRepository.findManyStorageRooms.mockResolvedValue([]);
+      pharmacyStorageRepository.findStorageRoomByCode.mockResolvedValue({
+        id: 'existing-room',
+        code: 'MAIN'});
+
+      await expect(
+        pharmacyStorageService.createPharmacyStorageRoom(
+          {
+            name: 'Another store',
+            code: 'MAIN',
+            facility_id: 'facility-1',
+            confirm_similar: true},
+          user.id,
+          '127.0.0.1',
+          user
+        )
+      ).rejects.toBeInstanceOf(HttpError);
+      expect(pharmacyStorageRepository.txCreateStorageRoom).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('checkPharmacyStorageRoomSimilarity', () => {
+    it('returns exact name conflict for duplicate names', async () => {
+      pharmacyStorageRepository.findManyStorageRooms.mockResolvedValue([
+        {
+          id: 'room-1',
+          human_friendly_id: 'PSR-1',
+          name: 'Main store',
+          code: 'MAIN',
+          is_active: true}]);
+
+      const result = await pharmacyStorageService.checkPharmacyStorageRoomSimilarity(
+        { name: 'Main store', facility_id: 'facility-1' },
+        user
+      );
+
+      expect(result.exact_name_conflict).toBe(true);
+      expect(result.matches.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('restorePharmacyStorageRoom', () => {
+    it('restores a soft-deleted room and its shelves', async () => {
+      pharmacyStorageRepository.findStorageRoomById
+        .mockResolvedValueOnce({
+          id: 'room-internal-1',
+          human_friendly_id: 'ROOM-1',
+          tenant_id: 'tenant-1',
+          facility_id: 'facility-1',
+          deleted_at: new Date('2026-01-01T00:00:00.000Z'),
+          shelves: []})
+        .mockResolvedValueOnce({
+          id: 'room-internal-1',
+          human_friendly_id: 'ROOM-1',
+          tenant_id: 'tenant-1',
+          facility_id: 'facility-1',
+          deleted_at: null,
+          name: 'Main store',
+          code: 'MAIN',
+          is_active: true,
+          shelves: []});
+      pharmacyStorageRepository.txRestoreShelvesForRoom.mockResolvedValue({ count: 1 });
+      pharmacyStorageRepository.txRestoreStorageRoom.mockResolvedValue({
+        id: 'room-internal-1',
+        human_friendly_id: 'ROOM-1',
+        deleted_at: null});
+
+      const result = await pharmacyStorageService.restorePharmacyStorageRoom(
+        'ROOM-1',
+        user.id,
+        '127.0.0.1',
+        user
+      );
+
+      expect(pharmacyStorageRepository.txRestoreShelvesForRoom).toHaveBeenCalled();
+      expect(pharmacyStorageRepository.txRestoreStorageRoom).toHaveBeenCalledWith(
+        expect.anything(),
+        'room-internal-1'
+      );
+      expect(result.id).toBe('ROOM-1');
+    });
+
+    it('rejects restore when room is not soft-deleted', async () => {
+      pharmacyStorageRepository.findStorageRoomById.mockResolvedValue({
+        id: 'room-internal-1',
+        human_friendly_id: 'ROOM-1',
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+        deleted_at: null,
+        shelves: []});
+
+      await expect(
+        pharmacyStorageService.restorePharmacyStorageRoom(
+          'ROOM-1',
+          user.id,
+          '127.0.0.1',
+          user
+        )
+      ).rejects.toBeInstanceOf(HttpError);
+    });
+  });
+
+  describe('permanentDeletePharmacyStorageRoom', () => {
+    it('hard-deletes after soft-delete and clears batch FKs', async () => {
+      pharmacyStorageRepository.findStorageRoomById.mockResolvedValue({
+        id: 'room-internal-1',
+        human_friendly_id: 'ROOM-1',
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+        deleted_at: new Date('2026-01-01T00:00:00.000Z'),
+        shelves: [{ id: 'shelf-1' }]});
+      pharmacyStorageRepository.txClearBatchStorageForRoom.mockResolvedValue({ count: 2 });
+      pharmacyStorageRepository.txHardDeleteShelvesForRoom.mockResolvedValue({ count: 1 });
+      pharmacyStorageRepository.txHardDeleteStorageRoom.mockResolvedValue({
+        id: 'room-internal-1'});
+
+      const result = await pharmacyStorageService.permanentDeletePharmacyStorageRoom(
+        'ROOM-1',
+        user.id,
+        '127.0.0.1',
+        user
+      );
+
+      expect(pharmacyStorageRepository.txClearBatchStorageForRoom).toHaveBeenCalledWith(
+        expect.anything(),
+        'room-internal-1'
+      );
+      expect(pharmacyStorageRepository.txHardDeleteShelvesForRoom).toHaveBeenCalledWith(
+        expect.anything(),
+        'room-internal-1'
+      );
+      expect(pharmacyStorageRepository.txHardDeleteStorageRoom).toHaveBeenCalledWith(
+        expect.anything(),
+        'room-internal-1'
+      );
+      expect(result).toEqual({ id: 'ROOM-1', permanently_deleted: true });
+    });
+
+    it('rejects permanent delete when room is not soft-deleted', async () => {
+      pharmacyStorageRepository.findStorageRoomById.mockResolvedValue({
+        id: 'room-internal-1',
+        human_friendly_id: 'ROOM-1',
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+        deleted_at: null,
+        shelves: []});
+
+      await expect(
+        pharmacyStorageService.permanentDeletePharmacyStorageRoom(
+          'ROOM-1',
+          user.id,
+          '127.0.0.1',
+          user
+        )
+      ).rejects.toBeInstanceOf(HttpError);
+      expect(pharmacyStorageRepository.txHardDeleteStorageRoom).not.toHaveBeenCalled();
+    });
+  });
+});

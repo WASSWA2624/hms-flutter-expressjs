@@ -84,7 +84,16 @@ abstract interface class PharmacyRepository {
 
   Future<Result<PharmacyStorageLayout>> loadStorageLayout({
     bool includeInactive = false,
+    bool includeDeleted = false,
     String? facilityId,
+  });
+
+  Future<Result<PharmacyStorageRoomSimilarityResult>>
+  checkStorageRoomSimilarity({
+    required String name,
+    String? code,
+    String? facilityId,
+    String? excludeRoomId,
   });
 
   Future<Result<PharmacyStorageRoom>> createStorageRoom(
@@ -107,6 +116,10 @@ abstract interface class PharmacyRepository {
   );
 
   Future<Result<void>> deleteStorageRoom(String roomId);
+
+  Future<Result<PharmacyStorageRoom>> restoreStorageRoom(String roomId);
+
+  Future<Result<void>> permanentDeleteStorageRoom(String roomId);
 
   Future<Result<void>> deleteStorageShelf(String shelfId);
 }

@@ -1509,6 +1509,8 @@ final class PharmacyStorageRoom {
     this.name,
     this.code,
     this.isActive = true,
+    this.createdAt,
+    this.deletedAt,
     this.shelves = const <PharmacyStorageShelf>[],
   });
 
@@ -1517,7 +1519,11 @@ final class PharmacyStorageRoom {
   final String? name;
   final String? code;
   final bool isActive;
+  final DateTime? createdAt;
+  final DateTime? deletedAt;
   final List<PharmacyStorageShelf> shelves;
+
+  bool get isSoftDeleted => deletedAt != null;
 }
 
 @immutable
@@ -1541,6 +1547,7 @@ final class PharmacyStorageRoomInput {
     this.tenantId,
     this.facilityId,
     this.isActive = true,
+    this.confirmSimilar = false,
   });
 
   final String name;
@@ -1548,6 +1555,7 @@ final class PharmacyStorageRoomInput {
   final String? tenantId;
   final String? facilityId;
   final bool isActive;
+  final bool confirmSimilar;
 
   Map<String, Object?> toJson() => <String, Object?>{
     'name': name,
@@ -1555,22 +1563,64 @@ final class PharmacyStorageRoomInput {
     if (tenantId != null) 'tenant_id': tenantId,
     if (facilityId != null) 'facility_id': facilityId,
     'is_active': isActive,
+    if (confirmSimilar) 'confirm_similar': true,
   };
 }
 
 @immutable
 final class PharmacyStorageRoomUpdateInput {
-  const PharmacyStorageRoomUpdateInput({this.name, this.code, this.isActive});
+  const PharmacyStorageRoomUpdateInput({
+    this.name,
+    this.code,
+    this.isActive,
+    this.confirmSimilar = false,
+  });
 
   final String? name;
   final String? code;
   final bool? isActive;
+  final bool confirmSimilar;
 
   Map<String, Object?> toJson() => <String, Object?>{
     if (name != null) 'name': name,
     if (code != null) 'code': code,
     if (isActive != null) 'is_active': isActive,
+    if (confirmSimilar) 'confirm_similar': true,
   };
+}
+
+@immutable
+final class PharmacyStorageRoomSimilarityMatch {
+  const PharmacyStorageRoomSimilarityMatch({
+    required this.room,
+    required this.score,
+    this.isExact = false,
+    this.exactNameConflict = false,
+    this.exactCodeConflict = false,
+  });
+
+  final PharmacyStorageRoom room;
+  final int score;
+  final bool isExact;
+  final bool exactNameConflict;
+  final bool exactCodeConflict;
+}
+
+@immutable
+final class PharmacyStorageRoomSimilarityResult {
+  const PharmacyStorageRoomSimilarityResult({
+    this.exactNameConflict = false,
+    this.exactCodeConflict = false,
+    this.closestScore = 0,
+    this.matches = const <PharmacyStorageRoomSimilarityMatch>[],
+  });
+
+  final bool exactNameConflict;
+  final bool exactCodeConflict;
+  final int closestScore;
+  final List<PharmacyStorageRoomSimilarityMatch> matches;
+
+  bool get hasExactConflict => exactNameConflict || exactCodeConflict;
 }
 
 @immutable

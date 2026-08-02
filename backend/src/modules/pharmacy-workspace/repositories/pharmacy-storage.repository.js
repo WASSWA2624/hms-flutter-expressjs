@@ -16,37 +16,81 @@ const ACTIVE_STORAGE_WHERE = {
   deleted_at: null,
   is_active: true};
 
-const findManyStorageRooms = async (where = {}, skip = 0, limit = 100, orderBy = { name: 'asc' }) =>
+const shelfInclude = (includeDeletedShelves = false) => ({
+  shelves: {
+    where: includeDeletedShelves ? {} : { deleted_at: null },
+    orderBy: [{ is_active: 'desc' }, { shelf_code: 'asc' }]}});
+
+const findManyStorageRooms = async (
+  where = {},
+  skip = 0,
+  limit = 100,
+  orderBy = { name: 'asc' },
+  { includeDeleted = false, includeDeletedShelves = false } = {}
+) =>
   withDbErrorHandling(() =>
     prisma.pharmacy_storage_room.findMany({
-      where: { deleted_at: null, ...where },
+      where: {
+        ...(includeDeleted ? {} : { deleted_at: null }),
+        ...where},
       skip,
       take: limit,
       orderBy,
-      include: {
-        shelves: {
-          where: { deleted_at: null },
-          orderBy: [{ is_active: 'desc' }, { shelf_code: 'asc' }]}}})
+      include: shelfInclude(includeDeletedShelves)})
   );
 
-const countStorageRooms = async (where = {}) =>
+const countStorageRooms = async (where = {}, { includeDeleted = false } = {}) =>
   withDbErrorHandling(() =>
     prisma.pharmacy_storage_room.count({
-      where: { deleted_at: null, ...where }})
+      where: {
+        ...(includeDeleted ? {} : { deleted_at: null }),
+        ...where}})
   );
 
-const findStorageRoomById = async (id, includeInactive = false) =>
-  withDbErrorHandling(() =>
+const findStorageRoomById = async (id, includeInactiveOrOptions = false) => {
+  const options =
+    typeof includeInactiveOrOptions === 'object' && includeInactiveOrOptions != null
+      ? includeInactiveOrOptions
+      : {
+          includeInactive: Boolean(includeInactiveOrOptions)};
+  const {
+    includeInactive = false,
+    includeDeleted = false,
+    includeDeletedShelves = false} = options;
+
+  return withDbErrorHandling(() =>
     prisma.pharmacy_storage_room.findFirst({
       where: {
-        deleted_at: null,
-        ...(includeInactive ? {} : { is_active: true }),
+        ...(includeDeleted ? {} : { deleted_at: null }),
+        ...(includeInactive || includeDeleted ? {} : { is_active: true }),
         OR: [{ id }, { human_friendly_id: id }]},
-      include: {
-        shelves: {
-          where: { deleted_at: null },
-          orderBy: [{ is_active: 'desc' }, { shelf_code: 'asc' }]}}})
+      include: shelfInclude(includeDeletedShelves)})
   );
+};
+
+const findStorageRoomByCode = async (facilityId, code, { excludeRoomId = null } = {}) =>
+  withDbErrorHandling(async () => {
+    const normalized = String(code || '')
+      .trim()
+      .toLowerCase();
+    if (!facilityId || !normalized) {
+      return null;
+    }
+    const rooms = await prisma.pharmacy_storage_room.findMany({
+      where: {
+        facility_id: facilityId,
+        deleted_at: null,
+        ...(excludeRoomId ? { id: { not: excludeRoomId } } : {})},
+      take: 200});
+    return (
+      rooms.find(
+        (room) =>
+          String(room.code || '')
+            .trim()
+            .toLowerCase() === normalized
+      ) || null
+    );
+  });
 
 const findStorageShelfById = async (id, includeInactive = false) =>
   withDbErrorHandling(() =>
@@ -87,6 +131,30 @@ const txSoftDeleteStorageShelf = async (tx, id, deletedAt = new Date()) =>
   tx.pharmacy_storage_shelf.update({
     where: { id },
     data: { deleted_at: deletedAt, is_active: false }});
+
+const txRestoreStorageRoom = async (tx, id) =>
+  tx.pharmacy_storage_room.update({
+    where: { id },
+    data: { deleted_at: null, is_active: true }});
+
+const txRestoreShelvesForRoom = async (tx, storageRoomId) =>
+  tx.pharmacy_storage_shelf.updateMany({
+    where: { storage_room_id: storageRoomId, deleted_at: { not: null } },
+    data: { deleted_at: null, is_active: true }});
+
+const txClearBatchStorageForRoom = async (tx, storageRoomId) => {
+  await tx.drug_batch.updateMany({
+    where: { storage_room_id: storageRoomId, deleted_at: null },
+    data: { storage_room_id: null, storage_shelf_id: null }});
+};
+
+const txHardDeleteShelvesForRoom = async (tx, storageRoomId) =>
+  tx.pharmacy_storage_shelf.deleteMany({
+    where: { storage_room_id: storageRoomId }});
+
+const txHardDeleteStorageRoom = async (tx, id) =>
+  tx.pharmacy_storage_room.delete({
+    where: { id }});
 
 const findDrugBatchesWithStorageByDrugIds = async (drugIds = []) =>
   withDbErrorHandling(() => {
@@ -174,6 +242,7 @@ module.exports = {
   findManyStorageRooms,
   countStorageRooms,
   findStorageRoomById,
+  findStorageRoomByCode,
   findStorageShelfById,
   txCreateStorageRoom,
   txUpdateStorageRoom,
@@ -182,6 +251,11 @@ module.exports = {
   txSoftDeleteStorageRoom,
   txSoftDeleteShelvesForRoom,
   txSoftDeleteStorageShelf,
+  txRestoreStorageRoom,
+  txRestoreShelvesForRoom,
+  txClearBatchStorageForRoom,
+  txHardDeleteShelvesForRoom,
+  txHardDeleteStorageRoom,
   findDrugBatchesWithStorageByDrugIds,
   findInventoryItemIdsByStorageFilters,
   findDrugIdsByStorageFilters};

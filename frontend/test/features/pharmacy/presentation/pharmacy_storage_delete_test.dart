@@ -46,6 +46,7 @@ void _stubBootstrap(_MockPharmacyRepository repository) {
   when(
     () => repository.loadStorageLayout(
       includeInactive: any(named: 'includeInactive'),
+      includeDeleted: any(named: 'includeDeleted'),
       facilityId: any(named: 'facilityId'),
     ),
   ).thenAnswer(
@@ -149,5 +150,46 @@ void main() {
     final AppFailure? failure = await controller.deleteStorageRoom('room-1');
 
     expect(failure, isNotNull);
+  });
+
+  test('restoreStorageRoom calls repository and refreshes layout', () async {
+    const PharmacyStorageRoom restored = PharmacyStorageRoom(
+      id: 'room-1',
+      name: 'Main store',
+      code: 'MAIN',
+    );
+    when(() => repository.restoreStorageRoom(any())).thenAnswer(
+      (_) async => const Result<PharmacyStorageRoom>.success(restored),
+    );
+
+    final ProviderContainer container = makeContainer();
+    final PharmacyWorkspaceController controller = await _bootController(
+      container,
+    );
+
+    final Result<PharmacyStorageRoom> result = await controller
+        .restoreStorageRoom('room-1');
+
+    expect(result.isSuccess, isTrue);
+    verify(() => repository.restoreStorageRoom('room-1')).called(1);
+  });
+
+  test('permanentDeleteStorageRoom calls repository and refreshes layout',
+      () async {
+    when(() => repository.permanentDeleteStorageRoom(any())).thenAnswer(
+      (_) async => const Result<void>.success(null),
+    );
+
+    final ProviderContainer container = makeContainer();
+    final PharmacyWorkspaceController controller = await _bootController(
+      container,
+    );
+
+    final AppFailure? failure = await controller.permanentDeleteStorageRoom(
+      'room-1',
+    );
+
+    expect(failure, isNull);
+    verify(() => repository.permanentDeleteStorageRoom('room-1')).called(1);
   });
 }

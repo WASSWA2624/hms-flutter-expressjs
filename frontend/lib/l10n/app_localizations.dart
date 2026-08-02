@@ -2104,6 +2104,12 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get commonCloseActionLabel;
 
+  /// Generic continue action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get commonContinueActionLabel;
+
   /// Title for the image crop dialog.
   ///
   /// In en, this message translates to:
@@ -22297,8 +22303,92 @@ abstract class AppLocalizations {
   /// Pharmacy delete storage room confirmation body.
   ///
   /// In en, this message translates to:
-  /// **'Remove this storage room and shelves? Drugs will lose this location.'**
+  /// **'Remove this storage room and shelves? Drugs will lose this location. You can restore later or delete permanently.'**
   String get pharmacyDeleteStorageRoomDialogBody;
+
+  /// Permanently delete a soft-deleted pharmacy storage room.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete permanently'**
+  String get pharmacyPermanentDeleteStorageRoomAction;
+
+  /// Title for permanent storage room delete confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete room permanently'**
+  String get pharmacyPermanentDeleteStorageRoomDialogTitle;
+
+  /// Body for permanent storage room delete confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete this room and its shelves? Batch locations on this room will be cleared. This cannot be undone.'**
+  String get pharmacyPermanentDeleteStorageRoomDialogBody;
+
+  /// Status label for a soft-deleted pharmacy storage room.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get pharmacyStorageDeletedLabel;
+
+  /// Title when pharmacy storage room name or code already exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate room'**
+  String get pharmacyStorageRoomDuplicateDialogTitle;
+
+  /// Body when pharmacy storage room is an exact duplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'An exact match already exists. Change the name or code before creating.'**
+  String get pharmacyStorageRoomDuplicateDialogBody;
+
+  /// Title when similar pharmacy storage rooms are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar rooms found'**
+  String get pharmacyStorageRoomSimilarDialogTitle;
+
+  /// Body when similar pharmacy storage rooms are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest match similarity: {score}%. Review matches before continuing.'**
+  String pharmacyStorageRoomSimilarDialogBody(int score);
+
+  /// Title when pharmacy storage room similarity finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar rooms'**
+  String get pharmacyStorageRoomNoSimilarDialogTitle;
+
+  /// Body when pharmacy storage room similarity finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No close matches found. Continue to create this room.'**
+  String get pharmacyStorageRoomNoSimilarDialogBody;
+
+  /// Continue creating a pharmacy storage room after similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get pharmacyStorageRoomCreateAnywayAction;
+
+  /// Room table filter to include soft-deleted rooms.
+  ///
+  /// In en, this message translates to:
+  /// **'Include deleted'**
+  String get pharmacyStorageIncludeDeletedFilterLabel;
+
+  /// Pharmacy storage room created-at column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Created at'**
+  String get pharmacyStorageCreatedAtColumnLabel;
+
+  /// Restore a soft-deleted pharmacy storage room.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get pharmacyRestoreStorageRoomAction;
 
   /// Pharmacy delete storage shelf confirmation title.
   ///

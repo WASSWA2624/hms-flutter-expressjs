@@ -239,6 +239,19 @@ const createPharmacyStorageRoom = asyncHandler(async (req, res) => {
   return sendSuccess(res, 201, 'messages.pharmacy_workspace.storage.room.create.success', data);
 });
 
+const checkPharmacyStorageRoomSimilarity = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.checkPharmacyStorageRoomSimilarity(
+    req.body,
+    req.user || {}
+  );
+  return sendSuccess(
+    res,
+    200,
+    'messages.pharmacy_workspace.storage.room.similarity.success',
+    data
+  );
+});
+
 const updatePharmacyStorageRoom = asyncHandler(async (req, res) => {
   const data = await pharmacyWorkspaceService.updatePharmacyStorageRoom(
     req.params.roomId,
@@ -282,6 +295,31 @@ const deletePharmacyStorageRoom = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.pharmacy_workspace.storage.room.delete.success', data);
 });
 
+const restorePharmacyStorageRoom = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.restorePharmacyStorageRoom(
+    req.params.roomId,
+    req.user?.id,
+    req.ip,
+    req.user || {}
+  );
+  return sendSuccess(res, 200, 'messages.pharmacy_workspace.storage.room.restore.success', data);
+});
+
+const permanentDeletePharmacyStorageRoom = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.permanentDeletePharmacyStorageRoom(
+    req.params.roomId,
+    req.user?.id,
+    req.ip,
+    req.user || {}
+  );
+  return sendSuccess(
+    res,
+    200,
+    'messages.pharmacy_workspace.storage.room.permanent_delete.success',
+    data
+  );
+});
+
 const deletePharmacyStorageShelf = asyncHandler(async (req, res) => {
   const data = await pharmacyWorkspaceService.deletePharmacyStorageShelf(
     req.params.shelfId,
@@ -308,8 +346,11 @@ module.exports = {
   resolveLegacyRoute,
   getPharmacyStorageLayout,
   createPharmacyStorageRoom,
+  checkPharmacyStorageRoomSimilarity,
   updatePharmacyStorageRoom,
   createPharmacyStorageShelf,
   updatePharmacyStorageShelf,
   deletePharmacyStorageRoom,
+  restorePharmacyStorageRoom,
+  permanentDeletePharmacyStorageRoom,
   deletePharmacyStorageShelf};

@@ -663,6 +663,8 @@ final class PharmacyStorageRoomDto {
       name: _string(json['name']),
       code: _string(json['code']),
       isActive: _bool(json['is_active'], fallback: true),
+      createdAt: _date(json['created_at']),
+      deletedAt: _date(json['deleted_at']),
       shelves: _list(json['shelves'])
           .map(PharmacyStorageShelfDto.new)
           .map((PharmacyStorageShelfDto dto) => dto.toEntity())

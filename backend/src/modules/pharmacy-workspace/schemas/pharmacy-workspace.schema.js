@@ -184,19 +184,29 @@ const resolveLegacyRouteParamsSchema = z.object({
 
 const getPharmacyStorageLayoutQuerySchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
-  include_inactive: z.coerce.boolean().optional()});
+  include_inactive: z.coerce.boolean().optional(),
+  include_deleted: z.coerce.boolean().optional()});
 
 const createPharmacyStorageRoomSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   name: z.string().trim().min(1).max(255),
   code: z.string().trim().max(80).optional().nullable(),
-  is_active: z.coerce.boolean().optional()});
+  is_active: z.coerce.boolean().optional(),
+  confirm_similar: z.coerce.boolean().optional()});
 
 const updatePharmacyStorageRoomSchema = z.object({
   name: z.string().trim().min(1).max(255).optional(),
   code: z.string().trim().max(80).optional().nullable(),
-  is_active: z.coerce.boolean().optional()});
+  is_active: z.coerce.boolean().optional(),
+  confirm_similar: z.coerce.boolean().optional()});
+
+const checkPharmacyStorageRoomSimilaritySchema = z.object({
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
+  name: z.string().trim().min(1).max(255),
+  code: z.string().trim().max(80).optional().nullable(),
+  exclude_room_id: uuidOrFriendlyIdentifierSchema.optional().nullable()});
 
 const pharmacyStorageRoomParamsSchema = z.object({
   roomId: uuidOrFriendlyIdentifierSchema});
@@ -234,6 +244,7 @@ module.exports = {
   getPharmacyStorageLayoutQuerySchema,
   createPharmacyStorageRoomSchema,
   updatePharmacyStorageRoomSchema,
+  checkPharmacyStorageRoomSimilaritySchema,
   pharmacyStorageRoomParamsSchema,
   createPharmacyStorageShelfSchema,
   updatePharmacyStorageShelfSchema,

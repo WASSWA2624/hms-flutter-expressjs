@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
@@ -13,14 +14,34 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
-Future<void> openPharmacyStorageRoomDialog(
+Future<PharmacyStorageRoom?> openPharmacyStorageRoomDialog(
   BuildContext context,
   WidgetRef ref, {
   PharmacyStorageRoom? room,
-}) {
-  return showAppDialog<bool>(
+}) async {
+  final Object? result = await showAppDialog<Object?>(
     context: context,
     builder: (_) => _StorageRoomDialog(room: room),
+  );
+  if (result is PharmacyStorageRoom) {
+    return result;
+  }
+  return null;
+}
+
+/// Opens a read/manage details dialog for [room].
+Future<void> openPharmacyStorageRoomDetailsDialog(
+  BuildContext context,
+  WidgetRef ref, {
+  required PharmacyStorageRoom room,
+  required AccessRequirement writeRequirement,
+}) {
+  return showAppDialog<void>(
+    context: context,
+    builder: (_) => _StorageRoomDetailsDialog(
+      room: room,
+      writeRequirement: writeRequirement,
+    ),
   );
 }
 
@@ -38,7 +59,7 @@ Future<void> openPharmacyStorageShelfDialog(
   );
 }
 
-/// Confirms and deletes a storage room. Reused by the Storage layout table.
+/// Soft-deletes a storage room (cascades shelves).
 Future<void> confirmDeletePharmacyStorageRoom(
   BuildContext context,
   WidgetRef ref,
@@ -57,7 +78,7 @@ Future<void> confirmDeletePharmacyStorageRoom(
           onPressed: () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
-          label: l10n.pharmacyDeleteStorageRoomAction,
+          label: l10n.commonDeleteActionLabel,
           leadingIcon: Icons.delete_outline,
           onPressed: () => Navigator.of(context).pop(true),
         ),
@@ -70,6 +91,67 @@ Future<void> confirmDeletePharmacyStorageRoom(
   final AppFailure? failure = await ref
       .read(pharmacyWorkspaceControllerProvider.notifier)
       .deleteStorageRoom(room.id);
+  if (!context.mounted || failure == null) {
+    return;
+  }
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
+  );
+}
+
+Future<void> confirmRestorePharmacyStorageRoom(
+  BuildContext context,
+  WidgetRef ref,
+  PharmacyStorageRoom room,
+) async {
+  final AppLocalizations l10n = context.l10n;
+  final Result<PharmacyStorageRoom> result = await ref
+      .read(pharmacyWorkspaceControllerProvider.notifier)
+      .restoreStorageRoom(room.id);
+  if (!context.mounted) {
+    return;
+  }
+  result.when(
+    success: (_) {},
+    failure: (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
+      );
+    },
+  );
+}
+
+Future<void> confirmPermanentDeletePharmacyStorageRoom(
+  BuildContext context,
+  WidgetRef ref,
+  PharmacyStorageRoom room,
+) async {
+  final AppLocalizations l10n = context.l10n;
+  final bool? confirmed = await showAppDialog<bool>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(l10n.pharmacyPermanentDeleteStorageRoomDialogTitle),
+      content: Text(l10n.pharmacyPermanentDeleteStorageRoomDialogBody),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: Icons.close,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.pharmacyPermanentDeleteStorageRoomAction,
+          leadingIcon: Icons.delete_forever_outlined,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) {
+    return;
+  }
+  final AppFailure? failure = await ref
+      .read(pharmacyWorkspaceControllerProvider.notifier)
+      .permanentDeleteStorageRoom(room.id);
   if (!context.mounted || failure == null) {
     return;
   }
@@ -473,34 +555,312 @@ class _StorageRoomDialogState extends ConsumerState<_StorageRoomDialog> {
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
-    final AppFailure? failure;
-    if (widget.room == null) {
-      failure = await controller.createStorageRoom(
-        PharmacyStorageRoomInput(
-          name: _nameController.text.trim(),
-          code: _emptyToNull(_codeController.text),
-          tenantId: controller.resolveTenantId(),
-          facilityId: controller.resolveFacilityId(),
-        ),
-      );
-    } else {
-      failure = await controller.updateStorageRoom(
-        widget.room!.id,
-        PharmacyStorageRoomUpdateInput(
-          name: _nameController.text.trim(),
-          code: _emptyToNull(_codeController.text),
-          isActive: _isActive,
-        ),
-      );
-    }
+    final AppLocalizations l10n = context.l10n;
+    final String name = _nameController.text.trim();
+    final String? code = _emptyToNull(_codeController.text);
+
+    final Result<PharmacyStorageRoomSimilarityResult> similarityResult =
+        await controller.checkStorageRoomSimilarity(
+          name: name,
+          code: code,
+          excludeRoomId: widget.room?.id,
+        );
     if (!mounted) {
       return;
     }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
+
+    PharmacyStorageRoomSimilarityResult? review;
+    final AppFailure? similarityFailure = similarityResult.when(
+      success: (PharmacyStorageRoomSimilarityResult value) {
+        review = value;
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
+    );
+    if (similarityFailure != null) {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
+      );
       return;
     }
-    setState(() => _isSaving = false);
+
+    final PharmacyStorageRoomSimilarityResult check =
+        review ?? const PharmacyStorageRoomSimilarityResult();
+    final bool? proceed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        final bool blocked = check.hasExactConflict;
+        final bool hasMatches = check.matches.isNotEmpty;
+        return AppDialog(
+          title: Text(
+            blocked
+                ? l10n.pharmacyStorageRoomDuplicateDialogTitle
+                : hasMatches
+                ? l10n.pharmacyStorageRoomSimilarDialogTitle
+                : l10n.pharmacyStorageRoomNoSimilarDialogTitle,
+          ),
+          icon: Icon(
+            blocked
+                ? Icons.gpp_bad_outlined
+                : hasMatches
+                ? Icons.warning_amber_outlined
+                : Icons.verified_outlined,
+          ),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                blocked
+                    ? l10n.pharmacyStorageRoomDuplicateDialogBody
+                    : hasMatches
+                    ? l10n.pharmacyStorageRoomSimilarDialogBody(
+                        check.closestScore,
+                      )
+                    : l10n.pharmacyStorageRoomNoSimilarDialogBody,
+              ),
+              if (hasMatches) ...<Widget>[
+                SizedBox(height: Theme.of(dialogContext).spacing.md),
+                for (final PharmacyStorageRoomSimilarityMatch match
+                    in check.matches.take(5))
+                  ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(match.room.name ?? match.room.id),
+                    subtitle: Text(
+                      [
+                        if ((match.room.code ?? '').isNotEmpty) match.room.code!,
+                        '${match.score}%',
+                      ].join(' · '),
+                    ),
+                  ),
+              ],
+            ],
+          ),
+          actions: <Widget>[
+            AppButton.tertiary(
+              label: l10n.commonCancelActionLabel,
+              leadingIcon: Icons.close,
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+            ),
+            if (!blocked)
+              AppButton.primary(
+                label: hasMatches
+                    ? l10n.pharmacyStorageRoomCreateAnywayAction
+                    : l10n.commonContinueActionLabel,
+                leadingIcon: Icons.check,
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+              ),
+          ],
+        );
+      },
+    );
+    if (proceed != true || !mounted) {
+      setState(() => _isSaving = false);
+      return;
+    }
+
+    if (widget.room == null) {
+      final Result<PharmacyStorageRoom> createResult = await controller
+          .createStorageRoom(
+            PharmacyStorageRoomInput(
+              name: name,
+              code: code,
+              tenantId: controller.resolveTenantId(),
+              facilityId: controller.resolveFacilityId(),
+              confirmSimilar: true,
+            ),
+          );
+      if (!mounted) {
+        return;
+      }
+      createResult.when(
+        success: (PharmacyStorageRoom created) {
+          Navigator.of(context).pop(created);
+        },
+        failure: (_) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
+          );
+        },
+      );
+      return;
+    }
+
+    final Result<PharmacyStorageRoom> updateResult = await controller
+        .updateStorageRoom(
+          widget.room!.id,
+          PharmacyStorageRoomUpdateInput(
+            name: name,
+            code: code,
+            isActive: _isActive,
+            confirmSimilar: true,
+          ),
+        );
+    if (!mounted) {
+      return;
+    }
+    updateResult.when(
+      success: (PharmacyStorageRoom updated) {
+        Navigator.of(context).pop(updated);
+      },
+      failure: (_) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
+        );
+      },
+    );
+  }
+}
+
+class _StorageRoomDetailsDialog extends ConsumerWidget {
+  const _StorageRoomDetailsDialog({
+    required this.room,
+    required this.writeRequirement,
+  });
+
+  final PharmacyStorageRoom room;
+  final AccessRequirement writeRequirement;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    PharmacyWorkspaceState? state;
+    final asyncState = ref.watch(pharmacyWorkspaceControllerProvider);
+    if (asyncState.hasValue) {
+      asyncState.requireValue.when(
+        success: (PharmacyWorkspaceState value) => state = value,
+        failure: (_) {},
+      );
+    }
+    PharmacyStorageRoom current = room;
+    if (state != null) {
+      for (final PharmacyStorageRoom item in state!.storageLayout.rooms) {
+        if (item.id == room.id) {
+          current = item;
+          break;
+        }
+      }
+    }
+
+    return AppDialog(
+      title: Text(current.name ?? l10n.pharmacyStorageRoomLabel),
+      icon: const Icon(Icons.warehouse_outlined),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text('${l10n.pharmacyStorageRoomCodeLabel}: ${current.code ?? '—'}'),
+          SizedBox(height: theme.spacing.sm),
+          Text(
+            '${l10n.pharmacyStorageStatusColumnLabel}: ${current.isSoftDeleted
+                ? l10n.pharmacyStorageDeletedLabel
+                : current.isActive
+                ? l10n.pharmacyStorageActiveLabel
+                : l10n.pharmacyStorageInactiveLabel}',
+          ),
+          SizedBox(height: theme.spacing.sm),
+          Text(
+            '${l10n.pharmacyStorageShelvesCountColumnLabel}: ${current.shelves.length}',
+          ),
+          if (current.shelves.isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            for (final PharmacyStorageShelf shelf in current.shelves.take(8))
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(shelf.shelfCode ?? shelf.id),
+                subtitle: Text(shelf.label ?? '—'),
+              ),
+          ],
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCloseActionLabel,
+          leadingIcon: Icons.close,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppAccessActionGate(
+          requirement: writeRequirement,
+          builder: (BuildContext context, bool allowed) {
+            if (!allowed) {
+              return const SizedBox.shrink();
+            }
+            if (current.isSoftDeleted) {
+              return const SizedBox.shrink();
+            }
+            return AppButton.tertiary(
+              label: l10n.commonCreateActionLabel,
+              leadingIcon: Icons.add,
+              semanticLabel: l10n.pharmacyAddStorageShelfAction,
+              onPressed: () async {
+                await openPharmacyStorageShelfDialog(
+                  context,
+                  ref,
+                  room: current,
+                );
+              },
+            );
+          },
+        ),
+        AppAccessActionGate(
+          requirement: writeRequirement,
+          builder: (BuildContext context, bool allowed) {
+            if (!allowed) {
+              return const SizedBox.shrink();
+            }
+            if (current.isSoftDeleted) {
+              return AppButton.tertiary(
+                label: l10n.pharmacyRestoreStorageRoomAction,
+                leadingIcon: Icons.restore_outlined,
+                onPressed: () async {
+                  await confirmRestorePharmacyStorageRoom(context, ref, current);
+                },
+              );
+            }
+            return AppButton.tertiary(
+              label: l10n.commonDeleteActionLabel,
+              leadingIcon: Icons.delete_outline,
+              semanticLabel: l10n.pharmacyDeleteStorageRoomAction,
+              onPressed: () async {
+                await confirmDeletePharmacyStorageRoom(context, ref, current);
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
+              },
+            );
+          },
+        ),
+        AppAccessActionGate(
+          requirement: writeRequirement,
+          builder: (BuildContext context, bool allowed) {
+            if (!allowed || current.isSoftDeleted) {
+              return const SizedBox.shrink();
+            }
+            return AppButton.primary(
+              label: l10n.commonEditActionLabel,
+              leadingIcon: Icons.edit_outlined,
+              onPressed: () async {
+                final PharmacyStorageRoom? updated =
+                    await openPharmacyStorageRoomDialog(
+                      context,
+                      ref,
+                      room: current,
+                    );
+                if (updated != null && context.mounted) {
+                  // Keep details open; parent will refresh via controller.
+                }
+              },
+            );
+          },
+        ),
+      ],
+    );
   }
 }
 

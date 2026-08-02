@@ -1063,6 +1063,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonCloseActionLabel => 'Close';
 
   @override
+  String get commonContinueActionLabel => 'Continue';
+
+  @override
   String get appImageCropTitle => 'Crop image';
 
   @override
@@ -12082,7 +12085,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyDeleteStorageRoomDialogBody =>
-      'Remove this storage room and shelves? Drugs will lose this location.';
+      'Remove this storage room and shelves? Drugs will lose this location. You can restore later or delete permanently.';
+
+  @override
+  String get pharmacyPermanentDeleteStorageRoomAction => 'Delete permanently';
+
+  @override
+  String get pharmacyPermanentDeleteStorageRoomDialogTitle =>
+      'Delete room permanently';
+
+  @override
+  String get pharmacyPermanentDeleteStorageRoomDialogBody =>
+      'Permanently delete this room and its shelves? Batch locations on this room will be cleared. This cannot be undone.';
+
+  @override
+  String get pharmacyStorageDeletedLabel => 'Deleted';
+
+  @override
+  String get pharmacyStorageRoomDuplicateDialogTitle => 'Duplicate room';
+
+  @override
+  String get pharmacyStorageRoomDuplicateDialogBody =>
+      'An exact match already exists. Change the name or code before creating.';
+
+  @override
+  String get pharmacyStorageRoomSimilarDialogTitle => 'Similar rooms found';
+
+  @override
+  String pharmacyStorageRoomSimilarDialogBody(int score) {
+    return 'Closest match similarity: $score%. Review matches before continuing.';
+  }
+
+  @override
+  String get pharmacyStorageRoomNoSimilarDialogTitle => 'No similar rooms';
+
+  @override
+  String get pharmacyStorageRoomNoSimilarDialogBody =>
+      'No close matches found. Continue to create this room.';
+
+  @override
+  String get pharmacyStorageRoomCreateAnywayAction => 'Create anyway';
+
+  @override
+  String get pharmacyStorageIncludeDeletedFilterLabel => 'Include deleted';
+
+  @override
+  String get pharmacyStorageCreatedAtColumnLabel => 'Created at';
+
+  @override
+  String get pharmacyRestoreStorageRoomAction => 'Restore';
 
   @override
   String get pharmacyDeleteStorageShelfDialogTitle => 'Delete shelf';

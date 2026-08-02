@@ -52,11 +52,14 @@ const {
   resolveDefaultStorageShelfId,
   attachDrugStorageSummaries,
   getPharmacyStorageLayout,
+  checkPharmacyStorageRoomSimilarity,
   createPharmacyStorageRoom,
   updatePharmacyStorageRoom,
   createPharmacyStorageShelf,
   updatePharmacyStorageShelf,
   deletePharmacyStorageRoom,
+  restorePharmacyStorageRoom,
+  permanentDeletePharmacyStorageRoom,
   deletePharmacyStorageShelf} = require('@services/pharmacy-workspace/pharmacy-storage.service');
 const { resolveIdentifierForPayload } = require('@lib/identifiers/service-identifier-resolution');
 const { resolveOperationalFacilityId } = require('@lib/facility-context');
@@ -2334,9 +2337,12 @@ module.exports = {
   recordOrderBilling,
   resolveLegacyRouteIdentifier,
   getPharmacyStorageLayout,
+  checkPharmacyStorageRoomSimilarity,
   createPharmacyStorageRoom,
   updatePharmacyStorageRoom,
   createPharmacyStorageShelf,
   updatePharmacyStorageShelf,
   deletePharmacyStorageRoom,
+  restorePharmacyStorageRoom,
+  permanentDeletePharmacyStorageRoom,
   deletePharmacyStorageShelf};

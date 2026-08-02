@@ -1653,6 +1653,8 @@ class _StorageLayoutCatalogTab extends ConsumerStatefulWidget {
 class _StorageLayoutCatalogTabState
     extends ConsumerState<_StorageLayoutCatalogTab> {
   late final TextEditingController _searchController;
+  bool _includeDeleted = false;
+  String? _statusFilter;
 
   @override
   void initState() {
@@ -1669,7 +1671,24 @@ class _StorageLayoutCatalogTabState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<PharmacyStorageRoom> rooms = widget.state.storageLayout.rooms;
+    final List<PharmacyStorageRoom> allRooms = widget.state.storageLayout.rooms;
+    final List<PharmacyStorageRoom> rooms = allRooms.where((
+      PharmacyStorageRoom room,
+    ) {
+      if (!_includeDeleted && room.isSoftDeleted && _statusFilter != 'deleted') {
+        return false;
+      }
+      switch (_statusFilter) {
+        case 'active':
+          return !room.isSoftDeleted && room.isActive;
+        case 'inactive':
+          return !room.isSoftDeleted && !room.isActive;
+        case 'deleted':
+          return room.isSoftDeleted;
+        default:
+          return _includeDeleted || !room.isSoftDeleted;
+      }
+    }).toList(growable: false);
     final AppPage<PharmacyStorageRoom> page = AppPage<PharmacyStorageRoom>(
       items: rooms,
       request: AppPageRequest(pageSize: rooms.isEmpty ? 10 : rooms.length),
@@ -1682,6 +1701,42 @@ class _StorageLayoutCatalogTabState
       shrinkWrap: !widget.fillHeight,
       physics: widget.fillHeight ? null : const NeverScrollableScrollPhysics(),
       columnVisibilityStorageKey: 'pharmacy_catalog_storage_rooms',
+      exportConfig: AppListTableExportConfig<PharmacyStorageRoom>(
+        fileNameStem: 'pharmacy_storage_rooms',
+        dateOf: (PharmacyStorageRoom item) => item.createdAt,
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: 'room_status',
+            label: l10n.pharmacyStorageStatusColumnLabel,
+            choices: <AppSearchBarFilterChoice>[
+              AppSearchBarFilterChoice(
+                value: 'active',
+                label: l10n.pharmacyStorageActiveLabel,
+              ),
+              AppSearchBarFilterChoice(
+                value: 'inactive',
+                label: l10n.pharmacyStorageInactiveLabel,
+              ),
+              AppSearchBarFilterChoice(
+                value: 'deleted',
+                label: l10n.pharmacyStorageDeletedLabel,
+              ),
+            ],
+          ),
+        ],
+        rowFilter: (PharmacyStorageRoom item, AppSearchBarFilterValue filters) {
+          final String? status = filters.options['room_status'];
+          if (status == null || status.isEmpty) {
+            return true;
+          }
+          return switch (status) {
+            'active' => !item.isSoftDeleted && item.isActive,
+            'inactive' => !item.isSoftDeleted && !item.isActive,
+            'deleted' => item.isSoftDeleted,
+            _ => true,
+          };
+        },
+      ),
       search: AppListTableSearch<PharmacyStorageRoom>(
         controller: _searchController,
         semanticLabel: l10n.pharmacySearchLabel,
@@ -1695,7 +1750,50 @@ class _StorageLayoutCatalogTabState
               (item.code ?? '').toLowerCase().contains(needle) ||
               item.id.toLowerCase().contains(needle);
         },
-        enableDateFilter: false,
+        showAdvancedFilterButton: true,
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: 'room_status',
+            label: l10n.pharmacyStorageStatusColumnLabel,
+            choices: <AppSearchBarFilterChoice>[
+              AppSearchBarFilterChoice(
+                value: 'active',
+                label: l10n.pharmacyStorageActiveLabel,
+              ),
+              AppSearchBarFilterChoice(
+                value: 'inactive',
+                label: l10n.pharmacyStorageInactiveLabel,
+              ),
+              AppSearchBarFilterChoice(
+                value: 'deleted',
+                label: l10n.pharmacyStorageDeletedLabel,
+              ),
+            ],
+          ),
+          AppSearchBarFilterGroup(
+            key: 'include_deleted',
+            label: l10n.pharmacyStorageIncludeDeletedFilterLabel,
+            choices: <AppSearchBarFilterChoice>[
+              AppSearchBarFilterChoice(
+                value: 'yes',
+                label: l10n.commonYesLabel,
+              ),
+            ],
+          ),
+        ],
+        filterValue: AppSearchBarFilterValue(
+          options: <String, String>{
+            if (_statusFilter case final String status) 'room_status': status,
+            if (_includeDeleted) 'include_deleted': 'yes',
+          },
+        ),
+        hasActiveFilters: _statusFilter != null || _includeDeleted,
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          setState(() {
+            _statusFilter = value.options['room_status'];
+            _includeDeleted = value.options['include_deleted'] == 'yes';
+          });
+        },
         trailingActions: _catalogSearchTrailingActions(
           ref: ref,
           writeRequirement: widget.writeRequirement,
@@ -1703,7 +1801,19 @@ class _StorageLayoutCatalogTabState
           hasSelection: false,
           addLabel: l10n.commonCreateActionLabel,
           addSemanticLabel: l10n.pharmacyAddStorageRoomAction,
-          onAdd: () => openPharmacyStorageRoomDialog(context, ref),
+          onAdd: () async {
+            final PharmacyStorageRoom? created =
+                await openPharmacyStorageRoomDialog(context, ref);
+            if (!context.mounted || created == null) {
+              return;
+            }
+            await openPharmacyStorageRoomDetailsDialog(
+              context,
+              ref,
+              room: created,
+              writeRequirement: widget.writeRequirement,
+            );
+          },
         ),
       ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.state(
@@ -1716,14 +1826,18 @@ class _StorageLayoutCatalogTabState
         AppListTableColumn<PharmacyStorageRoom>(
           id: 'name',
           label: l10n.pharmacyStorageRoomNameLabel,
+          preferredWidth: 180,
           cellBuilder: (_, PharmacyStorageRoom item) =>
               Text(item.name ?? item.id),
+          exportValue: (PharmacyStorageRoom item) => item.name ?? '',
         ),
         AppListTableColumn<PharmacyStorageRoom>(
           id: 'code',
           label: l10n.pharmacyStorageRoomCodeLabel,
+          preferredWidth: 120,
           cellBuilder: (_, PharmacyStorageRoom item) =>
               Text((item.code ?? '').isEmpty ? '—' : item.code!),
+          exportValue: (PharmacyStorageRoom item) => item.code ?? '',
         ),
         AppListTableColumn<PharmacyStorageRoom>(
           id: 'shelves_count',
@@ -1731,31 +1845,76 @@ class _StorageLayoutCatalogTabState
           numeric: true,
           cellBuilder: (_, PharmacyStorageRoom item) =>
               Text(item.shelves.length.toString()),
+          exportValue: (PharmacyStorageRoom item) => item.shelves.length,
         ),
         AppListTableColumn<PharmacyStorageRoom>(
           id: 'status',
           label: l10n.pharmacyStorageStatusColumnLabel,
           cellBuilder: (BuildContext context, PharmacyStorageRoom item) {
+            final String label = item.isSoftDeleted
+                ? l10n.pharmacyStorageDeletedLabel
+                : item.isActive
+                ? l10n.pharmacyStorageActiveLabel
+                : l10n.pharmacyStorageInactiveLabel;
+            final AppWorkspaceStatusTone tone = item.isSoftDeleted
+                ? AppWorkspaceStatusTone.error
+                : item.isActive
+                ? AppWorkspaceStatusTone.success
+                : AppWorkspaceStatusTone.neutral;
             return AppWorkspaceStatusBadge(
-              status: AppWorkspaceStatus(
-                label: item.isActive
-                    ? l10n.pharmacyStorageActiveLabel
-                    : l10n.pharmacyStorageInactiveLabel,
-                tone: item.isActive
-                    ? AppWorkspaceStatusTone.success
-                    : AppWorkspaceStatusTone.neutral,
+              status: AppWorkspaceStatus(label: label, tone: tone),
+            );
+          },
+          exportValue: (PharmacyStorageRoom item) => item.isSoftDeleted
+              ? 'deleted'
+              : item.isActive
+              ? 'active'
+              : 'inactive',
+        ),
+        AppListTableColumn<PharmacyStorageRoom>(
+          id: 'created_at',
+          label: l10n.pharmacyStorageCreatedAtColumnLabel,
+          cellBuilder: (BuildContext context, PharmacyStorageRoom item) {
+            if (item.createdAt == null) {
+              return const Text('—');
+            }
+            return Text(
+              AppFormatters.dateTime(
+                item.createdAt!,
+                Localizations.localeOf(context),
               ),
             );
           },
+          exportValue: (PharmacyStorageRoom item) =>
+              item.createdAt?.toIso8601String() ?? '',
         ),
         AppListTableColumn<PharmacyStorageRoom>(
           id: 'actions',
           label: l10n.pharmacyLineActionsColumnLabel,
           alwaysVisible: true,
-          // Create + Edit + Delete with labels exceed the default 200px actions
-          // column and overflow the cell without an explicit width.
-          fixedWidth: 280,
+          fixedWidth: 220,
           cellBuilder: (BuildContext context, PharmacyStorageRoom item) {
+            if (item.isSoftDeleted) {
+              return _catalogRowActions(
+                context: context,
+                writeRequirement: widget.writeRequirement,
+                isBusy: isBusy,
+                editLabel: l10n.pharmacyRestoreStorageRoomAction,
+                deleteLabel: l10n.pharmacyPermanentDeleteStorageRoomAction,
+                editSemanticLabel: l10n.pharmacyRestoreStorageRoomAction,
+                deleteSemanticLabel:
+                    l10n.pharmacyPermanentDeleteStorageRoomAction,
+                editIcon: Icons.restore_outlined,
+                deleteIcon: Icons.delete_forever_outlined,
+                onEdit: () =>
+                    confirmRestorePharmacyStorageRoom(context, ref, item),
+                onDelete: () => confirmPermanentDeletePharmacyStorageRoom(
+                  context,
+                  ref,
+                  item,
+                ),
+              );
+            }
             return _catalogRowActions(
               context: context,
               writeRequirement: widget.writeRequirement,
@@ -1764,28 +1923,39 @@ class _StorageLayoutCatalogTabState
               deleteLabel: l10n.commonDeleteActionLabel,
               editSemanticLabel: l10n.pharmacyEditStorageRoomAction,
               deleteSemanticLabel: l10n.pharmacyDeleteStorageRoomAction,
-              onEdit: () => openPharmacyStorageRoomDialog(
-                context,
-                ref,
-                room: item,
-              ),
-              onDelete: () => confirmDeletePharmacyStorageRoom(
-                context,
-                ref,
-                item,
-              ),
-              addLabel: l10n.commonCreateActionLabel,
-              addSemanticLabel: l10n.pharmacyAddStorageShelfAction,
-              addEnabled: item.isActive,
-              onAdd: () => openPharmacyStorageShelfDialog(
-                context,
-                ref,
-                room: item,
-              ),
+              onEdit: () async {
+                final PharmacyStorageRoom? updated =
+                    await openPharmacyStorageRoomDialog(
+                      context,
+                      ref,
+                      room: item,
+                    );
+                if (!context.mounted || updated == null) {
+                  return;
+                }
+                await openPharmacyStorageRoomDetailsDialog(
+                  context,
+                  ref,
+                  room: updated,
+                  writeRequirement: widget.writeRequirement,
+                );
+              },
+              onDelete: () =>
+                  confirmDeletePharmacyStorageRoom(context, ref, item),
             );
           },
         ),
       ],
+      onRowSelected: (PharmacyStorageRoom item) {
+        unawaited(
+          openPharmacyStorageRoomDetailsDialog(
+            context,
+            ref,
+            room: item,
+            writeRequirement: widget.writeRequirement,
+          ),
+        );
+      },
       mobileItemBuilder: (BuildContext context, PharmacyStorageRoom item) {
         return AppListTableMobileItem(
           title: item.name ?? item.id,
@@ -1797,7 +1967,9 @@ class _StorageLayoutCatalogTabState
               icon: Icons.view_week_outlined,
             ),
             AppListTableMobileMeta(
-              label: item.isActive
+              label: item.isSoftDeleted
+                  ? l10n.pharmacyStorageDeletedLabel
+                  : item.isActive
                   ? l10n.pharmacyStorageActiveLabel
                   : l10n.pharmacyStorageInactiveLabel,
             ),

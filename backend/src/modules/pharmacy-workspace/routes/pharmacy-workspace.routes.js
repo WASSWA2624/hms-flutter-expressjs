@@ -20,6 +20,7 @@ const {
   getPharmacyStorageLayoutQuerySchema,
   createPharmacyStorageRoomSchema,
   updatePharmacyStorageRoomSchema,
+  checkPharmacyStorageRoomSimilaritySchema,
   pharmacyStorageRoomParamsSchema,
   createPharmacyStorageShelfSchema,
   updatePharmacyStorageShelfSchema,
@@ -151,6 +152,14 @@ router.post(
   pharmacyWorkspaceController.createPharmacyStorageRoom
 );
 
+router.post(
+  '/storage/rooms/similarity-check',
+  validateRequest({ body: checkPharmacyStorageRoomSimilaritySchema }),
+  authenticate(),
+  authorize(INVENTORY_WRITE_SCOPES, 'permission'),
+  pharmacyWorkspaceController.checkPharmacyStorageRoomSimilarity
+);
+
 router.put(
   '/storage/rooms/:roomId',
   validateRequest({
@@ -187,6 +196,22 @@ router.delete(
   authenticate(),
   authorize(INVENTORY_WRITE_SCOPES, 'permission'),
   pharmacyWorkspaceController.deletePharmacyStorageRoom
+);
+
+router.post(
+  '/storage/rooms/:roomId/restore',
+  validateRequest({ params: pharmacyStorageRoomParamsSchema }),
+  authenticate(),
+  authorize(INVENTORY_WRITE_SCOPES, 'permission'),
+  pharmacyWorkspaceController.restorePharmacyStorageRoom
+);
+
+router.delete(
+  '/storage/rooms/:roomId/permanent',
+  validateRequest({ params: pharmacyStorageRoomParamsSchema }),
+  authenticate(),
+  authorize(INVENTORY_WRITE_SCOPES, 'permission'),
+  pharmacyWorkspaceController.permanentDeletePharmacyStorageRoom
 );
 
 router.delete(

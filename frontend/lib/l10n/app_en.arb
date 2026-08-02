@@ -1389,6 +1389,10 @@
   "@commonCloseActionLabel": {
     "description": "Label for actions that close the current dialog."
   },
+  "commonContinueActionLabel": "Continue",
+  "@commonContinueActionLabel": {
+    "description": "Generic continue action label."
+  },
   "appImageCropTitle": "Crop image",
   "@appImageCropTitle": {
     "description": "Title for the image crop dialog."
@@ -15417,9 +15421,70 @@
   "@pharmacyDeleteStorageRoomDialogTitle": {
     "description": "Pharmacy delete storage room confirmation title."
   },
-  "pharmacyDeleteStorageRoomDialogBody": "Remove this storage room and shelves? Drugs will lose this location.",
+  "pharmacyDeleteStorageRoomDialogBody": "Remove this storage room and shelves? Drugs will lose this location. You can restore later or delete permanently.",
   "@pharmacyDeleteStorageRoomDialogBody": {
     "description": "Pharmacy delete storage room confirmation body."
+  },
+  "pharmacyPermanentDeleteStorageRoomAction": "Delete permanently",
+  "@pharmacyPermanentDeleteStorageRoomAction": {
+    "description": "Permanently delete a soft-deleted pharmacy storage room."
+  },
+  "pharmacyPermanentDeleteStorageRoomDialogTitle": "Delete room permanently",
+  "@pharmacyPermanentDeleteStorageRoomDialogTitle": {
+    "description": "Title for permanent storage room delete confirmation."
+  },
+  "pharmacyPermanentDeleteStorageRoomDialogBody": "Permanently delete this room and its shelves? Batch locations on this room will be cleared. This cannot be undone.",
+  "@pharmacyPermanentDeleteStorageRoomDialogBody": {
+    "description": "Body for permanent storage room delete confirmation."
+  },
+  "pharmacyStorageDeletedLabel": "Deleted",
+  "@pharmacyStorageDeletedLabel": {
+    "description": "Status label for a soft-deleted pharmacy storage room."
+  },
+  "pharmacyStorageRoomDuplicateDialogTitle": "Duplicate room",
+  "@pharmacyStorageRoomDuplicateDialogTitle": {
+    "description": "Title when pharmacy storage room name or code already exists."
+  },
+  "pharmacyStorageRoomDuplicateDialogBody": "An exact match already exists. Change the name or code before creating.",
+  "@pharmacyStorageRoomDuplicateDialogBody": {
+    "description": "Body when pharmacy storage room is an exact duplicate."
+  },
+  "pharmacyStorageRoomSimilarDialogTitle": "Similar rooms found",
+  "@pharmacyStorageRoomSimilarDialogTitle": {
+    "description": "Title when similar pharmacy storage rooms are found."
+  },
+  "pharmacyStorageRoomSimilarDialogBody": "Closest match similarity: {score}%. Review matches before continuing.",
+  "@pharmacyStorageRoomSimilarDialogBody": {
+    "description": "Body when similar pharmacy storage rooms are found.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "pharmacyStorageRoomNoSimilarDialogTitle": "No similar rooms",
+  "@pharmacyStorageRoomNoSimilarDialogTitle": {
+    "description": "Title when pharmacy storage room similarity finds no matches."
+  },
+  "pharmacyStorageRoomNoSimilarDialogBody": "No close matches found. Continue to create this room.",
+  "@pharmacyStorageRoomNoSimilarDialogBody": {
+    "description": "Body when pharmacy storage room similarity finds no matches."
+  },
+  "pharmacyStorageRoomCreateAnywayAction": "Create anyway",
+  "@pharmacyStorageRoomCreateAnywayAction": {
+    "description": "Continue creating a pharmacy storage room after similarity review."
+  },
+  "pharmacyStorageIncludeDeletedFilterLabel": "Include deleted",
+  "@pharmacyStorageIncludeDeletedFilterLabel": {
+    "description": "Room table filter to include soft-deleted rooms."
+  },
+  "pharmacyStorageCreatedAtColumnLabel": "Created at",
+  "@pharmacyStorageCreatedAtColumnLabel": {
+    "description": "Pharmacy storage room created-at column label."
+  },
+  "pharmacyRestoreStorageRoomAction": "Restore",
+  "@pharmacyRestoreStorageRoomAction": {
+    "description": "Restore a soft-deleted pharmacy storage room."
   },
   "pharmacyDeleteStorageShelfDialogTitle": "Delete shelf",
   "@pharmacyDeleteStorageShelfDialogTitle": {
