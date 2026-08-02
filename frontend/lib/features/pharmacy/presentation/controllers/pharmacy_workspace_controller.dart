@@ -881,67 +881,66 @@ final class PharmacyWorkspaceController
     );
   }
 
-  Future<AppFailure?> createDrug(
+  Future<Result<PharmacyDrug>> createDrug(
     PharmacyDrugInput input, {
     PharmacyFacilityOfferingInput? facilityOffering,
   }) async {
     final Result<PharmacyDrug> result = await _repository.createDrug(input);
-    return result.when(
-      success: (PharmacyDrug drug) async {
-        if (facilityOffering != null) {
-          final Result<PharmacyDrug> offeringResult = await _repository
-              .upsertFacilityOffering(
-                drug.id,
-                PharmacyFacilityOfferingInput(
-                  unitPrice: facilityOffering.unitPrice,
-                  currency: facilityOffering.currency,
-                  isActive: facilityOffering.isActive,
-                  facilityId:
-                      facilityOffering.facilityId ??
-                      input.facilityId ??
-                      resolveFacilityId(),
-                  defaultStorageShelfId:
-                      facilityOffering.defaultStorageShelfId ??
-                      input.storageShelfId,
-                ),
-              );
-          final AppFailure? offeringFailure = offeringResult.when(
-            success: (_) => null,
-            failure: (AppFailure failure) => failure,
+    if (result case ResultFailure<PharmacyDrug>(failure: final failure)) {
+      return Result<PharmacyDrug>.failure(failure);
+    }
+
+    PharmacyDrug created =
+        (result as ResultSuccess<PharmacyDrug>).value;
+
+    if (facilityOffering != null) {
+      final Result<PharmacyDrug> offeringResult = await _repository
+          .upsertFacilityOffering(
+            created.id,
+            PharmacyFacilityOfferingInput(
+              unitPrice: facilityOffering.unitPrice,
+              currency: facilityOffering.currency,
+              isActive: facilityOffering.isActive,
+              facilityId:
+                  facilityOffering.facilityId ??
+                  input.facilityId ??
+                  resolveFacilityId(),
+              defaultStorageShelfId:
+                  facilityOffering.defaultStorageShelfId ??
+                  input.storageShelfId,
+            ),
           );
-          if (offeringFailure != null) {
-            return offeringFailure;
-          }
-        } else if (input.storageShelfId != null) {
-          final String? facilityId = input.facilityId ?? resolveFacilityId();
-          if (facilityId != null) {
-            final Result<PharmacyDrug> offeringResult = await _repository
-                .upsertFacilityOffering(
-                  drug.id,
-                  PharmacyFacilityOfferingInput(
-                    unitPrice: 0,
-                    isActive: false,
-                    facilityId: facilityId,
-                    defaultStorageShelfId: input.storageShelfId,
-                  ),
-                );
-            final AppFailure? offeringFailure = offeringResult.when(
-              success: (_) => null,
-              failure: (AppFailure failure) => failure,
+      if (offeringResult
+          case ResultFailure<PharmacyDrug>(failure: final failure)) {
+        return Result<PharmacyDrug>.failure(failure);
+      }
+      created = (offeringResult as ResultSuccess<PharmacyDrug>).value;
+    } else if (input.storageShelfId != null) {
+      final String? facilityId = input.facilityId ?? resolveFacilityId();
+      if (facilityId != null) {
+        final Result<PharmacyDrug> offeringResult = await _repository
+            .upsertFacilityOffering(
+              created.id,
+              PharmacyFacilityOfferingInput(
+                unitPrice: 0,
+                isActive: false,
+                facilityId: facilityId,
+                defaultStorageShelfId: input.storageShelfId,
+              ),
             );
-            if (offeringFailure != null) {
-              return offeringFailure;
-            }
-          }
+        if (offeringResult
+            case ResultFailure<PharmacyDrug>(failure: final failure)) {
+          return Result<PharmacyDrug>.failure(failure);
         }
-        await _refreshDrugs(showLoading: false);
-        if (input.hasStockSetup) {
-          await _refreshInventory(showLoading: false);
-        }
-        return null;
-      },
-      failure: (AppFailure failure) => failure,
-    );
+        created = (offeringResult as ResultSuccess<PharmacyDrug>).value;
+      }
+    }
+
+    await _refreshDrugs(showLoading: false);
+    if (input.hasStockSetup) {
+      await _refreshInventory(showLoading: false);
+    }
+    return Result<PharmacyDrug>.success(created);
   }
 
   Future<AppFailure?> updateDrug(

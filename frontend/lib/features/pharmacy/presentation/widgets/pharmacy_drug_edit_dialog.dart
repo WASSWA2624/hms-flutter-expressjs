@@ -26,7 +26,8 @@ final class PharmacyDrugFormResult {
   const PharmacyDrugFormResult.cancelled()
     : this._(saved: false, useExisting: false);
 
-  const PharmacyDrugFormResult.saved() : this._(saved: true, useExisting: false);
+  const PharmacyDrugFormResult.saved(PharmacyDrug drug)
+    : this._(saved: true, useExisting: false, drug: drug);
 
   const PharmacyDrugFormResult.useExisting(PharmacyDrug drug)
     : this._(saved: false, useExisting: true, drug: drug);
@@ -941,7 +942,7 @@ class _PharmacyDrugEditDialogState
           return;
         }
 
-        failure = await controller.createDrug(
+        final Result<PharmacyDrug> createResult = await controller.createDrug(
           PharmacyDrugInput(
             tenantId: tenantId,
             name: genericName,
@@ -966,6 +967,22 @@ class _PharmacyDrugEditDialogState
           ),
           facilityOffering: facilityOffering,
         );
+        if (!mounted) {
+          return;
+        }
+        createResult.when(
+          success: (PharmacyDrug created) {
+            Navigator.of(context).pop(PharmacyDrugFormResult.saved(created));
+          },
+          failure: (AppFailure error) {
+            setState(() => _isSaving = false);
+            failure = error;
+          },
+        );
+        if (failure != null) {
+          return;
+        }
+        return;
       }
     } else {
       failure = await controller.updateDrug(
@@ -998,12 +1015,17 @@ class _PharmacyDrugEditDialogState
           );
         }
       }
-    }
-    if (!mounted) {
+      if (!mounted) {
+        return;
+      }
+      if (failure == null) {
+        Navigator.of(context).pop(PharmacyDrugFormResult.saved(widget.drug!));
+        return;
+      }
+      setState(() => _isSaving = false);
       return;
     }
-    if (failure == null) {
-      Navigator.of(context).pop(const PharmacyDrugFormResult.saved());
+    if (!mounted) {
       return;
     }
     setState(() => _isSaving = false);

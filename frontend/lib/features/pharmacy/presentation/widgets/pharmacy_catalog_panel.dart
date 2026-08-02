@@ -420,15 +420,21 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
     if (!context.mounted || result == null) {
       return;
     }
-    if (result.useExisting && result.drug != null) {
-      await openPharmacyDrugDetailsDialog(
-        context,
-        ref,
-        drug: result.drug!,
-        writeRequirement: widget.writeRequirement,
-        onDelete: (PharmacyDrug item) => _confirmDeleteDrug(context, item),
-      );
+    final PharmacyDrug? detailsDrug = result.drug;
+    // After create (or Use existing), open details — same pattern as rooms.
+    final bool openDetails =
+        detailsDrug != null &&
+        (result.useExisting || (result.saved && drug == null));
+    if (!openDetails) {
+      return;
     }
+    await openPharmacyDrugDetailsDialog(
+      context,
+      ref,
+      drug: detailsDrug,
+      writeRequirement: widget.writeRequirement,
+      onDelete: (PharmacyDrug item) => _confirmDeleteDrug(context, item),
+    );
   }
 
   Future<bool> _confirmDeleteDrug(
