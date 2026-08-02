@@ -643,6 +643,7 @@ class _StorageRoomDialogState extends ConsumerState<_StorageRoomDialog> {
             proposed: PharmacyStorageRoomSimilarityProposedValues(
               name: name,
               code: code,
+              isActive: widget.room == null ? null : _isActive,
             ),
             check: check,
             isEdit: widget.room != null,

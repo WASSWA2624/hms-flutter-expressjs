@@ -154,6 +154,10 @@ void main() {
     expect(find.text('Save anyway'), findsOneWidget);
     expect(find.text('Near match'), findsOneWidget);
 
+    // Proposed section is collapsed by default — expand before editing.
+    await tester.tap(find.text('Proposed values'));
+    await tester.pumpAndSettle();
+
     await tester.enterText(find.byType(TextField).first, 'Room Alpha');
     await tester.tap(find.text('Check again'));
     await tester.pumpAndSettle();
@@ -225,7 +229,81 @@ void main() {
 
     expect(find.text('Check again'), findsNothing);
     expect(find.byType(TextField), findsNothing);
-    expect(find.text('Room 01'), findsWidgets);
+    expect(find.textContaining('Closest match: 80%'), findsOneWidget);
     expect(find.text('Save anyway'), findsOneWidget);
+  });
+
+  testWidgets('proposed section is collapsed and shows closest match in title', (
+    WidgetTester tester,
+  ) async {
+    await setLargeSurface(tester);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (BuildContext context) {
+            return Scaffold(
+              body: TextButton(
+                onPressed: () async {
+                  await showAppSimilarityReviewDialog<String>(
+                    context,
+                    title: 'Similar',
+                    bannerTitle: 'Review similar',
+                    bannerMessage: 'Closest match 91%.',
+                    bannerVariant: AppFormInformationVariant.warning,
+                    proposedFields: const <AppSimilarityProposedField>[
+                      AppSimilarityProposedField(
+                        key: 'name',
+                        label: 'Name',
+                        initialValue: 'Room 10',
+                        isRequired: true,
+                      ),
+                      AppSimilarityProposedField(
+                        key: 'code',
+                        label: 'Code',
+                        initialValue: 'RM003',
+                      ),
+                    ],
+                    matches: const <AppSimilarityMatch<String>>[
+                      AppSimilarityMatch<String>(
+                        item: 'room-1',
+                        title: 'Room 1',
+                        overallScore: 91,
+                        fields: <AppSimilarityFieldRow>[
+                          AppSimilarityFieldRow(
+                            key: 'name',
+                            label: 'Name',
+                            proposedValue: 'Room 10',
+                            existingValue: 'Room 1',
+                            score: 96,
+                          ),
+                        ],
+                      ),
+                    ],
+                    overallScore: 91,
+                    proposedHeading: 'Proposed room',
+                    proceedLabel: 'Save anyway',
+                  );
+                },
+                child: const Text('open'),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Proposed room'), findsOneWidget);
+    expect(find.textContaining('Closest match: 91%'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+
+    await tester.tap(find.text('Proposed room'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNWidgets(2));
   });
 }

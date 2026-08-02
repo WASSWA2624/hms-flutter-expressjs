@@ -51,10 +51,14 @@ final class PharmacyStorageRoomSimilarityProposedValues {
   const PharmacyStorageRoomSimilarityProposedValues({
     required this.name,
     this.code,
+    this.isActive,
   });
 
   final String name;
   final String? code;
+
+  /// Present on edit flows so Active is shown with other form fields.
+  final bool? isActive;
 }
 
 /// Pharmacy storage-room adapter over [showAppSimilarityReviewDialog].
@@ -160,6 +164,15 @@ showPharmacyStorageRoomSimilarityDialog(
             label: l10n.pharmacyStorageRoomCodeLabel,
             initialValue: proposed.code ?? '',
           ),
+          if (proposed.isActive != null)
+            AppSimilarityProposedField(
+              key: 'is_active',
+              label: l10n.pharmacyStorageActiveLabel,
+              initialValue: proposed.isActive!
+                  ? l10n.commonYesLabel
+                  : l10n.commonNoLabel,
+              editable: false,
+            ),
         ],
         matches: matches,
         overallScore: overallScore,

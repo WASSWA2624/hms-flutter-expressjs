@@ -68,6 +68,7 @@ class AppFormInformationBanner extends StatelessWidget {
     this.variant = AppFormInformationVariant.info,
     this.icon,
     this.children = const <Widget>[],
+    this.borderRadius,
     super.key,
   });
 
@@ -122,6 +123,10 @@ class AppFormInformationBanner extends StatelessWidget {
   final IconData? icon;
   final List<Widget> children;
 
+  /// Forwards to [AppContentPanel.borderRadius]. Use [BorderRadius.zero] for
+  /// sharp corners (e.g. similarity review dialogs).
+  final BorderRadiusGeometry? borderRadius;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -134,6 +139,7 @@ class AppFormInformationBanner extends StatelessWidget {
       label: title,
       child: AppContentPanel(
         tone: tone,
+        borderRadius: borderRadius,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[

@@ -37,12 +37,16 @@ final class AppSimilarityProposedField {
     required this.label,
     this.initialValue = '',
     this.isRequired = false,
+    this.editable = true,
   });
 
   final String key;
   final String label;
   final String initialValue;
   final bool isRequired;
+
+  /// When false, the field stays read-only even if the dialog is editable.
+  final bool editable;
 }
 
 /// One existing candidate in a similarity review.
@@ -121,6 +125,7 @@ class AppSimilarityMatchCard<T> extends StatelessWidget {
     this.proposedColumnLabel,
     this.existingColumnLabel,
     this.emptyValueLabel = '—',
+    this.initiallyExpanded = true,
     super.key,
   });
 
@@ -135,6 +140,7 @@ class AppSimilarityMatchCard<T> extends StatelessWidget {
   final String? proposedColumnLabel;
   final String? existingColumnLabel;
   final String emptyValueLabel;
+  final bool initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
@@ -143,89 +149,56 @@ class AppSimilarityMatchCard<T> extends StatelessWidget {
     final AppStatusColors statusColors = theme.statusColors;
     final bool exact = match.isExact;
     final Color accent = exact ? statusColors.error : statusColors.warning;
+    final Color container = exact
+        ? statusColors.errorContainer
+        : statusColors.warningContainer;
+    final Color onContainer = exact
+        ? statusColors.onErrorContainer
+        : statusColors.onWarningContainer;
+    final String badgeLabel = exact
+        ? (exactBadgeLabel ?? l10n.appSimilarityExactMatchLabel)
+        : (nearBadgeLabel ?? l10n.appSimilarityNearMatchLabel);
 
-    return AppContentPanel(
-      tone: exact
-          ? AppWorkspaceStatusTone.error
-          : AppWorkspaceStatusTone.warning,
-      density: AppContentPanelDensity.compact,
+    return AppCollapsibleSection(
+      initiallyExpanded: initiallyExpanded,
+      backgroundColor: container,
+      borderColor: accent.withValues(alpha: 0.55),
+      accentColor: accent,
+      titleColor: onContainer,
+      titleIcon: exact ? Icons.gpp_bad_outlined : Icons.warehouse_outlined,
+      eyebrow: existingHeading ?? l10n.appSimilarityExistingHeading,
+      title: match.title,
+      subtitle: (match.subtitle ?? '').trim().isEmpty ? null : match.subtitle,
+      contentPadding: EdgeInsets.all(theme.spacing.md),
+      headerActions: <Widget>[
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.sm,
+            vertical: theme.spacing.xs / 2,
+          ),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.14),
+            border: Border.all(color: accent.withValues(alpha: 0.45)),
+          ),
+          child: Text(
+            badgeLabel,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: accent,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Text(
+          '${match.overallScore}%',
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: accent,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      existingHeading ?? l10n.appSimilarityExistingHeading,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.start,
-                    ),
-                    SizedBox(height: theme.spacing.xs / 2),
-                    Text(
-                      match.title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.start,
-                    ),
-                    if ((match.subtitle ?? '').trim().isNotEmpty) ...<Widget>[
-                      SizedBox(height: theme.spacing.xs / 2),
-                      Text(
-                        match.subtitle!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        textAlign: TextAlign.start,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: <Widget>[
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: theme.spacing.sm,
-                      vertical: theme.spacing.xs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(theme.radius.md),
-                      border: Border.all(color: accent.withValues(alpha: 0.45)),
-                    ),
-                    child: Text(
-                      exact
-                          ? (exactBadgeLabel ??
-                                l10n.appSimilarityExactMatchLabel)
-                          : (nearBadgeLabel ??
-                                l10n.appSimilarityNearMatchLabel),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: accent,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.xs),
-                  Text(
-                    '${match.overallScore}%',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: accent,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.sm),
           _AppSimilarityFieldTable(
             fields: match.fields,
             fieldColumnLabel:
@@ -434,6 +407,24 @@ class _AppSimilarityReviewDialogState<T>
         : (widget.continueLabel ?? l10n.commonContinueActionLabel);
     final String emptyLabel =
         widget.emptyValueLabel ?? l10n.clinicalOrderEmptyValueLabel;
+    final AppStatusColors statusColors = theme.statusColors;
+    final Color proposedAccent = isExact
+        ? statusColors.error
+        : hasMatches
+        ? statusColors.warning
+        : statusColors.success;
+    final Color proposedContainer = isExact
+        ? statusColors.errorContainer
+        : hasMatches
+        ? statusColors.warningContainer
+        : statusColors.successContainer;
+    final Color proposedOnContainer = isExact
+        ? statusColors.onErrorContainer
+        : hasMatches
+        ? statusColors.onWarningContainer
+        : statusColors.onSuccessContainer;
+    final String closestMatchText =
+        '${widget.closestMatchLabel ?? l10n.appSimilarityClosestMatchLabel}: ${widget.overallScore}%';
 
     return AppDialog(
       title: Text(widget.title),
@@ -448,27 +439,40 @@ class _AppSimilarityReviewDialogState<T>
             message: widget.bannerMessage,
             variant: widget.bannerVariant,
             icon: resolvedIcon,
+            borderRadius: BorderRadius.zero,
           ),
           SizedBox(height: theme.spacing.md),
           AppCollapsibleSection(
-            title: widget.proposedHeading ?? l10n.appSimilarityProposedHeading,
+            initiallyExpanded: false,
+            backgroundColor: proposedContainer,
+            borderColor: proposedAccent.withValues(alpha: 0.55),
+            accentColor: proposedAccent,
+            titleColor: proposedOnContainer,
             titleIcon: widget.proposedReadOnly
                 ? Icons.list_alt_outlined
                 : Icons.edit_note_outlined,
-            headerActions: widget.enableRetry
-                ? <Widget>[
-                    AppButton.tertiary(
-                      dense: true,
-                      label: widget.retryLabel ?? l10n.appSimilarityRetryAction,
-                      leadingIcon: Icons.refresh,
-                      onPressed: () => Navigator.of(context).pop(
-                        AppSimilarityReviewResult<T>.retry(
-                          proposedValues: _readProposedValues(),
-                        ),
-                      ),
+            title: widget.proposedHeading ?? l10n.appSimilarityProposedHeading,
+            contentPadding: EdgeInsets.all(theme.spacing.md),
+            headerActions: <Widget>[
+              Text(
+                closestMatchText,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: proposedAccent,
+                ),
+              ),
+              if (widget.enableRetry)
+                AppButton.tertiary(
+                  dense: true,
+                  label: widget.retryLabel ?? l10n.appSimilarityRetryAction,
+                  leadingIcon: Icons.refresh,
+                  onPressed: () => Navigator.of(context).pop(
+                    AppSimilarityReviewResult<T>.retry(
+                      proposedValues: _readProposedValues(),
                     ),
-                  ]
-                : const <Widget>[],
+                  ),
+                ),
+            ],
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
@@ -478,7 +482,8 @@ class _AppSimilarityReviewDialogState<T>
                   index += 1
                 ) ...<Widget>[
                   if (index > 0) SizedBox(height: theme.spacing.sm),
-                  if (widget.proposedReadOnly)
+                  if (widget.proposedReadOnly ||
+                      !widget.proposedFields[index].editable)
                     _AppSimilarityReadOnlyField(
                       label: widget.proposedFields[index].label,
                       value: widget.proposedFields[index].initialValue,
@@ -494,22 +499,6 @@ class _AppSimilarityReviewDialogState<T>
                       enableSpeechToText: false,
                     ),
                 ],
-                SizedBox(height: theme.spacing.sm),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '${widget.closestMatchLabel ?? l10n.appSimilarityClosestMatchLabel}: ${widget.overallScore}%',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: isExact
-                          ? theme.statusColors.error
-                          : hasMatches
-                          ? theme.statusColors.warning
-                          : theme.statusColors.success,
-                    ),
-                    textAlign: TextAlign.start,
-                  ),
-                ),
               ],
             ),
           ),
@@ -551,6 +540,7 @@ class _AppSimilarityReviewDialogState<T>
                 proposedColumnLabel: widget.proposedColumnLabel,
                 existingColumnLabel: widget.existingColumnLabel,
                 emptyValueLabel: emptyLabel,
+                initiallyExpanded: index == 0,
                 onUseThis: () => Navigator.of(context).pop(
                   AppSimilarityReviewResult<T>.useExisting(
                     widget.matches[index].item,

@@ -12,6 +12,7 @@ class AppContentPanel extends StatelessWidget {
     this.padding,
     this.backgroundColor,
     this.borderColor,
+    this.borderRadius,
     super.key,
   });
 
@@ -22,17 +23,21 @@ class AppContentPanel extends StatelessWidget {
   final Color? backgroundColor;
   final Color? borderColor;
 
+  /// When null, uses the default responsive large radius.
+  final BorderRadiusGeometry? borderRadius;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final _AppPanelToneColors colors = _toneColors(theme, tone);
+    final BorderRadiusGeometry resolvedRadius =
+        borderRadius ??
+        BorderRadius.circular(context.responsiveRadius(theme.radius.lg));
 
     return Material(
       color: backgroundColor ?? colors.container,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(
-          context.responsiveRadius(theme.radius.lg),
-        ),
+        borderRadius: resolvedRadius,
         side: BorderSide(color: borderColor ?? colors.border),
       ),
       clipBehavior: Clip.antiAlias,

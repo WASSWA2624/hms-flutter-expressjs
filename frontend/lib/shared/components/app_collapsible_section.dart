@@ -14,6 +14,8 @@ class AppCollapsibleSection extends StatefulWidget {
   const AppCollapsibleSection({
     this.title,
     this.titleWidget,
+    this.eyebrow,
+    this.subtitle,
     required this.child,
     this.description,
     this.actions = const <Widget>[],
@@ -24,13 +26,25 @@ class AppCollapsibleSection extends StatefulWidget {
     this.expanded,
     this.onExpandedChanged,
     this.contentPadding,
+    this.backgroundColor,
+    this.borderColor,
+    this.accentColor,
+    this.titleColor,
     super.key,
   });
 
   final String? title;
 
-  /// Optional custom title row content. When set, takes precedence over [title].
+  /// Optional custom title row content. When set, takes precedence over [title],
+  /// [eyebrow], and [subtitle].
   final Widget? titleWidget;
+
+  /// Optional small label above [title] in the header (e.g. "Existing room").
+  final String? eyebrow;
+
+  /// Optional secondary line under [title] in the header (not the body).
+  final String? subtitle;
+
   final String? description;
   final List<Widget> actions;
 
@@ -54,6 +68,12 @@ class AppCollapsibleSection extends StatefulWidget {
 
   /// Overrides default body padding (`spacing.lg` on all sides).
   final EdgeInsetsGeometry? contentPadding;
+
+  /// Optional color overrides for status-toned sections (e.g. similarity).
+  final Color? backgroundColor;
+  final Color? borderColor;
+  final Color? accentColor;
+  final Color? titleColor;
 
   @override
   State<AppCollapsibleSection> createState() => _AppCollapsibleSectionState();
@@ -90,9 +110,27 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final Color container = widget.backgroundColor ?? colorScheme.surface;
+    final Color border = widget.borderColor ?? colorScheme.outlineVariant;
+    final Color accent = widget.accentColor ?? colorScheme.primary;
+    final Color onContainer = widget.titleColor ?? colorScheme.onSurface;
+    final Color chevron =
+        widget.titleColor ?? colorScheme.onSurfaceVariant;
+    final Color secondaryText =
+        widget.titleColor ?? colorScheme.onSurfaceVariant;
     final bool hasStringTitle =
         widget.title != null && widget.title!.trim().isNotEmpty;
-    final bool hasTitle = widget.titleWidget != null || hasStringTitle;
+    final String? eyebrow = widget.eyebrow?.trim().isNotEmpty == true
+        ? widget.eyebrow!.trim()
+        : null;
+    final String? subtitle = widget.subtitle?.trim().isNotEmpty == true
+        ? widget.subtitle!.trim()
+        : null;
+    final bool hasTitle =
+        widget.titleWidget != null ||
+        hasStringTitle ||
+        eyebrow != null ||
+        subtitle != null;
     final bool showBody = !widget.collapsible || _resolvedExpanded;
     final String? description =
         widget.description != null && widget.description!.trim().isNotEmpty
@@ -102,8 +140,8 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border.all(color: colorScheme.outlineVariant),
+        color: container,
+        border: Border.all(color: border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -124,25 +162,27 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                       vertical: theme.spacing.xs / 2,
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         if (widget.titleIcon != null) ...<Widget>[
-                          Icon(
-                            widget.titleIcon,
-                            size: theme.appTokens.listIconSize,
-                            color: colorScheme.primary,
+                          Padding(
+                            padding: EdgeInsets.only(top: theme.spacing.xs / 2),
+                            child: Icon(
+                              widget.titleIcon,
+                              size: theme.appTokens.listIconSize,
+                              color: accent,
+                            ),
                           ),
                           SizedBox(width: theme.spacing.sm),
                         ],
                         Expanded(
                           child: widget.titleWidget ??
-                              Text(
-                                widget.title!,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: true,
+                              _AppCollapsibleHeaderTitle(
+                                eyebrow: eyebrow,
+                                title: hasStringTitle ? widget.title : null,
+                                subtitle: subtitle,
+                                titleColor: onContainer,
+                                secondaryColor: secondaryText,
                               ),
                         ),
                         if (widget.headerActions.isNotEmpty) ...<Widget>[
@@ -162,6 +202,7 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                                 plainChrome: true,
                                 child: Wrap(
                                   alignment: WrapAlignment.end,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   spacing: theme.spacing.xs,
                                   runSpacing: theme.spacing.xs,
                                   children: widget.headerActions,
@@ -172,15 +213,18 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                         ],
                         if (widget.collapsible) ...<Widget>[
                           SizedBox(width: theme.spacing.xs),
-                          Icon(
-                            _resolvedExpanded
-                                ? Icons.expand_less
-                                : Icons.expand_more,
-                            size: theme.appTokens.listIconSize,
-                            color: colorScheme.onSurfaceVariant,
-                            semanticLabel: _resolvedExpanded
-                                ? context.l10n.commonShowLessActionLabel
-                                : context.l10n.commonShowMoreActionLabel,
+                          Padding(
+                            padding: EdgeInsets.only(top: theme.spacing.xs / 2),
+                            child: Icon(
+                              _resolvedExpanded
+                                  ? Icons.expand_less
+                                  : Icons.expand_more,
+                              size: theme.appTokens.listIconSize,
+                              color: chevron,
+                              semanticLabel: _resolvedExpanded
+                                  ? context.l10n.commonShowLessActionLabel
+                                  : context.l10n.commonShowMoreActionLabel,
+                            ),
                           ),
                         ],
                       ],
@@ -189,7 +233,8 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                 ),
               ),
             ),
-            if (showBody) const Divider(height: 1),
+            if (showBody)
+              Divider(height: 1, color: border.withValues(alpha: 0.55)),
           ],
           if (showBody)
             Padding(
@@ -200,6 +245,7 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                 colorScheme: colorScheme,
                 description: description,
                 hasActions: hasActions,
+                secondaryText: secondaryText,
               ),
             ),
         ],
@@ -212,6 +258,7 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
     required ColorScheme colorScheme,
     required String? description,
     required bool hasActions,
+    required Color secondaryText,
   }) {
     if (!hasActions && description == null) {
       return widget.child;
@@ -236,13 +283,76 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
           Text(
             description,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
+              color: secondaryText,
             ),
           ),
         ],
         if (hasActions || description != null)
           SizedBox(height: theme.spacing.md),
         widget.child,
+      ],
+    );
+  }
+}
+
+class _AppCollapsibleHeaderTitle extends StatelessWidget {
+  const _AppCollapsibleHeaderTitle({
+    required this.eyebrow,
+    required this.title,
+    required this.subtitle,
+    required this.titleColor,
+    required this.secondaryColor,
+  });
+
+  final String? eyebrow;
+  final String? title;
+  final String? subtitle;
+  final Color titleColor;
+  final Color secondaryColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        if (eyebrow != null)
+          Text(
+            eyebrow!,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: secondaryColor,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        if (title != null) ...<Widget>[
+          if (eyebrow != null) SizedBox(height: theme.spacing.xs / 2),
+          Text(
+            title!,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: titleColor,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            softWrap: true,
+          ),
+        ],
+        if (subtitle != null) ...<Widget>[
+          if (eyebrow != null || title != null)
+            SizedBox(height: theme.spacing.xs / 2),
+          Text(
+            subtitle!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: secondaryColor,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ],
     );
   }
