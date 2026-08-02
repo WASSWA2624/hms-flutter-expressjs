@@ -541,7 +541,7 @@ const runQueue = async (queue, scope, page, limit, filters = {}) => {
       billingRepository.findManyInvoices(where, skip, limit, { issued_at: 'desc' }, INVOICE_INCLUDE),
       billingRepository.countInvoices(where),
     ]);
-    const mappedItems = await attachClinicalInvoiceContexts(items.map((item) => mapInvoice(item)));
+    const mappedItems = await attachClinicalInvoiceContexts(items.map((item) => mapInvoice(item, true)));
     return { queue, items: mappedItems, total };
   }
   if (queue === QUEUE_TYPES.PENDING_PAYMENT) {
@@ -550,7 +550,7 @@ const runQueue = async (queue, scope, page, limit, filters = {}) => {
       billingRepository.findManyInvoices(where, skip, limit, { issued_at: 'desc' }, INVOICE_INCLUDE),
       billingRepository.countInvoices(where),
     ]);
-    const mappedItems = await attachClinicalInvoiceContexts(items.map((item) => mapInvoice(item)));
+    const mappedItems = await attachClinicalInvoiceContexts(items.map((item) => mapInvoice(item, true)));
     return { queue, items: mappedItems, total };
   }
   if (queue === QUEUE_TYPES.CLAIMS_PENDING) {
@@ -595,7 +595,7 @@ const runQueue = async (queue, scope, page, limit, filters = {}) => {
       billingRepository.findManyInvoices(where, skip, limit, { issued_at: 'asc' }, INVOICE_INCLUDE),
       billingRepository.countInvoices(where),
     ]);
-    const mappedItems = await attachClinicalInvoiceContexts(items.map((item) => mapInvoice(item)));
+    const mappedItems = await attachClinicalInvoiceContexts(items.map((item) => mapInvoice(item, true)));
     return { queue, items: mappedItems, total };
   }
   throw new HttpError('errors.validation.invalid', 400, [{ field: 'queue' }]);
@@ -678,10 +678,27 @@ const getWorkItems = async (filters = {}, page = 1, limit = 20, user = {}) => {
     const result = await runQueue(queue, scope, page, limit, filters);
     return { queue, items: result.items, pagination: pageMeta(page, limit, result.total) };
   }
-  const results = await Promise.all(
-    Object.values(QUEUE_TYPES).map((key) => runQueue(key, scope, 1, Math.min(10, limit), filters))
+
+  // ALL: return invoices across statuses (including PAID) so receive-payment
+  // updates remain visible instead of vanishing once they leave open queues.
+  const skip = (page - 1) * limit;
+  const invoiceWhere = await buildInvoiceWhere(scope, filters);
+  const where = {
+    ...invoiceWhere,
+    billing_status: { not: 'CANCELLED' },
+  };
+  const [items, total] = await Promise.all([
+    billingRepository.findManyInvoices(where, skip, limit, { issued_at: 'desc' }, INVOICE_INCLUDE),
+    billingRepository.countInvoices(where),
+  ]);
+  const mappedItems = await attachClinicalInvoiceContexts(
+    items.map((item) => mapInvoice(item, true))
   );
-  return { queues: results.map((entry) => ({ queue: entry.queue, items: entry.items, total: entry.total })) };
+  return {
+    queue: 'ALL',
+    items: mappedItems,
+    pagination: pageMeta(page, limit, total),
+  };
 };
 
 const assertOwnership = async (patient, user) => {

@@ -598,15 +598,32 @@ class _BillingLiveDetailDialogState
     if (state == null) {
       return _item;
     }
+    BillingWorkItem? live;
     if (state.selectedItem?.id == widget.initialItem.id) {
-      return state.selectedItem!;
-    }
-    for (final BillingWorkItem candidate in state.workItems.items) {
-      if (candidate.id == widget.initialItem.id) {
-        return candidate;
+      live = state.selectedItem;
+    } else {
+      for (final BillingWorkItem candidate in state.workItems.items) {
+        if (candidate.id == widget.initialItem.id) {
+          live = candidate;
+          break;
+        }
       }
     }
-    return _item;
+    if (live == null) {
+      return _item;
+    }
+    // Keep a locally paid snapshot if a queue refresh briefly returns unpaid.
+    final bool cachedLooksPaid =
+        _item.id == live.id &&
+        _item.balanceDue <= 0.009 &&
+        _item.paidAmount >= live.paidAmount;
+    final bool liveLooksUnpaid =
+        live.balanceDue > 0.009 &&
+        (live.billingStatus ?? '').toUpperCase() != 'PAID';
+    if (cachedLooksPaid && liveLooksUnpaid) {
+      return _item;
+    }
+    return live;
   }
 
   @override

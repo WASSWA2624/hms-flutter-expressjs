@@ -430,9 +430,11 @@ final class BillingWorkspaceController
             BillingWorkspaceMutationApplier.apply(latest, mutation);
         _emit(patched);
         _syncLinkedWorkspacesAfterPayment(mutation.invoice);
-        await _flushPendingRefresh(
-          preferredSelectedId: mutation.invoice?.id ?? patched.selectedItem?.id,
-        );
+        // Reconcile publishes several billing realtime events while isSaving.
+        // Those arm refreshPending; a full work-items GET would drop the paid
+        // invoice from queue-scoped lists and clobber the authoritative patch
+        // (detail dialog would fall back to the unpaid snapshot).
+        _pendingRefresh.refreshPending = false;
         return null;
       },
       failure: (AppFailure failure) async {
@@ -548,6 +550,7 @@ final class BillingWorkspaceController
               final BillingWorkItem? selected = _selectAfterRefresh(
                 workItems.items,
                 preferredSelectedId,
+                previousSelected: _currentState?.selectedItem,
               );
               _emit(
                 _currentState!.copyWith(
@@ -610,16 +613,42 @@ final class BillingWorkspaceController
 
   BillingWorkItem? _selectAfterRefresh(
     List<BillingWorkItem> items,
-    String? preferredSelectedId,
-  ) {
+    String? preferredSelectedId, {
+    BillingWorkItem? previousSelected,
+  }) {
     if (preferredSelectedId != null) {
       for (final BillingWorkItem item in items) {
         if (item.id == preferredSelectedId) {
-          return item;
+          return _preferFresherSelection(item, previousSelected);
         }
+      }
+      // Paid invoices leave pending-payment / merged-all queues; keep the
+      // locally patched selection so open detail dialogs stay live.
+      if (previousSelected?.id == preferredSelectedId) {
+        return previousSelected;
       }
     }
     return items.firstOrNull;
+  }
+
+  /// Prefer the selection that already reflects a completed payment / lower due.
+  BillingWorkItem _preferFresherSelection(
+    BillingWorkItem fromList,
+    BillingWorkItem? previousSelected,
+  ) {
+    if (previousSelected == null || previousSelected.id != fromList.id) {
+      return fromList;
+    }
+    final bool previousLooksPaid =
+        previousSelected.balanceDue <= 0.009 &&
+        previousSelected.paidAmount >= fromList.paidAmount;
+    final bool listLooksUnpaid =
+        fromList.balanceDue > 0.009 &&
+        (fromList.billingStatus ?? '').toUpperCase() != 'PAID';
+    if (previousLooksPaid && listLooksUnpaid) {
+      return previousSelected;
+    }
+    return fromList;
   }
 
   BillingWorkItem? get _selectedInvoice {

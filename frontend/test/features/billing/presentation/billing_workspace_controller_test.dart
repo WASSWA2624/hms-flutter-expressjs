@@ -92,9 +92,13 @@ void main() {
         BillingWorkItem? submittedInvoice;
         BillingPaymentDraft? submittedDraft;
         _stubInitialLoad(repository, items: <BillingWorkItem>[invoice]);
-        when(() => repository.receivePayment(any(), any())).thenAnswer((
-          invocation,
-        ) async {
+        when(
+          () => repository.receivePayment(
+            any(),
+            any(),
+            idempotencyKey: any(named: 'idempotencyKey'),
+          ),
+        ).thenAnswer((invocation) async {
           submittedInvoice =
               invocation.positionalArguments[0] as BillingWorkItem;
           submittedDraft =
@@ -155,6 +159,8 @@ void main() {
         expect(workspace.isRefreshing, isFalse);
         expect(workspace.overview.summary.pendingPayment, 0);
         expect(workspace.selectedItem?.billingStatus, 'PAID');
+        expect(workspace.selectedItem?.balanceDue, 0);
+        expect(workspace.selectedItem?.paidAmount, 1000);
         expect(workspace.selectedItem?.canReceivePayment, isFalse);
       },
     );
@@ -176,7 +182,13 @@ void main() {
         ),
       );
       _stubInitialLoad(repository, items: <BillingWorkItem>[invoice]);
-      when(() => repository.receivePayment(any(), any())).thenAnswer(
+      when(
+        () => repository.receivePayment(
+          any(),
+          any(),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).thenAnswer(
         (_) async => const Result<BillingMutationResult>.failure(
           AppFailure.network(),
         ),

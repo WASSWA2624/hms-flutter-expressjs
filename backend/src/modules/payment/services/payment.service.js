@@ -6,11 +6,13 @@
  */
 
 const paymentRepository = require('@repositories/payment/payment.repository');
+const billingRepository = require('@repositories/billing/billing.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { logger } = require('@lib/logging');
 const { publishDomainEvent, PAYMENT_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
+const { recalculateInvoiceStateTx } = require('@lib/billing/financials');
 const {
   sanitizeIdentifier,
   resolvePublicIdentifier,
@@ -480,11 +482,23 @@ const reconcilePayment = async (id, data = {}, userId, ipAddress) => {
       throw new HttpError('errors.payment.not_found', 404);
     }
 
-    const payment = await paymentRepository.update(before.id, {
-      status: data.status || 'COMPLETED',
-      paid_at: before.paid_at || new Date()
+    const targetStatus = String(data.status || 'COMPLETED').trim().toUpperCase() || 'COMPLETED';
+    const mutation = await billingRepository.withTransaction(async (tx) => {
+      const payment = await tx.payment.update({
+        where: { id: before.id },
+        data: {
+          status: targetStatus,
+          paid_at: before.paid_at || new Date(),
+        },
+      });
+      let invoiceState = null;
+      if (payment.invoice_id) {
+        invoiceState = await recalculateInvoiceStateTx(tx, payment.invoice_id);
+      }
+      return { payment, invoiceState };
     });
-    const updatedRecord = await paymentRepository.findById(payment.id, {
+
+    const updatedRecord = await paymentRepository.findById(mutation.payment.id, {
       tenant: { select: { id: true, human_friendly_id: true } },
       facility: { select: { id: true, human_friendly_id: true } },
       patient: { select: { id: true, human_friendly_id: true } },
@@ -495,20 +509,21 @@ const reconcilePayment = async (id, data = {}, userId, ipAddress) => {
       user_id: userId,
       action: 'RECONCILE',
       entity: 'payment',
-      entity_id: payment.id,
+      entity_id: mutation.payment.id,
       diff: {
         before,
-        after: payment,
+        after: mutation.payment,
         metadata: {
-          notes: data.notes || null
+          notes: data.notes || null,
+          invoice_billing_status: mutation.invoiceState?.invoice?.billing_status || null,
         }
       },
       ip_address: ipAddress
     }).catch(() => {});
 
-    await publishPaymentRealtimeEvent(PAYMENT_EVENTS.PAYMENT_RECONCILED, updatedRecord || payment, userId);
+    await publishPaymentRealtimeEvent(PAYMENT_EVENTS.PAYMENT_RECONCILED, updatedRecord || mutation.payment, userId);
 
-    return mapPaymentForDisplay(updatedRecord || payment);
+    return mapPaymentForDisplay(updatedRecord || mutation.payment);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);

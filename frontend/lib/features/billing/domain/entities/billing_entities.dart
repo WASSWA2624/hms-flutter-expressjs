@@ -15,8 +15,8 @@ enum BillingQueueType {
 
   static BillingQueueType fromServer(String? value) {
     final String normalized = (value ?? '').trim().toUpperCase();
-    if (normalized.isEmpty) {
-      return BillingQueueType.pendingPayment;
+    if (normalized.isEmpty || normalized == 'ALL') {
+      return BillingQueueType.all;
     }
     for (final BillingQueueType queue in values) {
       if (queue.serverValue == normalized) {

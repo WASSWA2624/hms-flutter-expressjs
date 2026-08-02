@@ -261,4 +261,67 @@ void main() {
     expect(patched.overview.summary.needsIssue, 0);
     expect(patched.overview.queues.single.count, 0);
   });
+
+  test('keeps selected paid invoice when it leaves the pending-payment queue', () {
+    const BillingWorkItem unpaid = BillingWorkItem(
+      id: 'invoice-1',
+      displayId: 'INV-001',
+      kind: BillingWorkItemKind.invoice,
+      tenantId: 'tenant-1',
+      billingStatus: 'ISSUED',
+      status: 'SENT',
+      amount: 210000,
+      financials: BillingFinancials(
+        invoiceTotal: 210000,
+        effectiveTotal: 210000,
+        balanceDue: 210000,
+      ),
+    );
+    final BillingWorkspaceState state = BillingWorkspaceState(
+      query: const BillingWorkspaceQuery(queue: BillingQueueType.pendingPayment),
+      overview: const BillingWorkspaceOverview(
+        summary: BillingSummary(pendingPayment: 1),
+      ),
+      workItems: const AppPage<BillingWorkItem>(
+        items: <BillingWorkItem>[unpaid],
+        request: AppPageRequest(),
+        totalItemCount: 1,
+      ),
+      selectedItem: unpaid,
+    );
+
+    final BillingWorkspaceState patched = BillingWorkspaceMutationApplier.apply(
+      state,
+      const BillingMutationResult(
+        invoice: BillingWorkItem(
+          id: 'invoice-1',
+          displayId: 'INV-001',
+          kind: BillingWorkItemKind.invoice,
+          tenantId: 'tenant-1',
+          billingStatus: 'PAID',
+          status: 'PAID',
+          amount: 210000,
+          financials: BillingFinancials(
+            invoiceTotal: 210000,
+            effectiveTotal: 210000,
+            grossPaidTotal: 210000,
+            netPaidTotal: 210000,
+            balanceDue: 0,
+          ),
+        ),
+        payment: BillingPayment(
+          id: 'pay-1',
+          status: 'COMPLETED',
+          amount: 210000,
+        ),
+      ),
+    );
+
+    expect(patched.workItems.items, isEmpty);
+    expect(patched.selectedItem?.id, 'invoice-1');
+    expect(patched.selectedItem?.balanceDue, 0);
+    expect(patched.selectedItem?.paidAmount, 210000);
+    expect(patched.selectedItem?.billingStatus, 'PAID');
+    expect(patched.overview.summary.pendingPayment, 0);
+  });
 }
