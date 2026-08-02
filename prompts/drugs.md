@@ -1,84 +1,80 @@
-# Create Drug Pack Scan UX
+# Create Drug Scan Pack Capture Polish
 
 ## Objective
 
-Simplify the Create Drug **Scan pack** assistive flow so barcode, multi-photo OCR, and optional AI text parse feed a clear preview, then prefill the existing Create Drug form—without changing create/save, similarity checks, or suggested-field confirmation.
+Refine the Create Drug **Scan pack or use AI capture** dialog so barcode, photo, and raw-text paths are clearly separated; photos collect then process via OCR and/or AI; suggested drug fields render as an editable structured list—without changing create/save, similarity, or form suggestion chrome after Prefill.
 
 ## Context
 
-**Current (Create Drug + Scan pack)**
+**Current (screenshots + `pharmacy_drug_pack_scan_dialog.dart`)**
 
-- Create Drug (`PharmacyDrugEditDialog`) exposes **Scan pack**, which opens `_PharmacyDrugPackScanDialog`.
-- Scan pack is barcode-first with a separate **Use barcode** button beside the field, **Capture pack photo** (single shot), **Paste pack text**, a large **Pack text** area, instructional body copy, then **Skip scan** / **Prefill form**.
-- Parse path: ephemeral image with **crop currently disabled** (`enableCrop: false`) → barcode decode + free OCR (`AppOcrService`) → `DrugPackFieldParser` → `DrugPackFieldCandidates` → prefill + `AppSuggestedFieldSet` chrome on the create form.
-- Images are never persisted; staff must confirm before save. Similarity check on create remains unchanged.
+- Package barcode field with mic + **Use barcode**; helper says type/paste barcode.
+- Toolbar: **Take photo**, **Upload photos** (multi-select), **Process photos**, **Clear photos** in one row; strip shows thumbnails with per-photo remove/edit; status like “5 photos processed.”
+- **Paste label wording** multiline with mic + **Parse text** suffix; helper implies paste-only.
+- Suggested result is a single green **Confirm suggested values** banner joining garbled OCR fragments (e.g. nonsense · Tablet · 500 mg)—not an editable field list.
+- Parse path today: local/heuristic `DrugPackFieldParser` + free OCR (`AppOcrService` / Tesseract WASM). No dedicated AI mapper. No camera barcode-scan control separate from typed barcode. Prefill / Skip / ephemeral images / create-form mapping remain.
 
 **Intended**
 
-- Declutter Scan pack: less instructional text; scan-focused layout.
-- Put **Use barcode** inside the barcode field suffix (right of mic): icon+label on large viewports, icon-only on small (tooltip/semantics retain full label).
-- Support **multiple pack photos** from either **camera take** or **gallery/file upload** (add repeatedly in one session). Each image gets **live session preview** plus **crop / rotate** (and related adjust) before OCR; then merge mapped candidates and show a field preview before Prefill.
-- Replace free-form “paste pack text” as a primary paste dump with an **AI/parser text** input: user pastes or types pack text → parser maps to the same candidate DTO used by OCR/barcode.
-- **Skip scan** / dialog close returns to Create Drug only (nested dialog); do not dismiss the whole create flow.
-- Entry action on Create Drug should read as scan/AI capture (e.g. “Scan pack or use AI capture”), not a vague “Scan pack” alone.
+- Keep typed barcode; clarify that entering a code then **Use barcode** reads/maps pack identity from that code. Add a **Scan barcode** action with Take/Upload (camera/decode into the barcode field).
+- Photo toolbar: Take + Upload (+ Scan barcode). Move **Clear** into the photo preview card (top-right, icon control like per-thumb actions). Move **Process photos** below the strip; enable when photos exist / need processing.
+- Raw-text area is freeform input (typed, pasted, or dictated)—not “label wording only”—mapped into the same drug candidate DTO. Place mic + **Parse text** neatly at the top-right of that section; Parse runs mapping.
+- Dual extract engines for photos (and text where applicable): **OCR** (on-device / free path) and **AI** (network when available)—both output `DrugPackFieldCandidates`.
+- Replace the flat banner with a structured, editable suggested-values list: field icon + parameter label + editable value for each known create field (generic, brand, form, strength, code, batch, dates, etc.).
 
 ## Requirements
 
-1. **Preserve create pipeline.** Keep Create Drug sections, validation, create/update APIs, similarity dialog, suggested accept/edit chrome, and `DrugPackFieldCandidates` → form mapping unless a field mapping bug is found.
-2. **Declutter Scan pack UI.** Remove or drastically shorten the long instructional body. Keep hierarchy: barcode → take/upload photos (strip + edit) → optional parser text → status/error → field preview → footer actions. No duplicate competing CTAs.
-3. **Inline barcode apply.** Move **Use barcode** into the barcode `AppTextField` suffix trail (after speech mic via existing `suffixIcon` composition). Responsive: show label+icon when space allows; icon-only below the compact breakpoint used by `AppButton`/label scope. Keep speech-to-text on the barcode field.
-4. **Multi-photo OCR (take or upload).** In one scan session, let the user add **two or more** pack images via **camera** and/or **gallery/file upload** (reuse ephemeral pick/capture from `captureEphemeralImage` / `pickAppImageFile`—both sources must be available where the platform supports them). Allow repeating Add/Take/Upload until done; do not cap at a single shot. Run barcode+OCR per finalized image (or batched), merge into one `DrugPackFieldCandidates` (existing `merge` semantics). Discard all image bytes after parse / dialog close. Show progress/count (e.g. “2 photos processed”) without media-API upload.
-5. **Live preview + crop / rotate before OCR.** For every taken or uploaded image, open the shared image editor (`showAppImageCropDialog` / `pickAppImageFile` with crop enabled—do **not** keep today’s `enableCrop: false` on pack scan). Required controls: **live preview** of the image (crop → preview → confirm flow already on the crop dialog), **crop** (free-form / aspect presets as the shared dialog supports), and **rotation** (at least 90° steps; extend the crop dialog if rotation is missing). Optional but preferred in the same editor: flip horizontal/vertical if cheap to add beside rotate. User can cancel an image without adding it; only confirmed/cropped bytes enter the OCR queue. Keep a session **photo strip** (ephemeral thumbnails) so staff can review, remove, or re-edit a shot before/while parsing. Never persist strip bytes beyond the scan dialog.
-6. **Parser text input (not paste dump).** Replace **Paste pack text** + large always-on dump UX with a single optional **Parse pack text** (AI/heuristic parser) control: multiline or compact expand-on-demand field + explicit parse action that calls the same `DrugPackFieldParser` (and any existing assistive mapping) to produce/update candidates. Do not introduce a paid drug-data subscription; stay on free heuristics/OCR already in `shared/scan`.
-7. **Field preview then Prefill.** After barcode apply, photo parse, or text parse succeeds with identity fields, show a clear preview of mapped candidates (brand, generic, form, strength, code, batch, dates as available). **Prefill form** stays disabled until preview has usable identity fields; on press, pop candidates and apply existing create-form prefill + suggestion marks.
-8. **Nested navigation.** **Skip scan**, dialog X, and Cancel-equivalent must `pop` only the scan dialog and leave Create Drug open and unchanged. Do not clear create-form state on skip.
-9. **Entry labeling.** Update Create Drug scan entry copy/iconography so intent is “scan pack or use AI/OCR capture.” Localize via `app_en.arb` (+ generated l10n). Keep icon consistent with scan/AI capture.
-10. **States.** Cover loading (busy while crop/OCR/decode/parse), empty (no candidates yet), error (no parseable data—reuse/adapt `pharmacyDrugScanNoDataBody`), success field preview, disabled Prefill when preview is empty, and cancel-from-crop (image not added). Unauthorized pharmacy create remains governed by existing catalog permissions (no new “no access” chrome).
-11. **Responsive + theme.** Layout must work mobile/tablet/desktop without clipping overflow of suffix actions or the photo strip; use theme tokens; support light/dark.
+1. **Preserve create pipeline.** Keep Create Drug form, Prefill → suggestion accept/edit, similarity gate, and save APIs unless a mapping bug is found. Skip/close still pops only the scan dialog.
+2. **Clarify barcode path.** Keep Package barcode + **Use barcode**. Copy must state: type/paste the barcode number, then Use barcode to map fields. Do not imply the barcode field accepts photos.
+3. **Add Scan barcode control.** Beside Take/Upload, add **Scan barcode** that captures/decodes a barcode into the Package barcode field (reuse `AppBarcodeDecoder` / ephemeral capture). User can then **Use barcode** or auto-apply decode when a code is found. Keep speech mic on the barcode field.
+4. **Photo toolbar layout.** Row actions: Take photo, Upload photos, Scan barcode. Remove Clear and Process from this row.
+5. **Photo preview card + Clear.** Wrap the strip in a card/section. Put **Clear photos** as a top-right icon action on that card (same visual language as per-thumb remove). Status text stays inside the card (ready vs processed counts).
+6. **Process photos below strip.** Place **Process photos** under the gallery. Enable when ≥1 photo is present and processing is needed (or always when photos exist if re-run is useful). On press, run extraction across **all** session photos and merge into one `DrugPackFieldCandidates`.
+7. **OCR vs AI process actions.** Under the strip (with Process), expose distinct **OCR** and **AI** actions (or Process menu / paired buttons). **OCR:** existing free `AppOcrService` + `DrugPackFieldParser` (works offline/on-device when the WASM engine is available). **AI:** new pluggable mapper that turns OCR/raw text (and optional image context) into structured `DrugPackFieldCandidates` when network/config allows; degrade gracefully to OCR/heuristics with visible feedback when AI is unavailable. Both must never persist pack images to media APIs.
+8. **Raw text → DTO.** Relabel the multiline as raw pack text (typed/pasted/dictated). Mic + **Parse text** sit at the section top-right. Parse maps into `DrugPackFieldCandidates` (heuristic and/or AI path consistent with Req 7).
+9. **Editable suggested-values list.** Replace the joined-string banner with a list/table of known parameters: icon, localized field label, editable value control. Seed from candidates; edits update the in-dialog candidate state used by Prefill. Empty fields may show placeholders. Keep Prefill disabled until at least one identity field is usable.
+10. **States.** Loading while OCR/AI/barcode decode runs; empty (no candidates); error (parse failed / AI offline); success list; disabled Process/Parse when inputs missing. Responsive; theme tokens; light/dark.
+11. **Localization.** Update `app_en.arb` for new labels/helpers (Scan barcode, OCR, AI, raw text, clear-on-card, editable suggestions).
 
 ### Optional enhancements
 
-- Separate labeled **Take photo** and **Upload photo** actions plus clear/reset session photos.
-- Collapse parser text behind progressive disclosure (“Have pack text?”) to keep the default scan path barcode + photos only.
-- Brightness/contrast tweak only if it reuses an existing editor path without new dependencies.
+- After Scan barcode decode, auto-run Use barcode when a code is found.
+- Show per-engine badge on each suggested field (OCR vs AI).
+- Collapse raw-text section behind progressive disclosure once photos/barcode succeed.
 
 ## Constraints
 
-- Reuse `showPharmacyDrugPackScanDialog`, `DrugPackFieldParser`, `AppOcrService`, `AppBarcodeDecoder`, `captureEphemeralImage` / `pickAppImageFile`, `showAppImageCropDialog`, `AppTextField`/`AppButton`/`AppDialog`, and create-form suggestion flow; do not reinvent parallel parsers, crop UIs, or media upload. Extend the shared crop dialog for rotation rather than adding a second editor.
-- Do not persist pack images to media APIs or disk beyond the in-memory parse session.
-- Do not change backend drug create contracts or similarity RBAC unless required for a bug in existing assistive mapping.
+- Reuse `showPharmacyDrugPackScanDialog`, `DrugPackFieldCandidates` / `DrugPackFieldParser`, `AppOcrService`, `AppBarcodeDecoder`, ephemeral take/upload/multi-upload, `showAppImageCropDialog`, and design-system controls. Extend with a small shared AI mapping interface rather than a second create flow.
+- No paid commercial drug-database subscription required for v1; AI may use an existing app AI/config endpoint if one exists, otherwise a clear stub/config gate with OCR fallback.
+- Do not persist pack images; do not change backend create/similarity contracts unless required for AI config.
 - No unrelated pharmacy catalog refactors.
-- Follow project prompt/UI rules: theme tokens, responsive actions, no unauthorized control stubs.
 
 ## Acceptance Criteria
 
-- [ ] AC1 (Req 1): Create Drug still saves, runs similarity, and applies suggestion accept/edit after prefill as today.
-- [ ] AC2 (Req 2–3): Scan pack has no long instruction paragraph; barcode field contains Use barcode in the suffix after mic; large viewport shows icon+label, small shows icon-only with accessible label.
-- [ ] AC3 (Req 4): User can add ≥2 pack photos in one session via camera and/or upload; candidates merge across photos; images discarded after parse/close; busy/error feedback visible; no media-API upload.
-- [ ] AC4 (Req 5): Each take/upload opens live preview + crop; rotation (≥90° steps) works; cancel skips that image; session strip shows/removes photos before OCR finalize.
-- [ ] AC5 (Req 6): Primary paste-dump CTA is gone; optional parser text produces the same candidate shape via `DrugPackFieldParser`.
-- [ ] AC6 (Req 7): Field preview appears when candidates exist; Prefill enabled only then; Prefill returns to Create Drug with fields filled and suggestion chrome.
-- [ ] AC7 (Req 8): Skip scan / close scan returns to Create Drug without closing create or wiping form values.
-- [ ] AC8 (Req 9): Create Drug entry label communicates scan or AI/OCR capture; strings localized.
-- [ ] AC9 (Req 10–11): Loading/empty/error/success and crop-cancel states work; UI OK on narrow and wide viewports in light and dark.
+- [ ] AC1 (Req 1): Prefill still fills Create Drug with suggestion chrome; Skip leaves create open; similarity/save unchanged.
+- [ ] AC2 (Req 2–3): Barcode copy is type/paste-only; Scan barcode fills the barcode field; Use barcode maps candidates.
+- [ ] AC3 (Req 4–6): Toolbar is Take / Upload / Scan barcode; Clear is on the photo card; Process sits below photos and runs on all images.
+- [ ] AC4 (Req 7): OCR and AI paths are distinct; AI unavailable falls back with feedback; no media upload of pack images.
+- [ ] AC5 (Req 8): Raw text section has top-right mic + Parse text; Parse updates candidates/DTO.
+- [ ] AC6 (Req 9): Suggested values show as editable icon+label+value rows; Prefill uses edited values.
+- [ ] AC7 (Req 10–11): Loading/empty/error/success work; strings localized; OK on narrow/wide, light/dark.
 
 ## Relevant Files
 
 - `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_drug_pack_scan_dialog.dart`
 - `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_drug_edit_dialog.dart`
 - `frontend/lib/shared/scan/drug_pack_field_parser.dart`
-- `frontend/lib/shared/scan/app_ephemeral_image_capture.dart`
 - `frontend/lib/shared/scan/app_ocr_service.dart`
 - `frontend/lib/shared/scan/app_barcode_decoder.dart`
+- `frontend/lib/shared/scan/app_ephemeral_image_capture.dart`
 - `frontend/lib/shared/components/app_image_crop_dialog.dart`
-- `frontend/lib/shared/components/app_image_upload_field.dart`
-- `frontend/lib/shared/components/app_text_field.dart`
 - `frontend/lib/l10n/app_en.arb`
+- `frontend/test/features/pharmacy/presentation/pharmacy_drug_pack_scan_dialog_test.dart`
 - `frontend/test/shared/scan/drug_pack_field_parser_test.dart`
 
 ## Verification
 
-- Widget/unit: barcode suffix layout; multi-photo merge (camera + upload); crop enabled path; rotation on shared crop dialog if extended; parser text → candidates; Prefill disabled/enabled; skip leaves create open.
-- Extend/adjust `drug_pack_field_parser_test.dart` if merge/parse behavior changes; add pack-scan dialog tests for skip vs prefill and crop-cancel not adding a photo where practical.
-- Manual: take + upload multiple photos; crop and rotate each; confirm live preview; remove a strip photo; parser text; field preview → Prefill; Skip/X; narrow + wide; light + dark.
-- Confirm no media upload network calls for pack images; pharmacy create permission behavior unchanged.
+- Widget tests: toolbar layout; Clear on card; Process below strip; editable suggestion rows update Prefill payload; Skip vs Prefill navigation.
+- Unit: OCR merge across multi-photo; AI mapper (or stub) → `DrugPackFieldCandidates`; barcode scan fills field.
+- Manual: type barcode → Use barcode; Scan barcode; take/upload many → Process OCR + AI; edit suggested rows → Prefill; raw text Parse; AI-offline fallback; light/dark; narrow/wide.
+- Confirm no pack-image media API calls; create permissions unchanged.
