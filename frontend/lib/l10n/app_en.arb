@@ -15475,6 +15475,10 @@
   "@pharmacyStorageRoomDetailsTitle": {
     "description": "Pharmacy storage room details dialog title."
   },
+  "pharmacyStorageShelfDetailsTitle": "Shelf Details",
+  "@pharmacyStorageShelfDetailsTitle": {
+    "description": "Pharmacy storage shelf details dialog title."
+  },
   "pharmacyStorageShelvesSearchHint": "Search shelf code or label",
   "@pharmacyStorageShelvesSearchHint": {
     "description": "Search hint for shelves table inside room details."
