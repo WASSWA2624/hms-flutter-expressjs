@@ -882,11 +882,15 @@ class _AppListTableMobileMetaRow extends StatelessWidget {
   }
 }
 
-/// Shared worklist table with viewport-aware progressive row mounting.
+/// Shared worklist table with viewport-virtualized rows.
 ///
-/// Large [items] / [page] lists are not painted in one frame: the first paint
-/// mounts roughly a viewport of rows (plus a buffer), then reveals more as the
-/// user scrolls. For paged backends, prefer
+/// In bounded-height layouts (the common workspace case) table rows live in a
+/// lazily built scroll view: only rows near the viewport are built, laid out,
+/// and painted, so the full loaded list is scrollable in one smooth gesture
+/// and appended pages extend the scroll extent in place. Shrink-wrapped
+/// tables inside an ancestor scroll view cannot be virtualized; those mount
+/// roughly a viewport of rows first and progressively reveal more as the user
+/// scrolls. For paged backends, prefer
 /// `AppPageRequest(pageSize: appListTablePreferredPageSize)` (100 / max page
 /// size); smaller explicit [AppPageRequest.pageSize] values are left alone.
 class AppListTable<T> extends StatefulWidget {
@@ -992,11 +996,13 @@ class AppListTable<T> extends StatefulWidget {
 
   /// Progressive reveal batch size override.
   ///
-  /// When null (default), [AppListTable] mounts roughly a viewport of rows plus
-  /// a small buffer and reveals more as the user scrolls — avoiding a full-list
-  /// paint freeze. When set, that value is the initial and per-scroll batch
-  /// size. Prefer [appListTablePreferredPageSize] (`AppPageRequest.maxPageSize`)
-  /// for paged data requests; this field only controls client-side mounting.
+  /// When null (default), bounded-height tables virtualize row building via
+  /// the scroll viewport, and shrink-wrapped tables mount roughly a viewport
+  /// of rows plus a small buffer, revealing more as the user scrolls. When
+  /// set, rows are always mounted in progressive batches with this value as
+  /// the initial and per-scroll batch size. Prefer
+  /// [appListTablePreferredPageSize] (`AppPageRequest.maxPageSize`) for paged
+  /// data requests; this field only controls client-side mounting.
   final int? maxVisibleItems;
   final bool isLoading;
   final Object? error;
@@ -1073,6 +1079,9 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   int? _viewportBatchSize;
   bool _viewportSyncScheduled = false;
   bool _revealScheduled = false;
+  bool _viewportDrivesRowMounting = false;
+  bool _lastLayoutHadBoundedHeight = false;
+  bool _rowMountingSyncScheduled = false;
   String _trackedQuery = '';
   int _trackedSortedItemCount = 0;
   List<T> _accumulatedItems = <T>[];
@@ -1337,7 +1346,13 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     if (metrics.maxScrollExtent <= 0) {
       return;
     }
-    if (metrics.pixels < metrics.maxScrollExtent - _infiniteScrollLoadExtent) {
+    // Prefetch roughly a viewport ahead so batch reveals and next-page
+    // requests start before the user actually hits the bottom.
+    final double loadExtent = math.max(
+      _infiniteScrollLoadExtent,
+      metrics.viewportDimension,
+    );
+    if (metrics.pixels < metrics.maxScrollExtent - loadExtent) {
       return;
     }
     _onNearScrollEnd();
@@ -1358,22 +1373,10 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 
   void _onNearScrollEnd({bool allowPageRequest = true}) {
-    final String query = _currentQuery();
-    final AppPage<T>? sourcePage = widget.page;
-    final List<T> sourceItems = _usesInfinitePagination
-        ? _accumulatedItems
-        : sourcePage?.items ?? widget.items ?? <T>[];
-    final bool usesExternalSearchListenable = widget.searchListenable != null;
-    List<T> visibleItems = sourceItems;
-    if (query.trim().isNotEmpty) {
-      final AppListTableSearchMatcher<T>? matcher = usesExternalSearchListenable
-          ? widget.searchMatcher
-          : widget.search?.matcher ?? widget.searchMatcher;
-      if (matcher != null) {
-        visibleItems = _filteredItems(sourceItems, query, matcher);
-      }
-    }
-    final int totalSortedCount = visibleItems.length;
+    // Reuses the row count tracked during the last build; re-filtering and
+    // re-sorting the source list on every scroll notification caused visible
+    // jank near the end of large tables.
+    final int totalSortedCount = _trackedSortedItemCount;
     if (_canRevealMoreItems(totalSortedCount)) {
       _revealMoreItems(totalSortedCount);
       // Keep revealing across frames while the user remains near the end so a
@@ -1652,13 +1655,24 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
 
   void _syncRenderLimit(String query, int sortedItemCount) {
     final int batch = _effectiveRevealBatch;
-    if (query != _trackedQuery || sortedItemCount != _trackedSortedItemCount) {
+    final int floor = math.min(batch, sortedItemCount);
+    if (query != _trackedQuery) {
+      // New search: restart from one batch.
       _trackedQuery = query;
       _trackedSortedItemCount = sortedItemCount;
-      _renderLimit = math.min(batch, sortedItemCount);
+      _renderLimit = floor;
       return;
     }
-    _renderLimit ??= math.min(batch, sortedItemCount);
+    if (sortedItemCount != _trackedSortedItemCount) {
+      // Item count changed (page append / refresh): keep already revealed
+      // rows mounted. Collapsing back to one batch reset the scroll extent
+      // and forced a batch-by-batch re-reveal after every page load.
+      _trackedSortedItemCount = sortedItemCount;
+      final int current = _renderLimit ?? floor;
+      _renderLimit = math.max(floor, math.min(current, sortedItemCount));
+      return;
+    }
+    _renderLimit ??= floor;
   }
 
   /// Progressive mount/reveal batch: [maxVisibleItems] override or viewport estimate.
@@ -1670,8 +1684,47 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     return _viewportBatchSize ?? _fallbackProgressiveBatch;
   }
 
+  /// Whether rows are mounted in progressive batches.
+  ///
+  /// Bounded-height layouts virtualize row building through the scroll
+  /// viewport instead, which keeps the full scroll extent available and lets
+  /// a single fling reach any loaded row without waiting for batch reveals.
+  /// Progressive mounting remains for shrink-wrapped/unbounded layouts (all
+  /// children of an ancestor scroll view are always built) and for callers
+  /// that force a cap through [AppListTable.maxVisibleItems].
+  bool get _usesProgressiveRowMounting {
+    return widget.maxVisibleItems != null || !_viewportDrivesRowMounting;
+  }
+
+  void _syncRowMountingStrategy({required bool boundedHeight}) {
+    _lastLayoutHadBoundedHeight = boundedHeight;
+    if (_viewportDrivesRowMounting == boundedHeight ||
+        _rowMountingSyncScheduled) {
+      return;
+    }
+    _rowMountingSyncScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _rowMountingSyncScheduled = false;
+      if (!mounted ||
+          _viewportDrivesRowMounting == _lastLayoutHadBoundedHeight) {
+        return;
+      }
+      setState(() {
+        _viewportDrivesRowMounting = _lastLayoutHadBoundedHeight;
+        if (_viewportDrivesRowMounting && widget.maxVisibleItems == null) {
+          _renderLimit = null;
+        }
+      });
+    });
+  }
+
   List<T> _limitedVisibleItems(List<T> items) {
     if (items.isEmpty) {
+      return items;
+    }
+    if (!_usesProgressiveRowMounting) {
+      // Virtualized layouts render the full list; the viewport only builds
+      // the rows it needs.
       return items;
     }
     final int batch = _effectiveRevealBatch;
@@ -1684,6 +1737,9 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
 
   bool _canRevealMoreItems(int totalSortedCount) {
     if (totalSortedCount <= 0) {
+      return false;
+    }
+    if (!_usesProgressiveRowMounting) {
       return false;
     }
     final int batch = _effectiveRevealBatch;
@@ -1706,6 +1762,9 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     required bool compact,
     required bool dense,
   }) {
+    if (!_usesProgressiveRowMounting) {
+      return;
+    }
     if (!constraints.hasBoundedHeight) {
       return;
     }
@@ -1865,6 +1924,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         final List<AppListTableColumn<T>> visibleColumns = _visibleColumns;
         final bool compact =
             widget.forceCompact || _usesCompactTableLayout(constraints);
+        _syncRowMountingStrategy(boundedHeight: !effectiveShrinkWrap);
         _syncViewportBatchFromConstraints(
           constraints: constraints,
           compact: compact,
@@ -2981,6 +3041,74 @@ class _SelectableMobileDataRow<T> extends StatelessWidget {
   }
 }
 
+/// Rendered table (grid) presentation of [AppListTable].
+///
+/// Non-generic marker widget wrapping the header and rows of the table
+/// layout. Tests and tooling can locate the rendered table with
+/// `find.byType(AppListTableGrid)` and read the resolved [horizontalMargin]
+/// and [columnSpacing] metrics.
+class AppListTableGrid extends StatelessWidget {
+  const AppListTableGrid({
+    required this.horizontalMargin,
+    required this.columnSpacing,
+    required this.child,
+    super.key,
+  });
+
+  /// Resolved margin before the first and after the last column.
+  final double horizontalMargin;
+
+  /// Resolved gap between adjacent columns.
+  final double columnSpacing;
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => child;
+}
+
+/// Paints the vertical inside column dividers (and optionally the bottom row
+/// divider) across a header/data/spacer row in one cheap pass, so rows never
+/// need intrinsic-height measurement to stretch bordered cells.
+class _TableGridLinePainter extends CustomPainter {
+  const _TableGridLinePainter({
+    required this.verticalOffsets,
+    required this.verticalSide,
+    this.bottomSide,
+  });
+
+  final List<double> verticalOffsets;
+  final BorderSide verticalSide;
+  final BorderSide? bottomSide;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (verticalSide.width > 0 && verticalOffsets.isNotEmpty) {
+      final Paint paint = Paint()
+        ..color = verticalSide.color
+        ..strokeWidth = verticalSide.width;
+      for (final double x in verticalOffsets) {
+        canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+      }
+    }
+    final BorderSide? bottom = bottomSide;
+    if (bottom != null) {
+      final Paint paint = Paint()
+        ..color = bottom.color
+        ..strokeWidth = bottom.width;
+      final double y = size.height - bottom.width / 2;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_TableGridLinePainter oldDelegate) {
+    return oldDelegate.verticalSide != verticalSide ||
+        oldDelegate.bottomSide != bottomSide ||
+        !listEquals(oldDelegate.verticalOffsets, verticalOffsets);
+  }
+}
+
 class _DesktopListTable<T> extends StatefulWidget {
   const _DesktopListTable({
     required this.items,
@@ -3046,6 +3174,14 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     return widget.compact ? 44 : 48;
   }
 
+  // Rows grow with wrapped cell content; min height keeps comfortable padding.
+  double get _rowMinHeight {
+    if (widget.dense) {
+      return 44;
+    }
+    return widget.compact ? 48 : 52;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -3060,32 +3196,67 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final double horizontalMargin =
+  // Layout metrics resolved once per build and shared by the header, data,
+  // and spacer row builders (including rows built lazily by slivers).
+  double _horizontalMargin = 0;
+  double _columnSpacing = 0;
+  List<double> _columnWidths = const <double>[];
+  List<double> _gridLineOffsets = const <double>[];
+  double _rowContentWidth = 0;
+  BorderSide _verticalInsideSide = BorderSide.none;
+  BorderSide _rowDividerSide = BorderSide.none;
+
+  void _resolveLayoutMetrics(ThemeData theme) {
+    _horizontalMargin =
         widget.horizontalMargin ??
         (widget.dense
             ? theme.spacing.xs
             : widget.compact
             ? theme.spacing.sm
             : theme.spacing.md);
-    final double columnSpacing = widget.dense
+    _columnSpacing = widget.dense
         ? theme.spacing.xs
         : widget.compact
         ? theme.spacing.sm
         : theme.spacing.lg;
-    // Rows grow with wrapped cell content; min height keeps comfortable padding.
-    final double rowMinHeight = widget.dense
-        ? 44
-        : widget.compact
-        ? 48
-        : 52;
-    const double rowMaxHeight = double.infinity;
-    final bool showRowNumbers = widget.showRowNumbers;
+    _columnWidths = <double>[
+      for (final AppListTableColumn<T> column in widget.columns)
+        widget.columnWidthFor(column),
+    ];
+
+    final List<double> slotWidths = <double>[
+      if (widget.showRowNumbers) _rowNumberColumnWidth,
+      ..._columnWidths,
+    ];
+    final List<double> gridLineOffsets = <double>[];
+    double cursor = _horizontalMargin;
+    for (int index = 0; index < slotWidths.length; index += 1) {
+      cursor += slotWidths[index];
+      if (index < slotWidths.length - 1) {
+        gridLineOffsets.add(cursor + _columnSpacing / 2);
+        cursor += _columnSpacing;
+      }
+    }
+    _gridLineOffsets = gridLineOffsets;
+    _rowContentWidth = cursor + _horizontalMargin;
+
+    _verticalInsideSide = BorderSide(
+      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.38),
+      width: theme.appTokens.dividerThickness,
+    );
+    _rowDividerSide = Divider.createBorderSide(
+      context,
+      width: theme.appTokens.dividerThickness,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     _resolveTableStyles(theme);
+    _resolveLayoutMetrics(theme);
 
     return Material(
       color: colorScheme.surface,
@@ -3098,130 +3269,25 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         label: widget.goToTopLabel,
         headerExtent: _headingRowHeight,
         builder: (BuildContext context, Key headerKey) {
-          Widget buildTable(int minRowCount) {
-            return DataTable(
-              showCheckboxColumn: false,
-              horizontalMargin: horizontalMargin,
-              columnSpacing: columnSpacing,
-              headingRowHeight: _headingRowHeight,
-              dataRowMinHeight: rowMinHeight,
-              dataRowMaxHeight: rowMaxHeight,
-              headingRowColor: _cachedHeadingRowColor,
-              dividerThickness: theme.appTokens.dividerThickness,
-              headingTextStyle: _cachedHeadingTextStyle,
-              dataTextStyle: _cachedDataTextStyle,
-              border: TableBorder(
-                verticalInside: BorderSide(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.38),
-                  width: theme.appTokens.dividerThickness,
-                ),
-              ),
-              columns: <DataColumn>[
-                if (showRowNumbers)
-                  DataColumn(
-                    headingRowAlignment: MainAxisAlignment.start,
-                    label: SizedBox(
-                      width: _rowNumberColumnWidth,
-                      child: Text(
-                        '#',
-                        textAlign: TextAlign.start,
-                        style: _cachedNumberColumnStyle,
-                      ),
-                    ),
-                  ),
-                for (final AppListTableColumn<T> column in widget.columns)
-                  DataColumn(
-                    // Always start-align: do not pass [column.numeric] through to
-                    // Flutter's DataColumn (that end-aligns cells/headers).
-                    headingRowAlignment: MainAxisAlignment.start,
-                    tooltip: column.tooltip,
-                    label: _DataColumnHeader<T>(
-                      column: column,
-                      isSorted: widget.sortColumnKey == column.key,
-                      sortAscending: widget.sortAscending,
-                      onSort: widget.onSort,
-                      width: widget.columnWidthFor(column),
-                      enableResize:
-                          widget.enableColumnResize &&
-                          column.fixedWidth == null,
-                      onWidthChanged:
-                          widget.onColumnWidthChanged == null ||
-                              column.fixedWidth != null
-                          ? null
-                          : (double width) {
-                              widget.onColumnWidthChanged!(column.key, width);
-                            },
-                    ),
-                  ),
-              ],
-              rows: <DataRow>[
-                for (var index = 0; index < widget.items.length; index += 1)
-                  _dataRow(context, index),
-                for (
-                  var index = widget.items.length;
-                  index < minRowCount;
-                  index += 1
-                )
-                  _emptyRow(context, index),
-              ],
-            );
-          }
-
           final Widget? surfaceHeader = widget.surfaceHeader;
-          final bool scrollWithHeader = surfaceHeader != null;
 
           if (widget.scrollVertically) {
             return LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
+                final double viewportWidth = constraints.hasBoundedWidth
+                    ? constraints.maxWidth
+                    : 0;
                 final double tableWidth = math.max(
-                  widget.minWidth,
-                  constraints.maxWidth,
+                  _rowContentWidth,
+                  math.max(widget.minWidth, viewportWidth),
                 );
 
-                Widget buildPinnedScrollBody({
-                  required double bodyHeight,
-                  required Widget table,
-                }) {
-                  // Horizontal scroll is the outer axis so its scrollbar stays
-                  // pinned to the bottom of the visible table viewport.
-                  return Scrollbar(
-                    controller: _horizontalController,
-                    thumbVisibility: true,
-                    scrollbarOrientation: ScrollbarOrientation.bottom,
-                    notificationPredicate: (ScrollNotification notification) {
-                      return notification.metrics.axis == Axis.horizontal;
-                    },
-                    child: SingleChildScrollView(
-                      controller: _horizontalController,
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(
-                        width: tableWidth,
-                        height: bodyHeight,
-                        child: Scrollbar(
-                          controller: _verticalController,
-                          thumbVisibility: true,
-                          child: SingleChildScrollView(
-                            controller: _verticalController,
-                            child: KeyedSubtree(key: headerKey, child: table),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }
-
-                if (!scrollWithHeader) {
-                  final int minRowCount = widget.padEmptyRows
-                      ? _rowCountToFillHeight(
-                          availableHeight: constraints.maxHeight,
-                          headingHeight: _headingRowHeight,
-                          rowMinHeight: rowMinHeight,
-                          itemCount: widget.items.length,
-                        )
-                      : widget.items.length;
-                  return buildPinnedScrollBody(
+                if (surfaceHeader == null) {
+                  return _buildVirtualizedBody(
+                    context,
+                    headerKey: headerKey,
+                    tableWidth: tableWidth,
                     bodyHeight: constraints.maxHeight,
-                    table: buildTable(minRowCount),
                   );
                 }
 
@@ -3232,20 +3298,17 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
                     Expanded(
                       child: LayoutBuilder(
                         builder:
-                            (BuildContext context, BoxConstraints bodyConstraints) {
-                          final int minRowCount = widget.padEmptyRows
-                              ? _rowCountToFillHeight(
-                                  availableHeight: bodyConstraints.maxHeight,
-                                  headingHeight: _headingRowHeight,
-                                  rowMinHeight: rowMinHeight,
-                                  itemCount: widget.items.length,
-                                )
-                              : widget.items.length;
-                          return buildPinnedScrollBody(
-                            bodyHeight: bodyConstraints.maxHeight,
-                            table: buildTable(minRowCount),
-                          );
-                        },
+                            (
+                              BuildContext context,
+                              BoxConstraints bodyConstraints,
+                            ) {
+                              return _buildVirtualizedBody(
+                                context,
+                                headerKey: headerKey,
+                                tableWidth: tableWidth,
+                                bodyHeight: bodyConstraints.maxHeight,
+                              );
+                            },
                       ),
                     ),
                   ],
@@ -3254,10 +3317,41 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
             );
           }
 
+          // Unbounded height: the table participates in an ancestor scroll
+          // view, so rows are mounted directly (the parent state throttles
+          // how many through progressive reveal).
+          final int itemCount = widget.items.length;
           final int minRowCount = widget.padEmptyRows
-              ? math.max(_minTableRowCount, widget.items.length)
-              : widget.items.length;
-          final Widget table = buildTable(minRowCount);
+              ? math.max(_minTableRowCount, itemCount)
+              : itemCount;
+          final int lastRowIndex = minRowCount - 1;
+
+          final Widget table = AppListTableGrid(
+            horizontalMargin: _horizontalMargin,
+            columnSpacing: _columnSpacing,
+            child: DefaultTextStyle(
+              style: _dataTextStyle(theme),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  _buildHeaderRow(context),
+                  for (int index = 0; index < itemCount; index += 1)
+                    _buildDataRow(
+                      context,
+                      index,
+                      drawBottomDivider: index != lastRowIndex,
+                    ),
+                  for (int index = itemCount; index < minRowCount; index += 1)
+                    _buildSpacerRow(
+                      context,
+                      index,
+                      drawBottomDivider: index != lastRowIndex,
+                    ),
+                ],
+              ),
+            ),
+          );
 
           final Widget horizontalTable = Scrollbar(
             controller: _horizontalController,
@@ -3269,13 +3363,15 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
               controller: _horizontalController,
               scrollDirection: Axis.horizontal,
               child: ConstrainedBox(
-                constraints: BoxConstraints(minWidth: widget.minWidth),
+                constraints: BoxConstraints(
+                  minWidth: math.max(widget.minWidth, _rowContentWidth),
+                ),
                 child: table,
               ),
             ),
           );
 
-          if (scrollWithHeader) {
+          if (surfaceHeader != null) {
             return KeyedSubtree(
               key: headerKey,
               child: Column(
@@ -3290,6 +3386,310 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         },
       ),
     );
+  }
+
+  /// Bounded-height table body: rows live in a [CustomScrollView] so only the
+  /// rows near the viewport are built, laid out, and painted. Scrolling stays
+  /// smooth regardless of how many rows are loaded, and the full scroll
+  /// extent is available immediately.
+  Widget _buildVirtualizedBody(
+    BuildContext context, {
+    required Key headerKey,
+    required double tableWidth,
+    required double bodyHeight,
+  }) {
+    final ThemeData theme = Theme.of(context);
+    final int itemCount = widget.items.length;
+    final int minRowCount = widget.padEmptyRows
+        ? _rowCountToFillHeight(
+            availableHeight: bodyHeight,
+            headingHeight: _headingRowHeight,
+            rowMinHeight: _rowMinHeight,
+            itemCount: itemCount,
+          )
+        : itemCount;
+    final int spacerCount = math.max(0, minRowCount - itemCount);
+    final int lastRowIndex = itemCount + spacerCount - 1;
+
+    // Horizontal scroll is the outer axis so its scrollbar stays pinned to
+    // the bottom of the visible table viewport.
+    return Scrollbar(
+      controller: _horizontalController,
+      thumbVisibility: true,
+      scrollbarOrientation: ScrollbarOrientation.bottom,
+      notificationPredicate: (ScrollNotification notification) {
+        return notification.metrics.axis == Axis.horizontal;
+      },
+      child: SingleChildScrollView(
+        controller: _horizontalController,
+        scrollDirection: Axis.horizontal,
+        child: SizedBox(
+          width: tableWidth,
+          height: bodyHeight,
+          child: AppListTableGrid(
+            horizontalMargin: _horizontalMargin,
+            columnSpacing: _columnSpacing,
+            child: Scrollbar(
+              controller: _verticalController,
+              thumbVisibility: true,
+              child: DefaultTextStyle(
+                style: _dataTextStyle(theme),
+                child: CustomScrollView(
+                  controller: _verticalController,
+                  slivers: <Widget>[
+                    SliverToBoxAdapter(
+                      child: KeyedSubtree(
+                        key: headerKey,
+                        child: _buildHeaderRow(context),
+                      ),
+                    ),
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (BuildContext context, int index) {
+                          return _buildDataRow(
+                            context,
+                            index,
+                            drawBottomDivider: index != lastRowIndex,
+                          );
+                        },
+                        childCount: itemCount,
+                        addAutomaticKeepAlives: false,
+                      ),
+                    ),
+                    if (spacerCount > 0)
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (BuildContext context, int index) {
+                            final int rowIndex = itemCount + index;
+                            return _buildSpacerRow(
+                              context,
+                              rowIndex,
+                              drawBottomDivider: rowIndex != lastRowIndex,
+                            );
+                          },
+                          childCount: spacerCount,
+                          addAutomaticKeepAlives: false,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderRow(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final TextStyle headingStyle =
+        _cachedHeadingTextStyle ??
+        theme.textTheme.labelLarge ??
+        const TextStyle();
+
+    return SizedBox(
+      height: _headingRowHeight,
+      child: CustomPaint(
+        foregroundPainter: _TableGridLinePainter(
+          verticalOffsets: _gridLineOffsets,
+          verticalSide: _verticalInsideSide,
+          bottomSide: _rowDividerSide,
+        ),
+        child: ColoredBox(
+          color: _headingBackgroundColor(theme),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: _horizontalMargin),
+            child: DefaultTextStyle(
+              style: headingStyle,
+              child: Row(
+                children: <Widget>[
+                  if (widget.showRowNumbers) ...<Widget>[
+                    SizedBox(
+                      width: _rowNumberColumnWidth,
+                      child: Text(
+                        '#',
+                        textAlign: TextAlign.start,
+                        style: _cachedNumberColumnStyle,
+                      ),
+                    ),
+                    SizedBox(width: _columnSpacing),
+                  ],
+                  for (
+                    int index = 0;
+                    index < widget.columns.length;
+                    index += 1
+                  ) ...<Widget>[
+                    if (index > 0) SizedBox(width: _columnSpacing),
+                    _buildHeaderCell(context, index),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderCell(BuildContext context, int index) {
+    final AppListTableColumn<T> column = widget.columns[index];
+    final Widget header = _DataColumnHeader<T>(
+      column: column,
+      isSorted: widget.sortColumnKey == column.key,
+      sortAscending: widget.sortAscending,
+      onSort: widget.onSort,
+      width: _columnWidths[index],
+      enableResize: widget.enableColumnResize && column.fixedWidth == null,
+      onWidthChanged:
+          widget.onColumnWidthChanged == null || column.fixedWidth != null
+          ? null
+          : (double width) {
+              widget.onColumnWidthChanged!(column.key, width);
+            },
+    );
+    final String? tooltip = column.tooltip;
+    // Sortable headers already describe themselves through the sort tooltip.
+    if (tooltip == null || column.isSortable) {
+      return header;
+    }
+    return Tooltip(message: tooltip, child: header);
+  }
+
+  Widget _buildDataRow(
+    BuildContext context,
+    int index, {
+    required bool drawBottomDivider,
+  }) {
+    final T item = widget.items[index];
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color? custom = widget.rowColorBuilder?.call(context, item);
+    final Color? stripe = index.isOdd
+        ? colorScheme.surfaceContainerLowest.withValues(alpha: 0.65)
+        : null;
+    final Color? baseColor = custom ?? stripe;
+    final ValueChanged<T>? onRowSelected = widget.onRowSelected;
+
+    Widget row = ConstrainedBox(
+      constraints: BoxConstraints(minHeight: _rowMinHeight),
+      child: CustomPaint(
+        foregroundPainter: _TableGridLinePainter(
+          verticalOffsets: _gridLineOffsets,
+          verticalSide: _verticalInsideSide,
+          bottomSide: drawBottomDivider ? _rowDividerSide : null,
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: _horizontalMargin),
+          child: Row(
+            children: <Widget>[
+              if (widget.showRowNumbers) ...<Widget>[
+                SizedBox(
+                  width: _rowNumberColumnWidth,
+                  child: Text(
+                    (widget.rowNumberOffset + index + 1).toString(),
+                    textAlign: TextAlign.center,
+                    style: _resolveRowNumberStyle(theme),
+                  ),
+                ),
+                SizedBox(width: _columnSpacing),
+              ],
+              for (
+                int columnIndex = 0;
+                columnIndex < widget.columns.length;
+                columnIndex += 1
+              ) ...<Widget>[
+                if (columnIndex > 0) SizedBox(width: _columnSpacing),
+                _AppListTableCell(
+                  width: _columnWidths[columnIndex],
+                  numeric: widget.columns[columnIndex].numeric,
+                  child: widget.columns[columnIndex].cellBuilder(
+                    context,
+                    item,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (onRowSelected != null) {
+      row = InkWell(
+        onTap: () {
+          onRowSelected(item);
+        },
+        hoverColor: colorScheme.primary.withValues(
+          alpha: baseColor == null ? 0.05 : 0.06,
+        ),
+        child: row,
+      );
+    }
+    // Each row hosts its own Material so hover/splash ink paints above the
+    // stripe/status base color instead of being hidden underneath it.
+    row = baseColor == null
+        ? Material(type: MaterialType.transparency, child: row)
+        : Material(color: baseColor, child: row);
+
+    return KeyedSubtree(
+      key: appListTableUniqueRowKey<T>(
+        index: index,
+        itemKeyBuilder: widget.itemKeyBuilder,
+        item: item,
+      ),
+      child: row,
+    );
+  }
+
+  Widget _buildSpacerRow(
+    BuildContext context,
+    int index, {
+    required bool drawBottomDivider,
+  }) {
+    final ThemeData theme = Theme.of(context);
+    final Color? stripe = index.isOdd
+        ? theme.colorScheme.surfaceContainerLowest.withValues(alpha: 0.65)
+        : null;
+
+    Widget content = Padding(
+      padding: EdgeInsets.symmetric(horizontal: _horizontalMargin),
+      child: widget.showRowNumbers
+          ? Row(
+              children: <Widget>[
+                SizedBox(
+                  width: _rowNumberColumnWidth,
+                  child: Text(
+                    (widget.rowNumberOffset + index + 1).toString(),
+                    textAlign: TextAlign.center,
+                    style: _resolveRowNumberStyle(theme),
+                  ),
+                ),
+              ],
+            )
+          : const SizedBox.shrink(),
+    );
+    if (stripe != null) {
+      content = ColoredBox(color: stripe, child: content);
+    }
+
+    return SizedBox(
+      height: _rowMinHeight,
+      child: CustomPaint(
+        foregroundPainter: _TableGridLinePainter(
+          verticalOffsets: _gridLineOffsets,
+          verticalSide: _verticalInsideSide,
+          bottomSide: drawBottomDivider ? _rowDividerSide : null,
+        ),
+        child: content,
+      ),
+    );
+  }
+
+  TextStyle _dataTextStyle(ThemeData theme) {
+    return _cachedDataTextStyle ??
+        theme.textTheme.bodyMedium ??
+        const TextStyle();
   }
 
   /// Computes how many rows (data + blank spacers) are needed so the table body
@@ -3312,10 +3712,14 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   }
 
   ColorScheme? _cachedTableStyleScheme;
-  WidgetStatePropertyAll<Color>? _cachedHeadingRowColor;
+  Color? _cachedHeadingRowColor;
   TextStyle? _cachedHeadingTextStyle;
   TextStyle? _cachedDataTextStyle;
   TextStyle? _cachedNumberColumnStyle;
+
+  Color _headingBackgroundColor(ThemeData theme) {
+    return _cachedHeadingRowColor ?? theme.colorScheme.surface;
+  }
 
   void _resolveTableStyles(ThemeData theme) {
     final ColorScheme cs = theme.colorScheme;
@@ -3323,8 +3727,9 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       return;
     }
     _cachedTableStyleScheme = cs;
-    _cachedHeadingRowColor = WidgetStatePropertyAll<Color>(
+    _cachedHeadingRowColor = Color.alphaBlend(
       cs.surfaceContainerHigh.withValues(alpha: 0.72),
+      cs.surface,
     );
     _cachedHeadingTextStyle = theme.textTheme.labelLarge?.copyWith(
       color: cs.onSurfaceVariant,
@@ -3356,138 +3761,6 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     return _rowNumberStyle;
   }
 
-  DataRow _dataRow(BuildContext context, int index) {
-    final T item = widget.items[index];
-
-    return DataRow(
-      key: appListTableUniqueRowKey<T>(
-        index: index,
-        itemKeyBuilder: widget.itemKeyBuilder,
-        item: item,
-      ),
-      color: _rowColor(context, item, index),
-      onSelectChanged: widget.onRowSelected == null
-          ? null
-          : (_) {
-              widget.onRowSelected!(item);
-            },
-      cells: <DataCell>[
-        if (widget.showRowNumbers)
-          DataCell(
-            _DesktopRowKeyboardActivator(
-              enabled: widget.onRowSelected != null,
-              onActivate: () => widget.onRowSelected?.call(item),
-              child: Align(
-                child: SizedBox(
-                  width: _rowNumberColumnWidth,
-                  child: Text(
-                    (widget.rowNumberOffset + index + 1).toString(),
-                    textAlign: TextAlign.center,
-                    style: _resolveRowNumberStyle(Theme.of(context)),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        for (final AppListTableColumn<T> column in widget.columns)
-          DataCell(
-            _AppListTableCell(
-              width: widget.columnWidthFor(column),
-              numeric: column.numeric,
-              child: column.cellBuilder(context, item),
-            ),
-          ),
-      ],
-    );
-  }
-
-  DataRow _emptyRow(BuildContext context, int index) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color? stripe = index.isOdd
-        ? colorScheme.surfaceContainerLowest.withValues(alpha: 0.65)
-        : null;
-
-    return DataRow(
-      key: ValueKey<int>(index),
-      color: stripe == null ? null : WidgetStatePropertyAll<Color>(stripe),
-      cells: <DataCell>[
-        if (widget.showRowNumbers)
-          DataCell(
-            Align(
-              child: SizedBox(
-                width: _rowNumberColumnWidth,
-                child: Text(
-                  (widget.rowNumberOffset + index + 1).toString(),
-                  textAlign: TextAlign.center,
-                  style: _resolveRowNumberStyle(theme),
-                ),
-              ),
-            ),
-          ),
-        for (final AppListTableColumn<T> column in widget.columns)
-          DataCell(SizedBox(width: widget.columnWidthFor(column))),
-      ],
-    );
-  }
-
-  WidgetStateProperty<Color?>? _cachedDefaultRowColor;
-  ColorScheme? _cachedRowColorScheme;
-
-  WidgetStateProperty<Color?> _defaultRowColor(ColorScheme colorScheme) {
-    if (_cachedDefaultRowColor != null &&
-        identical(_cachedRowColorScheme, colorScheme)) {
-      return _cachedDefaultRowColor!;
-    }
-    _cachedRowColorScheme = colorScheme;
-    _cachedDefaultRowColor = WidgetStateProperty.resolveWith<Color?>((
-      Set<WidgetState> states,
-    ) {
-      if (states.contains(WidgetState.hovered)) {
-        return colorScheme.primary.withValues(alpha: 0.05);
-      }
-      if (states.contains(WidgetState.selected)) {
-        return colorScheme.primary.withValues(alpha: 0.08);
-      }
-      return null;
-    });
-    return _cachedDefaultRowColor!;
-  }
-
-  WidgetStateProperty<Color?>? _rowColor(
-    BuildContext context,
-    T item,
-    int index,
-  ) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final AppListTableRowColorBuilder<T>? builder = widget.rowColorBuilder;
-    final Color? custom = builder?.call(context, item);
-    final Color? stripe = index.isOdd
-        ? colorScheme.surfaceContainerLowest.withValues(alpha: 0.65)
-        : null;
-    final Color? base = custom ?? stripe;
-    if (base == null) {
-      return _defaultRowColor(colorScheme);
-    }
-
-    return WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
-      Color color = base;
-      if (states.contains(WidgetState.hovered)) {
-        color = Color.alphaBlend(
-          colorScheme.primary.withValues(alpha: 0.06),
-          color,
-        );
-      }
-      if (states.contains(WidgetState.selected)) {
-        color = Color.alphaBlend(
-          colorScheme.primary.withValues(alpha: 0.08),
-          color,
-        );
-      }
-      return color;
-    });
-  }
 }
 
 /// Constrains cell content to the column width so text wraps and the row can
@@ -3510,8 +3783,8 @@ class _AppListTableCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final TextStyle style = DefaultTextStyle.of(context).style;
-    // Tight width so text wraps at the column edge; row height then follows
-    // the tallest cell via DataTable's unbounded dataRowMaxHeight.
+    // Tight width so text wraps at the column edge; the row then grows with
+    // its tallest cell (rows only enforce a minimum height).
     return SizedBox(
       width: width,
       child: Padding(
@@ -3740,70 +4013,6 @@ Widget _enableCellTextWrapping(Widget widget) {
   }
 
   return widget;
-}
-
-class _DesktopRowKeyboardActivator extends StatefulWidget {
-  const _DesktopRowKeyboardActivator({
-    required this.enabled,
-    required this.onActivate,
-    required this.child,
-  });
-
-
-  final bool enabled;
-  final VoidCallback onActivate;
-  final Widget child;
-
-  @override
-  State<_DesktopRowKeyboardActivator> createState() =>
-      _DesktopRowKeyboardActivatorState();
-}
-
-class _DesktopRowKeyboardActivatorState
-    extends State<_DesktopRowKeyboardActivator> {
-  static const Map<ShortcutActivator, Intent> _shortcuts =
-      <ShortcutActivator, Intent>{
-        SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
-        SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
-      };
-
-  bool _focused = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return FocusableActionDetector(
-      enabled: widget.enabled,
-      shortcuts: _shortcuts,
-      actions: <Type, Action<Intent>>{
-        ActivateIntent: CallbackAction<ActivateIntent>(
-          onInvoke: (_) {
-            widget.onActivate();
-            return null;
-          },
-        ),
-      },
-      onShowFocusHighlight: (bool value) {
-        if (_focused != value) {
-          setState(() => _focused = value);
-        }
-      },
-      child: Semantics(
-        button: widget.enabled,
-        enabled: widget.enabled,
-        onTap: widget.enabled ? widget.onActivate : null,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: _focused
-                ? Border.all(color: theme.colorScheme.primary)
-                : null,
-            borderRadius: BorderRadius.circular(theme.radius.xs),
-          ),
-          child: widget.child,
-        ),
-      ),
-    );
-  }
 }
 
 class _DataColumnHeader<T> extends StatelessWidget {
@@ -4040,9 +4249,15 @@ class _GoToTopHostState extends State<_GoToTopHost> {
 
   void _reattachScrollPosition() {
     final BuildContext? headerContext = _headerKey.currentContext;
-    final ScrollPosition? position = headerContext == null
-        ? null
-        : Scrollable.maybeOf(headerContext)?.position;
+    if (headerContext == null) {
+      // The header row can be virtualized out while scrolled far down; keep
+      // the tracked position so visibility updates keep flowing until the
+      // header mounts again.
+      return;
+    }
+    final ScrollPosition? position = Scrollable.maybeOf(
+      headerContext,
+    )?.position;
     if (identical(position, _trackedPosition)) {
       return;
     }

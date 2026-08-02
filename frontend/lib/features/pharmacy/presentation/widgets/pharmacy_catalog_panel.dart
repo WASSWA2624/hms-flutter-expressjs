@@ -13,6 +13,7 @@ import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.d
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_access.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catalog_tabs.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_details_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_edit_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_storage_panel.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -255,6 +256,26 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
           },
         ),
         AppListTableColumn<PharmacyDrug>(
+          id: 'actions',
+          label: l10n.pharmacyLineActionsColumnLabel,
+          alwaysVisible: true,
+          fixedWidth: 200,
+          cellBuilder: (BuildContext context, PharmacyDrug item) {
+            return _catalogRowActions(
+              context: context,
+              writeRequirement: widget.writeRequirement,
+              isBusy: isBusy,
+              alignStart: true,
+              editLabel: l10n.commonEditActionLabel,
+              deleteLabel: l10n.commonDeleteActionLabel,
+              editSemanticLabel: l10n.pharmacyEditDrugAction,
+              deleteSemanticLabel: l10n.pharmacyDeleteDrugAction,
+              onEdit: () => _openDrugDialog(context, drug: item),
+              onDelete: () => unawaited(_confirmDeleteDrug(context, item)),
+            );
+          },
+        ),
+        AppListTableColumn<PharmacyDrug>(
           id: 'brand_name',
           label: l10n.pharmacyDrugBrandNameLabel,
           preferredWidth: 160,
@@ -345,25 +366,18 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
             );
           },
         ),
-        AppListTableColumn<PharmacyDrug>(
-          id: 'actions',
-          label: l10n.pharmacyLineActionsColumnLabel,
-          alwaysVisible: true,
-          cellBuilder: (BuildContext context, PharmacyDrug item) {
-            return _catalogRowActions(
-              context: context,
-              writeRequirement: widget.writeRequirement,
-              isBusy: isBusy,
-              editLabel: l10n.commonEditActionLabel,
-              deleteLabel: l10n.commonDeleteActionLabel,
-              editSemanticLabel: l10n.pharmacyEditDrugAction,
-              deleteSemanticLabel: l10n.pharmacyDeleteDrugAction,
-              onEdit: () => _openDrugDialog(context, drug: item),
-              onDelete: () => _confirmDeleteDrug(context, item),
-            );
-          },
-        ),
       ],
+      onRowSelected: (PharmacyDrug item) {
+        unawaited(
+          openPharmacyDrugDetailsDialog(
+            context,
+            ref,
+            drug: item,
+            writeRequirement: widget.writeRequirement,
+            onDelete: (PharmacyDrug drug) => _confirmDeleteDrug(context, drug),
+          ),
+        );
+      },
       mobileItemBuilder: (BuildContext context, PharmacyDrug item) {
         return AppListTableMobileItem(
           leading: Checkbox(
@@ -399,7 +413,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
     );
   }
 
-  Future<void> _confirmDeleteDrug(
+  Future<bool> _confirmDeleteDrug(
     BuildContext context,
     PharmacyDrug drug,
   ) async {
@@ -421,21 +435,22 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
       ),
     );
     if (confirmed != true || !context.mounted) {
-      return;
+      return false;
     }
     final AppFailure? failure = await ref
         .read(pharmacyWorkspaceControllerProvider.notifier)
         .deleteDrug(drug.id);
     if (!context.mounted) {
-      return;
+      return false;
     }
     if (failure == null) {
       setState(() => _selectedDrugIds.remove(drug.id));
-      return;
+      return true;
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(context.l10n.pharmacyCatalogDeleteFailedMessage)),
     );
+    return false;
   }
 
   Future<void> _confirmDeleteSelectedDrugs(BuildContext context) async {

@@ -11994,6 +11994,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyAddDrugAction => 'Create drug';
 
   @override
+  String get pharmacyDrugDetailsTitle => 'Drug Details';
+
+  @override
+  String get pharmacyDrugDetailsSectionTitle => 'Drug';
+
+  @override
   String get pharmacyEditDrugAction => 'Edit drug';
 
   @override

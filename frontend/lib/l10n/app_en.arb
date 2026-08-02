@@ -15310,6 +15310,14 @@
   "@pharmacyAddDrugAction": {
     "description": "Pharmacy create drug action label."
   },
+  "pharmacyDrugDetailsTitle": "Drug Details",
+  "@pharmacyDrugDetailsTitle": {
+    "description": "Pharmacy catalog drug details dialog title."
+  },
+  "pharmacyDrugDetailsSectionTitle": "Drug",
+  "@pharmacyDrugDetailsSectionTitle": {
+    "description": "Pharmacy drug details dialog info section title."
+  },
   "pharmacyEditDrugAction": "Edit drug",
   "@pharmacyEditDrugAction": {
     "description": "Pharmacy edit drug action label."

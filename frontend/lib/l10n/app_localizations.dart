@@ -22144,6 +22144,18 @@ abstract class AppLocalizations {
   /// **'Create drug'**
   String get pharmacyAddDrugAction;
 
+  /// Pharmacy catalog drug details dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Drug Details'**
+  String get pharmacyDrugDetailsTitle;
+
+  /// Pharmacy drug details dialog info section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Drug'**
+  String get pharmacyDrugDetailsSectionTitle;
+
   /// Pharmacy edit drug action label.
   ///
   /// In en, this message translates to:
