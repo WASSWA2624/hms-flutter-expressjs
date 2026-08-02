@@ -1,127 +1,116 @@
-# Scope: Pharmacy drug pack scan automation — refine capture UX, barcode processing, and extraction accuracy
+# Implementation prompt: Similarity match card — Replace existing
 
 ## Goal
 
-Refine the existing **Scan pack or use AI capture** dialog (`showPharmacyDrugPackScanDialog`) so barcode processing, camera capture, live barcode scanning, and OCR/AI retries behave as staff expect—without redesigning the dialog or removing current assistive flows.
+Extend the shared similarity review UI so each match card can **replace an existing record with the proposed values**, instead of only selecting the existing record or creating a duplicate.
 
-Outcome: staff can process a typed/scanned barcode into suggested drug fields, take real camera photos, scan barcodes with an in-app scanner (with product lookup where available), re-run OCR/AI as many times as needed, and get more accurate generic name / brand / form / strength / batch / dates before **Prefill form**.
+Primary surface: `frontend/lib/shared/components/app_similarity.dart`.
 
-## Non-goals
+## Current behavior (as implemented)
 
-- Do not redesign the dialog layout, create-drug form, or catalog screens.
-- Do not persist pack photos, OCR blobs, or scan frames to media storage (session/ephemeral only—keep current contract).
-- Do not require a paid drug-data subscription; free/public lookup sources only, with graceful offline / unavailable fallbacks.
-- Do not remove: raw pack text + Parse text / Process with AI, suggested-value editors, Skip scan, Prefill form, multi-photo thumbnails with crop/remove, or the create-form prefill handoff from `pharmacy_drug_edit_dialog.dart`.
-- Do not block create when scan/lookup fails—assistive only; staff always confirm before save.
+`showAppSimilarityReviewDialog` / `AppSimilarityMatchCard` support these outcomes today:
 
-## Current implementation (baseline)
-
-Primary UI: `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_drug_pack_scan_dialog.dart`
-
-Supporting stack:
-
-| Area | Location | Current behavior |
+| Action | Meaning | Result |
 | --- | --- | --- |
-| Dialog entry | `pharmacy_drug_edit_dialog.dart` → `showPharmacyDrugPackScanDialog` | Returns `DrugPackFieldCandidates?` for create prefill |
-| Barcode field | `AppTextField` + speech mic + suffix **Use barcode** | `_applyBarcode` runs `DrugPackFieldParser` on typed code |
-| Take photo | `takeEphemeralImage` | Camera-preferring input; on unsupported platforms falls back to file picker (feels like “upload”) |
-| Upload photos | `uploadEphemeralImages` | Gallery/file multi-select — keep |
-| Scan barcode | Same as take-photo path + `AppHeuristicBarcodeDecoder` / OCR text heuristics | Still image, not a live scanner; no product catalog lookup |
-| Process OCR / AI | `_processPhotos` + `_canProcessPhotos` | Buttons **disable** after a successful run (`_photosNeedProcessing = false`) until photos change |
-| OCR | `AppTesseractJsOcrService` (web) | On-device Tesseract; accuracy often poor on pack art |
-| Field map | `DrugPackFieldParser`, `DrugPackLocalAiMapper` | Heuristic / local clean+parse; screenshots show garbage generic/brand strings |
-| AI mapper API | `DrugPackAiMapper` | Abstraction already allows a better remote/local impl without UI rewrite |
+| **Cancel** | Dismiss review | `AppSimilarityReviewAction.cancel` |
+| **Check again** | Re-run similarity with edited proposed fields | `retry` + `proposedValues` |
+| **Use this** (per match card) | Keep the selected existing item; abandon create | `useExisting` + `selected` (+ optional `proposedValues`) |
+| **Save / create anyway** (dialog footer) | Continue creating a new item with proposed values | `proceed` + `proposedValues` (hidden when `blockProceed` / exact conflict) |
 
-Observed gaps (from current UI + staff feedback):
+Match cards expose a **single** CTA (`onUseThis` → `useExisting`). There is **no** action that means: *apply the proposed (suggested) values onto this existing match*.
 
-1. Mic and **Use barcode** feel disconnected; label **Use barcode** understates that the action maps/prefills fields.
-2. **Take photo** often opens file upload instead of a real camera experience.
-3. **Scan barcode** is photo-based, not a built-in live scanner; no barcode→product metadata enrichment.
-4. **Process with OCR** / **Process with AI** become inactive after the first successful process—retries require re-adding/editing photos.
-5. Extracted suggested values (especially generic/brand) are frequently wrong or OCR garbage.
+Callers (e.g. pharmacy drug create via `pharmacy_drug_similarity_dialog.dart` → `pharmacy_drug_edit_dialog.dart`) already handle `useExisting` by selecting the existing entity and aborting create. That path must remain unchanged.
 
-## Required changes
+## Intended behavior
 
-### 1) Package barcode field: mic proximity + **Process barcode**
+When the user is **adding** (create flow) and similarity review shows one or more existing matches:
 
-- Rename action label from **Use barcode** → **Process barcode** (update `app_en.arb` + generated l10n; keep semantic meaning: map barcode into suggested drug fields).
-- Update helper copy to match (e.g. process barcode to map fields; scan barcode fills the field from the scanner).
-- Keep speech-to-text on the barcode field, but place the mic control **adjacent** to the Process barcode control (tight trailing cluster: mic → Process barcode), so the two actions read as one control group—not mic left floating and process far right.
-- Prefer fixing via the dialog’s suffix composition / `AppTextField` trailing layout for this field without breaking speech/suffix patterns elsewhere.
-- **Process barcode** must remain: take current barcode text → parse/map → seed Suggested values (and set drug code from barcode when identity fields are empty)—same success path as today, clearer naming only unless lookup (below) adds enrichment.
+1. Keep **Use this** as today: select the existing match and do **not** create a new record; do **not** overwrite the existing record with proposed values.
+2. Add **Replace existing** (per match card): choose that existing match as the target, and treat the **proposed/suggested values** as the values that should **overwrite** that existing record — **no new duplicate** is created.
+3. Preserve **Cancel**, **Check again**, and **Save/create anyway** semantics unless a caller explicitly opts into different footer behavior.
 
-### 2) Take photo → open camera
+Direction of data for replace:
 
-- **Take photo** must open a **camera capture** path (device camera / getUserMedia / platform camera UI), not the gallery/file picker, whenever the platform can support it.
-- Keep crop/editor behavior consistent with today’s take-photo flow if already used.
-- **Upload photos** stays gallery/file multi-select.
-- On true camera-unavailable platforms only, fall back clearly (message or disabled state)—do not silently pretend Take photo is Upload.
+- **Source of truth for field values:** current proposed values in the dialog (including any in-dialog edits), not the existing column.
+- **Target of the write:** the selected match’s existing item (`AppSimilarityMatch.item`).
+- **Outcome:** replace/update existing with proposed; do not create a second entity.
 
-### 3) Built-in barcode scanner + lookup infrastructure
+## Gap to close
 
-- **Scan barcode** must open an **in-app barcode scanner** (live camera viewfinder + decode), especially on phone/web-with-camera. Create shared scan infrastructure under `frontend/lib/shared/scan/` if missing (do not bolt a one-off only inside the pharmacy dialog if a reusable scanner is feasible).
-- Scanner requirements:
-  - Decode common retail/pharma barcodes (EAN/UPC/Code128/QR as already targeted by heuristics, expanded if the decoder stack allows).
-  - On successful decode: fill Package barcode, then run the same process/map path as Process barcode.
-  - Support cancel/close without losing existing dialog state.
-  - Ephemeral frames only; no media upload.
-- **Product / pack metadata lookup** (assistive):
-  - After a successful decode (and optionally after Process barcode), attempt lookup against configurable free/public barcode or open-drug resources (pluggable provider interface; fail soft).
-  - Merge any returned name/form/strength/etc. into `DrugPackFieldCandidates` the same way OCR/AI merge works today.
-  - If lookup is unavailable, offline, or empty: keep current parser-only behavior; show a non-blocking status, never block Prefill/Skip.
-- Desktop without camera: offer a clear fallback (manual entry + Process barcode, or still-image decode)—do not leave Scan barcode as a silent no-op.
+| Area | Gap |
+| --- | --- |
+| Result model | No `replaceExisting` (or equivalent) on `AppSimilarityReviewAction` / `AppSimilarityReviewResult` |
+| Match card UI | Only one action; no second CTA for replace |
+| Dialog API | No opt-in flags/labels/icons for replace; no way for callers to enable/disable it |
+| Tests | `app_similarity_test.dart` covers use-this / proceed / retry only |
 
-### 4) Allow repeated Process with OCR / Process with AI
+## Requirements
 
-- After photos are processed, **Process with OCR** and **Process with AI** must stay **enabled** whenever `_photos.isNotEmpty` and not busy—staff must be able to re-run for multiple trials without editing/re-uploading photos.
-- Fix the gate that currently ties enablement to `_photosNeedProcessing` only (e.g. allow process when photos exist; keep “needs processing” as status copy if useful, not as a hard disable).
-- Re-runs should re-OCR / re-map and refresh Suggested values + raw text merge behavior consistent with current merge rules (prefer non-empty; staff can still edit).
-- Preserve busy/loading guards so double-taps don’t spawn parallel runs; after completion, buttons re-enable for another try.
-- Mirror the same “retry anytime” expectation for raw-text **Parse text** / **Process with AI** (already mostly enabled when not busy—keep that).
+### Shared component (`app_similarity.dart`)
 
-### 5) Improve extraction accuracy (OCR + mapping)
+1. **Add a review action** for replace, e.g. `AppSimilarityReviewAction.replaceExisting`, with a result factory that carries:
+   - `selected` — the existing match item `T`
+   - `proposedValues` — map of current proposed field values (same shape as `proceed` / `retry`)
+2. **Extend `AppSimilarityMatchCard`** so each card can show a second action when enabled:
+   - Primary existing action remains **Use this** (`useExisting`).
+   - New action **Replace existing** pops `replaceExisting` with that card’s item + current proposed values.
+   - Layout: keep the existing card structure; place both actions in the card footer without clutter (e.g. secondary + primary/destructive-adjacent secondary). Match existing `AppButton` patterns.
+3. **Extend `showAppSimilarityReviewDialog` / dialog state** with opt-in replace support, for example:
+   - `enableReplaceExisting` (default `false`) — callers must opt in so existing adapters stay behavior-identical.
+   - Optional `replaceExistingLabel` / `replaceExistingIcon` (fallback to new shared l10n keys).
+4. **Default off:** when `enableReplaceExisting` is false, UI and result surface must match today’s behavior (no new buttons, no new enum values returned from the dialog).
+5. **Exact vs near matches:** replace should be available on both exact and near match cards when enabled (exact conflicts already block *create anyway*; replace is an alternative to create, not a bypass of identity review).
+6. **Do not** change field comparison rendering, scoring display, proposed-field editing, retry, cancel, or proceed unless required to wire the new action.
 
-- Improve pack-photo → field accuracy so generic name, brand name, form, strength, batch, manufacturing/expiry are recovered more reliably than today’s garbage strings.
-- Work within existing seams:
-  - `AppOcrService` / platform OCR (preprocessing, language/psm hints, multi-pass, or better engine if free and ephemeral-safe).
-  - `DrugPackFieldParser` heuristics (pack-label patterns: “Tablets B.P.”, brand lines, strength units, EXP/MFG).
-  - `DrugPackLocalAiMapper` cleanup + structured mapping; optionally wire a better `DrugPackAiMapper` when configured, with local fallback unchanged.
-- Prefer fixing mapping of *good* OCR lines over only UI polish; still surface Raw pack text so staff can correct and re-parse.
-- Add/extend unit tests with realistic pack OCR fixtures (e.g. Paracetamol / brand / 500 mg / Tablet) proving generic + brand + strength + form populate correctly; keep regression tests for barcode-only and empty OCR.
+### Localization
 
-## Preserve
+- Add shared strings in `app_en.arb` (and regenerate l10n as this repo requires), e.g.:
+  - `appSimilarityReplaceExistingAction` — default label such as “Replace existing”
+  - Optional short helper/tooltip only if the design system already uses one for similar CTAs; otherwise label-only is enough.
+- Domain adapters may override via `replaceExistingLabel` (e.g. pharmacy: “Replace this drug”) without hard-coding English in widgets.
 
-- Dialog title, Skip scan, Prefill form (`hasAnyIdentityField` gate).
-- Suggested values section and editable fields.
-- Multi-photo strip, clear-all, per-photo crop/remove.
-- Raw pack text section and parse/AI actions.
-- Ephemeral image contract (no HMS media persistence).
-- Existing `DrugPackFieldCandidates` shape and create-dialog prefill integration.
-- l10n via ARB (no hard-coded user-facing English in widgets).
-- Existing component patterns: `AppDialog`, `AppButton`, `AppTextField`, shared `scan` exports.
+### Call-site wiring (out of shared widget, but in scope for a complete feature)
+
+Shared component work alone is insufficient for end-to-end behavior. After the API exists, the **first consumer** should be the pharmacy drug create similarity path (prompt context: drugs), unless this task is explicitly limited to the shared widget + tests only:
+
+1. `pharmacy_drug_similarity_dialog.dart` — enable replace; map `replaceExisting` → a new `PharmacyDrugSimilarityAction.replaceExisting` carrying `selectedDrug` + proposed values.
+2. `pharmacy_drug_edit_dialog.dart` (create branch) — on replace: call existing `updateDrug` / offering upsert with proposed field values for the selected drug id; pop a saved/replaced result; **do not** call `createDrug`.
+3. `pharmacy_catalog_panel.dart` — treat a successful replace like a successful save/use-existing for refresh / details open, consistent with current post-create UX.
+4. Other similarity adapters (tenant, facility, storage, lab, etc.) **must remain unchanged** until they opt in.
+
+If this ticket is **shared-component only**, document the new API and leave domain wiring to a follow-up; still ship component tests.
+
+### Tests
+
+Update / add widget tests in `frontend/test/shared/components/app_similarity_test.dart`:
+
+- Replace CTA **absent** when `enableReplaceExisting` is false (default).
+- Replace CTA **present** when enabled; tapping returns `replaceExisting` with correct `selected` and edited `proposedValues`.
+- **Use this** still returns `useExisting` and does not update semantics.
+- Exact-conflict + replace enabled: proceed still blocked; replace and use-this still available.
+
+Add or extend pharmacy dialog/edit tests only if domain wiring is included in the same change.
+
+## Non-goals / preserve
+
+- Do not remove or redefine `useExisting`.
+- Do not force replace on all similarity dialogs; default remains off.
+- Do not redesign the similarity dialog layout beyond the match-card action area.
+- Do not change backend similarity scoring APIs for this UI action (replace is an update of an already-identified existing id).
+- Do not invent a merge/partial-field UI; replace applies the **current proposed values** as the update payload the caller already knows how to send.
 
 ## Acceptance criteria
 
-1. Barcode trailing controls: mic sits next to **Process barcode**; label/helper no longer say **Use barcode**.
-2. **Process barcode** with a valid/typed code maps into Suggested values (and code/barcode fields) as before, with clearer copy.
-3. **Take photo** opens camera capture on supported platforms; **Upload photos** remains file/gallery.
-4. **Scan barcode** opens an in-app live scanner when camera is available; decoded value fills the barcode field and triggers process/map; cancel leaves prior dialog state intact.
-5. Barcode decode can optionally enrich candidates via pluggable free lookup; failure degrades to parser-only without blocking the flow.
-6. With N photos already processed, **Process with OCR** and **Process with AI** remain clickable; each re-run refreshes suggestions; buttons only disable while a run is in progress.
-7. For representative pack photos/OCR text (e.g. Paracetamol 500 mg tablets + brand), Suggested values show correct-or-near-correct generic, brand, form, and strength—not OCR gibberish as the primary result.
-8. Existing tests updated; new tests cover: process-barcode labeling/behavior, process-buttons remain enabled after first run, scanner/lookup soft-fail, improved parser/AI fixtures.
-9. No pack image bytes uploaded to media APIs; create/save path unchanged aside from better prefill candidates.
+- [ ] Match cards can optionally offer **Replace existing** in addition to **Use this**.
+- [ ] Choosing replace returns selected existing item + proposed values; choosing use-this still only selects existing.
+- [ ] Default callers (replace disabled) behave exactly as before.
+- [ ] With pharmacy wiring (if in scope): create-with-similarity → replace updates that drug and does not create a duplicate.
+- [ ] Shared component tests cover enable/disable and both card actions.
+- [ ] l10n keys exist; no raw user-facing English hard-coded in the shared widget beyond existing patterns.
 
 ## Implementation notes
 
-- Start from `pharmacy_drug_pack_scan_dialog.dart`; extract reusable scanner/lookup into `frontend/lib/shared/scan/` when the dialog would otherwise grow a second capture stack.
-- Prefer extending `AppBarcodeDecoder` / new `DrugPackBarcodeLookup` (name as fits repo style) over scattering HTTP in the widget.
-- `_canProcessPhotos` today: `!_busy && _photos.isNotEmpty && _photosNeedProcessing` — this is the retry bug; change enablement, not the whole photo pipeline.
-- Web camera: improve beyond `capture=environment` file input where a real MediaStream viewfinder is needed for live scan; keep stub/unsupported paths for non-web.
-- Keep status messages (`pharmacyDrugScanProcessingAiBody`, empty/no-data, AI unavailable) coherent with retries and lookup misses.
-
-## Out of scope / later
-
-- Paid commercial drug databases or guaranteed global GTIN coverage.
-- Auto-saving catalog drugs without staff review.
-- Replacing the entire create-drug wizard with scan-only entry.
+- Prefer extending the existing result enum/factories over a parallel callback API, so adapters keep a single `switch (result.action)`.
+- Pass `proposedValues` on replace the same way `useExisting` already can, so callers do not re-read controllers after pop.
+- Keep `AppSimilarityMatchCard` reusable: if both actions are shown, prefer optional `onReplaceExisting` / visibility flag over baking domain logic into the card.
+- Visual language: reuse secondary/tertiary button styles already used on the card; avoid introducing a new card chrome.
