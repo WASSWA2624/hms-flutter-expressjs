@@ -33,6 +33,9 @@ abstract final class AppActionIcons {
   static const IconData print = Icons.print_outlined;
   static const IconData download = Icons.download_outlined;
   static const IconData upload = Icons.upload_outlined;
+
+  /// Table / sheet export (upward arrow). Prefer over [download] for Export.
+  static const IconData export = Icons.upload_outlined;
   static const IconData attach = Icons.attach_file;
   static const IconData info = Icons.info_outline;
   static const IconData warning = Icons.warning_amber_outlined;

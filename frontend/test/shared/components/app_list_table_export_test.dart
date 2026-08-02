@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 
 import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
@@ -253,13 +253,13 @@ void main() {
     }
 
     await pumpTable(enableExport: false, canExport: true);
-    expect(find.byIcon(AppActionIcons.download), findsNothing);
+    expect(find.byIcon(AppActionIcons.export), findsNothing);
 
     await pumpTable(enableExport: true, canExport: false);
-    expect(find.byIcon(AppActionIcons.download), findsNothing);
+    expect(find.byIcon(AppActionIcons.export), findsNothing);
 
     await pumpTable(enableExport: true, canExport: true);
-    expect(find.byIcon(AppActionIcons.download), findsOneWidget);
+    expect(find.byIcon(AppActionIcons.export), findsOneWidget);
   });
 
   testWidgets('Export is enabled by default on AppListTable', (
@@ -288,7 +288,7 @@ void main() {
       size: const Size(900, 600),
     );
 
-    expect(find.byIcon(AppActionIcons.download), findsOneWidget);
+    expect(find.byIcon(AppActionIcons.export), findsOneWidget);
   });
 
   testWidgets(
@@ -345,7 +345,7 @@ void main() {
       expect(visibility.isColumnVisible('status'), isTrue);
       expect(visibility.isColumnVisible('code'), isFalse);
 
-      await tester.tap(find.byIcon(AppActionIcons.download));
+      await tester.tap(find.byIcon(AppActionIcons.export));
       await tester.pumpAndSettle();
 
       expect(find.byType(AppListTableExportDialog<_ExportRow>), findsOneWidget);
@@ -427,7 +427,7 @@ void main() {
       size: const Size(1000, 700),
     );
 
-    await tester.tap(find.byIcon(AppActionIcons.download));
+    await tester.tap(find.byIcon(AppActionIcons.export));
     await tester.pumpAndSettle();
 
     final Finder selectAll = find.widgetWithText(CheckboxListTile, 'Select all');
@@ -508,10 +508,10 @@ void main() {
         size: const Size(1000, 700),
       );
 
-      await tester.tap(find.byIcon(AppActionIcons.download));
+      await tester.tap(find.byIcon(AppActionIcons.export));
       await tester.pumpAndSettle();
 
-      // Title stays (alwaysVisible); leave Status on and Code off → mixed.
+      // Title stays (alwaysVisible); leave Status on and Code off â†’ mixed.
       await tester.tap(find.widgetWithText(CheckboxListTile, 'Code'));
       await tester.pumpAndSettle();
 
@@ -582,7 +582,7 @@ void main() {
     visibility.applyVisibleColumnKeys(<String>{'title', 'status'});
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(AppActionIcons.download));
+    await tester.tap(find.byIcon(AppActionIcons.export));
     await tester.pumpAndSettle();
 
     final Finder reset = find.text('Reset columns');
@@ -689,7 +689,7 @@ void main() {
       size: const Size(1000, 700),
     );
 
-    await tester.tap(find.byIcon(AppActionIcons.download));
+    await tester.tap(find.byIcon(AppActionIcons.export));
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(AppButton, 'Export').last);

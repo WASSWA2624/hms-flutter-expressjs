@@ -257,6 +257,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         AppListTableColumn<PharmacyDrug>(
           id: 'brand_name',
           label: l10n.pharmacyDrugBrandNameLabel,
+          preferredWidth: 160,
           cellBuilder: (_, PharmacyDrug item) =>
               Text((item.brandName ?? '').trim().isEmpty
                   ? '—'
@@ -266,6 +267,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         AppListTableColumn<PharmacyDrug>(
           id: 'generic_name',
           label: l10n.pharmacyDrugGenericNameLabel,
+          preferredWidth: 180,
           cellBuilder: (_, PharmacyDrug item) {
             final String generic = (item.genericName ?? '').trim();
             if (generic.isNotEmpty) {
@@ -286,11 +288,13 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         AppListTableColumn<PharmacyDrug>(
           id: 'code',
           label: l10n.pharmacyDrugCodeLabel,
+          preferredWidth: 120,
           cellBuilder: (_, PharmacyDrug item) => Text(item.code ?? ''),
         ),
         AppListTableColumn<PharmacyDrug>(
           id: 'form',
           label: l10n.pharmacyDrugFormLabel,
+          preferredWidth: 120,
           cellBuilder: (_, PharmacyDrug item) =>
               Text((item.form ?? '').trim().isEmpty ? '—' : item.form!.trim()),
           exportValue: (PharmacyDrug item) => item.form ?? '',
@@ -343,7 +347,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         ),
         AppListTableColumn<PharmacyDrug>(
           id: 'actions',
-          label: '',
+          label: l10n.pharmacyLineActionsColumnLabel,
           alwaysVisible: true,
           cellBuilder: (BuildContext context, PharmacyDrug item) {
             return _catalogRowActions(
@@ -612,7 +616,8 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
         ),
         AppListTableColumn<PharmacyFormularyItem>(
           id: 'drug_name',
-          label: l10n.pharmacyDrugNameLabel,
+          label: l10n.pharmacyDrugGenericNameLabel,
+          preferredWidth: 220,
           cellBuilder: (_, PharmacyFormularyItem item) =>
               Text(item.drugNameLabel ?? '—'),
         ),
@@ -638,7 +643,7 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
         ),
         AppListTableColumn<PharmacyFormularyItem>(
           id: 'actions',
-          label: '',
+          label: l10n.pharmacyLineActionsColumnLabel,
           alwaysVisible: true,
           cellBuilder: (BuildContext context, PharmacyFormularyItem item) {
             return _catalogRowActions(
@@ -898,7 +903,7 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
                   },
                 ),
                 AppListTableColumn<PharmacyDrug>(
-                  label: l10n.pharmacyDrugNameLabel,
+                  label: l10n.pharmacyDrugGenericNameLabel,
                   cellBuilder: (_, PharmacyDrug drug) =>
                       Text(drug.displayTitle),
                 ),
@@ -1188,7 +1193,7 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
         ),
         AppListTableColumn<PharmacyInventoryStock>(
           id: 'actions',
-          label: '',
+          label: l10n.pharmacyLineActionsColumnLabel,
           alwaysVisible: true,
           cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
             return _catalogRowActions(
@@ -1745,7 +1750,7 @@ class _StorageLayoutCatalogTabState
         ),
         AppListTableColumn<PharmacyStorageRoom>(
           id: 'actions',
-          label: '',
+          label: l10n.pharmacyLineActionsColumnLabel,
           alwaysVisible: true,
           // Create + Edit + Delete with labels exceed the default 200px actions
           // column and overflow the cell without an explicit width.
@@ -1933,7 +1938,7 @@ class _ShelvesCatalogTabState extends ConsumerState<_ShelvesCatalogTab> {
         ),
         AppListTableColumn<_ShelfRow>(
           id: 'actions',
-          label: '',
+          label: l10n.pharmacyLineActionsColumnLabel,
           alwaysVisible: true,
           cellBuilder: (BuildContext context, _ShelfRow row) {
             return _catalogRowActions(

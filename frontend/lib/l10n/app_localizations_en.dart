@@ -11951,13 +11951,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyDeleteDrugAction => 'Delete drug';
 
   @override
-  String get pharmacyDrugNameLabel => 'Drug name';
+  String get pharmacyDrugNameLabel => 'Generic name';
 
   @override
   String get pharmacyDrugBrandNameLabel => 'Brand name';
 
   @override
-  String get pharmacyDrugGenericNameLabel => 'Generic (scientific) name';
+  String get pharmacyDrugGenericNameLabel => 'Generic name';
 
   @override
   String get pharmacyDrugCodeLabel => 'Drug code';

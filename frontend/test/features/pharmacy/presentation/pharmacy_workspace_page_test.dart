@@ -247,7 +247,21 @@ void _stubPharmacyRepository(_MockPharmacyRepository repository) {
   });
   when(() => repository.searchDrugs(any())).thenAnswer(
     (_) async => const Result<AppPage<PharmacyDrug>>.success(
-      AppPage<PharmacyDrug>(items: <PharmacyDrug>[], request: AppPageRequest()),
+      AppPage<PharmacyDrug>(
+        items: <PharmacyDrug>[
+          PharmacyDrug(
+            id: 'drug-1',
+            name: 'Amoxicillin',
+            genericName: 'Amoxicillin',
+            brandName: 'Amoxil',
+            code: 'AMX500',
+            form: 'Capsule',
+            strength: '500 mg',
+          ),
+        ],
+        request: AppPageRequest(),
+        totalItemCount: 1,
+      ),
     ),
   );
   when(() => repository.getInventoryStock(any())).thenAnswer(
@@ -517,6 +531,13 @@ void main() {
     expect(find.text('Drugs'), findsWidgets);
     expect(find.text('Room'), findsOneWidget);
     expect(find.text('Storage layout'), findsNothing);
+    expect(find.text('Generic name'), findsWidgets);
+    expect(find.text('Generic (scientific) name'), findsNothing);
+    expect(
+      find.descendant(of: find.byType(DataTable), matching: find.text('Actions')),
+      findsOneWidget,
+    );
+    expect(find.byIcon(AppActionIcons.export), findsOneWidget);
     // Add lives in the search trailing cluster (not an above-table toolbar).
     expect(find.byTooltip('Create drug'), findsOneWidget);
     expect(tester.takeException(), isNull);

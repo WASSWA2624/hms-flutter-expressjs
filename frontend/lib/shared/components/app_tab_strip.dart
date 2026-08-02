@@ -217,12 +217,21 @@ class _AppTabOverflowRow extends StatelessWidget {
                       MenuController controller,
                       Widget? child,
                     ) {
+                      final bool hasOverflowAttention = partition
+                          .overflowIndices
+                          .any((int index) {
+                            final int? count = tabs[index].count;
+                            return count != null && count > 0;
+                          });
                       return KeyedSubtree(
                         key: const ValueKey<String>('tabOverflowMore'),
                         child: AppButton.popupMenuTrigger(
                           context: context,
                           icon: Icons.more_vert,
-                          semanticLabel: _moreLabel,
+                          semanticLabel: hasOverflowAttention
+                              ? '$_moreLabel (attention)'
+                              : _moreLabel,
+                          attentionCount: hasOverflowAttention ? 1 : 0,
                           onPressed: () {
                             if (controller.isOpen) {
                               controller.close();

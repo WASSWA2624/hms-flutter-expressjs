@@ -42,14 +42,14 @@ const int _minTableRowCount = 50;
 const double _rowNumberColumnWidth = 48;
 const double _mobileRowNumberColumnWidth = 28;
 const double _mobileRowGutterHeight = 8;
-const double _minResizableColumnWidth = 72;
+const double _minResizableColumnWidth = 96;
 const String _defaultGoToTopLabel = 'Go to top';
 const String _defaultLoadingMoreLabel = 'Loading more...';
 const String _defaultAllRowsLoadedLabel = 'All rows loaded';
 const Duration _goToTopAnimationDuration = Duration(milliseconds: 280);
 const double _goToTopButtonExtent = 48;
-const double _defaultColumnWidth = 160;
-const double _defaultCompactColumnWidth = 136;
+const double _defaultColumnWidth = 168;
+const double _defaultCompactColumnWidth = 144;
 const double _columnResizeHandleWidth = 8;
 const double _infiniteScrollLoadExtent = 240;
 
@@ -1225,7 +1225,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       return preferred.clamp(_minResizableColumnWidth, 640);
     }
     if (_isActionsColumn(column)) {
-      return compact ? 168.0 : 200.0;
+      return compact ? 176.0 : 208.0;
     }
     return compact ? _defaultCompactColumnWidth : _defaultColumnWidth;
   }
@@ -2054,7 +2054,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     if (widget.enableExport && widget.canExport) {
       actions.add(
         AppSearchBarAction(
-          icon: AppActionIcons.download,
+          icon: AppActionIcons.export,
           label: _exportLabel,
           tooltip: _exportLabel,
           onPressed: _openExportDialog,
@@ -3041,76 +3041,82 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
           if (widget.scrollVertically) {
             return LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
-                final int minRowCount = widget.padEmptyRows
-                    ? _rowCountToFillHeight(
-                        availableHeight: constraints.maxHeight,
-                        headingHeight: _headingRowHeight,
-                        rowMinHeight: rowMinHeight,
-                        itemCount: widget.items.length,
-                      )
-                    : widget.items.length;
-                final Widget table = buildTable(minRowCount);
                 final double tableWidth = math.max(
                   widget.minWidth,
                   constraints.maxWidth,
                 );
-                final Widget horizontalTable = Scrollbar(
-                  controller: _horizontalController,
-                  thumbVisibility: true,
-                  scrollbarOrientation: ScrollbarOrientation.bottom,
-                  notificationPredicate: (ScrollNotification notification) {
-                    return notification.metrics.axis == Axis.horizontal;
-                  },
-                  child: SingleChildScrollView(
-                    controller: _horizontalController,
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(width: tableWidth, child: table),
-                  ),
-                );
 
-                if (scrollWithHeader) {
+                Widget buildPinnedScrollBody({
+                  required double bodyHeight,
+                  required Widget table,
+                }) {
+                  // Horizontal scroll is the outer axis so its scrollbar stays
+                  // pinned to the bottom of the visible table viewport.
                   return Scrollbar(
-                    controller: _verticalController,
+                    controller: _horizontalController,
                     thumbVisibility: true,
+                    scrollbarOrientation: ScrollbarOrientation.bottom,
+                    notificationPredicate: (ScrollNotification notification) {
+                      return notification.metrics.axis == Axis.horizontal;
+                    },
                     child: SingleChildScrollView(
-                      controller: _verticalController,
-                      child: KeyedSubtree(
-                        key: headerKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            surfaceHeader,
-                            horizontalTable,
-                          ],
+                      controller: _horizontalController,
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                        width: tableWidth,
+                        height: bodyHeight,
+                        child: Scrollbar(
+                          controller: _verticalController,
+                          thumbVisibility: true,
+                          child: SingleChildScrollView(
+                            controller: _verticalController,
+                            child: KeyedSubtree(key: headerKey, child: table),
+                          ),
                         ),
                       ),
                     ),
                   );
                 }
 
-                return Scrollbar(
-                  controller: _horizontalController,
-                  thumbVisibility: true,
-                  scrollbarOrientation: ScrollbarOrientation.bottom,
-                  notificationPredicate: (ScrollNotification notification) {
-                    return notification.metrics.axis == Axis.horizontal;
-                  },
-                  child: SingleChildScrollView(
-                    controller: _horizontalController,
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(
-                      width: tableWidth,
-                      height: constraints.maxHeight,
-                      child: Scrollbar(
-                        controller: _verticalController,
-                        thumbVisibility: true,
-                        child: SingleChildScrollView(
-                          controller: _verticalController,
-                          child: KeyedSubtree(key: headerKey, child: table),
-                        ),
+                if (!scrollWithHeader) {
+                  final int minRowCount = widget.padEmptyRows
+                      ? _rowCountToFillHeight(
+                          availableHeight: constraints.maxHeight,
+                          headingHeight: _headingRowHeight,
+                          rowMinHeight: rowMinHeight,
+                          itemCount: widget.items.length,
+                        )
+                      : widget.items.length;
+                  return buildPinnedScrollBody(
+                    bodyHeight: constraints.maxHeight,
+                    table: buildTable(minRowCount),
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    surfaceHeader,
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder:
+                            (BuildContext context, BoxConstraints bodyConstraints) {
+                          final int minRowCount = widget.padEmptyRows
+                              ? _rowCountToFillHeight(
+                                  availableHeight: bodyConstraints.maxHeight,
+                                  headingHeight: _headingRowHeight,
+                                  rowMinHeight: rowMinHeight,
+                                  itemCount: widget.items.length,
+                                )
+                              : widget.items.length;
+                          return buildPinnedScrollBody(
+                            bodyHeight: bodyConstraints.maxHeight,
+                            table: buildTable(minRowCount),
+                          );
+                        },
                       ),
                     ),
-                  ),
+                  ],
                 );
               },
             );

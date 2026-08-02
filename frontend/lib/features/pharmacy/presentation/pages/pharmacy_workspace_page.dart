@@ -449,6 +449,9 @@ class _PharmacyWorkspaceContentState
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
+      // Fill the shell viewport so nested AppListTable horizontal scrollbars
+      // stay pinned to the visible table bottom (not below-fold content).
+      scrollable: false,
       child: SizedBox(
         width: double.infinity,
         child: Column(
@@ -488,23 +491,28 @@ class _PharmacyWorkspaceContentState
                 body: l10n.pharmacyNoOrdersBody,
                 icon: Icons.medication_liquid_outlined,
               )
-            else if (effectiveSection.isCatalogSection)
-              PharmacyCatalogPanel(state: state)
-            else if (effectiveSection.isStockSection)
-              _PharmacyStockPanel(
-                state: state,
-                section: effectiveSection,
-                onOpenCatalogInventory: () =>
-                    _goToCatalogTab(controller, PharmacyCatalogTab.inventory),
-              )
             else
-              _PharmacyQueuePanel(
-                state: state,
-                section: effectiveSection,
-                writeRequirement:
-                    pharmacySectionWriteRequirement(effectiveSection),
-                searchController: _searchController,
-                columnVisibilityController: _tableColumnController,
+              Expanded(
+                child: effectiveSection.isCatalogSection
+                    ? PharmacyCatalogPanel(state: state, fillHeight: true)
+                    : effectiveSection.isStockSection
+                    ? _PharmacyStockPanel(
+                        state: state,
+                        section: effectiveSection,
+                        onOpenCatalogInventory: () => _goToCatalogTab(
+                          controller,
+                          PharmacyCatalogTab.inventory,
+                        ),
+                      )
+                    : _PharmacyQueuePanel(
+                        state: state,
+                        section: effectiveSection,
+                        writeRequirement: pharmacySectionWriteRequirement(
+                          effectiveSection,
+                        ),
+                        searchController: _searchController,
+                        columnVisibilityController: _tableColumnController,
+                      ),
               ),
           ],
         ),

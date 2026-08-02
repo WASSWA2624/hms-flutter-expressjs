@@ -309,4 +309,80 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Departments'), findsOneWidget);
   });
+
+  testWidgets('shows attention badge on More when overflow tab has count', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: AppTabStrip(
+            tabs: const <AppTabItem>[
+              AppTabItem(id: 'a', label: 'Appointments', count: 0),
+              AppTabItem(id: 'b', label: 'Desk queue', count: 0),
+              AppTabItem(id: 'c', label: 'High priority', count: 0),
+              AppTabItem(id: 'd', label: 'Active visits', count: 0),
+              AppTabItem(id: 'e', label: 'Follow-ups', count: 0),
+              AppTabItem(id: 'f', label: 'All orders', count: 2),
+            ],
+            selectedId: 'a',
+            onTabTapped: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey<String>('tabOverflowMore')), findsOneWidget);
+    expect(find.byType(Badge), findsWidgets);
+
+    await tester.tap(find.byKey(const ValueKey<String>('tabOverflowMore')));
+    await tester.pumpAndSettle();
+    expect(find.text('All orders (2)'), findsOneWidget);
+  });
+
+  testWidgets('hides attention badge on More when overflow counts are zero', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: AppTabStrip(
+            tabs: const <AppTabItem>[
+              AppTabItem(id: 'a', label: 'Appointments', count: 0),
+              AppTabItem(id: 'b', label: 'Desk queue', count: 0),
+              AppTabItem(id: 'c', label: 'High priority', count: 0),
+              AppTabItem(id: 'd', label: 'Active visits', count: 0),
+              AppTabItem(id: 'e', label: 'Follow-ups', count: 0),
+              AppTabItem(id: 'f', label: 'Payment gate', count: 0),
+            ],
+            selectedId: 'a',
+            onTabTapped: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey<String>('tabOverflowMore')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('tabOverflowMore')),
+        matching: find.byType(Badge),
+      ),
+      findsNothing,
+    );
+  });
 }

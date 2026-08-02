@@ -22066,10 +22066,10 @@ abstract class AppLocalizations {
   /// **'Delete drug'**
   String get pharmacyDeleteDrugAction;
 
-  /// Pharmacy drug name field label.
+  /// Pharmacy drug generic name field label (legacy key retained).
   ///
   /// In en, this message translates to:
-  /// **'Drug name'**
+  /// **'Generic name'**
   String get pharmacyDrugNameLabel;
 
   /// Pharmacy drug brand name field label.
@@ -22078,10 +22078,10 @@ abstract class AppLocalizations {
   /// **'Brand name'**
   String get pharmacyDrugBrandNameLabel;
 
-  /// Pharmacy drug generic or scientific name field label.
+  /// Pharmacy drug generic name field label.
   ///
   /// In en, this message translates to:
-  /// **'Generic (scientific) name'**
+  /// **'Generic name'**
   String get pharmacyDrugGenericNameLabel;
 
   /// Pharmacy drug code field label.

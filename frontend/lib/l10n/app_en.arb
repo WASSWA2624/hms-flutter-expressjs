@@ -15248,17 +15248,17 @@
   "@pharmacyDeleteDrugAction": {
     "description": "Pharmacy delete drug action label."
   },
-  "pharmacyDrugNameLabel": "Drug name",
+  "pharmacyDrugNameLabel": "Generic name",
   "@pharmacyDrugNameLabel": {
-    "description": "Pharmacy drug name field label."
+    "description": "Pharmacy drug generic name field label (legacy key retained)."
   },
   "pharmacyDrugBrandNameLabel": "Brand name",
   "@pharmacyDrugBrandNameLabel": {
     "description": "Pharmacy drug brand name field label."
   },
-  "pharmacyDrugGenericNameLabel": "Generic (scientific) name",
+  "pharmacyDrugGenericNameLabel": "Generic name",
   "@pharmacyDrugGenericNameLabel": {
-    "description": "Pharmacy drug generic or scientific name field label."
+    "description": "Pharmacy drug generic name field label."
   },
   "pharmacyDrugCodeLabel": "Drug code",
   "@pharmacyDrugCodeLabel": {

@@ -586,7 +586,7 @@ class _AppListTableExportDialogState<T>
 
     return AppDialog(
       title: Text(widget.title),
-      icon: const Icon(AppActionIcons.download),
+      icon: const Icon(AppActionIcons.export),
       scrollable: true,
       closeEnabled: canInteract,
       maxWidth: 760,
@@ -808,7 +808,7 @@ class _AppListTableExportDialogState<T>
       actions: <Widget>[
         AppButton.primary(
           label: widget.exportLabel,
-          leadingIcon: AppActionIcons.download,
+          leadingIcon: AppActionIcons.export,
           isLoading: _isExporting,
           enabled: canInteract,
           onPressed: canInteract ? _export : null,
