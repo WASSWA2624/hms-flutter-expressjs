@@ -1,71 +1,76 @@
-# Pharmacy Catalog Shelves: Details, Unified Create, and Room-Scoped Similarity
+# Pharmacy Room Details Dialog: Flatten Summary, Inline Meta, Shelves Table
 
-**Objective:** Keep the Catalog → Shelves table as-is for listing, then add a polished shelf **details** dialog on row select, replace the Create **Next** room-picker wizard with a **single** Add shelf dialog (room + fields together), require shelf label, allow optional blank shelf code with backend auto-generation, and run create/edit **similarity review scoped to shelves in the selected room** using the shared `AppSimilarity` components and the existing Rooms similarity flow as the pattern.
+**Objective:** Keep the Catalog → Rooms **room details** dialog (`openPharmacyStorageRoomDetailsDialog` / `_StorageRoomDetailsDialog`) as the single details surface, but restyle it: title **Room Details** (not the room name), remove the hero summary card, show room fields as wrapping icon + label + colon + value rows inside the **Storage room** section, move **Add shelf** into the Shelves section header (left of the chevron), and replace the shelf card list with a compact `AppListTable` (search / filters / settings) showing shelf id, name, status, and borderless Edit/Delete actions. Leave the dialog footer (Close / Delete / Edit room) as-is.
 
 ## Context
 
-Screenshots and code show Catalog and stock → **Shelves** (`?section=catalog`, `_ShelvesCatalogTab` in `pharmacy_catalog_panel.dart`):
+Screenshots (`pharmacy?section=catalog` → room row → details) and code show `_StorageRoomDetailsDialog` in `pharmacy_storage_panel.dart`:
 
 | Surface | Current behavior |
 | --- | --- |
-| Shelves table | Looks correct: Shelf code, Shelf label, Storage room, Status, Actions (Edit / Delete); toolbar **+ Create**; room column visible |
-| Create | Two-step: dialog picks **Storage room** then **Next** → separate `_StorageShelfDialog` with code (required) + label (optional) + **Create shelf** |
-| Row click | No details dialog — only Edit / Delete in the Actions column |
-| Edit | Opens `_StorageShelfDialog` for that shelf’s room; no similarity |
-| Delete | Confirm + soft delete via `confirmDeletePharmacyStorageShelf` |
-| Similarity | **None** for shelves; Rooms already use `checkStorageRoomSimilarity` + `showAppSimilarityReviewDialog` / pharmacy adapter |
-| Room details path | Room details already has **Add shelf** in the shelves body (pre-scoped room) — keep that entry working |
+| Dialog title | Room **name** (e.g. `ROOM 1`) + warehouse icon |
+| Hero / summary card | Large icon + room name + Active badge + code + display id (`RM001`, `PSR-…`) |
+| Storage room section | `AppCollapsibleSection` + **`AppInfoTileGrid`** of bordered cards (Room code, Status, Shelves count, Details/id, Created at) |
+| Shelves section | Title + count; **Add shelf** is a secondary button **inside** the body (top-right of content, not in the header); shelves rendered as `_StorageRoomShelfRow` cards (code, label, status badge, Edit/Delete) |
+| Footer | Close (tertiary), Delete/Restore (write-gated), Edit room (primary) — **keep** |
+| Write gating | `AppAccessActionGate` + soft-deleted room hides mutate shelf/room edit |
 
-Raw intent: table display is fine; clicking a shelf opens a well-designed **details** dialog with Edit/Delete in the footer; Create is one dialog (search/select room + shelf form, no Next); code may be blank → system generates human-friendly id; **label is required**; similarity compares against shelves **in that room only** (same code/label allowed in a different room); reuse shared similarity + existing pharmacy storage flows.
+Raw intent: data is correct, chrome is wrong — rename title; drop hero and fold identity into Storage room; replace info **cards** with inline icon/label/value rows that wrap; put Add shelf on the Shelves **header** just left of the chevron; shelves become a search+settings **table**; footer stays.
 
 ## Requirements
 
-1. **Preserve the Shelves table chrome.** Do not redesign columns, search, filters, Settings, Export, or generic Action labels (Create / Edit / Delete). Keep `pharmacyCatalogWriteRequirement` gating. Primary toolbar Create remains the entry for Add shelf from the tab.
+1. **Dialog title = “Room Details”.** Do not use the room name as `AppDialog.title`. Keep a suitable warehouse/storage icon. Room name still appears as a field (or primary value) inside the Storage room section, not as the window title.
 
-2. **Open shelf details on row select.** On `onRowSelected` (and mobile item tap if applicable), open a polished **shelf details** dialog (mirror the improved room details pattern): summary header (code, label, status, parent room), info tiles, footer **Close**, **Edit**, **Delete** (write-gated; hide mutate actions when not allowed / soft-deleted if applicable). Edit opens the shelf form; Delete reuses `confirmDeletePharmacyStorageShelf`. After successful edit/delete, refresh storage layout state so the table and open details stay in sync.
+2. **Remove the hero summary card.** Delete the top decorated summary block (large icon + name + status chip + code + display id). Do not replace it with another hero; identity moves into the Storage room section content.
 
-3. **Single Add shelf dialog (no Next).** Replace `_promptAddShelf`’s room-only + Next wizard with one `AppDialog` that includes:
-   - Searchable/select **Storage room** (required for create from the Shelves tab; when opened from room details / a known room, room is fixed/read-only).
-   - **Shelf code** and **Shelf label** fields on the **same** dialog.
-   - Footer **Cancel** + primary **Add shelf** (not Next). If no room is selected, still show the field shell; block submit with validation until room + required fields are valid.
+3. **Storage room section: inline meta rows, not cards.** Keep the collapsible **Storage room** section. Replace `AppInfoTileGrid` bordered tiles with a wrapping list of rows in the form:
+   - `[icon] Parameter name: value` on one line (same row),
+   - wrap to the next row when horizontal space runs out (`Wrap` / responsive flow).
+   - Include at least: room name, room code (copyable when present), status, shelves count, details/display id (copyable when present), created at when known — same data as today, flatter presentation. Prefer existing shared helpers if an inline icon+label+value pattern already exists; otherwise a small local/private row widget is fine. Preserve copy-to-clipboard for code and display id.
 
-4. **Field rules.** **Shelf label is required.** **Shelf code** may be left blank on create: backend assigns the human-friendly / display id (same contract style as storage rooms). On edit, preserve existing code unless the user changes it; keep Active switch on edit. Align frontend validators with these rules (do not require a non-empty code when auto-generate is allowed).
+4. **Shelves section header: Add shelf beside the chevron.** Keep the Shelves collapsible title + count. Move **Add shelf** from the section body into `AppCollapsibleSection.headerActions` so it sits **immediately left of the expand/collapse chevron** (headerActions already render before the chevron). Keep write-gate + hide when soft-deleted. Do not leave a duplicate Add shelf in the body.
 
-5. **Room-scoped similarity on create and edit.** Before persist, run a similarity check against **only shelves in the selected/parent room** (exclude self on edit). Exact code or label conflict in that room blocks proceed (Cancel / Use this shelf); near matches allow **Save anyway** / **Add anyway** with `confirm_similar`. Reuse `showAppSimilarityReviewDialog` via a thin pharmacy shelf adapter (like `pharmacy_storage_room_similarity_dialog.dart`), including editable proposed + **Check again** when the create/edit loop supports retry. Do **not** treat shelves in other rooms as conflicts.
+5. **Shelves body = `AppListTable`.** Replace `_StorageRoomShelfRow` cards with an `AppListTable` scoped to this room’s shelves:
+   - Toolbar: search bar, filter control, settings (column visibility) — match shared table chrome used elsewhere (e.g. Catalog → Shelves). Export optional; default table export is fine unless it feels noisy in a dialog — prefer enabling consistent chrome over inventing a one-off toolbar.
+   - Columns (order): **Shelf ID/code**, **Shelf name/label**, any other useful in-room fields already on the entity (skip parent **room** column — room is fixed), **Status**, **Actions**.
+   - Actions: Edit and Delete as **simple icon + label** controls — no border, no filled background (tertiary / plain chrome). **Delete** stays destructive (red). Raw note said Edit icon red; treat Delete as the red/destructive action and Edit as standard primary/on-surface so Edit/Delete remain distinguishable (matches current row affordance and Catalog shelves).
+   - Wire Edit → `openPharmacyStorageShelfDialog`, Delete → `confirmDeletePharmacyStorageShelf`; refresh from workspace state as today.
+   - Empty state: keep a clear empty message when the room has no shelves.
+   - Bound height inside the dialog so the table scrolls without blowing past `maxWidth` / dialog layout; mobile list mode via existing `AppListTable` adaptive behavior is OK.
 
-6. **Backend similarity + auto-code.** Add shelf similarity-check (and wire create/update to enforce it) under pharmacy storage APIs, scoped by `storage_room_id`, modeled on `storage/rooms/similarity-check` and room create/update `confirm_similar`. Support blank code → generate friendly id. Return field comparisons suitable for the shared similarity UI.
+6. **Preserve footer and room mutations.** Footer Close / Delete (or Restore) / Edit room stay as today, including access gates, soft-delete restore path, and re-opening details after “use existing” from room edit similarity.
 
-7. **Reuse and sync.** Prefer existing `openPharmacyStorageShelfDialog`, controller create/update/delete shelf methods, and storage layout reload. Keep Drugs / Formulary / Inventory / Rooms semantics unchanged except shared helpers needed for shelves.
+7. **No unrelated catalog work.** Do not redesign the Rooms/Shelves worklists, shelf create similarity, or room create/edit forms except where details dialog wiring already calls them.
 
 ## Constraints
 
-- Shared similarity stays domain-agnostic; pharmacy maps shelf models at the call site.
-- Similarity peers = shelves in the **current room only**.
-- No disabled “no access” chrome; unauthorized shelf write controls must not render.
-- Light + dark; mobile/tablet/desktop without clipping the details/create dialogs.
-- No unrelated catalog refactors or DB migrations beyond what shelf similarity / auto-code require.
+- Scope: `_StorageRoomDetailsDialog` (+ small private helpers / l10n for “Room Details” if missing). Prefer `pharmacy_storage_panel.dart`; avoid drive-by refactors of `AppInfoTileGrid` or `AppListTable`.
+- Reuse `AppCollapsibleSection.headerActions` for Add shelf placement.
+- Unauthorized users must not see Add shelf / Edit / Delete; soft-deleted rooms keep current mutate restrictions.
+- Light + dark; dialog usable on mobile width without clipped header actions or table chrome.
+- Preserve live refresh when `pharmacyWorkspaceControllerProvider` updates the room/shelves.
 
 ## Acceptance Criteria
 
-- (R1) Shelves table columns, Create/Edit/Delete, and room display remain intact.
-- (R2) Selecting a shelf opens details with room/code/label/status and footer Edit/Delete/Close; Edit/Delete work and refresh the list.
-- (R3) Toolbar Create opens one dialog with room selector + code + label and **Add shelf** (no Next step).
-- (R4) Blank code on create succeeds with a generated friendly code; empty label fails validation.
-- (R5) Duplicate/near shelf code or label **in the same room** shows shared similarity review; exact blocks Save anyway; near allows confirm; other rooms do not conflict.
-- (R6) Edit path runs the same room-scoped similarity rules; Use this opens/uses the existing shelf without creating a duplicate.
-- (R7) Add shelf from room details still works with room pre-selected and similarity scoped to that room.
-- (R8) Unauthorized users do not see Create/Edit/Delete/Add shelf; authorized flows still work.
+- (R1) Dialog title reads **Room Details** (or localized equivalent), not the room name.
+- (R2) Hero summary card is gone; name/code/status/id appear only via Storage room inline rows (or equivalent non-card meta).
+- (R3) Storage room fields are icon + `Label:` + value rows that wrap; no bordered info tiles in that section.
+- (R4) Add shelf appears in the Shelves section **header**, left of the chevron; not duplicated in the body; write-gated.
+- (R5) Shelves list is an `AppListTable` with search/settings (and filter if standard), columns for shelf id, name, status, actions.
+- (R6) Row Edit/Delete are borderless icon+label; Delete destructive; Edit/Delete still open existing shelf flows and refresh the dialog.
+- (R7) Footer Close / Delete|Restore / Edit room unchanged in behavior and gating.
+- (R8) Empty shelves and soft-deleted room states still behave correctly.
 
 ## Verification
 
-- Widget/source tests: single-dialog create (no Next); details on row select; label required / code optional; similarity adapter maps cancel / proceed / useExisting / retry.
-- Backend tests: room-scoped similarity; blank code generation; `confirm_similar` on create/update; exclude self on edit.
-- Manual: `?section=catalog` → Shelves — Create (pick room, blank code, required label, similar/exact); row → details → Edit/Delete; Add shelf from Room details; light + dark; mobile width.
+- Widget/source tests or golden-friendly pumps: title string; no hero; Storage room not using `AppInfoTileGrid`; Shelves `headerActions` contains Add shelf; body uses `AppListTable`; footer actions still present.
+- Manual: Catalog → Rooms → open Room 1 — confirm layout vs screenshots’ *intended* target; Add shelf from header; search shelves; Edit/Delete shelf; Edit/Delete room; narrow width; light + dark.
 
 ## Relevant Files
 
-- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart` (`_ShelvesCatalogTab`, `_promptAddShelf`)
-- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_storage_panel.dart` (`_StorageShelfDialog`, room details Add shelf, delete confirms)
-- Shared similarity: `frontend/lib/shared/components/app_similarity.dart`; rooms adapter `pharmacy_storage_room_similarity_dialog.dart`
-- Backend: `backend/src/modules/pharmacy-workspace/**`, `@lib/pharmacy/pharmacy-storage-room-similarity` (pattern for shelf similarity)
-- Tests: pharmacy shelf / storage tests; new shared or shelf similarity widget tests as needed
+- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_storage_panel.dart` — `_StorageRoomDetailsDialog`, `_StorageRoomShelfRow`, `openPharmacyStorageRoomDetailsDialog`
+- `frontend/lib/shared/components/app_collapsible_section.dart` — `headerActions` (Add shelf placement)
+- `frontend/lib/shared/components/app_list_table.dart` — shelves table chrome
+- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart` — Catalog → Shelves columns/actions as the table pattern reference
+- `frontend/lib/l10n/app_en.arb` (+ generated l10n) — add `Room Details` (or reuse an existing details title key if one fits)
+- Tests under `frontend/test/features/pharmacy/` as needed for dialog chrome
