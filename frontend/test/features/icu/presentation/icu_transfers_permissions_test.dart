@@ -597,7 +597,7 @@ void main() {
       expect(find.text('Request transfer'), findsNothing);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.textContaining('Next'),
         ),
         findsNothing,

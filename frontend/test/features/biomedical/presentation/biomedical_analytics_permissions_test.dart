@@ -770,7 +770,7 @@ void main() {
 
     expect(find.text('Analytics'), findsWidgets);
     expect(find.text('Ventilator utilization'), findsOneWidget);
-    expect(find.byType(DataTable), findsOneWidget);
+    expect(find.byType(AppListTableGrid), findsOneWidget);
   });
 
   testWidgets(

@@ -435,7 +435,7 @@ void main() {
       expect(find.byTooltip('Request authorization'), findsNothing);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Next action'),
         ),
         findsNothing,
@@ -483,14 +483,14 @@ void main() {
       expect(find.byTooltip('Request authorization'), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Next action'),
         ),
         findsOneWidget,
       );
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Update status'),
         ),
         findsOneWidget,
@@ -733,7 +733,7 @@ void main() {
       expect(find.byTooltip('Update status'), findsNothing);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Next action'),
         ),
         findsNothing,
@@ -759,7 +759,7 @@ void main() {
       _stubRepository(repository);
 
       final Finder nextAction = find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Update status'),
       );
       await tester.ensureVisible(nextAction);
@@ -927,7 +927,7 @@ void main() {
       physicalSize: const Size(390, 844),
     );
 
-    expect(find.byType(DataTable), findsNothing);
+    expect(find.byType(AppListTableGrid), findsNothing);
     expect(find.byType(AppListTableMobileItem), findsWidgets);
     expect(find.byTooltip('Request authorization'), findsOneWidget);
     expect(find.byTooltip('Update status'), findsOneWidget);
@@ -965,10 +965,10 @@ void main() {
       physicalSize: const Size(1440, 900),
     );
 
-    expect(find.byType(DataTable), findsOneWidget);
+    expect(find.byType(AppListTableGrid), findsOneWidget);
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Update status'),
       ),
       findsOneWidget,
@@ -1214,7 +1214,7 @@ void main() {
       );
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Next action'),
         ),
         findsOneWidget,

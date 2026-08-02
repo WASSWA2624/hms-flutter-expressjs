@@ -467,7 +467,7 @@ void main() {
     expect(find.byTooltip('Approve'), findsNothing);
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Next action'),
       ),
       findsNothing,
@@ -584,7 +584,7 @@ void main() {
       expect(find.text('Close shift'), findsNothing);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Next action'),
         ),
         findsNothing,
@@ -823,7 +823,7 @@ void main() {
       expect(_table(tester).columns.length, 4);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Next action'),
         ),
         findsNothing,
@@ -838,28 +838,28 @@ void main() {
 
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Patient ID'),
       ),
       findsNothing,
     );
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Status'),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Next action'),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Encounter'),
       ),
       findsNothing,
@@ -869,21 +869,21 @@ void main() {
 
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Encounter'),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Patient ID'),
       ),
       findsNothing,
     );
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Status'),
       ),
       findsOneWidget,

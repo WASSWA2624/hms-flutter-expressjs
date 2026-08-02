@@ -317,35 +317,35 @@ void main() {
     expect(find.byTooltip('Request authorization'), findsOneWidget);
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Patient'),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Coverage'),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Invoice'),
       ),
       findsNothing,
     );
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Next action'),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Update status'),
       ),
       findsOneWidget,
@@ -375,28 +375,28 @@ void main() {
     expect(find.byTooltip('Prepare claim'), findsOneWidget);
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Invoice'),
       ),
       findsNothing,
     );
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Next action'),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Record response'),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Amount'),
       ),
       findsNothing,
@@ -412,21 +412,21 @@ void main() {
     expect(find.byTooltip('Refresh'), findsNothing);
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Settlement'),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Invoice'),
       ),
       findsNothing,
     );
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Next action'),
       ),
       findsNothing,
@@ -691,7 +691,7 @@ void main() {
       _stubClaimsRepository(repository);
 
       final Finder nextAction = find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Update status'),
       );
       expect(nextAction, findsOneWidget);
@@ -717,7 +717,7 @@ void main() {
 
       expect(find.text('CLM-APPROVED'), findsOneWidget);
       final Finder closeAction = find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Close as paid'),
       );
       expect(closeAction, findsOneWidget);
@@ -777,7 +777,7 @@ void main() {
       physicalSize: const Size(390, 844),
     );
 
-    expect(find.byType(DataTable), findsNothing);
+    expect(find.byType(AppListTableGrid), findsNothing);
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.byType(AppListTableMobileItem), findsWidgets);
     expect(find.textContaining('AUTH-PENDING'), findsOneWidget);

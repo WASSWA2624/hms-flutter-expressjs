@@ -135,10 +135,10 @@ void main() {
 
     await _pumpUntilFound(tester, find.text('Sarah Clinical'));
 
-    expect(find.byType(DataTable), findsOneWidget);
+    expect(find.byType(AppListTableGrid), findsOneWidget);
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Sarah Clinical'),
       ),
       findsOneWidget,
@@ -248,7 +248,7 @@ void main() {
 
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Encounter type'),
       ),
       findsOneWidget,
@@ -280,7 +280,7 @@ void main() {
 
     await tester.tap(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Sarah Clinical'),
       ),
     );
@@ -296,7 +296,7 @@ void main() {
     await _pumpClinicalWorkspace(tester, physicalSize: const Size(390, 844));
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byType(DataTable), findsNothing);
+    expect(find.byType(AppListTableGrid), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });
 

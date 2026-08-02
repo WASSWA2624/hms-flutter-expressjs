@@ -1075,7 +1075,7 @@ void main() {
         tester.element(find.byType(AppTabStrip)),
       );
 
-      expect(find.byType(DataTable), findsNothing);
+      expect(find.byType(AppListTableGrid), findsNothing);
       expect(find.byType(AppListTableMobileItem), findsWidgets);
       expect(
         find.byTooltip(l10n.nursingActionAcknowledgeTransfer),

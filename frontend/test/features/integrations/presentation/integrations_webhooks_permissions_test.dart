@@ -934,7 +934,7 @@ void main() {
     expect(find.byTooltip('Create webhook'), findsOneWidget);
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Next action'),
       ),
       findsOneWidget,

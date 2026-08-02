@@ -480,7 +480,7 @@ void main() {
       expect(find.text('Acknowledge alert'), findsNothing);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.textContaining('Next'),
         ),
         findsNothing,

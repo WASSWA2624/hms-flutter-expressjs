@@ -178,7 +178,7 @@ void main() {
       size: const Size(900, 600),
     );
 
-    expect(find.byType(DataTable), findsOneWidget);
+    expect(find.byType(AppListTableGrid), findsOneWidget);
     expect(find.text('Title'), findsOneWidget);
     expect(find.text('Alpha'), findsOneWidget);
   });
@@ -232,7 +232,9 @@ void main() {
       size: const Size(700, 600),
     );
 
-    final DataTable table = tester.widget<DataTable>(find.byType(DataTable));
+    final AppListTableGrid table = tester.widget<AppListTableGrid>(
+      find.byType(AppListTableGrid),
+    );
     expect(find.text('Title'), findsOneWidget);
     expect(table.horizontalMargin, 8);
     expect(table.columnSpacing, 8);
@@ -257,7 +259,7 @@ void main() {
       size: const Size(900, 600),
     );
 
-    expect(find.byType(DataTable), findsNothing);
+    expect(find.byType(AppListTableGrid), findsNothing);
     expect(find.text('List Alpha'), findsOneWidget);
   });
 
@@ -431,7 +433,7 @@ void main() {
       find.descendant(of: sortedHeader, matching: find.text('Title')),
     );
     final Color primary = Theme.of(
-      tester.element(find.byType(DataTable)),
+      tester.element(find.byType(AppListTableGrid)),
     ).colorScheme.primary;
 
     expect(titleHeader.style?.color, primary);
@@ -955,6 +957,11 @@ void main() {
       await tester.pump();
       await tester.pump();
 
+      // The appended page extends the same scroll view (position preserved);
+      // scroll on to the new end to see the appended rows.
+      scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+      await tester.pump();
+
       expect(find.text('Beta 0'), findsOneWidget);
       expect(find.text('9'), findsOneWidget);
       expect(find.text('12'), findsOneWidget);
@@ -1182,7 +1189,8 @@ void main() {
   });
 
   testWidgets(
-    'AppListTable progressively reveals rows by default without mounting all',
+    'AppListTable virtualizes bounded-height tables and mounts only nearby '
+    'rows',
     (WidgetTester tester) async {
       final List<_RowItem> manyItems = List<_RowItem>.generate(
         80,
@@ -1213,26 +1221,29 @@ void main() {
       await tester.pump();
 
       expect(find.text('Item 0'), findsOneWidget);
+      // Far rows are not mounted until scrolled near the viewport.
       expect(find.text('Item 40'), findsNothing);
       expect(find.text('Item 79'), findsNothing);
 
       final ScrollableState scrollable = tester.state<ScrollableState>(
         find.byWidgetPredicate(_isVerticalScrollable).first,
       );
-      for (var i = 0; i < 12; i += 1) {
-        if (scrollable.position.maxScrollExtent > 0) {
-          scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
-        }
+      // The full scroll extent is available immediately: a single gesture can
+      // reach the last loaded row without waiting for batch reveals.
+      for (var i = 0; i < 4; i += 1) {
+        scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
         await tester.pump();
         await tester.pump();
       }
 
-      expect(find.text('Item 40'), findsOneWidget);
+      expect(find.text('Item 79'), findsOneWidget);
+      // Rows scrolled far behind are unmounted again to keep frames cheap.
+      expect(find.text('Item 0'), findsNothing);
     },
   );
 
   testWidgets(
-    'AppListTable can progressively reveal all rows when total is at most 100',
+    'AppListTable reaches the last of 100 rows in one scroll gesture',
     (WidgetTester tester) async {
       final List<_RowItem> manyItems = List<_RowItem>.generate(
         100,
@@ -1268,7 +1279,55 @@ void main() {
       final ScrollableState scrollable = tester.state<ScrollableState>(
         find.byWidgetPredicate(_isVerticalScrollable).first,
       );
-      for (var i = 0; i < 20; i += 1) {
+      for (var i = 0; i < 4; i += 1) {
+        scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+        await tester.pump();
+        await tester.pump();
+      }
+
+      expect(find.text('Item 99'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'AppListTable progressively reveals rows in shrink-wrapped layouts',
+    (WidgetTester tester) async {
+      final List<_RowItem> manyItems = List<_RowItem>.generate(
+        80,
+        (int index) => _RowItem(
+          id: 'item-$index',
+          title: 'Item $index',
+          status: 'Active',
+        ),
+      );
+
+      await pumpComponent(
+        tester,
+        SingleChildScrollView(
+          child: AppListTable<_RowItem>(
+            items: manyItems,
+            columns: _columns,
+            shrinkWrap: true,
+            displayMode: AppListTableDisplayMode.table,
+            mobileItemBuilder: (BuildContext context, _RowItem item) {
+              return ListTile(title: Text(item.title));
+            },
+          ),
+        ),
+        size: const Size(960, 600),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // Shrink-wrapped tables cannot virtualize (every child of the ancestor
+      // scroll view is built), so rows still mount in progressive batches.
+      expect(find.text('Item 0'), findsOneWidget);
+      expect(find.text('Item 79'), findsNothing);
+
+      final ScrollableState scrollable = tester.state<ScrollableState>(
+        find.byWidgetPredicate(_isVerticalScrollable).first,
+      );
+      for (var i = 0; i < 12; i += 1) {
         if (scrollable.position.maxScrollExtent > 0) {
           scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
         }
@@ -1276,7 +1335,7 @@ void main() {
         await tester.pump();
       }
 
-      expect(find.text('Item 99'), findsOneWidget);
+      expect(find.text('Item 79'), findsOneWidget);
     },
   );
 
@@ -1313,11 +1372,7 @@ void main() {
       final Finder goToTop = find.byTooltip('Go to top');
       expect(goToTop, findsNothing);
 
-      final Finder verticalScroll = find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is SingleChildScrollView &&
-            widget.scrollDirection == Axis.vertical,
-      );
+      final Finder verticalScroll = find.byType(CustomScrollView);
       expect(verticalScroll, findsOneWidget);
 
       await tester.drag(verticalScroll, const Offset(0, -240));

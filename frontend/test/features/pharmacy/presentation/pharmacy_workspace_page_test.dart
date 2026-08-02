@@ -534,7 +534,7 @@ void main() {
     expect(find.text('Generic name'), findsWidgets);
     expect(find.text('Generic (scientific) name'), findsNothing);
     expect(
-      find.descendant(of: find.byType(DataTable), matching: find.text('Actions')),
+      find.descendant(of: find.byType(AppListTableGrid), matching: find.text('Actions')),
       findsOneWidget,
     );
     expect(find.byIcon(AppActionIcons.export), findsOneWidget);
@@ -581,7 +581,7 @@ void main() {
       'pending-payment',
     );
     expect(_catalogAction(), findsOneWidget);
-    final Finder table = find.byType(DataTable);
+    final Finder table = find.byType(AppListTableGrid);
     expect(
       find.descendant(of: table, matching: find.text('Ordered at')),
       findsOneWidget,
@@ -602,7 +602,7 @@ void main() {
   ) async {
     await _pumpPharmacyWorkspace(tester, repository: repository);
 
-    final DataTable table = tester.widget<DataTable>(find.byType(DataTable));
+    final DataTable table = tester.widget<DataTable>(find.byType(AppListTableGrid));
     expect(table.columns.length, lessThanOrEqualTo(6));
   });
 
@@ -613,7 +613,7 @@ void main() {
 
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Cancel order'),
       ),
       findsAtLeastNWidgets(1),
@@ -628,7 +628,7 @@ void main() {
     await tester.tap(
       find
           .descendant(
-            of: find.byType(DataTable),
+            of: find.byType(AppListTableGrid),
             matching: find.text('Cancel order'),
           )
           .first,
@@ -654,7 +654,7 @@ void main() {
     expect(_toolbarAction('Refresh'), findsNothing);
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Cancel order'),
       ),
       findsNothing,
@@ -672,7 +672,7 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byType(DataTable), findsNothing);
+    expect(find.byType(AppListTableGrid), findsNothing);
     expect(_toolbarAction('Refresh'), findsNothing);
     expect(find.textContaining('Noah'), findsAtLeastNWidgets(1));
     expect(find.text('Cancel order'), findsAtLeastNWidgets(1));

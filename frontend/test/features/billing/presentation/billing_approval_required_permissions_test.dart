@@ -225,7 +225,7 @@ void main() {
       expect(find.byTooltip('Approve'), findsNothing);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Next action'),
         ),
         findsNothing,
@@ -278,7 +278,7 @@ void main() {
       expect(find.byTooltip('Approve'), findsNothing);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Next action'),
         ),
         findsNothing,
@@ -352,7 +352,7 @@ void main() {
       expect(find.byTooltip('Approve'), findsWidgets);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Next action'),
         ),
         findsOneWidget,

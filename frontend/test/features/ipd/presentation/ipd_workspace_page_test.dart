@@ -525,17 +525,17 @@ void main() {
       'Next action',
     ]) {
       expect(
-        find.descendant(of: find.byType(DataTable), matching: find.text(label)),
+        find.descendant(of: find.byType(AppListTableGrid), matching: find.text(label)),
         findsOneWidget,
       );
     }
     expect(
-      find.descendant(of: find.byType(DataTable), matching: find.text('Role')),
+      find.descendant(of: find.byType(AppListTableGrid), matching: find.text('Role')),
       findsNothing,
     );
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Length of stay'),
       ),
       findsNothing,
@@ -574,19 +574,19 @@ void main() {
       'Status',
     ]) {
       expect(
-        find.descendant(of: find.byType(DataTable), matching: find.text(label)),
+        find.descendant(of: find.byType(AppListTableGrid), matching: find.text(label)),
         findsOneWidget,
       );
     }
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Next action'),
       ),
       findsNothing,
     );
     expect(
-      find.descendant(of: find.byType(DataTable), matching: find.text('Room')),
+      find.descendant(of: find.byType(AppListTableGrid), matching: find.text('Room')),
       findsNothing,
     );
     expect(find.text('Settings'), findsOneWidget);
@@ -607,7 +607,7 @@ void main() {
 
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Next action'),
       ),
       findsOneWidget,

@@ -984,7 +984,7 @@ void main() {
         physicalSize: const Size(390, 844),
       );
 
-      expect(find.byType(DataTable), findsNothing);
+      expect(find.byType(AppListTableGrid), findsNothing);
       expect(find.byType(AppListTableMobileItem), findsWidgets);
       expect(find.byTooltip('Update repair status'), findsOneWidget);
       expect(_tabLabel('In progress'), findsOneWidget);

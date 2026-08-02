@@ -256,39 +256,17 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
           },
         ),
         AppListTableColumn<PharmacyDrug>(
-          id: 'actions',
-          label: l10n.pharmacyLineActionsColumnLabel,
+          id: 'code',
+          label: l10n.pharmacyDrugCodeLabel,
+          preferredWidth: 120,
           alwaysVisible: true,
-          fixedWidth: 200,
-          cellBuilder: (BuildContext context, PharmacyDrug item) {
-            return _catalogRowActions(
-              context: context,
-              writeRequirement: widget.writeRequirement,
-              isBusy: isBusy,
-              alignStart: true,
-              editLabel: l10n.commonEditActionLabel,
-              deleteLabel: l10n.commonDeleteActionLabel,
-              editSemanticLabel: l10n.pharmacyEditDrugAction,
-              deleteSemanticLabel: l10n.pharmacyDeleteDrugAction,
-              onEdit: () => _openDrugDialog(context, drug: item),
-              onDelete: () => unawaited(_confirmDeleteDrug(context, item)),
-            );
-          },
-        ),
-        AppListTableColumn<PharmacyDrug>(
-          id: 'brand_name',
-          label: l10n.pharmacyDrugBrandNameLabel,
-          preferredWidth: 160,
-          cellBuilder: (_, PharmacyDrug item) =>
-              Text((item.brandName ?? '').trim().isEmpty
-                  ? '—'
-                  : item.brandName!.trim()),
-          exportValue: (PharmacyDrug item) => item.brandName ?? '',
+          cellBuilder: (_, PharmacyDrug item) => Text(item.code ?? ''),
         ),
         AppListTableColumn<PharmacyDrug>(
           id: 'generic_name',
           label: l10n.pharmacyDrugGenericNameLabel,
           preferredWidth: 180,
+          alwaysVisible: true,
           cellBuilder: (_, PharmacyDrug item) {
             final String generic = (item.genericName ?? '').trim();
             if (generic.isNotEmpty) {
@@ -307,10 +285,35 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
           },
         ),
         AppListTableColumn<PharmacyDrug>(
-          id: 'code',
-          label: l10n.pharmacyDrugCodeLabel,
-          preferredWidth: 120,
-          cellBuilder: (_, PharmacyDrug item) => Text(item.code ?? ''),
+          id: 'brand_name',
+          label: l10n.pharmacyDrugBrandNameLabel,
+          preferredWidth: 160,
+          alwaysVisible: true,
+          cellBuilder: (_, PharmacyDrug item) =>
+              Text((item.brandName ?? '').trim().isEmpty
+                  ? '—'
+                  : item.brandName!.trim()),
+          exportValue: (PharmacyDrug item) => item.brandName ?? '',
+        ),
+        AppListTableColumn<PharmacyDrug>(
+          id: 'actions',
+          label: l10n.pharmacyLineActionsColumnLabel,
+          alwaysVisible: true,
+          fixedWidth: 200,
+          cellBuilder: (BuildContext context, PharmacyDrug item) {
+            return _catalogRowActions(
+              context: context,
+              writeRequirement: widget.writeRequirement,
+              isBusy: isBusy,
+              alignStart: true,
+              editLabel: l10n.commonEditActionLabel,
+              deleteLabel: l10n.commonDeleteActionLabel,
+              editSemanticLabel: l10n.pharmacyEditDrugAction,
+              deleteSemanticLabel: l10n.pharmacyDeleteDrugAction,
+              onEdit: () => _openDrugDialog(context, drug: item),
+              onDelete: () => unawaited(_confirmDeleteDrug(context, item)),
+            );
+          },
         ),
         AppListTableColumn<PharmacyDrug>(
           id: 'form',

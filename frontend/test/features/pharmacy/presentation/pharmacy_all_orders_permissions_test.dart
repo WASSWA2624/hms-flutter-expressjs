@@ -1000,7 +1000,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.byType(DataTable), findsOneWidget);
+      expect(find.byType(AppListTableGrid), findsOneWidget);
       expect(_catalogAction(), findsOneWidget);
       expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
     });
@@ -1023,7 +1023,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.byType(DataTable), findsNothing);
+      expect(find.byType(AppListTableGrid), findsNothing);
       expect(find.textContaining('Noah'), findsAtLeastNWidgets(1));
       expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
     });

@@ -566,7 +566,7 @@ void main() {
       expect(find.text('Quick arrival'), findsNothing);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Next action'),
         ),
         findsNothing,

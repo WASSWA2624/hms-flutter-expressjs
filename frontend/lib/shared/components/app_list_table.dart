@@ -1485,12 +1485,13 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     );
     final ThemeData theme = Theme.of(context);
     final bool loadingMore = _isLoadingMore(data.items.length);
-    if (loadingMore) {
-      final ColorScheme colorScheme = theme.colorScheme;
-      content = Stack(
-        fit: StackFit.passthrough,
-        children: <Widget>[
-          content,
+    // The Stack stays mounted while only the overlay child toggles, so the
+    // table subtree (and its scroll position) survives load-more cycles.
+    content = Stack(
+      fit: StackFit.passthrough,
+      children: <Widget>[
+        content,
+        if (loadingMore)
           Positioned(
             left: 0,
             right: 0,
@@ -1499,14 +1500,16 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
               child: Center(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: colorScheme.surface.withValues(alpha: 0.88),
+                    color: theme.colorScheme.surface.withValues(alpha: 0.88),
                     borderRadius: BorderRadius.circular(theme.radius.md),
                     border: Border.all(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+                      color: theme.colorScheme.outlineVariant.withValues(
+                        alpha: 0.45,
+                      ),
                     ),
                     boxShadow: <BoxShadow>[
                       BoxShadow(
-                        color: colorScheme.shadow.withValues(alpha: 0.08),
+                        color: theme.colorScheme.shadow.withValues(alpha: 0.08),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -1526,9 +1529,8 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
               ),
             ),
           ),
-        ],
-      );
-    }
+      ],
+    );
     final Widget? footer = _footerForPage(
       context,
       data.page,
@@ -1548,10 +1550,10 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       return true;
     }());
 
-    if (toolbar == null && footer == null) {
-      return content;
-    }
-
+    // The Column/LayoutBuilder shell is kept even when the toolbar and footer
+    // are currently absent: infinite pagination grows a footer once the last
+    // page loads, and swapping the widget type at this slot would remount the
+    // table and reset its scroll position.
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool canExpand =
@@ -1810,13 +1812,10 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     required int totalSortedCount,
     required Widget child,
   }) {
-    final bool canReveal = _canRevealMoreItems(totalSortedCount);
-    final bool canLoadPage =
-        _usesInfinitePagination && (widget.page?.hasNextPage ?? false);
-    if (!canReveal && !canLoadPage) {
-      return child;
-    }
-
+    // Always mounted, even when there is currently nothing to reveal or load:
+    // removing the listener when capabilities change would swap the widget
+    // type at this slot and remount the whole table subtree, resetting the
+    // scroll position (for example right after the last page loads).
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification notification) {
         if (notification.metrics.axis != Axis.vertical) {
@@ -3359,10 +3358,10 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
             child: SingleChildScrollView(
               controller: _horizontalController,
               scrollDirection: Axis.horizontal,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minWidth: math.max(widget.minWidth, _rowContentWidth),
-                ),
+              // Explicit width: the horizontal scroll view provides unbounded
+              // width, under which the stretched row Column cannot size itself.
+              child: SizedBox(
+                width: math.max(widget.minWidth, _rowContentWidth),
                 child: table,
               ),
             ),

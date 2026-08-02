@@ -496,7 +496,7 @@ void main() {
       expect(find.byTooltip('Prepare claim'), findsNothing);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Next action'),
         ),
         findsNothing,
@@ -539,7 +539,7 @@ void main() {
       expect(find.text('CLM-SUB'), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Record response'),
         ),
         findsOneWidget,
@@ -623,7 +623,7 @@ void main() {
       expect(find.text('CLM-APPROVED'), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Close as paid'),
         ),
         findsOneWidget,
@@ -678,7 +678,7 @@ void main() {
       _stubRepository(repository);
 
       final Finder nextAction = find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Record response'),
       );
       expect(nextAction, findsOneWidget);
@@ -795,7 +795,7 @@ void main() {
       physicalSize: const Size(390, 844),
     );
 
-    expect(find.byType(DataTable), findsNothing);
+    expect(find.byType(AppListTableGrid), findsNothing);
     expect(find.byType(AppListTableMobileItem), findsWidgets);
     expect(find.textContaining('CLM-SUB'), findsOneWidget);
     expect(find.byTooltip('Prepare claim'), findsOneWidget);
@@ -818,11 +818,11 @@ void main() {
       physicalSize: const Size(1440, 900),
     );
 
-    expect(find.byType(DataTable), findsOneWidget);
+    expect(find.byType(AppListTableGrid), findsOneWidget);
     expect(find.byTooltip('Prepare claim'), findsOneWidget);
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Next action'),
       ),
       findsOneWidget,
@@ -939,7 +939,7 @@ void main() {
       expect(find.byTooltip('Prepare claim'), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Record response'),
         ),
         findsOneWidget,
@@ -950,7 +950,7 @@ void main() {
 
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Close as paid'),
         ),
         findsOneWidget,
@@ -983,7 +983,7 @@ void main() {
       expect(find.text('CLM-DRAFT'), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Submit claim'),
         ),
         findsOneWidget,
@@ -1363,7 +1363,7 @@ void main() {
       expect(find.byTooltip('Prepare claim'), findsNothing);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Next action'),
         ),
         findsOneWidget,
@@ -1540,7 +1540,7 @@ void main() {
       _stubRepository(repository);
 
       final Finder nextAction = find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Close as paid'),
       );
       await tester.ensureVisible(nextAction);
@@ -1601,7 +1601,7 @@ void main() {
       expect(find.text('CLM-REJ'), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Resubmit claim'),
         ),
         findsOneWidget,

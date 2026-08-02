@@ -239,7 +239,7 @@ void main() {
       expect(find.byTooltip('Request authorization'), findsNothing);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Next action'),
         ),
         findsNothing,
@@ -364,7 +364,7 @@ void main() {
       expect(find.byTooltip('Request authorization'), findsNothing);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Next action'),
         ),
         findsNothing,
@@ -707,7 +707,7 @@ void main() {
       physicalSize: const Size(390, 844),
     );
 
-    expect(find.byType(DataTable), findsNothing);
+    expect(find.byType(AppListTableGrid), findsNothing);
     expect(find.byType(AppListTableMobileItem), findsWidgets);
     expect(find.textContaining('CLM-PAID'), findsOneWidget);
     expect(find.byTooltip('Prepare claim'), findsNothing);
@@ -736,11 +736,11 @@ void main() {
       physicalSize: const Size(1440, 900),
     );
 
-    expect(find.byType(DataTable), findsOneWidget);
+    expect(find.byType(AppListTableGrid), findsOneWidget);
     expect(find.text('CLM-PAID'), findsOneWidget);
     expect(
       find.descendant(
-        of: find.byType(DataTable),
+        of: find.byType(AppListTableGrid),
         matching: find.text('Next action'),
       ),
       findsNothing,
@@ -898,7 +898,7 @@ void main() {
       expect(find.byTooltip('Request authorization'), findsNothing);
       expect(
         find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Next action'),
         ),
         findsNothing,

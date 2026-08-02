@@ -385,7 +385,7 @@ void main() {
         );
 
         final Finder closeAction = find.descendant(
-          of: find.byType(DataTable),
+          of: find.byType(AppListTableGrid),
           matching: find.text('Close as paid'),
         );
         expect(closeAction, findsOneWidget);

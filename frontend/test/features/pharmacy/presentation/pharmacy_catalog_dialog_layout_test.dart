@@ -160,7 +160,7 @@ void main() {
 
       expect(find.text('CATALOG AND STOCK'), findsOneWidget);
       expect(find.byType(AppDialog), findsOneWidget);
-      // Confirms the populated DataTable (with action-button cells) laid out.
+      // Confirms the populated table (with action-button cells) laid out.
       expect(find.text('DRG-0'), findsOneWidget);
       expect(tester.takeException(), isNull);
 

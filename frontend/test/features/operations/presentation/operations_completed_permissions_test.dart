@@ -940,7 +940,7 @@ void main() {
         physicalSize: const Size(390, 844),
       );
 
-      expect(find.byType(DataTable), findsNothing);
+      expect(find.byType(AppListTableGrid), findsNothing);
       expect(find.byType(AppListTableMobileItem), findsWidgets);
       expect(find.byTooltip('Add closeout note if needed'), findsOneWidget);
       expect(_tabLabel('Completed'), findsOneWidget);

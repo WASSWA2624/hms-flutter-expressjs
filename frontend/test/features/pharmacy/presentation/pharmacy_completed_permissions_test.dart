@@ -1062,7 +1062,7 @@ void main() {
         await tester.tap(
           find
               .descendant(
-                of: find.byType(DataTable),
+                of: find.byType(AppListTableGrid),
                 matching: find.text('Return'),
               )
               .first,
@@ -1140,7 +1140,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.byType(DataTable), findsOneWidget);
+      expect(find.byType(AppListTableGrid), findsOneWidget);
       expect(_catalogAction(), findsOneWidget);
       expect(find.text('Return'), findsAtLeastNWidgets(1));
     });
@@ -1163,7 +1163,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.byType(DataTable), findsNothing);
+      expect(find.byType(AppListTableGrid), findsNothing);
       expect(find.textContaining('Dana'), findsAtLeastNWidgets(1));
       expect(find.text('Return'), findsAtLeastNWidgets(1));
     });
