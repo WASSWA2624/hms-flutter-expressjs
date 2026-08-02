@@ -1072,13 +1072,13 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
                 AppListTableColumn<PharmacyDrug>(
                   id: 'select',
                   label: '',
-                  fixedWidth: 48,
+                  fixedWidth: 40,
                   alwaysVisible: true,
                   exportable: false,
                   headerBuilder: (BuildContext context) {
                     final AppLocalizations headerL10n = context.l10n;
                     final String tooltip = allVisibleSelected
-                        ? headerL10n.commonClearSelectionActionLabel
+                        ? headerL10n.commonDeselectAllActionLabel
                         : headerL10n.commonSelectAllActionLabel;
                     return Align(
                       alignment: Alignment.centerLeft,
@@ -1097,9 +1097,9 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
                                 : false,
                             onChanged: _isSaving || visibleDrugs.isEmpty
                                 ? null
-                                : (bool? checked) => _toggleAllVisible(
+                                : (_) => _toggleAllVisible(
                                     visibleDrugs,
-                                    checked ?? false,
+                                    !allVisibleSelected,
                                   ),
                             visualDensity: VisualDensity.compact,
                             materialTapTargetSize:
@@ -1117,7 +1117,7 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
                         onChanged: _isSaving
                             ? null
                             : (bool? value) =>
-                                  _toggleDrug(drug.id, value ?? false),
+                                _toggleDrug(drug.id, value ?? false),
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -1439,7 +1439,7 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
           id: 'quantity',
           label: l10n.pharmacyInventoryQuantityColumnLabel,
           numeric: true,
-          fixedWidth: 96,
+          fixedWidth: 72,
           alwaysVisible: true,
           cellBuilder: (_, PharmacyInventoryStock item) =>
               Text(item.quantity.toString()),
@@ -1449,7 +1449,7 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
           id: 'reorder_level',
           label: l10n.pharmacyReorderLevelColumnLabel,
           numeric: true,
-          fixedWidth: 110,
+          fixedWidth: 84,
           cellBuilder: (_, PharmacyInventoryStock item) =>
               Text(item.reorderLevel.toString()),
           exportValue: (PharmacyInventoryStock item) => item.reorderLevel,
@@ -1688,17 +1688,29 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
     final AppLocalizations l10n = context.l10n;
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (_) => AppDialog(
+      builder: (BuildContext dialogContext) => AppDialog(
         title: Text(l10n.pharmacyDeleteInventoryStockDialogTitle),
-        content: Text(l10n.pharmacyDeleteInventoryStockDialogBody),
+        initialMaximized: false,
+        showMaximizeButton: false,
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(l10n.pharmacyDeleteInventoryStockDialogBody),
+            SizedBox(height: Theme.of(dialogContext).spacing.md),
+            _InventoryClearSelectedTile(stock: stock),
+          ],
+        ),
         actions: <Widget>[
           AppButton.tertiary(
             label: l10n.commonCancelActionLabel,
-            onPressed: () => Navigator.of(context).pop(false),
+            leadingIcon: Icons.close,
+            onPressed: () => Navigator.of(dialogContext).pop(false),
           ),
           AppButton.primary(
             label: l10n.pharmacyDeleteInventoryStockAction,
-            onPressed: () => Navigator.of(context).pop(true),
+            leadingIcon: Icons.delete_outline,
+            color: Theme.of(dialogContext).colorScheme.error,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
           ),
         ],
       ),
@@ -1711,30 +1723,7 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
 
   Future<void> _confirmClearSelectedInventory(BuildContext context) async {
     final AppLocalizations l10n = context.l10n;
-    final int count = _selectedInventoryIds.length;
-    if (count == 0) {
-      return;
-    }
-    final bool? confirmed = await showAppDialog<bool>(
-      context: context,
-      builder: (_) => AppDialog(
-        title: Text(l10n.pharmacyClearSelectedInventoryDialogTitle),
-        content: Text(l10n.pharmacyClearSelectedInventoryDialogBody(count)),
-        actions: <Widget>[
-          AppButton.tertiary(
-            label: l10n.commonCancelActionLabel,
-            onPressed: () => Navigator.of(context).pop(false),
-          ),
-          AppButton.primary(
-            label: l10n.pharmacyClearSelectedInventoryAction,
-            onPressed: () => Navigator.of(context).pop(true),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) {
-      return;
-    }
+    final ThemeData theme = Theme.of(context);
     final List<PharmacyInventoryStock> selectedStocks = widget
         .state
         .inventoryWorkbench
@@ -1745,6 +1734,58 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
               _selectedInventoryIds.contains(_inventorySelectionKey(item)),
         )
         .toList(growable: false);
+    final int count = selectedStocks.length;
+    if (count == 0) {
+      return;
+    }
+
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppDialog(
+        title: Text(l10n.pharmacyClearSelectedInventoryDialogTitle),
+        initialMaximized: false,
+        showMaximizeButton: false,
+        scrollable: true,
+        pinActionsToBottom: true,
+        maxWidth: 560,
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(l10n.pharmacyClearSelectedInventoryDialogBody(count)),
+            SizedBox(height: theme.spacing.md),
+            Text(
+              l10n.pharmacyClearSelectedInventoryListHeading,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: theme.spacing.sm),
+            for (int index = 0; index < selectedStocks.length; index += 1) ...<
+              Widget
+            >[
+              if (index > 0) SizedBox(height: theme.spacing.xs),
+              _InventoryClearSelectedTile(stock: selectedStocks[index]),
+            ],
+          ],
+        ),
+        actions: <Widget>[
+          AppButton.tertiary(
+            label: l10n.commonCancelActionLabel,
+            leadingIcon: Icons.close,
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+          ),
+          AppButton.primary(
+            label: l10n.pharmacyClearSelectedInventoryAction,
+            leadingIcon: Icons.delete_outline,
+            color: theme.colorScheme.error,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
     for (final PharmacyInventoryStock stock in selectedStocks) {
       if (!context.mounted) {
         return;
@@ -2670,11 +2711,11 @@ AppListTableColumn<T> _selectionColumn<T>({
     label: '',
     alwaysVisible: true,
     exportable: false,
-    fixedWidth: 48,
+    fixedWidth: 40,
     headerBuilder: (BuildContext context) {
       final AppLocalizations l10n = context.l10n;
       final String tooltip = allSelected
-          ? l10n.commonClearSelectionActionLabel
+          ? l10n.commonDeselectAllActionLabel
           : l10n.commonSelectAllActionLabel;
       return Align(
         alignment: Alignment.centerLeft,
@@ -2688,8 +2729,7 @@ AppListTableColumn<T> _selectionColumn<T>({
               tristate: true,
               value: checkboxValue,
               onChanged: !isBusy && visibleItems.isNotEmpty
-                  ? (bool? checked) =>
-                        onToggleAll(visibleItems, checked ?? false)
+                  ? (_) => onToggleAll(visibleItems, !allSelected)
                   : null,
               visualDensity: VisualDensity.compact,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -2699,19 +2739,79 @@ AppListTableColumn<T> _selectionColumn<T>({
       );
     },
     cellBuilder: (BuildContext context, T item) {
+      final bool selected = selectedKeys.contains(itemKey(item));
       return Align(
         alignment: Alignment.centerLeft,
         child: Checkbox(
-          value: selectedKeys.contains(itemKey(item)),
+          value: selected,
           onChanged: isBusy
               ? null
-              : (bool? value) => onToggle(item, value ?? false),
+              : (bool? value) => onToggle(item, value ?? !selected),
           visualDensity: VisualDensity.compact,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
       );
     },
   );
+}
+
+class _InventoryClearSelectedTile extends StatelessWidget {
+  const _InventoryClearSelectedTile({required this.stock});
+
+  final PharmacyInventoryStock stock;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final ColorScheme colors = theme.colorScheme;
+    final String title =
+        stock.inventoryItem?.displayTitle ?? stock.displayId ?? stock.id;
+    final String? sku = stock.inventoryItem?.sku?.trim();
+    final String location = (stock.storageLocationLabel ?? '').trim();
+    final String meta = <String>[
+      '${l10n.pharmacyInventoryQuantityColumnLabel}: ${stock.quantity}',
+      '${l10n.pharmacyReorderLevelColumnLabel}: ${stock.reorderLevel}',
+      if (location.isNotEmpty) location,
+    ].join(' · ');
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: colors.outlineVariant),
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              title,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (sku != null && sku.isNotEmpty) ...<Widget>[
+              SizedBox(height: theme.spacing.xs / 2),
+              Text(
+                '${l10n.pharmacyInventorySkuColumnLabel}: $sku',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            ],
+            SizedBox(height: theme.spacing.xs / 2),
+            Text(
+              meta,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 Widget _catalogRowActions({

@@ -16347,6 +16347,10 @@
       }
     }
   },
+  "pharmacyClearSelectedInventoryListHeading": "Selected stock",
+  "@pharmacyClearSelectedInventoryListHeading": {
+    "description": "Heading above the selected inventory stock list in the clear-selected confirmation dialog."
+  },
   "pharmacyDeleteInventoryStockAction": "Clear stock",
   "@pharmacyDeleteInventoryStockAction": {
     "description": "Pharmacy clear inventory stock row action label."
@@ -26286,6 +26290,10 @@
   "commonSelectAllActionLabel": "Select all",
   "@commonSelectAllActionLabel": {
     "description": "Shared select-all checkbox / action label for multi-select tables."
+  },
+  "commonDeselectAllActionLabel": "Deselect all",
+  "@commonDeselectAllActionLabel": {
+    "description": "Shared deselect-all checkbox / action label for multi-select tables."
   },
   "commonClearSelectionActionLabel": "Clear selection",
   "@commonClearSelectionActionLabel": {

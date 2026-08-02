@@ -12820,6 +12820,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get pharmacyClearSelectedInventoryListHeading => 'Selected stock';
+
+  @override
   String get pharmacyDeleteInventoryStockAction => 'Clear stock';
 
   @override
@@ -20509,6 +20512,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonSelectAllActionLabel => 'Select all';
+
+  @override
+  String get commonDeselectAllActionLabel => 'Deselect all';
 
   @override
   String get commonClearSelectionActionLabel => 'Clear selection';

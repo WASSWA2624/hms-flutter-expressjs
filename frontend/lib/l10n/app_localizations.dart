@@ -23584,6 +23584,12 @@ abstract class AppLocalizations {
   /// **'Set quantity to zero for {count, plural, =1{1 stock row} other{{count} stock rows}}?'**
   String pharmacyClearSelectedInventoryDialogBody(int count);
 
+  /// Heading above the selected inventory stock list in the clear-selected confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected stock'**
+  String get pharmacyClearSelectedInventoryListHeading;
+
   /// Pharmacy clear inventory stock row action label.
   ///
   /// In en, this message translates to:
@@ -38118,6 +38124,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select all'**
   String get commonSelectAllActionLabel;
+
+  /// Shared deselect-all checkbox / action label for multi-select tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect all'**
+  String get commonDeselectAllActionLabel;
 
   /// Shared clear-selection checkbox / action label for multi-select tables.
   ///
