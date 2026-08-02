@@ -1747,6 +1747,9 @@ class _StorageLayoutCatalogTabState
           id: 'actions',
           label: '',
           alwaysVisible: true,
+          // Create + Edit + Delete with labels exceed the default 200px actions
+          // column and overflow the cell without an explicit width.
+          fixedWidth: 280,
           cellBuilder: (BuildContext context, PharmacyStorageRoom item) {
             return _catalogRowActions(
               context: context,
@@ -2114,42 +2117,49 @@ Widget _catalogRowActions({
   final String? addSemantic = addSemanticLabel ?? addLabel;
   return AppAccessActionGate(
     requirement: writeRequirement,
-    builder: (BuildContext context, bool isAllowed) => Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        if (onAdd != null && addLabel != null) ...<Widget>[
-          AppButton.tertiary(
-            dense: true,
-            leadingIcon: addIcon,
-            label: addLabel,
-            semanticLabel: addSemantic,
-            tooltip: addSemantic,
-            enabled: isAllowed && !isBusy && addEnabled,
-            onPressed: isAllowed && !isBusy && addEnabled ? onAdd : null,
-          ),
-          SizedBox(width: theme.spacing.xs),
-        ],
-        AppButton.tertiary(
-          dense: true,
-          leadingIcon: editIcon,
-          label: editLabel,
-          semanticLabel: editSemantic,
-          tooltip: editSemantic,
-          enabled: isAllowed && !isBusy,
-          onPressed: isAllowed && !isBusy ? onEdit : null,
+    builder: (BuildContext context, bool isAllowed) => Align(
+      alignment: Alignment.centerRight,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerRight,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (onAdd != null && addLabel != null) ...<Widget>[
+              AppButton.tertiary(
+                dense: true,
+                leadingIcon: addIcon,
+                label: addLabel,
+                semanticLabel: addSemantic,
+                tooltip: addSemantic,
+                enabled: isAllowed && !isBusy && addEnabled,
+                onPressed: isAllowed && !isBusy && addEnabled ? onAdd : null,
+              ),
+              SizedBox(width: theme.spacing.xs),
+            ],
+            AppButton.tertiary(
+              dense: true,
+              leadingIcon: editIcon,
+              label: editLabel,
+              semanticLabel: editSemantic,
+              tooltip: editSemantic,
+              enabled: isAllowed && !isBusy,
+              onPressed: isAllowed && !isBusy ? onEdit : null,
+            ),
+            SizedBox(width: theme.spacing.xs),
+            AppButton.tertiary(
+              dense: true,
+              leadingIcon: deleteIcon,
+              label: deleteLabel,
+              semanticLabel: deleteSemantic,
+              tooltip: deleteSemantic,
+              color: colorScheme.error,
+              enabled: isAllowed && !isBusy,
+              onPressed: isAllowed && !isBusy ? onDelete : null,
+            ),
+          ],
         ),
-        SizedBox(width: theme.spacing.xs),
-        AppButton.tertiary(
-          dense: true,
-          leadingIcon: deleteIcon,
-          label: deleteLabel,
-          semanticLabel: deleteSemantic,
-          tooltip: deleteSemantic,
-          color: colorScheme.error,
-          enabled: isAllowed && !isBusy,
-          onPressed: isAllowed && !isBusy ? onDelete : null,
-        ),
-      ],
+      ),
     ),
   );
 }
