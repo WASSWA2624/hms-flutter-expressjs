@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -28,7 +27,6 @@ import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
 import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
-import 'package:hosspi_hms/shared/printing/printing.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_registry.dart';
@@ -2160,18 +2158,9 @@ class _ClinicalActionBar extends ConsumerWidget {
           label: l10n.clinicalPrintSummaryAction,
           leadingIcon: AppActionIcons.print,
           onPressed: () async {
-            await PrintDocumentTemplates.clinicalSummary(
-              ref: ref,
+            await showClinicalPrintSummaryDialog(
               context: context,
-              title: l10n.clinicalConsultationSummaryTitle,
-              patientContext: buildPrintFormPatientContext(
-                l10n,
-                patientName: bundle.entry.displayTitle,
-                patientId: bundle.entry.apiPatientId,
-                encounterId: bundle.entry.encounterPublicId,
-              ),
-              bodyHtml: _consultationSummaryHtml(context, bundle),
-              includeSignatures: true,
+              bundle: bundle,
             );
           },
         ),
@@ -3684,157 +3673,6 @@ String _joinDisplay(Iterable<String?> values) {
 
 bool _hasText(String? value) {
   return value != null && value.trim().isNotEmpty;
-}
-
-String _consultationSummaryHtml(
-  BuildContext context,
-  ClinicalEncounterBundle bundle,
-) {
-  final AppLocalizations l10n = context.l10n;
-  final ClinicalTriageHandoff? handoff = bundle.triageHandoff;
-  final List<ClinicalRelatedRecord> notes = clinicalNotesForDisplay(
-    bundle.clinicalNotes,
-  );
-  final List<ClinicalRelatedRecord> pharmacyOrders =
-      deduplicateClinicalRelatedRecords(bundle.pharmacyOrders);
-  final List<String> sections = <String>[];
-
-  void addSection(String title, List<ClinicalRelatedRecord> records) {
-    if (records.isEmpty) {
-      return;
-    }
-    sections.add(
-      PrintFormTemplate.section(title: title, bodyHtml: _recordsHtml(records)),
-    );
-  }
-
-  if (handoff?.hasCoverageDetails ?? false) {
-    final List<PrintFormMetadataItem> coverageItems =
-        <PrintFormMetadataItem>[
-          if (_hasText(handoff!.consultationPaymentStatus))
-            PrintFormMetadataItem(
-              label: l10n.opdPaymentStatusLabel,
-              value: _apiLabel(handoff.consultationPaymentStatus!),
-            ),
-          if (handoff.consultationPaid)
-            PrintFormMetadataItem(
-              label: l10n.claimsCoverageFieldLabel,
-              value: l10n.opdCoverageVerifiedLabel,
-            ),
-          if (_hasText(handoff.consultationFeeLabel))
-            PrintFormMetadataItem(
-              label: l10n.opdConsultationFeeLabel,
-              value: handoff.consultationFeeLabel!,
-            ),
-          if (_hasText(handoff.consultationPaidAmountLabel))
-            PrintFormMetadataItem(
-              label: l10n.opdBillingAmountPaidLabel,
-              value: handoff.consultationPaidAmountLabel!,
-            ),
-        ];
-    if (coverageItems.isNotEmpty) {
-      sections.add(
-        PrintFormTemplate.section(
-          title: l10n.claimsCoverageFieldLabel,
-          bodyHtml: PrintFormTemplate.keyValueGrid(coverageItems),
-        ),
-      );
-    }
-  }
-
-  if (handoff != null && handoff.vitalSigns.isNotEmpty) {
-    sections.add(
-      PrintFormTemplate.section(
-        title: l10n.clinicalVitalsSectionTitle,
-        bodyHtml: PrintFormTemplate.unorderedList(<String>[
-          for (final ClinicalVitalSummary vital in handoff.vitalSigns)
-            _joinDisplay(<String?>[
-              _apiLabel(vital.vitalType),
-              vital.displayValue,
-              vital.status.trim().isEmpty ||
-                      vital.status.toUpperCase() == 'RECORDED'
-                  ? null
-                  : _apiLabel(vital.status),
-            ]),
-        ]),
-        avoidPageBreak: true,
-      ),
-    );
-  }
-
-  addSection(l10n.clinicalPatientNotesTitle, notes);
-  sections.addAll(_pharmacyPrescriptionSectionsHtml(l10n, pharmacyOrders));
-  addSection(
-    l10n.clinicalPatientDiagnosesTitle,
-    deduplicateClinicalRelatedRecords(bundle.diagnoses, diagnoses: true),
-  );
-  addSection(l10n.opdProceduresSummaryLabel, bundle.procedures);
-  addSection(l10n.clinicalCarePlansTitle, bundle.carePlans);
-  addSection(l10n.clinicalLabOrdersTitle, bundle.labOrders);
-  addSection(l10n.clinicalRadiologyOrdersTitle, bundle.radiologyOrders);
-  addSection(l10n.opdReferralsTitle, bundle.referrals);
-  addSection(l10n.opdFollowUpsTitle, bundle.followUps);
-  addSection(l10n.patientsAdmissionsSectionTitle, bundle.admissions);
-
-  return sections.join();
-}
-
-List<String> _pharmacyPrescriptionSectionsHtml(
-  AppLocalizations l10n,
-  List<ClinicalRelatedRecord> pharmacyOrders,
-) {
-  if (pharmacyOrders.isEmpty) {
-    return const <String>[];
-  }
-  final List<String> lines = <String>[
-    for (final ClinicalRelatedRecord order in pharmacyOrders)
-      if (order.pharmacyOrderItems.isEmpty)
-        _clinicalRecordSummaryText(order)
-      else
-        for (final ClinicalPharmacyOrderItem item in order.pharmacyOrderItems)
-          clinicalPrescriptionItemPaperLine(item),
-  ];
-  return <String>[
-    PrintFormTemplate.section(
-      title: l10n.clinicalPharmacyOrdersTitle,
-      bodyHtml: PrintFormTemplate.unorderedList(
-        lines,
-        emptyText: 'No prescriptions.',
-      ),
-      avoidPageBreak: true,
-    ),
-  ];
-}
-
-String _recordsHtml(List<ClinicalRelatedRecord> records) {
-  return PrintFormTemplate.unorderedList(<String>[
-    for (final ClinicalRelatedRecord record in records)
-      _clinicalRecordSummaryText(record),
-  ], emptyText: 'No records.');
-}
-
-String _clinicalRecordSummaryText(ClinicalRelatedRecord record) {
-  return _joinDisplay(<String?>[
-    record.title,
-    record.subtitle,
-    if (record.labOrderItems.isNotEmpty)
-      _joinDisplay(
-        record.labOrderItems
-            .take(4)
-            .map((ClinicalLabOrderItem item) => item.displayTitle),
-      ),
-    if (record.radiologyOrderItems.isNotEmpty)
-      _joinDisplay(
-        record.radiologyOrderItems
-            .take(4)
-            .map((ClinicalRadiologyOrderItem item) => item.displayTitle),
-      ),
-    if (record.pharmacyOrderItems.isNotEmpty)
-      _joinDisplay(
-        record.pharmacyOrderItems.map(clinicalPrescriptionItemPaperLine),
-      ),
-    record.status == null ? null : _apiLabel(record.status!),
-  ]);
 }
 
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
