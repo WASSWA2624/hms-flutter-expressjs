@@ -2110,6 +2110,90 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get commonContinueActionLabel;
 
+  /// Select an existing match from a similarity review card.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this'**
+  String get appSimilarityUseThisAction;
+
+  /// Re-run similarity check with edited proposed values.
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get appSimilarityRetryAction;
+
+  /// Proceed with create/update despite near matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get appSimilaritySaveAnywayAction;
+
+  /// Heading for editable proposed values in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed values'**
+  String get appSimilarityProposedHeading;
+
+  /// Heading for an existing match card in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing'**
+  String get appSimilarityExistingHeading;
+
+  /// Heading above the list of similarity matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar matches'**
+  String get appSimilarityMatchesHeading;
+
+  /// Count of similarity matches.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} matches'**
+  String appSimilarityMatchCountLabel(int count);
+
+  /// Badge for an exact similarity conflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact match'**
+  String get appSimilarityExactMatchLabel;
+
+  /// Badge for a near similarity match.
+  ///
+  /// In en, this message translates to:
+  /// **'Near match'**
+  String get appSimilarityNearMatchLabel;
+
+  /// Column header for field name in similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Field'**
+  String get appSimilarityFieldColumnLabel;
+
+  /// Column header for proposed values in similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed'**
+  String get appSimilarityProposedColumnLabel;
+
+  /// Column header for existing values in similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing'**
+  String get appSimilarityExistingColumnLabel;
+
+  /// Label for overall closest-match percentage.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest match'**
+  String get appSimilarityClosestMatchLabel;
+
+  /// Shown when similarity review finds no near matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No close matches ({score}%)'**
+  String appSimilarityNoMatchScoreLabel(int score);
+
   /// Title for the image crop dialog.
   ///
   /// In en, this message translates to:

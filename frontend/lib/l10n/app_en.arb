@@ -1393,6 +1393,72 @@
   "@commonContinueActionLabel": {
     "description": "Generic continue action label."
   },
+  "appSimilarityUseThisAction": "Use this",
+  "@appSimilarityUseThisAction": {
+    "description": "Select an existing match from a similarity review card."
+  },
+  "appSimilarityRetryAction": "Check again",
+  "@appSimilarityRetryAction": {
+    "description": "Re-run similarity check with edited proposed values."
+  },
+  "appSimilaritySaveAnywayAction": "Save anyway",
+  "@appSimilaritySaveAnywayAction": {
+    "description": "Proceed with create/update despite near matches."
+  },
+  "appSimilarityProposedHeading": "Proposed values",
+  "@appSimilarityProposedHeading": {
+    "description": "Heading for editable proposed values in similarity review."
+  },
+  "appSimilarityExistingHeading": "Existing",
+  "@appSimilarityExistingHeading": {
+    "description": "Heading for an existing match card in similarity review."
+  },
+  "appSimilarityMatchesHeading": "Similar matches",
+  "@appSimilarityMatchesHeading": {
+    "description": "Heading above the list of similarity matches."
+  },
+  "appSimilarityMatchCountLabel": "{count} matches",
+  "@appSimilarityMatchCountLabel": {
+    "description": "Count of similarity matches.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "appSimilarityExactMatchLabel": "Exact match",
+  "@appSimilarityExactMatchLabel": {
+    "description": "Badge for an exact similarity conflict."
+  },
+  "appSimilarityNearMatchLabel": "Near match",
+  "@appSimilarityNearMatchLabel": {
+    "description": "Badge for a near similarity match."
+  },
+  "appSimilarityFieldColumnLabel": "Field",
+  "@appSimilarityFieldColumnLabel": {
+    "description": "Column header for field name in similarity comparison."
+  },
+  "appSimilarityProposedColumnLabel": "Proposed",
+  "@appSimilarityProposedColumnLabel": {
+    "description": "Column header for proposed values in similarity comparison."
+  },
+  "appSimilarityExistingColumnLabel": "Existing",
+  "@appSimilarityExistingColumnLabel": {
+    "description": "Column header for existing values in similarity comparison."
+  },
+  "appSimilarityClosestMatchLabel": "Closest match",
+  "@appSimilarityClosestMatchLabel": {
+    "description": "Label for overall closest-match percentage."
+  },
+  "appSimilarityNoMatchScoreLabel": "No close matches ({score}%)",
+  "@appSimilarityNoMatchScoreLabel": {
+    "description": "Shown when similarity review finds no near matches.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
   "appImageCropTitle": "Crop image",
   "@appImageCropTitle": {
     "description": "Title for the image crop dialog."

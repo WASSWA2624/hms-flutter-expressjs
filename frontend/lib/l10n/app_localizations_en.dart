@@ -1066,6 +1066,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonContinueActionLabel => 'Continue';
 
   @override
+  String get appSimilarityUseThisAction => 'Use this';
+
+  @override
+  String get appSimilarityRetryAction => 'Check again';
+
+  @override
+  String get appSimilaritySaveAnywayAction => 'Save anyway';
+
+  @override
+  String get appSimilarityProposedHeading => 'Proposed values';
+
+  @override
+  String get appSimilarityExistingHeading => 'Existing';
+
+  @override
+  String get appSimilarityMatchesHeading => 'Similar matches';
+
+  @override
+  String appSimilarityMatchCountLabel(int count) {
+    return '$count matches';
+  }
+
+  @override
+  String get appSimilarityExactMatchLabel => 'Exact match';
+
+  @override
+  String get appSimilarityNearMatchLabel => 'Near match';
+
+  @override
+  String get appSimilarityFieldColumnLabel => 'Field';
+
+  @override
+  String get appSimilarityProposedColumnLabel => 'Proposed';
+
+  @override
+  String get appSimilarityExistingColumnLabel => 'Existing';
+
+  @override
+  String get appSimilarityClosestMatchLabel => 'Closest match';
+
+  @override
+  String appSimilarityNoMatchScoreLabel(int score) {
+    return 'No close matches ($score%)';
+  }
+
+  @override
   String get appImageCropTitle => 'Crop image';
 
   @override

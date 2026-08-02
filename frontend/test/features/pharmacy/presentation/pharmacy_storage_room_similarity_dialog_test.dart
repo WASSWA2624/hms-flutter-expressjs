@@ -13,7 +13,7 @@ void main() {
     addTearDown(view.resetDevicePixelRatio);
   }
 
-  testWidgets('similarity dialog blocks create anyway on exact match', (
+  testWidgets('pharmacy adapter blocks create anyway on exact match', (
     WidgetTester tester,
   ) async {
     await setLargeSurface(tester);
@@ -85,8 +85,7 @@ void main() {
 
     expect(find.text('Use this room'), findsOneWidget);
     expect(find.text('Create anyway'), findsNothing);
-    expect(find.textContaining('Proposed'), findsWidgets);
-    expect(find.textContaining('Existing'), findsWidgets);
+    expect(find.text('Check again'), findsOneWidget);
 
     final Finder useExisting = find.text('Use this room');
     await tester.ensureVisible(useExisting);
@@ -94,11 +93,14 @@ void main() {
     await tester.tap(useExisting);
     await tester.pumpAndSettle();
 
-    expect(result?.action, PharmacyStorageRoomSimilarityAction.useExisting);
+    expect(
+      result?.action,
+      PharmacyStorageRoomSimilarityAction.useExisting,
+    );
     expect(result?.selectedRoom?.id, 'room-1');
   });
 
-  testWidgets('similarity dialog allows create anyway for near matches', (
+  testWidgets('pharmacy adapter allows create anyway for near matches', (
     WidgetTester tester,
   ) async {
     await setLargeSurface(tester);

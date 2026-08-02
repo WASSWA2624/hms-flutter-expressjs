@@ -605,64 +605,97 @@ class _StorageRoomDialogState extends ConsumerState<_StorageRoomDialog> {
       pharmacyWorkspaceControllerProvider.notifier,
     );
     final AppLocalizations l10n = context.l10n;
-    final String name = _nameController.text.trim();
-    final String? code = _emptyToNull(_codeController.text);
+    String name = _nameController.text.trim();
+    String? code = _emptyToNull(_codeController.text);
 
-    final Result<PharmacyStorageRoomSimilarityResult> similarityResult =
-        await controller.checkStorageRoomSimilarity(
-          name: name,
-          code: code,
-          excludeRoomId: widget.room?.id,
-        );
-    if (!mounted) {
-      return;
-    }
-
-    PharmacyStorageRoomSimilarityResult? review;
-    final AppFailure? similarityFailure = similarityResult.when(
-      success: (PharmacyStorageRoomSimilarityResult value) {
-        review = value;
-        return null;
-      },
-      failure: (AppFailure failure) => failure,
-    );
-    if (similarityFailure != null) {
-      setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
-      );
-      return;
-    }
-
-    final PharmacyStorageRoomSimilarityResult check =
-        review ?? const PharmacyStorageRoomSimilarityResult();
-    final PharmacyStorageRoomSimilarityDialogResult similarityDecision =
-        await showPharmacyStorageRoomSimilarityDialog(
-          context,
-          proposed: PharmacyStorageRoomSimilarityProposedValues(
+    while (mounted) {
+      final Result<PharmacyStorageRoomSimilarityResult> similarityResult =
+          await controller.checkStorageRoomSimilarity(
             name: name,
             code: code,
-          ),
-          check: check,
-          isEdit: widget.room != null,
-        );
-    if (!mounted) {
-      return;
-    }
-    if (similarityDecision.action ==
-        PharmacyStorageRoomSimilarityAction.cancel) {
-      setState(() => _isSaving = false);
-      return;
-    }
-    if (similarityDecision.action ==
-        PharmacyStorageRoomSimilarityAction.useExisting) {
-      final PharmacyStorageRoom? existing = similarityDecision.selectedRoom;
-      setState(() => _isSaving = false);
-      if (existing != null) {
-        Navigator.of(
-          context,
-        ).pop(PharmacyStorageRoomFormResult.useExisting(existing));
+            excludeRoomId: widget.room?.id,
+          );
+      if (!mounted) {
+        return;
       }
+
+      PharmacyStorageRoomSimilarityResult? review;
+      final AppFailure? similarityFailure = similarityResult.when(
+        success: (PharmacyStorageRoomSimilarityResult value) {
+          review = value;
+          return null;
+        },
+        failure: (AppFailure failure) => failure,
+      );
+      if (similarityFailure != null) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
+        );
+        return;
+      }
+
+      final PharmacyStorageRoomSimilarityResult check =
+          review ?? const PharmacyStorageRoomSimilarityResult();
+      final PharmacyStorageRoomSimilarityDialogResult similarityDecision =
+          await showPharmacyStorageRoomSimilarityDialog(
+            context,
+            proposed: PharmacyStorageRoomSimilarityProposedValues(
+              name: name,
+              code: code,
+            ),
+            check: check,
+            isEdit: widget.room != null,
+          );
+      if (!mounted) {
+        return;
+      }
+
+      if (similarityDecision.action ==
+          PharmacyStorageRoomSimilarityAction.cancel) {
+        setState(() => _isSaving = false);
+        return;
+      }
+
+      if (similarityDecision.action ==
+          PharmacyStorageRoomSimilarityAction.retry) {
+        final PharmacyStorageRoomSimilarityProposedValues? next =
+            similarityDecision.proposed;
+        if (next == null || next.name.trim().isEmpty) {
+          setState(() => _isSaving = false);
+          return;
+        }
+        name = next.name.trim();
+        code = next.code;
+        _nameController.text = name;
+        _codeController.text = code ?? '';
+        continue;
+      }
+
+      if (similarityDecision.action ==
+          PharmacyStorageRoomSimilarityAction.useExisting) {
+        final PharmacyStorageRoom? existing = similarityDecision.selectedRoom;
+        setState(() => _isSaving = false);
+        if (existing != null) {
+          Navigator.of(
+            context,
+          ).pop(PharmacyStorageRoomFormResult.useExisting(existing));
+        }
+        return;
+      }
+
+      final PharmacyStorageRoomSimilarityProposedValues? confirmed =
+          similarityDecision.proposed;
+      if (confirmed != null) {
+        name = confirmed.name.trim().isEmpty ? name : confirmed.name.trim();
+        code = confirmed.code;
+        _nameController.text = name;
+        _codeController.text = code ?? '';
+      }
+      break;
+    }
+
+    if (!mounted) {
       return;
     }
 
