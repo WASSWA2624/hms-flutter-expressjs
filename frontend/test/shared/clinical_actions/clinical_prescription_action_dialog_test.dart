@@ -216,6 +216,12 @@ void main() {
       expect(find.text('CHOOSE MEDICINES'), findsNothing);
       expect(find.textContaining('Amoxicillin'), findsWidgets);
       expect(_fieldWithLabel('Dose amount'), findsWidgets);
+      expect(find.text('Check the highlighted details.'), findsOneWidget);
+      expect(find.text('This field is required.'), findsWidgets);
+      final AppTextField durationField = tester.widget<AppTextField>(
+        _fieldWithLabel('Duration').first,
+      );
+      expect(durationField.errorText, 'This field is required.');
     });
 
     testWidgets('seeds duration and derived quantity so prescribe succeeds', (

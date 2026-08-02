@@ -859,9 +859,9 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       setState(() {
         _failure = AppFailure.validation();
         for (final _PrescriptionLineFormState line in _lines) {
+          _applyLineFieldErrors(line);
           if (!_lineIsComplete(line) || line.consistencyError != null) {
             line.expanded = true;
-            break;
           }
         }
       });
@@ -870,6 +870,9 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
     setState(() {
       _isSaving = true;
       _failure = null;
+      for (final _PrescriptionLineFormState line in _lines) {
+        line.clearFieldErrors();
+      }
     });
 
     final List<Map<String, Object?>> items = <Map<String, Object?>>[
@@ -918,6 +921,9 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
     if (quantity == null || quantity <= 0) {
       return false;
     }
+    if ((line.quantityUnit ?? '').trim().isEmpty) {
+      return false;
+    }
     final num? doseAmount = num.tryParse(line.doseAmountController.text.trim());
     if (doseAmount == null || doseAmount <= 0) {
       return false;
@@ -941,6 +947,42 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       }
     }
     return true;
+  }
+
+  void _applyLineFieldErrors(_PrescriptionLineFormState line) {
+    final AppLocalizations l10n = context.l10n;
+    final String required = l10n.validationRequired;
+    line.clearFieldErrors();
+
+    final int? quantity = int.tryParse(line.quantityController.text.trim());
+    if (quantity == null || quantity <= 0) {
+      line.quantityError = required;
+    }
+    if ((line.quantityUnit ?? '').trim().isEmpty) {
+      line.quantityUnitError = required;
+    }
+    final num? doseAmount = num.tryParse(line.doseAmountController.text.trim());
+    if (doseAmount == null || doseAmount <= 0) {
+      line.doseAmountError = required;
+    }
+    if ((line.doseUnit ?? '').trim().isEmpty) {
+      line.doseUnitError = required;
+    }
+    if ((line.route ?? '').trim().isEmpty) {
+      line.routeError = required;
+    }
+    if ((line.frequency ?? '').trim().isEmpty) {
+      line.frequencyError = required;
+    }
+    if (!clinicalPrescriptionDurationOptional(line.frequency)) {
+      final int? duration = int.tryParse(line.durationController.text.trim());
+      if (duration == null || duration <= 0) {
+        line.durationValueError = required;
+      }
+      if ((line.durationUnit ?? '').trim().isEmpty) {
+        line.durationUnitError = required;
+      }
+    }
   }
 
   void _seedLineFromDrug(
@@ -989,8 +1031,28 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
     line.lastEditedField = edited;
     if (edited == ClinicalPrescriptionDosingField.quantity) {
       line.quantityAutoDerived = false;
+      line.quantityError = null;
+    } else if (edited == ClinicalPrescriptionDosingField.doseAmount) {
+      line.doseAmountError = null;
+    } else if (edited == ClinicalPrescriptionDosingField.doseUnit) {
+      line.doseUnitError = null;
+    } else if (edited == ClinicalPrescriptionDosingField.frequency) {
+      line.frequencyError = null;
+    } else if (edited == ClinicalPrescriptionDosingField.durationValue) {
+      line.durationValueError = null;
+    } else if (edited == ClinicalPrescriptionDosingField.durationUnit) {
+      line.durationUnitError = null;
     }
     _refreshLineConsistency(line, edited: edited, applyDerivedValues: true);
+    if (line.durationController.text.trim().isNotEmpty) {
+      line.durationValueError = null;
+    }
+    if ((line.durationUnit ?? '').trim().isNotEmpty) {
+      line.durationUnitError = null;
+    }
+    if (line.quantityController.text.trim().isNotEmpty) {
+      line.quantityError = null;
+    }
   }
 
   void _refreshLineConsistency(
@@ -1237,7 +1299,7 @@ class _PrescriptionRxListTile extends StatelessWidget {
                   isRequired: true,
                   keyboardType: TextInputType.number,
                   inputFormatters: _integerFormatters,
-                  errorText: line.consistencyError,
+                  errorText: line.quantityError ?? line.consistencyError,
                   onChanged: (_) =>
                       onFieldEdited(ClinicalPrescriptionDosingField.quantity),
                 ),
@@ -1246,9 +1308,12 @@ class _PrescriptionRxListTile extends StatelessWidget {
                   labelText: l10n.clinicalPrescriptionQuantityUnitLabel,
                   enabled: enabled,
                   isDense: true,
+                  isRequired: true,
                   options: _unitOptions(_quantityUnits),
+                  errorText: line.quantityUnitError,
                   onChanged: (String? value) {
                     line.quantityUnit = value;
+                    line.quantityUnitError = null;
                     onChanged();
                   },
                 ),
@@ -1268,6 +1333,7 @@ class _PrescriptionRxListTile extends StatelessWidget {
                     decimal: true,
                   ),
                   inputFormatters: _decimalFormatters,
+                  errorText: line.doseAmountError,
                   onChanged: (_) => onFieldEdited(
                     ClinicalPrescriptionDosingField.doseAmount,
                   ),
@@ -1279,8 +1345,10 @@ class _PrescriptionRxListTile extends StatelessWidget {
                   isDense: true,
                   isRequired: true,
                   options: _unitOptions(_doseUnits),
+                  errorText: line.doseUnitError,
                   onChanged: (String? value) {
                     line.doseUnit = value;
+                    line.doseUnitError = null;
                     onFieldEdited(ClinicalPrescriptionDosingField.doseUnit);
                   },
                 ),
@@ -1296,8 +1364,10 @@ class _PrescriptionRxListTile extends StatelessWidget {
                   isDense: true,
                   isRequired: true,
                   options: _medicationRouteOptions(),
+                  errorText: line.routeError,
                   onChanged: (String? value) {
                     line.route = value;
+                    line.routeError = null;
                     onChanged();
                   },
                 ),
@@ -1308,8 +1378,10 @@ class _PrescriptionRxListTile extends StatelessWidget {
                   isDense: true,
                   isRequired: true,
                   options: _medicationFrequencyOptions(),
+                  errorText: line.frequencyError,
                   onChanged: (String? value) {
                     line.frequency = value;
+                    line.frequencyError = null;
                     onFieldEdited(ClinicalPrescriptionDosingField.frequency);
                   },
                 ),
@@ -1329,6 +1401,7 @@ class _PrescriptionRxListTile extends StatelessWidget {
                   ),
                   keyboardType: TextInputType.number,
                   inputFormatters: _integerFormatters,
+                  errorText: line.durationValueError,
                   onChanged: (_) => onFieldEdited(
                     ClinicalPrescriptionDosingField.durationValue,
                   ),
@@ -1342,8 +1415,10 @@ class _PrescriptionRxListTile extends StatelessWidget {
                     line.frequency,
                   ),
                   options: _durationUnitOptions(),
+                  errorText: line.durationUnitError,
                   onChanged: (String? value) {
                     line.durationUnit = value;
+                    line.durationUnitError = null;
                     onFieldEdited(
                       ClinicalPrescriptionDosingField.durationUnit,
                     );
@@ -1389,6 +1464,25 @@ class _PrescriptionLineFormState {
   bool quantityAutoDerived = true;
   ClinicalPrescriptionDosingField? lastEditedField;
   String? consistencyError;
+  String? quantityError;
+  String? quantityUnitError;
+  String? doseAmountError;
+  String? doseUnitError;
+  String? routeError;
+  String? frequencyError;
+  String? durationValueError;
+  String? durationUnitError;
+
+  void clearFieldErrors() {
+    quantityError = null;
+    quantityUnitError = null;
+    doseAmountError = null;
+    doseUnitError = null;
+    routeError = null;
+    frequencyError = null;
+    durationValueError = null;
+    durationUnitError = null;
+  }
 
   void dispose() {
     quantityController.dispose();
@@ -1476,7 +1570,9 @@ class _PrescriptionLineCard extends StatelessWidget {
                   labelText: l10n.clinicalPrescriptionQuantityUnitLabel,
                   enabled: enabled,
                   isDense: true,
+                  isRequired: true,
                   options: _unitOptions(_quantityUnits),
+                  validator: AppValidators.requiredValue(l10n.validationRequired),
                   onChanged: (String? value) {
                     line.quantityUnit = value;
                     onChanged();
