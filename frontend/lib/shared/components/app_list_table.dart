@@ -66,15 +66,16 @@ LocalKey appListTableUniqueRowKey<T>({
   required int index,
   required AppListTableItemKeyBuilder<T>? itemKeyBuilder,
   required T item,
+  Object? rowsVersion,
 }) {
   final LocalKey? baseKey = itemKeyBuilder?.call(item);
   if (baseKey is ValueKey<Object?>) {
-    return ValueKey<Object>(Object.hash(index, baseKey.value));
+    return ValueKey<Object>(Object.hash(index, baseKey.value, rowsVersion));
   }
   if (baseKey != null) {
-    return ValueKey<Object>(Object.hash(index, baseKey));
+    return ValueKey<Object>(Object.hash(index, baseKey, rowsVersion));
   }
-  return ValueKey<int>(index);
+  return ValueKey<Object>(Object.hash(index, rowsVersion));
 }
 
 List<AppListTableColumn<T>> _availableColumnsFor<T>(
@@ -250,6 +251,9 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
     );
     final bool storageUnchanged = _syncedStorageKey == resolvedStorageKey;
     if (availableUnchanged && defaultsUnchanged && storageUnchanged) {
+      // Keys/defaults are unchanged, but callers rebuild column objects with
+      // fresh builders (e.g. selection checkboxes). Keep references current.
+      _availableColumns = nextColumns;
       return;
     }
 
@@ -900,6 +904,7 @@ class AppListTable<T> extends StatefulWidget {
     this.page,
     this.columnChoices,
     this.itemKeyBuilder,
+    this.rowsVersion,
     this.onRowSelected,
     this.onPageChanged,
     this.pageLabelBuilder,
@@ -979,6 +984,10 @@ class AppListTable<T> extends StatefulWidget {
   final List<AppListTableColumn<T>>? columnChoices;
   final AppListTableMobileItemBuilder<T> mobileItemBuilder;
   final AppListTableItemKeyBuilder<T>? itemKeyBuilder;
+
+  /// When this value changes, desktop/mobile row elements remount so stateful
+  /// cell chrome (e.g. selection checkboxes) cannot stay visually stale.
+  final Object? rowsVersion;
   final ValueChanged<T>? onRowSelected;
   final ValueChanged<AppPageRequest>? onPageChanged;
   final AppListTablePageLabelBuilder<T>? pageLabelBuilder;
@@ -1939,6 +1948,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
             items: visibleItems,
             itemBuilder: widget.mobileItemBuilder,
             itemKeyBuilder: widget.itemKeyBuilder,
+            rowsVersion: widget.rowsVersion,
             onRowSelected: widget.onRowSelected,
             shrinkWrap: effectiveShrinkWrap,
             physics: effectivePhysics,
@@ -1957,6 +1967,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           items: visibleItems,
           columns: visibleColumns,
           itemKeyBuilder: widget.itemKeyBuilder,
+          rowsVersion: widget.rowsVersion,
           onRowSelected: widget.onRowSelected,
           minWidth: constraints.hasBoundedWidth
               ? math.max(
@@ -2830,6 +2841,7 @@ class _MobileListTable<T> extends StatelessWidget {
     required this.items,
     required this.itemBuilder,
     required this.itemKeyBuilder,
+    this.rowsVersion,
     required this.onRowSelected,
     required this.shrinkWrap,
     required this.physics,
@@ -2843,6 +2855,7 @@ class _MobileListTable<T> extends StatelessWidget {
   final List<T> items;
   final AppListTableMobileItemBuilder<T> itemBuilder;
   final AppListTableItemKeyBuilder<T>? itemKeyBuilder;
+  final Object? rowsVersion;
   final ValueChanged<T>? onRowSelected;
   final bool shrinkWrap;
   final ScrollPhysics? physics;
@@ -2874,6 +2887,7 @@ class _MobileListTable<T> extends StatelessWidget {
                 index: itemIndex,
                 itemKeyBuilder: itemKeyBuilder,
                 item: item,
+                rowsVersion: rowsVersion,
               ),
               child: showRowNumbers
                   ? _NumberedMobileListItem(
@@ -3123,6 +3137,7 @@ class _DesktopListTable<T> extends StatefulWidget {
     required this.items,
     required this.columns,
     required this.itemKeyBuilder,
+    this.rowsVersion,
     required this.onRowSelected,
     required this.minWidth,
     required this.rowColorBuilder,
@@ -3146,6 +3161,7 @@ class _DesktopListTable<T> extends StatefulWidget {
   final List<T> items;
   final List<AppListTableColumn<T>> columns;
   final AppListTableItemKeyBuilder<T>? itemKeyBuilder;
+  final Object? rowsVersion;
   final ValueChanged<T>? onRowSelected;
   final double minWidth;
   final AppListTableRowColorBuilder<T>? rowColorBuilder;
@@ -3646,6 +3662,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         index: index,
         itemKeyBuilder: widget.itemKeyBuilder,
         item: item,
+        rowsVersion: widget.rowsVersion,
       ),
       child: row,
     );

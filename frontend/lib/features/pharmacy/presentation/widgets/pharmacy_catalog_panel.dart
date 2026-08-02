@@ -133,6 +133,7 @@ class _DrugCatalogTab extends ConsumerStatefulWidget {
 class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
   late final TextEditingController _searchController;
   final Set<String> _selectedDrugIds = <String>{};
+  final ValueNotifier<int> _selectionTick = ValueNotifier<int>(0);
 
   @override
   void initState() {
@@ -144,8 +145,15 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
 
   @override
   void dispose() {
+    _selectionTick.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _mutateDrugSelection(void Function() mutate) {
+    mutate();
+    _selectionTick.value++;
+    setState(() {});
   }
 
   @override
@@ -162,6 +170,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
     final Widget table = AppListTable<PharmacyDrug>(
       page: widget.state.drugs,
       isLoading: isBusy,
+      rowsVersion: _selectionTick.value,
       columnVisibilityStorageKey: 'pharmacy_catalog_drugs',
       shrinkWrap: !widget.fillHeight,
       search: AppListTableSearch<PharmacyDrug>(
@@ -234,10 +243,11 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         _selectionColumn<PharmacyDrug>(
           visibleItems: widget.state.drugs.items,
           selectedKeys: _selectedDrugIds,
+          selectionTick: _selectionTick,
           isBusy: isBusy,
           itemKey: (PharmacyDrug item) => item.id,
           onToggle: (PharmacyDrug item, bool selected) {
-            setState(() {
+            _mutateDrugSelection(() {
               if (selected) {
                 _selectedDrugIds.add(item.id);
               } else {
@@ -246,7 +256,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
             });
           },
           onToggleAll: (List<PharmacyDrug> items, bool selected) {
-            setState(() {
+            _mutateDrugSelection(() {
               if (!selected) {
                 for (final PharmacyDrug item in items) {
                   _selectedDrugIds.remove(item.id);
@@ -394,7 +404,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
             onChanged: isBusy
                 ? null
                 : (bool? value) {
-                    setState(() {
+                    _mutateDrugSelection(() {
                       if (value ?? false) {
                         _selectedDrugIds.add(item.id);
                       } else {
@@ -545,6 +555,7 @@ class _FormularyCatalogTab extends ConsumerStatefulWidget {
 
 class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
   final Set<String> _selectedFormularyIds = <String>{};
+  final ValueNotifier<int> _selectionTick = ValueNotifier<int>(0);
   late final TextEditingController _searchController;
 
   @override
@@ -569,8 +580,15 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
 
   @override
   void dispose() {
+    _selectionTick.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _mutateFormularySelection(void Function() mutate) {
+    mutate();
+    _selectionTick.value++;
+    setState(() {});
   }
 
   @override
@@ -587,6 +605,7 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
     final Widget table = AppListTable<PharmacyFormularyItem>(
       page: widget.state.formularyItems,
       isLoading: isBusy,
+      rowsVersion: _selectionTick.value,
       columnVisibilityStorageKey: 'pharmacy_catalog_formulary',
       shrinkWrap: !widget.fillHeight,
       onPageChanged: controller.changeFormularyPage,
@@ -661,10 +680,11 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
         _selectionColumn<PharmacyFormularyItem>(
           visibleItems: widget.state.formularyItems.items,
           selectedKeys: _selectedFormularyIds,
+          selectionTick: _selectionTick,
           isBusy: isBusy,
           itemKey: (PharmacyFormularyItem item) => item.id,
           onToggle: (PharmacyFormularyItem item, bool selected) {
-            setState(() {
+            _mutateFormularySelection(() {
               if (selected) {
                 _selectedFormularyIds.add(item.id);
               } else {
@@ -673,7 +693,7 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
             });
           },
           onToggleAll: (List<PharmacyFormularyItem> items, bool selected) {
-            setState(() {
+            _mutateFormularySelection(() {
               if (!selected) {
                 for (final PharmacyFormularyItem item in items) {
                   _selectedFormularyIds.remove(item.id);
@@ -808,7 +828,7 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
             onChanged: isBusy
                 ? null
                 : (bool? value) {
-                    setState(() {
+                    _mutateFormularySelection(() {
                       if (value ?? false) {
                         _selectedFormularyIds.add(item.id);
                       } else {
@@ -1097,9 +1117,9 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
                                 : false,
                             onChanged: _isSaving || visibleDrugs.isEmpty
                                 ? null
-                                : (_) => _toggleAllVisible(
+                                : (bool? checked) => _toggleAllVisible(
                                     visibleDrugs,
-                                    !allVisibleSelected,
+                                    checked ?? false,
                                   ),
                             visualDensity: VisualDensity.compact,
                             materialTapTargetSize:
@@ -1281,6 +1301,7 @@ class _InventoryCatalogTab extends ConsumerStatefulWidget {
 class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
   late final TextEditingController _searchController;
   final Set<String> _selectedInventoryIds = <String>{};
+  final ValueNotifier<int> _selectionTick = ValueNotifier<int>(0);
 
   @override
   void initState() {
@@ -1304,8 +1325,15 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
 
   @override
   void dispose() {
+    _selectionTick.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _mutateInventorySelection(void Function() mutate) {
+    mutate();
+    _selectionTick.value++;
+    setState(() {});
   }
 
   @override
@@ -1323,6 +1351,9 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
     return AppListTable<PharmacyInventoryStock>(
       page: widget.state.inventoryWorkbench.stocks,
       isLoading: isBusy,
+      itemKeyBuilder: (PharmacyInventoryStock item) =>
+          ValueKey<String>(_inventorySelectionKey(item)),
+      rowsVersion: _selectionTick.value,
       columnVisibilityStorageKey: 'pharmacy_catalog_inventory',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
@@ -1395,11 +1426,12 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
         _selectionColumn<PharmacyInventoryStock>(
           visibleItems: widget.state.inventoryWorkbench.stocks.items,
           selectedKeys: _selectedInventoryIds,
+          selectionTick: _selectionTick,
           isBusy: isBusy,
           itemKey: (PharmacyInventoryStock item) =>
               _inventorySelectionKey(item),
           onToggle: (PharmacyInventoryStock item, bool selected) {
-            setState(() {
+            _mutateInventorySelection(() {
               final String key = _inventorySelectionKey(item);
               if (selected) {
                 _selectedInventoryIds.add(key);
@@ -1409,7 +1441,7 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
             });
           },
           onToggleAll: (List<PharmacyInventoryStock> items, bool selected) {
-            setState(() {
+            _mutateInventorySelection(() {
               if (!selected) {
                 for (final PharmacyInventoryStock item in items) {
                   _selectedInventoryIds.remove(_inventorySelectionKey(item));
@@ -1649,7 +1681,7 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
             onChanged: isBusy
                 ? null
                 : (bool? value) {
-                    setState(() {
+                    _mutateInventorySelection(() {
                       if (value ?? false) {
                         _selectedInventoryIds.add(selectionKey);
                       } else {
@@ -1722,8 +1754,6 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
   }
 
   Future<void> _confirmClearSelectedInventory(BuildContext context) async {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final List<PharmacyInventoryStock> selectedStocks = widget
         .state
         .inventoryWorkbench
@@ -1734,66 +1764,33 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
               _selectedInventoryIds.contains(_inventorySelectionKey(item)),
         )
         .toList(growable: false);
-    final int count = selectedStocks.length;
-    if (count == 0) {
+    if (selectedStocks.isEmpty) {
       return;
     }
 
-    final bool? confirmed = await showAppDialog<bool>(
-      context: context,
-      builder: (BuildContext dialogContext) => AppDialog(
-        title: Text(l10n.pharmacyClearSelectedInventoryDialogTitle),
-        initialMaximized: false,
-        showMaximizeButton: false,
-        scrollable: true,
-        pinActionsToBottom: true,
-        maxWidth: 560,
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(l10n.pharmacyClearSelectedInventoryDialogBody(count)),
-            SizedBox(height: theme.spacing.md),
-            Text(
-              l10n.pharmacyClearSelectedInventoryListHeading,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(height: theme.spacing.sm),
-            for (int index = 0; index < selectedStocks.length; index += 1) ...<
-              Widget
-            >[
-              if (index > 0) SizedBox(height: theme.spacing.xs),
-              _InventoryClearSelectedTile(stock: selectedStocks[index]),
-            ],
-          ],
-        ),
-        actions: <Widget>[
-          AppButton.tertiary(
-            label: l10n.commonCancelActionLabel,
-            leadingIcon: Icons.close,
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-          ),
-          AppButton.primary(
-            label: l10n.pharmacyClearSelectedInventoryAction,
-            leadingIcon: Icons.delete_outline,
-            color: theme.colorScheme.error,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) {
+    final List<PharmacyInventoryStock>? stocksToClear =
+        await showAppDialog<List<PharmacyInventoryStock>>(
+          context: context,
+          builder: (BuildContext dialogContext) =>
+              _ClearSelectedInventoryDialog(stocks: selectedStocks),
+        );
+    if (stocksToClear == null ||
+        stocksToClear.isEmpty ||
+        !context.mounted) {
       return;
     }
-    for (final PharmacyInventoryStock stock in selectedStocks) {
+    for (final PharmacyInventoryStock stock in stocksToClear) {
       if (!context.mounted) {
         return;
       }
       await _clearInventoryStock(context, stock, showFailureSnackBar: false);
     }
     if (context.mounted) {
-      setState(_selectedInventoryIds.clear);
+      _mutateInventorySelection(() {
+        for (final PharmacyInventoryStock stock in stocksToClear) {
+          _selectedInventoryIds.remove(_inventorySelectionKey(stock));
+        }
+      });
     }
   }
 
@@ -1803,7 +1800,7 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
     bool showFailureSnackBar = true,
   }) async {
     if (stock.quantity <= 0) {
-      setState(
+      _mutateInventorySelection(
         () => _selectedInventoryIds.remove(_inventorySelectionKey(stock)),
       );
       return;
@@ -1823,7 +1820,7 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
       return;
     }
     if (failure == null) {
-      setState(
+      _mutateInventorySelection(
         () => _selectedInventoryIds.remove(_inventorySelectionKey(stock)),
       );
       return;
@@ -1874,14 +1871,18 @@ class _InventoryAdjustDialogState
   @override
   void initState() {
     super.initState();
-    _deltaController = TextEditingController();
+    final int onHand = widget.stock.quantity.round();
+    _deltaController = TextEditingController(
+      text: onHand == 0 ? '' : onHand.toString(),
+    );
     _reorderController = TextEditingController(
       text: widget.stock.reorderLevel > 0
-          ? widget.stock.reorderLevel.toString()
+          ? widget.stock.reorderLevel.round().toString()
           : '',
     );
     _batchController = TextEditingController();
     _notesController = TextEditingController();
+    _expiryDate = widget.stock.nextExpiry;
     _storageRoomId = widget.stock.storageRoomId;
     _storageShelfId = widget.stock.storageShelfId;
   }
@@ -1924,7 +1925,7 @@ class _InventoryAdjustDialogState
         children: <Widget>[
           AppTextField(
             controller: _deltaController,
-            labelText: l10n.pharmacyQuantityDeltaLabel,
+            labelText: l10n.pharmacyInventoryQuantityColumnLabel,
             keyboardType: TextInputType.number,
             inputFormatters: <TextInputFormatter>[
               FilteringTextInputFormatter.allow(RegExp(r'^-?\d*')),
@@ -2048,7 +2049,10 @@ class _InventoryAdjustDialogState
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
-    final int delta = int.tryParse(_deltaController.text.trim()) ?? 0;
+    final int currentQty = widget.stock.quantity.round();
+    final String qtyText = _deltaController.text.trim();
+    final int? enteredQty = qtyText.isEmpty ? null : int.tryParse(qtyText);
+    final int delta = enteredQty == null ? 0 : enteredQty - currentQty;
     final int? reorderLevel = int.tryParse(_reorderController.text.trim());
     if (delta == 0 && reorderLevel == null) {
       return;
@@ -2689,70 +2693,334 @@ class _ShelfRow {
 AppListTableColumn<T> _selectionColumn<T>({
   required List<T> visibleItems,
   required Set<String> selectedKeys,
+  required ValueNotifier<int> selectionTick,
   required bool isBusy,
   required String Function(T item) itemKey,
   required void Function(T item, bool selected) onToggle,
   required void Function(List<T> items, bool selected) onToggleAll,
 }) {
-  final bool allSelected =
-      visibleItems.isNotEmpty &&
-      visibleItems.every((T item) => selectedKeys.contains(itemKey(item)));
-  final bool someSelected = visibleItems.any(
-    (T item) => selectedKeys.contains(itemKey(item)),
-  );
-  final bool? checkboxValue = allSelected
-      ? true
-      : someSelected
-      ? null
-      : false;
-
   return AppListTableColumn<T>(
     id: 'select',
     label: '',
     alwaysVisible: true,
     exportable: false,
-    fixedWidth: 40,
+    fixedWidth: 48,
     headerBuilder: (BuildContext context) {
-      final AppLocalizations l10n = context.l10n;
-      final String tooltip = allSelected
-          ? l10n.commonDeselectAllActionLabel
-          : l10n.commonSelectAllActionLabel;
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: Tooltip(
-          message: tooltip,
-          child: Semantics(
-            label: tooltip,
-            checked: allSelected,
-            mixed: someSelected && !allSelected,
-            child: Checkbox(
-              tristate: true,
-              value: checkboxValue,
-              onChanged: !isBusy && visibleItems.isNotEmpty
-                  ? (_) => onToggleAll(visibleItems, !allSelected)
-                  : null,
-              visualDensity: VisualDensity.compact,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      return ListenableBuilder(
+        listenable: selectionTick,
+        builder: (BuildContext context, _) {
+          final AppLocalizations l10n = context.l10n;
+          final bool allSelected =
+              visibleItems.isNotEmpty &&
+              visibleItems.every(
+                (T item) => selectedKeys.contains(itemKey(item)),
+              );
+          final bool someSelected = visibleItems.any(
+            (T item) => selectedKeys.contains(itemKey(item)),
+          );
+          final String tooltip = allSelected
+              ? l10n.commonDeselectAllActionLabel
+              : l10n.commonSelectAllActionLabel;
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: Tooltip(
+              message: tooltip,
+              child: Semantics(
+                label: tooltip,
+                checked: allSelected,
+                mixed: someSelected && !allSelected,
+                child: Checkbox(
+                  key: ValueKey<Object>(
+                    'select-all-$allSelected-$someSelected-${selectionTick.value}',
+                  ),
+                  tristate: true,
+                  value: allSelected
+                      ? true
+                      : someSelected
+                      ? null
+                      : false,
+                  // Match Material tristate: true → select all, false/null → clear.
+                  onChanged: !isBusy && visibleItems.isNotEmpty
+                      ? (bool? checked) =>
+                            onToggleAll(visibleItems, checked ?? false)
+                      : null,
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       );
     },
     cellBuilder: (BuildContext context, T item) {
-      final bool selected = selectedKeys.contains(itemKey(item));
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: Checkbox(
-          value: selected,
-          onChanged: isBusy
-              ? null
-              : (bool? value) => onToggle(item, value ?? !selected),
-          visualDensity: VisualDensity.compact,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
+      final String key = itemKey(item);
+      return ListenableBuilder(
+        listenable: selectionTick,
+        builder: (BuildContext context, _) {
+          final bool selected = selectedKeys.contains(key);
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: Checkbox(
+              key: ValueKey<Object>('select-row-$key-$selected'),
+              value: selected,
+              onChanged: isBusy
+                  ? null
+                  : (bool? value) => onToggle(item, value ?? false),
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          );
+        },
       );
     },
   );
+}
+
+class _ClearSelectedInventoryDialog extends StatefulWidget {
+  const _ClearSelectedInventoryDialog({required this.stocks});
+
+  final List<PharmacyInventoryStock> stocks;
+
+  @override
+  State<_ClearSelectedInventoryDialog> createState() =>
+      _ClearSelectedInventoryDialogState();
+}
+
+class _ClearSelectedInventoryDialogState
+    extends State<_ClearSelectedInventoryDialog> {
+  late final TextEditingController _searchController;
+  late final Set<String> _selectedIds;
+  final ValueNotifier<int> _selectionTick = ValueNotifier<int>(0);
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    _searchController.addListener(_onSearchChanged);
+    _selectedIds = widget.stocks
+        .map((PharmacyInventoryStock stock) => stock.id)
+        .toSet();
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _selectionTick.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(() {});
+  }
+
+  void _mutateSelection(void Function() mutate) {
+    mutate();
+    _selectionTick.value++;
+    setState(() {});
+  }
+
+  bool _matchesSearch(PharmacyInventoryStock item, String query) {
+    final String normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return true;
+    }
+    final String haystack = <String?>[
+      item.inventoryItem?.displayTitle,
+      item.inventoryItem?.sku,
+      item.displayId,
+      item.storageLocationLabel,
+      item.id,
+    ].whereType<String>().join(' ').toLowerCase();
+    return haystack.contains(normalized);
+  }
+
+  List<PharmacyInventoryStock> get _visibleStocks {
+    final String query = _searchController.text;
+    return widget.stocks
+        .where((PharmacyInventoryStock item) => _matchesSearch(item, query))
+        .toList(growable: false);
+  }
+
+  List<PharmacyInventoryStock> get _confirmedStocks {
+    return widget.stocks
+        .where((PharmacyInventoryStock stock) => _selectedIds.contains(stock.id))
+        .toList(growable: false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final int selectedCount = _selectedIds.length;
+    final AppPage<PharmacyInventoryStock> page = AppPage<PharmacyInventoryStock>(
+      items: widget.stocks,
+      request: AppPageRequest(
+        pageSize: widget.stocks.isEmpty ? 1 : widget.stocks.length,
+      ),
+      totalItemCount: widget.stocks.length,
+    );
+
+    return AppDialog(
+      title: Text(l10n.pharmacyClearSelectedInventoryDialogTitle),
+      pinActionsToBottom: true,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(l10n.pharmacyClearSelectedInventoryDialogBody(selectedCount)),
+          SizedBox(height: theme.spacing.md),
+          Expanded(
+            child: AppListTable<PharmacyInventoryStock>(
+              page: page,
+              rowsVersion: _selectionTick.value,
+              itemKeyBuilder: (PharmacyInventoryStock item) =>
+                  ValueKey<String>(item.id),
+              enableExport: false,
+              tableHorizontalMargin: 0,
+              search: AppListTableSearch<PharmacyInventoryStock>(
+                controller: _searchController,
+                semanticLabel: l10n.pharmacyInventoryFiltersSemanticLabel,
+                hintText: l10n.pharmacyInventorySearchHint,
+                matcher: _matchesSearch,
+                enableDateFilter: false,
+              ),
+              columns: <AppListTableColumn<PharmacyInventoryStock>>[
+                _selectionColumn<PharmacyInventoryStock>(
+                  visibleItems: _visibleStocks,
+                  selectedKeys: _selectedIds,
+                  selectionTick: _selectionTick,
+                  isBusy: false,
+                  itemKey: (PharmacyInventoryStock item) => item.id,
+                  onToggle: (PharmacyInventoryStock item, bool selected) {
+                    _mutateSelection(() {
+                      if (selected) {
+                        _selectedIds.add(item.id);
+                      } else {
+                        _selectedIds.remove(item.id);
+                      }
+                    });
+                  },
+                  onToggleAll: (List<PharmacyInventoryStock> items, bool selected) {
+                    _mutateSelection(() {
+                      if (!selected) {
+                        for (final PharmacyInventoryStock item in items) {
+                          _selectedIds.remove(item.id);
+                        }
+                        return;
+                      }
+                      for (final PharmacyInventoryStock item in items) {
+                        _selectedIds.add(item.id);
+                      }
+                    });
+                  },
+                ),
+                AppListTableColumn<PharmacyInventoryStock>(
+                  id: 'item',
+                  label: l10n.pharmacyInventoryItemLabel,
+                  preferredWidth: 280,
+                  alwaysVisible: true,
+                  cellBuilder: (_, PharmacyInventoryStock item) => Text(
+                    item.inventoryItem?.displayTitle ??
+                        item.displayId ??
+                        item.id,
+                  ),
+                ),
+                AppListTableColumn<PharmacyInventoryStock>(
+                  id: 'sku',
+                  label: l10n.pharmacyInventorySkuColumnLabel,
+                  preferredWidth: 120,
+                  cellBuilder: (_, PharmacyInventoryStock item) {
+                    final String sku =
+                        (item.inventoryItem?.sku ?? '').trim();
+                    return Text(sku.isEmpty ? '—' : sku);
+                  },
+                ),
+                AppListTableColumn<PharmacyInventoryStock>(
+                  id: 'quantity',
+                  label: l10n.pharmacyInventoryQuantityColumnLabel,
+                  numeric: true,
+                  fixedWidth: 72,
+                  alwaysVisible: true,
+                  cellBuilder: (_, PharmacyInventoryStock item) =>
+                      Text(item.quantity.toString()),
+                ),
+                AppListTableColumn<PharmacyInventoryStock>(
+                  id: 'reorder_level',
+                  label: l10n.pharmacyReorderLevelColumnLabel,
+                  numeric: true,
+                  fixedWidth: 84,
+                  cellBuilder: (_, PharmacyInventoryStock item) =>
+                      Text(item.reorderLevel.toString()),
+                ),
+                AppListTableColumn<PharmacyInventoryStock>(
+                  id: 'storage_location',
+                  label: l10n.pharmacyStorageLocationColumnLabel,
+                  preferredWidth: 200,
+                  cellBuilder: (_, PharmacyInventoryStock item) =>
+                      Text(item.storageLocationLabel ?? '—'),
+                ),
+              ],
+              mobileItemBuilder:
+                  (BuildContext context, PharmacyInventoryStock item) {
+                final bool selected = _selectedIds.contains(item.id);
+                return AppListTableMobileItem(
+                  leading: Checkbox(
+                    value: selected,
+                    onChanged: (bool? value) {
+                      _mutateSelection(() {
+                        if (value ?? false) {
+                          _selectedIds.add(item.id);
+                        } else {
+                          _selectedIds.remove(item.id);
+                        }
+                      });
+                    },
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  title: item.inventoryItem?.displayTitle ?? item.displayId ?? '',
+                  meta: <AppListTableMobileMeta>[
+                    AppListTableMobileMeta(
+                      label:
+                          '${item.quantity} · ${l10n.pharmacyReorderLevelColumnLabel}: ${item.reorderLevel}',
+                    ),
+                    if ((item.storageLocationLabel ?? '').trim().isNotEmpty)
+                      AppListTableMobileMeta(
+                        label: item.storageLocationLabel!,
+                      ),
+                  ],
+                  showAvatar: false,
+                );
+              },
+              emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+                variant: AppStateViewVariant.empty,
+                title: l10n.pharmacyNoInventoryTitle,
+                body: l10n.pharmacyNoInventoryBody,
+                icon: Icons.warehouse_outlined,
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: Icons.close,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppButton.primary(
+          label: l10n.pharmacyClearSelectedInventoryAction,
+          leadingIcon: Icons.delete_outline,
+          color: theme.colorScheme.error,
+          enabled: selectedCount > 0,
+          onPressed: selectedCount == 0
+              ? null
+              : () => Navigator.of(context).pop(_confirmedStocks),
+        ),
+      ],
+    );
+  }
 }
 
 class _InventoryClearSelectedTile extends StatelessWidget {
