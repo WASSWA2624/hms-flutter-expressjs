@@ -2989,19 +2989,21 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
               columns: <DataColumn>[
                 if (showRowNumbers)
                   DataColumn(
-                    numeric: true,
+                    headingRowAlignment: MainAxisAlignment.start,
                     label: SizedBox(
                       width: _rowNumberColumnWidth,
                       child: Text(
                         '#',
-                        textAlign: TextAlign.center,
+                        textAlign: TextAlign.start,
                         style: _cachedNumberColumnStyle,
                       ),
                     ),
                   ),
                 for (final AppListTableColumn<T> column in widget.columns)
                   DataColumn(
-                    numeric: column.numeric,
+                    // Always start-align: do not pass [column.numeric] through to
+                    // Flutter's DataColumn (that end-aligns cells/headers).
+                    headingRowAlignment: MainAxisAlignment.start,
                     tooltip: column.tooltip,
                     label: _DataColumnHeader<T>(
                       column: column,
