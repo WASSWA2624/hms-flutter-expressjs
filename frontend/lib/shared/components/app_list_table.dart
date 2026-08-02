@@ -707,7 +707,6 @@ class AppListTableMobileItem extends StatelessWidget {
             vertical: theme.spacing.md,
           ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           if (leadingWidget != null) ...<Widget>[
             leadingWidget,
@@ -1382,7 +1381,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       // Keep revealing across frames while the user remains near the end so a
       // single scroll gesture does not stall after one batch.
       if (allowPageRequest) {
-        _scheduleRevealIfNeeded(allowPageRequest: true);
+        _scheduleRevealIfNeeded();
       }
       return;
     }
@@ -2925,8 +2924,7 @@ class _MobileListTable<T> extends StatelessWidget {
               color: theme.colorScheme.surface,
               child: SizedBox(
                 height: _mobileRowGutterHeight,
-                child: Align(
-                  alignment: Alignment.center,
+                child: Center(
                   child: Container(
                     height: 1,
                     margin: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
@@ -2955,7 +2953,6 @@ class _NumberedMobileListItem extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         SizedBox(
           width: _mobileRowNumberColumnWidth,
@@ -4274,7 +4271,13 @@ class _GoToTopHostState extends State<_GoToTopHost> {
   bool _isHeaderHidden() {
     final BuildContext? headerContext = _headerKey.currentContext;
     if (headerContext == null) {
-      return false;
+      // A virtualized scroll view culls the header sliver once it is far off
+      // screen, so a missing context while scrolled past the header height
+      // means it is hidden.
+      final ScrollPosition? position = _trackedPosition;
+      return position != null &&
+          position.hasPixels &&
+          position.pixels > widget.headerExtent;
     }
     final RenderObject? headerRender = headerContext.findRenderObject();
     if (headerRender == null || !headerRender.attached) {
@@ -4304,14 +4307,16 @@ class _GoToTopHostState extends State<_GoToTopHost> {
 
   Rect? _viewportRectInOverlay(BuildContext overlayContext) {
     final BuildContext? headerContext = _headerKey.currentContext;
-    if (headerContext == null) {
-      return null;
+    RenderObject? viewportRender;
+    if (headerContext != null) {
+      viewportRender = Scrollable.maybeOf(
+        headerContext,
+      )?.context.findRenderObject();
+    } else if (mounted) {
+      // Header sliver culled by virtualization: the host wraps the scroll
+      // view directly, so its own render box matches the viewport bounds.
+      viewportRender = context.findRenderObject();
     }
-    final ScrollableState? scrollable = Scrollable.maybeOf(headerContext);
-    if (scrollable == null) {
-      return null;
-    }
-    final RenderObject? viewportRender = scrollable.context.findRenderObject();
     final RenderObject? overlayRender = overlayContext.findRenderObject();
     if (viewportRender is! RenderBox ||
         overlayRender is! RenderBox ||
@@ -4358,18 +4363,16 @@ class _GoToTopHostState extends State<_GoToTopHost> {
 
   Future<void> _goToTop() async {
     final BuildContext? headerContext = _headerKey.currentContext;
-    if (headerContext == null) {
-      return;
-    }
-    final ScrollableState? scrollable = Scrollable.maybeOf(headerContext);
-    final ScrollPosition? position = scrollable?.position;
+    final ScrollPosition? position = headerContext != null
+        ? Scrollable.maybeOf(headerContext)?.position
+        : _trackedPosition;
     if (position != null && position.hasPixels) {
       await position.animateTo(
         0,
         duration: _goToTopAnimationDuration,
         curve: Curves.easeOutCubic,
       );
-    } else {
+    } else if (headerContext != null) {
       await Scrollable.ensureVisible(
         headerContext,
         duration: _goToTopAnimationDuration,
