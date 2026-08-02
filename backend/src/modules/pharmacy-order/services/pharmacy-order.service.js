@@ -160,53 +160,6 @@ const normalizeOrderItemPayloads = async (items = [], scope = {}) => {
   return normalizedItems;
 };
 
-const createPrescriptionDetailNote = async ({ encounterId, items, userId }) => {
-  if (!encounterId || !userId) return;
-
-  const lines = items
-    .map((item, index) => {
-      const dosageText = buildDosageText(item);
-      const durationText = [
-        sanitizeString(item.duration_value || item.duration),
-        sanitizeString(item.duration_unit)].filter(Boolean).join(' ');
-      const details = [
-        dosageText,
-        sanitizeString(item.frequency),
-        durationText,
-        sanitizeString(item.route),
-        sanitizeString(item.quantity_unit)
-          ? `${sanitizeString(item.quantity)} ${sanitizeString(item.quantity_unit)} requested`
-          : sanitizeString(item.quantity)
-            ? `${sanitizeString(item.quantity)} requested`
-            : '',
-        sanitizeString(item.instructions),
-        sanitizeString(item.custom_prescription)].filter(Boolean);
-      if (!details.length) return '';
-      const medicationName = sanitizeString(
-        item?.drug?.name ||
-          item?.drug_display_name ||
-          item?.drug_name ||
-          item?.medicine_name ||
-          item?.medication_name ||
-          item?.custom_prescription
-      );
-      return `${index + 1}. ${medicationName || 'Medication'}: ${details.join('; ')}`;
-    })
-    .filter(Boolean);
-
-  if (!lines.length) return;
-
-  try {
-    await prisma.clinical_note.create({
-      data: {
-        encounter_id: encounterId,
-        author_user_id: userId,
-        note: `Prescription details:\n${lines.join('\n')}`}});
-  } catch (_error) {
-    // Prescription creation should not fail because supplementary note capture failed.
-  }
-};
-
 const buildScopedOrderWhereClause = async (filters = {}, user = {}) => {
   const scope = resolveScopedUserContext(user);
   const whereClause = {
@@ -378,11 +331,6 @@ const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
     const persistedOrder = billing
       ? await pharmacyOrderRepository.findById(pharmacyOrder.id, ORDER_SCOPE_INCLUDE)
       : pharmacyOrder;
-
-    await createPrescriptionDetailNote({
-      encounterId: payload.encounter_id,
-      items: persistedOrder.items || items,
-      userId});
 
     // Create audit log (non-blocking)
     createAuditLog({

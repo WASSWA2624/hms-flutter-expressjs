@@ -122,4 +122,12 @@ void main() {
       );
     });
   });
+
+  group('clinicalPrescriptionQuantityUnitFromForm', () {
+    test('maps common form labels', () {
+      expect(clinicalPrescriptionQuantityUnitFromForm('Capsule'), 'capsule');
+      expect(clinicalPrescriptionQuantityUnitFromForm('Film-coated tablet'), 'tablet');
+      expect(clinicalPrescriptionQuantityUnitFromForm(''), isNull);
+    });
+  });
 }

@@ -105,7 +105,8 @@ void main() {
       expect(find.byType(AppCollapsibleSection), findsNWidgets(2));
       expect(find.textContaining('Amoxicillin 500 mg'), findsWidgets);
       expect(find.textContaining('Ibuprofen 200 mg'), findsWidgets);
-      expect(find.textContaining('Oral · BID · Qty 1'), findsWidgets);
+      // Default 7-day course × BID → qty 14 / 14
+      expect(find.textContaining('Oral · BID · Qty 14'), findsWidgets);
       expect(find.text('Prescription details'), findsNothing);
       expect(find.text('Edit details'), findsNothing);
       expect(_fieldWithLabel('Dose amount'), findsNothing);
@@ -188,7 +189,7 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('blocks prescribe when duration is incomplete', (
+    testWidgets('blocks prescribe when duration is cleared', (
       WidgetTester tester,
     ) async {
       var submitted = false;
@@ -205,6 +206,9 @@ void main() {
       );
 
       await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
+      await _expandFirstMedicineCard(tester);
+      await _setDurationInline(tester, duration: '');
+
       await tester.tap(find.widgetWithIcon(AppButton, Icons.send_outlined));
       await tester.pumpAndSettle();
 
@@ -212,6 +216,38 @@ void main() {
       expect(find.text('CHOOSE MEDICINES'), findsNothing);
       expect(find.textContaining('Amoxicillin'), findsWidgets);
       expect(_fieldWithLabel('Dose amount'), findsWidgets);
+    });
+
+    testWidgets('seeds duration and derived quantity so prescribe succeeds', (
+      WidgetTester tester,
+    ) async {
+      List<Map<String, Object?>>? submittedItems;
+
+      await _pumpPrescribeDialog(
+        tester,
+        onSubmit:
+            ({
+              required List<Map<String, Object?>> items,
+              ClinicalRequestBillingSubmit? billing,
+            }) async {
+              submittedItems = items;
+              return null;
+            },
+      );
+
+      await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
+      expect(find.textContaining('Qty 14'), findsWidgets);
+
+      await tester.tap(find.widgetWithIcon(AppButton, Icons.send_outlined));
+      await tester.pumpAndSettle();
+
+      expect(submittedItems, isNotNull);
+      expect(submittedItems!.single['drug_id'], 'DRG-AMOX');
+      expect(submittedItems!.single['dose_amount'], 500);
+      expect(submittedItems!.single['dose_unit'], 'mg');
+      expect(submittedItems!.single['quantity'], 14);
+      expect(submittedItems!.single['duration_value'], 7);
+      expect(submittedItems!.single['quantity_unit'], 'capsule');
     });
 
     testWidgets('duration edit updates quantity and allows prescribe', (
@@ -233,9 +269,9 @@ void main() {
 
       await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
       await _expandFirstMedicineCard(tester);
-      await _setDurationInline(tester, duration: '7');
+      await _setDurationInline(tester, duration: '5');
 
-      expect(find.textContaining('Qty 14'), findsWidgets);
+      expect(find.textContaining('Qty 10'), findsWidgets);
 
       await tester.tap(find.widgetWithIcon(AppButton, Icons.send_outlined));
       await tester.pumpAndSettle();
@@ -244,8 +280,8 @@ void main() {
       expect(submittedItems!.single['drug_id'], 'DRG-AMOX');
       expect(submittedItems!.single['dose_amount'], 500);
       expect(submittedItems!.single['dose_unit'], 'mg');
-      expect(submittedItems!.single['quantity'], 14);
-      expect(submittedItems!.single['duration_value'], 7);
+      expect(submittedItems!.single['quantity'], 10);
+      expect(submittedItems!.single['duration_value'], 5);
     });
   });
 }
@@ -341,6 +377,7 @@ Future<void> _pumpPrescribeDialog(
                   metadata: <String, Object?>{
                     'generic_name': 'Amoxicillin',
                     'strength': '500 mg',
+                    'form': 'Capsule',
                   },
                 ),
                 ClinicalActionCatalogOption(
@@ -353,6 +390,7 @@ Future<void> _pumpPrescribeDialog(
                   metadata: <String, Object?>{
                     'generic_name': 'Ibuprofen',
                     'strength': '200 mg',
+                    'form': 'Tablet',
                   },
                 ),
               ],

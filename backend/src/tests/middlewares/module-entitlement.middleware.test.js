@@ -337,6 +337,58 @@ describe('module entitlement middleware', () => {
     );
   });
 
+  test('allows pharmacy-orders when tenant has encounters-vitals but not pharmacy-dispensing', async () => {
+    const { enforceModuleEntitlement } = loadMiddleware();
+    const req = {
+      path: '/pharmacy-orders',
+      user: { tenant_id: 'tenant-clinical-only', roles: ['DOCTOR'] }};
+
+    moduleRepository.count.mockResolvedValue(1);
+    moduleSubscriptionRepository.count.mockImplementation(async (filters = {}) => {
+      const slugs = filters?.module?.slug?.in || [];
+      return slugs.includes('encounters-vitals') ? 1 : 0;
+    });
+
+    const error = await invokeMiddleware(enforceModuleEntitlement(), req);
+
+    expect(error).toBeUndefined();
+    expect(moduleSubscriptionRepository.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        module: expect.objectContaining({
+          slug: expect.objectContaining({
+            in: expect.arrayContaining(['pharmacy-dispensing'])})})})
+    );
+    expect(moduleSubscriptionRepository.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        module: expect.objectContaining({
+          slug: expect.objectContaining({
+            in: expect.arrayContaining(['encounters-vitals'])})})})
+    );
+  });
+
+  test('still blocks pharmacy dispense paths without pharmacy-dispensing entitlement', async () => {
+    const { enforceModuleEntitlement } = loadMiddleware();
+    const req = {
+      path: '/pharmacy/workbench',
+      user: { tenant_id: 'tenant-clinical-only', roles: ['DOCTOR'] }};
+
+    moduleRepository.count.mockResolvedValue(1);
+    moduleSubscriptionRepository.count.mockImplementation(async (filters = {}) => {
+      const slugs = filters?.module?.slug?.in || [];
+      return slugs.includes('encounters-vitals') ? 1 : 0;
+    });
+    prismaMock.module.findFirst.mockResolvedValue({
+      id: 'mod-pharmacy',
+      slug: 'pharmacy-dispensing',
+      minimum_plan_tier_code: 'PRO'});
+
+    const error = await invokeMiddleware(enforceModuleEntitlement(), req);
+
+    expect(error).toBeDefined();
+    expect(error.messageKey).toBe('errors.auth.module_not_entitled');
+    expect(error.statusCode).toBe(403);
+  });
+
   test('allows SUPER_ADMIN to access commercial modules without plan entitlement', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {

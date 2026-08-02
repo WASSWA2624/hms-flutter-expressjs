@@ -961,8 +961,25 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         line.doseUnit = strength.unit;
       }
     }
+    if ((line.quantityUnit ?? '').trim().isEmpty) {
+      line.quantityUnit = clinicalPrescriptionQuantityUnitFromForm(
+        option.metadata['form']?.toString(),
+      );
+    }
+    // Seed a standard course so BID/etc. lines are submit-ready; quantity syncs.
+    if (!clinicalPrescriptionDurationOptional(line.frequency) &&
+        line.durationController.text.trim().isEmpty) {
+      line.durationController.text = '$clinicalPrescriptionDefaultDurationDays';
+      line.durationUnit =
+          (line.durationUnit ?? '').trim().isEmpty ? 'days' : line.durationUnit;
+    }
     line.quantityAutoDerived = true;
     line.consistencyError = null;
+    _refreshLineConsistency(
+      line,
+      edited: ClinicalPrescriptionDosingField.durationValue,
+      applyDerivedValues: true,
+    );
   }
 
   void _applyLineDosingSync(

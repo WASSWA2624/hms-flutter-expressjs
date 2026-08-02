@@ -86,6 +86,64 @@ bool clinicalPrescriptionDurationOptional(String? frequency) {
   return key == 'ONCE' || key == 'STAT';
 }
 
+/// Default course length seeded when a medicine is added (days).
+const int clinicalPrescriptionDefaultDurationDays = 7;
+
+/// Maps catalog drug form text onto a dispense quantity unit when possible.
+String? clinicalPrescriptionQuantityUnitFromForm(String? form) {
+  final String normalized = (form ?? '').trim().toLowerCase();
+  if (normalized.isEmpty) {
+    return null;
+  }
+  const List<String> known = <String>[
+    'tablet',
+    'capsule',
+    'vial',
+    'ampoule',
+    'bottle',
+    'tube',
+    'sachet',
+    'patch',
+    'drop',
+    'mL',
+    'dose',
+    'pack',
+  ];
+  for (final String unit in known) {
+    if (normalized == unit.toLowerCase()) {
+      return unit;
+    }
+  }
+  if (normalized.contains('capsule') || normalized.contains('cap')) {
+    return 'capsule';
+  }
+  if (normalized.contains('tablet') || normalized.contains('tab')) {
+    return 'tablet';
+  }
+  if (normalized.contains('vial')) {
+    return 'vial';
+  }
+  if (normalized.contains('ampoule') || normalized.contains('ampule')) {
+    return 'ampoule';
+  }
+  if (normalized.contains('bottle')) {
+    return 'bottle';
+  }
+  if (normalized.contains('sachet')) {
+    return 'sachet';
+  }
+  if (normalized.contains('patch')) {
+    return 'patch';
+  }
+  if (normalized.contains('drop')) {
+    return 'drop';
+  }
+  if (normalized == 'ml' || normalized.contains('millilit')) {
+    return 'mL';
+  }
+  return null;
+}
+
 num? clinicalPrescriptionDurationInDays(num? value, String? unit) {
   if (value == null || value <= 0) {
     return null;

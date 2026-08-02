@@ -247,6 +247,16 @@ const LEGACY_MODULE_SLUG_ALIASES = Object.freeze({
   'inventory-procurement-lite': Object.freeze(['inventory-procurement']),
 });
 
+/**
+ * Path segments that clinical workflows must reach even when the commercial
+ * pharmacy module is not subscribed (doctor prescribe → pharmacy-orders).
+ * Dispense / inventory paths stay pharmacy-dispensing only.
+ */
+const PATH_MODULE_ACCESS_ALTERNATES = Object.freeze({
+  'pharmacy-orders': Object.freeze(['encounters-vitals']),
+  'pharmacy-order-items': Object.freeze(['encounters-vitals']),
+});
+
 const trimExpiredEntries = (cache) => {
   const now = Date.now();
   for (const [key, entry] of cache.entries()) {
@@ -623,6 +633,13 @@ const enforceModuleEntitlement = () => async (req, res, next) => {
 
     const allowed = await tenantHasModuleAccess(tenantId, moduleSlug);
     if (!allowed) {
+      const alternateSlugs = PATH_MODULE_ACCESS_ALTERNATES[rawSegment] || [];
+      for (const alternateSlug of alternateSlugs) {
+        if (await tenantHasModuleAccess(tenantId, alternateSlug)) {
+          return next();
+        }
+      }
+
       recordSecurityEvent('module.entitlement_denied', {
         'hms.module.slug': moduleSlug,
       });
