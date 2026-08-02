@@ -1150,6 +1150,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appImageCropConfirmAction => 'Use image';
 
   @override
+  String get appImageCropRotateLeftAction => 'Rotate left';
+
+  @override
+  String get appImageCropRotateRightAction => 'Rotate right';
+
+  @override
+  String get appImageCropFlipHorizontalAction => 'Flip horizontal';
+
+  @override
+  String get appImageCropFlipVerticalAction => 'Flip vertical';
+
+  @override
   String get appImageUploadPreviewTitle => 'Image preview';
 
   @override
@@ -11994,14 +12006,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyAddDrugAction => 'Create drug';
 
   @override
-  String get pharmacyDrugScanPackAction => 'Scan pack';
+  String get pharmacyDrugScanPackAction => 'Scan pack or use AI capture';
 
   @override
-  String get pharmacyDrugScanPackTitle => 'Scan pack';
+  String get pharmacyDrugScanPackTitle => 'Scan pack or use AI capture';
 
   @override
   String get pharmacyDrugScanPackBody =>
-      'Enter or decode a barcode first. If that fails, capture pack photo(s) for free OCR prefill. Images are discarded after parsing.';
+      'Barcode, photos, or pack text — images are discarded after parsing.';
 
   @override
   String get pharmacyDrugBarcodeLabel => 'Barcode';
@@ -12013,7 +12025,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyDrugCapturePackPhotoAction => 'Capture pack photo';
 
   @override
-  String get pharmacyDrugPastePackTextAction => 'Paste pack text';
+  String get pharmacyDrugTakePackPhotoAction => 'Take photo';
+
+  @override
+  String get pharmacyDrugUploadPackPhotoAction => 'Upload photo';
+
+  @override
+  String get pharmacyDrugClearPackPhotosAction => 'Clear photos';
+
+  @override
+  String get pharmacyDrugRemovePackPhotoAction => 'Remove photo';
+
+  @override
+  String get pharmacyDrugEditPackPhotoAction => 'Edit photo';
+
+  @override
+  String pharmacyDrugPhotosProcessedBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count photos processed',
+      one: '1 photo processed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pharmacyDrugPastePackTextAction => 'Parse pack text';
+
+  @override
+  String get pharmacyDrugParsePackTextExpandAction => 'Have pack text?';
 
   @override
   String get pharmacyDrugPackTextLabel => 'Pack text';

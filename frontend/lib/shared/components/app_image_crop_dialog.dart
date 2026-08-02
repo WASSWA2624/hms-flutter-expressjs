@@ -9,6 +9,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
+import 'package:hosspi_hms/shared/components/app_image_transform.dart';
 
 /// Shows a crop editor and returns cropped image bytes, or `null` if cancelled.
 ///
@@ -16,7 +17,7 @@ import 'package:hosspi_hms/shared/components/app_dialog.dart';
 /// The user moves and resizes the crop rectangle over it. Pass [aspectRatio]
 /// as `null` (default) for free-form cropping. When [showAspectPresets] is
 /// true, Free / 1:1 / 4:3 / 16:9 shortcuts are offered; presets only lock the
-/// rectangle ratio.
+/// rectangle ratio. Rotate / flip adjust source bytes before cropping.
 Future<Uint8List?> showAppImageCropDialog({
   required BuildContext context,
   required Uint8List imageBytes,
@@ -54,19 +55,23 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
   static const double _edgeHitSize = 22;
 
   late CropController _controller;
+  late Uint8List _workingBytes;
   late double? _aspectRatio;
   bool _isCropping = false;
+  bool _isTransforming = false;
   int _cropViewGeneration = 0;
   Uint8List? _previewBytes;
   Rect? _cropViewportRect;
   Rect? _imageViewportRect;
 
   bool get _showingPreview => _previewBytes != null;
+  bool get _controlsLocked => _isCropping || _isTransforming;
 
   @override
   void initState() {
     super.initState();
     _controller = CropController();
+    _workingBytes = widget.imageBytes;
     _aspectRatio = widget.initialAspectRatio;
   }
 
@@ -78,7 +83,7 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
   }
 
   void _setAspectRatio(double? next) {
-    if (_isCropping || _showingPreview || _aspectRatio == next) {
+    if (_controlsLocked || _showingPreview || _aspectRatio == next) {
       return;
     }
     setState(() {
@@ -87,8 +92,42 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
     });
   }
 
+  Future<void> _transformWorkingBytes({
+    int quarterTurns = 0,
+    bool flipHorizontal = false,
+    bool flipVertical = false,
+  }) async {
+    if (_controlsLocked || _showingPreview) {
+      return;
+    }
+    setState(() => _isTransforming = true);
+    try {
+      final Uint8List next = await Future<Uint8List>(() {
+        return transformAppImageBytes(
+          _workingBytes,
+          quarterTurns: quarterTurns,
+          flipHorizontal: flipHorizontal,
+          flipVertical: flipVertical,
+        );
+      });
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _workingBytes = next;
+        _isTransforming = false;
+        _resetCropSession();
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _isTransforming = false);
+    }
+  }
+
   void _returnToCrop() {
-    if (_isCropping) {
+    if (_controlsLocked) {
       return;
     }
     setState(() {
@@ -272,7 +311,7 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
       scrollable: true,
       pinActionsToBottom: true,
       maxWidth: 800,
-      closeEnabled: !_isCropping,
+      closeEnabled: !_controlsLocked,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -286,38 +325,76 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
               color: colorScheme.onSurfaceVariant,
             ),
           ),
-          if (!showingPreview && widget.showAspectPresets) ...<Widget>[
+          if (!showingPreview) ...<Widget>[
             SizedBox(height: theme.spacing.sm),
             Wrap(
               spacing: theme.spacing.sm,
               runSpacing: theme.spacing.sm,
               children: <Widget>[
-                _AspectPresetChip(
-                  label: l10n.appImageCropAspectFree,
-                  selected: aspectRatio == null,
-                  enabled: !_isCropping,
-                  onSelected: () => _setAspectRatio(null),
+                AppButton.secondary(
+                  label: l10n.appImageCropRotateLeftAction,
+                  leadingIcon: Icons.rotate_left,
+                  dense: true,
+                  enabled: !_controlsLocked,
+                  onPressed: () => _transformWorkingBytes(quarterTurns: -1),
                 ),
-                _AspectPresetChip(
-                  label: l10n.appImageCropAspectSquare,
-                  selected: aspectRatio == 1,
-                  enabled: !_isCropping,
-                  onSelected: () => _setAspectRatio(1),
+                AppButton.secondary(
+                  label: l10n.appImageCropRotateRightAction,
+                  leadingIcon: Icons.rotate_right,
+                  dense: true,
+                  enabled: !_controlsLocked,
+                  onPressed: () => _transformWorkingBytes(quarterTurns: 1),
                 ),
-                _AspectPresetChip(
-                  label: l10n.appImageCropAspectFourThree,
-                  selected: aspectRatio == 4 / 3,
-                  enabled: !_isCropping,
-                  onSelected: () => _setAspectRatio(4 / 3),
+                AppButton.secondary(
+                  label: l10n.appImageCropFlipHorizontalAction,
+                  leadingIcon: Icons.flip,
+                  dense: true,
+                  enabled: !_controlsLocked,
+                  onPressed: () =>
+                      _transformWorkingBytes(flipHorizontal: true),
                 ),
-                _AspectPresetChip(
-                  label: l10n.appImageCropAspectSixteenNine,
-                  selected: aspectRatio == 16 / 9,
-                  enabled: !_isCropping,
-                  onSelected: () => _setAspectRatio(16 / 9),
+                AppButton.secondary(
+                  label: l10n.appImageCropFlipVerticalAction,
+                  leadingIcon: Icons.swap_vert,
+                  dense: true,
+                  enabled: !_controlsLocked,
+                  onPressed: () => _transformWorkingBytes(flipVertical: true),
                 ),
               ],
             ),
+            if (widget.showAspectPresets) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              Wrap(
+                spacing: theme.spacing.sm,
+                runSpacing: theme.spacing.sm,
+                children: <Widget>[
+                  _AspectPresetChip(
+                    label: l10n.appImageCropAspectFree,
+                    selected: aspectRatio == null,
+                    enabled: !_controlsLocked,
+                    onSelected: () => _setAspectRatio(null),
+                  ),
+                  _AspectPresetChip(
+                    label: l10n.appImageCropAspectSquare,
+                    selected: aspectRatio == 1,
+                    enabled: !_controlsLocked,
+                    onSelected: () => _setAspectRatio(1),
+                  ),
+                  _AspectPresetChip(
+                    label: l10n.appImageCropAspectFourThree,
+                    selected: aspectRatio == 4 / 3,
+                    enabled: !_controlsLocked,
+                    onSelected: () => _setAspectRatio(4 / 3),
+                  ),
+                  _AspectPresetChip(
+                    label: l10n.appImageCropAspectSixteenNine,
+                    selected: aspectRatio == 16 / 9,
+                    enabled: !_controlsLocked,
+                    onSelected: () => _setAspectRatio(16 / 9),
+                  ),
+                ],
+              ),
+            ],
           ],
           SizedBox(height: theme.spacing.md),
           SizedBox(
@@ -339,7 +416,7 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
                         children: <Widget>[
                           Crop(
                             key: ValueKey<int>(_cropViewGeneration),
-                            image: widget.imageBytes,
+                            image: _workingBytes,
                             controller: _controller,
                             aspectRatio: aspectRatio,
                             initialRectBuilder: aspectRatio == null
@@ -383,6 +460,13 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
                               }
                             },
                           ),
+                          if (_isTransforming)
+                            ColoredBox(
+                              color: colorScheme.scrim.withValues(alpha: 0.25),
+                              child: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            ),
                           ..._buildEdgeHandles(colorScheme),
                         ],
                       ),
@@ -413,8 +497,8 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
               AppButton.tertiary(
                 label: l10n.commonCancelActionLabel,
                 leadingIcon: Icons.close,
-                enabled: !_isCropping,
-                onPressed: _isCropping
+                enabled: !_controlsLocked,
+                onPressed: _controlsLocked
                     ? null
                     : () => Navigator.of(context).pop(),
               ),
@@ -422,7 +506,8 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
                 label: l10n.appImageCropApplyAction,
                 leadingIcon: Icons.preview_outlined,
                 isLoading: _isCropping,
-                onPressed: _isCropping
+                enabled: !_controlsLocked,
+                onPressed: _controlsLocked
                     ? null
                     : () {
                         setState(() {

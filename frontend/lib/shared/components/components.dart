@@ -22,6 +22,7 @@ export 'app_form_information_banner.dart';
 export 'app_rich_text_editor.dart';
 export 'app_gender_field.dart';
 export 'app_image_crop_dialog.dart';
+export 'app_image_transform.dart';
 export 'app_image_upload_field.dart';
 export 'app_info_sheet.dart';
 export 'app_info_tile.dart';

@@ -2266,6 +2266,30 @@ abstract class AppLocalizations {
   /// **'Use image'**
   String get appImageCropConfirmAction;
 
+  /// Rotate the crop source image 90 degrees counter-clockwise.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate left'**
+  String get appImageCropRotateLeftAction;
+
+  /// Rotate the crop source image 90 degrees clockwise.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate right'**
+  String get appImageCropRotateRightAction;
+
+  /// Flip the crop source image horizontally.
+  ///
+  /// In en, this message translates to:
+  /// **'Flip horizontal'**
+  String get appImageCropFlipHorizontalAction;
+
+  /// Flip the crop source image vertically.
+  ///
+  /// In en, this message translates to:
+  /// **'Flip vertical'**
+  String get appImageCropFlipVerticalAction;
+
   /// Title for the shared image upload preview dialog.
   ///
   /// In en, this message translates to:
@@ -22144,22 +22168,22 @@ abstract class AppLocalizations {
   /// **'Create drug'**
   String get pharmacyAddDrugAction;
 
-  /// Action to barcode/OCR-scan a drug pack for create prefill.
+  /// Action to barcode/OCR/AI-scan a drug pack for create prefill.
   ///
   /// In en, this message translates to:
-  /// **'Scan pack'**
+  /// **'Scan pack or use AI capture'**
   String get pharmacyDrugScanPackAction;
 
   /// Title for the drug pack scan assist dialog.
   ///
   /// In en, this message translates to:
-  /// **'Scan pack'**
+  /// **'Scan pack or use AI capture'**
   String get pharmacyDrugScanPackTitle;
 
-  /// Helper body for the drug pack scan assist dialog.
+  /// Short helper for the drug pack scan assist dialog.
   ///
   /// In en, this message translates to:
-  /// **'Enter or decode a barcode first. If that fails, capture pack photo(s) for free OCR prefill. Images are discarded after parsing.'**
+  /// **'Barcode, photos, or pack text — images are discarded after parsing.'**
   String get pharmacyDrugScanPackBody;
 
   /// Barcode entry field on drug pack scan.
@@ -22174,19 +22198,61 @@ abstract class AppLocalizations {
   /// **'Use barcode'**
   String get pharmacyDrugBarcodeApplyAction;
 
-  /// Pick/capture an ephemeral pack photo for OCR.
+  /// Legacy single capture label; prefer take/upload actions.
   ///
   /// In en, this message translates to:
   /// **'Capture pack photo'**
   String get pharmacyDrugCapturePackPhotoAction;
 
-  /// Fallback: paste OCR or pack text when camera OCR is unavailable.
+  /// Capture a pack photo with the camera for OCR.
   ///
   /// In en, this message translates to:
-  /// **'Paste pack text'**
+  /// **'Take photo'**
+  String get pharmacyDrugTakePackPhotoAction;
+
+  /// Upload a pack photo from gallery/files for OCR.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload photo'**
+  String get pharmacyDrugUploadPackPhotoAction;
+
+  /// Remove all ephemeral pack photos from the scan session.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear photos'**
+  String get pharmacyDrugClearPackPhotosAction;
+
+  /// Remove one ephemeral pack photo from the scan session.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get pharmacyDrugRemovePackPhotoAction;
+
+  /// Re-open crop/rotate for an ephemeral pack photo.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit photo'**
+  String get pharmacyDrugEditPackPhotoAction;
+
+  /// Status count for ephemeral pack photos processed in the scan session.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo processed} other{{count} photos processed}}'**
+  String pharmacyDrugPhotosProcessedBody(int count);
+
+  /// Parse pasted/typed pack text into drug field candidates.
+  ///
+  /// In en, this message translates to:
+  /// **'Parse pack text'**
   String get pharmacyDrugPastePackTextAction;
 
-  /// Multiline pack/OCR text field.
+  /// Progressive disclosure control that reveals the pack text parser.
+  ///
+  /// In en, this message translates to:
+  /// **'Have pack text?'**
+  String get pharmacyDrugParsePackTextExpandAction;
+
+  /// Multiline pack/OCR text field for heuristic parsing.
   ///
   /// In en, this message translates to:
   /// **'Pack text'**

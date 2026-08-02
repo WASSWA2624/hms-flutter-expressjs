@@ -423,7 +423,7 @@ class _PharmacyDrugEditDialogState
               alignment: Alignment.centerLeft,
               child: AppButton.secondary(
                 label: l10n.pharmacyDrugScanPackAction,
-                leadingIcon: Icons.qr_code_scanner_outlined,
+                leadingIcon: Icons.document_scanner_outlined,
                 enabled: !_isSaving,
                 onPressed: _openPackScan,
               ),

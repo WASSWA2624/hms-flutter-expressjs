@@ -1507,6 +1507,22 @@
   "@appImageCropConfirmAction": {
     "description": "Action that accepts the cropped preview and continues."
   },
+  "appImageCropRotateLeftAction": "Rotate left",
+  "@appImageCropRotateLeftAction": {
+    "description": "Rotate the crop source image 90 degrees counter-clockwise."
+  },
+  "appImageCropRotateRightAction": "Rotate right",
+  "@appImageCropRotateRightAction": {
+    "description": "Rotate the crop source image 90 degrees clockwise."
+  },
+  "appImageCropFlipHorizontalAction": "Flip horizontal",
+  "@appImageCropFlipHorizontalAction": {
+    "description": "Flip the crop source image horizontally."
+  },
+  "appImageCropFlipVerticalAction": "Flip vertical",
+  "@appImageCropFlipVerticalAction": {
+    "description": "Flip the crop source image vertically."
+  },
   "appImageUploadPreviewTitle": "Image preview",
   "@appImageUploadPreviewTitle": {
     "description": "Title for the shared image upload preview dialog."
@@ -15310,17 +15326,17 @@
   "@pharmacyAddDrugAction": {
     "description": "Pharmacy create drug action label."
   },
-  "pharmacyDrugScanPackAction": "Scan pack",
+  "pharmacyDrugScanPackAction": "Scan pack or use AI capture",
   "@pharmacyDrugScanPackAction": {
-    "description": "Action to barcode/OCR-scan a drug pack for create prefill."
+    "description": "Action to barcode/OCR/AI-scan a drug pack for create prefill."
   },
-  "pharmacyDrugScanPackTitle": "Scan pack",
+  "pharmacyDrugScanPackTitle": "Scan pack or use AI capture",
   "@pharmacyDrugScanPackTitle": {
     "description": "Title for the drug pack scan assist dialog."
   },
-  "pharmacyDrugScanPackBody": "Enter or decode a barcode first. If that fails, capture pack photo(s) for free OCR prefill. Images are discarded after parsing.",
+  "pharmacyDrugScanPackBody": "Barcode, photos, or pack text — images are discarded after parsing.",
   "@pharmacyDrugScanPackBody": {
-    "description": "Helper body for the drug pack scan assist dialog."
+    "description": "Short helper for the drug pack scan assist dialog."
   },
   "pharmacyDrugBarcodeLabel": "Barcode",
   "@pharmacyDrugBarcodeLabel": {
@@ -15332,15 +15348,48 @@
   },
   "pharmacyDrugCapturePackPhotoAction": "Capture pack photo",
   "@pharmacyDrugCapturePackPhotoAction": {
-    "description": "Pick/capture an ephemeral pack photo for OCR."
+    "description": "Legacy single capture label; prefer take/upload actions."
   },
-  "pharmacyDrugPastePackTextAction": "Paste pack text",
+  "pharmacyDrugTakePackPhotoAction": "Take photo",
+  "@pharmacyDrugTakePackPhotoAction": {
+    "description": "Capture a pack photo with the camera for OCR."
+  },
+  "pharmacyDrugUploadPackPhotoAction": "Upload photo",
+  "@pharmacyDrugUploadPackPhotoAction": {
+    "description": "Upload a pack photo from gallery/files for OCR."
+  },
+  "pharmacyDrugClearPackPhotosAction": "Clear photos",
+  "@pharmacyDrugClearPackPhotosAction": {
+    "description": "Remove all ephemeral pack photos from the scan session."
+  },
+  "pharmacyDrugRemovePackPhotoAction": "Remove photo",
+  "@pharmacyDrugRemovePackPhotoAction": {
+    "description": "Remove one ephemeral pack photo from the scan session."
+  },
+  "pharmacyDrugEditPackPhotoAction": "Edit photo",
+  "@pharmacyDrugEditPackPhotoAction": {
+    "description": "Re-open crop/rotate for an ephemeral pack photo."
+  },
+  "pharmacyDrugPhotosProcessedBody": "{count, plural, =1{1 photo processed} other{{count} photos processed}}",
+  "@pharmacyDrugPhotosProcessedBody": {
+    "description": "Status count for ephemeral pack photos processed in the scan session.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pharmacyDrugPastePackTextAction": "Parse pack text",
   "@pharmacyDrugPastePackTextAction": {
-    "description": "Fallback: paste OCR or pack text when camera OCR is unavailable."
+    "description": "Parse pasted/typed pack text into drug field candidates."
+  },
+  "pharmacyDrugParsePackTextExpandAction": "Have pack text?",
+  "@pharmacyDrugParsePackTextExpandAction": {
+    "description": "Progressive disclosure control that reveals the pack text parser."
   },
   "pharmacyDrugPackTextLabel": "Pack text",
   "@pharmacyDrugPackTextLabel": {
-    "description": "Multiline pack/OCR text field."
+    "description": "Multiline pack/OCR text field for heuristic parsing."
   },
   "pharmacyDrugScanSkipAction": "Skip scan",
   "@pharmacyDrugScanSkipAction": {
