@@ -366,6 +366,113 @@ void main() {
     expect(find.byIcon(Icons.mic_none_outlined), findsNWidgets(2));
   });
 
+  testWidgets('speech match selects the matching select option', (
+    WidgetTester tester,
+  ) async {
+    String? selected;
+
+    await pumpSpeechApp(
+      tester,
+      AppSelectField<String>.searchable(
+        labelText: 'Status',
+        options: const <AppSelectOption<String>>[
+          AppSelectOption<String>(value: 'draft', label: 'Draft'),
+          AppSelectOption<String>(value: 'live', label: 'Live'),
+          AppSelectOption<String>(
+            value: 'archived',
+            label: 'Archived',
+            searchText: 'retired closed',
+          ),
+        ],
+        onChanged: (String? value) => selected = value,
+      ),
+    );
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppSelectField<String>)),
+    );
+    await tester.tap(find.byTooltip(l10n.speechToTextStartTooltip));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    recognizer.emit('Live', isFinal: true);
+    await tester.pump();
+    await tester.pump();
+
+    expect(selected, 'live');
+    expect(find.byIcon(Icons.mic_none_outlined), findsOneWidget);
+  });
+
+  testWidgets('final speech unique search-text match selects the option', (
+    WidgetTester tester,
+  ) async {
+    String? selected;
+
+    await pumpSpeechApp(
+      tester,
+      AppSelectField<String>(
+        labelText: 'Country',
+        options: const <AppSelectOption<String>>[
+          AppSelectOption<String>(
+            value: 'ug',
+            label: 'Uganda',
+            searchText: 'UG Uganda East Africa',
+          ),
+          AppSelectOption<String>(
+            value: 'ke',
+            label: 'Kenya',
+            searchText: 'KE Kenya East Africa',
+          ),
+        ],
+        onChanged: (String? value) => selected = value,
+      ),
+    );
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppSelectField<String>)),
+    );
+    await tester.tap(find.byTooltip(l10n.speechToTextStartTooltip));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    recognizer.emit('Uganda', isFinal: true);
+    await tester.pump();
+    await tester.pump();
+
+    expect(selected, 'ug');
+  });
+
+  testWidgets('ambiguous speech does not select a select option', (
+    WidgetTester tester,
+  ) async {
+    String? selected = 'seed';
+
+    await pumpSpeechApp(
+      tester,
+      AppSelectField<String>.searchable(
+        labelText: 'Region',
+        options: const <AppSelectOption<String>>[
+          AppSelectOption<String>(value: 'east-a', label: 'East A'),
+          AppSelectOption<String>(value: 'east-b', label: 'East B'),
+        ],
+        onChanged: (String? value) => selected = value,
+      ),
+    );
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppSelectField<String>)),
+    );
+    await tester.tap(find.byTooltip(l10n.speechToTextStartTooltip));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    recognizer.emit('East', isFinal: true);
+    await tester.pump();
+    await tester.pump();
+
+    expect(selected, 'seed');
+  });
+
   testWidgets('opt-out and password fields hide speech controls', (
     WidgetTester tester,
   ) async {

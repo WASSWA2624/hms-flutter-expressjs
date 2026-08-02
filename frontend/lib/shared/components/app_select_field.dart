@@ -232,39 +232,34 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             widget.onChanged != null &&
             (widget.value != null || _hasControllerText);
         final bool showSpeech = _speechEnabled;
+        Widget? buildSpeechButton() {
+          if (!showSpeech) {
+            return null;
+          }
+          return AppSpeechToTextButton(
+            controller: _controller,
+            enabled: canSelect && !widget.isLoading,
+            dense: widget.isDense,
+            transcriptTransform: appSpeechTextTranscript,
+            onSpeechResult: (String transcript, {required bool isFinal}) {
+              _handleSpeechTranscript(transcript, isFinal: isFinal);
+            },
+          );
+        }
+
         final Widget trailingIcon = _SelectTrailingIcon(
           showClear: canClear,
           isExpanded: false,
           isLoading: widget.isLoading,
           onClear: _clearSelection,
-          speechButton: showSpeech
-              ? AppSpeechToTextButton(
-                  controller: _controller,
-                  enabled: canSelect && !widget.isLoading,
-                  dense: widget.isDense,
-                  transcriptTransform: appSpeechTextTranscript,
-                  onChanged: (String value) {
-                    widget.onSearchTextChanged?.call(value);
-                  },
-                )
-              : null,
+          speechButton: buildSpeechButton(),
         );
         final Widget selectedTrailingIcon = _SelectTrailingIcon(
           showClear: canClear,
           isExpanded: true,
           isLoading: widget.isLoading,
           onClear: _clearSelection,
-          speechButton: showSpeech
-              ? AppSpeechToTextButton(
-                  controller: _controller,
-                  enabled: canSelect && !widget.isLoading,
-                  dense: widget.isDense,
-                  transcriptTransform: appSpeechTextTranscript,
-                  onChanged: (String value) {
-                    widget.onSearchTextChanged?.call(value);
-                  },
-                )
-              : null,
+          speechButton: buildSpeechButton(),
         );
         // Searchable fields must use DropdownMenu's native filter path so
         // typing updates the open overlay immediately (not only after a
@@ -388,10 +383,135 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     return true;
   }
 
-  void _commitSelection(T? value) {
+  void _handleSpeechTranscript(String transcript, {required bool isFinal}) {
+    final String trimmed = transcript.trim();
+    if (!_focusNode.hasFocus) {
+      _focusNode.requestFocus();
+    }
+
+    _browseAllOptions = false;
+    _isSyncingControllerText = true;
+    try {
+      _controller.value = TextEditingValue(
+        text: trimmed,
+        selection: TextSelection.collapsed(offset: trimmed.length),
+      );
+    } finally {
+      _isSyncingControllerText = false;
+    }
+    _hasControllerText = trimmed.isNotEmpty;
+    widget.onSearchTextChanged?.call(trimmed);
+    _invalidateDropdownEntriesCache();
+    if (mounted) {
+      setState(() {});
+    }
+
+    final AppSelectOption<T>? match = _findSpeechMatch(
+      trimmed,
+      allowUniquePartial: isFinal,
+    );
+    if (match == null || !match.enabled) {
+      return;
+    }
+
+    _commitSelection(match.value, updateFormField: true);
+    AppSpeechToTextCoordinator.instance.stop(owner: _controller);
+  }
+
+  /// Resolves a spoken query to an option.
+  ///
+  /// Prefer exact label / search-text / value matches. When
+  /// [allowUniquePartial] is true (final utterance), also accept a unique
+  /// token containment or starts-with hit so "live st…" can still resolve.
+  AppSelectOption<T>? _findSpeechMatch(
+    String transcript, {
+    required bool allowUniquePartial,
+  }) {
+    final String normalized = _normalizeSearchText(transcript);
+    if (normalized.isEmpty) {
+      return null;
+    }
+
+    final List<AppSelectOption<T>> enabled = widget.options
+        .where((AppSelectOption<T> option) => option.enabled)
+        .toList(growable: false);
+
+    AppSelectOption<T>? uniqueWhere(
+      bool Function(AppSelectOption<T> option) test,
+    ) {
+      AppSelectOption<T>? found;
+      for (final AppSelectOption<T> option in enabled) {
+        if (!test(option)) {
+          continue;
+        }
+        if (found != null) {
+          return null;
+        }
+        found = option;
+      }
+      return found;
+    }
+
+    final AppSelectOption<T>? exactLabel = uniqueWhere(
+      (AppSelectOption<T> option) =>
+          _normalizeSearchText(option.label) == normalized,
+    );
+    if (exactLabel != null) {
+      return exactLabel;
+    }
+
+    final AppSelectOption<T>? exactSearchText = uniqueWhere((
+      AppSelectOption<T> option,
+    ) {
+      final String? searchText = option.searchText;
+      return searchText != null &&
+          _normalizeSearchText(searchText) == normalized;
+    });
+    if (exactSearchText != null) {
+      return exactSearchText;
+    }
+
+    final AppSelectOption<T>? exactValue = uniqueWhere(
+      (AppSelectOption<T> option) =>
+          _normalizeSearchText(option.value.toString()) == normalized,
+    );
+    if (exactValue != null) {
+      return exactValue;
+    }
+
+    if (!allowUniquePartial) {
+      return null;
+    }
+
+    final List<String> tokens = _queryTokens(transcript);
+    if (tokens.isEmpty) {
+      return null;
+    }
+
+    final AppSelectOption<T>? uniqueContains = uniqueWhere((
+      AppSelectOption<T> option,
+    ) {
+      final String searchable = _searchTextForOption(option);
+      return tokens.every(searchable.contains);
+    });
+    if (uniqueContains != null) {
+      return uniqueContains;
+    }
+
+    final String firstToken = tokens.first;
+    return uniqueWhere(
+      (AppSelectOption<T> option) =>
+          _searchTextForOption(option).startsWith(firstToken),
+    );
+  }
+
+  void _commitSelection(T? value, {bool updateFormField = false}) {
     _browseAllOptions = false;
     _invalidateDropdownEntriesCache();
     _syncControllerForSelection(value);
+    if (updateFormField) {
+      _formFieldKey.currentState?.didChange(value);
+    }
     widget.onChanged?.call(value);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _focusNode.hasFocus) {
