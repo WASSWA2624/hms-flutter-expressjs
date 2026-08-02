@@ -7,7 +7,6 @@ const router = express.Router();
 const diagnosisController = require('@controllers/diagnosis/diagnosis.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
 const { authenticate, authorize } = require('@middlewares/auth.middleware');
-const { requireClinicalDeletePrivilege } = require('@middlewares/clinical-guard.middleware');
 const { PERMISSIONS } = require('@config/permissions');
 const {
   createDiagnosisSchema,
@@ -48,12 +47,14 @@ router.put(
   diagnosisController.updateDiagnosis
 );
 
+// Soft-delete is a normal clinical chart correction (duplicate / wrong code).
+// Doctors with clinical:write must be able to remove diagnoses; do not apply
+// requireClinicalDeletePrivilege (admin-only cleanup) here.
 router.delete(
   '/:id',
   validateRequest({ params: diagnosisIdParamsSchema }),
   authenticate(),
   authorize(PERMISSIONS.CLINICAL_WRITE, 'permission'),
-  requireClinicalDeletePrivilege(),
   diagnosisController.deleteDiagnosis
 );
 
