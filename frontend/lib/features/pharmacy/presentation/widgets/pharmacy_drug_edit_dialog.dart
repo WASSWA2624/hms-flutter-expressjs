@@ -916,6 +916,56 @@ class _PharmacyDrugEditDialogState
             return;
           }
 
+          if (similarityDecision.action ==
+              PharmacyDrugSimilarityAction.replaceExisting) {
+            final PharmacyDrug? existing = similarityDecision.selectedDrug;
+            final PharmacyDrugSimilarityProposedValues? proposed =
+                similarityDecision.proposed;
+            if (existing == null || proposed == null) {
+              if (mounted) {
+                setState(() => _isSaving = false);
+              }
+              return;
+            }
+            genericName = proposed.genericName;
+            brandName = proposed.brandName;
+            code = proposed.code;
+            form = proposed.form;
+            strength = proposed.strength;
+            _genericNameController.text = genericName;
+            _brandNameController.text = brandName ?? '';
+            _codeController.text = code ?? '';
+            setState(() {
+              _form = form;
+              _strength = strength;
+            });
+            failure = await controller.updateDrug(
+              existing.id,
+              PharmacyDrugUpdateInput(
+                name: genericName,
+                brandName: brandName,
+                genericName: genericName,
+                code: code,
+                form: form,
+                strength: strength,
+                unitPrice: pharmacyPrice,
+                currency: pharmacyCurrency,
+              ),
+              facilityOffering: facilityOffering,
+            );
+            if (!mounted) {
+              return;
+            }
+            if (failure == null) {
+              Navigator.of(
+                context,
+              ).pop(PharmacyDrugFormResult.saved(existing));
+              return;
+            }
+            setState(() => _isSaving = false);
+            return;
+          }
+
           final PharmacyDrugSimilarityProposedValues? confirmed =
               similarityDecision.proposed;
           if (confirmed != null) {

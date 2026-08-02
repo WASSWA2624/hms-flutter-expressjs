@@ -130,6 +130,8 @@ Future<UserSimilarityDialogResult> showUserSimilarityDialog(
     case AppSimilarityReviewAction.cancel:
     case AppSimilarityReviewAction.retry:
       return const UserSimilarityDialogResult.cancel();
+    case AppSimilarityReviewAction.replaceExisting:
+      return const UserSimilarityDialogResult.cancel();
     case AppSimilarityReviewAction.proceed:
       return const UserSimilarityDialogResult.proceed();
     case AppSimilarityReviewAction.useExisting:

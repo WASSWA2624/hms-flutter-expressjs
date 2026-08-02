@@ -164,6 +164,8 @@ Future<WardSimilarityDialogResult> showWardSimilarityDialog(
         return const WardSimilarityDialogResult.cancel();
       }
       return WardSimilarityDialogResult.useExisting(ward);
+    case AppSimilarityReviewAction.replaceExisting:
+      return const WardSimilarityDialogResult.cancel();
     case AppSimilarityReviewAction.proceed:
       return const WardSimilarityDialogResult.proceed();
   }

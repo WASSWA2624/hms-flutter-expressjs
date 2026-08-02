@@ -79,6 +79,7 @@ void main() {
 
     expect(find.text('Save anyway'), findsNothing);
     expect(find.text('Use this room'), findsOneWidget);
+    expect(find.text('Replace existing'), findsNothing);
     expect(find.text('Check again'), findsOneWidget);
 
     final Finder useThis = find.text('Use this room');
@@ -306,4 +307,90 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(TextField), findsNWidgets(2));
   });
+
+  testWidgets(
+    'replace existing returns selected item and edited proposed values',
+    (WidgetTester tester) async {
+      await setLargeSurface(tester);
+      AppSimilarityReviewResult<String>? result;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (BuildContext context) {
+              return Scaffold(
+                body: TextButton(
+                  onPressed: () async {
+                    result = await showAppSimilarityReviewDialog<String>(
+                      context,
+                      title: 'Duplicate',
+                      bannerTitle: 'Exact match found',
+                      bannerMessage: 'An exact match already exists.',
+                      bannerVariant: AppFormInformationVariant.error,
+                      proposedFields: const <AppSimilarityProposedField>[
+                        AppSimilarityProposedField(
+                          key: 'name',
+                          label: 'Name',
+                          initialValue: 'Room 1',
+                          isRequired: true,
+                        ),
+                      ],
+                      matches: const <AppSimilarityMatch<String>>[
+                        AppSimilarityMatch<String>(
+                          item: 'room-1',
+                          title: 'Room 1',
+                          subtitle: 'RM001',
+                          overallScore: 100,
+                          isExact: true,
+                          fields: <AppSimilarityFieldRow>[
+                            AppSimilarityFieldRow(
+                              key: 'name',
+                              label: 'Name',
+                              proposedValue: 'Room 1',
+                              existingValue: 'Room 1',
+                              score: 100,
+                            ),
+                          ],
+                        ),
+                      ],
+                      overallScore: 100,
+                      blockProceed: true,
+                      enableReplaceExisting: true,
+                      useThisLabel: 'Use this room',
+                      replaceExistingLabel: 'Replace this room',
+                      proceedLabel: 'Save anyway',
+                    );
+                  },
+                  child: const Text('open'),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Save anyway'), findsNothing);
+      expect(find.text('Use this room'), findsOneWidget);
+      expect(find.text('Replace this room'), findsOneWidget);
+
+      await tester.tap(find.text('Proposed values'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'Room Beta');
+
+      final Finder replace = find.text('Replace this room');
+      await tester.ensureVisible(replace);
+      await tester.pumpAndSettle();
+      await tester.tap(replace);
+      await tester.pumpAndSettle();
+
+      expect(result?.action, AppSimilarityReviewAction.replaceExisting);
+      expect(result?.selected, 'room-1');
+      expect(result?.proposedValues['name'], 'Room Beta');
+    },
+  );
 }

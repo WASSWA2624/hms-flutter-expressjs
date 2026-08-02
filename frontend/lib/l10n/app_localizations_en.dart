@@ -1069,6 +1069,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appSimilarityUseThisAction => 'Use this';
 
   @override
+  String get appSimilarityReplaceExistingAction => 'Replace existing';
+
+  @override
   String get appSimilarityRetryAction => 'Check again';
 
   @override
@@ -12211,6 +12214,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyDrugUseExistingAction => 'Use this drug';
+
+  @override
+  String get pharmacyDrugReplaceExistingAction => 'Replace this drug';
 
   @override
   String get pharmacyDrugProposedHeading => 'Proposed drug';

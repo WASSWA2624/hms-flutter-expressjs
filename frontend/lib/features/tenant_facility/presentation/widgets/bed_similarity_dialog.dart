@@ -161,6 +161,8 @@ Future<BedSimilarityDialogResult> showBedSimilarityDialog(
         return const BedSimilarityDialogResult.cancel();
       }
       return BedSimilarityDialogResult.useExisting(bed);
+    case AppSimilarityReviewAction.replaceExisting:
+      return const BedSimilarityDialogResult.cancel();
     case AppSimilarityReviewAction.proceed:
       return const BedSimilarityDialogResult.proceed();
   }

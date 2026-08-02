@@ -69,7 +69,13 @@ final class AppSimilarityMatch<T> {
   final List<AppSimilarityFieldRow> fields;
 }
 
-enum AppSimilarityReviewAction { cancel, proceed, useExisting, retry }
+enum AppSimilarityReviewAction {
+  cancel,
+  proceed,
+  useExisting,
+  replaceExisting,
+  retry,
+}
 
 /// Result of [showAppSimilarityReviewDialog].
 @immutable
@@ -99,6 +105,15 @@ final class AppSimilarityReviewResult<T> {
          proposedValues: proposedValues,
        );
 
+  const AppSimilarityReviewResult.replaceExisting(
+    T item, {
+    Map<String, String> proposedValues = const <String, String>{},
+  }) : this._(
+         action: AppSimilarityReviewAction.replaceExisting,
+         selected: item,
+         proposedValues: proposedValues,
+       );
+
   const AppSimilarityReviewResult.retry({
     required Map<String, String> proposedValues,
   }) : this._(
@@ -116,9 +131,12 @@ class AppSimilarityMatchCard<T> extends StatelessWidget {
   const AppSimilarityMatchCard({
     required this.match,
     required this.onUseThis,
+    this.onReplaceExisting,
     this.existingHeading,
     this.useThisLabel,
     this.useThisIcon,
+    this.replaceExistingLabel,
+    this.replaceExistingIcon,
     this.exactBadgeLabel,
     this.nearBadgeLabel,
     this.fieldColumnLabel,
@@ -131,9 +149,12 @@ class AppSimilarityMatchCard<T> extends StatelessWidget {
 
   final AppSimilarityMatch<T> match;
   final VoidCallback onUseThis;
+  final VoidCallback? onReplaceExisting;
   final String? existingHeading;
   final String? useThisLabel;
   final IconData? useThisIcon;
+  final String? replaceExistingLabel;
+  final IconData? replaceExistingIcon;
   final String? exactBadgeLabel;
   final String? nearBadgeLabel;
   final String? fieldColumnLabel;
@@ -213,10 +234,26 @@ class AppSimilarityMatchCard<T> extends StatelessWidget {
           SizedBox(height: theme.spacing.sm),
           Align(
             alignment: Alignment.centerRight,
-            child: AppButton.secondary(
-              label: useThisLabel ?? l10n.appSimilarityUseThisAction,
-              leadingIcon: useThisIcon ?? Icons.check,
-              onPressed: onUseThis,
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              spacing: theme.spacing.sm,
+              runSpacing: theme.spacing.sm,
+              children: <Widget>[
+                if (onReplaceExisting != null)
+                  AppButton.tertiary(
+                    label:
+                        replaceExistingLabel ??
+                        l10n.appSimilarityReplaceExistingAction,
+                    leadingIcon:
+                        replaceExistingIcon ?? Icons.swap_horiz_outlined,
+                    onPressed: onReplaceExisting,
+                  ),
+                AppButton.secondary(
+                  label: useThisLabel ?? l10n.appSimilarityUseThisAction,
+                  leadingIcon: useThisIcon ?? Icons.check,
+                  onPressed: onUseThis,
+                ),
+              ],
             ),
           ),
         ],
@@ -241,9 +278,11 @@ Future<AppSimilarityReviewResult<T>> showAppSimilarityReviewDialog<T>(
   bool blockProceed = false,
   bool enableRetry = true,
   bool proposedReadOnly = false,
+  bool enableReplaceExisting = false,
   String? proceedLabel,
   String? continueLabel,
   String? useThisLabel,
+  String? replaceExistingLabel,
   String? proposedHeading,
   String? matchesHeading,
   String? exactBadgeLabel,
@@ -258,6 +297,7 @@ Future<AppSimilarityReviewResult<T>> showAppSimilarityReviewDialog<T>(
   String? emptyValueLabel,
   IconData? dialogIcon,
   IconData? useThisIcon,
+  IconData? replaceExistingIcon,
 }) {
   return showAppDialog<AppSimilarityReviewResult<T>>(
     context: context,
@@ -272,9 +312,11 @@ Future<AppSimilarityReviewResult<T>> showAppSimilarityReviewDialog<T>(
       blockProceed: blockProceed,
       enableRetry: enableRetry,
       proposedReadOnly: proposedReadOnly,
+      enableReplaceExisting: enableReplaceExisting,
       proceedLabel: proceedLabel,
       continueLabel: continueLabel,
       useThisLabel: useThisLabel,
+      replaceExistingLabel: replaceExistingLabel,
       proposedHeading: proposedHeading,
       matchesHeading: matchesHeading,
       exactBadgeLabel: exactBadgeLabel,
@@ -289,6 +331,7 @@ Future<AppSimilarityReviewResult<T>> showAppSimilarityReviewDialog<T>(
       emptyValueLabel: emptyValueLabel,
       dialogIcon: dialogIcon,
       useThisIcon: useThisIcon,
+      replaceExistingIcon: replaceExistingIcon,
     ),
   ).then(
     (AppSimilarityReviewResult<T>? value) =>
@@ -308,9 +351,11 @@ class _AppSimilarityReviewDialog<T> extends StatefulWidget {
     required this.blockProceed,
     this.enableRetry = true,
     this.proposedReadOnly = false,
+    this.enableReplaceExisting = false,
     this.proceedLabel,
     this.continueLabel,
     this.useThisLabel,
+    this.replaceExistingLabel,
     this.proposedHeading,
     this.matchesHeading,
     this.exactBadgeLabel,
@@ -325,6 +370,7 @@ class _AppSimilarityReviewDialog<T> extends StatefulWidget {
     this.emptyValueLabel,
     this.dialogIcon,
     this.useThisIcon,
+    this.replaceExistingIcon,
   });
 
   final String title;
@@ -337,9 +383,11 @@ class _AppSimilarityReviewDialog<T> extends StatefulWidget {
   final bool blockProceed;
   final bool enableRetry;
   final bool proposedReadOnly;
+  final bool enableReplaceExisting;
   final String? proceedLabel;
   final String? continueLabel;
   final String? useThisLabel;
+  final String? replaceExistingLabel;
   final String? proposedHeading;
   final String? matchesHeading;
   final String? exactBadgeLabel;
@@ -354,6 +402,7 @@ class _AppSimilarityReviewDialog<T> extends StatefulWidget {
   final String? emptyValueLabel;
   final IconData? dialogIcon;
   final IconData? useThisIcon;
+  final IconData? replaceExistingIcon;
 
   @override
   State<_AppSimilarityReviewDialog<T>> createState() =>
@@ -535,6 +584,8 @@ class _AppSimilarityReviewDialogState<T>
                 existingHeading: widget.existingHeading,
                 useThisLabel: widget.useThisLabel,
                 useThisIcon: widget.useThisIcon,
+                replaceExistingLabel: widget.replaceExistingLabel,
+                replaceExistingIcon: widget.replaceExistingIcon,
                 exactBadgeLabel: widget.exactBadgeLabel,
                 nearBadgeLabel: widget.nearBadgeLabel,
                 fieldColumnLabel: widget.fieldColumnLabel,
@@ -548,6 +599,14 @@ class _AppSimilarityReviewDialogState<T>
                     proposedValues: _readProposedValues(),
                   ),
                 ),
+                onReplaceExisting: widget.enableReplaceExisting
+                    ? () => Navigator.of(context).pop(
+                        AppSimilarityReviewResult<T>.replaceExisting(
+                          widget.matches[index].item,
+                          proposedValues: _readProposedValues(),
+                        ),
+                      )
+                    : null,
               ),
             ],
           ] else

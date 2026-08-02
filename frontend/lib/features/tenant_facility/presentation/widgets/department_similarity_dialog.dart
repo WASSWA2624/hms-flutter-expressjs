@@ -173,6 +173,8 @@ Future<DepartmentSimilarityDialogResult> showDepartmentSimilarityDialog(
         return const DepartmentSimilarityDialogResult.cancel();
       }
       return DepartmentSimilarityDialogResult.useExisting(department);
+    case AppSimilarityReviewAction.replaceExisting:
+      return const DepartmentSimilarityDialogResult.cancel();
     case AppSimilarityReviewAction.proceed:
       return const DepartmentSimilarityDialogResult.proceed();
   }

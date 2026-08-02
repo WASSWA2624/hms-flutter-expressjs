@@ -147,6 +147,8 @@ Future<RoomSimilarityDialogResult> showRoomSimilarityDialog(
         return const RoomSimilarityDialogResult.cancel();
       }
       return RoomSimilarityDialogResult.useExisting(room);
+    case AppSimilarityReviewAction.replaceExisting:
+      return const RoomSimilarityDialogResult.cancel();
     case AppSimilarityReviewAction.proceed:
       return const RoomSimilarityDialogResult.proceed();
   }

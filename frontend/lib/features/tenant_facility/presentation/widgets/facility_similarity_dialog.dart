@@ -168,6 +168,8 @@ Future<FacilitySimilarityDialogResult> showFacilitySimilarityDialog(
         return const FacilitySimilarityDialogResult.cancel();
       }
       return FacilitySimilarityDialogResult.useExisting(facility);
+    case AppSimilarityReviewAction.replaceExisting:
+      return const FacilitySimilarityDialogResult.cancel();
     case AppSimilarityReviewAction.proceed:
       return const FacilitySimilarityDialogResult.proceed();
   }

@@ -75,12 +75,143 @@ void main() {
 
     expect(find.text('Create anyway'), findsNothing);
     expect(find.text('Use this drug'), findsOneWidget);
+    expect(find.text('Replace this drug'), findsOneWidget);
 
     await tester.tap(find.text('Use this drug'));
     await tester.pumpAndSettle();
 
     expect(result?.action, PharmacyDrugSimilarityAction.useExisting);
     expect(result?.selectedDrug?.id, 'drug-1');
+  });
+
+  testWidgets('drug adapter replace existing returns proposed values', (
+    WidgetTester tester,
+  ) async {
+    await setLargeSurface(tester);
+    const PharmacyDrug existing = PharmacyDrug(
+      id: 'drug-1',
+      name: 'Amoxicillin',
+      genericName: 'Amoxicillin',
+      brandName: 'Amoxil',
+      code: 'AMX-500',
+      form: 'Capsule',
+      strength: '500mg',
+    );
+    PharmacyDrugSimilarityDialogResult? result;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (BuildContext context) {
+            return Scaffold(
+              body: TextButton(
+                onPressed: () async {
+                  result = await showPharmacyDrugSimilarityDialog(
+                    context,
+                    proposed: const PharmacyDrugSimilarityProposedValues(
+                      genericName: 'Amoxicillin Trihydrate',
+                      brandName: 'Amoxil Forte',
+                      code: 'AMX-500',
+                      form: 'Capsule',
+                      strength: '500mg',
+                    ),
+                    check: const PharmacyDrugSimilarityResult(
+                      exactIdentityConflict: true,
+                      exactCodeConflict: true,
+                      closestScore: 100,
+                      matches: <PharmacyDrugSimilarityMatch>[
+                        PharmacyDrugSimilarityMatch(
+                          drug: existing,
+                          score: 100,
+                          isExact: true,
+                          exactIdentityConflict: true,
+                          exactCodeConflict: true,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                child: const Text('open'),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Create anyway'), findsNothing);
+    expect(find.text('Replace this drug'), findsOneWidget);
+
+    await tester.tap(find.text('Replace this drug'));
+    await tester.pumpAndSettle();
+
+    expect(result?.action, PharmacyDrugSimilarityAction.replaceExisting);
+    expect(result?.selectedDrug?.id, 'drug-1');
+    expect(result?.proposed?.genericName, 'Amoxicillin Trihydrate');
+    expect(result?.proposed?.brandName, 'Amoxil Forte');
+  });
+
+  testWidgets('drug adapter hides replace when editing', (
+    WidgetTester tester,
+  ) async {
+    await setLargeSurface(tester);
+    const PharmacyDrug existing = PharmacyDrug(
+      id: 'drug-1',
+      name: 'Amoxicillin',
+      genericName: 'Amoxicillin',
+      code: 'AMX-500',
+    );
+    PharmacyDrugSimilarityDialogResult? result;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (BuildContext context) {
+            return Scaffold(
+              body: TextButton(
+                onPressed: () async {
+                  result = await showPharmacyDrugSimilarityDialog(
+                    context,
+                    isEdit: true,
+                    proposed: const PharmacyDrugSimilarityProposedValues(
+                      genericName: 'Amoxicillin',
+                      code: 'AMX-500',
+                    ),
+                    check: const PharmacyDrugSimilarityResult(
+                      exactIdentityConflict: true,
+                      closestScore: 100,
+                      matches: <PharmacyDrugSimilarityMatch>[
+                        PharmacyDrugSimilarityMatch(
+                          drug: existing,
+                          score: 100,
+                          isExact: true,
+                          exactIdentityConflict: true,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                child: const Text('open'),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Replace this drug'), findsNothing);
+    expect(find.text('Use this drug'), findsOneWidget);
+    expect(result, isNull);
   });
 
   testWidgets('drug adapter allows create anyway on near match', (

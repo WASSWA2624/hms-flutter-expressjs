@@ -7,6 +7,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 enum PharmacyDrugSimilarityAction {
   cancel,
   useExisting,
+  replaceExisting,
   proceed,
   retry,
 }
@@ -33,6 +34,15 @@ final class PharmacyDrugSimilarityDialogResult {
         action: PharmacyDrugSimilarityAction.useExisting,
         selectedDrug: drug,
       );
+
+  const PharmacyDrugSimilarityDialogResult.replaceExisting(
+    PharmacyDrug drug, {
+    required PharmacyDrugSimilarityProposedValues proposed,
+  }) : this._(
+         action: PharmacyDrugSimilarityAction.replaceExisting,
+         selectedDrug: drug,
+         proposed: proposed,
+       );
 
   const PharmacyDrugSimilarityDialogResult.retry({
     required PharmacyDrugSimilarityProposedValues proposed,
@@ -204,9 +214,11 @@ Future<PharmacyDrugSimilarityDialogResult> showPharmacyDrugSimilarityDialog(
         matches: matches,
         overallScore: overallScore,
         blockProceed: hasExactConflict,
+        enableReplaceExisting: !isEdit,
         proceedLabel: l10n.pharmacyDrugCreateAnywayAction,
         continueLabel: l10n.commonContinueActionLabel,
         useThisLabel: l10n.pharmacyDrugUseExistingAction,
+        replaceExistingLabel: l10n.pharmacyDrugReplaceExistingAction,
         proposedHeading: l10n.pharmacyDrugProposedHeading,
         matchesHeading: l10n.pharmacyDrugMatchesHeading,
         exactBadgeLabel: l10n.pharmacyDrugExactMatchLabel,
@@ -256,6 +268,15 @@ Future<PharmacyDrugSimilarityDialogResult> showPharmacyDrugSimilarityDialog(
         return const PharmacyDrugSimilarityDialogResult.cancel();
       }
       return PharmacyDrugSimilarityDialogResult.useExisting(drug);
+    case AppSimilarityReviewAction.replaceExisting:
+      final PharmacyDrug? drug = result.selected;
+      if (drug == null) {
+        return const PharmacyDrugSimilarityDialogResult.cancel();
+      }
+      return PharmacyDrugSimilarityDialogResult.replaceExisting(
+        drug,
+        proposed: proposedFrom(result.proposedValues),
+      );
     case AppSimilarityReviewAction.proceed:
       return PharmacyDrugSimilarityDialogResult.proceed(
         proposed: proposedFrom(result.proposedValues),

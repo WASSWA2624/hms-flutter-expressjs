@@ -125,6 +125,8 @@ Future<RoleSimilarityDialogResult> showRoleSimilarityDialog(
     case AppSimilarityReviewAction.cancel:
     case AppSimilarityReviewAction.retry:
       return const RoleSimilarityDialogResult.cancel();
+    case AppSimilarityReviewAction.replaceExisting:
+      return const RoleSimilarityDialogResult.cancel();
     case AppSimilarityReviewAction.proceed:
       return const RoleSimilarityDialogResult.proceed();
     case AppSimilarityReviewAction.useExisting:

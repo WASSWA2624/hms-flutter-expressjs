@@ -159,6 +159,8 @@ Future<UnitSimilarityDialogResult> showUnitSimilarityDialog(
         return const UnitSimilarityDialogResult.cancel();
       }
       return UnitSimilarityDialogResult.useExisting(unit);
+    case AppSimilarityReviewAction.replaceExisting:
+      return const UnitSimilarityDialogResult.cancel();
     case AppSimilarityReviewAction.proceed:
       return const UnitSimilarityDialogResult.proceed();
   }

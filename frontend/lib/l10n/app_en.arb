@@ -1397,6 +1397,10 @@
   "@appSimilarityUseThisAction": {
     "description": "Select an existing match from a similarity review card."
   },
+  "appSimilarityReplaceExistingAction": "Replace existing",
+  "@appSimilarityReplaceExistingAction": {
+    "description": "Overwrite an existing match with the proposed values from similarity review."
+  },
   "appSimilarityRetryAction": "Check again",
   "@appSimilarityRetryAction": {
     "description": "Re-run similarity check with edited proposed values."
@@ -15568,6 +15572,10 @@
   "pharmacyDrugUseExistingAction": "Use this drug",
   "@pharmacyDrugUseExistingAction": {
     "description": "Use an existing drug from similarity review."
+  },
+  "pharmacyDrugReplaceExistingAction": "Replace this drug",
+  "@pharmacyDrugReplaceExistingAction": {
+    "description": "Overwrite an existing drug with proposed values from similarity review."
   },
   "pharmacyDrugProposedHeading": "Proposed drug",
   "@pharmacyDrugProposedHeading": {

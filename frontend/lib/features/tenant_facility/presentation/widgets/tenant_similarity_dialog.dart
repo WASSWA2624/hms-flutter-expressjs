@@ -194,6 +194,8 @@ Future<TenantSimilarityDialogResult> showTenantSimilarityDialog(
         return const TenantSimilarityDialogResult.cancel();
       }
       return TenantSimilarityDialogResult.useExisting(tenant);
+    case AppSimilarityReviewAction.replaceExisting:
+      return const TenantSimilarityDialogResult.cancel();
     case AppSimilarityReviewAction.proceed:
       return const TenantSimilarityDialogResult.proceed();
   }

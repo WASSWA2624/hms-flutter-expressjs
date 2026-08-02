@@ -226,6 +226,8 @@ showPharmacyStorageShelfSimilarityDialog(
         return const PharmacyStorageShelfSimilarityDialogResult.cancel();
       }
       return PharmacyStorageShelfSimilarityDialogResult.useExisting(shelf);
+    case AppSimilarityReviewAction.replaceExisting:
+      return const PharmacyStorageShelfSimilarityDialogResult.cancel();
     case AppSimilarityReviewAction.proceed:
       return PharmacyStorageShelfSimilarityDialogResult.proceed(
         proposed: proposedFrom(result.proposedValues),

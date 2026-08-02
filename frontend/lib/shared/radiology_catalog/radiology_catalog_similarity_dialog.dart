@@ -139,6 +139,8 @@ showRadiologyCatalogSimilarityDialog(
     case AppSimilarityReviewAction.cancel:
     case AppSimilarityReviewAction.retry:
       return const RadiologyCatalogSimilarityDialogResult.cancel();
+    case AppSimilarityReviewAction.replaceExisting:
+      return const RadiologyCatalogSimilarityDialogResult.cancel();
     case AppSimilarityReviewAction.proceed:
       return const RadiologyCatalogSimilarityDialogResult.proceed();
     case AppSimilarityReviewAction.useExisting:

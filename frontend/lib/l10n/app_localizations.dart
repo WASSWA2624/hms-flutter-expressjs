@@ -2116,6 +2116,12 @@ abstract class AppLocalizations {
   /// **'Use this'**
   String get appSimilarityUseThisAction;
 
+  /// Overwrite an existing match with the proposed values from similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace existing'**
+  String get appSimilarityReplaceExistingAction;
+
   /// Re-run similarity check with edited proposed values.
   ///
   /// In en, this message translates to:
@@ -22509,6 +22515,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use this drug'**
   String get pharmacyDrugUseExistingAction;
+
+  /// Overwrite an existing drug with proposed values from similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace this drug'**
+  String get pharmacyDrugReplaceExistingAction;
 
   /// Heading for proposed values in drug similarity review.
   ///

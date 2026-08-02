@@ -180,6 +180,8 @@ Future<LabCatalogSimilarityDialogResult> showLabCatalogSimilarityDialog(
     case AppSimilarityReviewAction.cancel:
     case AppSimilarityReviewAction.retry:
       return const LabCatalogSimilarityDialogResult.cancel();
+    case AppSimilarityReviewAction.replaceExisting:
+      return const LabCatalogSimilarityDialogResult.cancel();
     case AppSimilarityReviewAction.proceed:
       return const LabCatalogSimilarityDialogResult.proceed();
     case AppSimilarityReviewAction.useExisting:
