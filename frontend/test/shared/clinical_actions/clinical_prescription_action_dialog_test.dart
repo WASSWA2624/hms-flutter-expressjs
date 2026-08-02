@@ -102,16 +102,14 @@ void main() {
         'Ibuprofen',
       ]);
 
-      expect(find.text('Amoxicillin 500 mg'), findsWidgets);
-      expect(find.text('Ibuprofen 200 mg'), findsWidgets);
-      expect(
-        find.textContaining('Take by mouth twice daily'),
-        findsWidgets,
-      );
-      expect(find.textContaining('Qty 1'), findsWidgets);
+      expect(find.textContaining('Amoxicillin 500 mg'), findsWidgets);
+      expect(find.textContaining('Ibuprofen 200 mg'), findsWidgets);
+      expect(find.textContaining('Oral · BID · Qty 1'), findsWidgets);
       expect(find.text('Prescription details'), findsWidgets);
       expect(find.text('Dose amount'), findsWidgets);
       expect(find.text('Medication route'), findsWidgets);
+      expect(find.text('Edit details'), findsWidgets);
+      expect(find.text('Remove item'), findsWidgets);
     });
 
     testWidgets('adds selected medicines from catalog and removes them', (
@@ -210,9 +208,10 @@ void main() {
       );
 
       expect(
-        find.textContaining('Take 500 mg by mouth twice daily'),
+        find.textContaining('Amoxicillin 500 mg · Oral · BID · Qty 1'),
         findsWidgets,
       );
+      expect(find.text('Dose amount'), findsWidgets);
 
       await tester.tap(find.widgetWithIcon(AppButton, Icons.send_outlined));
       await tester.pumpAndSettle();

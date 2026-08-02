@@ -143,6 +143,31 @@ String clinicalPrescriptionPaperQuantityLabel({
   return 'Qty $qty';
 }
 
+/// Compact header meta for medication cards, e.g. "Oral · BID · Qty 1".
+///
+/// Uses short catalog labels (not prose directions) so the header does not
+/// duplicate the wording of the editable prescription fields.
+String clinicalPrescriptionCompactHeaderMeta({
+  String? route,
+  String? frequency,
+  Object? quantity,
+  String? quantityUnit,
+}) {
+  final String? routeLabel = clinicalActionTrimmedOrNull(route) == null
+      ? null
+      : clinicalActionApiLabel(route!.trim());
+  final String? frequencyLabel = clinicalActionTrimmedOrNull(frequency);
+  final String qty = clinicalPrescriptionPaperQuantityLabel(
+    quantity: quantity,
+    quantityUnit: quantityUnit,
+  );
+  return clinicalActionJoinDisplay(<String?>[
+    routeLabel,
+    frequencyLabel?.toUpperCase(),
+    if (qty.isNotEmpty) qty,
+  ], separator: ' · ');
+}
+
 String clinicalPrescriptionPaperSummary({
   required ClinicalActionCatalogOption? drug,
   Object? quantity,
