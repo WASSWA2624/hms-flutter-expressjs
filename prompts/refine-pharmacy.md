@@ -1,86 +1,109 @@
-# Pharmacy Tables & Chrome: Actions Headers, Generic Naming, Pinned H-Scroll, Overflow Dot, Export Icon
+# Pharmacy Catalog · Room Tab: Export Filters, Similarity CRUD, Soft/Hard Delete, Room-Only Actions
 
-**Objective:** Align pharmacy `AppListTable` chrome and shared table/tab components with the current Catalog and stock UI so every pharmacy table shows an **Actions** column header, standardizes drug naming to **Generic name**, pins the horizontal scrollbar to the visible viewport bottom, surfaces an attention indicator on the desk-strip **More tabs** overflow control when hidden tabs have non-zero counts, and points the Export affordance icon upward — without changing dispensing, billing, catalog CRUD, RBAC, or desk-section routing unless a requirement below says so.
+**Objective:** Refine the Catalog and stock **Room** nested tab (`PharmacyCatalogTab.storageLayout`, labeled “Room”) so room Create/Edit enforce unique codes (auto-generate when omitted), run similarity review before save, soft-delete then restore/permanent-delete with cascade, open a room-details dialog after create, expose Export date/status filters, and keep row actions room-scoped only (no per-row Create shelf) — without changing Drugs, Formulary, Inventory, Shelves, dispensing, billing, or desk routing unless a requirement below says so.
 
 ## Context
 
-Catalog and stock is already an inline desk section (`?section=catalog`) with nested tabs **Drugs / Formulary / Inventory / Room / Shelves** (`PharmacyCatalogPanel`, `PharmacyCatalogTab`). Screenshots of the live UI show:
+Catalog and stock is already an inline desk section (`?section=catalog`) with nested tabs Drugs / Formulary / Inventory / **Room** / Shelves (`PharmacyCatalogPanel` → `_StorageLayoutCatalogTab`). The Room table is live today:
 
-- **Drugs** columns include Brand name and **Generic (scientific) name**; Formulary uses **Drug name**. Actions cells (Edit / Delete) render with an **empty** header (`label: ''` on `id: 'actions'`).
-- **Inventory**, **Room**, and **Shelves** likewise use blank actions headers while row buttons (Adjust/Clear, Create/Edit/Delete, Edit/Delete) are visible.
-- Wide catalog tables already scroll horizontally via `AppListTable` / `_DesktopListTable`, but the horizontal scrollbar often sits at the **bottom of the full table content** (below the fold) instead of staying pinned to the **bottom of the visible table viewport**.
-- The desk `AppTabStrip` overflow control (`_AppTabOverflowRow`, `Icons.more_vert`, semantic “More tabs”) lists stock-alert / secondary sections (e.g. All orders with count **2**). There is **no** badge/dot on the More button when overflow entries need attention.
-- Table Export in the search trailing cluster uses `AppActionIcons.download` (downward arrow). Product intent is an **upward** export/upload glyph.
-- Some columns still feel cramped or clipped at desktop widths even when horizontal scroll exists; the shared table should keep columns readable while scrolling.
+| Surface | Current behavior |
+| --- | --- |
+| Settings | Column visibility for Room name, Room code, Shelves, Status, Actions — keep |
+| Export | `AppListTable` Export shows **columns only**; Room search sets `enableDateFilter: false` and has **no** `exportConfig` filters (status / created-at), so users cannot narrow the export set |
+| Toolbar Create | Search trailing **Create** → `openPharmacyStorageRoomDialog` (create room) — keep as the room-create entry |
+| Row actions | **Create** (opens shelf dialog) + **Edit** + **Delete** via `_catalogRowActions` with `fixedWidth: 280` — Create-shelf on the Room table is in scope to **remove**; shelf create stays on Shelves tab / room details |
+| Create/Edit dialog | `_StorageRoomDialog` (`pharmacy_storage_panel.dart`): name required, code optional free text, active switch on edit; **no** uniqueness check, **no** auto code, **no** similarity review; on success pops back to the table |
+| Delete | `confirmDeletePharmacyStorageRoom` → `deleteStorageRoom` → backend `txSoftDeleteStorageRoom` + soft-delete shelves; **no** restore / permanent-delete UI; soft-deleted rooms disappear from the default layout list (`is_active: true` unless `include_inactive`) |
+| Backend | `pharmacy_storage_room` has `code` (nullable), `human_friendly_id`, `created_at`, `deleted_at`; create accepts optional `code` with **no** facility-scoped uniqueness or similarity endpoint yet |
+| RBAC | Browse/write gated by `pharmacyCatalogBrowseRequirement` / `pharmacyCatalogWriteRequirement` |
 
-Relevant code today:
+Existing patterns to reuse (do not invent parallel frameworks):
 
-| Area | Location | Current behavior |
-| --- | --- | --- |
-| Catalog action columns | `pharmacy_catalog_panel.dart` (Drugs ~L344, Formulary ~L639, Inventory ~L1189, Room ~L1746, Shelves ~L1935) | `id: 'actions'`, `label: ''` |
-| Naming l10n | `app_en.arb` | `pharmacyDrugGenericNameLabel` = “Generic (scientific) name”; `pharmacyDrugNameLabel` = “Drug name” |
-| H-scroll | `app_list_table.dart` `_DesktopListTable` (~L2894–L3151) | Nested horizontal/vertical `Scrollbar`s; not reliably viewport-pinned |
-| More tabs | `app_tab_strip.dart` `_AppTabOverflowRow` (~L205–L253) | Overflow menu only; no attention indicator |
-| Export icon | `app_list_table.dart` `_searchActions` (~L2055–L2060); `AppActionIcons.download` | Downward download icon |
+- Similarity review UX: tenant-facility room/department/unit dialogs (`room_similarity.dart`, `*_similarity_dialog.dart`) and backend `*-similarity` libs (e.g. department) — adapt for **pharmacy storage rooms** (name + code), not facility clinical rooms.
+- Soft → restore → permanent delete: department `restore` / `permanentDelete` routes and UI patterns.
+- HFID / public ids: existing `human_friendly_id` + `toPublicIdentifier` on storage rooms; when `code` is omitted, generate a unique facility-scoped human-friendly **code** (or reuse HFID as the displayed code) before insert.
+- Export filters: `AppListTableExportConfig` dateOf / rowFilter + search-bar date filter patterns used elsewhere when `enableDateFilter: true`.
 
-Order-queue tables already use labeled next-action / Actions strings in places (`pharmacyLineActionsColumnLabel`, `pharmacyNextActionColumnLabel`). Prefer reuse; do not invent parallel naming systems.
+Deep link scope remains `?section=catalog` with nested Room tab selected (`storageLayout`). If a nested-tab query param is already supported, keep it; otherwise do not invent a new desk section — optional `?catalogTab=room|storageLayout` is allowed only if it fits existing URL helpers without breaking current aliases.
 
 ## Requirements
 
-1. **Label every pharmacy Actions column.** On all pharmacy module tables that render row action chrome (Catalog nested tabs: Drugs, Formulary, Inventory, Room, Shelves; and any other pharmacy workspace `AppListTable` whose actions column currently uses `label: ''`), set the column header to **Actions** via the existing l10n key `pharmacyLineActionsColumnLabel` (or a shared `commonActionsColumnLabel` if one is introduced and wired consistently). Keep `id: 'actions'` (or existing action ids) so export exclusion and Settings behavior stay correct. Do not change the row buttons themselves (Edit / Delete / Adjust / Clear / Create-shelf).
+1. **Room-table actions are room-only.** On `_StorageLayoutCatalogTab`, remove the per-row **Create** (add shelf) button. Row actions are **Edit** and **Delete** (or Restore / Delete permanently when soft-deleted — see R6). Shrink `fixedWidth` accordingly so the Actions column stays non-clipping. Shelf creation remains available from the **Shelves** nested tab (and from the new room-details surface in R5). Toolbar/search **Create** continues to mean **create room**.
 
-2. **Standardize drug naming copy to “Generic name”.** Update user-visible pharmacy strings so:
-   - `pharmacyDrugGenericNameLabel` reads **Generic name** (replace “Generic (scientific) name”).
-   - Formulary (and any pharmacy table/dialog that still shows **Drug name** for the scientific/generic identity) uses **Generic name** instead of “Drug name” where that column/field means the generic identity — reuse `pharmacyDrugGenericNameLabel` or retarget `pharmacyDrugNameLabel` carefully so filters, Settings, Export headers, search placeholders, and edit-dialog labels stay consistent.
-   - Keep **Brand name** unchanged. Do not rename backend fields (`genericName`, `brandName`, legacy `name`) or break `displayTitle` / `genericSubtitle` fallbacks.
+2. **Create room: optional unique code + auto-generate.** In `_StorageRoomDialog` (create) and backend `createPharmacyStorageRoom`:
+   - **Name** required.
+   - **Code** optional in the form. If the user supplies a code, validate **facility-scoped uniqueness** among non-permanently-deleted rooms (case-insensitive trim); reject duplicates with a clear field error.
+   - If code is empty, the backend **assigns** a unique human-friendly code (prefer existing HFID/public-id machinery or an equivalent short facility-unique code) before persist. Never create two rooms with the same code in the same facility.
+   - Persist/refetch as today; audit log stays.
 
-3. **Pin the horizontal scrollbar to the visible viewport bottom (shared `AppListTable`).** In `_DesktopListTable` / `AppListTable`, ensure that when the table is wider than its viewport the **horizontal scrollbar remains visible at the bottom of the on-screen table area** (above any table footer/pagination if present), not only after scrolling to the end of a tall body. Prefer fixing the shared component so **every** `AppListTable` (pharmacy and elsewhere) inherits the behavior. Preserve vertical scrolling, sticky/header behavior, column resize, and go-to-top. Thumb should remain visible when horizontal overflow exists (`thumbVisibility: true` or equivalent).
+3. **Similarity review on create (and edit).** Before committing create/update, run a pharmacy-storage-room similarity check against other rooms in the facility (exclude the room being edited):
+   - Detect **exact** name (and exact code when provided) conflicts → **block** create/update (hard stop); do not offer “create anyway” for exact duplicates.
+   - Detect **near** matches (spelling / fuzzy name, and code similarity when applicable) with a percentage score (0–100).
+   - Always surface a similarity review dialog after the check (including “0% / no close matches” and high scores), following the existing tenant-facility similarity dialog pattern (proposed values, match list, overall %).
+   - For non-exact similar matches, user may **Continue / Create anyway** or cancel back to the form.
+   - Wire a backend check endpoint (or extend create/update to return a similarity challenge) consistent with department/facility duplicate-review contracts; keep tenant/facility scope and RBAC write-gated.
 
-4. **Keep all columns nicely readable while scrolling.** As part of the shared table pass, ensure default/min column widths and the table `minWidth` calculation keep headers and cell content legible (no crushed brand/generic/code/form columns; actions column retains enough width for its buttons, including Room’s multi-button row). Horizontal scroll is the overflow strategy — do not hide required always-visible columns. Respect existing column Settings visibility and saved width memory.
+4. **Edit room reuses the same uniqueness + similarity rules.** Edit dialog keeps name/code/active. Uniqueness and similarity peers **exclude the current room id**. Exact duplicate of another room’s name or code remains blocked.
 
-5. **Attention indicator on the More tabs overflow control.** In `AppTabStrip`’s overflow More button (`_AppTabOverflowRow` / `tabOverflowMore`), when **any** overflowed tab has a non-null `count` that is **greater than 0**, show a compact attention indicator on the More control (prefer a small red/error-tone **dot** badge on the icon button — theme `colorScheme.error` or equivalent token). When all overflow counts are null or 0, show no indicator. Keep menu items’ existing `(count)` labels. Do not change tab partitioning, selection, or badge tones on visible chips.
+5. **After successful create, open room details (do not only return to the table).** On create success, dismiss the create form and open a **room details** dialog/panel showing the new room (name, code, status, shelves count / shelf list summary, and affordances to add shelf / edit / soft-delete as write-allowed). From details, Add shelf may open the existing `_StorageShelfDialog`. Closing details returns to the Room table with data refreshed. Edit success may stay on details or return to the table; prefer opening/refreshing details when edit was launched from details.
 
-6. **Point the Export icon upward.** Change the `AppListTable` search-bar Export trailing action icon from the downward download glyph to an upward export/upload glyph (prefer `AppActionIcons.upload` / `Icons.upload_outlined`, or add a dedicated `AppActionIcons.export` that points up). Keep the visible label **Export** and existing export dialog behavior. Apply consistently wherever the shared table renders that Export control (including pharmacy catalog/order tables). Update related tests that assert `AppActionIcons.download` on Export if present.
+6. **Soft delete → Restore / Delete permanently (cascade).** Replace the current one-shot delete UX with:
+   - **Soft delete** (existing backend soft-delete of room + shelves): room leaves the active list (or appears inactive/deleted depending on filter); row actions become **Restore** and **Delete permanently** (write-gated).
+   - **Restore**: clear soft-delete / reactivate room (and decide shelf restore policy consistently — prefer restoring shelves soft-deleted with the room when still intact).
+   - **Delete permanently**: hard-delete the room and **cascade** dependent storage shelves (and any safe cascade rules for batch location FKs already defined in schema — never leave orphan shelves; follow referential integrity; if batches still reference the room, either block permanent delete with a clear message or null/reassign per existing pharmacy storage rules — document the chosen safe behavior and implement it).
+   - Expose backend restore + permanent-delete endpoints mirroring department patterns; list/layout APIs must support including soft-deleted rooms when Filters request them (see R7).
 
-7. **Preserve pharmacy behavior outside this polish.** Do not alter nested-tab set, Create/Adjust/Clear/Delete flows, Filters/Settings/Export data contracts, desk `?section=` routing, stock-alert filters, dispensing, billing, MAR, or RBAC gates (`pharmacyCatalogBrowseRequirement` / `pharmacyCatalogWriteRequirement` / section write requirements).
+7. **Export filters for Room.** Wire Room Export so the dialog includes useful filters in addition to column picks:
+   - **Created date** From/To (`created_at` via `exportConfig.dateOf` / enabling date filter on the Room search where appropriate).
+   - **Status** (Active / Inactive / Soft-deleted) and any other Room filters already on Advanced Filters once added.
+   - Default export = current visible/filtered set with **no** date constraint (everything matching current search/filters); users can narrow by date/status before download.
+   - Keep Export icon/label behavior from the shared table; do not change Drugs/Formulary/Inventory/Shelves export unless sharing a helper.
+
+8. **Room list Filters + Settings completeness.** Keep Settings. Add Advanced Filters appropriate to rooms (at least status / include soft-deleted; created-at if not only on Export). Search continues to match name, code, and id. Prefer loading soft-deleted rows only when the filter asks for them so the default Room tab stays an active operational list.
+
+9. **RBAC / ABAC.** Browse Room tab with `pharmacyCatalogBrowseRequirement`; Create / Edit / Soft-delete / Restore / Permanent-delete / Add-shelf-from-details with `pharmacyCatalogWriteRequirement`. Hide unauthorized write controls; never show disabled “no access” chrome. Backend remains authoritative.
+
+10. **Preserve out-of-scope behavior.** Do not change Drugs, Formulary, Inventory, Shelves tab semantics (except that shelf create remains available there), order queues, stock alerts, dispensing, billing, or MAR.
 
 ## Constraints
 
-- Prefer shared-component fixes (`app_list_table.dart`, `app_tab_strip.dart`, `app_action_icons.dart`) for scrollbar, column readability, Export icon, and More-tabs indicator so pharmacy inherits them without one-off forks.
-- Reuse existing l10n keys where possible; regenerate localizations after `app_en.arb` edits.
-- Theme tokens for light and dark; indicator and scrollbars must remain accessible (contrast, semantics on More button reflecting “attention” when the dot is shown).
-- No new backend endpoints or Prisma schema changes are expected for this polish.
-- Hide unauthorized write actions as today; never render disabled “no access” chrome.
+- Prefer extending `pharmacy-storage.service.js` / repository / routes and `_StorageLayoutCatalogTab` / `_StorageRoomDialog` rather than a parallel catalog stack.
+- Reuse similarity dialog patterns and soft/hard-delete patterns from tenant-facility / department; adapt copy and fields to pharmacy storage rooms (name + code).
+- Theme tokens (light + dark); responsive Actions column without overflow after removing Create-shelf.
+- Room **codes** stay unique per facility among non-purged rows; HFID remains the public id as today.
+- No change to unrelated modules; migrations only as needed for unique indexes / permanent-delete safety.
 
 ## Acceptance Criteria
 
-- (R1) Drugs, Formulary, Inventory, Room, and Shelves (and any other pharmacy tables that had blank action headers) show an **Actions** column header above the row action buttons.
-- (R2) Pharmacy UI copy uses **Generic name** instead of “Generic (scientific) name” and instead of “Drug name” where that field means the generic identity; Brand name unchanged; CRUD still saves brand/generic correctly.
-- (R3) On a wide pharmacy (or any) `AppListTable`, the horizontal scrollbar stays visible at the bottom of the **viewport** without scrolling the table body to its end first.
-- (R4) With horizontal overflow, all enabled columns remain readable via scroll; actions columns do not clip their buttons at desktop/tablet/mobile supported widths.
-- (R5) When the desk strip overflows and at least one overflow tab has `count > 0` (e.g. All orders (2)), the More tabs button shows a red/error-tone attention dot; when all overflow counts are 0/absent, no dot.
-- (R6) Export trailing action uses an upward-pointing icon; export still downloads the sheet successfully.
-- (R7) Order queues, stock alerts, catalog mutations, and permissions behave as before aside from the UI polish above.
+- (R1) Room table row actions are Edit + Delete (or Restore / Delete permanently); no Create-shelf on the Room row; Shelves tab (and room details) still create shelves.
+- (R2) Create with blank code persists a system-generated unique facility code; supplied codes that collide are rejected.
+- (R3) Create/Edit always run similarity review; exact name/code duplicates are blocked; near matches show % scores and allow continue-anyway only when not exact.
+- (R4) Edit excludes self from uniqueness/similarity peers.
+- (R5) Successful create opens room details; table refreshes; details can add shelves when write-allowed.
+- (R6) Soft delete then Restore or permanent cascade delete works end-to-end; permanent delete does not leave orphan shelves.
+- (R7) Room Export dialog exposes created-date range and status (and respects advanced filters); default is unfiltered-by-date export of the current set.
+- (R8) Settings still work; Filters cover status / soft-deleted inclusion as specified.
+- (R9) Read-only catalog users can view; only write-capable pharmacy catalog users mutate.
+- (R10) Other catalog nested tabs and pharmacy order flows behave as before.
 
 ## Verification
 
-- Extend/adjust Dart tests:
-  - Pharmacy catalog / workspace tests: Actions header present on nested catalog tables; Generic name string assertions; Export icon glyph.
-  - `app_list_table_test.dart` / export tests: upward Export icon; horizontal scrollbar pinned when viewport-bounded (widget/layout assertion or documented manual check if scrollbar geometry is hard to unit-test).
-  - `app_tab_strip_test.dart`: More button shows attention indicator iff an overflow tab has `count > 0`; no indicator when all overflow counts are 0.
-- Run `flutter analyze` and targeted `flutter test` for pharmacy + shared table/tab suites.
-- No backend Jest / schema work expected; if touched incidentally, run the relevant suite.
-- Manually verify on `?section=catalog` (all five nested tabs) and a crowded desk strip with overflow (stock-alert tabs in More): Actions headers, Generic name, pinned h-scroll, More-dot, upward Export — light and dark, desktop and narrow widths.
+- Frontend tests: `pharmacy_storage_panel_test.dart`, `pharmacy_storage_delete_test.dart`, catalog/workspace tests — cover room-only row actions, create→details, similarity block/continue, soft/restore/permanent UI gating, export filter presence.
+- Backend Jest: `pharmacy-storage.service.test.js` — unique code generation, uniqueness conflicts, similarity check, soft/restore/permanent cascade.
+- Manual: `?section=catalog` → Room — Create (blank & supplied code), similarity dialog, details after create, Edit, soft-delete → Restore / permanent delete, Export with date/status filters, RBAC with read vs write pharmacy users; light + dark; no Actions overflow.
 
 ## Relevant Files
 
-- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart` (actions `label: ''` → Actions; Formulary/Drugs naming columns)
-- `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart` (any remaining blank pharmacy action headers)
-- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_drug_edit_dialog.dart` (labels that still say Drug name / Generic (scientific) name)
-- `frontend/lib/shared/components/app_list_table.dart` (pinned horizontal scrollbar, column min widths, Export icon)
-- `frontend/lib/shared/components/app_list_table_export.dart` (Export dialog icons if they must match the upward glyph)
-- `frontend/lib/shared/components/app_tab_strip.dart` (`_AppTabOverflowRow` More-tabs attention indicator)
-- `frontend/lib/shared/icons/app_action_icons.dart` (`upload` / optional `export`)
-- `frontend/lib/l10n/app_en.arb` (`pharmacyDrugGenericNameLabel`, `pharmacyDrugNameLabel` / Formulary copy; reuse `pharmacyLineActionsColumnLabel`)
-- `frontend/test/shared/components/app_list_table_test.dart`, `app_list_table_export_test.dart`, `app_tab_strip_test.dart`
-- `frontend/test/features/pharmacy/presentation/**` (catalog/workspace string and header assertions)
+- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart` (`_StorageLayoutCatalogTab`, row actions, search/export wiring)
+- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_storage_panel.dart` (`_StorageRoomDialog`, delete confirm, shelf dialog reuse)
+- `frontend/lib/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart` (create/update/delete/restore/permanent; layout reload; include soft-deleted)
+- `frontend/lib/features/pharmacy/domain/entities/pharmacy_entities.dart` / DTOs / repository
+- `frontend/lib/features/pharmacy/presentation/pharmacy_access.dart`
+- `frontend/lib/shared/components/app_list_table.dart` / `app_list_table_export.dart` (export filters)
+- Similarity UI/domain patterns under `frontend/lib/features/tenant_facility/**` (reference only)
+- `backend/src/modules/pharmacy-workspace/services/pharmacy-storage.service.js`
+- `backend/src/modules/pharmacy-workspace/repositories/pharmacy-storage.repository.js`
+- `backend/src/modules/pharmacy-workspace/schemas/**`, routes/controllers for storage rooms
+- `backend/prisma/schema.prisma` (`pharmacy_storage_room` / shelf — unique code index if required)
+- `frontend/test/features/pharmacy/presentation/pharmacy_storage_*_test.dart`, workspace/catalog tests
+- `backend/src/tests/modules/pharmacy-workspace/services/pharmacy-storage.service.test.js`
