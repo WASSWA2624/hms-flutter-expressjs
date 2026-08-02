@@ -586,6 +586,13 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
       columnVisibilityStorageKey: 'pharmacy_catalog_formulary',
       shrinkWrap: !widget.fillHeight,
       onPageChanged: controller.changeFormularyPage,
+      exportConfig: AppListTableExportConfig<PharmacyFormularyItem>(
+        fileNameStem: 'pharmacy_formulary',
+        dateOf: (PharmacyFormularyItem item) => item.createdAt,
+        rowFilter: (PharmacyFormularyItem item, AppSearchBarFilterValue filters) {
+          return _matchesFormularyExportFilters(item, filters);
+        },
+      ),
       search: AppListTableSearch<PharmacyFormularyItem>(
         controller: _searchController,
         semanticLabel: l10n.pharmacyFormularyDrugLabel,
@@ -598,8 +605,30 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
         advancedFilterTitle: l10n.pharmacyFiltersSemanticLabel,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
-        enableDateFilter: false,
         allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+        textFilters: <AppSearchBarTextFilter>[
+          AppSearchBarTextFilter(
+            key: _drugNameFilterKey,
+            label: l10n.pharmacyDrugGenericNameLabel,
+            hintText: l10n.pharmacyDrugGenericNameLabel,
+            icon: Icons.medication_outlined,
+          ),
+          AppSearchBarTextFilter(
+            key: _drugCodeFilterKey,
+            label: l10n.pharmacyDrugCodeLabel,
+            icon: Icons.qr_code_2_outlined,
+          ),
+          AppSearchBarTextFilter(
+            key: _drugFormFilterKey,
+            label: l10n.pharmacyDrugFormLabel,
+            icon: Icons.science_outlined,
+          ),
+          AppSearchBarTextFilter(
+            key: _drugStrengthFilterKey,
+            label: l10n.pharmacyDrugStrengthLabel,
+            icon: Icons.straighten_outlined,
+          ),
+        ],
         filterGroups: _formularyCatalogFilterGroups(l10n),
         filterValue: _formularyCatalogFilterValue(formularyQuery),
         hasActiveFilters: _hasFormularyCatalogFilters(formularyQuery),
@@ -611,7 +640,7 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
           writeRequirement: widget.writeRequirement,
           isBusy: isBusy,
           hasSelection: hasSelection,
-          addLabel: l10n.commonCreateActionLabel,
+          addLabel: l10n.commonAddActionLabel,
           addSemanticLabel: l10n.pharmacyAddFormularyAction,
           onAdd: () => _openFormularyDialog(context),
           selectionLabel: l10n.pharmacyDeleteSelectedFormularyAction,
@@ -659,12 +688,43 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
           preferredWidth: 220,
           cellBuilder: (_, PharmacyFormularyItem item) =>
               Text(item.drugNameLabel ?? '—'),
+          exportValue: (PharmacyFormularyItem item) => item.drugNameLabel ?? '',
+        ),
+        AppListTableColumn<PharmacyFormularyItem>(
+          id: 'drug_code',
+          label: l10n.pharmacyDrugCodeLabel,
+          preferredWidth: 120,
+          cellBuilder: (_, PharmacyFormularyItem item) =>
+              Text((item.drugCode ?? '').trim().isEmpty ? '—' : item.drugCode!),
+          exportValue: (PharmacyFormularyItem item) => item.drugCode ?? '',
+        ),
+        AppListTableColumn<PharmacyFormularyItem>(
+          id: 'drug_form',
+          label: l10n.pharmacyDrugFormLabel,
+          preferredWidth: 120,
+          cellBuilder: (_, PharmacyFormularyItem item) => Text(
+            (item.drugForm ?? '').trim().isEmpty ? '—' : item.drugForm!.trim(),
+          ),
+          exportValue: (PharmacyFormularyItem item) => item.drugForm ?? '',
+        ),
+        AppListTableColumn<PharmacyFormularyItem>(
+          id: 'drug_strength',
+          label: l10n.pharmacyDrugStrengthLabel,
+          preferredWidth: 120,
+          cellBuilder: (_, PharmacyFormularyItem item) => Text(
+            (item.drugStrength ?? '').trim().isEmpty
+                ? '—'
+                : item.drugStrength!.trim(),
+          ),
+          exportValue: (PharmacyFormularyItem item) => item.drugStrength ?? '',
         ),
         AppListTableColumn<PharmacyFormularyItem>(
           id: 'formulary_id',
           label: l10n.pharmacyFormularyIdLabel,
           cellBuilder: (_, PharmacyFormularyItem item) =>
               Text(item.displayId ?? item.id),
+          exportValue: (PharmacyFormularyItem item) =>
+              item.displayId ?? item.id,
         ),
         AppListTableColumn<PharmacyFormularyItem>(
           id: 'is_active',
@@ -679,11 +739,48 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
               ),
             );
           },
+          exportValue: (PharmacyFormularyItem item) =>
+              item.isActive ? l10n.commonYesLabel : l10n.commonNoLabel,
+        ),
+        AppListTableColumn<PharmacyFormularyItem>(
+          id: 'created_at',
+          label: l10n.pharmacyStorageCreatedAtColumnLabel,
+          preferredWidth: 160,
+          cellBuilder: (BuildContext context, PharmacyFormularyItem item) {
+            if (item.createdAt == null) {
+              return const Text('—');
+            }
+            return Text(
+              AppFormatters.dateTime(
+                item.createdAt!,
+                Localizations.localeOf(context),
+              ),
+            );
+          },
+          exportValue: (PharmacyFormularyItem item) => item.createdAt,
+        ),
+        AppListTableColumn<PharmacyFormularyItem>(
+          id: 'updated_at',
+          label: l10n.tenantFacilityUpdatedAtLabel,
+          preferredWidth: 160,
+          cellBuilder: (BuildContext context, PharmacyFormularyItem item) {
+            if (item.updatedAt == null) {
+              return const Text('—');
+            }
+            return Text(
+              AppFormatters.dateTime(
+                item.updatedAt!,
+                Localizations.localeOf(context),
+              ),
+            );
+          },
+          exportValue: (PharmacyFormularyItem item) => item.updatedAt,
         ),
         AppListTableColumn<PharmacyFormularyItem>(
           id: 'actions',
           label: l10n.pharmacyLineActionsColumnLabel,
           alwaysVisible: true,
+          fixedWidth: 240,
           cellBuilder: (BuildContext context, PharmacyFormularyItem item) {
             return _catalogRowActions(
               context: context,
@@ -695,6 +792,7 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
               deleteSemanticLabel: l10n.pharmacyDeleteFormularyAction,
               onEdit: () => _openFormularyDialog(context, item: item),
               onDelete: () => _confirmDeleteFormulary(context, item),
+              alignStart: true,
             );
           },
         ),
@@ -836,7 +934,7 @@ class _FormularyItemDialog extends ConsumerStatefulWidget {
 }
 
 class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
-  late String? _drugId;
+  final Set<String> _selectedDrugIds = <String>{};
   late bool _isActive;
   bool _isSaving = false;
   late final TextEditingController _drugSearchController;
@@ -846,7 +944,6 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
   @override
   void initState() {
     super.initState();
-    _drugId = widget.item?.drugId;
     _isActive = widget.item?.isActive ?? true;
     _drugSearchController = TextEditingController();
     if (!_isEditing) {
@@ -869,6 +966,30 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
     super.dispose();
   }
 
+  void _toggleDrug(String drugId, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedDrugIds.add(drugId);
+      } else {
+        _selectedDrugIds.remove(drugId);
+      }
+    });
+  }
+
+  void _toggleAllVisible(List<PharmacyDrug> drugs, bool selected) {
+    setState(() {
+      if (!selected) {
+        for (final PharmacyDrug drug in drugs) {
+          _selectedDrugIds.remove(drug.id);
+        }
+        return;
+      }
+      for (final PharmacyDrug drug in drugs) {
+        _selectedDrugIds.add(drug.id);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -889,15 +1010,25 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
           request: AppPageRequest(pageSize: 10),
         );
     final bool isLoadingDrugs = workspaceState?.isRefreshingDrugs ?? false;
+    final List<PharmacyDrug> visibleDrugs = drugsPage.items;
+    final bool allVisibleSelected =
+        visibleDrugs.isNotEmpty &&
+        visibleDrugs.every(
+          (PharmacyDrug drug) => _selectedDrugIds.contains(drug.id),
+        );
+    final bool someVisibleSelected = visibleDrugs.any(
+      (PharmacyDrug drug) => _selectedDrugIds.contains(drug.id),
+    );
 
     return AppDialog(
       title: Text(
         _isEditing
             ? l10n.pharmacyEditFormularyAction
-            : l10n.pharmacyAddFormularyAction,
+            : l10n.pharmacyAddFormularyDialogTitle,
       ),
       scrollable: true,
-      maxWidth: 760,
+      pinActionsToBottom: true,
+      maxWidth: 880,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -914,62 +1045,118 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               tableHorizontalMargin: 0,
+              enableExport: false,
               onPageChanged: controller.changeDrugPage,
               onRowSelected: _isSaving
                   ? null
-                  : (PharmacyDrug drug) => setState(() => _drugId = drug.id),
+                  : (PharmacyDrug drug) {
+                      _toggleDrug(
+                        drug.id,
+                        !_selectedDrugIds.contains(drug.id),
+                      );
+                    },
               search: AppListTableSearch<PharmacyDrug>(
                 controller: _drugSearchController,
                 semanticLabel: l10n.pharmacyDrugSearchLabel,
                 hintText: l10n.pharmacyDrugSearchHint,
                 matcher: (_, _) => true,
+                enableDateFilter: false,
                 onSubmitted: controller.applyDrugSearch,
                 onClear: () => unawaited(controller.applyDrugSearch('')),
               ),
               columns: <AppListTableColumn<PharmacyDrug>>[
                 AppListTableColumn<PharmacyDrug>(
+                  id: 'select',
                   label: '',
+                  fixedWidth: 48,
+                  alwaysVisible: true,
+                  exportable: false,
+                  headerBuilder: (BuildContext context) {
+                    return Checkbox(
+                      tristate: true,
+                      value: allVisibleSelected
+                          ? true
+                          : someVisibleSelected
+                          ? null
+                          : false,
+                      onChanged: _isSaving || visibleDrugs.isEmpty
+                          ? null
+                          : (_) => _toggleAllVisible(
+                              visibleDrugs,
+                              !allVisibleSelected,
+                            ),
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    );
+                  },
                   cellBuilder: (BuildContext context, PharmacyDrug drug) {
-                    final bool selected = _drugId == drug.id;
-                    return Icon(
-                      selected
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_off,
-                      color: selected
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    return Checkbox(
+                      value: _selectedDrugIds.contains(drug.id),
+                      onChanged: _isSaving
+                          ? null
+                          : (bool? value) =>
+                                _toggleDrug(drug.id, value ?? false),
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     );
                   },
                 ),
                 AppListTableColumn<PharmacyDrug>(
+                  id: 'generic_name',
                   label: l10n.pharmacyDrugGenericNameLabel,
-                  cellBuilder: (_, PharmacyDrug drug) =>
-                      Text(drug.displayTitle),
+                  preferredWidth: 260,
+                  cellBuilder: (_, PharmacyDrug drug) {
+                    final String generic = (drug.genericName ?? '').trim();
+                    if (generic.isNotEmpty) {
+                      return Text(generic);
+                    }
+                    final String legacy = (drug.name ?? '').trim();
+                    return Text(legacy.isEmpty ? drug.displayTitle : legacy);
+                  },
                 ),
                 AppListTableColumn<PharmacyDrug>(
+                  id: 'code',
                   label: l10n.pharmacyDrugCodeLabel,
-                  cellBuilder: (_, PharmacyDrug drug) => Text(drug.code ?? ''),
+                  preferredWidth: 120,
+                  cellBuilder: (_, PharmacyDrug drug) =>
+                      Text((drug.code ?? '').trim().isEmpty ? '—' : drug.code!),
+                ),
+                AppListTableColumn<PharmacyDrug>(
+                  id: 'form',
+                  label: l10n.pharmacyDrugFormLabel,
+                  preferredWidth: 120,
+                  cellBuilder: (_, PharmacyDrug drug) => Text(
+                    (drug.form ?? '').trim().isEmpty
+                        ? '—'
+                        : drug.form!.trim(),
+                  ),
+                ),
+                AppListTableColumn<PharmacyDrug>(
+                  id: 'strength',
+                  label: l10n.pharmacyDrugStrengthLabel,
+                  preferredWidth: 120,
+                  cellBuilder: (_, PharmacyDrug drug) => Text(
+                    (drug.strength ?? '').trim().isEmpty
+                        ? '—'
+                        : drug.strength!.trim(),
+                  ),
                 ),
               ],
               mobileItemBuilder: (BuildContext context, PharmacyDrug drug) {
-                final bool selected = _drugId == drug.id;
-                return GestureDetector(
-                  onTap: _isSaving
-                      ? null
-                      : () => setState(() => _drugId = drug.id),
-                  child: AppListTableMobileItem(
-                    leading: Icon(
-                      selected
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_off,
-                      color: selected
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    title: drug.displayTitle,
-                    caption: drug.code,
-                    showAvatar: false,
+                final bool selected = _selectedDrugIds.contains(drug.id);
+                return AppListTableMobileItem(
+                  leading: Checkbox(
+                    value: selected,
+                    onChanged: _isSaving
+                        ? null
+                        : (bool? value) =>
+                              _toggleDrug(drug.id, value ?? false),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
+                  title: drug.displayTitle,
+                  caption: drug.code,
+                  showAvatar: false,
                 );
               },
               emptyBuilder: (_) => AppWorkspaceStatePanel.state(
@@ -998,9 +1185,10 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
         AppButton.primary(
           label: _isEditing
               ? l10n.pharmacyEditFormularyAction
-              : l10n.pharmacyAddFormularyAction,
+              : l10n.pharmacyAddSelectedFormularyItemsAction,
           leadingIcon: _isEditing ? Icons.save_outlined : Icons.add,
           isLoading: _isSaving,
+          enabled: _isEditing || _selectedDrugIds.isNotEmpty,
           onPressed: _submit,
         ),
       ],
@@ -1019,19 +1207,26 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
         isActive: _isActive,
       );
     } else {
-      final String? drugId = _drugId;
       final String? tenantId = controller.resolveTenantId();
-      if (drugId == null || tenantId == null) {
+      final List<String> drugIds = _selectedDrugIds.toList(growable: false);
+      if (tenantId == null || drugIds.isEmpty) {
         setState(() => _isSaving = false);
         return;
       }
-      failure = await controller.createFormularyItem(
-        PharmacyFormularyItemInput(
-          tenantId: tenantId,
-          drugId: drugId,
-          isActive: _isActive,
-        ),
-      );
+      AppFailure? createFailure;
+      for (final String drugId in drugIds) {
+        createFailure = await controller.createFormularyItem(
+          PharmacyFormularyItemInput(
+            tenantId: tenantId,
+            drugId: drugId,
+            isActive: _isActive,
+          ),
+        );
+        if (createFailure != null) {
+          break;
+        }
+      }
+      failure = createFailure;
     }
     if (!mounted) {
       return;
@@ -2288,6 +2483,7 @@ AppListTableColumn<T> _selectionColumn<T>({
     id: 'select',
     label: '',
     alwaysVisible: true,
+    exportable: false,
     fixedWidth: 48,
     headerBuilder: (BuildContext context) {
       return Checkbox(
@@ -2716,14 +2912,21 @@ AppSearchBarFilterValue _drugCatalogFilterValue(PharmacyDrugQuery query) {
 AppSearchBarFilterValue _formularyCatalogFilterValue(
   PharmacyFormularyQuery query,
 ) {
-  if (query.isActive == null) {
+  final Map<String, String> options = <String, String>{};
+  if (query.isActive != null) {
+    options[_formularyActiveFilterKey] = query.isActive! ? 'true' : 'false';
+  }
+  final Map<String, String> texts = <String, String>{
+    if ((query.name ?? '').trim().isNotEmpty) _drugNameFilterKey: query.name!,
+    if ((query.code ?? '').trim().isNotEmpty) _drugCodeFilterKey: query.code!,
+    if ((query.form ?? '').trim().isNotEmpty) _drugFormFilterKey: query.form!,
+    if ((query.strength ?? '').trim().isNotEmpty)
+      _drugStrengthFilterKey: query.strength!,
+  };
+  if (options.isEmpty && texts.isEmpty) {
     return AppSearchBarFilterValue.empty;
   }
-  return AppSearchBarFilterValue(
-    options: <String, String>{
-      _formularyActiveFilterKey: query.isActive! ? 'true' : 'false',
-    },
-  );
+  return AppSearchBarFilterValue(options: options, texts: texts);
 }
 
 AppSearchBarFilterValue _inventoryCatalogFilterValue(
@@ -2767,7 +2970,11 @@ bool _hasDrugCatalogFilters(PharmacyDrugQuery query) {
 }
 
 bool _hasFormularyCatalogFilters(PharmacyFormularyQuery query) {
-  return query.isActive != null;
+  return query.isActive != null ||
+      (query.name ?? '').trim().isNotEmpty ||
+      (query.code ?? '').trim().isNotEmpty ||
+      (query.form ?? '').trim().isNotEmpty ||
+      (query.strength ?? '').trim().isNotEmpty;
 }
 
 bool _hasInventoryCatalogFilters(PharmacyInventoryStockQuery query) {
@@ -2808,7 +3015,11 @@ Future<void> _applyFormularyCatalogFilter(
   }
 
   final String? activeChoice = value.option(_formularyActiveFilterKey);
-  await controller.applyFormularyActiveFilter(
+  await controller.applyFormularyCatalogFilters(
+    name: value.text(_drugNameFilterKey),
+    code: value.text(_drugCodeFilterKey),
+    form: value.text(_drugFormFilterKey),
+    strength: value.text(_drugStrengthFilterKey),
     isActive: switch (activeChoice) {
       'true' => true,
       'false' => false,
@@ -2816,6 +3027,32 @@ Future<void> _applyFormularyCatalogFilter(
     },
     clearIsActive: activeChoice == null,
   );
+}
+
+bool _matchesFormularyExportFilters(
+  PharmacyFormularyItem item,
+  AppSearchBarFilterValue filters,
+) {
+  final String? activeChoice = filters.option(_formularyActiveFilterKey);
+  if (activeChoice == 'true' && !item.isActive) {
+    return false;
+  }
+  if (activeChoice == 'false' && item.isActive) {
+    return false;
+  }
+
+  bool containsText(String? haystack, String? needle) {
+    final String query = (needle ?? '').trim().toLowerCase();
+    if (query.isEmpty) {
+      return true;
+    }
+    return (haystack ?? '').toLowerCase().contains(query);
+  }
+
+  return containsText(item.drugNameLabel, filters.text(_drugNameFilterKey)) &&
+      containsText(item.drugCode, filters.text(_drugCodeFilterKey)) &&
+      containsText(item.drugForm, filters.text(_drugFormFilterKey)) &&
+      containsText(item.drugStrength, filters.text(_drugStrengthFilterKey));
 }
 
 Future<void> _applyInventoryCatalogFilter(

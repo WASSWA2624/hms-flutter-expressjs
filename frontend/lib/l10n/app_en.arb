@@ -15759,9 +15759,17 @@
       "count": { "type": "int" }
     }
   },
-  "pharmacyAddFormularyAction": "Create formulary item",
+  "pharmacyAddFormularyAction": "Add formulary items",
   "@pharmacyAddFormularyAction": {
-    "description": "Pharmacy create formulary item action label."
+    "description": "Pharmacy add formulary items action / semantic label."
+  },
+  "pharmacyAddFormularyDialogTitle": "Add to formulary",
+  "@pharmacyAddFormularyDialogTitle": {
+    "description": "Pharmacy dialog title for adding drugs to the formulary."
+  },
+  "pharmacyAddSelectedFormularyItemsAction": "Add the selected items to the formula",
+  "@pharmacyAddSelectedFormularyItemsAction": {
+    "description": "Pharmacy confirm action to add selected drugs to the formulary."
   },
   "pharmacyFormularyDrugLabel": "Drug",
   "@pharmacyFormularyDrugLabel": {

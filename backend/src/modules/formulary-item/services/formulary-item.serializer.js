@@ -60,6 +60,8 @@ const mapFormularyItemRecord = (record) => {
     drug_id: toPublicIdentifier(record.drug?.human_friendly_id, record.drug_id),
     drug_display_name: drug?.drug_display_name || null,
     drug_code: drug?.code || null,
+    drug_form: drug?.form || null,
+    drug_strength: drug?.strength || null,
     is_active: Boolean(record.is_active),
     drug,
     created_at: toIsoDateTime(record.created_at),

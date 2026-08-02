@@ -24,6 +24,11 @@ const listFormularyItems = asyncHandler(async (req, res) => {
   const {
     tenant_id,
     drug_id,
+    search,
+    name,
+    code,
+    form,
+    strength,
     is_active,
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
@@ -34,6 +39,11 @@ const listFormularyItems = asyncHandler(async (req, res) => {
   const filters = {
     tenant_id,
     drug_id,
+    search,
+    name,
+    code,
+    form,
+    strength,
     is_active
   };
 

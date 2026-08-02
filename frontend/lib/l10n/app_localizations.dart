@@ -22762,11 +22762,23 @@ abstract class AppLocalizations {
   /// **'{count} months'**
   String pharmacyExpiryAlertLeadMonths(int count);
 
-  /// Pharmacy create formulary item action label.
+  /// Pharmacy add formulary items action / semantic label.
   ///
   /// In en, this message translates to:
-  /// **'Create formulary item'**
+  /// **'Add formulary items'**
   String get pharmacyAddFormularyAction;
+
+  /// Pharmacy dialog title for adding drugs to the formulary.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to formulary'**
+  String get pharmacyAddFormularyDialogTitle;
+
+  /// Pharmacy confirm action to add selected drugs to the formulary.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the selected items to the formula'**
+  String get pharmacyAddSelectedFormularyItemsAction;
 
   /// Pharmacy formulary drug selector label.
   ///

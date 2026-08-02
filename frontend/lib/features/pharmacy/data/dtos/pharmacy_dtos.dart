@@ -568,6 +568,9 @@ final class PharmacyFormularyItemDto {
           ) ??
           _string(drug['name']),
       drugCode: _string(json['drug_code']) ?? _string(drug['code']),
+      drugForm: _string(json['drug_form']) ?? _string(drug['form']),
+      drugStrength:
+          _string(json['drug_strength']) ?? _string(drug['strength']),
       isActive: _bool(json['is_active'], fallback: true),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),

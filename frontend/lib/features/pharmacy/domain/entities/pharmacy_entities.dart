@@ -152,22 +152,42 @@ enum PharmacyInventoryFilter {
 final class PharmacyFormularyQuery {
   const PharmacyFormularyQuery({
     this.search = '',
+    this.name,
+    this.code,
+    this.form,
+    this.strength,
     this.isActive,
     this.pageRequest = const AppPageRequest(pageSize: 10),
   });
 
   final String search;
+  final String? name;
+  final String? code;
+  final String? form;
+  final String? strength;
   final bool? isActive;
   final AppPageRequest pageRequest;
 
   PharmacyFormularyQuery copyWith({
     String? search,
+    String? name,
+    String? code,
+    String? form,
+    String? strength,
     bool? isActive,
     AppPageRequest? pageRequest,
+    bool clearName = false,
+    bool clearCode = false,
+    bool clearForm = false,
+    bool clearStrength = false,
     bool clearIsActive = false,
   }) {
     return PharmacyFormularyQuery(
       search: search ?? this.search,
+      name: clearName ? null : name ?? this.name,
+      code: clearCode ? null : code ?? this.code,
+      form: clearForm ? null : form ?? this.form,
+      strength: clearStrength ? null : strength ?? this.strength,
       isActive: clearIsActive ? null : isActive ?? this.isActive,
       pageRequest: pageRequest ?? this.pageRequest,
     );
@@ -300,6 +320,8 @@ final class PharmacyFormularyItem {
     this.drugId,
     this.drugDisplayName,
     this.drugCode,
+    this.drugForm,
+    this.drugStrength,
     this.isActive = true,
     this.createdAt,
     this.updatedAt,
@@ -311,6 +333,8 @@ final class PharmacyFormularyItem {
   final String? drugId;
   final String? drugDisplayName;
   final String? drugCode;
+  final String? drugForm;
+  final String? drugStrength;
   final bool isActive;
   final DateTime? createdAt;
   final DateTime? updatedAt;

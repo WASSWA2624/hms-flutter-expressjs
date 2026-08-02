@@ -45,6 +45,8 @@ describe('Formulary Item Serializer', () => {
         drug_id: 'DRG-ACV400',
         drug_display_name: 'Acyclovir | 400 mg | Tablet',
         drug_code: 'ACV400',
+        drug_form: 'Tablet',
+        drug_strength: '400 mg',
         is_active: true,
         drug: {
           name: 'Acyclovir',

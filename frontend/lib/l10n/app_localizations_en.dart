@@ -12355,7 +12355,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get pharmacyAddFormularyAction => 'Create formulary item';
+  String get pharmacyAddFormularyAction => 'Add formulary items';
+
+  @override
+  String get pharmacyAddFormularyDialogTitle => 'Add to formulary';
+
+  @override
+  String get pharmacyAddSelectedFormularyItemsAction =>
+      'Add the selected items to the formula';
 
   @override
   String get pharmacyFormularyDrugLabel => 'Drug';

@@ -48,6 +48,26 @@ const listFormularyItems = async (filters, page, limit, sortBy, order, userId, i
     if (filters.drug_id) whereClause.drug_id = filters.drug_id;
     if (filters.is_active !== undefined) whereClause.is_active = filters.is_active;
 
+    const drugContains = {};
+    if (filters.name) drugContains.name = { contains: filters.name };
+    if (filters.code) drugContains.code = { contains: filters.code };
+    if (filters.form) drugContains.form = { contains: filters.form };
+    if (filters.strength) drugContains.strength = { contains: filters.strength };
+    if (Object.keys(drugContains).length > 0) {
+      whereClause.drug = drugContains;
+    }
+
+    const search = typeof filters.search === 'string' ? filters.search.trim() : '';
+    if (search) {
+      whereClause.OR = [
+        { human_friendly_id: { contains: search } },
+        { drug: { name: { contains: search } } },
+        { drug: { code: { contains: search } } },
+        { drug: { form: { contains: search } } },
+        { drug: { strength: { contains: search } } },
+      ];
+    }
+
     const [formularyItems, total] = await Promise.all([
       formularyItemRepository.findMany(
         whereClause,

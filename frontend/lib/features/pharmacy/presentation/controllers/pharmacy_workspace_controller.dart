@@ -338,6 +338,56 @@ final class PharmacyWorkspaceController
     return _refreshFormulary(showLoading: true);
   }
 
+  Future<AppFailure?> applyFormularyCatalogFilters({
+    String? name,
+    String? code,
+    String? form,
+    String? strength,
+    bool? isActive,
+    bool clearIsActive = false,
+    bool clearAll = false,
+  }) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    if (clearAll) {
+      _emit(
+        current.copyWith(
+          formularyQuery: PharmacyFormularyQuery(
+            search: current.formularyQuery.search,
+            pageRequest: current.formularyQuery.pageRequest.first(),
+          ),
+          isRefreshingFormulary: true,
+          clearLastFailure: true,
+        ),
+      );
+      return _refreshFormulary(showLoading: true);
+    }
+
+    _emit(
+      current.copyWith(
+        formularyQuery: current.formularyQuery.copyWith(
+          name: name,
+          code: code,
+          form: form,
+          strength: strength,
+          isActive: isActive,
+          clearName: name == null,
+          clearCode: code == null,
+          clearForm: form == null,
+          clearStrength: strength == null,
+          clearIsActive: clearIsActive || isActive == null,
+          pageRequest: current.formularyQuery.pageRequest.first(),
+        ),
+        isRefreshingFormulary: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshFormulary(showLoading: true);
+  }
+
   Future<AppFailure?> clearFormularyFilters() async {
     final PharmacyWorkspaceState? current = _currentState;
     if (current == null) {

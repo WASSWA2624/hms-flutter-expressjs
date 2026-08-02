@@ -54,6 +54,11 @@ const formularyItemIdParamsSchema = z.object({
 const listFormularyItemsQuerySchema = listQuerySchema.extend({
   tenant_id: uuidSchema.optional(),
   drug_id: uuidSchema.optional(),
+  search: z.string().trim().optional(),
+  name: z.string().trim().optional(),
+  code: z.string().trim().optional(),
+  form: z.string().trim().optional(),
+  strength: z.string().trim().optional(),
   is_active: z.string().transform(val => val === 'true').optional()
 });
 

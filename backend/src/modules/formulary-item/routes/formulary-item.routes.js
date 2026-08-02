@@ -32,6 +32,11 @@ const {
  * @queryParams {string} [order=desc] - Sort order (asc/desc)
  * @queryParams {string} [tenant_id] - Filter by tenant ID (UUID)
  * @queryParams {string} [drug_id] - Filter by drug ID (UUID)
+ * @queryParams {string} [search] - Free-text search across drug name/code/form/strength and formulary id
+ * @queryParams {string} [name] - Filter by drug name (contains)
+ * @queryParams {string} [code] - Filter by drug code (contains)
+ * @queryParams {string} [form] - Filter by drug form (contains)
+ * @queryParams {string} [strength] - Filter by drug strength (contains)
  * @queryParams {string} [is_active] - Filter by active status (true/false)
  * @bodyParams None
  * @returns {Object} Paginated list of formulary items
