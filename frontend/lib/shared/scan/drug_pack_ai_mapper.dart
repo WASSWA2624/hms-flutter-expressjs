@@ -58,7 +58,8 @@ final class DrugPackLocalAiMapper implements DrugPackAiMapper {
   final DrugPackFieldParser parser;
 
   static final RegExp _mostlyGarbage = RegExp(
-    r'^[^A-Za-z0-9]*$|[\|\\\/\*\#\@\~\^]{2,}|"\d|"[^\w]|siege|owerase',
+    r'^[^A-Za-z0-9]*$|[\|\\\/\*\#\@\~\^]{2,}|"\d|"[^\w]|siege|owerase|'
+    r'[A-Za-z]+\d+[A-Za-z]+\d+|[\W_]{3,}',
     caseSensitive: false,
   );
 
@@ -81,6 +82,7 @@ final class DrugPackLocalAiMapper implements DrugPackAiMapper {
         .where((String line) => line.isNotEmpty)
         .where((String line) => !_mostlyGarbage.hasMatch(line))
         .where((String line) => RegExp(r'[A-Za-z]').hasMatch(line))
+        .where((String line) => !_isLowSignalLine(line))
         .toList(growable: false);
 
     final String cleanedText = cleaned.isEmpty
@@ -106,7 +108,27 @@ final class DrugPackLocalAiMapper implements DrugPackAiMapper {
     return line
         .replaceAll(RegExp(r'[^\S\r\n]+'), ' ')
         .replaceAll(RegExp(r'[“”"]+'), '"')
+        .replaceAll(RegExp(r'[|]{2,}'), ' ')
         .trim();
+  }
+
+  static bool _isLowSignalLine(String line) {
+    final int letters = RegExp(r'[A-Za-z]').allMatches(line).length;
+    final int digits = RegExp(r'\d').allMatches(line).length;
+    final int weird =
+        RegExp(r'''[^A-Za-z0-9\s\-\.:/#']''').allMatches(line).length;
+    if (letters < 3 && !RegExp(r'\d+\s?(?:mg|mcg|ml)\b', caseSensitive: false)
+        .hasMatch(line)) {
+      return true;
+    }
+    if (weird > letters && letters < 8) {
+      return true;
+    }
+    // Pure digit soup that is not a strength / GTIN-looking run.
+    if (letters == 0 && digits > 0 && digits < 8) {
+      return true;
+    }
+    return false;
   }
 }
 

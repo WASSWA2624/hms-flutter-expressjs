@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,6 +22,9 @@ void main() {
     WidgetTester tester, {
     required void Function(DrugPackFieldCandidates? result) onClosed,
     DrugPackAiMapper? aiMapper,
+    DrugPackBarcodeLookup? barcodeLookup,
+    List<Uint8List>? seedPhotos,
+    AppOcrService? ocrService,
   }) async {
     await setLargeSurface(tester);
     await tester.pumpWidget(
@@ -35,10 +40,13 @@ void main() {
                     final DrugPackFieldCandidates? result =
                         await showPharmacyDrugPackScanDialog(
                           context,
-                          ocrService: const AppNoOpOcrService(),
+                          ocrService: ocrService ?? const AppNoOpOcrService(),
                           barcodeDecoder: const AppHeuristicBarcodeDecoder(),
                           parser: const DrugPackFieldParser(),
                           aiMapper: aiMapper,
+                          barcodeLookup:
+                              barcodeLookup ?? const DrugPackNoOpBarcodeLookup(),
+                          seedPhotos: seedPhotos,
                         );
                     onClosed(result);
                   },
@@ -71,6 +79,7 @@ void main() {
     expect(find.text('Raw pack text'), findsWidgets);
     expect(find.text('Parse text'), findsOneWidget);
     expect(find.text('Clear photos'), findsNothing);
+    expect(find.text('Process barcode'), findsOneWidget);
 
     await tester.tap(find.text('Skip scan'));
     await tester.pumpAndSettle();
@@ -96,7 +105,6 @@ void main() {
     expect(find.text('Generic name'), findsOneWidget);
 
     await tester.enterText(find.widgetWithText(TextField, 'Generic name'), '');
-    // Find generic field by label and set a clear value via last matching editable.
     final Finder genericField = find.ancestor(
       of: find.text('Generic name'),
       matching: find.byType(TextField),
@@ -113,20 +121,56 @@ void main() {
     expect(closedWith!.form, 'Capsule');
   });
 
-  testWidgets('barcode use maps into suggested code field', (
+  testWidgets('process barcode maps into suggested code field', (
     WidgetTester tester,
   ) async {
     await pumpScan(tester, onClosed: (_) {});
 
     expect(
-      find.textContaining('Type or paste the barcode number'),
+      find.textContaining('Process barcode to map fields'),
       findsOneWidget,
     );
     await tester.enterText(find.byType(TextField).first, '8901234567890');
-    await tester.tap(find.byTooltip('Use barcode'));
+    await tester.tap(find.byTooltip('Process barcode'));
     await tester.pumpAndSettle();
 
     expect(find.text('Suggested values'), findsOneWidget);
     expect(find.text('Prefill form'), findsOneWidget);
+  });
+
+  testWidgets('process OCR stays enabled after first successful run', (
+    WidgetTester tester,
+  ) async {
+    // 1x1 PNG so Image.memory can decode the seeded thumb.
+    final Uint8List tinyPng = Uint8List.fromList(<int>[
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+      0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+      0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
+      0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+      0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
+      0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+    ]);
+    await pumpScan(
+      tester,
+      onClosed: (_) {},
+      ocrService: const AppFixedOcrService(
+        'AGOMO\nParacetamol Tablets B.P. 500mg\n',
+      ),
+      seedPhotos: <Uint8List>[tinyPng],
+    );
+
+    expect(find.text('Process with OCR'), findsOneWidget);
+    await tester.tap(find.text('Process with OCR'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Suggested values'), findsOneWidget);
+    expect(find.text('Process with OCR'), findsOneWidget);
+    expect(find.text('Process with AI'), findsWidgets);
+
+    // Second run must remain possible.
+    await tester.tap(find.text('Process with OCR'));
+    await tester.pumpAndSettle();
+    expect(find.text('Suggested values'), findsOneWidget);
+    expect(find.text('Process with OCR'), findsOneWidget);
   });
 }

@@ -22192,23 +22192,77 @@ abstract class AppLocalizations {
   /// **'Package barcode'**
   String get pharmacyDrugBarcodeLabel;
 
-  /// Explains typed barcode + Use barcode; photos/scan are separate.
+  /// Explains typed barcode + Process barcode; scan fills the field from the live scanner.
   ///
   /// In en, this message translates to:
-  /// **'Type or paste the barcode number, then Use barcode to map fields. Use Scan barcode to fill this field from a photo.'**
+  /// **'Type or paste the barcode number, then Process barcode to map fields. Use Scan barcode to fill this field from the scanner.'**
   String get pharmacyDrugBarcodeHelper;
 
-  /// Apply typed/scanned barcode to prefill candidates.
+  /// Process typed/scanned barcode to map and prefill drug field candidates.
   ///
   /// In en, this message translates to:
-  /// **'Use barcode'**
+  /// **'Process barcode'**
   String get pharmacyDrugBarcodeApplyAction;
 
-  /// Capture/decode a barcode image into the package barcode field.
+  /// Open the in-app barcode scanner and fill the package barcode field.
   ///
   /// In en, this message translates to:
   /// **'Scan barcode'**
   String get pharmacyDrugScanBarcodeAction;
+
+  /// Title for the live barcode scanner dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan barcode'**
+  String get pharmacyDrugScanBarcodeTitle;
+
+  /// Helper text inside the live barcode scanner dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Point the camera at the package barcode. Scanning stops automatically when a code is read.'**
+  String get pharmacyDrugScanBarcodeBody;
+
+  /// Shown when live barcode scanning cannot start.
+  ///
+  /// In en, this message translates to:
+  /// **'Live barcode scanning is unavailable on this device. Type or paste the code, or capture a still image instead.'**
+  String get pharmacyDrugScanBarcodeUnavailableBody;
+
+  /// Fallback action to decode a barcode from a still camera/image capture.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture still image'**
+  String get pharmacyDrugScanBarcodeCaptureFallbackAction;
+
+  /// Title for the live camera capture dialog used by Take photo.
+  ///
+  /// In en, this message translates to:
+  /// **'Take pack photo'**
+  String get pharmacyDrugCameraCaptureTitle;
+
+  /// Snap the current camera frame into an ephemeral pack photo.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture'**
+  String get pharmacyDrugCameraCaptureAction;
+
+  /// Shown when Take photo cannot open a real camera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera capture is unavailable on this device. Use Upload photos instead.'**
+  String get pharmacyDrugCameraUnavailableBody;
+
+  /// Busy status while free barcode product lookup runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking up pack details for this barcode…'**
+  String get pharmacyDrugBarcodeLookupBusyBody;
+
+  /// Soft-fail status when barcode lookup returns nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No online pack details found for this barcode. Review suggested values or add photos.'**
+  String get pharmacyDrugBarcodeLookupMissBody;
 
   /// Legacy single capture label; prefer take/upload actions.
   ///

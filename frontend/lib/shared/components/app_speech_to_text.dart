@@ -561,6 +561,464 @@ String _normalizeSpokenNumberField(
   );
 }
 
+// --- Spoken dates ------------------------------------------------------------
+
+/// Day / month / year fragments recognized from a spoken date utterance.
+@immutable
+class AppSpokenDateParts {
+  const AppSpokenDateParts({this.day, this.month, this.year});
+
+  final int? day;
+  final int? month;
+  final int? year;
+
+  bool get isEmpty => day == null && month == null && year == null;
+
+  bool get hasAny => !isEmpty;
+}
+
+const Map<String, int> _speechMonths = <String, int>{
+  'jan': 1,
+  'january': 1,
+  'feb': 2,
+  'february': 2,
+  'mar': 3,
+  'march': 3,
+  'apr': 4,
+  'april': 4,
+  'may': 5,
+  'jun': 6,
+  'june': 6,
+  'jul': 7,
+  'july': 7,
+  'aug': 8,
+  'august': 8,
+  'sep': 9,
+  'sept': 9,
+  'september': 9,
+  'oct': 10,
+  'october': 10,
+  'nov': 11,
+  'november': 11,
+  'dec': 12,
+  'december': 12,
+};
+
+const Map<String, int> _speechOrdinalOnes = <String, int>{
+  'first': 1,
+  'second': 2,
+  'third': 3,
+  'fourth': 4,
+  'fifth': 5,
+  'sixth': 6,
+  'seventh': 7,
+  'eighth': 8,
+  'ninth': 9,
+};
+
+const Map<String, int> _speechOrdinals = <String, int>{
+  ..._speechOrdinalOnes,
+  'tenth': 10,
+  'eleventh': 11,
+  'twelfth': 12,
+  'thirteenth': 13,
+  'fourteenth': 14,
+  'fifteenth': 15,
+  'sixteenth': 16,
+  'seventeenth': 17,
+  'eighteenth': 18,
+  'nineteenth': 19,
+  'twentieth': 20,
+  'twentyfirst': 21,
+  'twentysecond': 22,
+  'twentythird': 23,
+  'twentyfourth': 24,
+  'twentyfifth': 25,
+  'twentysixth': 26,
+  'twentyseventh': 27,
+  'twentyeighth': 28,
+  'twentyninth': 29,
+  'thirtieth': 30,
+  'thirtyfirst': 31,
+};
+
+final RegExp _speechOrdinalSuffix = RegExp(r'(?:st|nd|rd|th)$');
+
+/// Parses spoken / typed date phrases into day, month, and year parts.
+///
+/// Understands common forms such as:
+/// - `15/03/2024`, `2024-03-15`, `15.3.24`
+/// - `March 15 2024`, `15 March 2024`, `March 15th, 2024`
+/// - `march fifteenth twenty twenty four`
+/// - partial utterances: `March`, `fifteen`, `two thousand twenty four`
+AppSpokenDateParts? parseSpokenDateParts(String transcript) {
+  final String trimmed = transcript.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+
+  final AppSpokenDateParts? numeric = _parseNumericDateParts(trimmed);
+  if (numeric != null && numeric.hasAny) {
+    return numeric;
+  }
+
+  final List<String> tokens = _speechDateTokens(trimmed);
+  if (tokens.isEmpty) {
+    return null;
+  }
+
+  return _parseSpokenDateTokens(tokens);
+}
+
+/// Digits-only fallback for a single focused date part (day/month/year).
+String appSpeechDatePartTranscript(String transcript, {required int maxLength}) {
+  final AppSpokenDateParts? parts = parseSpokenDateParts(transcript);
+  if (parts != null) {
+    if (parts.year != null &&
+        parts.day == null &&
+        parts.month == null &&
+        maxLength >= 4) {
+      return parts.year.toString().padLeft(4, '0').substring(0, 4);
+    }
+    if (parts.month != null && parts.day == null && parts.year == null) {
+      return parts.month.toString().padLeft(2, '0');
+    }
+    if (parts.day != null && parts.month == null && parts.year == null) {
+      return parts.day.toString().padLeft(2, '0');
+    }
+  }
+
+  final String digits = appSpeechDigitsOnlyTranscript(transcript);
+  if (digits.isEmpty) {
+    return digits;
+  }
+  return digits.length <= maxLength ? digits : digits.substring(0, maxLength);
+}
+
+List<String> _speechDateTokens(String transcript) {
+  final String normalized = transcript
+      .toLowerCase()
+      .replaceAll(RegExp(r'[—–]'), '-')
+      .replaceAll(RegExp(r'[/.\-,]'), ' ')
+      .replaceAll(RegExp(r'\b(of|the|on|in|day|date|slash)\b'), ' ')
+      .replaceAll('-', ' ');
+  return normalized
+      .split(RegExp(r'\s+'))
+      .map((String token) => token.trim())
+      .where((String token) => token.isNotEmpty)
+      .toList(growable: false);
+}
+
+AppSpokenDateParts? _parseNumericDateParts(String transcript) {
+  final String compact = transcript.trim();
+  final Match? iso = RegExp(
+    r'^(\d{4})[./\-](\d{1,2})[./\-](\d{1,2})$',
+  ).firstMatch(compact);
+  if (iso != null) {
+    return _validatedDateParts(
+      year: int.tryParse(iso.group(1)!),
+      month: int.tryParse(iso.group(2)!),
+      day: int.tryParse(iso.group(3)!),
+    );
+  }
+
+  final Match? dmy = RegExp(
+    r'^(\d{1,2})[./\-](\d{1,2})[./\-](\d{2,4})$',
+  ).firstMatch(compact);
+  if (dmy != null) {
+    return _validatedDateParts(
+      day: int.tryParse(dmy.group(1)!),
+      month: int.tryParse(dmy.group(2)!),
+      year: _normalizeSpokenYear(int.tryParse(dmy.group(3)!)),
+    );
+  }
+
+  return null;
+}
+
+AppSpokenDateParts? _parseSpokenDateTokens(List<String> tokens) {
+  int? day;
+  int? month;
+  int? year;
+  final List<String> numberTokens = <String>[];
+
+  var index = 0;
+  while (index < tokens.length) {
+    final String token = tokens[index];
+    final int? monthValue = _speechMonths[token];
+    if (monthValue != null) {
+      month = monthValue;
+      index += 1;
+      continue;
+    }
+
+    // "twenty first" / "thirty first" after hyphen splitting.
+    if (_speechTens.containsKey(token) && index + 1 < tokens.length) {
+      final int? ordinalOne = _speechOrdinalOnes[tokens[index + 1]];
+      if (ordinalOne != null) {
+        day = _speechTens[token]! + ordinalOne;
+        index += 2;
+        continue;
+      }
+    }
+
+    final int? ordinal = _speechDayOrdinal(token);
+    if (ordinal != null) {
+      day = ordinal;
+      index += 1;
+      continue;
+    }
+
+    if (token == 'and') {
+      index += 1;
+      continue;
+    }
+
+    numberTokens.add(token);
+    index += 1;
+  }
+
+  if (numberTokens.isNotEmpty) {
+    final ({int? day, int? year}) numbers = _extractDayAndYearFromNumberTokens(
+      numberTokens,
+      dayAlreadySet: day != null,
+    );
+    day ??= numbers.day;
+    year ??= numbers.year;
+  }
+
+  final AppSpokenDateParts parts = AppSpokenDateParts(
+    day: day,
+    month: month,
+    year: year,
+  );
+  return parts.hasAny ? parts : null;
+}
+
+({int? day, int? year}) _extractDayAndYearFromNumberTokens(
+  List<String> tokens, {
+  required bool dayAlreadySet,
+}) {
+  // Prefer an explicit 4-digit year anywhere in the token list.
+  for (var i = 0; i < tokens.length; i++) {
+    final int? arabic = int.tryParse(tokens[i]);
+    if (arabic != null && arabic >= 1000 && arabic <= 9999) {
+      final List<String> remaining = <String>[
+        ...tokens.sublist(0, i),
+        ...tokens.sublist(i + 1),
+      ];
+      return (
+        day: dayAlreadySet ? null : _parseDayNumberTokens(remaining),
+        year: arabic,
+      );
+    }
+  }
+
+  // Whole phrase is a year: "twenty twenty four", "two thousand twenty four".
+  final int? wholePairedYear = _parsePairedCenturyYear(tokens);
+  if (wholePairedYear != null && _isPlausibleSpokenYear(wholePairedYear)) {
+    return (day: null, year: wholePairedYear);
+  }
+  final bool hasYearScale = tokens.any(
+    (String token) => token == 'thousand' || token == 'hundred',
+  );
+  if (hasYearScale) {
+    final int? wholeCardinalYear = _parseCardinalYear(tokens);
+    if (wholeCardinalYear != null &&
+        wholeCardinalYear >= 1000 &&
+        _isPlausibleSpokenYear(wholeCardinalYear)) {
+      return (day: null, year: wholeCardinalYear);
+    }
+  }
+
+  // Leading day + trailing year: "fifteen twenty twenty four".
+  if (!dayAlreadySet && tokens.length >= 3) {
+    ({int day, int year})? best;
+    for (var split = 1; split < tokens.length; split++) {
+      final int? maybeDay = _parseDayNumberTokens(tokens.sublist(0, split));
+      final int? maybeYear = _parsePairedCenturyYear(tokens.sublist(split)) ??
+          _parseCardinalYear(tokens.sublist(split));
+      if (maybeDay == null ||
+          maybeYear == null ||
+          !_isPlausibleSpokenYear(maybeYear)) {
+        continue;
+      }
+      // Prefer the longest year phrase (smallest day split wins ties later).
+      if (best == null || maybeYear > 99) {
+        best = (day: maybeDay, year: maybeYear);
+      }
+    }
+    if (best != null) {
+      return (day: best.day, year: best.year);
+    }
+  }
+
+  if (!dayAlreadySet) {
+    final int? dayOnly = _parseDayNumberTokens(tokens);
+    if (dayOnly != null) {
+      return (day: dayOnly, year: null);
+    }
+  }
+
+  final int? yearOnly = _normalizeSpokenYear(int.tryParse(tokens.join()));
+  return (day: null, year: yearOnly);
+}
+
+bool _isPlausibleSpokenYear(int year) => year >= 1900 && year <= 2100;
+
+int? _parseDayNumberTokens(List<String> tokens) {
+  if (tokens.isEmpty) {
+    return null;
+  }
+  if (tokens.length == 1) {
+    final String token = tokens.first;
+    final int? ordinal = _speechDayOrdinal(token);
+    if (ordinal != null) {
+      return ordinal;
+    }
+    final int? arabic = int.tryParse(token.replaceAll(_speechOrdinalSuffix, ''));
+    if (arabic != null && arabic >= 1 && arabic <= 31) {
+      return arabic;
+    }
+  }
+
+  final String? cardinal = parseSpokenEnglishNumber(
+    tokens.join(' '),
+    allowDecimal: false,
+  );
+  final int? value = int.tryParse(cardinal ?? '');
+  if (value != null && value >= 1 && value <= 31) {
+    return value;
+  }
+  return null;
+}
+
+int? _speechDayOrdinal(String token) {
+  final String compact = token.replaceAll('-', '').replaceAll(' ', '');
+  final int? named = _speechOrdinals[compact];
+  if (named != null) {
+    return named;
+  }
+  final Match? suffixed = RegExp(
+    r'^(\d{1,2})(?:st|nd|rd|th)$',
+  ).firstMatch(token);
+  if (suffixed != null) {
+    final int? value = int.tryParse(suffixed.group(1)!);
+    if (value != null && value >= 1 && value <= 31) {
+      return value;
+    }
+  }
+  return null;
+}
+
+int? _parsePairedCenturyYear(List<String> tokens) {
+  // "twenty twenty four" → 2024, "nineteen ninety nine" → 1999
+  if (tokens.length < 2 || tokens.length > 4) {
+    return null;
+  }
+
+  final int? first = _parseTwoDigitSpoken(tokens, 0);
+  if (first == null) {
+    return null;
+  }
+  final int? firstLen = _twoDigitTokenLength(tokens, 0);
+  if (firstLen == null || firstLen >= tokens.length) {
+    return null;
+  }
+  final int? second = _parseTwoDigitSpoken(tokens, firstLen);
+  if (second == null) {
+    return null;
+  }
+  final int secondLen = _twoDigitTokenLength(tokens, firstLen) ?? 0;
+  if (firstLen + secondLen != tokens.length) {
+    return null;
+  }
+  if (first < 10 || first > 99 || second > 99) {
+    return null;
+  }
+  return first * 100 + second;
+}
+
+int? _parseTwoDigitSpoken(List<String> tokens, int start) {
+  if (start >= tokens.length) {
+    return null;
+  }
+  final String first = tokens[start];
+  final int? arabic = int.tryParse(first);
+  if (arabic != null && arabic >= 0 && arabic <= 99) {
+    return arabic;
+  }
+  if (_speechTeens.containsKey(first)) {
+    return _speechTeens[first];
+  }
+  if (_speechTens.containsKey(first)) {
+    if (start + 1 < tokens.length && _speechOnes.containsKey(tokens[start + 1])) {
+      return _speechTens[first]! + _speechOnes[tokens[start + 1]]!;
+    }
+    return _speechTens[first];
+  }
+  if (_speechOnes.containsKey(first)) {
+    return _speechOnes[first];
+  }
+  return null;
+}
+
+int? _twoDigitTokenLength(List<String> tokens, int start) {
+  if (start >= tokens.length) {
+    return null;
+  }
+  final String first = tokens[start];
+  if (int.tryParse(first) != null ||
+      _speechTeens.containsKey(first) ||
+      _speechOnes.containsKey(first)) {
+    return 1;
+  }
+  if (_speechTens.containsKey(first)) {
+    if (start + 1 < tokens.length && _speechOnes.containsKey(tokens[start + 1])) {
+      return 2;
+    }
+    return 1;
+  }
+  return null;
+}
+
+int? _parseCardinalYear(List<String> tokens) {
+  final String? cardinal = parseSpokenEnglishNumber(
+    tokens.join(' '),
+    allowDecimal: false,
+  );
+  return _normalizeSpokenYear(int.tryParse(cardinal ?? ''));
+}
+
+int? _normalizeSpokenYear(int? value) {
+  if (value == null) {
+    return null;
+  }
+  if (value >= 1000 && value <= 9999) {
+    return value;
+  }
+  // Two-digit years: 00-49 → 2000s, 50-99 → 1900s.
+  if (value >= 0 && value <= 99) {
+    return value <= 49 ? 2000 + value : 1900 + value;
+  }
+  return null;
+}
+
+AppSpokenDateParts? _validatedDateParts({
+  int? day,
+  int? month,
+  int? year,
+}) {
+  final int? safeDay = (day != null && day >= 1 && day <= 31) ? day : null;
+  final int? safeMonth =
+      (month != null && month >= 1 && month <= 12) ? month : null;
+  final int? safeYear = _normalizeSpokenYear(year);
+  if (safeDay == null && safeMonth == null && safeYear == null) {
+    return null;
+  }
+  return AppSpokenDateParts(day: safeDay, month: safeMonth, year: safeYear);
+}
+
 // --- Email / text ------------------------------------------------------------
 
 const Map<String, String> _speechEmailSymbols = <String, String>{
@@ -822,11 +1280,16 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
 
   /// Starts dictation for [owner]. If another field was listening, stops it
   /// and returns `true` so the caller can warn the user.
+  ///
+  /// When [onSpeechResult] is provided, transformed transcripts are delivered
+  /// there instead of being inserted into [controller]. Use this for composite
+  /// fields (e.g. date parts) that distribute a single utterance.
   Future<({bool started, bool stoppedOther})> start({
     required Object owner,
     required TextEditingController controller,
     required ValueChanged<String>? onChanged,
     String Function(String transcript)? transcriptTransform,
+    void Function(String transcript, {required bool isFinal})? onSpeechResult,
   }) async {
     var stoppedOther = false;
     if (_activeOwner != null && _activeOwner != owner) {
@@ -855,19 +1318,23 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
           }
           final String transcript =
               (transcriptTransform ?? appSpeechTextTranscript).call(words);
-          insertSpeechTranscript(
-            controller,
-            transcript,
-            sessionPrefix: _sessionPrefix,
-            sessionSuffix: _sessionSuffix,
-          );
-          onChanged?.call(controller.text);
-          if (isFinal) {
-            // Keep listening until the user stops; refresh base for next utterance.
-            final ({String prefix, String suffix}) nextBounds =
-                captureSpeechSessionBounds(controller);
-            _sessionPrefix = nextBounds.prefix;
-            _sessionSuffix = nextBounds.suffix;
+          if (onSpeechResult != null) {
+            onSpeechResult(transcript, isFinal: isFinal);
+          } else {
+            insertSpeechTranscript(
+              controller,
+              transcript,
+              sessionPrefix: _sessionPrefix,
+              sessionSuffix: _sessionSuffix,
+            );
+            onChanged?.call(controller.text);
+            if (isFinal) {
+              // Keep listening until the user stops; refresh base for next utterance.
+              final ({String prefix, String suffix}) nextBounds =
+                  captureSpeechSessionBounds(controller);
+              _sessionPrefix = nextBounds.prefix;
+              _sessionSuffix = nextBounds.suffix;
+            }
           }
           notifyListeners();
         },
@@ -950,6 +1417,7 @@ class AppSpeechToTextButton extends ConsumerStatefulWidget {
     required this.controller,
     this.enabled = true,
     this.onChanged,
+    this.onSpeechResult,
     this.transcriptTransform,
     this.coordinator,
     this.dense = false,
@@ -959,6 +1427,10 @@ class AppSpeechToTextButton extends ConsumerStatefulWidget {
   final TextEditingController controller;
   final bool enabled;
   final ValueChanged<String>? onChanged;
+  /// When set, receives each transformed transcript instead of inserting into
+  /// [controller]. Useful for multi-part fields such as dates.
+  final void Function(String transcript, {required bool isFinal})?
+      onSpeechResult;
   /// Optional sanitizer (e.g. [appSpeechDigitsOnlyTranscript] for phone/date).
   final String Function(String transcript)? transcriptTransform;
   final AppSpeechToTextCoordinator? coordinator;
@@ -1066,6 +1538,7 @@ class _AppSpeechToTextButtonState extends ConsumerState<AppSpeechToTextButton> {
       owner: widget.controller,
       controller: widget.controller,
       onChanged: widget.onChanged,
+      onSpeechResult: widget.onSpeechResult,
       transcriptTransform:
           widget.transcriptTransform ?? appSpeechTextTranscript,
     );

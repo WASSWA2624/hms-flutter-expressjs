@@ -38,10 +38,40 @@ NDC: AMX-500
       );
 
       expect(result.form, 'Tablet');
+      expect(result.genericName?.toLowerCase(), contains('paracetamol'));
       expect(result.strength?.toLowerCase(), contains('500'));
       expect(result.batchNumber, 'AB12');
       expect(result.expiryDate?.year, 2028);
       expect(result.expiryDate?.month, 3);
+    });
+
+    test('maps Paracetamol pack brand + generic from OCR-like lines', () {
+      final DrugPackFieldCandidates result = parser.parse(
+        ocrText: '''
+AGOMO
+Paracetamol Tablets B.P. 500mg
+''',
+        ocrLines: const <String>[
+          'AGOMO',
+          'Paracetamol Tablets B.P. 500mg',
+        ],
+      );
+
+      expect(result.brandName, 'AGOMO');
+      expect(result.genericName, 'Paracetamol');
+      expect(result.form, 'Tablet');
+      expect(result.strength?.toLowerCase(), contains('500'));
+    });
+
+    test('rejects OCR garbage as brand or generic names', () {
+      final DrugPackFieldCandidates result = parser.parse(
+        ocrText: ''': S137189VL0LX0\nbw 005 '4'g s191ge] joweiadesel\nTablet\n500 mg''',
+      );
+
+      expect(result.form, 'Tablet');
+      expect(result.strength?.toLowerCase(), contains('500'));
+      expect(result.brandName, isNull);
+      expect(result.genericName, isNull);
     });
   });
 

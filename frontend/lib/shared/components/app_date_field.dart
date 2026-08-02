@@ -71,6 +71,7 @@ class _AppDateFieldState extends State<AppDateField> {
   late final TextEditingController _yearController;
   late final TextEditingController _monthController;
   late final TextEditingController _dayController;
+  late final TextEditingController _speechSessionController;
   late FocusNode _yearFocusNode;
   late FocusNode _monthFocusNode;
   late FocusNode _dayFocusNode;
@@ -83,6 +84,7 @@ class _AppDateFieldState extends State<AppDateField> {
     _yearController = TextEditingController();
     _monthController = TextEditingController();
     _dayController = TextEditingController();
+    _speechSessionController = TextEditingController();
     _syncControllersFromDate(widget.value);
     _attachFocusNode();
   }
@@ -105,6 +107,7 @@ class _AppDateFieldState extends State<AppDateField> {
     _yearController.dispose();
     _monthController.dispose();
     _dayController.dispose();
+    _speechSessionController.dispose();
     super.dispose();
   }
 
@@ -179,14 +182,14 @@ class _AppDateFieldState extends State<AppDateField> {
               children: <Widget>[
                 if (widget.enableSpeechToText)
                   AppSpeechToTextButton(
-                    key: ValueKey<int>(
-                      identityHashCode(_speechTargetController),
-                    ),
-                    controller: _speechTargetController,
+                    controller: _speechSessionController,
                     enabled: canChange,
                     dense: true,
-                    transcriptTransform: appSpeechDigitsOnlyTranscript,
-                    onChanged: (_) => _handlePartsChanged(field),
+                    // Keep the raw utterance; date parsing happens in onSpeechResult.
+                    transcriptTransform: (String transcript) => transcript,
+                    onSpeechResult: (String transcript, {required bool isFinal}) {
+                      _applySpokenDateTranscript(transcript, field);
+                    },
                   ),
                 _DatePickerButton(
                   label: widget.pickerButtonLabel,
@@ -289,6 +292,94 @@ class _AppDateFieldState extends State<AppDateField> {
       _yearFocusNode.hasFocus ||
       _monthFocusNode.hasFocus ||
       _dayFocusNode.hasFocus;
+
+  void _applySpokenDateTranscript(
+    String transcript,
+    FormFieldState<DateTime> field,
+  ) {
+    final String trimmed = transcript.trim();
+    if (trimmed.isEmpty) {
+      return;
+    }
+
+    final AppSpokenDateParts? parts = parseSpokenDateParts(trimmed);
+    if (parts != null && parts.hasAny) {
+      final bool multiPart = <bool>[
+            parts.day != null,
+            parts.month != null,
+            parts.year != null,
+          ].where((bool value) => value).length >
+          1;
+
+      if (multiPart ||
+          (parts.month != null && parts.day == null && parts.year == null) ||
+          (parts.year != null && parts.day == null && parts.month == null) ||
+          !_hasFocus) {
+        _isSyncing = true;
+        if (parts.day != null) {
+          _dayController.text = parts.day.toString().padLeft(2, '0');
+        }
+        if (parts.month != null) {
+          _monthController.text = parts.month.toString().padLeft(2, '0');
+        }
+        if (parts.year != null) {
+          _yearController.text = parts.year.toString().padLeft(4, '0');
+        }
+        _isSyncing = false;
+        _handlePartsChanged(field);
+        return;
+      }
+
+      // Single day number while a part is focused: fill the focused part.
+      if (parts.day != null) {
+        _applyDigitsToFocusedPart(parts.day.toString(), field);
+        return;
+      }
+    }
+
+    final TextEditingController target = _speechTargetController;
+    final int maxLength = identical(target, _yearController)
+        ? 4
+        : 2;
+    final String digits = appSpeechDatePartTranscript(
+      trimmed,
+      maxLength: maxLength,
+    );
+    if (digits.isEmpty) {
+      return;
+    }
+    _applyDigitsToFocusedPart(digits, field);
+  }
+
+  void _applyDigitsToFocusedPart(
+    String digits,
+    FormFieldState<DateTime> field,
+  ) {
+    final TextEditingController target = _speechTargetController;
+    final int maxLength = identical(target, _yearController) ? 4 : 2;
+    final String next = digits.length <= maxLength
+        ? digits
+        : digits.substring(0, maxLength);
+    if (next.isEmpty) {
+      return;
+    }
+    if (identical(target, _monthController)) {
+      final int? month = int.tryParse(next);
+      if (month != null && month > 12) {
+        return;
+      }
+    }
+    if (identical(target, _dayController)) {
+      final int? day = int.tryParse(next);
+      if (day != null && day > 31) {
+        return;
+      }
+    }
+    _isSyncing = true;
+    target.text = next;
+    _isSyncing = false;
+    _handlePartsChanged(field);
+  }
 
   TextEditingController get _speechTargetController {
     if (_dayFocusNode.hasFocus) {

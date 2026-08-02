@@ -170,6 +170,80 @@ void main() {
     expect(parseSpokenEnglishNumber('two million'), '2000000');
   });
 
+  test('parseSpokenDateParts understands full spoken and numeric dates', () {
+    expect(
+      parseSpokenDateParts('March 15 2024'),
+      isA<AppSpokenDateParts>()
+          .having((AppSpokenDateParts p) => p.day, 'day', 15)
+          .having((AppSpokenDateParts p) => p.month, 'month', 3)
+          .having((AppSpokenDateParts p) => p.year, 'year', 2024),
+    );
+    expect(
+      parseSpokenDateParts('15 March 2024'),
+      isA<AppSpokenDateParts>()
+          .having((AppSpokenDateParts p) => p.day, 'day', 15)
+          .having((AppSpokenDateParts p) => p.month, 'month', 3)
+          .having((AppSpokenDateParts p) => p.year, 'year', 2024),
+    );
+    expect(
+      parseSpokenDateParts('march fifteenth twenty twenty four'),
+      isA<AppSpokenDateParts>()
+          .having((AppSpokenDateParts p) => p.day, 'day', 15)
+          .having((AppSpokenDateParts p) => p.month, 'month', 3)
+          .having((AppSpokenDateParts p) => p.year, 'year', 2024),
+    );
+    expect(
+      parseSpokenDateParts('15/03/2024'),
+      isA<AppSpokenDateParts>()
+          .having((AppSpokenDateParts p) => p.day, 'day', 15)
+          .having((AppSpokenDateParts p) => p.month, 'month', 3)
+          .having((AppSpokenDateParts p) => p.year, 'year', 2024),
+    );
+    expect(
+      parseSpokenDateParts('2024-03-15'),
+      isA<AppSpokenDateParts>()
+          .having((AppSpokenDateParts p) => p.day, 'day', 15)
+          .having((AppSpokenDateParts p) => p.month, 'month', 3)
+          .having((AppSpokenDateParts p) => p.year, 'year', 2024),
+    );
+    expect(
+      parseSpokenDateParts('twenty first of december two thousand twenty five'),
+      isA<AppSpokenDateParts>()
+          .having((AppSpokenDateParts p) => p.day, 'day', 21)
+          .having((AppSpokenDateParts p) => p.month, 'month', 12)
+          .having((AppSpokenDateParts p) => p.year, 'year', 2025),
+    );
+  });
+
+  test('parseSpokenDateParts understands partial day month and year speech', () {
+    expect(
+      parseSpokenDateParts('March'),
+      isA<AppSpokenDateParts>()
+          .having((AppSpokenDateParts p) => p.month, 'month', 3)
+          .having((AppSpokenDateParts p) => p.day, 'day', isNull)
+          .having((AppSpokenDateParts p) => p.year, 'year', isNull),
+    );
+    expect(
+      parseSpokenDateParts('fifteenth'),
+      isA<AppSpokenDateParts>()
+          .having((AppSpokenDateParts p) => p.day, 'day', 15)
+          .having((AppSpokenDateParts p) => p.month, 'month', isNull)
+          .having((AppSpokenDateParts p) => p.year, 'year', isNull),
+    );
+    expect(
+      parseSpokenDateParts('two thousand twenty four'),
+      isA<AppSpokenDateParts>()
+          .having((AppSpokenDateParts p) => p.year, 'year', 2024)
+          .having((AppSpokenDateParts p) => p.day, 'day', isNull)
+          .having((AppSpokenDateParts p) => p.month, 'month', isNull),
+    );
+    expect(
+      parseSpokenDateParts('twenty twenty four'),
+      isA<AppSpokenDateParts>()
+          .having((AppSpokenDateParts p) => p.year, 'year', 2024),
+    );
+  });
+
   test('number fields use cardinal phrases and digit sequences', () {
     expect(
       appSpeechNormalizeTranscript(

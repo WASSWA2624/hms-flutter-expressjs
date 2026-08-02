@@ -7,6 +7,7 @@ import 'package:hosspi_hms/shared/components/app_image_upload_field.dart';
 import 'package:hosspi_hms/shared/scan/app_ephemeral_camera_stub.dart'
     if (dart.library.html) 'package:hosspi_hms/shared/scan/app_ephemeral_camera_web.dart'
     as camera;
+import 'package:hosspi_hms/shared/scan/app_live_camera.dart' as live_camera;
 
 /// Picks an image into memory only (camera/gallery/file). Caller must discard
 /// bytes after parse — never upload to media APIs.
@@ -41,17 +42,44 @@ Future<List<AppImageUploadPendingItem>> uploadEphemeralImages(
   );
 }
 
-/// Camera-preferring capture into memory. Falls back to file upload when the
-/// platform has no capture input. Optionally opens the crop editor.
+/// Camera-preferring capture into memory.
+///
+/// Prefers a live MediaStream viewfinder when available, then the platform
+/// capture input. When [allowFileFallback] is false (Take photo), unsupported
+/// platforms return null instead of silently opening the gallery picker.
 Future<AppImageUploadPendingItem?> takeEphemeralImage(
   BuildContext context, {
   bool enableCrop = true,
+  bool allowFileFallback = false,
+  String? liveCameraTitle,
+  String? liveCameraCaptureLabel,
+  String? liveCameraCloseLabel,
 }) async {
-  final ({Uint8List bytes, String fileName, String? mimeType})? captured =
-      await camera.pickEphemeralCameraImageBytes();
-  if (captured == null) {
-    if (!camera.ephemeralCameraCaptureSupported) {
-      // Desktop / unsupported capture → shared file picker fallback.
+  Uint8List? bytes;
+  String fileName = 'pack-photo.jpg';
+  String? mimeType = 'image/jpeg';
+
+  if (live_camera.liveCameraCaptureSupported && context.mounted) {
+    bytes = await live_camera.captureLiveCameraFrame(
+      context: context,
+      title: liveCameraTitle ?? 'Take pack photo',
+      captureLabel: liveCameraCaptureLabel ?? 'Capture',
+      closeLabel: liveCameraCloseLabel ?? 'Cancel',
+    );
+  }
+
+  if (bytes == null) {
+    final ({Uint8List bytes, String fileName, String? mimeType})? captured =
+        await camera.pickEphemeralCameraImageBytes();
+    if (captured != null) {
+      bytes = captured.bytes;
+      fileName = captured.fileName;
+      mimeType = captured.mimeType;
+    }
+  }
+
+  if (bytes == null) {
+    if (allowFileFallback && !camera.ephemeralCameraCaptureSupported) {
       if (!context.mounted) {
         return null;
       }
@@ -62,10 +90,6 @@ Future<AppImageUploadPendingItem?> takeEphemeralImage(
   if (!context.mounted) {
     return null;
   }
-
-  Uint8List bytes = captured.bytes;
-  String fileName = captured.fileName;
-  String? mimeType = captured.mimeType;
 
   if (enableCrop) {
     final Uint8List? cropped = await showAppImageCropDialog(

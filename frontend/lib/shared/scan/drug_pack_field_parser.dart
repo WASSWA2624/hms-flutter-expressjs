@@ -126,6 +126,21 @@ final class DrugPackFieldParser {
   );
   static final RegExp _gtin = RegExp(r'\b(\d{8}|\d{12,14})\b');
 
+  /// e.g. "Paracetamol Tablets B.P. 500mg" / "Amoxicillin Capsules USP"
+  /// Uses spaces/tabs only (not newlines) so a trailing word on one line cannot
+  /// pair with "Tablet" on the next line.
+  static final RegExp _drugFormLine = RegExp(
+    r'\b([A-Za-z][A-Za-z][A-Za-z\-]{1,40})[ \t]+'
+    r'(?:chewable[ \t]+)?'
+    r'(tabs?|tablets?|caps?|capsules?|syrup|suspension|injection|cream|ointment|gel|drops|powder|solution|lotion|spray|inhaler|patch|suppository)'
+    r'(?:[ \t]*(?:b\.?[ \t]*p\.?|u\.?[ \t]*s\.?[ \t]*p\.?|bp|usp))?'
+    r'(?:[ \t]+(\d+(?:[.,]\d+)?[ \t]?(?:mg|mcg|µg|g|ml|mL|%|IU|units?)))?',
+    caseSensitive: false,
+  );
+
+  /// Short trade/brand marks often printed in ALL CAPS.
+  static final RegExp _allCapsBrand = RegExp(r'^[A-Z][A-Z0-9]{2,14}$');
+
   DrugPackFieldCandidates parse({
     String? barcode,
     String? ocrText,
@@ -145,7 +160,7 @@ final class DrugPackFieldParser {
         _firstMatchAcross(_gtin, lines);
 
     final String? form = _matchForm(text, lines);
-    final String? strength =
+    String? strength =
         _firstMatch(_strengthPattern, text) ??
         _firstMatchAcross(_strengthPattern, lines);
     final String? batchNumber =
@@ -172,10 +187,17 @@ final class DrugPackFieldParser {
     String? brandName = hintedBrand;
     String? genericName = hintedGeneric;
 
+    final ({String? generic, String? strengthFromLine}) fromFormLine =
+        _extractFromDrugFormLine(text, lines);
+    genericName ??= fromFormLine.generic;
+    strength ??= fromFormLine.strengthFromLine;
+    brandName ??= _extractAllCapsBrand(lines, genericName: genericName);
+
     if (brandName == null || genericName == null) {
       final List<String> nameLines = lines
           .where((String line) => !_looksLikeMeta(line))
-          .take(4)
+          .where((String line) => !_looksLikeGarbageName(line))
+          .take(6)
           .toList(growable: false);
       if (brandName == null && nameLines.isNotEmpty) {
         brandName = _cleanName(nameLines.first);
@@ -189,6 +211,9 @@ final class DrugPackFieldParser {
         // Keep brand; leave generic empty for staff.
       }
     }
+
+    brandName = _rejectGarbageName(brandName);
+    genericName = _rejectGarbageName(genericName);
 
     // When barcode is the only signal, still surface it as code.
     return DrugPackFieldCandidates(
@@ -208,6 +233,110 @@ final class DrugPackFieldParser {
       barcode: normalizedBarcode,
       rawText: text.isEmpty ? null : text,
     );
+  }
+
+  ({String? generic, String? strengthFromLine}) _extractFromDrugFormLine(
+    String text,
+    List<String> lines,
+  ) {
+    Match? match = _drugFormLine.firstMatch(text);
+    if (match == null) {
+      for (final String line in lines) {
+        match = _drugFormLine.firstMatch(line);
+        if (match != null) {
+          break;
+        }
+      }
+    }
+    if (match == null) {
+      return (generic: null, strengthFromLine: null);
+    }
+    return (
+      generic: _cleanName(match.group(1)),
+      strengthFromLine: match.group(3)?.trim(),
+    );
+  }
+
+  String? _extractAllCapsBrand(
+    List<String> lines, {
+    String? genericName,
+  }) {
+    for (final String line in lines) {
+      final String token = line.trim();
+      if (!_allCapsBrand.hasMatch(token)) {
+        continue;
+      }
+      if (_looksLikeMeta(token) || _looksLikeGarbageName(token)) {
+        continue;
+      }
+      final String lower = token.toLowerCase();
+      if (genericName != null &&
+          lower == genericName.trim().toLowerCase()) {
+        continue;
+      }
+      if (knownForms.any((String form) => form.toLowerCase() == lower)) {
+        continue;
+      }
+      return token;
+    }
+    return null;
+  }
+
+  static String? _rejectGarbageName(String? value) {
+    if (value == null) {
+      return null;
+    }
+    return _looksLikeGarbageName(value) ? null : value;
+  }
+
+  static bool _looksLikeGarbageName(String value) {
+    final String trimmed = value.trim();
+    if (trimmed.length < 2) {
+      return true;
+    }
+    final int letters = RegExp(r'[A-Za-z]').allMatches(trimmed).length;
+    final int weird =
+        RegExp(r'''[^A-Za-z0-9\s\-\.']''').allMatches(trimmed).length;
+    if (letters < 3) {
+      return true;
+    }
+    if (weird > (letters / 3).ceil()) {
+      return true;
+    }
+    if (trimmed.contains(']') ||
+        trimmed.contains('[') ||
+        trimmed.contains('|') ||
+        trimmed.contains('{') ||
+        trimmed.contains('}') ||
+        trimmed.contains('<') ||
+        trimmed.contains('>')) {
+      return true;
+    }
+    final int quoteCount = "'".allMatches(trimmed).length +
+        '"'.allMatches(trimmed).length +
+        '`'.allMatches(trimmed).length;
+    if (quoteCount >= 2) {
+      return true;
+    }
+    if (RegExp(r'\d{5,}').hasMatch(trimmed)) {
+      return true;
+    }
+    // Digits embedded in a multi-token "name" that is not a strength phrase.
+    if (RegExp(r'\d').hasMatch(trimmed) &&
+        !RegExp(
+          r'\b\d+(?:[.,]\d+)?\s?(?:mg|mcg|µg|g|ml|mL|%|IU|units?)\b',
+          caseSensitive: false,
+        ).hasMatch(trimmed) &&
+        trimmed.split(RegExp(r'\s+')).length >= 2) {
+      return true;
+    }
+    // OCR noise often mixes digits into letter soup without spaces.
+    if (RegExp(r'[A-Za-z]+\d+[A-Za-z]+\d+').hasMatch(trimmed) &&
+        !RegExp(r'\b\d+\s?(?:mg|mcg|ml)\b', caseSensitive: false)
+            .hasMatch(trimmed)) {
+      return true;
+    }
+    return false;
   }
 
   String? _matchForm(String text, List<String> lines) {
@@ -241,6 +370,13 @@ final class DrugPackFieldParser {
       return true;
     }
     if (_gtin.hasMatch(line) && RegExp(r'^\d+$').hasMatch(line.trim())) {
+      return true;
+    }
+    if (knownForms.any((String form) => form.toLowerCase() == lower.trim())) {
+      return true;
+    }
+    if (RegExp(r'^(?:tabs?|caps?|inj)$', caseSensitive: false)
+        .hasMatch(lower.trim())) {
       return true;
     }
     if (lower.contains('manufacturer') ||

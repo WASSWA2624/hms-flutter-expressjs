@@ -12020,13 +12020,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyDrugBarcodeHelper =>
-      'Type or paste the barcode number, then Use barcode to map fields. Use Scan barcode to fill this field from a photo.';
+      'Type or paste the barcode number, then Process barcode to map fields. Use Scan barcode to fill this field from the scanner.';
 
   @override
-  String get pharmacyDrugBarcodeApplyAction => 'Use barcode';
+  String get pharmacyDrugBarcodeApplyAction => 'Process barcode';
 
   @override
   String get pharmacyDrugScanBarcodeAction => 'Scan barcode';
+
+  @override
+  String get pharmacyDrugScanBarcodeTitle => 'Scan barcode';
+
+  @override
+  String get pharmacyDrugScanBarcodeBody =>
+      'Point the camera at the package barcode. Scanning stops automatically when a code is read.';
+
+  @override
+  String get pharmacyDrugScanBarcodeUnavailableBody =>
+      'Live barcode scanning is unavailable on this device. Type or paste the code, or capture a still image instead.';
+
+  @override
+  String get pharmacyDrugScanBarcodeCaptureFallbackAction =>
+      'Capture still image';
+
+  @override
+  String get pharmacyDrugCameraCaptureTitle => 'Take pack photo';
+
+  @override
+  String get pharmacyDrugCameraCaptureAction => 'Capture';
+
+  @override
+  String get pharmacyDrugCameraUnavailableBody =>
+      'Camera capture is unavailable on this device. Use Upload photos instead.';
+
+  @override
+  String get pharmacyDrugBarcodeLookupBusyBody =>
+      'Looking up pack details for this barcode…';
+
+  @override
+  String get pharmacyDrugBarcodeLookupMissBody =>
+      'No online pack details found for this barcode. Review suggested values or add photos.';
 
   @override
   String get pharmacyDrugCapturePackPhotoAction => 'Capture pack photo';

@@ -15342,17 +15342,53 @@
   "@pharmacyDrugBarcodeLabel": {
     "description": "Barcode entry field on drug pack scan."
   },
-  "pharmacyDrugBarcodeHelper": "Type or paste the barcode number, then Use barcode to map fields. Use Scan barcode to fill this field from a photo.",
+  "pharmacyDrugBarcodeHelper": "Type or paste the barcode number, then Process barcode to map fields. Use Scan barcode to fill this field from the scanner.",
   "@pharmacyDrugBarcodeHelper": {
-    "description": "Explains typed barcode + Use barcode; photos/scan are separate."
+    "description": "Explains typed barcode + Process barcode; scan fills the field from the live scanner."
   },
-  "pharmacyDrugBarcodeApplyAction": "Use barcode",
+  "pharmacyDrugBarcodeApplyAction": "Process barcode",
   "@pharmacyDrugBarcodeApplyAction": {
-    "description": "Apply typed/scanned barcode to prefill candidates."
+    "description": "Process typed/scanned barcode to map and prefill drug field candidates."
   },
   "pharmacyDrugScanBarcodeAction": "Scan barcode",
   "@pharmacyDrugScanBarcodeAction": {
-    "description": "Capture/decode a barcode image into the package barcode field."
+    "description": "Open the in-app barcode scanner and fill the package barcode field."
+  },
+  "pharmacyDrugScanBarcodeTitle": "Scan barcode",
+  "@pharmacyDrugScanBarcodeTitle": {
+    "description": "Title for the live barcode scanner dialog."
+  },
+  "pharmacyDrugScanBarcodeBody": "Point the camera at the package barcode. Scanning stops automatically when a code is read.",
+  "@pharmacyDrugScanBarcodeBody": {
+    "description": "Helper text inside the live barcode scanner dialog."
+  },
+  "pharmacyDrugScanBarcodeUnavailableBody": "Live barcode scanning is unavailable on this device. Type or paste the code, or capture a still image instead.",
+  "@pharmacyDrugScanBarcodeUnavailableBody": {
+    "description": "Shown when live barcode scanning cannot start."
+  },
+  "pharmacyDrugScanBarcodeCaptureFallbackAction": "Capture still image",
+  "@pharmacyDrugScanBarcodeCaptureFallbackAction": {
+    "description": "Fallback action to decode a barcode from a still camera/image capture."
+  },
+  "pharmacyDrugCameraCaptureTitle": "Take pack photo",
+  "@pharmacyDrugCameraCaptureTitle": {
+    "description": "Title for the live camera capture dialog used by Take photo."
+  },
+  "pharmacyDrugCameraCaptureAction": "Capture",
+  "@pharmacyDrugCameraCaptureAction": {
+    "description": "Snap the current camera frame into an ephemeral pack photo."
+  },
+  "pharmacyDrugCameraUnavailableBody": "Camera capture is unavailable on this device. Use Upload photos instead.",
+  "@pharmacyDrugCameraUnavailableBody": {
+    "description": "Shown when Take photo cannot open a real camera."
+  },
+  "pharmacyDrugBarcodeLookupBusyBody": "Looking up pack details for this barcode…",
+  "@pharmacyDrugBarcodeLookupBusyBody": {
+    "description": "Busy status while free barcode product lookup runs."
+  },
+  "pharmacyDrugBarcodeLookupMissBody": "No online pack details found for this barcode. Review suggested values or add photos.",
+  "@pharmacyDrugBarcodeLookupMissBody": {
+    "description": "Soft-fail status when barcode lookup returns nothing."
   },
   "pharmacyDrugCapturePackPhotoAction": "Capture pack photo",
   "@pharmacyDrugCapturePackPhotoAction": {

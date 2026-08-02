@@ -25,6 +25,8 @@ Batch: LOT-9
 
       expect(result.unavailable, isFalse);
       expect(result.hasCandidates, isTrue);
+      expect(result.candidates!.brandName, 'AGOMO');
+      expect(result.candidates!.genericName, 'Paracetamol');
       expect(result.candidates!.form, 'Tablet');
       expect(result.candidates!.strength?.toLowerCase(), contains('500'));
       expect(result.candidates!.batchNumber, 'LOT-9');

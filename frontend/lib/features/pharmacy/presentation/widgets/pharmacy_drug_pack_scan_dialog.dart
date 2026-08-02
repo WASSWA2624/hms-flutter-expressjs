@@ -16,6 +16,8 @@ Future<DrugPackFieldCandidates?> showPharmacyDrugPackScanDialog(
   AppBarcodeDecoder? barcodeDecoder,
   DrugPackFieldParser? parser,
   DrugPackAiMapper? aiMapper,
+  DrugPackBarcodeLookup? barcodeLookup,
+  List<Uint8List>? seedPhotos,
 }) {
   return showAppDialog<DrugPackFieldCandidates?>(
     context: context,
@@ -24,6 +26,8 @@ Future<DrugPackFieldCandidates?> showPharmacyDrugPackScanDialog(
       barcodeDecoder: barcodeDecoder ?? const AppHeuristicBarcodeDecoder(),
       parser: parser ?? const DrugPackFieldParser(),
       aiMapper: aiMapper ?? createDefaultDrugPackAiMapper(),
+      barcodeLookup: barcodeLookup ?? createDefaultDrugPackBarcodeLookup(),
+      seedPhotos: seedPhotos,
     ),
   );
 }
@@ -43,12 +47,16 @@ class _PharmacyDrugPackScanDialog extends StatefulWidget {
     required this.barcodeDecoder,
     required this.parser,
     required this.aiMapper,
+    required this.barcodeLookup,
+    this.seedPhotos,
   });
 
   final AppOcrService ocrService;
   final AppBarcodeDecoder barcodeDecoder;
   final DrugPackFieldParser parser;
   final DrugPackAiMapper aiMapper;
+  final DrugPackBarcodeLookup barcodeLookup;
+  final List<Uint8List>? seedPhotos;
 
   @override
   State<_PharmacyDrugPackScanDialog> createState() =>
@@ -78,6 +86,18 @@ class _PharmacyDrugPackScanDialogState
   String? _statusMessage;
 
   @override
+  void initState() {
+    super.initState();
+    final List<Uint8List>? seeds = widget.seedPhotos;
+    if (seeds != null && seeds.isNotEmpty) {
+      for (final Uint8List bytes in seeds) {
+        _photos.add(_SessionPhoto(bytes: bytes, mimeType: 'image/png'));
+      }
+      _photosNeedProcessing = true;
+    }
+  }
+
+  @override
   void dispose() {
     _barcodeController.dispose();
     _packTextController.dispose();
@@ -98,8 +118,7 @@ class _PharmacyDrugPackScanDialogState
     return code.isEmpty ? null : code;
   }
 
-  bool get _canProcessPhotos =>
-      !_busy && _photos.isNotEmpty && _photosNeedProcessing;
+  bool get _canProcessPhotos => !_busy && _photos.isNotEmpty;
 
   DrugPackFieldCandidates _candidatesFromEditors() {
     return DrugPackFieldCandidates(
@@ -171,31 +190,49 @@ class _PharmacyDrugPackScanDialogState
     }
     setState(() {
       _busy = true;
-      _statusMessage = null;
+      _statusMessage = context.l10n.pharmacyDrugBarcodeLookupBusyBody;
     });
     try {
-      final DrugPackFieldCandidates parsed = widget.parser.parse(
-        barcode: code,
-        ocrText: _packTextController.text,
-      );
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        if (parsed.hasAnyIdentityField) {
-          _seedEditors(parsed);
-          _statusMessage = null;
-        } else {
-          _codeController.text = code;
-          _hasSuggestions = true;
-          _statusMessage = null;
-        }
-      });
+      await _mapBarcode(code);
     } finally {
       if (mounted) {
         setState(() => _busy = false);
       }
     }
+  }
+
+  Future<void> _mapBarcode(String code) async {
+    DrugPackFieldCandidates parsed = widget.parser.parse(
+      barcode: code,
+      ocrText: _packTextController.text,
+    );
+    bool lookupMiss = false;
+    try {
+      final DrugPackFieldCandidates? lookedUp = await widget.barcodeLookup
+          .lookup(code);
+      if (lookedUp != null && lookedUp.hasAnyIdentityField) {
+        parsed = parsed.merge(lookedUp);
+      } else if (!parsed.hasAnyIdentityField) {
+        lookupMiss = true;
+      }
+    } catch (_) {
+      // Soft-fail lookup; keep parser result.
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      if (parsed.hasAnyIdentityField) {
+        _seedEditors(parsed);
+        _statusMessage = null;
+      } else {
+        _codeController.text = code;
+        _hasSuggestions = true;
+        _statusMessage = lookupMiss
+            ? context.l10n.pharmacyDrugBarcodeLookupMissBody
+            : null;
+      }
+    });
   }
 
   Future<void> _scanBarcode() async {
@@ -204,34 +241,61 @@ class _PharmacyDrugPackScanDialogState
       _statusMessage = null;
     });
     try {
-      final AppImageUploadPendingItem? item = await takeEphemeralImage(context);
-      if (!mounted || item == null) {
-        return;
-      }
-      final Uint8List bytes = Uint8List.fromList(item.bytes);
-      AppBarcodeCaptureResult? decoded = await widget.barcodeDecoder
-          .decodeFromImage(bytes, mimeType: item.mimeType);
-      if (decoded == null) {
-        final AppOcrResult ocr = await widget.ocrService.recognize(
-          bytes,
-          mimeType: item.mimeType,
-        );
-        if (widget.barcodeDecoder is AppHeuristicBarcodeDecoder) {
-          decoded = (widget.barcodeDecoder as AppHeuristicBarcodeDecoder)
-              .decodeFromText(ocr.text);
-        }
-      }
+      final AppLocalizations l10n = context.l10n;
+      String? code = await scanLiveBarcode(
+        context: context,
+        title: l10n.pharmacyDrugScanBarcodeTitle,
+        body: l10n.pharmacyDrugScanBarcodeBody,
+        closeLabel: l10n.commonCancelActionLabel,
+        unavailableBody: l10n.pharmacyDrugScanBarcodeUnavailableBody,
+      );
       if (!mounted) {
         return;
       }
-      if (decoded == null || decoded.code.trim().isEmpty) {
-        setState(() {
-          _statusMessage = context.l10n.pharmacyDrugScanBarcodeEmptyBody;
-        });
-        return;
+
+      if (code == null || code.trim().isEmpty) {
+        // Fallback: still-image capture + decode (desktop / no BarcodeDetector).
+        final AppImageUploadPendingItem? item = await takeEphemeralImage(
+          context,
+          enableCrop: false,
+          allowFileFallback: true,
+          liveCameraTitle: l10n.pharmacyDrugCameraCaptureTitle,
+          liveCameraCaptureLabel: l10n.pharmacyDrugCameraCaptureAction,
+          liveCameraCloseLabel: l10n.commonCancelActionLabel,
+        );
+        if (!mounted || item == null) {
+          return;
+        }
+        final Uint8List bytes = Uint8List.fromList(item.bytes);
+        AppBarcodeCaptureResult? decoded = await widget.barcodeDecoder
+            .decodeFromImage(bytes, mimeType: item.mimeType);
+        if (decoded == null) {
+          final AppOcrResult ocr = await widget.ocrService.recognize(
+            bytes,
+            mimeType: item.mimeType,
+          );
+          if (widget.barcodeDecoder is AppHeuristicBarcodeDecoder) {
+            decoded = (widget.barcodeDecoder as AppHeuristicBarcodeDecoder)
+                .decodeFromText(ocr.text);
+          }
+        }
+        if (!mounted) {
+          return;
+        }
+        if (decoded == null || decoded.code.trim().isEmpty) {
+          setState(() {
+            _statusMessage = l10n.pharmacyDrugScanBarcodeEmptyBody;
+          });
+          return;
+        }
+        code = decoded.code.trim();
       }
-      _barcodeController.text = decoded.code.trim();
-      await _applyBarcode();
+
+      _barcodeController.text = code.trim();
+      setState(() {
+        _statusMessage = l10n.pharmacyDrugBarcodeLookupBusyBody;
+      });
+      await _mapBarcode(code.trim());
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -251,8 +315,20 @@ class _PharmacyDrugPackScanDialogState
       _statusMessage = null;
     });
     try {
-      final AppImageUploadPendingItem? item = await takeEphemeralImage(context);
-      if (!mounted || item == null) {
+      final AppLocalizations l10n = context.l10n;
+      final AppImageUploadPendingItem? item = await takeEphemeralImage(
+        context,
+        liveCameraTitle: l10n.pharmacyDrugCameraCaptureTitle,
+        liveCameraCaptureLabel: l10n.pharmacyDrugCameraCaptureAction,
+        liveCameraCloseLabel: l10n.commonCancelActionLabel,
+      );
+      if (!mounted) {
+        return;
+      }
+      if (item == null) {
+        setState(() {
+          _statusMessage = l10n.pharmacyDrugCameraUnavailableBody;
+        });
         return;
       }
       setState(() {
@@ -268,7 +344,7 @@ class _PharmacyDrugPackScanDialogState
     } catch (_) {
       if (mounted) {
         setState(() {
-          _statusMessage = context.l10n.pharmacyDrugScanNoDataBody;
+          _statusMessage = context.l10n.pharmacyDrugCameraUnavailableBody;
         });
       }
     } finally {
@@ -635,11 +711,22 @@ class _PharmacyDrugPackScanDialogState
             labelText: l10n.pharmacyDrugBarcodeLabel,
             helperText: l10n.pharmacyDrugBarcodeHelper,
             enabled: !_busy,
-            suffixIcon: _fieldSuffixAction(
-              label: l10n.pharmacyDrugBarcodeApplyAction,
-              icon: Icons.qr_code_2_outlined,
-              iconOnly: compactFieldActions,
-              onPressed: _applyBarcode,
+            enableSpeechToText: false,
+            suffixIcon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                AppSpeechToTextButton(
+                  controller: _barcodeController,
+                  enabled: !_busy,
+                  dense: true,
+                ),
+                _fieldSuffixAction(
+                  label: l10n.pharmacyDrugBarcodeApplyAction,
+                  icon: Icons.qr_code_2_outlined,
+                  iconOnly: compactFieldActions,
+                  onPressed: _applyBarcode,
+                ),
+              ],
             ),
           ),
           SizedBox(height: theme.spacing.md),
@@ -742,7 +829,7 @@ class _PharmacyDrugPackScanDialogState
                   label: l10n.pharmacyDrugProcessPackPhotosOcrAction,
                   leadingIcon: Icons.document_scanner_outlined,
                   enabled: _canProcessPhotos,
-                  isLoading: _busy && _photosNeedProcessing,
+                  isLoading: _busy && _photos.isNotEmpty,
                   onPressed: () => _processPhotos(_PhotoEngine.ocr),
                 ),
                 AppButton.secondary(
