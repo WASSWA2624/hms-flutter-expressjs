@@ -266,6 +266,36 @@ String clinicalPrescriptionItemReadableSummary(ClinicalPharmacyOrderItem item) {
   );
 }
 
+/// Layman-friendly prescription line for details + printed reports.
+///
+/// Example: `Amoxicillin 500 mg — Take 500 mg by mouth twice daily for 7 days · Qty 14 tablets`
+String clinicalPrescriptionItemPaperLine(ClinicalPharmacyOrderItem item) {
+  final String name = clinicalActionTrimmedOrNull(item.displayTitle) ?? 'Medication';
+  final String directions = clinicalPrescriptionPaperDirections(
+    doseAmount: item.doseAmount ?? item.dosage,
+    doseUnit: item.doseUnit,
+    dosage: item.dosage,
+    route: item.route,
+    frequency: item.frequency,
+    durationValue: item.durationValue,
+    durationUnit: item.durationUnit,
+  );
+  final String qty = clinicalPrescriptionPaperQuantityLabel(
+    quantity: item.quantity,
+    quantityUnit: item.quantityUnit,
+  );
+  final String line = clinicalActionJoinDisplay(<String?>[
+    name,
+    if (directions.isNotEmpty) directions,
+    if (qty.isNotEmpty) qty,
+  ], separator: ' — ');
+  final String? note = clinicalActionTrimmedOrNull(item.instructions);
+  if (note == null) {
+    return line;
+  }
+  return '$line. $note';
+}
+
 String clinicalPrescriptionRouteReadable(String route) {
   return switch (route.toUpperCase()) {
     'ORAL' => 'by mouth',

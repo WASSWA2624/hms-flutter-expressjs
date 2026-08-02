@@ -1638,7 +1638,35 @@ final class ClinicalWorkspaceController
           )
           .toList(growable: false),
       alerts: alerts,
+      consultationPaymentStatus:
+          detail.consultationPaymentStatus ??
+          detail.summary.consultationPaymentStatus,
+      consultationPaid:
+          detail.consultationPaid || detail.summary.consultationPaid,
+      consultationPaymentRequired:
+          detail.consultationPaymentRequired ||
+          detail.summary.consultationPaymentRequired,
+      consultationFeeLabel: _moneyLabel(
+        detail.summary.consultationFee,
+        detail.summary.consultationCurrency,
+      ),
+      consultationPaidAmountLabel: _moneyLabel(
+        detail.consultationPaidAmount ??
+            detail.summary.consultationPaidAmount,
+        detail.summary.consultationCurrency,
+      ),
     );
+  }
+
+  String? _moneyLabel(num? amount, String? currency) {
+    if (amount == null) {
+      return null;
+    }
+    final String unit = (currency ?? '').trim().toUpperCase();
+    if (unit.isEmpty) {
+      return amount.toString();
+    }
+    return '$unit $amount';
   }
 
   ClinicalAlertSummary _alertFromOpd(OpdClinicalAlert alert) {

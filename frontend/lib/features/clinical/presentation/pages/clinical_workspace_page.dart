@@ -1323,7 +1323,11 @@ class _ClinicalDetailPanel extends ConsumerWidget {
       clinicalWorkspaceControllerProvider.notifier,
     );
     final List<ClinicalRelatedRecord> clinicalNotes =
-        sortClinicalRecordsNewestFirst(bundle.clinicalNotes);
+        sortClinicalRecordsNewestFirst(clinicalNotesForDisplay(bundle.clinicalNotes));
+    final List<ClinicalRelatedRecord> diagnoses =
+        deduplicateClinicalRelatedRecords(bundle.diagnoses, diagnoses: true);
+    final List<ClinicalRelatedRecord> pharmacyOrders =
+        deduplicateClinicalRelatedRecords(bundle.pharmacyOrders);
     final List<Widget> sections = <Widget>[
       _ClinicalEncounterContextPanel(
         entry: entry,
@@ -1362,22 +1366,94 @@ class _ClinicalDetailPanel extends ConsumerWidget {
               ? () => _openEditNotesDialog(context, controller, clinicalNotes)
               : null,
         ),
-      if (bundle.diagnoses.isNotEmpty)
+      if (pharmacyOrders.isNotEmpty)
+        ClinicalPharmacyOrdersTablePanel(
+          orders: pharmacyOrders,
+          onCancel: (BuildContext context, ClinicalRelatedRecord order) =>
+              _confirmLabOrderMutation(
+                context: context,
+                title: l10n.clinicalCancelPharmacyOrderDialogTitle,
+                body: l10n.clinicalCancelPharmacyOrderDialogBody,
+                confirmLabel: l10n.clinicalCancelPharmacyOrderAction,
+                action: () => ref
+                    .read(clinicalWorkspaceControllerProvider.notifier)
+                    .cancelPharmacyOrder(order.id),
+              ),
+          onDelete: (BuildContext context, ClinicalRelatedRecord order) =>
+              _confirmLabOrderMutation(
+                context: context,
+                title: l10n.clinicalDeletePharmacyOrderDialogTitle,
+                body: l10n.clinicalDeletePharmacyOrderDialogBody,
+                confirmLabel: l10n.clinicalDeletePharmacyOrderAction,
+                action: () => ref
+                    .read(clinicalWorkspaceControllerProvider.notifier)
+                    .deletePharmacyOrder(order.id),
+              ),
+          onCancelSelected:
+              (BuildContext context, List<ClinicalRelatedRecord> orders) =>
+                  _confirmLabOrderMutation(
+                    context: context,
+                    title:
+                        l10n.clinicalCancelSelectedPharmacyOrdersDialogTitle,
+                    body: l10n.clinicalCancelSelectedPharmacyOrdersDialogBody(
+                      orders.length,
+                    ),
+                    confirmLabel:
+                        l10n.clinicalCancelSelectedRadiologyOrdersAction,
+                    action: () async {
+                      AppFailure? failure;
+                      for (final ClinicalRelatedRecord order in orders) {
+                        failure = await ref
+                            .read(clinicalWorkspaceControllerProvider.notifier)
+                            .cancelPharmacyOrder(order.id);
+                        if (failure != null) {
+                          return failure;
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+          onDeleteSelected:
+              (BuildContext context, List<ClinicalRelatedRecord> orders) =>
+                  _confirmLabOrderMutation(
+                    context: context,
+                    title:
+                        l10n.clinicalDeleteSelectedPharmacyOrdersDialogTitle,
+                    body: l10n.clinicalDeleteSelectedPharmacyOrdersDialogBody(
+                      orders.length,
+                    ),
+                    confirmLabel:
+                        l10n.clinicalDeleteSelectedRadiologyOrdersAction,
+                    action: () async {
+                      AppFailure? failure;
+                      for (final ClinicalRelatedRecord order in orders) {
+                        failure = await ref
+                            .read(clinicalWorkspaceControllerProvider.notifier)
+                            .deletePharmacyOrder(order.id);
+                        if (failure != null) {
+                          return failure;
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+        ),
+      if (diagnoses.isNotEmpty)
         ClinicalDiagnosesTablePanel(
-          diagnoses: bundle.diagnoses,
+          diagnoses: diagnoses,
           onAdd: canWrite
               ? () => _openDiagnosisDialog(
                     context,
                     controller,
-                    existingDiagnoses: bundle.diagnoses,
+                    existingDiagnoses: diagnoses,
                   )
               : null,
           onEditSelected: canWrite
-              ? (BuildContext context, List<ClinicalRelatedRecord> diagnoses) =>
+              ? (BuildContext context, List<ClinicalRelatedRecord> selected) =>
                     _openEditDiagnosisDialog(
                       context,
                       ref.read(clinicalWorkspaceControllerProvider.notifier),
-                      diagnoses,
+                      selected,
                     )
               : null,
           onRemove: (BuildContext context, ClinicalRelatedRecord diagnosis) =>
@@ -1391,18 +1467,18 @@ class _ClinicalDetailPanel extends ConsumerWidget {
                     .deleteDiagnosis(diagnosis.id),
               ),
           onRemoveSelected:
-              (BuildContext context, List<ClinicalRelatedRecord> diagnoses) =>
+              (BuildContext context, List<ClinicalRelatedRecord> selected) =>
                   _confirmLabOrderMutation(
                     context: context,
                     title: l10n.clinicalRemoveSelectedDiagnosesDialogTitle,
                     body: l10n.clinicalRemoveSelectedDiagnosesDialogBody(
-                      diagnoses.length,
+                      selected.length,
                     ),
                     confirmLabel: l10n.clinicalRemoveSelectedDiagnosesAction,
                     action: () async {
                       AppFailure? failure;
                       for (final ClinicalRelatedRecord diagnosis
-                          in diagnoses) {
+                          in selected) {
                         failure = await ref
                             .read(clinicalWorkspaceControllerProvider.notifier)
                             .deleteDiagnosis(diagnosis.id);
@@ -1416,7 +1492,7 @@ class _ClinicalDetailPanel extends ConsumerWidget {
         ),
       if (canViewLabResults && bundle.labOrders.isNotEmpty)
         ClinicalLabOrdersTablePanel(
-          orders: bundle.labOrders,
+          orders: deduplicateClinicalRelatedRecords(bundle.labOrders),
           onEdit: (BuildContext context, ClinicalRelatedRecord order) =>
               _openLabDialog(
                 context,
@@ -1510,7 +1586,7 @@ class _ClinicalDetailPanel extends ConsumerWidget {
         ),
       if (canViewRadiologyResults && bundle.radiologyOrders.isNotEmpty)
         ClinicalRadiologyOrdersTablePanel(
-          orders: bundle.radiologyOrders,
+          orders: deduplicateClinicalRelatedRecords(bundle.radiologyOrders),
           onCancel: (BuildContext context, ClinicalRelatedRecord order) =>
               _confirmLabOrderMutation(
                 context: context,
@@ -1578,102 +1654,40 @@ class _ClinicalDetailPanel extends ConsumerWidget {
                     },
                   ),
         ),
-      if (bundle.pharmacyOrders.isNotEmpty)
-        ClinicalPharmacyOrdersTablePanel(
-          orders: bundle.pharmacyOrders,
-          onCancel: (BuildContext context, ClinicalRelatedRecord order) =>
-              _confirmLabOrderMutation(
-                context: context,
-                title: l10n.clinicalCancelPharmacyOrderDialogTitle,
-                body: l10n.clinicalCancelPharmacyOrderDialogBody,
-                confirmLabel: l10n.clinicalCancelPharmacyOrderAction,
-                action: () => ref
-                    .read(clinicalWorkspaceControllerProvider.notifier)
-                    .cancelPharmacyOrder(order.id),
-              ),
-          onDelete: (BuildContext context, ClinicalRelatedRecord order) =>
-              _confirmLabOrderMutation(
-                context: context,
-                title: l10n.clinicalDeletePharmacyOrderDialogTitle,
-                body: l10n.clinicalDeletePharmacyOrderDialogBody,
-                confirmLabel: l10n.clinicalDeletePharmacyOrderAction,
-                action: () => ref
-                    .read(clinicalWorkspaceControllerProvider.notifier)
-                    .deletePharmacyOrder(order.id),
-              ),
-          onCancelSelected:
-              (BuildContext context, List<ClinicalRelatedRecord> orders) =>
-                  _confirmLabOrderMutation(
-                    context: context,
-                    title:
-                        l10n.clinicalCancelSelectedPharmacyOrdersDialogTitle,
-                    body: l10n.clinicalCancelSelectedPharmacyOrdersDialogBody(
-                      orders.length,
-                    ),
-                    confirmLabel:
-                        l10n.clinicalCancelSelectedRadiologyOrdersAction,
-                    action: () async {
-                      AppFailure? failure;
-                      for (final ClinicalRelatedRecord order in orders) {
-                        failure = await ref
-                            .read(clinicalWorkspaceControllerProvider.notifier)
-                            .cancelPharmacyOrder(order.id);
-                        if (failure != null) {
-                          return failure;
-                        }
-                      }
-                      return null;
-                    },
-                  ),
-          onDeleteSelected:
-              (BuildContext context, List<ClinicalRelatedRecord> orders) =>
-                  _confirmLabOrderMutation(
-                    context: context,
-                    title:
-                        l10n.clinicalDeleteSelectedPharmacyOrdersDialogTitle,
-                    body: l10n.clinicalDeleteSelectedPharmacyOrdersDialogBody(
-                      orders.length,
-                    ),
-                    confirmLabel:
-                        l10n.clinicalDeleteSelectedRadiologyOrdersAction,
-                    action: () async {
-                      AppFailure? failure;
-                      for (final ClinicalRelatedRecord order in orders) {
-                        failure = await ref
-                            .read(clinicalWorkspaceControllerProvider.notifier)
-                            .deletePharmacyOrder(order.id);
-                        if (failure != null) {
-                          return failure;
-                        }
-                      }
-                      return null;
-                    },
-                  ),
-        ),
       if (bundle.procedures.isNotEmpty)
         _ClinicalRecordSection(
           title: l10n.opdProceduresSummaryLabel,
-          records: sortClinicalRecordsNewestFirst(bundle.procedures),
+          records: sortClinicalRecordsNewestFirst(
+            deduplicateClinicalRelatedRecords(bundle.procedures),
+          ),
         ),
       if (bundle.referrals.isNotEmpty)
         _ClinicalRecordSection(
           title: l10n.opdReferralsTitle,
-          records: sortClinicalRecordsNewestFirst(bundle.referrals),
+          records: sortClinicalRecordsNewestFirst(
+            deduplicateClinicalRelatedRecords(bundle.referrals),
+          ),
         ),
       if (bundle.followUps.isNotEmpty)
         _ClinicalRecordSection(
           title: l10n.opdFollowUpsTitle,
-          records: sortClinicalRecordsNewestFirst(bundle.followUps),
+          records: sortClinicalRecordsNewestFirst(
+            deduplicateClinicalRelatedRecords(bundle.followUps),
+          ),
         ),
       if (bundle.admissions.isNotEmpty)
         _ClinicalRecordSection(
           title: l10n.patientsAdmissionsSectionTitle,
-          records: sortClinicalRecordsNewestFirst(bundle.admissions),
+          records: sortClinicalRecordsNewestFirst(
+            deduplicateClinicalRelatedRecords(bundle.admissions),
+          ),
         ),
       if (bundle.carePlans.isNotEmpty)
         _ClinicalRecordSection(
           title: l10n.clinicalCarePlansTitle,
-          records: sortClinicalRecordsNewestFirst(bundle.carePlans),
+          records: sortClinicalRecordsNewestFirst(
+            deduplicateClinicalRelatedRecords(bundle.carePlans),
+          ),
         ),
     ];
 
@@ -2043,21 +2057,25 @@ class _ClinicalActionBar extends ConsumerWidget {
         ),
       if (canWrite)
         AppActionItem(
-          label: bundle.clinicalNotes.isEmpty
+          label: clinicalNotesForDisplay(bundle.clinicalNotes).isEmpty
               ? l10n.clinicalAddNoteAction
               : l10n.clinicalEditNotesAction,
-          leadingIcon: bundle.clinicalNotes.isEmpty
+          leadingIcon: clinicalNotesForDisplay(bundle.clinicalNotes).isEmpty
               ? Icons.note_add_outlined
               : AppActionIcons.edit,
           onPressed: () {
-            if (bundle.clinicalNotes.isEmpty) {
+            final List<ClinicalRelatedRecord> notes =
+                sortClinicalRecordsNewestFirst(
+                  clinicalNotesForDisplay(bundle.clinicalNotes),
+                );
+            if (notes.isEmpty) {
               _openNoteDialog(context, controller);
               return;
             }
             _openEditNotesDialog(
               context,
               controller,
-              sortClinicalRecordsNewestFirst(bundle.clinicalNotes),
+              notes,
             );
           },
         ),
@@ -2068,7 +2086,10 @@ class _ClinicalActionBar extends ConsumerWidget {
           onPressed: () => _openDiagnosisDialog(
             context,
             controller,
-            existingDiagnoses: bundle.diagnoses,
+            existingDiagnoses: deduplicateClinicalRelatedRecords(
+              bundle.diagnoses,
+              diagnoses: true,
+            ),
           ),
         ),
       if (canLab)
@@ -2536,9 +2557,7 @@ class _ClinicalPharmacyOrderItemRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final String readableSummary = clinicalPrescriptionItemReadableSummary(
-      item,
-    );
+    final String readableSummary = clinicalPrescriptionItemPaperLine(item);
     final List<AppWorkspacePatientContextField> facts =
         <AppWorkspacePatientContextField>[
           AppWorkspacePatientContextField(
@@ -3672,6 +3691,12 @@ String _consultationSummaryHtml(
   ClinicalEncounterBundle bundle,
 ) {
   final AppLocalizations l10n = context.l10n;
+  final ClinicalTriageHandoff? handoff = bundle.triageHandoff;
+  final List<ClinicalRelatedRecord> notes = clinicalNotesForDisplay(
+    bundle.clinicalNotes,
+  );
+  final List<ClinicalRelatedRecord> pharmacyOrders =
+      deduplicateClinicalRelatedRecords(bundle.pharmacyOrders);
   final List<String> sections = <String>[];
 
   void addSection(String title, List<ClinicalRelatedRecord> records) {
@@ -3683,18 +3708,102 @@ String _consultationSummaryHtml(
     );
   }
 
-  addSection(l10n.clinicalPatientNotesTitle, bundle.clinicalNotes);
-  addSection(l10n.clinicalPatientDiagnosesTitle, bundle.diagnoses);
+  if (handoff?.hasCoverageDetails ?? false) {
+    final List<PrintFormMetadataItem> coverageItems =
+        <PrintFormMetadataItem>[
+          if (_hasText(handoff!.consultationPaymentStatus))
+            PrintFormMetadataItem(
+              label: l10n.opdPaymentStatusLabel,
+              value: _apiLabel(handoff.consultationPaymentStatus!),
+            ),
+          if (handoff.consultationPaid)
+            PrintFormMetadataItem(
+              label: l10n.claimsCoverageFieldLabel,
+              value: l10n.opdCoverageVerifiedLabel,
+            ),
+          if (_hasText(handoff.consultationFeeLabel))
+            PrintFormMetadataItem(
+              label: l10n.opdConsultationFeeLabel,
+              value: handoff.consultationFeeLabel!,
+            ),
+          if (_hasText(handoff.consultationPaidAmountLabel))
+            PrintFormMetadataItem(
+              label: l10n.opdBillingAmountPaidLabel,
+              value: handoff.consultationPaidAmountLabel!,
+            ),
+        ];
+    if (coverageItems.isNotEmpty) {
+      sections.add(
+        PrintFormTemplate.section(
+          title: l10n.claimsCoverageFieldLabel,
+          bodyHtml: PrintFormTemplate.keyValueGrid(coverageItems),
+        ),
+      );
+    }
+  }
+
+  if (handoff != null && handoff.vitalSigns.isNotEmpty) {
+    sections.add(
+      PrintFormTemplate.section(
+        title: l10n.clinicalVitalsSectionTitle,
+        bodyHtml: PrintFormTemplate.unorderedList(<String>[
+          for (final ClinicalVitalSummary vital in handoff.vitalSigns)
+            _joinDisplay(<String?>[
+              _apiLabel(vital.vitalType),
+              vital.displayValue,
+              vital.status.trim().isEmpty ||
+                      vital.status.toUpperCase() == 'RECORDED'
+                  ? null
+                  : _apiLabel(vital.status),
+            ]),
+        ]),
+        avoidPageBreak: true,
+      ),
+    );
+  }
+
+  addSection(l10n.clinicalPatientNotesTitle, notes);
+  sections.addAll(_pharmacyPrescriptionSectionsHtml(l10n, pharmacyOrders));
+  addSection(
+    l10n.clinicalPatientDiagnosesTitle,
+    deduplicateClinicalRelatedRecords(bundle.diagnoses, diagnoses: true),
+  );
   addSection(l10n.opdProceduresSummaryLabel, bundle.procedures);
   addSection(l10n.clinicalCarePlansTitle, bundle.carePlans);
   addSection(l10n.clinicalLabOrdersTitle, bundle.labOrders);
   addSection(l10n.clinicalRadiologyOrdersTitle, bundle.radiologyOrders);
-  addSection(l10n.clinicalPharmacyOrdersTitle, bundle.pharmacyOrders);
   addSection(l10n.opdReferralsTitle, bundle.referrals);
   addSection(l10n.opdFollowUpsTitle, bundle.followUps);
   addSection(l10n.patientsAdmissionsSectionTitle, bundle.admissions);
 
   return sections.join();
+}
+
+List<String> _pharmacyPrescriptionSectionsHtml(
+  AppLocalizations l10n,
+  List<ClinicalRelatedRecord> pharmacyOrders,
+) {
+  if (pharmacyOrders.isEmpty) {
+    return const <String>[];
+  }
+  final List<String> lines = <String>[
+    for (final ClinicalRelatedRecord order in pharmacyOrders)
+      if (order.pharmacyOrderItems.isEmpty)
+        _clinicalRecordSummaryText(order)
+      else
+        for (final ClinicalPharmacyOrderItem item in order.pharmacyOrderItems)
+          clinicalPrescriptionItemPaperLine(item),
+  ];
+  return <String>[
+    PrintFormTemplate.section(
+      title: l10n.clinicalPharmacyOrdersTitle,
+      bodyHtml: PrintFormTemplate.unorderedList(
+        lines,
+        emptyText: 'No prescriptions.',
+      ),
+      avoidPageBreak: true,
+    ),
+  ];
 }
 
 String _recordsHtml(List<ClinicalRelatedRecord> records) {
@@ -3722,9 +3831,7 @@ String _clinicalRecordSummaryText(ClinicalRelatedRecord record) {
       ),
     if (record.pharmacyOrderItems.isNotEmpty)
       _joinDisplay(
-        record.pharmacyOrderItems
-            .take(4)
-            .map((ClinicalPharmacyOrderItem item) => item.displayTitle),
+        record.pharmacyOrderItems.map(clinicalPrescriptionItemPaperLine),
       ),
     record.status == null ? null : _apiLabel(record.status!),
   ]);

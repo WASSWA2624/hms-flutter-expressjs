@@ -12,6 +12,7 @@ import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.d
 import 'package:hosspi_hms/features/clinical/presentation/clinical_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_prescription_display.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_edit_diagnosis_action_dialog.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -942,7 +943,7 @@ class _ClinicalPharmacyOrdersTablePanelState
               showCheckboxColumn: false,
               headingRowHeight: 40,
               dataRowMinHeight: 48,
-              dataRowMaxHeight: 72,
+              dataRowMaxHeight: 120,
               columnSpacing: theme.spacing.md,
               horizontalMargin: theme.spacing.sm,
               columns: <DataColumn>[
@@ -1015,10 +1016,35 @@ class _ClinicalPharmacyOrdersTablePanelState
                           ),
                         ),
                       DataCell(
-                        Text(
-                          order.title ?? order.id,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 420),
+                          child: order.pharmacyOrderItems.isEmpty
+                              ? Text(
+                                  order.title ?? order.id,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                )
+                              : Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: <Widget>[
+                                    for (final ClinicalPharmacyOrderItem item
+                                        in order.pharmacyOrderItems)
+                                      Padding(
+                                        padding: EdgeInsets.only(
+                                          bottom: theme.spacing.xs / 2,
+                                        ),
+                                        child: Text(
+                                          clinicalPrescriptionItemPaperLine(
+                                            item,
+                                          ),
+                                          maxLines: 3,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.bodyMedium,
+                                        ),
+                                      ),
+                                  ],
+                                ),
                         ),
                       ),
                       DataCell(

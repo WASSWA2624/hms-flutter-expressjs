@@ -97,16 +97,19 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
 
     final bundle = ClinicalEncounterBundle(
       entry: entry,
-      clinicalNotes: results[0],
-      diagnoses: results[1],
-      procedures: results[2],
-      carePlans: results[3],
-      labOrders: results[4],
-      radiologyOrders: results[5],
-      pharmacyOrders: results[6],
-      referrals: results[7],
-      followUps: results[8],
-      admissions: results[9],
+      clinicalNotes: clinicalNotesForDisplay(results[0]),
+      diagnoses: deduplicateClinicalRelatedRecords(
+        results[1],
+        diagnoses: true,
+      ),
+      procedures: deduplicateClinicalRelatedRecords(results[2]),
+      carePlans: deduplicateClinicalRelatedRecords(results[3]),
+      labOrders: deduplicateClinicalRelatedRecords(results[4]),
+      radiologyOrders: deduplicateClinicalRelatedRecords(results[5]),
+      pharmacyOrders: deduplicateClinicalRelatedRecords(results[6]),
+      referrals: deduplicateClinicalRelatedRecords(results[7]),
+      followUps: deduplicateClinicalRelatedRecords(results[8]),
+      admissions: deduplicateClinicalRelatedRecords(results[9]),
     );
 
     return Result<ClinicalEncounterBundle>.success(

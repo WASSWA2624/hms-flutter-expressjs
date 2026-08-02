@@ -4683,13 +4683,34 @@ const doctorReview = async (id, data, context = {}) => {
       throw new HttpError('errors.opd_flow.invalid_stage_transition', 400, [{ field: 'author_user_id' }]);
     }
 
-    const note = await tx.clinical_note.create({
-      data: {
-        encounter_id: encounter.id,
-        author_user_id: authorUserId,
-        note: data.note
-      }
-    });
+    const noteText = typeof data.note === 'string' ? data.note.trim() : '';
+    const isPlaceholderActionNote = (value) => {
+      const normalized = String(value || '').trim().toLowerCase();
+      if (!normalized) return true;
+      return [
+        'prescribe',
+        'request procedure',
+        'request lab',
+        'order lab',
+        'request radiology',
+        'order radiology',
+        'add diagnosis',
+        'record diagnosis',
+      ].includes(normalized);
+    };
+
+    // Persist only real clinical prose. Action labels like "Prescribe" belong
+    // with pharmacy/lab/radiology orders, not the clinical notes section.
+    let note = null;
+    if (noteText && !isPlaceholderActionNote(noteText)) {
+      note = await tx.clinical_note.create({
+        data: {
+          encounter_id: encounter.id,
+          author_user_id: authorUserId,
+          note: noteText,
+        },
+      });
+    }
 
     if (Array.isArray(data.diagnoses) && data.diagnoses.length) {
       await tx.diagnosis.createMany({
@@ -4905,7 +4926,9 @@ const doctorReview = async (id, data, context = {}) => {
     }
 
     flow.review_completed = true;
-    flow.clinical_note_id = note.id;
+    if (note?.id) {
+      flow.clinical_note_id = note.id;
+    }
     if (labOrder) {
       flow.lab_order_ids = [labOrder.id];
     }
@@ -4917,7 +4940,7 @@ const doctorReview = async (id, data, context = {}) => {
     }
 
     appendTimelineEvent(flow, 'DOCTOR_REVIEW_COMPLETED', context, {
-      note_id: note.id,
+      note_id: note?.id || null,
       diagnosis_count: Array.isArray(data.diagnoses) ? data.diagnoses.length : 0,
       procedure_count: Array.isArray(data.procedures) ? data.procedures.length : 0,
       lab_order_count: hasLab ? 1 : 0,

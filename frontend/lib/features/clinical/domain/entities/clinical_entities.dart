@@ -833,6 +833,11 @@ final class ClinicalTriageHandoff {
     this.vitalSigns = const <ClinicalVitalSummary>[],
     this.alerts = const <ClinicalAlertSummary>[],
     this.timeline = const <ClinicalWorkflowTimelineItem>[],
+    this.consultationPaymentStatus,
+    this.consultationPaid = false,
+    this.consultationPaymentRequired = false,
+    this.consultationFeeLabel,
+    this.consultationPaidAmountLabel,
   });
 
   final String? triageLevel;
@@ -846,6 +851,24 @@ final class ClinicalTriageHandoff {
   final List<ClinicalVitalSummary> vitalSigns;
   final List<ClinicalAlertSummary> alerts;
   final List<ClinicalWorkflowTimelineItem> timeline;
+
+  /// Visit payment / coverage snapshot from OPD flow (for clinical report).
+  final String? consultationPaymentStatus;
+  final bool consultationPaid;
+  final bool consultationPaymentRequired;
+  final String? consultationFeeLabel;
+  final String? consultationPaidAmountLabel;
+
+  bool get hasCoverageDetails {
+    return _firstNonEmpty(<String?>[
+          consultationPaymentStatus,
+          consultationFeeLabel,
+          consultationPaidAmountLabel,
+        ]) !=
+        null ||
+        consultationPaid ||
+        consultationPaymentRequired;
+  }
 
   bool get hasContent {
     return hasTriageDetails ||
@@ -1193,6 +1216,93 @@ ClinicalWorklistFacetCounts clinicalWorklistFacetCounts(
     urgent: urgent,
     resultsReady: resultsReady,
     completedToday: completedToday,
+  );
+}
+
+/// Deduplicate related clinical records by stable id (and diagnosis clinical key).
+List<ClinicalRelatedRecord> deduplicateClinicalRelatedRecords(
+  Iterable<ClinicalRelatedRecord> records, {
+  bool diagnoses = false,
+}) {
+  final Map<String, ClinicalRelatedRecord> byKey =
+      <String, ClinicalRelatedRecord>{};
+  for (final ClinicalRelatedRecord record in records) {
+    final String idKey = record.id.trim().toUpperCase();
+    if (idKey.isEmpty) {
+      continue;
+    }
+    final String clinicalKey = diagnoses
+        ? _diagnosisDeduplicationKey(record)
+        : idKey;
+    final ClinicalRelatedRecord? existing = byKey[clinicalKey];
+    if (existing == null) {
+      byKey[clinicalKey] = record;
+      continue;
+    }
+    final DateTime existingAt =
+        existing.occurredAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final DateTime nextAt =
+        record.occurredAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    if (nextAt.isAfter(existingAt)) {
+      byKey[clinicalKey] = record;
+    }
+  }
+  return byKey.values.toList(growable: false);
+}
+
+String _diagnosisDeduplicationKey(ClinicalRelatedRecord record) {
+  final String id = record.id.trim().toUpperCase();
+  final String code = (record.code ?? '').trim().toUpperCase();
+  final String type = (record.diagnosisType ?? '').trim().toUpperCase();
+  final String title = (record.title ?? '').trim().toUpperCase();
+  if (code.isNotEmpty || title.isNotEmpty) {
+    return '$code|$type|$title';
+  }
+  return id;
+}
+
+/// Action-label notes created by order workflows (Prescribe / order lab / …)
+/// must not appear as clinical notes — those belong in their own sections.
+bool isClinicalWorkflowPlaceholderNote(ClinicalRelatedRecord note) {
+  final String text = (note.title ?? '').trim().toLowerCase();
+  if (text.isEmpty) {
+    return true;
+  }
+  const Set<String> placeholders = <String>{
+    'prescribe',
+    'request procedure',
+    'request lab',
+    'order lab',
+    'request radiology',
+    'order radiology',
+    'add diagnosis',
+    'record diagnosis',
+  };
+  if (placeholders.contains(text)) {
+    return true;
+  }
+  // Single-token action verbs / short UI labels without clinical prose.
+  if (text.length <= 24 && !text.contains(' ') && !text.contains('.')) {
+    const Set<String> actionTokens = <String>{
+      'prescribe',
+      'diagnosis',
+      'procedure',
+      'referral',
+      'follow-up',
+      'followup',
+    };
+    if (actionTokens.contains(text)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+List<ClinicalRelatedRecord> clinicalNotesForDisplay(
+  Iterable<ClinicalRelatedRecord> notes,
+) {
+  return deduplicateClinicalRelatedRecords(
+    notes.where((ClinicalRelatedRecord note) => !isClinicalWorkflowPlaceholderNote(note)),
   );
 }
 
