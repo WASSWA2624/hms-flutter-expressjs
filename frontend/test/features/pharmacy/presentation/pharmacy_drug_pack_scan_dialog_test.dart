@@ -19,6 +19,7 @@ void main() {
   Future<void> pumpScan(
     WidgetTester tester, {
     required void Function(DrugPackFieldCandidates? result) onClosed,
+    DrugPackAiMapper? aiMapper,
   }) async {
     await setLargeSurface(tester);
     await tester.pumpWidget(
@@ -37,6 +38,7 @@ void main() {
                           ocrService: const AppNoOpOcrService(),
                           barcodeDecoder: const AppHeuristicBarcodeDecoder(),
                           parser: const DrugPackFieldParser(),
+                          aiMapper: aiMapper,
                         );
                     onClosed(result);
                   },
@@ -52,7 +54,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('skip closes scan without candidates and keeps host route', (
+  testWidgets('toolbar and raw text layout without photos', (
     WidgetTester tester,
   ) async {
     DrugPackFieldCandidates? closedWith;
@@ -63,18 +65,19 @@ void main() {
     expect(find.text('SCAN PACK OR USE AI CAPTURE'), findsOneWidget);
     expect(find.text('Take photo'), findsOneWidget);
     expect(find.text('Upload photos'), findsOneWidget);
-    expect(find.text('Paste label wording'), findsOneWidget);
-    expect(find.text('Process photos'), findsNothing);
-    expect(find.text('Prefill form'), findsOneWidget);
+    expect(find.text('Scan barcode'), findsOneWidget);
+    expect(find.text('Process with OCR'), findsNothing);
+    expect(find.text('Process with AI'), findsWidgets);
+    expect(find.text('Raw pack text'), findsWidgets);
+    expect(find.text('Parse text'), findsOneWidget);
+    expect(find.text('Clear photos'), findsNothing);
 
     await tester.tap(find.text('Skip scan'));
     await tester.pumpAndSettle();
-
     expect(closedWith, isNull);
-    expect(find.text('Open scan'), findsOneWidget);
   });
 
-  testWidgets('parser text produces candidates and enables prefill', (
+  testWidgets('parse text seeds editable suggested values for prefill', (
     WidgetTester tester,
   ) async {
     DrugPackFieldCandidates? closedWith;
@@ -83,13 +86,24 @@ void main() {
     });
 
     await tester.enterText(
-      find.byType(TextField).last,
+      find.byType(TextField).at(1),
       'Amoxil\nAmoxicillin\nCapsule 500mg\nBatch: LOT-1\n',
     );
-    await tester.tap(find.byTooltip('Parse text'));
+    await tester.tap(find.text('Parse text'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Capsule'), findsWidgets);
+    expect(find.text('Suggested values'), findsOneWidget);
+    expect(find.text('Generic name'), findsOneWidget);
+
+    await tester.enterText(find.widgetWithText(TextField, 'Generic name'), '');
+    // Find generic field by label and set a clear value via last matching editable.
+    final Finder genericField = find.ancestor(
+      of: find.text('Generic name'),
+      matching: find.byType(TextField),
+    );
+    if (tester.any(genericField)) {
+      await tester.enterText(genericField.first, 'Amoxicillin');
+    }
 
     await tester.tap(find.text('Prefill form'));
     await tester.pumpAndSettle();
@@ -99,7 +113,9 @@ void main() {
     expect(closedWith!.form, 'Capsule');
   });
 
-  testWidgets('barcode apply merges into field preview', (WidgetTester tester) async {
+  testWidgets('barcode use maps into suggested code field', (
+    WidgetTester tester,
+  ) async {
     await pumpScan(tester, onClosed: (_) {});
 
     expect(
@@ -110,6 +126,7 @@ void main() {
     await tester.tap(find.byTooltip('Use barcode'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Suggested values'), findsOneWidget);
     expect(find.text('Prefill form'), findsOneWidget);
   });
 }

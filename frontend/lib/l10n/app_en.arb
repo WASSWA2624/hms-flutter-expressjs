@@ -15342,13 +15342,17 @@
   "@pharmacyDrugBarcodeLabel": {
     "description": "Barcode entry field on drug pack scan."
   },
-  "pharmacyDrugBarcodeHelper": "Type or paste the barcode number from the pack. Photos are separate below.",
+  "pharmacyDrugBarcodeHelper": "Type or paste the barcode number, then Use barcode to map fields. Use Scan barcode to fill this field from a photo.",
   "@pharmacyDrugBarcodeHelper": {
-    "description": "Explains that barcode is typed text, not a photo."
+    "description": "Explains typed barcode + Use barcode; photos/scan are separate."
   },
   "pharmacyDrugBarcodeApplyAction": "Use barcode",
   "@pharmacyDrugBarcodeApplyAction": {
     "description": "Apply typed/scanned barcode to prefill candidates."
+  },
+  "pharmacyDrugScanBarcodeAction": "Scan barcode",
+  "@pharmacyDrugScanBarcodeAction": {
+    "description": "Capture/decode a barcode image into the package barcode field."
   },
   "pharmacyDrugCapturePackPhotoAction": "Capture pack photo",
   "@pharmacyDrugCapturePackPhotoAction": {
@@ -15362,9 +15366,21 @@
   "@pharmacyDrugUploadPackPhotoAction": {
     "description": "Upload one or more pack photos from gallery/files for OCR."
   },
+  "pharmacyDrugProcessPackPhotosOcrAction": "Process with OCR",
+  "@pharmacyDrugProcessPackPhotosOcrAction": {
+    "description": "Run on-device OCR across all collected pack photos."
+  },
+  "pharmacyDrugProcessPackPhotosAiAction": "Process with AI",
+  "@pharmacyDrugProcessPackPhotosAiAction": {
+    "description": "Run AI/structured assist across all collected pack photos."
+  },
   "pharmacyDrugProcessPackPhotosAction": "Process photos",
   "@pharmacyDrugProcessPackPhotosAction": {
-    "description": "Run OCR on all collected pack photos and map drug fields."
+    "description": "Legacy process label; prefer OCR/AI actions."
+  },
+  "pharmacyDrugPhotosSectionTitle": "Pack photos",
+  "@pharmacyDrugPhotosSectionTitle": {
+    "description": "Title for the ephemeral pack photo preview card."
   },
   "pharmacyDrugClearPackPhotosAction": "Clear photos",
   "@pharmacyDrugClearPackPhotosAction": {
@@ -15380,7 +15396,7 @@
   },
   "pharmacyDrugPhotosReadyBody": "{count, plural, =1{1 photo ready — process when finished} other{{count} photos ready — process when finished}}",
   "@pharmacyDrugPhotosReadyBody": {
-    "description": "Status for collected pack photos waiting for OCR.",
+    "description": "Status for collected pack photos waiting for OCR/AI.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -15389,7 +15405,7 @@
   },
   "pharmacyDrugPhotosProcessedBody": "{count, plural, =1{1 photo processed} other{{count} photos processed}}",
   "@pharmacyDrugPhotosProcessedBody": {
-    "description": "Status count after OCR finishes on pack photos.",
+    "description": "Status count after OCR/AI finishes on pack photos.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -15398,19 +15414,23 @@
   },
   "pharmacyDrugPastePackTextAction": "Parse text",
   "@pharmacyDrugPastePackTextAction": {
-    "description": "Parse pasted/typed pack wording into drug field candidates."
+    "description": "Parse typed/pasted/dictated raw pack text into drug field candidates."
   },
   "pharmacyDrugParsePackTextExpandAction": "Have pack text?",
   "@pharmacyDrugParsePackTextExpandAction": {
-    "description": "Progressive disclosure control that reveals the pack text parser."
+    "description": "Legacy progressive disclosure for pack text."
   },
-  "pharmacyDrugPackTextLabel": "Paste label wording",
+  "pharmacyDrugPackTextLabel": "Raw pack text",
   "@pharmacyDrugPackTextLabel": {
-    "description": "Multiline field for pasted drug-pack label text."
+    "description": "Multiline field for typed, pasted, or dictated pack text."
   },
-  "pharmacyDrugPackTextHelper": "Paste wording from the pack if you already have it. Click Parse text to map fields.",
+  "pharmacyDrugPackTextHelper": "Type, paste, or dictate raw pack wording. Parse text maps it into drug fields.",
   "@pharmacyDrugPackTextHelper": {
-    "description": "Helper for the pack wording parser field."
+    "description": "Helper for the raw pack text parser field."
+  },
+  "pharmacyDrugPackTextSectionTitle": "Raw pack text",
+  "@pharmacyDrugPackTextSectionTitle": {
+    "description": "Section title above the raw pack text field."
   },
   "pharmacyDrugScanSkipAction": "Skip scan",
   "@pharmacyDrugScanSkipAction": {
@@ -15428,13 +15448,37 @@
   "@pharmacyDrugScanProcessingPhotosBody": {
     "description": "Busy status while OCR runs across collected pack photos."
   },
+  "pharmacyDrugScanProcessingAiBody": "Mapping pack details with AI…",
+  "@pharmacyDrugScanProcessingAiBody": {
+    "description": "Busy status while AI/structured assist maps pack details."
+  },
+  "pharmacyDrugScanAiUnavailableBody": "AI assist is unavailable right now. Try Process with OCR, or check connectivity.",
+  "@pharmacyDrugScanAiUnavailableBody": {
+    "description": "Shown when the AI mapper cannot run and OCR fallback is offered."
+  },
+  "pharmacyDrugScanBarcodeEmptyBody": "No barcode could be read from that image. Type or paste the code instead.",
+  "@pharmacyDrugScanBarcodeEmptyBody": {
+    "description": "Shown when Scan barcode cannot decode a code."
+  },
   "pharmacyDrugSuggestedBannerTitle": "Confirm suggested values",
   "@pharmacyDrugSuggestedBannerTitle": {
-    "description": "Banner title when scan/OCR prefilled fields need confirmation."
+    "description": "Banner title when scan/OCR prefilled fields need confirmation on the create form."
   },
   "pharmacyDrugSuggestedBannerBody": "Highlighted fields came from scan/OCR. Accept each field, edit it, or accept all before creating.",
   "@pharmacyDrugSuggestedBannerBody": {
-    "description": "Banner body for suggested-field confirmation."
+    "description": "Banner body for suggested-field confirmation on the create form."
+  },
+  "pharmacyDrugScanSuggestedTitle": "Suggested values",
+  "@pharmacyDrugScanSuggestedTitle": {
+    "description": "Title for editable suggested drug field values in the pack scan dialog."
+  },
+  "pharmacyDrugScanSuggestedBody": "Review and edit suggested values before prefilling the create form.",
+  "@pharmacyDrugScanSuggestedBody": {
+    "description": "Helper under the suggested values list in the pack scan dialog."
+  },
+  "pharmacyDrugSuggestedEditableHint": "Suggested",
+  "@pharmacyDrugSuggestedEditableHint": {
+    "description": "Placeholder hint on empty suggested-value fields."
   },
   "pharmacyDrugAcceptSuggestionAction": "Accept",
   "@pharmacyDrugAcceptSuggestionAction": {

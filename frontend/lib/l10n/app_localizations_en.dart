@@ -12020,10 +12020,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyDrugBarcodeHelper =>
-      'Type or paste the barcode number from the pack. Photos are separate below.';
+      'Type or paste the barcode number, then Use barcode to map fields. Use Scan barcode to fill this field from a photo.';
 
   @override
   String get pharmacyDrugBarcodeApplyAction => 'Use barcode';
+
+  @override
+  String get pharmacyDrugScanBarcodeAction => 'Scan barcode';
 
   @override
   String get pharmacyDrugCapturePackPhotoAction => 'Capture pack photo';
@@ -12035,7 +12038,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyDrugUploadPackPhotoAction => 'Upload photos';
 
   @override
+  String get pharmacyDrugProcessPackPhotosOcrAction => 'Process with OCR';
+
+  @override
+  String get pharmacyDrugProcessPackPhotosAiAction => 'Process with AI';
+
+  @override
   String get pharmacyDrugProcessPackPhotosAction => 'Process photos';
+
+  @override
+  String get pharmacyDrugPhotosSectionTitle => 'Pack photos';
 
   @override
   String get pharmacyDrugClearPackPhotosAction => 'Clear photos';
@@ -12075,11 +12087,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyDrugParsePackTextExpandAction => 'Have pack text?';
 
   @override
-  String get pharmacyDrugPackTextLabel => 'Paste label wording';
+  String get pharmacyDrugPackTextLabel => 'Raw pack text';
 
   @override
   String get pharmacyDrugPackTextHelper =>
-      'Paste wording from the pack if you already have it. Click Parse text to map fields.';
+      'Type, paste, or dictate raw pack wording. Parse text maps it into drug fields.';
+
+  @override
+  String get pharmacyDrugPackTextSectionTitle => 'Raw pack text';
 
   @override
   String get pharmacyDrugScanSkipAction => 'Skip scan';
@@ -12095,11 +12110,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyDrugScanProcessingPhotosBody => 'Reading all pack photos…';
 
   @override
+  String get pharmacyDrugScanProcessingAiBody =>
+      'Mapping pack details with AI…';
+
+  @override
+  String get pharmacyDrugScanAiUnavailableBody =>
+      'AI assist is unavailable right now. Try Process with OCR, or check connectivity.';
+
+  @override
+  String get pharmacyDrugScanBarcodeEmptyBody =>
+      'No barcode could be read from that image. Type or paste the code instead.';
+
+  @override
   String get pharmacyDrugSuggestedBannerTitle => 'Confirm suggested values';
 
   @override
   String get pharmacyDrugSuggestedBannerBody =>
       'Highlighted fields came from scan/OCR. Accept each field, edit it, or accept all before creating.';
+
+  @override
+  String get pharmacyDrugScanSuggestedTitle => 'Suggested values';
+
+  @override
+  String get pharmacyDrugScanSuggestedBody =>
+      'Review and edit suggested values before prefilling the create form.';
+
+  @override
+  String get pharmacyDrugSuggestedEditableHint => 'Suggested';
 
   @override
   String get pharmacyDrugAcceptSuggestionAction => 'Accept';

@@ -22192,10 +22192,10 @@ abstract class AppLocalizations {
   /// **'Package barcode'**
   String get pharmacyDrugBarcodeLabel;
 
-  /// Explains that barcode is typed text, not a photo.
+  /// Explains typed barcode + Use barcode; photos/scan are separate.
   ///
   /// In en, this message translates to:
-  /// **'Type or paste the barcode number from the pack. Photos are separate below.'**
+  /// **'Type or paste the barcode number, then Use barcode to map fields. Use Scan barcode to fill this field from a photo.'**
   String get pharmacyDrugBarcodeHelper;
 
   /// Apply typed/scanned barcode to prefill candidates.
@@ -22203,6 +22203,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use barcode'**
   String get pharmacyDrugBarcodeApplyAction;
+
+  /// Capture/decode a barcode image into the package barcode field.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan barcode'**
+  String get pharmacyDrugScanBarcodeAction;
 
   /// Legacy single capture label; prefer take/upload actions.
   ///
@@ -22222,11 +22228,29 @@ abstract class AppLocalizations {
   /// **'Upload photos'**
   String get pharmacyDrugUploadPackPhotoAction;
 
-  /// Run OCR on all collected pack photos and map drug fields.
+  /// Run on-device OCR across all collected pack photos.
+  ///
+  /// In en, this message translates to:
+  /// **'Process with OCR'**
+  String get pharmacyDrugProcessPackPhotosOcrAction;
+
+  /// Run AI/structured assist across all collected pack photos.
+  ///
+  /// In en, this message translates to:
+  /// **'Process with AI'**
+  String get pharmacyDrugProcessPackPhotosAiAction;
+
+  /// Legacy process label; prefer OCR/AI actions.
   ///
   /// In en, this message translates to:
   /// **'Process photos'**
   String get pharmacyDrugProcessPackPhotosAction;
+
+  /// Title for the ephemeral pack photo preview card.
+  ///
+  /// In en, this message translates to:
+  /// **'Pack photos'**
+  String get pharmacyDrugPhotosSectionTitle;
 
   /// Remove all ephemeral pack photos from the scan session.
   ///
@@ -22246,41 +22270,47 @@ abstract class AppLocalizations {
   /// **'Edit photo'**
   String get pharmacyDrugEditPackPhotoAction;
 
-  /// Status for collected pack photos waiting for OCR.
+  /// Status for collected pack photos waiting for OCR/AI.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 photo ready — process when finished} other{{count} photos ready — process when finished}}'**
   String pharmacyDrugPhotosReadyBody(int count);
 
-  /// Status count after OCR finishes on pack photos.
+  /// Status count after OCR/AI finishes on pack photos.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 photo processed} other{{count} photos processed}}'**
   String pharmacyDrugPhotosProcessedBody(int count);
 
-  /// Parse pasted/typed pack wording into drug field candidates.
+  /// Parse typed/pasted/dictated raw pack text into drug field candidates.
   ///
   /// In en, this message translates to:
   /// **'Parse text'**
   String get pharmacyDrugPastePackTextAction;
 
-  /// Progressive disclosure control that reveals the pack text parser.
+  /// Legacy progressive disclosure for pack text.
   ///
   /// In en, this message translates to:
   /// **'Have pack text?'**
   String get pharmacyDrugParsePackTextExpandAction;
 
-  /// Multiline field for pasted drug-pack label text.
+  /// Multiline field for typed, pasted, or dictated pack text.
   ///
   /// In en, this message translates to:
-  /// **'Paste label wording'**
+  /// **'Raw pack text'**
   String get pharmacyDrugPackTextLabel;
 
-  /// Helper for the pack wording parser field.
+  /// Helper for the raw pack text parser field.
   ///
   /// In en, this message translates to:
-  /// **'Paste wording from the pack if you already have it. Click Parse text to map fields.'**
+  /// **'Type, paste, or dictate raw pack wording. Parse text maps it into drug fields.'**
   String get pharmacyDrugPackTextHelper;
+
+  /// Section title above the raw pack text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw pack text'**
+  String get pharmacyDrugPackTextSectionTitle;
 
   /// Skip assistive scan and continue with a blank create form.
   ///
@@ -22306,17 +22336,53 @@ abstract class AppLocalizations {
   /// **'Reading all pack photos…'**
   String get pharmacyDrugScanProcessingPhotosBody;
 
-  /// Banner title when scan/OCR prefilled fields need confirmation.
+  /// Busy status while AI/structured assist maps pack details.
+  ///
+  /// In en, this message translates to:
+  /// **'Mapping pack details with AI…'**
+  String get pharmacyDrugScanProcessingAiBody;
+
+  /// Shown when the AI mapper cannot run and OCR fallback is offered.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assist is unavailable right now. Try Process with OCR, or check connectivity.'**
+  String get pharmacyDrugScanAiUnavailableBody;
+
+  /// Shown when Scan barcode cannot decode a code.
+  ///
+  /// In en, this message translates to:
+  /// **'No barcode could be read from that image. Type or paste the code instead.'**
+  String get pharmacyDrugScanBarcodeEmptyBody;
+
+  /// Banner title when scan/OCR prefilled fields need confirmation on the create form.
   ///
   /// In en, this message translates to:
   /// **'Confirm suggested values'**
   String get pharmacyDrugSuggestedBannerTitle;
 
-  /// Banner body for suggested-field confirmation.
+  /// Banner body for suggested-field confirmation on the create form.
   ///
   /// In en, this message translates to:
   /// **'Highlighted fields came from scan/OCR. Accept each field, edit it, or accept all before creating.'**
   String get pharmacyDrugSuggestedBannerBody;
+
+  /// Title for editable suggested drug field values in the pack scan dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested values'**
+  String get pharmacyDrugScanSuggestedTitle;
+
+  /// Helper under the suggested values list in the pack scan dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Review and edit suggested values before prefilling the create form.'**
+  String get pharmacyDrugScanSuggestedBody;
+
+  /// Placeholder hint on empty suggested-value fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested'**
+  String get pharmacyDrugSuggestedEditableHint;
 
   /// Accept one suggested drug field.
   ///
