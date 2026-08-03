@@ -199,6 +199,7 @@ class _PharmacyDrugDetailsDialog extends ConsumerWidget {
               label: l10n.commonDeleteActionLabel,
               leadingIcon: Icons.delete_outline,
               semanticLabel: l10n.pharmacyDeleteDrugAction,
+              color: theme.colorScheme.error,
               onPressed: () async {
                 final bool deleted = await onDelete(current);
                 // Pop the details dialog route (root navigator), not a shell route.

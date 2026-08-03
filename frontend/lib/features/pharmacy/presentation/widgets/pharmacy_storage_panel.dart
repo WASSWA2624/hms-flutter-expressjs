@@ -15,6 +15,7 @@ import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_stora
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_storage_shelf_similarity_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
@@ -233,7 +234,8 @@ PharmacyStorageRoom? _findShelfParentRoom(
 }
 
 /// Soft-deletes a storage room (cascades shelves).
-Future<void> confirmDeletePharmacyStorageRoom(
+/// Returns `true` when the room was deleted successfully.
+Future<bool> confirmDeletePharmacyStorageRoom(
   BuildContext context,
   WidgetRef ref,
   PharmacyStorageRoom room,
@@ -241,35 +243,20 @@ Future<void> confirmDeletePharmacyStorageRoom(
   final AppLocalizations l10n = context.l10n;
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
-    builder: (BuildContext dialogContext) => AppDialog(
-      title: Text(l10n.pharmacyDeleteStorageRoomDialogTitle),
-      content: Text(l10n.pharmacyDeleteStorageRoomDialogBody),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: Icons.close,
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.commonDeleteActionLabel,
-          leadingIcon: Icons.delete_outline,
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-        ),
-      ],
+    builder: (_) => AppConfirmActionDialog(
+      title: l10n.pharmacyDeleteStorageRoomDialogTitle,
+      body: l10n.pharmacyDeleteStorageRoomDialogBody,
+      highlightedText: room.name ?? room.displayId ?? room.id,
+      submitLabel: l10n.commonDeleteActionLabel,
+      destructive: true,
+      icon: const Icon(AppActionIcons.delete),
+      submitLeadingIcon: AppActionIcons.delete,
+      onConfirm: () => ref
+          .read(pharmacyWorkspaceControllerProvider.notifier)
+          .deleteStorageRoom(room.id),
     ),
   );
-  if (confirmed != true || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(pharmacyWorkspaceControllerProvider.notifier)
-      .deleteStorageRoom(room.id);
-  if (!context.mounted || failure == null) {
-    return;
-  }
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
-  );
+  return confirmed == true;
 }
 
 Future<void> confirmRestorePharmacyStorageRoom(
@@ -294,7 +281,7 @@ Future<void> confirmRestorePharmacyStorageRoom(
   );
 }
 
-Future<void> confirmPermanentDeletePharmacyStorageRoom(
+Future<bool> confirmPermanentDeletePharmacyStorageRoom(
   BuildContext context,
   WidgetRef ref,
   PharmacyStorageRoom room,
@@ -302,39 +289,25 @@ Future<void> confirmPermanentDeletePharmacyStorageRoom(
   final AppLocalizations l10n = context.l10n;
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
-    builder: (BuildContext dialogContext) => AppDialog(
-      title: Text(l10n.pharmacyPermanentDeleteStorageRoomDialogTitle),
-      content: Text(l10n.pharmacyPermanentDeleteStorageRoomDialogBody),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: Icons.close,
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.pharmacyPermanentDeleteStorageRoomAction,
-          leadingIcon: Icons.delete_forever_outlined,
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-        ),
-      ],
+    builder: (_) => AppConfirmActionDialog(
+      title: l10n.pharmacyPermanentDeleteStorageRoomDialogTitle,
+      body: l10n.pharmacyPermanentDeleteStorageRoomDialogBody,
+      highlightedText: room.name ?? room.displayId ?? room.id,
+      submitLabel: l10n.pharmacyPermanentDeleteStorageRoomAction,
+      destructive: true,
+      icon: const Icon(Icons.delete_forever_outlined),
+      submitLeadingIcon: Icons.delete_forever_outlined,
+      onConfirm: () => ref
+          .read(pharmacyWorkspaceControllerProvider.notifier)
+          .permanentDeleteStorageRoom(room.id),
     ),
   );
-  if (confirmed != true || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(pharmacyWorkspaceControllerProvider.notifier)
-      .permanentDeleteStorageRoom(room.id);
-  if (!context.mounted || failure == null) {
-    return;
-  }
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
-  );
+  return confirmed == true;
 }
 
 /// Confirms and deletes a storage shelf. Reused by the Shelves table.
-Future<void> confirmDeletePharmacyStorageShelf(
+/// Returns `true` when the shelf was deleted successfully.
+Future<bool> confirmDeletePharmacyStorageShelf(
   BuildContext context,
   WidgetRef ref,
   PharmacyStorageShelf shelf,
@@ -342,35 +315,20 @@ Future<void> confirmDeletePharmacyStorageShelf(
   final AppLocalizations l10n = context.l10n;
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
-    builder: (BuildContext dialogContext) => AppDialog(
-      title: Text(l10n.pharmacyDeleteStorageShelfDialogTitle),
-      content: Text(l10n.pharmacyDeleteStorageShelfDialogBody),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: Icons.close,
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.pharmacyDeleteStorageShelfAction,
-          leadingIcon: Icons.delete_outline,
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-        ),
-      ],
+    builder: (_) => AppConfirmActionDialog(
+      title: l10n.pharmacyDeleteStorageShelfDialogTitle,
+      body: l10n.pharmacyDeleteStorageShelfDialogBody,
+      highlightedText: shelf.displayLabel,
+      submitLabel: l10n.pharmacyDeleteStorageShelfAction,
+      destructive: true,
+      icon: const Icon(AppActionIcons.delete),
+      submitLeadingIcon: AppActionIcons.delete,
+      onConfirm: () => ref
+          .read(pharmacyWorkspaceControllerProvider.notifier)
+          .deleteStorageShelf(shelf.id),
     ),
   );
-  if (confirmed != true || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(pharmacyWorkspaceControllerProvider.notifier)
-      .deleteStorageShelf(shelf.id);
-  if (!context.mounted || failure == null) {
-    return;
-  }
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
-  );
+  return confirmed == true;
 }
 
 class PharmacyStoragePanel extends ConsumerWidget {
@@ -1276,9 +1234,14 @@ class _StorageRoomDetailsDialogState
               label: l10n.commonDeleteActionLabel,
               leadingIcon: Icons.delete_outline,
               semanticLabel: l10n.pharmacyDeleteStorageRoomAction,
+              color: theme.colorScheme.error,
               onPressed: () async {
-                await confirmDeletePharmacyStorageRoom(context, ref, current);
-                if (context.mounted) {
+                final bool deleted = await confirmDeletePharmacyStorageRoom(
+                  context,
+                  ref,
+                  current,
+                );
+                if (deleted && context.mounted) {
                   Navigator.of(context).pop();
                 }
               },
@@ -1839,9 +1802,14 @@ class _StorageShelfDetailsDialog extends ConsumerWidget {
               label: l10n.commonDeleteActionLabel,
               leadingIcon: Icons.delete_outline,
               semanticLabel: l10n.pharmacyDeleteStorageShelfAction,
+              color: theme.colorScheme.error,
               onPressed: () async {
-                await confirmDeletePharmacyStorageShelf(context, ref, current);
-                if (context.mounted) {
+                final bool deleted = await confirmDeletePharmacyStorageShelf(
+                  context,
+                  ref,
+                  current,
+                );
+                if (deleted && context.mounted) {
                   Navigator.of(context).pop();
                 }
               },

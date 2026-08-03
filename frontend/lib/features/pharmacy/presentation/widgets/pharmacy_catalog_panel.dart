@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_storage_panel.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -460,40 +461,27 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
     BuildContext context,
     PharmacyDrug drug,
   ) async {
+    final AppLocalizations l10n = context.l10n;
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (BuildContext dialogContext) => AppDialog(
-        title: Text(context.l10n.pharmacyDeleteDrugDialogTitle),
-        content: Text(context.l10n.pharmacyDeleteDrugDialogBody),
-        actions: <Widget>[
-          AppButton.tertiary(
-            label: context.l10n.commonCancelActionLabel,
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-          ),
-          AppButton.primary(
-            label: context.l10n.pharmacyDeleteDrugAction,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-          ),
-        ],
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.pharmacyDeleteDrugDialogTitle,
+        body: l10n.pharmacyDeleteDrugDialogBody,
+        highlightedText: drug.displayTitle,
+        submitLabel: l10n.pharmacyDeleteDrugAction,
+        destructive: true,
+        icon: const Icon(AppActionIcons.delete),
+        submitLeadingIcon: AppActionIcons.delete,
+        onConfirm: () => ref
+            .read(pharmacyWorkspaceControllerProvider.notifier)
+            .deleteDrug(drug.id),
       ),
     );
     if (confirmed != true || !context.mounted) {
       return false;
     }
-    final AppFailure? failure = await ref
-        .read(pharmacyWorkspaceControllerProvider.notifier)
-        .deleteDrug(drug.id);
-    if (!context.mounted) {
-      return false;
-    }
-    if (failure == null) {
-      setState(() => _selectedDrugIds.remove(drug.id));
-      return true;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.pharmacyCatalogDeleteFailedMessage)),
-    );
-    return false;
+    setState(() => _selectedDrugIds.remove(drug.id));
+    return true;
   }
 
   Future<void> _confirmDeleteSelectedDrugs(BuildContext context) async {
@@ -502,41 +490,32 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
     if (count == 0) {
       return;
     }
+    final List<String> ids = _selectedDrugIds.toList(growable: false);
+    final PharmacyWorkspaceController controller = ref.read(
+      pharmacyWorkspaceControllerProvider.notifier,
+    );
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (BuildContext dialogContext) => AppDialog(
-        title: Text(l10n.pharmacyDeleteSelectedDrugsDialogTitle),
-        content: Text(l10n.pharmacyDeleteSelectedDrugsDialogBody(count)),
-        actions: <Widget>[
-          AppButton.tertiary(
-            label: l10n.commonCancelActionLabel,
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-          ),
-          AppButton.primary(
-            label: l10n.pharmacyDeleteDrugAction,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-          ),
-        ],
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.pharmacyDeleteSelectedDrugsDialogTitle,
+        body: l10n.pharmacyDeleteSelectedDrugsDialogBody(count),
+        submitLabel: l10n.pharmacyDeleteDrugAction,
+        destructive: true,
+        icon: const Icon(AppActionIcons.delete),
+        submitLeadingIcon: AppActionIcons.delete,
+        onConfirm: () async {
+          for (final String drugId in ids) {
+            final AppFailure? failure = await controller.deleteDrug(drugId);
+            if (failure != null) {
+              return failure;
+            }
+          }
+          return null;
+        },
       ),
     );
     if (confirmed != true || !context.mounted) {
       return;
-    }
-    final PharmacyWorkspaceController controller = ref.read(
-      pharmacyWorkspaceControllerProvider.notifier,
-    );
-    final List<String> ids = _selectedDrugIds.toList(growable: false);
-    for (final String drugId in ids) {
-      final AppFailure? failure = await controller.deleteDrug(drugId);
-      if (!context.mounted) {
-        return;
-      }
-      if (failure != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
-        );
-        return;
-      }
     }
     setState(_selectedDrugIds.clear);
   }
@@ -871,37 +850,23 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
     final AppLocalizations l10n = context.l10n;
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (BuildContext dialogContext) => AppDialog(
-        title: Text(l10n.pharmacyDeleteFormularyDialogTitle),
-        content: Text(l10n.pharmacyDeleteFormularyDialogBody),
-        actions: <Widget>[
-          AppButton.tertiary(
-            label: l10n.commonCancelActionLabel,
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-          ),
-          AppButton.primary(
-            label: l10n.pharmacyDeleteFormularyAction,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-          ),
-        ],
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.pharmacyDeleteFormularyDialogTitle,
+        body: l10n.pharmacyDeleteFormularyDialogBody,
+        highlightedText: item.displayTitle,
+        submitLabel: l10n.pharmacyDeleteFormularyAction,
+        destructive: true,
+        icon: const Icon(AppActionIcons.delete),
+        submitLeadingIcon: AppActionIcons.delete,
+        onConfirm: () => ref
+            .read(pharmacyWorkspaceControllerProvider.notifier)
+            .deleteFormularyItem(item.id),
       ),
     );
     if (confirmed != true || !context.mounted) {
       return;
     }
-    final AppFailure? failure = await ref
-        .read(pharmacyWorkspaceControllerProvider.notifier)
-        .deleteFormularyItem(item.id);
-    if (!context.mounted) {
-      return;
-    }
-    if (failure == null) {
-      setState(() => _selectedFormularyIds.remove(item.id));
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
-    );
+    setState(() => _selectedFormularyIds.remove(item.id));
   }
 
   Future<void> _confirmDeleteSelectedFormulary(BuildContext context) async {
@@ -910,43 +875,34 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
     if (count == 0) {
       return;
     }
+    final List<String> ids = _selectedFormularyIds.toList(growable: false);
+    final PharmacyWorkspaceController controller = ref.read(
+      pharmacyWorkspaceControllerProvider.notifier,
+    );
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (BuildContext dialogContext) => AppDialog(
-        title: Text(l10n.pharmacyDeleteSelectedFormularyDialogTitle),
-        content: Text(l10n.pharmacyDeleteSelectedFormularyDialogBody(count)),
-        actions: <Widget>[
-          AppButton.tertiary(
-            label: l10n.commonCancelActionLabel,
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-          ),
-          AppButton.primary(
-            label: l10n.pharmacyDeleteFormularyAction,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-          ),
-        ],
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.pharmacyDeleteSelectedFormularyDialogTitle,
+        body: l10n.pharmacyDeleteSelectedFormularyDialogBody(count),
+        submitLabel: l10n.pharmacyDeleteFormularyAction,
+        destructive: true,
+        icon: const Icon(AppActionIcons.delete),
+        submitLeadingIcon: AppActionIcons.delete,
+        onConfirm: () async {
+          for (final String formularyItemId in ids) {
+            final AppFailure? failure = await controller.deleteFormularyItem(
+              formularyItemId,
+            );
+            if (failure != null) {
+              return failure;
+            }
+          }
+          return null;
+        },
       ),
     );
     if (confirmed != true || !context.mounted) {
       return;
-    }
-    final PharmacyWorkspaceController controller = ref.read(
-      pharmacyWorkspaceControllerProvider.notifier,
-    );
-    final List<String> ids = _selectedFormularyIds.toList(growable: false);
-    for (final String formularyItemId in ids) {
-      final AppFailure? failure = await controller.deleteFormularyItem(
-        formularyItemId,
-      );
-      if (!context.mounted) {
-        return;
-      }
-      if (failure != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
-        );
-        return;
-      }
     }
     setState(_selectedFormularyIds.clear);
   }
@@ -1732,39 +1688,28 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
     PharmacyInventoryStock stock,
   ) async {
     final AppLocalizations l10n = context.l10n;
+    final String title =
+        stock.inventoryItem?.displayTitle ?? stock.displayId ?? stock.id;
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (BuildContext dialogContext) => AppDialog(
-        title: Text(l10n.pharmacyDeleteInventoryStockDialogTitle),
-        initialMaximized: false,
-        showMaximizeButton: false,
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(l10n.pharmacyDeleteInventoryStockDialogBody),
-            SizedBox(height: Theme.of(dialogContext).spacing.md),
-            _InventoryClearSelectedTile(stock: stock),
-          ],
-        ),
-        actions: <Widget>[
-          AppButton.tertiary(
-            label: l10n.commonCancelActionLabel,
-            leadingIcon: Icons.close,
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-          ),
-          AppButton.primary(
-            label: l10n.pharmacyDeleteInventoryStockAction,
-            leadingIcon: Icons.delete_outline,
-            color: Theme.of(dialogContext).colorScheme.error,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-          ),
-        ],
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.pharmacyDeleteInventoryStockDialogTitle,
+        body: l10n.pharmacyDeleteInventoryStockDialogBody,
+        highlightedText: title,
+        submitLabel: l10n.pharmacyDeleteInventoryStockAction,
+        destructive: true,
+        icon: const Icon(AppActionIcons.delete),
+        submitLeadingIcon: AppActionIcons.delete,
+        leadingContent: <Widget>[_InventoryClearSelectedTile(stock: stock)],
+        onConfirm: () => _clearInventoryStockFailure(stock),
       ),
     );
     if (confirmed != true || !context.mounted) {
       return;
     }
-    await _clearInventoryStock(context, stock);
+    _mutateInventorySelection(
+      () => _selectedInventoryIds.remove(_inventorySelectionKey(stock)),
+    );
   }
 
   Future<void> _confirmClearSelectedInventory(BuildContext context) async {
@@ -1808,6 +1753,25 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
     }
   }
 
+  Future<AppFailure?> _clearInventoryStockFailure(
+    PharmacyInventoryStock stock,
+  ) async {
+    if (stock.quantity <= 0) {
+      return null;
+    }
+    return ref
+        .read(pharmacyWorkspaceControllerProvider.notifier)
+        .adjustInventoryStock(
+          PharmacyInventoryAdjustInput(
+            inventoryItemId:
+                stock.inventoryItemId ?? stock.inventoryItem?.id ?? stock.id,
+            quantityDelta: -stock.quantity.toInt(),
+            reason: 'DAMAGE',
+            facilityId: stock.facilityId,
+          ),
+        );
+  }
+
   Future<void> _clearInventoryStock(
     BuildContext context,
     PharmacyInventoryStock stock, {
@@ -1819,17 +1783,7 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
       );
       return;
     }
-    final AppFailure? failure = await ref
-        .read(pharmacyWorkspaceControllerProvider.notifier)
-        .adjustInventoryStock(
-          PharmacyInventoryAdjustInput(
-            inventoryItemId:
-                stock.inventoryItemId ?? stock.inventoryItem?.id ?? stock.id,
-            quantityDelta: -stock.quantity.toInt(),
-            reason: 'DAMAGE',
-            facilityId: stock.facilityId,
-          ),
-        );
+    final AppFailure? failure = await _clearInventoryStockFailure(stock);
     if (!context.mounted) {
       return;
     }
@@ -2878,6 +2832,8 @@ class _ClearSelectedInventoryDialogState
 
     return AppDialog(
       title: Text(l10n.pharmacyClearSelectedInventoryDialogTitle),
+      initialMaximized: false,
+      showMaximizeButton: false,
       pinActionsToBottom: true,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -3023,9 +2979,9 @@ class _ClearSelectedInventoryDialogState
           leadingIcon: Icons.close,
           onPressed: () => Navigator.of(context).pop(),
         ),
-        AppButton.primary(
+        AppButton.tertiary(
           label: l10n.pharmacyClearSelectedInventoryAction,
-          leadingIcon: Icons.delete_outline,
+          leadingIcon: AppActionIcons.delete,
           color: theme.colorScheme.error,
           enabled: selectedCount > 0,
           onPressed: selectedCount == 0
