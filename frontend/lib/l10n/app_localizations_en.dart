@@ -12246,6 +12246,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'No close matches found. Continue to create this drug.';
 
   @override
+  String get pharmacyDrugNoSimilarEditDialogBody =>
+      'No close matches found. Continue to save these edits.';
+
+  @override
   String get pharmacyDrugCreateAnywayAction => 'Create anyway';
 
   @override

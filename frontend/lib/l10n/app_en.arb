@@ -15616,7 +15616,11 @@
   },
   "pharmacyDrugNoSimilarDialogBody": "No close matches found. Continue to create this drug.",
   "@pharmacyDrugNoSimilarDialogBody": {
-    "description": "Body when drug similarity finds no matches."
+    "description": "Body when drug similarity finds no matches during create."
+  },
+  "pharmacyDrugNoSimilarEditDialogBody": "No close matches found. Continue to save these edits.",
+  "@pharmacyDrugNoSimilarEditDialogBody": {
+    "description": "Body when drug similarity finds no matches during edit."
   },
   "pharmacyDrugCreateAnywayAction": "Create anyway",
   "@pharmacyDrugCreateAnywayAction": {

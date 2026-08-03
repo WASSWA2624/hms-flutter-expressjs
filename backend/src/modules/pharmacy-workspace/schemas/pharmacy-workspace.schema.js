@@ -238,7 +238,9 @@ const checkPharmacyDrugSimilaritySchema = z.object({
   code: z.string().trim().max(80).optional().nullable(),
   form: z.string().trim().max(80).optional().nullable(),
   strength: z.string().trim().max(80).optional().nullable(),
-  exclude_drug_id: uuidOrFriendlyIdentifierSchema.optional().nullable()});
+  // Accept UUID or public id; repository resolves either. Keep looser than
+  // uuidOrFriendly so atypical public ids still exclude the edited drug.
+  exclude_drug_id: z.string().trim().min(1).max(64).optional().nullable()});
 
 const pharmacyStorageShelfParamsSchema = z.object({
   shelfId: uuidOrFriendlyIdentifierSchema});

@@ -374,16 +374,83 @@ class _PharmacyDrugEditDialogState
     );
   }
 
+  List<AppSelectOption<String>> _withCurrentOption(
+    List<AppSelectOption<String>> options,
+    String? current,
+  ) {
+    final String? value = _emptyToNull(current ?? '');
+    if (value == null) {
+      return options;
+    }
+    if (options.any((AppSelectOption<String> option) => option.value == value)) {
+      return options;
+    }
+    return <AppSelectOption<String>>[
+      ...options,
+      AppSelectOption<String>(value: value, label: value),
+    ];
+  }
+
+  /// Drops the drug under edit from similarity matches (id or display id).
+  PharmacyDrugSimilarityResult _similarityExcludingDrug(
+    PharmacyDrugSimilarityResult check,
+    String excludeDrugId,
+  ) {
+    final String exclude = excludeDrugId.trim().toUpperCase();
+    if (exclude.isEmpty) {
+      return check;
+    }
+
+    bool isExcluded(PharmacyDrug drug) {
+      final String id = drug.id.trim().toUpperCase();
+      final String display = (drug.displayId ?? '').trim().toUpperCase();
+      return id == exclude || (display.isNotEmpty && display == exclude);
+    }
+
+    final List<PharmacyDrugSimilarityMatch> matches = check.matches
+        .where(
+          (PharmacyDrugSimilarityMatch match) => !isExcluded(match.drug),
+        )
+        .toList(growable: false);
+    if (matches.length == check.matches.length) {
+      return check;
+    }
+
+    int closestScore = 0;
+    for (final PharmacyDrugSimilarityMatch match in matches) {
+      if (match.score > closestScore) {
+        closestScore = match.score;
+      }
+    }
+
+    return PharmacyDrugSimilarityResult(
+      exactIdentityConflict: matches.any(
+        (PharmacyDrugSimilarityMatch match) => match.exactIdentityConflict,
+      ),
+      exactCodeConflict: matches.any(
+        (PharmacyDrugSimilarityMatch match) => match.exactCodeConflict,
+      ),
+      closestScore: closestScore,
+      matches: matches,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final List<AppSelectOption<String>> formOptions =
-        pharmacyDrugFormSelectOptions(l10n);
-    final List<AppSelectOption<String>> strengthOptions =
-        pharmacyStrengthSelectOptions(_form);
-    final List<AppSelectOption<String>> unitOptions =
-        pharmacyInventoryUnitSelectOptions(l10n, form: _form);
+    final List<AppSelectOption<String>> formOptions = _withCurrentOption(
+      pharmacyDrugFormSelectOptions(l10n),
+      _form,
+    );
+    final List<AppSelectOption<String>> strengthOptions = _withCurrentOption(
+      pharmacyStrengthSelectOptions(_form),
+      _strength,
+    );
+    final List<AppSelectOption<String>> unitOptions = _withCurrentOption(
+      pharmacyInventoryUnitSelectOptions(l10n, form: _form),
+      _inventoryUnit,
+    );
     final String? inventoryUnitLabel = pharmacyInventoryUnitDisplayLabel(
       l10n,
       _inventoryUnit,
@@ -1061,7 +1128,6 @@ class _PharmacyDrugEditDialogState
       if (tenantId == null) {
         failure = AppFailure.validation();
       } else {
-        bool confirmedSimilar = false;
         while (mounted) {
           final Result<PharmacyDrugSimilarityResult> similarityResult =
               await controller.checkDrugSimilarity(
@@ -1074,14 +1140,14 @@ class _PharmacyDrugEditDialogState
                 tenantId: tenantId,
                 excludeDrugId: widget.drug!.id,
               );
-          final PharmacyDrugSimilarityResult? check = similarityResult.when(
+          final PharmacyDrugSimilarityResult? rawCheck = similarityResult.when(
             success: (PharmacyDrugSimilarityResult value) => value,
             failure: (AppFailure error) {
               failure = error;
               return null;
             },
           );
-          if (check == null) {
+          if (rawCheck == null) {
             break;
           }
 
@@ -1089,11 +1155,11 @@ class _PharmacyDrugEditDialogState
             return;
           }
 
-          // Skip the review dialog when there are no matches against other drugs.
-          if (check.matches.isEmpty && !check.hasExactConflict) {
-            confirmedSimilar = true;
-            break;
-          }
+          // Never compare the drug against itself — only other catalog drugs.
+          final PharmacyDrugSimilarityResult check = _similarityExcludingDrug(
+            rawCheck,
+            widget.drug!.id,
+          );
 
           final PharmacyDrugSimilarityDialogResult similarityDecision =
               await showPharmacyDrugSimilarityDialog(
@@ -1228,7 +1294,6 @@ class _PharmacyDrugEditDialogState
               _strength = strength;
             });
           }
-          confirmedSimilar = true;
           break;
         }
 
@@ -1244,14 +1309,14 @@ class _PharmacyDrugEditDialogState
           widget.drug!.id,
           PharmacyDrugUpdateInput(
             name: genericName,
-            brandName: brandName ?? _brandNameController.text.trim(),
+            brandName: brandName,
             genericName: genericName,
             code: code,
             form: form,
             strength: strength,
             unitPrice: pharmacyPrice,
             currency: pharmacyCurrency,
-            confirmSimilar: confirmedSimilar,
+            confirmSimilar: true,
           ),
           facilityOffering: facilityOffering,
         );

@@ -22558,11 +22558,17 @@ abstract class AppLocalizations {
   /// **'No similar drugs'**
   String get pharmacyDrugNoSimilarDialogTitle;
 
-  /// Body when drug similarity finds no matches.
+  /// Body when drug similarity finds no matches during create.
   ///
   /// In en, this message translates to:
   /// **'No close matches found. Continue to create this drug.'**
   String get pharmacyDrugNoSimilarDialogBody;
+
+  /// Body when drug similarity finds no matches during edit.
+  ///
+  /// In en, this message translates to:
+  /// **'No close matches found. Continue to save these edits.'**
+  String get pharmacyDrugNoSimilarEditDialogBody;
 
   /// Continue creating a drug after similarity review.
   ///

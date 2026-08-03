@@ -101,6 +101,8 @@ Future<PharmacyDrugSimilarityDialogResult> showPharmacyDrugSimilarityDialog(
       ? l10n.pharmacyDrugDuplicateDialogBody
       : hasMatches
       ? l10n.pharmacyDrugSimilarDialogBody(overallScore)
+      : isEdit
+      ? l10n.pharmacyDrugNoSimilarEditDialogBody
       : l10n.pharmacyDrugNoSimilarDialogBody;
   final AppFormInformationVariant bannerVariant = hasExactConflict
       ? AppFormInformationVariant.error

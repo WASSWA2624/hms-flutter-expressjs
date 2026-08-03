@@ -173,9 +173,11 @@ const checkPharmacyDrugSimilarity = async (payload = {}, user = {}) => {
   );
 
   let excludeInternalId = null;
+  let excludeFriendlyId = null;
   if (excludeDrugId) {
     const existingDrug = await drugRepository.findById(excludeDrugId);
     excludeInternalId = existingDrug?.id || excludeDrugId;
+    excludeFriendlyId = existingDrug?.human_friendly_id || null;
   }
 
   const duplicateCheck = checkPharmacyDrugDuplicates({
@@ -188,11 +190,37 @@ const checkPharmacyDrugSimilarity = async (payload = {}, user = {}) => {
     existing,
     excludeDrugId: excludeInternalId});
 
+  const excludeKeys = new Set(
+    [excludeDrugId, excludeInternalId, excludeFriendlyId]
+      .map((value) => String(value || '').trim().toUpperCase())
+      .filter(Boolean)
+  );
+
+  const filteredMatches = duplicateCheck.similarMatches.filter((match) => {
+    if (excludeKeys.size === 0) {
+      return true;
+    }
+    const drug = match.drug || {};
+    const drugKeys = [drug.id, drug.human_friendly_id, drug.display_id]
+      .map((value) => String(value || '').trim().toUpperCase())
+      .filter(Boolean);
+    return !drugKeys.some((key) => excludeKeys.has(key));
+  });
+
+  const closestScore = filteredMatches.reduce(
+    (max, match) => Math.max(max, Number(match.score) || 0),
+    0
+  );
+
   return {
-    exact_identity_conflict: duplicateCheck.exactIdentityConflict,
-    exact_code_conflict: duplicateCheck.exactCodeConflict,
-    closest_score: duplicateCheck.closestScore,
-    matches: duplicateCheck.similarMatches.slice(0, 8).map((match) => ({
+    exact_identity_conflict: filteredMatches.some(
+      (match) => match.exact_identity_conflict === true
+    ),
+    exact_code_conflict: filteredMatches.some(
+      (match) => match.exact_code_conflict === true
+    ),
+    closest_score: closestScore,
+    matches: filteredMatches.slice(0, 8).map((match) => ({
       ...match,
       drug: mapDrugRecord(match.drug) || match.drug}))};
 };
