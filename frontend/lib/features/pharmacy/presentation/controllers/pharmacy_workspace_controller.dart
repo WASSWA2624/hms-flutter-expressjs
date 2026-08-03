@@ -1004,11 +1004,9 @@ final class PharmacyWorkspaceController
                   input.storageShelfId,
             ),
           );
-      if (offeringResult
-          case ResultFailure<PharmacyDrug>(failure: final failure)) {
-        return Result<PharmacyDrug>.failure(failure);
+      if (offeringResult case ResultSuccess<PharmacyDrug>(value: final value)) {
+        created = value;
       }
-      created = (offeringResult as ResultSuccess<PharmacyDrug>).value;
     } else if (input.storageShelfId != null) {
       final String? facilityId = input.facilityId ?? resolveFacilityId();
       if (facilityId != null) {
@@ -1023,10 +1021,9 @@ final class PharmacyWorkspaceController
               ),
             );
         if (offeringResult
-            case ResultFailure<PharmacyDrug>(failure: final failure)) {
-          return Result<PharmacyDrug>.failure(failure);
+            case ResultSuccess<PharmacyDrug>(value: final value)) {
+          created = value;
         }
-        created = (offeringResult as ResultSuccess<PharmacyDrug>).value;
       }
     }
 
@@ -1054,11 +1051,11 @@ final class PharmacyWorkspaceController
     if (facilityOffering != null) {
       final Result<PharmacyDrug> offeringResult = await _repository
           .upsertFacilityOffering(drugId, facilityOffering);
-      if (offeringResult
-          case ResultFailure<PharmacyDrug>(failure: final failure)) {
-        return Result<PharmacyDrug>.failure(failure);
+      // Facility catalog may be module-gated; never roll back a successful
+      // drug identity update or block the edit → details flow.
+      if (offeringResult case ResultSuccess<PharmacyDrug>(value: final value)) {
+        current = value;
       }
-      current = (offeringResult as ResultSuccess<PharmacyDrug>).value;
     }
     await _refreshDrugs(showLoading: false);
     return Result<PharmacyDrug>.success(

@@ -357,14 +357,18 @@ class _PharmacyDrugEditDialogState
   }) {
     final String? previousShelfId = widget.drug?.storageShelfId;
     final bool storageChanged = _storageShelfId != previousShelfId;
-    final bool shouldUpsertOffering =
-        facilityPrice != null || storageChanged;
-    if (!shouldUpsertOffering) {
+    final bool facilityPriceChanged = !_sameOptionalPrice(
+      facilityPrice,
+      widget.drug?.facilityUnitPrice,
+    );
+    // Only hit facility catalog when facility price or storage actually changed.
+    // Pre-filled unchanged prices must not trigger a gated upsert on every save.
+    if (!facilityPriceChanged && !storageChanged) {
       return null;
     }
     // Active offerings require unit_price (>= 0). Prefer the edited facility
     // price, then existing facility/pharmacy prices, then 0 so storage-only
-    // edits still persist instead of silently no-oping.
+    // edits still attempt to persist.
     final num offeringPrice =
         facilityPrice ??
         widget.drug?.facilityUnitPrice ??
@@ -1339,20 +1343,29 @@ class _PharmacyDrugEditDialogState
           final int? reorderLevel = int.tryParse(
             _reorderLevelController.text.trim(),
           );
+          final num? previousReorder = widget.drug!.stockRows.isNotEmpty
+              ? widget.drug!.stockRows.first.reorderLevel
+              : null;
+          final bool reorderChanged =
+              reorderLevel != null &&
+              (previousReorder == null ||
+                  previousReorder.toInt() != reorderLevel);
           // Prefer the pre-edit catalog drug — PUT /drugs often omits stock maps.
           final String? inventoryItemId =
               _resolveInventoryItemId(widget.drug!) ??
               _resolveInventoryItemId(updatedDrug!);
-          if (reorderLevel != null && inventoryItemId != null) {
-            failure = await controller.adjustInventoryStock(
-              PharmacyInventoryAdjustInput(
-                inventoryItemId: inventoryItemId,
-                reorderLevel: reorderLevel,
-                reason: 'OTHER',
-                facilityId: controller.resolveFacilityId(),
-              ),
-            );
-            if (failure == null) {
+          if (reorderChanged && inventoryItemId != null) {
+            final AppFailure? reorderFailure = await controller
+                .adjustInventoryStock(
+                  PharmacyInventoryAdjustInput(
+                    inventoryItemId: inventoryItemId,
+                    reorderLevel: reorderLevel,
+                    reason: 'OTHER',
+                    facilityId: controller.resolveFacilityId(),
+                  ),
+                );
+            // Reorder is best-effort; identity update already succeeded.
+            if (reorderFailure == null) {
               updatedDrug =
                   _findDrugInProvider(ref, widget.drug!.id) ?? updatedDrug;
             }
@@ -1405,6 +1418,16 @@ class _PharmacyDrugEditDialogState
 String? _emptyToNull(String value) {
   final String normalized = value.trim();
   return normalized.isEmpty ? null : normalized;
+}
+
+bool _sameOptionalPrice(num? left, num? right) {
+  if (left == null && right == null) {
+    return true;
+  }
+  if (left == null || right == null) {
+    return false;
+  }
+  return left == right;
 }
 
 PharmacyDrug? _findDrugInProvider(WidgetRef ref, String drugId) {
