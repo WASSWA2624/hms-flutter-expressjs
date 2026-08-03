@@ -56,6 +56,7 @@ class _PharmacyDrugEditDialogState
   late final TextEditingController _codeController;
   late final TextEditingController _pharmacyPriceController;
   late final TextEditingController _facilityPriceController;
+  late final TextEditingController _onHandQuantityController;
   late final TextEditingController _initialStockController;
   late final TextEditingController _reorderLevelController;
   late final TextEditingController _batchNumberController;
@@ -70,6 +71,7 @@ class _PharmacyDrugEditDialogState
   DateTime? _manufacturedAt;
   DateTime? _expiryDate;
   bool _isSaving = false;
+  bool _didResolveStorageRoom = false;
   final AppSuggestedFieldSet _suggestions = AppSuggestedFieldSet();
 
   bool get _isEdit => widget.drug != null;
@@ -87,6 +89,8 @@ class _PharmacyDrugEditDialogState
     _codeController = TextEditingController(text: drug?.code ?? '');
     _form = _emptyToNull(drug?.form ?? '');
     _strength = _emptyToNull(drug?.strength ?? '');
+    _inventoryUnit = _resolveInventoryUnit(drug) ??
+        pharmacyDefaultInventoryUnitForForm(_form);
     _pharmacyPriceController = TextEditingController(
       text: _priceText(drug?.pharmacyUnitPrice ?? drug?.unitPrice),
     );
@@ -97,17 +101,29 @@ class _PharmacyDrugEditDialogState
         drug?.pharmacyCurrency ?? drug?.currency ?? appDefaultCurrencyCode;
     _facilityCurrency =
         drug?.facilityCurrency ?? drug?.currency ?? appDefaultCurrencyCode;
+    final num onHand = drug?.quantityOnHand ??
+        drug?.availableQuantity ??
+        drug?.stockLevel ??
+        0;
+    _onHandQuantityController = TextEditingController(
+      text: onHand > 0 ? _trimNumber(onHand) : '0',
+    );
+    // Edit: leave add-quantity empty so save does not re-add on-hand.
     _initialStockController = TextEditingController();
-    final num? existingReorderLevel = drug?.stockRows.isNotEmpty == true
-        ? drug!.stockRows.first.reorderLevel
-        : null;
+    final num? existingReorderLevel = _resolveReorderLevel(drug);
     _reorderLevelController = TextEditingController(
-      text: existingReorderLevel != null && existingReorderLevel > 0
-          ? existingReorderLevel.toString()
+      text: existingReorderLevel != null
+          ? _trimNumber(existingReorderLevel)
           : '',
     );
-    _storageRoomId = drug?.storageRoomId;
-    _storageShelfId = drug?.storageShelfId;
+    final PharmacyInventoryStock? primaryStock = _primaryStockRow(drug);
+    _storageRoomId =
+        _emptyToNull(drug?.storageRoomId ?? '') ??
+        _emptyToNull(primaryStock?.storageRoomId ?? '');
+    _storageShelfId =
+        _emptyToNull(drug?.storageShelfId ?? '') ??
+        _emptyToNull(primaryStock?.storageShelfId ?? '');
+    _expiryDate = primaryStock?.nextExpiry;
     _batchNumberController = TextEditingController();
   }
 
@@ -118,6 +134,7 @@ class _PharmacyDrugEditDialogState
     _codeController.dispose();
     _pharmacyPriceController.dispose();
     _facilityPriceController.dispose();
+    _onHandQuantityController.dispose();
     _initialStockController.dispose();
     _reorderLevelController.dispose();
     _batchNumberController.dispose();
@@ -350,6 +367,64 @@ class _PharmacyDrugEditDialogState
     return null;
   }
 
+  PharmacyInventoryStock? _primaryStockRow(PharmacyDrug? drug) {
+    if (drug == null || drug.stockRows.isEmpty) {
+      return null;
+    }
+    return drug.stockRows.first;
+  }
+
+  num? _resolveReorderLevel(PharmacyDrug? drug) {
+    final PharmacyInventoryStock? stock = _primaryStockRow(drug);
+    if (stock != null) {
+      return stock.reorderLevel;
+    }
+    return null;
+  }
+
+  String? _resolveInventoryUnit(PharmacyDrug? drug) {
+    if (drug == null) {
+      return null;
+    }
+    for (final PharmacyDrugStockMapping mapping in drug.stockMappings) {
+      final String? unit = _emptyToNull(mapping.inventoryItem?.unit ?? '');
+      if (unit != null) {
+        return unit;
+      }
+    }
+    for (final PharmacyInventoryStock stock in drug.stockRows) {
+      final String? unit = _emptyToNull(stock.inventoryItem?.unit ?? '');
+      if (unit != null) {
+        return unit;
+      }
+    }
+    return null;
+  }
+
+  void _resolveStorageRoomFromLayout(List<PharmacyStorageRoom> rooms) {
+    if (_didResolveStorageRoom ||
+        _storageShelfId == null ||
+        _storageRoomId != null ||
+        rooms.isEmpty) {
+      return;
+    }
+    _didResolveStorageRoom = true;
+    for (final PharmacyStorageRoom room in rooms) {
+      final bool hasShelf = room.shelves.any(
+        (PharmacyStorageShelf shelf) => shelf.id == _storageShelfId,
+      );
+      if (hasShelf) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _storageRoomId != null) {
+            return;
+          }
+          setState(() => _storageRoomId = room.id);
+        });
+        return;
+      }
+    }
+  }
+
   PharmacyFacilityOfferingInput? _buildFacilityOfferingInput(
     PharmacyWorkspaceController controller, {
     num? facilityPrice,
@@ -484,6 +559,7 @@ class _PharmacyDrugEditDialogState
         .expand((PharmacyStorageRoom room) => room.shelves)
         .where((PharmacyStorageShelf shelf) => shelf.isActive)
         .toList(growable: false);
+    _resolveStorageRoomFromLayout(activeRooms);
 
     return AppDialog(
       title: Text(
@@ -684,40 +760,66 @@ class _PharmacyDrugEditDialogState
               ),
             ],
           ),
-          if (_isEdit) ...<Widget>[
-            SizedBox(height: theme.spacing.md),
-            AppFormSection(
-              title: l10n.pharmacyDrugInitialStockSectionTitle,
-              children: <Widget>[
-                AppTextField(
-                  controller: _reorderLevelController,
-                  labelText: l10n.pharmacyReorderLevelLabel,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: <TextInputFormatter>[
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
-                  validator: _optionalNonNegativeIntegerValidator,
+          SizedBox(height: theme.spacing.md),
+          AppFormSection(
+            title: l10n.pharmacyDrugInitialStockSectionTitle,
+            children: <Widget>[
+              if (_isEdit) ...<Widget>[
+                AppResponsiveFieldRow.two(
+                  gap: AppResponsiveFieldRowGap.form,
+                  left: AppTextField(
+                    controller: _onHandQuantityController,
+                    labelText: l10n.pharmacyOnHandQuantityLabel,
+                    enabled: false,
+                    keyboardType: TextInputType.number,
+                  ),
+                  right: AppSelectField<String>.searchable(
+                    value: _inventoryUnit,
+                    labelText: l10n.pharmacyInventoryUnitLabel,
+                    enabled: !_isSaving,
+                    options: unitOptions,
+                    onChanged: (String? value) =>
+                        setState(() => _inventoryUnit = value),
+                  ),
                 ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.md),
-            _buildStorageLocationSection(
-              l10n: l10n,
-              theme: theme,
-              activeRooms: activeRooms,
-              shelfOptions: shelfOptions,
-            ),
-          ],
-          if (!_isEdit) ...<Widget>[
-            SizedBox(height: theme.spacing.md),
-            AppFormSection(
-              title: l10n.pharmacyDrugInitialStockSectionTitle,
-              children: <Widget>[
+                AppResponsiveFieldRow.two(
+                  gap: AppResponsiveFieldRowGap.form,
+                  left: AppTextField(
+                    controller: _initialStockController,
+                    labelText: l10n.pharmacyAddQuantityLabel,
+                    hintText: l10n.pharmacyAddQuantityHint,
+                    helperText: l10n.pharmacyAddQuantityHelper,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    validator: _optionalNonNegativeIntegerValidator,
+                  ),
+                  right: AppTextField(
+                    controller: _reorderLevelController,
+                    labelText: inventoryUnitLabel == null
+                        ? l10n.pharmacyReorderLevelLabel
+                        : l10n.pharmacyReorderLevelLabelWithUnit(
+                            inventoryUnitLabel,
+                          ),
+                    hintText: l10n.pharmacyReorderLevelHint,
+                    helperText: inventoryUnitLabel == null
+                        ? l10n.pharmacyReorderLevelHelper
+                        : l10n.pharmacyReorderLevelHelperWithUnit,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    validator: _optionalNonNegativeIntegerValidator,
+                  ),
+                ),
+              ] else ...<Widget>[
                 AppResponsiveFieldRow.two(
                   gap: AppResponsiveFieldRowGap.form,
                   left: AppTextField(
                     controller: _initialStockController,
                     labelText: l10n.pharmacyInitialStockLabel,
+                    hintText: l10n.pharmacyInitialStockHint,
                     keyboardType: TextInputType.number,
                     inputFormatters: <TextInputFormatter>[
                       FilteringTextInputFormatter.digitsOnly,
@@ -740,6 +842,7 @@ class _PharmacyDrugEditDialogState
                       : l10n.pharmacyReorderLevelLabelWithUnit(
                           inventoryUnitLabel,
                         ),
+                  hintText: l10n.pharmacyReorderLevelHint,
                   helperText: inventoryUnitLabel == null
                       ? l10n.pharmacyReorderLevelSelectUnitHelper
                       : l10n.pharmacyReorderLevelHelperWithUnit,
@@ -750,123 +853,123 @@ class _PharmacyDrugEditDialogState
                   validator: _optionalNonNegativeIntegerValidator,
                 ),
               ],
-            ),
-            SizedBox(height: theme.spacing.md),
-            AppFormSection(
-              title: l10n.pharmacyDrugBatchSectionTitle,
-              children: <Widget>[
-                AppResponsiveFieldRow.two(
-                  gap: AppResponsiveFieldRowGap.form,
-                  left: _suggestedChrome(
-                    fieldKey: PharmacyDrugSuggestedFields.batchNumber,
-                    l10n: l10n,
-                    theme: theme,
-                    child: AppTextField(
-                      controller: _batchNumberController,
-                      labelText: l10n.pharmacyBatchNumberLabel,
-                      isRequired: _expiryDate != null,
-                      validator: (String? value) {
-                        if (_expiryDate != null &&
-                            (value ?? '').trim().isEmpty) {
-                          return l10n.validationRequired;
-                        }
-                        return null;
-                      },
-                      onChanged: (_) {
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
+          AppFormSection(
+            title: l10n.pharmacyDrugBatchSectionTitle,
+            children: <Widget>[
+              AppResponsiveFieldRow.two(
+                gap: AppResponsiveFieldRowGap.form,
+                left: _suggestedChrome(
+                  fieldKey: PharmacyDrugSuggestedFields.batchNumber,
+                  l10n: l10n,
+                  theme: theme,
+                  child: AppTextField(
+                    controller: _batchNumberController,
+                    labelText: l10n.pharmacyBatchNumberLabel,
+                    isRequired: _expiryDate != null,
+                    validator: (String? value) {
+                      if (_expiryDate != null &&
+                          (value ?? '').trim().isEmpty) {
+                        return l10n.validationRequired;
+                      }
+                      return null;
+                    },
+                    onChanged: (_) {
+                      if (_suggestions.isSuggested(
+                        PharmacyDrugSuggestedFields.batchNumber,
+                      )) {
+                        setState(
+                          () => _suggestions.edit(
+                            PharmacyDrugSuggestedFields.batchNumber,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+                right: _suggestedChrome(
+                  fieldKey: PharmacyDrugSuggestedFields.manufacturedAt,
+                  l10n: l10n,
+                  theme: theme,
+                  child: AppDateField(
+                    labelText: l10n.pharmacyManufacturingDateLabel,
+                    value: _manufacturedAt,
+                    pickerButtonLabel: l10n.housekeepingPickDateAction,
+                    invalidDateMessage: l10n.pharmacyManufacturingDateLabel,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                    onChanged: (DateTime? value) {
+                      setState(() {
+                        _manufacturedAt = value;
                         if (_suggestions.isSuggested(
-                          PharmacyDrugSuggestedFields.batchNumber,
+                          PharmacyDrugSuggestedFields.manufacturedAt,
                         )) {
-                          setState(
-                            () => _suggestions.edit(
-                              PharmacyDrugSuggestedFields.batchNumber,
-                            ),
+                          _suggestions.edit(
+                            PharmacyDrugSuggestedFields.manufacturedAt,
                           );
                         }
-                      },
-                    ),
-                  ),
-                  right: _suggestedChrome(
-                    fieldKey: PharmacyDrugSuggestedFields.manufacturedAt,
-                    l10n: l10n,
-                    theme: theme,
-                    child: AppDateField(
-                      labelText: l10n.pharmacyManufacturingDateLabel,
-                      value: _manufacturedAt,
-                      pickerButtonLabel: l10n.housekeepingPickDateAction,
-                      invalidDateMessage: l10n.pharmacyManufacturingDateLabel,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                      onChanged: (DateTime? value) {
-                        setState(() {
-                          _manufacturedAt = value;
-                          if (_suggestions.isSuggested(
-                            PharmacyDrugSuggestedFields.manufacturedAt,
-                          )) {
-                            _suggestions.edit(
-                              PharmacyDrugSuggestedFields.manufacturedAt,
-                            );
-                          }
-                        });
-                      },
-                    ),
+                      });
+                    },
                   ),
                 ),
-                AppResponsiveFieldRow.two(
-                  gap: AppResponsiveFieldRowGap.form,
-                  left: _suggestedChrome(
-                    fieldKey: PharmacyDrugSuggestedFields.expiryDate,
-                    l10n: l10n,
-                    theme: theme,
-                    child: AppDateField(
-                      labelText: l10n.pharmacyExpiryDateLabel,
-                      value: _expiryDate,
-                      pickerButtonLabel: l10n.housekeepingPickDateAction,
-                      invalidDateMessage: l10n.pharmacyExpiryDateLabel,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                      onChanged: (DateTime? value) {
-                        setState(() {
-                          _expiryDate = value;
-                          if (_suggestions.isSuggested(
+              ),
+              AppResponsiveFieldRow.two(
+                gap: AppResponsiveFieldRowGap.form,
+                left: _suggestedChrome(
+                  fieldKey: PharmacyDrugSuggestedFields.expiryDate,
+                  l10n: l10n,
+                  theme: theme,
+                  child: AppDateField(
+                    labelText: l10n.pharmacyExpiryDateLabel,
+                    value: _expiryDate,
+                    pickerButtonLabel: l10n.housekeepingPickDateAction,
+                    invalidDateMessage: l10n.pharmacyExpiryDateLabel,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                    onChanged: (DateTime? value) {
+                      setState(() {
+                        _expiryDate = value;
+                        if (_suggestions.isSuggested(
+                          PharmacyDrugSuggestedFields.expiryDate,
+                        )) {
+                          _suggestions.edit(
                             PharmacyDrugSuggestedFields.expiryDate,
-                          )) {
-                            _suggestions.edit(
-                              PharmacyDrugSuggestedFields.expiryDate,
-                            );
-                          }
-                        });
-                        _formKey.currentState?.validate();
-                      },
-                    ),
-                  ),
-                  right: AppSelectField<int>(
-                    value: _expiryAlertLeadDays,
-                    labelText: l10n.pharmacyExpiryAlertLeadLabel,
-                    helperText: l10n.pharmacyExpiryAlertLeadHelper,
-                    enabled: !_isSaving,
-                    options: expiryLeadOptions
-                        .map(
-                          (PharmacyExpiryAlertLeadOption option) =>
-                              AppSelectOption<int>(
-                                value: option.days,
-                                label: option.label,
-                              ),
-                        )
-                        .toList(growable: false),
-                    onChanged: (int? value) =>
-                        setState(() => _expiryAlertLeadDays = value),
+                          );
+                        }
+                      });
+                      _formKey.currentState?.validate();
+                    },
                   ),
                 ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.md),
-            _buildStorageLocationSection(
-              l10n: l10n,
-              theme: theme,
-              activeRooms: activeRooms,
-              shelfOptions: shelfOptions,
-            ),
-          ],
+                right: AppSelectField<int>(
+                  value: _expiryAlertLeadDays,
+                  labelText: l10n.pharmacyExpiryAlertLeadLabel,
+                  helperText: l10n.pharmacyExpiryAlertLeadHelper,
+                  enabled: !_isSaving,
+                  options: expiryLeadOptions
+                      .map(
+                        (PharmacyExpiryAlertLeadOption option) =>
+                            AppSelectOption<int>(
+                              value: option.days,
+                              label: option.label,
+                            ),
+                      )
+                      .toList(growable: false),
+                  onChanged: (int? value) =>
+                      setState(() => _expiryAlertLeadDays = value),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
+          _buildStorageLocationSection(
+            l10n: l10n,
+            theme: theme,
+            activeRooms: activeRooms,
+            shelfOptions: shelfOptions,
+          ),
         ],
       ),
       actions: <Widget>[
@@ -1340,6 +1443,8 @@ class _PharmacyDrugEditDialogState
           failure: (AppFailure error) => failure = error,
         );
         if (failure == null && updatedDrug != null) {
+          final int addQuantity =
+              int.tryParse(_initialStockController.text.trim()) ?? 0;
           final int? reorderLevel = int.tryParse(
             _reorderLevelController.text.trim(),
           );
@@ -1354,18 +1459,30 @@ class _PharmacyDrugEditDialogState
           final String? inventoryItemId =
               _resolveInventoryItemId(widget.drug!) ??
               _resolveInventoryItemId(updatedDrug!);
-          if (reorderChanged && inventoryItemId != null) {
-            final AppFailure? reorderFailure = await controller
+          if (inventoryItemId != null &&
+              (addQuantity > 0 || reorderChanged)) {
+            final AppFailure? stockFailure = await controller
                 .adjustInventoryStock(
                   PharmacyInventoryAdjustInput(
                     inventoryItemId: inventoryItemId,
-                    reorderLevel: reorderLevel,
+                    quantityDelta: addQuantity > 0 ? addQuantity : 0,
+                    reorderLevel: reorderChanged ? reorderLevel : null,
                     reason: 'OTHER',
                     facilityId: controller.resolveFacilityId(),
+                    batchNumber: addQuantity > 0
+                        ? _emptyToNull(_batchNumberController.text)
+                        : null,
+                    manufacturedAt: addQuantity > 0 ? _manufacturedAt : null,
+                    expiryDate: addQuantity > 0 ? _expiryDate : null,
+                    expiryAlertLeadDays:
+                        addQuantity > 0 ? _expiryAlertLeadDays : null,
+                    storageRoomId: addQuantity > 0 ? _storageRoomId : null,
+                    storageShelfId: addQuantity > 0 ? _storageShelfId : null,
+                    drugId: widget.drug!.id,
                   ),
                 );
-            // Reorder is best-effort; identity update already succeeded.
-            if (reorderFailure == null) {
+            // Stock adjust is best-effort; identity update already succeeded.
+            if (stockFailure == null) {
               updatedDrug =
                   _findDrugInProvider(ref, widget.drug!.id) ?? updatedDrug;
             }
@@ -1418,6 +1535,13 @@ class _PharmacyDrugEditDialogState
 String? _emptyToNull(String value) {
   final String normalized = value.trim();
   return normalized.isEmpty ? null : normalized;
+}
+
+String _trimNumber(num value) {
+  if (value % 1 == 0) {
+    return value.toInt().toString();
+  }
+  return value.toString();
 }
 
 bool _sameOptionalPrice(num? left, num? right) {

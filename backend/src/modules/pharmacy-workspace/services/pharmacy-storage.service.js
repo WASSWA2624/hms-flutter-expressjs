@@ -163,9 +163,16 @@ const attachDrugStorageSummaries = async (drugs = []) => {
     return acc;
   }, new Map());
 
-  return drugs.map((drug) => ({
-    ...drug,
-    ...buildPrimaryBatchStorageSummary(batchesByDrugId.get(drug.id) || [])}));
+  return drugs.map((drug) => {
+    const fromBatch = buildPrimaryBatchStorageSummary(batchesByDrugId.get(drug.id) || []);
+    // Prefer batch location when present; otherwise keep offering/mapped storage.
+    if (fromBatch.storage_shelf_id || fromBatch.storage_room_id) {
+      return {
+        ...drug,
+        ...fromBatch};
+    }
+    return drug;
+  });
 };
 
 const getPharmacyStorageLayout = async (filters = {}, user = {}) => {

@@ -12342,7 +12342,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyDrugPricingSectionTitle => 'Pricing';
 
   @override
-  String get pharmacyDrugInitialStockSectionTitle => 'Initial stock';
+  String get pharmacyDrugInitialStockSectionTitle => 'Stock';
 
   @override
   String get pharmacyDrugBatchSectionTitle => 'Batch and shelf life';
@@ -12371,7 +12371,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String pharmacyReorderLevelLabelWithUnit(String unit) {
-    return 'Reorder alert at ($unit)';
+    return 'Reorder at quantity ($unit)';
   }
 
   @override
@@ -12751,7 +12751,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyInventoryFiltersSemanticLabel => 'Inventory stock filters';
 
   @override
-  String get pharmacyReorderLevelLabel => 'Reorder alert at';
+  String get pharmacyReorderLevelLabel => 'Reorder at quantity';
+
+  @override
+  String get pharmacyReorderLevelHint => 'e.g. 10';
 
   @override
   String get pharmacyReorderLevelColumnLabel => 'Reorder at';
@@ -12772,7 +12775,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyInventoryUnitLabel => 'Inventory unit';
 
   @override
-  String get pharmacyInitialStockLabel => 'Initial stock';
+  String get pharmacyInitialStockLabel => 'Initial quantity';
+
+  @override
+  String get pharmacyInitialStockHint => 'e.g. 100';
+
+  @override
+  String get pharmacyInitialStockEditHint => 'e.g. 50';
+
+  @override
+  String get pharmacyInitialStockEditHelper =>
+      'Adds to the current on-hand quantity.';
+
+  @override
+  String get pharmacyOnHandQuantityLabel => 'On-hand quantity';
+
+  @override
+  String get pharmacyAddQuantityLabel => 'Add quantity';
+
+  @override
+  String get pharmacyAddQuantityHint => 'e.g. 50';
+
+  @override
+  String get pharmacyAddQuantityHelper =>
+      'Adds to the current on-hand quantity.';
 
   @override
   String get pharmacySummaryLowStockLabel => 'Low stock';

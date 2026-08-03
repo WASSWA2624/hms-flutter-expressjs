@@ -7,6 +7,11 @@ const { HttpError } = require('@lib/errors');
 
 const FACILITY_PHARMACY_OFFERING_INCLUDE = {
   drug: true,
+  default_storage_shelf: {
+    include: {
+      storage_room: true,
+    },
+  },
 };
 
 const findDrugOffering = async (

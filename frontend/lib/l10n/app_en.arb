@@ -15747,9 +15747,9 @@
   "@pharmacyDrugPricingSectionTitle": {
     "description": "Pharmacy add drug dialog section for pharmacy and facility prices."
   },
-  "pharmacyDrugInitialStockSectionTitle": "Initial stock",
+  "pharmacyDrugInitialStockSectionTitle": "Stock",
   "@pharmacyDrugInitialStockSectionTitle": {
-    "description": "Pharmacy add drug dialog section for opening stock quantities."
+    "description": "Pharmacy add/edit drug dialog section for stock quantities."
   },
   "pharmacyDrugBatchSectionTitle": "Batch and shelf life",
   "@pharmacyDrugBatchSectionTitle": {
@@ -15779,7 +15779,7 @@
   "@pharmacyReorderLevelSelectUnitHelper": {
     "description": "Placeholder helper for pharmacy reorder threshold before inventory unit is chosen."
   },
-  "pharmacyReorderLevelLabelWithUnit": "Reorder alert at ({unit})",
+  "pharmacyReorderLevelLabelWithUnit": "Reorder at quantity ({unit})",
   "@pharmacyReorderLevelLabelWithUnit": {
     "description": "Pharmacy reorder threshold label including the selected inventory unit.",
     "placeholders": {
@@ -16281,9 +16281,13 @@
   "@pharmacyInventoryFiltersSemanticLabel": {
     "description": "Semantic label for pharmacy inventory filters."
   },
-  "pharmacyReorderLevelLabel": "Reorder alert at",
+  "pharmacyReorderLevelLabel": "Reorder at quantity",
   "@pharmacyReorderLevelLabel": {
     "description": "Pharmacy reorder threshold field label."
+  },
+  "pharmacyReorderLevelHint": "e.g. 10",
+  "@pharmacyReorderLevelHint": {
+    "description": "Placeholder hint for pharmacy reorder-at quantity field."
   },
   "pharmacyReorderLevelColumnLabel": "Reorder at",
   "@pharmacyReorderLevelColumnLabel": {
@@ -16309,9 +16313,37 @@
   "@pharmacyInventoryUnitLabel": {
     "description": "Pharmacy drug inventory unit field label."
   },
-  "pharmacyInitialStockLabel": "Initial stock",
+  "pharmacyInitialStockLabel": "Initial quantity",
   "@pharmacyInitialStockLabel": {
-    "description": "Pharmacy drug initial stock field label."
+    "description": "Pharmacy drug initial/on-hand quantity field label."
+  },
+  "pharmacyInitialStockHint": "e.g. 100",
+  "@pharmacyInitialStockHint": {
+    "description": "Placeholder hint for pharmacy initial quantity on create."
+  },
+  "pharmacyInitialStockEditHint": "e.g. 50",
+  "@pharmacyInitialStockEditHint": {
+    "description": "Placeholder hint for quantity to add when editing a drug."
+  },
+  "pharmacyInitialStockEditHelper": "Adds to the current on-hand quantity.",
+  "@pharmacyInitialStockEditHelper": {
+    "description": "Helper text for adding stock quantity while editing a drug."
+  },
+  "pharmacyOnHandQuantityLabel": "On-hand quantity",
+  "@pharmacyOnHandQuantityLabel": {
+    "description": "Read-only current on-hand quantity when editing a drug."
+  },
+  "pharmacyAddQuantityLabel": "Add quantity",
+  "@pharmacyAddQuantityLabel": {
+    "description": "Quantity to add to on-hand stock when editing a drug."
+  },
+  "pharmacyAddQuantityHint": "e.g. 50",
+  "@pharmacyAddQuantityHint": {
+    "description": "Placeholder hint for add-quantity field when editing a drug."
+  },
+  "pharmacyAddQuantityHelper": "Adds to the current on-hand quantity.",
+  "@pharmacyAddQuantityHelper": {
+    "description": "Helper text for add-quantity field when editing a drug."
   },
   "pharmacySummaryLowStockLabel": "Low stock",
   "@pharmacySummaryLowStockLabel": {

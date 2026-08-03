@@ -22750,10 +22750,10 @@ abstract class AppLocalizations {
   /// **'Pricing'**
   String get pharmacyDrugPricingSectionTitle;
 
-  /// Pharmacy add drug dialog section for opening stock quantities.
+  /// Pharmacy add/edit drug dialog section for stock quantities.
   ///
   /// In en, this message translates to:
-  /// **'Initial stock'**
+  /// **'Stock'**
   String get pharmacyDrugInitialStockSectionTitle;
 
   /// Pharmacy add drug dialog section for batch metadata.
@@ -22801,7 +22801,7 @@ abstract class AppLocalizations {
   /// Pharmacy reorder threshold label including the selected inventory unit.
   ///
   /// In en, this message translates to:
-  /// **'Reorder alert at ({unit})'**
+  /// **'Reorder at quantity ({unit})'**
   String pharmacyReorderLevelLabelWithUnit(String unit);
 
   /// Action to open pharmacy storage layout configuration.
@@ -23491,8 +23491,14 @@ abstract class AppLocalizations {
   /// Pharmacy reorder threshold field label.
   ///
   /// In en, this message translates to:
-  /// **'Reorder alert at'**
+  /// **'Reorder at quantity'**
   String get pharmacyReorderLevelLabel;
+
+  /// Placeholder hint for pharmacy reorder-at quantity field.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 10'**
+  String get pharmacyReorderLevelHint;
 
   /// Pharmacy inventory reorder level column label.
   ///
@@ -23530,11 +23536,53 @@ abstract class AppLocalizations {
   /// **'Inventory unit'**
   String get pharmacyInventoryUnitLabel;
 
-  /// Pharmacy drug initial stock field label.
+  /// Pharmacy drug initial/on-hand quantity field label.
   ///
   /// In en, this message translates to:
-  /// **'Initial stock'**
+  /// **'Initial quantity'**
   String get pharmacyInitialStockLabel;
+
+  /// Placeholder hint for pharmacy initial quantity on create.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 100'**
+  String get pharmacyInitialStockHint;
+
+  /// Placeholder hint for quantity to add when editing a drug.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 50'**
+  String get pharmacyInitialStockEditHint;
+
+  /// Helper text for adding stock quantity while editing a drug.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds to the current on-hand quantity.'**
+  String get pharmacyInitialStockEditHelper;
+
+  /// Read-only current on-hand quantity when editing a drug.
+  ///
+  /// In en, this message translates to:
+  /// **'On-hand quantity'**
+  String get pharmacyOnHandQuantityLabel;
+
+  /// Quantity to add to on-hand stock when editing a drug.
+  ///
+  /// In en, this message translates to:
+  /// **'Add quantity'**
+  String get pharmacyAddQuantityLabel;
+
+  /// Placeholder hint for add-quantity field when editing a drug.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 50'**
+  String get pharmacyAddQuantityHint;
+
+  /// Helper text for add-quantity field when editing a drug.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds to the current on-hand quantity.'**
+  String get pharmacyAddQuantityHelper;
 
   /// Pharmacy workspace low stock summary chip label.
   ///

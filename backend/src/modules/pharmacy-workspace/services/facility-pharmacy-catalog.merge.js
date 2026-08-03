@@ -4,6 +4,9 @@
 
 const { mapCatalogUnitPriceFields } = require('@lib/billing/clinical-request-billing');
 const { mapDrugRecord } = require('@services/pharmacy-workspace/pharmacy.serializer');
+const {
+  mapStorageLocationFields,
+} = require('@services/pharmacy-workspace/pharmacy-storage.service');
 
 const toOptionalText = (value) => {
   const normalized = String(value ?? '').trim();
@@ -48,6 +51,12 @@ const mapMergedDrugRecord = (masterDrug, offering = null) => {
   const facilityPriceFields = mapCatalogUnitPriceFields({
     unit_price: merged.facility_unit_price,
     currency: merged.facility_currency});
+  const offeringStorage = offering?.default_storage_shelf
+    ? mapStorageLocationFields(
+        offering.default_storage_shelf.storage_room,
+        offering.default_storage_shelf
+      )
+    : null;
 
   return {
     ...mapped,
@@ -62,7 +71,11 @@ const mapMergedDrugRecord = (masterDrug, offering = null) => {
     facility_offering_id: offering?.id || null,
     offering_is_active: offering?.is_active ?? false,
     offering_sort_order: offering?.sort_order ?? 0,
-    uses_platform_defaults: !offering};
+    uses_platform_defaults: !offering,
+    ...(offeringStorage &&
+    (offeringStorage.storage_shelf_id || offeringStorage.storage_room_id)
+      ? offeringStorage
+      : {})};
 };
 
 module.exports = {
