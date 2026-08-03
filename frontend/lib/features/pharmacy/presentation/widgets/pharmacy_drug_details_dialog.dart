@@ -191,7 +191,7 @@ class _PharmacyDrugDetailsDialog extends ConsumerWidget {
         ),
         AppAccessActionGate(
           requirement: writeRequirement,
-          builder: (BuildContext context, bool allowed) {
+          builder: (BuildContext _, bool allowed) {
             if (!allowed) {
               return const SizedBox.shrink();
             }
@@ -201,6 +201,7 @@ class _PharmacyDrugDetailsDialog extends ConsumerWidget {
               semanticLabel: l10n.pharmacyDeleteDrugAction,
               onPressed: () async {
                 final bool deleted = await onDelete(current);
+                // Pop the details dialog route (root navigator), not a shell route.
                 if (deleted && context.mounted) {
                   Navigator.of(context).pop();
                 }
@@ -210,7 +211,7 @@ class _PharmacyDrugDetailsDialog extends ConsumerWidget {
         ),
         AppAccessActionGate(
           requirement: writeRequirement,
-          builder: (BuildContext context, bool allowed) {
+          builder: (BuildContext _, bool allowed) {
             if (!allowed) {
               return const SizedBox.shrink();
             }

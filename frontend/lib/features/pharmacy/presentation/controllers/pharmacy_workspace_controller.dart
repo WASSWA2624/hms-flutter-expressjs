@@ -1105,6 +1105,16 @@ final class PharmacyWorkspaceController
     final Result<void> result = await _repository.deleteDrug(drugId);
     return result.when(
       success: (_) async {
+        final PharmacyWorkspaceState? current = _currentState;
+        if (current != null) {
+          _emit(
+            current.copyWith(
+              drugQuery: current.drugQuery.copyWith(
+                pageRequest: current.drugQuery.pageRequest.first(),
+              ),
+            ),
+          );
+        }
         await _refreshDrugs(showLoading: false);
         return null;
       },

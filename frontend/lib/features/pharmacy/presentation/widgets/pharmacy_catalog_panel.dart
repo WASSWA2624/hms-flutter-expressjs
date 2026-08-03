@@ -462,17 +462,17 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
   ) async {
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (_) => AppDialog(
+      builder: (BuildContext dialogContext) => AppDialog(
         title: Text(context.l10n.pharmacyDeleteDrugDialogTitle),
         content: Text(context.l10n.pharmacyDeleteDrugDialogBody),
         actions: <Widget>[
           AppButton.tertiary(
             label: context.l10n.commonCancelActionLabel,
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
           ),
           AppButton.primary(
             label: context.l10n.pharmacyDeleteDrugAction,
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
           ),
         ],
       ),
@@ -504,17 +504,17 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
     }
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (_) => AppDialog(
+      builder: (BuildContext dialogContext) => AppDialog(
         title: Text(l10n.pharmacyDeleteSelectedDrugsDialogTitle),
         content: Text(l10n.pharmacyDeleteSelectedDrugsDialogBody(count)),
         actions: <Widget>[
           AppButton.tertiary(
             label: l10n.commonCancelActionLabel,
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
           ),
           AppButton.primary(
             label: l10n.pharmacyDeleteDrugAction,
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
           ),
         ],
       ),
@@ -871,17 +871,17 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
     final AppLocalizations l10n = context.l10n;
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (_) => AppDialog(
+      builder: (BuildContext dialogContext) => AppDialog(
         title: Text(l10n.pharmacyDeleteFormularyDialogTitle),
         content: Text(l10n.pharmacyDeleteFormularyDialogBody),
         actions: <Widget>[
           AppButton.tertiary(
             label: l10n.commonCancelActionLabel,
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
           ),
           AppButton.primary(
             label: l10n.pharmacyDeleteFormularyAction,
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
           ),
         ],
       ),
@@ -912,17 +912,17 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
     }
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (_) => AppDialog(
+      builder: (BuildContext dialogContext) => AppDialog(
         title: Text(l10n.pharmacyDeleteSelectedFormularyDialogTitle),
         content: Text(l10n.pharmacyDeleteSelectedFormularyDialogBody(count)),
         actions: <Widget>[
           AppButton.tertiary(
             label: l10n.commonCancelActionLabel,
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
           ),
           AppButton.primary(
             label: l10n.pharmacyDeleteFormularyAction,
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
           ),
         ],
       ),
@@ -1044,9 +1044,6 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final PharmacyWorkspaceController controller = ref.read(
-      pharmacyWorkspaceControllerProvider.notifier,
-    );
     final AppPage<PharmacyDrug> drugsPage = _pickerDrugs;
     final bool isLoadingDrugs = _isLoadingPickerDrugs;
     final List<PharmacyDrug> visibleDrugs = drugsPage.items;

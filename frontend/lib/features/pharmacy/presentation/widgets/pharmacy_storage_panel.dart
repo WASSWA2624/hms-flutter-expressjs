@@ -241,19 +241,19 @@ Future<void> confirmDeletePharmacyStorageRoom(
   final AppLocalizations l10n = context.l10n;
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
-    builder: (_) => AppDialog(
+    builder: (BuildContext dialogContext) => AppDialog(
       title: Text(l10n.pharmacyDeleteStorageRoomDialogTitle),
       content: Text(l10n.pharmacyDeleteStorageRoomDialogBody),
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () => Navigator.of(dialogContext).pop(false),
         ),
         AppButton.primary(
           label: l10n.commonDeleteActionLabel,
           leadingIcon: Icons.delete_outline,
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(dialogContext).pop(true),
         ),
       ],
     ),
@@ -302,19 +302,19 @@ Future<void> confirmPermanentDeletePharmacyStorageRoom(
   final AppLocalizations l10n = context.l10n;
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
-    builder: (_) => AppDialog(
+    builder: (BuildContext dialogContext) => AppDialog(
       title: Text(l10n.pharmacyPermanentDeleteStorageRoomDialogTitle),
       content: Text(l10n.pharmacyPermanentDeleteStorageRoomDialogBody),
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () => Navigator.of(dialogContext).pop(false),
         ),
         AppButton.primary(
           label: l10n.pharmacyPermanentDeleteStorageRoomAction,
           leadingIcon: Icons.delete_forever_outlined,
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(dialogContext).pop(true),
         ),
       ],
     ),
@@ -342,19 +342,19 @@ Future<void> confirmDeletePharmacyStorageShelf(
   final AppLocalizations l10n = context.l10n;
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
-    builder: (_) => AppDialog(
+    builder: (BuildContext dialogContext) => AppDialog(
       title: Text(l10n.pharmacyDeleteStorageShelfDialogTitle),
       content: Text(l10n.pharmacyDeleteStorageShelfDialogBody),
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () => Navigator.of(dialogContext).pop(false),
         ),
         AppButton.primary(
           label: l10n.pharmacyDeleteStorageShelfAction,
           leadingIcon: Icons.delete_outline,
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(dialogContext).pop(true),
         ),
       ],
     ),
