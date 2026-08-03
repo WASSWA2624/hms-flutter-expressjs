@@ -1256,13 +1256,14 @@ class _MedicationItemsPanelState extends ConsumerState<_MedicationItemsPanel> {
 
     return AppCollapsibleSection(
       title: l10n.pharmacyMedicationPanelTitle,
-      collapsible: false,
       contentPadding: EdgeInsets.zero,
       child: AppListTable<PharmacyOrderItem>(
-      items: items,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      columnVisibilityController: _columnVisibilityController,
+        items: items,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        tableHorizontalMargin: 0,
+        toolbarContentGap: 0,
+        columnVisibilityController: _columnVisibilityController,
       columnVisibilityStorageKey: 'pharmacy_order_items',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
@@ -1709,12 +1710,13 @@ class _DispenseHistoryPanelState extends ConsumerState<_DispenseHistoryPanel> {
 
     return AppCollapsibleSection(
       title: l10n.pharmacyTimelinePanelTitle,
-      collapsible: false,
       contentPadding: EdgeInsets.zero,
       child: AppListTable<PharmacyTimelineItem>(
         items: items,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
+        tableHorizontalMargin: 0,
+        toolbarContentGap: 0,
         columnVisibilityController: _columnVisibilityController,
         columnVisibilityStorageKey: 'pharmacy_dispense_history',
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,

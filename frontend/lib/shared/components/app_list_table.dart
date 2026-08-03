@@ -959,6 +959,7 @@ class AppListTable<T> extends StatefulWidget {
     this.exportInvalidDateMessage,
     this.enableColumnResize = true,
     this.tableHorizontalMargin,
+    this.toolbarContentGap,
     this.showRowNumbers = true,
     this.padEmptyRows,
     this.surfaceHeader,
@@ -1053,6 +1054,13 @@ class AppListTable<T> extends StatefulWidget {
   final String? exportInvalidDateMessage;
   final bool enableColumnResize;
   final double? tableHorizontalMargin;
+
+  /// Vertical space between the search/toolbar and the table surface.
+  ///
+  /// Defaults to `theme.spacing.xs`. Pass `0` when the table should sit flush
+  /// under the search bar (e.g. inside an [AppCollapsibleSection] with zero
+  /// content padding).
+  final double? toolbarContentGap;
 
   /// When false, hides the leading `#` index column (desktop and mobile).
   final bool showRowNumbers;
@@ -1568,13 +1576,15 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         final bool canExpand =
             !widget.shrinkWrap && constraints.hasBoundedHeight;
 
+        final double toolbarGap =
+            widget.toolbarContentGap ?? theme.spacing.xs;
         return Column(
           mainAxisSize: canExpand ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             if (toolbar != null) ...<Widget>[
               toolbar,
-              SizedBox(height: theme.spacing.xs),
+              if (toolbarGap > 0) SizedBox(height: toolbarGap),
             ],
             if (canExpand) Expanded(child: content) else content,
             ?footer,
