@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
@@ -72,33 +73,38 @@ class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
     final List<PharmacyCatalogTabDescriptor> tabDescriptors =
         pharmacyCatalogTabDescriptors(l10n);
 
-    final Widget tabContent = switch (tab) {
-      PharmacyCatalogTab.drugs => _DrugCatalogTab(
+    final List<Widget> tabViews = <Widget>[
+      _DrugCatalogTab(
         state: state,
         writeRequirement: pharmacyCatalogWriteRequirement,
         fillHeight: widget.fillHeight,
       ),
-      PharmacyCatalogTab.formulary => _FormularyCatalogTab(
+      _FormularyCatalogTab(
         state: state,
         writeRequirement: pharmacyCatalogWriteRequirement,
         fillHeight: widget.fillHeight,
       ),
-      PharmacyCatalogTab.inventory => _InventoryCatalogTab(
+      _InventoryCatalogTab(
         state: state,
         writeRequirement: pharmacyCatalogWriteRequirement,
         fillHeight: widget.fillHeight,
       ),
-      PharmacyCatalogTab.storageLayout => _StorageLayoutCatalogTab(
+      _StorageLayoutCatalogTab(
         state: state,
         writeRequirement: pharmacyCatalogWriteRequirement,
         fillHeight: widget.fillHeight,
       ),
-      PharmacyCatalogTab.shelves => _ShelvesCatalogTab(
+      _ShelvesCatalogTab(
         state: state,
         writeRequirement: pharmacyCatalogWriteRequirement,
         fillHeight: widget.fillHeight,
       ),
-    };
+    ];
+    final Widget tabContent = IndexedStack(
+      index: tab.index,
+      sizing: StackFit.expand,
+      children: tabViews,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -961,6 +967,11 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
   late bool _isActive;
   bool _isSaving = false;
   late final TextEditingController _drugSearchController;
+  AppPage<PharmacyDrug> _pickerDrugs = const AppPage<PharmacyDrug>(
+    items: <PharmacyDrug>[],
+    request: AppPageRequest(pageSize: AppPageRequest.maxPageSize),
+  );
+  bool _isLoadingPickerDrugs = false;
 
   bool get _isEditing => widget.item != null;
 
@@ -974,13 +985,30 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
         if (!mounted) {
           return;
         }
-        unawaited(
-          ref
-              .read(pharmacyWorkspaceControllerProvider.notifier)
-              .applyDrugSearch(''),
-        );
+        unawaited(_loadPickerDrugs());
       });
     }
+  }
+
+  Future<void> _loadPickerDrugs({String search = ''}) async {
+    setState(() => _isLoadingPickerDrugs = true);
+    final Result<AppPage<PharmacyDrug>> result = await ref
+        .read(pharmacyWorkspaceControllerProvider.notifier)
+        .loadDrugPickerPage(search: search);
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (AppPage<PharmacyDrug> page) {
+        setState(() {
+          _pickerDrugs = page;
+          _isLoadingPickerDrugs = false;
+        });
+      },
+      failure: (_) {
+        setState(() => _isLoadingPickerDrugs = false);
+      },
+    );
   }
 
   @override
@@ -1019,20 +1047,8 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
-    final PharmacyWorkspaceState? workspaceState = ref
-        .watch(pharmacyWorkspaceControllerProvider)
-        .value
-        ?.when(
-          success: (PharmacyWorkspaceState value) => value,
-          failure: (_) => null,
-        );
-    final AppPage<PharmacyDrug> drugsPage =
-        workspaceState?.drugs ??
-        const AppPage<PharmacyDrug>(
-          items: <PharmacyDrug>[],
-          request: AppPageRequest(pageSize: 10),
-        );
-    final bool isLoadingDrugs = workspaceState?.isRefreshingDrugs ?? false;
+    final AppPage<PharmacyDrug> drugsPage = _pickerDrugs;
+    final bool isLoadingDrugs = _isLoadingPickerDrugs;
     final List<PharmacyDrug> visibleDrugs = drugsPage.items;
     final bool allVisibleSelected =
         visibleDrugs.isNotEmpty &&
@@ -1069,7 +1085,7 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
               physics: const NeverScrollableScrollPhysics(),
               tableHorizontalMargin: 0,
               enableExport: false,
-              onPageChanged: controller.changeDrugPage,
+              onPageChanged: (_) {},
               onRowSelected: _isSaving
                   ? null
                   : (PharmacyDrug drug) {
@@ -1084,8 +1100,10 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
                 hintText: l10n.pharmacyDrugSearchHint,
                 matcher: (_, _) => true,
                 enableDateFilter: false,
-                onSubmitted: controller.applyDrugSearch,
-                onClear: () => unawaited(controller.applyDrugSearch('')),
+                onSubmitted: (String value) {
+                  unawaited(_loadPickerDrugs(search: value));
+                },
+                onClear: () => unawaited(_loadPickerDrugs()),
               ),
               columns: <AppListTableColumn<PharmacyDrug>>[
                 AppListTableColumn<PharmacyDrug>(

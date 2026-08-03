@@ -155,7 +155,7 @@ void main() {
     expect(result?.proposed?.brandName, 'Amoxil Forte');
   });
 
-  testWidgets('drug adapter hides replace when editing', (
+  testWidgets('drug adapter allows edit anyway and replace when editing', (
     WidgetTester tester,
   ) async {
     await setLargeSurface(tester);
@@ -208,10 +208,15 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Replace this drug'), findsNothing);
+    expect(find.text('Replace this drug'), findsOneWidget);
+    expect(find.text('Edit anyway'), findsOneWidget);
     expect(find.text('Use this drug'), findsOneWidget);
-    expect(find.text('Create anyway'), findsOneWidget);
     expect(result, isNull);
+
+    await tester.tap(find.text('Edit anyway'));
+    await tester.pumpAndSettle();
+
+    expect(result?.action, PharmacyDrugSimilarityAction.proceed);
   });
 
   testWidgets('drug adapter allows create anyway on near match', (

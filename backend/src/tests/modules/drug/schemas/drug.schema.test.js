@@ -202,10 +202,10 @@ describe('Drug Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject invalid UUID', () => {
-      const data = { id: 'invalid-uuid' };
+    it('should accept a friendly drug identifier', () => {
+      const data = { id: 'DRG-1001' };
       const result = drugIdParamsSchema.safeParse(data);
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
     });
 
     it('should reject missing id', () => {

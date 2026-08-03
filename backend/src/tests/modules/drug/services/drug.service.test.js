@@ -276,6 +276,7 @@ describe('Drug Service', () => {
     it('should create drug and log audit', async () => {
       const mockData = { tenant_id: '123', name: 'Paracetamol', code: 'PARA500' };
       const mockDrug = { id: '456', ...mockData };
+      drugRepository.findMany.mockResolvedValue([]);
       drugRepository.create.mockResolvedValue(mockDrug);
 
       const result = await drugService.createDrug(mockData, mockUserId, mockIpAddress, mockUser);
@@ -296,6 +297,7 @@ describe('Drug Service', () => {
 
     it('should propagate HttpErrors from repository', async () => {
       const httpError = new HttpError('errors.database.unique_field', 409);
+      drugRepository.findMany.mockResolvedValue([]);
       drugRepository.create.mockRejectedValue(httpError);
 
       await expect(
@@ -307,6 +309,7 @@ describe('Drug Service', () => {
       const mockData = { tenant_id: 'TEN-ALPHA01', name: 'Paracetamol' };
       const mockDrug = { id: '456', tenant_id: 'tenant-uuid-1', name: 'Paracetamol' };
       resolveIdentifierForPayload.mockResolvedValue('tenant-uuid-1');
+      drugRepository.findMany.mockResolvedValue([]);
       drugRepository.create.mockResolvedValue(mockDrug);
 
       const result = await drugService.createDrug(
@@ -327,7 +330,45 @@ describe('Drug Service', () => {
         name: 'Paracetamol'});
     });
 
+    it('allows exact duplicates when confirm_similar is true', async () => {
+      drugRepository.findMany.mockResolvedValue([
+        {
+          id: 'existing-1',
+          name: 'Amoxicillin',
+          generic_name: 'Amoxicillin',
+          code: 'AMX-500',
+          form: 'Capsule',
+          strength: '500mg'}]);
+      drugRepository.create.mockResolvedValue({
+        id: 'new-1',
+        name: 'Amoxicillin',
+        generic_name: 'Amoxicillin',
+        code: 'AMX-500',
+        form: 'Capsule',
+        strength: '500mg',
+        tenant_id: 'tenant-123'});
+
+      const result = await drugService.createDrug(
+        {
+          name: 'Amoxicillin',
+          generic_name: 'Amoxicillin',
+          code: 'AMX-500',
+          form: 'Capsule',
+          strength: '500mg',
+          confirm_similar: true},
+        mockUserId,
+        mockIpAddress,
+        mockUser
+      );
+
+      expect(result.id).toBe('new-1');
+      expect(drugRepository.create).toHaveBeenCalledWith(
+        expect.not.objectContaining({ confirm_similar: true })
+      );
+    });
+
     it('should handle unexpected errors', async () => {
+      drugRepository.findMany.mockResolvedValue([]);
       drugRepository.create.mockRejectedValue(new Error('Unexpected error'));
 
       await expect(
@@ -341,6 +382,7 @@ describe('Drug Service', () => {
       const mockBefore = buildScopedDrug();
       const mockAfter = { id: '123', name: 'Paracetamol Updated' };
       drugRepository.findById.mockResolvedValue(mockBefore);
+      drugRepository.findMany.mockResolvedValue([]);
       drugRepository.update.mockResolvedValue(mockAfter);
 
       const result = await drugService.updateDrug(
@@ -366,6 +408,45 @@ describe('Drug Service', () => {
       }));
     });
 
+    it('allows similar updates when confirm_similar is true', async () => {
+      const mockBefore = buildScopedDrug({
+        id: 'drug-edit',
+        name: 'Amoxicillin',
+        generic_name: 'Amoxicillin',
+        code: 'AMX-501',
+        form: 'Capsule',
+        strength: '500mg'});
+      drugRepository.findById.mockResolvedValue(mockBefore);
+      drugRepository.findMany.mockResolvedValue([
+        mockBefore,
+        {
+          id: 'other-drug',
+          name: 'Amoxicillin',
+          generic_name: 'Amoxicillin',
+          code: 'AMX-500',
+          form: 'Capsule',
+          strength: '500mg'}]);
+      drugRepository.update.mockResolvedValue({
+        ...mockBefore,
+        code: 'AMX-500'});
+
+      const result = await drugService.updateDrug(
+        'drug-edit',
+        {
+          code: 'AMX-500',
+          confirm_similar: true},
+        mockUserId,
+        mockIpAddress,
+        mockUser
+      );
+
+      expect(result.code).toBe('AMX-500');
+      expect(drugRepository.update).toHaveBeenCalledWith(
+        'drug-edit',
+        expect.not.objectContaining({ confirm_similar: true })
+      );
+    });
+
     it('should throw HttpError if drug not found', async () => {
       drugRepository.findById.mockResolvedValue(null);
 
@@ -382,6 +463,7 @@ describe('Drug Service', () => {
 
     it('should propagate HttpErrors from repository', async () => {
       drugRepository.findById.mockResolvedValue(buildScopedDrug());
+      drugRepository.findMany.mockResolvedValue([]);
       const httpError = new HttpError('errors.database.unique_field', 409);
       drugRepository.update.mockRejectedValue(httpError);
 

@@ -174,7 +174,9 @@ final class PharmacyFormularyQuery {
     this.form,
     this.strength,
     this.isActive,
-    this.pageRequest = const AppPageRequest(pageSize: 10),
+    this.pageRequest = const AppPageRequest(
+      pageSize: AppPageRequest.maxPageSize,
+    ),
   });
 
   final String search;
@@ -227,7 +229,9 @@ final class PharmacyInventoryStockQuery {
     this.storageShelfId,
     this.facilityId,
     this.inventoryItemId,
-    this.pageRequest = const AppPageRequest(pageSize: 10),
+    this.pageRequest = const AppPageRequest(
+      pageSize: AppPageRequest.maxPageSize,
+    ),
   });
 
   final String search;
@@ -493,6 +497,7 @@ final class PharmacyDrugUpdateInput {
     this.strength,
     this.unitPrice,
     this.currency,
+    this.confirmSimilar = false,
   });
 
   final String? name;
@@ -503,6 +508,7 @@ final class PharmacyDrugUpdateInput {
   final String? strength;
   final num? unitPrice;
   final String? currency;
+  final bool confirmSimilar;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
@@ -514,6 +520,7 @@ final class PharmacyDrugUpdateInput {
       if (strength != null) 'strength': strength,
       if (unitPrice != null) 'unit_price': unitPrice,
       if (currency != null) 'currency': currency,
+      if (confirmSimilar) 'confirm_similar': true,
     };
   }
 }
@@ -763,7 +770,9 @@ final class PharmacyDrugQuery {
     this.storageRoomId,
     this.storageShelfId,
     this.facilityId,
-    this.pageRequest = const AppPageRequest(pageSize: 10),
+    this.pageRequest = const AppPageRequest(
+      pageSize: AppPageRequest.maxPageSize,
+    ),
   });
 
   final String search;

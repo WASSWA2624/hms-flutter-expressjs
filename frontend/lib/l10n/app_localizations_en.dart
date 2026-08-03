@@ -12239,6 +12239,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyDrugCreateAnywayAction => 'Create anyway';
 
   @override
+  String get pharmacyDrugEditAnywayAction => 'Edit anyway';
+
+  @override
   String get pharmacyDrugUseExistingAction => 'Use this drug';
 
   @override

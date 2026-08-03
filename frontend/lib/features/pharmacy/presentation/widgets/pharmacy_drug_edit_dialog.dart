@@ -14,6 +14,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace_feedback.dart';
 import 'package:hosspi_hms/shared/scan/scan.dart';
 
 final class PharmacyDrugFormResult {
@@ -532,8 +533,12 @@ class _PharmacyDrugEditDialogState
                   child: AppSelectField<String>.searchable(
                     value: _form,
                     labelText: l10n.pharmacyDrugFormLabel,
+                    isRequired: true,
                     enabled: !_isSaving,
                     options: formOptions,
+                    validator: AppValidators.requiredValue(
+                      l10n.validationRequired,
+                    ),
                     onChanged: _onFormChanged,
                   ),
                 ),
@@ -544,8 +549,12 @@ class _PharmacyDrugEditDialogState
                   child: AppSelectField<String>.searchable(
                     value: _strength,
                     labelText: l10n.pharmacyDrugStrengthLabel,
+                    isRequired: true,
                     enabled: !_isSaving && _form != null,
                     options: strengthOptions,
+                    validator: AppValidators.requiredValue(
+                      l10n.validationRequired,
+                    ),
                     onChanged: (String? value) {
                       setState(() {
                         _strength = value;
@@ -804,7 +813,8 @@ class _PharmacyDrugEditDialogState
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    final bool isValid = _formKey.currentState?.validate() ?? false;
+    if (!isValid) {
       return;
     }
     if (!_isEdit && _suggestions.hasPending) {
@@ -969,6 +979,7 @@ class _PharmacyDrugEditDialogState
               },
             );
             if (failure != null) {
+              showAppFailureSnackBar(context, failure);
               return;
             }
             return;
@@ -996,6 +1007,7 @@ class _PharmacyDrugEditDialogState
         if (failure != null) {
           if (mounted) {
             setState(() => _isSaving = false);
+            showAppFailureSnackBar(context, failure);
           }
           return;
         }
@@ -1038,60 +1050,249 @@ class _PharmacyDrugEditDialogState
           },
         );
         if (failure != null) {
+          showAppFailureSnackBar(context, failure);
           return;
         }
         return;
       }
     } else {
-      final Result<PharmacyDrug> updateResult = await controller.updateDrug(
-        widget.drug!.id,
-        PharmacyDrugUpdateInput(
-          name: genericName,
-          brandName: _brandNameController.text.trim(),
-          genericName: genericName,
-          code: _emptyToNull(_codeController.text),
-          form: _form,
-          strength: _strength,
-          unitPrice: pharmacyPrice,
-          currency: pharmacyCurrency,
-        ),
-        facilityOffering: facilityOffering,
-      );
-      PharmacyDrug? updatedDrug;
-      updateResult.when(
-        success: (PharmacyDrug value) => updatedDrug = value,
-        failure: (AppFailure error) => failure = error,
-      );
-      if (failure == null && updatedDrug != null) {
-        final int? reorderLevel = int.tryParse(
-          _reorderLevelController.text.trim(),
-        );
-        final String? inventoryItemId = _resolveInventoryItemId(updatedDrug!);
-        if (reorderLevel != null && inventoryItemId != null) {
-          failure = await controller.adjustInventoryStock(
-            PharmacyInventoryAdjustInput(
-              inventoryItemId: inventoryItemId,
-              reorderLevel: reorderLevel,
-              reason: 'OTHER',
-              facilityId: controller.resolveFacilityId(),
-            ),
+      final String? tenantId =
+          controller.resolveTenantId() ?? widget.drug!.tenantId;
+      if (tenantId == null) {
+        failure = AppFailure.validation();
+      } else {
+        bool confirmedSimilar = false;
+        while (mounted) {
+          final Result<PharmacyDrugSimilarityResult> similarityResult =
+              await controller.checkDrugSimilarity(
+                genericName: genericName,
+                name: genericName,
+                brandName: brandName,
+                code: code,
+                form: form,
+                strength: strength,
+                tenantId: tenantId,
+                excludeDrugId: widget.drug!.id,
+              );
+          final PharmacyDrugSimilarityResult? check = similarityResult.when(
+            success: (PharmacyDrugSimilarityResult value) => value,
+            failure: (AppFailure error) {
+              failure = error;
+              return null;
+            },
           );
+          if (check == null) {
+            break;
+          }
+
+          if (!mounted) {
+            return;
+          }
+
+          // Skip the review dialog when there are no matches against other drugs.
+          if (check.matches.isEmpty && !check.hasExactConflict) {
+            confirmedSimilar = true;
+            break;
+          }
+
+          final PharmacyDrugSimilarityDialogResult similarityDecision =
+              await showPharmacyDrugSimilarityDialog(
+                context,
+                isEdit: true,
+                proposed: PharmacyDrugSimilarityProposedValues(
+                  genericName: genericName,
+                  brandName: brandName,
+                  code: code,
+                  form: form,
+                  strength: strength,
+                ),
+                check: check,
+              );
+
+          if (similarityDecision.action == PharmacyDrugSimilarityAction.cancel) {
+            if (mounted) {
+              setState(() => _isSaving = false);
+            }
+            return;
+          }
+
+          if (similarityDecision.action == PharmacyDrugSimilarityAction.retry) {
+            final PharmacyDrugSimilarityProposedValues? proposed =
+                similarityDecision.proposed;
+            if (proposed != null) {
+              genericName = proposed.genericName;
+              brandName = proposed.brandName;
+              code = proposed.code;
+              form = proposed.form;
+              strength = proposed.strength;
+              _genericNameController.text = genericName;
+              _brandNameController.text = brandName ?? '';
+              _codeController.text = code ?? '';
+              setState(() {
+                _form = form;
+                _strength = strength;
+              });
+            }
+            continue;
+          }
+
+          if (similarityDecision.action ==
+              PharmacyDrugSimilarityAction.useExisting) {
+            final PharmacyDrug? existing = similarityDecision.selectedDrug;
+            if (!mounted) {
+              return;
+            }
+            setState(() => _isSaving = false);
+            if (existing != null) {
+              Navigator.of(
+                context,
+              ).pop(PharmacyDrugFormResult.useExisting(existing));
+            }
+            return;
+          }
+
+          if (similarityDecision.action ==
+              PharmacyDrugSimilarityAction.replaceExisting) {
+            final PharmacyDrug? existing = similarityDecision.selectedDrug;
+            final PharmacyDrugSimilarityProposedValues? proposed =
+                similarityDecision.proposed;
+            if (existing == null || proposed == null) {
+              if (mounted) {
+                setState(() => _isSaving = false);
+              }
+              return;
+            }
+            genericName = proposed.genericName;
+            brandName = proposed.brandName;
+            code = proposed.code;
+            form = proposed.form;
+            strength = proposed.strength;
+            _genericNameController.text = genericName;
+            _brandNameController.text = brandName ?? '';
+            _codeController.text = code ?? '';
+            setState(() {
+              _form = form;
+              _strength = strength;
+            });
+            final Result<PharmacyDrug> replaceResult = await controller
+                .updateDrug(
+                  existing.id,
+                  PharmacyDrugUpdateInput(
+                    name: genericName,
+                    brandName: brandName,
+                    genericName: genericName,
+                    code: code,
+                    form: form,
+                    strength: strength,
+                    unitPrice: pharmacyPrice,
+                    currency: pharmacyCurrency,
+                    confirmSimilar: true,
+                  ),
+                  facilityOffering: facilityOffering,
+                );
+            if (!mounted) {
+              return;
+            }
+            replaceResult.when(
+              success: (PharmacyDrug updated) {
+                Navigator.of(
+                  context,
+                ).pop(PharmacyDrugFormResult.saved(updated));
+              },
+              failure: (AppFailure error) {
+                failure = error;
+                setState(() => _isSaving = false);
+              },
+            );
+            if (failure != null) {
+              showAppFailureSnackBar(context, failure);
+              return;
+            }
+            return;
+          }
+
+          // Edit anyway / continue — apply any proposed edits, then update self.
+          final PharmacyDrugSimilarityProposedValues? confirmed =
+              similarityDecision.proposed;
+          if (confirmed != null) {
+            genericName = confirmed.genericName;
+            brandName = confirmed.brandName;
+            code = confirmed.code;
+            form = confirmed.form;
+            strength = confirmed.strength;
+            _genericNameController.text = genericName;
+            _brandNameController.text = brandName ?? '';
+            _codeController.text = code ?? '';
+            setState(() {
+              _form = form;
+              _strength = strength;
+            });
+          }
+          confirmedSimilar = true;
+          break;
         }
-      }
-      if (!mounted) {
+
+        if (failure != null) {
+          if (mounted) {
+            setState(() => _isSaving = false);
+            showAppFailureSnackBar(context, failure);
+          }
+          return;
+        }
+
+        final Result<PharmacyDrug> updateResult = await controller.updateDrug(
+          widget.drug!.id,
+          PharmacyDrugUpdateInput(
+            name: genericName,
+            brandName: brandName ?? _brandNameController.text.trim(),
+            genericName: genericName,
+            code: code,
+            form: form,
+            strength: strength,
+            unitPrice: pharmacyPrice,
+            currency: pharmacyCurrency,
+            confirmSimilar: confirmedSimilar,
+          ),
+          facilityOffering: facilityOffering,
+        );
+        PharmacyDrug? updatedDrug;
+        updateResult.when(
+          success: (PharmacyDrug value) => updatedDrug = value,
+          failure: (AppFailure error) => failure = error,
+        );
+        if (failure == null && updatedDrug != null) {
+          final int? reorderLevel = int.tryParse(
+            _reorderLevelController.text.trim(),
+          );
+          final String? inventoryItemId = _resolveInventoryItemId(updatedDrug!);
+          if (reorderLevel != null && inventoryItemId != null) {
+            failure = await controller.adjustInventoryStock(
+              PharmacyInventoryAdjustInput(
+                inventoryItemId: inventoryItemId,
+                reorderLevel: reorderLevel,
+                reason: 'OTHER',
+                facilityId: controller.resolveFacilityId(),
+              ),
+            );
+          }
+        }
+        if (!mounted) {
+          return;
+        }
+        if (failure == null && updatedDrug != null) {
+          Navigator.of(context).pop(PharmacyDrugFormResult.saved(updatedDrug!));
+          return;
+        }
+        setState(() => _isSaving = false);
+        showAppFailureSnackBar(context, failure);
         return;
       }
-      if (failure == null && updatedDrug != null) {
-        Navigator.of(context).pop(PharmacyDrugFormResult.saved(updatedDrug!));
-        return;
-      }
-      setState(() => _isSaving = false);
-      return;
     }
     if (!mounted) {
       return;
     }
     setState(() => _isSaving = false);
+    showAppFailureSnackBar(context, failure);
   }
 
   String? _optionalPositiveAmountValidator(String? value) {

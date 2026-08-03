@@ -221,12 +221,12 @@ const createDrug = async (data, userId, ipAddress, user = {}) => {
       strength: payload.strength,
       existing,
     });
-    if (duplicateCheck.exactIdentityConflict) {
+    if (!confirmSimilar && duplicateCheck.exactIdentityConflict) {
       throw new HttpError('errors.pharmacy_drug.duplicate_identity', 409, [
         { field: 'generic_name' },
       ]);
     }
-    if (duplicateCheck.exactCodeConflict) {
+    if (!confirmSimilar && duplicateCheck.exactCodeConflict) {
       throw new HttpError('errors.pharmacy_drug.duplicate_code', 409, [
         { field: 'code' },
       ]);
@@ -279,7 +279,9 @@ const updateDrug = async (id, data, userId, ipAddress, user = {}) => {
   try {
     // Get current state for audit
     const { scope, drug: before } = await findScopedDrugOrThrow(id, user);
-    const payload = { ...data };
+    const confirmSimilar = data?.confirm_similar === true;
+    const { confirm_similar: _confirmSimilar, ...rawPayload } = data || {};
+    const payload = { ...rawPayload };
     if (!scope.can_manage_all_tenants) {
       payload.tenant_id = scope.tenant_id;
     } else if (hasOwn(payload, 'tenant_id')) {
@@ -290,7 +292,60 @@ const updateDrug = async (id, data, userId, ipAddress, user = {}) => {
         where: { deleted_at: null },
       });
     }
-    const drug = await drugRepository.update(id, payload);
+
+    const nextName = hasOwn(payload, 'name') ? payload.name : before.name;
+    const nextGeneric = hasOwn(payload, 'generic_name')
+      ? payload.generic_name
+      : before.generic_name;
+    const nextBrand = hasOwn(payload, 'brand_name')
+      ? payload.brand_name
+      : before.brand_name;
+    const nextCode = hasOwn(payload, 'code') ? payload.code : before.code;
+    const nextForm = hasOwn(payload, 'form') ? payload.form : before.form;
+    const nextStrength = hasOwn(payload, 'strength')
+      ? payload.strength
+      : before.strength;
+
+    const existing = await drugRepository.findMany(
+      { tenant_id: before.tenant_id || scope.tenant_id },
+      0,
+      500,
+      { updated_at: 'desc' }
+    );
+    const duplicateCheck = checkPharmacyDrugDuplicates({
+      name: nextName,
+      genericName: nextGeneric,
+      brandName: nextBrand,
+      code: nextCode,
+      form: nextForm,
+      strength: nextStrength,
+      existing,
+      excludeDrugId: before.id,
+    });
+    if (!confirmSimilar && duplicateCheck.exactIdentityConflict) {
+      throw new HttpError('errors.pharmacy_drug.duplicate_identity', 409, [
+        { field: 'generic_name' },
+      ]);
+    }
+    if (!confirmSimilar && duplicateCheck.exactCodeConflict) {
+      throw new HttpError('errors.pharmacy_drug.duplicate_code', 409, [
+        { field: 'code' },
+      ]);
+    }
+    const reviewMatches = duplicateCheck.similarMatches
+      .filter((match) => !match.is_exact)
+      .slice(0, 8);
+    if (!confirmSimilar && reviewMatches.length > 0) {
+      throw new HttpError('errors.pharmacy_drug.similar_exists', 409, [
+        {
+          field: 'generic_name',
+          matches: reviewMatches,
+          closest_score: duplicateCheck.closestScore,
+        },
+      ]);
+    }
+
+    const drug = await drugRepository.update(before.id, payload);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -325,7 +380,7 @@ const deleteDrug = async (id, userId, ipAddress, user = {}) => {
     // Get current state for audit
     const { scope, drug: before } = await findScopedDrugOrThrow(id, user);
 
-    await drugRepository.softDelete(id);
+    await drugRepository.softDelete(before.id);
 
     // Create audit log (non-blocking)
     createAuditLog({

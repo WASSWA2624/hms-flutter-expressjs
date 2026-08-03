@@ -9,9 +9,10 @@
 
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
+const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 
 /**
- * Find drug by ID
+ * Find drug by UUID or human-friendly id.
  *
  * @param {string} id - Drug ID
  * @param {Object} include - Relations to include
@@ -19,13 +20,25 @@ const { HttpError } = require('@lib/errors');
  */
 const findById = async (id, include = {}) => {
   try {
+    const normalized = String(id || '').trim();
+    if (!normalized) {
+      return null;
+    }
+
+    if (isUuidLike(normalized)) {
+      return await prisma.drug.findFirst({
+        where: {
+          id: normalized,
+          deleted_at: null},
+        include});
+    }
+
+    const upper = normalized.toUpperCase();
     return await prisma.drug.findFirst({
       where: {
-        id,
-        deleted_at: null
-      },
-      include
-    });
+        deleted_at: null,
+        OR: [{ id: normalized }, { human_friendly_id: upper }]},
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }

@@ -9,7 +9,6 @@
 
 const { z } = require('zod');
 const { 
-  uuidSchema, 
   uuidOrFriendlyIdentifierSchema,
   listQuerySchema
 } = require('@lib/validation/zod');
@@ -47,6 +46,7 @@ const updateDrugSchema = z.object({
   strength: z.string().trim().max(80).optional().nullable(),
   unit_price: z.coerce.number().min(0).optional().nullable(),
   currency: z.string().trim().max(10).optional().nullable(),
+  confirm_similar: z.coerce.boolean().optional(),
 });
 
 // ==================== URL Params ====================
@@ -56,7 +56,7 @@ const updateDrugSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const drugIdParamsSchema = z.object({
-  id: uuidSchema
+  id: uuidOrFriendlyIdentifierSchema
 });
 
 // ==================== Query Params ====================

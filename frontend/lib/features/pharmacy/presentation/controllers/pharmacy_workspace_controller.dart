@@ -737,6 +737,22 @@ final class PharmacyWorkspaceController
   PharmacyCatalogTab get currentCatalogTab =>
       _currentState?.catalogTab ?? PharmacyCatalogTab.drugs;
 
+  /// Loads drugs for nested pickers without mutating Catalog Drugs filters.
+  Future<Result<AppPage<PharmacyDrug>>> loadDrugPickerPage({
+    String search = '',
+  }) {
+    return _repository.searchDrugs(
+      _scopedDrugQuery(
+        PharmacyDrugQuery(
+          search: search,
+          pageRequest: const AppPageRequest(
+            pageSize: AppPageRequest.maxPageSize,
+          ),
+        ),
+      ),
+    );
+  }
+
   void setCatalogTab(PharmacyCatalogTab tab) {
     final PharmacyWorkspaceState? current = _currentState;
     if (current == null || current.catalogTab == tab) {

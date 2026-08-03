@@ -15610,6 +15610,10 @@
   "@pharmacyDrugCreateAnywayAction": {
     "description": "Continue creating a drug after similarity review."
   },
+  "pharmacyDrugEditAnywayAction": "Edit anyway",
+  "@pharmacyDrugEditAnywayAction": {
+    "description": "Continue editing a drug after similarity review against other drugs."
+  },
   "pharmacyDrugUseExistingAction": "Use this drug",
   "@pharmacyDrugUseExistingAction": {
     "description": "Use an existing drug from similarity review."

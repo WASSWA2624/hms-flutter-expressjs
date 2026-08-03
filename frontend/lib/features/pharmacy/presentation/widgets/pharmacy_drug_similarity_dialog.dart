@@ -213,8 +213,10 @@ Future<PharmacyDrugSimilarityDialogResult> showPharmacyDrugSimilarityDialog(
         ],
         matches: matches,
         overallScore: overallScore,
-        enableReplaceExisting: !isEdit,
-        proceedLabel: l10n.pharmacyDrugCreateAnywayAction,
+        enableReplaceExisting: true,
+        proceedLabel: isEdit
+            ? l10n.pharmacyDrugEditAnywayAction
+            : l10n.pharmacyDrugCreateAnywayAction,
         continueLabel: l10n.commonContinueActionLabel,
         useThisLabel: l10n.pharmacyDrugUseExistingAction,
         replaceExistingLabel: l10n.pharmacyDrugReplaceExistingAction,

@@ -22552,6 +22552,12 @@ abstract class AppLocalizations {
   /// **'Create anyway'**
   String get pharmacyDrugCreateAnywayAction;
 
+  /// Continue editing a drug after similarity review against other drugs.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit anyway'**
+  String get pharmacyDrugEditAnywayAction;
+
   /// Use an existing drug from similarity review.
   ///
   /// In en, this message translates to:
