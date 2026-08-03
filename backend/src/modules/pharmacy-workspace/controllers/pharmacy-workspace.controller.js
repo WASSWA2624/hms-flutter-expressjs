@@ -216,6 +216,22 @@ const setupPharmacyDrug = asyncHandler(async (req, res) => {
   return sendSuccess(res, 201, 'messages.pharmacy_workspace.drug.setup.success', data);
 });
 
+const upsertPharmacyDrugFacilityOffering = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.upsertPharmacyDrugFacilityOffering(
+    req.params.drugId,
+    req.body,
+    req.user?.id,
+    req.ip,
+    req.user || {}
+  );
+  return sendSuccess(
+    res,
+    200,
+    'messages.pharmacy_workspace.drug.facility_offering.upsert.success',
+    data
+  );
+});
+
 const checkPharmacyDrugSimilarity = asyncHandler(async (req, res) => {
   const data = await pharmacyWorkspaceService.checkPharmacyDrugSimilarity(
     req.body,
@@ -374,6 +390,7 @@ module.exports = {
   getInventoryStock,
   adjustInventoryStock,
   setupPharmacyDrug,
+  upsertPharmacyDrugFacilityOffering,
   checkPharmacyDrugSimilarity,
   resolveLegacyRoute,
   getPharmacyStorageLayout,

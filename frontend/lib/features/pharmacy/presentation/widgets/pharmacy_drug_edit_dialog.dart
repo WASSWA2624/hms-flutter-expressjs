@@ -123,8 +123,13 @@ class _PharmacyDrugEditDialogState
     _storageShelfId =
         _emptyToNull(drug?.storageShelfId ?? '') ??
         _emptyToNull(primaryStock?.storageShelfId ?? '');
-    _expiryDate = primaryStock?.nextExpiry;
-    _batchNumberController = TextEditingController();
+    _manufacturedAt = drug?.manufacturedAt;
+    _expiryDate =
+        drug?.expiryDate ?? drug?.nextExpiry ?? primaryStock?.nextExpiry;
+    _expiryAlertLeadDays = drug?.expiryAlertLeadDays;
+    _batchNumberController = TextEditingController(
+      text: _emptyToNull(drug?.batchNumber ?? '') ?? '',
+    );
   }
 
   @override
@@ -432,18 +437,13 @@ class _PharmacyDrugEditDialogState
   }) {
     final String? previousShelfId = widget.drug?.storageShelfId;
     final bool storageChanged = _storageShelfId != previousShelfId;
-    final bool facilityPriceChanged = !_sameOptionalPrice(
-      facilityPrice,
-      widget.drug?.facilityUnitPrice,
-    );
-    // Only hit facility catalog when facility price or storage actually changed.
-    // Pre-filled unchanged prices must not trigger a gated upsert on every save.
-    if (!facilityPriceChanged && !storageChanged) {
+    final bool hasFacilityPrice = facilityPrice != null;
+    final bool hasStorageShelf = _storageShelfId != null;
+    // Persist whenever facility price or location is filled/changed so both
+    // prices and shelf survive edit (including recovering from prior failures).
+    if (!hasFacilityPrice && !hasStorageShelf && !storageChanged) {
       return null;
     }
-    // Active offerings require unit_price (>= 0). Prefer the edited facility
-    // price, then existing facility/pharmacy prices, then 0 so storage-only
-    // edits still attempt to persist.
     final num offeringPrice =
         facilityPrice ??
         widget.drug?.facilityUnitPrice ??
@@ -1544,16 +1544,6 @@ String _trimNumber(num value) {
     return value.toInt().toString();
   }
   return value.toString();
-}
-
-bool _sameOptionalPrice(num? left, num? right) {
-  if (left == null && right == null) {
-    return true;
-  }
-  if (left == null || right == null) {
-    return false;
-  }
-  return left == right;
 }
 
 PharmacyDrug? _findDrugInProvider(WidgetRef ref, String drugId) {

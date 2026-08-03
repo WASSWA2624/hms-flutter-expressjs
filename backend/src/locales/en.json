@@ -1318,6 +1318,7 @@
   "messages.pharmacy_workspace.storage.shelf.similarity.success": "Storage shelf similarity checked successfully",
   "messages.pharmacy_workspace.drug.similarity.success": "Drug similarity checked successfully",
   "messages.pharmacy_workspace.drug.setup.success": "Pharmacy drug created successfully",
+  "messages.pharmacy_workspace.drug.facility_offering.upsert.success": "Facility pharmacy offering saved successfully",
   "messages.pharmacy_workspace.storage.shelf.update.success": "Storage shelf updated successfully",
   "messages.pharmacy_workspace.workbench.success": "Pharmacy workspace loaded successfully",
   "messages.pharmacy_workspace.workflow.success": "Pharmacy workflow loaded successfully",

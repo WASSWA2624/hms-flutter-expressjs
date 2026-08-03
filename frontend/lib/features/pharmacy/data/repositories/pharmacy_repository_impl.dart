@@ -210,11 +210,19 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
   ) {
     return _apiClient.put<PharmacyDrug>(
       ApiEndpoints.apiV1(<String>[
-        HmsApiResource.facilityPharmacyCatalog.path,
+        HmsApiResource.pharmacy.path,
         'drugs',
         drugId,
+        'facility-offering',
       ]),
-      data: _withoutEmpty(input.toJson()),
+      data: <String, Object?>{
+        'unit_price': input.unitPrice,
+        'is_active': input.isActive,
+        if (input.currency != null) 'currency': input.currency,
+        if (input.facilityId != null) 'facility_id': input.facilityId,
+        // Always include shelf so location updates are not stripped.
+        'default_storage_shelf_id': input.defaultStorageShelfId,
+      },
       decoder: (Object? data) {
         final PharmacyJsonMap response = _expectMap(data);
         return PharmacyDrugDto(_map(response['data'])).toEntity();

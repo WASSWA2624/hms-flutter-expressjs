@@ -145,18 +145,104 @@ const resolveDefaultStorageShelfId = async (identifier, scope, facilityId) => {
   return storageShelfId;
 };
 
+const INTERNAL_UNLABELED_BATCH = 'UNLABELED';
+
+const toIsoDateTime = (value) => {
+  if (!value) return null;
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+};
+
+const hasBatchIdentityMeta = (batch) => {
+  if (!batch) return false;
+  const batchNumber = toText(batch.batch_number);
+  const labeled =
+    Boolean(batchNumber) && batchNumber.toUpperCase() !== INTERNAL_UNLABELED_BATCH;
+  return (
+    labeled ||
+    Boolean(batch.manufactured_at) ||
+    Boolean(batch.expiry_date) ||
+    batch.expiry_alert_lead_days != null ||
+    Boolean(batch.storage_shelf_id || batch.storage_room_id)
+  );
+};
+
+const pickPrimaryBatch = (batches = []) => {
+  const list = Array.isArray(batches) ? batches : [];
+  if (!list.length) return null;
+
+  const withQuantity = list.filter((batch) => Number(batch.quantity || 0) > 0);
+  const withMeta = list.filter(hasBatchIdentityMeta);
+  const pool = withQuantity.length ? withQuantity : withMeta.length ? withMeta : list;
+
+  const withShelf = pool.find((batch) => batch.storage_shelf_id || batch.storage_room_id);
+  const dated = pool
+    .filter((batch) => batch.expiry_date)
+    .sort((left, right) => new Date(left.expiry_date) - new Date(right.expiry_date));
+
+  return withShelf || dated[0] || pool[0] || null;
+};
+
 const buildPrimaryBatchStorageSummary = (batches = []) => {
-  const active = (batches || []).filter((batch) => Number(batch.quantity || 0) > 0);
-  const withShelf = active.find((batch) => batch.storage_shelf_id || batch.storage_room_id);
-  const selected = withShelf || active[0] || batches[0] || null;
-  if (!selected) return mapStorageLocationFields();
-  return mapStorageLocationFields(selected.storage_room, selected.storage_shelf);
+  const selected = pickPrimaryBatch(batches);
+  if (!selected) {
+    return {
+      ...mapStorageLocationFields(),
+      batch_number: null,
+      manufactured_at: null,
+      expiry_date: null,
+      next_expiry: null,
+      expiry_alert_lead_days: null};
+  }
+
+  const rawBatchNumber = toText(selected.batch_number);
+  const batchNumber =
+    rawBatchNumber && rawBatchNumber.toUpperCase() !== INTERNAL_UNLABELED_BATCH
+      ? rawBatchNumber
+      : null;
+  const expiryDate = toIsoDateTime(selected.expiry_date);
+
+  return {
+    ...mapStorageLocationFields(selected.storage_room, selected.storage_shelf),
+    batch_number: batchNumber,
+    manufactured_at: toIsoDateTime(selected.manufactured_at),
+    expiry_date: expiryDate,
+    next_expiry: expiryDate,
+    expiry_alert_lead_days:
+      selected.expiry_alert_lead_days == null
+        ? null
+        : Number(selected.expiry_alert_lead_days)};
+};
+
+const buildPublicIdToUuidMap = (resolvedRows = [], requestedIds = []) => {
+  const map = new Map();
+  for (const id of requestedIds) {
+    const normalized = toText(id);
+    if (!normalized) continue;
+    if (isUuidLike(normalized)) {
+      map.set(normalized, normalized);
+    }
+  }
+  for (const row of resolvedRows || []) {
+    if (!row?.id) continue;
+    map.set(row.id, row.id);
+    const friendly = toText(row.human_friendly_id);
+    if (friendly) {
+      map.set(friendly, row.id);
+      map.set(friendly.toUpperCase(), row.id);
+    }
+  }
+  return map;
 };
 
 const attachDrugStorageSummaries = async (drugs = []) => {
   if (!Array.isArray(drugs) || !drugs.length) return drugs;
   const drugIds = drugs.map((drug) => drug.id).filter(Boolean);
-  const batches = await pharmacyStorageRepository.findDrugBatchesWithStorageByDrugIds(drugIds);
+  const resolvedRows = await pharmacyStorageRepository.resolveDrugIdsByIdentifiers(drugIds);
+  const publicIdToUuid = buildPublicIdToUuidMap(resolvedRows, drugIds);
+  const uuidIds = Array.from(new Set(Array.from(publicIdToUuid.values()).filter(Boolean)));
+  const batches = await pharmacyStorageRepository.findDrugBatchesWithStorageByDrugIds(uuidIds);
   const batchesByDrugId = batches.reduce((acc, batch) => {
     if (!acc.has(batch.drug_id)) acc.set(batch.drug_id, []);
     acc.get(batch.drug_id).push(batch);
@@ -164,14 +250,38 @@ const attachDrugStorageSummaries = async (drugs = []) => {
   }, new Map());
 
   return drugs.map((drug) => {
-    const fromBatch = buildPrimaryBatchStorageSummary(batchesByDrugId.get(drug.id) || []);
-    // Prefer batch location when present; otherwise keep offering/mapped storage.
-    if (fromBatch.storage_shelf_id || fromBatch.storage_room_id) {
-      return {
-        ...drug,
-        ...fromBatch};
+    const uuid = publicIdToUuid.get(toText(drug.id)) || publicIdToUuid.get(toText(drug.id).toUpperCase());
+    const fromBatch = buildPrimaryBatchStorageSummary(batchesByDrugId.get(uuid) || []);
+    const hasBatchStorage = Boolean(fromBatch.storage_shelf_id || fromBatch.storage_room_id);
+    const hasBatchIdentity =
+      Boolean(fromBatch.batch_number) ||
+      Boolean(fromBatch.manufactured_at) ||
+      Boolean(fromBatch.expiry_date) ||
+      fromBatch.expiry_alert_lead_days != null;
+
+    if (!hasBatchStorage && !hasBatchIdentity) {
+      return drug;
     }
-    return drug;
+
+    return {
+      ...drug,
+      // Prefer batch location when present; otherwise keep offering/mapped storage.
+      ...(hasBatchStorage
+        ? {
+            storage_room_id: fromBatch.storage_room_id,
+            storage_room_label: fromBatch.storage_room_label,
+            storage_shelf_id: fromBatch.storage_shelf_id,
+            storage_shelf_code: fromBatch.storage_shelf_code,
+            storage_location_label: fromBatch.storage_location_label}
+        : {}),
+      ...(hasBatchIdentity
+        ? {
+            batch_number: fromBatch.batch_number,
+            manufactured_at: fromBatch.manufactured_at,
+            expiry_date: fromBatch.expiry_date,
+            next_expiry: fromBatch.next_expiry,
+            expiry_alert_lead_days: fromBatch.expiry_alert_lead_days}
+        : {})};
   });
 };
 

@@ -596,3 +596,69 @@ describe('pharmacy-storage.service shelf similarity and create', () => {
     expect(updated.label).toBe('Antibiotics Updated');
   });
 });
+
+describe('pharmacy-storage.service batch summaries', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('builds primary batch identity fields and hides UNLABELED numbers', () => {
+    const summary = pharmacyStorageService.buildPrimaryBatchStorageSummary([
+      {
+        batch_number: 'UNLABELED',
+        manufactured_at: new Date('2025-01-15T00:00:00.000Z'),
+        expiry_date: new Date('2027-01-15T00:00:00.000Z'),
+        expiry_alert_lead_days: 60,
+        quantity: 0,
+        storage_room_id: null,
+        storage_shelf_id: null},
+    ]);
+
+    expect(summary.batch_number).toBeNull();
+    expect(summary.manufactured_at).toBe('2025-01-15T00:00:00.000Z');
+    expect(summary.expiry_date).toBe('2027-01-15T00:00:00.000Z');
+    expect(summary.next_expiry).toBe('2027-01-15T00:00:00.000Z');
+    expect(summary.expiry_alert_lead_days).toBe(60);
+  });
+
+  it('attaches batch fields using friendly drug ids resolved to UUIDs', async () => {
+    pharmacyStorageRepository.resolveDrugIdsByIdentifiers.mockResolvedValue([
+      { id: 'drug-uuid-1', human_friendly_id: 'DRU0000001' },
+    ]);
+    pharmacyStorageRepository.findDrugBatchesWithStorageByDrugIds.mockResolvedValue([
+      {
+        drug_id: 'drug-uuid-1',
+        batch_number: 'LOT-42',
+        manufactured_at: new Date('2024-06-01T00:00:00.000Z'),
+        expiry_date: new Date('2026-06-01T00:00:00.000Z'),
+        expiry_alert_lead_days: 30,
+        quantity: 12,
+        storage_room_id: null,
+        storage_shelf_id: null},
+    ]);
+
+    const enriched = await pharmacyStorageService.attachDrugStorageSummaries([
+      {
+        id: 'DRU0000001',
+        name: 'Amoxicillin',
+        storage_room_id: 'ROOM-KEEP'},
+    ]);
+
+    expect(pharmacyStorageRepository.resolveDrugIdsByIdentifiers).toHaveBeenCalledWith([
+      'DRU0000001',
+    ]);
+    expect(pharmacyStorageRepository.findDrugBatchesWithStorageByDrugIds).toHaveBeenCalledWith([
+      'drug-uuid-1',
+    ]);
+    expect(enriched[0]).toEqual(
+      expect.objectContaining({
+        id: 'DRU0000001',
+        storage_room_id: 'ROOM-KEEP',
+        batch_number: 'LOT-42',
+        manufactured_at: '2024-06-01T00:00:00.000Z',
+        expiry_date: '2026-06-01T00:00:00.000Z',
+        next_expiry: '2026-06-01T00:00:00.000Z',
+        expiry_alert_lead_days: 30})
+    );
+  });
+});

@@ -204,6 +204,33 @@ const txHardDeleteStorageRoom = async (tx, id) =>
   tx.pharmacy_storage_room.delete({
     where: { id }});
 
+const resolveDrugIdsByIdentifiers = async (identifiers = []) =>
+  withDbErrorHandling(() => {
+    const normalized = Array.from(
+      new Set((identifiers || []).map((value) => String(value || '').trim()).filter(Boolean))
+    );
+    if (!normalized.length) return [];
+
+    const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
+    const uuidIds = normalized.filter((value) => isUuidLike(value));
+    const friendlyIds = normalized
+      .filter((value) => !isUuidLike(value))
+      .map((value) => value.toUpperCase());
+
+    const orClauses = [];
+    if (uuidIds.length) orClauses.push({ id: { in: uuidIds } });
+    if (friendlyIds.length) orClauses.push({ human_friendly_id: { in: friendlyIds } });
+    if (!orClauses.length) return [];
+
+    return prisma.drug.findMany({
+      where: {
+        deleted_at: null,
+        OR: orClauses},
+      select: {
+        id: true,
+        human_friendly_id: true}});
+  });
+
 const findDrugBatchesWithStorageByDrugIds = async (drugIds = []) =>
   withDbErrorHandling(() => {
     const normalized = Array.from(new Set((drugIds || []).filter(Boolean)));
@@ -216,7 +243,9 @@ const findDrugBatchesWithStorageByDrugIds = async (drugIds = []) =>
         id: true,
         drug_id: true,
         batch_number: true,
+        manufactured_at: true,
         expiry_date: true,
+        expiry_alert_lead_days: true,
         quantity: true,
         storage_room_id: true,
         storage_shelf_id: true,
@@ -306,6 +335,7 @@ module.exports = {
   txClearBatchStorageForRoom,
   txHardDeleteShelvesForRoom,
   txHardDeleteStorageRoom,
+  resolveDrugIdsByIdentifiers,
   findDrugBatchesWithStorageByDrugIds,
   findInventoryItemIdsByStorageFilters,
   findDrugIdsByStorageFilters};

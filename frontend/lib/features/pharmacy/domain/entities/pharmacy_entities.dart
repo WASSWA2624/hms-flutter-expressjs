@@ -1406,6 +1406,11 @@ final class PharmacyDrug {
     this.pendingStock = false,
     this.stockMappings = const <PharmacyDrugStockMapping>[],
     this.stockRows = const <PharmacyInventoryStock>[],
+    this.batchNumber,
+    this.manufacturedAt,
+    this.expiryDate,
+    this.nextExpiry,
+    this.expiryAlertLeadDays,
     this.storageRoomId,
     this.storageRoomLabel,
     this.storageShelfId,
@@ -1439,6 +1444,11 @@ final class PharmacyDrug {
   final bool pendingStock;
   final List<PharmacyDrugStockMapping> stockMappings;
   final List<PharmacyInventoryStock> stockRows;
+  final String? batchNumber;
+  final DateTime? manufacturedAt;
+  final DateTime? expiryDate;
+  final DateTime? nextExpiry;
+  final int? expiryAlertLeadDays;
   final String? storageRoomId;
   final String? storageRoomLabel;
   final String? storageShelfId;

@@ -16,6 +16,8 @@ const {
   getInventoryStockQuerySchema,
   adjustInventorySchema,
   setupPharmacyDrugSchema,
+  upsertPharmacyDrugFacilityOfferingSchema,
+  pharmacyDrugParamsSchema,
   resolveLegacyRouteParamsSchema,
   getPharmacyStorageLayoutQuerySchema,
   createPharmacyStorageRoomSchema,
@@ -56,6 +58,16 @@ router.post(
   authenticate(),
   authorize(INVENTORY_WRITE_SCOPES, 'permission'),
   pharmacyWorkspaceController.setupPharmacyDrug
+);
+
+router.put(
+  '/drugs/:drugId/facility-offering',
+  validateRequest({
+    params: pharmacyDrugParamsSchema,
+    body: upsertPharmacyDrugFacilityOfferingSchema}),
+  authenticate(),
+  authorize(INVENTORY_WRITE_SCOPES, 'permission'),
+  pharmacyWorkspaceController.upsertPharmacyDrugFacilityOffering
 );
 
 router.post(

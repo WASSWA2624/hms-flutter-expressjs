@@ -242,6 +242,26 @@ const checkPharmacyDrugSimilaritySchema = z.object({
 const pharmacyStorageShelfParamsSchema = z.object({
   shelfId: uuidOrFriendlyIdentifierSchema});
 
+const pharmacyDrugParamsSchema = z.object({
+  drugId: uuidOrFriendlyIdentifierSchema});
+
+const upsertPharmacyDrugFacilityOfferingSchema = z
+  .object({
+    facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+    is_active: z.boolean().optional().default(true),
+    sort_order: z.coerce.number().int().min(0).max(9999).optional().default(0),
+    unit_price: z.coerce.number().min(0).optional(),
+    currency: z.string().trim().max(10).optional().nullable(),
+    default_storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional().nullable()})
+  .superRefine((data, ctx) => {
+    if (data.is_active !== false && (data.unit_price == null || data.unit_price < 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'unit_price is required when the offering is active',
+        path: ['unit_price']});
+    }
+  });
+
 module.exports = {
   pharmacyOrderStatusSchema,
   stockStatusSchema,
@@ -268,4 +288,6 @@ module.exports = {
   updatePharmacyStorageShelfSchema,
   checkPharmacyStorageShelfSimilaritySchema,
   checkPharmacyDrugSimilaritySchema,
-  pharmacyStorageShelfParamsSchema};
+  pharmacyStorageShelfParamsSchema,
+  pharmacyDrugParamsSchema,
+  upsertPharmacyDrugFacilityOfferingSchema};

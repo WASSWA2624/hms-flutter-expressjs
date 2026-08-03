@@ -8,6 +8,7 @@ const prisma = require('@prisma/client');
 const pharmacyWorkspaceRepository = require('@repositories/pharmacy-workspace/pharmacy-workspace.repository');
 const pharmacyStorageRepository = require('@repositories/pharmacy-workspace/pharmacy-storage.repository');
 const facilityPharmacyCatalogRepository = require('@repositories/facility-pharmacy-catalog/facility-pharmacy-catalog.repository');
+const facilityPharmacyCatalogService = require('@services/facility-pharmacy-catalog/facility-pharmacy-catalog.service');
 const pharmacyOrderService = require('@services/pharmacy-order/pharmacy-order.service');
 const { emitToUsers, PHARMACY_EVENTS, INVENTORY_EVENTS } = require('@lib/websocket');
 const {
@@ -2535,11 +2536,71 @@ const resolveLegacyRouteIdentifier = async (resource, identifier, user = {}) => 
   }
 };
 
+const upsertPharmacyDrugFacilityOffering = async (
+  drugIdentifier,
+  payload = {},
+  userId,
+  ipAddress,
+  user = {}
+) => {
+  try {
+    const scope = resolveScopedUserContext(user);
+    const item = await facilityPharmacyCatalogService.upsertFacilityPharmacyOffering(
+      {
+        ...payload,
+        drug_id: drugIdentifier,
+        facility_id: payload.facility_id || scope.facility_id || null,
+        tenant_id: payload.tenant_id || scope.tenant_id || null},
+      {
+        tenant_id: scope.tenant_id,
+        user_id: userId,
+        facility_id: scope.facility_id || payload.facility_id || null,
+        ip_address: ipAddress}
+    );
+
+    // Re-list through pharmacy search enrichment so storage labels match catalog.
+    const drugId = await resolveModelIdOrThrow({
+      identifier: drugIdentifier,
+      model: 'drug',
+      where: { deleted_at: null, ...buildDrugScopeWhere(scope) },
+      errorKey: 'errors.drug.not_found'});
+    const records = await pharmacyWorkspaceRepository.findManyDrugs(
+      { id: drugId },
+      0,
+      1,
+      { name: 'asc' },
+      buildDrugStockInclude(scope)
+    );
+    if (!records.length) {
+      return item;
+    }
+    const offeringRows = scope.facility_id
+      ? await facilityPharmacyCatalogRepository.findDrugOfferings(
+          {
+            tenant_id: scope.tenant_id,
+            facility_id: scope.facility_id,
+            drug_id: drugId,
+            is_active: true},
+          0,
+          1
+        )
+      : [];
+    const enriched = await attachDrugStorageSummaries(
+      [mapMergedDrugRecord(records[0], offeringRows[0] || null)].filter(Boolean)
+    );
+    return enriched[0] || item;
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   getPharmacyWorkbench,
   getPharmacyOrderWorkflow,
   searchDrugs,
   setupPharmacyDrug,
+  upsertPharmacyDrugFacilityOffering,
   createPharmacyOrder,
   prepareDispense,
   attestDispense,

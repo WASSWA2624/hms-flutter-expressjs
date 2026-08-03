@@ -436,6 +436,11 @@ final class PharmacyDrugDto {
           .map((PharmacyInventoryStockDto dto) => dto.toEntity())
           .where((PharmacyInventoryStock item) => item.id.isNotEmpty)
           .toList(growable: false),
+      batchNumber: _string(json['batch_number']),
+      manufacturedAt: _date(json['manufactured_at']),
+      expiryDate: _date(json['expiry_date']),
+      nextExpiry: _date(json['next_expiry']) ?? _date(json['expiry_date']),
+      expiryAlertLeadDays: _int(json['expiry_alert_lead_days']),
       storageRoomId: _string(json['storage_room_id']),
       storageRoomLabel: _string(json['storage_room_label']),
       storageShelfId: _string(json['storage_shelf_id']),
