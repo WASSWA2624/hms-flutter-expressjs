@@ -249,12 +249,14 @@ Future<PharmacyDrugSimilarityDialogResult> showPharmacyDrugSimilarityDialog(
     final String form = (values['form'] ?? proposed.form ?? '').trim();
     final String strength = (values['strength'] ?? proposed.strength ?? '')
         .trim();
+    // Keep formulation from the edit form when the collapsed proposed section
+    // returns blank controllers — empty must not wipe form/strength on save.
     return PharmacyDrugSimilarityProposedValues(
       genericName: generic.isEmpty ? proposed.genericName : generic,
-      brandName: brand.isEmpty ? null : brand,
-      code: code.isEmpty ? null : code,
-      form: form.isEmpty ? null : form,
-      strength: strength.isEmpty ? null : strength,
+      brandName: brand.isEmpty ? proposed.brandName : brand,
+      code: code.isEmpty ? proposed.code : code,
+      form: form.isEmpty ? proposed.form : form,
+      strength: strength.isEmpty ? proposed.strength : strength,
     );
   }
 

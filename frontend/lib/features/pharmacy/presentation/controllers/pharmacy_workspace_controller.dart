@@ -1178,6 +1178,8 @@ final class PharmacyWorkspaceController
     return result.when(
       success: (_) async {
         final AppFailure? failure = await _refreshInventory(showLoading: false);
+        // Keep Catalog & Stock drug rows (reorder / stock status) in sync.
+        await _refreshDrugs(showLoading: false);
         unawaited(_refreshStockAlertSummary());
         final PharmacyWorkspaceState? latest = _currentState;
         if (latest != null) {

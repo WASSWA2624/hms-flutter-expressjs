@@ -29,7 +29,7 @@ Future<void> openPharmacyDrugDetailsDialog(
   );
 }
 
-class _PharmacyDrugDetailsDialog extends ConsumerWidget {
+class _PharmacyDrugDetailsDialog extends ConsumerStatefulWidget {
   const _PharmacyDrugDetailsDialog({
     required this.drug,
     required this.writeRequirement,
@@ -39,6 +39,21 @@ class _PharmacyDrugDetailsDialog extends ConsumerWidget {
   final PharmacyDrug drug;
   final AccessRequirement writeRequirement;
   final Future<bool> Function(PharmacyDrug drug) onDelete;
+
+  @override
+  ConsumerState<_PharmacyDrugDetailsDialog> createState() =>
+      _PharmacyDrugDetailsDialogState();
+}
+
+class _PharmacyDrugDetailsDialogState
+    extends ConsumerState<_PharmacyDrugDetailsDialog> {
+  late PharmacyDrug _fallbackDrug;
+
+  @override
+  void initState() {
+    super.initState();
+    _fallbackDrug = widget.drug;
+  }
 
   PharmacyDrug _resolveDrug(
     PharmacyDrug fallback,
@@ -56,7 +71,7 @@ class _PharmacyDrugDetailsDialog extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     PharmacyWorkspaceState? state;
@@ -67,8 +82,10 @@ class _PharmacyDrugDetailsDialog extends ConsumerWidget {
         failure: (_) {},
       );
     }
-    final PharmacyDrug current = _resolveDrug(drug, state);
+    final PharmacyDrug current = _resolveDrug(_fallbackDrug, state);
     final String empty = l10n.clinicalOrderEmptyValueLabel;
+    final AccessRequirement writeRequirement = widget.writeRequirement;
+    final Future<bool> Function(PharmacyDrug drug) onDelete = widget.onDelete;
 
     String displayOrEmpty(String? value) {
       final String trimmed = (value ?? '').trim();
@@ -221,10 +238,20 @@ class _PharmacyDrugDetailsDialog extends ConsumerWidget {
               leadingIcon: Icons.edit_outlined,
               semanticLabel: l10n.pharmacyEditDrugAction,
               onPressed: () async {
-                await showAppDialog<PharmacyDrugFormResult>(
-                  context: context,
-                  builder: (_) => PharmacyDrugEditDialog(drug: current),
-                );
+                final PharmacyDrugFormResult? result =
+                    await showAppDialog<PharmacyDrugFormResult>(
+                      context: context,
+                      builder: (_) => PharmacyDrugEditDialog(drug: current),
+                    );
+                if (!mounted) {
+                  return;
+                }
+                final PharmacyDrug? saved = result?.drug;
+                if (result != null &&
+                    (result.saved || result.useExisting) &&
+                    saved != null) {
+                  setState(() => _fallbackDrug = saved);
+                }
               },
             );
           },

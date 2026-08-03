@@ -351,21 +351,27 @@ class _PharmacyDrugEditDialogState
   }
 
   PharmacyFacilityOfferingInput? _buildFacilityOfferingInput(
-    PharmacyWorkspaceController controller,
+    PharmacyWorkspaceController controller, {
     num? facilityPrice,
-  ) {
-    final num? offeringPrice =
-        facilityPrice ??
-        widget.drug?.facilityUnitPrice ??
-        widget.drug?.pharmacyUnitPrice ??
-        widget.drug?.unitPrice;
+    num? pharmacyPrice,
+  }) {
+    final String? previousShelfId = widget.drug?.storageShelfId;
+    final bool storageChanged = _storageShelfId != previousShelfId;
     final bool shouldUpsertOffering =
-        facilityPrice != null ||
-        _storageShelfId != null ||
-        widget.drug?.storageShelfId != null;
-    if (!shouldUpsertOffering || offeringPrice == null) {
+        facilityPrice != null || storageChanged;
+    if (!shouldUpsertOffering) {
       return null;
     }
+    // Active offerings require unit_price (>= 0). Prefer the edited facility
+    // price, then existing facility/pharmacy prices, then 0 so storage-only
+    // edits still persist instead of silently no-oping.
+    final num offeringPrice =
+        facilityPrice ??
+        widget.drug?.facilityUnitPrice ??
+        pharmacyPrice ??
+        widget.drug?.pharmacyUnitPrice ??
+        widget.drug?.unitPrice ??
+        0;
     return PharmacyFacilityOfferingInput(
       unitPrice: offeringPrice,
       currency: _facilityCurrency,
@@ -905,7 +911,11 @@ class _PharmacyDrugEditDialogState
         ? null
         : _pharmacyCurrency;
     final PharmacyFacilityOfferingInput? facilityOffering =
-        _buildFacilityOfferingInput(controller, facilityPrice);
+        _buildFacilityOfferingInput(
+          controller,
+          facilityPrice: facilityPrice,
+          pharmacyPrice: pharmacyPrice,
+        );
     AppFailure? failure;
     if (widget.drug == null) {
       final String? tenantId = controller.resolveTenantId();
@@ -1329,7 +1339,10 @@ class _PharmacyDrugEditDialogState
           final int? reorderLevel = int.tryParse(
             _reorderLevelController.text.trim(),
           );
-          final String? inventoryItemId = _resolveInventoryItemId(updatedDrug!);
+          // Prefer the pre-edit catalog drug — PUT /drugs often omits stock maps.
+          final String? inventoryItemId =
+              _resolveInventoryItemId(widget.drug!) ??
+              _resolveInventoryItemId(updatedDrug!);
           if (reorderLevel != null && inventoryItemId != null) {
             failure = await controller.adjustInventoryStock(
               PharmacyInventoryAdjustInput(
@@ -1339,6 +1352,10 @@ class _PharmacyDrugEditDialogState
                 facilityId: controller.resolveFacilityId(),
               ),
             );
+            if (failure == null) {
+              updatedDrug =
+                  _findDrugInProvider(ref, widget.drug!.id) ?? updatedDrug;
+            }
           }
         }
         if (!mounted) {
@@ -1388,6 +1405,28 @@ class _PharmacyDrugEditDialogState
 String? _emptyToNull(String value) {
   final String normalized = value.trim();
   return normalized.isEmpty ? null : normalized;
+}
+
+PharmacyDrug? _findDrugInProvider(WidgetRef ref, String drugId) {
+  final AsyncValue<Result<PharmacyWorkspaceState>> asyncState = ref.read(
+    pharmacyWorkspaceControllerProvider,
+  );
+  if (!asyncState.hasValue) {
+    return null;
+  }
+  PharmacyDrug? found;
+  asyncState.requireValue.when(
+    success: (PharmacyWorkspaceState value) {
+      for (final PharmacyDrug item in value.drugs.items) {
+        if (item.id == drugId) {
+          found = item;
+          return;
+        }
+      }
+    },
+    failure: (_) {},
+  );
+  return found;
 }
 
 String _priceText(num? value) {
