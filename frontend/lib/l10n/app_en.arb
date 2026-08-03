@@ -15343,6 +15343,10 @@
   "@pharmacyDispenseQuantityColumnLabel": {
     "description": "Editable dispense quantity column in the dispense dialog table."
   },
+  "pharmacyDispenseQuantityRequiredBody": "Enter a dispense quantity greater than 0 for at least one medication.",
+  "@pharmacyDispenseQuantityRequiredBody": {
+    "description": "Shown when the dispense dialog is submitted with all quantities at zero."
+  },
   "pharmacyDispensableQtyColumnLabel": "Dispensable qty",
   "@pharmacyDispensableQtyColumnLabel": {
     "description": "Remaining quantity available to dispense on a medication line."

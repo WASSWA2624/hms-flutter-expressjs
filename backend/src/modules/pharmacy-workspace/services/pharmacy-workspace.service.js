@@ -664,7 +664,8 @@ const computeItemDispensedMetrics = (item) => {
 
   const prescribed = Number(item?.quantity || 0);
   const netDispensed = Math.max(0, dispensed - returned);
-  const remaining = Math.max(0, prescribed - netDispensed);
+  // Pending prepare batches are already reserved and cannot be prepared again.
+  const remaining = Math.max(0, prescribed - netDispensed - pending);
 
   return {
     prescribed,
@@ -1424,6 +1425,16 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
           order_item_id: line.order_item_id,
           remaining: metrics.remaining,
           requested: quantity});
+
+        const inventoryMap = await resolveInventoryMapForItem({
+          tx,
+          item: orderItem,
+          tenantId: order.patient?.tenant_id || null,
+          inventoryItemIdentifier: line.inventory_item_id || null});
+        if (!inventoryMap) {
+          throw new HttpError('errors.pharmacy_workspace.inventory_map.required', 400, [
+            { order_item_id: orderItem.id }]);
+        }
 
         targetLines.push({
           orderItem,

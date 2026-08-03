@@ -22174,6 +22174,12 @@ abstract class AppLocalizations {
   /// **'Dispense Quantity'**
   String get pharmacyDispenseQuantityColumnLabel;
 
+  /// Shown when the dispense dialog is submitted with all quantities at zero.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a dispense quantity greater than 0 for at least one medication.'**
+  String get pharmacyDispenseQuantityRequiredBody;
+
   /// Remaining quantity available to dispense on a medication line.
   ///
   /// In en, this message translates to:

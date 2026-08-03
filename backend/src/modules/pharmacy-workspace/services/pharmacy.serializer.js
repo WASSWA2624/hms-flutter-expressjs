@@ -324,7 +324,11 @@ const computeItemDispenseMetrics = (item) => {
 
   const prescribedQuantity = Number(item?.quantity || 0);
   const netDispensedQuantity = Math.max(0, dispensedQuantity - returnedQuantity);
-  const remainingQuantity = Math.max(0, prescribedQuantity - netDispensedQuantity);
+  // Pending prepare batches are already reserved and cannot be prepared again.
+  const remainingQuantity = Math.max(
+    0,
+    prescribedQuantity - netDispensedQuantity - pendingQuantity
+  );
 
   return {
     prescribedQuantity,

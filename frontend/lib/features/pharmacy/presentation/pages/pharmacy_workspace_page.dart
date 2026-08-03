@@ -2263,19 +2263,48 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (widget.workflow.order.requiresPaymentBeforeDispense) {
+      setState(() {
+        _failure = AppFailure.validation(
+          detailMessage: context.l10n.pharmacyDispenseBlockedPaymentBody,
+        );
+      });
       return;
     }
+
+    // Validate quantity fields when they are mounted; do not bail solely on
+    // FormState (search TextFormField / lazy table rows can confuse validate()).
+    _formKey.currentState?.validate();
+
+    final List<String> quantityErrors = <String>[];
+    for (final _LineEditState line in _lines) {
+      final int quantity = int.tryParse(line.quantityController.text.trim()) ?? 0;
+      if (quantity < 0 || quantity > line.item.quantityRemaining) {
+        quantityErrors.add(
+          context.l10n.pharmacyQuantityValidationLabel(
+            _wholeNumber(line.item.quantityRemaining),
+          ),
+        );
+      }
+    }
+    if (quantityErrors.isNotEmpty) {
+      setState(() {
+        _failure = AppFailure.validation(detailMessage: quantityErrors.first);
+      });
+      return;
+    }
+
     // Quantity 0 (default / unchanged) is treated as "do not dispense" for that line.
     final List<PharmacyDispenseLineInput> selected = _lines
         .map((_LineEditState line) => line.toDispenseInput())
         .whereType<PharmacyDispenseLineInput>()
         .toList(growable: false);
     if (selected.isEmpty) {
-      if (!mounted) {
-        return;
-      }
-      Navigator.of(context).pop(true);
+      setState(() {
+        _failure = AppFailure.validation(
+          detailMessage: context.l10n.pharmacyDispenseQuantityRequiredBody,
+        );
+      });
       return;
     }
 
