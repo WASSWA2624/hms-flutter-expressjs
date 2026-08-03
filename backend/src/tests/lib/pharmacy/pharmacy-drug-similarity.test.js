@@ -37,8 +37,10 @@ describe('pharmacy-drug-similarity', () => {
 
     expect(result.exactCodeConflict).toBe(true);
     expect(result.similarMatches[0].is_exact).toBe(true);
-    expect(result.similarMatches[0].score).toBe(100);
     expect(result.similarMatches[0].exact_code_conflict).toBe(true);
+    // Overall score stays weighted — only code matches among scored fields.
+    expect(result.similarMatches[0].score).toBeLessThan(100);
+    expect(result.similarMatches[0].code_score).toBe(100);
   });
 
   it('detects exact clinical identity (generic + form + strength)', () => {
@@ -54,6 +56,26 @@ describe('pharmacy-drug-similarity', () => {
     expect(result.exactIdentityConflict).toBe(true);
     expect(result.similarMatches[0].is_exact).toBe(true);
     expect(result.similarMatches[0].exact_identity_conflict).toBe(true);
+    // Differing brand/code pull the composite below a full-field 100.
+    expect(result.similarMatches[0].score).toBeLessThan(100);
+    expect(result.similarMatches[0].generic_score).toBe(100);
+    expect(result.similarMatches[0].form_score).toBe(100);
+    expect(result.similarMatches[0].strength_score).toBe(100);
+  });
+
+  it('keeps overall score at 100 when every weighted field matches', () => {
+    const result = checkPharmacyDrugDuplicates({
+      name: 'Amoxicillin',
+      genericName: 'Amoxicillin',
+      brandName: 'Amoxil',
+      code: 'AMX-500',
+      form: 'Capsule',
+      strength: '500mg',
+      existing});
+
+    expect(result.exactIdentityConflict).toBe(true);
+    expect(result.exactCodeConflict).toBe(true);
+    expect(result.similarMatches[0].score).toBe(100);
   });
 
   it('returns near matches above the similarity threshold', () => {

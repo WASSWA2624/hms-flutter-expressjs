@@ -1,6 +1,6 @@
 /**
  * Pharmacy storage-shelf duplicate / similarity helpers (room-scoped).
- * Weighted score across label + shelf_code. Exact conflicts are hard blocks.
+ * Weighted score across label + shelf_code. Exact flags are advisory; callers gate on confirm.
  */
 
 const {
@@ -150,7 +150,7 @@ const checkPharmacyStorageShelfDuplicates = ({
 
     matches.push({
       shelf: snapshot,
-      score: isExact ? 100 : score,
+      score,
       reasons,
       is_exact: isExact,
       exact_label_conflict: labelExact,

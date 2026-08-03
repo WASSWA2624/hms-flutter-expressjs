@@ -13,7 +13,7 @@ void main() {
     addTearDown(view.resetDevicePixelRatio);
   }
 
-  testWidgets('drug adapter blocks create anyway on exact match', (
+  testWidgets('drug adapter allows create anyway on exact match', (
     WidgetTester tester,
   ) async {
     await setLargeSurface(tester);
@@ -73,15 +73,14 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Create anyway'), findsNothing);
+    expect(find.text('Create anyway'), findsOneWidget);
     expect(find.text('Use this drug'), findsOneWidget);
     expect(find.text('Replace this drug'), findsOneWidget);
 
-    await tester.tap(find.text('Use this drug'));
+    await tester.tap(find.text('Create anyway'));
     await tester.pumpAndSettle();
 
-    expect(result?.action, PharmacyDrugSimilarityAction.useExisting);
-    expect(result?.selectedDrug?.id, 'drug-1');
+    expect(result?.action, PharmacyDrugSimilarityAction.proceed);
   });
 
   testWidgets('drug adapter replace existing returns proposed values', (
@@ -144,7 +143,7 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Create anyway'), findsNothing);
+    expect(find.text('Create anyway'), findsOneWidget);
     expect(find.text('Replace this drug'), findsOneWidget);
 
     await tester.tap(find.text('Replace this drug'));
@@ -211,6 +210,7 @@ void main() {
 
     expect(find.text('Replace this drug'), findsNothing);
     expect(find.text('Use this drug'), findsOneWidget);
+    expect(find.text('Create anyway'), findsOneWidget);
     expect(result, isNull);
   });
 

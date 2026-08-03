@@ -213,7 +213,6 @@ Future<PharmacyDrugSimilarityDialogResult> showPharmacyDrugSimilarityDialog(
         ],
         matches: matches,
         overallScore: overallScore,
-        blockProceed: hasExactConflict,
         enableReplaceExisting: !isEdit,
         proceedLabel: l10n.pharmacyDrugCreateAnywayAction,
         continueLabel: l10n.commonContinueActionLabel,

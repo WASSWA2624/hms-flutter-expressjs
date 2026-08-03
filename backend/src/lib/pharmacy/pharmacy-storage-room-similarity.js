@@ -1,6 +1,6 @@
 /**
  * Pharmacy storage-room duplicate / similarity helpers (facility-scoped).
- * Weighted score across name + code. Exact name/code conflicts are hard blocks.
+ * Weighted score across name + code. Exact flags are advisory; callers gate on confirm.
  */
 
 const {
@@ -145,7 +145,7 @@ const checkPharmacyStorageRoomDuplicates = ({
 
     matches.push({
       room: snapshot,
-      score: isExact ? 100 : score,
+      score,
       reasons,
       is_exact: isExact,
       exact_name_conflict: nameExact,

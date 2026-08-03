@@ -435,10 +435,9 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
       return;
     }
     final PharmacyDrug? detailsDrug = result.drug;
-    // After create, replace, or Use existing, open details — same pattern as rooms.
+    // After create, edit, replace, or Use existing, open details — same pattern as rooms.
     final bool openDetails =
-        detailsDrug != null &&
-        (result.useExisting || (result.saved && drug == null));
+        detailsDrug != null && (result.useExisting || result.saved);
     if (!openDetails) {
       return;
     }

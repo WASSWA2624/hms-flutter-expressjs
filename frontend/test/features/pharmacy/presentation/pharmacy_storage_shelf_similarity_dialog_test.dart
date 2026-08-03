@@ -13,7 +13,7 @@ void main() {
     addTearDown(view.resetDevicePixelRatio);
   }
 
-  testWidgets('pharmacy shelf adapter blocks create anyway on exact match', (
+  testWidgets('pharmacy shelf adapter allows create anyway on exact match', (
     WidgetTester tester,
   ) async {
     await setLargeSurface(tester);
@@ -85,20 +85,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Use this shelf'), findsOneWidget);
-    expect(find.text('Create anyway'), findsNothing);
+    expect(find.text('Create anyway'), findsOneWidget);
     expect(find.text('Check again'), findsOneWidget);
 
-    final Finder useExisting = find.text('Use this shelf');
-    await tester.ensureVisible(useExisting);
+    final Finder createAnyway = find.text('Create anyway');
+    await tester.ensureVisible(createAnyway);
     await tester.pumpAndSettle();
-    await tester.tap(useExisting);
+    await tester.tap(createAnyway);
     await tester.pumpAndSettle();
 
     expect(
       result?.action,
-      PharmacyStorageShelfSimilarityAction.useExisting,
+      PharmacyStorageShelfSimilarityAction.proceed,
     );
-    expect(result?.selectedShelf?.id, 'shelf-1');
   });
 
   testWidgets('pharmacy shelf adapter allows create anyway for near matches', (

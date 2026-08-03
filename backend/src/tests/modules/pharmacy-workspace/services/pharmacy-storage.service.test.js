@@ -179,6 +179,64 @@ describe('pharmacy-storage.service room uniqueness and lifecycle', () => {
       ).rejects.toBeInstanceOf(HttpError);
       expect(pharmacyStorageRepository.txCreateStorageRoom).not.toHaveBeenCalled();
     });
+
+    it('rejects exact name duplicates without confirm_similar', async () => {
+      pharmacyStorageRepository.findManyStorageRooms.mockResolvedValue([
+        {
+          id: 'room-1',
+          human_friendly_id: 'PSR-1',
+          name: 'Main store',
+          code: 'MAIN',
+          is_active: true}]);
+
+      await expect(
+        pharmacyStorageService.createPharmacyStorageRoom(
+          {
+            name: 'Main store',
+            code: 'MAIN-2',
+            facility_id: 'facility-1'},
+          user.id,
+          '127.0.0.1',
+          user
+        )
+      ).rejects.toMatchObject({
+        message: 'errors.pharmacy_storage_room.duplicate_name'});
+      expect(pharmacyStorageRepository.txCreateStorageRoom).not.toHaveBeenCalled();
+    });
+
+    it('allows exact name duplicates when confirm_similar is true', async () => {
+      pharmacyStorageRepository.findManyStorageRooms.mockResolvedValue([
+        {
+          id: 'room-1',
+          human_friendly_id: 'PSR-1',
+          name: 'Main store',
+          code: 'MAIN',
+          is_active: true}]);
+      pharmacyStorageRepository.findStorageRoomByCode.mockResolvedValue(null);
+      pharmacyStorageRepository.txCreateStorageRoom.mockResolvedValue({
+        id: 'room-uuid-2',
+        human_friendly_id: 'PSR-1002',
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+        name: 'Main store',
+        code: 'MAIN-2',
+        is_active: true});
+
+      const result = await pharmacyStorageService.createPharmacyStorageRoom(
+        {
+          name: 'Main store',
+          code: 'MAIN-2',
+          facility_id: 'facility-1',
+          confirm_similar: true},
+        user.id,
+        '127.0.0.1',
+        user
+      );
+
+      expect(pharmacyStorageRepository.txCreateStorageRoom).toHaveBeenCalled();
+      expect(result.name).toBe('Main store');
+      expect(result.code).toBe('MAIN-2');
+    });
   });
 
   describe('checkPharmacyStorageRoomSimilarity', () => {
@@ -198,6 +256,29 @@ describe('pharmacy-storage.service room uniqueness and lifecycle', () => {
 
       expect(result.exact_name_conflict).toBe(true);
       expect(result.matches.length).toBeGreaterThan(0);
+      // Name-only input scores against name; composite stays field-weighted.
+      expect(result.matches[0].score).toBe(100);
+      expect(result.matches[0].is_exact).toBe(true);
+    });
+
+    it('returns weighted composite below 100 when only one field matches', async () => {
+      pharmacyStorageRepository.findManyStorageRooms.mockResolvedValue([
+        {
+          id: 'room-1',
+          human_friendly_id: 'PSR-1',
+          name: 'Main store',
+          code: 'MAIN',
+          is_active: true}]);
+
+      const result = await pharmacyStorageService.checkPharmacyStorageRoomSimilarity(
+        { name: 'Cold store', code: 'MAIN', facility_id: 'facility-1' },
+        user
+      );
+
+      expect(result.exact_code_conflict).toBe(true);
+      expect(result.matches[0].is_exact).toBe(true);
+      expect(result.matches[0].score).toBeLessThan(100);
+      expect(result.matches[0].code_score).toBe(100);
     });
   });
 
@@ -435,6 +516,43 @@ describe('pharmacy-storage.service shelf similarity and create', () => {
       )
     ).rejects.toMatchObject({
       message: 'errors.pharmacy_storage_shelf.similar_exists'});
+  });
+
+  it('allows exact label duplicates when confirm_similar is true', async () => {
+    pharmacyStorageRepository.findStorageRoomById.mockResolvedValue({
+      id: 'room-internal-1',
+      human_friendly_id: 'ROOM-1',
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1'});
+    pharmacyStorageRepository.findManyStorageShelves.mockResolvedValue([
+      {
+        id: 'shelf-1',
+        human_friendly_id: 'SHELF-1',
+        storage_room_id: 'room-internal-1',
+        shelf_code: 'A1',
+        label: 'Antibiotics'}]);
+    pharmacyStorageRepository.findStorageShelfByCode.mockResolvedValue(null);
+    pharmacyStorageRepository.txCreateStorageShelf.mockResolvedValue({
+      id: 'shelf-internal-2',
+      human_friendly_id: 'PSS-1002',
+      storage_room_id: 'room-internal-1',
+      shelf_code: 'A2',
+      label: 'Antibiotics',
+      is_active: true,
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1'});
+
+    const created = await pharmacyStorageService.createPharmacyStorageShelf(
+      'ROOM-1',
+      { label: 'Antibiotics', shelf_code: 'A2', confirm_similar: true },
+      user.id,
+      '127.0.0.1',
+      user
+    );
+
+    expect(pharmacyStorageRepository.txCreateStorageShelf).toHaveBeenCalled();
+    expect(created.label).toBe('Antibiotics');
+    expect(created.shelf_code).toBe('A2');
   });
 
   it('excludes self when checking uniqueness on update', async () => {

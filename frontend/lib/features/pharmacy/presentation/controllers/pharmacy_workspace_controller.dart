@@ -1021,7 +1021,7 @@ final class PharmacyWorkspaceController
     return Result<PharmacyDrug>.success(created);
   }
 
-  Future<AppFailure?> updateDrug(
+  Future<Result<PharmacyDrug>> updateDrug(
     String drugId,
     PharmacyDrugUpdateInput input, {
     PharmacyFacilityOfferingInput? facilityOffering,
@@ -1030,24 +1030,44 @@ final class PharmacyWorkspaceController
       drugId,
       input,
     );
-    return result.when(
-      success: (_) async {
-        if (facilityOffering != null) {
-          final Result<PharmacyDrug> offeringResult = await _repository
-              .upsertFacilityOffering(drugId, facilityOffering);
-          final AppFailure? offeringFailure = offeringResult.when(
-            success: (_) => null,
-            failure: (AppFailure failure) => failure,
-          );
-          if (offeringFailure != null) {
-            return offeringFailure;
+    if (result case ResultFailure<PharmacyDrug>(failure: final failure)) {
+      return Result<PharmacyDrug>.failure(failure);
+    }
+
+    PharmacyDrug current = (result as ResultSuccess<PharmacyDrug>).value;
+    if (facilityOffering != null) {
+      final Result<PharmacyDrug> offeringResult = await _repository
+          .upsertFacilityOffering(drugId, facilityOffering);
+      if (offeringResult
+          case ResultFailure<PharmacyDrug>(failure: final failure)) {
+        return Result<PharmacyDrug>.failure(failure);
+      }
+      current = (offeringResult as ResultSuccess<PharmacyDrug>).value;
+    }
+    await _refreshDrugs(showLoading: false);
+    return Result<PharmacyDrug>.success(
+      _findDrugInState(drugId) ?? current,
+    );
+  }
+
+  PharmacyDrug? _findDrugInState(String drugId) {
+    final AsyncValue<Result<PharmacyWorkspaceState>> asyncState = state;
+    if (!asyncState.hasValue) {
+      return null;
+    }
+    PharmacyDrug? found;
+    asyncState.requireValue.when(
+      success: (PharmacyWorkspaceState value) {
+        for (final PharmacyDrug item in value.drugs.items) {
+          if (item.id == drugId) {
+            found = item;
+            return;
           }
         }
-        await _refreshDrugs(showLoading: false);
-        return null;
       },
-      failure: (AppFailure failure) => failure,
+      failure: (_) {},
     );
+    return found;
   }
 
   Future<AppFailure?> upsertFacilityOffering(

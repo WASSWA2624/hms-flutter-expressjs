@@ -106,7 +106,7 @@ const assertPharmacyDrugUniqueness = async ({
     existing,
     excludeDrugId});
 
-  if (duplicateCheck.exactIdentityConflict) {
+  if (!confirmSimilar && duplicateCheck.exactIdentityConflict) {
     throw new HttpError('errors.pharmacy_drug.duplicate_identity', 409, [
       {
         field: 'generic_name',
@@ -115,7 +115,7 @@ const assertPharmacyDrugUniqueness = async ({
           .slice(0, 5)}]);
   }
 
-  if (duplicateCheck.exactCodeConflict) {
+  if (!confirmSimilar && duplicateCheck.exactCodeConflict) {
     throw new HttpError('errors.pharmacy_drug.duplicate_code', 409, [
       {
         field: 'code',

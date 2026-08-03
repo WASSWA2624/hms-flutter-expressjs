@@ -939,30 +939,38 @@ class _PharmacyDrugEditDialogState
               _form = form;
               _strength = strength;
             });
-            failure = await controller.updateDrug(
-              existing.id,
-              PharmacyDrugUpdateInput(
-                name: genericName,
-                brandName: brandName,
-                genericName: genericName,
-                code: code,
-                form: form,
-                strength: strength,
-                unitPrice: pharmacyPrice,
-                currency: pharmacyCurrency,
-              ),
-              facilityOffering: facilityOffering,
-            );
+            final Result<PharmacyDrug> updateResult = await controller
+                .updateDrug(
+                  existing.id,
+                  PharmacyDrugUpdateInput(
+                    name: genericName,
+                    brandName: brandName,
+                    genericName: genericName,
+                    code: code,
+                    form: form,
+                    strength: strength,
+                    unitPrice: pharmacyPrice,
+                    currency: pharmacyCurrency,
+                  ),
+                  facilityOffering: facilityOffering,
+                );
             if (!mounted) {
               return;
             }
-            if (failure == null) {
-              Navigator.of(
-                context,
-              ).pop(PharmacyDrugFormResult.saved(existing));
+            updateResult.when(
+              success: (PharmacyDrug updated) {
+                Navigator.of(
+                  context,
+                ).pop(PharmacyDrugFormResult.saved(updated));
+              },
+              failure: (AppFailure error) {
+                failure = error;
+                setState(() => _isSaving = false);
+              },
+            );
+            if (failure != null) {
               return;
             }
-            setState(() => _isSaving = false);
             return;
           }
 
@@ -1035,7 +1043,7 @@ class _PharmacyDrugEditDialogState
         return;
       }
     } else {
-      failure = await controller.updateDrug(
+      final Result<PharmacyDrug> updateResult = await controller.updateDrug(
         widget.drug!.id,
         PharmacyDrugUpdateInput(
           name: genericName,
@@ -1049,11 +1057,16 @@ class _PharmacyDrugEditDialogState
         ),
         facilityOffering: facilityOffering,
       );
-      if (failure == null) {
+      PharmacyDrug? updatedDrug;
+      updateResult.when(
+        success: (PharmacyDrug value) => updatedDrug = value,
+        failure: (AppFailure error) => failure = error,
+      );
+      if (failure == null && updatedDrug != null) {
         final int? reorderLevel = int.tryParse(
           _reorderLevelController.text.trim(),
         );
-        final String? inventoryItemId = _resolveInventoryItemId(widget.drug!);
+        final String? inventoryItemId = _resolveInventoryItemId(updatedDrug!);
         if (reorderLevel != null && inventoryItemId != null) {
           failure = await controller.adjustInventoryStock(
             PharmacyInventoryAdjustInput(
@@ -1068,8 +1081,8 @@ class _PharmacyDrugEditDialogState
       if (!mounted) {
         return;
       }
-      if (failure == null) {
-        Navigator.of(context).pop(PharmacyDrugFormResult.saved(widget.drug!));
+      if (failure == null && updatedDrug != null) {
+        Navigator.of(context).pop(PharmacyDrugFormResult.saved(updatedDrug!));
         return;
       }
       setState(() => _isSaving = false);

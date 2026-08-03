@@ -251,7 +251,7 @@ const assertPharmacyStorageRoomUniqueness = async ({
     existing,
     excludeRoomId});
 
-  if (duplicateCheck.exactNameConflict) {
+  if (!confirmSimilar && duplicateCheck.exactNameConflict) {
     throw new HttpError('errors.pharmacy_storage_room.duplicate_name', 409, [
       {
         field: 'name',
@@ -260,7 +260,7 @@ const assertPharmacyStorageRoomUniqueness = async ({
           .slice(0, 5)}]);
   }
 
-  if (duplicateCheck.exactCodeConflict) {
+  if (!confirmSimilar && duplicateCheck.exactCodeConflict) {
     throw new HttpError('errors.pharmacy_storage_room.duplicate_code', 409, [
       {
         field: 'code',
@@ -489,7 +489,7 @@ const assertPharmacyStorageShelfUniqueness = async ({
     existing,
     excludeShelfId});
 
-  if (duplicateCheck.exactLabelConflict) {
+  if (!confirmSimilar && duplicateCheck.exactLabelConflict) {
     throw new HttpError('errors.pharmacy_storage_shelf.duplicate_label', 409, [
       {
         field: 'label',
@@ -498,7 +498,7 @@ const assertPharmacyStorageShelfUniqueness = async ({
           .slice(0, 5)}]);
   }
 
-  if (duplicateCheck.exactCodeConflict) {
+  if (!confirmSimilar && duplicateCheck.exactCodeConflict) {
     throw new HttpError('errors.pharmacy_storage_shelf.duplicate_code', 409, [
       {
         field: 'shelf_code',

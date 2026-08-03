@@ -1,7 +1,7 @@
 /**
  * Pharmacy drug duplicate / similarity helpers (tenant-scoped).
  * Weighted score across generic/name, brand, code, form, and strength.
- * Exact code or exact clinical identity conflicts are hard blocks.
+ * Exact code or clinical identity flags are advisory; callers gate on confirm.
  */
 
 const {
@@ -261,7 +261,7 @@ const checkPharmacyDrugDuplicates = ({
 
     matches.push({
       drug: snapshot,
-      score: isExact ? 100 : score,
+      score,
       reasons,
       is_exact: isExact,
       exact_identity_conflict: identityExact,

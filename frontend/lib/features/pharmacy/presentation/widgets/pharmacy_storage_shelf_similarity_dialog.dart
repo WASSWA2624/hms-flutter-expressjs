@@ -179,7 +179,6 @@ showPharmacyStorageShelfSimilarityDialog(
         ],
         matches: matches,
         overallScore: overallScore,
-        blockProceed: hasExactConflict,
         proceedLabel: l10n.pharmacyStorageShelfCreateAnywayAction,
         continueLabel: l10n.commonContinueActionLabel,
         useThisLabel: l10n.pharmacyStorageShelfUseExistingAction,
