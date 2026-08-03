@@ -70,7 +70,6 @@ class _PharmacyDrugEditDialogState
   int? _expiryAlertLeadDays;
   DateTime? _manufacturedAt;
   DateTime? _expiryDate;
-  DateTime? _seededExpiryDate;
   bool _isSaving = false;
   bool _didResolveStorageRoom = false;
   final AppSuggestedFieldSet _suggestions = AppSuggestedFieldSet();
@@ -124,24 +123,8 @@ class _PharmacyDrugEditDialogState
     _storageShelfId =
         _emptyToNull(drug?.storageShelfId ?? '') ??
         _emptyToNull(primaryStock?.storageShelfId ?? '');
-    _seededExpiryDate = primaryStock?.nextExpiry;
-    _expiryDate = _seededExpiryDate;
+    _expiryDate = primaryStock?.nextExpiry;
     _batchNumberController = TextEditingController();
-  }
-
-  /// Same required set as create: batch only when an expiry is being recorded.
-  /// Prefilling next expiry on edit must not force batch number.
-  bool get _requiresBatchNumber {
-    if (_expiryDate == null) {
-      return false;
-    }
-    if (!_isEdit) {
-      return true;
-    }
-    final int addQuantity =
-        int.tryParse(_initialStockController.text.trim()) ?? 0;
-    final bool expiryChanged = _expiryDate != _seededExpiryDate;
-    return expiryChanged || addQuantity > 0;
   }
 
   @override
@@ -811,7 +794,6 @@ class _PharmacyDrugEditDialogState
                       FilteringTextInputFormatter.digitsOnly,
                     ],
                     validator: _optionalNonNegativeIntegerValidator,
-                    onChanged: (_) => _formKey.currentState?.validate(),
                   ),
                   right: AppTextField(
                     controller: _reorderLevelController,
@@ -886,14 +868,6 @@ class _PharmacyDrugEditDialogState
                   child: AppTextField(
                     controller: _batchNumberController,
                     labelText: l10n.pharmacyBatchNumberLabel,
-                    isRequired: _requiresBatchNumber,
-                    validator: (String? value) {
-                      if (_requiresBatchNumber &&
-                          (value ?? '').trim().isEmpty) {
-                        return l10n.validationRequired;
-                      }
-                      return null;
-                    },
                     onChanged: (_) {
                       if (_suggestions.isSuggested(
                         PharmacyDrugSuggestedFields.batchNumber,

@@ -128,13 +128,6 @@ const adjustInventorySchema = z
         message: 'errors.validation.required',
         path: ['quantity_delta']});
     }
-
-    if (data.expiry_date && !data.batch_number) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'errors.validation.required',
-        path: ['batch_number']});
-    }
   });
 
 const setupPharmacyDrugSchema = z
@@ -159,15 +152,7 @@ const setupPharmacyDrugSchema = z
     storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     default_storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-    confirm_similar: z.coerce.boolean().optional()})
-  .superRefine((data, ctx) => {
-    if (data.expiry_date && !data.batch_number) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'errors.validation.required',
-        path: ['batch_number']});
-    }
-  });
+    confirm_similar: z.coerce.boolean().optional()});
 
 const recordOrderBillingSchema = z.object({
   billing: clinicalRequestBillingSchema});
