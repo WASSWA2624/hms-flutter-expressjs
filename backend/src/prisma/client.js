@@ -86,6 +86,8 @@ const FRIENDLY_ID_REGEX = /^[A-Z]{3}\d{7}$/;
 const SYSTEM_MODELS = new Set(['human_id_counter']);
 
 const MODEL_PREFIX_OVERRIDES = Object.freeze({
+  pharmacy_order: 'PHA',
+  pharmacy_order_item: 'POI',
   tenant: 'TEN',
   facility: 'FAC',
   branch: 'BRA',
@@ -503,6 +505,9 @@ try {
     console.warn('Failed to initialize Prisma query performance tracking:', err.message);
   }
 }
+
+prisma.assignFriendlyIdIfMissing = async (model, data) =>
+  assignFriendlyIdIfMissing(prisma, model, data);
 
 module.exports = prisma;
 

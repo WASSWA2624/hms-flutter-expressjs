@@ -4897,16 +4897,21 @@ const doctorReview = async (id, data, context = {}) => {
       });
 
       await tx.pharmacy_order_item.createMany({
-        data: resolvedMedications.map((medication) => ({
-          pharmacy_order_id: pharmacyOrder.id,
-          drug_id: medication.drug_id,
-          quantity: medication.quantity,
-          dosage: medication.dosage || null,
-          frequency: medication.frequency || null,
-          route: medication.route || null,
-          status: medication.status || 'ACTIVE'
-        }))
-      });
+        data: await Promise.all(
+          resolvedMedications.map(async (medication) => {
+            const row = {
+              pharmacy_order_id: pharmacyOrder.id,
+              drug_id: medication.drug_id,
+              quantity: medication.quantity,
+              dosage: medication.dosage || null,
+              frequency: medication.frequency || null,
+              route: medication.route || null,
+              status: medication.status || 'ACTIVE'};
+            // Nested/createMany paths do not always run HFID middleware — assign explicitly.
+            await prisma.assignFriendlyIdIfMissing('pharmacy_order_item', row);
+            return row;
+          })
+        )});
     }
 
     const hasLab = Boolean(labOrder);

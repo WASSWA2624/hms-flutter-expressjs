@@ -141,7 +141,7 @@ const normalizeOrderItemPayloads = async (items = [], scope = {}) => {
   const normalizedItems = [];
 
   for (const item of items) {
-    normalizedItems.push({
+    const row = {
       drug_id: await resolveScopedDrugId(item.drug_id, scope),
       quantity: calculateRequestedQuantity(item),
       quantity_unit: normalizeNullableString(item.quantity_unit),
@@ -154,7 +154,10 @@ const normalizeOrderItemPayloads = async (items = [], scope = {}) => {
       duration_unit: normalizeNullableString(item.duration_unit),
       instructions: normalizeNullableString(item.instructions),
       custom_prescription: normalizeNullableString(item.custom_prescription),
-      status: 'ACTIVE'});
+      status: 'ACTIVE'};
+    // Nested order create does not run child HFID middleware.
+    await prisma.assignFriendlyIdIfMissing('pharmacy_order_item', row);
+    normalizedItems.push(row);
   }
 
   return normalizedItems;

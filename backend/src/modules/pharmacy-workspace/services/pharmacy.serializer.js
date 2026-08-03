@@ -8,13 +8,19 @@ const { mapStorageLocationFields } = require('@services/pharmacy-workspace/pharm
 const toText = (value) => (value == null ? '' : String(value).trim());
 
 const toPublicIdentifier = (...candidates) => {
+  let uuidFallback = null;
   for (const candidate of candidates) {
     const normalized = toText(candidate);
     if (!normalized) continue;
-    if (isUuidLike(normalized)) continue;
+    // Prefer human-friendly IDs; fall back to UUID so records without HFID
+    // are still usable in the pharmacy UI (nested/createMany writes can omit HFID).
+    if (isUuidLike(normalized)) {
+      if (!uuidFallback) uuidFallback = normalized;
+      continue;
+    }
     return normalized;
   }
-  return null;
+  return uuidFallback;
 };
 
 const toIsoDateTime = (value) => {
