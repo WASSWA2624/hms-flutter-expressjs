@@ -498,18 +498,60 @@ const mapPharmacyOrderWorkflowRecord = (record, options = {}) => {
       label_key: 'pharmacy.workbench.timeline.orderPlaced',
       label_params: {}}];
 
+  // Group dispense logs by batch + status so one timeline row opens one batch.
+  const dispenseBatches = new Map();
   order.items.forEach((item, itemIndex) => {
-    item.dispense_logs.forEach((log, logIndex) => {
-      timeline.push({
-        id: `dispense-log-${log.id || `${item.id}-${logIndex}`}`,
-        type: `DISPENSE_${toText(log.status).toUpperCase() || 'UPDATED'}`,
-        at: log.dispensed_at || log.updated_at || log.created_at,
-        label_key: 'pharmacy.workbench.timeline.medicationDispenseEvent',
-        label_params: {
-          medication: item.drug_display_name || item.display_id || String(itemIndex + 1),
-          status: toText(log.status).toUpperCase() || 'UPDATED'}});
+    const medication =
+      item.drug_display_name || item.display_id || String(itemIndex + 1);
+    (item.dispense_logs || []).forEach((log, logIndex) => {
+      const status = toText(log.status).toUpperCase() || 'UPDATED';
+      const batchRef = toText(log.dispense_batch_ref) || null;
+      const logId = log.id || `${item.id}-${logIndex}`;
+      const bucketKey = batchRef
+        ? `batch:${batchRef}|${status}`
+        : `log:${logId}|${status}`;
+      const existing = dispenseBatches.get(bucketKey);
+      const at = log.dispensed_at || log.updated_at || log.created_at;
+      if (!existing) {
+        dispenseBatches.set(bucketKey, {
+          id: batchRef
+            ? `dispense-batch-${batchRef}-${status}`
+            : `dispense-log-${logId}`,
+          type: `DISPENSE_${status}`,
+          at,
+          batch: batchRef,
+          log_id: batchRef ? null : logId,
+          status,
+          medications: [medication],
+          line_count: 1});
+        return;
+      }
+      existing.line_count += 1;
+      existing.medications.push(medication);
+      const existingAt = Date.parse(existing.at || '');
+      const nextAt = Date.parse(at || '');
+      if (Number.isFinite(nextAt) && (!Number.isFinite(existingAt) || nextAt > existingAt)) {
+        existing.at = at;
+      }
     });
   });
+
+  for (const batch of dispenseBatches.values()) {
+    const isSingle = batch.line_count === 1;
+    timeline.push({
+      id: batch.id,
+      type: batch.type,
+      at: batch.at,
+      label_key: isSingle
+        ? 'pharmacy.workbench.timeline.medicationDispenseEvent'
+        : 'pharmacy.workbench.timeline.dispenseBatchEvent',
+      label_params: {
+        medication: isSingle ? batch.medications[0] : null,
+        medication_count: batch.line_count,
+        status: batch.status,
+        batch: batch.batch,
+        log_id: batch.log_id}});
+  }
 
   order.dispense_attestations.forEach((attestation, index) => {
     timeline.push({

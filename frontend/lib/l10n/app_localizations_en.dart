@@ -11877,6 +11877,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyNoTimelineBody => 'No dispense history is available yet.';
 
   @override
+  String get pharmacyDispenseBatchDialogTitle => 'Dispense batch';
+
+  @override
+  String pharmacyDispenseBatchDialogTitleWithRef(String batch) {
+    return 'Dispense batch $batch';
+  }
+
+  @override
+  String get pharmacyDispenseBatchEmptyTitle => 'No dispensed items';
+
+  @override
+  String get pharmacyDispenseBatchEmptyBody =>
+      'No medications were recorded for this dispense event.';
+
+  @override
+  String get pharmacyDispenseBatchPrintAction => 'Print dispense';
+
+  @override
+  String get pharmacyDispenseBatchTapHint => 'Tap to view dispensed items';
+
+  @override
+  String pharmacyTimelineBatchMedicationsEvent(int count, String status) {
+    return '$count medicines $status';
+  }
+
+  @override
   String get pharmacyDrugPanelTitle => 'Formulary and stock';
 
   @override

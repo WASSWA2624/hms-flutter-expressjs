@@ -341,6 +341,29 @@ describe('pharmacy-workspace.service', () => {
     expect(JSON.stringify(whereArg)).toContain('NOT');
   });
 
+  it('getPharmacyWorkbench summary buckets keep search filters', async () => {
+    pharmacyWorkspaceRepository.findManyOrders.mockResolvedValue([]);
+    pharmacyWorkspaceRepository.countOrders.mockResolvedValue(1);
+    pharmacyWorkspaceRepository.countDispenseAttestations.mockResolvedValue(0);
+
+    await pharmacyWorkspaceService.getPharmacyWorkbench(
+      { search: 'Noah', status: 'ORDERED', payment_cleared: true },
+      1,
+      20,
+      null,
+      'desc',
+      mockUser
+    );
+
+    // countOrders is called for list total + each summary bucket; every call
+    // should retain the search clause while section gates are bucket-specific.
+    expect(pharmacyWorkspaceRepository.countOrders.mock.calls.length).toBeGreaterThan(1);
+    for (const [whereArg] of pharmacyWorkspaceRepository.countOrders.mock.calls) {
+      const serialized = JSON.stringify(whereArg);
+      expect(serialized).toContain('Noah');
+    }
+  });
+
   it('getPharmacyWorkbench Completed orders are scoped to the current day', async () => {
     pharmacyWorkspaceRepository.findManyOrders.mockResolvedValue([]);
     pharmacyWorkspaceRepository.countOrders.mockResolvedValue(0);

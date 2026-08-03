@@ -56,6 +56,23 @@ extension PharmacyDeskSectionX on PharmacyDeskSection {
   /// nested Drugs / Formulary / Inventory / Storage layout / Shelves tabs.
   bool get isCatalogSection => this == PharmacyDeskSection.catalog;
 
+  /// True for order-queue desk tabs (not catalog or stock alerts).
+  bool get isOrderSection {
+    return switch (this) {
+      PharmacyDeskSection.queue ||
+      PharmacyDeskSection.inProgress ||
+      PharmacyDeskSection.pendingPayment ||
+      PharmacyDeskSection.completed ||
+      PharmacyDeskSection.cancelled ||
+      PharmacyDeskSection.allOrders => true,
+      PharmacyDeskSection.catalog ||
+      PharmacyDeskSection.nearExpiry ||
+      PharmacyDeskSection.expired ||
+      PharmacyDeskSection.lowStock ||
+      PharmacyDeskSection.outOfStock => false,
+    };
+  }
+
   /// Inventory stock query backing a stock section, or null for order sections.
   PharmacyInventoryStockQuery? get stockQuery {
     return switch (this) {

@@ -15161,6 +15161,47 @@
   "@pharmacyNoTimelineBody": {
     "description": "Pharmacy empty timeline body."
   },
+  "pharmacyDispenseBatchDialogTitle": "Dispense batch",
+  "@pharmacyDispenseBatchDialogTitle": {
+    "description": "Title for the dispense-batch detail dialog."
+  },
+  "pharmacyDispenseBatchDialogTitleWithRef": "Dispense batch {batch}",
+  "@pharmacyDispenseBatchDialogTitleWithRef": {
+    "description": "Title for the dispense-batch detail dialog with batch reference.",
+    "placeholders": {
+      "batch": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDispenseBatchEmptyTitle": "No dispensed items",
+  "@pharmacyDispenseBatchEmptyTitle": {
+    "description": "Empty title when a dispense batch has no line items."
+  },
+  "pharmacyDispenseBatchEmptyBody": "No medications were recorded for this dispense event.",
+  "@pharmacyDispenseBatchEmptyBody": {
+    "description": "Empty body when a dispense batch has no line items."
+  },
+  "pharmacyDispenseBatchPrintAction": "Print dispense",
+  "@pharmacyDispenseBatchPrintAction": {
+    "description": "Print action for a dispense batch dialog."
+  },
+  "pharmacyDispenseBatchTapHint": "Tap to view dispensed items",
+  "@pharmacyDispenseBatchTapHint": {
+    "description": "Hint under interactive dispense history rows."
+  },
+  "pharmacyTimelineBatchMedicationsEvent": "{count} medicines {status}",
+  "@pharmacyTimelineBatchMedicationsEvent": {
+    "description": "Timeline label for a multi-line dispense batch.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "pharmacyDrugPanelTitle": "Formulary and stock",
   "@pharmacyDrugPanelTitle": {
     "description": "Pharmacy drug and stock panel title."

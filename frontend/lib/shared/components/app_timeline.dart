@@ -15,6 +15,7 @@ final class AppTimelineItem {
     this.icon,
     this.tone = AppWorkspaceStatusTone.neutral,
     this.id,
+    this.onTap,
   });
 
   final Object? id;
@@ -24,6 +25,9 @@ final class AppTimelineItem {
   final String? description;
   final IconData? icon;
   final AppWorkspaceStatusTone tone;
+
+  /// Optional tap handler (e.g. open dispense-batch detail).
+  final VoidCallback? onTap;
 
   AppWorkspaceActivityItem toActivityItem({
     required String Function(DateTime value) formatOccurredAt,
@@ -179,87 +183,98 @@ class _TimelineNode extends StatelessWidget {
             : AppFormatters.dateTime(item.occurredAt!, locale));
     final IconData resolvedIcon = item.icon ?? _defaultToneIcon(item.tone);
 
+    final Widget node = IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          SizedBox(
+            width: dense ? 24 : 28,
+            child: Column(
+              children: <Widget>[
+                Container(
+                  width: dense ? 10 : 12,
+                  height: dense ? 10 : 12,
+                  decoration: BoxDecoration(
+                    color: toneColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: colorScheme.surface),
+                  ),
+                  child: Icon(
+                    resolvedIcon,
+                    size: dense ? 6 : 8,
+                    color: colorScheme.surface,
+                  ),
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      color: colorScheme.outlineVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: isLast
+                    ? 0
+                    : (dense ? theme.spacing.sm : theme.spacing.md),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    item.title,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (timestamp.isNotEmpty)
+                    Text(
+                      timestamp,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  if (item.description != null &&
+                      item.description!.trim().isNotEmpty) ...<Widget>[
+                    SizedBox(height: theme.spacing.xs),
+                    Text(
+                      item.description!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
     return Semantics(
       container: true,
+      button: item.onTap != null,
       label: <String>[
         item.title,
         if (timestamp.isNotEmpty) timestamp,
         if (item.description != null && item.description!.isNotEmpty)
           item.description!,
       ].join('. '),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            SizedBox(
-              width: dense ? 24 : 28,
-              child: Column(
-                children: <Widget>[
-                  Container(
-                    width: dense ? 10 : 12,
-                    height: dense ? 10 : 12,
-                    decoration: BoxDecoration(
-                      color: toneColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: colorScheme.surface),
-                    ),
-                    child: Icon(
-                      resolvedIcon,
-                      size: dense ? 6 : 8,
-                      color: colorScheme.surface,
-                    ),
-                  ),
-                  if (!isLast)
-                    Expanded(
-                      child: Container(
-                        width: 2,
-                        color: colorScheme.outlineVariant,
-                      ),
-                    ),
-                ],
+      child: item.onTap == null
+          ? node
+          : Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: item.onTap,
+                child: node,
               ),
             ),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: isLast
-                      ? 0
-                      : (dense ? theme.spacing.sm : theme.spacing.md),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      item.title,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (timestamp.isNotEmpty)
-                      Text(
-                        timestamp,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    if (item.description != null &&
-                        item.description!.trim().isNotEmpty) ...<Widget>[
-                      SizedBox(height: theme.spacing.xs),
-                      Text(
-                        item.description!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

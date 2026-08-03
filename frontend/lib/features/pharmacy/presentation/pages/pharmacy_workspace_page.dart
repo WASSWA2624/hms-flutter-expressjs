@@ -28,6 +28,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_resolve.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -347,8 +348,18 @@ class _PharmacyWorkspaceContentState
 
   static int _sectionCount(
     PharmacyWorkspaceState state,
-    PharmacyDeskSection section,
-  ) {
+    PharmacyDeskSection section, {
+    PharmacyDeskSection? activeSection,
+  }) {
+    // Active order tab badge mirrors the list query total so search/advanced
+    // filters cannot leave the strip higher than the visible worklist.
+    if (activeSection == section && section.isOrderSection) {
+      final int? listTotal = state.workbench.orders.totalItemCount;
+      if (listTotal != null) {
+        return listTotal;
+      }
+    }
+
     final PharmacyWorkbenchSummary summary = state.workbench.summary;
     final PharmacyInventoryStockSummary stock = state.stockAlertSummary;
     return switch (section) {
@@ -468,7 +479,11 @@ class _PharmacyWorkspaceContentState
                       // Catalog is a management hub with no worklist count.
                       count: section.isCatalogSection
                           ? null
-                          : _sectionCount(state, section),
+                          : _sectionCount(
+                              state,
+                              section,
+                              activeSection: effectiveSection,
+                            ),
                       countTone: _sectionCountTone(section),
                     ),
                 ],
@@ -886,6 +901,33 @@ class _PharmacyQueuePanel extends ConsumerWidget {
 }
 
 
+class _PharmacyDetailDialogBody extends ConsumerWidget {
+  const _PharmacyDetailDialogBody({
+    required this.fallbackState,
+    required this.writeRequirement,
+  });
+
+  final PharmacyWorkspaceState fallbackState;
+  final AccessRequirement writeRequirement;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<Result<PharmacyWorkspaceState>> asyncState = ref.watch(
+      pharmacyWorkspaceControllerProvider,
+    );
+    final PharmacyWorkspaceState state =
+        asyncState.asData?.value.when(
+          success: (PharmacyWorkspaceState value) => value,
+          failure: (_) => fallbackState,
+        ) ??
+        fallbackState;
+    return _PharmacyDetailPanel(
+      state: state,
+      writeRequirement: writeRequirement,
+    );
+  }
+}
+
 class _PharmacyDetailPanel extends ConsumerWidget {
   const _PharmacyDetailPanel({
     required this.state,
@@ -982,8 +1024,8 @@ Future<void> _openPharmacyDetailDialog(
       icon: const Icon(Icons.receipt_long_outlined),
       scrollable: true,
       maxWidth: 980,
-      content: _PharmacyDetailPanel(
-        state: state,
+      content: _PharmacyDetailDialogBody(
+        fallbackState: state,
         writeRequirement: writeRequirement,
       ),
     ),
@@ -1217,30 +1259,29 @@ class _MedicationItemsPanelState extends ConsumerState<_MedicationItemsPanel> {
         ? workflow.order.items
         : workflow.items;
 
-    return AppCollapsibleSection(
-      child: AppListTable<PharmacyOrderItem>(
-        items: items,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        columnVisibilityController: _columnVisibilityController,
-        columnVisibilityStorageKey: 'pharmacy_order_items',
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        columnVisibilityTitle: l10n.commonTableSettingsTitle,
-        search: AppListTableSearch<PharmacyOrderItem>(
-          controller: _searchController,
-          semanticLabel: l10n.pharmacyMedicationColumnLabel,
-          hintText: l10n.pharmacySearchHint,
-          matcher: (PharmacyOrderItem item, String query) =>
-              _medicationItemSearchMatcher(context, order, item, query),
-        ),
-        emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-          variant: AppStateViewVariant.empty,
-          title: l10n.pharmacyNoMedicationTitle,
-          body: l10n.pharmacyNoMedicationBody,
-          icon: Icons.medication_outlined,
-          minHeight: 180,
-        ),
-        columns: <AppListTableColumn<PharmacyOrderItem>>[
+    return AppListTable<PharmacyOrderItem>(
+      items: items,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      columnVisibilityController: _columnVisibilityController,
+      columnVisibilityStorageKey: 'pharmacy_order_items',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      search: AppListTableSearch<PharmacyOrderItem>(
+        controller: _searchController,
+        semanticLabel: l10n.pharmacyMedicationColumnLabel,
+        hintText: l10n.pharmacySearchHint,
+        matcher: (PharmacyOrderItem item, String query) =>
+            _medicationItemSearchMatcher(context, order, item, query),
+      ),
+      emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+        variant: AppStateViewVariant.empty,
+        title: l10n.pharmacyNoMedicationTitle,
+        body: l10n.pharmacyNoMedicationBody,
+        icon: Icons.medication_outlined,
+        minHeight: 180,
+      ),
+      columns: <AppListTableColumn<PharmacyOrderItem>>[
           AppListTableColumn<PharmacyOrderItem>(
             id: 'medication',
             label: l10n.pharmacyMedicationColumnLabel,
@@ -1335,7 +1376,6 @@ class _MedicationItemsPanelState extends ConsumerState<_MedicationItemsPanel> {
             ],
           );
         },
-      ),
     );
   }
 }
@@ -1568,14 +1608,17 @@ class _MedicationPrimaryLineAction extends ConsumerWidget {
   }
 }
 
-class _TimelinePanel extends StatelessWidget {
+class _TimelinePanel extends ConsumerWidget {
   const _TimelinePanel({required this.workflow});
 
   final PharmacyOrderWorkflow workflow;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canPrint = canPrintPharmacyInstructions(policy);
+
     return AppCollapsibleSection(
       title: l10n.pharmacyTimelinePanelTitle,
       description: l10n.pharmacyTimelinePanelDescription,
@@ -1585,14 +1628,159 @@ class _TimelinePanel extends StatelessWidget {
         items: <AppTimelineItem>[
           for (final PharmacyTimelineItem item in workflow.timeline)
             AppTimelineItem(
+              id: item.id,
               title: _timelineLabel(context, item),
               occurredAt: item.at,
               icon: Icons.local_pharmacy_outlined,
+              description: _timelineDispenseTapHint(context, item),
+              onTap: _canOpenDispenseBatch(item)
+                  ? () => _openDispenseBatchDialog(
+                      context,
+                      ref,
+                      workflow: workflow,
+                      timelineItem: item,
+                      canPrint: canPrint,
+                    )
+                  : null,
             ),
         ],
       ),
     );
   }
+}
+
+bool _canOpenDispenseBatch(PharmacyTimelineItem item) {
+  final String type = (item.type ?? '').toUpperCase();
+  if (!type.startsWith('DISPENSE_')) {
+    return false;
+  }
+  // Attestation phases are not medication line batches.
+  if (type == 'DISPENSE_PREPARE' || type == 'DISPENSE_ATTEST') {
+    final String? batch = item.labelParams['batch']?.toString().trim();
+    return batch != null && batch.isNotEmpty;
+  }
+  final String? batch = item.labelParams['batch']?.toString().trim();
+  final String? logId = item.labelParams['log_id']?.toString().trim();
+  return (batch != null && batch.isNotEmpty) ||
+      (logId != null && logId.isNotEmpty);
+}
+
+String? _timelineDispenseTapHint(
+  BuildContext context,
+  PharmacyTimelineItem item,
+) {
+  if (!_canOpenDispenseBatch(item)) {
+    return null;
+  }
+  return context.l10n.pharmacyDispenseBatchTapHint;
+}
+
+Future<void> _openDispenseBatchDialog(
+  BuildContext context,
+  WidgetRef ref, {
+  required PharmacyOrderWorkflow workflow,
+  required PharmacyTimelineItem timelineItem,
+  required bool canPrint,
+}) async {
+  final String? batchRef = timelineItem.labelParams['batch']?.toString().trim();
+  final String? logId = timelineItem.labelParams['log_id']?.toString().trim();
+  final List<PharmacyDispenseBatchLine> lines =
+      resolvePharmacyDispenseBatchLines(
+        workflow: workflow,
+        dispenseBatchRef: batchRef,
+        dispenseLogId: logId,
+      );
+
+  if (!context.mounted) {
+    return;
+  }
+
+  final AppLocalizations l10n = context.l10n;
+  final String title = (batchRef == null || batchRef.isEmpty)
+      ? l10n.pharmacyDispenseBatchDialogTitle
+      : l10n.pharmacyDispenseBatchDialogTitleWithRef(batchRef);
+
+  await showAppDialog<void>(
+    context: context,
+    builder: (BuildContext dialogContext) {
+      final ThemeData theme = Theme.of(dialogContext);
+      return AppDialog(
+        title: Text(title),
+        icon: const Icon(Icons.medication_liquid_outlined),
+        scrollable: true,
+        maxWidth: 720,
+        content: lines.isEmpty
+            ? AppWorkspaceStatePanel.state(
+                variant: AppStateViewVariant.empty,
+                title: l10n.pharmacyDispenseBatchEmptyTitle,
+                body: l10n.pharmacyDispenseBatchEmptyBody,
+                icon: Icons.medication_outlined,
+                minHeight: 160,
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  for (var index = 0; index < lines.length; index += 1) ...<Widget>[
+                    if (index > 0) SizedBox(height: theme.spacing.sm),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(lines[index].item.medicationLabel),
+                      subtitle: Text(
+                        <String>[
+                          clinicalActionJoinDisplay(<String?>[
+                            _numberLabel(lines[index].quantityDispensed),
+                            clinicalActionTrimmedOrNull(
+                              lines[index].item.quantityUnit,
+                            ),
+                          ], separator: ' '),
+                          if ((lines[index].log.status ?? '')
+                              .trim()
+                              .isNotEmpty)
+                            _apiLabel(lines[index].log.status!),
+                        ].where((String part) => part.isNotEmpty).join(' · '),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+        actions: <Widget>[
+          if (canPrint && lines.isNotEmpty)
+            AppReportActionButton.print(
+              label: l10n.pharmacyDispenseBatchPrintAction,
+              variant: AppButtonVariant.secondary,
+              onPressed: () async {
+                await PrintDocumentTemplates.medicationInstructions(
+                  ref: ref,
+                  context: dialogContext,
+                  title: l10n.pharmacyReportTitle,
+                  patientContext: buildPrintFormPatientContext(
+                    l10n,
+                    patientName: workflow.order.displayTitle,
+                    patientId: workflow.order.patientId,
+                    encounterId: workflow.order.encounterId,
+                  ),
+                  orderReference: PrintFormContextReference(
+                    label: l10n.pharmacyReportOrderLabel,
+                    value:
+                        workflow.order.displayId ?? l10n.profileUnknownValue,
+                  ),
+                  bodyHtml: pharmacyDispenseBatchHtml(
+                    dialogContext,
+                    lines: lines,
+                    dispenseBatchRef: batchRef,
+                  ),
+                  footerNote: l10n.pharmacyReportFooter,
+                );
+              },
+            ),
+          AppButton(
+            label: l10n.commonCloseActionLabel,
+            onPressed: () => Navigator.of(dialogContext).maybePop(),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 class _DispenseDialog extends ConsumerStatefulWidget {
@@ -3434,10 +3622,17 @@ String _timelineLabel(BuildContext context, PharmacyTimelineItem item) {
   final String? medication = item.labelParams['medication']?.toString();
   final String? status = item.labelParams['status']?.toString();
   final String? batch = item.labelParams['batch']?.toString();
+  final Object? medicationCount = item.labelParams['medication_count'];
   if ((medication ?? '').isNotEmpty) {
     return context.l10n.pharmacyTimelineMedicationEvent(
       medication!,
       _apiLabel(status ?? ''),
+    );
+  }
+  if (medicationCount is num && medicationCount > 1) {
+    return context.l10n.pharmacyTimelineBatchMedicationsEvent(
+      medicationCount.toInt(),
+      _apiLabel(status ?? type),
     );
   }
   if ((batch ?? '').isNotEmpty) {

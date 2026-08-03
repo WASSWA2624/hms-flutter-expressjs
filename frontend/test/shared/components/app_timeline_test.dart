@@ -44,4 +44,26 @@ void main() {
     expect(find.text('No timeline'), findsOneWidget);
     expect(find.text('Nothing yet'), findsOneWidget);
   });
+
+  testWidgets('AppTimeline invokes onTap for interactive items', (
+    WidgetTester tester,
+  ) async {
+    var tapped = false;
+    await pumpComponent(
+      tester,
+      AppTimeline(
+        items: <AppTimelineItem>[
+          AppTimelineItem(
+            title: 'Dispensed batch',
+            occurredAt: DateTime.utc(2026, 1, 2, 12),
+            onTap: () => tapped = true,
+          ),
+        ],
+      ),
+    );
+
+    await tester.tap(find.text('Dispensed batch'));
+    await tester.pump();
+    expect(tapped, isTrue);
+  });
 }

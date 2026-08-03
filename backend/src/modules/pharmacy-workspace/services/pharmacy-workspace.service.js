@@ -1121,19 +1121,21 @@ const getPharmacyWorkbench = async (filters, page, limit, sortBy, order, user = 
     const skip = (page - 1) * limit;
     const orderBy = sortBy ? { [sortBy]: order } : { ordered_at: 'desc' };
 
+    // Summary buckets strip only section-specific gates (status / payment /
+    // today) so badges stay aligned with search + advanced filters applied to
+    // the worklist. Location, date range, priority, and search remain.
     const [where, summaryWhere, summaryBaseWhere] = await Promise.all([
       buildWorkbenchOrderWhere(filters, scope, { includeSearch: true }),
-      buildWorkbenchOrderWhere(filters, scope, { includeSearch: false }),
+      buildWorkbenchOrderWhere(filters, scope, { includeSearch: true }),
       buildWorkbenchOrderWhere(
         {
           ...filters,
           status: undefined,
-          location: undefined,
           pending_payment: undefined,
           payment_cleared: undefined,
           today_only: undefined},
         scope,
-        { includeSearch: false }
+        { includeSearch: true }
       )]);
 
     const [worklistRecords, total, summary] = await Promise.all([

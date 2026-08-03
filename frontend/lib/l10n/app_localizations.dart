@@ -21928,6 +21928,48 @@ abstract class AppLocalizations {
   /// **'No dispense history is available yet.'**
   String get pharmacyNoTimelineBody;
 
+  /// Title for the dispense-batch detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispense batch'**
+  String get pharmacyDispenseBatchDialogTitle;
+
+  /// Title for the dispense-batch detail dialog with batch reference.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispense batch {batch}'**
+  String pharmacyDispenseBatchDialogTitleWithRef(String batch);
+
+  /// Empty title when a dispense batch has no line items.
+  ///
+  /// In en, this message translates to:
+  /// **'No dispensed items'**
+  String get pharmacyDispenseBatchEmptyTitle;
+
+  /// Empty body when a dispense batch has no line items.
+  ///
+  /// In en, this message translates to:
+  /// **'No medications were recorded for this dispense event.'**
+  String get pharmacyDispenseBatchEmptyBody;
+
+  /// Print action for a dispense batch dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Print dispense'**
+  String get pharmacyDispenseBatchPrintAction;
+
+  /// Hint under interactive dispense history rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to view dispensed items'**
+  String get pharmacyDispenseBatchTapHint;
+
+  /// Timeline label for a multi-line dispense batch.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} medicines {status}'**
+  String pharmacyTimelineBatchMedicationsEvent(int count, String status);
+
   /// Pharmacy drug and stock panel title.
   ///
   /// In en, this message translates to:

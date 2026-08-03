@@ -176,10 +176,16 @@ final class PharmacyWorkspaceController
       success: (PharmacyOrderWorkflow workflow) {
         final PharmacyWorkspaceState? latest = _currentState;
         if (latest != null) {
+          // Prefer workflow items; fall back to the worklist row snapshot when
+          // the workflow payload omits lines so detail never looks empty.
+          final PharmacyOrderWorkflow resolved = _withFallbackItems(
+            workflow,
+            order,
+          );
           _emit(
             latest.copyWith(
-              selectedWorkflow: workflow,
-              workbench: _replaceOrder(latest.workbench, workflow.order),
+              selectedWorkflow: resolved,
+              workbench: _replaceOrder(latest.workbench, resolved.order),
               isRefreshingDetail: false,
             ),
           );
@@ -1704,6 +1710,25 @@ final class PharmacyWorkspaceController
     }
 
     return selected;
+  }
+
+  PharmacyOrderWorkflow _withFallbackItems(
+    PharmacyOrderWorkflow workflow,
+    PharmacyOrder listOrder,
+  ) {
+    if (workflow.items.isNotEmpty || listOrder.items.isEmpty) {
+      return workflow;
+    }
+    return PharmacyOrderWorkflow(
+      order: workflow.order.copyWith(
+        items: listOrder.items,
+        itemCount: listOrder.items.length,
+      ),
+      items: listOrder.items,
+      attestations: workflow.attestations,
+      timeline: workflow.timeline,
+      nextActions: workflow.nextActions,
+    );
   }
 
   PharmacyWorkbench _replaceOrder(

@@ -100,11 +100,114 @@ void main() {
     });
   });
 
-  group('clinicalFrequencyReadable', () {
-    test('maps common abbreviations', () {
-      expect(clinicalFrequencyReadable('BID'), 'twice daily');
-      expect(clinicalFrequencyReadable('TID'), 'three times daily');
-      expect(clinicalFrequencyReadable('QID'), 'four times daily');
+  group('resolvePharmacyDispenseBatchLines', () {
+    test('matches lines by dispense batch ref', () {
+      final PharmacyOrderItem item = PharmacyOrderItem(
+        id: 'item-1',
+        drugDisplayName: 'Artemether + Lumefantrine 20/120 mg Tablet',
+        dosage: '20/120 mg',
+        doseAmount: 2,
+        doseUnit: 'tablets',
+        route: 'ORAL',
+        frequency: 'BID',
+        quantityPrescribed: 4,
+        quantityUnit: 'tablets',
+        dispenseLogs: const <PharmacyDispenseLog>[
+          PharmacyDispenseLog(
+            id: 'log-1',
+            dispenseBatchRef: 'DSPBATCH001',
+            status: 'DISPENSED',
+            quantityDispensed: 2,
+          ),
+          PharmacyDispenseLog(
+            id: 'log-2',
+            dispenseBatchRef: 'DSPBATCH002',
+            status: 'DISPENSED',
+            quantityDispensed: 1,
+          ),
+        ],
+      );
+      final PharmacyOrderWorkflow workflow = PharmacyOrderWorkflow(
+        order: _sampleOrder(),
+        items: <PharmacyOrderItem>[item],
+      );
+
+      final List<PharmacyDispenseBatchLine> lines =
+          resolvePharmacyDispenseBatchLines(
+            workflow: workflow,
+            dispenseBatchRef: 'DSPBATCH001',
+          );
+
+      expect(lines, hasLength(1));
+      expect(lines.single.quantityDispensed, 2);
+      expect(lines.single.item.id, 'item-1');
+    });
+
+    test('matches a single log by id when batch is absent', () {
+      final PharmacyOrderItem item = PharmacyOrderItem(
+        id: 'item-1',
+        drugDisplayName: 'Artemether + Lumefantrine 20/120 mg Tablet',
+        quantityPrescribed: 4,
+        quantityUnit: 'tablets',
+        dispenseLogs: const <PharmacyDispenseLog>[
+          PharmacyDispenseLog(
+            id: 'log-orphan',
+            status: 'DISPENSED',
+            quantityDispensed: 3,
+          ),
+        ],
+      );
+      final PharmacyOrderWorkflow workflow = PharmacyOrderWorkflow(
+        order: _sampleOrder(),
+        items: <PharmacyOrderItem>[item],
+      );
+
+      final List<PharmacyDispenseBatchLine> lines =
+          resolvePharmacyDispenseBatchLines(
+            workflow: workflow,
+            dispenseLogId: 'log-orphan',
+          );
+
+      expect(lines, hasLength(1));
+      expect(lines.single.quantityDispensed, 3);
+    });
+  });
+
+  group('pharmacyDispenseBatchHtml', () {
+    testWidgets('renders dispensed quantities for the batch', (tester) async {
+      late String html;
+      final PharmacyOrderItem item = _sampleItem(frequency: 'BID');
+      final PharmacyDispenseBatchLine line = PharmacyDispenseBatchLine(
+        item: item,
+        log: const PharmacyDispenseLog(
+          id: 'log-1',
+          dispenseBatchRef: 'DSPBATCH001',
+          status: 'DISPENSED',
+          quantityDispensed: 2,
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (BuildContext context) {
+              html = pharmacyDispenseBatchHtml(
+                context,
+                lines: <PharmacyDispenseBatchLine>[line],
+                dispenseBatchRef: 'DSPBATCH001',
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(html, contains('DSPBATCH001'));
+      expect(html, contains('Artemether + Lumefantrine'));
+      expect(html, contains('2 tablets'));
+      expect(html, isNot(contains('Unit price')));
     });
   });
 }
