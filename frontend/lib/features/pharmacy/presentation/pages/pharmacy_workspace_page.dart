@@ -2086,10 +2086,13 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
                 matcher: (_LineEditState line, String query) {
                   final String haystack = <String?>[
                     line.item.medicationLabel,
+                    line.item.drugDisplayName,
+                    line.item.drugCode,
+                    line.item.drugForm,
+                    line.item.drugStrength,
                     line.item.simplifiedDoseLine,
                     line.item.doseLine,
                     line.item.quantityLine,
-                    line.item.drugCode,
                   ].whereType<String>().join(' ').toLowerCase();
                   return haystack.contains(query.trim().toLowerCase());
                 },
@@ -2109,21 +2112,44 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
               ),
               columns: <AppListTableColumn<_LineEditState>>[
                 AppListTableColumn<_LineEditState>(
-                  id: 'row_number',
-                  label: l10n.pharmacyPrintRowNumberColumnLabel,
+                  id: 'code',
+                  label: l10n.pharmacyDrugCodeLabel,
                   cellBuilder: (BuildContext context, _LineEditState line) {
-                    final int index = _lines.indexOf(line);
-                    return Text('${index < 0 ? '—' : index + 1}');
+                    return Text(_dispenseCellText(line.item.drugCode));
                   },
                 ),
                 AppListTableColumn<_LineEditState>(
-                  id: 'medicine_details',
-                  label: l10n.pharmacyMedicationColumnLabel,
+                  id: 'drug_name',
+                  label: l10n.pharmacyDrugNameLabel,
                   cellBuilder: (BuildContext context, _LineEditState line) {
-                    return Align(
-                      alignment: Alignment.topLeft,
-                      child: _DispenseMedicineDetailsCell(item: line.item),
+                    return Text(
+                      _dispenseCellText(
+                        line.item.drugDisplayName ?? line.item.medicationLabel,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     );
+                  },
+                ),
+                AppListTableColumn<_LineEditState>(
+                  id: 'dosage',
+                  label: l10n.pharmacyDoseColumnLabel,
+                  cellBuilder: (BuildContext context, _LineEditState line) {
+                    final String dose = line.item.simplifiedDoseLine.isEmpty
+                        ? line.item.doseLine
+                        : line.item.simplifiedDoseLine;
+                    return Text(
+                      _dispenseCellText(dose),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    );
+                  },
+                ),
+                AppListTableColumn<_LineEditState>(
+                  id: 'form',
+                  label: l10n.pharmacyDrugFormLabel,
+                  cellBuilder: (BuildContext context, _LineEditState line) {
+                    return Text(_dispenseCellText(line.item.drugForm));
                   },
                 ),
                 AppListTableColumn<_LineEditState>(
@@ -2132,12 +2158,14 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
                   alwaysVisible: true,
                   cellBuilder: (BuildContext context, _LineEditState line) {
                     return Align(
-                      alignment: Alignment.topLeft,
+                      alignment: Alignment.centerLeft,
                       child: SizedBox(
-                        width: 120,
+                        width: 96,
                         child: AppTextField(
                           controller: line.quantityController,
-                          labelText: l10n.pharmacyDispenseQuantityColumnLabel,
+                          semanticLabel: l10n.pharmacyDispenseQuantityColumnLabel,
+                          useFloatingLabel: false,
+                          isDense: true,
                           enabled: !_isSaving,
                           keyboardType: TextInputType.number,
                           inputFormatters: _integerFormatters,
@@ -2163,10 +2191,15 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     AppListTableMobileItem(
-                      title: line.item.medicationLabel,
-                      caption: line.item.simplifiedDoseLine.isEmpty
-                          ? line.item.doseLine
-                          : line.item.simplifiedDoseLine,
+                      title: line.item.drugDisplayName ??
+                          line.item.medicationLabel,
+                      caption: <String?>[
+                        line.item.drugCode,
+                        line.item.drugForm,
+                        line.item.simplifiedDoseLine.isEmpty
+                            ? line.item.doseLine
+                            : line.item.simplifiedDoseLine,
+                      ].whereType<String>().where((String v) => v.trim().isNotEmpty).join(' · '),
                       meta: <AppListTableMobileMeta>[
                         AppListTableMobileMeta(label: line.item.quantityLine),
                       ],
@@ -2180,7 +2213,9 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
                       ),
                       child: AppTextField(
                         controller: line.quantityController,
-                        labelText: l10n.pharmacyDispenseQuantityColumnLabel,
+                        semanticLabel: l10n.pharmacyDispenseQuantityColumnLabel,
+                        useFloatingLabel: false,
+                        isDense: true,
                         enabled: !_isSaving,
                         keyboardType: TextInputType.number,
                         inputFormatters: _integerFormatters,
@@ -2198,6 +2233,8 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
         l10n.pharmacyDispenseAction,
         _isSaving,
         _submit,
+        cancelLeadingIcon: AppActionIcons.cancel,
+        submitLeadingIcon: Icons.medication_liquid_outlined,
       ),
     );
   }
@@ -2244,53 +2281,9 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
   }
 }
 
-class _DispenseMedicineDetailsCell extends StatelessWidget {
-  const _DispenseMedicineDetailsCell({required this.item});
-
-  final PharmacyOrderItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final String dose = item.simplifiedDoseLine.isEmpty
-        ? item.doseLine
-        : item.simplifiedDoseLine;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          item.medicationLabel,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        if (dose.trim().isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            dose,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-        if (item.quantityLine.trim().isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            item.quantityLine,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
+String _dispenseCellText(String? value) {
+  final String normalized = value?.trim() ?? '';
+  return normalized.isEmpty ? '—' : normalized;
 }
 
 class _AttestDialog extends ConsumerStatefulWidget {
