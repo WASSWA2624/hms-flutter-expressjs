@@ -121,8 +121,13 @@ const adjustInventorySchema = z
     const quantityDelta = Number(data.quantity_delta || 0);
     const hasQuantityChange = quantityDelta !== 0;
     const hasReorderChange = data.reorder_level !== undefined;
+    const hasBatchMeta =
+      Boolean(data.batch_number) ||
+      data.manufactured_at != null ||
+      data.expiry_date != null ||
+      data.expiry_alert_lead_days != null;
 
-    if (!hasQuantityChange && !hasReorderChange) {
+    if (!hasQuantityChange && !hasReorderChange && !hasBatchMeta) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'errors.validation.required',

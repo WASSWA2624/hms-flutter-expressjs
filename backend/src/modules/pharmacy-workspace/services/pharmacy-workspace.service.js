@@ -382,37 +382,53 @@ const upsertDrugBatchForReceipt = async (
     drugId,
     batchNumber,
     manufacturedAt = null,
-    expiryDate,
+    expiryDate = null,
     expiryAlertLeadDays = null,
-    quantityDelta,
+    quantityDelta = 0,
     storageRoomId = null,
     storageShelfId = null}
 ) => {
-  if (!drugId || !batchNumber || quantityDelta <= 0) return null;
+  const resolvedBatchNumber = String(batchNumber || '').trim() || 'UNLABELED';
+  if (!drugId) return null;
+  const delta = Number(quantityDelta || 0);
+  const hasDates = Boolean(manufacturedAt || expiryDate || expiryAlertLeadDays != null);
+  // Allow metadata-only upserts (MFD/ED without quantity or pack batch number).
+  if (delta <= 0 && !hasDates && resolvedBatchNumber === 'UNLABELED') {
+    return null;
+  }
+  if (delta < 0) {
+    return null;
+  }
 
   let batch = await pharmacyWorkspaceRepository.txFindDrugBatchByDrugAndNumber(
     tx,
     drugId,
-    batchNumber
+    resolvedBatchNumber
   );
 
   if (batch) {
-    return pharmacyWorkspaceRepository.txUpdateDrugBatch(tx, batch.id, {
-      quantity: Number(batch.quantity || 0) + quantityDelta,
+    const stockUpdate = {
+      ...(delta > 0 ? { quantity: Number(batch.quantity || 0) + delta } : {}),
       ...(manufacturedAt ? { manufactured_at: manufacturedAt } : {}),
       ...(expiryDate ? { expiry_date: expiryDate } : {}),
-      ...(expiryAlertLeadDays != null ? { expiry_alert_lead_days: expiryAlertLeadDays } : {}),
+      ...(expiryAlertLeadDays != null
+        ? { expiry_alert_lead_days: expiryAlertLeadDays }
+        : {}),
       ...(storageRoomId ? { storage_room_id: storageRoomId } : {}),
-      ...(storageShelfId ? { storage_shelf_id: storageShelfId } : {})});
+      ...(storageShelfId ? { storage_shelf_id: storageShelfId } : {})};
+    if (!Object.keys(stockUpdate).length) {
+      return batch;
+    }
+    return pharmacyWorkspaceRepository.txUpdateDrugBatch(tx, batch.id, stockUpdate);
   }
 
   return pharmacyWorkspaceRepository.txCreateDrugBatch(tx, {
     drug_id: drugId,
-    batch_number: batchNumber,
+    batch_number: resolvedBatchNumber,
     manufactured_at: manufacturedAt,
     expiry_date: expiryDate,
     expiry_alert_lead_days: expiryAlertLeadDays,
-    quantity: quantityDelta,
+    quantity: Math.max(delta, 0),
     storage_room_id: storageRoomId,
     storage_shelf_id: storageShelfId});
 };
@@ -2098,7 +2114,6 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
           occurred_at: toDateOrNull(payload.occurred_at, new Date())});
       }
 
-      const reason = String(payload.reason || 'OTHER').trim().toUpperCase();
       const batchNumber = String(payload.batch_number || '').trim();
       const manufacturedAt = toDateOrNull(payload.manufactured_at, null);
       const expiryDate = toDateOrNull(payload.expiry_date, null);
@@ -2106,7 +2121,12 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
         payload.expiry_alert_lead_days == null
           ? null
           : Number(payload.expiry_alert_lead_days);
-      if (quantityDelta > 0 && reason === 'PURCHASE' && batchNumber) {
+      const hasBatchMeta =
+        Boolean(batchNumber) ||
+        Boolean(manufacturedAt) ||
+        Boolean(expiryDate) ||
+        expiryAlertLeadDays != null;
+      if (hasBatchMeta) {
         let drugId = null;
         if (payload.drug_id) {
           drugId = await resolveModelIdOrThrow({
@@ -2126,11 +2146,11 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
         if (drugId) {
           await upsertDrugBatchForReceipt(tx, {
             drugId,
-            batchNumber,
+            batchNumber: batchNumber || 'UNLABELED',
             manufacturedAt,
             expiryDate,
             expiryAlertLeadDays,
-            quantityDelta,
+            quantityDelta: quantityDelta > 0 ? quantityDelta : 0,
             storageRoomId: storageAssignment.storageRoomId,
             storageShelfId: storageAssignment.storageShelfId});
         }
@@ -2288,10 +2308,10 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
         }
       }
 
-      if (batchNumber) {
+      if (batchNumber || manufacturedAt || expiryDate) {
         await pharmacyWorkspaceRepository.txCreateDrugBatch(tx, {
           drug_id: drug.id,
-          batch_number: batchNumber,
+          batch_number: batchNumber || 'UNLABELED',
           manufactured_at: manufacturedAt,
           expiry_date: expiryDate,
           expiry_alert_lead_days: expiryAlertLeadDays,

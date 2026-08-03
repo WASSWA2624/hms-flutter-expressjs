@@ -1447,12 +1447,19 @@ class _PharmacyDrugEditDialogState
               reorderLevel != null &&
               (previousReorder == null ||
                   previousReorder.toInt() != reorderLevel);
+          final String? batchNumber =
+              _emptyToNull(_batchNumberController.text);
+          final bool hasBatchMeta =
+              batchNumber != null ||
+              _manufacturedAt != null ||
+              _expiryDate != null ||
+              _expiryAlertLeadDays != null;
           // Prefer the pre-edit catalog drug — PUT /drugs often omits stock maps.
           final String? inventoryItemId =
               _resolveInventoryItemId(widget.drug!) ??
               _resolveInventoryItemId(updatedDrug!);
           if (inventoryItemId != null &&
-              (addQuantity > 0 || reorderChanged)) {
+              (addQuantity > 0 || reorderChanged || hasBatchMeta)) {
             final AppFailure? stockFailure = await controller
                 .adjustInventoryStock(
                   PharmacyInventoryAdjustInput(
@@ -1461,15 +1468,12 @@ class _PharmacyDrugEditDialogState
                     reorderLevel: reorderChanged ? reorderLevel : null,
                     reason: 'OTHER',
                     facilityId: controller.resolveFacilityId(),
-                    batchNumber: addQuantity > 0
-                        ? _emptyToNull(_batchNumberController.text)
-                        : null,
-                    manufacturedAt: addQuantity > 0 ? _manufacturedAt : null,
-                    expiryDate: addQuantity > 0 ? _expiryDate : null,
-                    expiryAlertLeadDays:
-                        addQuantity > 0 ? _expiryAlertLeadDays : null,
-                    storageRoomId: addQuantity > 0 ? _storageRoomId : null,
-                    storageShelfId: addQuantity > 0 ? _storageShelfId : null,
+                    batchNumber: batchNumber,
+                    manufacturedAt: _manufacturedAt,
+                    expiryDate: _expiryDate,
+                    expiryAlertLeadDays: _expiryAlertLeadDays,
+                    storageRoomId: _storageRoomId,
+                    storageShelfId: _storageShelfId,
                     drugId: widget.drug!.id,
                   ),
                 );
