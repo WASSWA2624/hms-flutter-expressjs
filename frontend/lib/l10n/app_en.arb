@@ -15234,6 +15234,18 @@
   "@pharmacyNoDrugsBody": {
     "description": "Empty pharmacy drug search body."
   },
+  "pharmacyDrugsLoadingTitle": "Loading drugs",
+  "@pharmacyDrugsLoadingTitle": {
+    "description": "Pharmacy catalog drugs table initial loading title."
+  },
+  "pharmacyDrugsLoadingBody": "Fetching drug catalog and stock levels...",
+  "@pharmacyDrugsLoadingBody": {
+    "description": "Pharmacy catalog drugs table initial loading body."
+  },
+  "pharmacyDrugsLoadingMoreLabel": "Loading more drugs...",
+  "@pharmacyDrugsLoadingMoreLabel": {
+    "description": "Pharmacy catalog drugs table load-more overlay label."
+  },
   "pharmacyDrugColumnLabel": "Drug",
   "@pharmacyDrugColumnLabel": {
     "description": "Pharmacy drug column label."

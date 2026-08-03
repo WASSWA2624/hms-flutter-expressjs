@@ -180,6 +180,17 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
       rowsVersion: _selectionTick.value,
       columnVisibilityStorageKey: 'pharmacy_catalog_drugs',
       shrinkWrap: !widget.fillHeight,
+      loadingMoreLabel: l10n.pharmacyDrugsLoadingMoreLabel,
+      loadingBuilder: (BuildContext context) {
+        final ThemeData theme = Theme.of(context);
+        return Padding(
+          padding: EdgeInsets.symmetric(vertical: theme.spacing.xl),
+          child: AppLoadingIndicator.compact(
+            title: l10n.pharmacyDrugsLoadingTitle,
+            body: l10n.pharmacyDrugsLoadingBody,
+          ),
+        );
+      },
       search: AppListTableSearch<PharmacyDrug>(
         controller: _searchController,
         semanticLabel: l10n.pharmacyDrugSearchLabel,

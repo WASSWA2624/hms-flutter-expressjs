@@ -22018,6 +22018,24 @@ abstract class AppLocalizations {
   /// **'Matching formulary drugs and stock rows will appear here.'**
   String get pharmacyNoDrugsBody;
 
+  /// Pharmacy catalog drugs table initial loading title.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading drugs'**
+  String get pharmacyDrugsLoadingTitle;
+
+  /// Pharmacy catalog drugs table initial loading body.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching drug catalog and stock levels...'**
+  String get pharmacyDrugsLoadingBody;
+
+  /// Pharmacy catalog drugs table load-more overlay label.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading more drugs...'**
+  String get pharmacyDrugsLoadingMoreLabel;
+
   /// Pharmacy drug column label.
   ///
   /// In en, this message translates to:

@@ -11929,6 +11929,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Matching formulary drugs and stock rows will appear here.';
 
   @override
+  String get pharmacyDrugsLoadingTitle => 'Loading drugs';
+
+  @override
+  String get pharmacyDrugsLoadingBody =>
+      'Fetching drug catalog and stock levels...';
+
+  @override
+  String get pharmacyDrugsLoadingMoreLabel => 'Loading more drugs...';
+
+  @override
   String get pharmacyDrugColumnLabel => 'Drug';
 
   @override
