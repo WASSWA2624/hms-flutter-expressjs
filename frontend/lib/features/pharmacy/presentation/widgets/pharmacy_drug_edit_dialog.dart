@@ -62,6 +62,7 @@ class _PharmacyDrugEditDialogState
   late final TextEditingController _batchNumberController;
   late String _pharmacyCurrency;
   late String _facilityCurrency;
+  late final int _originalOnHandQuantity;
   String? _form;
   String? _strength;
   String? _inventoryUnit;
@@ -105,10 +106,11 @@ class _PharmacyDrugEditDialogState
         drug?.availableQuantity ??
         drug?.stockLevel ??
         0;
+    _originalOnHandQuantity = onHand > 0 ? onHand.toInt() : 0;
     _onHandQuantityController = TextEditingController(
-      text: onHand > 0 ? _trimNumber(onHand) : '0',
+      text: _trimNumber(_originalOnHandQuantity),
     );
-    // Edit: leave add-quantity empty so save does not re-add on-hand.
+    // Create-only: initial stock. Edit uses editable on-hand instead.
     _initialStockController = TextEditingController();
     final num? existingReorderLevel = _resolveReorderLevel(drug);
     _reorderLevelController = TextEditingController(
@@ -770,8 +772,12 @@ class _PharmacyDrugEditDialogState
                   left: AppTextField(
                     controller: _onHandQuantityController,
                     labelText: l10n.pharmacyOnHandQuantityLabel,
-                    enabled: false,
+                    enabled: !_isSaving,
                     keyboardType: TextInputType.number,
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    validator: _optionalNonNegativeIntegerValidator,
                   ),
                   right: AppSelectField<String>.searchable(
                     value: _inventoryUnit,
@@ -782,36 +788,22 @@ class _PharmacyDrugEditDialogState
                         setState(() => _inventoryUnit = value),
                   ),
                 ),
-                AppResponsiveFieldRow.two(
-                  gap: AppResponsiveFieldRowGap.form,
-                  left: AppTextField(
-                    controller: _initialStockController,
-                    labelText: l10n.pharmacyAddQuantityLabel,
-                    hintText: l10n.pharmacyAddQuantityHint,
-                    helperText: l10n.pharmacyAddQuantityHelper,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
-                    validator: _optionalNonNegativeIntegerValidator,
-                  ),
-                  right: AppTextField(
-                    controller: _reorderLevelController,
-                    labelText: inventoryUnitLabel == null
-                        ? l10n.pharmacyReorderLevelLabel
-                        : l10n.pharmacyReorderLevelLabelWithUnit(
-                            inventoryUnitLabel,
-                          ),
-                    hintText: l10n.pharmacyReorderLevelHint,
-                    helperText: inventoryUnitLabel == null
-                        ? l10n.pharmacyReorderLevelHelper
-                        : l10n.pharmacyReorderLevelHelperWithUnit,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
-                    validator: _optionalNonNegativeIntegerValidator,
-                  ),
+                AppTextField(
+                  controller: _reorderLevelController,
+                  labelText: inventoryUnitLabel == null
+                      ? l10n.pharmacyReorderLevelLabel
+                      : l10n.pharmacyReorderLevelLabelWithUnit(
+                          inventoryUnitLabel,
+                        ),
+                  hintText: l10n.pharmacyReorderLevelHint,
+                  helperText: inventoryUnitLabel == null
+                      ? l10n.pharmacyReorderLevelHelper
+                      : l10n.pharmacyReorderLevelHelperWithUnit,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  validator: _optionalNonNegativeIntegerValidator,
                 ),
               ] else ...<Widget>[
                 AppResponsiveFieldRow.two(
@@ -1435,8 +1427,10 @@ class _PharmacyDrugEditDialogState
           failure: (AppFailure error) => failure = error,
         );
         if (failure == null && updatedDrug != null) {
-          final int addQuantity =
-              int.tryParse(_initialStockController.text.trim()) ?? 0;
+          final int targetOnHand =
+              int.tryParse(_onHandQuantityController.text.trim()) ??
+              _originalOnHandQuantity;
+          final int quantityDelta = targetOnHand - _originalOnHandQuantity;
           final int? reorderLevel = int.tryParse(
             _reorderLevelController.text.trim(),
           );
@@ -1462,7 +1456,7 @@ class _PharmacyDrugEditDialogState
               _resolveInventoryItemId(widget.drug!) ??
               _resolveInventoryItemId(updatedDrug!);
           if (inventoryItemId != null &&
-              (addQuantity > 0 ||
+              (quantityDelta != 0 ||
                   reorderChanged ||
                   hasBatchMeta ||
                   storageChanged)) {
@@ -1470,7 +1464,7 @@ class _PharmacyDrugEditDialogState
                 .adjustInventoryStock(
                   PharmacyInventoryAdjustInput(
                     inventoryItemId: inventoryItemId,
-                    quantityDelta: addQuantity > 0 ? addQuantity : 0,
+                    quantityDelta: quantityDelta,
                     reorderLevel: reorderChanged ? reorderLevel : null,
                     reason: 'OTHER',
                     facilityId: controller.resolveFacilityId(),
