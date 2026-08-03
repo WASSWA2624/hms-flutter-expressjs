@@ -373,6 +373,28 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
   }
 
   @override
+  Future<Result<PharmacyMutationResult>> cancelOrderItem({
+    required String orderId,
+    required String itemId,
+    required String reason,
+    String? notes,
+  }) {
+    return _apiClient.post<PharmacyMutationResult>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'orders',
+        orderId,
+        'items',
+        itemId,
+        'cancel',
+      ]),
+      data: _withoutEmpty(<String, Object?>{'reason': reason, 'notes': notes}),
+      decoder: (Object? data) =>
+          PharmacyMutationResultDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
   Future<Result<PharmacyMutationResult>> returnDispense({
     required String orderId,
     required List<PharmacyReturnLineInput> items,

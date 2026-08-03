@@ -1190,13 +1190,28 @@ final class PharmacyOrderItem {
   }
 
   String get doseLine {
+    final String? structuredDose = _doseDisplay(doseAmount, doseUnit);
+    // Prefer structured amount/unit when present so "500 mg" is not duplicated
+    // as both dosage text and amount+unit.
     return _joinDisplay(<String?>[
-      dosage,
-      _doseDisplay(doseAmount, doseUnit),
+      structuredDose ?? dosage,
       route,
       frequency,
       _durationDisplay(durationValue, durationUnit),
     ]);
+  }
+
+  /// Human-readable SIG for tables (avoids pipe-joined duplicates).
+  String get simplifiedDoseLine {
+    final String? structuredDose = _doseDisplay(doseAmount, doseUnit);
+    final String dose = structuredDose ?? (dosage ?? '').trim();
+    final String duration = _durationDisplay(durationValue, durationUnit) ?? '';
+    return <String?>[
+      dose.isEmpty ? null : dose.replaceAll(' | ', ' '),
+      (route ?? '').trim().isEmpty ? null : route!.trim(),
+      (frequency ?? '').trim().isEmpty ? null : frequency!.trim(),
+      duration.isEmpty ? null : 'for ${duration.replaceAll(' | ', ' ')}',
+    ].whereType<String>().where((String part) => part.isNotEmpty).join(' · ');
   }
 
   String get quantityLine {

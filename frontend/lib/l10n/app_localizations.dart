@@ -21847,14 +21847,116 @@ abstract class AppLocalizations {
   /// Action to use pharmacy retail price for an order line.
   ///
   /// In en, this message translates to:
-  /// **'Pharmacy price'**
+  /// **'Use Pharmacy Price'**
   String get pharmacyUsePharmacyPriceAction;
 
   /// Action to use facility billing price for an order line.
   ///
   /// In en, this message translates to:
-  /// **'Facility price'**
+  /// **'Use Facility Price'**
   String get pharmacyUseFacilityPriceAction;
+
+  /// Action to dispense every remaining medication on a prescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispense All'**
+  String get pharmacyDispenseAllAction;
+
+  /// Action to cancel a single medication line on a prescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get pharmacyCancelItemAction;
+
+  /// Title for cancelling one pharmacy order item.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel medication'**
+  String get pharmacyCancelItemDialogTitle;
+
+  /// Guidance body for cancelling one pharmacy order item.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the medication from the active pharmacy workflow. Provide a reason to continue.'**
+  String get pharmacyCancelItemDialogBody;
+
+  /// Title for pharmacy print-instructions options dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Print instructions'**
+  String get pharmacyPrintInstructionsOptionsTitle;
+
+  /// Print option to hide medications with zero remaining quantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide zero-quantity items'**
+  String get pharmacyPrintHideZeroQuantityLabel;
+
+  /// Print option to hide medications that are partially dispensed.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide partially dispensed items'**
+  String get pharmacyPrintHidePartialLabel;
+
+  /// Print option to include dispense history records.
+  ///
+  /// In en, this message translates to:
+  /// **'Include dispense history'**
+  String get pharmacyPrintIncludeHistoryLabel;
+
+  /// Section label for selecting medications in print options.
+  ///
+  /// In en, this message translates to:
+  /// **'Medications to include'**
+  String get pharmacyPrintSelectMedicationsLabel;
+
+  /// Section label for selecting history records in print options.
+  ///
+  /// In en, this message translates to:
+  /// **'History records to include'**
+  String get pharmacyPrintSelectHistoryLabel;
+
+  /// Toggle to select every dispense history record for printing.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all history'**
+  String get pharmacyPrintSelectAllHistoryLabel;
+
+  /// Action to print dispense history for a prescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Print History'**
+  String get pharmacyPrintHistoryAction;
+
+  /// Dispense history table event column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get pharmacyHistoryEventColumnLabel;
+
+  /// Dispense history table timestamp column label.
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get pharmacyHistoryWhenColumnLabel;
+
+  /// Dispense history table batch column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch'**
+  String get pharmacyHistoryBatchColumnLabel;
+
+  /// Empty title when a prescription has no dispense history rows.
+  ///
+  /// In en, this message translates to:
+  /// **'No history yet'**
+  String get pharmacyDispenseHistoryEmptyTitle;
+
+  /// Empty body when a prescription has no dispense history rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare, attest, dispense, and return events will appear here.'**
+  String get pharmacyDispenseHistoryEmptyBody;
 
   /// Action to map a medication to inventory stock.
   ///

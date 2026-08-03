@@ -15105,13 +15105,81 @@
   "@pharmacyPaymentClearanceFieldLabel": {
     "description": "Pharmacy payment clearance field label in prescription detail."
   },
-  "pharmacyUsePharmacyPriceAction": "Pharmacy price",
+  "pharmacyUsePharmacyPriceAction": "Use Pharmacy Price",
   "@pharmacyUsePharmacyPriceAction": {
     "description": "Action to use pharmacy retail price for an order line."
   },
-  "pharmacyUseFacilityPriceAction": "Facility price",
+  "pharmacyUseFacilityPriceAction": "Use Facility Price",
   "@pharmacyUseFacilityPriceAction": {
     "description": "Action to use facility billing price for an order line."
+  },
+  "pharmacyDispenseAllAction": "Dispense All",
+  "@pharmacyDispenseAllAction": {
+    "description": "Action to dispense every remaining medication on a prescription."
+  },
+  "pharmacyCancelItemAction": "Cancel",
+  "@pharmacyCancelItemAction": {
+    "description": "Action to cancel a single medication line on a prescription."
+  },
+  "pharmacyCancelItemDialogTitle": "Cancel medication",
+  "@pharmacyCancelItemDialogTitle": {
+    "description": "Title for cancelling one pharmacy order item."
+  },
+  "pharmacyCancelItemDialogBody": "This removes the medication from the active pharmacy workflow. Provide a reason to continue.",
+  "@pharmacyCancelItemDialogBody": {
+    "description": "Guidance body for cancelling one pharmacy order item."
+  },
+  "pharmacyPrintInstructionsOptionsTitle": "Print instructions",
+  "@pharmacyPrintInstructionsOptionsTitle": {
+    "description": "Title for pharmacy print-instructions options dialog."
+  },
+  "pharmacyPrintHideZeroQuantityLabel": "Hide zero-quantity items",
+  "@pharmacyPrintHideZeroQuantityLabel": {
+    "description": "Print option to hide medications with zero remaining quantity."
+  },
+  "pharmacyPrintHidePartialLabel": "Hide partially dispensed items",
+  "@pharmacyPrintHidePartialLabel": {
+    "description": "Print option to hide medications that are partially dispensed."
+  },
+  "pharmacyPrintIncludeHistoryLabel": "Include dispense history",
+  "@pharmacyPrintIncludeHistoryLabel": {
+    "description": "Print option to include dispense history records."
+  },
+  "pharmacyPrintSelectMedicationsLabel": "Medications to include",
+  "@pharmacyPrintSelectMedicationsLabel": {
+    "description": "Section label for selecting medications in print options."
+  },
+  "pharmacyPrintSelectHistoryLabel": "History records to include",
+  "@pharmacyPrintSelectHistoryLabel": {
+    "description": "Section label for selecting history records in print options."
+  },
+  "pharmacyPrintSelectAllHistoryLabel": "Select all history",
+  "@pharmacyPrintSelectAllHistoryLabel": {
+    "description": "Toggle to select every dispense history record for printing."
+  },
+  "pharmacyPrintHistoryAction": "Print History",
+  "@pharmacyPrintHistoryAction": {
+    "description": "Action to print dispense history for a prescription."
+  },
+  "pharmacyHistoryEventColumnLabel": "Event",
+  "@pharmacyHistoryEventColumnLabel": {
+    "description": "Dispense history table event column label."
+  },
+  "pharmacyHistoryWhenColumnLabel": "When",
+  "@pharmacyHistoryWhenColumnLabel": {
+    "description": "Dispense history table timestamp column label."
+  },
+  "pharmacyHistoryBatchColumnLabel": "Batch",
+  "@pharmacyHistoryBatchColumnLabel": {
+    "description": "Dispense history table batch column label."
+  },
+  "pharmacyDispenseHistoryEmptyTitle": "No history yet",
+  "@pharmacyDispenseHistoryEmptyTitle": {
+    "description": "Empty title when a prescription has no dispense history rows."
+  },
+  "pharmacyDispenseHistoryEmptyBody": "Prepare, attest, dispense, and return events will appear here.",
+  "@pharmacyDispenseHistoryEmptyBody": {
+    "description": "Empty body when a prescription has no dispense history rows."
   },
   "pharmacyMapStockAction": "Map stock",
   "@pharmacyMapStockAction": {

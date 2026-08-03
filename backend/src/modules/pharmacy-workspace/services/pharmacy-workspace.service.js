@@ -1811,6 +1811,117 @@ const cancelPharmacyOrder = async (identifier, payload = {}, userId, _userRole, 
   }
 };
 
+const cancelPharmacyOrderItem = async (
+  orderIdentifier,
+  itemIdentifier,
+  payload = {},
+  userId,
+  _userRole,
+  ipAddress,
+  user = {}
+) => {
+  try {
+    const scope = resolveScopedUserContext(user);
+    const orderId = await resolveScopedOrderId(orderIdentifier, scope);
+
+    const mutation = await pharmacyWorkspaceRepository.withTransaction(async (tx) => {
+      const order = ensureScopedOrderRecord(
+        await pharmacyWorkspaceRepository.txFindOrderById(
+          tx,
+          orderId,
+          PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
+        ),
+        scope
+      );
+
+      assertTransition(['ORDERED', 'PARTIALLY_DISPENSED'].includes(order.status), {
+        from: order.status,
+        to: 'CANCEL_ITEM'});
+
+      const orderItem = resolveOrderItemByIdentifier(order, itemIdentifier);
+      if (!orderItem) {
+        throw new HttpError('errors.pharmacy_order_item.not_found', 404);
+      }
+
+      assertTransition(String(orderItem.status || '').toUpperCase() !== 'CANCELLED', {
+        reason: 'item_already_cancelled',
+        order_item_id: orderItem.id});
+
+      await tx.pharmacy_order_item.update({
+        where: { id: orderItem.id },
+        data: { status: 'CANCELLED' }});
+
+      await pharmacyWorkspaceRepository.txUpdateManyDispenseLogs(
+        tx,
+        {
+          status: 'PENDING',
+          pharmacy_order_item_id: orderItem.id},
+        {
+          status: 'CANCELLED'}
+      );
+
+      const remainingActive = (order.items || []).filter((item) => {
+        if (!item || item.id === orderItem.id) return false;
+        return String(item.status || '').toUpperCase() !== 'CANCELLED';
+      });
+
+      if (!remainingActive.length) {
+        await pharmacyWorkspaceRepository.txUpdateOrder(tx, order.id, {
+          status: 'CANCELLED'});
+
+        const existingSnapshot = extractStoredClinicalBilling(order);
+        if (existingSnapshot?.invoice_id) {
+          await reverseClinicalRequestBilling(tx, { existingSnapshot });
+          await tx.pharmacy_order.update({
+            where: { id: order.id },
+            data: { billing_snapshot: null }});
+        }
+      }
+
+      const refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
+        tx,
+        order.id,
+        PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
+      );
+
+      return { order: refreshedOrder, orderItemId: orderItem.id };
+    });
+
+    createAuditLog({
+      user_id: userId,
+      action: 'CANCEL',
+      entity: 'pharmacy_order_item',
+      entity_id: mutation.orderItemId,
+      diff: {
+        metadata: {
+          reason: payload.reason || null,
+          notes: payload.notes || null,
+          pharmacy_order_id: mutation.order?.id || null}},
+      ip_address: ipAddress}).catch(() => {});
+
+    const workflow = await mapScopedPharmacyOrderWorkflowRecord(mutation.order, scope);
+
+    publishPharmacyRealtimeUpdates({
+      workflow,
+      orderRecord: mutation.order,
+      actorUserId: userId || null,
+      action: 'CANCEL_ORDER_ITEM',
+      resourceType: 'order_item',
+      resourceId: mutation.orderItemId || null}).catch(() => {});
+
+    const orderSummary = await buildWorkbenchSummary(
+      await buildWorkbenchOrderWhere({}, scope, { includeSearch: false })
+    );
+
+    return {
+      workflow,
+      order_summary: orderSummary};
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 const returnDispense = async (identifier, payload = {}, userId, userRole, ipAddress, user = {}) => {
   try {
     const scope = resolveScopedUserContext(user);
@@ -2605,6 +2716,7 @@ module.exports = {
   prepareDispense,
   attestDispense,
   cancelPharmacyOrder,
+  cancelPharmacyOrderItem,
   returnDispense,
   getInventoryStock,
   adjustInventoryStock,

@@ -132,6 +132,19 @@ const cancelPharmacyOrder = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.pharmacy_workspace.cancel.success', data);
 });
 
+const cancelPharmacyOrderItem = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.cancelPharmacyOrderItem(
+    req.params.id,
+    req.params.itemId,
+    req.body,
+    req.user?.id,
+    req.user?.role,
+    req.ip,
+    req.user || {}
+  );
+  return sendSuccess(res, 200, 'messages.pharmacy_workspace.cancel_item.success', data);
+});
+
 const returnDispense = asyncHandler(async (req, res) => {
   const data = await pharmacyWorkspaceService.returnDispense(
     req.params.id,
@@ -385,6 +398,7 @@ module.exports = {
   prepareDispense,
   attestDispense,
   cancelPharmacyOrder,
+  cancelPharmacyOrderItem,
   returnDispense,
   recordOrderBilling,
   getInventoryStock,

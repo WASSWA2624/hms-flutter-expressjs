@@ -1304,6 +1304,21 @@ final class PharmacyWorkspaceController
     );
   }
 
+  Future<AppFailure?> cancelOrderItem({
+    required String itemId,
+    required String reason,
+    String? notes,
+  }) {
+    return _mutateSelected(
+      (PharmacyOrderWorkflow workflow) => _repository.cancelOrderItem(
+        orderId: workflow.order.id,
+        itemId: itemId,
+        reason: reason,
+        notes: notes,
+      ),
+    );
+  }
+
   Future<AppFailure?> returnDispense({
     required List<PharmacyReturnLineInput> items,
     String? reason,

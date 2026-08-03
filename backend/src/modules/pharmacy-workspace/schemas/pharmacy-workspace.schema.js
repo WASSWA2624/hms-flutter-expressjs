@@ -79,6 +79,14 @@ const cancelPharmacyOrderSchema = z.object({
   reason: z.string().trim().min(2).max(255),
   notes: z.string().trim().max(65535).optional().nullable()});
 
+const cancelPharmacyOrderItemParamsSchema = z.object({
+  id: uuidOrFriendlyIdentifierSchema,
+  itemId: uuidOrFriendlyIdentifierSchema});
+
+const cancelPharmacyOrderItemSchema = z.object({
+  reason: z.string().trim().min(2).max(255),
+  notes: z.string().trim().max(65535).optional().nullable()});
+
 const returnDispenseLineSchema = z.object({
   order_item_id: uuidOrFriendlyIdentifierSchema,
   quantity: z.coerce.number().int().positive(),
@@ -273,6 +281,8 @@ module.exports = {
   prepareDispenseSchema,
   attestDispenseSchema,
   cancelPharmacyOrderSchema,
+  cancelPharmacyOrderItemParamsSchema,
+  cancelPharmacyOrderItemSchema,
   returnPharmacyOrderSchema,
   getInventoryStockQuerySchema,
   adjustInventorySchema,

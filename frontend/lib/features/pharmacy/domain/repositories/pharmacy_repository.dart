@@ -75,6 +75,13 @@ abstract interface class PharmacyRepository {
     String? notes,
   });
 
+  Future<Result<PharmacyMutationResult>> cancelOrderItem({
+    required String orderId,
+    required String itemId,
+    required String reason,
+    String? notes,
+  });
+
   Future<Result<PharmacyMutationResult>> returnDispense({
     required String orderId,
     required List<PharmacyReturnLineInput> items,

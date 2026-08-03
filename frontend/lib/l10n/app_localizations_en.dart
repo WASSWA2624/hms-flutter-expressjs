@@ -11829,10 +11829,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyPaymentClearanceFieldLabel => 'Payment clearance';
 
   @override
-  String get pharmacyUsePharmacyPriceAction => 'Pharmacy price';
+  String get pharmacyUsePharmacyPriceAction => 'Use Pharmacy Price';
 
   @override
-  String get pharmacyUseFacilityPriceAction => 'Facility price';
+  String get pharmacyUseFacilityPriceAction => 'Use Facility Price';
+
+  @override
+  String get pharmacyDispenseAllAction => 'Dispense All';
+
+  @override
+  String get pharmacyCancelItemAction => 'Cancel';
+
+  @override
+  String get pharmacyCancelItemDialogTitle => 'Cancel medication';
+
+  @override
+  String get pharmacyCancelItemDialogBody =>
+      'This removes the medication from the active pharmacy workflow. Provide a reason to continue.';
+
+  @override
+  String get pharmacyPrintInstructionsOptionsTitle => 'Print instructions';
+
+  @override
+  String get pharmacyPrintHideZeroQuantityLabel => 'Hide zero-quantity items';
+
+  @override
+  String get pharmacyPrintHidePartialLabel => 'Hide partially dispensed items';
+
+  @override
+  String get pharmacyPrintIncludeHistoryLabel => 'Include dispense history';
+
+  @override
+  String get pharmacyPrintSelectMedicationsLabel => 'Medications to include';
+
+  @override
+  String get pharmacyPrintSelectHistoryLabel => 'History records to include';
+
+  @override
+  String get pharmacyPrintSelectAllHistoryLabel => 'Select all history';
+
+  @override
+  String get pharmacyPrintHistoryAction => 'Print History';
+
+  @override
+  String get pharmacyHistoryEventColumnLabel => 'Event';
+
+  @override
+  String get pharmacyHistoryWhenColumnLabel => 'When';
+
+  @override
+  String get pharmacyHistoryBatchColumnLabel => 'Batch';
+
+  @override
+  String get pharmacyDispenseHistoryEmptyTitle => 'No history yet';
+
+  @override
+  String get pharmacyDispenseHistoryEmptyBody =>
+      'Prepare, attest, dispense, and return events will appear here.';
 
   @override
   String get pharmacyMapStockAction => 'Map stock';

@@ -11,6 +11,8 @@ const {
   prepareDispenseSchema,
   attestDispenseSchema,
   cancelPharmacyOrderSchema,
+  cancelPharmacyOrderItemParamsSchema,
+  cancelPharmacyOrderItemSchema,
   returnPharmacyOrderSchema,
   recordOrderBillingSchema,
   getInventoryStockQuerySchema,
@@ -124,6 +126,16 @@ router.post(
   authenticate(),
   authorize(PHARMACY_WORKSPACE_WRITE_SCOPES, 'permission'),
   pharmacyWorkspaceController.cancelPharmacyOrder
+);
+
+router.post(
+  '/orders/:id/items/:itemId/cancel',
+  validateRequest({
+    params: cancelPharmacyOrderItemParamsSchema,
+    body: cancelPharmacyOrderItemSchema}),
+  authenticate(),
+  authorize(PHARMACY_WORKSPACE_WRITE_SCOPES, 'permission'),
+  pharmacyWorkspaceController.cancelPharmacyOrderItem
 );
 
 router.post(
