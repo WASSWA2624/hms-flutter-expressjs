@@ -186,7 +186,11 @@ const upsertFacilityPharmacyOffering = async (payload = {}, context = {}) => {
   });
 
   let defaultStorageShelfId = null;
-  if (payload.default_storage_shelf_id) {
+  const hasShelfField = Object.prototype.hasOwnProperty.call(
+    payload,
+    'default_storage_shelf_id'
+  );
+  if (hasShelfField && payload.default_storage_shelf_id) {
     defaultStorageShelfId = await resolveDefaultStorageShelfId(
       payload.default_storage_shelf_id,
       { tenant_id: tenantId, user_id: userId, facility_id: facilityId },
@@ -200,9 +204,18 @@ const upsertFacilityPharmacyOffering = async (payload = {}, context = {}) => {
     drug_id: drugId,
     is_active: payload.is_active !== false,
     sort_order: Number(payload.sort_order || 0),
-    unit_price: payload.unit_price,
-    currency: toOptionalText(payload.currency) || masterDrug.currency || null,
-    ...(defaultStorageShelfId ? { default_storage_shelf_id: defaultStorageShelfId } : {}),
+    unit_price:
+      payload.unit_price != null
+        ? payload.unit_price
+        : existing?.unit_price != null
+          ? existing.unit_price
+          : 0,
+    currency:
+      toOptionalText(payload.currency) ||
+      existing?.currency ||
+      masterDrug.currency ||
+      null,
+    ...(hasShelfField ? { default_storage_shelf_id: defaultStorageShelfId } : {}),
   };
 
   const offering = existing

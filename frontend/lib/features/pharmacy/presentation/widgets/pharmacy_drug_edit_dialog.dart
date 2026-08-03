@@ -1454,12 +1454,18 @@ class _PharmacyDrugEditDialogState
               _manufacturedAt != null ||
               _expiryDate != null ||
               _expiryAlertLeadDays != null;
+          final bool storageChanged =
+              _storageShelfId != widget.drug?.storageShelfId ||
+              _storageRoomId != widget.drug?.storageRoomId;
           // Prefer the pre-edit catalog drug — PUT /drugs often omits stock maps.
           final String? inventoryItemId =
               _resolveInventoryItemId(widget.drug!) ??
               _resolveInventoryItemId(updatedDrug!);
           if (inventoryItemId != null &&
-              (addQuantity > 0 || reorderChanged || hasBatchMeta)) {
+              (addQuantity > 0 ||
+                  reorderChanged ||
+                  hasBatchMeta ||
+                  storageChanged)) {
             final AppFailure? stockFailure = await controller
                 .adjustInventoryStock(
                   PharmacyInventoryAdjustInput(

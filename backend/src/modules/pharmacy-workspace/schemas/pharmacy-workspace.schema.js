@@ -126,8 +126,15 @@ const adjustInventorySchema = z
       data.manufactured_at != null ||
       data.expiry_date != null ||
       data.expiry_alert_lead_days != null;
+    const hasStorageChange =
+      data.storage_room_id != null || data.storage_shelf_id != null;
 
-    if (!hasQuantityChange && !hasReorderChange && !hasBatchMeta) {
+    if (
+      !hasQuantityChange &&
+      !hasReorderChange &&
+      !hasBatchMeta &&
+      !hasStorageChange
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'errors.validation.required',

@@ -392,8 +392,9 @@ const upsertDrugBatchForReceipt = async (
   if (!drugId) return null;
   const delta = Number(quantityDelta || 0);
   const hasDates = Boolean(manufacturedAt || expiryDate || expiryAlertLeadDays != null);
-  // Allow metadata-only upserts (MFD/ED without quantity or pack batch number).
-  if (delta <= 0 && !hasDates && resolvedBatchNumber === 'UNLABELED') {
+  const hasStorage = Boolean(storageRoomId || storageShelfId);
+  // Allow metadata-only upserts (MFD/ED/location without quantity or pack batch).
+  if (delta <= 0 && !hasDates && !hasStorage && resolvedBatchNumber === 'UNLABELED') {
     return null;
   }
   if (delta < 0) {
@@ -2126,7 +2127,10 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
         Boolean(manufacturedAt) ||
         Boolean(expiryDate) ||
         expiryAlertLeadDays != null;
-      if (hasBatchMeta) {
+      const hasStorageChange = Boolean(
+        storageAssignment.storageRoomId || storageAssignment.storageShelfId
+      );
+      if (hasBatchMeta || hasStorageChange) {
         let drugId = null;
         if (payload.drug_id) {
           drugId = await resolveModelIdOrThrow({

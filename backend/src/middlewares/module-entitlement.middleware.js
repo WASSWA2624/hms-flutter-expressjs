@@ -129,6 +129,7 @@ const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   'pharmacy-orders': 'pharmacy-dispensing',
   'pharmacy-order-items': 'pharmacy-dispensing',
   'dispense-logs': 'pharmacy-dispensing',
+  'facility-pharmacy-catalog': 'pharmacy-dispensing',
   inventory: 'inventory-procurement-lite',
   'inventory-items': 'inventory-procurement-lite',
   'inventory-stocks': 'inventory-procurement-lite',
