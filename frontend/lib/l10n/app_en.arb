@@ -15343,6 +15343,14 @@
   "@pharmacyDispenseQuantityColumnLabel": {
     "description": "Editable dispense quantity column in the dispense dialog table."
   },
+  "pharmacyDispensableQtyColumnLabel": "Dispensable qty",
+  "@pharmacyDispensableQtyColumnLabel": {
+    "description": "Remaining quantity available to dispense on a medication line."
+  },
+  "pharmacyDispensedQtyColumnLabel": "Dispensed qty",
+  "@pharmacyDispensedQtyColumnLabel": {
+    "description": "Quantity already dispensed for a medication line."
+  },
   "pharmacyAttestDialogTitle": "Attest dispense",
   "@pharmacyAttestDialogTitle": {
     "description": "Pharmacy attest dialog title."

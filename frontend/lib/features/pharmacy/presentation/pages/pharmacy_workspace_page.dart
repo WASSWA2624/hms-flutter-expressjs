@@ -2155,6 +2155,20 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
                   },
                 ),
                 AppListTableColumn<_LineEditState>(
+                  id: 'dispensable_qty',
+                  label: l10n.pharmacyDispensableQtyColumnLabel,
+                  cellBuilder: (BuildContext context, _LineEditState line) {
+                    return Text(_numberLabel(line.item.quantityRemaining));
+                  },
+                ),
+                AppListTableColumn<_LineEditState>(
+                  id: 'dispensed_qty',
+                  label: l10n.pharmacyDispensedQtyColumnLabel,
+                  cellBuilder: (BuildContext context, _LineEditState line) {
+                    return Text(_numberLabel(line.item.quantityDispensed));
+                  },
+                ),
+                AppListTableColumn<_LineEditState>(
                   id: 'dispense_quantity',
                   label: l10n.pharmacyDispenseQuantityColumnLabel,
                   alwaysVisible: true,
@@ -2203,7 +2217,14 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
                             : line.item.simplifiedDoseLine,
                       ].whereType<String>().where((String v) => v.trim().isNotEmpty).join(' · '),
                       meta: <AppListTableMobileMeta>[
-                        AppListTableMobileMeta(label: line.item.quantityLine),
+                        AppListTableMobileMeta(
+                          label:
+                              '${l10n.pharmacyDispensableQtyColumnLabel}: ${_numberLabel(line.item.quantityRemaining)}',
+                        ),
+                        AppListTableMobileMeta(
+                          label:
+                              '${l10n.pharmacyDispensedQtyColumnLabel}: ${_numberLabel(line.item.quantityDispensed)}',
+                        ),
                       ],
                       showAvatar: false,
                     ),

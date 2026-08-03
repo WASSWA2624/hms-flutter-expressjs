@@ -22174,6 +22174,18 @@ abstract class AppLocalizations {
   /// **'Dispense Quantity'**
   String get pharmacyDispenseQuantityColumnLabel;
 
+  /// Remaining quantity available to dispense on a medication line.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispensable qty'**
+  String get pharmacyDispensableQtyColumnLabel;
+
+  /// Quantity already dispensed for a medication line.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispensed qty'**
+  String get pharmacyDispensedQtyColumnLabel;
+
   /// Pharmacy attest dialog title.
   ///
   /// In en, this message translates to:
