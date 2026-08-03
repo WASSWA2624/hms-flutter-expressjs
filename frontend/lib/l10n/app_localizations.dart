@@ -22165,8 +22165,14 @@ abstract class AppLocalizations {
   /// Pharmacy dispense dialog title.
   ///
   /// In en, this message translates to:
-  /// **'Prepare dispense'**
+  /// **'Dispense'**
   String get pharmacyDispenseDialogTitle;
+
+  /// Editable dispense quantity column in the dispense dialog table.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispense Quantity'**
+  String get pharmacyDispenseQuantityColumnLabel;
 
   /// Pharmacy attest dialog title.
   ///

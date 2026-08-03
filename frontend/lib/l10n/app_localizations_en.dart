@@ -12006,7 +12006,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get pharmacyDispenseDialogTitle => 'Prepare dispense';
+  String get pharmacyDispenseDialogTitle => 'Dispense';
+
+  @override
+  String get pharmacyDispenseQuantityColumnLabel => 'Dispense Quantity';
 
   @override
   String get pharmacyAttestDialogTitle => 'Attest dispense';

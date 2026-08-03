@@ -1999,9 +1999,9 @@ class _DispenseDialog extends ConsumerStatefulWidget {
 
 class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _batchController;
-  late final TextEditingController _statementController;
-  late final TextEditingController _reasonController;
+  late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<_LineEditState>
+  _columnVisibilityController;
   late final List<_LineEditState> _lines;
   bool _isSaving = false;
   AppFailure? _failure;
@@ -2009,9 +2009,9 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
   @override
   void initState() {
     super.initState();
-    _batchController = TextEditingController();
-    _statementController = TextEditingController();
-    _reasonController = TextEditingController();
+    _searchController = TextEditingController();
+    _columnVisibilityController =
+        AppListTableColumnVisibilityController<_LineEditState>();
     final Set<String>? itemIds = widget.itemIds;
     final List<PharmacyOrderItem> sourceItems = widget.workflow.items.isEmpty
         ? widget.workflow.order.items
@@ -2034,9 +2034,7 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
 
   @override
   void dispose() {
-    _batchController.dispose();
-    _statementController.dispose();
-    _reasonController.dispose();
+    _searchController.dispose();
     for (final _LineEditState line in _lines) {
       line.dispose();
     }
@@ -2046,50 +2044,158 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final bool paymentBlocked =
+        widget.workflow.order.requiresPaymentBeforeDispense;
+
     return AppDialog(
       title: Text(l10n.pharmacyDispenseDialogTitle),
       icon: const Icon(Icons.medication_liquid_outlined),
-      initialMaximized: false,
       scrollable: true,
       pinActionsToBottom: true,
       content: AppFormShell(
         formKey: _formKey,
-        formStatus: appFormGuidanceAndFailureStatus(
-          context,
-          guidanceMessage: widget.workflow.order.requiresPaymentBeforeDispense
-              ? l10n.pharmacyDispenseBlockedPaymentBody
-              : l10n.pharmacyDispenseDialogBody,
-          failure: _failure,
-        ),
+        formStatus: paymentBlocked
+            ? appFormGuidanceAndFailureStatus(
+                context,
+                guidanceMessage: l10n.pharmacyDispenseBlockedPaymentBody,
+                failure: _failure,
+              )
+            : appFormFailureStatus(context, _failure),
         enabled: !_isSaving,
         children: <Widget>[
-          AppTextField(
-            controller: _batchController,
-            labelText: l10n.pharmacyBatchRefLabel,
-            enabled: !_isSaving,
-          ),
-          AppTextField(
-            controller: _statementController,
-            labelText: l10n.pharmacyStatementLabel,
-            enabled: !_isSaving,
-            maxLines: 3,
-          ),
-          AppTextField(
-            controller: _reasonController,
-            labelText: l10n.pharmacyReasonLabel,
-            enabled: !_isSaving,
-          ),
-          for (final _LineEditState line in _lines)
-            _LineEditTile(
-              line: line,
-              mode: _LineEditMode.dispense,
-              isSaving: _isSaving,
+          DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.colorScheme.outlineVariant),
             ),
+            child: AppListTable<_LineEditState>(
+              items: _lines,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              tableHorizontalMargin: theme.spacing.sm,
+              columnVisibilityController: _columnVisibilityController,
+              columnVisibilityStorageKey: 'pharmacy_dispense_dialog_lines',
+              columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+              columnVisibilityTitle: l10n.commonTableSettingsTitle,
+              itemKeyBuilder: (_LineEditState line) =>
+                  ValueKey<String>(line.item.id),
+              search: AppListTableSearch<_LineEditState>(
+                controller: _searchController,
+                semanticLabel: l10n.pharmacyMedicationColumnLabel,
+                hintText: l10n.pharmacySearchHint,
+                matcher: (_LineEditState line, String query) {
+                  final String haystack = <String?>[
+                    line.item.medicationLabel,
+                    line.item.simplifiedDoseLine,
+                    line.item.doseLine,
+                    line.item.quantityLine,
+                    line.item.drugCode,
+                  ].whereType<String>().join(' ').toLowerCase();
+                  return haystack.contains(query.trim().toLowerCase());
+                },
+                showAdvancedFilterButton: true,
+                advancedFilterButtonLabel: l10n.pharmacyQueueFilterLabel,
+                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                enableDateFilter: false,
+              ),
+              emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+                variant: AppStateViewVariant.empty,
+                title: l10n.pharmacyNoMedicationTitle,
+                body: l10n.pharmacyNoMedicationBody,
+                icon: Icons.medication_outlined,
+                minHeight: 160,
+              ),
+              columns: <AppListTableColumn<_LineEditState>>[
+                AppListTableColumn<_LineEditState>(
+                  id: 'row_number',
+                  label: l10n.pharmacyPrintRowNumberColumnLabel,
+                  cellBuilder: (BuildContext context, _LineEditState line) {
+                    final int index = _lines.indexOf(line);
+                    return Text('${index < 0 ? '—' : index + 1}');
+                  },
+                ),
+                AppListTableColumn<_LineEditState>(
+                  id: 'medicine_details',
+                  label: l10n.pharmacyMedicationColumnLabel,
+                  cellBuilder: (BuildContext context, _LineEditState line) {
+                    return Align(
+                      alignment: Alignment.topLeft,
+                      child: _DispenseMedicineDetailsCell(item: line.item),
+                    );
+                  },
+                ),
+                AppListTableColumn<_LineEditState>(
+                  id: 'dispense_quantity',
+                  label: l10n.pharmacyDispenseQuantityColumnLabel,
+                  alwaysVisible: true,
+                  cellBuilder: (BuildContext context, _LineEditState line) {
+                    return Align(
+                      alignment: Alignment.topLeft,
+                      child: SizedBox(
+                        width: 120,
+                        child: AppTextField(
+                          controller: line.quantityController,
+                          labelText: l10n.pharmacyDispenseQuantityColumnLabel,
+                          enabled: !_isSaving,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: _integerFormatters,
+                          validator: (String? value) {
+                            final int quantity =
+                                int.tryParse((value ?? '').trim()) ?? 0;
+                            if (quantity < 0 ||
+                                quantity > line.item.quantityRemaining) {
+                              return l10n.pharmacyQuantityValidationLabel(
+                                _wholeNumber(line.item.quantityRemaining),
+                              );
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+              mobileItemBuilder: (BuildContext context, _LineEditState line) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    AppListTableMobileItem(
+                      title: line.item.medicationLabel,
+                      caption: line.item.simplifiedDoseLine.isEmpty
+                          ? line.item.doseLine
+                          : line.item.simplifiedDoseLine,
+                      meta: <AppListTableMobileMeta>[
+                        AppListTableMobileMeta(label: line.item.quantityLine),
+                      ],
+                      showAvatar: false,
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(
+                        left: theme.spacing.sm,
+                        right: theme.spacing.sm,
+                        bottom: theme.spacing.sm,
+                      ),
+                      child: AppTextField(
+                        controller: line.quantityController,
+                        labelText: l10n.pharmacyDispenseQuantityColumnLabel,
+                        enabled: !_isSaving,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: _integerFormatters,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
         ],
       ),
       actions: _dialogActions(
         context,
-        l10n.pharmacyPrepareDispenseAction,
+        l10n.pharmacyDispenseAction,
         _isSaving,
         _submit,
       ),
@@ -2100,12 +2206,16 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
+    // Quantity 0 (default / unchanged) is treated as "do not dispense" for that line.
     final List<PharmacyDispenseLineInput> selected = _lines
-        .map((line) => line.toDispenseInput())
+        .map((_LineEditState line) => line.toDispenseInput())
         .whereType<PharmacyDispenseLineInput>()
         .toList(growable: false);
     if (selected.isEmpty) {
-      setState(() => _failure = AppFailure.validation());
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop(true);
       return;
     }
 
@@ -2115,12 +2225,7 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
     });
     final AppFailure? failure = await ref
         .read(pharmacyWorkspaceControllerProvider.notifier)
-        .prepareDispense(
-          items: selected,
-          dispenseBatchRef: _batchController.text.trim(),
-          statement: _statementController.text.trim(),
-          reason: _reasonController.text.trim(),
-        );
+        .prepareDispense(items: selected);
     _finishSubmit(failure);
   }
 
@@ -2136,6 +2241,55 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
       _failure = failure;
       _isSaving = false;
     });
+  }
+}
+
+class _DispenseMedicineDetailsCell extends StatelessWidget {
+  const _DispenseMedicineDetailsCell({required this.item});
+
+  final PharmacyOrderItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String dose = item.simplifiedDoseLine.isEmpty
+        ? item.doseLine
+        : item.simplifiedDoseLine;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          item.medicationLabel,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (dose.trim().isNotEmpty) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            dose,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        if (item.quantityLine.trim().isNotEmpty) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            item.quantityLine,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }
 
@@ -2801,9 +2955,7 @@ class _LineEditState {
   factory _LineEditState.forDispense(PharmacyOrderItem item) {
     return _LineEditState(
       item: item,
-      quantityController: TextEditingController(
-        text: _wholeNumber(item.quantityRemaining),
-      ),
+      quantityController: TextEditingController(text: '0'),
       inventoryItemId: item.defaultStockMapping?.inventoryItemId,
     );
   }

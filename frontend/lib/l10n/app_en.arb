@@ -15335,9 +15335,13 @@
       }
     }
   },
-  "pharmacyDispenseDialogTitle": "Prepare dispense",
+  "pharmacyDispenseDialogTitle": "Dispense",
   "@pharmacyDispenseDialogTitle": {
     "description": "Pharmacy dispense dialog title."
+  },
+  "pharmacyDispenseQuantityColumnLabel": "Dispense Quantity",
+  "@pharmacyDispenseQuantityColumnLabel": {
+    "description": "Editable dispense quantity column in the dispense dialog table."
   },
   "pharmacyAttestDialogTitle": "Attest dispense",
   "@pharmacyAttestDialogTitle": {
