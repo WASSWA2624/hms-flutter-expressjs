@@ -6,6 +6,9 @@
  * carrying default catalogs in runtime code.
  */
 
+const { assertLabCatalogIntegrity } = require('./catalog-validation');
+const { applyUgandaReferenceRanges } = require('./uganda-lab-reference-ranges');
+
 const unitOption = (unit, label = null, ucumCode = null, isDefault = true) => ({
   label,
   unit,
@@ -16,6 +19,7 @@ const unitOption = (unit, label = null, ucumCode = null, isDefault = true) => ({
 const referenceRange = ({
   label = null,
   unit = null,
+  method = null,
   gender = null,
   ageMin = null,
   ageMinUnit = null,
@@ -27,9 +31,13 @@ const referenceRange = ({
   criticalMax = null,
   referenceText = null,
   notes = null,
+  effectiveFrom = null,
+  effectiveTo = null,
+  version = 1,
 }) => ({
   label,
   unit,
+  method,
   gender,
   age_min_value: ageMin,
   age_min_unit: ageMinUnit,
@@ -41,6 +49,9 @@ const referenceRange = ({
   critical_max_value: criticalMax,
   reference_text: referenceText,
   notes,
+  effective_from: effectiveFrom,
+  effective_to: effectiveTo,
+  version,
 });
 
 const resultOption = ({
@@ -194,6 +205,16 @@ const positiveNegativeOptions = ({
 
   return options;
 };
+
+const reactiveNonReactiveOptions = () =>
+  positiveNegativeOptions({
+    positiveValue: 'REACTIVE',
+    positiveLabel: 'Reactive',
+    positiveAliases: ['POSITIVE'],
+    negativeValue: 'NON_REACTIVE',
+    negativeLabel: 'Non-reactive',
+    negativeAliases: ['NEGATIVE'],
+  });
 
 const semiQuantitativeOptions = () => [
   resultOption({
@@ -516,6 +537,146 @@ const HEMATOLOGY_TESTS = [
     ],
   }),
   numericTest({
+    key: 'neutrophil_percent',
+    name: 'Neutrophils',
+    code: 'NEUT-PCT',
+    category: 'Hematology',
+    specimenType: 'Whole blood',
+    description: 'Neutrophil proportion in the automated or manual white-cell differential.',
+    referenceRange: 'Age-specific structured interval',
+    unit: '%',
+  }),
+  numericTest({
+    key: 'lymphocyte_count',
+    name: 'Absolute Lymphocyte Count',
+    code: 'LYMPH-ABS',
+    category: 'Hematology',
+    specimenType: 'Whole blood',
+    description: 'Absolute lymphocyte count in the white-cell differential.',
+    referenceRange: 'Age-specific Ugandan structured interval',
+    unit: 'x10^9/L',
+  }),
+  numericTest({
+    key: 'lymphocyte_percent',
+    name: 'Lymphocytes',
+    code: 'LYMPH-PCT',
+    category: 'Hematology',
+    specimenType: 'Whole blood',
+    description: 'Lymphocyte proportion in the automated or manual white-cell differential.',
+    referenceRange: 'Age-specific structured interval',
+    unit: '%',
+  }),
+  numericTest({
+    key: 'monocyte_count',
+    name: 'Absolute Monocyte Count',
+    code: 'MONO-ABS',
+    category: 'Hematology',
+    specimenType: 'Whole blood',
+    description: 'Absolute monocyte count in the white-cell differential.',
+    referenceRange: 'Age-specific Ugandan structured interval',
+    unit: 'x10^9/L',
+  }),
+  numericTest({
+    key: 'monocyte_percent',
+    name: 'Monocytes',
+    code: 'MONO-PCT',
+    category: 'Hematology',
+    specimenType: 'Whole blood',
+    description: 'Monocyte proportion in the automated or manual white-cell differential.',
+    referenceRange: 'Age-specific structured interval',
+    unit: '%',
+  }),
+  numericTest({
+    key: 'eosinophil_count',
+    name: 'Absolute Eosinophil Count',
+    code: 'EOS-ABS',
+    category: 'Hematology',
+    specimenType: 'Whole blood',
+    description: 'Absolute eosinophil count in the white-cell differential.',
+    referenceRange: 'Age-specific Ugandan structured interval',
+    unit: 'x10^9/L',
+  }),
+  numericTest({
+    key: 'eosinophil_percent',
+    name: 'Eosinophils',
+    code: 'EOS-PCT',
+    category: 'Hematology',
+    specimenType: 'Whole blood',
+    description: 'Eosinophil proportion in the automated or manual white-cell differential.',
+    referenceRange: 'Age-specific structured interval',
+    unit: '%',
+  }),
+  numericTest({
+    key: 'basophil_count',
+    name: 'Absolute Basophil Count',
+    code: 'BASO-ABS',
+    category: 'Hematology',
+    specimenType: 'Whole blood',
+    description: 'Absolute basophil count in the white-cell differential.',
+    referenceRange: 'Age-specific Ugandan structured interval',
+    unit: 'x10^9/L',
+  }),
+  numericTest({
+    key: 'basophil_percent',
+    name: 'Basophils',
+    code: 'BASO-PCT',
+    category: 'Hematology',
+    specimenType: 'Whole blood',
+    description: 'Basophil proportion in the automated or manual white-cell differential.',
+    referenceRange: 'Age-specific structured interval',
+    unit: '%',
+  }),
+  numericTest({
+    key: 'mean_platelet_volume',
+    name: 'Mean Platelet Volume',
+    code: 'MPV',
+    category: 'Hematology',
+    specimenType: 'Whole blood',
+    description: 'Average platelet volume reported by compatible haematology analysers.',
+    referenceRange: 'Age- and analyser-specific structured interval',
+    unit: 'fL',
+  }),
+  numericTest({
+    key: 'cd8_absolute',
+    name: 'CD8 Absolute Count',
+    code: 'CD8-ABS',
+    category: 'Immunology',
+    specimenType: 'Whole blood',
+    description: 'Absolute CD8 T-lymphocyte count by flow cytometry.',
+    referenceRange: 'Age- and sex-specific Ugandan structured interval',
+    unit: 'cells/µL',
+  }),
+  numericTest({
+    key: 'cd4_percent',
+    name: 'CD4 Percentage',
+    code: 'CD4-PCT',
+    category: 'Immunology',
+    specimenType: 'Whole blood',
+    description: 'CD4 T lymphocytes as a percentage of lymphocytes by flow cytometry.',
+    referenceRange: 'Age- and sex-specific Ugandan structured interval',
+    unit: '%',
+  }),
+  numericTest({
+    key: 'cd8_percent',
+    name: 'CD8 Percentage',
+    code: 'CD8-PCT',
+    category: 'Immunology',
+    specimenType: 'Whole blood',
+    description: 'CD8 T lymphocytes as a percentage of lymphocytes by flow cytometry.',
+    referenceRange: 'Age- and sex-specific Ugandan structured interval',
+    unit: '%',
+  }),
+  numericTest({
+    key: 'cd4_cd8_ratio',
+    name: 'CD4/CD8 Ratio',
+    code: 'CD4-CD8',
+    category: 'Immunology',
+    specimenType: 'Whole blood',
+    description: 'Ratio of CD4 to CD8 T lymphocytes by flow cytometry.',
+    referenceRange: 'Age- and sex-specific Ugandan structured interval',
+    unit: 'ratio',
+  }),
+  numericTest({
     key: 'reticulocyte_count',
     name: 'Reticulocyte Count',
     code: 'RETIC',
@@ -748,11 +909,11 @@ const CHEMISTRY_TESTS = [
   }),
   numericTest({
     key: 'bun',
-    name: 'Urea / BUN',
+    name: 'Blood Urea Nitrogen',
     code: 'BUN',
     category: 'Chemistry',
     specimenType: 'Serum / Plasma',
-    description: 'Nitrogenous waste marker for renal function.',
+    description: 'Blood urea nitrogen for renal and hydration assessment; not interchangeable with urea without conversion.',
     referenceRange: 'Adult 7 - 20 mg/dL',
     unit: 'mg/dL',
     referenceRanges: [
@@ -1532,6 +1693,184 @@ const QUALITATIVE_AND_TEXT_TESTS = [
 
 
 const ADDITIONAL_UGANDA_LAB_TESTS = [
+  numericTest({
+    key: 'urea',
+    name: 'Urea',
+    code: 'UREA',
+    category: 'Chemistry',
+    specimenType: 'Serum / Plasma',
+    description: 'Serum or plasma urea concentration for renal function and hydration assessment.',
+    unit: 'mmol/L',
+    referenceRange: 'Age-specific structured interval',
+    referenceRanges: [
+      referenceRange({
+        label: 'Adult',
+        unit: 'mmol/L',
+        ageMin: 18,
+        ageMinUnit: 'YEAR',
+        normalMin: 2.5,
+        normalMax: 7.8,
+        notes: 'UG_MOH_LAB_MENU_2017; verify the local urease method and population interval',
+      }),
+    ],
+  }),
+  numericTest({
+    key: 'fibrinogen',
+    name: 'Fibrinogen',
+    code: 'FIB',
+    category: 'Coagulation',
+    specimenType: 'Citrated plasma',
+    description: 'Functional fibrinogen, preferably by a validated Clauss assay.',
+    unit: 'g/L',
+    referenceRange: 'Method- and age-specific; verify locally',
+    referenceRanges: [
+      referenceRange({
+        label: 'Adult Clauss method',
+        unit: 'g/L',
+        ageMin: 18,
+        ageMinUnit: 'YEAR',
+        normalMin: 2,
+        normalMax: 4,
+        method: 'Clauss',
+        notes: 'UG_MOH_LAB_MENU_2017; reagent-specific interval requires local verification',
+      }),
+    ],
+  }),
+  numericTest({
+    key: 'thrombin_time',
+    name: 'Thrombin Time',
+    code: 'TT',
+    category: 'Coagulation',
+    specimenType: 'Citrated plasma',
+    description: 'Thrombin time for fibrin formation; interpretation is reagent and analyser specific.',
+    unit: 'seconds',
+    referenceRange: 'Use reagent-specific locally verified interval',
+    referenceRanges: [
+      referenceRange({
+        label: 'Method-specific',
+        unit: 'seconds',
+        referenceText: 'Use the locally verified reagent and analyser interval',
+        notes: 'UG_MOH_LAB_MENU_2017; do not apply a universal numerical interval',
+      }),
+    ],
+  }),
+  textTest({
+    key: 'bleeding_clotting_time',
+    name: 'Bleeding and Clotting Time',
+    code: 'BCT',
+    category: 'Coagulation',
+    specimenType: 'Whole blood',
+    description: 'Legacy whole-blood assessment in the Uganda test menu; prefer validated PT/APTT and platelet testing when available.',
+    referenceRange: 'Report method, collection site, times, and local method interval',
+  }),
+  textTest({
+    key: 'semen_analysis',
+    name: 'Semen Analysis',
+    code: 'SEMEN',
+    category: 'Reproductive Health',
+    specimenType: 'Semen',
+    description: 'Macroscopic and microscopic semen assessment; report abstinence period, timing, volume, concentration, motility, and morphology.',
+    referenceRange: 'Interpret using the current WHO semen examination manual and local method',
+  }),
+  qualitativeTest({
+    key: 'filaria_microscopy',
+    name: 'Filaria Microscopy',
+    code: 'FILARIA-MIC',
+    category: 'Parasitology',
+    specimenType: 'Blood',
+    description: 'Timed blood-film microscopy for microfilariae with species and density reported when detected.',
+    resultOptions: positiveNegativeOptions(),
+  }),
+  qualitativeTest({
+    key: 'trypanosoma_microscopy',
+    name: 'Trypanosoma Microscopy',
+    code: 'TRYP-MIC',
+    category: 'Parasitology',
+    specimenType: 'Blood / Lymph node aspirate / CSF',
+    description: 'Microscopy for trypanosomes using the specimen and concentration method appropriate to disease stage.',
+    resultOptions: positiveNegativeOptions(),
+  }),
+  qualitativeTest({
+    key: 'leishmania_microscopy',
+    name: 'Leishmania Microscopy',
+    code: 'LEISH-MIC',
+    category: 'Parasitology',
+    specimenType: 'Tissue aspirate / Smear',
+    description: 'Microscopy for Leishmania amastigotes in an appropriate clinical specimen.',
+    resultOptions: positiveNegativeOptions(),
+  }),
+  qualitativeTest({
+    key: 'skin_snip_onchocerca',
+    name: 'Skin Snip for Onchocerca',
+    code: 'ONCHO-SNIP',
+    category: 'Parasitology',
+    specimenType: 'Skin snip',
+    description: 'Microscopic examination of skin snips for Onchocerca volvulus microfilariae.',
+    resultOptions: positiveNegativeOptions(),
+  }),
+  qualitativeTest({
+    key: 'hepatitis_a_igm',
+    name: 'Hepatitis A IgM Antibody',
+    code: 'HAV-IGM',
+    category: 'Serology',
+    specimenType: 'Serum / Plasma',
+    description: 'IgM antibody test supporting diagnosis of recent hepatitis A infection.',
+    resultOptions: reactiveNonReactiveOptions(),
+  }),
+  qualitativeTest({
+    key: 'hepatitis_b_e_antigen',
+    name: 'Hepatitis B e Antigen',
+    code: 'HBEAG',
+    category: 'Serology',
+    specimenType: 'Serum / Plasma',
+    description: 'HBeAg marker used with the full hepatitis B profile and HBV DNA.',
+    resultOptions: reactiveNonReactiveOptions(),
+  }),
+  qualitativeTest({
+    key: 'hepatitis_b_core_total_antibody',
+    name: 'Hepatitis B Core Total Antibody',
+    code: 'ANTI-HBC-T',
+    category: 'Serology',
+    specimenType: 'Serum / Plasma',
+    description: 'Total anti-HBc marker interpreted with HBsAg, anti-HBs, IgM anti-HBc, and clinical context.',
+    resultOptions: reactiveNonReactiveOptions(),
+  }),
+  qualitativeTest({
+    key: 'treponema_pallidum_antibody',
+    name: 'Treponema pallidum Antibody',
+    code: 'TP-AB',
+    category: 'Serology',
+    specimenType: 'Serum / Plasma',
+    description: 'Treponemal antibody test used with a non-treponemal test and treatment history in syphilis diagnosis.',
+    resultOptions: reactiveNonReactiveOptions(),
+  }),
+  qualitativeTest({
+    key: 'h_pylori_igg',
+    name: 'Helicobacter pylori IgG Antibody',
+    code: 'HP-IGG',
+    category: 'Serology',
+    specimenType: 'Serum / Plasma',
+    description: 'H. pylori exposure antibody; a positive result does not by itself establish active infection or eradication.',
+    resultOptions: positiveNegativeOptions(),
+  }),
+  numericTest({
+    key: 'hbv_viral_load',
+    name: 'Hepatitis B Viral Load',
+    code: 'HBV-VL',
+    category: 'Molecular',
+    specimenType: 'Plasma',
+    description: 'Quantitative HBV DNA by a validated nucleic-acid amplification method.',
+    unit: 'IU/mL',
+    referenceRange: 'Target not detected; interpret quantitatively with treatment and disease-stage guidance',
+    referenceRanges: [
+      referenceRange({
+        label: 'Interpretive',
+        unit: 'IU/mL',
+        referenceText: 'Target not detected; report assay lower limit and interpret detected values clinically',
+        notes: 'UG_MOH_LAB_MENU_2017; assay-specific measuring range and thresholds apply',
+      }),
+    ],
+  }),
   qualitativeTest({
     key: 'blood_group_abo_rh',
     name: 'ABO/Rh Blood Group',
@@ -2170,7 +2509,7 @@ const LAB_TEST_CATALOG = Object.freeze([
   ...BLOOD_GAS_AND_URINALYSIS_TESTS,
   ...QUALITATIVE_AND_TEXT_TESTS,
   ...ADDITIONAL_UGANDA_LAB_TESTS,
-]);
+].map(applyUgandaReferenceRanges));
 
 const BASE_LAB_PANEL_CATALOG = [
   {
@@ -2329,6 +2668,8 @@ const BASE_LAB_PANEL_CATALOG = [
 ];
 
 const ADDITIONAL_UGANDA_LAB_PANELS = [
+  { key: 'complete_blood_count_with_differential', name: 'Complete Blood Count with Differential', code: 'CBC-DIFF', category: 'Hematology', description: 'CBC with absolute and percentage five-part white-cell differential.', test_keys: ['hemoglobin', 'hematocrit', 'red_blood_cell_count', 'white_blood_cell_count', 'platelet_count', 'mcv', 'mch', 'mchc', 'rdw', 'anc', 'neutrophil_percent', 'lymphocyte_count', 'lymphocyte_percent', 'monocyte_count', 'monocyte_percent', 'eosinophil_count', 'eosinophil_percent', 'basophil_count', 'basophil_percent', 'mean_platelet_volume'] },
+  { key: 'lymphocyte_subset_panel', name: 'CD4/CD8 Lymphocyte Subset Panel', code: 'CD4-CD8-PNL', category: 'Immunology', description: 'Flow-cytometry lymphocyte subset profile with age- and sex-specific interpretation.', test_keys: ['cd4_count', 'cd8_absolute', 'cd4_percent', 'cd8_percent', 'cd4_cd8_ratio'] },
   { key: 'antenatal_first_visit_panel', name: 'Antenatal First Visit Panel', code: 'ANC1', category: 'Antenatal', description: 'Initial antenatal laboratory screen for common maternal risks.', test_keys: ['hemoglobin', 'blood_group_abo_rh', 'hiv_rapid', 'hbsag', 'rpr_syphilis', 'malaria_antigen', 'urine_protein', 'urine_glucose'] },
   { key: 'antenatal_booking_infectious_screen', name: 'Antenatal Infectious Screen', code: 'ANCINF', category: 'Antenatal', description: 'Infectious disease bundle used during antenatal booking.', test_keys: ['hiv_rapid', 'hbsag', 'rpr_syphilis', 'malaria_antigen', 'urine_nitrite', 'urine_leukocyte_esterase'] },
   { key: 'antenatal_anemia_screen', name: 'Antenatal Anemia Screen', code: 'ANCANEM', category: 'Antenatal', description: 'Anemia and blood group assessment for pregnancy care.', test_keys: ['hemoglobin', 'hematocrit', 'mcv', 'mch', 'ferritin', 'serum_iron', 'blood_group_abo_rh'] },
@@ -2394,8 +2735,7 @@ const ADDITIONAL_UGANDA_LAB_PANELS = [
   { key: 'meningitis_initial_panel', name: 'Meningitis Initial Panel', code: 'MENING', category: 'Emergency', description: 'CSF and systemic markers for suspected meningitis pathways.', test_keys: ['csf_wbc', 'csf_protein', 'csf_glucose', 'csf_gram_stain', 'white_blood_cell_count', 'crp', 'glucose', 'cryptococcal_antigen'] },
   { key: 'csf_analysis_panel', name: 'CSF Analysis Panel', code: 'CSF', category: 'CSF', description: 'Core cerebrospinal fluid analysis bundle.', test_keys: ['csf_wbc', 'csf_protein', 'csf_glucose', 'csf_gram_stain'] },
   { key: 'respiratory_infection_panel', name: 'Respiratory Infection Panel', code: 'RESPINF', category: 'Respiratory', description: 'Respiratory infection and inflammation screen.', test_keys: ['white_blood_cell_count', 'crp', 'covid_antigen', 'influenza_ab_antigen', 'procalcitonin'] },
-  { key: 'covid_influenza_panel', name: 'COVID-19 / Influenza Panel', code: 'COVFLU', category: 'Respiratory', description: 'Rapid respiratory virus testing bundle.', test_keys: ['covid_antigen', 'influenza_ab_antigen'] },
-  { key: 'sti_expanded_panel', name: 'Expanded STI Screen', code: 'STIEX', category: 'Serology', description: 'Expanded sexually transmitted infection screen.', test_keys: ['hiv_rapid', 'rpr_syphilis', 'vdrl', 'hbsag', 'hcv_antibody', 'wet_mount_vaginal'] },
+  { key: 'sti_expanded_panel', name: 'Expanded STI Screen', code: 'STIEX', category: 'Serology', description: 'Expanded sexually transmitted infection screen.', test_keys: ['hiv_rapid', 'rpr_syphilis', 'treponema_pallidum_antibody', 'hbsag', 'hcv_antibody', 'wet_mount_vaginal'] },
   { key: 'cervical_cancer_screen_panel', name: 'Cervical Cancer Screen Panel', code: 'CXSCR', category: 'Reproductive Health', description: 'MoH cervical cancer screening laboratory support bundle.', test_keys: ['pap_smear', 'hpv_dna', 'hiv_rapid'] },
   { key: 'vaginitis_screen_panel', name: 'Vaginitis Screen Panel', code: 'VAGSCR', category: 'Reproductive Health', description: 'Clinic microscopy bundle for vaginal discharge syndromes.', test_keys: ['wet_mount_vaginal', 'pregnancy_urine_hcg'] },
   { key: 'renal_electrolyte_critical_panel', name: 'Critical Renal Electrolyte Panel', code: 'CRENLYT', category: 'Critical Care', description: 'Focused electrolytes and kidney function panel for acute care.', test_keys: ['sodium', 'potassium', 'chloride', 'bicarbonate', 'creatinine', 'bun', 'calcium_total', 'magnesium'] },
@@ -2405,7 +2745,6 @@ const ADDITIONAL_UGANDA_LAB_PANELS = [
   { key: 'chronic_liver_disease_panel', name: 'Chronic Liver Disease Panel', code: 'CLD', category: 'Liver', description: 'Synthetic and injury markers for chronic liver disease.', test_keys: ['ast', 'alt', 'alp', 'ggt', 'bilirubin_total', 'albumin', 'total_protein', 'pt', 'inr'] },
   { key: 'lipid_cardio_risk_panel', name: 'Lipid Cardio Risk Panel', code: 'LIPRISK', category: 'Cardiovascular', description: 'Lipid and glycemic risk profile for cardiovascular prevention.', test_keys: ['cholesterol_total', 'hdl_cholesterol', 'ldl_cholesterol', 'triglycerides', 'glucose', 'hba1c'] },
   { key: 'endocrine_basic_panel', name: 'Basic Endocrine Panel', code: 'ENDOBASE', category: 'Endocrine', description: 'Basic endocrine screen for diabetes and thyroid review.', test_keys: ['glucose', 'hba1c', 'tsh', 'free_t4'] },
-  { key: 'thyroid_followup_panel', name: 'Thyroid Follow-Up Panel', code: 'THYFU', category: 'Endocrine', description: 'Focused thyroid disease follow-up bundle.', test_keys: ['tsh', 'free_t4'] },
   { key: 'arthritis_autoimmune_screen', name: 'Arthritis Autoimmune Screen', code: 'ARTHAI', category: 'Immunology', description: 'Inflammatory arthritis and autoimmune screen.', test_keys: ['esr', 'crp', 'rheumatoid_factor'] },
   { key: 'prostate_screen_panel', name: 'Prostate Screen Panel', code: 'PROSCR', category: 'Oncology', description: 'Adult male prostate assessment support panel.', test_keys: ['psa', 'creatinine', 'urine_nitrite', 'urine_leukocyte_esterase'] },
   { key: 'malnutrition_micronutrient_panel', name: 'Malnutrition Micronutrient Panel', code: 'MICRONUT', category: 'Nutrition', description: 'Nutrition and micronutrient support panel.', test_keys: ['albumin', 'total_protein', 'ferritin', 'serum_iron', 'vitamin_b12', 'folate', 'magnesium', 'phosphate'] },
@@ -2421,6 +2760,11 @@ const LAB_PANEL_CATALOG = Object.freeze([
   ...BASE_LAB_PANEL_CATALOG,
   ...ADDITIONAL_UGANDA_LAB_PANELS,
 ]);
+
+assertLabCatalogIntegrity({
+  tests: LAB_TEST_CATALOG,
+  panels: LAB_PANEL_CATALOG,
+});
 
 module.exports = {
   LAB_PANEL_CATALOG,

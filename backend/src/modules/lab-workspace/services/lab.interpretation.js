@@ -19,17 +19,6 @@ const toNumberOrNull = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const ageUnitToDays = (value, unit) => {
-  const numericValue = Number.parseInt(String(value || ''), 10);
-  if (!Number.isFinite(numericValue)) return null;
-  const normalizedUnit = normalizeToken(unit);
-  if (normalizedUnit === 'DAY') return numericValue;
-  if (normalizedUnit === 'WEEK') return numericValue * 7;
-  if (normalizedUnit === 'MONTH') return numericValue * 30;
-  if (normalizedUnit === 'YEAR') return numericValue * 365;
-  return null;
-};
-
 const resolvePatientAgeInDays = (patient = {}, now = new Date()) => {
   const dobValue = patient?.date_of_birth;
   if (!dobValue) return null;
@@ -41,6 +30,36 @@ const resolvePatientAgeInDays = (patient = {}, now = new Date()) => {
     0,
     Math.floor((referenceDate.getTime() - parsedDob.getTime()) / (24 * 60 * 60 * 1000))
   );
+};
+
+const resolvePatientAgeInUnit = (patient = {}, unit, now = new Date()) => {
+  const ageInDays = resolvePatientAgeInDays(patient, now);
+  if (ageInDays == null) return null;
+
+  const normalizedUnit = normalizeToken(unit);
+  if (normalizedUnit === 'DAY') return ageInDays;
+  if (normalizedUnit === 'WEEK') return Math.floor(ageInDays / 7);
+
+  const dobValue = patient?.date_of_birth;
+  const parsedDob = dobValue instanceof Date ? dobValue : new Date(dobValue);
+  const referenceDate = now instanceof Date ? now : new Date(now);
+  if (Number.isNaN(parsedDob.getTime()) || Number.isNaN(referenceDate.getTime())) {
+    return null;
+  }
+
+  let completedMonths =
+    (referenceDate.getUTCFullYear() - parsedDob.getUTCFullYear()) * 12
+    + referenceDate.getUTCMonth()
+    - parsedDob.getUTCMonth();
+  const monthAnniversary = new Date(parsedDob.getTime());
+  monthAnniversary.setUTCFullYear(referenceDate.getUTCFullYear());
+  monthAnniversary.setUTCMonth(referenceDate.getUTCMonth());
+  if (referenceDate < monthAnniversary) completedMonths -= 1;
+  completedMonths = Math.max(0, completedMonths);
+
+  if (normalizedUnit === 'MONTH') return completedMonths;
+  if (normalizedUnit === 'YEAR') return Math.floor(completedMonths / 12);
+  return null;
 };
 
 const resolveDefaultUnit = (test = {}) => {
@@ -186,14 +205,17 @@ const matchesReferenceRange = (
     return false;
   }
 
-  const patientAgeDays = resolvePatientAgeInDays(patient, at);
-  const minAgeDays = ageUnitToDays(range?.age_min_value, range?.age_min_unit);
-  const maxAgeDays = ageUnitToDays(range?.age_max_value, range?.age_max_unit);
-  if (patientAgeDays != null) {
-    if (minAgeDays != null && patientAgeDays < minAgeDays) return false;
-    if (maxAgeDays != null && patientAgeDays > maxAgeDays) return false;
-  } else if (minAgeDays != null || maxAgeDays != null) {
-    return false;
+  if (range?.age_min_value != null) {
+    const patientMinimumAge = resolvePatientAgeInUnit(patient, range.age_min_unit, at);
+    if (patientMinimumAge == null || patientMinimumAge < Number(range.age_min_value)) {
+      return false;
+    }
+  }
+  if (range?.age_max_value != null) {
+    const patientMaximumAge = resolvePatientAgeInUnit(patient, range.age_max_unit, at);
+    if (patientMaximumAge == null || patientMaximumAge > Number(range.age_max_value)) {
+      return false;
+    }
   }
 
   return true;
@@ -348,4 +370,5 @@ module.exports = {
   matchesReferenceRange,
   resolveDefaultUnit,
   resolvePatientAgeInDays,
+  resolvePatientAgeInUnit,
   selectReferenceRange};

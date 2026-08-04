@@ -7,11 +7,17 @@
  * ImagingModality enum supports them on radiology_procedure records.
  */
 
+const { assertUniqueFields } = require('./catalog-validation');
+const { UGANDA_CLINICAL_SOURCES } = require('./uganda-clinical-sources');
+
+const IMAGING_SOURCE = `${UGANDA_CLINICAL_SOURCES.UG_MOH_UCG_2023.id}+${UGANDA_CLINICAL_SOURCES.WHO_DIAGNOSTIC_IMAGING.id}`;
+
 const radiologyTest = (key, name, code, modality) => ({
   key,
   name,
   code,
   modality,
+  source: IMAGING_SOURCE,
 });
 
 const XRAY_TESTS = [
@@ -46,6 +52,9 @@ const XRAY_TESTS = [
   radiologyTest('xray_mandible', 'Mandible X-Ray', 'XR-MANDIBLE', 'XRAY'),
   radiologyTest('xray_opg', 'Orthopantomogram (OPG)', 'XR-OPG', 'XRAY'),
   radiologyTest('xray_babygram', 'Babygram X-Ray', 'XR-BABYGRAM', 'XRAY'),
+  radiologyTest('xray_bone_age', 'Bone Age X-Ray of Left Hand and Wrist', 'XR-BONE-AGE', 'XRAY'),
+  radiologyTest('xray_skeletal_survey', 'Skeletal Survey X-Ray', 'XR-SKEL-SURV', 'XRAY'),
+  radiologyTest('xray_shunt_series', 'Ventriculoperitoneal Shunt Series X-Ray', 'XR-VP-SHUNT', 'XRAY'),
 ];
 
 const FLUOROSCOPY_TESTS = [
@@ -55,6 +64,9 @@ const FLUOROSCOPY_TESTS = [
   radiologyTest('fluoro_hysterosalpingogram', 'Hysterosalpingogram', 'FL-HSG', 'FLUOROSCOPY'),
   radiologyTest('fluoro_micturating_cystourethrogram', 'Micturating Cystourethrogram', 'FL-MCU', 'FLUOROSCOPY'),
   radiologyTest('fluoro_intravenous_urogram', 'Intravenous Urogram', 'FL-IVU', 'FLUOROSCOPY'),
+  radiologyTest('fluoro_retrograde_urethrogram', 'Retrograde Urethrogram', 'FL-RUG', 'FLUOROSCOPY'),
+  radiologyTest('fluoro_small_bowel_follow_through', 'Small Bowel Follow Through', 'FL-SBFT', 'FLUOROSCOPY'),
+  radiologyTest('fluoro_fistulogram', 'Fistulogram / Sinogram', 'FL-FIST', 'FLUOROSCOPY'),
 ];
 
 const ULTRASOUND_TESTS = [
@@ -83,6 +95,14 @@ const ULTRASOUND_TESTS = [
   radiologyTest('uss_dvt_doppler', 'Lower Limb Venous Doppler', 'USS-DOPPLER-DVT', 'ULTRASOUND'),
   radiologyTest('uss_arterial_doppler_lower_limb', 'Lower Limb Arterial Doppler', 'USS-ART-DOP', 'ULTRASOUND'),
   radiologyTest('uss_carotid_doppler', 'Carotid Doppler Ultrasound', 'USS-CAROTID', 'ULTRASOUND'),
+  radiologyTest('uss_neonatal_cranial', 'Neonatal Cranial Ultrasound', 'USS-CRANIAL-NEO', 'ULTRASOUND'),
+  radiologyTest('uss_pediatric_hip', 'Pediatric Hip Ultrasound', 'USS-HIP-PED', 'ULTRASOUND'),
+  radiologyTest('uss_appendix', 'Appendix Ultrasound', 'USS-APPENDIX', 'ULTRASOUND'),
+  radiologyTest('uss_pylorus', 'Pyloric Stenosis Ultrasound', 'USS-PYLORUS', 'ULTRASOUND'),
+  radiologyTest('uss_intussusception', 'Intussusception Ultrasound', 'USS-INTUSS', 'ULTRASOUND'),
+  radiologyTest('uss_pleural', 'Pleural Ultrasound', 'USS-PLEURAL', 'ULTRASOUND'),
+  radiologyTest('uss_upper_limb_venous_doppler', 'Upper Limb Venous Doppler', 'USS-DOPPLER-ULV', 'ULTRASOUND'),
+  radiologyTest('uss_renal_artery_doppler', 'Renal Artery Doppler Ultrasound', 'USS-RENAL-ART', 'ULTRASOUND'),
 ];
 
 const CT_TESTS = [
@@ -103,6 +123,11 @@ const CT_TESTS = [
   radiologyTest('ct_temporal_bones', 'CT Temporal Bones', 'CT-TBONE', 'CT'),
   radiologyTest('ct_angiography_head_neck', 'CT Angiography Head and Neck', 'CT-CTA-HN', 'CT'),
   radiologyTest('ct_angiography_lower_limb', 'CT Angiography Lower Limb', 'CT-CTA-LL', 'CT'),
+  radiologyTest('ct_maxillofacial', 'CT Maxillofacial', 'CT-MAXFACE', 'CT'),
+  radiologyTest('ct_neck_contrast', 'CT Neck with Contrast', 'CT-NECK-C', 'CT'),
+  radiologyTest('ct_aortic_angiogram', 'CT Aortic Angiogram', 'CT-CTA-AORTA', 'CT'),
+  radiologyTest('ct_triphasic_liver', 'CT Liver Triphasic Protocol', 'CT-LIVER-3PH', 'CT'),
+  radiologyTest('ct_extremity', 'CT Extremity', 'CT-EXTREMITY', 'CT'),
 ];
 
 const MRI_TESTS = [
@@ -118,6 +143,18 @@ const MRI_TESTS = [
   radiologyTest('mri_shoulder', 'MRI Shoulder', 'MRI-SHOULDER', 'MRI'),
   radiologyTest('mri_ankle', 'MRI Ankle', 'MRI-ANKLE', 'MRI'),
   radiologyTest('mri_wrist', 'MRI Wrist', 'MRI-WRIST', 'MRI'),
+  radiologyTest('mri_pituitary', 'MRI Pituitary with Contrast', 'MRI-PITUITARY', 'MRI'),
+  radiologyTest('mri_orbits', 'MRI Orbits with Contrast', 'MRI-ORBITS', 'MRI'),
+  radiologyTest('mri_internal_auditory_canals', 'MRI Internal Auditory Canals', 'MRI-IAC', 'MRI'),
+  radiologyTest('mri_mrcp', 'Magnetic Resonance Cholangiopancreatography', 'MRI-MRCP', 'MRI'),
+  radiologyTest('mri_liver', 'MRI Liver', 'MRI-LIVER', 'MRI'),
+  radiologyTest('mri_prostate', 'MRI Prostate Multiparametric', 'MRI-PROSTATE', 'MRI'),
+  radiologyTest('mri_rectal_staging', 'MRI Rectal Cancer Staging', 'MRI-RECTAL', 'MRI'),
+  radiologyTest('mri_female_pelvis', 'MRI Female Pelvis', 'MRI-FPELVIS', 'MRI'),
+  radiologyTest('mri_whole_spine', 'MRI Whole Spine', 'MRI-WSPINE', 'MRI'),
+  radiologyTest('mri_hip', 'MRI Hip', 'MRI-HIP', 'MRI'),
+  radiologyTest('mri_angiography_brain', 'MR Angiography Brain', 'MRI-MRA-BRAIN', 'MRI'),
+  radiologyTest('mri_venography_brain', 'MR Venography Brain', 'MRI-MRV-BRAIN', 'MRI'),
 ];
 
 const MAMMOGRAPHY_TESTS = [
@@ -129,8 +166,12 @@ const MAMMOGRAPHY_TESTS = [
 const CARDIAC_TESTS = [
   radiologyTest('ecg_resting', 'ECG Resting 12 Lead', 'ECG-12', 'ECG'),
   radiologyTest('ecg_holter', 'ECG Holter 24 Hour', 'ECG-HOLTER', 'ECG'),
+  radiologyTest('ecg_exercise_stress', 'Exercise Stress ECG', 'ECG-STRESS', 'ECG'),
   radiologyTest('echo_transthoracic', 'Transthoracic Echocardiogram', 'ECHO-TTE', 'ECHO'),
   radiologyTest('echo_focused', 'Focused Cardiac Ultrasound', 'ECHO-FOCUS', 'ECHO'),
+  radiologyTest('echo_pediatric_congenital', 'Pediatric Congenital Echocardiogram', 'ECHO-PED', 'ECHO'),
+  radiologyTest('echo_transesophageal', 'Transesophageal Echocardiogram', 'ECHO-TEE', 'ECHO'),
+  radiologyTest('echo_stress', 'Stress Echocardiogram', 'ECHO-STRESS', 'ECHO'),
 ];
 
 const ENDO_GASTRO_TESTS = [
@@ -138,14 +179,21 @@ const ENDO_GASTRO_TESTS = [
   radiologyTest('endo_bronchoscopy', 'Bronchoscopy', 'ENDO-BRONCH', 'ENDO'),
   radiologyTest('gastro_colonoscopy', 'Colonoscopy', 'GASTRO-COLON', 'GASTRO'),
   radiologyTest('gastro_sigmoidoscopy', 'Flexible Sigmoidoscopy', 'GASTRO-SIG', 'GASTRO'),
+  radiologyTest('gastro_ercp', 'Endoscopic Retrograde Cholangiopancreatography', 'GASTRO-ERCP', 'GASTRO'),
 ];
 
 const OTHER_IMAGING_TESTS = [
   radiologyTest('ir_image_guided_biopsy', 'Image-Guided Biopsy', 'IR-BIOPSY', 'INTERVENTIONAL_RADIOLOGY'),
   radiologyTest('ir_abscess_drainage', 'Image-Guided Abscess Drainage', 'IR-DRAIN', 'INTERVENTIONAL_RADIOLOGY'),
+  radiologyTest('ir_percutaneous_nephrostomy', 'Percutaneous Nephrostomy', 'IR-PCN', 'INTERVENTIONAL_RADIOLOGY'),
+  radiologyTest('ir_biliary_drainage', 'Percutaneous Biliary Drainage', 'IR-PTBD', 'INTERVENTIONAL_RADIOLOGY'),
+  radiologyTest('ir_central_venous_access', 'Image-Guided Central Venous Access', 'IR-CVA', 'INTERVENTIONAL_RADIOLOGY'),
+  radiologyTest('ir_joint_injection', 'Image-Guided Joint Injection or Aspiration', 'IR-JOINT', 'INTERVENTIONAL_RADIOLOGY'),
+  radiologyTest('ir_breast_biopsy', 'Image-Guided Breast Biopsy', 'IR-BREAST-BX', 'INTERVENTIONAL_RADIOLOGY'),
+  radiologyTest('ir_thyroid_fna', 'Ultrasound-Guided Thyroid FNA', 'IR-THY-FNA', 'INTERVENTIONAL_RADIOLOGY'),
 ];
 
-const RADIOLOGY_TEST_CATALOG = Object.freeze([
+const radiologyCatalog = [
   ...XRAY_TESTS,
   ...FLUOROSCOPY_TESTS,
   ...ULTRASOUND_TESTS,
@@ -155,7 +203,14 @@ const RADIOLOGY_TEST_CATALOG = Object.freeze([
   ...CARDIAC_TESTS,
   ...ENDO_GASTRO_TESTS,
   ...OTHER_IMAGING_TESTS,
-]);
+];
+
+assertUniqueFields(radiologyCatalog, {
+  label: 'RADIOLOGY_TEST_CATALOG',
+  fields: ['key', 'name', 'code'],
+});
+
+const RADIOLOGY_TEST_CATALOG = Object.freeze(radiologyCatalog);
 
 module.exports = {
   RADIOLOGY_TEST_CATALOG,
