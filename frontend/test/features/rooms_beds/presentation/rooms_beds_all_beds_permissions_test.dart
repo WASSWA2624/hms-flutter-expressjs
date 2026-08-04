@@ -587,7 +587,7 @@ void main() {
   );
 
   testWidgets(
-    'facility-admin ∪: Create room / Create bed / Manage catalog present',
+    'facility-admin ∪: Create room / Create bed / Manage catalog absent (setup-only)',
     (WidgetTester tester) async {
       final AppAccessPolicy admin = _facilityAdminPolicy();
       expect(RoomsBedsAllBedsAtomPermissions.create.isAllowed(admin), isTrue);
@@ -598,16 +598,16 @@ void main() {
         accessPolicy: admin,
       );
 
-      expect(_toolbarPrimary('Create room'), findsOneWidget);
-      expect(_toolbarAction('Create bed'), findsOneWidget);
-      expect(_toolbarAction('Manage catalog'), findsOneWidget);
+      expect(_toolbarPrimary('Create room'), findsNothing);
+      expect(_toolbarAction('Create bed'), findsNothing);
+      expect(_toolbarAction('Manage catalog'), findsNothing);
       expect(find.text('Assign bed'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'unit:manage ∪ grant shows Create room (matrix ∩ → source ∪)',
+    'unit:manage ∪: Create room / Create bed / Manage catalog absent (setup-only)',
     (WidgetTester tester) async {
       await _pumpAllBedsTab(
         tester,
@@ -615,9 +615,9 @@ void main() {
         accessPolicy: _unitManageOnlyPolicy(),
       );
 
-      expect(_toolbarPrimary('Create room'), findsOneWidget);
-      expect(_toolbarAction('Create bed'), findsOneWidget);
-      expect(_toolbarAction('Manage catalog'), findsOneWidget);
+      expect(_toolbarPrimary('Create room'), findsNothing);
+      expect(_toolbarAction('Create bed'), findsNothing);
+      expect(_toolbarAction('Manage catalog'), findsNothing);
       expect(find.text('Assign bed'), findsNothing);
     },
   );
@@ -820,7 +820,7 @@ void main() {
     },
   );
 
-  testWidgets('desktop dark theme: admin create remains visible', (
+  testWidgets('desktop dark theme: admin create remains absent', (
     WidgetTester tester,
   ) async {
     await _pumpAllBedsTab(
@@ -830,7 +830,7 @@ void main() {
       themeMode: ThemeMode.dark,
     );
 
-    expect(_toolbarPrimary('Create room'), findsOneWidget);
+    expect(_toolbarPrimary('Create room'), findsNothing);
     expect(find.text('Bed A1'), findsWidgets);
   });
 

@@ -276,7 +276,7 @@ AccessRequirement patientRegistrySectionTabRequirement(
   };
 }
 
-/// Register-patient strip primary for the selected section.
+/// Register-patient CTA for the selected section (search-bar trailing action).
 AccessRequirement patientRegistryRegisterAtom(PatientRegistrySection section) {
   return switch (section) {
     PatientRegistrySection.all => PatientAllAtomPermissions.register,
@@ -542,7 +542,7 @@ PatientRegistrySection? patientRegistryFallbackSection(
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | All patients strip tab / count | navigate | read ∩ `patient:read` |
-/// | Register patient (primary) | create | write ∩ `patient:write` |
+/// | Register patient (search trailing) | create | write ∩ `patient:write` |
 /// | Duplicate review (secondary) | update | write ∩ |
 /// | Search / Clear / Filters / Settings / columns | read chrome | read ∩ |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
@@ -652,7 +652,7 @@ abstract final class PatientAllAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Active strip tab / count | navigate | read ∩ `patient:read` |
-/// | Register patient (primary) | create | write ∩ `patient:write` |
+/// | Register patient (search trailing) | create | write ∩ `patient:write` |
 /// | Duplicate review (secondary) | update | write ∩ |
 /// | Search / Clear / Filters / Settings / columns | read chrome | read ∩ |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
@@ -763,7 +763,7 @@ abstract final class PatientActiveAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Admitted strip tab / count | navigate | read ∩ `patient:read` |
-/// | Register patient (primary) | create | write ∩ `patient:write` |
+/// | Register patient (search trailing) | create | write ∩ `patient:write` |
 /// | Duplicate review (secondary) | update | write ∩ |
 /// | Search / Clear / Filters / Settings / columns | read chrome | read ∩ |
 /// | Visit column (admission context) | nested read | ∪ clinical\|billing read |
@@ -887,7 +887,7 @@ abstract final class PatientAdmittedAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Balance due strip tab / count | navigate | read ∩ patient:read + billing:read |
-/// | Register patient (primary) | create | write ∩ patient:write |
+/// | Register patient (search trailing) | create | write ∩ patient:write |
 /// | Duplicate review (secondary) | update | write ∩ |
 /// | Search / Clear / Filters / Settings / columns | read chrome | tab read ∩ |
 /// | Empty / loading / error / retry | read chrome | tab read ∩ |

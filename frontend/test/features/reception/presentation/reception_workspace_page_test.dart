@@ -651,16 +651,20 @@ void main() {
     expect(find.text('Full registry'), findsNothing);
     expect(find.text('Outpatient (OPD)'), findsNothing);
     expect(find.text('Full OPD'), findsNothing);
-    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.byType(AppTabToolbarPrimary), findsNothing);
+    expect(find.byType(AppTabToolbarAction), findsNothing);
     expect(
       find.descendant(
-        of: find.byType(AppTabToolbarPrimary),
+        of: find.byType(AppSearchBar),
         matching: find.text('Register patient'),
       ),
       findsOneWidget,
     );
     expect(
-      find.widgetWithText(AppTabToolbarAction, 'Schedule appointment'),
+      find.descendant(
+        of: find.byType(AppSearchBar),
+        matching: find.text('Schedule appointment'),
+      ),
       findsOneWidget,
     );
 
@@ -722,23 +726,25 @@ void main() {
       expect(find.byTooltip('Patient registry'), findsNothing);
       expect(find.byTooltip('Outpatient (OPD)'), findsNothing);
       expect(find.byTooltip('Refresh'), findsNothing);
+      expect(find.byType(AppTabToolbarPrimary), findsNothing);
+      expect(find.byType(AppTabToolbarAction), findsNothing);
       expect(
-        find.byType(AppTabToolbarPrimary),
-        findsOneWidget,
-      );
-      expect(
-        find.widgetWithText(AppTabToolbarAction, 'Schedule appointment')
-            .evaluate()
-            .isNotEmpty ||
+        find.text('Schedule appointment').evaluate().isNotEmpty ||
             find.byTooltip('Schedule appointment').evaluate().isNotEmpty,
         isTrue,
-        reason: 'Schedule remains available (label or icon-only tooltip)',
+        reason: 'Schedule remains available in search bar (label or tooltip)',
+      );
+      expect(
+        find.text('Register patient').evaluate().isNotEmpty ||
+            find.byTooltip('Register patient').evaluate().isNotEmpty,
+        isTrue,
+        reason: 'Register remains available in search bar (label or tooltip)',
       );
     });
   }
 
   testWidgets(
-    'tab selection updates URL and keeps the desk toolbar active',
+    'tab selection updates URL and keeps desk CTAs in the search bar',
     (WidgetTester tester) async {
       final GoRouter router = await _pumpWorkspace(
         tester,
@@ -755,8 +761,20 @@ void main() {
         await _tapReceptionDeskTab(tester, tab);
 
         expect(router.state.uri.queryParameters['section'], section);
-        expect(find.text('Register patient'), findsOneWidget);
-        expect(find.text('Schedule appointment'), findsOneWidget);
+        expect(find.byType(AppTabToolbarPrimary), findsNothing);
+        expect(find.byType(AppTabToolbarAction), findsNothing);
+        expect(
+          find.text('Register patient').evaluate().isNotEmpty ||
+              find.byTooltip('Register patient').evaluate().isNotEmpty,
+          isTrue,
+          reason: 'Register in search bar on $tab',
+        );
+        expect(
+          find.text('Schedule appointment').evaluate().isNotEmpty ||
+              find.byTooltip('Schedule appointment').evaluate().isNotEmpty,
+          isTrue,
+          reason: 'Schedule in search bar on $tab',
+        );
         expect(find.text('Refresh'), findsNothing);
         expect(find.text('Patient registry'), findsNothing);
         expect(find.text('Outpatient (OPD)'), findsNothing);
@@ -764,25 +782,6 @@ void main() {
         expect(find.text('Billing'), findsNothing);
         expect(find.text('Open billing'), findsNothing);
         expect(router.state.uri.path, '/reception');
-        expect(
-          tester
-              .widget<AppTabToolbarPrimary>(find.byType(AppTabToolbarPrimary))
-              .onPressed,
-          isNotNull,
-        );
-        final AppTabToolbarAction schedule = tester.widget<AppTabToolbarAction>(
-          find.widgetWithText(AppTabToolbarAction, 'Schedule appointment'),
-        );
-        expect(schedule.enabled, isTrue, reason: 'Schedule on $tab');
-        expect(schedule.onPressed, isNotNull, reason: 'Schedule on $tab');
-        expect(
-          tester
-              .widgetList<AppTabToolbarAction>(find.byType(AppTabToolbarAction))
-              .single
-              .label,
-          'Schedule appointment',
-          reason: 'Schedule is the only secondary action on $tab',
-        );
       }
     },
   );
@@ -805,9 +804,10 @@ void main() {
 
     expect(find.text('Billing'), findsNothing);
     expect(find.text('Register patient'), findsOneWidget);
+    expect(find.byType(AppTabToolbarPrimary), findsNothing);
     expect(
       find.descendant(
-        of: find.byType(AppTabToolbarPrimary),
+        of: find.byType(AppSearchBar),
         matching: find.text('Register patient'),
       ),
       findsOneWidget,
@@ -1390,16 +1390,9 @@ void main() {
         tester.widget<AppSearchBar>(find.byType(AppSearchBar)).isLoading,
         isFalse,
       );
-      final AppTabToolbarPrimary register = tester.widget<AppTabToolbarPrimary>(
-        find.byType(AppTabToolbarPrimary),
-      );
-      expect(register.enabled, isTrue);
-      expect(register.isLoading, isFalse);
-      final AppTabToolbarAction schedule = tester.widget<AppTabToolbarAction>(
-        find.widgetWithText(AppTabToolbarAction, 'Schedule appointment'),
-      );
-      expect(schedule.enabled, isTrue);
-      expect(schedule.isLoading, isFalse);
+      expect(find.byType(AppTabToolbarPrimary), findsNothing);
+      expect(find.text('Register patient'), findsOneWidget);
+      expect(find.text('Schedule appointment'), findsOneWidget);
       expect(find.byTooltip('Filters'), findsOneWidget);
       expect(find.byTooltip('Settings'), findsOneWidget);
 
@@ -1561,12 +1554,12 @@ void main() {
       ),
       findsNothing,
     );
-    final AppTabToolbarPrimary registerAction = tester
-        .widgetList<AppTabToolbarPrimary>(find.byType(AppTabToolbarPrimary))
-        .singleWhere(
-          (AppTabToolbarPrimary action) => action.label == 'Register patient',
-        );
-    expect(registerAction.isLoading, isFalse);
+    expect(find.byType(AppTabToolbarPrimary), findsNothing);
+    expect(find.text('Register patient'), findsOneWidget);
+    expect(
+      tester.widget<AppSearchBar>(find.byType(AppSearchBar)).isLoading,
+      isFalse,
+    );
 
     completer.complete(const Result<OpdAppointment>.success(_newAppointment));
     await tester.pumpAndSettle();

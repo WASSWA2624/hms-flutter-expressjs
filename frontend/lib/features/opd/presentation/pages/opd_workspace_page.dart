@@ -129,8 +129,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       });
     }
     final List<_OpdTableItem> allItems = _tableItems(context, state);
-    final ({Widget primary, List<Widget> secondary}) toolbar =
-        _opdToolbarForSection(context, ref, _section, state);
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -167,8 +165,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
                   }
                 }
               },
-              primaryAction: toolbar.primary,
-              secondaryActions: toolbar.secondary,
             ),
             SizedBox(height: theme.spacing.sm),
             ValueListenableBuilder<_OpdTableFilter>(
@@ -200,42 +196,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
         ),
       ),
     );
-  }
-
-  ({Widget primary, List<Widget> secondary}) _opdToolbarForSection(
-    BuildContext context,
-    WidgetRef ref,
-    OpdWorkspaceSection section,
-    OpdWorkspaceState state,
-  ) {
-    final AppLocalizations l10n = context.l10n;
-
-    final Widget primary = switch (section) {
-      OpdWorkspaceSection.followUps => const SizedBox.shrink(),
-      OpdWorkspaceSection.all ||
-      OpdWorkspaceSection.arrivals ||
-      OpdWorkspaceSection.queue ||
-      OpdWorkspaceSection.triage ||
-      OpdWorkspaceSection.active => AppAccessActionGate(
-        requirement: opdStartEncounterRequirementForSection(section),
-        builder: (BuildContext context, bool isAllowed) {
-          if (!isAllowed) {
-            return const SizedBox.shrink();
-          }
-          return AppTabToolbarPrimary(
-            label: l10n.opdStartWalkInAction,
-            icon: opdEncounterIcon,
-            semanticLabel: l10n.opdStartWalkInAction,
-            tooltip: l10n.opdStartEncounterTooltip,
-            onPressed: () {
-              unawaited(openOpdWorkspaceEncounterFlow(context, ref, state));
-            },
-          );
-        },
-      ),
-    };
-
-    return (primary: primary, secondary: const <Widget>[]);
   }
 
   void _setFilter(_OpdTableFilter filter) {
@@ -2434,6 +2394,12 @@ class _OpdMainTable extends ConsumerWidget {
             );
           },
           hasActiveFilters: filter.hasAdvancedFilters,
+          trailingActions: _startEncounterSearchActions(
+            context,
+            ref,
+            section: section,
+            state: state,
+          ),
         ),
         mobileItemBuilder: (BuildContext context, _OpdTableItem item) =>
             AppListTableMobileItem(
@@ -2460,6 +2426,33 @@ class _OpdMainTable extends ConsumerWidget {
         rowColorBuilder: _opdTableRowColor,
       ),
     );
+  }
+
+  /// Start OPD CTA lives after Export in the search bar (not the tab toolbar).
+  List<AppSearchBarAction> _startEncounterSearchActions(
+    BuildContext context,
+    WidgetRef ref, {
+    required OpdWorkspaceSection section,
+    required OpdWorkspaceState state,
+  }) {
+    if (section == OpdWorkspaceSection.followUps) {
+      return const <AppSearchBarAction>[];
+    }
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    if (!opdStartEncounterRequirementForSection(section).isAllowed(policy)) {
+      return const <AppSearchBarAction>[];
+    }
+    final AppLocalizations l10n = context.l10n;
+    return <AppSearchBarAction>[
+      AppSearchBarAction(
+        icon: opdEncounterIcon,
+        label: l10n.opdStartWalkInAction,
+        tooltip: l10n.opdStartEncounterTooltip,
+        onPressed: () {
+          unawaited(openOpdWorkspaceEncounterFlow(context, ref, state));
+        },
+      ),
+    ];
   }
 }
 

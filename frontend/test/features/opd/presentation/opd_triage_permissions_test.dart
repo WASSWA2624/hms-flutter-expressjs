@@ -618,7 +618,7 @@ void main() {
 
         expect(find.text('Triage'), findsWidgets);
         expect(find.text('Triage Patient'), findsOneWidget);
-        expect(find.byType(AppTabToolbarPrimary), findsNothing);
+        expect(find.byTooltip('Create or continue an OPD encounter'), findsNothing);
         expect(find.text('Start OPD encounter'), findsNothing);
         expect(find.text('Record vitals'), findsNothing);
         expect(find.text('Next action'), findsNothing);
@@ -635,7 +635,7 @@ void main() {
         accessPolicy: _writerPolicy(),
       );
 
-      expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+      expect(find.byTooltip('Create or continue an OPD encounter'), findsOneWidget);
       expect(find.text('Start OPD encounter'), findsWidgets);
       expect(find.text('Record vitals'), findsWidgets);
       expect(find.text('Next action'), findsWidgets);
@@ -674,7 +674,7 @@ void main() {
       );
 
       expect(find.text('Triage Patient'), findsOneWidget);
-      expect(find.byType(AppTabToolbarPrimary), findsNothing);
+      expect(find.byTooltip('Create or continue an OPD encounter'), findsNothing);
     });
 
     testWidgets('billing-only: Triage tab collapsed (no patient/clinical read)', (
@@ -794,7 +794,7 @@ void main() {
       expect(find.text('Triage Patient'), findsOneWidget);
       expect(find.text('Start OPD encounter'), findsNothing);
       expect(find.text('Record vitals'), findsNothing);
-      expect(find.byType(AppTabToolbarPrimary), findsNothing);
+      expect(find.byTooltip('Create or continue an OPD encounter'), findsNothing);
     });
 
     testWidgets('desktop dark theme: writer Record vitals still mounts', (
@@ -809,7 +809,7 @@ void main() {
 
       expect(find.text('Record vitals'), findsWidgets);
       expect(find.text('Triage Patient'), findsOneWidget);
-      expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+      expect(find.byTooltip('Create or continue an OPD encounter'), findsOneWidget);
     });
 
     testWidgets('mobile light theme: writer Start + Record vitals mount', (
@@ -825,7 +825,7 @@ void main() {
 
       expect(find.text('Triage Patient'), findsOneWidget);
       expect(find.text('Record vitals'), findsWidgets);
-      expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+      expect(find.byTooltip('Create or continue an OPD encounter'), findsOneWidget);
     });
 
     testWidgets(

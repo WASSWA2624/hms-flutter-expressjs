@@ -657,7 +657,7 @@ void main() {
   );
 
   testWidgets(
-    'facility-admin ∪: Manage catalog + Mark available present; create primary null',
+    'facility-admin ∪: Mark available present; Manage catalog / create absent',
     (WidgetTester tester) async {
       final AppAccessPolicy admin = _facilityAdminPolicy();
       expect(
@@ -671,7 +671,7 @@ void main() {
         accessPolicy: admin,
       );
 
-      expect(_toolbarAction('Manage catalog'), findsOneWidget);
+      expect(_toolbarAction('Manage catalog'), findsNothing);
       expect(_toolbarPrimary('Create room'), findsNothing);
       expect(_toolbarPrimary('Create bed'), findsNothing);
       expect(find.text('Mark available'), findsWidgets);
@@ -780,7 +780,7 @@ void main() {
     );
 
     expect(find.text('Mark available'), findsWidgets);
-    expect(_toolbarAction('Manage catalog'), findsOneWidget);
+    expect(_toolbarAction('Manage catalog'), findsNothing);
     expect(find.text('Bed B1'), findsWidgets);
   });
 

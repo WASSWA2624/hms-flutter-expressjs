@@ -14,7 +14,6 @@ import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_wor
 import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_scope_navigation.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_shift_context_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_actions.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_filters.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_panel.dart';
@@ -233,8 +232,6 @@ class _NursingWorkspaceContentState
         controller.applyScope(fallback);
       });
     }
-    final bool canShiftContext = canReadNursingShiftContext(policy);
-
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
       scrollable: false,
@@ -248,16 +245,6 @@ class _NursingWorkspaceContentState
               tabs: nursingTabItems(l10n, state, policy: policy),
               selectedId: nursingScopeToQueryValue(_scope),
               onTabTapped: _onTabTapped,
-              secondaryActions: <Widget>[
-                if (canShiftContext)
-                  AppTabToolbarAction(
-                    label: l10n.nursingShiftContextTitle,
-                    icon: Icons.assignment_ind_outlined,
-                    tooltip: l10n.nursingShiftContextTitle,
-                    semanticLabel: l10n.nursingShiftContextTitle,
-                    onPressed: _openShiftContextDialog,
-                  ),
-              ],
             ),
             SizedBox(height: theme.spacing.sm),
             Expanded(
@@ -306,14 +293,6 @@ class _NursingWorkspaceContentState
           ],
         ),
       ),
-    );
-  }
-
-  void _openShiftContextDialog() {
-    showAppDialog<void>(
-      context: context,
-      builder: (BuildContext dialogContext) =>
-          const NursingShiftContextDialog(),
     );
   }
 }

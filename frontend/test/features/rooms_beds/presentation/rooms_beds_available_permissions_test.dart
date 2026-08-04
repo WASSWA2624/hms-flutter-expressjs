@@ -482,7 +482,7 @@ void main() {
     );
 
     testWidgets(
-      'facility admin: Create bed primary + Create room + catalog present',
+      'facility admin: Create bed / Create room / Manage catalog absent (setup-only)',
       (WidgetTester tester) async {
         await _pumpAvailable(
           tester,
@@ -490,15 +490,15 @@ void main() {
           accessPolicy: _facilityAdmin(),
         );
 
-        expect(_toolbarPrimary('Create bed'), findsOneWidget);
-        expect(_toolbarAction('Create room'), findsOneWidget);
-        expect(_toolbarAction('Manage catalog'), findsOneWidget);
+        expect(_toolbarPrimary('Create bed'), findsNothing);
+        expect(_toolbarAction('Create room'), findsNothing);
+        expect(_toolbarAction('Manage catalog'), findsNothing);
         expect(find.text('Assign bed'), findsNothing);
       },
     );
 
     testWidgets(
-      'unit:manage union grant shows Create bed (matrix ∩ → source ∪)',
+      'unit:manage union: Create bed / Manage catalog absent (setup-only)',
       (WidgetTester tester) async {
         await _pumpAvailable(
           tester,
@@ -506,8 +506,8 @@ void main() {
           accessPolicy: _unitManageOnly(),
         );
 
-        expect(_toolbarPrimary('Create bed'), findsOneWidget);
-        expect(_toolbarAction('Manage catalog'), findsOneWidget);
+        expect(_toolbarPrimary('Create bed'), findsNothing);
+        expect(_toolbarAction('Manage catalog'), findsNothing);
       },
     );
 
@@ -718,7 +718,7 @@ void main() {
       expect(find.byTooltip('Assign bed'), findsWidgets);
     });
 
-    testWidgets('desktop dark theme: Create bed present for facility admin', (
+    testWidgets('desktop dark theme: Create bed absent for facility admin', (
       WidgetTester tester,
     ) async {
       await _pumpAvailable(
@@ -729,7 +729,7 @@ void main() {
         themeMode: ThemeMode.dark,
       );
 
-      expect(_toolbarPrimary('Create bed'), findsOneWidget);
+      expect(_toolbarPrimary('Create bed'), findsNothing);
       expect(find.text('Bed A1'), findsWidgets);
     });
 

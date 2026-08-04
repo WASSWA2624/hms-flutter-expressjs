@@ -604,7 +604,7 @@ void main() {
           repository: repository,
           accessPolicy: facilityAdmin,
         );
-        expect(_toolbarAction('Manage catalog'), findsOneWidget);
+        expect(_toolbarAction('Manage catalog'), findsNothing);
         expect(find.text('Release bed'), findsNothing);
         // Occupied next-action column requires occupancy write ∪ — omit empty.
         expect(find.byType(RoomsBedsNextActionButton), findsNothing);
@@ -797,7 +797,7 @@ void main() {
       expect(_tabLabel('Occupied'), findsOneWidget);
       expect(find.text('Bed O1'), findsWidgets);
       expect(find.text('Release bed'), findsWidgets);
-      expect(_toolbarAction('Manage catalog'), findsOneWidget);
+      expect(_toolbarAction('Manage catalog'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     });
 

@@ -224,16 +224,13 @@ Finder _startOpdEncounterInWorklist() {
     if (widget is! Text || widget.data != 'Start OPD encounter') {
       return false;
     }
-    return element.findAncestorWidgetOfExactType<AppTabToolbarPrimary>() ==
-        null;
+    // Exclude the search-bar chrome CTA (label may show on wide layouts).
+    return element.findAncestorWidgetOfExactType<AppSearchBar>() == null;
   });
 }
 
-Finder _startOpdEncounterInToolbar() {
-  return find.descendant(
-    of: find.byType(AppTabToolbarPrimary),
-    matching: find.text('Start OPD encounter'),
-  );
+Finder _startOpdEncounterInSearchBar() {
+  return find.byTooltip('Create or continue an OPD encounter');
 }
 
 void main() {
@@ -267,13 +264,13 @@ void main() {
     expect(find.text('Quinn Queue'), findsOneWidget);
     expect(find.text('Tina Triage'), findsOneWidget);
     expect(find.text('Alex Active'), findsOneWidget);
-    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.byTooltip('Create or continue an OPD encounter'), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
     expect(find.byTooltip('Filters'), findsOneWidget);
     expect(find.byTooltip('Settings'), findsOneWidget);
     expect(find.text('Next action'), findsWidgets);
-    // Toolbar walk-in primary + arrival next-action only (queue has none).
-    expect(_startOpdEncounterInToolbar(), findsOneWidget);
+    // Search-bar walk-in CTA + arrival next-action only (queue has none).
+    expect(_startOpdEncounterInSearchBar(), findsOneWidget);
     expect(_startOpdEncounterInWorklist(), findsOneWidget);
     expect(find.text('Record vitals'), findsWidgets);
   });
@@ -294,7 +291,7 @@ void main() {
     expect(find.text('Quinn Queue'), findsNothing);
     expect(find.text('Tina Triage'), findsNothing);
     expect(find.text('Alex Active'), findsNothing);
-    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.byTooltip('Create or continue an OPD encounter'), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
 
     await tester.tap(find.textContaining('Queue').first);
@@ -303,7 +300,7 @@ void main() {
     expect(router.state.uri.queryParameters['section'], 'queue');
     expect(find.text('Quinn Queue'), findsOneWidget);
     expect(find.text('Ann Arrival'), findsNothing);
-    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.byTooltip('Create or continue an OPD encounter'), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
 
     await tester.tap(find.textContaining('Triage').first);
@@ -312,7 +309,7 @@ void main() {
     expect(router.state.uri.queryParameters['section'], 'triage');
     expect(find.text('Tina Triage'), findsOneWidget);
     expect(find.text('Alex Active'), findsNothing);
-    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.byTooltip('Create or continue an OPD encounter'), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
 
     await tester.tap(find.textContaining('Active').first);
@@ -321,7 +318,7 @@ void main() {
     expect(router.state.uri.queryParameters['section'], 'active');
     expect(find.text('Alex Active'), findsOneWidget);
     expect(find.text('Tina Triage'), findsNothing);
-    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.byTooltip('Create or continue an OPD encounter'), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
 
     await tester.tap(find.textContaining('All worklist').first);
@@ -332,7 +329,7 @@ void main() {
     expect(find.text('Quinn Queue'), findsOneWidget);
     expect(find.text('Tina Triage'), findsOneWidget);
     expect(find.text('Alex Active'), findsOneWidget);
-    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.byTooltip('Create or continue an OPD encounter'), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
   });
 
@@ -351,7 +348,7 @@ void main() {
     expect(find.text('Ann Arrival'), findsNothing);
     expect(find.text('Quinn Queue'), findsNothing);
     expect(find.text('Alex Active'), findsNothing);
-    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.byTooltip('Create or continue an OPD encounter'), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
   });
 
@@ -384,9 +381,9 @@ void main() {
     );
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.byTooltip('Create or continue an OPD encounter'), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
-    // Compact widths hide the toolbar label; tooltip remains.
+    // Compact widths hide the search-bar action label; tooltip remains.
     expect(
       find.byTooltip('Create or continue an OPD encounter'),
       findsOneWidget,
@@ -622,7 +619,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
 
-    expect(find.byType(AppTabToolbarPrimary), findsNothing);
+    expect(find.byTooltip('Create or continue an OPD encounter'), findsNothing);
     expect(find.text('Start OPD encounter'), findsNothing);
     expect(find.text('Record vitals'), findsNothing);
     expect(find.text('Refresh'), findsNothing);

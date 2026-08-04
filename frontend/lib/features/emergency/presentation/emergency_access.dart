@@ -557,7 +557,7 @@ bool canViewEmergencyCritical(AppAccessPolicy policy) {
 /// | Search / Clear / Filters / Settings (columns) | read chrome | [listChrome] |
 /// | Empty / loading / error / retry | read chrome | [listChrome] / page |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
-/// | Quick arrival (strip primary) | create | write ∩ |
+/// | Quick arrival (search trailing) | create | write ∩ |
 /// | Row select → case detail | read | [detail] |
 /// | Next action Dispatch / Start trip / Complete trip / … | create / update | write ∩ |
 /// | Next action Record handoff | update | handoff ∪ source |

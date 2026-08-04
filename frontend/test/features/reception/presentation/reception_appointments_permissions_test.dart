@@ -550,7 +550,7 @@ void main() {
         accessPolicy: _writerPolicy(),
       );
 
-      expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+      expect(find.byType(AppTabToolbarPrimary), findsNothing);
       expect(find.text('Register patient'), findsOneWidget);
       expect(find.text('Schedule appointment'), findsOneWidget);
       expect(find.text('Next action'), findsWidgets);
@@ -680,7 +680,7 @@ void main() {
 
       expect(find.text('Schedule appointment'), findsOneWidget);
       expect(find.text('Ada Appointment'), findsOneWidget);
-      expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+      expect(find.byType(AppTabToolbarPrimary), findsNothing);
       expect(find.text('Start OPD encounter'), findsWidgets);
     });
 

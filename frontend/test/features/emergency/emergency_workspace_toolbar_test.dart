@@ -59,15 +59,15 @@ void main() {
     });
   });
 
-  group('Emergency toolbar matrix', () {
-    test('Quick arrival is the only strip primary; Refresh is absent', () {
-      // Refresh was removed — board syncs after mutations / realtime / retry.
+  group('Emergency Quick arrival matrix', () {
+    test('Quick arrival is offered on every tab except Closed', () {
+      // Lives in the search bar after Export; the tab toolbar is omitted.
       for (final EmergencyBoardTab tab in EmergencyBoardTab.values) {
-        final bool hasPrimary = emergencyShowsQuickArrival(tab);
+        final bool showsQuickArrival = emergencyShowsQuickArrival(tab);
         if (tab == EmergencyBoardTab.closed) {
-          expect(hasPrimary, isFalse);
+          expect(showsQuickArrival, isFalse);
         } else {
-          expect(hasPrimary, isTrue);
+          expect(showsQuickArrival, isTrue);
         }
       }
     });

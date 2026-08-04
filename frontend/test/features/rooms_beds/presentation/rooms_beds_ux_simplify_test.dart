@@ -42,16 +42,16 @@ void main() {
       expect(pageSource.contains('_refreshSecondary'), isFalse);
     });
 
-    test('turnover secondary Open operations is absent', () {
-      final int secondaryStart = pageSource.indexOf(
-        'List<Widget> _buildSecondaryActions(',
-      );
-      expect(secondaryStart, greaterThanOrEqualTo(0));
-      final String secondaryBody = pageSource.substring(
-        secondaryStart,
-        pageSource.indexOf('Future<void> _openAddRoomDialog(', secondaryStart),
-      );
-      expect(secondaryBody.contains('roomsBedsOpenOperationsAction'), isFalse);
+    test('catalog CRUD toolbar actions are absent', () {
+      expect(pageSource.contains('_buildPrimaryAction'), isFalse);
+      expect(pageSource.contains('_buildSecondaryActions'), isFalse);
+      expect(pageSource.contains('_openAddRoomDialog'), isFalse);
+      expect(pageSource.contains('_openAddBedDialog'), isFalse);
+      expect(pageSource.contains('roomsBedsManageCatalogAction'), isFalse);
+      expect(pageSource.contains('tenantFacilityAddRoomAction'), isFalse);
+      expect(pageSource.contains('tenantFacilityAddBedAction'), isFalse);
+      expect(pageSource.contains('primaryAction:'), isFalse);
+      expect(pageSource.contains('secondaryActions:'), isFalse);
     });
 
     test('detail omits readiness tile', () {

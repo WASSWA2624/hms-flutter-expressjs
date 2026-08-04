@@ -280,12 +280,10 @@ void main() {
 
     test('leave-screen strip primaries are absent', () {
       expect(pageSource.contains('navigationIpdShortLabel'), isFalse);
-      expect(
-        pageSource.contains(
-          'RoomsBedsSection.occupied ||\n      RoomsBedsSection.turnover ||\n      RoomsBedsSection.outOfService => null',
-        ),
-        isTrue,
-      );
+      expect(pageSource.contains('primaryAction:'), isFalse);
+      expect(pageSource.contains('secondaryActions:'), isFalse);
+      expect(pageSource.contains('_buildPrimaryAction'), isFalse);
+      expect(pageSource.contains('_buildSecondaryActions'), isFalse);
     });
 
     test('detail omits board next-action twin', () {
@@ -338,14 +336,15 @@ void main() {
     });
   });
 
-  testWidgets('removes strip refresh and leave-screen primaries', (
+  testWidgets('omits strip refresh and catalog CRUD toolbar actions', (
     WidgetTester tester,
   ) async {
     await _pumpRoomsBedsWorkspace(tester, repository: repository);
 
-    expect(_toolbarPrimary('Create room'), findsOneWidget);
-    expect(_toolbarAction('Create bed'), findsOneWidget);
-    expect(_toolbarAction('Manage catalog'), findsOneWidget);
+    expect(_toolbarPrimary('Create room'), findsNothing);
+    expect(_toolbarAction('Create bed'), findsNothing);
+    expect(_toolbarAction('Manage catalog'), findsNothing);
+    expect(find.byType(AppTabToolbarPrimary), findsNothing);
     expect(_tabToolbarRefresh(), findsNothing);
     expect(_toolbarPrimary('IPD'), findsNothing);
     expect(find.text('Open housekeeping'), findsNothing);
@@ -353,7 +352,7 @@ void main() {
 
     await _selectTab(tester, 'Occupied');
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
-    expect(_toolbarAction('Manage catalog'), findsOneWidget);
+    expect(_toolbarAction('Manage catalog'), findsNothing);
     expect(_tabToolbarRefresh(), findsNothing);
 
     await _selectTab(tester, 'Turnover');
@@ -365,7 +364,7 @@ void main() {
     expect(find.text('Open operations'), findsNothing);
   });
 
-  testWidgets('unauthorized catalog and write next-actions are absent', (
+  testWidgets('unauthorized write next-actions are absent', (
     WidgetTester tester,
   ) async {
     await _pumpRoomsBedsWorkspace(

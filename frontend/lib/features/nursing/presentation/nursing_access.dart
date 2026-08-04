@@ -309,7 +309,7 @@ AccessRequirement? nursingFocusedPanelRequirement(NursingDetailPanel panel) {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | All tab / count badge | navigate | read ∪ ([tab]) |
-/// | Shift context (toolbar) | progressive disclosure | ([shiftContext]) |
+/// | Shift context (search bar) | progressive disclosure | ([shiftContext]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
 /// | Medication due count (column choices) | nested read | ([medicationsPanel]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
@@ -409,7 +409,7 @@ abstract final class NursingAllAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Assigned ward tab / count badge | navigate | read ∪ ([tab]) |
-/// | Shift context (toolbar) | progressive disclosure | ([shiftContext]) |
+/// | Shift context (search bar) | progressive disclosure | ([shiftContext]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | write / form |
@@ -511,7 +511,7 @@ abstract final class NursingAssignedWardAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Urgent tab / danger count badge | navigate | read ∪ ([tab]) |
-/// | Shift context (toolbar) | progressive disclosure | ([shiftContext]) |
+/// | Shift context (search bar) | progressive disclosure | ([shiftContext]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
 /// | Priority column / mobile priority meta | read | ([listChrome]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |

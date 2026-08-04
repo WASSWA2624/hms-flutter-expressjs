@@ -7,9 +7,7 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
@@ -18,7 +16,6 @@ import 'package:hosspi_hms/features/rooms_beds/presentation/rooms_beds_access.da
 import 'package:hosspi_hms/features/rooms_beds/presentation/widgets/rooms_beds_next_action_button.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/widgets/rooms_beds_status_helpers.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
-import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -314,16 +311,7 @@ class _RoomsBedsWorkspaceContentState
                   }
                 }
               },
-              primaryAction: _buildPrimaryAction(
-                l10n,
-                controller: controller,
-                state: state,
-              ),
-              secondaryActions: _buildSecondaryActions(
-                l10n,
-                controller: controller,
-                state: state,
-              ),
+              // Room/bed catalog CRUD lives in Tenant setup → Facility only.
             ),
             SizedBox(height: theme.spacing.sm),
             if (lastFailure != null) ...<Widget>[
@@ -514,139 +502,6 @@ class _RoomsBedsWorkspaceContentState
     );
   }
 
-  Widget? _buildPrimaryAction(
-    AppLocalizations l10n, {
-    required RoomsBedsWorkspaceController controller,
-    required RoomsBedsWorkspaceState state,
-  }) {
-    return switch (_section) {
-      RoomsBedsSection.all => AppAccessActionGate(
-        requirement: RoomsBedsAllBedsAtomPermissions.createRoom,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppTabToolbarPrimary(
-            label: l10n.tenantFacilityAddRoomAction,
-            icon: Icons.meeting_room_outlined,
-            semanticLabel: l10n.tenantFacilityAddRoomAction,
-            tooltip: l10n.tenantFacilityAddRoomAction,
-            enabled: !state.isSaving,
-            onPressed: state.isSaving
-                ? null
-                : () => unawaited(_openAddRoomDialog(controller, state)),
-          );
-        },
-      ),
-      RoomsBedsSection.available => AppAccessActionGate(
-        requirement: RoomsBedsAvailableAtomPermissions.createBed,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppTabToolbarPrimary(
-            label: l10n.tenantFacilityAddBedAction,
-            icon: Icons.bed_outlined,
-            semanticLabel: l10n.tenantFacilityAddBedAction,
-            tooltip: l10n.tenantFacilityAddBedAction,
-            enabled: !state.isSaving,
-            onPressed: state.isSaving
-                ? null
-                : () => unawaited(_openAddBedDialog(controller, state)),
-          );
-        },
-      ),
-      RoomsBedsSection.occupied ||
-      RoomsBedsSection.turnover ||
-      RoomsBedsSection.outOfService => null,
-    };
-  }
-
-  List<Widget> _buildSecondaryActions(
-    AppLocalizations l10n, {
-    required RoomsBedsWorkspaceController controller,
-    required RoomsBedsWorkspaceState state,
-  }) {
-    AccessRequirement manageCatalogRequirement() {
-      return switch (_section) {
-        RoomsBedsSection.all => RoomsBedsAllBedsAtomPermissions.manageCatalog,
-        RoomsBedsSection.available =>
-          RoomsBedsAvailableAtomPermissions.manageCatalog,
-        RoomsBedsSection.occupied =>
-          RoomsBedsOccupiedAtomPermissions.manageCatalog,
-        RoomsBedsSection.turnover =>
-          RoomsBedsTurnoverAtomPermissions.manageCatalog,
-        RoomsBedsSection.outOfService =>
-          RoomsBedsOutOfServiceAtomPermissions.manageCatalog,
-      };
-    }
-
-    final Widget manageCatalog = AppAccessGate(
-      requirement: manageCatalogRequirement(),
-      child: AppTabToolbarAction(
-        label: l10n.roomsBedsManageCatalogAction,
-        icon: Icons.apartment_outlined,
-        tooltip: l10n.roomsBedsManageCatalogAction,
-        onPressed: () => context.go(AppRoutes.tenantFacilitySetup.location()),
-      ),
-    );
-
-    return switch (_section) {
-      RoomsBedsSection.all => <Widget>[
-        AppAccessGate(
-          requirement: RoomsBedsAllBedsAtomPermissions.createBed,
-          child: AppTabToolbarAction(
-            label: l10n.tenantFacilityAddBedAction,
-            icon: Icons.bed_outlined,
-            tooltip: l10n.tenantFacilityAddBedAction,
-            enabled: !state.isSaving,
-            onPressed: state.isSaving
-                ? null
-                : () => unawaited(_openAddBedDialog(controller, state)),
-          ),
-        ),
-        manageCatalog,
-      ],
-      RoomsBedsSection.available => <Widget>[
-        AppAccessGate(
-          requirement: RoomsBedsAvailableAtomPermissions.createRoom,
-          child: AppTabToolbarAction(
-            label: l10n.tenantFacilityAddRoomAction,
-            icon: Icons.meeting_room_outlined,
-            tooltip: l10n.tenantFacilityAddRoomAction,
-            enabled: !state.isSaving,
-            onPressed: state.isSaving
-                ? null
-                : () => unawaited(_openAddRoomDialog(controller, state)),
-          ),
-        ),
-        manageCatalog,
-      ],
-      RoomsBedsSection.occupied => <Widget>[manageCatalog],
-      RoomsBedsSection.turnover ||
-      RoomsBedsSection.outOfService => <Widget>[manageCatalog],
-    };
-  }
-
-  Future<void> _openAddRoomDialog(
-    RoomsBedsWorkspaceController controller,
-    RoomsBedsWorkspaceState state,
-  ) async {
-    await showTenantFacilityRoomFormDialog(
-      context,
-      state.referenceData.snapshot,
-    );
-    if (mounted) {
-      await controller.refresh();
-    }
-  }
-
-  Future<void> _openAddBedDialog(
-    RoomsBedsWorkspaceController controller,
-    RoomsBedsWorkspaceState state,
-  ) async {
-    await showTenantFacilityBedFormDialog(
-      context,
-      state.referenceData.snapshot,
-    );
-    if (mounted) {
-      await controller.refresh();
-    }
-  }
 }
 
 Future<void> _openBedDetailDialog(

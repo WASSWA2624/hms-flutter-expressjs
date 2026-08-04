@@ -60,7 +60,7 @@ abstract final class NursingAllBillingInventory {
 
   static const NursingAllFinancialAtom shiftContext = NursingAllFinancialAtom(
     id: 'shift_context',
-    label: 'Shift context toolbar',
+    label: 'Shift context search action',
     financialClass: NursingAllFinancialClass.notRequired,
     requirement: NursingAllAtomPermissions.shiftContext,
     auditCode: 'NOT_REQUIRED',

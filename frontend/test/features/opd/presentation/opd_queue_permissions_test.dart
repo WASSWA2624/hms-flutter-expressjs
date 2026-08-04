@@ -594,14 +594,14 @@ void main() {
 
         expect(find.text('Queue'), findsWidgets);
         expect(find.text('Queue Patient'), findsOneWidget);
-        expect(find.byType(AppTabToolbarPrimary), findsNothing);
+        expect(find.byTooltip('Create or continue an OPD encounter'), findsNothing);
         expect(find.text('Start OPD encounter'), findsNothing);
         expect(find.text('Next action'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
       },
     );
 
-    testWidgets('writer: Start encounter toolbar present; no next-action column', (
+    testWidgets('writer: Start encounter search-bar CTA present; no next-action column', (
       WidgetTester tester,
     ) async {
       await _pumpQueueTab(
@@ -610,7 +610,7 @@ void main() {
         accessPolicy: _writerPolicy(),
       );
 
-      expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+      expect(find.byTooltip('Create or continue an OPD encounter'), findsOneWidget);
       expect(find.text('Start OPD encounter'), findsWidgets);
       expect(find.text('Queue Patient'), findsOneWidget);
       expect(find.text('Next action'), findsNothing);
@@ -648,7 +648,7 @@ void main() {
       );
 
       expect(find.text('Queue Patient'), findsOneWidget);
-      expect(find.byType(AppTabToolbarPrimary), findsNothing);
+      expect(find.byTooltip('Create or continue an OPD encounter'), findsNothing);
     });
 
     testWidgets('billing-only: Queue tab collapsed (no patient/clinical read)', (
@@ -882,7 +882,7 @@ void main() {
 
       expect(find.text('Queue Patient'), findsOneWidget);
       expect(find.text('Start OPD encounter'), findsNothing);
-      expect(find.byType(AppTabToolbarPrimary), findsNothing);
+      expect(find.byTooltip('Create or continue an OPD encounter'), findsNothing);
     });
 
     testWidgets('desktop dark theme: writer Start encounter still mounts', (
@@ -897,7 +897,7 @@ void main() {
 
       expect(find.text('Start OPD encounter'), findsWidgets);
       expect(find.text('Queue Patient'), findsOneWidget);
-      expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+      expect(find.byTooltip('Create or continue an OPD encounter'), findsOneWidget);
     });
 
     testWidgets('post-mutation sync path: Start encounter opens dialog', (

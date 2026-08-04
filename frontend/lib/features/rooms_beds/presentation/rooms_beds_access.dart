@@ -189,9 +189,7 @@ RoomsBedsSection? roomsBedsFallbackSection(AppAccessPolicy policy) {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | All beds tab | navigate | read ∪ clinical\|operations\|facility:admin |
-/// | Create room (tab primary) | create | admin ∪ unit:manage\|facility/tenant/system |
-/// | Create bed (secondary) | create | admin ∪ |
-/// | Manage catalog → setup | navigate / nested write | admin ∪ |
+/// | Create room / bed / Manage catalog | create | _(n/a)_ workspace — Tenant setup → Facility |
 /// | Search / filters / columns / pagination | read chrome | read ∪ |
 /// | Status filter (All beds only) | read chrome | read ∪ |
 /// | Empty / error / retry / loading | read chrome | read ∪ |
@@ -204,7 +202,6 @@ RoomsBedsSection? roomsBedsFallbackSection(AppAccessPolicy policy) {
 /// | Detail Assign / Release / Transfer / Manage transfer | update | occupancy write ∪ |
 /// | Detail Open IPD admission | navigate | _(n/a)_ |
 /// | Nested assign / release / transfer dialogs | update | occupancy write ∪ |
-/// | Nested create room / bed forms | create | admin ∪ |
 /// | Nested cross-module read/write | — | _(n/a)_ |
 /// | Route entry (catalog) | navigate | catalog ∩ rooms_beds:read |
 /// | Route entry (AppRoutes ∪) | navigate | clinical\|operations\|admins |
@@ -270,9 +267,7 @@ abstract final class RoomsBedsAllBedsAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Available tab | navigate | read ∪ clinical\|operations\|facility:admin |
-/// | Create bed (tab primary) | create | admin ∪ unit:manage\|facility/tenant/system |
-/// | Create room (secondary) | create | admin ∪ |
-/// | Manage catalog → setup | navigate / nested write | admin ∪ |
+/// | Create room / bed / Manage catalog | create | _(n/a)_ workspace — Tenant setup → Facility |
 /// | Search / filters / columns / pagination | read chrome | read ∪ |
 /// | Empty / error / retry / loading | read chrome | read ∪ |
 /// | Success snackbar / form validation | feedback | occupancy write ∪ / admin ∪ |
@@ -283,7 +278,6 @@ abstract final class RoomsBedsAllBedsAtomPermissions {
 /// | Detail Open IPD admission | navigate | _(n/a)_ when admission linked |
 /// | Detail Open housekeeping / operations | navigate | _(n/a)_ under admin chrome |
 /// | Nested assign dialog | update | occupancy write ∪ |
-/// | Nested create room / bed forms | create | admin ∪ |
 /// | Nested cross-module read/write | — | _(n/a)_ |
 /// | Route entry (catalog) | navigate | catalog ∩ rooms_beds:read + facility ABAC |
 /// | Route entry (AppRoutes ∪) | navigate | clinical\|operations\|admins |
@@ -353,8 +347,7 @@ abstract final class RoomsBedsAvailableAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Occupied tab | navigate | read ∪ clinical\|operations\|facility:admin |
-/// | Tab primary | — | none (null) |
-/// | Manage catalog → setup | navigate / nested write | admin ∪ unit:manage\|facility/tenant/system |
+/// | Tab primary / Create / Manage catalog | — | _(n/a)_ workspace — Tenant setup → Facility |
 /// | Search / filters / columns / pagination | read chrome | read ∪ |
 /// | Empty / error / retry / loading | read chrome | read ∪ |
 /// | Success snackbar / form validation | feedback | occupancy write ∪ |
@@ -368,7 +361,6 @@ abstract final class RoomsBedsAvailableAtomPermissions {
 /// | Detail Release / Request transfer / Manage transfer | update | occupancy write ∪ |
 /// | Detail Assign / status mutations | update | occupancy write ∪ / admin ∪ |
 /// | Nested release / transfer dialogs | update | occupancy write ∪ |
-/// | Nested create room / bed (via catalog) | create | admin ∪ |
 /// | Nested cross-module read/write | — | _(n/a)_ |
 /// | Route entry (catalog) | navigate | catalog ∩ rooms_beds:read |
 /// | Route entry (AppRoutes ∪) | navigate | clinical\|operations\|admins |
@@ -435,8 +427,7 @@ abstract final class RoomsBedsOccupiedAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Turnover tab | navigate | read ∪ clinical\|operations\|facility:admin |
-/// | Tab primary | — | none (null) |
-/// | Manage catalog → setup | navigate / nested write | admin ∪ unit:manage\|facility/tenant/system |
+/// | Tab primary / Create / Manage catalog | — | _(n/a)_ workspace — Tenant setup → Facility |
 /// | Search / filters / columns / pagination | read chrome | read ∪ |
 /// | Empty / error / retry / loading | read chrome | read ∪ |
 /// | Success snackbar / form validation | feedback | admin ∪ / occupancy write ∪ |
@@ -448,7 +439,6 @@ abstract final class RoomsBedsOccupiedAtomPermissions {
 /// | Detail Assign / Release / Transfer | update | occupancy write ∪ |
 /// | Detail Open housekeeping / operations | navigate | admin chrome (existing) |
 /// | Nested occupancy dialogs | update | occupancy write ∪ |
-/// | Nested create room / bed (via catalog) | create | admin ∪ |
 /// | Nested cross-module read/write | — | _(n/a)_ |
 /// | Route entry (catalog) | navigate | catalog ∩ rooms_beds:read |
 /// | Route entry (AppRoutes ∪) | navigate | clinical\|operations\|admins |
@@ -517,8 +507,7 @@ abstract final class RoomsBedsTurnoverAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Out of service tab | navigate | read ∪ clinical\|operations\|facility:admin |
-/// | Tab primary | — | none (null) |
-/// | Manage catalog → setup | navigate / nested write | admin ∪ unit:manage\|facility/tenant/system |
+/// | Tab primary / Create / Manage catalog | — | _(n/a)_ workspace — Tenant setup → Facility |
 /// | Search / filters / columns / pagination | read chrome | read ∪ |
 /// | Empty / error / retry / loading | read chrome | read ∪ |
 /// | Success snackbar / form validation | feedback | admin ∪ / occupancy write ∪ |
@@ -532,7 +521,6 @@ abstract final class RoomsBedsTurnoverAtomPermissions {
 /// | Detail Assign / Release / Transfer | update | occupancy write ∪ |
 /// | Nested status update (mark available) | update | admin ∪ |
 /// | Nested assign / release / transfer dialogs | update | occupancy write ∪ |
-/// | Nested create room / bed (via catalog) | create | admin ∪ |
 /// | Nested cross-module read/write | — | _(n/a)_ |
 /// | Route entry (catalog) | navigate | catalog ∩ rooms_beds:read |
 /// | Route entry (AppRoutes ∪) | navigate | clinical\|operations\|admins |

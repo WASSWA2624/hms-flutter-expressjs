@@ -615,7 +615,7 @@ void main() {
           accessPolicy: _deskWriterPolicy(),
         );
 
-        expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+        expect(find.byType(AppTabToolbarPrimary), findsNothing);
         expect(find.text('Register patient'), findsOneWidget);
         expect(find.text('Schedule appointment'), findsOneWidget);
         expect(find.text('Penny Payment'), findsOneWidget);
@@ -896,7 +896,7 @@ void main() {
 
       expect(find.text('Schedule appointment'), findsOneWidget);
       expect(find.text('Penny Payment'), findsOneWidget);
-      expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+      expect(find.byType(AppTabToolbarPrimary), findsNothing);
       expect(find.text('Receive payment'), findsNothing);
     });
 

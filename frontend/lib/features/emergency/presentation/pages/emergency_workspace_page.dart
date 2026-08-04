@@ -290,7 +290,6 @@ class _EmergencyWorkspaceContentState
                   }
                 }
               },
-              primaryAction: _buildPrimaryAction(context),
             ),
             SizedBox(height: theme.spacing.sm),
             AppListTable<EmergencyCaseSummary>(
@@ -340,6 +339,8 @@ class _EmergencyWorkspaceContentState
                 onFilterChanged: (AppSearchBarFilterValue value) {
                   setState(() => _filterValue = value);
                 },
+                // Filters → Settings → Export → Quick arrival.
+                trailingActions: _quickArrivalSearchActions(context),
               ),
               onRowSelected: (EmergencyCaseSummary summary) {
                 unawaited(
@@ -384,9 +385,10 @@ class _EmergencyWorkspaceContentState
     );
   }
 
-  Widget? _buildPrimaryAction(BuildContext context) {
+  /// Quick arrival lives after Export in the search bar (not the tab toolbar).
+  List<AppSearchBarAction> _quickArrivalSearchActions(BuildContext context) {
     if (!emergencyShowsQuickArrival(_currentTab)) {
-      return null;
+      return const <AppSearchBarAction>[];
     }
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final AccessRequirement quickArrivalRequirement = switch (_currentTab) {
@@ -401,13 +403,17 @@ class _EmergencyWorkspaceContentState
       EmergencyBoardTab.all => EmergencyAllAtomPermissions.quickArrival,
     };
     if (!quickArrivalRequirement.isAllowed(policy)) {
-      return null;
+      return const <AppSearchBarAction>[];
     }
-    return AppTabToolbarPrimary(
-      label: context.l10n.emergencyQuickArrivalAction,
-      icon: Icons.add_circle_outline,
-      onPressed: () => _openQuickArrivalDialog(context),
-    );
+    final String label = context.l10n.emergencyQuickArrivalAction;
+    return <AppSearchBarAction>[
+      AppSearchBarAction(
+        icon: Icons.add_circle_outline,
+        label: label,
+        tooltip: label,
+        onPressed: () => _openQuickArrivalDialog(context),
+      ),
+    ];
   }
 
   List<EmergencyCaseSummary> _filteredRows(EmergencyWorkspaceState state) {
@@ -522,7 +528,7 @@ String emergencyTabLabel(EmergencyBoardTab tab) {
   };
 }
 
-/// Whether the tab toolbar shows Quick arrival as the primary action.
+/// Whether Quick arrival is offered on this tab (search-bar trailing action).
 bool emergencyShowsQuickArrival(EmergencyBoardTab tab) {
   return tab != EmergencyBoardTab.closed;
 }

@@ -199,7 +199,6 @@ class _PatientRegistryContentState
                   }
                 }
               },
-              primaryAction: _buildPrimaryAction(l10n),
               secondaryActions: _buildSecondaryActions(l10n),
             ),
             SizedBox(height: theme.spacing.sm),
@@ -213,19 +212,6 @@ class _PatientRegistryContentState
         ),
       ),
     );
-  }
-
-  AccessRequirement get _sectionWriteRequirement {
-    return patientRegistryRegisterAtom(_section);
-  }
-
-  Widget _buildPrimaryAction(AppLocalizations l10n) {
-    return switch (_section) {
-      PatientRegistrySection.all ||
-      PatientRegistrySection.active ||
-      PatientRegistrySection.admitted ||
-      PatientRegistrySection.balanceDue => _registerPatientPrimaryAction(l10n),
-    };
   }
 
   List<Widget> _buildSecondaryActions(AppLocalizations l10n) {
@@ -255,27 +241,6 @@ class _PatientRegistryContentState
         },
       ),
     ];
-  }
-
-  Widget _registerPatientPrimaryAction(AppLocalizations l10n) {
-    return AppAccessActionGate(
-      requirement: _sectionWriteRequirement,
-      builder: (BuildContext context, bool isAllowed) {
-        if (!isAllowed) {
-          return const SizedBox.shrink();
-        }
-        return AppTabToolbarPrimary(
-          icon: Icons.person_add_alt_1_outlined,
-          label: l10n.patientsRegisterPatientAction,
-          semanticLabel: l10n.patientsRegisterPatientAction,
-          tooltip: l10n.patientsRegisterPatientAction,
-          enabled: isAllowed,
-          onPressed: () {
-            _openRegisterPatientDialog(context, ref);
-          },
-        );
-      },
-    );
   }
 
   Future<void> _openDuplicateReviewDialog(
@@ -402,41 +367,43 @@ class _PatientRegistryContentState
     };
   }
 
-  Future<void> _openRegisterPatientDialog(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    final PatientRegistrationResult? registration =
-        await showRegisterNewPatientDialog(
-          context: context,
-          referenceData: widget.state.referenceData,
-          registrationScope: PatientRegistrationScope.resolve(
-            referenceData: widget.state.referenceData,
-            accessPolicy: ref.read(appAccessPolicyProvider),
-          ),
-          onLookupDuplicates: (PatientDuplicateQuery query) {
-            return ref
-                .read(patientRegistryControllerProvider.notifier)
-                .loadDuplicateCandidates(query);
-          },
-          onSubmit: (Map<String, Object?> payload) {
-            return ref
-                .read(patientRegistryControllerProvider.notifier)
-                .createPatient(payload);
-          },
-        );
+}
 
-    if (registration == null || !context.mounted) {
-      return;
-    }
-
-    if (registration.wasCreated) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.patientsSavedMessage)),
+Future<void> _openRegisterPatientDialog(
+  BuildContext context,
+  WidgetRef ref,
+  PatientRegistryState state,
+) async {
+  final PatientRegistrationResult? registration =
+      await showRegisterNewPatientDialog(
+        context: context,
+        referenceData: state.referenceData,
+        registrationScope: PatientRegistrationScope.resolve(
+          referenceData: state.referenceData,
+          accessPolicy: ref.read(appAccessPolicyProvider),
+        ),
+        onLookupDuplicates: (PatientDuplicateQuery query) {
+          return ref
+              .read(patientRegistryControllerProvider.notifier)
+              .loadDuplicateCandidates(query);
+        },
+        onSubmit: (Map<String, Object?> payload) {
+          return ref
+              .read(patientRegistryControllerProvider.notifier)
+              .createPatient(payload);
+        },
       );
-    }
-    await showPatientDetailDialog(context, ref, registration.patient.id);
+
+  if (registration == null || !context.mounted) {
+    return;
   }
+
+  if (registration.wasCreated) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.patientsSavedMessage)),
+    );
+  }
+  await showPatientDetailDialog(context, ref, registration.patient.id);
 }
 
 @immutable
@@ -1058,6 +1025,18 @@ class _PatientList extends ConsumerWidget {
             ),
           );
         },
+        // Filters → Settings → Export → Register patient.
+        trailingActions: <AppSearchBarAction>[
+          if (patientRegistryRegisterAtom(section).isAllowed(policy))
+            AppSearchBarAction(
+              icon: Icons.person_add_alt_1_outlined,
+              label: l10n.patientsRegisterPatientAction,
+              tooltip: l10n.patientsRegisterPatientAction,
+              onPressed: () {
+                unawaited(_openRegisterPatientDialog(context, ref, state));
+              },
+            ),
+        ],
       ),
       isLoading: state.isRefreshingList,
       shrinkWrap: true,

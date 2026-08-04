@@ -616,7 +616,7 @@ void main() {
         accessPolicy: _writerPolicy(),
       );
 
-      expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+      expect(find.byType(AppTabToolbarPrimary), findsNothing);
       expect(find.text('Register patient'), findsOneWidget);
       expect(find.text('Schedule appointment'), findsOneWidget);
       expect(find.text('Victor VIP'), findsOneWidget);
@@ -969,7 +969,7 @@ void main() {
 
       expect(find.text('Schedule appointment'), findsOneWidget);
       expect(find.text('Victor VIP'), findsOneWidget);
-      expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+      expect(find.byType(AppTabToolbarPrimary), findsNothing);
     });
 
     testWidgets('integration: section=high-priority deep link selects tab', (

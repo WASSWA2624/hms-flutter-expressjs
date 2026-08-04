@@ -7,7 +7,7 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
@@ -305,8 +305,6 @@ class _ReceptionWorkspaceContentState
                   }
                 }
               },
-              primaryAction: _buildPrimaryAction(l10n),
-              secondaryActions: _buildSecondaryActions(l10n),
             ),
             SizedBox(height: theme.spacing.sm),
             if (_section == ReceptionDeskSection.paymentGate &&
@@ -399,6 +397,8 @@ class _ReceptionWorkspaceContentState
                       : (AppSearchBarFilterValue value) {
                           setState(() => _filterValues[_section] = value);
                         },
+                  // Filters → Settings → Export → Schedule → Register.
+                  trailingActions: _searchTrailingActions(l10n),
                 ),
                 emptyBuilder: (_) => AppStateView(
                   title: switch (_section) {
@@ -702,28 +702,8 @@ class _ReceptionWorkspaceContentState
     };
   }
 
-  Widget _buildPrimaryAction(AppLocalizations l10n) {
-    return AppAccessActionGate(
-      requirement: _stripWriteRequirement,
-      builder: (BuildContext context, bool isAllowed) {
-        if (!isAllowed) {
-          return const SizedBox.shrink();
-        }
-        return AppTabToolbarPrimary(
-          label: l10n.receptionRegisterPatientAction,
-          icon: Icons.person_add_alt_1_outlined,
-          enabled: isAllowed,
-          onPressed: isAllowed ? () => unawaited(_openRegisterPatient()) : null,
-        );
-      },
-    );
-  }
-
-  List<Widget> _buildSecondaryActions(AppLocalizations l10n) {
-    // Cross-module nav (Patient registry / OPD) and Refresh were removed as
-    // redundant shortcuts — those destinations stay in app navigation; desk
-    // data refreshes after mutations via [_refreshWorkspace].
-    final AccessRequirement scheduleRequirement = switch (_section) {
+  AccessRequirement get _scheduleRequirement {
+    return switch (_section) {
       ReceptionDeskSection.queue => ReceptionDeskQueueAtomPermissions.schedule,
       ReceptionDeskSection.highPriority =>
         ReceptionHighPriorityAtomPermissions.schedule,
@@ -735,23 +715,26 @@ class _ReceptionWorkspaceContentState
         ReceptionPaymentGateAtomPermissions.schedule,
       _ => ReceptionAppointmentsAtomPermissions.schedule,
     };
-    return <Widget>[
-      AppAccessActionGate(
-        requirement: scheduleRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          if (!isAllowed) {
-            return const SizedBox.shrink();
-          }
-          return AppTabToolbarAction(
-            label: l10n.receptionScheduleAppointmentAction,
-            icon: Icons.calendar_month_outlined,
-            enabled: isAllowed,
-            onPressed: isAllowed
-                ? () => unawaited(_scheduleAppointment())
-                : null,
-          );
-        },
-      ),
+  }
+
+  /// Desk CTAs live after Export in the search bar (not the tab toolbar).
+  List<AppSearchBarAction> _searchTrailingActions(AppLocalizations l10n) {
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    return <AppSearchBarAction>[
+      if (_scheduleRequirement.isAllowed(policy))
+        AppSearchBarAction(
+          icon: Icons.calendar_month_outlined,
+          label: l10n.receptionScheduleAppointmentAction,
+          tooltip: l10n.receptionScheduleAppointmentAction,
+          onPressed: () => unawaited(_scheduleAppointment()),
+        ),
+      if (_stripWriteRequirement.isAllowed(policy))
+        AppSearchBarAction(
+          icon: Icons.person_add_alt_1_outlined,
+          label: l10n.receptionRegisterPatientAction,
+          tooltip: l10n.receptionRegisterPatientAction,
+          onPressed: () => unawaited(_openRegisterPatient()),
+        ),
     ];
   }
 

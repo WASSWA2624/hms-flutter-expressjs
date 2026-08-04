@@ -199,7 +199,7 @@ AccessRequirement? opdNextActionRequirement(OpdBoardNextActionKind kind) {
   return opdBoardNextActionRequirement(kind);
 }
 
-/// Start-encounter gate for the active tab toolbar.
+/// Start-encounter gate for the active tab search-bar CTA.
 AccessRequirement opdStartEncounterRequirementForSection(
   OpdWorkspaceSection section,
 ) {
@@ -320,7 +320,7 @@ bool opdBoardShowsNextActionColumn(
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Active tab / count badge | navigate | read ∪ ([tab]) |
-/// | Start OPD encounter (toolbar) | create | source encounter ([startEncounter]) |
+/// | Start OPD encounter (search bar) | create | source encounter ([startEncounter]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | clinical write / form |
@@ -348,7 +348,7 @@ abstract final class OpdActiveAtomPermissions {
   static const AccessRequirement rowSelect = opdWorkspaceReadRequirement;
   static const AccessRequirement detail = opdWorkspaceReadRequirement;
 
-  /// Matrix ∩ `clinical:write`; toolbar create uses [startEncounter] (source).
+  /// Matrix ∩ `clinical:write`; search-bar create uses [startEncounter] (source).
   static const AccessRequirement create = opdClinicalWriteRequirement;
   static const AccessRequirement update = opdClinicalWriteRequirement;
   static const AccessRequirement delete = opdWorkspaceDeleteRequirement;
@@ -413,7 +413,7 @@ abstract final class OpdActiveAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | All worklist tab / count badge | navigate | read ∪ ([tab]) |
-/// | Start OPD encounter (toolbar) | create | source encounter ([startEncounter]) |
+/// | Start OPD encounter (search bar) | create | source encounter ([startEncounter]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | clinical write / form |
@@ -442,7 +442,7 @@ abstract final class OpdAllAtomPermissions {
   static const AccessRequirement rowSelect = opdWorkspaceReadRequirement;
   static const AccessRequirement detail = opdWorkspaceReadRequirement;
 
-  /// Matrix ∩ `clinical:write`; toolbar create uses [startEncounter] (source).
+  /// Matrix ∩ `clinical:write`; search-bar create uses [startEncounter] (source).
   static const AccessRequirement create = opdClinicalWriteRequirement;
   static const AccessRequirement update = opdClinicalWriteRequirement;
   static const AccessRequirement delete = opdWorkspaceDeleteRequirement;
@@ -510,7 +510,7 @@ abstract final class OpdAllAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Arrivals tab / count badge | navigate | read ∪ ([tab]) |
-/// | Start OPD encounter (toolbar) | create | source encounter ([startEncounter]) |
+/// | Start OPD encounter (search bar) | create | source encounter ([startEncounter]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | clinical write / form |
@@ -535,7 +535,7 @@ abstract final class OpdArrivalsAtomPermissions {
   static const AccessRequirement rowSelect = opdWorkspaceReadRequirement;
   static const AccessRequirement detail = opdWorkspaceReadRequirement;
 
-  /// Matrix ∩ `clinical:write`; toolbar create uses [startEncounter] (source).
+  /// Matrix ∩ `clinical:write`; search-bar create uses [startEncounter] (source).
   static const AccessRequirement create = opdClinicalWriteRequirement;
   static const AccessRequirement update = opdClinicalWriteRequirement;
   static const AccessRequirement delete = opdWorkspaceDeleteRequirement;
@@ -585,14 +585,14 @@ abstract final class OpdArrivalsAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Queue tab / count badge | navigate | read ∪ ([tab]) |
-/// | Start OPD encounter (toolbar) | create | source encounter ([startEncounter]) |
+/// | Start OPD encounter (search bar) | create | source encounter ([startEncounter]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | clinical write / form |
 /// | Row select → Queue Actions | read | ([rowSelect] / [detail]) |
 /// | Next action column | update | absent on Queue ([nextAction] unused) |
 /// | Nested prioritize / change status / assign doctor | update | source front-desk |
-/// | Nested encounter dialog (toolbar) | create | source encounter |
+/// | Nested encounter dialog (search bar) | create | source encounter |
 /// | Nested billing / admission panels | nested write | _(n/a)_ — not reachable |
 /// | Route entry (deep link) | navigate | catalog ∩ `opd:read` |
 abstract final class OpdQueueAtomPermissions {
@@ -610,7 +610,7 @@ abstract final class OpdQueueAtomPermissions {
   static const AccessRequirement detail = opdWorkspaceReadRequirement;
   static const AccessRequirement close = opdWorkspaceReadRequirement;
 
-  /// Matrix ∩ `clinical:write`; toolbar create uses [startEncounter] (source).
+  /// Matrix ∩ `clinical:write`; search-bar create uses [startEncounter] (source).
   static const AccessRequirement create = opdClinicalWriteRequirement;
   static const AccessRequirement update = opdClinicalWriteRequirement;
   static const AccessRequirement delete = opdWorkspaceDeleteRequirement;
@@ -659,7 +659,7 @@ abstract final class OpdQueueAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Triage tab / count badge | navigate | read ∪ ([tab]) |
-/// | Start OPD encounter (toolbar) | create | source encounter ([startEncounter]) |
+/// | Start OPD encounter (search bar) | create | source encounter ([startEncounter]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
 /// | Triage scope filter (waiting/urgent/…) | read chrome | ([filters]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
@@ -685,7 +685,7 @@ abstract final class OpdTriageAtomPermissions {
   static const AccessRequirement rowSelect = opdWorkspaceReadRequirement;
   static const AccessRequirement detail = opdWorkspaceReadRequirement;
 
-  /// Matrix ∩ `clinical:write`; toolbar create uses [startEncounter] (source).
+  /// Matrix ∩ `clinical:write`; search-bar create uses [startEncounter] (source).
   static const AccessRequirement create = opdClinicalWriteRequirement;
   static const AccessRequirement update = opdClinicalWriteRequirement;
   static const AccessRequirement delete = opdWorkspaceDeleteRequirement;
@@ -772,7 +772,7 @@ abstract final class OpdFollowUpsAtomPermissions {
   static const AccessRequirement write = opdFollowUpsWriteRequirement;
   static const AccessRequirement clinicalWrite = opdClinicalWriteRequirement;
 
-  /// Source encounter gate — toolbar does not mount Start OPD on Follow-ups.
+  /// Source encounter gate — search bar does not mount Start OPD on Follow-ups.
   static const AccessRequirement startEncounter = opdStartEncounterRequirement;
 
   /// Nested cross-module — matrix _(n/a)_; reuses clinical write ∩ / read ∪.

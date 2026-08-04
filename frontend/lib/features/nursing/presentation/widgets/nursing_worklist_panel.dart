@@ -11,6 +11,7 @@ import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_handove
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_medication_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_patient_detail_dialog.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_shift_context_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_vitals_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_actions.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_columns.dart';
@@ -100,6 +101,8 @@ class NursingWorklistPanel extends ConsumerWidget {
         filterValue: filterValue,
         hasActiveFilters: state.query.hasAdvancedFilters,
         onFilterChanged: onFilterChanged,
+        // Filters → Settings → Export → Shift context.
+        trailingActions: _shiftContextSearchActions(context, policy),
       ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.state(
         variant: AppStateViewVariant.empty,
@@ -150,6 +153,31 @@ class NursingWorklistPanel extends ConsumerWidget {
         );
       },
     );
+  }
+
+  /// Shift context lives after Export in the search bar (not the tab toolbar).
+  List<AppSearchBarAction> _shiftContextSearchActions(
+    BuildContext context,
+    AppAccessPolicy policy,
+  ) {
+    if (!canReadNursingShiftContext(policy)) {
+      return const <AppSearchBarAction>[];
+    }
+    final String label = context.l10n.nursingShiftContextTitle;
+    return <AppSearchBarAction>[
+      AppSearchBarAction(
+        icon: Icons.assignment_ind_outlined,
+        label: label,
+        tooltip: label,
+        onPressed: () {
+          showAppDialog<void>(
+            context: context,
+            builder: (BuildContext dialogContext) =>
+                const NursingShiftContextDialog(),
+          );
+        },
+      ),
+    ];
   }
 }
 

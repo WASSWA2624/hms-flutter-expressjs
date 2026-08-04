@@ -1387,7 +1387,7 @@ void main() {
   });
 
   testWidgets(
-    'renders AppTabStrip with tabs, Register patient toolbar, and Filters/Settings',
+    'renders AppTabStrip with tabs, Register patient in search bar, and Filters/Settings',
     (WidgetTester tester) async {
       final patientRepository = _MockPatientRepository();
       final opdRepository = _MockOpdRepository();
@@ -1426,7 +1426,7 @@ void main() {
   );
 
   testWidgets(
-    'switching tabs updates section query and keeps Register patient toolbar',
+    'switching tabs updates section query and keeps Register patient in search bar',
     (WidgetTester tester) async {
       final patientRepository = _MockPatientRepository();
       final opdRepository = _MockOpdRepository();
