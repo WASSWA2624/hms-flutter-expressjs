@@ -374,7 +374,10 @@ class _FacilityConfigPanelState extends ConsumerState<_FacilityConfigPanel> {
   @override
   void didUpdateWidget(covariant _FacilityConfigPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.facility.id != widget.facility.id) {
+    if (oldWidget.facility.id != widget.facility.id ||
+        oldWidget.facility.currency != widget.facility.currency ||
+        oldWidget.facility.standardConsultationFee !=
+            widget.facility.standardConsultationFee) {
       _currency = widget.facility.currency;
       _feeController.text = widget.facility.standardConsultationFee ?? '';
     }

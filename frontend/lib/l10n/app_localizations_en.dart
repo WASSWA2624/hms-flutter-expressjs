@@ -1327,6 +1327,94 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilitySetupTabUsers => 'Users';
 
   @override
+  String get tenantFacilitySetupTabSubscriptionApprovals =>
+      'Subscription approvals';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsIntro =>
+      'Review verified facility registrations. Activating assigns a Pro package for 3 months, then Free.';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsSearchHint =>
+      'Search by admin, facility, email, or phone';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsAdminColumn => 'Administrator';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsFacilityColumn => 'Facility';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsActionsColumn => 'Actions';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsEmptyTitle =>
+      'No accounts awaiting approval';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsEmpty =>
+      'When a facility owner verifies their email, they appear here for platform activation.';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsActivateTitle =>
+      'Activate account?';
+
+  @override
+  String tenantFacilitySubscriptionApprovalsActivateBody(String name) {
+    return 'Activate $name and assign a Pro package for 3 months. After that the account moves to Free.';
+  }
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsActivateSuccess =>
+      'Account activated with a 3-month Pro trial.';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsRejectTitle =>
+      'Reject registration?';
+
+  @override
+  String tenantFacilitySubscriptionApprovalsRejectBody(String name) {
+    return 'Reject $name? They will not be able to sign in.';
+  }
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsRejectSuccess =>
+      'Registration rejected.';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsDetailTitle =>
+      'Registration details';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsContactsSection => 'Contacts';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsContactsDescription =>
+      'Administrator contact details submitted at signup.';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsFacilitySection => 'Facility';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsFacilityDescription =>
+      'Organization and facility created during self-registration.';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsPlanSection =>
+      'Subscription plan';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsPlanDescription =>
+      'What activation provisions for this tenant.';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsPlanBody =>
+      'Activation assigns the Pro package for 3 months. When that window ends, the tenant is automatically moved to the Free package.';
+
+  @override
+  String get tenantFacilitySubscriptionApprovalsActionsSection => 'Actions';
+
+  @override
   String get tenantFacilitySetupTabClinicalCatalog => 'Clinical Services';
 
   @override
@@ -6769,7 +6857,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityFacilitySectionBody =>
-      'Facility name, logo reference, contact details, address, type, and active state.';
+      'Facility name, logo reference, contact details, address, type, currency, default consultation fee, and active state.';
 
   @override
   String get tenantFacilityLogoLabel => 'Facility logo';

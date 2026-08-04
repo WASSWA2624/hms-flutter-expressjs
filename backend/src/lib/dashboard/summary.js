@@ -602,6 +602,20 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
         value: metrics.moduleEntitlementIssues || 0,
         required_permissions: ['system:admin'],
       },
+      {
+        id: 'pending_registration_approvals',
+        label: 'Approvals',
+        value: metrics.pendingRegistrationApprovals || 0,
+        required_permissions: ['system:admin'],
+        hint:
+          Number(metrics.pendingRegistrationApprovals || 0) > 0
+            ? 'New accounts awaiting platform approval'
+            : null,
+        route_target: {
+          path: '/admin/setup',
+          query: { section: 'subscription-approvals' },
+        },
+      },
     ];
   }
 

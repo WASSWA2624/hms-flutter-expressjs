@@ -180,6 +180,34 @@ describe('tenant-facility-workspace service', () => {
     expect(result.permissions.can_manage_tenant).toBe(true);
   });
 
+  it('includes facility billing defaults in setup facility payload', async () => {
+    repository.findFacilities.mockResolvedValue([
+      {
+        id: 'facility-uuid',
+        human_friendly_id: 'FAC0001',
+        tenant_id: 'tenant-uuid',
+        name: 'Main Campus',
+        facility_type: 'HOSPITAL',
+        is_active: true,
+        extension_json: {
+          logo_url: 'https://example.com/logo.png',
+          currency: 'ugx',
+          billing: { standard_consultation_fee: '20000' },
+        },
+      },
+    ]);
+
+    const result = await service.getSetup({}, { role: 'TENANT_ADMIN' });
+
+    expect(result.facility.extension_json).toEqual(
+      expect.objectContaining({
+        logo_url: 'https://example.com/logo.png',
+        currency: 'UGX',
+        billing: { standard_consultation_fee: '20000' },
+      })
+    );
+  });
+
   it('loads structure lists when include_structure is requested', async () => {
     const result = await service.getSetup(
       { include_structure: true },

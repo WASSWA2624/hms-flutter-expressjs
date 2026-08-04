@@ -5,6 +5,9 @@
  */
 
 const prisma = require('@prisma/client');
+const {
+  downgradeExpiredOnboardingTrials,
+} = require('@lib/subscriptions/tenant-onboarding');
 
 const serializeEntitlement = (record = {}) => {
   const module = record.module || {};
@@ -36,6 +39,9 @@ const resolveTenantModuleEntitlements = async (tenantId) => {
   if (!tenantId) {
     return [];
   }
+
+  // Lazy expiry: Pro onboarding trials become Free after end_date.
+  await downgradeExpiredOnboardingTrials(tenantId).catch(() => 0);
 
   const now = new Date();
   const records = await prisma.module_subscription.findMany({

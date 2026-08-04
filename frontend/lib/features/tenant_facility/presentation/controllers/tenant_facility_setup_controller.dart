@@ -329,6 +329,8 @@ final class TenantFacilitySetupSubmissionController
     String? logoUrl,
     bool removeLogo = false,
     String? currency,
+    String? standardConsultationFee,
+    bool clearStandardConsultationFee = false,
     List<int>? logoBytes,
     String? logoFileName,
     String? logoMimeType,
@@ -349,6 +351,10 @@ final class TenantFacilitySetupSubmissionController
         final String? resolvedCurrency = currency?.trim().isNotEmpty == true
             ? currency!.trim().toUpperCase()
             : null;
+        final String? resolvedFee = standardConsultationFee?.trim().isNotEmpty ==
+                true
+            ? standardConsultationFee!.trim()
+            : null;
 
         var facilityResult = await _repository.saveFacility(
           id: id,
@@ -359,6 +365,8 @@ final class TenantFacilitySetupSubmissionController
           logoUrl: resolvedLogoUrl,
           removeLogo: removeLogo,
           currency: resolvedCurrency,
+          standardConsultationFee: resolvedFee,
+          clearStandardConsultationFee: clearStandardConsultationFee,
           phone: phone,
           email: email,
           addressLine1: addressLine1,
@@ -405,6 +413,8 @@ final class TenantFacilitySetupSubmissionController
             isActive: isActive,
             logoUrl: uploadedLogoUrl,
             currency: resolvedCurrency ?? facility.currency,
+            standardConsultationFee: resolvedFee,
+            clearStandardConsultationFee: clearStandardConsultationFee,
           );
           if (facilityResult case ResultFailure<FacilityProfile>(
             :final failure,

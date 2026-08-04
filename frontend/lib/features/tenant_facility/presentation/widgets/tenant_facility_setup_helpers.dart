@@ -21,7 +21,9 @@ enum TenantFacilitySetupDeskSection {
   roles,
   permissions,
   users,
-  clinicalCatalog;
+  clinicalCatalog,
+  /// Platform-only queue of self-registered accounts awaiting Pro trial activation.
+  subscriptionApprovals;
 
   /// Canonical `?section=` query value for this tab.
   String get routeQueryValue {
@@ -37,6 +39,8 @@ enum TenantFacilitySetupDeskSection {
       TenantFacilitySetupDeskSection.roles => 'roles',
       TenantFacilitySetupDeskSection.permissions => 'permissions',
       TenantFacilitySetupDeskSection.users => 'users',
+      TenantFacilitySetupDeskSection.subscriptionApprovals =>
+        'subscription-approvals',
     };
   }
 
@@ -79,6 +83,12 @@ enum TenantFacilitySetupDeskSection {
       case 'users':
       case 'user':
         return TenantFacilitySetupDeskSection.users;
+      case 'subscription-approvals':
+      case 'subscription_approvals':
+      case 'approvals':
+      case 'account-approvals':
+      case 'registration-approvals':
+        return TenantFacilitySetupDeskSection.subscriptionApprovals;
       default:
         return null;
     }
@@ -131,6 +141,7 @@ bool tenantFacilitySetupDeskSectionVisible({
   required bool canManageTenant,
   required bool canManageFacility,
   required bool canManageAccess,
+  bool isElevated = false,
 }) {
   return switch (section) {
     TenantFacilitySetupDeskSection.tenants => canManageTenant,
@@ -145,6 +156,7 @@ bool tenantFacilitySetupDeskSectionVisible({
     TenantFacilitySetupDeskSection.roles ||
     TenantFacilitySetupDeskSection.permissions ||
     TenantFacilitySetupDeskSection.users => canManageAccess,
+    TenantFacilitySetupDeskSection.subscriptionApprovals => isElevated,
   };
 }
 
@@ -152,6 +164,7 @@ List<TenantFacilitySetupDeskSection> tenantFacilityVisibleSetupDeskSections({
   required bool canManageTenant,
   required bool canManageFacility,
   required bool canManageAccess,
+  bool isElevated = false,
 }) {
   return TenantFacilitySetupDeskSection.values
       .where(
@@ -161,6 +174,7 @@ List<TenantFacilitySetupDeskSection> tenantFacilityVisibleSetupDeskSections({
               canManageTenant: canManageTenant,
               canManageFacility: canManageFacility,
               canManageAccess: canManageAccess,
+              isElevated: isElevated,
             ),
       )
       .toList(growable: false);
@@ -554,6 +568,8 @@ String tenantFacilitySetupDeskSectionLabel(
     TenantFacilitySetupDeskSection.permissions =>
       l10n.tenantFacilitySetupTabPermissions,
     TenantFacilitySetupDeskSection.users => l10n.tenantFacilitySetupTabUsers,
+    TenantFacilitySetupDeskSection.subscriptionApprovals =>
+      l10n.tenantFacilitySetupTabSubscriptionApprovals,
   };
 }
 
@@ -573,6 +589,8 @@ IconData tenantFacilitySetupDeskSectionIcon(
     TenantFacilitySetupDeskSection.roles => Icons.badge_outlined,
     TenantFacilitySetupDeskSection.permissions => Icons.key_outlined,
     TenantFacilitySetupDeskSection.users => Icons.people_outline,
+    TenantFacilitySetupDeskSection.subscriptionApprovals =>
+      Icons.verified_user_outlined,
   };
 }
 
@@ -597,6 +615,7 @@ String? tenantFacilitySetupDeskCreateLabel(
     TenantFacilitySetupDeskSection.roles => l10n.accessAdminCreateRoleAction,
     TenantFacilitySetupDeskSection.permissions => null,
     TenantFacilitySetupDeskSection.users => l10n.accessAdminCreateUserAction,
+    TenantFacilitySetupDeskSection.subscriptionApprovals => null,
   };
 }
 
@@ -616,6 +635,7 @@ IconData? tenantFacilitySetupDeskCreateIcon(
     TenantFacilitySetupDeskSection.roles => Icons.badge_outlined,
     TenantFacilitySetupDeskSection.permissions => null,
     TenantFacilitySetupDeskSection.users => Icons.person_add_alt_1_outlined,
+    TenantFacilitySetupDeskSection.subscriptionApprovals => null,
   };
 }
 

@@ -52,7 +52,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     roleLabel: 'Platform administrator',
     homeTitle: 'Platform',
     emptyMessage: '',
-    maxStatusCards: 4,
+    maxStatusCards: 5,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'tenants_active',
@@ -70,6 +70,11 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         label: 'Subscriptions',
         format: 'ratio',
         requiredPermissions: <AppPermission>[AppPermissions.subscriptionsRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'pending_registration_approvals',
+        label: 'Approvals',
+        requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
       ),
       HomeStatusCardTemplate(
         id: 'module_entitlement_issues',
@@ -92,6 +97,19 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'manage_roles_access',
       'manage_users',
     ],
+    metricRouteTargets: <String, HomeMetricRouteTarget>{
+      'pending_registration_approvals': HomeMetricRouteTarget(
+        queryParameters: <String, String>{
+          'section': 'subscription-approvals',
+        },
+      ),
+      'tenants_active': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'tenants'},
+      ),
+      'facilities_active': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'facility'},
+      ),
+    },
   ),
   AppRole.tenantAdmin: HomeDashboardProfile(
     id: 'tenant_admin',

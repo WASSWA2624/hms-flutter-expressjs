@@ -35,6 +35,7 @@ import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/departm
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/department_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_catalog_config_panel.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_similarity_dialog.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/manage_subscription_approvals_panel.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/room_details_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/room_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
@@ -120,6 +121,7 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
       AppPermissions.facilityAdmin,
       AppPermissions.hrWrite,
     ]);
+    final bool isElevated = accessPolicy.isElevated;
 
     return AppWorkspace(
       title: tenantFacilitySetupWorkspaceTitle(accessPolicy, l10n),
@@ -139,6 +141,7 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
         canManageFacility: canManageFacility,
         canEditStructure: canEditStructure,
         canManageAccess: canManageAccess,
+        isElevated: isElevated,
       ),
     );
   }
@@ -457,6 +460,7 @@ class _SetupBody extends ConsumerStatefulWidget {
     required this.canManageFacility,
     required this.canEditStructure,
     required this.canManageAccess,
+    required this.isElevated,
     this.initialQuery,
   });
 
@@ -466,6 +470,7 @@ class _SetupBody extends ConsumerStatefulWidget {
   final bool canManageFacility;
   final bool canEditStructure;
   final bool canManageAccess;
+  final bool isElevated;
 
   @override
   ConsumerState<_SetupBody> createState() => _SetupBodyState();
@@ -481,6 +486,7 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
       canManageTenant: widget.canManageTenant,
       canManageFacility: widget.canManageFacility,
       canManageAccess: widget.canManageAccess,
+      isElevated: widget.isElevated,
     );
   }
 
@@ -680,6 +686,8 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
           panel: AccessAdminPanel.permissions,
         ),
       TenantFacilitySetupDeskSection.users => const ManageUsersPanel(),
+      TenantFacilitySetupDeskSection.subscriptionApprovals =>
+        const ManageSubscriptionApprovalsPanel(),
     };
   }
 
@@ -1338,6 +1346,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   late final TextEditingController _emailController;
   late final TextEditingController _addressLineController;
   late final TextEditingController _cityController;
+  late final TextEditingController _feeController;
   late FacilitySetupType _type;
   late bool _isActive;
   late String _currency;
@@ -1362,6 +1371,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   FacilitySetupType _baselineType = FacilitySetupType.hospital;
   bool _baselineIsActive = true;
   String _baselineCurrency = appDefaultCurrencyCode;
+  String? _baselineFee;
   String? _baselinePhone;
   String? _baselineEmail;
   String? _baselineAddressLine1;
@@ -1441,6 +1451,9 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       text: contact.addressLine1 ?? '',
     );
     _cityController = TextEditingController(text: contact.city ?? '');
+    _feeController = TextEditingController(
+      text: facility?.standardConsultationFee ?? '',
+    );
     _selectedCountry = contact.country;
     _type = facility?.type ?? FacilitySetupType.hospital;
     _isActive = facility?.isActive ?? true;
@@ -1466,6 +1479,9 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     _baselineType = _type;
     _baselineIsActive = _isActive;
     _baselineCurrency = _currency.trim().toUpperCase();
+    _baselineFee = _normalizedOptional(
+      normalizeCurrencyAmount(_feeController.text),
+    );
     _baselinePhone = _normalizedOptional(_phoneController.text);
     _baselineEmail = _normalizedOptional(_emailController.text);
     _baselineAddressLine1 = _normalizedOptional(_addressLineController.text);
@@ -1548,6 +1564,11 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
             tenantCurrency:
                 snapshot.tenant?.currency ?? widget.snapshot.tenant?.currency,
           );
+          if (_normalizedOptional(_feeController.text) == null &&
+              _normalizedOptional(loadedFacility.standardConsultationFee) !=
+                  null) {
+            _feeController.text = loadedFacility.standardConsultationFee ?? '';
+          }
           if (logoMissing) {
             _existingLogoUrl = loadedFacility.logoUrl;
           }
@@ -1656,6 +1677,8 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
         facilityCurrency: widget.snapshot.facility?.currency,
         tenantCurrency: widget.snapshot.tenant?.currency,
       );
+      _feeController.text =
+          widget.snapshot.facility?.standardConsultationFee ?? '';
       _captureBaseline();
       _notifyDialogState();
     }
@@ -1670,6 +1693,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     _emailController.dispose();
     _addressLineController.dispose();
     _cityController.dispose();
+    _feeController.dispose();
     super.dispose();
   }
 
@@ -1727,6 +1751,10 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     final bool fieldsEnabled =
         canEditBase && _hasSelectedTenant && !_loadingContact;
     final bool requireFields = _isCreate;
+    final String resolvedCurrency = resolveDefaultCurrency(
+      facilityCurrency: _currency,
+      tenantCurrency: widget.snapshot.tenant?.currency,
+    );
 
     final Widget form = Form(
       key: _formKey,
@@ -1872,6 +1900,22 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
                 _currency = value.trim().toUpperCase();
               });
             },
+          ),
+          AppCurrencyAmountField(
+            amountController: _feeController,
+            currency: resolvedCurrency,
+            onCurrencyChanged: (String? value) {
+              if (value == null || value.trim().isEmpty) {
+                return;
+              }
+              setState(() {
+                _currency = value.trim().toUpperCase();
+              });
+            },
+            amountLabelText: l10n.settingsConfigurationConsultationFeeLabel,
+            currencyLabelText: l10n.tenantFacilityDefaultCurrencyLabel,
+            helperText: l10n.settingsConfigurationConsultationFeeHelper,
+            enabled: fieldsEnabled,
           ),
           AppImageUploadField(
             label: l10n.tenantFacilityLogoLabel,
@@ -2034,6 +2078,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     final String? resolvedLogoUrl = _logoCleared
         ? null
         : (_normalizedOptional(_existingLogoUrl) ?? _baselineLogoUrl);
+    final String resolvedFee = normalizeCurrencyAmount(_feeController.text);
 
     if (!_isCreate) {
       final List<_FacilityFieldChange> changes = _buildFacilityChanges(
@@ -2041,6 +2086,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
         type: _type,
         isActive: _isActive,
         currency: _currency.trim().toUpperCase(),
+        standardConsultationFee: resolvedFee.isEmpty ? null : resolvedFee,
         phone: resolvedPhone,
         email: resolvedEmail,
         addressLine1: resolvedAddress,
@@ -2097,6 +2143,8 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           logoUrl: resolvedLogoUrl,
           removeLogo: _logoCleared,
           currency: _currency.trim().toUpperCase(),
+          standardConsultationFee: resolvedFee.isEmpty ? null : resolvedFee,
+          clearStandardConsultationFee: resolvedFee.isEmpty,
           logoBytes: _logoBytes,
           logoFileName: _logoFileName,
           logoMimeType: _logoMimeType,
@@ -2158,6 +2206,8 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           logoUrl: resolvedLogoUrl,
           removeLogo: _logoCleared,
           currency: _currency.trim().toUpperCase(),
+          standardConsultationFee: resolvedFee.isEmpty ? null : resolvedFee,
+          clearStandardConsultationFee: resolvedFee.isEmpty,
           logoBytes: _logoBytes,
           logoFileName: _logoFileName,
           logoMimeType: _logoMimeType,
@@ -2188,6 +2238,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     required FacilitySetupType type,
     required bool isActive,
     required String currency,
+    required String? standardConsultationFee,
     required String? phone,
     required String? email,
     required String? addressLine1,
@@ -2234,6 +2285,11 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       l10n.tenantFacilityDefaultCurrencyLabel,
       _baselineCurrency,
       currency,
+    );
+    addChange(
+      l10n.settingsConfigurationConsultationFeeLabel,
+      _baselineFee,
+      standardConsultationFee,
     );
     addChange(l10n.profilePhoneLabel, _baselinePhone, phone);
     addChange(l10n.profileEmailLabel, _baselineEmail, email);

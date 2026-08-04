@@ -1736,6 +1736,110 @@
   "@tenantFacilitySetupTabUsers": {
     "description": "Setup workspace tab label for users."
   },
+  "tenantFacilitySetupTabSubscriptionApprovals": "Subscription approvals",
+  "@tenantFacilitySetupTabSubscriptionApprovals": {
+    "description": "Platform setup tab for approving new facility registrations and assigning Pro trial."
+  },
+  "tenantFacilitySubscriptionApprovalsIntro": "Review verified facility registrations. Activating assigns a Pro package for 3 months, then Free.",
+  "@tenantFacilitySubscriptionApprovalsIntro": {
+    "description": "Intro text above the subscription approvals worklist."
+  },
+  "tenantFacilitySubscriptionApprovalsSearchHint": "Search by admin, facility, email, or phone",
+  "@tenantFacilitySubscriptionApprovalsSearchHint": {
+    "description": "Search hint for subscription approvals worklist."
+  },
+  "tenantFacilitySubscriptionApprovalsAdminColumn": "Administrator",
+  "@tenantFacilitySubscriptionApprovalsAdminColumn": {
+    "description": "Column for administrator name on subscription approvals."
+  },
+  "tenantFacilitySubscriptionApprovalsFacilityColumn": "Facility",
+  "@tenantFacilitySubscriptionApprovalsFacilityColumn": {
+    "description": "Column for facility name on subscription approvals."
+  },
+  "tenantFacilitySubscriptionApprovalsActionsColumn": "Actions",
+  "@tenantFacilitySubscriptionApprovalsActionsColumn": {
+    "description": "Actions column header on subscription approvals."
+  },
+  "tenantFacilitySubscriptionApprovalsEmptyTitle": "No accounts awaiting approval",
+  "@tenantFacilitySubscriptionApprovalsEmptyTitle": {
+    "description": "Empty-state title for subscription approvals."
+  },
+  "tenantFacilitySubscriptionApprovalsEmpty": "When a facility owner verifies their email, they appear here for platform activation.",
+  "@tenantFacilitySubscriptionApprovalsEmpty": {
+    "description": "Empty-state body for subscription approvals."
+  },
+  "tenantFacilitySubscriptionApprovalsActivateTitle": "Activate account?",
+  "@tenantFacilitySubscriptionApprovalsActivateTitle": {
+    "description": "Confirm dialog title when activating a pending registration."
+  },
+  "tenantFacilitySubscriptionApprovalsActivateBody": "Activate {name} and assign a Pro package for 3 months. After that the account moves to Free.",
+  "@tenantFacilitySubscriptionApprovalsActivateBody": {
+    "description": "Confirm dialog body when activating a pending registration.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Wasswa Wilson"
+      }
+    }
+  },
+  "tenantFacilitySubscriptionApprovalsActivateSuccess": "Account activated with a 3-month Pro trial.",
+  "@tenantFacilitySubscriptionApprovalsActivateSuccess": {
+    "description": "SnackBar after successful registration activation."
+  },
+  "tenantFacilitySubscriptionApprovalsRejectTitle": "Reject registration?",
+  "@tenantFacilitySubscriptionApprovalsRejectTitle": {
+    "description": "Confirm dialog title when rejecting a pending registration."
+  },
+  "tenantFacilitySubscriptionApprovalsRejectBody": "Reject {name}? They will not be able to sign in.",
+  "@tenantFacilitySubscriptionApprovalsRejectBody": {
+    "description": "Confirm dialog body when rejecting a pending registration.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Wasswa Wilson"
+      }
+    }
+  },
+  "tenantFacilitySubscriptionApprovalsRejectSuccess": "Registration rejected.",
+  "@tenantFacilitySubscriptionApprovalsRejectSuccess": {
+    "description": "SnackBar after rejecting a registration."
+  },
+  "tenantFacilitySubscriptionApprovalsDetailTitle": "Registration details",
+  "@tenantFacilitySubscriptionApprovalsDetailTitle": {
+    "description": "Detail dialog title for a pending registration."
+  },
+  "tenantFacilitySubscriptionApprovalsContactsSection": "Contacts",
+  "@tenantFacilitySubscriptionApprovalsContactsSection": {
+    "description": "Collapsible section title for registration contacts."
+  },
+  "tenantFacilitySubscriptionApprovalsContactsDescription": "Administrator contact details submitted at signup.",
+  "@tenantFacilitySubscriptionApprovalsContactsDescription": {
+    "description": "Collapsible section description for registration contacts."
+  },
+  "tenantFacilitySubscriptionApprovalsFacilitySection": "Facility",
+  "@tenantFacilitySubscriptionApprovalsFacilitySection": {
+    "description": "Collapsible section title for facility details."
+  },
+  "tenantFacilitySubscriptionApprovalsFacilityDescription": "Organization and facility created during self-registration.",
+  "@tenantFacilitySubscriptionApprovalsFacilityDescription": {
+    "description": "Collapsible section description for facility details."
+  },
+  "tenantFacilitySubscriptionApprovalsPlanSection": "Subscription plan",
+  "@tenantFacilitySubscriptionApprovalsPlanSection": {
+    "description": "Collapsible section title for plan assignment details."
+  },
+  "tenantFacilitySubscriptionApprovalsPlanDescription": "What activation provisions for this tenant.",
+  "@tenantFacilitySubscriptionApprovalsPlanDescription": {
+    "description": "Collapsible section description for plan assignment."
+  },
+  "tenantFacilitySubscriptionApprovalsPlanBody": "Activation assigns the Pro package for 3 months. When that window ends, the tenant is automatically moved to the Free package.",
+  "@tenantFacilitySubscriptionApprovalsPlanBody": {
+    "description": "Body explaining Pro trial then Free downgrade."
+  },
+  "tenantFacilitySubscriptionApprovalsActionsSection": "Actions",
+  "@tenantFacilitySubscriptionApprovalsActionsSection": {
+    "description": "Section title for activate/reject buttons in the detail dialog."
+  },
   "tenantFacilitySetupTabClinicalCatalog": "Clinical Services",
   "@tenantFacilitySetupTabClinicalCatalog": {
     "description": "Setup workspace tab label for the clinical service catalog."
@@ -8577,7 +8681,7 @@
   "@tenantFacilityFacilitySectionTitle": {
     "description": "Facility profile form section title."
   },
-  "tenantFacilityFacilitySectionBody": "Facility name, logo reference, contact details, address, type, and active state.",
+  "tenantFacilityFacilitySectionBody": "Facility name, logo reference, contact details, address, type, currency, default consultation fee, and active state.",
   "@tenantFacilityFacilitySectionBody": {
     "description": "Facility profile form section body."
   },

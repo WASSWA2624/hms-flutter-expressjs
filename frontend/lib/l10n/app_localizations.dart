@@ -2602,6 +2602,144 @@ abstract class AppLocalizations {
   /// **'Users'**
   String get tenantFacilitySetupTabUsers;
 
+  /// Platform setup tab for approving new facility registrations and assigning Pro trial.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription approvals'**
+  String get tenantFacilitySetupTabSubscriptionApprovals;
+
+  /// Intro text above the subscription approvals worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Review verified facility registrations. Activating assigns a Pro package for 3 months, then Free.'**
+  String get tenantFacilitySubscriptionApprovalsIntro;
+
+  /// Search hint for subscription approvals worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by admin, facility, email, or phone'**
+  String get tenantFacilitySubscriptionApprovalsSearchHint;
+
+  /// Column for administrator name on subscription approvals.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator'**
+  String get tenantFacilitySubscriptionApprovalsAdminColumn;
+
+  /// Column for facility name on subscription approvals.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get tenantFacilitySubscriptionApprovalsFacilityColumn;
+
+  /// Actions column header on subscription approvals.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get tenantFacilitySubscriptionApprovalsActionsColumn;
+
+  /// Empty-state title for subscription approvals.
+  ///
+  /// In en, this message translates to:
+  /// **'No accounts awaiting approval'**
+  String get tenantFacilitySubscriptionApprovalsEmptyTitle;
+
+  /// Empty-state body for subscription approvals.
+  ///
+  /// In en, this message translates to:
+  /// **'When a facility owner verifies their email, they appear here for platform activation.'**
+  String get tenantFacilitySubscriptionApprovalsEmpty;
+
+  /// Confirm dialog title when activating a pending registration.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate account?'**
+  String get tenantFacilitySubscriptionApprovalsActivateTitle;
+
+  /// Confirm dialog body when activating a pending registration.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate {name} and assign a Pro package for 3 months. After that the account moves to Free.'**
+  String tenantFacilitySubscriptionApprovalsActivateBody(String name);
+
+  /// SnackBar after successful registration activation.
+  ///
+  /// In en, this message translates to:
+  /// **'Account activated with a 3-month Pro trial.'**
+  String get tenantFacilitySubscriptionApprovalsActivateSuccess;
+
+  /// Confirm dialog title when rejecting a pending registration.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject registration?'**
+  String get tenantFacilitySubscriptionApprovalsRejectTitle;
+
+  /// Confirm dialog body when rejecting a pending registration.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject {name}? They will not be able to sign in.'**
+  String tenantFacilitySubscriptionApprovalsRejectBody(String name);
+
+  /// SnackBar after rejecting a registration.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration rejected.'**
+  String get tenantFacilitySubscriptionApprovalsRejectSuccess;
+
+  /// Detail dialog title for a pending registration.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration details'**
+  String get tenantFacilitySubscriptionApprovalsDetailTitle;
+
+  /// Collapsible section title for registration contacts.
+  ///
+  /// In en, this message translates to:
+  /// **'Contacts'**
+  String get tenantFacilitySubscriptionApprovalsContactsSection;
+
+  /// Collapsible section description for registration contacts.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator contact details submitted at signup.'**
+  String get tenantFacilitySubscriptionApprovalsContactsDescription;
+
+  /// Collapsible section title for facility details.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get tenantFacilitySubscriptionApprovalsFacilitySection;
+
+  /// Collapsible section description for facility details.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization and facility created during self-registration.'**
+  String get tenantFacilitySubscriptionApprovalsFacilityDescription;
+
+  /// Collapsible section title for plan assignment details.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription plan'**
+  String get tenantFacilitySubscriptionApprovalsPlanSection;
+
+  /// Collapsible section description for plan assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'What activation provisions for this tenant.'**
+  String get tenantFacilitySubscriptionApprovalsPlanDescription;
+
+  /// Body explaining Pro trial then Free downgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Activation assigns the Pro package for 3 months. When that window ends, the tenant is automatically moved to the Free package.'**
+  String get tenantFacilitySubscriptionApprovalsPlanBody;
+
+  /// Section title for activate/reject buttons in the detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get tenantFacilitySubscriptionApprovalsActionsSection;
+
   /// Setup workspace tab label for the clinical service catalog.
   ///
   /// In en, this message translates to:
@@ -12565,7 +12703,7 @@ abstract class AppLocalizations {
   /// Facility profile form section body.
   ///
   /// In en, this message translates to:
-  /// **'Facility name, logo reference, contact details, address, type, and active state.'**
+  /// **'Facility name, logo reference, contact details, address, type, currency, default consultation fee, and active state.'**
   String get tenantFacilityFacilitySectionBody;
 
   /// Facility logo upload field label.

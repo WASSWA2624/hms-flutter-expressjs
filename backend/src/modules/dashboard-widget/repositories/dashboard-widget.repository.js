@@ -571,6 +571,7 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         subscriptionsExpiring,
         moduleEntitlementIssues,
         tenantsWithoutSubscription,
+        pendingRegistrationApprovals,
         trendDates,
         subscriptionStatusCounts,
       ] = await Promise.all([
@@ -611,6 +612,17 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
             },
           },
         }),
+        prisma.registration_follow_up.count({
+          where: {
+            deleted_at: null,
+            account_status: 'PENDING',
+            user: {
+              deleted_at: null,
+              status: 'PENDING',
+              email_verified_at: { not: null },
+            },
+          },
+        }).catch(() => 0),
         selectDateSeries(
           prisma.tenant,
           { deleted_at: null, created_at: { gte: trendStart } },
@@ -642,6 +654,7 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           subscriptionsActive,
           subscriptionsExpiring,
           moduleEntitlementIssues,
+          pendingRegistrationApprovals,
         },
         trendDates,
         statusCounts,

@@ -185,6 +185,16 @@ const serializeFacility = (record, context = null, contactAddress = null) => {
     typeof extensionJson.currency === 'string' && extensionJson.currency.trim()
       ? extensionJson.currency.trim().toUpperCase()
       : null;
+  const billingRaw =
+    extensionJson.billing && typeof extensionJson.billing === 'object'
+      ? extensionJson.billing
+      : null;
+  const consultationFee = (() => {
+    const raw = billingRaw?.standard_consultation_fee;
+    if (raw === null || raw === undefined) return null;
+    const asString = String(raw).trim();
+    return asString ? asString : null;
+  })();
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
@@ -204,6 +214,13 @@ const serializeFacility = (record, context = null, contactAddress = null) => {
     extension_json: {
       logo_url: extensionJson.logo_url || null,
       currency,
+      ...(billingRaw
+        ? {
+            billing: {
+              standard_consultation_fee: consultationFee,
+            },
+          }
+        : {}),
     },
   };
 };

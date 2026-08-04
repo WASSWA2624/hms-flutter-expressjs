@@ -21,6 +21,9 @@ abstract final class HomeDashboardAtomPermissions {
         'subscriptions_health': <AppPermission>[
           AppPermissions.subscriptionsRead,
         ],
+        'pending_registration_approvals': <AppPermission>[
+          AppPermissions.systemAdmin,
+        ],
         'module_entitlement_issues': <AppPermission>[AppPermissions.systemAdmin],
         // Gap: platform_users / system_health — no live metric source yet.
 

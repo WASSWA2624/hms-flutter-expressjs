@@ -245,6 +245,23 @@ AppRouteData? _clinicalMetricRoute({
     };
   }
 
+  if (profile.id == 'super_admin') {
+    return switch (cardId) {
+      'pending_registration_approvals' ||
+      'tenants_active' ||
+      'facilities_active'
+          when policy.grants(AppPermissions.systemAdmin) =>
+        AppRoutes.tenantFacilitySetup,
+      'subscriptions_health'
+          when policy.grants(AppPermissions.subscriptionsRead) =>
+        AppRoutes.subscriptions,
+      'module_entitlement_issues'
+          when policy.grants(AppPermissions.systemAdmin) =>
+        AppRoutes.subscriptions,
+      _ => null,
+    };
+  }
+
   return null;
 }
 

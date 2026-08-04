@@ -407,6 +407,38 @@ void main() {
       expect(sections.contains(TenantFacilitySetupDeskSection.users), isTrue);
     });
 
+    test('includes subscription approvals only for elevated platform admins', () {
+      final List<TenantFacilitySetupDeskSection> elevated =
+          tenantFacilityVisibleSetupDeskSections(
+            canManageTenant: true,
+            canManageFacility: true,
+            canManageAccess: true,
+            isElevated: true,
+          );
+      final List<TenantFacilitySetupDeskSection> tenantOnly =
+          tenantFacilityVisibleSetupDeskSections(
+            canManageTenant: true,
+            canManageFacility: true,
+            canManageAccess: true,
+            isElevated: false,
+          );
+
+      expect(
+        elevated.contains(TenantFacilitySetupDeskSection.subscriptionApprovals),
+        isTrue,
+      );
+      expect(
+        tenantOnly.contains(
+          TenantFacilitySetupDeskSection.subscriptionApprovals,
+        ),
+        isFalse,
+      );
+      expect(
+        TenantFacilitySetupDeskSection.fromQuery('subscription-approvals'),
+        TenantFacilitySetupDeskSection.subscriptionApprovals,
+      );
+    });
+
     test('includes tenants for tenant admins', () {
       final List<TenantFacilitySetupDeskSection> sections =
           tenantFacilityVisibleSetupDeskSections(
