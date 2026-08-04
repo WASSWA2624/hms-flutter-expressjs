@@ -103,8 +103,8 @@ const AccessRequirement opdAdmissionHandoffRequirement = AccessRequirement(
 
 /// Shared OPD queue/flow stage actions hub for OPD, Reception, and Patients.
 ///
-/// Shows expanded patient/encounter context (without the visit journey
-/// stepper) plus stage-appropriate quick actions including Print summary.
+/// Shows the patient block as outermost chrome (no Encounter context wrapper)
+/// plus the full permission-gated clinical/billing action set for open visits.
 Future<bool?> showFlowActionsDialog({
   required BuildContext context,
   required OpdFlowSummary flow,
@@ -155,16 +155,27 @@ class FlowActionsDialog extends ConsumerStatefulWidget {
 }
 
 class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
+  /// False until [selectFlow] for this dialog finishes so a leftover workspace
+  /// [OpdWorkspaceState.lastFailure] cannot flash as an error banner on open.
+  bool _selectionSettled = false;
+
   @override
   void initState() {
     super.initState();
-    unawaited(
-      Future<void>.microtask(
-        () => ref
-            .read(opdWorkspaceControllerProvider.notifier)
-            .selectFlow(widget.flow),
-      ),
-    );
+    // Defer selectFlow so Riverpod is not modified while this dialog mounts.
+    unawaited(Future<void>.microtask(_loadSelectedFlow));
+  }
+
+  Future<void> _loadSelectedFlow() async {
+    await ref
+        .read(opdWorkspaceControllerProvider.notifier)
+        .selectFlow(widget.flow);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _selectionSettled = true;
+    });
   }
 
   @override
@@ -180,7 +191,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     final bool isWorkspaceBootstrapping =
         workspace.isLoading && workspaceState == null;
     final bool isBusy =
-        isSaving || isRefreshingDetail || isWorkspaceBootstrapping;
+        isSaving ||
+        isRefreshingDetail ||
+        isWorkspaceBootstrapping ||
+        !_selectionSettled;
     final Object? rawFailure = workspaceState?.lastFailure;
     final AppFailure? failure = rawFailure is AppFailure ? rawFailure : null;
     final OpdFlowDetail? detail =
@@ -189,7 +203,9 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         : selected;
     final OpdFlowSummary flow = detail?.summary ?? widget.flow;
     final bool isInitialLoad =
-        detail == null && (isRefreshingDetail || isWorkspaceBootstrapping);
+        !_selectionSettled ||
+        (detail == null && (isRefreshingDetail || isWorkspaceBootstrapping));
+    final bool showFailure = failure != null && _selectionSettled;
 
     return AppDialog(
       title: Text(l10n.opdFlowActionsTitle),
@@ -201,7 +217,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
         children: <Widget>[
-          if (failure != null)
+          if (showFailure)
             AppFormInformationBanner.failure(
               context: context,
               failure: failure,
@@ -209,6 +225,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           OpdActionContextPanel(
             flow: flow,
             detail: detail,
+            showTitle: false,
             showJourneyStepper: false,
             initiallyExpanded: true,
           ),
@@ -377,26 +394,14 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         stage: flow.stage,
         isOpdContext: true,
       );
-      final String normalizedDisplayCode = (flow.displayCode ?? '')
-          .trim()
-          .toUpperCase();
-      final bool canDispose =
-          stage == 'WAITING_DISPOSITION' ||
-          <String>{
-            'DECISION_NEEDED',
-            'RESULTS_READY',
-            'REPORT_READY',
-            'MEDICINES_DISPENSED',
-          }.contains(normalizedDisplayCode);
       return AppPermissionActionItem(
         requirement: opdDoctorActionRequirement,
         label: label,
         icon: AppActionIcons.complete,
         fullWidth: true,
         hideWhenDenied: true,
-        enabled: actionsEnabled && !terminal && canDispose,
-        tooltip: canDispose ? null : opdStageDisplayLabel(l10n, stage),
-        onPressed: terminal || !canDispose || !actionsEnabled
+        enabled: actionsEnabled && !terminal,
+        onPressed: terminal || !actionsEnabled
             ? null
             : () => _openDisposition(
                 context,
@@ -440,19 +445,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     }
 
     final bool hasPendingAdmission = opdFlowHasPendingAdmission(flow, detail);
-    final String displayCode = (flow.displayCode ?? '').trim().toUpperCase();
-    final bool clinicalStage = _isClinicalReviewStage(stage);
     final bool servicePendingStage = _isServicePendingStage(stage);
-    final bool canDispose =
-        stage == 'WAITING_DISPOSITION' ||
-        <String>{
-          'DECISION_NEEDED',
-          'RESULTS_READY',
-          'REPORT_READY',
-          'MEDICINES_DISPENSED',
-        }.contains(displayCode);
-    final bool canAdjustBilling =
-        consultationPaid || consultationPaymentRequired;
     final String nextActionKey = resolveOpdFlowNextActionKey(
       flow,
       detail: detail,
@@ -473,8 +466,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             icon: AppActionIcons.triage,
             fullWidth: true,
             hideWhenDenied: true,
-            enabled: actionsEnabled,
-            onPressed: actionsEnabled
+            enabled: actionsEnabled && !terminal,
+            onPressed: actionsEnabled && !terminal
                 ? () => _openDiagnosisDialog(context, flow)
                 : null,
           ),
@@ -484,8 +477,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             icon: Icons.science_outlined,
             fullWidth: true,
             hideWhenDenied: true,
-            enabled: actionsEnabled,
-            onPressed: actionsEnabled
+            enabled: actionsEnabled && !terminal,
+            onPressed: actionsEnabled && !terminal
                 ? () => _openLabOrderDialog(context, flow)
                 : null,
           ),
@@ -495,8 +488,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             icon: Icons.biotech_outlined,
             fullWidth: true,
             hideWhenDenied: true,
-            enabled: actionsEnabled,
-            onPressed: actionsEnabled
+            enabled: actionsEnabled && !terminal,
+            onPressed: actionsEnabled && !terminal
                 ? () => _openRadiologyOrderDialog(context, flow)
                 : null,
           ),
@@ -506,8 +499,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             icon: Icons.medication_outlined,
             fullWidth: true,
             hideWhenDenied: true,
-            enabled: actionsEnabled,
-            onPressed: actionsEnabled
+            enabled: actionsEnabled && !terminal,
+            onPressed: actionsEnabled && !terminal
                 ? () => _openPrescriptionDialog(context, flow)
                 : null,
           ),
@@ -517,8 +510,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             icon: Icons.healing_outlined,
             fullWidth: true,
             hideWhenDenied: true,
-            enabled: actionsEnabled,
-            onPressed: actionsEnabled
+            enabled: actionsEnabled && !terminal,
+            onPressed: actionsEnabled && !terminal
                 ? () => _openProcedureDialog(context, flow)
                 : null,
           ),
@@ -528,8 +521,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             icon: AppActionIcons.referral,
             fullWidth: true,
             hideWhenDenied: true,
-            enabled: actionsEnabled,
-            onPressed: actionsEnabled
+            enabled: actionsEnabled && !terminal,
+            onPressed: actionsEnabled && !terminal
                 ? () => _openNestedOpener(
                     context,
                     () => showReferralDialog(context: context, flow: flow),
@@ -544,8 +537,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             icon: AppActionIcons.followUp,
             fullWidth: true,
             hideWhenDenied: true,
-            enabled: actionsEnabled,
-            onPressed: actionsEnabled
+            enabled: actionsEnabled && !terminal,
+            onPressed: actionsEnabled && !terminal
                 ? () => _openNestedOpener(
                     context,
                     () => showFollowUpDialog(context: context, flow: flow),
@@ -576,32 +569,19 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
 
     bool shouldIncludeAction(String key) {
       return switch (key) {
-        'billing' =>
-          widget.allowBillingActions &&
-              !terminal &&
-              (canPayNow || canAdjustBilling || nextActionKey == 'billing'),
-        'vitals' =>
-          widget.allowVitalsActions &&
-              !terminal &&
-              (nextActionKey == 'vitals' ||
-                  <String>{'WAITING_VITALS', 'VITALS_NEEDED'}.contains(stage) ||
-                  displayCode == 'VITALS_NEEDED' ||
-                  hasVitals),
-        'route_decision' => !terminal && hasVitals,
+        // Always offer billing while the encounter is open so payment mistakes
+        // can be corrected without waiting for a payment-due stage.
+        'billing' => widget.allowBillingActions && !terminal,
+        // Vitals stay available for the full active visit (record or edit).
+        'vitals' => widget.allowVitalsActions && !terminal,
+        'route_decision' =>
+          widget.allowVitalsActions && !terminal && hasVitals,
         // Keep Assign/Change doctor available for the whole active encounter so
         // front-desk users still have actions after a provider is assigned.
         'assign_doctor' => !terminal,
-        'doctor_review' =>
-          widget.allowClinicalActions &&
-              !terminal &&
-              (nextActionKey == 'doctor_review' ||
-                  <String>{
-                    'WAITING_DOCTOR_REVIEW',
-                    'WITH_DOCTOR',
-                    'WAITING_DISPOSITION',
-                  }.contains(stage) ||
-                  displayCode == 'WITH_DOCTOR' ||
-                  clinicalStage),
+        // Clinical notes + orders match the clinical module action bar for any
+        // open encounter (stage only emphasizes the primary next action).
+        'doctor_review' => widget.allowClinicalActions && !terminal,
         // Department handoff navigates into lab/imaging/pharmacy work — omit
         // for Reception; progress remains visible via status labels.
         'handoff' =>
@@ -612,13 +592,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         'prescription' ||
         'procedure' ||
         'referral' =>
-          widget.allowClinicalActions && !terminal && clinicalStage,
+          widget.allowClinicalActions && !terminal,
         // Follow up stays available on Reception (and clinical) surfaces.
-        'follow_up' => !terminal && clinicalStage,
-        'disposition' =>
-          widget.allowClinicalActions &&
-              !terminal &&
-              (canDispose || nextActionKey == 'disposition'),
+        'follow_up' => !terminal,
+        'disposition' => widget.allowClinicalActions && !terminal,
         'admission_handoff' =>
           widget.allowClinicalActions && hasPendingAdmission,
         'print' => true,
@@ -629,6 +606,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     const List<String> chronologicalOrder = <String>[
       'billing',
       'vitals',
+      'route_decision',
       'assign_doctor',
       'doctor_review',
       'handoff',
@@ -1610,21 +1588,6 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
 }
 
 /// Disposition / referral / print summary live in extracted dialog files.
-
-bool _isClinicalReviewStage(String? stage) {
-  return <String>{
-    'WAITING_DOCTOR_REVIEW',
-    'WAITING_DISPOSITION',
-    'LAB_REQUESTED',
-    'RADIOLOGY_REQUESTED',
-    'LAB_AND_RADIOLOGY_REQUESTED',
-    'PHARMACY_REQUESTED',
-    'DECISION_NEEDED',
-    'RESULTS_READY',
-    'REPORT_READY',
-    'MEDICINES_DISPENSED',
-  }.contains(_normalizedStage(stage));
-}
 
 bool _isServicePendingStage(String stage) {
   return <String>{

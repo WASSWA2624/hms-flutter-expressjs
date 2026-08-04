@@ -90,41 +90,56 @@ class OpdWorkflowContextPanel extends StatelessWidget {
         ),
     ];
 
+    final List<Widget> body = <Widget>[
+      AppPatientDetails(
+        patientName: patientName,
+        patientNumber: patientNumber,
+        patientNumberLabel: l10n.opdPatientIdLabel,
+        ageLabel: ageLabel,
+        genderLabel: genderLabel,
+        genderIcon: genderIcon,
+        phoneLabel: phoneLabel,
+        emailLabel: emailLabel,
+        status: normalizedCurrent.isEmpty
+            ? null
+            : AppWorkspaceStatus(
+                label: normalizedCurrent,
+                tone: currentStepTone ?? opdStageStatusTone(currentStepCode),
+              ),
+        expandedFields: expandedFields,
+        expandedChild: expandedChild,
+        showAvatar: false,
+        semanticLabel: patientName,
+        persistExpandPreference: false,
+        initiallyExpanded: initiallyExpanded,
+      ),
+      if (showJourneyStepper && steps.isNotEmpty) ...<Widget>[
+        SizedBox(height: theme.spacing.md),
+        AppWorkflowStepper(
+          steps: steps,
+          semanticLabel: l10n.opdVisitJourneyLabel,
+        ),
+      ],
+    ];
+
+    // Without a section title, patient details is the outermost chrome (Flow
+    // Actions and nested hubs). Keep AppSectionPanel only for titled context.
+    if (!showTitle) {
+      return KeyedSubtree(
+        key: const ValueKey<String>('opdWorkflowContextPanel'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: body,
+        ),
+      );
+    }
+
     return AppSectionPanel(
       key: const ValueKey<String>('opdWorkflowContextPanel'),
-      title: showTitle ? l10n.opdEncounterContextTitle : null,
+      title: l10n.opdEncounterContextTitle,
       density: AppContentPanelDensity.compact,
-      children: <Widget>[
-        AppPatientDetails(
-          patientName: patientName,
-          patientNumber: patientNumber,
-          patientNumberLabel: l10n.opdPatientIdLabel,
-          ageLabel: ageLabel,
-          genderLabel: genderLabel,
-          genderIcon: genderIcon,
-          phoneLabel: phoneLabel,
-          emailLabel: emailLabel,
-          status: normalizedCurrent.isEmpty
-              ? null
-              : AppWorkspaceStatus(
-                  label: normalizedCurrent,
-                  tone: currentStepTone ?? opdStageStatusTone(currentStepCode),
-                ),
-          expandedFields: expandedFields,
-          expandedChild: expandedChild,
-          showAvatar: false,
-          semanticLabel: patientName,
-          persistExpandPreference: false,
-          initiallyExpanded: initiallyExpanded,
-        ),
-        if (showJourneyStepper && steps.isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
-          AppWorkflowStepper(
-            steps: steps,
-            semanticLabel: l10n.opdVisitJourneyLabel,
-          ),
-        ],
-      ],
+      children: body,
     );
   }
 }

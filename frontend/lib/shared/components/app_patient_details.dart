@@ -190,7 +190,9 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
       onExpandedChanged: sectionCollapsible
           ? (bool value) => _toggleExpanded(expanded: value)
           : null,
-      initiallyExpanded: !sectionCollapsible,
+      initiallyExpanded: sectionCollapsible
+          ? (widget.initiallyExpanded ?? false)
+          : true,
       contentPadding: EdgeInsets.fromLTRB(
         theme.spacing.md,
         theme.spacing.sm,

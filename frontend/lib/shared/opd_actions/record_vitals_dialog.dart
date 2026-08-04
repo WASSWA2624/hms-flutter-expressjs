@@ -148,7 +148,12 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
 
   List<Widget> _leadingSections(BuildContext context, bool enabled) {
     return <Widget>[
-      OpdActionContextPanel(flow: widget.flow, showTitle: false),
+      OpdActionContextPanel(
+        flow: widget.flow,
+        showTitle: false,
+        showJourneyStepper: false,
+        initiallyExpanded: true,
+      ),
       if (!_editingVitals) _triagePrioritySection(context, enabled),
     ];
   }

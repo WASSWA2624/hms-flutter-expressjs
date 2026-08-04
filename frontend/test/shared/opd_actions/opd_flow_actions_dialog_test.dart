@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -16,6 +19,7 @@ import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_reposi
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
+import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -60,6 +64,7 @@ void main() {
     expect(dialog.actions, hasLength(1));
     expect(find.byType(AppQuickActions), findsOneWidget);
     expect(find.text('FLOW ACTIONS'), findsOneWidget);
+    expect(find.text('Encounter context'), findsNothing);
     expect(find.text('Next · Pay consultation'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
@@ -272,6 +277,58 @@ void main() {
     expect(find.text('Cancel'), findsOneWidget);
   });
 
+  testWidgets(
+    'doctor at vitals-needed sees full clinical and billing actions',
+    (WidgetTester tester) async {
+      const OpdFlowSummary vitalsNeeded = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        patientDisplayName: 'Patient Example',
+        stage: 'WAITING_VITALS',
+        displayCode: 'VITALS_NEEDED',
+        displayNextStep: 'RECORD_VITALS',
+        providerUserId: 'USR-DOC001',
+        providerDisplayName: 'Jordan Demo',
+        assignedStaffLabel: 'Doctor: Jordan Demo',
+        consultationPaymentRequired: false,
+        consultationPaid: true,
+      );
+
+      await _pumpDialog(
+        tester,
+        vitalsNeeded,
+        detail: const OpdFlowDetail(summary: vitalsNeeded),
+        policy: _doctorWithBillingPolicy(),
+      );
+
+      expect(find.text('Encounter context'), findsNothing);
+      expect(
+        find.widgetWithText(AppButton, 'Next · Record vitals'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('consultation billing'),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(AppButton, 'Clinical notes'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Add diagnosis'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Request lab'), findsOneWidget);
+      expect(
+        find.widgetWithText(AppButton, 'Request radiology'),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(AppButton, 'Prescribe'), findsOneWidget);
+      expect(
+        find.widgetWithText(AppButton, 'Record procedure'),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(AppButton, 'Refer'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Follow up'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+    },
+  );
+
   testWidgets('clinical services panel can hide measurement results', (
     WidgetTester tester,
   ) async {
@@ -464,6 +521,89 @@ void main() {
 
     await tester.pumpAndSettle();
     expect(find.text('FLOW ACTIONS'), findsOneWidget);
+  });
+
+  testWidgets('does not flash a stale workspace failure while opening', (
+    WidgetTester tester,
+  ) async {
+    final Completer<Result<OpdFlowDetail>> detailCompleter =
+        Completer<Result<OpdFlowDetail>>();
+    final _MockOpdRepository repository = _MockOpdRepository();
+    final _MockClinicalRepository clinicalRepository = _MockClinicalRepository();
+    _stubWorkspaceLoad(repository);
+    when(() => clinicalRepository.loadReferenceData()).thenAnswer(
+      (_) async =>
+          const Result<ClinicalReferenceData>.success(ClinicalReferenceData()),
+    );
+
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        appAccessPolicyProvider.overrideWithValue(_billingFrontDeskPolicy()),
+        initialSessionStateProvider.overrideWithValue(
+          const SessionState.ready(),
+        ),
+        opdRepositoryProvider.overrideWithValue(repository),
+        clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(opdWorkspaceControllerProvider.future);
+
+    when(() => repository.getOpdFlow(any())).thenAnswer(
+      (_) async => const Result<OpdFlowDetail>.failure(AppFailure.network()),
+    );
+    await container
+        .read(opdWorkspaceControllerProvider.notifier)
+        .selectFlow(flow);
+
+    final Result<OpdWorkspaceState>? seeded =
+        container.read(opdWorkspaceControllerProvider).asData?.value;
+    expect(
+      seeded?.when(
+        success: (OpdWorkspaceState state) => state.lastFailure,
+        failure: (_) => null,
+      ),
+      isA<AppFailure>(),
+    );
+
+    when(() => repository.getOpdFlow(any())).thenAnswer((_) {
+      return detailCompleter.future;
+    });
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: AppTheme.light,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: FlowActionsDialog(flow: flow)),
+        ),
+      ),
+    );
+    // First frame: dialog mounted, selectFlow still pending via microtask.
+    await tester.pump();
+
+    expect(find.byType(AppFormInformationBanner), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    // Microtask starts selectFlow (clears stale failure, begins refresh).
+    await tester.pump();
+    expect(find.byType(AppFormInformationBanner), findsNothing);
+    expect(find.byType(AppLoadingIndicator), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    detailCompleter.complete(const Result<OpdFlowDetail>.success(detail));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(AppFormInformationBanner), findsNothing);
+    expect(find.text('FLOW ACTIONS'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    container.dispose();
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('remains usable on a compact dark high-text-scale surface', (
@@ -689,6 +829,29 @@ AppAccessPolicy _doctorPolicy() {
           code: 'encounters-vitals',
           licenseStatus: 'ACTIVE',
         ),
+      ],
+    ),
+  );
+}
+
+AppAccessPolicy _doctorWithBillingPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['DOCTOR']),
+      permissions: <AppPermission>{
+        AppPermissions.patientRead,
+        AppPermissions.clinicalRead,
+        AppPermissions.clinicalWrite,
+        AppPermissions.billingWrite,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(
+          code: 'encounters-vitals',
+          licenseStatus: 'ACTIVE',
+        ),
+        AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
       ],
     ),
   );

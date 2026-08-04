@@ -216,6 +216,8 @@ void main() {
     expect(find.byType(AppRecordVitalsDialog), findsOneWidget);
     expect(find.byType(AppDialog), findsOneWidget);
     expect(find.text('RECORD VITALS'), findsOneWidget);
+    expect(find.text('Encounter context'), findsNothing);
+    expect(find.byType(AppWorkflowStepper), findsNothing);
     expect(find.text('Triage'), findsOneWidget);
     expect(find.text('Triage priority'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Heart rate'), findsOneWidget);

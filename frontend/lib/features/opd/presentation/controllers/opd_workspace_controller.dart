@@ -445,6 +445,8 @@ final class OpdWorkspaceController
       }
     }
 
+    // Clear any leftover hub failure before the await so dialogs that open
+    // this encounter do not paint a stale error banner for one frame.
     _emit(current.copyWith(isRefreshingDetail: true, clearLastFailure: true));
     final Result<OpdFlowDetail> result = await _repository.getOpdFlow(
       flow.apiId,
