@@ -2,7 +2,7 @@
  * Uganda-focused radiology catalog seed data.
  *
  * Kept under scripts/seeders/data so radiology orders load persisted
- * radiology_test records through the API instead of runtime defaults.
+ * radiology_procedure records through the API instead of runtime defaults.
  */
 
 const radiologyTest = (key, name, code, modality) => ({

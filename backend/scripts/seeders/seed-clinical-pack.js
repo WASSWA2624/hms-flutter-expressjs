@@ -77,8 +77,8 @@ const ensureLabTest = async (ctx, scenario, facility, catalogPack, recordKey, fa
 const ensureRadiologyTest = async (ctx, scenario, facility, catalogPack, recordKey, fallback) =>
   getCatalogRecord(catalogPack?.radiology?.tests, scenario.key, recordKey)
   || ctx.upsert(
-    'radiology_test',
-    `${scenario.key}:radiology-test:${recordKey}`,
+    'radiology_procedure',
+    `${scenario.key}:radiology-procedure:${recordKey}`,
     {
       tenant_id: facility.tenant_id,
       ...fallback,
@@ -625,7 +625,7 @@ const seedClinicalPack = async (ctx, orgPack, accessPack, catalogPack = null) =>
     {
       encounter_id: inpatientEncounter.id,
       patient_id: inpatientPatient.id,
-      radiology_test_id: chestXrayTest.id,
+      radiology_procedure_id: chestXrayTest.id,
       status: 'COMPLETED',
       ordered_at: ctx.date(-1, 70),
     },

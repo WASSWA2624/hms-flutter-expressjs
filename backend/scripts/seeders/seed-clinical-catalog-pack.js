@@ -198,8 +198,8 @@ const seedRadiologyCatalogForTenant = async (
 
   for (const testSpec of RADIOLOGY_TEST_CATALOG) {
     const record = await ctx.upsert(
-      'radiology_test',
-      `${seedKey}:radiology-test:${testSpec.key}`,
+      'radiology_procedure',
+      `${seedKey}:radiology-procedure:${testSpec.key}`,
       {
         tenant_id: tenantId,
         name: testSpec.name,

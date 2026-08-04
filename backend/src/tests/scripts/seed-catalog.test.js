@@ -37,6 +37,16 @@ describe('seed-catalog', () => {
       'super.admin@hosspi.com',
       'tenant.admin@hosspi.com',
       'facility.admin@hosspi.com',
+      'integration.admin@hosspi.com',
+      'hr.staff@hosspi.com',
+      'operations.staff@hosspi.com',
+      'discharge@hosspi.com',
+      'dentist@hosspi.com',
+      'radiologist@hosspi.com',
+      'sonographer@hosspi.com',
+      'accountant@hosspi.com',
+      'support@hosspi.com',
+      'visitor@hosspi.com',
       'doctor@hosspi.com',
       'nurse@hosspi.com',
       'lab@hosspi.com',
@@ -48,9 +58,10 @@ describe('seed-catalog', () => {
       'hr@hosspi.com',
       'biomed@hosspi.com',
       'housekeeping@hosspi.com',
+      'ambulance@hosspi.com',
+      'physio@hosspi.com',
       'mortuary.staff@hosspi.com',
       'mortuary.manager@hosspi.com',
-      'ambulance@hosspi.com',
       'patient.portal@hosspi.com']);
   });
 
