@@ -35,12 +35,19 @@ final class UserProfileRepositoryImpl implements UserProfileRepository {
     final Result<AuthSession> refreshed = await _authRepository
         .fetchCurrentUser(session);
 
+    final AuthSession enrichedSession;
     if (refreshed case ResultFailure<AuthSession>(failure: final failure)) {
-      return Result<UserProfileView>.failure(failure);
+      // Match session enrichment: keep a usable local profile when /auth/me is
+      // briefly unreachable (backend restart, flaky LAN) instead of blanking
+      // Account and security with a hard network error.
+      if (!failure.isRetryable || !_hasDisplayableProfile(session)) {
+        return Result<UserProfileView>.failure(failure);
+      }
+      enrichedSession = session;
+    } else {
+      enrichedSession = (refreshed as ResultSuccess<AuthSession>).value;
     }
 
-    final AuthSession enrichedSession =
-        (refreshed as ResultSuccess<AuthSession>).value;
     final String? userId = enrichedSession.user?.id;
     if (userId == null || userId.trim().isEmpty) {
       return Result<UserProfileView>.success(
@@ -63,6 +70,22 @@ final class UserProfileRepositoryImpl implements UserProfileRepository {
         );
       },
     );
+  }
+
+  static bool _hasDisplayableProfile(AuthSession session) {
+    final AuthUserProfile? user = session.user;
+    if (user != null) {
+      final String? displayName = user.displayName?.trim();
+      if (displayName != null && displayName.isNotEmpty) {
+        return true;
+      }
+      final String? id = user.id?.trim();
+      if (id != null && id.isNotEmpty) {
+        return true;
+      }
+    }
+    final String? subject = session.subject?.trim();
+    return subject != null && subject.isNotEmpty;
   }
 
   @override

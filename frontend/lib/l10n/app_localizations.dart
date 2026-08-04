@@ -21889,7 +21889,7 @@ abstract class AppLocalizations {
   /// Guidance body for cancelling one pharmacy order item.
   ///
   /// In en, this message translates to:
-  /// **'This removes the medication from the active pharmacy workflow. Provide a reason to continue.'**
+  /// **'This removes the medication from the active pharmacy workflow. Select one or more reasons to continue.'**
   String get pharmacyCancelItemDialogBody;
 
   /// Print option to hide medications with zero remaining quantity.
@@ -22275,6 +22275,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel only when the order should no longer be dispensed.'**
   String get pharmacyCancelDialogBody;
+
+  /// Section title for pharmacy cancel reason checkboxes.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation reasons'**
+  String get pharmacyCancelReasonsSectionLabel;
+
+  /// Guidance under the pharmacy cancel reasons section.
+  ///
+  /// In en, this message translates to:
+  /// **'Select one or more reasons. Add a custom reason if none of the listed options apply.'**
+  String get pharmacyCancelReasonsSectionBody;
+
+  /// Partial selection count for pharmacy cancel reasons.
+  ///
+  /// In en, this message translates to:
+  /// **'{selected} of {total} selected'**
+  String pharmacyCancelReasonsSelectedCountLabel(int selected, int total);
+
+  /// Label for optional/required custom pharmacy cancel reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom reason'**
+  String get pharmacyCancelCustomReasonLabel;
+
+  /// Helper when predefined cancel reasons are selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional when at least one reason above is selected.'**
+  String get pharmacyCancelCustomReasonOptionalHelper;
+
+  /// Helper when no predefined cancel reason is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Required when no predefined reason is selected.'**
+  String get pharmacyCancelCustomReasonRequiredHelper;
+
+  /// Validation message when pharmacy cancel has no reasons.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one reason or enter a custom reason.'**
+  String get pharmacyCancelReasonRequiredMessage;
+
+  /// Pharmacy cancel reason: discontinued by prescriber.
+  ///
+  /// In en, this message translates to:
+  /// **'Discontinued by prescriber'**
+  String get pharmacyCancelReasonDiscontinuedByPrescriber;
+
+  /// Pharmacy cancel reason: duplicate order.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate order'**
+  String get pharmacyCancelReasonDuplicateOrder;
+
+  /// Pharmacy cancel reason: patient refused.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient refused medication'**
+  String get pharmacyCancelReasonPatientRefused;
+
+  /// Pharmacy cancel reason: allergy or adverse reaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Allergy or adverse reaction concern'**
+  String get pharmacyCancelReasonAllergyOrAdverseReaction;
+
+  /// Pharmacy cancel reason: interaction or contraindication.
+  ///
+  /// In en, this message translates to:
+  /// **'Drug interaction or contraindication'**
+  String get pharmacyCancelReasonDrugInteractionOrContraindication;
+
+  /// Pharmacy cancel reason: out of stock.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock or unavailable'**
+  String get pharmacyCancelReasonOutOfStock;
+
+  /// Pharmacy cancel reason: wrong medication or dose.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong medication or dose on order'**
+  String get pharmacyCancelReasonWrongMedicationOrDose;
+
+  /// Pharmacy cancel reason: discharged or transferred.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient discharged or transferred'**
+  String get pharmacyCancelReasonPatientDischargedOrTransferred;
+
+  /// Pharmacy cancel reason: payment or insurance denied.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment or insurance not approved'**
+  String get pharmacyCancelReasonPaymentOrInsuranceDenied;
+
+  /// Pharmacy cancel reason: entered in error.
+  ///
+  /// In en, this message translates to:
+  /// **'Entered in error'**
+  String get pharmacyCancelReasonEnteredInError;
+
+  /// Pharmacy cancel reason: therapy no longer indicated.
+  ///
+  /// In en, this message translates to:
+  /// **'Therapy no longer indicated'**
+  String get pharmacyCancelReasonTherapyNoLongerIndicated;
+
+  /// Pharmacy cancel reason: patient deceased.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient deceased'**
+  String get pharmacyCancelReasonPatientDeceased;
+
+  /// Pharmacy cancel reason: substitution not accepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Substitution not accepted'**
+  String get pharmacyCancelReasonSubstitutionNotAccepted;
+
+  /// Pharmacy cancel reason: awaiting clinical clarification.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting clinical clarification'**
+  String get pharmacyCancelReasonAwaitingClinicalClarification;
 
   /// Pharmacy billing gate unavailable body.
   ///

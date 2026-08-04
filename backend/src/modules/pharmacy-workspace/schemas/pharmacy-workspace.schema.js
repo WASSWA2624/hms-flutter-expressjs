@@ -79,7 +79,7 @@ const attestDispenseSchema = z.object({
   attested_at: z.string().datetime().optional()});
 
 const cancelPharmacyOrderSchema = z.object({
-  reason: z.string().trim().min(2).max(255),
+  reason: z.string().trim().min(2).max(2000),
   notes: z.string().trim().max(65535).optional().nullable()});
 
 const cancelPharmacyOrderItemParamsSchema = z.object({
@@ -87,7 +87,7 @@ const cancelPharmacyOrderItemParamsSchema = z.object({
   itemId: uuidOrFriendlyIdentifierSchema});
 
 const cancelPharmacyOrderItemSchema = z.object({
-  reason: z.string().trim().min(2).max(255),
+  reason: z.string().trim().min(2).max(2000),
   notes: z.string().trim().max(65535).optional().nullable()});
 
 const returnDispenseLineSchema = z.object({

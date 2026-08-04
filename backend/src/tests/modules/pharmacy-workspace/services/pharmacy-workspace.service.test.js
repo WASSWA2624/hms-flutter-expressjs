@@ -4,7 +4,8 @@ jest.mock('@lib/billing/clinical-request-billing', () => {
   const actual = jest.requireActual('@lib/billing/clinical-request-billing');
   return {
     ...actual,
-    persistPharmacyOrderBilling: jest.fn()};
+    persistPharmacyOrderBilling: jest.fn(),
+    reverseClinicalRequestBilling: jest.fn().mockResolvedValue(true)};
 });
 jest.mock('@repositories/pharmacy-workspace/pharmacy-workspace.repository');
 jest.mock('@repositories/facility-pharmacy-catalog/facility-pharmacy-catalog.repository', () => ({
@@ -40,7 +41,8 @@ const {
   resolveModelIdOrThrow,
   resolveModelRecordOrThrow} = require('@services/pharmacy-workspace/pharmacy.shared');
 const {
-  persistPharmacyOrderBilling} = require('@lib/billing/clinical-request-billing');
+  persistPharmacyOrderBilling,
+  reverseClinicalRequestBilling} = require('@lib/billing/clinical-request-billing');
 const pharmacyWorkspaceService = require('@services/pharmacy-workspace/pharmacy-workspace.service');
 
 const now = new Date('2026-02-27T10:20:00.000Z');
@@ -728,5 +730,147 @@ describe('pharmacy-workspace.service', () => {
     expect(persistPharmacyOrderBilling).toHaveBeenCalled();
     expect(result.workflow).toBeDefined();
     expect(result.order_summary).toHaveProperty('pending_payment_queue');
+  });
+
+  it('cancelPharmacyOrder cancels items and clears billing snapshot', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+    const billedOrder = buildOrder({
+      billing_snapshot: {
+        payment_status: 'PENDING',
+        invoice_id: 'invoice-1',
+        line_items: [
+          {
+            id: 'drug-internal-1',
+            label: 'Paracetamol',
+            quantity: 10,
+            unit_price: 100,
+            line_total: '1000'}]}});
+    const cancelledOrder = buildOrder({
+      status: 'CANCELLED',
+      billing_snapshot: null,
+      items: [
+        {
+          ...billedOrder.items[0],
+          status: 'CANCELLED'}]});
+
+    const tx = {
+      pharmacy_order_item: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 })},
+      pharmacy_order: {
+        update: jest.fn().mockResolvedValue({ id: 'order-internal-1' })}};
+
+    pharmacyWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback(tx)
+    );
+    pharmacyWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(billedOrder)
+      .mockResolvedValueOnce(cancelledOrder);
+    pharmacyWorkspaceRepository.txUpdateManyDispenseLogs.mockResolvedValue({ count: 0 });
+    pharmacyWorkspaceRepository.txUpdateOrder.mockResolvedValue({ id: 'order-internal-1' });
+    pharmacyWorkspaceRepository.countOrders.mockResolvedValue(0);
+    pharmacyWorkspaceRepository.countDispenseAttestations.mockResolvedValue(0);
+
+    const result = await pharmacyWorkspaceService.cancelPharmacyOrder(
+      'PHO0000001',
+      { reason: 'Duplicate order; Out of stock' },
+      'actor-1',
+      'PHARMACIST',
+      '127.0.0.1',
+      mockUser
+    );
+
+    expect(tx.pharmacy_order_item.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { status: 'CANCELLED' }})
+    );
+    expect(pharmacyWorkspaceRepository.txUpdateOrder).toHaveBeenCalledWith(
+      tx,
+      'order-internal-1',
+      { status: 'CANCELLED' }
+    );
+    expect(reverseClinicalRequestBilling).toHaveBeenCalled();
+    expect(tx.pharmacy_order.update).toHaveBeenCalledWith({
+      where: { id: 'order-internal-1' },
+      data: { billing_snapshot: null }});
+    expect(result.workflow.order.status).toBe('CANCELLED');
+  });
+
+  it('cancelPharmacyOrderItem rebuilds unpaid billing for remaining lines', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+    const secondItem = {
+      id: 'item-internal-2',
+      human_friendly_id: 'POI0000002',
+      pharmacy_order_id: 'order-internal-1',
+      drug_id: 'drug-internal-2',
+      quantity: 5,
+      status: 'ACTIVE',
+      dosage: '1 tab',
+      frequency: 'ONCE',
+      route: 'ORAL',
+      created_at: now,
+      updated_at: now,
+      dispense_logs: [],
+      drug: {
+        id: 'drug-internal-2',
+        human_friendly_id: 'DRG0000002',
+        name: 'Amoxicillin',
+        code: 'AMX',
+        inventory_maps: []}};
+    const orderBefore = buildOrder({
+      billing_snapshot: {
+        payment_status: 'PENDING',
+        invoice_id: 'invoice-1',
+        line_items: [
+          {
+            id: 'drug-internal-1',
+            label: 'Paracetamol',
+            quantity: 10,
+            unit_price: 100,
+            line_total: '1000'},
+          {
+            id: 'drug-internal-2',
+            label: 'Amoxicillin',
+            quantity: 5,
+            unit_price: 200,
+            line_total: '1000'}]},
+      items: [buildOrder().items[0], secondItem]});
+    const orderAfterCancel = {
+      ...orderBefore,
+      items: [
+        { ...orderBefore.items[0], status: 'CANCELLED' },
+        secondItem]};
+
+    const tx = {
+      pharmacy_order_item: {
+        update: jest.fn().mockResolvedValue({ id: 'item-internal-1' })}};
+
+    pharmacyWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback(tx)
+    );
+    pharmacyWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(orderBefore)
+      .mockResolvedValueOnce(orderAfterCancel)
+      .mockResolvedValueOnce(orderAfterCancel);
+    pharmacyWorkspaceRepository.txUpdateManyDispenseLogs.mockResolvedValue({ count: 0 });
+    pharmacyWorkspaceRepository.countOrders.mockResolvedValue(1);
+    pharmacyWorkspaceRepository.countDispenseAttestations.mockResolvedValue(0);
+
+    await pharmacyWorkspaceService.cancelPharmacyOrderItem(
+      'PHO0000001',
+      'POI0000001',
+      { reason: 'Patient refused medication' },
+      'actor-1',
+      'PHARMACIST',
+      '127.0.0.1',
+      mockUser
+    );
+
+    expect(tx.pharmacy_order_item.update).toHaveBeenCalledWith({
+      where: { id: 'item-internal-1' },
+      data: { status: 'CANCELLED' }});
+    expect(persistPharmacyOrderBilling).toHaveBeenCalled();
+    const billingArg = persistPharmacyOrderBilling.mock.calls[0][1].billing;
+    expect(billingArg.line_items).toHaveLength(1);
+    expect(billingArg.line_items[0].id).toBe('drug-internal-2');
   });
 });

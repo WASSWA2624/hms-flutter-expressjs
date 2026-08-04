@@ -19,9 +19,11 @@ import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.d
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_access.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_billing_helpers.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_cancel_reasons.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_catalog_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_instructions_print_helpers.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_order_item_pricing_helpers.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_cancel_reasons_section.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_print_history_options_section.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_print_options_section.dart';
@@ -3083,21 +3085,23 @@ class _CancelOrderDialog extends ConsumerStatefulWidget {
 
 class _CancelOrderDialogState extends ConsumerState<_CancelOrderDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _reasonController;
+  late final TextEditingController _customReasonController;
   late final TextEditingController _notesController;
+  Set<PharmacyCancelReason> _selectedReasons = <PharmacyCancelReason>{};
+  bool _showReasonValidation = false;
   bool _isSaving = false;
   AppFailure? _failure;
 
   @override
   void initState() {
     super.initState();
-    _reasonController = TextEditingController();
+    _customReasonController = TextEditingController();
     _notesController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _reasonController.dispose();
+    _customReasonController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -3108,7 +3112,7 @@ class _CancelOrderDialogState extends ConsumerState<_CancelOrderDialog> {
     return AppDialog(
       title: Text(l10n.pharmacyCancelDialogTitle),
       icon: const Icon(Icons.cancel_outlined),
-      initialMaximized: false,
+      initialMaximized: true,
       scrollable: true,
       pinActionsToBottom: true,
       content: AppFormShell(
@@ -3120,12 +3124,22 @@ class _CancelOrderDialogState extends ConsumerState<_CancelOrderDialog> {
         ),
         enabled: !_isSaving,
         children: <Widget>[
-          AppTextField(
-            controller: _reasonController,
-            labelText: l10n.pharmacyReasonLabel,
-            enabled: !_isSaving,
-            isRequired: true,
-            validator: AppValidators.requiredText(l10n.validationRequired),
+          ListenableBuilder(
+            listenable: _customReasonController,
+            builder: (BuildContext context, _) {
+              return PharmacyCancelReasonsSection(
+                selectedReasons: _selectedReasons,
+                onChanged: (Set<PharmacyCancelReason> next) {
+                  setState(() {
+                    _selectedReasons = next;
+                    _showReasonValidation = false;
+                  });
+                },
+                customReasonController: _customReasonController,
+                enabled: !_isSaving,
+                showValidationError: _showReasonValidation,
+              );
+            },
           ),
           AppTextField(
             controller: _notesController,
@@ -3140,12 +3154,24 @@ class _CancelOrderDialogState extends ConsumerState<_CancelOrderDialog> {
         l10n.pharmacyCancelOrderAction,
         _isSaving,
         _submit,
+        cancelLeadingIcon: AppActionIcons.cancel,
+        submitLeadingIcon: Icons.block_outlined,
       ),
     );
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    final AppLocalizations l10n = context.l10n;
+    final String reason = composePharmacyCancelReason(
+      l10n: l10n,
+      selected: _selectedReasons,
+      customReason: _customReasonController.text,
+    );
+    final bool hasReason = reason.trim().length >= 2;
+    setState(() {
+      _showReasonValidation = !hasReason;
+    });
+    if (!hasReason || !(_formKey.currentState?.validate() ?? false)) {
       return;
     }
     setState(() {
@@ -3155,7 +3181,7 @@ class _CancelOrderDialogState extends ConsumerState<_CancelOrderDialog> {
     final AppFailure? failure = await ref
         .read(pharmacyWorkspaceControllerProvider.notifier)
         .cancelOrder(
-          reason: _reasonController.text.trim(),
+          reason: reason,
           notes: _notesController.text.trim(),
         );
     _finishSubmit(failure);
@@ -3511,21 +3537,23 @@ class _CancelOrderItemDialog extends ConsumerStatefulWidget {
 
 class _CancelOrderItemDialogState extends ConsumerState<_CancelOrderItemDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _reasonController;
+  late final TextEditingController _customReasonController;
   late final TextEditingController _notesController;
+  Set<PharmacyCancelReason> _selectedReasons = <PharmacyCancelReason>{};
+  bool _showReasonValidation = false;
   bool _isSaving = false;
   AppFailure? _failure;
 
   @override
   void initState() {
     super.initState();
-    _reasonController = TextEditingController();
+    _customReasonController = TextEditingController();
     _notesController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _reasonController.dispose();
+    _customReasonController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -3536,7 +3564,7 @@ class _CancelOrderItemDialogState extends ConsumerState<_CancelOrderItemDialog> 
     return AppDialog(
       title: Text(l10n.pharmacyCancelItemDialogTitle),
       icon: const Icon(Icons.cancel_outlined),
-      initialMaximized: false,
+      initialMaximized: true,
       scrollable: true,
       pinActionsToBottom: true,
       content: AppFormShell(
@@ -3549,12 +3577,22 @@ class _CancelOrderItemDialogState extends ConsumerState<_CancelOrderItemDialog> 
         ),
         enabled: !_isSaving,
         children: <Widget>[
-          AppTextField(
-            controller: _reasonController,
-            labelText: l10n.pharmacyReasonLabel,
-            enabled: !_isSaving,
-            isRequired: true,
-            validator: AppValidators.requiredText(l10n.validationRequired),
+          ListenableBuilder(
+            listenable: _customReasonController,
+            builder: (BuildContext context, _) {
+              return PharmacyCancelReasonsSection(
+                selectedReasons: _selectedReasons,
+                onChanged: (Set<PharmacyCancelReason> next) {
+                  setState(() {
+                    _selectedReasons = next;
+                    _showReasonValidation = false;
+                  });
+                },
+                customReasonController: _customReasonController,
+                enabled: !_isSaving,
+                showValidationError: _showReasonValidation,
+              );
+            },
           ),
           AppTextField(
             controller: _notesController,
@@ -3569,12 +3607,24 @@ class _CancelOrderItemDialogState extends ConsumerState<_CancelOrderItemDialog> 
         l10n.pharmacyCancelItemAction,
         _isSaving,
         _submit,
+        cancelLeadingIcon: AppActionIcons.cancel,
+        submitLeadingIcon: Icons.block_outlined,
       ),
     );
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    final AppLocalizations l10n = context.l10n;
+    final String reason = composePharmacyCancelReason(
+      l10n: l10n,
+      selected: _selectedReasons,
+      customReason: _customReasonController.text,
+    );
+    final bool hasReason = reason.trim().length >= 2;
+    setState(() {
+      _showReasonValidation = !hasReason;
+    });
+    if (!hasReason || !(_formKey.currentState?.validate() ?? false)) {
       return;
     }
     setState(() {
@@ -3585,7 +3635,7 @@ class _CancelOrderItemDialogState extends ConsumerState<_CancelOrderItemDialog> 
         .read(pharmacyWorkspaceControllerProvider.notifier)
         .cancelOrderItem(
           itemId: widget.item.id,
-          reason: _reasonController.text.trim(),
+          reason: reason,
           notes: _notesController.text.trim(),
         );
     if (!mounted) {

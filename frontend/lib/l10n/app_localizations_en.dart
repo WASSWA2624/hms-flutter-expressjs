@@ -11851,7 +11851,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyCancelItemDialogBody =>
-      'This removes the medication from the active pharmacy workflow. Provide a reason to continue.';
+      'This removes the medication from the active pharmacy workflow. Select one or more reasons to continue.';
 
   @override
   String get pharmacyPrintHideZeroQuantityLabel => 'Hide zero-quantity items';
@@ -12065,6 +12065,84 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pharmacyCancelDialogBody =>
       'Cancel only when the order should no longer be dispensed.';
+
+  @override
+  String get pharmacyCancelReasonsSectionLabel => 'Cancellation reasons';
+
+  @override
+  String get pharmacyCancelReasonsSectionBody =>
+      'Select one or more reasons. Add a custom reason if none of the listed options apply.';
+
+  @override
+  String pharmacyCancelReasonsSelectedCountLabel(int selected, int total) {
+    return '$selected of $total selected';
+  }
+
+  @override
+  String get pharmacyCancelCustomReasonLabel => 'Custom reason';
+
+  @override
+  String get pharmacyCancelCustomReasonOptionalHelper =>
+      'Optional when at least one reason above is selected.';
+
+  @override
+  String get pharmacyCancelCustomReasonRequiredHelper =>
+      'Required when no predefined reason is selected.';
+
+  @override
+  String get pharmacyCancelReasonRequiredMessage =>
+      'Select at least one reason or enter a custom reason.';
+
+  @override
+  String get pharmacyCancelReasonDiscontinuedByPrescriber =>
+      'Discontinued by prescriber';
+
+  @override
+  String get pharmacyCancelReasonDuplicateOrder => 'Duplicate order';
+
+  @override
+  String get pharmacyCancelReasonPatientRefused => 'Patient refused medication';
+
+  @override
+  String get pharmacyCancelReasonAllergyOrAdverseReaction =>
+      'Allergy or adverse reaction concern';
+
+  @override
+  String get pharmacyCancelReasonDrugInteractionOrContraindication =>
+      'Drug interaction or contraindication';
+
+  @override
+  String get pharmacyCancelReasonOutOfStock => 'Out of stock or unavailable';
+
+  @override
+  String get pharmacyCancelReasonWrongMedicationOrDose =>
+      'Wrong medication or dose on order';
+
+  @override
+  String get pharmacyCancelReasonPatientDischargedOrTransferred =>
+      'Patient discharged or transferred';
+
+  @override
+  String get pharmacyCancelReasonPaymentOrInsuranceDenied =>
+      'Payment or insurance not approved';
+
+  @override
+  String get pharmacyCancelReasonEnteredInError => 'Entered in error';
+
+  @override
+  String get pharmacyCancelReasonTherapyNoLongerIndicated =>
+      'Therapy no longer indicated';
+
+  @override
+  String get pharmacyCancelReasonPatientDeceased => 'Patient deceased';
+
+  @override
+  String get pharmacyCancelReasonSubstitutionNotAccepted =>
+      'Substitution not accepted';
+
+  @override
+  String get pharmacyCancelReasonAwaitingClinicalClarification =>
+      'Awaiting clinical clarification';
 
   @override
   String get pharmacyBillingGateUnavailableBody =>

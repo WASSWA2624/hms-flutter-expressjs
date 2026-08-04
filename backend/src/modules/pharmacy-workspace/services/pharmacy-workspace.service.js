@@ -1163,6 +1163,118 @@ const reconcilePendingPharmacyBillingAfterDispense = async (tx, orderRecord) => 
   return true;
 };
 
+const orderItemBillingKeys = (item) =>
+  [item?.drug?.human_friendly_id, item?.drug_id, item?.drug?.id, item?.id]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+
+/** Reverse reversible invoice (if any) and clear the pharmacy billing snapshot. */
+const clearPharmacyOrderBilling = async (tx, orderRecord) => {
+  const existingSnapshot = extractStoredClinicalBilling(orderRecord);
+  if (!existingSnapshot) {
+    return false;
+  }
+
+  if (existingSnapshot.invoice_id) {
+    await reverseClinicalRequestBilling(tx, { existingSnapshot });
+  }
+
+  await tx.pharmacy_order.update({
+    where: { id: orderRecord.id },
+    data: { billing_snapshot: null }});
+
+  return true;
+};
+
+/**
+ * Rebuild unpaid pharmacy billing after a line cancel: drop cancelled drugs,
+ * prefer net-dispensed quantities when present, otherwise keep remaining lines.
+ * Clears billing when nothing billable remains.
+ */
+const reconcilePendingPharmacyBillingAfterItemCancel = async (tx, orderRecord) => {
+  const snapshot = extractStoredClinicalBilling(orderRecord);
+  if (!snapshot) {
+    return false;
+  }
+
+  const paymentStatus = String(snapshot.payment_status || '').toUpperCase();
+  if (!PHARMACY_PENDING_PAYMENT_STATUSES.includes(paymentStatus)) {
+    return false;
+  }
+
+  const activeItems = (Array.isArray(orderRecord?.items) ? orderRecord.items : []).filter(
+    (item) => String(item?.status || '').toUpperCase() !== 'CANCELLED'
+  );
+  if (!activeItems.length) {
+    return clearPharmacyOrderBilling(tx, orderRecord);
+  }
+
+  const dispensedPatch = buildDispensedQuantityBillingPatch(orderRecord);
+  if (dispensedPatch) {
+    const patient = orderRecord?.patient || {};
+    await persistPharmacyOrderBilling(tx, {
+      orderId: orderRecord.id,
+      billing: dispensedPatch,
+      existingSnapshot: snapshot,
+      tenantId: patient.tenant_id || null,
+      facilityId: patient.facility_id || null,
+      patientId: orderRecord.patient_id || patient.id || null,
+      encounterId: orderRecord.encounter_id || orderRecord.encounter?.id || null,
+      description: 'Pharmacy cancel item reconciliation'});
+    return true;
+  }
+
+  const lineItems = Array.isArray(snapshot.line_items) ? snapshot.line_items : [];
+  const activeKeys = new Set(activeItems.flatMap(orderItemBillingKeys));
+  const nextLines = lineItems.filter((line) => {
+    const lineId = String(line?.id || '').trim();
+    return lineId && activeKeys.has(lineId);
+  });
+
+  if (!nextLines.length) {
+    return clearPharmacyOrderBilling(tx, orderRecord);
+  }
+
+  const priorSignature = JSON.stringify(
+    lineItems.map((line) => [String(line?.id || ''), Number(line?.quantity) || 0])
+  );
+  const nextSignature = JSON.stringify(
+    nextLines.map((line) => [String(line?.id || ''), Number(line?.quantity) || 0])
+  );
+  if (priorSignature === nextSignature) {
+    return false;
+  }
+
+  const subtotal = nextLines.reduce((sum, line) => {
+    const lineTotal = Number(line?.line_total);
+    if (Number.isFinite(lineTotal)) {
+      return sum + lineTotal;
+    }
+    const unitPrice = Number(line?.unit_price) || 0;
+    return sum + unitPrice * (Number(line?.quantity) || 0);
+  }, 0);
+
+  const patchedBilling = {
+    ...snapshot,
+    line_items: nextLines,
+    total_amount: String(subtotal),
+    ...(snapshot.subtotal !== undefined ? { subtotal: String(subtotal) } : {}),
+    ...(snapshot.total !== undefined ? { total: String(subtotal) } : {})};
+
+  const patient = orderRecord?.patient || {};
+  await persistPharmacyOrderBilling(tx, {
+    orderId: orderRecord.id,
+    billing: patchedBilling,
+    existingSnapshot: snapshot,
+    tenantId: patient.tenant_id || null,
+    facilityId: patient.facility_id || null,
+    patientId: orderRecord.patient_id || patient.id || null,
+    encounterId: orderRecord.encounter_id || orderRecord.encounter?.id || null,
+    description: 'Pharmacy cancel item reconciliation'});
+
+  return true;
+};
+
 const buildPendingPaymentStatusClause = () => ({
   OR: PHARMACY_PENDING_PAYMENT_STATUSES.map((paymentStatus) => ({
     billing_snapshot: { path: '$.payment_status', equals: paymentStatus }}))});
@@ -2037,16 +2149,16 @@ const cancelPharmacyOrder = async (identifier, payload = {}, userId, _userRole, 
           status: 'CANCELLED'}
       );
 
+      await tx.pharmacy_order_item.updateMany({
+        where: {
+          pharmacy_order_id: order.id,
+          NOT: { status: 'CANCELLED' }},
+        data: { status: 'CANCELLED' }});
+
       await pharmacyWorkspaceRepository.txUpdateOrder(tx, order.id, {
         status: 'CANCELLED'});
 
-      const existingSnapshot = extractStoredClinicalBilling(order);
-      if (existingSnapshot?.invoice_id) {
-        await reverseClinicalRequestBilling(tx, { existingSnapshot });
-        await tx.pharmacy_order.update({
-          where: { id: order.id },
-          data: { billing_snapshot: null }});
-      }
+      await clearPharmacyOrderBilling(tx, order);
 
       const refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
         tx,
@@ -2148,14 +2260,15 @@ const cancelPharmacyOrderItem = async (
       if (!remainingActive.length) {
         await pharmacyWorkspaceRepository.txUpdateOrder(tx, order.id, {
           status: 'CANCELLED'});
-
-        const existingSnapshot = extractStoredClinicalBilling(order);
-        if (existingSnapshot?.invoice_id) {
-          await reverseClinicalRequestBilling(tx, { existingSnapshot });
-          await tx.pharmacy_order.update({
-            where: { id: order.id },
-            data: { billing_snapshot: null }});
-        }
+        await clearPharmacyOrderBilling(tx, order);
+      } else {
+        // Refresh after item cancel so billing rebuild sees CANCELLED status.
+        const orderAfterItemCancel = await pharmacyWorkspaceRepository.txFindOrderById(
+          tx,
+          order.id,
+          PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
+        );
+        await reconcilePendingPharmacyBillingAfterItemCancel(tx, orderAfterItemCancel);
       }
 
       const refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(

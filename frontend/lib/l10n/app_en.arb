@@ -15133,7 +15133,7 @@
   "@pharmacyCancelItemDialogTitle": {
     "description": "Title for cancelling one pharmacy order item."
   },
-  "pharmacyCancelItemDialogBody": "This removes the medication from the active pharmacy workflow. Provide a reason to continue.",
+  "pharmacyCancelItemDialogBody": "This removes the medication from the active pharmacy workflow. Select one or more reasons to continue.",
   "@pharmacyCancelItemDialogBody": {
     "description": "Guidance body for cancelling one pharmacy order item."
   },
@@ -15410,6 +15410,94 @@
   "pharmacyCancelDialogBody": "Cancel only when the order should no longer be dispensed.",
   "@pharmacyCancelDialogBody": {
     "description": "Pharmacy cancel dialog body."
+  },
+  "pharmacyCancelReasonsSectionLabel": "Cancellation reasons",
+  "@pharmacyCancelReasonsSectionLabel": {
+    "description": "Section title for pharmacy cancel reason checkboxes."
+  },
+  "pharmacyCancelReasonsSectionBody": "Select one or more reasons. Add a custom reason if none of the listed options apply.",
+  "@pharmacyCancelReasonsSectionBody": {
+    "description": "Guidance under the pharmacy cancel reasons section."
+  },
+  "pharmacyCancelReasonsSelectedCountLabel": "{selected} of {total} selected",
+  "@pharmacyCancelReasonsSelectedCountLabel": {
+    "description": "Partial selection count for pharmacy cancel reasons.",
+    "placeholders": {
+      "selected": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "pharmacyCancelCustomReasonLabel": "Custom reason",
+  "@pharmacyCancelCustomReasonLabel": {
+    "description": "Label for optional/required custom pharmacy cancel reason."
+  },
+  "pharmacyCancelCustomReasonOptionalHelper": "Optional when at least one reason above is selected.",
+  "@pharmacyCancelCustomReasonOptionalHelper": {
+    "description": "Helper when predefined cancel reasons are selected."
+  },
+  "pharmacyCancelCustomReasonRequiredHelper": "Required when no predefined reason is selected.",
+  "@pharmacyCancelCustomReasonRequiredHelper": {
+    "description": "Helper when no predefined cancel reason is selected."
+  },
+  "pharmacyCancelReasonRequiredMessage": "Select at least one reason or enter a custom reason.",
+  "@pharmacyCancelReasonRequiredMessage": {
+    "description": "Validation message when pharmacy cancel has no reasons."
+  },
+  "pharmacyCancelReasonDiscontinuedByPrescriber": "Discontinued by prescriber",
+  "@pharmacyCancelReasonDiscontinuedByPrescriber": {
+    "description": "Pharmacy cancel reason: discontinued by prescriber."
+  },
+  "pharmacyCancelReasonDuplicateOrder": "Duplicate order",
+  "@pharmacyCancelReasonDuplicateOrder": {
+    "description": "Pharmacy cancel reason: duplicate order."
+  },
+  "pharmacyCancelReasonPatientRefused": "Patient refused medication",
+  "@pharmacyCancelReasonPatientRefused": {
+    "description": "Pharmacy cancel reason: patient refused."
+  },
+  "pharmacyCancelReasonAllergyOrAdverseReaction": "Allergy or adverse reaction concern",
+  "@pharmacyCancelReasonAllergyOrAdverseReaction": {
+    "description": "Pharmacy cancel reason: allergy or adverse reaction."
+  },
+  "pharmacyCancelReasonDrugInteractionOrContraindication": "Drug interaction or contraindication",
+  "@pharmacyCancelReasonDrugInteractionOrContraindication": {
+    "description": "Pharmacy cancel reason: interaction or contraindication."
+  },
+  "pharmacyCancelReasonOutOfStock": "Out of stock or unavailable",
+  "@pharmacyCancelReasonOutOfStock": {
+    "description": "Pharmacy cancel reason: out of stock."
+  },
+  "pharmacyCancelReasonWrongMedicationOrDose": "Wrong medication or dose on order",
+  "@pharmacyCancelReasonWrongMedicationOrDose": {
+    "description": "Pharmacy cancel reason: wrong medication or dose."
+  },
+  "pharmacyCancelReasonPatientDischargedOrTransferred": "Patient discharged or transferred",
+  "@pharmacyCancelReasonPatientDischargedOrTransferred": {
+    "description": "Pharmacy cancel reason: discharged or transferred."
+  },
+  "pharmacyCancelReasonPaymentOrInsuranceDenied": "Payment or insurance not approved",
+  "@pharmacyCancelReasonPaymentOrInsuranceDenied": {
+    "description": "Pharmacy cancel reason: payment or insurance denied."
+  },
+  "pharmacyCancelReasonEnteredInError": "Entered in error",
+  "@pharmacyCancelReasonEnteredInError": {
+    "description": "Pharmacy cancel reason: entered in error."
+  },
+  "pharmacyCancelReasonTherapyNoLongerIndicated": "Therapy no longer indicated",
+  "@pharmacyCancelReasonTherapyNoLongerIndicated": {
+    "description": "Pharmacy cancel reason: therapy no longer indicated."
+  },
+  "pharmacyCancelReasonPatientDeceased": "Patient deceased",
+  "@pharmacyCancelReasonPatientDeceased": {
+    "description": "Pharmacy cancel reason: patient deceased."
+  },
+  "pharmacyCancelReasonSubstitutionNotAccepted": "Substitution not accepted",
+  "@pharmacyCancelReasonSubstitutionNotAccepted": {
+    "description": "Pharmacy cancel reason: substitution not accepted."
+  },
+  "pharmacyCancelReasonAwaitingClinicalClarification": "Awaiting clinical clarification",
+  "@pharmacyCancelReasonAwaitingClinicalClarification": {
+    "description": "Pharmacy cancel reason: awaiting clinical clarification."
   },
   "pharmacyBillingGateUnavailableBody": "Payment clearance is unavailable for this order.",
   "@pharmacyBillingGateUnavailableBody": {
