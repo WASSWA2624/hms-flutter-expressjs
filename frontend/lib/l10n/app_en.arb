@@ -15165,6 +15165,22 @@
   "@pharmacyPrintHistoryAction": {
     "description": "Action to print dispense history for a prescription."
   },
+  "pharmacyPrintHistoryOptionsSectionLabel": "History to print",
+  "@pharmacyPrintHistoryOptionsSectionLabel": {
+    "description": "Collapsible section title for selecting dispense history records in the print preview."
+  },
+  "pharmacyHistoryFiltersDialogTitle": "Filter dispense history",
+  "@pharmacyHistoryFiltersDialogTitle": {
+    "description": "Title for the dispense history filters dialog."
+  },
+  "pharmacyHistoryAllEventsFilterLabel": "All events",
+  "@pharmacyHistoryAllEventsFilterLabel": {
+    "description": "All-events option in the dispense history filters dialog."
+  },
+  "pharmacyHistorySettingsTitle": "Dispense history columns",
+  "@pharmacyHistorySettingsTitle": {
+    "description": "Title for the dispense history table settings dialog."
+  },
   "pharmacyHistoryEventColumnLabel": "Event",
   "@pharmacyHistoryEventColumnLabel": {
     "description": "Dispense history table event column label."

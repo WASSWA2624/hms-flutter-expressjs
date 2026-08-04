@@ -267,7 +267,7 @@ class PharmacyPrintOptionsSection extends StatelessWidget {
               Widget
             >[
               if (index > 0) SizedBox(height: theme.spacing.xs),
-              _PharmacyPrintSelectableTile(
+              PharmacyPrintSelectableTile(
                 selected: controller.selectedItemIds.contains(
                   controller.items[index].id,
                 ),
@@ -327,7 +327,7 @@ class PharmacyPrintOptionsSection extends StatelessWidget {
                   index++
                 ) ...<Widget>[
                   if (index > 0) SizedBox(height: theme.spacing.xs),
-                  _PharmacyPrintSelectableTile(
+                  PharmacyPrintSelectableTile(
                     selected: controller.selectedHistoryIds.contains(
                       controller.history[index].id,
                     ),
@@ -353,14 +353,15 @@ class PharmacyPrintOptionsSection extends StatelessWidget {
 }
 
 /// Bordered checkbox tile aligned with facility print-section chrome.
-class _PharmacyPrintSelectableTile extends StatelessWidget {
-  const _PharmacyPrintSelectableTile({
+class PharmacyPrintSelectableTile extends StatelessWidget {
+  const PharmacyPrintSelectableTile({
     required this.selected,
     required this.icon,
     required this.title,
     required this.onChanged,
     this.subtitle,
     this.meta,
+    super.key,
   });
 
   final bool selected;
@@ -426,7 +427,6 @@ class _PharmacyPrintSelectableTile extends StatelessWidget {
                 vertical: theme.spacing.xs,
               ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
                   Checkbox(
                     value: selected,
@@ -466,6 +466,103 @@ class _PharmacyPrintSelectableTile extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Read-only bordered info card for pharmacy dialogs and summaries.
+class PharmacyInfoCard extends StatelessWidget {
+  const PharmacyInfoCard({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.meta,
+    super.key,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final String? meta;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String? resolvedSubtitle = subtitle?.trim();
+    final String? resolvedMeta = meta?.trim();
+    final bool hasSubtitle =
+        resolvedSubtitle != null && resolvedSubtitle.isNotEmpty;
+    final bool hasMeta = resolvedMeta != null && resolvedMeta.isNotEmpty;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.sm,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Icon(
+              icon,
+              size: theme.appTokens.listIconSize * 0.9,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  children: <InlineSpan>[
+                    TextSpan(
+                      text: title,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                      ),
+                    ),
+                    if (hasSubtitle) ...<InlineSpan>[
+                      TextSpan(
+                        text: ' · ',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      TextSpan(
+                        text: resolvedSubtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.25,
+                        ),
+                      ),
+                    ],
+                    if (hasMeta) ...<InlineSpan>[
+                      TextSpan(
+                        text: ' · ',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      TextSpan(
+                        text: resolvedMeta,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                          height: 1.2,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

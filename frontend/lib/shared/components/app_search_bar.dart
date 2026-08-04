@@ -1372,48 +1372,99 @@ class _MultiSelectFilterGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
     return Semantics(
       container: true,
       label: group.label,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(color: theme.colorScheme.outlineVariant),
-          borderRadius: BorderRadius.circular(theme.radius.md),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                theme.spacing.md,
-                theme.spacing.sm,
-                theme.spacing.md,
-                theme.spacing.xs,
-              ),
-              child: Text(group.label, style: theme.textTheme.labelLarge),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(group.label, style: theme.textTheme.titleSmall),
+          SizedBox(height: theme.spacing.sm),
+          for (var index = 0; index < group.choices.length; index++) ...<Widget>[
+            if (index > 0) SizedBox(height: theme.spacing.xs),
+            Builder(
+              builder: (BuildContext context) {
+                final AppSearchBarFilterChoice choice = group.choices[index];
+                final bool isSelected = selected.contains(choice.value);
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      final Set<String> next = Set<String>.of(selected);
+                      if (isSelected) {
+                        next.remove(choice.value);
+                      } else {
+                        next.add(choice.value);
+                      }
+                      onChanged(next);
+                    },
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? colorScheme.primaryContainer.withValues(
+                                alpha: 0.28,
+                              )
+                            : colorScheme.surface,
+                        border: Border.all(
+                          color: isSelected
+                              ? colorScheme.primary
+                              : colorScheme.outlineVariant,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: theme.spacing.xs,
+                          vertical: theme.spacing.xs,
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            Checkbox(
+                              value: isSelected,
+                              visualDensity: VisualDensity.compact,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              onChanged: (bool? checked) {
+                                final Set<String> next = Set<String>.of(
+                                  selected,
+                                );
+                                if (checked ?? false) {
+                                  next.add(choice.value);
+                                } else {
+                                  next.remove(choice.value);
+                                }
+                                onChanged(next);
+                              },
+                            ),
+                            if (choice.icon != null) ...<Widget>[
+                              Icon(
+                                choice.icon,
+                                size: theme.appTokens.listIconSize * 0.9,
+                                color: isSelected
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurfaceVariant,
+                              ),
+                              SizedBox(width: theme.spacing.sm),
+                            ],
+                            Expanded(
+                              child: Text(
+                                choice.label,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
-            for (final AppSearchBarFilterChoice choice in group.choices)
-              CheckboxListTile(
-                dense: true,
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: theme.spacing.sm,
-                ),
-                value: selected.contains(choice.value),
-                title: Text(choice.label),
-                secondary: choice.icon == null ? null : Icon(choice.icon),
-                onChanged: (bool? checked) {
-                  final Set<String> next = Set<String>.of(selected);
-                  if (checked ?? false) {
-                    next.add(choice.value);
-                  } else {
-                    next.remove(choice.value);
-                  }
-                  onChanged(next);
-                },
-              ),
           ],
-        ),
+        ],
       ),
     );
   }

@@ -11875,6 +11875,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyPrintHistoryAction => 'Print History';
 
   @override
+  String get pharmacyPrintHistoryOptionsSectionLabel => 'History to print';
+
+  @override
+  String get pharmacyHistoryFiltersDialogTitle => 'Filter dispense history';
+
+  @override
+  String get pharmacyHistoryAllEventsFilterLabel => 'All events';
+
+  @override
+  String get pharmacyHistorySettingsTitle => 'Dispense history columns';
+
+  @override
   String get pharmacyHistoryEventColumnLabel => 'Event';
 
   @override

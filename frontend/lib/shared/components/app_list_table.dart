@@ -2657,6 +2657,9 @@ class _ColumnVisibilityDialogState<T>
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
     return AppDialog(
       title: Text(widget.title),
       icon: const Icon(Icons.settings_outlined),
@@ -2664,10 +2667,15 @@ class _ColumnVisibilityDialogState<T>
       scrollable: true,
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          for (final AppListTableColumn<T> column in widget.columns)
+          for (var index = 0; index < widget.columns.length; index++) ...<
+            Widget
+          >[
+            if (index > 0) SizedBox(height: theme.spacing.xs),
             Builder(
               builder: (BuildContext context) {
+                final AppListTableColumn<T> column = widget.columns[index];
                 final bool isChecked =
                     column.alwaysVisible ||
                     _visibleColumnKeys.contains(column.key);
@@ -2676,35 +2684,103 @@ class _ColumnVisibilityDialogState<T>
                     (!isChecked || _visibleColumnKeys.length > 1);
 
                 return Material(
-                  type: MaterialType.transparency,
-                  child: CheckboxListTile(
-                    value: isChecked,
-                    title: Text(column.label),
-                    subtitle: column.tooltip == null
-                        ? null
-                        : Text(column.tooltip!),
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    onChanged: canChange
-                        ? (bool? value) {
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: canChange
+                        ? () {
                             setState(() {
                               final Set<String> next = Set<String>.of(
                                 _visibleColumnKeys,
                               );
-                              if (value ?? false) {
-                                next.add(column.key);
-                              } else {
+                              if (isChecked) {
                                 next.remove(column.key);
+                              } else {
+                                next.add(column.key);
                               }
                               _visibleColumnKeys = next;
                             });
                           }
                         : null,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: isChecked
+                            ? colorScheme.primaryContainer.withValues(
+                                alpha: 0.28,
+                              )
+                            : colorScheme.surface,
+                        border: Border.all(
+                          color: isChecked
+                              ? colorScheme.primary
+                              : colorScheme.outlineVariant,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: theme.spacing.xs,
+                          vertical: theme.spacing.xs,
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            Checkbox(
+                              value: isChecked,
+                              visualDensity: VisualDensity.compact,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              onChanged: canChange
+                                  ? (bool? value) {
+                                      setState(() {
+                                        final Set<String> next = Set<String>.of(
+                                          _visibleColumnKeys,
+                                        );
+                                        if (value ?? false) {
+                                          next.add(column.key);
+                                        } else {
+                                          next.remove(column.key);
+                                        }
+                                        _visibleColumnKeys = next;
+                                      });
+                                    }
+                                  : null,
+                            ),
+                            Icon(
+                              Icons.view_column_outlined,
+                              size: theme.appTokens.listIconSize * 0.9,
+                              color: isChecked
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurfaceVariant,
+                            ),
+                            SizedBox(width: theme.spacing.sm),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    column.label,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (column.tooltip != null)
+                                    Text(
+                                      column.tooltip!,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color:
+                                                colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 );
               },
             ),
+          ],
         ],
       ),
       actions: <Widget>[

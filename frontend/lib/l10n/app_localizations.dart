@@ -21934,6 +21934,30 @@ abstract class AppLocalizations {
   /// **'Print History'**
   String get pharmacyPrintHistoryAction;
 
+  /// Collapsible section title for selecting dispense history records in the print preview.
+  ///
+  /// In en, this message translates to:
+  /// **'History to print'**
+  String get pharmacyPrintHistoryOptionsSectionLabel;
+
+  /// Title for the dispense history filters dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter dispense history'**
+  String get pharmacyHistoryFiltersDialogTitle;
+
+  /// All-events option in the dispense history filters dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'All events'**
+  String get pharmacyHistoryAllEventsFilterLabel;
+
+  /// Title for the dispense history table settings dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispense history columns'**
+  String get pharmacyHistorySettingsTitle;
+
   /// Dispense history table event column label.
   ///
   /// In en, this message translates to:
