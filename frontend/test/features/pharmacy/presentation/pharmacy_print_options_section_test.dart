@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_print_options_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 
 void main() {
   group('PharmacyPrintOptionsController', () {
@@ -46,7 +47,7 @@ void main() {
     });
   });
 
-  testWidgets('Print options section uses checkboxes for filters', (
+  testWidgets('Print options section orders filters above medicines', (
     WidgetTester tester,
   ) async {
     final PharmacyPrintOptionsController controller =
@@ -65,12 +66,23 @@ void main() {
     );
 
     expect(find.text('Print options'), findsOneWidget);
+    expect(find.text('Hide zero-quantity items'), findsOneWidget);
+    expect(find.text('Hide partially dispensed items'), findsOneWidget);
+    expect(find.text('Include dispense history'), findsOneWidget);
     expect(find.text('Medications to include'), findsOneWidget);
     expect(find.text('Med A'), findsOneWidget);
-    expect(find.text('Hide zero-quantity items'), findsOneWidget);
-    expect(find.byType(CheckboxListTile), findsWidgets);
+    expect(find.text('2 / 2'), findsOneWidget);
+    expect(find.byType(AppReportSectionTile), findsWidgets);
     expect(find.byType(SwitchListTile), findsNothing);
     expect(find.byType(RadioListTile<Object>), findsNothing);
+
+    final double filterY = tester
+        .getTopLeft(find.text('Hide zero-quantity items'))
+        .dy;
+    final double medicinesY = tester
+        .getTopLeft(find.text('Medications to include'))
+        .dy;
+    expect(filterY, lessThan(medicinesY));
 
     await tester.tap(find.text('Include dispense history'));
     await tester.pump();
