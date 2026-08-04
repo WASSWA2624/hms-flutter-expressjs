@@ -23,7 +23,7 @@ import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_catalog_dialo
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_instructions_print_helpers.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_order_item_pricing_helpers.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart';
-import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_print_instructions_options_dialog.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_print_options_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -3212,50 +3212,47 @@ Future<void> _openPrintInstructionsDialog(
   WidgetRef ref,
   PharmacyOrderWorkflow workflow,
 ) async {
-  final PharmacyPrintInstructionsOptions? options =
-      await showPharmacyPrintInstructionsOptionsDialog(
-        context,
-        workflow: workflow,
-      );
-  if (options == null || !context.mounted) {
-    return;
-  }
-
   final AppLocalizations l10n = context.l10n;
-  final List<PharmacyTimelineItem> historyItems = options.includeHistory
-      ? workflow.timeline
-            .where(
-              (PharmacyTimelineItem item) =>
-                  options.selectedHistoryIds.contains(item.id),
-            )
-            .toList(growable: false)
-      : const <PharmacyTimelineItem>[];
+  final PharmacyPrintOptionsController options =
+      PharmacyPrintOptionsController(workflow);
 
-  await PrintDocumentTemplates.medicationInstructions(
-    ref: ref,
-    context: context,
-    title: l10n.pharmacyReportTitle,
-    patientContext: buildPrintFormPatientContext(
-      l10n,
-      patientName: workflow.order.displayTitle,
-      patientId: workflow.order.patientId,
-      encounterId: workflow.order.encounterId,
-    ),
-    orderReference: PrintFormContextReference(
-      label: l10n.pharmacyReportOrderLabel,
-      value: workflow.order.displayId ?? l10n.profileUnknownValue,
-    ),
-    bodyHtml: pharmacyInstructionsHtml(
+  String buildBodyHtml() {
+    return pharmacyInstructionsHtml(
       context,
       workflow,
       selectedItemIds: options.selectedItemIds,
       hideZeroQuantity: options.hideZeroQuantity,
       hidePartiallyDispensed: options.hidePartiallyDispensed,
-      historyItems: historyItems,
-    ),
-    footerNote: l10n.pharmacyReportFooter,
-    includeSignatures: true,
-  );
+      historyItems: options.selectedHistoryItems,
+    );
+  }
+
+  try {
+    await PrintDocumentTemplates.medicationInstructions(
+      ref: ref,
+      context: context,
+      title: l10n.pharmacyReportTitle,
+      previewDialogTitle: l10n.pharmacyPrintPrescriptionsDialogTitle,
+      patientContext: buildPrintFormPatientContext(
+        l10n,
+        patientName: workflow.order.displayTitle,
+        patientId: workflow.order.patientId,
+        encounterId: workflow.order.encounterId,
+      ),
+      orderReference: PrintFormContextReference(
+        label: l10n.pharmacyReportOrderLabel,
+        value: workflow.order.displayId ?? l10n.profileUnknownValue,
+      ),
+      bodyHtml: buildBodyHtml(),
+      bodyHtmlBuilder: buildBodyHtml,
+      previewSectionsExtra: PharmacyPrintOptionsSection(controller: options),
+      previewDocumentRevision: options,
+      isPrintEnabled: () => options.canPrint,
+      footerNote: l10n.pharmacyReportFooter,
+    );
+  } finally {
+    options.dispose();
+  }
 }
 
 Future<void> _printDispenseHistory(

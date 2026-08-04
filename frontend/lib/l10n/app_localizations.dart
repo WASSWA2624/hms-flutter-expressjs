@@ -21769,8 +21769,20 @@ abstract class AppLocalizations {
   /// Pharmacy print medication instructions action label.
   ///
   /// In en, this message translates to:
-  /// **'Print instructions'**
+  /// **'Print'**
   String get pharmacyPrintInstructionsAction;
+
+  /// Title for the pharmacy medication-instructions print preview dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Print prescriptions'**
+  String get pharmacyPrintPrescriptionsDialogTitle;
+
+  /// Collapsible section title for pharmacy print filter options in the preview dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Print options'**
+  String get pharmacyPrintOptionsSectionLabel;
 
   /// Pharmacy medication panel title.
   ///
@@ -21879,12 +21891,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This removes the medication from the active pharmacy workflow. Provide a reason to continue.'**
   String get pharmacyCancelItemDialogBody;
-
-  /// Title for pharmacy print-instructions options dialog.
-  ///
-  /// In en, this message translates to:
-  /// **'Print instructions'**
-  String get pharmacyPrintInstructionsOptionsTitle;
 
   /// Print option to hide medications with zero remaining quantity.
   ///

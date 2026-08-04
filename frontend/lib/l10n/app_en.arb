@@ -15053,9 +15053,17 @@
   "@pharmacyCancelOrderAction": {
     "description": "Pharmacy cancel order action label."
   },
-  "pharmacyPrintInstructionsAction": "Print instructions",
+  "pharmacyPrintInstructionsAction": "Print",
   "@pharmacyPrintInstructionsAction": {
     "description": "Pharmacy print medication instructions action label."
+  },
+  "pharmacyPrintPrescriptionsDialogTitle": "Print prescriptions",
+  "@pharmacyPrintPrescriptionsDialogTitle": {
+    "description": "Title for the pharmacy medication-instructions print preview dialog."
+  },
+  "pharmacyPrintOptionsSectionLabel": "Print options",
+  "@pharmacyPrintOptionsSectionLabel": {
+    "description": "Collapsible section title for pharmacy print filter options in the preview dialog."
   },
   "pharmacyMedicationPanelTitle": "Medicines",
   "@pharmacyMedicationPanelTitle": {
@@ -15128,10 +15136,6 @@
   "pharmacyCancelItemDialogBody": "This removes the medication from the active pharmacy workflow. Provide a reason to continue.",
   "@pharmacyCancelItemDialogBody": {
     "description": "Guidance body for cancelling one pharmacy order item."
-  },
-  "pharmacyPrintInstructionsOptionsTitle": "Print instructions",
-  "@pharmacyPrintInstructionsOptionsTitle": {
-    "description": "Title for pharmacy print-instructions options dialog."
   },
   "pharmacyPrintHideZeroQuantityLabel": "Hide zero-quantity items",
   "@pharmacyPrintHideZeroQuantityLabel": {

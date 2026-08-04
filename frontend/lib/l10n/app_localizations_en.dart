@@ -11788,7 +11788,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyCancelOrderAction => 'Cancel order';
 
   @override
-  String get pharmacyPrintInstructionsAction => 'Print instructions';
+  String get pharmacyPrintInstructionsAction => 'Print';
+
+  @override
+  String get pharmacyPrintPrescriptionsDialogTitle => 'Print prescriptions';
+
+  @override
+  String get pharmacyPrintOptionsSectionLabel => 'Print options';
 
   @override
   String get pharmacyMedicationPanelTitle => 'Medicines';
@@ -11846,9 +11852,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pharmacyCancelItemDialogBody =>
       'This removes the medication from the active pharmacy workflow. Provide a reason to continue.';
-
-  @override
-  String get pharmacyPrintInstructionsOptionsTitle => 'Print instructions';
 
   @override
   String get pharmacyPrintHideZeroQuantityLabel => 'Hide zero-quantity items';

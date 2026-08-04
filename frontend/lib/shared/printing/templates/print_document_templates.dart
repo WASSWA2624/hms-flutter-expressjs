@@ -176,6 +176,10 @@ abstract final class PrintDocumentTemplates {
     String? previewDialogTitle,
     String? previewDialogBody,
     String? fallbackText,
+    String Function()? bodyHtmlBuilder,
+    Widget? previewSectionsExtra,
+    Listenable? previewDocumentRevision,
+    bool Function()? isPrintEnabled,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.medicationInstructions,
@@ -191,6 +195,10 @@ abstract final class PrintDocumentTemplates {
       previewDialogTitle: previewDialogTitle,
       previewDialogBody: previewDialogBody,
       fallbackText: fallbackText,
+      bodyHtmlBuilder: bodyHtmlBuilder,
+      previewSectionsExtra: previewSectionsExtra,
+      previewDocumentRevision: previewDocumentRevision,
+      isPrintEnabled: isPrintEnabled,
     );
   }
 
@@ -470,13 +478,19 @@ abstract final class PrintDocumentTemplates {
     String? previewDialogBody,
     String? fallbackText,
     PrintFormBrandingOptions brandingOptions = PrintFormBrandingOptions.all,
+    String Function()? bodyHtmlBuilder,
+    Widget? previewSectionsExtra,
+    Listenable? previewDocumentRevision,
+    bool Function()? isPrintEnabled,
   }) async {
     assert(
-      bodyHtml != null || pages.isNotEmpty,
-      'PrintDocumentTemplates.${kind.name} requires bodyHtml or pages.',
+      bodyHtml != null || pages.isNotEmpty || bodyHtmlBuilder != null,
+      'PrintDocumentTemplates.${kind.name} requires bodyHtml, bodyHtmlBuilder, or pages.',
     );
     final String resolvedFooter =
         footerNote ?? 'Generated from ${displayName(kind).toLowerCase()}.';
+
+    String? resolvedBodyHtml() => bodyHtmlBuilder?.call() ?? bodyHtml;
 
     Future<void> doPrint() {
       return printFormTemplateDocument(
@@ -484,7 +498,7 @@ abstract final class PrintDocumentTemplates {
         context: context,
         title: title,
         subtitle: subtitle,
-        bodyHtml: bodyHtml,
+        bodyHtml: resolvedBodyHtml(),
         pages: pages,
         metadata: metadata,
         patientContext: patientContext,
@@ -528,7 +542,7 @@ abstract final class PrintDocumentTemplates {
         context: context,
         title: title,
         subtitle: subtitle,
-        bodyHtml: bodyHtml,
+        bodyHtml: resolvedBodyHtml(),
         pages: pages,
         metadata: metadata,
         patientContext: patientContext,
@@ -549,6 +563,9 @@ abstract final class PrintDocumentTemplates {
       facilitySectionBranding: facilitySectionBranding,
       initialBrandingOptions: brandingOptions,
       documentHtmlBuilder: htmlFor,
+      sectionsExtra: previewSectionsExtra,
+      documentRevision: previewDocumentRevision,
+      isPrintEnabled: isPrintEnabled,
       onPrint: doPrint,
       onPrintWithBranding: (PrintFormBrandingOptions options) {
         return printFormTemplateDocument(
@@ -556,7 +573,7 @@ abstract final class PrintDocumentTemplates {
           context: context,
           title: title,
           subtitle: subtitle,
-          bodyHtml: bodyHtml,
+          bodyHtml: resolvedBodyHtml(),
           pages: pages,
           metadata: metadata,
           patientContext: patientContext,

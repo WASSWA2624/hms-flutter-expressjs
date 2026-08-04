@@ -98,6 +98,71 @@ void main() {
       expect(html, isNot(contains('TID')));
       expect(html, isNot(contains('Grand total')));
     });
+
+    testWidgets('applies selected-item and zero-quantity filters', (
+      tester,
+    ) async {
+      late String html;
+      const PharmacyOrderItem kept = PharmacyOrderItem(
+        id: 'kept',
+        drugDisplayName: 'Kept Medicine',
+        quantityPrescribed: 4,
+        quantityUnit: 'tablets',
+        quantityRemaining: 4,
+        frequency: 'BID',
+        route: 'ORAL',
+      );
+      const PharmacyOrderItem hiddenZero = PharmacyOrderItem(
+        id: 'zero',
+        drugDisplayName: 'Zero Remaining',
+        quantityPrescribed: 4,
+        quantityUnit: 'tablets',
+        quantityRemaining: 0,
+        frequency: 'BID',
+        route: 'ORAL',
+      );
+      const PharmacyOrderItem unselected = PharmacyOrderItem(
+        id: 'skip',
+        drugDisplayName: 'Unselected Medicine',
+        quantityPrescribed: 2,
+        quantityUnit: 'tablets',
+        quantityRemaining: 2,
+        frequency: 'BID',
+        route: 'ORAL',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (BuildContext context) {
+              html = pharmacyInstructionsHtml(
+                context,
+                const PharmacyOrderWorkflow(
+                  order: PharmacyOrder(
+                    id: 'order-1',
+                    displayId: 'PHO-3E51507634',
+                    patientId: 'PAT-03596352D8',
+                    encounterId: 'ENC-3C95E3B11E',
+                    patientDisplayName: 'Noah Demo-Echo',
+                    status: 'DISPENSED',
+                  ),
+                  items: <PharmacyOrderItem>[kept, hiddenZero, unselected],
+                ),
+                selectedItemIds: <String>{'kept', 'zero'},
+                hideZeroQuantity: true,
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(html, contains('Kept Medicine'));
+      expect(html, isNot(contains('Zero Remaining')));
+      expect(html, isNot(contains('Unselected Medicine')));
+    });
   });
 
   group('resolvePharmacyDispenseBatchLines', () {

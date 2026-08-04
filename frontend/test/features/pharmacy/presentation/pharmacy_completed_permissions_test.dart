@@ -708,7 +708,7 @@ void main() {
         expect(
           find.descendant(
             of: dialog,
-            matching: find.text('Print instructions'),
+            matching: find.text('Print'),
           ),
           findsOneWidget,
         );
@@ -750,7 +750,7 @@ void main() {
         expect(
           find.descendant(
             of: dialog,
-            matching: find.text('Print instructions'),
+            matching: find.text('Print'),
           ),
           findsOneWidget,
         );

@@ -668,6 +668,9 @@ Future<void> showAppPrintPreviewDialog({
       PrintFormBrandingOptions.all,
   String Function(PrintFormBrandingOptions options)? documentHtmlBuilder,
   Future<void> Function(PrintFormBrandingOptions options)? onPrintWithBranding,
+  Widget? sectionsExtra,
+  Listenable? documentRevision,
+  bool Function()? isPrintEnabled,
 }) {
   return showAppDialog<void>(
     context: context,
@@ -688,6 +691,9 @@ Future<void> showAppPrintPreviewDialog({
       initialBrandingOptions: initialBrandingOptions,
       documentHtmlBuilder: documentHtmlBuilder,
       onPrintWithBranding: onPrintWithBranding,
+      sectionsExtra: sectionsExtra,
+      documentRevision: documentRevision,
+      isPrintEnabled: isPrintEnabled,
     ),
   );
 }
@@ -709,6 +715,9 @@ class _AppPrintPreviewDialog extends StatefulWidget {
     this.initialBrandingOptions = PrintFormBrandingOptions.all,
     this.documentHtmlBuilder,
     this.onPrintWithBranding,
+    this.sectionsExtra,
+    this.documentRevision,
+    this.isPrintEnabled,
   });
 
   final String title;
@@ -727,6 +736,9 @@ class _AppPrintPreviewDialog extends StatefulWidget {
   final String Function(PrintFormBrandingOptions options)? documentHtmlBuilder;
   final Future<void> Function(PrintFormBrandingOptions options)?
       onPrintWithBranding;
+  final Widget? sectionsExtra;
+  final Listenable? documentRevision;
+  final bool Function()? isPrintEnabled;
 
   @override
   State<_AppPrintPreviewDialog> createState() => _AppPrintPreviewDialogState();
@@ -743,9 +755,17 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
       widget.facilitySectionBranding != null &&
       widget.documentHtmlBuilder != null;
 
+  bool get _sectionsEnabled =>
+      widget.documentHtmlBuilder != null &&
+      (widget.facilitySectionBranding != null || widget.sectionsExtra != null);
+
+  bool get _printAllowed =>
+      !_isPrinting && (widget.isPrintEnabled?.call() ?? true);
+
   @override
   void initState() {
     super.initState();
+    widget.documentRevision?.addListener(_onDocumentRevision);
     if (_facilitySectionsEnabled) {
       final List<ReportSectionAvailability> availabilities =
           buildFacilityPrintSectionAvailabilities(
@@ -782,11 +802,33 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
     }
   }
 
+  @override
+  void didUpdateWidget(covariant _AppPrintPreviewDialog oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.documentRevision != widget.documentRevision) {
+      oldWidget.documentRevision?.removeListener(_onDocumentRevision);
+      widget.documentRevision?.addListener(_onDocumentRevision);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.documentRevision?.removeListener(_onDocumentRevision);
+    super.dispose();
+  }
+
+  void _onDocumentRevision() {
+    if (!mounted) {
+      return;
+    }
+    setState(() => _currentPage = 1);
+  }
+
   PrintFormBrandingOptions get _brandingOptions =>
       brandingOptionsFromFacilitySections(_selectedFacilitySections);
 
   String get _documentHtml {
-    if (!_facilitySectionsEnabled) {
+    if (!_sectionsEnabled) {
       return widget.documentHtml;
     }
     return widget.documentHtmlBuilder!(_brandingOptions);
@@ -804,7 +846,7 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
       pageCount,
     );
     final double dialogMaxWidth =
-        _facilitySectionsEnabled ? 1120 : widget.maxWidth;
+        _sectionsEnabled ? 1120 : widget.maxWidth;
 
     final Widget previewPanel = AppPrintPreviewPanel(
       html: documentHtml,
@@ -865,23 +907,53 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
     );
 
     final Widget content;
-    if (_facilitySectionsEnabled) {
-      final List<ReportSectionAvailability> availabilities =
-          buildFacilityPrintSectionAvailabilities(
-        widget.facilitySectionBranding!,
-      );
-      final Set<Object> selected = sanitizeReportSectionSelection(
-        selectedIds: _selectedFacilitySections,
-        sections: availabilities,
-      );
-      final List<AppReportSectionData> tiles = buildReportSectionTiles(
-        sections: availabilities,
-        titleFor: (Object id) =>
-            printFacilitySectionLabel(l10n, id as PrintFacilitySection),
-        iconFor: (Object id) =>
-            printFacilitySectionIcon(id as PrintFacilitySection),
-        emptyDisabledReason: l10n.reportSectionEmptyDisabledReason,
-      );
+    if (_sectionsEnabled) {
+      final List<Widget> sectionChildren = <Widget>[];
+      if (_facilitySectionsEnabled) {
+        final List<ReportSectionAvailability> availabilities =
+            buildFacilityPrintSectionAvailabilities(
+          widget.facilitySectionBranding!,
+        );
+        final Set<Object> selected = sanitizeReportSectionSelection(
+          selectedIds: _selectedFacilitySections,
+          sections: availabilities,
+        );
+        final List<AppReportSectionData> tiles = buildReportSectionTiles(
+          sections: availabilities,
+          titleFor: (Object id) =>
+              printFacilitySectionLabel(l10n, id as PrintFacilitySection),
+          iconFor: (Object id) =>
+              printFacilitySectionIcon(id as PrintFacilitySection),
+          emptyDisabledReason: l10n.reportSectionEmptyDisabledReason,
+        );
+        sectionChildren.add(
+          AppFormSection(
+            title: l10n.printFacilityDetailsSectionsLabel,
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              AppReportSectionPicker(
+                sections: tiles,
+                selectedIds: selected,
+                onSelectionChanged: (Set<Object> next) {
+                  setState(() {
+                    _selectedFacilitySections = sanitizeReportSectionSelection(
+                      selectedIds: next,
+                      sections: availabilities,
+                    );
+                    _currentPage = 1;
+                  });
+                },
+              ),
+            ],
+          ),
+        );
+      }
+      if (widget.sectionsExtra != null) {
+        if (sectionChildren.isNotEmpty) {
+          sectionChildren.add(SizedBox(height: theme.spacing.sm));
+        }
+        sectionChildren.add(widget.sectionsExtra!);
+      }
       content = AppPrintPreviewWorkspace(
         paneMode: _paneMode,
         paneModeEnabled: !_isPrinting,
@@ -889,24 +961,9 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
           setState(() => _paneMode = next);
         },
         toolbar: toolbar,
-        sectionPicker: AppFormSection(
-          title: l10n.printFacilityDetailsSectionsLabel,
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            AppReportSectionPicker(
-              sections: tiles,
-              selectedIds: selected,
-              onSelectionChanged: (Set<Object> next) {
-                setState(() {
-                  _selectedFacilitySections = sanitizeReportSectionSelection(
-                    selectedIds: next,
-                    sections: availabilities,
-                  );
-                  _currentPage = 1;
-                });
-              },
-            ),
-          ],
+        sectionPicker: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: sectionChildren,
         ),
         preview: previewPanel,
       );
@@ -964,18 +1021,21 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
         ),
         AppReportActionButton.print(
           label: printLabel,
-          enabled: !_isPrinting,
+          enabled: _printAllowed,
           isLoading: _isPrinting,
-          onPressed: _isPrinting ? null : () => _print(),
+          onPressed: _printAllowed ? () => _print() : null,
         ),
       ],
     );
   }
 
   Future<void> _print() async {
+    if (!_printAllowed) {
+      return;
+    }
     setState(() => _isPrinting = true);
     try {
-      if (_facilitySectionsEnabled && widget.onPrintWithBranding != null) {
+      if (_sectionsEnabled && widget.onPrintWithBranding != null) {
         await widget.onPrintWithBranding!(_brandingOptions);
       } else {
         await widget.onPrint();
