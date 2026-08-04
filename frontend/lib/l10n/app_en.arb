@@ -10036,9 +10036,19 @@
   "@authWrongPasswordMessage": {
     "description": "Login failure message when the account exists but the password is wrong."
   },
-  "authRateLimitedMessage": "Too many sign-in attempts. Please wait a moment and try again.",
+  "authRateLimitedMessage": "Too many attempts. Please wait a moment and try again.",
   "@authRateLimitedMessage": {
     "description": "Auth failure message when the server temporarily rate limits repeated auth attempts."
+  },
+  "authRateLimitedTryAgainAtMessage": "Too many attempts. Try again after {time}.",
+  "@authRateLimitedTryAgainAtMessage": {
+    "description": "Auth rate-limit failure message that includes the earliest local retry time.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "20:22"
+      }
+    }
   },
   "authForbiddenMessage": "This account cannot complete that action.",
   "@authForbiddenMessage": {

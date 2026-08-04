@@ -7905,7 +7905,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authRateLimitedMessage =>
-      'Too many sign-in attempts. Please wait a moment and try again.';
+      'Too many attempts. Please wait a moment and try again.';
+
+  @override
+  String authRateLimitedTryAgainAtMessage(String time) {
+    return 'Too many attempts. Try again after $time.';
+  }
 
   @override
   String get authForbiddenMessage =>

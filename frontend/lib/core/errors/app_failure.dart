@@ -29,6 +29,7 @@ sealed class AppFailure {
     String code,
     int? statusCode,
     bool isRetryable,
+    String? detailMessage,
   }) = NetworkFailure;
 
   const factory AppFailure.timeout({int? statusCode}) = TimeoutFailure;
@@ -159,6 +160,7 @@ final class NetworkFailure extends AppFailure {
     super.code = 'network.request_failed',
     super.statusCode,
     super.isRetryable = true,
+    super.detailMessage,
   }) : super._(
          category: AppFailureCategory.network,
          messageKey: 'errors.network',

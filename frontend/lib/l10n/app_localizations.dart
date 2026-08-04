@@ -14593,8 +14593,14 @@ abstract class AppLocalizations {
   /// Auth failure message when the server temporarily rate limits repeated auth attempts.
   ///
   /// In en, this message translates to:
-  /// **'Too many sign-in attempts. Please wait a moment and try again.'**
+  /// **'Too many attempts. Please wait a moment and try again.'**
   String get authRateLimitedMessage;
+
+  /// Auth rate-limit failure message that includes the earliest local retry time.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts. Try again after {time}.'**
+  String authRateLimitedTryAgainAtMessage(String time);
 
   /// Safe auth forbidden failure message.
   ///

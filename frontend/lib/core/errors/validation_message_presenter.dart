@@ -110,11 +110,24 @@ abstract final class ValidationMessagePresenter {
       'auth.account_pending_approval' => l10n.authAccountPendingApprovalMessage,
       'auth.account_not_found' => l10n.authAccountNotFoundMessage,
       'auth.wrong_password' => l10n.authWrongPasswordMessage,
-      'network.rate_limited' => l10n.authRateLimitedMessage,
+      'network.rate_limited' => _rateLimitedMessage(l10n, failure),
       'auth.reset_password.invalid_token' ||
       'auth.token_invalid' => l10n.authResetPasswordInvalidTokenMessage,
       _ => null,
     };
+  }
+
+  static String _rateLimitedMessage(AppLocalizations l10n, AppFailure failure) {
+    final DateTime? resetAt = DateTime.tryParse(failure.detailMessage ?? '');
+    if (resetAt != null) {
+      final DateTime local = resetAt.toLocal();
+      final String hour = local.hour.toString().padLeft(2, '0');
+      final String minute = local.minute.toString().padLeft(2, '0');
+      final String time = '$hour:$minute';
+      return l10n.authRateLimitedTryAgainAtMessage(time);
+    }
+
+    return l10n.authRateLimitedMessage;
   }
 
   static String fieldLabel(AppLocalizations l10n, String field) {

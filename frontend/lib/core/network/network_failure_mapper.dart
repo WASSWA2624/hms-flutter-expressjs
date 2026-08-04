@@ -116,6 +116,7 @@ final class NetworkFailureMapper {
       return AppFailure.network(
         code: 'network.rate_limited',
         statusCode: statusCode,
+        detailMessage: _rateLimitResetAt(response),
       );
     }
 
@@ -296,5 +297,39 @@ final class NetworkFailureMapper {
     }
 
     return false;
+  }
+
+  /// Prefer body `errors[].reset_at`, then `X-RateLimit-Reset` (unix seconds).
+  String? _rateLimitResetAt(Response<dynamic>? response) {
+    final Object? data = response?.data;
+    if (data is Map<Object?, Object?>) {
+      final Object? errors = data['errors'];
+      if (errors is List<Object?>) {
+        for (final Object? entry in errors) {
+          if (entry is! Map<Object?, Object?>) {
+            continue;
+          }
+          final Object? resetAt = entry['reset_at'];
+          if (resetAt is String && resetAt.trim().isNotEmpty) {
+            return resetAt.trim();
+          }
+        }
+      }
+    }
+
+    final Object? header = response?.headers.value('x-ratelimit-reset');
+    if (header is! String || header.trim().isEmpty) {
+      return null;
+    }
+
+    final int? unixSeconds = int.tryParse(header.trim());
+    if (unixSeconds == null) {
+      return null;
+    }
+
+    return DateTime.fromMillisecondsSinceEpoch(
+      unixSeconds * 1000,
+      isUtc: true,
+    ).toIso8601String();
   }
 }

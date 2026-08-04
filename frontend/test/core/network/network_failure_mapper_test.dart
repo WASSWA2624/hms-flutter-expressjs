@@ -137,7 +137,16 @@ void main() {
           response: Response<Object?>(
             requestOptions: requestOptions,
             statusCode: 429,
-            data: <String, Object?>{'code': 'EXCEEDED'},
+            data: <String, Object?>{
+              'code': 'EXCEEDED',
+              'errors': <Object?>[
+                <String, Object?>{
+                  'field': 'rate_limit',
+                  'message': 'Limit will reset at {{reset_at}}',
+                  'reset_at': '2026-08-04T17:22:52.782Z',
+                },
+              ],
+            },
           ),
           type: DioExceptionType.badResponse,
         ),
@@ -148,6 +157,7 @@ void main() {
       expect(failure.code, 'network.rate_limited');
       expect(failure.statusCode, 429);
       expect(failure.isRetryable, isTrue);
+      expect(failure.detailMessage, '2026-08-04T17:22:52.782Z');
     });
 
     test(

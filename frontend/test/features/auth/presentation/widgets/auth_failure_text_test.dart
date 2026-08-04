@@ -25,7 +25,7 @@ void main() {
 
     expect(
       find.text(
-        'No account exists for that email or phone. Check the details or create an account.',
+        'No account for that email or phone. Check details or register.',
       ),
       findsOneWidget,
     );
@@ -66,9 +66,36 @@ void main() {
     );
 
     expect(
-      find.text(
-        'Too many sign-in attempts. Please wait a moment and try again.',
+      find.text('Too many attempts. Please wait a moment and try again.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows a rate limited retry time when reset_at is present', (
+    WidgetTester tester,
+  ) async {
+    final DateTime resetAt = DateTime.utc(2026, 8, 4, 17, 22);
+    final String expectedTime =
+        '${resetAt.toLocal().hour.toString().padLeft(2, '0')}:'
+        '${resetAt.toLocal().minute.toString().padLeft(2, '0')}';
+
+    await pumpLocalizedWidget(
+      tester,
+      Builder(
+        builder: (BuildContext context) {
+          return AppFormInformationBanner.failure(
+            context: context,
+            failure: AppFailure.network(
+              code: 'network.rate_limited',
+              detailMessage: resetAt.toIso8601String(),
+            ),
+          );
+        },
       ),
+    );
+
+    expect(
+      find.text('Too many attempts. Try again after $expectedTime.'),
       findsOneWidget,
     );
   });
