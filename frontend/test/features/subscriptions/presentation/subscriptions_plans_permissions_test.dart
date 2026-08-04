@@ -87,10 +87,7 @@ Finder _tabLabel(String label) {
   );
 }
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _toolbarPrimary(String label) => find.byTooltip(label);
 
 void _stubWorkspace(
   _MockSubscriptionsRepository repository, {
@@ -741,7 +738,7 @@ void main() {
       );
     });
 
-    testWidgets('nested Modules resource is read-only (no pack create primary)', (
+    testWidgets('Modules primary tab is read-only (no pack create primary)', (
       WidgetTester tester,
     ) async {
       final AppAccessPolicy writer = _policy(
@@ -759,8 +756,8 @@ void main() {
 
       expect(_toolbarPrimary('Create plan'), findsOneWidget);
 
-      // Navigate via nested resource strip (deep-link apply can race initial load).
-      await tester.tap(_tabLabel('Modules').last);
+      // Modules is a primary tab (not nested under Plans).
+      await tester.tap(_tabLabel('Modules').first);
       await tester.pumpAndSettle();
 
       expect(_tabLabel('Modules'), findsWidgets);
@@ -900,13 +897,20 @@ void main() {
         );
 
         expect(_tabLabel('Plans'), findsWidgets);
+        expect(_tabLabel('Modules'), findsWidgets);
         final List<AppTabStrip> strips = tester
             .widgetList<AppTabStrip>(find.byType(AppTabStrip))
             .toList(growable: false);
-        expect(strips.length, greaterThanOrEqualTo(2));
+        expect(strips, isNotEmpty);
         expect(
-          strips[1].tabs.map((AppTabItem tab) => tab.label),
-          <String>['Plans', 'Modules'],
+          strips.first.tabs.map((AppTabItem tab) => tab.label),
+          containsAll(<String>['Plans', 'Modules', 'Denied modules']),
+        );
+        expect(
+          strips.where(
+            (AppTabStrip strip) => strip.variant == AppTabStripVariant.nested,
+          ),
+          isEmpty,
         );
       },
     );

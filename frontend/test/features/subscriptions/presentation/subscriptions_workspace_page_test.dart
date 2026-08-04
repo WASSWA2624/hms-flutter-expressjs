@@ -24,10 +24,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _MockSubscriptionsRepository extends Mock
     implements SubscriptionsRepository {}
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _toolbarPrimary(String label) => find.byTooltip(label);
 
 const SubscriptionItem _planItem = SubscriptionItem(
   id: 'plan-1',
@@ -136,6 +133,11 @@ void _stubWorkspace(
             label: 'Pending changes',
             value: 1,
           ),
+          SubscriptionSummaryMetric(
+            id: 'denied_modules',
+            label: 'Denied modules',
+            value: 8,
+          ),
         ],
         queueSummaries: const <SubscriptionQueueSummary>[
           SubscriptionQueueSummary(
@@ -153,6 +155,14 @@ void _stubWorkspace(
             panel: SubscriptionPanel.operations,
             resource: SubscriptionResource.subscriptions,
             queue: 'pending_changes',
+          ),
+          SubscriptionQueueSummary(
+            id: 'module_blocked',
+            label: 'Denied modules',
+            count: 8,
+            panel: SubscriptionPanel.denied,
+            resource: SubscriptionResource.moduleSubscriptions,
+            queue: 'MODULE_BLOCKED',
           ),
         ],
         panelSummaries: const <SubscriptionPanelSummary>[],
@@ -317,34 +327,40 @@ void main() {
       <String>[
         'Overview',
         'Plans',
+        'Modules',
         'Subscriptions',
         'Invoices',
         'Licenses',
+        'Denied modules',
       ],
     );
     expect(find.text('Notifications'), findsNothing);
     expect(find.widgetWithText(FilterChip, 'Past due invoices (2)'), findsOneWidget);
     expect(find.widgetWithText(FilterChip, 'Pending changes (1)'), findsOneWidget);
+    expect(find.widgetWithText(FilterChip, 'Denied modules (8)'), findsNothing);
     expect(find.text('Starter Plan'), findsOneWidget);
     expect(_toolbarPrimary('Create plan'), findsOneWidget);
+    expect(find.byType(AppTabToolbarPrimary), findsNothing);
   });
 
-  testWidgets('overview shows cohort metrics without worklist or past-due card', (
+  testWidgets('overview shows cohort metrics, charts, and no worklist creates', (
     WidgetTester tester,
   ) async {
     await _pumpSubscriptionsWorkspace(tester, repository: repository);
     await _selectPanelTab(tester, 'Overview');
 
-    expect(find.text('Active plans'), findsOneWidget);
-    expect(find.text('Not subscribed'), findsOneWidget);
+    expect(find.text('Active plans'), findsWidgets);
+    expect(find.text('Not subscribed'), findsWidgets);
     expect(find.text('Closed subscriptions'), findsOneWidget);
-    expect(find.text('Past due'), findsNothing);
+    expect(find.text('Tenant cohorts'), findsOneWidget);
+    expect(find.text('Workspace attention'), findsOneWidget);
     expect(find.byType(AppListTable<SubscriptionItem>), findsNothing);
     expect(_toolbarPrimary('New subscription'), findsNothing);
     expect(_toolbarPrimary('Create plan'), findsNothing);
+    expect(find.byType(AppTabToolbarPrimary), findsNothing);
   });
 
-  testWidgets('catalog exposes Plans/Modules nested tabs; filters omit Resource', (
+  testWidgets('Plans has no nested Modules strip; Modules is a primary tab', (
     WidgetTester tester,
   ) async {
     await _pumpSubscriptionsWorkspace(tester, repository: repository);
@@ -352,12 +368,14 @@ void main() {
     final List<AppTabStrip> strips = tester
         .widgetList<AppTabStrip>(find.byType(AppTabStrip))
         .toList(growable: false);
-    expect(strips.length, greaterThanOrEqualTo(2));
-    final AppTabStrip resourceStrip = strips[1];
-    expect(resourceStrip.variant, AppTabStripVariant.nested);
+    expect(strips, isNotEmpty);
     expect(
-      resourceStrip.tabs.map((AppTabItem tab) => tab.label),
-      <String>['Plans', 'Modules'],
+      strips.first.tabs.map((AppTabItem tab) => tab.label),
+      containsAll(<String>['Plans', 'Modules']),
+    );
+    expect(
+      strips.where((AppTabStrip strip) => strip.variant == AppTabStripVariant.nested),
+      isEmpty,
     );
 
     final AppListTable<SubscriptionItem> table = tester
@@ -377,6 +395,9 @@ void main() {
     );
     await tester.tap(find.text('Close').first);
     await tester.pumpAndSettle();
+
+    await _selectPanelTab(tester, 'Modules');
+    expect(find.byType(AppListTable<SubscriptionItem>), findsOneWidget);
   });
 
   testWidgets('operations owns New subscription as the sole create entry', (

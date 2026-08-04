@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/subscriptions/presentation/subscriptions_acc
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/dashboard/dashboard.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -139,7 +140,6 @@ class _SubscriptionsWorkspacePageState
             SubscriptionsLicensesAtomPermissions.rowSelect.isAllowed(policy),
           SubscriptionResource.subscriptionInvoices =>
             SubscriptionsInvoicesAtomPermissions.rowSelect.isAllowed(policy),
-          _ => canReadSubscriptions(policy),
         };
         if (!canOpenDetail) {
           return;
@@ -156,7 +156,6 @@ class _SubscriptionsWorkspacePageState
             SubscriptionsLicensesAtomPermissions.update.isAllowed(policy),
           SubscriptionResource.subscriptionInvoices =>
             SubscriptionsInvoicesAtomPermissions.update.isAllowed(policy),
-          _ => canWriteSubscriptions(policy),
         };
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) {
@@ -231,9 +230,6 @@ class _SubscriptionsWorkspaceContentState
   Widget build(BuildContext context) {
     final SubscriptionsWorkspaceState state = widget.state;
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final SubscriptionsCapabilities caps =
-        SubscriptionsCapabilities.fromPolicy(accessPolicy);
-    final bool canWrite = caps.canWrite;
     final List<SubscriptionPanel> visiblePanels = subscriptionsAllowedPanels(
       accessPolicy,
     );
@@ -295,19 +291,24 @@ class _SubscriptionsWorkspaceContentState
                   ? state.query.panel
                   : visiblePanels.first,
               isRefreshing: state.isRefreshing,
+              deniedModulesCount: state.summaryValue(_SummaryIds.deniedModules),
               onPanelSelected: (SubscriptionPanel panel) {
                 final SubscriptionResource resource =
                     _defaultResourceForPanel(panel);
                 unawaited(controller.applyPanel(panel));
                 context.go(
                   state.query
-                      .copyWith(panel: panel, resource: resource)
+                      .resetFilters()
+                      .copyWith(
+                        panel: panel,
+                        resource: resource,
+                        queue: panel == SubscriptionPanel.denied
+                            ? 'MODULE_BLOCKED'
+                            : null,
+                      )
                       .location(),
                 );
               },
-              primaryAction: canShowCurrentPanel
-                  ? _primaryAction(context, accessPolicy, state)
-                  : null,
             ),
             SizedBox(height: theme.spacing.sm),
             if (canShowCurrentPanel) ...<Widget>[
@@ -354,7 +355,8 @@ class _SubscriptionsWorkspaceContentState
                             .isAllowed(accessPolicy)) {
                       return;
                     }
-                    if (state.query.panel == SubscriptionPanel.catalog &&
+                    if ((state.query.panel == SubscriptionPanel.catalog ||
+                            state.query.panel == SubscriptionPanel.modules) &&
                         !SubscriptionsPlansAtomPermissions.rowSelect
                             .isAllowed(accessPolicy)) {
                       return;
@@ -364,7 +366,8 @@ class _SubscriptionsWorkspaceContentState
                             .isAllowed(accessPolicy)) {
                       return;
                     }
-                    if (state.query.panel == SubscriptionPanel.operations &&
+                    if ((state.query.panel == SubscriptionPanel.operations ||
+                            state.query.panel == SubscriptionPanel.denied) &&
                         !SubscriptionsAtomPermissions.rowSelect
                             .isAllowed(accessPolicy)) {
                       return;
@@ -385,7 +388,6 @@ class _SubscriptionsWorkspaceContentState
                       SubscriptionResource.subscriptionInvoices =>
                         SubscriptionsInvoicesAtomPermissions.update
                             .isAllowed(accessPolicy),
-                      _ => canWrite,
                     };
                     unawaited(
                       _openSubscriptionDetailDialog(
@@ -403,74 +405,6 @@ class _SubscriptionsWorkspaceContentState
         ),
       ),
     );
-  }
-
-  Widget? _primaryAction(
-    BuildContext context,
-    AppAccessPolicy accessPolicy,
-    SubscriptionsWorkspaceState state,
-  ) {
-    // Overview: summary KPIs only — no tab-strip create primary
-    // ([SubscriptionsOverviewAtomPermissions.create] is cohort-only).
-    if (state.query.panel == SubscriptionPanel.overview) {
-      return null;
-    }
-    // Invoices: no create primary — Collect/Retry live on detail only.
-    if (state.query.panel == SubscriptionPanel.billing) {
-      return null;
-    }
-    if (state.query.resource == SubscriptionResource.licenses) {
-      if (!SubscriptionsLicensesAtomPermissions.create.isAllowed(
-        accessPolicy,
-      )) {
-        return null;
-      }
-      return AppTabToolbarPrimary(
-        label: _SubscriptionsText.addLicense,
-        icon: Icons.key_outlined,
-        enabled: !state.isSaving && state.lookups.tenants.isNotEmpty,
-        onPressed: () => _showLicenseDialog(context, ref, state),
-      );
-    }
-    if (state.query.resource == SubscriptionResource.subscriptionPlans) {
-      if (!SubscriptionsPlansAtomPermissions.create.isAllowed(accessPolicy)) {
-        return null;
-      }
-      return AppTabToolbarPrimary(
-        label: _SubscriptionsText.createPlan,
-        icon: Icons.add,
-        enabled: !state.isSaving,
-        onPressed: () => _showPlanDialog(context, ref),
-      );
-    }
-    // Catalog Modules nested resource: read-only catalog (no create primary).
-    // Module packs are edited via Manage modules on a plan detail.
-    if (state.query.resource == SubscriptionResource.modules) {
-      return null;
-    }
-    if (state.query.resource == SubscriptionResource.subscriptions) {
-      if (!SubscriptionsAtomPermissions.create.isAllowed(accessPolicy)) {
-        return null;
-      }
-      return AppTabToolbarPrimary(
-        label: _SubscriptionsText.newSubscription,
-        icon: Icons.add,
-        enabled: !state.isSaving && state.lookups.tenants.isNotEmpty,
-        onPressed: () => _showSubscriptionDialog(context, ref, state),
-      );
-    }
-    if (state.query.resource == SubscriptionResource.moduleSubscriptions) {
-      if (!SubscriptionsAtomPermissions.assignModule.isAllowed(accessPolicy)) {
-        return null;
-      }
-      return AppTabToolbarPrimary(
-        label: _SubscriptionsText.assignModule,
-        icon: Icons.extension_outlined,
-        enabled: !state.isSaving && state.lookups.modules.isNotEmpty,
-        onPressed: () => _showModuleSubscriptionDialog(context, ref, state),
-      );
-    }
-    return null;
   }
 
   List<AppWorkspaceSummaryNotification> _queueSummaryChips(
@@ -531,13 +465,7 @@ class _SubscriptionsWorkspaceContentState
         tone: AppWorkspaceStatusTone.warning,
         queueId: _QueueIds.pastDueBilling,
       ),
-      chip(
-        metricId: _SummaryIds.deniedModules,
-        label: _SubscriptionsText.deniedModules,
-        icon: Icons.block_outlined,
-        tone: AppWorkspaceStatusTone.error,
-        queueId: _QueueIds.moduleBlocked,
-      ),
+      // Denied modules is a primary tab — omit the shared queue chip.
       chip(
         metricId: _SummaryIds.expiringLicenses,
         label: _SubscriptionsText.expiringLicenses,
@@ -562,14 +490,14 @@ class _SubscriptionsPanelTabBar extends StatelessWidget {
     required this.activePanel,
     required this.isRefreshing,
     required this.onPanelSelected,
-    this.primaryAction,
+    this.deniedModulesCount = 0,
   });
 
   final List<SubscriptionPanel> visiblePanels;
   final SubscriptionPanel activePanel;
   final bool isRefreshing;
   final ValueChanged<SubscriptionPanel> onPanelSelected;
-  final Widget? primaryAction;
+  final int deniedModulesCount;
 
   @override
   Widget build(BuildContext context) {
@@ -580,6 +508,10 @@ class _SubscriptionsPanelTabBar extends StatelessWidget {
             id: panel.serverValue,
             icon: _panelIcon(panel),
             label: _panelLabel(panel),
+            count: panel == SubscriptionPanel.denied && deniedModulesCount > 0
+                ? deniedModulesCount
+                : null,
+            countTone: AppTabCountTone.danger,
           ),
       ],
       selectedId: activePanel.serverValue,
@@ -593,7 +525,6 @@ class _SubscriptionsPanelTabBar extends StatelessWidget {
                 }
               }
             },
-      primaryAction: primaryAction,
     );
   }
 }
@@ -696,8 +627,18 @@ class _SubscriptionOverviewPanel extends ConsumerWidget {
         SubscriptionsOverviewAtomPermissions.recommendations.isAllowed(
           accessPolicy,
         );
+    final bool showCharts = showKpis;
+    final bool showAttention = showKpis &&
+        (overview.nextInvoice != null ||
+            overview.licenseSummary.activeCount > 0 ||
+            overview.licenseSummary.expiringCount > 0 ||
+            overview.pendingChangeStatus != null);
 
-    if (!showKpis && !showUsage && !showRecommendations) {
+    if (!showKpis &&
+        !showUsage &&
+        !showRecommendations &&
+        !showCharts &&
+        !showAttention) {
       return const SizedBox.shrink();
     }
 
@@ -759,6 +700,17 @@ class _SubscriptionOverviewPanel extends ConsumerWidget {
               ),
             ],
           ),
+        if (showCharts) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          DashboardChartsRow(
+            twoColumns: MediaQuery.sizeOf(context).width >= 900,
+            data: _subscriptionsOverviewChartsData(state),
+          ),
+        ],
+        if (showAttention) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          _OverviewAttentionPanel(overview: overview, state: state),
+        ],
         if (showUsage) ...<Widget>[
           SizedBox(height: theme.spacing.sm),
           _UsageLimitPanel(
@@ -769,6 +721,141 @@ class _SubscriptionOverviewPanel extends ConsumerWidget {
         if (showRecommendations) ...<Widget>[
           SizedBox(height: theme.spacing.sm),
           _RecommendationList(recommendations: overview.recommendations),
+        ],
+      ],
+    );
+  }
+}
+
+DashboardChartsData _subscriptionsOverviewChartsData(
+  SubscriptionsWorkspaceState state,
+) {
+  final SubscriptionsOverview overview = state.overview;
+  final int active = overview.activePlanTenants.count;
+  final int notSubscribed = overview.notSubscribedTenants.count;
+  final int closed = overview.closedSubscriptionTenants.count;
+  final int cohortTotal = active + notSubscribed + closed;
+
+  final List<DashboardTrendPointData> attentionPoints =
+      <DashboardTrendPointData>[
+        DashboardTrendPointData(
+          value: state.summaryValue('active_subscriptions'),
+          label: _SubscriptionsText.activeSubscriptionsChart,
+        ),
+        DashboardTrendPointData(
+          value: state.summaryValue(_SummaryIds.pastDueInvoices),
+          label: _SubscriptionsText.pastDue,
+        ),
+        DashboardTrendPointData(
+          value: state.summaryValue(_SummaryIds.deniedModules),
+          label: _SubscriptionsText.deniedModules,
+        ),
+        DashboardTrendPointData(
+          value: state.summaryValue(_SummaryIds.expiringLicenses),
+          label: _SubscriptionsText.expiringLicenses,
+        ),
+        DashboardTrendPointData(
+          value: state.summaryValue(_SummaryIds.approachingLimits),
+          label: _SubscriptionsText.approachingLimits,
+        ),
+      ].where((DashboardTrendPointData point) => point.value > 0).toList();
+
+  return DashboardChartsData(
+    trend: DashboardTrendChartData(
+      title: _SubscriptionsText.attentionChartTitle,
+      subtitle: _SubscriptionsText.attentionChartSubtitle,
+      points: attentionPoints,
+      emptyMessage: _SubscriptionsText.attentionChartEmpty,
+    ),
+    distribution: DashboardDistributionChartData(
+      title: _SubscriptionsText.cohortChartTitle,
+      total: cohortTotal,
+      totalLabel: _SubscriptionsText.cohortChartTotalLabel,
+      emptyMessage: _SubscriptionsText.cohortChartEmpty,
+      segments: <DashboardDistributionSegmentData>[
+        if (active > 0)
+          DashboardDistributionSegmentData(
+            label: _SubscriptionsText.activePlans,
+            value: active,
+          ),
+        if (notSubscribed > 0)
+          DashboardDistributionSegmentData(
+            label: _SubscriptionsText.notSubscribed,
+            value: notSubscribed,
+          ),
+        if (closed > 0)
+          DashboardDistributionSegmentData(
+            label: _SubscriptionsText.closedSubscriptions,
+            value: closed,
+          ),
+      ],
+    ),
+  );
+}
+
+class _OverviewAttentionPanel extends StatelessWidget {
+  const _OverviewAttentionPanel({
+    required this.overview,
+    required this.state,
+  });
+
+  final SubscriptionsOverview overview;
+  final SubscriptionsWorkspaceState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final List<Widget> tiles = <Widget>[];
+
+    final SubscriptionItem? nextInvoice = overview.nextInvoice;
+    if (nextInvoice != null) {
+      final num? invoiceAmount =
+          nextInvoice.totalAmount ?? nextInvoice.price;
+      tiles.add(
+        _TwoLineCell(
+          title: _SubscriptionsText.nextInvoiceAttention,
+          subtitle:
+              '${nextInvoice.invoiceStatus ?? nextInvoice.status ?? _SubscriptionsText.notRecorded}'
+              '${invoiceAmount == null ? '' : ' · $invoiceAmount'}',
+        ),
+      );
+    }
+
+    final SubscriptionLicenseSummary licenses = overview.licenseSummary;
+    if (licenses.activeCount > 0 || licenses.expiringCount > 0) {
+      tiles.add(
+        _TwoLineCell(
+          title: _SubscriptionsText.licenseAttention,
+          subtitle: _SubscriptionsText.licenseAttentionBody(
+            licenses.activeCount,
+            licenses.expiringCount,
+          ),
+        ),
+      );
+    }
+
+    if (overview.pendingChangeStatus != null &&
+        overview.pendingChangeStatus!.trim().isNotEmpty) {
+      tiles.add(
+        _TwoLineCell(
+          title: _SubscriptionsText.pendingChanges,
+          subtitle: overview.pendingChangeStatus!,
+        ),
+      );
+    }
+
+    if (tiles.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return AppSectionPanel(
+      title: _SubscriptionsText.attentionSectionTitle,
+      density: AppContentPanelDensity.compact,
+      tone: AppWorkspaceStatusTone.info,
+      children: <Widget>[
+        for (final Widget tile in tiles) ...<Widget>[
+          tile,
+          SizedBox(height: theme.spacing.xs),
         ],
       ],
     );
@@ -1022,8 +1109,15 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
     final controller = ref.read(
       subscriptionsWorkspaceControllerProvider.notifier,
     );
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final SubscriptionResource resource = state.query.resource;
     final String resourceKey = _subscriptionResourceStorageKey(resource);
+    final AppSearchBarAction? createAction = _worklistCreateAction(
+      context,
+      ref,
+      accessPolicy,
+      state,
+    );
 
     return AppListTable<SubscriptionItem>(
       page: state.items,
@@ -1078,6 +1172,9 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
             ),
           );
         },
+        trailingActions: <AppSearchBarAction>[
+          ?createAction,
+        ],
       ),
       itemKeyBuilder: (SubscriptionItem item) => ValueKey<String>(
         <String?>[
@@ -4793,9 +4890,11 @@ String _panelLabel(SubscriptionPanel panel) {
   return switch (panel) {
     SubscriptionPanel.overview => _SubscriptionsText.overview,
     SubscriptionPanel.catalog => _SubscriptionsText.plans,
+    SubscriptionPanel.modules => _SubscriptionsText.modules,
     SubscriptionPanel.operations => _SubscriptionsText.subscriptions,
     SubscriptionPanel.billing => _SubscriptionsText.invoices,
     SubscriptionPanel.governance => _SubscriptionsText.licenses,
+    SubscriptionPanel.denied => _SubscriptionsText.deniedModules,
   };
 }
 
@@ -4803,9 +4902,11 @@ IconData _panelIcon(SubscriptionPanel panel) {
   return switch (panel) {
     SubscriptionPanel.overview => Icons.dashboard_customize_outlined,
     SubscriptionPanel.catalog => Icons.workspace_premium_outlined,
+    SubscriptionPanel.modules => Icons.view_module_outlined,
     SubscriptionPanel.operations => Icons.verified_user_outlined,
     SubscriptionPanel.billing => Icons.receipt_long_outlined,
     SubscriptionPanel.governance => Icons.key_outlined,
+    SubscriptionPanel.denied => Icons.block_outlined,
   };
 }
 
@@ -4813,9 +4914,11 @@ SubscriptionResource _defaultResourceForPanel(SubscriptionPanel panel) {
   return switch (panel) {
     SubscriptionPanel.overview => SubscriptionResource.subscriptions,
     SubscriptionPanel.catalog => SubscriptionResource.subscriptionPlans,
+    SubscriptionPanel.modules => SubscriptionResource.modules,
     SubscriptionPanel.operations => SubscriptionResource.subscriptions,
     SubscriptionPanel.billing => SubscriptionResource.subscriptionInvoices,
     SubscriptionPanel.governance => SubscriptionResource.licenses,
+    SubscriptionPanel.denied => SubscriptionResource.moduleSubscriptions,
   };
 }
 
@@ -4824,6 +4927,8 @@ List<SubscriptionResource> _resourcesForPanel(SubscriptionPanel panel) {
     SubscriptionPanel.overview => const <SubscriptionResource>[],
     SubscriptionPanel.catalog => const <SubscriptionResource>[
       SubscriptionResource.subscriptionPlans,
+    ],
+    SubscriptionPanel.modules => const <SubscriptionResource>[
       SubscriptionResource.modules,
     ],
     SubscriptionPanel.operations => const <SubscriptionResource>[
@@ -4836,7 +4941,89 @@ List<SubscriptionResource> _resourcesForPanel(SubscriptionPanel panel) {
     SubscriptionPanel.governance => const <SubscriptionResource>[
       SubscriptionResource.licenses,
     ],
+    SubscriptionPanel.denied => const <SubscriptionResource>[
+      SubscriptionResource.moduleSubscriptions,
+    ],
   };
+}
+
+AppSearchBarAction? _worklistCreateAction(
+  BuildContext context,
+  WidgetRef ref,
+  AppAccessPolicy accessPolicy,
+  SubscriptionsWorkspaceState state,
+) {
+  // Denied / Modules / Invoices / Overview: no create primary on the worklist.
+  if (state.query.panel == SubscriptionPanel.denied ||
+      state.query.panel == SubscriptionPanel.modules ||
+      state.query.panel == SubscriptionPanel.billing ||
+      state.query.panel == SubscriptionPanel.overview) {
+    return null;
+  }
+
+  if (state.query.resource == SubscriptionResource.subscriptionPlans) {
+    if (!SubscriptionsPlansAtomPermissions.create.isAllowed(accessPolicy)) {
+      return null;
+    }
+    return AppSearchBarAction(
+      icon: Icons.add,
+      label: _SubscriptionsText.createPlan,
+      tooltip: _SubscriptionsText.createPlan,
+      enabled: !state.isSaving,
+      onPressed: state.isSaving
+          ? null
+          : () => _showPlanDialog(context, ref),
+    );
+  }
+
+  if (state.query.resource == SubscriptionResource.subscriptions) {
+    if (!SubscriptionsAtomPermissions.create.isAllowed(accessPolicy)) {
+      return null;
+    }
+    return AppSearchBarAction(
+      icon: Icons.add,
+      label: _SubscriptionsText.newSubscription,
+      tooltip: _SubscriptionsText.newSubscription,
+      enabled: !state.isSaving && state.lookups.tenants.isNotEmpty,
+      onPressed: state.isSaving || state.lookups.tenants.isEmpty
+          ? null
+          : () => _showSubscriptionDialog(context, ref, state),
+    );
+  }
+
+  // Module subscriptions under Operations only (not Denied tab).
+  if (state.query.panel == SubscriptionPanel.operations &&
+      state.query.resource == SubscriptionResource.moduleSubscriptions) {
+    if (!SubscriptionsAtomPermissions.assignModule.isAllowed(accessPolicy)) {
+      return null;
+    }
+    return AppSearchBarAction(
+      icon: Icons.extension_outlined,
+      label: _SubscriptionsText.assignModule,
+      tooltip: _SubscriptionsText.assignModule,
+      enabled: !state.isSaving && state.lookups.modules.isNotEmpty,
+      onPressed: state.isSaving || state.lookups.modules.isEmpty
+          ? null
+          : () => _showModuleSubscriptionDialog(context, ref, state),
+    );
+  }
+
+  if (state.query.resource == SubscriptionResource.licenses) {
+    if (!SubscriptionsLicensesAtomPermissions.create.isAllowed(accessPolicy)) {
+      return null;
+    }
+    return AppSearchBarAction(
+      icon: Icons.key_outlined,
+      label: _SubscriptionsText.addLicense,
+      tooltip: _SubscriptionsText.addLicense,
+      enabled: !state.isSaving && state.lookups.tenants.isNotEmpty,
+      onPressed: state.isSaving || state.lookups.tenants.isEmpty
+          ? null
+          : () => _showLicenseDialog(context, ref, state),
+    );
+  }
+
+  return null;
 }
 
 String? _querySignature(SubscriptionsWorkspaceQuery? query) {
@@ -5103,7 +5290,6 @@ abstract final class _QueueIds {
   static const String renewalsDue = 'renewals_due';
   static const String pastDueBilling = 'past_due_billing';
   static const String upgradeRecommended = 'upgrade_recommended';
-  static const String moduleBlocked = 'module_blocked';
   static const String pendingChanges = 'pending_changes';
 }
 
@@ -5171,6 +5357,20 @@ abstract final class _SubscriptionsText {
   static const String deniedModules = 'Denied modules';
   static const String expiringLicenses = 'Expiring licenses';
   static const String approachingLimits = 'Approaching limits';
+  static const String attentionChartTitle = 'Workspace attention';
+  static const String attentionChartSubtitle =
+      'Current counts from subscription summary metrics';
+  static const String attentionChartEmpty = 'No attention metrics yet.';
+  static const String cohortChartTitle = 'Tenant cohorts';
+  static const String cohortChartTotalLabel = 'Tenants';
+  static const String cohortChartEmpty = 'No tenant cohort data yet.';
+  static const String activeSubscriptionsChart = 'Active subscriptions';
+  static const String attentionSectionTitle = 'Billing and license attention';
+  static const String nextInvoiceAttention = 'Next invoice';
+  static const String licenseAttention = 'Licenses';
+  static String licenseAttentionBody(int active, int expiring) {
+    return '$active active · $expiring expiring';
+  }
   static const String renewalExpiry = 'Renewal / expiry';
   static const String licenses = 'Licenses';
   static const String users = 'Users';

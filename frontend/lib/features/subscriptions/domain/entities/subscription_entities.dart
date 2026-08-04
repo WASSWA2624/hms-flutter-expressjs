@@ -5,9 +5,11 @@ import 'package:hosspi_hms/shared/data/data.dart';
 enum SubscriptionPanel {
   overview('overview'),
   catalog('catalog'),
+  modules('modules'),
   operations('operations'),
   billing('billing'),
-  governance('governance');
+  governance('governance'),
+  denied('denied');
 
   const SubscriptionPanel(this.serverValue);
 
@@ -15,6 +17,9 @@ enum SubscriptionPanel {
 
   static SubscriptionPanel fromServer(String? value) {
     final String normalized = (value ?? '').trim().toLowerCase();
+    if (normalized == 'denied-modules' || normalized == 'denied_modules') {
+      return SubscriptionPanel.denied;
+    }
     for (final SubscriptionPanel panel in values) {
       if (panel.serverValue == normalized) {
         return panel;
@@ -26,7 +31,7 @@ enum SubscriptionPanel {
 
 enum SubscriptionResource {
   subscriptionPlans('subscription-plans', SubscriptionPanel.catalog),
-  modules('modules', SubscriptionPanel.catalog),
+  modules('modules', SubscriptionPanel.modules),
   subscriptions('subscriptions', SubscriptionPanel.operations),
   moduleSubscriptions('module-subscriptions', SubscriptionPanel.operations),
   subscriptionInvoices('subscription-invoices', SubscriptionPanel.billing),
@@ -113,11 +118,40 @@ final class SubscriptionsWorkspaceQuery {
 
   factory SubscriptionsWorkspaceQuery.fromUri(Uri uri) {
     final Map<String, String> params = uri.queryParameters;
+    SubscriptionPanel panel = SubscriptionPanel.fromServer(params['panel']);
+    SubscriptionResource resource = SubscriptionResource.fromServer(
+      params['resource'],
+    );
+    String? queue = _nonEmpty(params['queue']);
+
+    // Legacy: Plans nested Modules → Modules primary tab.
+    if (panel == SubscriptionPanel.catalog &&
+        resource == SubscriptionResource.modules) {
+      panel = SubscriptionPanel.modules;
+    }
+
+    // Legacy: module_blocked queue chip → Denied modules primary tab.
+    final String? normalizedQueue = queue?.trim().toUpperCase();
+    if (normalizedQueue == 'MODULE_BLOCKED' ||
+        (queue ?? '').trim().toLowerCase() == 'module_blocked') {
+      panel = SubscriptionPanel.denied;
+      resource = SubscriptionResource.moduleSubscriptions;
+      queue = 'MODULE_BLOCKED';
+    }
+
+    if (panel == SubscriptionPanel.modules) {
+      resource = SubscriptionResource.modules;
+    }
+    if (panel == SubscriptionPanel.denied) {
+      resource = SubscriptionResource.moduleSubscriptions;
+      queue = 'MODULE_BLOCKED';
+    }
+
     return SubscriptionsWorkspaceQuery(
       search: params['search'] ?? '',
-      panel: SubscriptionPanel.fromServer(params['panel']),
-      resource: SubscriptionResource.fromServer(params['resource']),
-      queue: _nonEmpty(params['queue']),
+      panel: panel,
+      resource: resource,
+      queue: queue,
       tenantId: _nonEmpty(params['tenantId'] ?? params['tenant_id']),
       recordId: _nonEmpty(params['id'] ?? params['recordId']),
       action: _nonEmpty(params['action']),
@@ -178,7 +212,11 @@ final class SubscriptionsWorkspaceQuery {
     final Map<String, String> query = <String, String>{
       'panel': panel.serverValue,
     };
-    if (resource != SubscriptionResource.subscriptionPlans) {
+    final bool includeResource = panel == SubscriptionPanel.denied ||
+        panel == SubscriptionPanel.modules ||
+        panel == SubscriptionPanel.operations ||
+        resource != SubscriptionResource.subscriptionPlans;
+    if (includeResource) {
       query['resource'] = resource.serverValue;
     }
     if (search.isNotEmpty) query['search'] = search;

@@ -4,9 +4,14 @@ const { listQuerySchema, uuidOrFriendlyIdentifierSchema } = require('@lib/valida
 const subscriptionsPanelSchema = z.enum([
   'overview',
   'catalog',
+  'modules',
   'operations',
   'billing',
-  'governance']);
+  'governance',
+  'denied',
+  // Legacy aliases accepted then normalized by the service.
+  'denied-modules',
+  'denied_modules']);
 
 const subscriptionsResourceSchema = z.enum([
   'subscription-plans',

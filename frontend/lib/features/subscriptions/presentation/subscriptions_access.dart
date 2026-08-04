@@ -111,9 +111,11 @@ AccessRequirement subscriptionsPanelTabRequirement(SubscriptionPanel panel) {
   return switch (panel) {
     SubscriptionPanel.overview => SubscriptionsOverviewAtomPermissions.tab,
     SubscriptionPanel.catalog => SubscriptionsPlansAtomPermissions.tab,
+    SubscriptionPanel.modules => SubscriptionsPlansAtomPermissions.tab,
     SubscriptionPanel.billing => SubscriptionsInvoicesAtomPermissions.tab,
     SubscriptionPanel.governance => SubscriptionsLicensesAtomPermissions.tab,
     SubscriptionPanel.operations => SubscriptionsAtomPermissions.tab,
+    SubscriptionPanel.denied => SubscriptionsAtomPermissions.tab,
   };
 }
 
@@ -224,14 +226,14 @@ abstract final class SubscriptionsOverviewAtomPermissions {
       subscriptionsWorkspaceCatalogEntryRequirement;
 }
 
-/// Plans tab (`panel=catalog` / `resource=subscription-plans`, nested Modules)
-/// atom → permission mapping (inventory + matrix).
+/// Plans tab (`panel=catalog` / `resource=subscription-plans`) and Modules
+/// primary tab (`panel=modules`) atom → permission mapping (inventory + matrix).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Plans strip tab (catalog) | navigate | read ∩ `subscriptions:read` ([tab]) |
-/// | Nested Plans / Modules resource tabs | navigate | read ∩ ([nestedResourceTabs]) |
-/// | Modules resource list / detail (catalog packs) | read | read ∩ ([listChrome] / [detail]) — **no write primary** |
+/// | Modules strip tab (`panel=modules`) | navigate | read ∩ ([tab] / [nestedResourceTabs]) |
+/// | Modules catalog list / detail | read | read ∩ ([listChrome] / [detail]) — **no write primary** |
 /// | Search / filters / columns / pagination | read chrome | read ∩ ([listChrome] / [search] / [filters] / [columns] / [pagination]) |
 /// | Empty / loading / error / retry / success / validation | read chrome | read ∩ ([empty] / [loading] / [retryChrome]) |
 /// | Row select → plan detail | read | read ∩ ([rowSelect] / [detail]) |

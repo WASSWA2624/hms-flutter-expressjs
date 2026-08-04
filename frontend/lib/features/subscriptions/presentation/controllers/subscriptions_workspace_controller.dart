@@ -119,6 +119,8 @@ final class SubscriptionsWorkspaceController
       return refresh();
     }
     final SubscriptionResource resource = _defaultResourceForPanel(panel);
+    final String? deniedQueue =
+        panel == SubscriptionPanel.denied ? 'MODULE_BLOCKED' : null;
     return _loadQuery(
       current.query
           .copyWith(
@@ -127,7 +129,7 @@ final class SubscriptionsWorkspaceController
             pageRequest: current.query.pageRequest.first(),
           )
           .resetFilters()
-          .copyWith(panel: panel, resource: resource),
+          .copyWith(panel: panel, resource: resource, queue: deniedQueue),
       clearSelectedItem: true,
     );
   }
@@ -773,8 +775,10 @@ SubscriptionResource _defaultResourceForPanel(SubscriptionPanel panel) {
   return switch (panel) {
     SubscriptionPanel.overview => SubscriptionResource.subscriptions,
     SubscriptionPanel.catalog => SubscriptionResource.subscriptionPlans,
+    SubscriptionPanel.modules => SubscriptionResource.modules,
     SubscriptionPanel.operations => SubscriptionResource.subscriptions,
     SubscriptionPanel.billing => SubscriptionResource.subscriptionInvoices,
     SubscriptionPanel.governance => SubscriptionResource.licenses,
+    SubscriptionPanel.denied => SubscriptionResource.moduleSubscriptions,
   };
 }

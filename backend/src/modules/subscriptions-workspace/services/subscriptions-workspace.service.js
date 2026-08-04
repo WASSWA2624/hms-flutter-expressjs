@@ -258,15 +258,17 @@ const mapQueueSummaries = (summary = {}) => [
   { id: 'renewals_due', label: 'Renewals due', count: numberValue(summary.expiring_licenses), panel: 'governance', resource: 'licenses', queue: 'EXPIRING_LICENSES' },
   { id: 'past_due_billing', label: 'Past due billing', count: numberValue(summary.past_due_invoices), panel: 'billing', resource: 'subscription-invoices', queue: 'PAST_DUE' },
   { id: 'upgrade_recommended', label: 'Upgrade recommended', count: numberValue(summary.approaching_limits), panel: 'operations', resource: 'subscriptions', queue: 'UPGRADE_RECOMMENDED' },
-  { id: 'module_blocked', label: 'Module blocked', count: numberValue(summary.denied_modules), panel: 'operations', resource: 'module-subscriptions', queue: 'MODULE_BLOCKED' },
+  { id: 'module_blocked', label: 'Module blocked', count: numberValue(summary.denied_modules), panel: 'denied', resource: 'module-subscriptions', queue: 'MODULE_BLOCKED' },
   { id: 'pending_changes', label: 'Pending changes', count: numberValue(summary.pending_changes), panel: 'operations', resource: 'subscriptions', queue: 'PENDING_CHANGES' }];
 
 const mapPanelSummaries = (summary = {}) => [
   { id: 'overview', count: numberValue(summary.pending_changes) + numberValue(summary.past_due_invoices), default_resource: 'subscriptions' },
   { id: 'catalog', count: numberValue(summary.active_subscriptions), default_resource: 'subscription-plans' },
-  { id: 'operations', count: numberValue(summary.pending_changes) + numberValue(summary.denied_modules), default_resource: 'subscriptions' },
+  { id: 'modules', count: 0, default_resource: 'modules' },
+  { id: 'operations', count: numberValue(summary.pending_changes), default_resource: 'subscriptions' },
   { id: 'billing', count: numberValue(summary.past_due_invoices), default_resource: 'subscription-invoices' },
-  { id: 'governance', count: numberValue(summary.expiring_licenses), default_resource: 'licenses' }];
+  { id: 'governance', count: numberValue(summary.expiring_licenses), default_resource: 'licenses' },
+  { id: 'denied', count: numberValue(summary.denied_modules), default_resource: 'module-subscriptions' }];
 
 const serializeItems = (resource, items = [], { modules = [] } = {}) => {
   if (resource === 'subscription-plans') {
@@ -553,11 +555,56 @@ const buildOverview = (records = {}) => {
     recommendations};
 };
 
+const normalizeWorkspacePanel = (rawPanel, rawResource, rawQueue) => {
+  let panel = text(rawPanel).toLowerCase() || 'overview';
+  let resource = text(rawResource).toLowerCase();
+  let queue = text(rawQueue) || null;
+
+  if (panel === 'denied-modules' || panel === 'denied_modules') {
+    panel = 'denied';
+  }
+
+  // Legacy: catalog + modules nested resource → modules primary panel.
+  if (panel === 'catalog' && resource === 'modules') {
+    panel = 'modules';
+  }
+
+  const normalizedQueue = String(queue || '').trim().toUpperCase();
+  if (normalizedQueue === 'MODULE_BLOCKED') {
+    panel = 'denied';
+    resource = 'module-subscriptions';
+    queue = 'MODULE_BLOCKED';
+  }
+
+  if (panel === 'modules') {
+    resource = 'modules';
+  }
+  if (panel === 'denied') {
+    resource = 'module-subscriptions';
+    queue = 'MODULE_BLOCKED';
+  }
+
+  if (!resource) {
+    resource = SUBSCRIPTIONS_PANEL_RESOURCE_MAP[panel] || 'subscriptions';
+  }
+
+  return { panel, resource, queue };
+};
+
 const getWorkspace = async (query = {}, page = 1, limit = 20, sortBy, order = 'desc', user = {}) => {
-  const panel = text(query.panel).toLowerCase() || 'overview';
-  const resource = text(query.resource).toLowerCase()
-    || SUBSCRIPTIONS_PANEL_RESOURCE_MAP[panel]
-    || 'subscriptions';
+  const normalized = normalizeWorkspacePanel(
+    query.panel,
+    query.resource,
+    query.queue
+  );
+  const panel = normalized.panel;
+  const resource = normalized.resource;
+  // Keep denied-module filtering authoritative when the Denied panel is open.
+  if (normalized.queue) {
+    query = { ...query, queue: normalized.queue, panel, resource };
+  } else {
+    query = { ...query, panel, resource };
+  }
   const scope = await resolveTenantScope(query, user);
 
   if (scope.tenant_id === null) {

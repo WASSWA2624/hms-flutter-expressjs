@@ -10,9 +10,11 @@ const PUBLIC_ID_PREFIXES = Object.freeze({
 const SUBSCRIPTIONS_PANELS = Object.freeze([
   { id: 'overview', label_key: 'subscriptions.workbench.panels.overview' },
   { id: 'catalog', label_key: 'subscriptions.workbench.panels.catalog' },
+  { id: 'modules', label_key: 'subscriptions.workbench.panels.modules' },
   { id: 'operations', label_key: 'subscriptions.workbench.panels.operations' },
   { id: 'billing', label_key: 'subscriptions.workbench.panels.billing' },
   { id: 'governance', label_key: 'subscriptions.workbench.panels.governance' },
+  { id: 'denied', label_key: 'subscriptions.workbench.panels.denied' },
 ]);
 
 const SUBSCRIPTIONS_RESOURCES = Object.freeze([
@@ -27,14 +29,16 @@ const SUBSCRIPTIONS_RESOURCES = Object.freeze([
 const SUBSCRIPTIONS_PANEL_RESOURCE_MAP = Object.freeze({
   overview: 'subscriptions',
   catalog: 'subscription-plans',
+  modules: 'modules',
   operations: 'subscriptions',
   billing: 'subscription-invoices',
   governance: 'licenses',
+  denied: 'module-subscriptions',
 });
 
 const SUBSCRIPTIONS_RESOURCE_PANEL_MAP = Object.freeze({
   'subscription-plans': 'catalog',
-  modules: 'catalog',
+  modules: 'modules',
   subscriptions: 'operations',
   'module-subscriptions': 'operations',
   'subscription-invoices': 'billing',

@@ -83,10 +83,7 @@ Finder _tabLabel(String label) {
   );
 }
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _toolbarPrimary(String label) => find.byTooltip(label);
 
 void _stubWorkspace(
   _MockSubscriptionsRepository repository, {

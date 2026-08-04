@@ -28,6 +28,24 @@ describe('subscriptions-workspace schemas', () => {
     ).toBe(false);
   });
 
+  it('accepts modules and denied primary panels', () => {
+    expect(
+      workspaceQuerySchema.safeParse({
+        panel: 'modules',
+        resource: 'modules'}).success
+    ).toBe(true);
+    expect(
+      workspaceQuerySchema.safeParse({
+        panel: 'denied',
+        resource: 'module-subscriptions',
+        queue: 'MODULE_BLOCKED'}).success
+    ).toBe(true);
+    expect(
+      workspaceQuerySchema.safeParse({
+        panel: 'denied-modules'}).success
+    ).toBe(true);
+  });
+
   it('accepts only supported date preset values', () => {
     expect(
       workspaceQuerySchema.safeParse({
