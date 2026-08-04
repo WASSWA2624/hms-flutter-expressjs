@@ -71,6 +71,10 @@ abstract final class AppPermissions {
   static const pharmacyWrite = AppPermission('pharmacy:write');
   static const billingRead = AppPermission('billing:read');
   static const billingWrite = AppPermission('billing:write');
+  static const pricingPharmacyRead = AppPermission('pricing:pharmacy_read');
+  static const pricingPharmacyWrite = AppPermission('pricing:pharmacy_write');
+  static const pricingFacilityRead = AppPermission('pricing:facility_read');
+  static const pricingFacilityWrite = AppPermission('pricing:facility_write');
   static const operationsRead = AppPermission('operations:read');
   static const operationsWrite = AppPermission('operations:write');
   static const hrRead = AppPermission('hr:read');
@@ -155,6 +159,10 @@ abstract final class AppPermissions {
     pharmacyWrite,
     billingRead,
     billingWrite,
+    pricingPharmacyRead,
+    pricingPharmacyWrite,
+    pricingFacilityRead,
+    pricingFacilityWrite,
     operationsRead,
     operationsWrite,
     hrRead,
@@ -1026,6 +1034,8 @@ final class AppAccessPolicy {
       AppRole.pharmacist => const <AppPermission>[
         AppPermissions.pharmacyRead,
         AppPermissions.pharmacyWrite,
+        AppPermissions.pricingPharmacyRead,
+        AppPermissions.pricingPharmacyWrite,
         AppPermissions.patientRead,
         AppPermissions.patientsRead,
         AppPermissions.reportsRead,
@@ -1051,6 +1061,8 @@ final class AppAccessPolicy {
       AppRole.billing => const <AppPermission>[
         AppPermissions.billingRead,
         AppPermissions.billingWrite,
+        AppPermissions.pricingFacilityRead,
+        AppPermissions.pricingFacilityWrite,
         AppPermissions.claimsRead,
         AppPermissions.financialApprove,
         AppPermissions.evidenceExport,

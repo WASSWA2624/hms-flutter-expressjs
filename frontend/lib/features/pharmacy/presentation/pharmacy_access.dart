@@ -53,6 +53,26 @@ const AccessRequirement pharmacyCatalogWriteRequirement = AccessRequirement(
   activeModules: <String>[pharmacyDispensingModule],
 );
 
+/// Set pharmacy retail / OTC sell price on `drug` (∩ `pricing:pharmacy_write`).
+const AccessRequirement pharmacyPricingWriteRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.pricingPharmacyWrite],
+  activeModules: <String>[pharmacyDispensingModule],
+);
+
+/// Set facility encounter tariff on pharmacy offerings (∩ `pricing:facility_write`).
+const AccessRequirement facilityPricingWriteRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.pricingFacilityWrite],
+  activeModules: <String>[billingPaymentsModule],
+);
+
+/// Manual order-line switch to pharmacy retail price source.
+const AccessRequirement pharmacyPriceSourcePharmacyRequirement =
+    pharmacyPricingWriteRequirement;
+
+/// Manual order-line switch to facility tariff price source.
+const AccessRequirement pharmacyPriceSourceFacilityRequirement =
+    facilityPricingWriteRequirement;
+
 /// Catalog browse / open dialog (matrix ∩ `pharmacy:read`).
 const AccessRequirement pharmacyCatalogBrowseRequirement =
     pharmacyWorkspaceReadRequirement;
@@ -310,7 +330,10 @@ abstract final class PharmacyReadyAtomPermissions {
   static const AccessRequirement returnItems = pharmacyWorkspaceWriteRequirement;
   static const AccessRequirement cancelOrder = pharmacyWorkspaceWriteRequirement;
   static const AccessRequirement mapStock = pharmacyWorkspaceWriteRequirement;
-  static const AccessRequirement priceSource = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement priceSource =
+      pharmacyPriceSourcePharmacyRequirement;
+  static const AccessRequirement priceSourceFacility =
+      pharmacyPriceSourceFacilityRequirement;
   static const AccessRequirement recordPayment =
       pharmacyRecordPaymentRequirement;
   static const AccessRequirement billingStatus =
@@ -397,7 +420,10 @@ abstract final class PharmacyAllOrdersAtomPermissions {
   static const AccessRequirement returnItems = pharmacyWorkspaceWriteRequirement;
   static const AccessRequirement cancelOrder = pharmacyWorkspaceWriteRequirement;
   static const AccessRequirement mapStock = pharmacyWorkspaceWriteRequirement;
-  static const AccessRequirement priceSource = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement priceSource =
+      pharmacyPriceSourcePharmacyRequirement;
+  static const AccessRequirement priceSourceFacility =
+      pharmacyPriceSourceFacilityRequirement;
   static const AccessRequirement recordPayment =
       pharmacyRecordPaymentRequirement;
   static const AccessRequirement billingStatus =
@@ -485,7 +511,10 @@ abstract final class PharmacyPartialAtomPermissions {
   static const AccessRequirement returnItems = pharmacyWorkspaceWriteRequirement;
   static const AccessRequirement cancelOrder = pharmacyWorkspaceWriteRequirement;
   static const AccessRequirement mapStock = pharmacyWorkspaceWriteRequirement;
-  static const AccessRequirement priceSource = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement priceSource =
+      pharmacyPriceSourcePharmacyRequirement;
+  static const AccessRequirement priceSourceFacility =
+      pharmacyPriceSourceFacilityRequirement;
   static const AccessRequirement recordPayment =
       pharmacyRecordPaymentRequirement;
   static const AccessRequirement billingStatus =
@@ -575,7 +604,10 @@ abstract final class PharmacyCompletedAtomPermissions {
   static const AccessRequirement returnItems = pharmacyWorkspaceWriteRequirement;
   static const AccessRequirement cancelOrder = pharmacyWorkspaceWriteRequirement;
   static const AccessRequirement mapStock = pharmacyWorkspaceWriteRequirement;
-  static const AccessRequirement priceSource = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement priceSource =
+      pharmacyPriceSourcePharmacyRequirement;
+  static const AccessRequirement priceSourceFacility =
+      pharmacyPriceSourceFacilityRequirement;
   static const AccessRequirement recordPayment =
       pharmacyRecordPaymentRequirement;
   static const AccessRequirement billingStatus =
@@ -676,7 +708,10 @@ abstract final class PharmacyPendingPaymentAtomPermissions {
   static const AccessRequirement returnItems = pharmacyWorkspaceWriteRequirement;
   static const AccessRequirement cancelOrder = pharmacyWorkspaceWriteRequirement;
   static const AccessRequirement mapStock = pharmacyWorkspaceWriteRequirement;
-  static const AccessRequirement priceSource = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement priceSource =
+      pharmacyPriceSourcePharmacyRequirement;
+  static const AccessRequirement priceSourceFacility =
+      pharmacyPriceSourceFacilityRequirement;
   static const AccessRequirement recordPayment =
       pharmacyRecordPaymentRequirement;
   static const AccessRequirement billingStatus =

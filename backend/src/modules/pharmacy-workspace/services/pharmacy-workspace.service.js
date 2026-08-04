@@ -15,6 +15,10 @@ const {
   reverseClinicalRequestBilling,
   extractStoredClinicalBilling,
   persistPharmacyOrderBilling} = require('@lib/billing/clinical-request-billing');
+const {
+  assertPharmacyRetailPriceMutationAllowed,
+  assertFacilityTariffMutationAllowed,
+} = require('@lib/billing/pricing-permissions');
 const { ROLES } = require('@config/roles');
 const {
   PHARMACY_ORDER_WITH_RELATIONS_INCLUDE,
@@ -2745,6 +2749,7 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
     const scope = resolveScopedUserContext(user);
     const confirmSimilar = payload?.confirm_similar === true;
     const data = stripDrugSimilarityPayloadFields(payload);
+    assertPharmacyRetailPriceMutationAllowed(user, data);
     let tenantId = scope.tenant_id;
     if (scope.can_manage_all_tenants) {
       tenantId = await resolveIdentifierForPayload({
@@ -2856,14 +2861,15 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
         await facilityPharmacyCatalogRepository.updateDrugOffering(existingOffering.id, {
           default_storage_shelf_id: defaultStorageShelfId});
       } else {
+        // Shelf placeholder only — facility tariff is set via offering upsert.
         await facilityPharmacyCatalogRepository.createDrugOffering({
           tenant_id: tenantId,
           facility_id: facilityId,
           drug_id: mutation.id,
           is_active: false,
           sort_order: 0,
-          unit_price: data.unit_price ?? 0,
-          currency: data.currency || null,
+          unit_price: 0,
+          currency: null,
           default_storage_shelf_id: defaultStorageShelfId});
       }
     }
@@ -3057,6 +3063,7 @@ const upsertPharmacyDrugFacilityOffering = async (
 ) => {
   try {
     const scope = resolveScopedUserContext(user);
+    assertFacilityTariffMutationAllowed(user, payload);
     const item = await facilityPharmacyCatalogService.upsertFacilityPharmacyOffering(
       {
         ...payload,
@@ -3067,7 +3074,8 @@ const upsertPharmacyDrugFacilityOffering = async (
         tenant_id: scope.tenant_id,
         user_id: userId,
         facility_id: scope.facility_id || payload.facility_id || null,
-        ip_address: ipAddress}
+        ip_address: ipAddress,
+        user}
     );
 
     // Re-list through pharmacy search enrichment so storage labels match catalog.

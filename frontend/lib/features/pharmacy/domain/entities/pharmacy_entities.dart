@@ -528,24 +528,24 @@ final class PharmacyDrugUpdateInput {
 @immutable
 final class PharmacyFacilityOfferingInput {
   const PharmacyFacilityOfferingInput({
-    required this.unitPrice,
+    this.unitPrice,
     this.currency,
-    this.isActive = true,
+    this.isActive,
     this.facilityId,
     this.defaultStorageShelfId,
   });
 
-  final num unitPrice;
+  final num? unitPrice;
   final String? currency;
-  final bool isActive;
+  final bool? isActive;
   final String? facilityId;
   final String? defaultStorageShelfId;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
-      'unit_price': unitPrice,
+      if (unitPrice != null) 'unit_price': unitPrice,
       if (currency != null) 'currency': currency,
-      'is_active': isActive,
+      if (isActive != null) 'is_active': isActive,
       if (facilityId != null) 'facility_id': facilityId,
       if (defaultStorageShelfId != null)
         'default_storage_shelf_id': defaultStorageShelfId,

@@ -102,7 +102,8 @@ const createPriceBookEntry = asyncHandler(async (req, res) => {
   const priceBookEntry = await priceBookEntryService.createPriceBookEntry(
     req.body,
     userId,
-    ipAddress
+    ipAddress,
+    req.user || {}
   );
 
   sendSuccess(res, 201, 'messages.price_book_entry.create.success', priceBookEntry);
@@ -124,7 +125,8 @@ const updatePriceBookEntry = asyncHandler(async (req, res) => {
     id,
     req.body,
     userId,
-    ipAddress
+    ipAddress,
+    req.user || {}
   );
 
   sendSuccess(res, 200, 'messages.price_book_entry.update.success', priceBookEntry);
@@ -142,7 +144,12 @@ const deletePriceBookEntry = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  await priceBookEntryService.deletePriceBookEntry(id, userId, ipAddress);
+  await priceBookEntryService.deletePriceBookEntry(
+    id,
+    userId,
+    ipAddress,
+    req.user || {}
+  );
 
   sendNoContent(res);
 });

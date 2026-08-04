@@ -19,6 +19,9 @@ const { resolveUnitPrices } = require('@lib/billing/price-resolver');
 const {
   applyCoverageSplitToLineItems,
   summarizeCoverageShares} = require('@lib/billing/coverage-split');
+const {
+  assertPriceBookBillingEntityWrite,
+} = require('@lib/billing/pricing-permissions');
 
 const PRICE_BOOK_ENTRY_INCLUDE = {
   tenant: { select: { id: true, human_friendly_id: true } },
@@ -254,9 +257,13 @@ const getPriceBookEntryById = async (id) => {
 /**
  * Create new price book entry
  */
-const createPriceBookEntry = async (data, userId, ipAddress) => {
+const createPriceBookEntry = async (data, userId, ipAddress, user = {}) => {
   try {
     const payload = await normalizeCreatePayload(data);
+    assertPriceBookBillingEntityWrite(
+      user,
+      payload.billing_entity || data?.billing_entity || 'FACILITY'
+    );
     const priceBookEntry = await priceBookEntryRepository.create(payload);
     const createdRecord = await priceBookEntryRepository.findById(
       priceBookEntry.id,
@@ -282,7 +289,7 @@ const createPriceBookEntry = async (data, userId, ipAddress) => {
 /**
  * Update price book entry
  */
-const updatePriceBookEntry = async (id, data, userId, ipAddress) => {
+const updatePriceBookEntry = async (id, data, userId, ipAddress, user = {}) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'price_book_entry',
@@ -295,6 +302,10 @@ const updatePriceBookEntry = async (id, data, userId, ipAddress) => {
     }
 
     const payload = await normalizeUpdatePayload(data);
+    assertPriceBookBillingEntityWrite(
+      user,
+      payload.billing_entity || before.billing_entity || 'FACILITY'
+    );
     const priceBookEntry = await priceBookEntryRepository.update(before.id, payload);
     const updatedRecord = await priceBookEntryRepository.findById(
       priceBookEntry.id,
@@ -320,7 +331,7 @@ const updatePriceBookEntry = async (id, data, userId, ipAddress) => {
 /**
  * Delete price book entry (soft delete)
  */
-const deletePriceBookEntry = async (id, userId, ipAddress) => {
+const deletePriceBookEntry = async (id, userId, ipAddress, user = {}) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'price_book_entry',
@@ -331,6 +342,11 @@ const deletePriceBookEntry = async (id, userId, ipAddress) => {
     if (!before) {
       throw new HttpError('errors.price_book_entry.not_found', 404);
     }
+
+    assertPriceBookBillingEntityWrite(
+      user,
+      before.billing_entity || 'FACILITY'
+    );
 
     await priceBookEntryRepository.softDelete(before.id);
 

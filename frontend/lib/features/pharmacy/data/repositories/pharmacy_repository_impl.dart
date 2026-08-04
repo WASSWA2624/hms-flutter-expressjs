@@ -216,8 +216,8 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
         'facility-offering',
       ]),
       data: <String, Object?>{
-        'unit_price': input.unitPrice,
-        'is_active': input.isActive,
+        if (input.unitPrice != null) 'unit_price': input.unitPrice,
+        if (input.isActive != null) 'is_active': input.isActive,
         if (input.currency != null) 'currency': input.currency,
         if (input.facilityId != null) 'facility_id': input.facilityId,
         // Always include shelf so location updates are not stripped.

@@ -8,6 +8,9 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { resolveOperationalFacilityId } = require('@lib/facility-context');
 const {
+  assertFacilityTariffMutationAllowed,
+} = require('@lib/billing/pricing-permissions');
+const {
   buildPagination,
   normalizeSearchTerm,
   resolveModelIdOrThrow,
@@ -168,6 +171,8 @@ const upsertFacilityPharmacyOffering = async (payload = {}, context = {}) => {
   const userId = context.user_id;
   if (!tenantId || !userId) throw new HttpError('errors.auth.unauthorized', 401);
 
+  assertFacilityTariffMutationAllowed(context.user || { id: userId }, payload);
+
   const facilityId = await resolveFacilityId(context, payload);
   const drugId = await resolveDrugIdOrThrow({
     identifier: payload.drug_id,
@@ -198,23 +203,39 @@ const upsertFacilityPharmacyOffering = async (payload = {}, context = {}) => {
     );
   }
 
+  const hasIsActiveField = Object.prototype.hasOwnProperty.call(
+    payload,
+    'is_active'
+  );
+  const hasUnitPriceField = Object.prototype.hasOwnProperty.call(
+    payload,
+    'unit_price'
+  );
+  const hasCurrencyField = Object.prototype.hasOwnProperty.call(
+    payload,
+    'currency'
+  );
+
   const writePayload = {
     tenant_id: tenantId,
     facility_id: facilityId,
     drug_id: drugId,
-    is_active: payload.is_active !== false,
-    sort_order: Number(payload.sort_order || 0),
-    unit_price:
-      payload.unit_price != null
-        ? payload.unit_price
-        : existing?.unit_price != null
-          ? existing.unit_price
-          : 0,
-    currency:
-      toOptionalText(payload.currency) ||
-      existing?.currency ||
-      masterDrug.currency ||
-      null,
+    is_active: hasIsActiveField
+      ? payload.is_active !== false
+      : existing?.is_active ?? false,
+    sort_order: Number(
+      Object.prototype.hasOwnProperty.call(payload, 'sort_order')
+        ? payload.sort_order
+        : existing?.sort_order || 0
+    ),
+    unit_price: hasUnitPriceField
+      ? payload.unit_price
+      : existing?.unit_price != null
+        ? existing.unit_price
+        : 0,
+    currency: hasCurrencyField
+      ? toOptionalText(payload.currency)
+      : existing?.currency || masterDrug.currency || null,
     ...(hasShelfField ? { default_storage_shelf_id: defaultStorageShelfId } : {}),
   };
 

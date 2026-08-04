@@ -50,11 +50,33 @@ describe('permissions config', () => {
       expect.arrayContaining([
         PERMISSIONS.PHARMACY_READ,
         PERMISSIONS.PHARMACY_WRITE,
+        PERMISSIONS.PRICING_PHARMACY_READ,
+        PERMISSIONS.PRICING_PHARMACY_WRITE,
         PERMISSIONS.PATIENT_READ,
         PERMISSIONS.REPORTS_READ])
     );
     expect(ROLE_PERMISSIONS[ROLES.PHARMACIST]).not.toContain(
       PERMISSIONS.PATIENT_WRITE
+    );
+    expect(ROLE_PERMISSIONS[ROLES.PHARMACIST]).not.toContain(
+      PERMISSIONS.PRICING_FACILITY_WRITE
+    );
+  });
+
+  it('grants facility pricing to BILLING and not pharmacy retail pricing', () => {
+    expect(ROLE_PERMISSIONS[ROLES.BILLING]).toEqual(
+      expect.arrayContaining([
+        PERMISSIONS.BILLING_READ,
+        PERMISSIONS.BILLING_WRITE,
+        PERMISSIONS.PRICING_FACILITY_READ,
+        PERMISSIONS.PRICING_FACILITY_WRITE,
+      ])
+    );
+    expect(ROLE_PERMISSIONS[ROLES.BILLING]).not.toContain(
+      PERMISSIONS.PRICING_PHARMACY_WRITE
+    );
+    expect(ROLE_PERMISSIONS[ROLES.ACCOUNTANT]).toEqual(
+      ROLE_PERMISSIONS[ROLES.BILLING]
     );
   });
 
@@ -67,7 +89,7 @@ describe('permissions config', () => {
 
   it('exposes atomic domain:action permission keys only', () => {
     const values = Object.values(PERMISSIONS);
-    expect(values).toHaveLength(64);
+    expect(values).toHaveLength(82);
     for (const value of values) {
       expect(value).toMatch(/^[a-z0-9_]+:[a-z0-9_]+$/);
       expect(value.split(':')).toHaveLength(2);

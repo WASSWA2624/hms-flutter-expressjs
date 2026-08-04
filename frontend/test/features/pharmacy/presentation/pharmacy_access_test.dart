@@ -537,10 +537,77 @@ void main() {
           permissions: <AppPermission>{AppPermissions.pharmacyRead},
         );
 
+        expect(pharmacyCatalogWriteRequirement.isAllowed(pharmacyWriter), isTrue);
+        expect(
+          pharmacyCatalogWriteRequirement.isAllowed(operationsWriter),
+          isTrue,
+        );
+        expect(pharmacyCatalogWriteRequirement.isAllowed(reader), isFalse);
         expect(canWritePharmacyCatalog(pharmacyWriter), isTrue);
         expect(canWritePharmacyCatalog(operationsWriter), isTrue);
         expect(canWritePharmacyCatalog(reader), isFalse);
         expect(canWritePharmacy(operationsWriter), isFalse);
+      },
+    );
+
+    test(
+      'pricing write gates split pharmacy retail vs facility tariff',
+      () {
+        final AppAccessPolicy pharmacyPricer = _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.pharmacyWrite,
+            AppPermissions.pricingPharmacyWrite,
+          },
+        );
+        final AppAccessPolicy facilityPricer = _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.billingWrite,
+            AppPermissions.pricingFacilityWrite,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: pharmacyDispensingModule,
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: billingPaymentsModule,
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          roles: const <String>['BILLING'],
+        );
+        final AppAccessPolicy adminBoth = _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.pricingPharmacyWrite,
+            AppPermissions.pricingFacilityWrite,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: pharmacyDispensingModule,
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: billingPaymentsModule,
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          roles: const <String>['FACILITY_ADMIN'],
+        );
+
+        expect(pharmacyPricingWriteRequirement.isAllowed(pharmacyPricer), isTrue);
+        expect(facilityPricingWriteRequirement.isAllowed(pharmacyPricer), isFalse);
+        expect(pharmacyPricingWriteRequirement.isAllowed(facilityPricer), isFalse);
+        expect(facilityPricingWriteRequirement.isAllowed(facilityPricer), isTrue);
+        expect(pharmacyPricingWriteRequirement.isAllowed(adminBoth), isTrue);
+        expect(facilityPricingWriteRequirement.isAllowed(adminBoth), isTrue);
+        expect(
+          pharmacyPriceSourcePharmacyRequirement.isAllowed(pharmacyPricer),
+          isTrue,
+        );
+        expect(
+          pharmacyPriceSourceFacilityRequirement.isAllowed(pharmacyPricer),
+          isFalse,
+        );
       },
     );
 

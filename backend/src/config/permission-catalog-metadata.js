@@ -24,6 +24,7 @@ const DOMAIN_LABELS = Object.freeze({
   radiology: 'Radiology',
   pharmacy: 'Pharmacy',
   billing: 'Billing',
+  pricing: 'Pricing',
   claims: 'Claims',
   operations: 'Operations',
   housekeeping: 'Housekeeping',
@@ -83,6 +84,22 @@ const PERMISSION_OVERRIDES = Object.freeze({
   'financial:approve': {
     displayName: 'Financial — Approve',
     description: 'Approve financial transactions, adjustments, and billing exceptions.',
+  },
+  'pricing:pharmacy_read': {
+    displayName: 'Pricing — Pharmacy Read',
+    description: 'View pharmacy retail / OTC sell prices on the drug catalog.',
+  },
+  'pricing:pharmacy_write': {
+    displayName: 'Pricing — Pharmacy Write',
+    description: 'Set pharmacy retail / OTC sell prices on the drug catalog.',
+  },
+  'pricing:facility_read': {
+    displayName: 'Pricing — Facility Read',
+    description: 'View facility encounter tariffs for pharmacy offerings and related price books.',
+  },
+  'pricing:facility_write': {
+    displayName: 'Pricing — Facility Write',
+    description: 'Set facility encounter tariffs for pharmacy offerings and facility price-book rows.',
   },
   'reception:read': {
     displayName: 'Reception — Read',

@@ -1016,9 +1016,6 @@ final class PharmacyWorkspaceController
             .upsertFacilityOffering(
               created.id,
               PharmacyFacilityOfferingInput(
-                unitPrice: input.unitPrice ?? 0,
-                currency: input.currency,
-                isActive: (input.unitPrice ?? 0) > 0,
                 facilityId: facilityId,
                 defaultStorageShelfId: input.storageShelfId,
               ),

@@ -12,6 +12,7 @@ const buildContext = (req) => ({
   facility_id: req.user?.facility_id || req.user?.facilityId || req.query?.facility_id || req.body?.facility_id,
   user_id: req.user?.id,
   ip_address: req.ip,
+  user: req.user || {},
 });
 
 const listFacilityPharmacyDrugs = asyncHandler(async (req, res) => {

@@ -43,6 +43,10 @@ extension AppPermissionCatalogLocalizations on AppLocalizations {
       'pharmacy:write' => permissionCatalogPharmacyWrite,
       'billing:read' => permissionCatalogBillingRead,
       'billing:write' => permissionCatalogBillingWrite,
+      'pricing:pharmacy_read' => 'Pricing — Pharmacy Read',
+      'pricing:pharmacy_write' => 'Pricing — Pharmacy Write',
+      'pricing:facility_read' => 'Pricing — Facility Read',
+      'pricing:facility_write' => 'Pricing — Facility Write',
       'operations:read' => permissionCatalogOperationsRead,
       'operations:write' => permissionCatalogOperationsWrite,
       'hr:read' => permissionCatalogHrRead,
@@ -151,6 +155,14 @@ String? _permissionDescriptionOverride(String code) {
       'Full platform administration across tenants and global settings.',
     'financial:approve' =>
       'Approve financial transactions, adjustments, and billing exceptions.',
+    'pricing:pharmacy_read' =>
+      'View pharmacy retail / OTC sell prices on the drug catalog.',
+    'pricing:pharmacy_write' =>
+      'Set pharmacy retail / OTC sell prices on the drug catalog.',
+    'pricing:facility_read' =>
+      'View facility encounter tariffs for pharmacy offerings and related price books.',
+    'pricing:facility_write' =>
+      'Set facility encounter tariffs for pharmacy offerings and facility price-book rows.',
     'evidence:export' =>
       'Export audit evidence and compliance records for review.',
     'break_glass:request' =>
@@ -200,6 +212,7 @@ String _humanizePermissionToken(String token) {
     'radiology': 'Radiology',
     'pharmacy': 'Pharmacy',
     'billing': 'Billing',
+    'pricing': 'Pricing',
     'operations': 'Operations',
     'hr': 'HR',
     'unit': 'Unit',

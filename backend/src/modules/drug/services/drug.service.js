@@ -11,6 +11,9 @@ const drugRepository = require('@repositories/drug/drug.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
+  assertPharmacyRetailPriceMutationAllowed,
+} = require('@lib/billing/pricing-permissions');
+const {
   resolveScopedUserContext,
   buildTenantScopeWhere,
 } = require('@services/pharmacy-workspace/pharmacy.shared');
@@ -191,6 +194,7 @@ const getDrugById = async (id, userId, ipAddress, user = {}) => {
  */
 const createDrug = async (data, userId, ipAddress, user = {}) => {
   try {
+    assertPharmacyRetailPriceMutationAllowed(user, data);
     const scope = resolveScopedUserContext(user);
     const confirmSimilar = data?.confirm_similar === true;
     const { confirm_similar: _confirmSimilar, ...rawPayload } = data || {};
@@ -277,6 +281,7 @@ const createDrug = async (data, userId, ipAddress, user = {}) => {
  */
 const updateDrug = async (id, data, userId, ipAddress, user = {}) => {
   try {
+    assertPharmacyRetailPriceMutationAllowed(user, data);
     // Get current state for audit
     const { scope, drug: before } = await findScopedDrugOrThrow(id, user);
     const confirmSimilar = data?.confirm_similar === true;

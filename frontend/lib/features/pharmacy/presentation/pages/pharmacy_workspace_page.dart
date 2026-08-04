@@ -1559,9 +1559,12 @@ class _MedicationPrimaryLineAction extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final PharmacyOrder order = workflow.order;
-    final bool canWrite = writeRequirement.isAllowed(
-      ref.watch(appAccessPolicyProvider),
-    );
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canWrite = writeRequirement.isAllowed(accessPolicy);
+    final bool canSwitchToPharmacy =
+        pharmacyPriceSourcePharmacyRequirement.isAllowed(accessPolicy);
+    final bool canSwitchToFacility =
+        pharmacyPriceSourceFacilityRequirement.isAllowed(accessPolicy);
 
     if (pharmacyItemIsCancelled(item)) {
       return Text(
@@ -1617,8 +1620,9 @@ class _MedicationPrimaryLineAction extends ConsumerWidget {
             itemIds: <String>{item.id},
           ),
         ),
-      if (pharmacyItemHasSelectablePrices(item) && canWrite) ...<Widget>[
-        if (activeSource != PharmacyItemPriceSource.pharmacy)
+      if (pharmacyItemHasSelectablePrices(item)) ...<Widget>[
+        if (activeSource != PharmacyItemPriceSource.pharmacy &&
+            canSwitchToPharmacy)
           AppButton.tertiary(
             label: l10n.pharmacyUsePharmacyPriceAction,
             leadingIcon: Icons.local_pharmacy_outlined,
@@ -1630,7 +1634,8 @@ class _MedicationPrimaryLineAction extends ConsumerWidget {
               PharmacyItemPriceSource.pharmacy,
             ),
           ),
-        if (activeSource != PharmacyItemPriceSource.facility)
+        if (activeSource != PharmacyItemPriceSource.facility &&
+            canSwitchToFacility)
           AppButton.tertiary(
             label: l10n.pharmacyUseFacilityPriceAction,
             leadingIcon: Icons.account_balance_outlined,

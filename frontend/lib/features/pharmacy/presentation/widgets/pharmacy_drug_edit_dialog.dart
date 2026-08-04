@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_access.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_catalog_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_drug_catalog_options.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_pack_scan_dialog.dart';
@@ -434,8 +437,8 @@ class _PharmacyDrugEditDialogState
 
   PharmacyFacilityOfferingInput? _buildFacilityOfferingInput(
     PharmacyWorkspaceController controller, {
+    required bool canWriteFacilityPrice,
     num? facilityPrice,
-    num? pharmacyPrice,
   }) {
     final String? previousShelfId = widget.drug?.storageShelfId;
     final bool storageChanged = _storageShelfId != previousShelfId;
@@ -446,19 +449,22 @@ class _PharmacyDrugEditDialogState
     if (!hasFacilityPrice && !hasStorageShelf && !storageChanged) {
       return null;
     }
-    final num offeringPrice =
-        facilityPrice ??
-        widget.drug?.facilityUnitPrice ??
-        pharmacyPrice ??
-        widget.drug?.pharmacyUnitPrice ??
-        widget.drug?.unitPrice ??
-        0;
-    return PharmacyFacilityOfferingInput(
-      unitPrice: offeringPrice,
-      currency: _facilityCurrency,
-      facilityId: controller.resolveFacilityId(),
-      defaultStorageShelfId: _storageShelfId,
-    );
+    if (canWriteFacilityPrice && hasFacilityPrice) {
+      return PharmacyFacilityOfferingInput(
+        unitPrice: facilityPrice,
+        currency: _facilityCurrency,
+        isActive: facilityPrice > 0,
+        facilityId: controller.resolveFacilityId(),
+        defaultStorageShelfId: _storageShelfId,
+      );
+    }
+    if (hasStorageShelf || storageChanged) {
+      return PharmacyFacilityOfferingInput(
+        facilityId: controller.resolveFacilityId(),
+        defaultStorageShelfId: _storageShelfId,
+      );
+    }
+    return null;
   }
 
   List<AppSelectOption<String>> _withCurrentOption(
@@ -728,39 +734,59 @@ class _PharmacyDrugEditDialogState
             ],
           ),
           SizedBox(height: theme.spacing.md),
-          AppFormSection(
-            title: l10n.pharmacyDrugPricingSectionTitle,
-            children: <Widget>[
-              AppResponsiveFieldRow.two(
-                gap: AppResponsiveFieldRowGap.form,
-                left: AppCurrencyAmountField(
-                  amountController: _pharmacyPriceController,
-                  currency: _pharmacyCurrency,
-                  amountLabelText: l10n.pharmacyPharmacyPriceLabel,
-                  currencyLabelText: l10n.opdCurrencyLabel,
-                  enabled: !_isSaving,
-                  onCurrencyChanged: (String? value) {
-                    setState(() {
-                      _pharmacyCurrency = value ?? appDefaultCurrencyCode;
-                    });
-                  },
-                  validator: _optionalPositiveAmountValidator,
-                ),
-                right: AppCurrencyAmountField(
-                  amountController: _facilityPriceController,
-                  currency: _facilityCurrency,
-                  amountLabelText: l10n.pharmacyFacilityPriceLabel,
-                  currencyLabelText: l10n.opdCurrencyLabel,
-                  enabled: !_isSaving,
-                  onCurrencyChanged: (String? value) {
-                    setState(() {
-                      _facilityCurrency = value ?? appDefaultCurrencyCode;
-                    });
-                  },
-                  validator: _optionalPositiveAmountValidator,
-                ),
-              ),
-            ],
+          Builder(
+            builder: (BuildContext context) {
+              final AppAccessPolicy accessPolicy = ref.watch(
+                appAccessPolicyProvider,
+              );
+              final bool canWritePharmacyPrice =
+                  pharmacyPricingWriteRequirement.isAllowed(accessPolicy);
+              final bool canWriteFacilityPrice =
+                  facilityPricingWriteRequirement.isAllowed(accessPolicy);
+              if (!canWritePharmacyPrice && !canWriteFacilityPrice) {
+                return const SizedBox.shrink();
+              }
+              return AppFormSection(
+                title: l10n.pharmacyDrugPricingSectionTitle,
+                children: <Widget>[
+                  AppResponsiveFieldRow.two(
+                    gap: AppResponsiveFieldRowGap.form,
+                    left: canWritePharmacyPrice
+                        ? AppCurrencyAmountField(
+                            amountController: _pharmacyPriceController,
+                            currency: _pharmacyCurrency,
+                            amountLabelText: l10n.pharmacyPharmacyPriceLabel,
+                            currencyLabelText: l10n.opdCurrencyLabel,
+                            enabled: !_isSaving,
+                            onCurrencyChanged: (String? value) {
+                              setState(() {
+                                _pharmacyCurrency =
+                                    value ?? appDefaultCurrencyCode;
+                              });
+                            },
+                            validator: _optionalPositiveAmountValidator,
+                          )
+                        : const SizedBox.shrink(),
+                    right: canWriteFacilityPrice
+                        ? AppCurrencyAmountField(
+                            amountController: _facilityPriceController,
+                            currency: _facilityCurrency,
+                            amountLabelText: l10n.pharmacyFacilityPriceLabel,
+                            currencyLabelText: l10n.opdCurrencyLabel,
+                            enabled: !_isSaving,
+                            onCurrencyChanged: (String? value) {
+                              setState(() {
+                                _facilityCurrency =
+                                    value ?? appDefaultCurrencyCode;
+                              });
+                            },
+                            validator: _optionalPositiveAmountValidator,
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              );
+            },
           ),
           SizedBox(height: theme.spacing.md),
           AppFormSection(
@@ -991,21 +1017,30 @@ class _PharmacyDrugEditDialogState
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
+    final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+    final bool canWritePharmacyPrice =
+        pharmacyPricingWriteRequirement.isAllowed(accessPolicy);
+    final bool canWriteFacilityPrice =
+        facilityPricingWriteRequirement.isAllowed(accessPolicy);
     String genericName = _genericNameController.text.trim();
     String? brandName = _emptyToNull(_brandNameController.text);
     String? code = _emptyToNull(_codeController.text);
     String? form = _form;
     String? strength = _strength;
-    final num? pharmacyPrice = _parsePrice(_pharmacyPriceController.text);
-    final num? facilityPrice = _parsePrice(_facilityPriceController.text);
+    final num? pharmacyPrice = canWritePharmacyPrice
+        ? _parsePrice(_pharmacyPriceController.text)
+        : null;
+    final num? facilityPrice = canWriteFacilityPrice
+        ? _parsePrice(_facilityPriceController.text)
+        : null;
     final String? pharmacyCurrency = pharmacyPrice == null
         ? null
         : _pharmacyCurrency;
     final PharmacyFacilityOfferingInput? facilityOffering =
         _buildFacilityOfferingInput(
           controller,
+          canWriteFacilityPrice: canWriteFacilityPrice,
           facilityPrice: facilityPrice,
-          pharmacyPrice: pharmacyPrice,
         );
     AppFailure? failure;
     if (widget.drug == null) {
