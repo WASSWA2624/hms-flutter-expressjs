@@ -120,6 +120,22 @@ void main() {
         theme.sidebarTokens.badgeAccentBackgroundColor,
         theme.colorScheme.tertiaryContainer,
       );
+      expect(theme.borders.thin, 1);
+      expect(theme.borders.medium, 1.4);
+      expect(theme.borders.thick, 2);
+      expect(theme.borders.faint, AppLightThemePalette.palette.disabledBorderColor);
+      expect(theme.borders.subtle, AppLightThemePalette.palette.borderColor);
+      expect(theme.borders.focused, AppLightThemePalette.palette.focusedBorderColor);
+      expect(theme.borders.selected, theme.colorScheme.primary);
+      expect(theme.borders.side().width, theme.borders.thin);
+      expect(theme.borders.side().color, theme.borders.faint);
+      expect(
+        theme.borders.side(
+          tone: AppBorderTone.focused,
+          weight: AppBorderWeight.medium,
+        ).width,
+        theme.borders.medium,
+      );
     });
 
     test('builds dark theme with dark status colors', () {
@@ -158,6 +174,9 @@ void main() {
         AppDarkThemePalette.statusColors.danger,
       );
       expect(theme.appTokens.minInteractiveDimension, 40);
+      expect(theme.borders.faint, AppDarkThemePalette.palette.disabledBorderColor);
+      expect(theme.borders.subtle, AppDarkThemePalette.palette.borderColor);
+      expect(theme.borders.selected, theme.colorScheme.primary);
     });
   });
 }

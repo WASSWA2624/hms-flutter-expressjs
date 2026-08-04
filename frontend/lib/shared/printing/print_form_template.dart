@@ -713,7 +713,7 @@ $logoHtml
     margin: 0;
   }
   .print-template-compact-header {
-    border-bottom: 1px solid #d1d5db;
+    border-bottom: var(--print-border-thin) solid var(--print-border-subtle);
     display: flex;
     flex-wrap: wrap;
     gap: 4mm;
@@ -757,7 +757,7 @@ $logoHtml
     min-height: 6mm;
   }
   .print-template-signature-stamp {
-    border-top: 1px solid #111827;
+    border-top: var(--print-border-thin) solid var(--print-border-ink);
     color: #6b7280;
     font-size: 9px;
     min-height: 14mm;
@@ -782,6 +782,14 @@ $logoHtml
 
     return '''
 <style>
+  :root {
+    --print-border-thin: 1px;
+    --print-border-thick: 2px;
+    --print-border-faint: #e5e7eb;
+    --print-border-subtle: #d1d5db;
+    --print-border-strong: #9ca3af;
+    --print-border-ink: #111827;
+  }
   @page {
     size: A4;
     margin: 14mm 14mm 18mm;
@@ -816,14 +824,14 @@ $logoHtml
     grid-template-columns: 22mm 1fr;
     gap: 5mm;
     align-items: center;
-    border-bottom: 2px solid #111827;
+    border-bottom: var(--print-border-thick) solid var(--print-border-ink);
     padding-bottom: 4mm;
     margin-bottom: 5mm;
   }
   .print-template-logo {
     width: 22mm;
     height: 22mm;
-    border: 1px solid #9ca3af;
+    border: var(--print-border-thin) solid var(--print-border-strong);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -873,7 +881,7 @@ $logoHtml
   }
   .print-template-metadata div,
   .print-template-kv-item {
-    border: 1px solid #d1d5db;
+    border: var(--print-border-thin) solid var(--print-border-subtle);
     padding: 2mm;
     min-width: 0;
   }
@@ -902,7 +910,7 @@ $logoHtml
     page-break-inside: avoid;
   }
   .print-template-section h2 {
-    border-bottom: 1px solid #d1d5db;
+    border-bottom: var(--print-border-thin) solid var(--print-border-subtle);
     color: #111827;
     font-size: 13px;
     line-height: 1.25;
@@ -929,7 +937,7 @@ $logoHtml
   }
   .print-template-table th,
   .print-template-table td {
-    border: 1px solid #d1d5db;
+    border: var(--print-border-thin) solid var(--print-border-subtle);
     padding: 2mm;
     text-align: left;
     vertical-align: top;
@@ -939,7 +947,7 @@ $logoHtml
     font-weight: 800;
   }
   .print-template-table tr.print-template-table-footer td {
-    border-top: 2px solid #9ca3af;
+    border-top: var(--print-border-thick) solid var(--print-border-strong);
     font-weight: 800;
   }
   .print-template-empty {
@@ -959,7 +967,7 @@ $logoHtml
     min-height: 10mm;
   }
   .print-template-footer {
-    border-top: 1px solid #d1d5db;
+    border-top: var(--print-border-thin) solid var(--print-border-subtle);
     color: #374151;
     display: flex;
     justify-content: space-between;

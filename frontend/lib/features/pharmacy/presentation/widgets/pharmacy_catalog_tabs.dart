@@ -38,7 +38,7 @@ class PharmacyCatalogIconTabBar extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
+        border: theme.borders.only(bottom: true),
       ),
       child: Row(
         children: <Widget>[
@@ -89,10 +89,7 @@ class _PharmacyCatalogIconTab extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             border: Border(
-              bottom: BorderSide(
-                color: selected ? activeColor : Colors.transparent,
-                width: 2,
-              ),
+              bottom: theme.borders.side(color: selected ? activeColor : Colors.transparent, width: 2,),
             ),
           ),
           child: Row(

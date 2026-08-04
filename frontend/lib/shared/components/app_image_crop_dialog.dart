@@ -206,7 +206,8 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
     _controller.cropRect = next;
   }
 
-  List<Widget> _buildEdgeHandles(ColorScheme colorScheme) {
+  List<Widget> _buildEdgeHandles(ThemeData theme) {
+    final ColorScheme colorScheme = theme.colorScheme;
     final Rect? crop = _cropViewportRect;
     if (crop == null || _aspectRatio != null) {
       return const <Widget>[];
@@ -237,7 +238,7 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
                   decoration: BoxDecoration(
                     color: colorScheme.surface,
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: colorScheme.outlineVariant),
+                    border: theme.borders.all(),
                     boxShadow: <BoxShadow>[
                       BoxShadow(
                         color: colorScheme.shadow.withValues(alpha: 0.18),
@@ -467,7 +468,7 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
                                 child: CircularProgressIndicator(),
                               ),
                             ),
-                          ..._buildEdgeHandles(colorScheme),
+                          ..._buildEdgeHandles(theme),
                         ],
                       ),
               ),

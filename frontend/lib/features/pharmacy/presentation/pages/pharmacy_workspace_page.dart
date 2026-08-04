@@ -2241,7 +2241,7 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
         children: <Widget>[
           DecoratedBox(
             decoration: BoxDecoration(
-              border: Border.all(color: theme.colorScheme.outlineVariant),
+              border: theme.borders.all(),
             ),
             child: AppListTable<_LineEditState>(
               items: _lines,
@@ -2826,7 +2826,7 @@ class _ReturnMedicationsTable extends StatelessWidget {
     // Search omitted: return dialog lines are typically short (≤8 rows).
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: AppListTable<_LineEditState>(
         items: lines,

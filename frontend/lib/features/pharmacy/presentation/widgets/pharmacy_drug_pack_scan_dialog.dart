@@ -759,7 +759,7 @@ class _PharmacyDrugPackScanDialogState
             DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(theme.radius.md),
-                border: Border.all(color: colors.outlineVariant),
+                border: theme.borders.all(),
                 color: colors.surfaceContainerLowest,
               ),
               child: Padding(
@@ -892,9 +892,7 @@ class _PharmacyDrugPackScanDialogState
             DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(theme.radius.md),
-                border: Border.all(
-                  color: colors.tertiary.withValues(alpha: 0.55),
-                ),
+                border: theme.borders.all(color: colors.tertiary.withValues(alpha: 0.55)),
                 color: colors.tertiaryContainer.withValues(alpha: 0.28),
               ),
               child: Padding(

@@ -771,6 +771,209 @@ final class AppSidebarTokens extends ThemeExtension<AppSidebarTokens> {
   }
 }
 
+/// Semantic border weight used by [AppBorderTokens].
+enum AppBorderWeight {
+  /// Default hairline used for panels, cards, and decorative outlines.
+  thin,
+
+  /// Emphasized outline (focused inputs, selected chips).
+  medium,
+
+  /// Structural emphasis (section rules, table footers).
+  thick,
+}
+
+/// Semantic border color role used by [AppBorderTokens].
+enum AppBorderTone {
+  /// Default decorative border — thin and faint.
+  faint,
+
+  /// Slightly more visible hairline (form fields, persistent panels).
+  subtle,
+
+  /// Stronger structural outline.
+  strong,
+
+  /// Focus ring / active input.
+  focused,
+
+  /// Selected / emphasized control.
+  selected,
+
+  /// Disabled control outline.
+  disabled,
+
+  /// Validation / destructive outline.
+  error,
+}
+
+/// Shared border colors and widths for the design system.
+///
+/// Prefer [all] / [side] / [only] over ad-hoc [Border.all] and [BorderSide]
+/// so light/dark surfaces stay consistent. Defaults are thin + faint.
+@immutable
+final class AppBorderTokens extends ThemeExtension<AppBorderTokens> {
+  const AppBorderTokens({
+    required this.thin,
+    required this.medium,
+    required this.thick,
+    required this.faint,
+    required this.subtle,
+    required this.strong,
+    required this.focused,
+    required this.selected,
+    required this.disabled,
+    required this.error,
+  });
+
+  /// Fallback when the theme extension is missing (tests / partial themes).
+  factory AppBorderTokens.fallback({
+    required ColorScheme colorScheme,
+    required AppStatusColors statusColors,
+  }) {
+    return AppBorderTokens(
+      thin: 1,
+      medium: 1.4,
+      thick: 2,
+      faint: colorScheme.outlineVariant.withValues(alpha: 0.72),
+      subtle: colorScheme.outlineVariant,
+      strong: colorScheme.outline,
+      focused: colorScheme.primary,
+      selected: colorScheme.primary,
+      disabled: colorScheme.outlineVariant.withValues(alpha: 0.55),
+      error: statusColors.error,
+    );
+  }
+
+  final double thin;
+  final double medium;
+  final double thick;
+  final Color faint;
+  final Color subtle;
+  final Color strong;
+  final Color focused;
+  final Color selected;
+  final Color disabled;
+  final Color error;
+
+  double widthOf(AppBorderWeight weight) {
+    return switch (weight) {
+      AppBorderWeight.thin => thin,
+      AppBorderWeight.medium => medium,
+      AppBorderWeight.thick => thick,
+    };
+  }
+
+  Color colorOf(AppBorderTone tone) {
+    return switch (tone) {
+      AppBorderTone.faint => faint,
+      AppBorderTone.subtle => subtle,
+      AppBorderTone.strong => strong,
+      AppBorderTone.focused => focused,
+      AppBorderTone.selected => selected,
+      AppBorderTone.disabled => disabled,
+      AppBorderTone.error => error,
+    };
+  }
+
+  /// Default thin + faint [BorderSide].
+  BorderSide side({
+    AppBorderTone tone = AppBorderTone.faint,
+    AppBorderWeight weight = AppBorderWeight.thin,
+    Color? color,
+    double? width,
+  }) {
+    return BorderSide(
+      color: color ?? colorOf(tone),
+      width: width ?? widthOf(weight),
+    );
+  }
+
+  /// Default thin + faint box border on all sides.
+  Border all({
+    AppBorderTone tone = AppBorderTone.faint,
+    AppBorderWeight weight = AppBorderWeight.thin,
+    Color? color,
+    double? width,
+  }) {
+    return Border.fromBorderSide(
+      side(tone: tone, weight: weight, color: color, width: width),
+    );
+  }
+
+  /// Thin + faint border on selected sides only.
+  Border only({
+    bool top = false,
+    bool right = false,
+    bool bottom = false,
+    bool left = false,
+    AppBorderTone tone = AppBorderTone.faint,
+    AppBorderWeight weight = AppBorderWeight.thin,
+    Color? color,
+    double? width,
+  }) {
+    final BorderSide resolved = side(
+      tone: tone,
+      weight: weight,
+      color: color,
+      width: width,
+    );
+    return Border(
+      top: top ? resolved : BorderSide.none,
+      right: right ? resolved : BorderSide.none,
+      bottom: bottom ? resolved : BorderSide.none,
+      left: left ? resolved : BorderSide.none,
+    );
+  }
+
+  @override
+  AppBorderTokens copyWith({
+    double? thin,
+    double? medium,
+    double? thick,
+    Color? faint,
+    Color? subtle,
+    Color? strong,
+    Color? focused,
+    Color? selected,
+    Color? disabled,
+    Color? error,
+  }) {
+    return AppBorderTokens(
+      thin: thin ?? this.thin,
+      medium: medium ?? this.medium,
+      thick: thick ?? this.thick,
+      faint: faint ?? this.faint,
+      subtle: subtle ?? this.subtle,
+      strong: strong ?? this.strong,
+      focused: focused ?? this.focused,
+      selected: selected ?? this.selected,
+      disabled: disabled ?? this.disabled,
+      error: error ?? this.error,
+    );
+  }
+
+  @override
+  AppBorderTokens lerp(AppBorderTokens? other, double t) {
+    if (other == null) {
+      return this;
+    }
+
+    return AppBorderTokens(
+      thin: _lerpDouble(thin, other.thin, t),
+      medium: _lerpDouble(medium, other.medium, t),
+      thick: _lerpDouble(thick, other.thick, t),
+      faint: _lerpColor(faint, other.faint, t),
+      subtle: _lerpColor(subtle, other.subtle, t),
+      strong: _lerpColor(strong, other.strong, t),
+      focused: _lerpColor(focused, other.focused, t),
+      selected: _lerpColor(selected, other.selected, t),
+      disabled: _lerpColor(disabled, other.disabled, t),
+      error: _lerpColor(error, other.error, t),
+    );
+  }
+}
+
 extension AppThemeDataTokens on ThemeData {
   AppSpacingTokens get spacing {
     return extension<AppSpacingTokens>() ?? AppSpacingTokens.standard;
@@ -778,6 +981,17 @@ extension AppThemeDataTokens on ThemeData {
 
   AppRadiusTokens get radius {
     return extension<AppRadiusTokens>() ?? AppRadiusTokens.standard;
+  }
+
+  AppBorderTokens get borders {
+    final AppBorderTokens? tokens = extension<AppBorderTokens>();
+    if (tokens != null) {
+      return tokens;
+    }
+    return AppBorderTokens.fallback(
+      colorScheme: colorScheme,
+      statusColors: statusColors,
+    );
   }
 
   AppStatusColors get statusColors {

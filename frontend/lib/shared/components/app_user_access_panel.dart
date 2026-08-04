@@ -508,7 +508,7 @@ class _DirectPermissionRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(

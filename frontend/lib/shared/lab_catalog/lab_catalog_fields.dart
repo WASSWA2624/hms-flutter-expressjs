@@ -106,9 +106,7 @@ class _LabEditableValueListFieldState extends State<LabEditableValueListField> {
               borderRadius: BorderRadius.circular(
                 context.responsiveRadius(theme.radius.md),
               ),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
-              ),
+              border: theme.borders.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7)),
             ),
             child: Padding(
               padding: EdgeInsets.all(theme.spacing.sm),
@@ -274,9 +272,7 @@ class _LabSearchableTextFieldState extends State<LabSearchableTextField> {
                 shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.14),
                 surfaceTintColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
-                  side: BorderSide(
-                    color: theme.colorScheme.outlineVariant,
-                  ),
+                  side: theme.borders.side(),
                   borderRadius: BorderRadius.circular(
                     context.responsiveRadius(theme.radius.md),
                   ),

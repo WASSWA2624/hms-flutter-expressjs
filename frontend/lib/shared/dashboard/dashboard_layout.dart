@@ -9,11 +9,6 @@ Color dashboardSectionBackgroundColor(ColorScheme colorScheme) {
   return colorScheme.surface;
 }
 
-/// Subtle border matching metric cards and shortcut tiles.
-Color dashboardSectionBorderColor(ColorScheme colorScheme) {
-  return colorScheme.outlineVariant.withValues(alpha: 0.35);
-}
-
 List<BoxShadow> dashboardSoftShadow(ColorScheme colorScheme) {
   return <BoxShadow>[
     BoxShadow(
@@ -38,8 +33,8 @@ BoxDecoration dashboardSurfaceCardDecoration(
   return BoxDecoration(
     color: backgroundColor ?? dashboardSectionBackgroundColor(colorScheme),
     borderRadius: BorderRadius.circular(theme.radius.xl),
-    border: Border.all(
-      color: borderColor ?? dashboardSectionBorderColor(colorScheme),
+    border: theme.borders.all(
+      color: borderColor ?? theme.borders.faint,
     ),
     boxShadow: dashboardSoftShadow(colorScheme),
   );
@@ -57,7 +52,7 @@ BoxDecoration dashboardMetricCardDecoration(
   return BoxDecoration(
     color: wash,
     borderRadius: BorderRadius.circular(theme.radius.lg),
-    border: Border.all(color: accent.withValues(alpha: 0.18)),
+    border: theme.borders.all(color: accent.withValues(alpha: 0.18)),
     boxShadow: <BoxShadow>[
       BoxShadow(
         color: accent.withValues(alpha: 0.08),
@@ -91,7 +86,7 @@ BoxDecoration dashboardMetricIconDecoration(ThemeData theme, Color accent) {
       ],
     ),
     borderRadius: BorderRadius.circular(theme.radius.md),
-    border: Border.all(color: accent.withValues(alpha: 0.22)),
+    border: theme.borders.all(color: accent.withValues(alpha: 0.22)),
   );
 }
 
@@ -106,9 +101,7 @@ BoxDecoration dashboardWorklistGroupDecoration(
   return BoxDecoration(
     color: colorScheme.surfaceContainerLowest.withValues(alpha: 0.65),
     borderRadius: BorderRadius.circular(theme.radius.lg),
-    border: Border.all(
-      color: colorScheme.outlineVariant.withValues(alpha: 0.25),
-    ),
+    border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.25)),
   );
 }
 
@@ -120,7 +113,7 @@ BoxDecoration dashboardAlertsPanelDecoration(
   return BoxDecoration(
     color: Color.lerp(colorScheme.surface, accent, 0.06),
     borderRadius: BorderRadius.circular(theme.radius.xl),
-    border: Border.all(color: accent.withValues(alpha: 0.22)),
+    border: theme.borders.all(color: accent.withValues(alpha: 0.22)),
     boxShadow: dashboardSoftShadow(colorScheme),
   );
 }

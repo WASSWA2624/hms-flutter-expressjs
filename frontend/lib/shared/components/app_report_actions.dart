@@ -260,7 +260,7 @@ class AppReportPreviewPanel extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerLowest,
-          border: Border.all(color: colorScheme.outlineVariant),
+          border: theme.borders.all(),
         ),
         child: content,
       ),
@@ -284,7 +284,7 @@ class _ReportSummaryTile extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: colorScheme.surface,
-          border: Border.all(color: colorScheme.outlineVariant),
+          border: theme.borders.all(),
         ),
         child: Padding(
           padding: EdgeInsets.all(theme.spacing.sm),

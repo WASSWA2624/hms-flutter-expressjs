@@ -34,7 +34,7 @@ class ClinicalRequestFlowSummaryBar extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLowest,
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
         borderRadius: BorderRadius.circular(theme.spacing.xs),
       ),
       child: Padding(
@@ -188,7 +188,7 @@ class _ClinicalRequestRemoveItemsConfirmationDialog extends StatelessWidget {
           SizedBox(height: theme.spacing.md),
           DecoratedBox(
             decoration: BoxDecoration(
-              border: Border.all(color: colorScheme.outlineVariant),
+              border: theme.borders.all(),
               borderRadius: BorderRadius.circular(theme.spacing.xs),
             ),
             child: ConstrainedBox(
@@ -433,7 +433,7 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: AppListTable<T>(
         // Force a fresh table state whenever the selection identity changes so
@@ -682,7 +682,7 @@ class _ClinicalRequestCatalogTableTotalFooter extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
+        border: theme.borders.only(top: true),
       ),
       child: Padding(
         padding: EdgeInsets.only(bottom: theme.spacing.sm),

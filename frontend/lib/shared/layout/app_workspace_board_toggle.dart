@@ -33,9 +33,7 @@ class AppWorkspaceBoardToggle<T extends Object> extends StatelessWidget {
             side: WidgetStateProperty.resolveWith<BorderSide?>((
               Set<WidgetState> states,
             ) {
-              return BorderSide(
-                color: theme.colorScheme.outlineVariant,
-                width: states.contains(WidgetState.selected) ? 1.25 : 1,
+              return theme.borders.side(color: theme.colorScheme.outlineVariant, width: states.contains(WidgetState.selected) ? 1.25 : 1,
               );
             }),
           ),

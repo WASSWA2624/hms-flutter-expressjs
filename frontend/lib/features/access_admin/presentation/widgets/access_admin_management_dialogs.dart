@@ -2097,7 +2097,7 @@ class _PermissionDetailSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfaceContainerHighest.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(color: colors.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.md),
@@ -2157,7 +2157,7 @@ class _PermissionDetailSummaryCard extends StatelessWidget {
                   ),
                   visualDensity: VisualDensity.compact,
                   backgroundColor: colors.surface,
-                  side: BorderSide(color: colors.outlineVariant),
+                  side: theme.borders.side(),
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ],
@@ -2540,7 +2540,7 @@ class _RoleDetailSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfaceContainerHighest.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(color: colors.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.md),
@@ -2844,7 +2844,7 @@ class _AccessAdminDetailMetaChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: Border.all(color: colors.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -2913,7 +2913,7 @@ class _RoleScopeBadge extends StatelessWidget {
           : isPlatform
           ? colors.secondaryContainer
           : colors.primaryContainer,
-      side: BorderSide(
+      side: theme.borders.side(
         color: (isFacility
                 ? colors.tertiary
                 : isPlatform
@@ -3658,7 +3658,7 @@ class _UserDetailSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.md),
@@ -3949,7 +3949,7 @@ class _UserDetailStatusChip extends StatelessWidget {
       avatar: Icon(icon, size: 16, color: foreground),
       label: Text(status),
       backgroundColor: foreground.withValues(alpha: 0.12),
-      side: BorderSide(color: foreground.withValues(alpha: 0.24)),
+      side: theme.borders.side(color: foreground.withValues(alpha: 0.24)),
       labelStyle: theme.textTheme.labelMedium?.copyWith(
         color: foreground,
         fontWeight: FontWeight.w600,

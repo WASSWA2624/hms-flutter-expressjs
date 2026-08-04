@@ -889,7 +889,7 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
       surfaceTintColor: WidgetStateProperty.all(colorScheme.surfaceTint),
       shape: WidgetStateProperty.all(
         RoundedRectangleBorder(
-          side: BorderSide(color: colorScheme.outlineVariant),
+          side: theme.borders.side(),
           borderRadius: BorderRadius.circular(theme.radius.sm),
         ),
       ),
@@ -907,7 +907,7 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
       surfaceTintColor: WidgetStateProperty.all(colorScheme.surfaceTint),
       shape: WidgetStateProperty.all(
         RoundedRectangleBorder(
-          side: BorderSide(color: colorScheme.outlineVariant),
+          side: theme.borders.side(),
           borderRadius: BorderRadius.circular(theme.radius.sm),
         ),
       ),
@@ -946,10 +946,7 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
         if (!states.contains(WidgetState.focused)) {
           return null;
         }
-        return BorderSide(
-          color: colorScheme.primary.withValues(alpha: 0.72),
-          width: 1.25,
-        );
+        return theme.borders.side(color: colorScheme.primary.withValues(alpha: 0.72), width: 1.25,);
       }),
     );
   }

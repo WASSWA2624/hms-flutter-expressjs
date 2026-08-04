@@ -342,25 +342,16 @@ class AppButton extends StatelessWidget {
         const double thinWidth = 0.5;
         if (states.contains(WidgetState.focused) &&
             variant != AppButtonVariant.primary) {
-          return BorderSide(
-            color: colorScheme.primary.withValues(alpha: 0.72),
-            width: thinWidth,
-          );
+          return theme.borders.side(color: colorScheme.primary.withValues(alpha: 0.72), width: thinWidth,);
         }
         if (variant == AppButtonVariant.primary) {
           final double alpha = states.contains(WidgetState.disabled)
               ? 0.24
               : 0.72;
-          return BorderSide(
-            color: colorScheme.primary.withValues(alpha: alpha),
-            width: thinWidth,
-          );
+          return theme.borders.side(color: colorScheme.primary.withValues(alpha: alpha), width: thinWidth,);
         }
         final double alpha = states.contains(WidgetState.disabled) ? 0.2 : 0.42;
-        return BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: alpha),
-          width: thinWidth,
-        );
+        return theme.borders.side(color: colorScheme.outlineVariant.withValues(alpha: alpha), width: thinWidth,);
       }),
     );
   }

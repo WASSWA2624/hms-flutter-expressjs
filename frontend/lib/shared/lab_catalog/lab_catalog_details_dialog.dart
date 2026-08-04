@@ -156,9 +156,7 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
                     else
                       DecoratedBox(
                         decoration: BoxDecoration(
-                          border: Border.all(
-                            color: theme.colorScheme.outlineVariant,
-                          ),
+                          border: theme.borders.all(),
                           borderRadius: BorderRadius.circular(theme.radius.sm),
                         ),
                         child: Column(

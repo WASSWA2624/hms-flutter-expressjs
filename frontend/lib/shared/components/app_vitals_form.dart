@@ -745,7 +745,7 @@ class _BloodPressureInput extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.md),

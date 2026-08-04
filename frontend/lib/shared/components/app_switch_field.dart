@@ -326,7 +326,7 @@ class _GlassSwitchTile extends StatelessWidget {
                       glassFill,
                     ],
                   ),
-                  border: Border.all(color: glassBorder, width: 1),
+                  border: theme.borders.all(color: glassBorder, width: 1),
                 ),
                 child: InkWell(
                   onTap: onChanged == null ? null : () => onChanged!(!value),
@@ -350,8 +350,9 @@ class _GlassWell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final bool isDark = theme.brightness == Brightness.dark;
 
     return SizedBox(
       width: size,
@@ -360,7 +361,7 @@ class _GlassWell extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: colors.onSurface.withValues(alpha: isDark ? 0.08 : 0.04),
-          border: Border.all(
+          border: theme.borders.all(
             color: colors.onSurface.withValues(alpha: isDark ? 0.12 : 0.08),
           ),
           boxShadow: <BoxShadow>[

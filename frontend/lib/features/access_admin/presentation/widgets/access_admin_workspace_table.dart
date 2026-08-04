@@ -847,7 +847,7 @@ class AccessAdminRoleScopeBadge extends StatelessWidget {
       label: Text(label, style: theme.textTheme.labelSmall),
       visualDensity: VisualDensity.compact,
       backgroundColor: container,
-      side: BorderSide(color: accent.withValues(alpha: 0.28)),
+      side: theme.borders.side(color: accent.withValues(alpha: 0.28)),
       padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
     );
   }

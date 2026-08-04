@@ -144,9 +144,7 @@ class _TenantFacilitySetupWizardState extends State<TenantFacilitySetupWizard> {
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(theme.radius.md),
-              border: Border.all(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.7),
-              ),
+              border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.7)),
             ),
             child: Padding(
               padding: EdgeInsets.fromLTRB(
@@ -408,7 +406,7 @@ class _SetupStepPanel extends StatelessWidget {
           ],
         ),
         borderRadius: BorderRadius.circular(theme.radius.lg),
-        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.18)),
+        border: theme.borders.all(color: colorScheme.primary.withValues(alpha: 0.18)),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.lg),
@@ -873,9 +871,7 @@ class _SetupEmptyRecords extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
-        ),
+        border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.6)),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -1019,9 +1015,7 @@ class TenantFacilityPermissionStrip extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.65),
-        ),
+        border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.65)),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(

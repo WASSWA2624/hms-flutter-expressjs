@@ -38,7 +38,7 @@ class AppContentPanel extends StatelessWidget {
       color: backgroundColor ?? colors.container,
       shape: RoundedRectangleBorder(
         borderRadius: resolvedRadius,
-        side: BorderSide(color: borderColor ?? colors.border),
+        side: theme.borders.side(color: borderColor ?? colors.border),
       ),
       clipBehavior: Clip.antiAlias,
       child: Padding(padding: padding ?? _padding(theme), child: child),

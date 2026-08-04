@@ -398,9 +398,7 @@ class _ProfileSummary extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
-        ),
+        border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.55)),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.md),
@@ -503,9 +501,7 @@ class _ProfileBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.45),
-        ),
+        border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.45)),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -542,9 +538,7 @@ class _ProfileBlock extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
-        ),
+        border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.55)),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.md),

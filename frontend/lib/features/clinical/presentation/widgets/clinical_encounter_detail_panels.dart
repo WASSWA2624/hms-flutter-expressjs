@@ -433,8 +433,8 @@ class _ClinicalLabResultRowsTable extends StatelessWidget {
     final bool showActions = onCancelItem != null;
     final Color borderColor = colorScheme.outlineVariant;
     final TableBorder tableBorder = TableBorder(
-      horizontalInside: BorderSide(color: borderColor),
-      verticalInside: BorderSide(color: borderColor),
+      horizontalInside: theme.borders.side(color: borderColor),
+      verticalInside: theme.borders.side(color: borderColor),
     );
 
     return Table(
@@ -1467,7 +1467,7 @@ class _ClinicalOrderMobileCard extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
         borderRadius: BorderRadius.circular(theme.radius.sm),
       ),
       child: Padding(
@@ -1940,9 +1940,7 @@ class _ClinicalDetailDataTableContainer extends StatelessWidget {
     return Material(
       color: colorScheme.surface,
       shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
-        ),
+        side: theme.borders.side(),
       ),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {

@@ -422,11 +422,9 @@ class PharmacyPrintSelectableTile extends StatelessWidget {
               color: selected
                   ? colorScheme.primaryContainer.withValues(alpha: 0.28)
                   : colorScheme.surface,
-              border: Border.all(
-                color: selected
-                    ? colorScheme.primary
-                    : colorScheme.outlineVariant,
-              ),
+              border: selected
+                  ? theme.borders.all(tone: AppBorderTone.selected)
+                  : theme.borders.all(),
             ),
             child: Padding(
               padding: EdgeInsets.symmetric(
@@ -507,7 +505,7 @@ class PharmacyInfoCard extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(

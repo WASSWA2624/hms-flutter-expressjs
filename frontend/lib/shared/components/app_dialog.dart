@@ -138,7 +138,7 @@ class _AppDialogState extends State<AppDialog> {
 
     final Widget dialogContent = DecoratedBox(
       decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: _DialogBody(
         title: widget.title,
@@ -627,7 +627,7 @@ class _DialogHeader extends StatelessWidget {
     final Widget header = DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
+        border: theme.borders.only(bottom: true),
       ),
       child: Padding(
         padding: padding,
@@ -843,7 +843,7 @@ class _DialogActions extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
+        border: theme.borders.only(top: true),
       ),
       child: Padding(padding: padding, child: actionRow),
     );

@@ -712,7 +712,7 @@ class _QuantityStepper extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
         borderRadius: BorderRadius.circular(theme.spacing.xs),
       ),
       child: Row(

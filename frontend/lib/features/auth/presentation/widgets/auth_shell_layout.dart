@@ -109,9 +109,7 @@ class _AuthBrandHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(
           context.responsiveRadius(theme.radius.md),
         ),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-        ),
+        border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: colorScheme.shadow.withValues(alpha: 0.06),

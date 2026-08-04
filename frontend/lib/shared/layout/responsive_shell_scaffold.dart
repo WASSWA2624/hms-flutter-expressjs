@@ -499,10 +499,7 @@ class AppMenuBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
-          bottom: BorderSide(
-            color: colorScheme.outlineVariant,
-            width: theme.appTokens.dividerThickness,
-          ),
+          bottom: theme.borders.side(color: colorScheme.outlineVariant, width: theme.appTokens.dividerThickness,),
         ),
       ),
       child: SizedBox(
@@ -627,7 +624,7 @@ class _SystemIndicatorBadge extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: colors.background,
-            border: Border.all(color: colors.foreground),
+            border: theme.borders.all(color: colors.foreground),
           ),
           child: Padding(
             padding: EdgeInsets.all(theme.spacing.xs),
@@ -755,7 +752,7 @@ class _UserMenuButton extends StatelessWidget {
       color: colorScheme.surface,
       surfaceTintColor: colorScheme.surfaceTint,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: colorScheme.outlineVariant),
+        side: theme.borders.side(),
       ),
       onSelected: (_UserMenuAction action) {
         switch (action) {
@@ -956,7 +953,7 @@ class _UserMenuChip extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.secondaryContainer,
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -1554,12 +1551,10 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
         color: backgroundColor,
         borderRadius: itemRadius,
         border: _focused
-            ? Border.all(
-                color: widget.selected
+            ? theme.borders.all(color: widget.selected
                     ? sidebar.selectedForegroundColor.withValues(alpha: 0.48)
                     : sidebar.focusBorderColor,
-                width: _focusIndicatorWidth,
-              )
+                width: _focusIndicatorWidth)
             : null,
       ),
       child: Row(

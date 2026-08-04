@@ -39,7 +39,7 @@ class AppCurrencyFlagIcon extends StatelessWidget {
             ? colorScheme.surfaceContainerHighest
             : colorScheme.surfaceContainerHighest.withValues(alpha: 0.62),
         shape: BoxShape.circle,
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: emoji == null
           ? Icon(

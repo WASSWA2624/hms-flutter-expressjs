@@ -195,7 +195,7 @@ class AppImageUploadField extends StatelessWidget {
         SizedBox(height: theme.spacing.sm),
         DecoratedBox(
           decoration: BoxDecoration(
-            border: Border.all(color: colorScheme.outlineVariant),
+            border: theme.borders.all(),
             borderRadius: BorderRadius.circular(theme.radius.md),
             color: colorScheme.surfaceContainerLowest,
           ),
@@ -367,11 +367,10 @@ class _ImagePreviewTile extends StatelessWidget {
                 ? colorScheme.primaryContainer.withValues(alpha: 0.35)
                 : colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(theme.radius.md),
-            border: Border.all(
+            border: theme.borders.all(
               color: isAddTile
                   ? colorScheme.primary.withValues(alpha: 0.35)
                   : colorScheme.outlineVariant,
-              style: isAddTile ? BorderStyle.solid : BorderStyle.solid,
             ),
           ),
           child: ClipRRect(

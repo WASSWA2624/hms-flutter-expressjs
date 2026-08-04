@@ -879,7 +879,7 @@ class _DuplicateScoreBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: severity.container,
         borderRadius: BorderRadius.circular(theme.radius.full),
-        border: Border.all(color: severity.accent),
+        border: theme.borders.all(color: severity.accent),
       ),
       child: Text(
         label,

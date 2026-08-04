@@ -1266,8 +1266,8 @@ class _ProcedureWorkbenchSectionState
 
     final Color borderColor = colors.outlineVariant;
     final TableBorder tableBorder = TableBorder(
-      horizontalInside: BorderSide(color: borderColor),
-      verticalInside: BorderSide(color: borderColor),
+      horizontalInside: theme.borders.side(color: borderColor),
+      verticalInside: theme.borders.side(color: borderColor),
     );
     final Color hoverRowColor = colors.surfaceContainerHighest.withValues(
       alpha: 0.55,

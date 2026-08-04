@@ -72,9 +72,7 @@ class AuthPageFrame extends StatelessWidget {
           borderRadius: BorderRadius.circular(
             context.responsiveRadius(theme.radius.lg),
           ),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.55),
-          ),
+          border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.55)),
           boxShadow: <BoxShadow>[
             BoxShadow(
               color: colorScheme.shadow.withValues(alpha: 0.07),

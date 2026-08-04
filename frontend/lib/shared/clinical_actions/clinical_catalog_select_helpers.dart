@@ -160,7 +160,7 @@ class ClinicalCatalogSelectPanel extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.sm),
@@ -254,7 +254,7 @@ class ClinicalRequestSelectionManager extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.sm),

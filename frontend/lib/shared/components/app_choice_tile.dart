@@ -43,7 +43,7 @@ class AppChoiceTile extends StatelessWidget {
         color: background,
         shape: RoundedRectangleBorder(
           borderRadius: radius,
-          side: BorderSide(color: border, width: selected ? 1.5 : 1),
+          side: theme.borders.side(color: border, width: selected ? 1.5 : 1),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(

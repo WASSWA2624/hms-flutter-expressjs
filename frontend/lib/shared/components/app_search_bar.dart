@@ -418,10 +418,8 @@ class _AppSearchBarState extends State<AppSearchBar> {
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: _fillColor(theme, canEdit),
-                  border: Border.all(
-                    color: borderSide.color,
-                    width: borderSide.width,
-                  ),
+                  border: theme.borders.all(color: borderSide.color,
+                    width: borderSide.width),
                 ),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: minHeight),
@@ -567,16 +565,19 @@ class _AppSearchBarState extends State<AppSearchBar> {
     final ColorScheme colorScheme = theme.colorScheme;
     if (!widget.enabled) {
       return _sideFromBorder(theme.inputDecorationTheme.disabledBorder) ??
-          BorderSide(color: colorScheme.outlineVariant);
+          theme.borders.side();
     }
 
     if (_focusNode.hasFocus) {
       return _sideFromBorder(theme.inputDecorationTheme.focusedBorder) ??
-          BorderSide(color: colorScheme.primary, width: 1.4);
+          theme.borders.side(
+            tone: AppBorderTone.focused,
+            weight: AppBorderWeight.medium,
+          );
     }
 
     return _sideFromBorder(theme.inputDecorationTheme.enabledBorder) ??
-        BorderSide(color: colorScheme.outlineVariant);
+        theme.borders.side();
   }
 
   BorderSide? _sideFromBorder(InputBorder? border) {
@@ -1407,11 +1408,9 @@ class _MultiSelectFilterGroup extends StatelessWidget {
                                 alpha: 0.28,
                               )
                             : colorScheme.surface,
-                        border: Border.all(
-                          color: isSelected
+                        border: theme.borders.all(color: isSelected
                               ? colorScheme.primary
-                              : colorScheme.outlineVariant,
-                        ),
+                              : colorScheme.outlineVariant),
                       ),
                       child: Padding(
                         padding: EdgeInsets.symmetric(

@@ -1650,9 +1650,7 @@ class _TenantDetailsSummary extends StatelessWidget {
           decoration: BoxDecoration(
             color: colorScheme.primary.withValues(alpha: 0.12),
             shape: BoxShape.circle,
-            border: Border.all(
-              color: colorScheme.primary.withValues(alpha: 0.22),
-            ),
+            border: theme.borders.all(color: colorScheme.primary.withValues(alpha: 0.22)),
           ),
           child: SizedBox.square(
             dimension: framed ? 56 : 44,
@@ -1890,7 +1888,7 @@ class _TenantDetailsSummary extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.zero,
-        side: BorderSide(color: colorScheme.outlineVariant),
+        side: theme.borders.side(),
       ),
       clipBehavior: Clip.hardEdge,
       child: framedBody,
@@ -1926,7 +1924,7 @@ class _TenantStatusBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: foreground.withValues(alpha: 0.12),
         borderRadius: BorderRadius.zero,
-        border: Border.all(color: foreground.withValues(alpha: 0.24)),
+        border: theme.borders.all(color: foreground.withValues(alpha: 0.24)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -3430,7 +3428,7 @@ class _FacilityDetailsSummary extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLowest,
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
@@ -3645,7 +3643,7 @@ class _FacilityLogoAvatar extends ConsumerWidget {
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colorScheme.outlineVariant),
+          border: theme.borders.all(),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
@@ -3715,7 +3713,7 @@ class _FacilityMetricChip extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: borderColor, width: selected ? 1.5 : 1),
+            border: theme.borders.all(color: borderColor, width: selected ? 1.5 : 1),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -5590,7 +5588,7 @@ class _FacilityScopedDetailsSummary extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.zero,
-        side: BorderSide(color: colorScheme.outlineVariant),
+        side: theme.borders.side(),
       ),
       clipBehavior: Clip.antiAlias,
       child: framedBody,

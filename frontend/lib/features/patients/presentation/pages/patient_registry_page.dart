@@ -3001,7 +3001,7 @@ class _PatientReportPreviewPage extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: theme.borders.all(),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: theme.colorScheme.shadow.withValues(alpha: 0.08),
@@ -3060,7 +3060,7 @@ class _PatientReportPageHeader extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: theme.colorScheme.outline)),
+        border: Border(bottom: theme.borders.side(color: theme.colorScheme.outline)),
       ),
       child: Padding(
         padding: EdgeInsets.only(bottom: theme.spacing.sm),
@@ -3152,7 +3152,7 @@ class _PatientReportBlockPreview extends StatelessWidget {
         SizedBox(height: theme.spacing.xs),
         DecoratedBox(
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xffd1d5db)),
+            border: theme.borders.all(color: const Color(0xffd1d5db)),
           ),
           child: block.rows.isEmpty
               ? Padding(
@@ -3205,7 +3205,7 @@ class _PatientReportRowPreview extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         border: showDivider
-            ? const Border(bottom: BorderSide(color: Color(0xffe5e7eb)))
+            ? theme.borders.only(bottom: true)
             : null,
       ),
       child: Padding(

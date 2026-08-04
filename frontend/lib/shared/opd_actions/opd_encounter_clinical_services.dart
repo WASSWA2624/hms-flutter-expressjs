@@ -303,9 +303,7 @@ class _OpdClinicalServicesTable extends StatelessWidget {
     return Material(
       color: colorScheme.surface,
       shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
-        ),
+        side: theme.borders.side(),
       ),
       child: Table(
         columnWidths: <int, TableColumnWidth>{
@@ -519,7 +517,7 @@ class _OpdClinicalServiceStatusChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.background,
         borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: Border.all(color: colors.border),
+        border: theme.borders.all(color: colors.border),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -611,7 +609,7 @@ class _OpdClinicalServiceCard extends StatelessWidget {
       padding: EdgeInsets.only(bottom: theme.spacing.sm),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          border: Border.all(color: theme.colorScheme.outlineVariant),
+          border: theme.borders.all(),
           borderRadius: BorderRadius.circular(theme.radius.sm),
         ),
         child: Padding(

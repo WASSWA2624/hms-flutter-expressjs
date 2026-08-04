@@ -121,7 +121,7 @@ class AppPrintPreviewPanel extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerLowest,
-            border: Border.all(color: colorScheme.outlineVariant),
+            border: theme.borders.all(),
           ),
           child: child,
         ),
@@ -615,7 +615,7 @@ class _ScrollPane extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerLowest,
-          border: Border.all(color: colorScheme.outlineVariant),
+          border: theme.borders.all(),
         ),
         child: ClipRect(child: body),
       ),

@@ -853,9 +853,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(
           context.responsiveRadius(theme.radius.md),
         ),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.8),
-        ),
+        side: theme.borders.side(),
       ),
       clipBehavior: Clip.antiAlias,
       child: Padding(

@@ -157,7 +157,8 @@ class _AppPermissionAsyncActionButtonState
               ? accessRequirementDenialMessage(l10n, widget.requirement, policy)
               : (widget.blockedReason ?? widget.tooltip ?? widget.label));
 
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return AppButton(
       label: widget.label,

@@ -47,6 +47,19 @@ abstract final class AppTheme {
       vertical: spacing.sm,
     );
     final AppStatusColors statusColors = palette.statusColors;
+    final AppBorderTokens borders = AppBorderTokens(
+      thin: appTokens.dividerThickness,
+      medium: 1.4,
+      thick: 2,
+      // Default decorative border: softest palette stroke (thin + faint).
+      faint: palette.disabledBorderColor,
+      subtle: palette.borderColor,
+      strong: colorScheme.outline,
+      focused: palette.focusedBorderColor,
+      selected: colorScheme.primary,
+      disabled: palette.disabledBorderColor,
+      error: statusColors.error,
+    );
     final TextTheme baseTextTheme = switch (brightness) {
       Brightness.light => Typography.material2021(
         colorScheme: colorScheme,
@@ -57,21 +70,18 @@ abstract final class AppTheme {
     };
     final OutlineInputBorder inputBorder = OutlineInputBorder(
       borderRadius: controlRadius,
-      borderSide: BorderSide(
-        color: palette.borderColor,
-        width: appTokens.dividerThickness,
-      ),
+      borderSide: borders.side(tone: AppBorderTone.subtle),
     );
     final OutlineInputBorder focusedInputBorder = OutlineInputBorder(
       borderRadius: controlRadius,
-      borderSide: BorderSide(color: palette.focusedBorderColor, width: 1.4),
+      borderSide: borders.side(
+        tone: AppBorderTone.focused,
+        weight: AppBorderWeight.medium,
+      ),
     );
     final OutlineInputBorder errorInputBorder = OutlineInputBorder(
       borderRadius: controlRadius,
-      borderSide: BorderSide(
-        color: statusColors.error,
-        width: appTokens.dividerThickness,
-      ),
+      borderSide: borders.side(tone: AppBorderTone.error),
     );
 
     final TextTheme textTheme = _withLighterWeights(
@@ -104,6 +114,7 @@ abstract final class AppTheme {
       extensions: <ThemeExtension<dynamic>>[
         spacing,
         AppRadiusTokens.standard,
+        borders,
         statusColors,
         appTokens,
         AppListTokens.compact(
@@ -130,7 +141,7 @@ abstract final class AppTheme {
       ),
       dividerTheme: DividerThemeData(
         color: palette.dividerColor,
-        thickness: appTokens.dividerThickness,
+        thickness: borders.thin,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -200,15 +211,15 @@ abstract final class AppTheme {
         border: inputBorder,
         enabledBorder: inputBorder,
         disabledBorder: inputBorder.copyWith(
-          borderSide: BorderSide(
-            color: palette.disabledBorderColor,
-            width: appTokens.dividerThickness,
-          ),
+          borderSide: borders.side(tone: AppBorderTone.disabled),
         ),
         focusedBorder: focusedInputBorder,
         errorBorder: errorInputBorder,
         focusedErrorBorder: errorInputBorder.copyWith(
-          borderSide: BorderSide(color: statusColors.error, width: 1.4),
+          borderSide: borders.side(
+            tone: AppBorderTone.error,
+            weight: AppBorderWeight.medium,
+          ),
         ),
         // Empty-field labels must read as placeholders (light + muted), not
         // as entered values. Hints stay lightest; floating labels stay ≤ w400.
@@ -268,7 +279,7 @@ abstract final class AppTheme {
         headingRowHeight: 48,
         horizontalMargin: spacing.md,
         columnSpacing: spacing.lg,
-        dividerThickness: appTokens.dividerThickness,
+        dividerThickness: borders.thin,
         headingRowColor: WidgetStatePropertyAll<Color>(
           colorScheme.surfaceContainerHigh.withValues(alpha: 0.72),
         ),
@@ -349,7 +360,7 @@ abstract final class AppTheme {
       ),
       chipTheme: ChipThemeData(
         shape: controlShape,
-        side: BorderSide(color: palette.borderColor),
+        side: borders.side(tone: AppBorderTone.subtle),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         surfaceTintColor: Colors.transparent,

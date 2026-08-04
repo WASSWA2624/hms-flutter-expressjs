@@ -241,10 +241,8 @@ class _PharmacyDrugEditDialogState
         DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(theme.radius.md),
-            border: Border.all(
-              color: theme.colorScheme.tertiary.withValues(alpha: 0.7),
-              width: 1.5,
-            ),
+            border: theme.borders.all(color: theme.colorScheme.tertiary.withValues(alpha: 0.7),
+              width: 1.5),
             color: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.35),
           ),
           child: Padding(

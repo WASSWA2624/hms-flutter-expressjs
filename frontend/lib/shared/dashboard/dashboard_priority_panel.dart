@@ -562,9 +562,7 @@ class _DashboardShortcutTile extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(theme.radius.lg),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-            ),
+            border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.35)),
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(

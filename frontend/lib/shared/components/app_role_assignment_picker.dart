@@ -499,10 +499,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
           : colors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(theme.radius.md),
-        side: BorderSide(
-          color: selected ? colors.primary : colors.outlineVariant,
-          width: selected ? 1.5 : 1,
-        ),
+        side: theme.borders.side(color: selected ? colors.primary : colors.outlineVariant, width: selected ? 1.5 : 1,),
       ),
       clipBehavior: Clip.antiAlias,
       child: Theme(
@@ -568,7 +565,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
               decoration: BoxDecoration(
                 color: colors.surfaceContainerLowest,
                 border: Border(
-                  top: BorderSide(color: colors.outlineVariant),
+                  top: theme.borders.side(),
                 ),
               ),
               child: Padding(
@@ -608,9 +605,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
                                   labelPadding: EdgeInsets.symmetric(
                                     horizontal: theme.spacing.xs / 2,
                                   ),
-                                  side: BorderSide(
-                                    color: colors.outlineVariant,
-                                  ),
+                                  side: theme.borders.side(),
                                   backgroundColor: colors.surface,
                                   label: Text(
                                     l10n.permissionCatalogLabelForCode(

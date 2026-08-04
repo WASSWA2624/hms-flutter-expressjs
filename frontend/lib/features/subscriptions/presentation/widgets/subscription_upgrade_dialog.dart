@@ -1140,7 +1140,7 @@ class _ProofPreview extends StatelessWidget {
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(theme.radius.sm),
-                border: Border.all(color: colorScheme.outlineVariant),
+                border: theme.borders.all(),
               ),
               child: Icon(
                 _isPdf

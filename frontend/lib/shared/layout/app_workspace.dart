@@ -262,7 +262,7 @@ class AppWorkspaceHeader extends StatelessWidget {
           );
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
+        border: theme.borders.only(bottom: true),
       ),
       child: Padding(
         padding: EdgeInsets.only(
@@ -402,7 +402,7 @@ class AppWorkspaceFilterBar extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: colorScheme.surface,
-            border: Border.all(color: colorScheme.outlineVariant),
+            border: theme.borders.all(),
           ),
           child: Padding(
             padding: EdgeInsets.all(theme.spacing.xs),
@@ -562,7 +562,7 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
     Widget header = DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.lg),
@@ -868,7 +868,7 @@ class AppWorkspaceStatePanel extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(minHeight: minHeight),
@@ -932,7 +932,7 @@ class AppWorkspaceDetailDrawer extends StatelessWidget {
           color: colorScheme.surface,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              border: Border.all(color: colorScheme.outlineVariant),
+              border: theme.borders.all(),
             ),
             child: SafeArea(
               child: Column(
@@ -1098,7 +1098,7 @@ class _PatientContextIdentity extends StatelessWidget {
           DecoratedBox(
             decoration: BoxDecoration(
               color: colorScheme.primaryContainer,
-              border: Border.all(color: colorScheme.primary),
+              border: theme.borders.all(tone: AppBorderTone.selected),
             ),
             child: SizedBox.square(
               dimension: 44,
@@ -1550,7 +1550,7 @@ class _PatientContextFieldTile extends StatelessWidget {
         color: neutralTone
             ? colorScheme.surfaceContainerLowest
             : colors.container,
-        border: Border.all(color: borderColor),
+        border: theme.borders.all(color: borderColor),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.sm),
@@ -1642,7 +1642,7 @@ class _WorkspaceDrawerHeader extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
+        border: theme.borders.only(bottom: true),
       ),
       child: Padding(
         padding: EdgeInsetsDirectional.only(
@@ -1731,7 +1731,7 @@ class _WorkspaceDrawerActions extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLowest,
-        border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
+        border: theme.borders.only(top: true),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.lg),

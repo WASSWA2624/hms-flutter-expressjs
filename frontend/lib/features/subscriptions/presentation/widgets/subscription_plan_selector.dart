@@ -227,7 +227,7 @@ class _BillingCycleToggle extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: radius,
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.xs),
@@ -360,7 +360,7 @@ class _PlanColumnTile extends StatelessWidget {
       color: fill,
       shape: RoundedRectangleBorder(
         borderRadius: radius,
-        side: BorderSide(color: borderColor, width: selected ? 2 : 1.25),
+        side: theme.borders.side(color: borderColor, width: selected ? 2 : 1.25),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -443,11 +443,9 @@ class _PlanColumnTile extends StatelessWidget {
                             borderRadius: BorderRadius.circular(
                               theme.radius.full,
                             ),
-                            border: Border.all(
-                              color: planTheme.foreground.withValues(
+                            border: theme.borders.all(color: planTheme.foreground.withValues(
                                 alpha: 0.35,
-                              ),
-                            ),
+                              )),
                           ),
                           child: Text(
                             currentPlanLabel,

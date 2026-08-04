@@ -200,7 +200,7 @@ class AppSimilarityMatchCard<T> extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: accent.withValues(alpha: 0.14),
-            border: Border.all(color: accent.withValues(alpha: 0.45)),
+            border: theme.borders.all(color: accent.withValues(alpha: 0.45)),
           ),
           child: Text(
             badgeLabel,

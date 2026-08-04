@@ -3026,7 +3026,7 @@ class _InventoryClearSelectedTile extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border.all(color: colors.outlineVariant),
+        border: theme.borders.all(),
         borderRadius: BorderRadius.circular(theme.radius.sm),
       ),
       child: Padding(

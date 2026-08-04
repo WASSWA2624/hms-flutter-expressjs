@@ -88,9 +88,7 @@ class AppFormSection extends StatelessWidget {
           borderRadius: BorderRadius.circular(
             context.responsiveRadius(theme.radius.lg),
           ),
-          side: BorderSide(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.72),
-          ),
+          side: theme.borders.side(),
         ),
         clipBehavior: Clip.antiAlias,
         child: Padding(padding: _framePadding(theme), child: body),

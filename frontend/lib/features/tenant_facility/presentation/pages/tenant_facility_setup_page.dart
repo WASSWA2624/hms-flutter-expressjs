@@ -2288,9 +2288,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
                 decoration: BoxDecoration(
                   color: colorScheme.primaryContainer.withValues(alpha: 0.35),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: colorScheme.primary.withValues(alpha: 0.18),
-                  ),
+                  border: theme.borders.all(color: colorScheme.primary.withValues(alpha: 0.18)),
                 ),
                 child: Padding(
                   padding: EdgeInsets.all(theme.spacing.md),
@@ -7395,7 +7393,7 @@ class _FacilityChangeDiffCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.md),
@@ -7510,7 +7508,7 @@ class _FacilityChangeValuePane extends StatelessWidget {
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: border),
+        border: theme.borders.all(color: border),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.sm),
@@ -7632,7 +7630,7 @@ class _FacilityConfirmLogoPreview extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),

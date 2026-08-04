@@ -712,7 +712,7 @@ class _LabApplyingChangesBanner extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer.withValues(alpha: 0.45),
-        border: Border.all(color: theme.colorScheme.primary),
+        border: theme.borders.all(tone: AppBorderTone.selected),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -907,14 +907,12 @@ class _LabResultEntryCards extends StatelessWidget {
                   ? theme.colorScheme.errorContainer.withValues(alpha: 0.28)
                   : _resultRowAccentColor(theme, draft.item, draft) ??
                       theme.colorScheme.surfaceContainerLowest,
-              border: Border.all(
-                color: _isCancelledItem(draft.item) || draft.showValidationError
+              border: theme.borders.all(color: _isCancelledItem(draft.item) || draft.showValidationError
                     ? theme.colorScheme.error
                     : theme.colorScheme.outlineVariant,
                 width: _isCancelledItem(draft.item) || draft.showValidationError
                     ? 1.5
-                    : 1,
-              ),
+                    : 1),
             ),
             child: Padding(
               padding: cardPadding,
@@ -1130,8 +1128,8 @@ class _LabResultEntryRowsTable extends StatelessWidget {
     final double tableWidth = availableWidth;
     final Color borderColor = colorScheme.outlineVariant;
     final TableBorder tableBorder = TableBorder(
-      horizontalInside: BorderSide(color: borderColor),
-      verticalInside: BorderSide(color: borderColor),
+      horizontalInside: theme.borders.side(color: borderColor),
+      verticalInside: theme.borders.side(color: borderColor),
     );
 
     final bool showActionsColumn = canMutate;
@@ -1182,9 +1180,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
     return Material(
       color: colorScheme.surface,
       shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
-        ),
+        side: theme.borders.side(),
       ),
       child: table,
     );
@@ -1252,7 +1248,7 @@ TableRow _labResultEntryTableRow(
           : _resultRowAccentColor(theme, item, draft) ??
               theme.colorScheme.surfaceContainerLowest,
       border: cancelled || draft.showValidationError
-          ? Border.all(color: theme.colorScheme.error, width: 1.5)
+          ? theme.borders.all(color: theme.colorScheme.error, width: 1.5)
           : null,
     ),
     children: <Widget>[
@@ -2304,11 +2300,9 @@ class _LabReportTestSelectionTile extends StatelessWidget {
         onTap: () => onChanged(!selected),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            border: Border.all(
-              color: selected
+            border: theme.borders.all(color: selected
                   ? theme.colorScheme.primary
-                  : theme.colorScheme.outlineVariant,
-            ),
+                  : theme.colorScheme.outlineVariant),
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(
@@ -2952,9 +2946,7 @@ class _EditResultTestContext extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
-        ),
+        border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.55)),
         borderRadius: BorderRadius.circular(
           context.responsiveRadius(theme.radius.sm),
         ),

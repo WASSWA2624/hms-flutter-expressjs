@@ -3146,7 +3146,7 @@ class LabPanelTestPicker extends StatelessWidget {
         else
           DecoratedBox(
             decoration: BoxDecoration(
-              border: Border.all(color: theme.colorScheme.outlineVariant),
+              border: theme.borders.all(),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,

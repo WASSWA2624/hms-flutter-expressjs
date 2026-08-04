@@ -346,9 +346,7 @@ class _RoomDetailsDialogState extends ConsumerState<_RoomDetailsDialog> {
             decoration: BoxDecoration(
               color: colorScheme.primaryContainer.withValues(alpha: 0.28),
               borderRadius: BorderRadius.circular(theme.radius.md),
-              border: Border.all(
-                color: colorScheme.primary.withValues(alpha: 0.18),
-              ),
+              border: theme.borders.all(color: colorScheme.primary.withValues(alpha: 0.18)),
             ),
             child: Padding(
               padding: EdgeInsets.all(theme.spacing.md),
@@ -359,7 +357,7 @@ class _RoomDetailsDialogState extends ConsumerState<_RoomDetailsDialog> {
                     decoration: BoxDecoration(
                       color: colorScheme.surface,
                       borderRadius: BorderRadius.circular(theme.radius.sm),
-                      border: Border.all(color: colorScheme.outlineVariant),
+                      border: theme.borders.all(),
                     ),
                     child: Padding(
                       padding: EdgeInsets.all(theme.spacing.sm),
@@ -504,7 +502,7 @@ class _RoomFactTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.sm),
@@ -567,7 +565,7 @@ class _RoomStatusBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: foreground.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: Border.all(color: foreground.withValues(alpha: 0.24)),
+        border: theme.borders.all(color: foreground.withValues(alpha: 0.24)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

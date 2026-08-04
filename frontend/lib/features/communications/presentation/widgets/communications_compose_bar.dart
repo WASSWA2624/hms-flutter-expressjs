@@ -96,7 +96,7 @@ class _CommunicationsComposeBarState
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(
-          top: BorderSide(color: theme.colorScheme.outlineVariant),
+          top: theme.borders.side(),
         ),
       ),
       child: Padding(
@@ -163,7 +163,7 @@ class _CommunicationsComposeBarState
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest,
           border: Border(
-            left: BorderSide(color: theme.colorScheme.primary, width: 3),
+            left: theme.borders.side(color: theme.colorScheme.primary, width: 3),
           ),
         ),
         child: Padding(

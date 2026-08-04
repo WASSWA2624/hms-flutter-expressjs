@@ -302,9 +302,7 @@ class _HeaderText extends StatelessWidget {
                   color: theme.colorScheme.primaryContainer.withValues(
                     alpha: 0.62,
                   ),
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.28),
-                  ),
+                  border: theme.borders.all(color: theme.colorScheme.primary.withValues(alpha: 0.28)),
                 ),
                 child: SizedBox.square(
                   dimension: 36,

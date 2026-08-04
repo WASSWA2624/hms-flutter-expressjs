@@ -197,7 +197,7 @@ class _TimelineNode extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: toneColor,
                     shape: BoxShape.circle,
-                    border: Border.all(color: colorScheme.surface),
+                    border: theme.borders.all(color: colorScheme.surface),
                   ),
                   child: Icon(
                     resolvedIcon,

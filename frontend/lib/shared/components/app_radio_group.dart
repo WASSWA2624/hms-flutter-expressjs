@@ -397,10 +397,7 @@ class _AppRadioOptionTile<T> extends StatelessWidget {
         color: fillColor,
         shape: RoundedRectangleBorder(
           borderRadius: radius,
-          side: BorderSide(
-            color: borderColor,
-            width: selected ? 1.5 : 1,
-          ),
+          side: theme.borders.side(color: borderColor, width: selected ? 1.5 : 1,),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(

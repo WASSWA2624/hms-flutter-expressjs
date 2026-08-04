@@ -27,7 +27,8 @@ List<Widget> clinicalActionDialogActions(
   double? borderRadius,
 }) {
   final bool canInteract = enabled && !isSaving;
-  final ColorScheme colorScheme = Theme.of(context).colorScheme;
+  final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
   final Widget? cancelButton = showCancel
       ? AppButton.secondary(
           label: cancelLabel ?? context.l10n.commonCancelActionLabel,

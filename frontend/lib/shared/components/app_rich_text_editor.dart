@@ -323,7 +323,7 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
         : colors.outlineVariant;
     final OutlineInputBorder fieldBorder = OutlineInputBorder(
       borderRadius: BorderRadius.zero,
-      borderSide: BorderSide(color: borderColor),
+      borderSide: theme.borders.side(color: borderColor),
     );
     final List<Widget> toolbarItems = <Widget>[
       if (widget.tools.contains(AppRichTextTool.bold))
@@ -442,24 +442,19 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
             border: fieldBorder,
             enabledBorder: fieldBorder,
             disabledBorder: fieldBorder.copyWith(
-              borderSide: BorderSide(
-                color: colors.outlineVariant.withValues(alpha: 0.6),
-              ),
+              borderSide: theme.borders.side(),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.zero,
-              borderSide: BorderSide(
-                color: widget.errorText != null ? colors.error : colors.primary,
-                width: 1.5,
-              ),
+              borderSide: theme.borders.side(color: widget.errorText != null ? colors.error : colors.primary, width: 1.5,),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.zero,
-              borderSide: BorderSide(color: colors.error),
+              borderSide: theme.borders.side(color: colors.error),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.zero,
-              borderSide: BorderSide(color: colors.error, width: 1.5),
+              borderSide: theme.borders.side(color: colors.error, width: 1.5),
             ),
           ),
           validator:

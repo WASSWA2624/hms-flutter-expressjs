@@ -766,9 +766,7 @@ class _AppListTableMobileAvatar extends StatelessWidget {
         decoration: BoxDecoration(
           color: tone.background,
           shape: BoxShape.circle,
-          border: Border.all(
-            color: tone.foreground.withValues(alpha: 0.12),
-          ),
+          border: theme.borders.all(color: tone.foreground.withValues(alpha: 0.12)),
         ),
         child: initials == null
             ? Icon(
@@ -1519,11 +1517,9 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface.withValues(alpha: 0.88),
                     borderRadius: BorderRadius.circular(theme.radius.md),
-                    border: Border.all(
-                      color: theme.colorScheme.outlineVariant.withValues(
+                    border: theme.borders.all(color: theme.colorScheme.outlineVariant.withValues(
                         alpha: 0.45,
-                      ),
-                    ),
+                      )),
                     boxShadow: <BoxShadow>[
                       BoxShadow(
                         color: theme.colorScheme.shadow.withValues(alpha: 0.08),
@@ -1882,9 +1878,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           return Material(
             color: colorScheme.surface,
             shape: RoundedRectangleBorder(
-              side: BorderSide(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.55),
-              ),
+              side: theme.borders.side(),
             ),
             child: Column(
               mainAxisSize: canExpand ? MainAxisSize.max : MainAxisSize.min,
@@ -1914,9 +1908,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           return Material(
             color: colorScheme.surface,
             shape: RoundedRectangleBorder(
-              side: BorderSide(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.55),
-              ),
+              side: theme.borders.side(),
             ),
             child: Column(
               mainAxisSize: canExpand ? MainAxisSize.max : MainAxisSize.min,
@@ -2708,11 +2700,9 @@ class _ColumnVisibilityDialogState<T>
                                 alpha: 0.28,
                               )
                             : colorScheme.surface,
-                        border: Border.all(
-                          color: isChecked
+                        border: theme.borders.all(color: isChecked
                               ? colorScheme.primary
-                              : colorScheme.outlineVariant,
-                        ),
+                              : colorScheme.outlineVariant),
                       ),
                       child: Padding(
                         padding: EdgeInsets.symmetric(
@@ -2999,7 +2989,7 @@ class _MobileListTable<T> extends StatelessWidget {
                   border: Border(
                     // Soft left rail keeps status tint readable as a distinct
                     // row even when adjacent pastels are similar.
-                    left: BorderSide(
+                    left: theme.borders.side(
                       color: Color.alphaBlend(
                         theme.colorScheme.onSurface.withValues(alpha: 0.14),
                         rowColor,
@@ -3351,10 +3341,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     _gridLineOffsets = gridLineOffsets;
     _rowContentWidth = cursor + _horizontalMargin;
 
-    _verticalInsideSide = BorderSide(
-      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.38),
-      width: theme.appTokens.dividerThickness,
-    );
+    _verticalInsideSide = theme.borders.side(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.38), width: theme.appTokens.dividerThickness,);
     _rowDividerSide = Divider.createBorderSide(
       context,
       width: theme.appTokens.dividerThickness,
@@ -3372,9 +3359,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     return Material(
       color: colorScheme.surface,
       shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
-        ),
+        side: theme.borders.side(),
       ),
       child: _GoToTopHost(
         label: widget.goToTopLabel,
@@ -4198,12 +4183,9 @@ class _DataColumnHeader<T> extends StatelessWidget {
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   border: Border(
-                    bottom: BorderSide(
-                      color: isSorted
+                    bottom: theme.borders.side(color: isSorted
                           ? colorScheme.primary
-                          : Colors.transparent,
-                      width: 1.5,
-                    ),
+                          : Colors.transparent, width: 1.5,),
                   ),
                 ),
                 child: Row(

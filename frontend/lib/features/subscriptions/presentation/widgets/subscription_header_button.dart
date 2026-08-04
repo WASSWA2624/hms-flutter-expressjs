@@ -76,7 +76,7 @@ final class SubscriptionHeaderButton extends StatelessWidget {
           color: presentation.background,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(theme.radius.sm),
-            side: BorderSide(color: presentation.border),
+            side: theme.borders.side(color: presentation.border),
           ),
           child: interactive
               ? InkWell(

@@ -90,7 +90,7 @@ class _PatientActiveWorkRow extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: theme.borders.all(),
         color: theme.colorScheme.surfaceContainerLowest,
       ),
       child: Padding(

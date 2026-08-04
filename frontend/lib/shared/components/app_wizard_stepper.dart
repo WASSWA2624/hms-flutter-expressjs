@@ -286,10 +286,8 @@ class _StepNodeState extends State<_StepNode> {
               decoration: BoxDecoration(
                 color: circleFill,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: borderColor,
-                  width: widget.active ? 3 : 1.5,
-                ),
+                border: theme.borders.all(color: borderColor,
+                  width: widget.active ? 3 : 1.5),
                 boxShadow: highlight && widget.enabled
                     ? <BoxShadow>[
                         BoxShadow(

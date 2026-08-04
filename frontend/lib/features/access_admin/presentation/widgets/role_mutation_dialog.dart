@@ -977,7 +977,7 @@ class _RoleTargetMultiSelect extends StatelessWidget {
             color: theme.colorScheme.surfaceContainerLowest,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(theme.radius.md),
-              side: BorderSide(color: theme.colorScheme.outlineVariant),
+              side: theme.borders.side(),
             ),
             clipBehavior: Clip.antiAlias,
             child: ListView.builder(
@@ -1087,10 +1087,10 @@ class _RoleMutationSelectionChip extends StatelessWidget {
       backgroundColor: hasSelection
           ? colors.primaryContainer
           : colors.surfaceContainerHighest,
-      side: BorderSide(
+      side: theme.borders.side(
         color: hasSelection
             ? colors.primary.withValues(alpha: 0.24)
-            : colors.outlineVariant,
+            : theme.borders.subtle,
       ),
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),

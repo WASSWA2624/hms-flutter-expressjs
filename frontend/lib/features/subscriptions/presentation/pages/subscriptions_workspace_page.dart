@@ -1326,7 +1326,7 @@ class _PlanDetailContent extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: planTheme.background,
                   borderRadius: BorderRadius.circular(theme.radius.sm),
-                  border: Border.all(color: planTheme.border),
+                  border: theme.borders.all(color: planTheme.border),
                 ),
                 child: Text(
                   isFree
@@ -2535,7 +2535,7 @@ class _PlanModulesCheckboxPanel extends StatelessWidget {
           color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
           shape: RoundedRectangleBorder(
             borderRadius: selectAllRadius,
-            side: BorderSide(
+            side: theme.borders.side(
               color: theme.colorScheme.primary.withValues(alpha: 0.18),
             ),
           ),
@@ -2601,11 +2601,9 @@ class _PlanModulesCheckboxPanel extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(theme.radius.sm),
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant.withValues(
+                      border: theme.borders.all(color: theme.colorScheme.outlineVariant.withValues(
                           alpha: 0.7,
-                        ),
-                      ),
+                        )),
                     ),
                     child: Padding(
                       padding: EdgeInsets.symmetric(
@@ -2683,7 +2681,7 @@ class _PlanModuleOptionTile extends StatelessWidget {
       color: baseFill,
       shape: RoundedRectangleBorder(
         borderRadius: radius,
-        side: BorderSide(color: borderColor),
+        side: theme.borders.side(color: borderColor),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -2711,9 +2709,7 @@ class _PlanModuleOptionTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: colors.surface.withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(theme.radius.sm),
-                  border: Border.all(
-                    color: colors.primary.withValues(alpha: 0.14),
-                  ),
+                  border: theme.borders.all(color: colors.primary.withValues(alpha: 0.14)),
                 ),
                 child: Padding(
                   padding: EdgeInsets.all(theme.spacing.xs),

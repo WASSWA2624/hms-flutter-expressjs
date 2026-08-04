@@ -116,7 +116,7 @@ class _CommunicationsThreadViewState
     return DecoratedBox(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: theme.borders.all(),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

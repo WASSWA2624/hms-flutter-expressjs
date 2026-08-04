@@ -297,7 +297,7 @@ class _WorkflowStepperPanel extends StatelessWidget {
           scheme.surfaceContainerLow,
         ),
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.7)),
+        border: theme.borders.all(color: scheme.outlineVariant.withValues(alpha: 0.7)),
       ),
       child: child,
     );
@@ -478,10 +478,8 @@ class _WorkflowStepEntry extends StatelessWidget {
             colorScheme.surface,
           ),
           borderRadius: BorderRadius.circular(theme.radius.md),
-          border: Border.all(
-            color: colorScheme.primary.withValues(alpha: 0.42),
-            width: 1.5,
-          ),
+          border: theme.borders.all(color: colorScheme.primary.withValues(alpha: 0.42),
+            width: 1.5),
         ),
         child: entryBody,
       );
@@ -541,7 +539,7 @@ class _WorkflowStepEntry extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(theme.radius.sm),
                     border: focused
-                        ? Border.all(color: colorScheme.primary, width: 2)
+                        ? theme.borders.all(color: colorScheme.primary, width: 2)
                         : null,
                   ),
                   child: node,
@@ -584,7 +582,7 @@ class _WorkflowStepEntry extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: scheme.primary, width: 2),
+            border: theme.borders.all(color: scheme.primary, width: 2),
             color: scheme.primary.withValues(alpha: 0.14),
           ),
           child: Center(
@@ -673,7 +671,7 @@ class _WorkflowStepTag extends StatelessWidget {
     final Color foreground = isNext ? scheme.onPrimary : color;
     final BorderSide? border = isNext
         ? null
-        : BorderSide(color: color.withValues(alpha: isCurrent ? 0.35 : 0.65));
+        : theme.borders.side(color: color.withValues(alpha: isCurrent ? 0.35 : 0.65));
 
     return Container(
       key: ValueKey<String>(

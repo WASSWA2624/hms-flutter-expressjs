@@ -108,7 +108,7 @@ class AppTabStrip extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: activeFill,
-            border: Border(bottom: BorderSide(color: hairline)),
+            border: Border(bottom: theme.borders.side(color: hairline)),
           ),
           padding: EdgeInsets.symmetric(
             vertical: theme.spacing.sm,
@@ -911,12 +911,9 @@ class _AppTabChipState extends State<_AppTabChip> {
               decoration: BoxDecoration(
                 color: hoverFill,
                 border: Border(
-                  bottom: BorderSide(
-                    color: widget.isSelected
+                  bottom: theme.borders.side(color: widget.isSelected
                         ? colorScheme.primary
-                        : colorScheme.outlineVariant.withValues(alpha: 0.5),
-                    width: widget.isSelected ? 2.5 : 1,
-                  ),
+                        : colorScheme.outlineVariant.withValues(alpha: 0.5), width: widget.isSelected ? 2.5 : 1,),
                 ),
               ),
               child: ConstrainedBox(

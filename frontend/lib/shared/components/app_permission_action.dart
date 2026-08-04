@@ -80,7 +80,8 @@ class AppPermissionActionButton extends ConsumerWidget {
               ? accessRequirementDenialMessage(l10n, requirement, policy)
               : (blockedReason ?? tooltip ?? label));
 
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return AppButton(
       label: label,

@@ -69,11 +69,9 @@ class AppReportSectionTile extends StatelessWidget {
             color: isSelected
                 ? colorScheme.primaryContainer.withValues(alpha: 0.28)
                 : colorScheme.surface,
-            border: Border.all(
-              color: isSelected
+            border: theme.borders.all(color: isSelected
                   ? colorScheme.primary
-                  : colorScheme.outlineVariant,
-            ),
+                  : colorScheme.outlineVariant),
           ),
           child: Padding(
             padding: padding,

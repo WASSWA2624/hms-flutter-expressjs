@@ -116,7 +116,7 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final Color container = widget.backgroundColor ?? colorScheme.surface;
-    final Color border = widget.borderColor ?? colorScheme.outlineVariant;
+    final Color border = widget.borderColor ?? theme.borders.faint;
     final Color accent = widget.accentColor ?? colorScheme.primary;
     final Color onContainer = widget.titleColor ?? colorScheme.onSurface;
     final Color chevron =
@@ -146,7 +146,7 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: container,
-        border: Border.all(color: border),
+        border: theme.borders.all(color: border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

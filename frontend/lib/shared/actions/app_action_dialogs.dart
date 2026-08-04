@@ -830,7 +830,7 @@ class _DestructiveConfirmationBody extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.errorContainer.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(color: colorScheme.error.withValues(alpha: 0.28)),
+        border: theme.borders.all(color: colorScheme.error.withValues(alpha: 0.28)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

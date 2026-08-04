@@ -423,7 +423,7 @@ class _PermissionActionChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: colors.surfaceContainerHighest.withValues(alpha: 0.55),
           borderRadius: BorderRadius.circular(theme.radius.sm),
-          border: Border.all(color: colors.outlineVariant),
+          border: theme.borders.all(),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

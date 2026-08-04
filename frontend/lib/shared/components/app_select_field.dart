@@ -712,10 +712,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
       ),
       shape: WidgetStatePropertyAll<OutlinedBorder>(
         RoundedRectangleBorder(
-          side: BorderSide(
-            color: chrome.borderColor,
-            width: chrome.borderWidth,
-          ),
+          side: theme.borders.side(color: chrome.borderColor, width: chrome.borderWidth,),
         ),
       ),
       visualDensity: theme.visualDensity,
