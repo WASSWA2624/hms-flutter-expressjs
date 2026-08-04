@@ -117,14 +117,29 @@ void _stubWorkspace(
     }
     final SubscriptionsWorkspaceQuery query =
         invocation.positionalArguments.single as SubscriptionsWorkspaceQuery;
-    final List<SubscriptionItem> pageItems;
+    List<SubscriptionItem> pageItems;
     if (empty) {
       pageItems = const <SubscriptionItem>[];
-    } else if (query.resource == SubscriptionResource.subscriptions ||
-        query.resource == SubscriptionResource.moduleSubscriptions) {
+    } else if (query.resource == SubscriptionResource.subscriptions) {
       pageItems = items
-          .where((SubscriptionItem item) => item.resource == query.resource)
+          .where(
+            (SubscriptionItem item) =>
+                item.resource == SubscriptionResource.subscriptions,
+          )
           .toList(growable: false);
+      if (pageItems.isEmpty) {
+        pageItems = items;
+      }
+    } else if (query.resource == SubscriptionResource.moduleSubscriptions) {
+      pageItems = items
+          .where(
+            (SubscriptionItem item) =>
+                item.resource == SubscriptionResource.moduleSubscriptions,
+          )
+          .toList(growable: false);
+      if (pageItems.isEmpty) {
+        pageItems = const <SubscriptionItem>[_moduleSubscriptionItem];
+      }
     } else {
       pageItems = const <SubscriptionItem>[];
     }
@@ -595,7 +610,7 @@ void main() {
     );
 
     testWidgets(
-      'nested Module subscriptions: read hides Assign/Disable',
+      'subscription detail: read hides Assign module and module toggles',
       (WidgetTester tester) async {
         final AppAccessPolicy reader = _policy(
           permissions: <AppPermission>{AppPermissions.subscriptionsRead},
@@ -605,18 +620,16 @@ void main() {
           tester,
           repository: repository,
           accessPolicy: reader,
-          initialLocation:
-              '/subscriptions?panel=operations&resource=module-subscriptions',
-          selectSubscriptionsTab: false,
-          items: const <SubscriptionItem>[_moduleSubscriptionItem],
         );
 
-        expect(find.text('Module subscriptions'), findsWidgets);
         expect(_toolbarPrimary('Assign module'), findsNothing);
-        expect(find.text('Billing'), findsOneWidget);
+        expect(find.text('Module subscriptions'), findsNothing);
 
-        await tester.tap(find.text('Billing'));
+        await tester.tap(find.text('Acme Clinic'));
         await tester.pumpAndSettle();
+
+        expect(find.text('Module access'), findsOneWidget);
+        expect(find.text('Assign module'), findsNothing);
         expect(find.text('Disable module'), findsNothing);
         expect(find.text('Enable module'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
@@ -624,7 +637,36 @@ void main() {
     );
 
     testWidgets(
-      'nested Module subscriptions: write mounts Assign/Disable',
+      'subscription detail: write mounts Assign module and Disable',
+      (WidgetTester tester) async {
+        final AppAccessPolicy writer = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+          },
+        );
+
+        await _pumpSubscriptionsTab(
+          tester,
+          repository: repository,
+          accessPolicy: writer,
+        );
+
+        expect(_toolbarPrimary('Assign module'), findsNothing);
+        expect(_toolbarPrimary('New subscription'), findsOneWidget);
+
+        await tester.tap(find.text('Acme Clinic'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Module access'), findsOneWidget);
+        expect(find.text('Assign module'), findsWidgets);
+        expect(find.text('Billing'), findsWidgets);
+        expect(find.text('Disable module'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'legacy module-subscriptions deep link opens subscriptions worklist',
       (WidgetTester tester) async {
         final AppAccessPolicy writer = _policy(
           permissions: <AppPermission>{
@@ -640,14 +682,20 @@ void main() {
           initialLocation:
               '/subscriptions?panel=operations&resource=module-subscriptions',
           selectSubscriptionsTab: false,
-          items: const <SubscriptionItem>[_moduleSubscriptionItem],
         );
 
-        expect(_toolbarPrimary('Assign module'), findsOneWidget);
-        expect(_toolbarPrimary('New subscription'), findsNothing);
-        await tester.tap(find.text('Billing'));
-        await tester.pumpAndSettle();
-        expect(find.text('Disable module'), findsOneWidget);
+        expect(_toolbarPrimary('New subscription'), findsOneWidget);
+        expect(_toolbarPrimary('Assign module'), findsNothing);
+        expect(find.text('Acme Clinic'), findsOneWidget);
+        expect(
+          tester
+              .widgetList<AppTabStrip>(find.byType(AppTabStrip))
+              .where(
+                (AppTabStrip strip) =>
+                    strip.variant == AppTabStripVariant.nested,
+              ),
+          isEmpty,
+        );
       },
     );
 

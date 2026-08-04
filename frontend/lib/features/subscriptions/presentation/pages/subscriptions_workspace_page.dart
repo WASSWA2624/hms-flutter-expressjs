@@ -12,7 +12,9 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/subscriptions/subscription_plan_theme.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/subscriptions/data/repositories/subscriptions_repository_impl.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
+import 'package:hosspi_hms/features/subscriptions/domain/repositories/subscriptions_repository.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/controllers/subscriptions_workspace_controller.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/subscriptions_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -1320,6 +1322,13 @@ class _SubscriptionDetailPanel extends ConsumerWidget {
         _DetailActions(item: item, state: state),
         SizedBox(height: Theme.of(context).spacing.md),
         _DetailFields(item: item),
+        if (item.resource == SubscriptionResource.subscriptions) ...<Widget>[
+          SizedBox(height: Theme.of(context).spacing.md),
+          _SubscriptionModuleAccessSection(
+            subscription: item,
+            state: state,
+          ),
+        ],
         if (state.timeline.isNotEmpty) ...<Widget>[
           SizedBox(height: Theme.of(context).spacing.md),
           _TimelinePanel(timeline: state.timeline),
@@ -1910,6 +1919,18 @@ class _DetailActions extends ConsumerWidget {
             onPressed: () =>
                 _showEditSubscriptionDialog(context, ref, state, item),
           ),
+        if (SubscriptionsAtomPermissions.assignModule.isAllowed(accessPolicy))
+          AppButton.secondary(
+            label: _SubscriptionsText.assignModule,
+            leadingIcon: Icons.extension_outlined,
+            enabled: !state.isSaving && state.lookups.modules.isNotEmpty,
+            onPressed: () => _showModuleSubscriptionDialog(
+              context,
+              ref,
+              state,
+              initialSubscriptionId: item.id,
+            ),
+          ),
         if (item.canRenewSubscription &&
             SubscriptionsAtomPermissions.renew.isAllowed(accessPolicy))
           AppButton.secondary(
@@ -2009,6 +2030,375 @@ class _DetailActions extends ConsumerWidget {
     return AppQuickActions(
       title: _SubscriptionsText.quickActions,
       extraActions: actions,
+    );
+  }
+}
+
+class _SubscriptionModuleAccessSection extends ConsumerStatefulWidget {
+  const _SubscriptionModuleAccessSection({
+    required this.subscription,
+    required this.state,
+  });
+
+  final SubscriptionItem subscription;
+  final SubscriptionsWorkspaceState state;
+
+  @override
+  ConsumerState<_SubscriptionModuleAccessSection> createState() =>
+      _SubscriptionModuleAccessSectionState();
+}
+
+class _SubscriptionModuleAccessSectionState
+    extends ConsumerState<_SubscriptionModuleAccessSection> {
+  bool _loading = true;
+  AppFailure? _failure;
+  List<SubscriptionItem> _moduleSubscriptions = const <SubscriptionItem>[];
+  List<SubscriptionLookupItem> _catalogModules =
+      const <SubscriptionLookupItem>[];
+  bool? _wasSaving;
+
+  @override
+  void initState() {
+    super.initState();
+    _wasSaving = widget.state.isSaving;
+    unawaited(_load());
+  }
+
+  @override
+  void didUpdateWidget(covariant _SubscriptionModuleAccessSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.subscription.id != widget.subscription.id ||
+        oldWidget.subscription.tenantId != widget.subscription.tenantId) {
+      unawaited(_load());
+      return;
+    }
+    if (_wasSaving == true && !widget.state.isSaving) {
+      unawaited(_load());
+    }
+    _wasSaving = widget.state.isSaving;
+  }
+
+  Future<void> _load() async {
+    final String? tenantId = widget.subscription.tenantId;
+    if (tenantId == null || tenantId.trim().isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loading = false;
+        _failure = null;
+        _moduleSubscriptions = const <SubscriptionItem>[];
+        _catalogModules = widget.state.lookups.modules;
+      });
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _failure = null;
+    });
+
+    final SubscriptionsRepository repository = ref.read(
+      subscriptionsRepositoryProvider,
+    );
+    final Result<SubscriptionsWorkspaceData> result = await repository
+        .getWorkspace(
+          SubscriptionsWorkspaceQuery(
+            panel: SubscriptionPanel.operations,
+            resource: SubscriptionResource.moduleSubscriptions,
+            tenantId: tenantId,
+            pageRequest: const AppPageRequest(pageSize: 200),
+          ),
+        );
+
+    if (!mounted) {
+      return;
+    }
+
+    result.when(
+      success: (SubscriptionsWorkspaceData data) {
+        setState(() {
+          _loading = false;
+          _failure = null;
+          _moduleSubscriptions = data.items.items
+              .where(
+                (SubscriptionItem item) =>
+                    item.resource == SubscriptionResource.moduleSubscriptions,
+              )
+              .toList(growable: false);
+          _catalogModules = data.lookups.modules.isNotEmpty
+              ? data.lookups.modules
+              : widget.state.lookups.modules;
+        });
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _loading = false;
+          _failure = failure;
+          _moduleSubscriptions = const <SubscriptionItem>[];
+          _catalogModules = widget.state.lookups.modules;
+        });
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canAssign = SubscriptionsAtomPermissions.assignModule.isAllowed(
+      accessPolicy,
+    );
+    final bool canToggle = SubscriptionsAtomPermissions.toggleModule.isAllowed(
+      accessPolicy,
+    );
+
+    final List<SubscriptionItem> granted = _moduleSubscriptions
+        .where(
+          (SubscriptionItem item) =>
+              item.isActive == true && !item.entitlementDenied,
+        )
+        .toList(growable: false);
+    final List<SubscriptionItem> unavailableAssigned = _moduleSubscriptions
+        .where(
+          (SubscriptionItem item) =>
+              item.isActive != true || item.entitlementDenied,
+        )
+        .toList(growable: false);
+    final Set<String> assignedModuleIds = <String>{
+      for (final SubscriptionItem item in _moduleSubscriptions)
+        if ((item.moduleId ?? '').trim().isNotEmpty) item.moduleId!,
+    };
+    final List<SubscriptionLookupItem> unavailableCatalog = _catalogModules
+        .where(
+          (SubscriptionLookupItem module) =>
+              module.id.trim().isNotEmpty &&
+              !assignedModuleIds.contains(module.id),
+        )
+        .toList(growable: false);
+
+    return AppCollapsibleSection(
+      title: _SubscriptionsText.moduleAccessTitle,
+      subtitle: _SubscriptionsText.moduleAccessSubtitle,
+      titleIcon: Icons.extension_outlined,
+      initiallyExpanded: true,
+      headerActions: <Widget>[
+        if (canAssign)
+          AppButton.secondary(
+            label: _SubscriptionsText.assignModule,
+            leadingIcon: Icons.extension_outlined,
+            enabled: !widget.state.isSaving && _catalogModules.isNotEmpty,
+            onPressed: () async {
+              await _showModuleSubscriptionDialog(
+                context,
+                ref,
+                widget.state,
+                initialSubscriptionId: widget.subscription.id,
+              );
+              if (mounted) {
+                unawaited(_load());
+              }
+            },
+          ),
+      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (_loading)
+            const AppStateView(
+              title: _SubscriptionsText.moduleAccessLoadingTitle,
+              body: _SubscriptionsText.moduleAccessLoadingBody,
+              variant: AppStateViewVariant.loading,
+            )
+          else if (_failure != null)
+            AppFailureStateView(failure: _failure!, onRetry: _load)
+          else ...<Widget>[
+            _ModuleAccessGroup(
+              title: _SubscriptionsText.grantedModules,
+              emptyLabel: _SubscriptionsText.grantedModulesEmpty,
+              children: <Widget>[
+                for (final SubscriptionItem item in granted)
+                  _ModuleAccessRow(
+                    title: item.moduleLabel ?? item.title,
+                    subtitle:
+                        item.entitlementDenialReason ??
+                        item.primaryStatus ??
+                        _SubscriptionsText.moduleActiveStatus,
+                    trailing: canToggle
+                        ? AppButton.secondary(
+                            label: _SubscriptionsText.disableModule,
+                            leadingIcon: Icons.visibility_off_outlined,
+                            enabled: !widget.state.isSaving,
+                            onPressed: () async {
+                              await _showToggleModuleDialog(
+                                context,
+                                ref,
+                                item,
+                              );
+                              if (mounted) {
+                                unawaited(_load());
+                              }
+                            },
+                          )
+                        : null,
+                  ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.md),
+            _ModuleAccessGroup(
+              title: _SubscriptionsText.unavailableModules,
+              emptyLabel: _SubscriptionsText.unavailableModulesEmpty,
+              children: <Widget>[
+                for (final SubscriptionItem item in unavailableAssigned)
+                  _ModuleAccessRow(
+                    title: item.moduleLabel ?? item.title,
+                    subtitle: item.entitlementDenied
+                        ? (item.entitlementDenialReason ??
+                              _SubscriptionsText.deniedModules)
+                        : (item.primaryStatus ??
+                              _SubscriptionsText.inactiveModule),
+                    trailing: canToggle && item.canToggleModule
+                        ? AppButton.secondary(
+                            label: item.isActive == true
+                                ? _SubscriptionsText.disableModule
+                                : _SubscriptionsText.enableModule,
+                            leadingIcon: item.isActive == true
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            enabled: !widget.state.isSaving,
+                            onPressed: () async {
+                              await _showToggleModuleDialog(
+                                context,
+                                ref,
+                                item,
+                              );
+                              if (mounted) {
+                                unawaited(_load());
+                              }
+                            },
+                          )
+                        : null,
+                  ),
+                for (final SubscriptionLookupItem module in unavailableCatalog)
+                  _ModuleAccessRow(
+                    title: module.label,
+                    subtitle:
+                        module.subtitle ?? _SubscriptionsText.moduleNotAssigned,
+                    trailing: canAssign
+                        ? AppButton.secondary(
+                            label: _SubscriptionsText.assignModule,
+                            leadingIcon: Icons.add,
+                            enabled:
+                                !widget.state.isSaving &&
+                                _catalogModules.isNotEmpty,
+                            onPressed: () async {
+                              await _showModuleSubscriptionDialog(
+                                context,
+                                ref,
+                                widget.state,
+                                initialSubscriptionId: widget.subscription.id,
+                              );
+                              if (mounted) {
+                                unawaited(_load());
+                              }
+                            },
+                          )
+                        : null,
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ModuleAccessGroup extends StatelessWidget {
+  const _ModuleAccessGroup({
+    required this.title,
+    required this.emptyLabel,
+    required this.children,
+  });
+
+  final String title;
+  final String emptyLabel;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          title,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: AppFontWeight.emphasis,
+          ),
+        ),
+        SizedBox(height: theme.spacing.sm),
+        if (children.isEmpty)
+          Text(
+            emptyLabel,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          )
+        else
+          for (final Widget child in children) ...<Widget>[
+            child,
+            SizedBox(height: theme.spacing.xs),
+          ],
+      ],
+    );
+  }
+}
+
+class _ModuleAccessRow extends StatelessWidget {
+  const _ModuleAccessRow({
+    required this.title,
+    required this.subtitle,
+    this.trailing,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return AppContentPanel(
+      density: AppContentPanelDensity.compact,
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: AppFontWeight.emphasis,
+                  ),
+                ),
+                SizedBox(height: theme.spacing.xs),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (trailing != null) ...<Widget>[
+            SizedBox(width: theme.spacing.sm),
+            trailing!,
+          ],
+        ],
+      ),
     );
   }
 }
@@ -3242,11 +3632,13 @@ class _ModuleSubscriptionForm extends StatefulWidget {
     required this.dialogTitle,
     required this.dialogIcon,
     required this.state,
+    this.initialSubscriptionId,
   });
 
   final Widget dialogTitle;
   final Widget? dialogIcon;
   final SubscriptionsWorkspaceState state;
+  final String? initialSubscriptionId;
 
   @override
   State<_ModuleSubscriptionForm> createState() =>
@@ -3262,7 +3654,9 @@ class _ModuleSubscriptionFormState extends State<_ModuleSubscriptionForm> {
   @override
   void initState() {
     super.initState();
-    _subscriptionId = widget.state.overview.currentSubscription?.id;
+    _subscriptionId =
+        widget.initialSubscriptionId ??
+        widget.state.overview.currentSubscription?.id;
   }
 
   @override
@@ -3281,7 +3675,19 @@ class _ModuleSubscriptionFormState extends State<_ModuleSubscriptionForm> {
             label: item.title,
             subtitle: item.tenantLabel,
           ),
+      if (widget.state.selectedItem case final SubscriptionItem selected?
+          when selected.resource == SubscriptionResource.subscriptions)
+        SubscriptionLookupItem(
+          id: selected.id,
+          label: selected.title,
+          subtitle: selected.tenantLabel,
+        ),
     ];
+    final Map<String, SubscriptionLookupItem> uniqueSubscriptions =
+        <String, SubscriptionLookupItem>{
+          for (final SubscriptionLookupItem entry in subscriptions)
+            if (entry.id.trim().isNotEmpty) entry.id: entry,
+        };
 
     return AppDialog(
       title: widget.dialogTitle,
@@ -3294,7 +3700,7 @@ class _ModuleSubscriptionFormState extends State<_ModuleSubscriptionForm> {
             value: _subscriptionId,
             labelText: _SubscriptionsText.subscription,
             isRequired: true,
-            options: _lookupOptions(subscriptions),
+            options: _lookupOptions(uniqueSubscriptions.values.toList()),
             validator: AppValidators.requiredValue(
               _SubscriptionsText.subscriptionRequired,
             ),
@@ -4177,8 +4583,9 @@ Future<void> _showRenewalDialog(BuildContext context, WidgetRef ref) async {
 Future<void> _showModuleSubscriptionDialog(
   BuildContext context,
   WidgetRef ref,
-  SubscriptionsWorkspaceState state,
-) async {
+  SubscriptionsWorkspaceState state, {
+  String? initialSubscriptionId,
+}) async {
   if (!SubscriptionsAtomPermissions.assignModule.isAllowed(
     ref.read(appAccessPolicyProvider),
   )) {
@@ -4191,6 +4598,7 @@ Future<void> _showModuleSubscriptionDialog(
           dialogTitle: const Text(_SubscriptionsText.assignModule),
           dialogIcon: const Icon(Icons.extension_outlined),
           state: state,
+          initialSubscriptionId: initialSubscriptionId,
         ),
       );
   if (draft == null || !context.mounted) {
@@ -4305,7 +4713,7 @@ Future<void> _showToggleModuleDialog(
   }
   final AppFailure? failure = await ref
       .read(subscriptionsWorkspaceControllerProvider.notifier)
-      .toggleSelectedModule(reason: draft.reason);
+      .toggleModuleSubscription(item, reason: draft.reason);
   if (context.mounted) {
     _showMutationResult(context, failure);
   }
@@ -4933,7 +5341,6 @@ List<SubscriptionResource> _resourcesForPanel(SubscriptionPanel panel) {
     ],
     SubscriptionPanel.operations => const <SubscriptionResource>[
       SubscriptionResource.subscriptions,
-      SubscriptionResource.moduleSubscriptions,
     ],
     SubscriptionPanel.billing => const <SubscriptionResource>[
       SubscriptionResource.subscriptionInvoices,
@@ -4988,23 +5395,6 @@ AppSearchBarAction? _worklistCreateAction(
       onPressed: state.isSaving || state.lookups.tenants.isEmpty
           ? null
           : () => _showSubscriptionDialog(context, ref, state),
-    );
-  }
-
-  // Module subscriptions under Operations only (not Denied tab).
-  if (state.query.panel == SubscriptionPanel.operations &&
-      state.query.resource == SubscriptionResource.moduleSubscriptions) {
-    if (!SubscriptionsAtomPermissions.assignModule.isAllowed(accessPolicy)) {
-      return null;
-    }
-    return AppSearchBarAction(
-      icon: Icons.extension_outlined,
-      label: _SubscriptionsText.assignModule,
-      tooltip: _SubscriptionsText.assignModule,
-      enabled: !state.isSaving && state.lookups.modules.isNotEmpty,
-      onPressed: state.isSaving || state.lookups.modules.isEmpty
-          ? null
-          : () => _showModuleSubscriptionDialog(context, ref, state),
     );
   }
 
@@ -5445,6 +5835,21 @@ abstract final class _SubscriptionsText {
   static const String editSubscription = 'Edit subscription';
   static const String saveSubscription = 'Save subscription';
   static const String assignModule = 'Assign module';
+  static const String moduleAccessTitle = 'Module access';
+  static const String moduleAccessSubtitle =
+      'Modules this tenant can use, and modules still unavailable';
+  static const String moduleAccessLoadingTitle = 'Loading modules';
+  static const String moduleAccessLoadingBody =
+      'Fetching granted and unavailable modules for this subscription.';
+  static const String grantedModules = 'Granted modules';
+  static const String grantedModulesEmpty =
+      'No active modules are granted to this tenant yet.';
+  static const String unavailableModules = 'Unavailable modules';
+  static const String unavailableModulesEmpty =
+      'All catalog modules are already assigned and active.';
+  static const String moduleNotAssigned = 'Not assigned';
+  static const String inactiveModule = 'Inactive';
+  static const String moduleActiveStatus = 'Active';
   static const String addLicense = 'Add license';
   static const String updateLicense = 'Update license';
   static const String revokeLicense = 'Revoke license';

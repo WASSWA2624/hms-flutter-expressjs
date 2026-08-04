@@ -388,10 +388,21 @@ final class SubscriptionsWorkspaceController
     if (selected == null) {
       return Future<AppFailure?>.value(_missingSelectionFailure());
     }
+    return toggleModuleSubscription(selected, reason: reason);
+  }
+
+  Future<AppFailure?> toggleModuleSubscription(
+    SubscriptionItem item, {
+    String? reason,
+  }) {
+    if (item.resource != SubscriptionResource.moduleSubscriptions ||
+        item.id.trim().isEmpty) {
+      return Future<AppFailure?>.value(_missingSelectionFailure());
+    }
     return _submitAction(
       () => _repository.setModuleSubscriptionActive(
-        selected.id,
-        isActive: selected.isActive != true,
+        item.id,
+        isActive: item.isActive != true,
         reason: reason,
       ),
       refreshSession: true,

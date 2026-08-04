@@ -400,23 +400,25 @@ void main() {
     expect(find.byType(AppListTable<SubscriptionItem>), findsOneWidget);
   });
 
-  testWidgets('operations owns New subscription as the sole create entry', (
+  testWidgets('operations owns New subscription without nested module strip', (
     WidgetTester tester,
   ) async {
     await _pumpSubscriptionsWorkspace(tester, repository: repository);
 
     await _selectPanelTab(tester, 'Subscriptions');
     expect(_toolbarPrimary('New subscription'), findsOneWidget);
+    expect(_toolbarPrimary('Assign module'), findsNothing);
     expect(find.text('Activate subscription'), findsNothing);
     expect(find.text('Acme Clinic'), findsOneWidget);
 
     final List<AppTabStrip> strips = tester
         .widgetList<AppTabStrip>(find.byType(AppTabStrip))
         .toList(growable: false);
-    expect(strips.length, greaterThanOrEqualTo(2));
     expect(
-      strips[1].tabs.map((AppTabItem tab) => tab.label),
-      <String>['Subscriptions', 'Module subscriptions'],
+      strips.where(
+        (AppTabStrip strip) => strip.variant == AppTabStripVariant.nested,
+      ),
+      isEmpty,
     );
   });
 

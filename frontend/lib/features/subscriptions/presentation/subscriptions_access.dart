@@ -487,7 +487,7 @@ abstract final class SubscriptionsLicensesAtomPermissions {
 /// | Row select → detail | read | read ∩ ([rowSelect] / [detail]) |
 /// | Detail fields / timeline | read | read ∩ ([detail]) |
 /// | New subscription (tab primary) | create | write ∩ ([create] / [newSubscription]) |
-/// | Assign module (nested resource primary) | create | write ∩ ([assignModule] / [create]) |
+/// | Assign module (subscription detail) | create | write ∩ ([assignModule] / [create]) |
 /// | Edit / Renew / Change plan / Activate | update | write ∩ ([update] / [edit] / …) |
 /// | Cancel subscription (status→CANCELLED via PUT) | update | write ∩ ([cancel] / [update]) |
 /// | Enable / Disable module | update | write ∩ ([toggleModule] / [update]) |

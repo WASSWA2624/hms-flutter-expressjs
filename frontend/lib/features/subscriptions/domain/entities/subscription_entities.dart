@@ -147,6 +147,13 @@ final class SubscriptionsWorkspaceQuery {
       queue = 'MODULE_BLOCKED';
     }
 
+    // Legacy: nested Module subscriptions under operations → subscriptions
+    // worklist (Denied / MODULE_BLOCKED already handled above).
+    if (panel == SubscriptionPanel.operations &&
+        resource == SubscriptionResource.moduleSubscriptions) {
+      resource = SubscriptionResource.subscriptions;
+    }
+
     return SubscriptionsWorkspaceQuery(
       search: params['search'] ?? '',
       panel: panel,
