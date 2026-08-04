@@ -548,7 +548,7 @@ class BillingNextActionButton extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: primaryColor,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: AppFontWeight.medium,
                         decoration: enabled ? TextDecoration.underline : null,
                         decorationColor: primaryColor.withValues(alpha: 0.4),
                       ),

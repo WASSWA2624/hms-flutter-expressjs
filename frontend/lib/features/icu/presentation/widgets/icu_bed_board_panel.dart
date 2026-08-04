@@ -143,7 +143,7 @@ class _IcuBedRow extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
                 ),
                 SizedBox(height: theme.spacing.xs),

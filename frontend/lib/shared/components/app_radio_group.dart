@@ -126,7 +126,7 @@ class AppRadioGroup<T> extends StatelessWidget {
                           ? theme.textTheme.labelLarge
                           : theme.textTheme.titleSmall)
                       ?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                 ),
                 SizedBox(height: dense ? theme.spacing.xs : theme.spacing.sm),
@@ -298,7 +298,7 @@ class _AppRadioOptionTile<T> extends StatelessWidget {
                   ? theme.textTheme.bodyMedium
                   : theme.textTheme.titleSmall)
               ?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.emphasis,
                 height: borderless ? 1.2 : null,
                 color: enabled
                     ? colors.onSurface
@@ -369,15 +369,18 @@ class _AppRadioOptionTile<T> extends StatelessWidget {
       );
     }
 
-    final Color borderColor;
+    final BorderSide borderSide;
     if (!enabled) {
-      borderColor = colors.outlineVariant.withValues(alpha: 0.5);
+      borderSide = theme.borders.side(tone: AppBorderTone.disabled);
     } else if (hasError && !selected) {
-      borderColor = colors.error.withValues(alpha: 0.7);
+      borderSide = theme.borders.side(tone: AppBorderTone.error);
     } else if (selected) {
-      borderColor = colors.primary;
+      borderSide = theme.borders.side(
+        tone: AppBorderTone.selected,
+        weight: AppBorderWeight.medium,
+      );
     } else {
-      borderColor = colors.outlineVariant;
+      borderSide = theme.borders.side();
     }
 
     final Color fillColor;
@@ -397,7 +400,7 @@ class _AppRadioOptionTile<T> extends StatelessWidget {
         color: fillColor,
         shape: RoundedRectangleBorder(
           borderRadius: radius,
-          side: theme.borders.side(color: borderColor, width: selected ? 1.5 : 1,),
+          side: borderSide,
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(

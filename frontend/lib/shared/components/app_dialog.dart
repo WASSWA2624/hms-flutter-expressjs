@@ -519,7 +519,7 @@ class _DialogBody extends StatelessWidget {
                   color: colorScheme.onSurface,
                   fontSize: compact ? 18 : 22,
                 ))
-            .copyWith(fontWeight: FontWeight.w600);
+            .copyWith(fontWeight: AppFontWeight.emphasis);
     final TextStyle contentStyle =
         theme.textTheme.bodyMedium ?? TextStyle(color: colorScheme.onSurface);
     final Widget? dialogContent = content == null

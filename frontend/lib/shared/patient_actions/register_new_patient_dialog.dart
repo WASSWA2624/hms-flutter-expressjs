@@ -821,7 +821,7 @@ class _CandidateCardHeader extends StatelessWidget {
               Text(
                 patient.effectiveDisplayName,
                 style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               ),
               if (summary.isNotEmpty) ...<Widget>[
@@ -851,7 +851,7 @@ class _CandidateCardHeader extends StatelessWidget {
               severity.label,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: severity.accent,
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.emphasis,
               ),
             ),
           ],
@@ -885,7 +885,7 @@ class _DuplicateScoreBadge extends StatelessWidget {
         label,
         style: theme.textTheme.labelMedium?.copyWith(
           color: severity.onContainer,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.emphasis,
         ),
       ),
     );
@@ -937,7 +937,7 @@ class _FieldComparisonRow extends StatelessWidget {
                     child: Text(
                       _comparisonFieldLabel(l10n, comparison.field),
                       style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                   ),
@@ -945,7 +945,7 @@ class _FieldComparisonRow extends StatelessWidget {
                     status.label,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: status.color,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                 ],
@@ -963,7 +963,7 @@ class _FieldComparisonRow extends StatelessWidget {
                   '$candidateValue',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: status.color,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: AppFontWeight.medium,
                   ),
                 ),
               ],
@@ -997,7 +997,7 @@ class _MatchReasonChip extends StatelessWidget {
         label,
         style: theme.textTheme.labelSmall?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w500,
+          fontWeight: AppFontWeight.medium,
         ),
       ),
     );

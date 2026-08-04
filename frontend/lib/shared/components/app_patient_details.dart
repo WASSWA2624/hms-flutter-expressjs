@@ -407,7 +407,7 @@ class _PatientDetailsTitle extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final bool compact = AppBreakpoints.of(context).isMobile;
     final TextStyle? nameStyle = theme.textTheme.titleMedium?.copyWith(
-      fontWeight: FontWeight.w600,
+      fontWeight: AppFontWeight.emphasis,
     );
     final String normalizedId = patientNumber.trim();
     final String semanticsLabel =
@@ -432,7 +432,7 @@ class _PatientDetailsTitle extends StatelessWidget {
             onCopied: onCopyPatientNumber,
             textStyle: nameStyle?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
+              fontWeight: AppFontWeight.medium,
             ),
           );
 

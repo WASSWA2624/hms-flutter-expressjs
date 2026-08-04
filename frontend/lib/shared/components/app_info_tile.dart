@@ -305,7 +305,7 @@ class _InfoText extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         SizedBox(height: theme.spacing.xs),
@@ -319,7 +319,7 @@ class _InfoText extends StatelessWidget {
                 maxLines: maxLines,
                 placeholderValues: copyPlaceholderValues,
                 textStyle: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeight.medium,
                 ),
               )
             : Text(
@@ -327,7 +327,7 @@ class _InfoText extends StatelessWidget {
                 maxLines: maxLines,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeight.medium,
                 ),
               ),
       ],

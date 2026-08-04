@@ -138,7 +138,7 @@ abstract final class AppRichTextMarkup {
         spans.add(
           TextSpan(
             text: match.group(2),
-            style: base.copyWith(fontWeight: FontWeight.w700),
+            style: base.copyWith(fontWeight: AppFontWeight.strong),
           ),
         );
       } else if (match.group(4) != null) {
@@ -186,7 +186,7 @@ class AppRichTextView extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final TextStyle resolved =
         style ??
-        theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500) ??
+        theme.textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.medium) ??
         const TextStyle();
     final TextSpan span = AppRichTextMarkup.toTextSpan(text, resolved);
     if (selectable) {
@@ -320,7 +320,7 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
         widget.showToolbar && widget.tools.isNotEmpty && widget.enabled;
     final Color borderColor = widget.errorText != null
         ? colors.error
-        : colors.outlineVariant;
+        : theme.borders.subtle;
     final OutlineInputBorder fieldBorder = OutlineInputBorder(
       borderRadius: BorderRadius.zero,
       borderSide: theme.borders.side(color: borderColor),
@@ -362,7 +362,7 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
           height: 24,
           child: VerticalDivider(
             width: theme.spacing.md,
-            color: colors.outlineVariant,
+            color: theme.borders.faint,
           ),
         ),
       if (widget.tools.contains(AppRichTextTool.bulletList))
@@ -413,7 +413,7 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
                 ),
             ],
           ),
-          Divider(height: 1, color: colors.outlineVariant),
+          Divider(height: 1, color: theme.borders.faint),
           SizedBox(height: theme.spacing.xs),
         ],
         TextFormField(
@@ -446,7 +446,12 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.zero,
-              borderSide: theme.borders.side(color: widget.errorText != null ? colors.error : colors.primary, width: 1.5,),
+              borderSide: theme.borders.side(
+                tone: widget.errorText != null
+                    ? AppBorderTone.error
+                    : AppBorderTone.focused,
+                weight: AppBorderWeight.medium,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.zero,
@@ -454,7 +459,7 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.zero,
-              borderSide: theme.borders.side(color: colors.error, width: 1.5),
+              borderSide: theme.borders.side(tone: AppBorderTone.error, weight: AppBorderWeight.medium),
             ),
           ),
           validator:

@@ -230,7 +230,7 @@ class _BedOccupantCell extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w500,
+            fontWeight: AppFontWeight.medium,
           ),
         ),
         if (bed.occupantAdmissionDisplayId != null)
@@ -301,7 +301,7 @@ class _BedActionMenu extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: AppFontWeight.medium,
                       ),
                     ),
                   ),
@@ -342,7 +342,7 @@ class _BedActionMenu extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w500,
+                fontWeight: AppFontWeight.medium,
               ),
             ),
           ),
@@ -377,7 +377,7 @@ List<AppListTableColumn<IpdBedBoardEntry>> _ipdBedBoardDefaultColumns(
           overflow: TextOverflow.ellipsis,
           style: Theme.of(
             context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
         );
       },
     ),

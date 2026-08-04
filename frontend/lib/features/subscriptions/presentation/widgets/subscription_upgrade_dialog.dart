@@ -1070,7 +1070,7 @@ class _BankDetailRow extends StatelessWidget {
           child: Text(
             label,
             style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w500,
+              fontWeight: AppFontWeight.medium,
             ),
           ),
         ),
@@ -1155,7 +1155,7 @@ class _ProofPreview extends StatelessWidget {
             child: Text(
               fileName,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
+                fontWeight: AppFontWeight.medium,
               ),
             ),
           ),
@@ -1239,14 +1239,14 @@ class _ContactDetail extends StatelessWidget {
               Text(
                 label,
                 style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeight.medium,
                 ),
               ),
               SizedBox(height: theme.spacing.xs),
               SelectableText(
                 value,
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.emphasis,
                   color: color,
                 ),
               ),

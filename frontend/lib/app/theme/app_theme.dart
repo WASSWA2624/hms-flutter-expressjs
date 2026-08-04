@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_dark_theme_palette.dart';
-import 'package:hosspi_hms/app/theme/app_font_family.dart';
 import 'package:hosspi_hms/app/theme/app_light_theme_palette.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/app/theme/app_theme_palette.dart';
@@ -84,7 +83,7 @@ abstract final class AppTheme {
       borderSide: borders.side(tone: AppBorderTone.error),
     );
 
-    final TextTheme textTheme = _withLighterWeights(
+    final TextTheme textTheme = _withAppFontWeights(
       baseTextTheme.apply(
         fontFamily: AppFontFamily.primary,
         fontFamilyFallback: AppFontFamily.fallback,
@@ -92,9 +91,8 @@ abstract final class AppTheme {
         displayColor: palette.displayTextColor,
       ),
     );
-    const TextStyle inputTextStyle = TextStyle(
-      fontFamily: AppFontFamily.primary,
-      fontFamilyFallback: AppFontFamily.fallback,
+    final TextStyle inputTextStyle = AppFontFamily.style(
+      fontWeight: AppFontWeight.label,
     );
 
     return ThemeData(
@@ -111,12 +109,14 @@ abstract final class AppTheme {
       visualDensity: VisualDensity.standard,
       materialTapTargetSize: MaterialTapTargetSize.padded,
       textTheme: textTheme,
+      primaryTextTheme: textTheme,
       extensions: <ThemeExtension<dynamic>>[
         spacing,
         AppRadiusTokens.standard,
         borders,
         statusColors,
         appTokens,
+        AppFontTokens.standard,
         AppListTokens.compact(
           textTheme: textTheme,
           colorScheme: colorScheme,
@@ -131,6 +131,10 @@ abstract final class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 2,
         shadowColor: softShadow,
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          color: palette.appBarForegroundColor,
+          fontWeight: AppFontWeight.title,
+        ),
       ),
       cardTheme: CardThemeData(
         shape: surfaceShape,
@@ -152,6 +156,9 @@ abstract final class AppTheme {
           shadowColor: softShadow,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
+          textStyle: textTheme.labelLarge?.copyWith(
+            fontWeight: AppFontWeight.emphasis,
+          ),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -161,6 +168,9 @@ abstract final class AppTheme {
           shape: controlShape,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
+          textStyle: textTheme.labelLarge?.copyWith(
+            fontWeight: AppFontWeight.emphasis,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -170,6 +180,9 @@ abstract final class AppTheme {
           shape: controlShape,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
+          textStyle: textTheme.labelLarge?.copyWith(
+            fontWeight: AppFontWeight.emphasis,
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -179,6 +192,9 @@ abstract final class AppTheme {
           shape: controlShape,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
+          textStyle: textTheme.labelLarge?.copyWith(
+            fontWeight: AppFontWeight.emphasis,
+          ),
         ),
       ),
       iconButtonTheme: IconButtonThemeData(
@@ -222,20 +238,20 @@ abstract final class AppTheme {
           ),
         ),
         // Empty-field labels must read as placeholders (light + muted), not
-        // as entered values. Hints stay lightest; floating labels stay ≤ w400.
+        // as entered values. Hints stay lightest; floating labels stay ≤ regular.
         labelStyle: inputTextStyle.copyWith(
           color: palette.inputHintColor,
-          fontWeight: FontWeight.w300,
+          fontWeight: AppFontWeight.light,
           fontSize: 14,
           height: 1.5,
         ),
         floatingLabelStyle: inputTextStyle.copyWith(
           color: palette.inputFloatingLabelColor,
-          fontWeight: FontWeight.w400,
+          fontWeight: AppFontWeight.regular,
         ),
         hintStyle: inputTextStyle.copyWith(
           color: palette.inputHintColor,
-          fontWeight: FontWeight.w300,
+          fontWeight: AppFontWeight.light,
           fontSize: 14,
           height: 1.5,
         ),
@@ -285,12 +301,12 @@ abstract final class AppTheme {
         ),
         headingTextStyle: textTheme.labelLarge?.copyWith(
           color: colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.emphasis,
           letterSpacing: 0.1,
         ),
         dataTextStyle: textTheme.bodyMedium?.copyWith(
           color: colorScheme.onSurface,
-          fontWeight: FontWeight.w400,
+          fontWeight: AppFontWeight.body,
         ),
         dataRowColor: WidgetStateProperty.resolveWith<Color?>((
           Set<WidgetState> states,
@@ -382,53 +398,33 @@ abstract final class AppTheme {
     );
   }
 
-  /// Shifts Material text styles one weight step lighter so titles/labels read
-  /// as Regular/Medium instead of Medium/Bold across the app.
-  static TextTheme _withLighterWeights(TextTheme theme) {
-    TextStyle? lighten(TextStyle? style) {
+  /// Applies the light-first [AppFontWeight] roles across Material text roles
+  /// so every platform inherits thin/light defaults from the theme.
+  static TextTheme _withAppFontWeights(TextTheme theme) {
+    TextStyle? apply(TextStyle? style, FontWeight weight) {
       if (style == null) {
         return null;
       }
-      return style.copyWith(fontWeight: _lighterWeight(style.fontWeight));
+      return style.copyWith(fontWeight: weight);
     }
 
     return theme.copyWith(
-      displayLarge: lighten(theme.displayLarge),
-      displayMedium: lighten(theme.displayMedium),
-      displaySmall: lighten(theme.displaySmall),
-      headlineLarge: lighten(theme.headlineLarge),
-      headlineMedium: lighten(theme.headlineMedium),
-      headlineSmall: lighten(theme.headlineSmall),
-      titleLarge: lighten(theme.titleLarge),
-      titleMedium: lighten(theme.titleMedium),
-      titleSmall: lighten(theme.titleSmall),
-      bodyLarge: lighten(theme.bodyLarge),
-      bodyMedium: lighten(theme.bodyMedium),
-      bodySmall: lighten(theme.bodySmall),
-      labelLarge: lighten(theme.labelLarge),
-      labelMedium: lighten(theme.labelMedium),
-      labelSmall: lighten(theme.labelSmall),
+      displayLarge: apply(theme.displayLarge, AppFontWeight.display),
+      displayMedium: apply(theme.displayMedium, AppFontWeight.display),
+      displaySmall: apply(theme.displaySmall, AppFontWeight.thin),
+      headlineLarge: apply(theme.headlineLarge, AppFontWeight.light),
+      headlineMedium: apply(theme.headlineMedium, AppFontWeight.light),
+      headlineSmall: apply(theme.headlineSmall, AppFontWeight.light),
+      titleLarge: apply(theme.titleLarge, AppFontWeight.title),
+      titleMedium: apply(theme.titleMedium, AppFontWeight.title),
+      titleSmall: apply(theme.titleSmall, AppFontWeight.regular),
+      bodyLarge: apply(theme.bodyLarge, AppFontWeight.body),
+      bodyMedium: apply(theme.bodyMedium, AppFontWeight.body),
+      bodySmall: apply(theme.bodySmall, AppFontWeight.light),
+      labelLarge: apply(theme.labelLarge, AppFontWeight.regular),
+      labelMedium: apply(theme.labelMedium, AppFontWeight.label),
+      labelSmall: apply(theme.labelSmall, AppFontWeight.label),
     );
-  }
-
-  static FontWeight? _lighterWeight(FontWeight? weight) {
-    if (weight == null) {
-      return FontWeight.w400;
-    }
-    final int value = weight.value;
-    if (value >= 800) {
-      return FontWeight.w600;
-    }
-    if (value >= 700) {
-      return FontWeight.w600;
-    }
-    if (value >= 600) {
-      return FontWeight.w500;
-    }
-    if (value >= 500) {
-      return FontWeight.w400;
-    }
-    return FontWeight.w400;
   }
 
   static AppSidebarTokens _sidebarTokens({

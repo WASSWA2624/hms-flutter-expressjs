@@ -67,7 +67,7 @@ class AppTabStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final Color hairline = colorScheme.outlineVariant.withValues(alpha: 0.4);
+    final Color hairline = theme.borders.faint;
     final bool nested = variant == AppTabStripVariant.nested;
     // Opaque merge color shared by the active tab and the toolbar so the two
     // render as one continuous surface (translucent tints would not blend
@@ -108,7 +108,7 @@ class AppTabStrip extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: activeFill,
-            border: Border(bottom: theme.borders.side(color: hairline)),
+            border: theme.borders.only(bottom: true, color: hairline),
           ),
           padding: EdgeInsets.symmetric(
             vertical: theme.spacing.sm,
@@ -379,7 +379,7 @@ double _estimateTabWidth({
     text: TextSpan(
       text: tab.label.trim(),
       style: (nested ? theme.textTheme.labelMedium : theme.textTheme.labelLarge)
-          ?.copyWith(fontWeight: FontWeight.w500),
+          ?.copyWith(fontWeight: AppFontWeight.medium),
     ),
     maxLines: 1,
     textDirection: textDirection,
@@ -392,7 +392,7 @@ double _estimateTabWidth({
       text: TextSpan(
         text: '${tab.count}',
         style: theme.textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w700,
+          fontWeight: AppFontWeight.strong,
           fontSize: _tabCountFontSize,
           height: 1.1,
         ),
@@ -479,7 +479,7 @@ class AppTabToolbarAction extends StatelessWidget {
               // Regular weight keeps toolbar actions visually lighter than the
               // tab labels above.
               style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w400,
+                fontWeight: AppFontWeight.regular,
               ),
             ),
         ],
@@ -567,7 +567,7 @@ class AppTabToolbarPrimary extends StatelessWidget {
               // while still standing out from the flat toolbar actions (w400).
               style: theme.textTheme.labelMedium?.copyWith(
                 color: colorScheme.primary,
-                fontWeight: FontWeight.w400,
+                fontWeight: AppFontWeight.regular,
               ),
             ),
         ],
@@ -612,7 +612,7 @@ Color _countToneColor(ThemeData theme, AppTabCountTone tone) {
 TextStyle? _tabCountStyle(ThemeData theme, AppTabCountTone tone) {
   return theme.textTheme.labelSmall?.copyWith(
     color: _countToneColor(theme, tone),
-    fontWeight: FontWeight.w700,
+    fontWeight: AppFontWeight.strong,
     fontSize: _tabCountFontSize,
     height: 1.1,
   );
@@ -801,8 +801,8 @@ class _AppTabChipState extends State<_AppTabChip> {
     // Selected uses the heaviest available weight; inactive stays medium so
     // tabs still read as controls rather than body copy.
     final FontWeight fontWeight = widget.isSelected
-        ? FontWeight.w700
-        : FontWeight.w500;
+        ? AppFontWeight.strong
+        : AppFontWeight.medium;
     final bool flareLeft = widget.isSelected && !widget.isFirst;
     final bool flareRight = widget.isSelected;
 
@@ -887,8 +887,8 @@ class _AppTabChipState extends State<_AppTabChip> {
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
     final FontWeight fontWeight = widget.isSelected
-        ? FontWeight.w700
-        : FontWeight.w500;
+        ? AppFontWeight.strong
+        : AppFontWeight.medium;
     final Color hoverFill = _isHovered
         ? colorScheme.onSurface.withValues(alpha: 0.04)
         : Colors.transparent;
@@ -910,10 +910,12 @@ class _AppTabChipState extends State<_AppTabChip> {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: hoverFill,
-                border: Border(
-                  bottom: theme.borders.side(color: widget.isSelected
-                        ? colorScheme.primary
-                        : colorScheme.outlineVariant.withValues(alpha: 0.5), width: widget.isSelected ? 2.5 : 1,),
+                border: theme.borders.only(
+                  bottom: true,
+                  color: widget.isSelected
+                      ? colorScheme.primary
+                      : theme.borders.faint,
+                  width: widget.isSelected ? theme.borders.thick + 0.5 : theme.borders.thin,
                 ),
               ),
               child: ConstrainedBox(

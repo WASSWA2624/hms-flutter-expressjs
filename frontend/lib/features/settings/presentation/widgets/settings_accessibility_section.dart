@@ -239,7 +239,7 @@ class _PreferenceValueRow extends StatelessWidget {
               child: Text(
                 label,
                 style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeight.medium,
                 ),
               ),
             ),

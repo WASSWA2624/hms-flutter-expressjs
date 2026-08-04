@@ -239,15 +239,15 @@ class _AppTextFieldState extends State<AppTextField> {
         inputTheme.hintStyle ??
         theme.textTheme.bodyLarge?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w300,
+          fontWeight: AppFontWeight.light,
         ) ??
-        const TextStyle(fontWeight: FontWeight.w300);
+        const TextStyle(fontWeight: AppFontWeight.light);
     final TextStyle placeholderLabelStyle = fieldLabelStyle.copyWith(
       color:
           fieldLabelStyle.color ??
           inputTheme.hintStyle?.color ??
           theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w300,
+      fontWeight: AppFontWeight.light,
     );
     final Widget? floatingLabel = widget.useFloatingLabel
         ? appFieldLabelWidget(
@@ -288,7 +288,7 @@ class _AppTextFieldState extends State<AppTextField> {
             color: canEdit
                 ? theme.colorScheme.onSurface
                 : theme.colorScheme.onSurface.withValues(alpha: 0.62),
-            fontWeight: FontWeight.w400,
+            fontWeight: AppFontWeight.regular,
             fontSize: 16,
             height: 1.5,
           )

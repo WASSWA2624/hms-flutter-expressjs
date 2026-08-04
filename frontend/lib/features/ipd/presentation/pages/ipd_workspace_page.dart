@@ -735,7 +735,7 @@ class _IpdPatientCell extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         Text(
@@ -1956,7 +1956,7 @@ class _IpdRecordRow extends StatelessWidget {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
                 ),
                 Text(
@@ -2038,7 +2038,7 @@ class _IpdKeyValueTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.labelMedium?.copyWith(
             color: colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         SizedBox(height: theme.spacing.xs),
@@ -2047,7 +2047,7 @@ class _IpdKeyValueTile extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w500,
+            fontWeight: AppFontWeight.medium,
           ),
         ),
       ],

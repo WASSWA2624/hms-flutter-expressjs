@@ -8,7 +8,7 @@ class AppStatusText extends StatelessWidget {
     this.tone = AppWorkspaceStatusTone.neutral,
     this.icon,
     this.includeDefaultToneIcon = true,
-    this.fontWeight = FontWeight.w600,
+    this.fontWeight = AppFontWeight.emphasis,
     this.maxLines = 1,
     this.softWrap = false,
     super.key,

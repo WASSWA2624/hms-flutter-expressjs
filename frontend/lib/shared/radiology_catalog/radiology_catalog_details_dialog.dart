@@ -54,14 +54,14 @@ Future<void> showRadiologyCatalogProcedureDetailsDialog(
                             label,
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: AppFontWeight.emphasis,
                             ),
                           ),
                           SizedBox(height: theme.spacing.xs / 2),
                           Text(
                             value,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
+                              fontWeight: AppFontWeight.medium,
                             ),
                           ),
                         ],

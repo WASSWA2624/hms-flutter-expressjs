@@ -81,7 +81,7 @@ class AppInfoSheetRow extends StatelessWidget {
                 maxLines: maxLines,
                 placeholderValues: copyPlaceholderValues,
                 textStyle: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeight.medium,
                 ),
               )
             : Text(
@@ -89,7 +89,7 @@ class AppInfoSheetRow extends StatelessWidget {
                 maxLines: maxLines,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeight.medium,
                 ),
               ),
         if (showDivider)
@@ -98,7 +98,7 @@ class AppInfoSheetRow extends StatelessWidget {
             child: Divider(
               height: 1,
               thickness: 1,
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+              color: theme.borders.faint,
             ),
           ),
       ],

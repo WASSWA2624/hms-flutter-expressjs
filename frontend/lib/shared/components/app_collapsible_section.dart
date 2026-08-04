@@ -359,7 +359,7 @@ class _AppCollapsibleHeaderTitle extends StatelessWidget {
             eyebrow!,
             style: theme.textTheme.labelMedium?.copyWith(
               color: secondaryColor,
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.emphasis,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -369,7 +369,7 @@ class _AppCollapsibleHeaderTitle extends StatelessWidget {
           Text(
             title!,
             style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: AppFontWeight.strong,
               color: titleColor,
             ),
             maxLines: 2,
@@ -384,7 +384,7 @@ class _AppCollapsibleHeaderTitle extends StatelessWidget {
             subtitle!,
             style: theme.textTheme.bodySmall?.copyWith(
               color: secondaryColor,
-              fontWeight: FontWeight.w500,
+              fontWeight: AppFontWeight.medium,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -397,19 +397,19 @@ class _AppCollapsibleHeaderTitle extends StatelessWidget {
   Widget _buildInline(ThemeData theme) {
     final TextStyle separatorStyle = theme.textTheme.bodyMedium!.copyWith(
       color: secondaryColor.withValues(alpha: 0.55),
-      fontWeight: FontWeight.w500,
+      fontWeight: AppFontWeight.medium,
     );
     final TextStyle eyebrowStyle = theme.textTheme.labelMedium!.copyWith(
       color: secondaryColor,
-      fontWeight: FontWeight.w600,
+      fontWeight: AppFontWeight.emphasis,
     );
     final TextStyle titleStyle = theme.textTheme.titleSmall!.copyWith(
-      fontWeight: FontWeight.w700,
+      fontWeight: AppFontWeight.strong,
       color: titleColor,
     );
     final TextStyle subtitleStyle = theme.textTheme.bodySmall!.copyWith(
       color: secondaryColor,
-      fontWeight: FontWeight.w500,
+      fontWeight: AppFontWeight.medium,
     );
 
     final List<InlineSpan> spans = <InlineSpan>[];

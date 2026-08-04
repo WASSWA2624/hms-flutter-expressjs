@@ -304,7 +304,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
                 theme.inputDecorationTheme.hintStyle ??
                 theme.textTheme.bodyLarge?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w300,
+                  fontWeight: AppFontWeight.light,
                 ),
           ),
           hintText: widget.hintText,
@@ -316,7 +316,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
                 color: canSelect
                     ? theme.colorScheme.onSurface
                     : theme.colorScheme.onSurface.withValues(alpha: 0.62),
-                fontWeight: FontWeight.w400,
+                fontWeight: AppFontWeight.regular,
                 fontSize: widget.isDense ? 16 : null,
                 height: widget.isDense ? 1.5 : null,
               )
@@ -685,7 +685,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
         focusedBorder?.borderSide.color ?? colorScheme.primary;
     final double focusedBorderWidth = focusedBorder?.borderSide.width ?? 1.4;
     final Color enabledBorderColor =
-        enabledBorder?.borderSide.color ?? colorScheme.outlineVariant;
+        enabledBorder?.borderSide.color ?? theme.borders.subtle;
     final double enabledBorderWidth =
         enabledBorder?.borderSide.width ?? theme.appTokens.dividerThickness;
 
@@ -693,7 +693,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
       fillColor: _fieldFillColor(theme),
       borderColor: menuIsOpen ? focusedBorderColor : enabledBorderColor,
       borderWidth: menuIsOpen ? focusedBorderWidth : enabledBorderWidth,
-      dividerColor: colorScheme.outlineVariant.withValues(alpha: 0.72),
+      dividerColor: theme.borders.faint,
       hoverColor: colorScheme.onSurface.withValues(alpha: 0.06),
       shadowColor: colorScheme.shadow.withValues(alpha: 0.14),
     );
@@ -761,7 +761,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
       color: option.enabled
           ? colorScheme.onSurface
           : colorScheme.onSurface.withValues(alpha: 0.38),
-      fontWeight: FontWeight.w400,
+      fontWeight: AppFontWeight.regular,
     );
     final Widget label =
         option.labelWidget ?? Text(option.label, style: labelStyle);
@@ -875,7 +875,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     }
     final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
       color: colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w400,
+      fontWeight: AppFontWeight.regular,
     );
     return <DropdownMenuEntry<T>>[
       DropdownMenuEntry<T>(

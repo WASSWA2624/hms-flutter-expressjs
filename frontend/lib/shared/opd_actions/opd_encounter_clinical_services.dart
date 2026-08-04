@@ -295,7 +295,7 @@ class _OpdClinicalServicesTable extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final TextStyle headerStyle = theme.textTheme.labelLarge!.copyWith(
-      fontWeight: FontWeight.w600,
+      fontWeight: AppFontWeight.emphasis,
       color: colorScheme.onSurfaceVariant,
       letterSpacing: 0.1,
     );
@@ -407,7 +407,7 @@ class _BodyCell extends StatelessWidget {
             text ?? '',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurface,
-              fontWeight: FontWeight.w400,
+              fontWeight: AppFontWeight.regular,
             ),
           ),
     );
@@ -442,7 +442,7 @@ class _ServiceCell extends StatelessWidget {
               child: Text(
                 row.serviceLabel,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeight.medium,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -481,7 +481,7 @@ class _ResultCell extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodySmall?.copyWith(
-            fontWeight: unavailable ? FontWeight.w400 : FontWeight.w600,
+            fontWeight: unavailable ? AppFontWeight.regular : AppFontWeight.emphasis,
             color: unavailable
                 ? theme.colorScheme.onSurfaceVariant
                 : statusColor ?? theme.colorScheme.onSurface,
@@ -534,7 +534,7 @@ class _OpdClinicalServiceStatusChip extends StatelessWidget {
                       : theme.textTheme.labelMedium)
                   ?.copyWith(
                     color: colors.foreground,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
         ),
       ),
@@ -584,7 +584,7 @@ _ClinicalChipColors _clinicalChipColors(
     AppWorkspaceStatusTone.neutral => _ClinicalChipColors(
       background: theme.colorScheme.surfaceContainerHighest,
       foreground: theme.colorScheme.onSurfaceVariant,
-      border: theme.colorScheme.outlineVariant,
+      border: theme.borders.faint,
     ),
   };
 }
@@ -629,7 +629,7 @@ class _OpdClinicalServiceCard extends StatelessWidget {
                     child: Text(
                       row.serviceLabel,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
+                        fontWeight: AppFontWeight.medium,
                       ),
                     ),
                   ),
@@ -676,7 +676,7 @@ class _OpdClinicalServiceCard extends StatelessWidget {
                 Text(
                   '${l10n.opdClinicalServiceResultColumnLabel}: ${row.resultLabel}',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: unavailable ? FontWeight.w400 : FontWeight.w600,
+                    fontWeight: unavailable ? AppFontWeight.regular : AppFontWeight.emphasis,
                     color: unavailable
                         ? theme.colorScheme.onSurfaceVariant
                         : appVitalSignStatusColor(context, row.resultStatus) ??

@@ -1011,7 +1011,7 @@ class _ClinicalCompactFallbackAction extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: primaryColor,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                       decoration: TextDecoration.underline,
                       decorationColor: primaryColor,
                     ),
@@ -1160,7 +1160,7 @@ class _ClinicalStatusText extends StatelessWidget {
     final Color color = _clinicalToneColor(theme, status.tone);
     final IconData icon = status.icon ?? _clinicalStatusIcon(status.tone);
     final TextStyle? effectiveStyle = (textStyle ?? theme.textTheme.bodyMedium)
-        ?.copyWith(color: color, fontWeight: FontWeight.w500);
+        ?.copyWith(color: color, fontWeight: AppFontWeight.medium);
 
     return Semantics(
       label: status.label,
@@ -1878,7 +1878,7 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
           Text(
             l10n.clinicalVitalsSectionTitle,
             style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: AppFontWeight.strong,
             ),
           ),
           if (vitalFacts.isNotEmpty) ...<Widget>[
@@ -1915,7 +1915,7 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
                           '${l10n.opdVitalsSummaryLabel}:',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: AppFontWeight.medium,
                           ),
                         ),
                         SizedBox(width: theme.spacing.xs),
@@ -1988,7 +1988,7 @@ class _ClinicalVitalLegendItem extends StatelessWidget {
           label,
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w400,
+            fontWeight: AppFontWeight.regular,
           ),
         ),
       ],
@@ -2206,7 +2206,7 @@ class _ClinicalNotesSection extends StatelessWidget {
           Text(
             l10n.clinicalPatientNotesTitle,
             style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: AppFontWeight.strong,
             ),
           ),
           if (lastUpdated != null) ...<Widget>[
@@ -2217,7 +2217,7 @@ class _ClinicalNotesSection extends StatelessWidget {
                 '${_dateTimeLabel(context, lastUpdated)}',
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: AppFontWeight.regular,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -2356,7 +2356,7 @@ class _ClinicalGenericRecordRow extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
+                    fontWeight: AppFontWeight.medium,
                   ),
                 ),
                 SizedBox(height: theme.spacing.xs),
@@ -2435,7 +2435,7 @@ class _ClinicalPharmacyOrderRow extends ConsumerWidget {
                     Text(
                       record.title ?? record.id,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                     if (_hasText(status))
@@ -2591,7 +2591,7 @@ class _ClinicalPharmacyOrderItemRow extends StatelessWidget {
                     Text(
                       item.displayTitle,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                     SizedBox(height: theme.spacing.xs),

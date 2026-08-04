@@ -444,7 +444,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
                                   : theme.colorScheme.onSurface.withValues(
                                       alpha: 0.62,
                                     ),
-                              fontWeight: FontWeight.w400,
+                              fontWeight: AppFontWeight.regular,
                             ),
                             decoration: InputDecoration(
                               hintText: widget.hintText,
@@ -562,7 +562,6 @@ class _AppSearchBarState extends State<AppSearchBar> {
   }
 
   BorderSide _borderSide(ThemeData theme) {
-    final ColorScheme colorScheme = theme.colorScheme;
     if (!widget.enabled) {
       return _sideFromBorder(theme.inputDecorationTheme.disabledBorder) ??
           theme.borders.side();
@@ -846,7 +845,7 @@ class _AttachedSearchBarButton extends StatelessWidget {
               label,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: foreground,
-                fontWeight: FontWeight.w500,
+                fontWeight: AppFontWeight.medium,
               ),
             ),
           ],
@@ -1408,9 +1407,9 @@ class _MultiSelectFilterGroup extends StatelessWidget {
                                 alpha: 0.28,
                               )
                             : colorScheme.surface,
-                        border: theme.borders.all(color: isSelected
-                              ? colorScheme.primary
-                              : colorScheme.outlineVariant),
+                        border: isSelected
+                            ? theme.borders.all(tone: AppBorderTone.selected)
+                            : theme.borders.all(),
                       ),
                       child: Padding(
                         padding: EdgeInsets.symmetric(
@@ -1450,7 +1449,7 @@ class _MultiSelectFilterGroup extends StatelessWidget {
                               child: Text(
                                 choice.label,
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: AppFontWeight.emphasis,
                                 ),
                               ),
                             ),
@@ -1487,7 +1486,7 @@ class _DialogSectionTitle extends StatelessWidget {
       label,
       style: theme.textTheme.titleSmall?.copyWith(
         color: colorScheme.onSurface,
-        fontWeight: FontWeight.w600,
+        fontWeight: AppFontWeight.emphasis,
       ),
     );
   }

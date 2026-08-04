@@ -2012,7 +2012,7 @@ class _LabEnableFacilityOfferingDialogState
                 l10n.labSelectedTestCount(selectedListedCount, listedCount),
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               ),
             );
@@ -2260,7 +2260,7 @@ class _LabEnableFacilityOfferingDialogState
                               Text(
                                 item.name ?? item.displayTitle,
                                 style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: AppFontWeight.emphasis,
                                 ),
                               ),
                               AppMutedText(
@@ -2716,7 +2716,7 @@ Widget _labEnableOfferingStatusCell(
           label,
           style: theme.textTheme.labelMedium?.copyWith(
             color: color,
-            fontWeight: FontWeight.w500,
+            fontWeight: AppFontWeight.medium,
           ),
         ),
       ],
@@ -2809,7 +2809,7 @@ class _LabEnableOfferingPriceDialogState
             Text(
               item.displayTitle,
               style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.emphasis,
               ),
             ),
             if (item.displaySubtitle != null &&
@@ -3158,7 +3158,7 @@ class LabPanelTestPicker extends StatelessWidget {
                     style: theme.textTheme.labelLarge,
                   ),
                 ),
-                Divider(height: 1, color: theme.colorScheme.outlineVariant),
+                Divider(height: 1, color: theme.borders.faint),
                 for (var index = 0; index < selectedTests.length; index += 1)
                   _SelectedPanelTestRow(
                     item: selectedTests[index],
@@ -3222,7 +3222,7 @@ class _SelectedPanelTestRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
                 ),
                 if (subtitle.isNotEmpty)
@@ -3359,7 +3359,7 @@ class _LabPanelTestSelectionTableState
         Text(
           l10n.labPanelSelectedTestsCountLabel(widget.selectedTests.length),
           style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         SizedBox(height: theme.spacing.xs),

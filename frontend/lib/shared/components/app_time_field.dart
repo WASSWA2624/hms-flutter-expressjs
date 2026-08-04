@@ -720,7 +720,7 @@ class _TimePartTextField extends StatelessWidget {
       },
       style: theme.textTheme.bodyLarge?.copyWith(
         color: textColor,
-        fontWeight: FontWeight.w400,
+        fontWeight: AppFontWeight.regular,
       ),
       decoration: InputDecoration(
         hintText: hintText ?? labelText,
@@ -838,7 +838,7 @@ class _TimeFormatToggle extends StatelessWidget {
               activeLabel,
               style: theme.textTheme.labelLarge?.copyWith(
                 color: foreground,
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.emphasis,
               ),
             ),
           ),
@@ -934,7 +934,7 @@ class _TimePeriodChip extends StatelessWidget {
             label,
             style: theme.textTheme.labelLarge?.copyWith(
               color: foreground,
-              fontWeight: FontWeight.w500,
+              fontWeight: AppFontWeight.medium,
             ),
           ),
         ),

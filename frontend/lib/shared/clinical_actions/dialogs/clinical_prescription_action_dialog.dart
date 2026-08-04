@@ -1220,12 +1220,12 @@ class _PrescriptionRxListTile extends StatelessWidget {
       quantityUnit: line.quantityUnit,
     );
     final TextStyle? titleStyle = theme.textTheme.titleMedium?.copyWith(
-      fontWeight: FontWeight.w700,
+      fontWeight: AppFontWeight.strong,
       letterSpacing: 0.2,
     );
     final TextStyle? metaStyle = theme.textTheme.bodyMedium?.copyWith(
       color: colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w500,
+      fontWeight: AppFontWeight.medium,
     );
 
     return Padding(
@@ -1238,8 +1238,8 @@ class _PrescriptionRxListTile extends StatelessWidget {
             ? colorScheme.primaryContainer.withValues(alpha: 0.28)
             : colorScheme.surfaceContainerLowest,
         borderColor: selected
-            ? colorScheme.primary.withValues(alpha: 0.45)
-            : colorScheme.outlineVariant,
+            ? colorScheme.primary
+            : theme.borders.faint,
         contentPadding: EdgeInsets.fromLTRB(
           theme.spacing.md,
           theme.spacing.sm,
@@ -1720,7 +1720,7 @@ class _PrescriptionLineHeader extends StatelessWidget {
               Text(
                 '${l10n.clinicalPrescriptionMedicineLabel} ${index + 1}',
                 style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               ),
               Text(
@@ -1795,7 +1795,7 @@ class _PrescriptionDurationField extends StatelessWidget {
                 Text(
                   l10n.clinicalDurationValueLabel,
                   style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
                 ),
               ],

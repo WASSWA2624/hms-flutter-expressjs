@@ -101,7 +101,7 @@ BoxDecoration dashboardWorklistGroupDecoration(
   return BoxDecoration(
     color: colorScheme.surfaceContainerLowest.withValues(alpha: 0.65),
     borderRadius: BorderRadius.circular(theme.radius.lg),
-    border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.25)),
+    border: theme.borders.all(),
   );
 }
 

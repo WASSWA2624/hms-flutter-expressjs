@@ -283,7 +283,7 @@ class _ClinicalRequestBillingPanelState
           ),
         Divider(
           height: theme.spacing.lg,
-          color: colorScheme.outlineVariant,
+          color: theme.borders.faint,
         ),
         Row(
           children: <Widget>[
@@ -291,7 +291,7 @@ class _ClinicalRequestBillingPanelState
               child: Text(
                 l10n.clinicalRequestBillingTotalLabel,
                 style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               ),
             ),
@@ -302,7 +302,7 @@ class _ClinicalRequestBillingPanelState
                 _currency,
               ),
               style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.emphasis,
                 color: colorScheme.primary,
               ),
             ),
@@ -651,7 +651,7 @@ class _EditableBillingLineRow extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
+              fontWeight: AppFontWeight.medium,
             ),
           ),
           SizedBox(height: theme.spacing.xs),
@@ -680,7 +680,7 @@ class _EditableBillingLineRow extends StatelessWidget {
                   lineTotalLabel ?? l10n.clinicalRequestPriceNotSetLabel,
                   textAlign: TextAlign.end,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.emphasis,
                     color: lineTotalLabel == null
                         ? colorScheme.onSurfaceVariant
                         : null,
@@ -731,7 +731,7 @@ class _QuantityStepper extends StatelessWidget {
           Text(
             '${quantity % 1 == 0 ? quantity.toInt() : quantity}',
             style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.emphasis,
             ),
           ),
           AppButton(
@@ -785,7 +785,7 @@ class _BillingLineRow extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
+                    fontWeight: AppFontWeight.medium,
                   ),
                 ),
                 Text(
@@ -801,7 +801,7 @@ class _BillingLineRow extends StatelessWidget {
             Text(
               lineTotalLabel,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.emphasis,
               ),
             ),
         ],
@@ -915,7 +915,7 @@ class _PaymentModeRadioOption extends StatelessWidget {
             Text(
               label,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
+                fontWeight: AppFontWeight.medium,
               ),
             ),
           ],
@@ -961,7 +961,7 @@ class _PayerShareSummary extends StatelessWidget {
             Text(
               plan,
               style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.emphasis,
               ),
             ),
             SizedBox(height: theme.spacing.xs),
@@ -993,7 +993,7 @@ class _PayerShareSummary extends StatelessWidget {
           Text(
             clinicalRequestPriceLabel(context, amount, currency),
             style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.emphasis,
             ),
           ),
         ],

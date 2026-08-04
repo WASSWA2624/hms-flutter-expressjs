@@ -131,7 +131,7 @@ List<AppListTableColumn<SubscriptionItem>> _subscriptionPlanDefaultColumns(
           subtitle: item.code,
           titleStyle: Theme.of(
             context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
         );
       },
     ),
@@ -313,7 +313,7 @@ List<AppListTableColumn<SubscriptionItem>> _subscriptionDefaultColumns(
           title: item.tenantLabel ?? _SubscriptionsText.notRecorded,
           titleStyle: Theme.of(
             context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
         );
       },
     ),
@@ -330,7 +330,7 @@ List<AppListTableColumn<SubscriptionItem>> _subscriptionDefaultColumns(
           overflow: TextOverflow.ellipsis,
           style: Theme.of(
             context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
         );
       },
     ),
@@ -462,7 +462,7 @@ List<AppListTableColumn<SubscriptionItem>> _moduleDefaultColumns(
           subtitle: item.code,
           titleStyle: Theme.of(
             context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
         );
       },
     ),
@@ -588,7 +588,7 @@ List<AppListTableColumn<SubscriptionItem>> _moduleSubscriptionDefaultColumns(
           title: item.moduleLabel ?? item.title,
           titleStyle: Theme.of(
             context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
         );
       },
     ),
@@ -721,7 +721,7 @@ List<AppListTableColumn<SubscriptionItem>> _subscriptionInvoiceDefaultColumns(
           title: item.invoiceDisplayId ?? _SubscriptionsText.notRecorded,
           titleStyle: Theme.of(
             context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
         );
       },
     ),
@@ -839,7 +839,7 @@ List<AppListTableColumn<SubscriptionItem>> _licenseDefaultColumns(
           title: item.licenseType ?? _SubscriptionsText.notRecorded,
           titleStyle: Theme.of(
             context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
         );
       },
     ),

@@ -1648,7 +1648,7 @@ class _NextActionCell extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.labelLarge?.copyWith(
                             color: primaryColor,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: AppFontWeight.emphasis,
                           ),
                         ),
                       ),
@@ -2874,7 +2874,7 @@ class _PatientReportPreviewControls extends StatelessWidget {
                 l10n.patientsReportDateRangeInvalidMessage,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.error,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               ),
           ],
@@ -3029,14 +3029,14 @@ class _PatientReportPreviewPage extends StatelessWidget {
                   SizedBox(height: theme.spacing.md),
               ],
               SizedBox(height: theme.spacing.md),
-              Divider(color: theme.colorScheme.outlineVariant),
+              Divider(color: theme.borders.faint),
               Align(
                 alignment: AlignmentDirectional.centerEnd,
                 child: Text(
                   l10n.patientsReportPageNumberLabel(pageNumber, totalPages),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
                 ),
               ),
@@ -3060,7 +3060,7 @@ class _PatientReportPageHeader extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border(bottom: theme.borders.side(color: theme.colorScheme.outline)),
+        border: theme.borders.only(bottom: true, tone: AppBorderTone.strong),
       ),
       child: Padding(
         padding: EdgeInsets.only(bottom: theme.spacing.sm),
@@ -3075,7 +3075,7 @@ class _PatientReportPageHeader extends StatelessWidget {
                     document.hospitalName,
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: Colors.black,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                   Text(
@@ -3099,7 +3099,7 @@ class _PatientReportPageHeader extends StatelessWidget {
                     textAlign: TextAlign.end,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.black,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                   Text(
@@ -3146,13 +3146,13 @@ class _PatientReportBlockPreview extends StatelessWidget {
           block.title,
           style: theme.textTheme.titleSmall?.copyWith(
             color: Colors.black,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         SizedBox(height: theme.spacing.xs),
         DecoratedBox(
           decoration: BoxDecoration(
-            border: theme.borders.all(color: const Color(0xffd1d5db)),
+            border: theme.borders.all(),
           ),
           child: block.rows.isEmpty
               ? Padding(
@@ -3193,7 +3193,7 @@ class _PatientReportRowPreview extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final TextStyle? labelStyle = theme.textTheme.bodySmall?.copyWith(
       color: Colors.black87,
-      fontWeight: FontWeight.w600,
+      fontWeight: AppFontWeight.emphasis,
     );
     final TextStyle? valueStyle = theme.textTheme.bodySmall?.copyWith(
       color: Colors.black,

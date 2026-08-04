@@ -286,7 +286,7 @@ class AppButton extends StatelessWidget {
         ),
       ),
       textStyle: WidgetStatePropertyAll<TextStyle?>(
-        theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500),
+        theme.textTheme.labelLarge?.copyWith(fontWeight: AppFontWeight.medium),
       ),
       foregroundColor: WidgetStateProperty.resolveWith<Color?>((
         Set<WidgetState> states,
@@ -351,7 +351,7 @@ class AppButton extends StatelessWidget {
           return theme.borders.side(color: colorScheme.primary.withValues(alpha: alpha), width: thinWidth,);
         }
         final double alpha = states.contains(WidgetState.disabled) ? 0.2 : 0.42;
-        return theme.borders.side(color: colorScheme.outlineVariant.withValues(alpha: alpha), width: thinWidth,);
+        return theme.borders.side(width: thinWidth);
       }),
     );
   }
@@ -411,7 +411,7 @@ class _ButtonContent extends StatelessWidget {
     final AppSpacingTokens spacing = theme.spacing;
     final double iconSize = theme.appTokens.listIconSize;
     final TextStyle? labelStyle = theme.textTheme.labelLarge?.copyWith(
-      fontWeight: FontWeight.w600,
+      fontWeight: AppFontWeight.emphasis,
       fontSize: 14,
     );
     final Widget labelText = labelWidget ??

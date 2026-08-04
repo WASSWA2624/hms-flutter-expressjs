@@ -1517,9 +1517,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface.withValues(alpha: 0.88),
                     borderRadius: BorderRadius.circular(theme.radius.md),
-                    border: theme.borders.all(color: theme.colorScheme.outlineVariant.withValues(
-                        alpha: 0.45,
-                      )),
+                    border: theme.borders.all(),
                     boxShadow: <BoxShadow>[
                       BoxShadow(
                         color: theme.colorScheme.shadow.withValues(alpha: 0.08),
@@ -2700,9 +2698,9 @@ class _ColumnVisibilityDialogState<T>
                                 alpha: 0.28,
                               )
                             : colorScheme.surface,
-                        border: theme.borders.all(color: isChecked
-                              ? colorScheme.primary
-                              : colorScheme.outlineVariant),
+                        border: isChecked
+                            ? theme.borders.all(tone: AppBorderTone.selected)
+                            : theme.borders.all(),
                       ),
                       child: Padding(
                         padding: EdgeInsets.symmetric(
@@ -2747,7 +2745,7 @@ class _ColumnVisibilityDialogState<T>
                                   Text(
                                     column.label,
                                     style: theme.textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: AppFontWeight.emphasis,
                                     ),
                                   ),
                                   if (column.tooltip != null)
@@ -2893,7 +2891,7 @@ class _AppInfiniteScrollFooter extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: AppFontWeight.regular,
                 ),
               ),
             )
@@ -3017,9 +3015,7 @@ class _MobileListTable<T> extends StatelessWidget {
                   child: Container(
                     height: 1,
                     margin: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
-                    color: theme.colorScheme.outlineVariant.withValues(
-                      alpha: 0.42,
-                    ),
+                    color: theme.borders.faint,
                   ),
                 ),
               ),
@@ -3341,7 +3337,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     _gridLineOffsets = gridLineOffsets;
     _rowContentWidth = cursor + _horizontalMargin;
 
-    _verticalInsideSide = theme.borders.side(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.38), width: theme.appTokens.dividerThickness,);
+    _verticalInsideSide = theme.borders.side();
     _rowDividerSide = Divider.createBorderSide(
       context,
       width: theme.appTokens.dividerThickness,
@@ -3830,16 +3826,16 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     );
     _cachedHeadingTextStyle = theme.textTheme.labelLarge?.copyWith(
       color: cs.onSurfaceVariant,
-      fontWeight: FontWeight.w600,
+      fontWeight: AppFontWeight.emphasis,
       letterSpacing: 0.1,
     );
     _cachedDataTextStyle = theme.textTheme.bodyMedium?.copyWith(
       color: cs.onSurface,
-      fontWeight: FontWeight.w400,
+      fontWeight: AppFontWeight.regular,
     );
     _cachedNumberColumnStyle = theme.textTheme.labelMedium?.copyWith(
       color: cs.onSurfaceVariant,
-      fontWeight: FontWeight.w600,
+      fontWeight: AppFontWeight.emphasis,
     );
     _rowNumberStyle = null;
   }
@@ -3853,7 +3849,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     }
     _rowNumberStyle = theme.textTheme.labelMedium?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w500,
+      fontWeight: AppFontWeight.medium,
     );
     return _rowNumberStyle;
   }
@@ -4137,7 +4133,7 @@ class _DataColumnHeader<T> extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final TextStyle? headerStyle = theme.textTheme.labelLarge?.copyWith(
       color: isSorted ? colorScheme.primary : colorScheme.onSurfaceVariant,
-      fontWeight: isSorted ? FontWeight.w600 : FontWeight.w500,
+      fontWeight: isSorted ? AppFontWeight.emphasis : AppFontWeight.medium,
     );
 
     Widget label;
@@ -4182,10 +4178,10 @@ class _DataColumnHeader<T> extends StatelessWidget {
               padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  border: Border(
-                    bottom: theme.borders.side(color: isSorted
-                          ? colorScheme.primary
-                          : Colors.transparent, width: 1.5,),
+                  border: theme.borders.only(
+                    bottom: true,
+                    color: isSorted ? colorScheme.primary : Colors.transparent,
+                    weight: AppBorderWeight.medium,
                   ),
                 ),
                 child: Row(
@@ -4244,7 +4240,7 @@ class _ColumnResizeHandleState extends State<_ColumnResizeHandle> {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
 
     return MouseRegion(
       cursor: SystemMouseCursors.resizeColumn,
@@ -4274,7 +4270,7 @@ class _ColumnResizeHandleState extends State<_ColumnResizeHandle> {
                 width: 2,
                 height: 18,
                 decoration: BoxDecoration(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.9),
+                  color: theme.borders.faint,
                   borderRadius: BorderRadius.circular(1),
                 ),
               ),

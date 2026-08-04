@@ -428,7 +428,7 @@ class _MessageBubble extends StatelessWidget {
                                 mentionStyle: theme.textTheme.bodyMedium!
                                     .copyWith(
                                       color: colors.primary,
-                                      fontWeight: FontWeight.w500,
+                                      fontWeight: AppFontWeight.medium,
                                     ),
                               ),
                             ),

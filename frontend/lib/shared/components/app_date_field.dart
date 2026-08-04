@@ -740,7 +740,7 @@ class _DatePartTextField extends StatelessWidget {
       },
       style: theme.textTheme.bodyLarge?.copyWith(
         color: textColor,
-        fontWeight: FontWeight.w400,
+        fontWeight: AppFontWeight.regular,
       ),
       decoration: InputDecoration(
         hintText: hintText ?? labelText,

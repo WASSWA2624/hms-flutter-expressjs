@@ -465,7 +465,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
           child: Text(
             title,
             style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.emphasis,
               color: colors.onSurface,
             ),
           ),
@@ -474,7 +474,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
           '$count',
           style: theme.textTheme.labelMedium?.copyWith(
             color: colors.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
+            fontWeight: AppFontWeight.medium,
           ),
         ),
       ],
@@ -499,7 +499,12 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
           : colors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(theme.radius.md),
-        side: theme.borders.side(color: selected ? colors.primary : colors.outlineVariant, width: selected ? 1.5 : 1,),
+        side: selected
+            ? theme.borders.side(
+                tone: AppBorderTone.selected,
+                weight: AppBorderWeight.medium,
+              )
+            : theme.borders.side(),
       ),
       clipBehavior: Clip.antiAlias,
       child: Theme(
@@ -528,7 +533,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.emphasis,
             ),
           ),
           subtitle: Text(
@@ -564,9 +569,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
             DecoratedBox(
               decoration: BoxDecoration(
                 color: colors.surfaceContainerLowest,
-                border: Border(
-                  top: theme.borders.side(),
-                ),
+                border: theme.borders.only(top: true),
               ),
               child: Padding(
                 padding: EdgeInsets.fromLTRB(

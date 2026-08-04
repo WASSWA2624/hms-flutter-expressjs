@@ -159,7 +159,7 @@ class AppFormInformationBanner extends StatelessWidget {
                       title,
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: colors.title,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                   if (message.trim().isNotEmpty) ...<Widget>[

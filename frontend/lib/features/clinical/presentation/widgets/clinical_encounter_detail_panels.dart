@@ -150,7 +150,7 @@ class _ClinicalLabOrdersTablePanelState
                             selectedOrders.length,
                           ),
                           style: theme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: AppFontWeight.emphasis,
                           ),
                         ),
                       if (cancellableSelected.isNotEmpty &&
@@ -431,7 +431,7 @@ class _ClinicalLabResultRowsTable extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final AppLocalizations l10n = context.l10n;
     final bool showActions = onCancelItem != null;
-    final Color borderColor = colorScheme.outlineVariant;
+    final Color borderColor = theme.borders.faint;
     final TableBorder tableBorder = TableBorder(
       horizontalInside: theme.borders.side(color: borderColor),
       verticalInside: theme.borders.side(color: borderColor),
@@ -494,7 +494,7 @@ class _ClinicalLabResultTableCell extends StatelessWidget {
           return Text(
             label,
             style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.emphasis,
               color: theme.colorScheme.onSurfaceVariant,
               letterSpacing: 0.1,
             ),
@@ -557,7 +557,7 @@ TableRow _clinicalLabResultTableRow(
         child: Text(
           item.displayTitle,
           style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
       ),
@@ -570,7 +570,7 @@ TableRow _clinicalLabResultTableRow(
           style: abnormalResult && result?.trim().isNotEmpty == true
               ? theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.error,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.emphasis,
                 )
               : null,
         ),
@@ -1152,7 +1152,7 @@ class _ClinicalDiagnosesTablePanelState
                             selectedDiagnoses.length,
                           ),
                           style: theme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: AppFontWeight.emphasis,
                           ),
                         ),
                       if (hasSelection && widget.onRemoveSelected != null)
@@ -1493,7 +1493,7 @@ class _ClinicalOrderMobileCard extends StatelessWidget {
                       Text(
                         title,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.emphasis,
                         ),
                       ),
                       if (_hasText(subtitle))
@@ -1564,7 +1564,7 @@ class _ClinicalLabeledChip extends StatelessWidget {
           label,
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         child ?? Text(value ?? ''),
@@ -1706,7 +1706,7 @@ List<Widget> _clinicalBatchHeaderActions({
   return <Widget>[
     Text(
       l10n.clinicalLabRequestSelectedCount(selectedCount),
-      style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+      style: theme.textTheme.labelLarge?.copyWith(fontWeight: AppFontWeight.emphasis),
     ),
     AppAccessActionGate(
       requirement: requirement,

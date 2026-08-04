@@ -3037,7 +3037,7 @@ class _InventoryClearSelectedTile extends StatelessWidget {
             Text(
               title,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.emphasis,
               ),
             ),
             if (sku != null && sku.isNotEmpty) ...<Widget>[

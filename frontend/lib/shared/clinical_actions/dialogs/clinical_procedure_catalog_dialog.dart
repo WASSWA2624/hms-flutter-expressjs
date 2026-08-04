@@ -335,7 +335,7 @@ class _ProcedurePreviewCard extends StatelessWidget {
                   Text(
                     _procedureTitle(procedure),
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
+                      fontWeight: AppFontWeight.medium,
                     ),
                   ),
                   if (_procedureSubtitle(procedure).isNotEmpty)
@@ -374,7 +374,7 @@ class _ProcedureOptionLabel extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w500,
+            fontWeight: AppFontWeight.medium,
           ),
         ),
         if (subtitle.isNotEmpty)

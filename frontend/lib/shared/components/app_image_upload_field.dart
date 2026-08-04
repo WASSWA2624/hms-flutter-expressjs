@@ -181,7 +181,7 @@ class AppImageUploadField extends StatelessWidget {
         Text(
           label,
           style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w500,
+            fontWeight: AppFontWeight.medium,
           ),
         ),
         SizedBox(height: theme.spacing.xs),
@@ -345,7 +345,7 @@ class _ImagePreviewTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: colorScheme.primary,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeight.medium,
                 ),
               ),
             ),
@@ -367,11 +367,9 @@ class _ImagePreviewTile extends StatelessWidget {
                 ? colorScheme.primaryContainer.withValues(alpha: 0.35)
                 : colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(theme.radius.md),
-            border: theme.borders.all(
-              color: isAddTile
-                  ? colorScheme.primary.withValues(alpha: 0.35)
-                  : colorScheme.outlineVariant,
-            ),
+            border: isAddTile
+                ? theme.borders.all(color: colorScheme.primary.withValues(alpha: 0.35))
+                : theme.borders.all(),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(theme.radius.md),

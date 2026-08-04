@@ -118,7 +118,7 @@ class _DashboardTrendChart extends StatelessWidget {
                 points: visiblePoints,
                 barColor: colorScheme.primary.withValues(alpha: 0.18),
                 lineColor: colorScheme.primary,
-                gridColor: colorScheme.outlineVariant,
+                gridColor: theme.borders.faint,
                 labelColor: colorScheme.onSurfaceVariant,
                 textStyle: theme.textTheme.labelSmall,
                 labelBuilder: _trendPointLabel,
@@ -233,7 +233,7 @@ class _DashboardDistributionChart extends StatelessWidget {
                         Text(
                           NumberFormat.compact().format(total),
                           style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: AppFontWeight.emphasis,
                           ),
                         ),
                         Text(
@@ -307,7 +307,7 @@ class _DistributionLegendItem extends StatelessWidget {
             '${_formatToken(segment.label)} ${percent.round()}%',
             style: theme.textTheme.labelSmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.emphasis,
             ),
           ),
         ],

@@ -1976,7 +1976,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
               ? l10n.tenantFacilityCreateFacilityTitle
               : l10n.tenantFacilityEditFacilityTitle,
           style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         SizedBox(height: theme.spacing.xs),
@@ -2321,7 +2321,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
                       l10n.tenantFacilityFieldPreviousLabel,
                       style: theme.textTheme.labelLarge?.copyWith(
                         color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                   ),
@@ -2331,7 +2331,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
                       l10n.tenantFacilityFieldNewLabel,
                       style: theme.textTheme.labelLarge?.copyWith(
                         color: colorScheme.primary,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                   ),
@@ -7403,7 +7403,7 @@ class _FacilityChangeDiffCard extends StatelessWidget {
             Text(
               change.label,
               style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.emphasis,
               ),
             ),
             SizedBox(height: theme.spacing.sm),
@@ -7528,14 +7528,14 @@ class _FacilityChangeValuePane extends StatelessWidget {
                 caption,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: captionColor,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               ),
               SizedBox(height: theme.spacing.sm),
               Text(
                 textValue,
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeight.medium,
                   decoration: isPrevious ? TextDecoration.lineThrough : null,
                   color: isPrevious
                       ? colorScheme.onSurfaceVariant
@@ -7968,7 +7968,7 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
                                   .tenantFacilityDepartmentSimilarityCheckingMessage
                             : l10n.commonLoadingCompactTitle,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
+                          fontWeight: AppFontWeight.medium,
                         ),
                       ),
                     ),

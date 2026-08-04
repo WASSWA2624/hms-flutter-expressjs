@@ -550,7 +550,7 @@ class _AspectPresetChip extends StatelessWidget {
       checkmarkColor: colorScheme.primary,
       labelStyle: theme.textTheme.labelLarge?.copyWith(
         color: selected ? colorScheme.primary : colorScheme.onSurface,
-        fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+        fontWeight: selected ? AppFontWeight.emphasis : AppFontWeight.regular,
       ),
     );
   }

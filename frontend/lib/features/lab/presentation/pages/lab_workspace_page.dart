@@ -1354,7 +1354,7 @@ class _LabCompactNextActionButton extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: primaryColor,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.emphasis,
                         ),
                       ),
                     ),

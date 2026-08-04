@@ -498,9 +498,7 @@ class AppMenuBar extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        border: Border(
-          bottom: theme.borders.side(color: colorScheme.outlineVariant, width: theme.appTokens.dividerThickness,),
-        ),
+        border: theme.borders.only(bottom: true),
       ),
       child: SizedBox(
         height: AppShellLayout.headerHeight,
@@ -528,7 +526,7 @@ class AppMenuBar extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.emphasis,
                         ),
                       ),
               ),
@@ -894,7 +892,7 @@ class _UserMenuHeader extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                     if (email != null) ...<Widget>[
@@ -964,7 +962,7 @@ class _UserMenuChip extends StatelessWidget {
           label,
           style: theme.textTheme.labelSmall?.copyWith(
             color: colorScheme.onSecondaryContainer,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
       ),
@@ -1014,7 +1012,7 @@ class _AvatarInitialsText extends StatelessWidget {
       overflow: TextOverflow.clip,
       style: Theme.of(context).textTheme.labelLarge?.copyWith(
         fontSize: size,
-        fontWeight: FontWeight.w600,
+        fontWeight: AppFontWeight.emphasis,
       ),
     );
   }
@@ -1106,7 +1104,7 @@ class _MobileShellDrawer extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.emphasis,
                         ),
                       ),
                     ),
@@ -1393,7 +1391,7 @@ class _ShellMenuGroupHeader extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: theme.textTheme.labelSmall?.copyWith(
           color: colorScheme.onSurfaceVariant.withValues(alpha: 0.78),
-          fontWeight: FontWeight.w500,
+          fontWeight: AppFontWeight.medium,
           letterSpacing: 0.4,
         ),
       ),
@@ -1586,8 +1584,8 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: foregroundColor,
                   fontWeight: widget.selected
-                      ? FontWeight.w500
-                      : FontWeight.w400,
+                      ? AppFontWeight.medium
+                      : AppFontWeight.regular,
                 ),
               ),
             ),
@@ -1696,7 +1694,7 @@ class _MenuItemCountBadge extends StatelessWidget {
             color: selected
                 ? sidebar.selectedForegroundColor
                 : sidebar.badgeAccentForegroundColor,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
       ),
@@ -1718,7 +1716,8 @@ class _SidebarResizeHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color color = Theme.of(context).colorScheme.outlineVariant;
+    final ThemeData theme = Theme.of(context);
+    final Color color = theme.borders.faint;
 
     return MouseRegion(
       cursor: SystemMouseCursors.resizeColumn,

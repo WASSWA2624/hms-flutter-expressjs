@@ -39,7 +39,7 @@ class AuthPageFrame extends StatelessWidget {
           textAlign: TextAlign.center,
           style: theme.textTheme.headlineSmall?.copyWith(
             color: colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
             fontSize: switch (breakpoint) {
               AppBreakpoint.xs || AppBreakpoint.sm => 22,
               _ => 24,
@@ -72,7 +72,7 @@ class AuthPageFrame extends StatelessWidget {
           borderRadius: BorderRadius.circular(
             context.responsiveRadius(theme.radius.lg),
           ),
-          border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.55)),
+          border: theme.borders.all(),
           boxShadow: <BoxShadow>[
             BoxShadow(
               color: colorScheme.shadow.withValues(alpha: 0.07),

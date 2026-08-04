@@ -64,7 +64,7 @@ class AppWizardStepper extends StatelessWidget {
             textAlign: TextAlign.center,
             style: theme.textTheme.labelLarge?.copyWith(
               color: colorScheme.primary,
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.emphasis,
             ),
           ),
           SizedBox(height: theme.spacing.sm),
@@ -140,7 +140,7 @@ class AppWizardStepper extends StatelessWidget {
             current.label,
             textAlign: TextAlign.center,
             style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.emphasis,
               color: colorScheme.onSurface,
             ),
           ),
@@ -152,7 +152,7 @@ class AppWizardStepper extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeight.medium,
                 ),
               ),
             ),
@@ -175,15 +175,14 @@ class _StepConnector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       width: width,
       height: 4,
       margin: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
-        color: completed
-            ? colorScheme.primary
-            : colorScheme.outlineVariant.withValues(alpha: 0.75),
+        color: completed ? colorScheme.primary : theme.borders.faint,
         borderRadius: BorderRadius.circular(999),
       ),
     );
@@ -241,12 +240,12 @@ class _StepNodeState extends State<_StepNode> {
       circleFill = colorScheme.surfaceContainerHighest.withValues(alpha: 0.55);
       circleFg = colorScheme.onSurfaceVariant.withValues(alpha: 0.45);
       labelColor = colorScheme.onSurfaceVariant.withValues(alpha: 0.45);
-      borderColor = colorScheme.outlineVariant.withValues(alpha: 0.5);
+      borderColor = theme.borders.disabled;
     } else if (widget.active || widget.completed) {
       circleFill = colorScheme.primary;
       circleFg = colorScheme.onPrimary;
       labelColor = widget.active ? colorScheme.primary : colorScheme.onSurface;
-      borderColor = colorScheme.primary;
+      borderColor = theme.borders.selected;
     } else {
       circleFill = highlight
           ? colorScheme.primary.withValues(alpha: 0.12)
@@ -255,9 +254,7 @@ class _StepNodeState extends State<_StepNode> {
       labelColor = highlight
           ? colorScheme.primary
           : colorScheme.onSurfaceVariant;
-      borderColor = highlight
-          ? colorScheme.primary
-          : colorScheme.outlineVariant;
+      borderColor = highlight ? theme.borders.selected : theme.borders.faint;
     }
 
     final Widget node = Semantics(
@@ -286,8 +283,10 @@ class _StepNodeState extends State<_StepNode> {
               decoration: BoxDecoration(
                 color: circleFill,
                 shape: BoxShape.circle,
-                border: theme.borders.all(color: borderColor,
-                  width: widget.active ? 3 : 1.5),
+                border: theme.borders.all(
+                  color: borderColor,
+                  width: widget.active ? theme.borders.thick + 1 : theme.borders.medium,
+                ),
                 boxShadow: highlight && widget.enabled
                     ? <BoxShadow>[
                         BoxShadow(
@@ -314,7 +313,7 @@ class _StepNodeState extends State<_StepNode> {
                       '${widget.index}',
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: circleFg,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.emphasis,
                         fontSize: widget.compact ? 12 : 14,
                         height: 1,
                       ),
@@ -333,8 +332,8 @@ class _StepNodeState extends State<_StepNode> {
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: labelColor,
                       fontWeight: widget.active
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                          ? AppFontWeight.emphasis
+                          : AppFontWeight.medium,
                       height: 1.15,
                       fontSize: widget.compact ? 11 : 12,
                     ),
@@ -345,7 +344,7 @@ class _StepNodeState extends State<_StepNode> {
                       textAlign: TextAlign.center,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: labelColor.withValues(alpha: 0.85),
-                        fontWeight: FontWeight.w500,
+                        fontWeight: AppFontWeight.medium,
                         fontSize: widget.compact ? 9 : 10,
                       ),
                     ),

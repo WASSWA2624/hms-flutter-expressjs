@@ -106,7 +106,7 @@ class _LabEditableValueListFieldState extends State<LabEditableValueListField> {
               borderRadius: BorderRadius.circular(
                 context.responsiveRadius(theme.radius.md),
               ),
-              border: theme.borders.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7)),
+              border: theme.borders.all(),
             ),
             child: Padding(
               padding: EdgeInsets.all(theme.spacing.sm),
@@ -289,7 +289,7 @@ class _LabSearchableTextFieldState extends State<LabSearchableTextField> {
                       separatorBuilder: (_, _) => Divider(
                         height: 1,
                         thickness: 0.5,
-                        color: theme.colorScheme.outlineVariant.withValues(
+                        color: theme.borders.faint.withValues(
                           alpha: 0.7,
                         ),
                       ),
@@ -308,7 +308,7 @@ class _LabSearchableTextFieldState extends State<LabSearchableTextField> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w400,
+                              fontWeight: AppFontWeight.regular,
                             ),
                           ),
                           onTap: () => onSelected(option),

@@ -7,6 +7,7 @@ import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscript
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/app/theme/app_font_family.dart';
 
 /// Shows a one-shot action dialog when the tenant subscription is expired.
 class SubscriptionExpiredPromptHost extends StatefulWidget {
@@ -118,7 +119,7 @@ class _SubscriptionExpiredPromptHostState
             l10n.subscriptionExpiredPromptBody,
             style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
               height: 1.35,
-              fontWeight: FontWeight.w500,
+              fontWeight: AppFontWeight.medium,
             ),
           ),
           actions: <Widget>[

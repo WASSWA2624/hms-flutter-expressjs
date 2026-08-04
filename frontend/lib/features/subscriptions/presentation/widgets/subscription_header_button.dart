@@ -41,7 +41,7 @@ final class SubscriptionHeaderButton extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.emphasis,
                     color: presentation.foreground,
                   ),
                 ),

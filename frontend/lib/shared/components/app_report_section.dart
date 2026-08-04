@@ -69,9 +69,9 @@ class AppReportSectionTile extends StatelessWidget {
             color: isSelected
                 ? colorScheme.primaryContainer.withValues(alpha: 0.28)
                 : colorScheme.surface,
-            border: theme.borders.all(color: isSelected
-                  ? colorScheme.primary
-                  : colorScheme.outlineVariant),
+            border: isSelected
+                            ? theme.borders.all(tone: AppBorderTone.selected)
+                            : theme.borders.all(),
           ),
           child: Padding(
             padding: padding,
@@ -107,7 +107,7 @@ class AppReportSectionTile extends StatelessWidget {
                                     ? theme.textTheme.labelMedium
                                     : theme.textTheme.bodyMedium)
                                 ?.copyWith(
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: AppFontWeight.emphasis,
                                   color: section.enabled
                                       ? null
                                       : colorScheme.onSurfaceVariant,
@@ -133,7 +133,7 @@ class AppReportSectionTile extends StatelessWidget {
                     section.count.toString(),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                 ],

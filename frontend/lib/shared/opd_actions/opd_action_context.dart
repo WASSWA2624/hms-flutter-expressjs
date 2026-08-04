@@ -408,7 +408,7 @@ class _OpdEncounterSummaryTile extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.labelSmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.emphasis,
             ),
           ),
           SizedBox(height: theme.spacing.xs),
@@ -423,7 +423,7 @@ class _OpdEncounterSummaryTile extends StatelessWidget {
             AppCopyableIdentifier(
               value: pair.value,
               textStyle: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
+                fontWeight: AppFontWeight.medium,
               ),
               copiedMessage: pair.label == l10n.opdPatientIdLabel
                   ? l10n.clinicalPatientIdCopiedMessage
@@ -435,7 +435,7 @@ class _OpdEncounterSummaryTile extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
+                fontWeight: AppFontWeight.medium,
               ),
             ),
         ],

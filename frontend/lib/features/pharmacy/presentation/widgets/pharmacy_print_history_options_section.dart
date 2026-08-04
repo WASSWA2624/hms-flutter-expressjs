@@ -88,7 +88,7 @@ class PharmacyPrintHistoryOptionsSection extends StatelessWidget {
                   child: Text(
                     l10n.pharmacyPrintSelectHistoryLabel,
                     style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                 ),
@@ -96,7 +96,7 @@ class PharmacyPrintHistoryOptionsSection extends StatelessWidget {
                   '$selectedCount / $totalCount',
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
                 ),
               ],

@@ -196,7 +196,7 @@ class _AppCurrencySelectFieldState extends State<AppCurrencySelectField> {
               Theme.of(context).inputDecorationTheme.hintStyle ??
               Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w300,
+                fontWeight: AppFontWeight.light,
               ),
         ),
         floatingLabelBehavior: FloatingLabelBehavior.auto,
@@ -239,7 +239,7 @@ class _AppCurrencySelectFieldState extends State<AppCurrencySelectField> {
                                     : colorScheme.onSurface.withValues(
                                         alpha: 0.62,
                                       ),
-                                fontWeight: FontWeight.w600,
+                                fontWeight: AppFontWeight.emphasis,
                               )
                             : theme.inputDecorationTheme.hintStyle,
                       ),
@@ -385,7 +385,7 @@ class _CurrencySelectButton extends StatelessWidget {
                                   : theme.textTheme.headlineSmall)
                               ?.copyWith(
                                 color: contentColor,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: AppFontWeight.emphasis,
                               )
                         : theme.inputDecorationTheme.hintStyle,
                   ),
@@ -491,7 +491,7 @@ class _AppCurrencyPickerDialogState extends State<_AppCurrencyPickerDialog> {
                   : ListView.separated(
                       itemCount: options.length,
                       separatorBuilder: (_, _) =>
-                          Divider(height: 1, color: colorScheme.outlineVariant),
+                          Divider(height: 1, color: theme.borders.faint),
                       itemBuilder: (BuildContext context, int index) {
                         final AppCurrencyOption option = options[index];
                         final bool selected =

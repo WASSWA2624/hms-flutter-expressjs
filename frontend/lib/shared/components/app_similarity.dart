@@ -206,7 +206,7 @@ class AppSimilarityMatchCard<T> extends StatelessWidget {
             badgeLabel,
             style: theme.textTheme.labelMedium?.copyWith(
               color: accent,
-              fontWeight: FontWeight.w700,
+              fontWeight: AppFontWeight.strong,
             ),
           ),
         ),
@@ -214,7 +214,7 @@ class AppSimilarityMatchCard<T> extends StatelessWidget {
           '${match.overallScore}%',
           style: theme.textTheme.labelLarge?.copyWith(
             color: accent,
-            fontWeight: FontWeight.w800,
+            fontWeight: AppFontWeight.strong,
           ),
         ),
       ],
@@ -507,7 +507,7 @@ class _AppSimilarityReviewDialogState<T>
               Text(
                 closestMatchText,
                 style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: AppFontWeight.strong,
                   color: proposedAccent,
                 ),
               ),
@@ -560,7 +560,7 @@ class _AppSimilarityReviewDialogState<T>
                   child: Text(
                     widget.matchesHeading ?? l10n.appSimilarityMatchesHeading,
                     style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                     textAlign: TextAlign.start,
                   ),
@@ -569,7 +569,7 @@ class _AppSimilarityReviewDialogState<T>
                   l10n.appSimilarityMatchCountLabel(widget.matches.length),
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: AppFontWeight.medium,
                   ),
                 ),
               ],
@@ -671,7 +671,7 @@ class _AppSimilarityReadOnlyField extends StatelessWidget {
               TextSpan(
                 text: label,
                 style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.emphasis,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -679,7 +679,7 @@ class _AppSimilarityReadOnlyField extends StatelessWidget {
                 TextSpan(
                   text: ' *',
                   style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: AppFontWeight.strong,
                     color: theme.statusColors.error,
                   ),
                 ),
@@ -690,7 +690,7 @@ class _AppSimilarityReadOnlyField extends StatelessWidget {
         Text(
           display,
           style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w500,
+            fontWeight: AppFontWeight.medium,
             color: trimmed.isEmpty
                 ? theme.colorScheme.onSurfaceVariant
                 : theme.colorScheme.onSurface,
@@ -728,7 +728,7 @@ class _AppSimilarityNoMatchPanel extends StatelessWidget {
             child: Text(
               label,
               style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.emphasis,
               ),
               textAlign: TextAlign.start,
             ),
@@ -746,7 +746,7 @@ class _AppSimilarityNoMatchPanel extends StatelessWidget {
               '$score%',
               style: theme.textTheme.labelLarge?.copyWith(
                 color: statusColors.onSuccessContainer,
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.emphasis,
               ),
             ),
           ),
@@ -780,7 +780,7 @@ class _AppSimilarityFieldTable extends StatelessWidget {
     }
 
     final TextStyle headerStyle = theme.textTheme.labelSmall!.copyWith(
-      fontWeight: FontWeight.w700,
+      fontWeight: AppFontWeight.strong,
       color: theme.colorScheme.onSurfaceVariant,
     );
 
@@ -831,7 +831,7 @@ class _AppSimilarityFieldTable extends StatelessWidget {
                   child: Text(
                     row.label,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                     textAlign: TextAlign.start,
                   ),
@@ -857,7 +857,7 @@ class _AppSimilarityFieldTable extends StatelessWidget {
                   child: Text(
                     row.score == null ? emptyValueLabel : '${row.score}%',
                     style: theme.textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                       color: row.isExact
                           ? statusColors.error
                           : (row.score ?? 0) >= 70

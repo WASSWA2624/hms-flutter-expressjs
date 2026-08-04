@@ -138,7 +138,7 @@ class _AdministrationActionList extends StatelessWidget {
               height: 1,
               indent: theme.spacing.sm,
               endIndent: theme.spacing.sm,
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+              color: theme.borders.faint,
             ),
         ],
       ],
@@ -191,7 +191,7 @@ class _AdministrationActionTile extends StatelessWidget {
                     Text(
                       action.title,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w500,
+                        fontWeight: AppFontWeight.medium,
                       ),
                     ),
                     SizedBox(height: theme.spacing.xs / 2),

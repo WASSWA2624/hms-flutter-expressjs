@@ -128,7 +128,7 @@ class _AppCopyableIdentifierState extends State<AppCopyableIdentifier> {
     final String visibleValue = (widget.value ?? '').trim();
     final TextStyle? effectiveTextStyle =
         widget.textStyle ??
-        theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600);
+        theme.textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis);
     final bool wrap = AppListTableTextPolicy.wrapOf(context);
     final int? maxLines = wrap ? null : widget.maxLines;
     final TextOverflow overflow = wrap

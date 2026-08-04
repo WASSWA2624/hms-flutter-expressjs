@@ -1044,7 +1044,7 @@ class _ExportSelectAllColumnsTile extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         dense: true,
@@ -1110,7 +1110,7 @@ class _ExportColumnGrid extends StatelessWidget {
           header!,
           Divider(
             height: theme.spacing.md,
-            color: colorScheme.outlineVariant.withValues(alpha: 0.55),
+            color: theme.borders.faint,
           ),
         ],
         LayoutBuilder(
@@ -1192,7 +1192,7 @@ class _ExportMultiSelectGroup extends StatelessWidget {
         Text(
           group.label,
           style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         SizedBox(height: theme.spacing.xs),

@@ -233,7 +233,7 @@ class PharmacyPrintOptionsSection extends StatelessWidget {
                   child: Text(
                     l10n.pharmacyPrintSelectMedicationsLabel,
                     style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                 ),
@@ -241,7 +241,7 @@ class PharmacyPrintOptionsSection extends StatelessWidget {
                   '$selectedCount / $totalCount',
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
                 ),
               ],
@@ -294,7 +294,7 @@ class PharmacyPrintOptionsSection extends StatelessWidget {
                     child: Text(
                       l10n.pharmacyPrintSelectHistoryLabel,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                   ),
@@ -388,7 +388,7 @@ class PharmacyPrintSelectableTile extends StatelessWidget {
         resolvedSubtitle != null && resolvedSubtitle.isNotEmpty;
     final bool hasMeta = resolvedMeta != null && resolvedMeta.isNotEmpty;
     final TextStyle? titleStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontWeight: emphasizeTitle ? FontWeight.w600 : FontWeight.w400,
+      fontWeight: emphasizeTitle ? AppFontWeight.emphasis : AppFontWeight.regular,
       height: 1.2,
     );
     final TextStyle? subtitleStyle = theme.textTheme.bodySmall?.copyWith(
@@ -397,7 +397,7 @@ class PharmacyPrintSelectableTile extends StatelessWidget {
     );
     final TextStyle? metaStyle = theme.textTheme.labelSmall?.copyWith(
       color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
-      fontWeight: emphasizeTitle ? FontWeight.w600 : FontWeight.w400,
+      fontWeight: emphasizeTitle ? AppFontWeight.emphasis : AppFontWeight.regular,
       height: 1.2,
     );
     final TextStyle? separatorStyle = theme.textTheme.bodySmall?.copyWith(
@@ -528,7 +528,7 @@ class PharmacyInfoCard extends StatelessWidget {
                     TextSpan(
                       text: title,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.emphasis,
                         height: 1.2,
                       ),
                     ),
@@ -558,7 +558,7 @@ class PharmacyInfoCard extends StatelessWidget {
                         text: resolvedMeta,
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: colorScheme.primary,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.emphasis,
                           height: 1.2,
                         ),
                       ),

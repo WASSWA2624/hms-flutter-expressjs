@@ -507,7 +507,7 @@ Future<bool?> showRoleMutationDialog({
                               ? l10n.accessAdminRoleScopeLabel
                               : createScopeOptions.first.label,
                           style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: AppFontWeight.emphasis,
                           ),
                         )
                       else
@@ -967,7 +967,7 @@ class _RoleTargetMultiSelect extends StatelessWidget {
         Text(
           label,
           style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         SizedBox(height: theme.spacing.xs),

@@ -9,6 +9,7 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 import '../components/component_test_app.dart';
+import 'package:hosspi_hms/app/theme/app_font_family.dart';
 
 void main() {
   testWidgets('AppWorkspace renders header, actions, and sections', (
@@ -555,7 +556,7 @@ void main() {
     expect(find.byIcon(Icons.expand_less), findsOneWidget);
 
     final Text title = tester.widget<Text>(find.text('Orders'));
-    expect(title.style?.fontWeight, FontWeight.w700);
+    expect(title.style?.fontWeight, AppFontWeight.strong);
 
     await tester.tap(find.text('Orders'));
     await tester.pumpAndSettle();
@@ -594,7 +595,7 @@ void main() {
       expect(chevronCenter.dx, greaterThan(deleteCenter.dx));
 
       final Text title = tester.widget<Text>(find.text('CBC PANEL'));
-      expect(title.style?.fontWeight, FontWeight.w700);
+      expect(title.style?.fontWeight, AppFontWeight.strong);
     },
   );
 

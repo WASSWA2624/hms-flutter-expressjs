@@ -208,8 +208,8 @@ class _TimelineNode extends StatelessWidget {
                 if (!isLast)
                   Expanded(
                     child: Container(
-                      width: 2,
-                      color: colorScheme.outlineVariant,
+                      width: theme.borders.thick,
+                      color: theme.borders.faint,
                     ),
                   ),
               ],
@@ -229,7 +229,7 @@ class _TimelineNode extends StatelessWidget {
                   Text(
                     item.title,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                   if (timestamp.isNotEmpty)

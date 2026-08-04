@@ -401,7 +401,7 @@ class _AccordionPanelContent extends StatelessWidget {
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(12),
-          border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.4)),
+          border: theme.borders.all(),
         ),
         child: Padding(
           padding: EdgeInsets.all(theme.spacing.lg),

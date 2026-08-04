@@ -144,7 +144,7 @@ class _TenantFacilitySetupWizardState extends State<TenantFacilitySetupWizard> {
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(theme.radius.md),
-              border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.7)),
+              border: theme.borders.all(),
             ),
             child: Padding(
               padding: EdgeInsets.fromLTRB(
@@ -528,7 +528,7 @@ class _SetupStepPanel extends StatelessWidget {
                   Text(
                     title,
                     style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                   if (optional)
@@ -620,8 +620,8 @@ class _SetupStepRequirementsChecklist extends StatelessWidget {
                                     ? colorScheme.onSurfaceVariant
                                     : colorScheme.onSurface,
                                 fontWeight: item.satisfied
-                                    ? FontWeight.w400
-                                    : FontWeight.w600,
+                                    ? AppFontWeight.regular
+                                    : AppFontWeight.emphasis,
                                 decoration: item.satisfied
                                     ? TextDecoration.lineThrough
                                     : null,
@@ -638,7 +638,7 @@ class _SetupStepRequirementsChecklist extends StatelessWidget {
                                 ),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: pendingTone,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: AppFontWeight.medium,
                                 ),
                               ),
                             ],
@@ -871,7 +871,7 @@ class _SetupEmptyRecords extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.6)),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -988,7 +988,7 @@ class _StepBadge extends StatelessWidget {
         label,
         style: theme.textTheme.labelSmall?.copyWith(
           color: tone,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.emphasis,
         ),
       ),
     );
@@ -1015,7 +1015,7 @@ class TenantFacilityPermissionStrip extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.65)),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -1039,7 +1039,7 @@ class TenantFacilityPermissionStrip extends StatelessWidget {
                   Text(
                     l10n.tenantFacilityPermissionsTitle,
                     style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                   _PermissionChip(
@@ -1087,7 +1087,7 @@ class _PermissionChip extends StatelessWidget {
           '$label · ${allowed ? l10n.tenantFacilityPermissionAllowed : l10n.tenantFacilityPermissionDenied}',
           style: theme.textTheme.labelMedium?.copyWith(
             color: tone,
-            fontWeight: FontWeight.w500,
+            fontWeight: AppFontWeight.medium,
           ),
         ),
       ],

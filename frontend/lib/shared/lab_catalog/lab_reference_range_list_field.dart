@@ -867,7 +867,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
                   child: Text(
                     title,
                     style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w500,
+                      fontWeight: AppFontWeight.medium,
                     ),
                   ),
                 ),
@@ -1057,7 +1057,7 @@ class _LabGenderApplicabilityField extends StatelessWidget {
           l10n.labGenderApplicabilityLabel,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
+            fontWeight: AppFontWeight.medium,
           ),
         ),
         SizedBox(height: theme.spacing.xs),
@@ -1128,7 +1128,7 @@ class _LabAgeApplicabilityField extends StatelessWidget {
           l10n.labAgeApplicabilityLabel,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
+            fontWeight: AppFontWeight.medium,
           ),
         ),
         SizedBox(height: theme.spacing.xs),

@@ -184,8 +184,8 @@ class _ConversationRow extends StatelessWidget {
                             title,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: conversation.unread
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
+                                  ? AppFontWeight.emphasis
+                                  : AppFontWeight.regular,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

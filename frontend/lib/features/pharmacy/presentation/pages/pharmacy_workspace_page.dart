@@ -1414,7 +1414,7 @@ class _MedicationCell extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         if ((item.instructions ?? '').trim().isNotEmpty) ...<Widget>[
@@ -1449,7 +1449,7 @@ class _ReturnLineMedicationCell extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         if (item.doseLine.trim().isNotEmpty) ...<Widget>[
@@ -1516,7 +1516,7 @@ class _MedicationPriceCell extends StatelessWidget {
         Text(
           clinicalRequestPriceLabel(context, unitPrice, currency),
           style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w500,
+            fontWeight: AppFontWeight.medium,
           ),
         ),
         SizedBox(height: theme.spacing.xs),
@@ -1524,7 +1524,7 @@ class _MedicationPriceCell extends StatelessWidget {
           sourceLabel,
           style: theme.textTheme.labelSmall?.copyWith(
             color: colorScheme.primary,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         if (lineTotal != null && lineTotal > 0) ...<Widget>[
@@ -1566,7 +1566,7 @@ class _MedicationPrimaryLineAction extends ConsumerWidget {
         l10n.pharmacyItemCancelledLabel,
         style: theme.textTheme.bodySmall?.copyWith(
           color: theme.colorScheme.error,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.emphasis,
         ),
       );
     }
@@ -1859,7 +1859,7 @@ class _DispenseHistoryPanelState extends ConsumerState<_DispenseHistoryPanel> {
               return Text(
                 (batch == null || batch.isEmpty) ? '—' : batch,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               );
             },
@@ -1987,7 +1987,7 @@ class _HistoryTableCell extends StatelessWidget {
         Text(
           primary,
           style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         if (hasSecondary) ...<Widget>[
@@ -2927,7 +2927,7 @@ class _ReturnMedicationsTable extends StatelessWidget {
               _returnQuantityLabel(line),
               style: Theme.of(
                 context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+              ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.medium),
             ),
           );
         },

@@ -734,7 +734,7 @@ class _LabApplyingChangesBanner extends StatelessWidget {
               child: Text(
                 message,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeight.medium,
                   color: theme.colorScheme.onPrimaryContainer,
                 ),
               ),
@@ -764,7 +764,7 @@ class _LabResultValidationMessage extends StatelessWidget {
       message,
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.colorScheme.error,
-        fontWeight: FontWeight.w400,
+        fontWeight: AppFontWeight.regular,
       ),
     );
   }
@@ -907,12 +907,12 @@ class _LabResultEntryCards extends StatelessWidget {
                   ? theme.colorScheme.errorContainer.withValues(alpha: 0.28)
                   : _resultRowAccentColor(theme, draft.item, draft) ??
                       theme.colorScheme.surfaceContainerLowest,
-              border: theme.borders.all(color: _isCancelledItem(draft.item) || draft.showValidationError
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.outlineVariant,
-                width: _isCancelledItem(draft.item) || draft.showValidationError
-                    ? 1.5
-                    : 1),
+              border: (_isCancelledItem(draft.item) || draft.showValidationError)
+                  ? theme.borders.all(
+                      tone: AppBorderTone.error,
+                      weight: AppBorderWeight.medium,
+                    )
+                  : theme.borders.all(),
             ),
             child: Padding(
               padding: cardPadding,
@@ -998,7 +998,7 @@ class _MobileResultParameterRow extends StatelessWidget {
           label,
           style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         SizedBox(width: theme.spacing.sm),
@@ -1126,7 +1126,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
     // Fill the panel width; avoid forcing a min wider than the viewport
     // (that caused awkward horizontal scroll just above the card breakpoint).
     final double tableWidth = availableWidth;
-    final Color borderColor = colorScheme.outlineVariant;
+    final Color borderColor = theme.borders.faint;
     final TableBorder tableBorder = TableBorder(
       horizontalInside: theme.borders.side(color: borderColor),
       verticalInside: theme.borders.side(color: borderColor),
@@ -1218,7 +1218,7 @@ class _LabResultHeaderText extends StatelessWidget {
     return Text(
       label,
       style: theme.textTheme.labelLarge?.copyWith(
-        fontWeight: FontWeight.w600,
+        fontWeight: AppFontWeight.emphasis,
         color: theme.colorScheme.onSurfaceVariant,
         letterSpacing: 0.1,
       ),
@@ -1248,7 +1248,7 @@ TableRow _labResultEntryTableRow(
           : _resultRowAccentColor(theme, item, draft) ??
               theme.colorScheme.surfaceContainerLowest,
       border: cancelled || draft.showValidationError
-          ? theme.borders.all(color: theme.colorScheme.error, width: 1.5)
+          ? theme.borders.all(tone: AppBorderTone.error, weight: AppBorderWeight.medium)
           : null,
     ),
     children: <Widget>[
@@ -1313,8 +1313,8 @@ class _LabResultTestCell extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final LabOrderItem item = draft.item;
     final TextStyle titleStyle =
-        theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w400) ??
-        const TextStyle(fontWeight: FontWeight.w400);
+        theme.textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.regular) ??
+        const TextStyle(fontWeight: AppFontWeight.regular);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -1443,7 +1443,7 @@ class _CompactResultInputState extends State<_CompactResultInput> {
         ? null
         : TextStyle(
             color: _resultInterpretationForeground(theme, tone),
-            fontWeight: FontWeight.w400,
+            fontWeight: AppFontWeight.regular,
           );
 
     // Keep field-affixed clear/dropdown controls icon-only so toolbar
@@ -1541,7 +1541,7 @@ class _CompactResultInputState extends State<_CompactResultInput> {
                     : l10n.labResultEntryRequiredMessage,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.error,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeight.medium,
                 ),
                 softWrap: true,
               ),
@@ -1590,7 +1590,7 @@ class _CompletedResultReadout extends StatelessWidget {
       value,
       style: theme.textTheme.bodyMedium?.copyWith(
         color: valueColor,
-        fontWeight: FontWeight.w400,
+        fontWeight: AppFontWeight.regular,
       ),
       softWrap: true,
     );
@@ -1618,7 +1618,7 @@ class _LabResultFlagCell extends StatelessWidget {
         context.l10n.labStatusPending,
         style: theme.textTheme.bodyMedium?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w400,
+          fontWeight: AppFontWeight.regular,
         ),
       );
     }
@@ -1633,7 +1633,7 @@ class _LabResultFlagCell extends StatelessWidget {
         context.l10n.clinicalResultsFlagUnknownLabel,
         style: theme.textTheme.bodyMedium?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w400,
+          fontWeight: AppFontWeight.regular,
         ),
       );
     }
@@ -2196,7 +2196,7 @@ class _LabReportTestSelectionPane extends StatelessWidget {
                   Text(
                     l10n.labReportSelectionTitle,
                     style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                   SizedBox(height: theme.spacing.xs),
@@ -2300,9 +2300,9 @@ class _LabReportTestSelectionTile extends StatelessWidget {
         onTap: () => onChanged(!selected),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            border: theme.borders.all(color: selected
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.outlineVariant),
+            border: selected
+                  ? theme.borders.all(tone: AppBorderTone.selected)
+                  : theme.borders.all(),
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(
@@ -2326,7 +2326,7 @@ class _LabReportTestSelectionTile extends StatelessWidget {
                       Text(
                         item.displayTitle,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.emphasis,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -2336,7 +2336,7 @@ class _LabReportTestSelectionTile extends StatelessWidget {
                           color: abnormal
                               ? theme.colorScheme.error
                               : theme.colorScheme.onSurfaceVariant,
-                          fontWeight: abnormal ? FontWeight.w600 : null,
+                          fontWeight: abnormal ? AppFontWeight.emphasis : null,
                         ),
                       ),
                     ],
@@ -2681,7 +2681,7 @@ class _ReopenSavedResultDialogState
                 l10n.labResultEntryRequiredMessage,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.error,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeight.medium,
                 ),
               ),
             AppTextField(
@@ -2946,7 +2946,7 @@ class _EditResultTestContext extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.55)),
+        border: theme.borders.all(),
         borderRadius: BorderRadius.circular(
           context.responsiveRadius(theme.radius.sm),
         ),
@@ -2959,7 +2959,7 @@ class _EditResultTestContext extends StatelessWidget {
             Text(
               title,
               style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.emphasis,
                 color: colorScheme.onSurface,
               ),
             ),

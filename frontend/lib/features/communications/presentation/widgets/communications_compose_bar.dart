@@ -95,9 +95,7 @@ class _CommunicationsComposeBarState
     return DecoratedBox(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        border: Border(
-          top: theme.borders.side(),
-        ),
+        border: theme.borders.only(top: true),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.sm),
@@ -162,8 +160,10 @@ class _CommunicationsComposeBarState
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest,
-          border: Border(
-            left: theme.borders.side(color: theme.colorScheme.primary, width: 3),
+          border: theme.borders.only(
+            left: true,
+            color: theme.colorScheme.primary,
+            width: theme.borders.thick + 1,
           ),
         ),
         child: Padding(

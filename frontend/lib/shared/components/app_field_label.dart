@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/app/theme/app_font_family.dart';
 
 class AppFieldRequirementScope extends InheritedWidget {
   const AppFieldRequirementScope({
@@ -89,9 +90,9 @@ TextStyle _requiredLabelStyle(ColorScheme colorScheme) {
     return _cachedRequiredStyle!;
   }
   _cachedLabelColorScheme = colorScheme;
-  _cachedRequiredStyle = TextStyle(
+  _cachedRequiredStyle = AppFontFamily.style(
     color: colorScheme.error,
-    fontWeight: FontWeight.w600,
+    fontWeight: AppFontWeight.emphasis,
   );
   _cachedOptionalStyle = null;
   return _cachedRequiredStyle!;
@@ -103,9 +104,9 @@ TextStyle _optionalLabelStyle(ColorScheme colorScheme) {
     return _cachedOptionalStyle!;
   }
   _cachedLabelColorScheme = colorScheme;
-  _cachedOptionalStyle = TextStyle(
+  _cachedOptionalStyle = AppFontFamily.style(
     color: colorScheme.onSurfaceVariant,
-    fontWeight: FontWeight.w300,
+    fontWeight: AppFontWeight.label,
   );
   _cachedRequiredStyle = null;
   return _cachedOptionalStyle!;

@@ -2128,7 +2128,7 @@ class _PermissionDetailSummaryCard extends StatelessWidget {
                       Text(
                         permission.title,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
+                          fontWeight: AppFontWeight.medium,
                         ),
                       ),
                       if (code != null) ...<Widget>[
@@ -2137,7 +2137,7 @@ class _PermissionDetailSummaryCard extends StatelessWidget {
                           code!,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colors.onSurfaceVariant,
-                            fontFamily: 'monospace',
+                            fontFamily: AppFontFamily.monospace,
                             letterSpacing: 0.2,
                           ),
                         ),
@@ -2571,7 +2571,7 @@ class _RoleDetailSummaryCard extends StatelessWidget {
                       Text(
                         title.isEmpty ? '—' : title,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.emphasis,
                         ),
                       ),
                       if (technicalName != null) ...<Widget>[
@@ -2580,7 +2580,7 @@ class _RoleDetailSummaryCard extends StatelessWidget {
                           technicalName,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colors.onSurfaceVariant,
-                            fontFamily: 'monospace',
+                            fontFamily: AppFontFamily.monospace,
                             letterSpacing: 0.2,
                           ),
                         ),
@@ -3672,7 +3672,7 @@ class _UserDetailSummaryCard extends StatelessWidget {
               child: Text(
                 _userInitials(identity.primary),
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               ),
             ),
@@ -3684,7 +3684,7 @@ class _UserDetailSummaryCard extends StatelessWidget {
                   Text(
                     identity.primary,
                     style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                   SizedBox(height: theme.spacing.sm),
@@ -3870,7 +3870,7 @@ class _UserDetailAccountFields extends StatelessWidget {
               SizedBox(height: theme.spacing.sm),
               Divider(
                 height: theme.spacing.md,
-                color: theme.colorScheme.outlineVariant,
+                color: theme.borders.faint,
               ),
             ],
             _UserDetailFieldGrid(fields: assignmentFields, wide: wide),
@@ -3952,7 +3952,7 @@ class _UserDetailStatusChip extends StatelessWidget {
       side: theme.borders.side(color: foreground.withValues(alpha: 0.24)),
       labelStyle: theme.textTheme.labelMedium?.copyWith(
         color: foreground,
-        fontWeight: FontWeight.w600,
+        fontWeight: AppFontWeight.emphasis,
       ),
       visualDensity: VisualDensity.compact,
     );
@@ -3997,7 +3997,7 @@ class _UserDetailInfoTile extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final AppLocalizations l10n = context.l10n;
     final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontWeight: FontWeight.w500,
+      fontWeight: AppFontWeight.medium,
     );
 
     return Padding(

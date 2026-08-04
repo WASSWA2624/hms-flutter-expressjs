@@ -325,7 +325,7 @@ class AppWorkspaceStatusBadge extends StatelessWidget {
               overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
               style: theme.textTheme.labelLarge?.copyWith(
                 color: color,
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.emphasis,
               ),
             ),
           ),
@@ -1122,7 +1122,7 @@ class _PatientContextIdentity extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleLarge?.copyWith(
                     color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
                 ),
                 SizedBox(height: theme.spacing.xs),
@@ -1244,11 +1244,11 @@ class _PatientContextNumberToken extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final TextStyle? labelStyle = theme.textTheme.labelMedium?.copyWith(
       color: colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w600,
+      fontWeight: AppFontWeight.emphasis,
     );
     final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
       color: colorScheme.onSurface,
-      fontWeight: FontWeight.w600,
+      fontWeight: AppFontWeight.emphasis,
     );
     final String? resolvedLabel = label?.trim();
 
@@ -1334,7 +1334,7 @@ class AppPatientContextFactsRow extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final TextStyle? separatorStyle = theme.textTheme.bodyMedium?.copyWith(
       color: colorScheme.outlineVariant,
-      fontWeight: FontWeight.w400,
+      fontWeight: AppFontWeight.regular,
     );
 
     return LayoutBuilder(
@@ -1421,13 +1421,13 @@ class _PatientContextInlineFact extends StatelessWidget {
         : colors.on;
     final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
       color: colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w500,
+      fontWeight: AppFontWeight.medium,
     );
     final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
       color: field.tone == AppWorkspaceStatusTone.neutral
           ? colorScheme.onSurface
           : accentColor,
-      fontWeight: FontWeight.w400,
+      fontWeight: AppFontWeight.regular,
     );
 
     final Widget value = field.copyable
@@ -1538,7 +1538,7 @@ class _PatientContextFieldTile extends StatelessWidget {
     final bool neutralTone = field.tone == AppWorkspaceStatusTone.neutral;
     final _WorkspaceToneColors colors = _toneColors(theme, field.tone);
     final Color borderColor = neutralTone
-        ? colorScheme.outlineVariant
+        ? theme.borders.faint
         : colors.border;
     final Color labelColor = neutralTone
         ? colorScheme.onSurfaceVariant
@@ -1578,7 +1578,7 @@ class _PatientContextFieldTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: labelColor,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                   SizedBox(height: theme.spacing.xs),
@@ -1595,7 +1595,7 @@ class _PatientContextFieldTile extends StatelessWidget {
                             color: neutralTone
                                 ? colorScheme.onSurface
                                 : colors.on,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: AppFontWeight.medium,
                           ),
                         )
                       : Text(
@@ -1606,7 +1606,7 @@ class _PatientContextFieldTile extends StatelessWidget {
                             color: neutralTone
                                 ? colorScheme.onSurface
                                 : colors.on,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: AppFontWeight.medium,
                           ),
                         ),
                 ],
@@ -1786,7 +1786,7 @@ class _WorkspaceHeaderTitle extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       style: titleStyle?.copyWith(
         color: colorScheme.onSurface,
-        fontWeight: FontWeight.w600,
+        fontWeight: AppFontWeight.emphasis,
       ),
     );
   }
@@ -2105,7 +2105,7 @@ _WorkspaceToneColors _toneColors(ThemeData theme, AppWorkspaceStatusTone tone) {
     AppWorkspaceStatusTone.neutral => _WorkspaceToneColors(
       container: colorScheme.surfaceContainerHighest,
       on: colorScheme.onSurfaceVariant,
-      border: colorScheme.outlineVariant,
+      border: theme.borders.faint,
     ),
     AppWorkspaceStatusTone.success => _WorkspaceToneColors(
       container: statusColors.successContainer,

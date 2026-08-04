@@ -166,12 +166,12 @@ final class _GlassSwitchMetrics {
       blurSigma: blurSigma,
       titleStyle: (textTheme.titleSmall ?? textTheme.bodyLarge)!.copyWith(
         color: colors.onSurface,
-        fontWeight: FontWeight.w600,
+        fontWeight: AppFontWeight.emphasis,
         height: 1.2,
       ),
       subtitleStyle: (textTheme.bodySmall ?? textTheme.labelMedium)!.copyWith(
         color: colors.onSurfaceVariant,
-        fontWeight: FontWeight.w400,
+        fontWeight: AppFontWeight.regular,
         height: 1.3,
       ),
     );

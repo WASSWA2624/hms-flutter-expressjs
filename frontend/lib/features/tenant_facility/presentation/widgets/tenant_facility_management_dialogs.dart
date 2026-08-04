@@ -1532,7 +1532,7 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
                   VerticalDivider(
                     width: theme.spacing.md,
                     thickness: 1,
-                    color: colorScheme.outlineVariant,
+                    color: theme.borders.faint,
                   ),
                   Expanded(child: facilitiesPanel),
                 ],
@@ -1663,7 +1663,7 @@ class _TenantDetailsSummary extends StatelessWidget {
                             : theme.textTheme.titleMedium)
                         ?.copyWith(
                           color: colorScheme.primary,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.emphasis,
                         ),
               ),
             ),
@@ -1680,7 +1680,7 @@ class _TenantDetailsSummary extends StatelessWidget {
                     (framed
                             ? theme.textTheme.headlineSmall
                             : theme.textTheme.titleLarge)
-                        ?.copyWith(fontWeight: FontWeight.w600, height: 1.15),
+                        ?.copyWith(fontWeight: AppFontWeight.emphasis, height: 1.15),
               ),
               SizedBox(height: theme.spacing.xs),
               Wrap(
@@ -1694,7 +1694,7 @@ class _TenantDetailsSummary extends StatelessWidget {
                       slug,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w400,
+                        fontWeight: AppFontWeight.regular,
                       ),
                     ),
                 ],
@@ -1855,7 +1855,7 @@ class _TenantDetailsSummary extends StatelessWidget {
           ),
           child: header,
         ),
-        Divider(height: 1, color: colorScheme.outlineVariant),
+        Divider(height: 1, color: theme.borders.faint),
         if (expandToFill)
           Expanded(child: SingleChildScrollView(child: sections))
         else
@@ -1932,7 +1932,7 @@ class _TenantStatusBadge extends StatelessWidget {
           label,
           style: theme.textTheme.labelLarge?.copyWith(
             color: foreground,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
       ),
@@ -1969,7 +1969,7 @@ class _TenantMetaRow extends StatelessWidget {
             child: Text(
               value,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
+                fontWeight: AppFontWeight.medium,
               ),
             ),
           ),
@@ -3448,7 +3448,7 @@ class _FacilityDetailsSummary extends StatelessWidget {
                       Text(
                         facility.name,
                         style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.emphasis,
                           height: 1.2,
                         ),
                       ),
@@ -3699,7 +3699,7 @@ class _FacilityMetricChip extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final Color borderColor = selected
         ? colorScheme.primary
-        : colorScheme.outlineVariant;
+        : theme.borders.faint;
     final Color background = selected
         ? colorScheme.primary.withValues(alpha: 0.10)
         : colorScheme.surface;
@@ -3723,7 +3723,7 @@ class _FacilityMetricChip extends StatelessWidget {
                 Text(
                   '$value',
                   style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.emphasis,
                     color: selected ? colorScheme.primary : null,
                   ),
                 ),
@@ -3733,7 +3733,7 @@ class _FacilityMetricChip extends StatelessWidget {
                     color: selected
                         ? colorScheme.primary
                         : colorScheme.onSurfaceVariant,
-                    fontWeight: selected ? FontWeight.w600 : null,
+                    fontWeight: selected ? AppFontWeight.emphasis : null,
                   ),
                 ),
               ],
@@ -3826,7 +3826,7 @@ class _FacilityStructureCrudPanelState<T>
               child: Text(
                 widget.title,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: AppFontWeight.strong,
                 ),
               ),
             ),
@@ -3888,7 +3888,7 @@ class _FacilityStructureCrudPanelState<T>
                       title: Text(
                         widget.titleBuilder(item),
                         style: mutedStyle?.copyWith(
-                          fontWeight: FontWeight.w500,
+                          fontWeight: AppFontWeight.medium,
                         ),
                       ),
                       subtitle: Column(
@@ -4005,7 +4005,7 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
               child: Text(
                 l10n.tenantFacilityFacilityDetailsUsersHeading,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: AppFontWeight.strong,
                 ),
               ),
             ),
@@ -5391,7 +5391,7 @@ class _FacilityScopedDetailsSummary extends StatelessWidget {
                     (framed
                             ? theme.textTheme.headlineSmall
                             : theme.textTheme.titleLarge)
-                        ?.copyWith(fontWeight: FontWeight.w600, height: 1.15),
+                        ?.copyWith(fontWeight: AppFontWeight.emphasis, height: 1.15),
               ),
               SizedBox(height: theme.spacing.xs),
               Wrap(
@@ -5405,7 +5405,7 @@ class _FacilityScopedDetailsSummary extends StatelessWidget {
                       displayId,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w400,
+                        fontWeight: AppFontWeight.regular,
                       ),
                     ),
                 ],
@@ -5563,7 +5563,7 @@ class _FacilityScopedDetailsSummary extends StatelessWidget {
           ),
           child: header,
         ),
-        Divider(height: 1, color: colorScheme.outlineVariant),
+        Divider(height: 1, color: theme.borders.faint),
         if (expandToFill)
           Expanded(child: SingleChildScrollView(child: sections))
         else

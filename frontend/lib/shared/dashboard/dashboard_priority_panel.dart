@@ -396,7 +396,7 @@ class _DashboardWorklistGroup extends StatelessWidget {
               if (index > 0)
                 Divider(
                   height: 1,
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.25),
+                  color: theme.borders.faint,
                 ),
               _DashboardWorklistRow(item: items[index]),
             ],
@@ -476,7 +476,7 @@ class _DashboardWorklistRow extends StatelessWidget {
       subtitle: item.subtitle,
     );
     final TextStyle? headlineStyle = theme.textTheme.titleSmall?.copyWith(
-      fontWeight: FontWeight.w600,
+      fontWeight: AppFontWeight.emphasis,
     );
     final TextStyle? detailStyle = theme.textTheme.bodySmall?.copyWith(
       color: colorScheme.onSurfaceVariant,
@@ -562,7 +562,7 @@ class _DashboardShortcutTile extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(theme.radius.lg),
-            border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.35)),
+            border: theme.borders.all(),
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(
@@ -592,7 +592,7 @@ class _DashboardShortcutTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w500,
+                    fontWeight: AppFontWeight.medium,
                     height: 1.2,
                   ),
                 ),
@@ -659,7 +659,7 @@ class _DashboardQuietState extends StatelessWidget {
             message,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w400,
+              fontWeight: AppFontWeight.regular,
             ),
           ),
         ],

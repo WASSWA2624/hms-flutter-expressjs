@@ -88,8 +88,10 @@ class _PharmacyCatalogIconTab extends StatelessWidget {
             vertical: theme.spacing.sm,
           ),
           decoration: BoxDecoration(
-            border: Border(
-              bottom: theme.borders.side(color: selected ? activeColor : Colors.transparent, width: 2,),
+            border: theme.borders.only(
+              bottom: true,
+              color: selected ? activeColor : Colors.transparent,
+              weight: AppBorderWeight.thick,
             ),
           ),
           child: Row(
@@ -110,7 +112,7 @@ class _PharmacyCatalogIconTab extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: selected ? activeColor : inactiveColor,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                      fontWeight: selected ? AppFontWeight.emphasis : AppFontWeight.regular,
                     ),
                   ),
                 ),

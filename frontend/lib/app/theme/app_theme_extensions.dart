@@ -1,7 +1,11 @@
 import 'dart:ui' show FontFeature, lerpDouble;
 
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/app/theme/app_font_family.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+
+export 'package:hosspi_hms/app/theme/app_font_family.dart';
+ 
 
 @immutable
 final class AppSpacingTokens extends ThemeExtension<AppSpacingTokens> {
@@ -496,9 +500,9 @@ final class AppListTokens extends ThemeExtension<AppListTokens> {
   });
 
   /// Weights for mobile list hierarchy (title stands out from muted meta).
-  static const FontWeight mobileTitleWeight = FontWeight.w600;
-  static const FontWeight mobileSecondaryWeight = FontWeight.w400;
-  static const FontWeight mobileAvatarInitialsWeight = FontWeight.w600;
+  static const FontWeight mobileTitleWeight = AppFontWeight.title;
+  static const FontWeight mobileSecondaryWeight = AppFontWeight.body;
+  static const FontWeight mobileAvatarInitialsWeight = AppFontWeight.emphasis;
 
   /// Metrics for mobile list chrome — sized for thumb-friendly readability.
   static const double mobileAvatarExtent = 40;
@@ -555,7 +559,7 @@ final class AppListTokens extends ThemeExtension<AppListTokens> {
       mobileRowNumber: secondaryBase.copyWith(
         color: colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
         fontSize: 11,
-        fontWeight: FontWeight.w500,
+        fontWeight: AppFontWeight.medium,
         height: 1.2,
         fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
       ),
@@ -974,7 +978,125 @@ final class AppBorderTokens extends ThemeExtension<AppBorderTokens> {
   }
 }
 
+/// Theme-level font tokens so widgets can read family + weight roles from
+/// [ThemeData] without hardcoding Material [FontWeight] values.
+@immutable
+final class AppFontTokens extends ThemeExtension<AppFontTokens> {
+  const AppFontTokens({
+    required this.family,
+    required this.fallback,
+    required this.monospaceFamily,
+    required this.monospaceFallback,
+    required this.display,
+    required this.body,
+    required this.label,
+    required this.title,
+    required this.emphasis,
+    required this.strong,
+  });
+
+  static const AppFontTokens standard = AppFontTokens(
+    family: AppFontFamily.primary,
+    fallback: AppFontFamily.fallback,
+    monospaceFamily: AppFontFamily.monospace,
+    monospaceFallback: AppFontFamily.monospaceFallback,
+    display: AppFontWeight.display,
+    body: AppFontWeight.body,
+    label: AppFontWeight.label,
+    title: AppFontWeight.title,
+    emphasis: AppFontWeight.emphasis,
+    strong: AppFontWeight.strong,
+  );
+
+  final String family;
+  final List<String> fallback;
+  final String monospaceFamily;
+  final List<String> monospaceFallback;
+  final FontWeight display;
+  final FontWeight body;
+  final FontWeight label;
+  final FontWeight title;
+  final FontWeight emphasis;
+  final FontWeight strong;
+
+  TextStyle style({
+    Color? color,
+    double? fontSize,
+    FontWeight? fontWeight,
+    FontStyle? fontStyle,
+    double? letterSpacing,
+    double? height,
+    TextDecoration? decoration,
+  }) {
+    return AppFontFamily.style(
+      color: color,
+      fontSize: fontSize,
+      fontWeight: fontWeight ?? body,
+      fontStyle: fontStyle,
+      letterSpacing: letterSpacing,
+      height: height,
+      decoration: decoration,
+      fontFamily: family,
+      fontFamilyFallback: fallback,
+    );
+  }
+
+  TextStyle mono({
+    Color? color,
+    double? fontSize,
+    FontWeight? fontWeight,
+    double? height,
+  }) {
+    return AppFontFamily.mono(
+      color: color,
+      fontSize: fontSize,
+      fontWeight: fontWeight ?? AppFontWeight.regular,
+      height: height,
+    );
+  }
+
+  @override
+  AppFontTokens copyWith({
+    String? family,
+    List<String>? fallback,
+    String? monospaceFamily,
+    List<String>? monospaceFallback,
+    FontWeight? display,
+    FontWeight? body,
+    FontWeight? label,
+    FontWeight? title,
+    FontWeight? emphasis,
+    FontWeight? strong,
+  }) {
+    return AppFontTokens(
+      family: family ?? this.family,
+      fallback: fallback ?? this.fallback,
+      monospaceFamily: monospaceFamily ?? this.monospaceFamily,
+      monospaceFallback: monospaceFallback ?? this.monospaceFallback,
+      display: display ?? this.display,
+      body: body ?? this.body,
+      label: label ?? this.label,
+      title: title ?? this.title,
+      emphasis: emphasis ?? this.emphasis,
+      strong: strong ?? this.strong,
+    );
+  }
+
+  @override
+  AppFontTokens lerp(AppFontTokens? other, double t) {
+    if (other == null) {
+      return this;
+    }
+    // Font identities do not interpolate; snap at midpoint.
+    return t < 0.5 ? this : other;
+  }
+}
+
 extension AppThemeDataTokens on ThemeData {
+  AppFontTokens get fonts {
+    return extension<AppFontTokens>() ?? AppFontTokens.standard;
+  }
+
   AppSpacingTokens get spacing {
     return extension<AppSpacingTokens>() ?? AppSpacingTokens.standard;
   }

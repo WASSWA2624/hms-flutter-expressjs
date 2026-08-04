@@ -475,7 +475,7 @@ class _UnifiedCurrencyAmountInput extends StatelessWidget {
                             color: canEditAmount
                                 ? colorScheme.onSurface
                                 : colorScheme.onSurface.withValues(alpha: 0.62),
-                            fontWeight: FontWeight.w600,
+                            fontWeight: AppFontWeight.emphasis,
                           ),
                   decoration: InputDecoration(
                     border: InputBorder.none,
@@ -518,7 +518,7 @@ class _UnifiedCurrencyAmountInput extends StatelessWidget {
                 child: VerticalDivider(
                   width: theme.appTokens.dividerThickness,
                   thickness: theme.appTokens.dividerThickness,
-                  color: colorScheme.outlineVariant,
+                  color: theme.borders.faint,
                 ),
               ),
               SizedBox(

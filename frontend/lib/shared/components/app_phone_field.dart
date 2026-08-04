@@ -166,7 +166,7 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
                     isRequired: widget.isRequired,
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   )
                 : null,
@@ -211,7 +211,7 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
             isRequired: widget.isRequired,
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.emphasis,
             ),
           )!,
           SizedBox(height: theme.spacing.xs),
@@ -523,7 +523,7 @@ class _UnifiedPhoneInput extends StatelessWidget {
               VerticalDivider(
                 width: theme.appTokens.dividerThickness,
                 thickness: theme.appTokens.dividerThickness,
-                color: colorScheme.outlineVariant,
+                color: theme.borders.faint,
               ),
               Expanded(
                 child: TextField(
@@ -546,7 +546,7 @@ class _UnifiedPhoneInput extends StatelessWidget {
                     color: canEdit
                         ? colorScheme.onSurface
                         : colorScheme.onSurface.withValues(alpha: 0.62),
-                    fontWeight: FontWeight.w400,
+                    fontWeight: AppFontWeight.regular,
                   ),
                   decoration: InputDecoration(
                     border: InputBorder.none,
@@ -634,7 +634,7 @@ class _PhoneCountryButton extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: contentColor,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                 ),
@@ -737,7 +737,7 @@ class _PhoneCountryPickerDialogState extends State<_PhoneCountryPickerDialog> {
                   : ListView.separated(
                       itemCount: countries.length,
                       separatorBuilder: (_, _) =>
-                          Divider(height: 1, color: colorScheme.outlineVariant),
+                          Divider(height: 1, color: theme.borders.faint),
                       itemBuilder: (BuildContext context, int index) {
                         final _PhoneCountry country = countries[index];
                         final bool selected = country == widget.selectedCountry;

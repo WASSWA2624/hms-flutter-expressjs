@@ -97,7 +97,7 @@ class _ClinicalPrescriptionCatalogDialogState
             child: Text(
               l10n.clinicalPrescriptionCatalogSelectedCount(_stagedIds.length),
               style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.emphasis,
                 color: colorScheme.primary,
               ),
             ),

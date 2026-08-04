@@ -206,7 +206,7 @@ class AppMessagePanel extends StatelessWidget {
                     title!,
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: colors.onContainer,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                   SizedBox(height: theme.spacing.xs),
@@ -271,7 +271,7 @@ class _AppSectionPanelHeader extends StatelessWidget {
                   title!,
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: colors.onContainer,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
                 ),
               if (description != null) ...<Widget>[
@@ -321,7 +321,7 @@ _AppPanelToneColors _toneColors(ThemeData theme, AppWorkspaceStatusTone tone) {
       container: colorScheme.surfaceContainerLowest,
       onContainer: colorScheme.onSurface,
       secondaryText: colorScheme.onSurfaceVariant,
-      border: colorScheme.outlineVariant,
+      border: theme.borders.faint,
       accent: colorScheme.primary,
     ),
     AppWorkspaceStatusTone.success => _AppPanelToneColors(

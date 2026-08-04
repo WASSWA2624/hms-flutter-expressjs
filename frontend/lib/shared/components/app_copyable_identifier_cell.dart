@@ -21,7 +21,7 @@ class AppCopyableIdentifierCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final TextStyle? titleStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontWeight: FontWeight.w600,
+      fontWeight: AppFontWeight.emphasis,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_dark_theme_palette.dart';
-import 'package:hosspi_hms/app/theme/app_font_family.dart';
 import 'package:hosspi_hms/app/theme/app_light_theme_palette.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -17,20 +16,25 @@ void main() {
         theme.textTheme.bodyMedium?.fontFamilyFallback,
         AppFontFamily.fallback,
       );
-      expect(theme.textTheme.bodyMedium?.fontWeight, FontWeight.w400);
-      expect(theme.textTheme.titleMedium?.fontWeight, FontWeight.w400);
-      expect(theme.textTheme.labelLarge?.fontWeight, FontWeight.w400);
+      expect(theme.textTheme.bodyMedium?.fontWeight, AppFontWeight.body);
+      expect(theme.textTheme.titleMedium?.fontWeight, AppFontWeight.title);
+      expect(theme.textTheme.labelLarge?.fontWeight, AppFontWeight.regular);
+      expect(theme.textTheme.displayLarge?.fontWeight, AppFontWeight.display);
+      expect(theme.textTheme.headlineMedium?.fontWeight, AppFontWeight.light);
+      expect(theme.fonts.family, AppFontFamily.primary);
+      expect(theme.fonts.body, AppFontWeight.body);
+      expect(theme.fonts.emphasis, AppFontWeight.emphasis);
       expect(
         theme.inputDecorationTheme.labelStyle?.fontWeight,
-        FontWeight.w300,
+        AppFontWeight.light,
       );
       expect(
         theme.inputDecorationTheme.floatingLabelStyle?.fontWeight,
-        FontWeight.w400,
+        AppFontWeight.regular,
       );
       expect(
         theme.inputDecorationTheme.hintStyle?.fontWeight,
-        FontWeight.w300,
+        AppFontWeight.light,
       );
       expect(theme.inputDecorationTheme.hintStyle?.fontSize, 14);
       expect(theme.colorScheme.brightness, Brightness.light);

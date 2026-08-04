@@ -1264,7 +1264,7 @@ class _ProcedureWorkbenchSectionState
         rows.isNotEmpty && _selectedKeys.length == rows.length;
     final bool someSelected = _selectedKeys.isNotEmpty && !allSelected;
 
-    final Color borderColor = colors.outlineVariant;
+    final Color borderColor = theme.borders.faint;
     final TableBorder tableBorder = TableBorder(
       horizontalInside: theme.borders.side(color: borderColor),
       verticalInside: theme.borders.side(color: borderColor),
@@ -1406,7 +1406,7 @@ class _ProcedureWorkbenchSectionState
                           child: Text(
                             rows[index].id,
                             style: theme.textTheme.labelLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
+                              fontWeight: AppFontWeight.strong,
                             ),
                           ),
                         ),
@@ -1420,7 +1420,7 @@ class _ProcedureWorkbenchSectionState
                           child: Text(
                             rows[index].name,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
+                              fontWeight: AppFontWeight.emphasis,
                             ),
                           ),
                         ),
@@ -1688,7 +1688,7 @@ class _ProcedureDetailsDialog extends StatelessWidget {
                   value: Text(
                     modalityValue,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                 ),
@@ -1699,7 +1699,7 @@ class _ProcedureDetailsDialog extends StatelessWidget {
                   value: Text(
                     bodyOrgan,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                 ),
@@ -1804,7 +1804,7 @@ class _ProcedureDetailParameterRow extends StatelessWidget {
           label,
           style: theme.textTheme.labelLarge?.copyWith(
             color: colors.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         SizedBox(width: theme.spacing.sm),
@@ -1856,7 +1856,7 @@ class _ProcedureStatusLabel extends StatelessWidget {
               softWrap: true,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: color,
-                fontWeight: FontWeight.w400,
+                fontWeight: AppFontWeight.regular,
               ),
             ),
           ),
@@ -1894,7 +1894,7 @@ class _ProcedureTableCell extends StatelessWidget {
         ? Text(
             _headerLabel,
             style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: AppFontWeight.strong,
             ),
           )
         : child!;
@@ -2286,7 +2286,7 @@ class _SelectedRadiologyRequestSummary extends StatelessWidget {
                 request.clinicalNote,
               ]),
               titleStyle: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.emphasis,
               ),
             ),
           ),

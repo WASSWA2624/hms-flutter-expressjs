@@ -398,7 +398,7 @@ class _ProfileSummary extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.55)),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.md),
@@ -411,7 +411,7 @@ class _ProfileSummary extends StatelessWidget {
               child: Text(
                 profile.initials,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: AppFontWeight.strong,
                 ),
               ),
             ),
@@ -428,7 +428,7 @@ class _ProfileSummary extends StatelessWidget {
                       Text(
                         displayName,
                         style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: AppFontWeight.strong,
                         ),
                       ),
                       if (statusLabel != null)
@@ -501,7 +501,7 @@ class _ProfileBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.45)),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -512,7 +512,7 @@ class _ProfileBadge extends StatelessWidget {
           label,
           style: theme.textTheme.labelMedium?.copyWith(
             color: foreground,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
       ),
@@ -538,7 +538,7 @@ class _ProfileBlock extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: theme.borders.all(color: colorScheme.outlineVariant.withValues(alpha: 0.55)),
+        border: theme.borders.all(),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.md),
@@ -548,7 +548,7 @@ class _ProfileBlock extends StatelessWidget {
             Text(
               title,
               style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: AppFontWeight.strong,
               ),
             ),
             SizedBox(height: theme.spacing.sm),
@@ -610,7 +610,7 @@ class _ProfileKvRow extends StatelessWidget {
       color: colorScheme.onSurfaceVariant,
     );
     final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontWeight: FontWeight.w600,
+      fontWeight: AppFontWeight.emphasis,
       color: colorScheme.onSurface,
     );
 

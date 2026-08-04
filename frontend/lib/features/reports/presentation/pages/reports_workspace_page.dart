@@ -966,7 +966,7 @@ class _PreviewKeyValueList extends StatelessWidget {
                     row.label,
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                 ),

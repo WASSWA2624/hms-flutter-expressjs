@@ -107,14 +107,14 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
                                 label,
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: AppFontWeight.emphasis,
                                 ),
                               ),
                               SizedBox(height: theme.spacing.xs / 2),
                               Text(
                                 value,
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: AppFontWeight.medium,
                                 ),
                               ),
                             ],
@@ -127,7 +127,7 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
                     Text(
                       l10n.labTestRangesSectionTitle,
                       style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                     SizedBox(height: theme.spacing.sm),
@@ -136,7 +136,7 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
                       Text(
                         range.displayLabel,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w500,
+                          fontWeight: AppFontWeight.medium,
                         ),
                       ),
                       SizedBox(height: theme.spacing.xs),
@@ -147,7 +147,7 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
                     Text(
                       l10n.labPanelTestsLabel,
                       style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                     SizedBox(height: theme.spacing.sm),
@@ -170,7 +170,7 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
                               if (index > 0)
                                 Divider(
                                   height: 1,
-                                  color: theme.colorScheme.outlineVariant,
+                                  color: theme.borders.faint,
                                 ),
                               Padding(
                                 padding: EdgeInsets.symmetric(
@@ -184,7 +184,7 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
                                       '${index + 1}.',
                                       style: theme.textTheme.labelLarge
                                           ?.copyWith(
-                                            fontWeight: FontWeight.w600,
+                                            fontWeight: AppFontWeight.emphasis,
                                           ),
                                     ),
                                     SizedBox(width: theme.spacing.sm),
@@ -197,7 +197,7 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
                                             item.panelItems[index].displayTitle,
                                             style: theme.textTheme.bodyMedium
                                                 ?.copyWith(
-                                                  fontWeight: FontWeight.w500,
+                                                  fontWeight: AppFontWeight.medium,
                                                 ),
                                           ),
                                           if (_panelItemSubtitle(

@@ -33,7 +33,7 @@ class AppChoiceTile extends StatelessWidget {
     final Color background = selected
         ? accent.withValues(alpha: 0.12)
         : colorScheme.surface;
-    final Color border = selected ? accent : colorScheme.outlineVariant;
+    final Color border = selected ? accent : theme.borders.faint;
 
     return Semantics(
       button: true,
@@ -43,7 +43,9 @@ class AppChoiceTile extends StatelessWidget {
         color: background,
         shape: RoundedRectangleBorder(
           borderRadius: radius,
-          side: theme.borders.side(color: border, width: selected ? 1.5 : 1),
+          side: selected
+              ? theme.borders.side(color: border, weight: AppBorderWeight.medium)
+              : theme.borders.side(color: border),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -75,7 +77,7 @@ class AppChoiceTile extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.emphasis,
                           color: selected ? accent : colorScheme.onSurface,
                         ),
                       ),

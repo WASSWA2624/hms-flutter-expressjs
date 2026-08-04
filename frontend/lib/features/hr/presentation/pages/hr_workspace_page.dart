@@ -1384,7 +1384,7 @@ class _RecordLineTile extends StatelessWidget {
                   title: line.title,
                   subtitle: line.subtitle,
                   titleStyle: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
                 ),
                 if (line.badges.isNotEmpty) ...<Widget>[
@@ -1467,7 +1467,7 @@ class _HrSeparationBanner extends StatelessWidget {
               child: Text(
                 l10n.hrSeparationBannerMessage(separationType, lastDay),
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeight.medium,
                 ),
               ),
             ),
@@ -2630,7 +2630,7 @@ AppListTableColumn<HrWorkItem> _workItemStaffColumn(AppLocalizations l10n) {
             : context.l10n.profileUnknownValue,
         subtitle: item.staffNumber,
         titleStyle: theme.textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.emphasis,
         ),
       );
     },
