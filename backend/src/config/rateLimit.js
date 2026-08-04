@@ -28,16 +28,16 @@ const RateLimitConfig = {
       max: NODE_ENV === 'development' ? 1000 : 20
     },
     
-    // Registration endpoint
+    // Registration endpoint (strict in prod; higher in development for local testing)
     register: {
       windowMs: 60 * 60 * 1000, // 1 hour
-      max: 3
+      max: NODE_ENV === 'development' ? 100 : 3
     },
     
     // Password reset endpoint
     passwordReset: {
       windowMs: 60 * 60 * 1000, // 1 hour
-      max: 3
+      max: NODE_ENV === 'development' ? 100 : 3
     },
     
     // File upload endpoints

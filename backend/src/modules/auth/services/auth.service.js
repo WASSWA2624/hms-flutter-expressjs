@@ -488,8 +488,19 @@ const sendPasswordResetEmail = async ({
   });
 };
 
-const ensureEmailDelivered = (deliveryResult, context) => {
+const ensureEmailDelivered = (deliveryResult, context, options = {}) => {
   if (deliveryResult?.sent) {
+    return;
+  }
+
+  // Local setups often have SMTP misconfigured; do not block registration/resend
+  // in development so facility bootstrap remains testable.
+  if (env.NODE_ENV === 'development') {
+    logger.warn('Email delivery unavailable; continuing auth flow in development.', {
+      context: context || 'verification_email',
+      provider: deliveryResult?.provider || 'unknown',
+      verification_code: options.code || undefined,
+    });
     return;
   }
 
@@ -729,7 +740,9 @@ const handleExistingEmailRegistration = async ({
     expiresAt: verification.expiresAt,
     locale: request_context?.locale,
   });
-  ensureEmailDelivered(deliveryResult, 'register_existing_email');
+  ensureEmailDelivered(deliveryResult, 'register_existing_email', {
+    code: verification.code,
+  });
 
   await persistRegistrationFollowUp({
     user,
@@ -1191,7 +1204,9 @@ const register = async (data) => {
     expiresAt: verification.expiresAt,
     locale: request_context?.locale,
   });
-  ensureEmailDelivered(deliveryResult, 'register_new_user');
+  ensureEmailDelivered(deliveryResult, 'register_new_user', {
+    code: verification.code,
+  });
 
   await persistRegistrationFollowUp({
     user,
@@ -1631,7 +1646,9 @@ const resendVerification = async (data) => {
       expiresAt: tokens.expiresAt,
       locale: request_context?.locale,
     });
-    ensureEmailDelivered(deliveryResult, 'resend_verification');
+    ensureEmailDelivered(deliveryResult, 'resend_verification', {
+      code: tokens.code,
+    });
   } else {
     await authRepository.deleteExpiredTokens(user.id, tokenType);
     const token = crypto.randomInt(0, 1000000).toString().padStart(6, '0');
