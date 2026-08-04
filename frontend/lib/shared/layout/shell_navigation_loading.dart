@@ -122,7 +122,15 @@ class _ShellRouteChildRetentionState extends State<ShellRouteChildRetention> {
   bool _sawLoadingForPending = false;
   int _pendingGeneration = 0;
   Timer? _neverLoadedCommitTimer;
-  final Map<String, GlobalKey> _routeKeys = <String, GlobalKey>{};
+  /// Stable identity for the *pending* route only, so deep-link work started
+  /// while offstage keeps the same [Element] after commit.
+  ///
+  /// Do not GlobalKey the visible/previous route: reparenting a large
+  /// workspace Element into a Stack beside a second heavy Offstage workspace
+  /// freezes Flutter web (Chrome "Page Unresponsive") on module switches such
+  /// as Radiology → Pharmacy.
+  GlobalKey? _pendingRouteKeyHandle;
+  String? _pendingRouteKeyHandleFor;
 
   @override
   void initState() {
@@ -137,21 +145,19 @@ class _ShellRouteChildRetentionState extends State<ShellRouteChildRetention> {
     super.dispose();
   }
 
-  GlobalKey _keyFor(String routeKey) {
-    return _routeKeys.putIfAbsent(routeKey, GlobalKey.new);
+  GlobalKey _pendingKeyFor(String routeKey) {
+    if (_pendingRouteKeyHandleFor != routeKey || _pendingRouteKeyHandle == null) {
+      _pendingRouteKeyHandle = GlobalKey();
+      _pendingRouteKeyHandleFor = routeKey;
+    }
+    return _pendingRouteKeyHandle!;
   }
 
-  void _pruneRouteKeys() {
-    final Set<String> keep = <String>{
-      ?_visibleRouteKey,
-      ?_pendingRouteKey,
-      widget.routeKey,
-    };
-    _routeKeys.removeWhere((String key, _) => !keep.contains(key));
-  }
-
-  Widget _keyedChild(String routeKey, Widget child) {
-    return KeyedSubtree(key: _keyFor(routeKey), child: child);
+  Widget _pendingChild(Widget child) {
+    return KeyedSubtree(
+      key: _pendingKeyFor(widget.routeKey),
+      child: child,
+    );
   }
 
   @override
@@ -235,21 +241,26 @@ class _ShellRouteChildRetentionState extends State<ShellRouteChildRetention> {
         _pendingRouteKey != null && _visibleChild != null;
 
     if (!retainPrevious) {
-      _pruneRouteKeys();
-      // Keep a stable GlobalKey so deep-link work started while the route was
-      // pending/offstage keeps the same Element after commit (avoids using a
-      // deactivated context for showDialog / Navigator lookups).
-      return _keyedChild(widget.routeKey, widget.child);
+      // Keep the destination GlobalKey after Offstage → visible commit so
+      // deep-link State (and dialog contexts) survive the reparent.
+      if (_pendingRouteKeyHandle != null &&
+          _pendingRouteKeyHandleFor == widget.routeKey) {
+        return _pendingChild(widget.child);
+      }
+      return widget.child;
     }
 
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        _keyedChild(_visibleRouteKey!, _visibleChild!),
+        // Previous route: no GlobalKey (avoid large-tree reparent into Stack).
+        _visibleChild!,
         Offstage(
+          // Tickers off while hidden: destination only needs to mount enough
+          // to report shell loading / hydrate providers.
           child: TickerMode(
-            enabled: true,
-            child: _keyedChild(widget.routeKey, widget.child),
+            enabled: false,
+            child: _pendingChild(widget.child),
           ),
         ),
       ],

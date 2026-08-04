@@ -274,7 +274,6 @@ class _BillingWorkspaceContentState
         ? state.lastFailure! as AppFailure
         : null;
     final ThemeData theme = Theme.of(context);
-    final AppLocalizations l10n = context.l10n;
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -303,16 +302,6 @@ class _BillingWorkspaceContentState
                   }
                 }
               },
-              primaryAction: _buildPrimaryAction(
-                l10n,
-                state: state,
-                canWrite: canWrite,
-              ),
-              secondaryActions: _buildSecondaryActions(
-                l10n,
-                state: state,
-                canWrite: canWrite,
-              ),
             ),
             SizedBox(height: theme.spacing.sm),
             if (lastFailure != null) ...<Widget>[
@@ -334,48 +323,6 @@ class _BillingWorkspaceContentState
         ),
       ),
     );
-  }
-
-  Widget? _buildPrimaryAction(
-    AppLocalizations l10n, {
-    required BillingWorkspaceState state,
-    required bool canWrite,
-  }) {
-    // Refresh and tab-rotating primary CTAs were removed as redundant —
-    // queue work refreshes after mutations / scaffold retry / realtime.
-    if (!canWrite) {
-      return null;
-    }
-    final bool enabled = !state.isSaving;
-    return AppTabToolbarPrimary(
-      label: l10n.billingCloseShift,
-      icon: Icons.schedule_send_outlined,
-      semanticLabel: l10n.billingCloseShift,
-      tooltip: l10n.billingCloseShift,
-      enabled: enabled,
-      onPressed: enabled ? () => _showShiftCloseDialog(context, ref) : null,
-    );
-  }
-
-  List<Widget> _buildSecondaryActions(
-    AppLocalizations l10n, {
-    required BillingWorkspaceState state,
-    required bool canWrite,
-  }) {
-    if (!canWrite) {
-      return const <Widget>[];
-    }
-    final bool enabled = !state.isSaving;
-    return <Widget>[
-      AppTabToolbarAction(
-        label: l10n.billingCloseDay,
-        icon: Icons.today_outlined,
-        semanticLabel: l10n.billingCloseDay,
-        tooltip: l10n.billingCloseDay,
-        enabled: enabled,
-        onPressed: enabled ? () => _showDayCloseDialog(context, ref) : null,
-      ),
-    ];
   }
 }
 
@@ -445,6 +392,14 @@ class _BillingQueuePanel extends ConsumerWidget {
             ),
           );
         },
+        // Filters → Settings → Export → Close day / Close shift.
+        trailingActions: _billingCloseSearchActions(
+          context,
+          ref,
+          l10n,
+          canWrite: canWrite,
+          enabled: !state.isSaving,
+        ),
       ),
       itemKeyBuilder: (BillingWorkItem item) => ValueKey<String>(item.id),
       onRowSelected: (BillingWorkItem item) {
@@ -866,6 +821,34 @@ Future<void> _showSendDialog(BuildContext context, WidgetRef ref) async {
     return;
   }
   _showMutationResult(context, ref, failure);
+}
+
+List<AppSearchBarAction> _billingCloseSearchActions(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n, {
+  required bool canWrite,
+  required bool enabled,
+}) {
+  if (!canWrite) {
+    return const <AppSearchBarAction>[];
+  }
+  return <AppSearchBarAction>[
+    AppSearchBarAction(
+      icon: Icons.today_outlined,
+      label: l10n.billingCloseDay,
+      tooltip: l10n.billingCloseDay,
+      enabled: enabled,
+      onPressed: enabled ? () => _showDayCloseDialog(context, ref) : null,
+    ),
+    AppSearchBarAction(
+      icon: Icons.schedule_send_outlined,
+      label: l10n.billingCloseShift,
+      tooltip: l10n.billingCloseShift,
+      enabled: enabled,
+      onPressed: enabled ? () => _showShiftCloseDialog(context, ref) : null,
+    ),
+  ];
 }
 
 Future<void> _showShiftCloseDialog(BuildContext context, WidgetRef ref) async {

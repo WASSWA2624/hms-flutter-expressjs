@@ -24,14 +24,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockBillingRepository extends Mock implements BillingRepository {}
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
-
-Finder _toolbarAction(String label) => find.descendant(
-  of: find.byType(AppTabToolbarAction),
-  matching: find.text(label),
+Finder _searchBarAction(String label) => find.descendant(
+  of: find.byType(AppSearchBar),
+  matching: find.byTooltip(label),
 );
 
 AppListTable<BillingWorkItem> _table(WidgetTester tester) {
@@ -338,12 +333,18 @@ String billingQueueTabLabel(BillingQueueType queue) {
   };
 }
 
-void _expectStableCloseToolbar() {
-  expect(_toolbarPrimary('Close shift'), findsOneWidget);
-  expect(_toolbarAction('Close day'), findsOneWidget);
+void _expectStableCloseSearchActions(WidgetTester tester) {
+  expect(_searchBarAction('Close day'), findsOneWidget);
+  expect(_searchBarAction('Close shift'), findsOneWidget);
   expect(find.text('Refresh'), findsNothing);
-  expect(_toolbarPrimary('Close day'), findsNothing);
-  expect(_toolbarAction('Close shift'), findsNothing);
+  expect(find.byType(AppTabToolbarPrimary), findsNothing);
+  expect(find.byType(AppTabToolbarAction), findsNothing);
+  final List<AppSearchBarAction> trailing =
+      _table(tester).search?.trailingActions ?? const <AppSearchBarAction>[];
+  expect(trailing.map((AppSearchBarAction a) => a.label).toList(), <String>[
+    'Close day',
+    'Close shift',
+  ]);
 }
 
 Future<void> _selectQueueTab(WidgetTester tester, String label) async {
@@ -392,7 +393,7 @@ void main() {
     );
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.text('Ben Payment'), findsOneWidget);
-    _expectStableCloseToolbar();
+    _expectStableCloseSearchActions(tester);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
     expect(_table(tester).columnVisibilityTitle, 'Table Settings');
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
@@ -427,17 +428,17 @@ void main() {
     );
     expect(find.text('Ben Payment'), findsOneWidget);
     expect(find.text('Ada Draft'), findsNothing);
-    _expectStableCloseToolbar();
+    _expectStableCloseSearchActions(tester);
 
     await _selectQueueTab(tester, 'Needs issue');
 
     expect(harness.router.state.uri.queryParameters['queue'], 'needs-issue');
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.text('Ben Payment'), findsNothing);
-    _expectStableCloseToolbar();
+    _expectStableCloseSearchActions(tester);
   });
 
-  testWidgets('toolbar stays Close shift / Close day across tabs without Refresh', (
+  testWidgets('search bar keeps Close day / Close shift across tabs without Refresh', (
     WidgetTester tester,
   ) async {
     await _pumpBillingWorkspace(tester, repository: repository);
@@ -446,7 +447,7 @@ void main() {
       if (queue != BillingQueueType.all) {
         await _selectQueueTab(tester, billingQueueTabLabel(queue));
       }
-      _expectStableCloseToolbar();
+      _expectStableCloseSearchActions(tester);
     }
   });
 
@@ -528,7 +529,7 @@ void main() {
       isNot(contains('Claims pending')),
     );
     expect(strip.tabs.length, BillingQueueType.values.length - 1);
-    _expectStableCloseToolbar();
+    _expectStableCloseSearchActions(tester);
   });
 
   testWidgets('missing billing-payments module omits billing chrome', (
@@ -560,7 +561,7 @@ void main() {
 
       expect(find.text('Ben Payment'), findsOneWidget);
       expect(find.byTooltip('Receive payment'), findsWidgets);
-      _expectStableCloseToolbar();
+      _expectStableCloseSearchActions(tester);
 
       await tester.tap(find.text('Ben Payment'));
       await tester.pumpAndSettle();
@@ -653,7 +654,7 @@ void main() {
 
       expect(find.text('Ben Payment'), findsOneWidget);
       expect(find.byTooltip('Receive payment'), findsWidgets);
-      _expectStableCloseToolbar();
+      _expectStableCloseSearchActions(tester);
     },
   );
 
@@ -711,11 +712,11 @@ void main() {
 
       expect(find.text('Ada Draft'), findsOneWidget);
       expect(find.byTooltip('Issue'), findsWidgets);
-      _expectStableCloseToolbar();
+      _expectStableCloseSearchActions(tester);
     }
   });
 
-  testWidgets('mobile viewport keeps authorized close toolbar without banners', (
+  testWidgets('mobile viewport keeps authorized close search actions without banners', (
     WidgetTester tester,
   ) async {
     await _pumpBillingWorkspace(
@@ -732,7 +733,8 @@ void main() {
     );
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.byType(AppTabToolbarPrimary), findsNothing);
+    expect(find.byType(AppTabToolbarAction), findsNothing);
     expect(find.byTooltip('Close shift'), findsOneWidget);
     expect(find.byTooltip('Close day'), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
@@ -772,7 +774,7 @@ void main() {
     expect(find.text('Ben Payment'), findsOneWidget);
     expect(find.text('Ada Draft'), findsNothing);
     expect(find.text('Cara Claim'), findsNothing);
-    _expectStableCloseToolbar();
+    _expectStableCloseSearchActions(tester);
   });
 
   testWidgets('deep link queue=needs-issue selects Needs Issue tab', (
@@ -789,7 +791,7 @@ void main() {
 
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.text('Ben Payment'), findsNothing);
-    _expectStableCloseToolbar();
+    _expectStableCloseSearchActions(tester);
   });
 
   testWidgets('each tab exposes five default columns when mutations allowed', (
@@ -947,7 +949,7 @@ void main() {
 
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
-    _expectStableCloseToolbar();
+    _expectStableCloseSearchActions(tester);
     expect(find.byType(AppWorkspaceStatusBadge), findsWidgets);
     expect(find.byTooltip('Issue'), findsWidgets);
     expect(find.text('Refresh'), findsNothing);
@@ -974,6 +976,6 @@ void main() {
     );
     expect(find.text('Cara Claim'), findsOneWidget);
     expect(find.text('Dana Approval'), findsNothing);
-    _expectStableCloseToolbar();
+    _expectStableCloseSearchActions(tester);
   });
 }
