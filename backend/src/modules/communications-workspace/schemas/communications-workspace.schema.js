@@ -113,7 +113,7 @@ const createMessageSchema = z.object({
 });
 
 const startCallSchema = z.object({
-  kind: z.enum(['VOICE', 'VIDEO']).optional().default('VOICE'),
+  kind: z.enum(['VOICE']).optional().default('VOICE'),
 });
 
 const updateCallSchema = z.object({

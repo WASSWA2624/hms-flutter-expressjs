@@ -205,27 +205,32 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                         if (widget.headerActions.isNotEmpty) ...<Widget>[
                           SizedBox(width: theme.spacing.sm),
                           // Keep header actions tappable without toggling.
-                          Builder(
-                            builder: (BuildContext context) {
-                              final bool compact =
-                                  AppBreakpoints.of(context).isMobile;
-                              final AppActionLabelScope? ambient =
-                                  AppActionLabelScope.maybeOf(context);
-                              return AppActionLabelScope(
-                                showLabels: compact
-                                    ? false
-                                    : (ambient?.showLabels ?? true),
-                                forceIconOnly: compact,
-                                plainChrome: true,
-                                child: Wrap(
-                                  alignment: WrapAlignment.end,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  spacing: theme.spacing.xs,
-                                  runSpacing: theme.spacing.xs,
-                                  children: widget.headerActions,
-                                ),
-                              );
-                            },
+                          // Flexible so full-width children (or many chips) do
+                          // not receive unbounded Row width and crash layout.
+                          Flexible(
+                            child: Builder(
+                              builder: (BuildContext context) {
+                                final bool compact =
+                                    AppBreakpoints.of(context).isMobile;
+                                final AppActionLabelScope? ambient =
+                                    AppActionLabelScope.maybeOf(context);
+                                return AppActionLabelScope(
+                                  showLabels: compact
+                                      ? false
+                                      : (ambient?.showLabels ?? true),
+                                  forceIconOnly: compact,
+                                  plainChrome: true,
+                                  child: Wrap(
+                                    alignment: WrapAlignment.end,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    spacing: theme.spacing.xs,
+                                    runSpacing: theme.spacing.xs,
+                                    children: widget.headerActions,
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                         ],
                         if (widget.collapsible) ...<Widget>[

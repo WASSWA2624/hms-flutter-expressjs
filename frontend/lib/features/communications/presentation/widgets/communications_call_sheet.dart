@@ -119,7 +119,6 @@ class _CommunicationsCallSheetState
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final bool isVideo = widget.kind.toUpperCase() == 'VIDEO';
     final String status = _active?.action ?? 'starting';
     return SafeArea(
       child: Padding(
@@ -127,15 +126,10 @@ class _CommunicationsCallSheetState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(
-              isVideo ? Icons.videocam_outlined : Icons.call_outlined,
-              size: 48,
-            ),
+            const Icon(Icons.call_outlined, size: 48),
             SizedBox(height: theme.spacing.sm),
             Text(
-              isVideo
-                  ? context.l10n.communicationsVideoCallTitle
-                  : context.l10n.communicationsVoiceCallTitle,
+              context.l10n.communicationsVoiceCallTitle,
               style: theme.textTheme.titleLarge,
             ),
             SizedBox(height: theme.spacing.xs),

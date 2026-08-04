@@ -1009,17 +1009,16 @@ class _IpdDetailPanel extends ConsumerWidget {
                   : AppWorkspaceStatusTone.neutral,
             ),
           ],
-          actions: <Widget>[
-            _IpdDetailActions(
-              admission: admission,
-              state: state,
-              canOperate: canOperate,
-              canClinical: canClinical,
-              canBilling: canBilling,
-              actionsEnabled: actionsEnabled,
-              omitNextActionKind: omitNextActionKind,
-            ),
-          ],
+        ),
+        SizedBox(height: theme.spacing.md),
+        _IpdDetailActions(
+          admission: admission,
+          state: state,
+          canOperate: canOperate,
+          canClinical: canClinical,
+          canBilling: canBilling,
+          actionsEnabled: actionsEnabled,
+          omitNextActionKind: omitNextActionKind,
         ),
         for (var index = 0; index < detailSections.length; index += 1) ...<Widget>[
           SizedBox(height: theme.spacing.md),

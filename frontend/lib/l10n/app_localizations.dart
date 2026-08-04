@@ -31744,7 +31744,7 @@ abstract class AppLocalizations {
   /// Hint that calls are signaling-only for now.
   ///
   /// In en, this message translates to:
-  /// **'Call signaling is available now. Media (microphone/camera) will follow in a later release.'**
+  /// **'Voice call signaling is available now. Microphone media will follow in a later release.'**
   String get communicationsCallSignalingHint;
 
   /// Accept an incoming call.
@@ -31812,6 +31812,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send the first message to start this conversation.'**
   String get communicationsFirstMessageHint;
+
+  /// Placeholder hint in the WhatsApp-style message compose field.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a message'**
+  String get communicationsComposeHint;
+
+  /// Subtitle under a direct-chat thread header.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct message'**
+  String get communicationsDirectChatSubtitle;
 
   /// Helper text when a group name is entered without members.
   ///

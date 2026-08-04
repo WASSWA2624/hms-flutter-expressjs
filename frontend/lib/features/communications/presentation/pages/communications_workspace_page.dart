@@ -397,13 +397,15 @@ class _CommunicationsWorkspaceContentState
             SizedBox(height: Theme.of(context).spacing.md),
           ],
           if (canShowCurrentPanel)
-            _CommunicationsListPanel(
-              state: state,
-              searchController: _searchController,
-              canWrite: canWrite,
-              notificationColumns: _notificationColumns,
-              deliveryColumns: _deliveryColumns,
-              templateColumns: _templateColumns,
+            Expanded(
+              child: _CommunicationsListPanel(
+                state: state,
+                searchController: _searchController,
+                canWrite: canWrite,
+                notificationColumns: _notificationColumns,
+                deliveryColumns: _deliveryColumns,
+                templateColumns: _templateColumns,
+              ),
             ),
         ],
       ),

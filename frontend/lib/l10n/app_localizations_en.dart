@@ -17152,7 +17152,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get communicationsCallSignalingHint =>
-      'Call signaling is available now. Media (microphone/camera) will follow in a later release.';
+      'Voice call signaling is available now. Microphone media will follow in a later release.';
 
   @override
   String get communicationsAcceptCallAction => 'Accept';
@@ -17188,6 +17188,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get communicationsFirstMessageHint =>
       'Send the first message to start this conversation.';
+
+  @override
+  String get communicationsComposeHint => 'Type a message';
+
+  @override
+  String get communicationsDirectChatSubtitle => 'Direct message';
 
   @override
   String get communicationsGroupMembersRequiredHelper =>

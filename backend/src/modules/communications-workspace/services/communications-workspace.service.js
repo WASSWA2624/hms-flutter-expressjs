@@ -834,7 +834,7 @@ const postCallSystemMessage = async ({
           notification_type: 'SYSTEM',
           priority: 'HIGH',
           title: notifyTitle,
-          message: `${callPayload.kind === 'VIDEO' ? 'Video' : 'Voice'} call ${callPayload.action}`,
+          message: `Voice call ${callPayload.action}`,
           target_path: buildConversationPath(publicConversationId),
           context_type: 'conversation',
           context_public_id: publicConversationId,
@@ -890,7 +890,7 @@ const startConversationCall = async (identifier, payload = {}, user = {}) => {
   const conversation = await repository.getConversation({ tenantId, identifier });
   if (!conversation) throw new HttpError('errors.conversation.not_found', 404);
   requireConversationAccess(conversation, userId);
-  const kind = text(payload.kind).toUpperCase() === 'VIDEO' ? 'VIDEO' : 'VOICE';
+  const kind = 'VOICE';
   const callPayload = {
     id: repository.createPublicId('CALL'),
     kind,
@@ -902,7 +902,7 @@ const startConversationCall = async (identifier, payload = {}, user = {}) => {
     conversation,
     user,
     callPayload,
-    notifyTitle: kind === 'VIDEO' ? 'Incoming video call' : 'Incoming voice call',
+    notifyTitle: 'Incoming voice call',
   });
 };
 

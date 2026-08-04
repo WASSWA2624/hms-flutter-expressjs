@@ -131,39 +131,48 @@ class _CommunicationsThreadViewState
             onBack: widget.onBack,
           ),
           Expanded(
-            child: widget.isLoadingThread
-                ? const Center(child: CircularProgressIndicator())
-                : isEmpty
-                ? Center(
-                    child: AppMessagePanel(
-                      message: canCompose
-                          ? context.l10n.communicationsFirstMessageHint
-                          : context.l10n.communicationsNoMessagesBody,
-                      icon: Icons.forum_outlined,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLowest,
+              ),
+              child: widget.isLoadingThread
+                  ? const Center(child: CircularProgressIndicator())
+                  : isEmpty
+                  ? Center(
+                      child: AppMessagePanel(
+                        message: canCompose
+                            ? context.l10n.communicationsFirstMessageHint
+                            : context.l10n.communicationsNoMessagesBody,
+                        icon: Icons.chat_bubble_outline,
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: theme.spacing.md,
+                        vertical: theme.spacing.sm,
+                      ),
+                      itemCount: conversation.messages.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        final CommunicationMessage message =
+                            conversation.messages[index];
+                        final bool isOwn =
+                            message.senderUserId != null &&
+                            message.senderUserId == currentUserId;
+                        return _MessageBubble(
+                          message: message,
+                          isOwn: isOwn,
+                          isGroup: conversation.isGroup,
+                          participants: conversation.participants,
+                          currentUserId: currentUserId,
+                          onReply: canCompose
+                              ? () =>
+                                    setState(() => _replyToMessage = message)
+                              : null,
+                        );
+                      },
                     ),
-                  )
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: EdgeInsets.all(theme.spacing.md),
-                    itemCount: conversation.messages.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final CommunicationMessage message =
-                          conversation.messages[index];
-                      final bool isOwn =
-                          message.senderUserId != null &&
-                          message.senderUserId == currentUserId;
-                      return _MessageBubble(
-                        message: message,
-                        isOwn: isOwn,
-                        isGroup: conversation.isGroup,
-                        participants: conversation.participants,
-                        currentUserId: currentUserId,
-                        onReply: canCompose
-                            ? () => setState(() => _replyToMessage = message)
-                            : null,
-                      );
-                    },
-                  ),
+            ),
           ),
           if (canCompose)
             CommunicationsComposeBar(
@@ -211,122 +220,126 @@ class _ThreadHeader extends ConsumerWidget {
       communicationsWorkspaceControllerProvider.notifier,
     );
 
-    return Padding(
-      padding: EdgeInsets.all(theme.spacing.md),
-      child: Row(
-        children: <Widget>[
-          if (showBackButton)
-            AppButton(
-              iconOnly: true,
-              icon: Icons.arrow_back,
-              label: context.l10n.communicationsBackToInboxAction,
-              semanticLabel: context.l10n.communicationsBackToInboxAction,
-              onPressed: onBack,
-            ),
-          CircleAvatar(
-            child: Text(
-              communicationsConversationAvatarLabel(
-                conversation,
-                displayTitle: title,
-              ),
-            ),
+    return Material(
+      color: theme.colorScheme.surface,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: theme.borders.only(bottom: true),
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.sm,
+            vertical: theme.spacing.sm,
           ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          child: Row(
+            children: <Widget>[
+              if (showBackButton)
+                AppButton(
+                  iconOnly: true,
+                  icon: Icons.arrow_back,
+                  label: context.l10n.communicationsBackToInboxAction,
+                  semanticLabel: context.l10n.communicationsBackToInboxAction,
+                  onPressed: onBack,
                 ),
-                if (conversation.isGroup)
-                  Text(
-                    context.l10n.communicationsGroupMembersLabel(
-                      conversation.participants.length,
-                    ),
-                    style: theme.textTheme.bodySmall,
+              CircleAvatar(
+                child: Text(
+                  communicationsConversationAvatarLabel(
+                    conversation,
+                    displayTitle: title,
                   ),
-              ],
-            ),
-          ),
-          if (canWrite) ...<Widget>[
-            AppButton(
-              iconOnly: true,
-              icon: Icons.call_outlined,
-              label: context.l10n.communicationsVoiceCallAction,
-              semanticLabel: context.l10n.communicationsVoiceCallAction,
-              tooltip: context.l10n.communicationsVoiceCallAction,
-              enabled: !isSaving,
-              onPressed: () => showCommunicationsCallSheet(
-                context,
-                ref,
-                kind: 'VOICE',
+                ),
               ),
-            ),
-            AppButton(
-              iconOnly: true,
-              icon: Icons.videocam_outlined,
-              label: context.l10n.communicationsVideoCallAction,
-              semanticLabel: context.l10n.communicationsVideoCallAction,
-              tooltip: context.l10n.communicationsVideoCallAction,
-              enabled: !isSaving,
-              onPressed: () => showCommunicationsCallSheet(
-                context,
-                ref,
-                kind: 'VIDEO',
-              ),
-            ),
-          ],
-          if (canThreadMenu)
-            PopupMenuButton<String>(
-              tooltip: context.l10n.communicationsThreadMenuAction,
-              onSelected: (String value) =>
-                  _handleMenu(context, ref, controller, value),
-              itemBuilder: (BuildContext context) {
-                return <PopupMenuEntry<String>>[
-                  PopupMenuItem<String>(
-                    value: 'favorite',
-                    child: Text(
-                      conversation.isFavorite
-                          ? context.l10n.communicationsUnfavoriteAction
-                          : context.l10n.communicationsFavoriteAction,
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      title,
+                      style: theme.textTheme.titleMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'flag',
-                    child: Text(
-                      conversation.isFlagged
-                          ? context.l10n.communicationsUnflagAction
-                          : context.l10n.communicationsFlagAction,
-                    ),
-                  ),
-                  if (conversation.unread)
-                    PopupMenuItem<String>(
-                      value: 'read',
-                      child: Text(context.l10n.communicationsMarkReadAction),
-                    ),
-                  PopupMenuItem<String>(
-                    value: conversation.archived ? 'unarchive' : 'archive',
-                    child: Text(
-                      conversation.archived
-                          ? context.l10n.communicationsUnarchiveAction
-                          : context.l10n.communicationsArchiveAction,
-                    ),
-                  ),
-                  if (conversation.isGroup && canManageMembers)
-                    PopupMenuItem<String>(
-                      value: 'members',
-                      child: Text(
-                        context.l10n.communicationsManageMembersAction,
+                    if (conversation.isGroup)
+                      Text(
+                        context.l10n.communicationsGroupMembersLabel(
+                          conversation.participants.length,
+                        ),
+                        style: theme.textTheme.bodySmall,
+                      )
+                    else
+                      Text(
+                        context.l10n.communicationsDirectChatSubtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                ];
-              },
-            ),
-        ],
+                  ],
+                ),
+              ),
+              if (canWrite)
+                AppButton(
+                  iconOnly: true,
+                  icon: Icons.call_outlined,
+                  label: context.l10n.communicationsVoiceCallAction,
+                  semanticLabel: context.l10n.communicationsVoiceCallAction,
+                  tooltip: context.l10n.communicationsVoiceCallAction,
+                  enabled: !isSaving,
+                  onPressed: () => showCommunicationsCallSheet(
+                    context,
+                    ref,
+                    kind: 'VOICE',
+                  ),
+                ),
+              if (canThreadMenu)
+                PopupMenuButton<String>(
+                  tooltip: context.l10n.communicationsThreadMenuAction,
+                  onSelected: (String value) =>
+                      _handleMenu(context, ref, controller, value),
+                  itemBuilder: (BuildContext context) {
+                    return <PopupMenuEntry<String>>[
+                      PopupMenuItem<String>(
+                        value: 'favorite',
+                        child: Text(
+                          conversation.isFavorite
+                              ? context.l10n.communicationsUnfavoriteAction
+                              : context.l10n.communicationsFavoriteAction,
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'flag',
+                        child: Text(
+                          conversation.isFlagged
+                              ? context.l10n.communicationsUnflagAction
+                              : context.l10n.communicationsFlagAction,
+                        ),
+                      ),
+                      if (conversation.unread)
+                        PopupMenuItem<String>(
+                          value: 'read',
+                          child: Text(context.l10n.communicationsMarkReadAction),
+                        ),
+                      PopupMenuItem<String>(
+                        value: conversation.archived ? 'unarchive' : 'archive',
+                        child: Text(
+                          conversation.archived
+                              ? context.l10n.communicationsUnarchiveAction
+                              : context.l10n.communicationsArchiveAction,
+                        ),
+                      ),
+                      if (conversation.isGroup && canManageMembers)
+                        PopupMenuItem<String>(
+                          value: 'members',
+                          child: Text(
+                            context.l10n.communicationsManageMembersAction,
+                          ),
+                        ),
+                    ];
+                  },
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -421,161 +434,156 @@ class _MessageBubble extends StatelessWidget {
         : Alignment.centerLeft;
     final Color bubbleColor = isOwn
         ? colors.primaryContainer
-        : colors.surfaceContainerHighest;
+        : colors.surface;
     final bool isRead = communicationsMessageIsReadByOthers(
       message: message,
       participants: participants,
       currentUserId: currentUserId,
     );
+    final BorderRadius bubbleRadius = BorderRadius.only(
+      topLeft: Radius.circular(theme.radius.md),
+      topRight: Radius.circular(theme.radius.md),
+      bottomLeft: Radius.circular(isOwn ? theme.radius.md : theme.radius.xs),
+      bottomRight: Radius.circular(isOwn ? theme.radius.xs : theme.radius.md),
+    );
 
-    return Align(
-      alignment: alignment,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.72,
-        ),
-        child: Padding(
-          padding: EdgeInsets.only(bottom: theme.spacing.sm),
-          child: Column(
-            crossAxisAlignment: isOwn
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
-            children: <Widget>[
-              if (isGroup && !isOwn)
-                Padding(
-                  padding: EdgeInsets.only(bottom: theme.spacing.xs),
-                  child: Text(
-                    message.sender?.displayName ??
-                        context.l10n.profileUnknownValue,
-                    style: theme.textTheme.labelSmall,
-                  ),
-                ),
-              Material(
-                color: bubbleColor,
-                borderRadius: BorderRadius.circular(theme.radius.md),
-                child: InkWell(
-                  onLongPress: onReply,
-                  borderRadius: BorderRadius.circular(theme.radius.md),
-                  child: Padding(
-                    padding: EdgeInsets.all(theme.spacing.sm),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        if (message.replyToMessage != null)
-                          Padding(
-                            padding: EdgeInsets.only(bottom: theme.spacing.xs),
-                            child: Text(
-                              displayMessageContent(
-                                message.replyToMessage!.content ?? '',
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colors.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        if ((message.content ?? '').trim().isNotEmpty)
-                          RichText(
-                            text: TextSpan(
-                              children: buildMentionTextSpans(
-                                content: message.content ?? '',
-                                baseStyle: theme.textTheme.bodyMedium!,
-                                mentionStyle: theme.textTheme.bodyMedium!
-                                    .copyWith(
-                                      color: colors.primary,
-                                      fontWeight: AppFontWeight.emphasis,
-                                    ),
-                              ),
-                            ),
-                          ),
-                        if (message.attachments.isNotEmpty)
-                          ...message.attachments.map(
-                            (CommunicationAttachment attachment) => Padding(
-                              padding: EdgeInsets.only(top: theme.spacing.xs),
-                              child: _AttachmentTile(attachment: attachment),
-                            ),
-                          ),
-                        SizedBox(height: theme.spacing.xs),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double maxBubbleWidth = (constraints.maxWidth * 0.78).clamp(
+          160.0,
+          520.0,
+        );
+        return Align(
+          alignment: alignment,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxBubbleWidth),
+            child: Padding(
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
+              child: Column(
+                crossAxisAlignment: isOwn
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
+                children: <Widget>[
+                  if (isGroup && !isOwn)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        left: theme.spacing.xs,
+                        bottom: theme.spacing.xs,
+                      ),
+                      child: Text(
+                        message.sender?.displayName ??
+                            context.l10n.profileUnknownValue,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colors.primary,
+                          fontWeight: AppFontWeight.emphasis,
+                        ),
+                      ),
+                    ),
+                  Material(
+                    color: bubbleColor,
+                    elevation: 0.5,
+                    shadowColor: colors.shadow.withValues(alpha: 0.18),
+                    borderRadius: bubbleRadius,
+                    child: InkWell(
+                      onLongPress: onReply,
+                      borderRadius: bubbleRadius,
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          theme.spacing.sm,
+                          theme.spacing.sm,
+                          theme.spacing.sm,
+                          theme.spacing.xs,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            Tooltip(
-                              message: communicationsAbsoluteTime(
-                                context,
-                                message.sentAt,
-                              ),
-                              child: Text(
-                                communicationsRelativeTime(
-                                  context,
-                                  message.sentAt,
+                            if (message.replyToMessage != null)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: theme.spacing.xs,
                                 ),
-                                style: theme.textTheme.labelSmall,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: colors.surfaceContainerHighest
+                                        .withValues(alpha: 0.7),
+                                    border: theme.borders.only(
+                                      left: true,
+                                      color: colors.primary,
+                                      width: theme.borders.thick + 1,
+                                    ),
+                                  ),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(theme.spacing.xs),
+                                    child: Text(
+                                      displayMessageContent(
+                                        message.replyToMessage!.content ?? '',
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: colors.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ),
+                                ),
                               ),
+                            if ((message.content ?? '').trim().isNotEmpty)
+                              RichText(
+                                text: TextSpan(
+                                  children: buildMentionTextSpans(
+                                    content: message.content ?? '',
+                                    baseStyle: theme.textTheme.bodyMedium!,
+                                    mentionStyle: theme.textTheme.bodyMedium!
+                                        .copyWith(
+                                          color: colors.primary,
+                                          fontWeight: AppFontWeight.emphasis,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            SizedBox(height: theme.spacing.xs),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Tooltip(
+                                  message: communicationsAbsoluteTime(
+                                    context,
+                                    message.sentAt,
+                                  ),
+                                  child: Text(
+                                    communicationsRelativeTime(
+                                      context,
+                                      message.sentAt,
+                                    ),
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: colors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                                if (isOwn) ...<Widget>[
+                                  SizedBox(width: theme.spacing.xs),
+                                  Icon(
+                                    isRead ? Icons.done_all : Icons.check,
+                                    size: 14,
+                                    color: isRead
+                                        ? colors.primary
+                                        : colors.onSurfaceVariant,
+                                  ),
+                                ],
+                              ],
                             ),
-                            if (isOwn) ...<Widget>[
-                              SizedBox(width: theme.spacing.xs),
-                              Icon(
-                                isRead ? Icons.done_all : Icons.check,
-                                size: 14,
-                                color: isRead
-                                    ? colors.primary
-                                    : colors.onSurfaceVariant,
-                              ),
-                            ],
                           ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AttachmentTile extends StatelessWidget {
-  const _AttachmentTile({required this.attachment});
-
-  final CommunicationAttachment attachment;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final bool isImage =
-        (attachment.contentType ?? '').startsWith('image/') ||
-        attachment.attachmentKind?.toUpperCase() == 'IMAGE';
-
-    if (isImage && attachment.publicUrl != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        child: Image.network(
-          attachment.publicUrl!,
-          height: 140,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          cacheHeight: 280,
-          errorBuilder: (_, _, _) => _fileRow(context),
-        ),
-      );
-    }
-    return _fileRow(context);
-  }
-
-  Widget _fileRow(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        const Icon(Icons.attach_file, size: 16),
-        const SizedBox(width: 4),
-        Flexible(
-          child: Text(attachment.fileName, overflow: TextOverflow.ellipsis),
-        ),
-      ],
+        );
+      },
     );
   }
 }

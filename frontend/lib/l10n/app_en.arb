@@ -22090,7 +22090,7 @@
       }
     }
   },
-  "communicationsCallSignalingHint": "Call signaling is available now. Media (microphone/camera) will follow in a later release.",
+  "communicationsCallSignalingHint": "Voice call signaling is available now. Microphone media will follow in a later release.",
   "@communicationsCallSignalingHint": {
     "description": "Hint that calls are signaling-only for now."
   },
@@ -22137,6 +22137,14 @@
   "communicationsFirstMessageHint": "Send the first message to start this conversation.",
   "@communicationsFirstMessageHint": {
     "description": "Empty thread hint encouraging the user to send the first message."
+  },
+  "communicationsComposeHint": "Type a message",
+  "@communicationsComposeHint": {
+    "description": "Placeholder hint in the WhatsApp-style message compose field."
+  },
+  "communicationsDirectChatSubtitle": "Direct message",
+  "@communicationsDirectChatSubtitle": {
+    "description": "Subtitle under a direct-chat thread header."
   },
   "communicationsGroupMembersRequiredHelper": "Add at least one member to create the group.",
   "@communicationsGroupMembersRequiredHelper": {

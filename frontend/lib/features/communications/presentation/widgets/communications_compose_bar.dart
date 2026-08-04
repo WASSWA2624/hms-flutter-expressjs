@@ -11,6 +11,7 @@ import 'package:hosspi_hms/features/communications/presentation/widgets/communic
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
+/// WhatsApp-style text compose bar (no multimedia attachments).
 class CommunicationsComposeBar extends ConsumerStatefulWidget {
   const CommunicationsComposeBar({
     required this.canWrite,
@@ -83,7 +84,6 @@ class _CommunicationsComposeBarState
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    // Unauthorized compose must not mount (no routine "no access" / lock banner).
     if (!widget.canWrite ||
         !CommunicationsMessagesAtomPermissions.compose.isAllowed(policy)) {
       return const SizedBox.shrink();
@@ -95,7 +95,12 @@ class _CommunicationsComposeBarState
         border: theme.borders.only(top: true),
       ),
       child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
+        padding: EdgeInsets.fromLTRB(
+          theme.spacing.sm,
+          theme.spacing.sm,
+          theme.spacing.sm,
+          theme.spacing.sm,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -106,20 +111,40 @@ class _CommunicationsComposeBarState
               crossAxisAlignment: CrossAxisAlignment.end,
               children: <Widget>[
                 Expanded(
-                  child: AppTextField(
-                    controller: _controller,
-                    focusNode: _focusNode,
-                    labelText: context.l10n.communicationsMessageFieldLabel,
-                    minLines: 1,
-                    maxLines: 5,
-                    enabled: !widget.isSaving,
-                    onChanged: _handleTextChanged,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(theme.radius.lg),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: theme.spacing.md,
+                        vertical: theme.spacing.xs,
+                      ),
+                      child: TextField(
+                        controller: _controller,
+                        focusNode: _focusNode,
+                        enabled: !widget.isSaving,
+                        minLines: 1,
+                        maxLines: 5,
+                        textInputAction: TextInputAction.newline,
+                        decoration: InputDecoration(
+                          hintText: context.l10n.communicationsComposeHint,
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: theme.spacing.sm,
+                          ),
+                        ),
+                        onChanged: _handleTextChanged,
+                      ),
+                    ),
                   ),
                 ),
-                SizedBox(width: theme.spacing.xs),
+                SizedBox(width: theme.spacing.sm),
                 AppButton(
                   iconOnly: true,
-                  icon: Icons.send_outlined,
+                  icon: Icons.send,
                   label: context.l10n.communicationsSendMessageAction,
                   semanticLabel: context.l10n.communicationsSendMessageAction,
                   tooltip: context.l10n.communicationsSendMessageAction,
@@ -145,6 +170,7 @@ class _CommunicationsComposeBarState
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(theme.radius.sm),
           border: theme.borders.only(
             left: true,
             color: theme.colorScheme.primary,
@@ -180,9 +206,11 @@ class _CommunicationsComposeBarState
   Widget _mentionOverlay(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 180),
-      child: Card(
-        margin: EdgeInsets.only(bottom: theme.spacing.xs),
+      constraints: const BoxConstraints(maxHeight: 200),
+      child: Material(
+        elevation: 2,
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        color: theme.colorScheme.surface,
         child: ListView.builder(
           shrinkWrap: true,
           itemCount: _mentionOptions.length,
@@ -190,6 +218,14 @@ class _CommunicationsComposeBarState
             final CommunicationStaffOption option = _mentionOptions[index];
             return ListTile(
               dense: true,
+              leading: CircleAvatar(
+                radius: 16,
+                child: Text(
+                  option.label.isEmpty
+                      ? '?'
+                      : option.label.substring(0, 1).toUpperCase(),
+                ),
+              ),
               title: Text(option.label),
               subtitle: Text(
                 <String?>[option.positionTitle, option.email]
@@ -206,7 +242,6 @@ class _CommunicationsComposeBarState
   }
 
   Future<void> _handleTextChanged(String value) async {
-    // Rebuild so Send enablement tracks content without waiting on mentions.
     setState(() {});
     final MentionQuery? query = parseActiveMentionQuery(
       value,
@@ -259,7 +294,6 @@ class _CommunicationsComposeBarState
   }
 
   Future<void> _send() async {
-    // Re-check before mutation — stale grants must not fire write paths.
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
     if (!widget.canWrite ||
         !CommunicationsMessagesAtomPermissions.compose.isAllowed(policy)) {

@@ -8,6 +8,7 @@ import 'package:hosspi_hms/features/communications/presentation/communications_a
 import 'package:hosspi_hms/features/communications/presentation/config/communications_message_filters.dart';
 import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_formatters.dart';
+import 'package:hosspi_hms/features/communications/presentation/widgets/communications_mention_utils.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -202,11 +203,14 @@ class _ConversationRow extends StatelessWidget {
                     ),
                     SizedBox(height: theme.spacing.xs),
                     Text(
-                      conversation.preview,
+                      displayMessageContent(conversation.preview),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colors.onSurfaceVariant,
+                        fontWeight: conversation.unread
+                            ? AppFontWeight.emphasis
+                            : AppFontWeight.regular,
                       ),
                     ),
                   ],
