@@ -1,79 +1,78 @@
-**Verdict:** Don’t invent two new finance “jobs” as the primary fix. The app already models two prices; what’s missing is **who is allowed to set each one**. Prefer **fine-grained pricing permissions** (and optional role packs), not a second accountant identity.
+# Separate facility vs pharmacy price ownership (billing / accountant)
 
-## What you already have
+## Objective
 
-Pricing is already split at the data layer for pharmacy drugs:
+Stop one finance or catalog actor from setting both **pharmacy retail** and **facility tariff** under one write gate. Add pricing permissions, enforce them on API and UI, and map role packs so Billing/Accountant own facility tariffs and Pharmacy owns retail—without new billing engines or parallel catalogs.
 
-| Concept | Storage | Meaning |
-|---|---|---|
-| Pharmacy retail | `drug.unit_price` → `pharmacy_unit_price` | Walk-in / OTC / pharmacy counter |
-| Facility billing | `facility_pharmacy_offering.unit_price` → `facility_unit_price` | In-hospital / clinical encounter charging |
+## Context
 
-Order-time selection already exists (`PharmacyItemPriceSource.pharmacy` vs `.facility`): clinical/OPD/IPD/etc. default to **facility**; walk-in defaults to **pharmacy**. Price books and invoice lines also carry `billing_entity: FACILITY | PHARMACY`.
+**Status quo**
 
-So the mix risk is mostly **authorization and UI**, not missing price fields.
+- Dual drug prices already exist: pharmacy retail on `drug.unit_price` (`pharmacy_unit_price`); facility tariff on `facility_pharmacy_offering.unit_price` (`facility_unit_price`).
+- Order defaults already work: clinical/encounter → **FACILITY**; walk-in → **PHARMACY**. Lines/price books already use `billing_entity` / `price_source` (`FACILITY` | `PHARMACY`).
+- Catalog create/edit (`pharmacy_drug_edit_dialog.dart`) edits both prices under catalog write ∪ `pharmacy:write` | `operations:write`. Matching backend routes use the same coarse scopes.
+- `BILLING` owns invoices/claims/`financial:approve`. `ACCOUNTANT` aliases `BILLING` (backend templates + frontend `access_policy.dart`). Neither owns a distinct pricing tier. Price-book writes use only `billing:write`.
 
-## Where mixing still happens
+**Intended behavior**
 
-1. **One dialog, one gate** — `pharmacy_drug_edit_dialog` edits pharmacy + facility price together; catalog write is effectively `pharmacy:write` ∪ `operations:write`.
-2. **Coarse finance roles** — `BILLING` owns invoice/claims/`financial:approve`; `ACCOUNTANT` is only an alias of `BILLING`. Neither owns “set pharmacy retail” vs “set facility tariff.”
-3. **Price book** — `billing:write` can write either `billing_entity` with no split.
-4. **No cost floor** — there’s no purchase/cost price, so nothing stops retail or facility tariff going below cost.
+- Fine-grained **pricing permissions** (not a second accountant job) separate who sets each tier.
+- Unauthorized pricing write controls must not render; backend RBAC is authoritative.
+- Preserve dispense, stock, payments, dual-price resolution, and the single billing pipeline.
 
-## Recommended approach: permissions first, roles as packs
+**Definitions**
 
-### 1. Add pricing permissions (primary lever)
+- **Pharmacy retail**: counter/OTC / `PHARMACY` sell price on `drug`.
+- **Facility tariff**: encounter / `FACILITY` sell price on facility pharmacy offerings (lab/radiology only if same path is touched).
+- **Pricing write**: mutating sell price or activating an offering that requires unit price—not dispense, stock, or cash collection.
 
-Keep existing `billing:*` / `pharmacy:*` for operations (dispense, collect payment). Add pricing-specific atoms, for example:
+## Requirements
 
-- `pricing:pharmacy_read` / `pricing:pharmacy_write` — pharmacy retail on `drug`
-- `pricing:facility_read` / `pricing:facility_write` — facility tariffs (pharmacy offerings, lab/radiology offerings, clinical catalog)
-- Optionally later: `pricing:price_book_write` scoped by `billing_entity`, or `pricing:approve` for dual-control
+1. Add permissions in backend catalog, metadata, seeds/sync, and frontend `AppPermissions` parity: `pricing:pharmacy_read`, `pricing:pharmacy_write`, `pricing:facility_read`, `pricing:facility_write`.
+2. Keep `billing:*`, `pharmacy:*`, and `financial:approve` for existing ops (queues, payments, dispense, stock). Do not use them as the sole price-edit gates.
+3. Role packs (admins keep both via existing admin expansion):
+   - `PHARMACIST` / `PHARMACY_TECHNICIAN`: add pharmacy pricing read/write; do **not** add facility tariff write.
+   - `BILLING` and `ACCOUNTANT` (keep alias unless explicitly split later): add facility pricing read/write; do **not** add pharmacy retail write.
+4. Backend: mutating `drug.unit_price`/`currency` requires `pricing:pharmacy_write`. Upserting offering `unit_price` or activating an offering that requires price requires `pricing:facility_write`. Reject forbidden price fields with 403; allow non-price identity/stock updates without those fields. Price-book write: `billing_entity=FACILITY` → facility pricing write; `PHARMACY` → pharmacy pricing write (admins exempt as today).
+5. Frontend: render pharmacy price controls only with `pricing:pharmacy_write`; facility price controls only with `pricing:facility_write`. No disabled stubs for unauthorized tiers. Non-price catalog fields stay under existing catalog write. Manual `price_source` override requires write for the target tier (not every dispenser). Read-only price columns may stay for matching pricing/pharmacy/billing read.
+6. Preserve clinical→facility and walk-in→pharmacy defaults; do not change invoice posting or coverage split except for auth.
+7. After authorized price saves, refresh catalog/order state so tiers are not stale.
+8. Reuse existing dialog loading/empty/error/success/validation. Active offerings still require a non-negative price when the actor is allowed to set that tier. Surface 403 via existing failure handling; no routine “no access” chrome.
 
-Wire them so:
+## Optional enhancements (out of scope unless requested)
 
-- Updating `drug.unit_price` requires **pharmacy pricing write**
-- Updating `facility_pharmacy_offering.unit_price` requires **facility pricing write**
-- UI disables the other field if the user lacks that permission
-- Backend enforces the same split (UI alone is not enough)
+- Cost floor + `pricing:approve`; distinct ACCOUNTANT vs BILLING packs; dedicated pricing-only roles; full lab/radiology tariff gates beyond pharmacy offerings + price-book entity split.
 
-That stops one person quietly overwriting the other ledger’s price.
+## Constraints
 
-### 2. Optional roles (convenience only)
+- Reuse dual-price model, `billing_entity`/`price_source`, AccessRequirement gates, authorize middleware, and design-system fields.
+- No second billing engine, invoice schema, or parallel catalog; no unrelated refactors; no `screens/` inventories.
+- Keep backend↔frontend↔seed↔metadata permission parity. Unauthorized write UI must not render.
 
-Only add roles if staffing is literally two people:
+## Acceptance Criteria
 
-| Role pack | Permissions | Owns |
-|---|---|---|
-| **Pharmacy pricing** (or extend Pharmacist / Pharmacy manager) | `pricing:pharmacy_*` (+ existing `pharmacy:*` as needed) | Retail / OTC |
-| **Facility billing / tariff** (or keep Billing/Accountant) | `pricing:facility_*`, `billing:*` | Encounter / facility tariffs, invoices, claims |
+- AC1 (1–3): Pricing permissions exist end-to-end; role packs match Requirement 3.
+- AC2 (4): API denies retail mutation without pharmacy pricing write and facility offering price mutation without facility pricing write; allowed calls persist only the permitted tier.
+- AC3 (4): Price-book writes enforce pricing write by `billing_entity`.
+- AC4 (5): Only-pharmacy write → facility price edits absent; only-facility write → pharmacy price edits absent; admin → both present.
+- AC5 (5–6): Dispense, stock, payments, and default price-source selection unchanged for existing ops holders.
+- AC6 (7–8): Authorized save updates visible catalog prices; forbidden tier is not half-updated.
+- AC7: Tests prove unauthorized pricing UI absent / authorized present, and backend 403/success per tier.
 
-Do **not** make `ACCOUNTANT` a second full clone of `BILLING` unless you also split permissions. Today `ACCOUNTANT → BILLING` means they are the same capability set.
+## Relevant Files
 
-Prefer: **one Billing Officer for facility tariffs + cash office**, and **pharmacy manager/pharmacist for retail**, both composed from permissions. Custom roles in Access Admin already fit this.
+- `backend/src/config/permissions.js`, `permission-catalog-metadata.js`
+- `backend/scripts/seeders/seed-access-pack.js`, `seed-catalog.js`
+- `backend/src/modules/pharmacy-workspace/routes/pharmacy-workspace.routes.js`, `services/pharmacy-workspace.service.js`
+- `backend/src/modules/facility-pharmacy-catalog/routes|services`
+- `backend/src/modules/price-book-entry/routes/price-book-entry.routes.js`
+- `frontend/lib/core/permissions/access_policy.dart` (+ permission catalog/parity)
+- `frontend/lib/features/pharmacy/presentation/pharmacy_access.dart`, `widgets/pharmacy_drug_edit_dialog.dart`, `widgets/pharmacy_catalog_panel.dart`, `pharmacy_order_item_pricing_helpers.dart`
+- `frontend/lib/shared/clinical_actions/clinical_request_billing_panel.dart`
+- Tests: `backend/src/tests/config/permissions.test.js`, pharmacy/facility-catalog/price-book auth tests, `frontend/test/core/permissions/*parity*`, `frontend/test/features/pharmacy/presentation/pharmacy_access_test.dart`
 
-### 3. What not to do
+## Verification
 
-- Don’t create parallel invoice engines or parallel catalogs — you already have one billing pipeline with `billing_entity` / `price_source`.
-- Don’t rely on “two accountants” without permission atoms — they’ll still share `billing:write` and mix prices.
-- Don’t give both people `pharmacy:write` and expect process discipline to protect margins.
-
-### 4. Loss-prevention add-ons (after the split)
-
-- Optional **cost / acquisition price** with “selling &lt; cost needs `pricing:approve`”
-- Audit on price changes (who changed which tier)
-- Keep runtime defaults as today (clinical → facility, walk-in → pharmacy); restrict **manual override** of `price_source` to billing/pricing write, not every dispenser
-
-## Practical target model
-
-```text
-Pharmacist / Pharmacy tech     → dispense, stock, (optional) pharmacy retail price
-Facility billing / accountant  → facility tariffs, invoices, claims, payments
-Facility admin                 → both pricing writes (exception / setup)
-```
-
-**Bottom line:** Separate **permissions** for pharmacy vs facility price writes; use **roles only as packs** of those permissions. That matches the current dual-price model and closes the real gap (same write path editing both prices).
-
----
-Rules: `user_rules` (ask mode, concise communication, cite code, append rules/model)  
-Model: Composer (Auto / agent router)
+- Backend route/service tests: allow/deny per pricing permission on retail, facility offering, and price-book entity.
+- Frontend access/widget tests: unauthorized tier controls absent; authorized/admin present.
+- Catalog parity + metadata tests pass.
+- Manual: pharmacist retail-only; billing/accountant facility-only; admin both; walk-in vs clinical defaults; dispense/payment unchanged; one- and two-field dialog layouts on mobile/tablet/desktop; light/dark via theme tokens.
