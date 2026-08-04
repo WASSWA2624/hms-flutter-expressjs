@@ -152,7 +152,7 @@ class AppWizardStepper extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
-                  fontWeight: AppFontWeight.medium,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               ),
             ),
@@ -333,7 +333,7 @@ class _StepNodeState extends State<_StepNode> {
                       color: labelColor,
                       fontWeight: widget.active
                           ? AppFontWeight.emphasis
-                          : AppFontWeight.medium,
+                          : AppFontWeight.emphasis,
                       height: 1.15,
                       fontSize: widget.compact ? 11 : 12,
                     ),
@@ -344,7 +344,7 @@ class _StepNodeState extends State<_StepNode> {
                       textAlign: TextAlign.center,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: labelColor.withValues(alpha: 0.85),
-                        fontWeight: AppFontWeight.medium,
+                        fontWeight: AppFontWeight.emphasis,
                         fontSize: widget.compact ? 9 : 10,
                       ),
                     ),

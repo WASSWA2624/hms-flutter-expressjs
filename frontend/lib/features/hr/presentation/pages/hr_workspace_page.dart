@@ -1467,7 +1467,7 @@ class _HrSeparationBanner extends StatelessWidget {
               child: Text(
                 l10n.hrSeparationBannerMessage(separationType, lastDay),
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: AppFontWeight.medium,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               ),
             ),

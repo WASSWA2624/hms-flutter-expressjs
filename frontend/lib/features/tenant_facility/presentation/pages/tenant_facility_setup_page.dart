@@ -7535,7 +7535,7 @@ class _FacilityChangeValuePane extends StatelessWidget {
               Text(
                 textValue,
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  fontWeight: AppFontWeight.medium,
+                  fontWeight: AppFontWeight.emphasis,
                   decoration: isPrevious ? TextDecoration.lineThrough : null,
                   color: isPrevious
                       ? colorScheme.onSurfaceVariant
@@ -7968,7 +7968,7 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
                                   .tenantFacilityDepartmentSimilarityCheckingMessage
                             : l10n.commonLoadingCompactTitle,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: AppFontWeight.medium,
+                          fontWeight: AppFontWeight.emphasis,
                         ),
                       ),
                     ),

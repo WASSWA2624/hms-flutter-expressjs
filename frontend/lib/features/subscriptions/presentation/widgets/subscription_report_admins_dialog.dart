@@ -308,7 +308,7 @@ class _AdminContactCard extends StatelessWidget {
                 roleLabel,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
-                  fontWeight: AppFontWeight.medium,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               ),
               if (contact.email != null) ...<Widget>[

@@ -434,14 +434,14 @@ class _BedDetailsDialogState extends ConsumerState<_BedDetailsDialog> {
                                 displayId,
                                 style: theme.textTheme.labelLarge?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
-                                  fontWeight: AppFontWeight.medium,
+                                  fontWeight: AppFontWeight.emphasis,
                                 ),
                               ),
                             Text(
                               wardName,
                               style: theme.textTheme.labelLarge?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
-                                fontWeight: AppFontWeight.medium,
+                                fontWeight: AppFontWeight.emphasis,
                               ),
                             ),
                           ],

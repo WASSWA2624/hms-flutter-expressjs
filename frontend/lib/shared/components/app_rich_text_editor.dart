@@ -89,7 +89,7 @@ abstract final class AppRichTextMarkup {
   }
 
   static TextSpan toTextSpan(String source, TextStyle? baseStyle) {
-    final TextStyle style = baseStyle ?? const TextStyle();
+    final TextStyle style = baseStyle ?? AppFontFamily.style();
     if (source.isEmpty) {
       return TextSpan(text: '', style: style);
     }
@@ -186,8 +186,8 @@ class AppRichTextView extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final TextStyle resolved =
         style ??
-        theme.textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.medium) ??
-        const TextStyle();
+        theme.textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis) ??
+        AppFontFamily.style();
     final TextSpan span = AppRichTextMarkup.toTextSpan(text, resolved);
     if (selectable) {
       return SelectableText.rich(span);
@@ -320,7 +320,7 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
         widget.showToolbar && widget.tools.isNotEmpty && widget.enabled;
     final Color borderColor = widget.errorText != null
         ? colors.error
-        : theme.borders.subtle;
+        : theme.borders.faint;
     final OutlineInputBorder fieldBorder = OutlineInputBorder(
       borderRadius: BorderRadius.zero,
       borderSide: theme.borders.side(color: borderColor),

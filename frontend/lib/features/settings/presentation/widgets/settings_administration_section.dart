@@ -191,7 +191,7 @@ class _AdministrationActionTile extends StatelessWidget {
                     Text(
                       action.title,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: AppFontWeight.medium,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                     SizedBox(height: theme.spacing.xs / 2),

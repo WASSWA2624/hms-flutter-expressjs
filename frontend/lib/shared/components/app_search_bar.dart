@@ -845,7 +845,7 @@ class _AttachedSearchBarButton extends StatelessWidget {
               label,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: foreground,
-                fontWeight: AppFontWeight.medium,
+                fontWeight: AppFontWeight.emphasis,
               ),
             ),
           ],

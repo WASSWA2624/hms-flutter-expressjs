@@ -963,7 +963,7 @@ class _FieldComparisonRow extends StatelessWidget {
                   '$candidateValue',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: status.color,
-                    fontWeight: AppFontWeight.medium,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
                 ),
               ],
@@ -997,7 +997,7 @@ class _MatchReasonChip extends StatelessWidget {
         label,
         style: theme.textTheme.labelSmall?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
-          fontWeight: AppFontWeight.medium,
+          fontWeight: AppFontWeight.emphasis,
         ),
       ),
     );

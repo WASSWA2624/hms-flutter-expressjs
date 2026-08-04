@@ -107,7 +107,7 @@ class _PatientActiveWorkRow extends StatelessWidget {
                   Text(
                     kindLabel,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: AppFontWeight.medium,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                   if (contextLabel.isNotEmpty) ...<Widget>[
@@ -137,7 +137,7 @@ class _PatientActiveWorkRow extends StatelessWidget {
                         Text(
                           '${l10n.patientsActiveWorkCurrentStatusLabel}:',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: AppFontWeight.medium,
+                            fontWeight: AppFontWeight.emphasis,
                           ),
                         ),
                         AppStatusText(label: statusLabel, tone: statusTone),
@@ -150,7 +150,9 @@ class _PatientActiveWorkRow extends StatelessWidget {
                       children: <InlineSpan>[
                         TextSpan(
                           text: '${l10n.patientsActiveWorkNextStepLabel}: ',
-                          style: const TextStyle(fontWeight: AppFontWeight.medium),
+                          style: AppFontFamily.style(
+                            fontWeight: AppFontWeight.emphasis,
+                          ),
                         ),
                         TextSpan(text: nextStepLabel),
                       ],

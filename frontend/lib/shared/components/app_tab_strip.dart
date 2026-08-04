@@ -379,7 +379,7 @@ double _estimateTabWidth({
     text: TextSpan(
       text: tab.label.trim(),
       style: (nested ? theme.textTheme.labelMedium : theme.textTheme.labelLarge)
-          ?.copyWith(fontWeight: AppFontWeight.medium),
+          ?.copyWith(fontWeight: AppFontWeight.emphasis),
     ),
     maxLines: 1,
     textDirection: textDirection,
@@ -802,7 +802,7 @@ class _AppTabChipState extends State<_AppTabChip> {
     // tabs still read as controls rather than body copy.
     final FontWeight fontWeight = widget.isSelected
         ? AppFontWeight.strong
-        : AppFontWeight.medium;
+        : AppFontWeight.emphasis;
     final bool flareLeft = widget.isSelected && !widget.isFirst;
     final bool flareRight = widget.isSelected;
 
@@ -888,7 +888,7 @@ class _AppTabChipState extends State<_AppTabChip> {
         : colorScheme.onSurfaceVariant;
     final FontWeight fontWeight = widget.isSelected
         ? AppFontWeight.strong
-        : AppFontWeight.medium;
+        : AppFontWeight.emphasis;
     final Color hoverFill = _isHovered
         ? colorScheme.onSurface.withValues(alpha: 0.04)
         : Colors.transparent;

@@ -247,7 +247,7 @@ class AppWorkflowStepper extends StatelessWidget {
             current.blockedReason!,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.statusColors.warning,
-              fontWeight: AppFontWeight.medium,
+              fontWeight: AppFontWeight.emphasis,
             ),
           ),
         ],
@@ -399,9 +399,9 @@ class _WorkflowStepEntry extends StatelessWidget {
     final bool interactive = step.onTap != null || step.hasHelpActionContent;
 
     final TextStyle labelStyle = (theme.textTheme.labelMedium ??
-            const TextStyle())
+            AppFontFamily.style())
         .copyWith(
-          fontWeight: isCurrent ? AppFontWeight.emphasis : AppFontWeight.medium,
+          fontWeight: isCurrent ? AppFontWeight.emphasis : AppFontWeight.regular,
           color: labelColor,
           letterSpacing: isCurrent ? 0.15 : null,
         );
@@ -478,8 +478,10 @@ class _WorkflowStepEntry extends StatelessWidget {
             colorScheme.surface,
           ),
           borderRadius: BorderRadius.circular(theme.radius.md),
-          border: theme.borders.all(color: colorScheme.primary.withValues(alpha: 0.42),
-            width: 1.5),
+          border: theme.borders.all(
+            color: colorScheme.primary.withValues(alpha: 0.42),
+            weight: AppBorderWeight.medium,
+          ),
         ),
         child: entryBody,
       );
@@ -539,7 +541,10 @@ class _WorkflowStepEntry extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(theme.radius.sm),
                     border: focused
-                        ? theme.borders.all(color: colorScheme.primary, width: 2)
+                        ? theme.borders.all(
+                            color: colorScheme.primary,
+                            weight: AppBorderWeight.thick,
+                          )
                         : null,
                   ),
                   child: node,
@@ -582,7 +587,10 @@ class _WorkflowStepEntry extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: theme.borders.all(color: scheme.primary, width: 2),
+            border: theme.borders.all(
+              color: scheme.primary,
+              weight: AppBorderWeight.thick,
+            ),
             color: scheme.primary.withValues(alpha: 0.14),
           ),
           child: Center(

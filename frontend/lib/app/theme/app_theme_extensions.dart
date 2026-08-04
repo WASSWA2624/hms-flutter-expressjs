@@ -521,11 +521,11 @@ final class AppListTokens extends ThemeExtension<AppListTokens> {
     final TextStyle titleBase =
         textTheme.bodyLarge ??
         textTheme.titleSmall ??
-        const TextStyle(fontSize: 15, height: 1.3);
+        AppFontFamily.style(fontSize: 15, height: 1.3);
     final TextStyle secondaryBase =
         textTheme.bodySmall ??
         textTheme.labelMedium ??
-        const TextStyle(fontSize: 12, height: 1.3);
+        AppFontFamily.style(fontSize: 12, height: 1.3);
     final double titleSize = titleBase.fontSize ?? 15;
     final double secondarySize = secondaryBase.fontSize ?? 12;
     final Color muted = colorScheme.onSurfaceVariant.withValues(alpha: 0.78);
@@ -559,7 +559,7 @@ final class AppListTokens extends ThemeExtension<AppListTokens> {
       mobileRowNumber: secondaryBase.copyWith(
         color: colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
         fontSize: 11,
-        fontWeight: AppFontWeight.medium,
+        fontWeight: AppFontWeight.emphasis,
         height: 1.2,
         fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
       ),

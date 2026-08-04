@@ -61,7 +61,7 @@ Future<void> showRadiologyCatalogProcedureDetailsDialog(
                           Text(
                             value,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: AppFontWeight.medium,
+                              fontWeight: AppFontWeight.emphasis,
                             ),
                           ),
                         ],

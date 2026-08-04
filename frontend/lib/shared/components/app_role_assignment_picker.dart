@@ -474,7 +474,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
           '$count',
           style: theme.textTheme.labelMedium?.copyWith(
             color: colors.onSurfaceVariant,
-            fontWeight: AppFontWeight.medium,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
       ],

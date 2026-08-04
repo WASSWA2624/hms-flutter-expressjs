@@ -1160,7 +1160,7 @@ class _ClinicalStatusText extends StatelessWidget {
     final Color color = _clinicalToneColor(theme, status.tone);
     final IconData icon = status.icon ?? _clinicalStatusIcon(status.tone);
     final TextStyle? effectiveStyle = (textStyle ?? theme.textTheme.bodyMedium)
-        ?.copyWith(color: color, fontWeight: AppFontWeight.medium);
+        ?.copyWith(color: color, fontWeight: AppFontWeight.emphasis);
 
     return Semantics(
       label: status.label,
@@ -1915,7 +1915,7 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
                           '${l10n.opdVitalsSummaryLabel}:',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: AppFontWeight.medium,
+                            fontWeight: AppFontWeight.emphasis,
                           ),
                         ),
                         SizedBox(width: theme.spacing.xs),
@@ -2356,7 +2356,7 @@ class _ClinicalGenericRecordRow extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: AppFontWeight.medium,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
                 ),
                 SizedBox(height: theme.spacing.xs),

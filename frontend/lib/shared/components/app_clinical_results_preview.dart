@@ -453,7 +453,7 @@ class AppClinicalResultEntryView extends StatelessWidget {
               moduleDisplay.label,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: AppFontWeight.medium,
+                fontWeight: AppFontWeight.emphasis,
               ),
             ),
             AppStatusBadge(
@@ -612,7 +612,7 @@ class _RadiologyContentAdapter extends StatelessWidget {
             meta,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: AppFontWeight.medium,
+              fontWeight: AppFontWeight.emphasis,
             ),
           ),
         if (narrative.isNotEmpty) ...<Widget>[

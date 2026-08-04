@@ -150,7 +150,7 @@ class _StandardActionButton extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: primaryColor,
-                        fontWeight: AppFontWeight.medium,
+                        fontWeight: AppFontWeight.emphasis,
                         decoration: enabled ? TextDecoration.underline : null,
                         decorationColor: primaryColor.withValues(alpha: 0.4),
                       ),
@@ -223,7 +223,7 @@ class _CompactActionButton extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: primaryColor,
-                        fontWeight: AppFontWeight.medium,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                   ),

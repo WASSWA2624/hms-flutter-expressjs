@@ -734,7 +734,7 @@ class _LabApplyingChangesBanner extends StatelessWidget {
               child: Text(
                 message,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: AppFontWeight.medium,
+                  fontWeight: AppFontWeight.emphasis,
                   color: theme.colorScheme.onPrimaryContainer,
                 ),
               ),
@@ -1313,8 +1313,8 @@ class _LabResultTestCell extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final LabOrderItem item = draft.item;
     final TextStyle titleStyle =
-        theme.textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.regular) ??
-        const TextStyle(fontWeight: AppFontWeight.regular);
+        theme.textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.title) ??
+        AppFontFamily.style(fontWeight: AppFontWeight.title);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -1441,9 +1441,9 @@ class _CompactResultInputState extends State<_CompactResultInput> {
     );
     final TextStyle? valueStyle = tone == null || !widget.draft.hasEntry
         ? null
-        : TextStyle(
+        : AppFontFamily.style(
             color: _resultInterpretationForeground(theme, tone),
-            fontWeight: AppFontWeight.regular,
+            fontWeight: AppFontWeight.title,
           );
 
     // Keep field-affixed clear/dropdown controls icon-only so toolbar
@@ -1541,7 +1541,7 @@ class _CompactResultInputState extends State<_CompactResultInput> {
                     : l10n.labResultEntryRequiredMessage,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.error,
-                  fontWeight: AppFontWeight.medium,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
                 softWrap: true,
               ),
@@ -2681,7 +2681,7 @@ class _ReopenSavedResultDialogState
                 l10n.labResultEntryRequiredMessage,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.error,
-                  fontWeight: AppFontWeight.medium,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               ),
             AppTextField(

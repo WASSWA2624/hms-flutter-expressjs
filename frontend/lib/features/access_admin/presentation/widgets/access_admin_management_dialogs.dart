@@ -2128,7 +2128,7 @@ class _PermissionDetailSummaryCard extends StatelessWidget {
                       Text(
                         permission.title,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: AppFontWeight.medium,
+                          fontWeight: AppFontWeight.emphasis,
                         ),
                       ),
                       if (code != null) ...<Widget>[
@@ -3997,7 +3997,7 @@ class _UserDetailInfoTile extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final AppLocalizations l10n = context.l10n;
     final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontWeight: AppFontWeight.medium,
+      fontWeight: AppFontWeight.emphasis,
     );
 
     return Padding(

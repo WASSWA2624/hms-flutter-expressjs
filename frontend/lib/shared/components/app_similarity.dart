@@ -569,7 +569,7 @@ class _AppSimilarityReviewDialogState<T>
                   l10n.appSimilarityMatchCountLabel(widget.matches.length),
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: AppFontWeight.medium,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
                 ),
               ],
@@ -690,7 +690,7 @@ class _AppSimilarityReadOnlyField extends StatelessWidget {
         Text(
           display,
           style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: AppFontWeight.medium,
+            fontWeight: AppFontWeight.emphasis,
             color: trimmed.isEmpty
                 ? theme.colorScheme.onSurfaceVariant
                 : theme.colorScheme.onSurface,

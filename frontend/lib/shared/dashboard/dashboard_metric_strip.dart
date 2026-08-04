@@ -105,7 +105,7 @@ class _DashboardMetricCard extends StatelessWidget {
             );
     final TextStyle? labelStyle = theme.textTheme.labelMedium?.copyWith(
       color: colorScheme.onSurfaceVariant,
-      fontWeight: AppFontWeight.medium,
+      fontWeight: AppFontWeight.emphasis,
       height: 1.2,
       leadingDistribution: TextLeadingDistribution.even,
     );

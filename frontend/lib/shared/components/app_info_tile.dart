@@ -319,7 +319,7 @@ class _InfoText extends StatelessWidget {
                 maxLines: maxLines,
                 placeholderValues: copyPlaceholderValues,
                 textStyle: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: AppFontWeight.medium,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               )
             : Text(
@@ -327,7 +327,7 @@ class _InfoText extends StatelessWidget {
                 maxLines: maxLines,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: AppFontWeight.medium,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               ),
       ],

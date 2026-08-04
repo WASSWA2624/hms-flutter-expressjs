@@ -1516,7 +1516,7 @@ class _MedicationPriceCell extends StatelessWidget {
         Text(
           clinicalRequestPriceLabel(context, unitPrice, currency),
           style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: AppFontWeight.medium,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         SizedBox(height: theme.spacing.xs),
@@ -2927,7 +2927,7 @@ class _ReturnMedicationsTable extends StatelessWidget {
               _returnQuantityLabel(line),
               style: Theme.of(
                 context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.medium),
+              ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
             ),
           );
         },

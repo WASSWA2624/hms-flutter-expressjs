@@ -291,7 +291,7 @@ class _OpdCompactNextAction extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: primaryColor,
-                        fontWeight: AppFontWeight.medium,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                   ),

@@ -1225,7 +1225,7 @@ class _PrescriptionRxListTile extends StatelessWidget {
     );
     final TextStyle? metaStyle = theme.textTheme.bodyMedium?.copyWith(
       color: colorScheme.onSurfaceVariant,
-      fontWeight: AppFontWeight.medium,
+      fontWeight: AppFontWeight.emphasis,
     );
 
     return Padding(

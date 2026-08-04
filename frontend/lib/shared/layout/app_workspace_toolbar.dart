@@ -946,7 +946,10 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
         if (!states.contains(WidgetState.focused)) {
           return null;
         }
-        return theme.borders.side(color: colorScheme.primary.withValues(alpha: 0.72), width: 1.25,);
+        return theme.borders.side(
+          color: colorScheme.primary.withValues(alpha: 0.72),
+          weight: AppBorderWeight.medium,
+        );
       }),
     );
   }

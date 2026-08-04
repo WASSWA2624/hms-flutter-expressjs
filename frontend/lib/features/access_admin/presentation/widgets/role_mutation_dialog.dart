@@ -1090,7 +1090,7 @@ class _RoleMutationSelectionChip extends StatelessWidget {
       side: theme.borders.side(
         color: hasSelection
             ? colors.primary.withValues(alpha: 0.24)
-            : theme.borders.subtle,
+            : theme.borders.faint,
       ),
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),

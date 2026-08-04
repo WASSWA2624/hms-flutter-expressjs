@@ -934,7 +934,7 @@ class _TimePeriodChip extends StatelessWidget {
             label,
             style: theme.textTheme.labelLarge?.copyWith(
               color: foreground,
-              fontWeight: AppFontWeight.medium,
+              fontWeight: AppFontWeight.emphasis,
             ),
           ),
         ),

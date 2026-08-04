@@ -321,7 +321,7 @@ class _LoadingMetrics {
           letterSpacing: 0.2,
         ),
         titleStyle: (ThemeData theme) =>
-            theme.textTheme.titleSmall?.copyWith(fontWeight: AppFontWeight.medium),
+            theme.textTheme.titleSmall?.copyWith(fontWeight: AppFontWeight.emphasis),
       ),
       AppLoadingIndicatorSize.regular => _LoadingMetrics(
         logoSize: compactViewport ? 48 : 56,
@@ -333,7 +333,7 @@ class _LoadingMetrics {
           letterSpacing: 0.2,
         ),
         titleStyle: (ThemeData theme) =>
-            theme.textTheme.titleMedium?.copyWith(fontWeight: AppFontWeight.medium),
+            theme.textTheme.titleMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
       ),
       AppLoadingIndicatorSize.large => _LoadingMetrics(
         logoSize: switch (breakpoint) {
@@ -351,7 +351,7 @@ class _LoadingMetrics {
         brandStyle: (ThemeData theme) => theme.textTheme.headlineSmall
             ?.copyWith(fontWeight: AppFontWeight.emphasis, letterSpacing: 0.15),
         titleStyle: (ThemeData theme) =>
-            theme.textTheme.titleLarge?.copyWith(fontWeight: AppFontWeight.medium),
+            theme.textTheme.titleLarge?.copyWith(fontWeight: AppFontWeight.emphasis),
       ),
       AppLoadingIndicatorSize.hero => _LoadingMetrics(
         logoSize: switch (breakpoint) {
@@ -377,7 +377,7 @@ class _LoadingMetrics {
           );
         },
         titleStyle: (ThemeData theme) => theme.textTheme.titleLarge?.copyWith(
-          fontWeight: AppFontWeight.medium,
+          fontWeight: AppFontWeight.emphasis,
           color: theme.colorScheme.onSurface,
         ),
       ),

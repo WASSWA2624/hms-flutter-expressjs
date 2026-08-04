@@ -69,7 +69,8 @@ abstract final class AppTheme {
     };
     final OutlineInputBorder inputBorder = OutlineInputBorder(
       borderRadius: controlRadius,
-      borderSide: borders.side(tone: AppBorderTone.subtle),
+      // Resting controls: thin + faint (default AppBorderTokens.side).
+      borderSide: borders.side(),
     );
     final OutlineInputBorder focusedInputBorder = OutlineInputBorder(
       borderRadius: controlRadius,
@@ -178,6 +179,7 @@ abstract final class AppTheme {
           minimumSize: minimumControlSize,
           padding: buttonPadding,
           shape: controlShape,
+          side: borders.side(),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
           textStyle: textTheme.labelLarge?.copyWith(
@@ -241,7 +243,7 @@ abstract final class AppTheme {
         // as entered values. Hints stay lightest; floating labels stay ≤ regular.
         labelStyle: inputTextStyle.copyWith(
           color: palette.inputHintColor,
-          fontWeight: AppFontWeight.light,
+          fontWeight: AppFontWeight.label,
           fontSize: 14,
           height: 1.5,
         ),
@@ -251,7 +253,7 @@ abstract final class AppTheme {
         ),
         hintStyle: inputTextStyle.copyWith(
           color: palette.inputHintColor,
-          fontWeight: AppFontWeight.light,
+          fontWeight: AppFontWeight.label,
           fontSize: 14,
           height: 1.5,
         ),
@@ -376,7 +378,7 @@ abstract final class AppTheme {
       ),
       chipTheme: ChipThemeData(
         shape: controlShape,
-        side: borders.side(tone: AppBorderTone.subtle),
+        side: borders.side(),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         surfaceTintColor: Colors.transparent,

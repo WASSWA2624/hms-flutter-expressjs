@@ -442,7 +442,7 @@ class _ServiceCell extends StatelessWidget {
               child: Text(
                 row.serviceLabel,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: AppFontWeight.medium,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -629,7 +629,7 @@ class _OpdClinicalServiceCard extends StatelessWidget {
                     child: Text(
                       row.serviceLabel,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: AppFontWeight.medium,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                   ),

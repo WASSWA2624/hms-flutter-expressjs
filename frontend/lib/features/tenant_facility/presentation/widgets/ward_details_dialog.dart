@@ -413,7 +413,7 @@ class _WardDetailsDialogState extends ConsumerState<_WardDetailsDialog> {
                               typeLabel,
                               style: theme.textTheme.labelLarge?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
-                                fontWeight: AppFontWeight.medium,
+                                fontWeight: AppFontWeight.emphasis,
                               ),
                             ),
                             if (displayId != null)

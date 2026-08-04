@@ -54,7 +54,7 @@ class ClinicalRequestFlowSummaryBar extends StatelessWidget {
               child: Text(
                 l10n.clinicalRequestFlowItemCountLabel(itemCount),
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: AppFontWeight.medium,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               ),
             ),
@@ -217,7 +217,7 @@ class _ClinicalRequestRemoveItemsConfirmationDialog extends StatelessWidget {
                           child: Text(
                             item.name,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: AppFontWeight.medium,
+                              fontWeight: AppFontWeight.emphasis,
                             ),
                           ),
                         ),
@@ -226,7 +226,7 @@ class _ClinicalRequestRemoveItemsConfirmationDialog extends StatelessWidget {
                           item.typeLabel,
                           style: theme.textTheme.labelMedium?.copyWith(
                             color: colorScheme.onSurfaceVariant,
-                            fontWeight: AppFontWeight.medium,
+                            fontWeight: AppFontWeight.emphasis,
                           ),
                         ),
                       ],
@@ -820,7 +820,7 @@ class ClinicalRequestSelectedCatalogRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: AppFontWeight.medium,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                   if (subtitle != null && subtitle!.isNotEmpty)
@@ -836,7 +836,7 @@ class ClinicalRequestSelectedCatalogRow extends StatelessWidget {
                     priceLabel,
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: colorScheme.primary,
-                      fontWeight: AppFontWeight.medium,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                 ],

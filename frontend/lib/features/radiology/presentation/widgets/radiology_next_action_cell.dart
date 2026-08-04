@@ -76,7 +76,7 @@ class _RadiologyNextActionText extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       style: theme.textTheme.bodyMedium?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
-        fontWeight: AppFontWeight.medium,
+        fontWeight: AppFontWeight.emphasis,
       ),
     );
   }

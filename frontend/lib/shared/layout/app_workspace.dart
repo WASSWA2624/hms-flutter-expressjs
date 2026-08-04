@@ -1421,7 +1421,7 @@ class _PatientContextInlineFact extends StatelessWidget {
         : colors.on;
     final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
       color: colorScheme.onSurfaceVariant,
-      fontWeight: AppFontWeight.medium,
+      fontWeight: AppFontWeight.emphasis,
     );
     final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
       color: field.tone == AppWorkspaceStatusTone.neutral
@@ -1595,7 +1595,7 @@ class _PatientContextFieldTile extends StatelessWidget {
                             color: neutralTone
                                 ? colorScheme.onSurface
                                 : colors.on,
-                            fontWeight: AppFontWeight.medium,
+                            fontWeight: AppFontWeight.emphasis,
                           ),
                         )
                       : Text(
@@ -1606,7 +1606,7 @@ class _PatientContextFieldTile extends StatelessWidget {
                             color: neutralTone
                                 ? colorScheme.onSurface
                                 : colors.on,
-                            fontWeight: AppFontWeight.medium,
+                            fontWeight: AppFontWeight.emphasis,
                           ),
                         ),
                 ],
@@ -1676,7 +1676,11 @@ class _WorkspaceDrawerHeader extends StatelessWidget {
                         theme.textTheme.titleLarge?.copyWith(
                           color: colorScheme.onSurface,
                         ) ??
-                        TextStyle(color: colorScheme.onSurface, fontSize: 22),
+                        theme.fonts.style(
+                          color: colorScheme.onSurface,
+                          fontSize: 22,
+                          fontWeight: AppFontWeight.title,
+                        ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     child: title,
@@ -1688,7 +1692,9 @@ class _WorkspaceDrawerHeader extends StatelessWidget {
                           theme.textTheme.bodyMedium?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ) ??
-                          TextStyle(color: colorScheme.onSurfaceVariant),
+                          theme.fonts.style(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                       child: description!,
                     ),
                   ],

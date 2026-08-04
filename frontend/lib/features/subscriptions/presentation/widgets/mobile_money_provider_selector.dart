@@ -147,7 +147,7 @@ class _InitialsLogo extends StatelessWidget {
       ),
       child: Text(
         brand.initials,
-        style: TextStyle(
+        style: AppFontFamily.style(
           color: brand.onAccent,
           fontSize: size * 0.34,
           fontWeight: AppFontWeight.emphasis,

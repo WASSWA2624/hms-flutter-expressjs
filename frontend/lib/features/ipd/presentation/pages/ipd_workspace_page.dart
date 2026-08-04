@@ -2047,7 +2047,7 @@ class _IpdKeyValueTile extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: AppFontWeight.medium,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
       ],

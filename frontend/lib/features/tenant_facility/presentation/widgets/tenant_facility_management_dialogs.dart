@@ -1969,7 +1969,7 @@ class _TenantMetaRow extends StatelessWidget {
             child: Text(
               value,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: AppFontWeight.medium,
+                fontWeight: AppFontWeight.emphasis,
               ),
             ),
           ),
@@ -3713,7 +3713,10 @@ class _FacilityMetricChip extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            border: theme.borders.all(color: borderColor, width: selected ? 1.5 : 1),
+            border: theme.borders.all(
+              color: borderColor,
+              weight: selected ? AppBorderWeight.medium : AppBorderWeight.thin,
+            ),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -3888,7 +3891,7 @@ class _FacilityStructureCrudPanelState<T>
                       title: Text(
                         widget.titleBuilder(item),
                         style: mutedStyle?.copyWith(
-                          fontWeight: AppFontWeight.medium,
+                          fontWeight: AppFontWeight.emphasis,
                         ),
                       ),
                       subtitle: Column(

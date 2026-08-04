@@ -418,7 +418,7 @@ class _PermissionOverflowMenuItem extends StatelessWidget {
             child: Text(
               action.label,
               style: action.destructive && enabled
-                  ? TextStyle(color: colorScheme.error)
+                  ? AppFontFamily.style(color: colorScheme.error)
                   : null,
             ),
           ),

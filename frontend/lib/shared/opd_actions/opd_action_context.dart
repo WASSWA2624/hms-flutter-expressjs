@@ -423,7 +423,7 @@ class _OpdEncounterSummaryTile extends StatelessWidget {
             AppCopyableIdentifier(
               value: pair.value,
               textStyle: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: AppFontWeight.medium,
+                fontWeight: AppFontWeight.emphasis,
               ),
               copiedMessage: pair.label == l10n.opdPatientIdLabel
                   ? l10n.clinicalPatientIdCopiedMessage
@@ -435,7 +435,7 @@ class _OpdEncounterSummaryTile extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: AppFontWeight.medium,
+                fontWeight: AppFontWeight.emphasis,
               ),
             ),
         ],

@@ -1391,7 +1391,7 @@ class _ShellMenuGroupHeader extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: theme.textTheme.labelSmall?.copyWith(
           color: colorScheme.onSurfaceVariant.withValues(alpha: 0.78),
-          fontWeight: AppFontWeight.medium,
+          fontWeight: AppFontWeight.emphasis,
           letterSpacing: 0.4,
         ),
       ),
@@ -1584,7 +1584,7 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: foregroundColor,
                   fontWeight: widget.selected
-                      ? AppFontWeight.medium
+                      ? AppFontWeight.emphasis
                       : AppFontWeight.regular,
                 ),
               ),

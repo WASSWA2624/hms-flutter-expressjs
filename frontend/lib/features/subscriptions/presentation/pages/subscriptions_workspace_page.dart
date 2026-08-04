@@ -1301,7 +1301,7 @@ class _PlanDetailContent extends ConsumerWidget {
                             planId,
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: AppFontWeight.medium,
+                              fontWeight: AppFontWeight.emphasis,
                             ),
                           ),
                       ],
@@ -3952,7 +3952,7 @@ class _CohortMetaChip extends StatelessWidget {
           label,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: AppFontWeight.medium,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
       ],

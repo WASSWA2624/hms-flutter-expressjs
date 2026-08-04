@@ -2716,7 +2716,7 @@ Widget _labEnableOfferingStatusCell(
           label,
           style: theme.textTheme.labelMedium?.copyWith(
             color: color,
-            fontWeight: AppFontWeight.medium,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
       ],

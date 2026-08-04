@@ -401,7 +401,7 @@ class _UnitDetailsDialogState extends ConsumerState<_UnitDetailsDialog> {
                                 departmentName,
                                 style: theme.textTheme.labelLarge?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
-                                  fontWeight: AppFontWeight.medium,
+                                  fontWeight: AppFontWeight.emphasis,
                                 ),
                               ),
                             if (displayId != null)

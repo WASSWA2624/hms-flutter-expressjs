@@ -57,7 +57,7 @@ final class SubscriptionHeaderButton extends StatelessWidget {
       child: IconTheme(
         data: IconThemeData(color: presentation.foreground),
         child: DefaultTextStyle(
-          style: TextStyle(color: presentation.foreground),
+          style: theme.fonts.style(color: presentation.foreground),
           child: content,
         ),
       ),

@@ -26,7 +26,7 @@ void main() {
       expect(theme.fonts.emphasis, AppFontWeight.emphasis);
       expect(
         theme.inputDecorationTheme.labelStyle?.fontWeight,
-        AppFontWeight.light,
+        AppFontWeight.label,
       );
       expect(
         theme.inputDecorationTheme.floatingLabelStyle?.fontWeight,
@@ -34,9 +34,23 @@ void main() {
       );
       expect(
         theme.inputDecorationTheme.hintStyle?.fontWeight,
-        AppFontWeight.light,
+        AppFontWeight.label,
       );
       expect(theme.inputDecorationTheme.hintStyle?.fontSize, 14);
+      expect(
+        theme.inputDecorationTheme.enabledBorder,
+        isA<OutlineInputBorder>(),
+      );
+      final OutlineInputBorder enabledBorder =
+          theme.inputDecorationTheme.enabledBorder! as OutlineInputBorder;
+      expect(enabledBorder.borderSide.color, theme.borders.faint);
+      expect(enabledBorder.borderSide.width, theme.borders.thin);
+      expect(theme.chipTheme.side?.color, theme.borders.faint);
+      expect(theme.chipTheme.side?.width, theme.borders.thin);
+      expect(
+        theme.outlinedButtonTheme.style?.side?.resolve(const <WidgetState>{}),
+        theme.borders.side(),
+      );
       expect(theme.colorScheme.brightness, Brightness.light);
       expect(theme.colorScheme.primary, AppLightThemePalette.azure700);
       expect(theme.colorScheme.primaryContainer, AppLightThemePalette.azure50);

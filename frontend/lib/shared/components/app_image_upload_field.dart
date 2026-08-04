@@ -181,7 +181,7 @@ class AppImageUploadField extends StatelessWidget {
         Text(
           label,
           style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: AppFontWeight.medium,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         SizedBox(height: theme.spacing.xs),
@@ -345,7 +345,7 @@ class _ImagePreviewTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: colorScheme.primary,
-                  fontWeight: AppFontWeight.medium,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               ),
             ),

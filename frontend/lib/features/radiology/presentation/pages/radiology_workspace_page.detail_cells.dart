@@ -49,7 +49,7 @@ class _DetailLine extends StatelessWidget {
                       fontWeight: AppFontWeight.regular,
                     )
                   : theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: AppFontWeight.medium,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
             ),
           ),

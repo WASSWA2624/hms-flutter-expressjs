@@ -286,7 +286,7 @@ class AppButton extends StatelessWidget {
         ),
       ),
       textStyle: WidgetStatePropertyAll<TextStyle?>(
-        theme.textTheme.labelLarge?.copyWith(fontWeight: AppFontWeight.medium),
+        theme.textTheme.labelLarge?.copyWith(fontWeight: AppFontWeight.emphasis),
       ),
       foregroundColor: WidgetStateProperty.resolveWith<Color?>((
         Set<WidgetState> states,

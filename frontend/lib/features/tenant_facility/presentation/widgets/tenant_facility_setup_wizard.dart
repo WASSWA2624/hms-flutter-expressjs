@@ -638,7 +638,7 @@ class _SetupStepRequirementsChecklist extends StatelessWidget {
                                 ),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: pendingTone,
-                                  fontWeight: AppFontWeight.medium,
+                                  fontWeight: AppFontWeight.emphasis,
                                 ),
                               ),
                             ],
@@ -1087,7 +1087,7 @@ class _PermissionChip extends StatelessWidget {
           '$label · ${allowed ? l10n.tenantFacilityPermissionAllowed : l10n.tenantFacilityPermissionDenied}',
           style: theme.textTheme.labelMedium?.copyWith(
             color: tone,
-            fontWeight: AppFontWeight.medium,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
       ],

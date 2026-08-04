@@ -592,7 +592,7 @@ class _DashboardShortcutTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: AppFontWeight.medium,
+                    fontWeight: AppFontWeight.emphasis,
                     height: 1.2,
                   ),
                 ),

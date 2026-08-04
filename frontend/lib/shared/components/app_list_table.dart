@@ -3578,7 +3578,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     final TextStyle headingStyle =
         _cachedHeadingTextStyle ??
         theme.textTheme.labelLarge ??
-        const TextStyle();
+        AppFontFamily.style();
 
     return SizedBox(
       height: _headingRowHeight,
@@ -3782,7 +3782,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   TextStyle _dataTextStyle(ThemeData theme) {
     return _cachedDataTextStyle ??
         theme.textTheme.bodyMedium ??
-        const TextStyle();
+        AppFontFamily.style();
   }
 
   /// Computes how many rows (data + blank spacers) are needed so the table body
@@ -3849,7 +3849,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     }
     _rowNumberStyle = theme.textTheme.labelMedium?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: AppFontWeight.medium,
+      fontWeight: AppFontWeight.emphasis,
     );
     return _rowNumberStyle;
   }
@@ -4133,7 +4133,7 @@ class _DataColumnHeader<T> extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final TextStyle? headerStyle = theme.textTheme.labelLarge?.copyWith(
       color: isSorted ? colorScheme.primary : colorScheme.onSurfaceVariant,
-      fontWeight: isSorted ? AppFontWeight.emphasis : AppFontWeight.medium,
+      fontWeight: isSorted ? AppFontWeight.emphasis : AppFontWeight.regular,
     );
 
     Widget label;

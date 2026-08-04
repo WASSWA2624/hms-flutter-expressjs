@@ -84,7 +84,7 @@ class ClinicalCatalogOptionLabel extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: AppFontWeight.medium,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         if (resolvedSubtitle.isNotEmpty)
@@ -100,7 +100,7 @@ class ClinicalCatalogOptionLabel extends StatelessWidget {
           clinicalRequestCatalogPriceLabel(context, option),
           style: theme.textTheme.labelMedium?.copyWith(
             color: colorScheme.primary,
-            fontWeight: AppFontWeight.medium,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
       ],

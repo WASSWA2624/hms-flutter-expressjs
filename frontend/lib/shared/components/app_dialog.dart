@@ -515,13 +515,15 @@ class _DialogBody extends StatelessWidget {
         EdgeInsets.all(compact ? theme.spacing.md : theme.spacing.lg);
     final TextStyle titleStyle =
         ((compact ? theme.textTheme.titleMedium : theme.textTheme.titleLarge) ??
-                TextStyle(
+                theme.fonts.style(
                   color: colorScheme.onSurface,
                   fontSize: compact ? 18 : 22,
+                  fontWeight: AppFontWeight.title,
                 ))
             .copyWith(fontWeight: AppFontWeight.emphasis);
     final TextStyle contentStyle =
-        theme.textTheme.bodyMedium ?? TextStyle(color: colorScheme.onSurface);
+        theme.textTheme.bodyMedium ??
+        theme.fonts.style(color: colorScheme.onSurface);
     final Widget? dialogContent = content == null
         ? null
         : AppFieldRequirementScope(

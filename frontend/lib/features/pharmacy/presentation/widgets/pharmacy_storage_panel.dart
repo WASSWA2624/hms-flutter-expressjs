@@ -1333,7 +1333,7 @@ class _StorageDetailMetaRow extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
       color: colorScheme.onSurfaceVariant,
-      fontWeight: AppFontWeight.medium,
+      fontWeight: AppFontWeight.emphasis,
     );
     final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
       color: colorScheme.onSurface,

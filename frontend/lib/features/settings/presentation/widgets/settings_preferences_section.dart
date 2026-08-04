@@ -122,7 +122,7 @@ class _PreferencesReadOnlySummary extends StatelessWidget {
         Text(
           l10n.settingsThemeModeFieldLabel,
           style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: AppFontWeight.medium,
+            fontWeight: AppFontWeight.emphasis,
           ),
         ),
         SizedBox(height: theme.spacing.sm),
@@ -132,7 +132,7 @@ class _PreferencesReadOnlySummary extends StatelessWidget {
               child: Text(
                 label,
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  fontWeight: AppFontWeight.medium,
+                  fontWeight: AppFontWeight.emphasis,
                 ),
               ),
             ),

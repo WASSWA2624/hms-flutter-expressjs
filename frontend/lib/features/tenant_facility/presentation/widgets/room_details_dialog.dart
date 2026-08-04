@@ -394,14 +394,14 @@ class _RoomDetailsDialogState extends ConsumerState<_RoomDetailsDialog> {
                                 displayId,
                                 style: theme.textTheme.labelLarge?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
-                                  fontWeight: AppFontWeight.medium,
+                                  fontWeight: AppFontWeight.emphasis,
                                 ),
                               ),
                             Text(
                               _resolveWardName(),
                               style: theme.textTheme.labelLarge?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
-                                fontWeight: AppFontWeight.medium,
+                                fontWeight: AppFontWeight.emphasis,
                               ),
                             ),
                           ],

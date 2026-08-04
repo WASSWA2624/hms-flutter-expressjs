@@ -326,7 +326,7 @@ class _GlassSwitchTile extends StatelessWidget {
                       glassFill,
                     ],
                   ),
-                  border: theme.borders.all(color: glassBorder, width: 1),
+                  border: theme.borders.all(color: glassBorder),
                 ),
                 child: InkWell(
                   onTap: onChanged == null ? null : () => onChanged!(!value),

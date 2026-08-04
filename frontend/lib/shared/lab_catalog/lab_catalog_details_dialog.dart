@@ -114,7 +114,7 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
                               Text(
                                 value,
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: AppFontWeight.medium,
+                                  fontWeight: AppFontWeight.emphasis,
                                 ),
                               ),
                             ],
@@ -136,7 +136,7 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
                       Text(
                         range.displayLabel,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: AppFontWeight.medium,
+                          fontWeight: AppFontWeight.emphasis,
                         ),
                       ),
                       SizedBox(height: theme.spacing.xs),
@@ -197,7 +197,7 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
                                             item.panelItems[index].displayTitle,
                                             style: theme.textTheme.bodyMedium
                                                 ?.copyWith(
-                                                  fontWeight: AppFontWeight.medium,
+                                                  fontWeight: AppFontWeight.emphasis,
                                                 ),
                                           ),
                                           if (_panelItemSubtitle(

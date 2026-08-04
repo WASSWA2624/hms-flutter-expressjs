@@ -651,7 +651,7 @@ class _EditableBillingLineRow extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: AppFontWeight.medium,
+              fontWeight: AppFontWeight.emphasis,
             ),
           ),
           SizedBox(height: theme.spacing.xs),
@@ -785,7 +785,7 @@ class _BillingLineRow extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: AppFontWeight.medium,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
                 ),
                 Text(
@@ -915,7 +915,7 @@ class _PaymentModeRadioOption extends StatelessWidget {
             Text(
               label,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: AppFontWeight.medium,
+                fontWeight: AppFontWeight.emphasis,
               ),
             ),
           ],

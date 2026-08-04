@@ -452,7 +452,7 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
                 _diagnosisTitle(item),
                 softWrap: true,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: AppFontWeight.medium,
+                  fontWeight: AppFontWeight.emphasis,
                   height: 1.15,
                 ),
               ),

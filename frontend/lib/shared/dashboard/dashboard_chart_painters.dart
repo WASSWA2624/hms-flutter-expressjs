@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/app/theme/app_font_family.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 
 typedef DashboardTrendPointLabelBuilder =
@@ -87,7 +88,7 @@ class DashboardTrendChartPainter extends CustomPainter {
             text: labelBuilder(point, compact: true),
             style:
                 textStyle?.copyWith(color: labelColor) ??
-                TextStyle(color: labelColor, fontSize: 10),
+                AppFontFamily.style(color: labelColor, fontSize: 10),
           ),
           textDirection: TextDirection.ltr,
           maxLines: 1,

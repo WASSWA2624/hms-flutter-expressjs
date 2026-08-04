@@ -384,7 +384,7 @@ class _AppCollapsibleHeaderTitle extends StatelessWidget {
             subtitle!,
             style: theme.textTheme.bodySmall?.copyWith(
               color: secondaryColor,
-              fontWeight: AppFontWeight.medium,
+              fontWeight: AppFontWeight.emphasis,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -397,7 +397,7 @@ class _AppCollapsibleHeaderTitle extends StatelessWidget {
   Widget _buildInline(ThemeData theme) {
     final TextStyle separatorStyle = theme.textTheme.bodyMedium!.copyWith(
       color: secondaryColor.withValues(alpha: 0.55),
-      fontWeight: AppFontWeight.medium,
+      fontWeight: AppFontWeight.emphasis,
     );
     final TextStyle eyebrowStyle = theme.textTheme.labelMedium!.copyWith(
       color: secondaryColor,
@@ -409,7 +409,7 @@ class _AppCollapsibleHeaderTitle extends StatelessWidget {
     );
     final TextStyle subtitleStyle = theme.textTheme.bodySmall!.copyWith(
       color: secondaryColor,
-      fontWeight: AppFontWeight.medium,
+      fontWeight: AppFontWeight.emphasis,
     );
 
     final List<InlineSpan> spans = <InlineSpan>[];

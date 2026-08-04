@@ -432,7 +432,7 @@ class _PatientDetailsTitle extends StatelessWidget {
             onCopied: onCopyPatientNumber,
             textStyle: nameStyle?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: AppFontWeight.medium,
+              fontWeight: AppFontWeight.emphasis,
             ),
           );
 

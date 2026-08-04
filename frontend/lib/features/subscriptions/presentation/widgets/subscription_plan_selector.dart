@@ -360,7 +360,10 @@ class _PlanColumnTile extends StatelessWidget {
       color: fill,
       shape: RoundedRectangleBorder(
         borderRadius: radius,
-        side: theme.borders.side(color: borderColor, width: selected ? 2 : 1.25),
+        side: theme.borders.side(
+          color: borderColor,
+          weight: selected ? AppBorderWeight.thick : AppBorderWeight.medium,
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -419,7 +422,7 @@ class _PlanColumnTile extends StatelessWidget {
                     cycleLabel,
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: AppFontWeight.medium,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                   SizedBox(height: theme.spacing.sm),
