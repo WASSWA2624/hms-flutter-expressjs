@@ -67,6 +67,7 @@ void main() {
         ),
       ),
     );
+    when(() => repo.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
     when(() => repo.listWards(search: any(named: 'search'))).thenAnswer(
       (_) async => const Result<List<IpdWardOption>>.success(<IpdWardOption>[]),
     );
@@ -252,6 +253,7 @@ void main() {
           ),
         ),
       );
+      when(() => repo.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
       when(() => repo.listWards(search: any(named: 'search'))).thenAnswer(
         (_) async =>
             const Result<List<IpdWardOption>>.success(<IpdWardOption>[]),
@@ -426,6 +428,7 @@ void main() {
         ),
       ),
     );
+    when(() => repo.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
     when(() => repo.listWards(search: any(named: 'search'))).thenAnswer(
       (_) async => const Result<List<IpdWardOption>>.success(<IpdWardOption>[]),
     );
@@ -530,6 +533,7 @@ void main() {
               ),
             ),
       );
+      when(() => repo.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
       return Result<IpdAdmissionDetail>.success(
         IpdAdmissionDetail(
           summary: transferred,
@@ -641,6 +645,7 @@ void main() {
               ),
             ),
       );
+      when(() => repo.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
       return Result<IpdAdmissionDetail>.success(
         IpdAdmissionDetail(
           summary: approved,

@@ -2478,27 +2478,27 @@ const String _ipdPhoneTextKey = 'phone';
 
 List<AppSearchBarFieldChoice> _ipdSearchFields(AppLocalizations l10n) {
   return <AppSearchBarFieldChoice>[
-    AppSearchBarFieldChoice(value: 'patient', label: l10n.opdPatientColumnLabel),
+    AppSearchBarFieldChoice(field: 'patient', label: l10n.opdPatientColumnLabel),
     AppSearchBarFieldChoice(
-      value: 'patient_id',
+      field: 'patient_id',
       label: l10n.ipdPatientIdFilterLabel,
     ),
     AppSearchBarFieldChoice(
-      value: 'admission',
+      field: 'admission',
       label: l10n.ipdAdmissionIdFilterLabel,
     ),
     AppSearchBarFieldChoice(
-      value: 'encounter',
+      field: 'encounter',
       label: l10n.ipdEncounterIdFilterLabel,
     ),
-    AppSearchBarFieldChoice(value: 'ward', label: l10n.ipdWardFilterLabel),
-    AppSearchBarFieldChoice(value: 'bed', label: l10n.ipdBedColumnLabel),
-    AppSearchBarFieldChoice(value: 'status', label: l10n.opdStatusColumnLabel),
+    AppSearchBarFieldChoice(field: 'ward', label: l10n.ipdWardFilterLabel),
+    AppSearchBarFieldChoice(field: 'bed', label: l10n.ipdBedColumnLabel),
+    AppSearchBarFieldChoice(field: 'status', label: l10n.opdStatusColumnLabel),
     AppSearchBarFieldChoice(
-      value: 'transfer',
+      field: 'transfer',
       label: l10n.ipdTransferStatusFilterLabel,
     ),
-    AppSearchBarFieldChoice(value: 'icu', label: l10n.ipdIcuStatusFilterLabel),
+    AppSearchBarFieldChoice(field: 'icu', label: l10n.ipdIcuStatusFilterLabel),
   ];
 }
 

@@ -34,12 +34,14 @@ class IpdBedBoardPanel extends ConsumerStatefulWidget {
     required this.state,
     required this.canManageBeds,
     required this.onOpenAdmission,
+    this.onStartAdmission,
     super.key,
   });
 
   final IpdWorkspaceState state;
   final bool canManageBeds;
   final ValueChanged<IpdBedBoardEntry> onOpenAdmission;
+  final VoidCallback? onStartAdmission;
 
   @override
   ConsumerState<IpdBedBoardPanel> createState() => _IpdBedBoardPanelState();
@@ -165,6 +167,30 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
             _showFailure(context, failure);
           }
         },
+        trailingActions: <AppSearchBarAction>[
+          if (widget.onStartAdmission != null)
+            AppSearchBarAction(
+              icon: Icons.person_add_alt_1_outlined,
+              label: l10n.ipdStartAdmissionAction,
+              tooltip: l10n.ipdStartAdmissionAction,
+              enabled: !state.isSaving,
+              onPressed: widget.onStartAdmission!,
+            ),
+        ],
+      ),
+      enableExport: true,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportConfig: AppListTableExportConfig<IpdBedBoardEntry>(
+        fileNameStem: 'ipd_bed_board',
+        sheetName: l10n.ipdBedBoardTab,
       ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.ipdBedBoardEmptyTitle,

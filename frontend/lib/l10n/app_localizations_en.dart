@@ -9036,6 +9036,90 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ipdAllWardsOption => 'All wards';
 
   @override
+  String get ipdSearchFieldFilterLabel => 'Search in';
+
+  @override
+  String get ipdAllFieldsFilterLabel => 'All fields';
+
+  @override
+  String get ipdPatientIdFilterLabel => 'Patient ID';
+
+  @override
+  String get ipdPatientIdFilterHint => 'Patient number or ID';
+
+  @override
+  String get ipdAdmissionIdFilterLabel => 'Admission ID';
+
+  @override
+  String get ipdAdmissionIdFilterHint => 'Admission number or ID';
+
+  @override
+  String get ipdEncounterIdFilterLabel => 'Encounter ID';
+
+  @override
+  String get ipdEncounterIdFilterHint => 'Encounter number or ID';
+
+  @override
+  String get ipdPhoneFilterLabel => 'Phone';
+
+  @override
+  String get ipdPhoneFilterHint => 'Patient or contact phone';
+
+  @override
+  String get ipdTransferStatusFilterLabel => 'Transfer status';
+
+  @override
+  String get ipdTransferStatusRequested => 'Requested';
+
+  @override
+  String get ipdTransferStatusApproved => 'Approved';
+
+  @override
+  String get ipdTransferStatusInProgress => 'In progress';
+
+  @override
+  String get ipdHasActiveBedFilterLabel => 'Bed assignment';
+
+  @override
+  String get ipdHasActiveBedYes => 'Has active bed';
+
+  @override
+  String get ipdHasActiveBedNo => 'No active bed';
+
+  @override
+  String get ipdCriticalAlertFilterLabel => 'Critical alerts';
+
+  @override
+  String get ipdCriticalAlertYes => 'Has critical alert';
+
+  @override
+  String get ipdCriticalAlertNo => 'No critical alert';
+
+  @override
+  String get ipdCriticalSeverityFilterLabel => 'Alert severity';
+
+  @override
+  String get ipdIcuQueueFilterLabel => 'ICU stay';
+
+  @override
+  String get ipdIcuQueueWithIcu => 'With ICU stay';
+
+  @override
+  String get ipdIcuQueueActive => 'Active ICU stay';
+
+  @override
+  String get ipdIcuStatusFilterLabel => 'ICU status';
+
+  @override
+  String get ipdIcuStatusActive => 'Active';
+
+  @override
+  String get ipdIcuStatusEnded => 'Ended';
+
+  @override
+  String get ipdIcuStatusNone => 'No ICU stay';
+
+  @override
   String get ipdBoardTitle => 'Inpatient board';
 
   @override
@@ -9567,15 +9651,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ipdSourceKindDirect => 'Direct admission';
-
-  @override
-  String get ipdIcuStatusActive => 'Active';
-
-  @override
-  String get ipdIcuStatusEnded => 'Ended';
-
-  @override
-  String get ipdIcuStatusNone => 'No ICU stay';
 
   @override
   String get ipdCriticalAlertLabel => 'Critical alert';
@@ -17035,6 +17110,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get communicationsNewGroupAction => 'New group';
+
+  @override
+  String get communicationsNewScopedPostAction => 'New scoped post';
+
+  @override
+  String get communicationsCreateScopedPostAction => 'Create post';
+
+  @override
+  String get communicationsScopedPostHelper =>
+      'Posts reach staff in your access scope who have the selected roles.';
+
+  @override
+  String get communicationsScopedPostSubjectLabel => 'Subject';
+
+  @override
+  String get communicationsScopedPostMessageLabel => 'Message';
+
+  @override
+  String get communicationsScopedPostRolesLabel => 'Audience roles';
+
+  @override
+  String get communicationsScopedPostCreatedMessage => 'Scoped post created.';
+
+  @override
+  String get communicationsVoiceCallAction => 'Voice call';
+
+  @override
+  String get communicationsVideoCallAction => 'Video call';
+
+  @override
+  String get communicationsVoiceCallTitle => 'Voice call';
+
+  @override
+  String get communicationsVideoCallTitle => 'Video call';
+
+  @override
+  String communicationsCallStatusLabel(String status) {
+    return 'Status: $status';
+  }
+
+  @override
+  String get communicationsCallSignalingHint =>
+      'Call signaling is available now. Media (microphone/camera) will follow in a later release.';
+
+  @override
+  String get communicationsAcceptCallAction => 'Accept';
+
+  @override
+  String get communicationsDeclineCallAction => 'Decline';
+
+  @override
+  String get communicationsEndCallAction => 'End call';
+
+  @override
+  String get communicationsCallFailedMessage => 'Could not start the call.';
 
   @override
   String get communicationsFavoritesFilterLabel => 'Favorites';

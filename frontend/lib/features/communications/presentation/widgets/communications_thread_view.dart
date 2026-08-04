@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
 import 'package:hosspi_hms/features/communications/presentation/communications_access.dart';
 import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
+import 'package:hosspi_hms/features/communications/presentation/widgets/communications_call_sheet.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_compose_bar.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_formatters.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_manage_members_dialog.dart';
@@ -251,6 +252,34 @@ class _ThreadHeader extends ConsumerWidget {
               ],
             ),
           ),
+          if (canWrite) ...<Widget>[
+            AppButton(
+              iconOnly: true,
+              icon: Icons.call_outlined,
+              label: context.l10n.communicationsVoiceCallAction,
+              semanticLabel: context.l10n.communicationsVoiceCallAction,
+              tooltip: context.l10n.communicationsVoiceCallAction,
+              enabled: !isSaving,
+              onPressed: () => showCommunicationsCallSheet(
+                context,
+                ref,
+                kind: 'VOICE',
+              ),
+            ),
+            AppButton(
+              iconOnly: true,
+              icon: Icons.videocam_outlined,
+              label: context.l10n.communicationsVideoCallAction,
+              semanticLabel: context.l10n.communicationsVideoCallAction,
+              tooltip: context.l10n.communicationsVideoCallAction,
+              enabled: !isSaving,
+              onPressed: () => showCommunicationsCallSheet(
+                context,
+                ref,
+                kind: 'VIDEO',
+              ),
+            ),
+          ],
           if (canThreadMenu)
             PopupMenuButton<String>(
               tooltip: context.l10n.communicationsThreadMenuAction,
@@ -360,6 +389,33 @@ class _MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final CommunicationCallEvent? call = message.callEvent;
+    if (call != null || message.isSystem) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: theme.spacing.sm),
+        child: Center(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(theme.radius.md),
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: theme.spacing.md,
+                vertical: theme.spacing.xs,
+              ),
+              child: Text(
+                call != null
+                    ? message.preview
+                    : displayMessageContent(message.content ?? ''),
+                style: theme.textTheme.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     final Alignment alignment = isOwn
         ? Alignment.centerRight
         : Alignment.centerLeft;

@@ -139,6 +139,24 @@ const createMessage = asyncHandler(async (req, res) => {
   return sendCreated(res, data, 'Conversation message created.');
 });
 
+const startCall = asyncHandler(async (req, res) => {
+  const data = await communicationsWorkspaceService.startConversationCall(
+    req.params.conversationIdentifier,
+    req.body,
+    req.user
+  );
+  return sendCreated(res, data, 'Conversation call started.');
+});
+
+const updateCall = asyncHandler(async (req, res) => {
+  const data = await communicationsWorkspaceService.updateConversationCall(
+    req.params.conversationIdentifier,
+    req.body,
+    req.user
+  );
+  return sendSuccess(res, 200, 'Conversation call updated.', data);
+});
+
 module.exports = {
   getWorkspace,
   getReferenceData,
@@ -155,4 +173,6 @@ module.exports = {
   removeParticipant,
   listMessages,
   createMessage,
+  startCall,
+  updateCall,
 };

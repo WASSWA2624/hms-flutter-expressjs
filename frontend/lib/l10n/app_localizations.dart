@@ -16582,6 +16582,174 @@ abstract class AppLocalizations {
   /// **'All wards'**
   String get ipdAllWardsOption;
 
+  /// IPD advanced filter label for search field scope.
+  ///
+  /// In en, this message translates to:
+  /// **'Search in'**
+  String get ipdSearchFieldFilterLabel;
+
+  /// IPD search field option for all fields.
+  ///
+  /// In en, this message translates to:
+  /// **'All fields'**
+  String get ipdAllFieldsFilterLabel;
+
+  /// IPD patient ID filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient ID'**
+  String get ipdPatientIdFilterLabel;
+
+  /// IPD patient ID filter hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient number or ID'**
+  String get ipdPatientIdFilterHint;
+
+  /// IPD admission ID filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission ID'**
+  String get ipdAdmissionIdFilterLabel;
+
+  /// IPD admission ID filter hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission number or ID'**
+  String get ipdAdmissionIdFilterHint;
+
+  /// IPD encounter ID filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter ID'**
+  String get ipdEncounterIdFilterLabel;
+
+  /// IPD encounter ID filter hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter number or ID'**
+  String get ipdEncounterIdFilterHint;
+
+  /// IPD phone filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get ipdPhoneFilterLabel;
+
+  /// IPD phone filter hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient or contact phone'**
+  String get ipdPhoneFilterHint;
+
+  /// IPD transfer status filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer status'**
+  String get ipdTransferStatusFilterLabel;
+
+  /// IPD transfer status option: requested.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested'**
+  String get ipdTransferStatusRequested;
+
+  /// IPD transfer status option: approved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get ipdTransferStatusApproved;
+
+  /// IPD transfer status option: in progress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get ipdTransferStatusInProgress;
+
+  /// IPD active bed assignment filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed assignment'**
+  String get ipdHasActiveBedFilterLabel;
+
+  /// IPD has-active-bed filter yes option.
+  ///
+  /// In en, this message translates to:
+  /// **'Has active bed'**
+  String get ipdHasActiveBedYes;
+
+  /// IPD has-active-bed filter no option.
+  ///
+  /// In en, this message translates to:
+  /// **'No active bed'**
+  String get ipdHasActiveBedNo;
+
+  /// IPD critical alert filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical alerts'**
+  String get ipdCriticalAlertFilterLabel;
+
+  /// IPD critical alert filter yes option.
+  ///
+  /// In en, this message translates to:
+  /// **'Has critical alert'**
+  String get ipdCriticalAlertYes;
+
+  /// IPD critical alert filter no option.
+  ///
+  /// In en, this message translates to:
+  /// **'No critical alert'**
+  String get ipdCriticalAlertNo;
+
+  /// IPD critical severity filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert severity'**
+  String get ipdCriticalSeverityFilterLabel;
+
+  /// IPD ICU queue scope filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU stay'**
+  String get ipdIcuQueueFilterLabel;
+
+  /// IPD ICU queue option: with ICU.
+  ///
+  /// In en, this message translates to:
+  /// **'With ICU stay'**
+  String get ipdIcuQueueWithIcu;
+
+  /// IPD ICU queue option: active ICU.
+  ///
+  /// In en, this message translates to:
+  /// **'Active ICU stay'**
+  String get ipdIcuQueueActive;
+
+  /// IPD ICU status filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU status'**
+  String get ipdIcuStatusFilterLabel;
+
+  /// IPD ICU status label for active.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get ipdIcuStatusActive;
+
+  /// IPD ICU status label for ended.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended'**
+  String get ipdIcuStatusEnded;
+
+  /// IPD ICU status label when no ICU stay is active.
+  ///
+  /// In en, this message translates to:
+  /// **'No ICU stay'**
+  String get ipdIcuStatusNone;
+
   /// IPD admissions board title.
   ///
   /// In en, this message translates to:
@@ -17601,24 +17769,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Direct admission'**
   String get ipdSourceKindDirect;
-
-  /// IPD ICU status label for active.
-  ///
-  /// In en, this message translates to:
-  /// **'Active'**
-  String get ipdIcuStatusActive;
-
-  /// IPD ICU status label for ended.
-  ///
-  /// In en, this message translates to:
-  /// **'Ended'**
-  String get ipdIcuStatusEnded;
-
-  /// IPD ICU status label when no ICU stay is active.
-  ///
-  /// In en, this message translates to:
-  /// **'No ICU stay'**
-  String get ipdIcuStatusNone;
 
   /// IPD critical alert label.
   ///
@@ -31518,6 +31668,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New group'**
   String get communicationsNewGroupAction;
+
+  /// Action label for creating a role-scoped internal post.
+  ///
+  /// In en, this message translates to:
+  /// **'New scoped post'**
+  String get communicationsNewScopedPostAction;
+
+  /// Submit label for the scoped post dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Create post'**
+  String get communicationsCreateScopedPostAction;
+
+  /// Helper text explaining scoped post audience.
+  ///
+  /// In en, this message translates to:
+  /// **'Posts reach staff in your access scope who have the selected roles.'**
+  String get communicationsScopedPostHelper;
+
+  /// Subject field for a scoped post.
+  ///
+  /// In en, this message translates to:
+  /// **'Subject'**
+  String get communicationsScopedPostSubjectLabel;
+
+  /// Optional first message for a scoped post.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get communicationsScopedPostMessageLabel;
+
+  /// Role multi-select label for scoped posts.
+  ///
+  /// In en, this message translates to:
+  /// **'Audience roles'**
+  String get communicationsScopedPostRolesLabel;
+
+  /// Snackbar after creating a scoped post.
+  ///
+  /// In en, this message translates to:
+  /// **'Scoped post created.'**
+  String get communicationsScopedPostCreatedMessage;
+
+  /// Start a voice call in the conversation thread.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice call'**
+  String get communicationsVoiceCallAction;
+
+  /// Start a video call in the conversation thread.
+  ///
+  /// In en, this message translates to:
+  /// **'Video call'**
+  String get communicationsVideoCallAction;
+
+  /// Title for the voice call sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice call'**
+  String get communicationsVoiceCallTitle;
+
+  /// Title for the video call sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Video call'**
+  String get communicationsVideoCallTitle;
+
+  /// Call status line in the call sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Status: {status}'**
+  String communicationsCallStatusLabel(String status);
+
+  /// Hint that calls are signaling-only for now.
+  ///
+  /// In en, this message translates to:
+  /// **'Call signaling is available now. Media (microphone/camera) will follow in a later release.'**
+  String get communicationsCallSignalingHint;
+
+  /// Accept an incoming call.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get communicationsAcceptCallAction;
+
+  /// Decline an incoming call.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get communicationsDeclineCallAction;
+
+  /// End the active call.
+  ///
+  /// In en, this message translates to:
+  /// **'End call'**
+  String get communicationsEndCallAction;
+
+  /// Snackbar when call start fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start the call.'**
+  String get communicationsCallFailedMessage;
 
   /// Inbox filter label for favorite conversations.
   ///

@@ -188,6 +188,7 @@ void main() {
               ),
             ),
       );
+      when(() => repository.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
       return Result<IpdAdmissionDetail>.success(
         IpdAdmissionDetail(
           summary: transferred,
@@ -323,6 +324,7 @@ void _stubWorkspaceLoad(_MockIpdRepository repository) {
       ),
     ),
   );
+  when(() => repository.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
   when(() => repository.listWards(search: any(named: 'search'))).thenAnswer(
     (_) async => const Result<List<IpdWardOption>>.success(_wards),
   );

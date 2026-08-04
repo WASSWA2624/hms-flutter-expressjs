@@ -517,6 +517,44 @@ final class CommunicationsWorkspaceController
     );
   }
 
+  Future<List<CommunicationRoleOption>> listRoles() async {
+    final Result<List<CommunicationRoleOption>> result = await _repository
+        .getReferenceRoles();
+    return result.when(
+      success: (List<CommunicationRoleOption> value) => value,
+      failure: (_) => const <CommunicationRoleOption>[],
+    );
+  }
+
+  Future<AppFailure?> startCall({required String kind}) {
+    final CommunicationsConversation? selected =
+        _currentState?.selectedConversation;
+    if (selected == null) {
+      return Future<AppFailure?>.value(_missingSelectionFailure());
+    }
+    return _submitConversationMutation(
+      () => _repository.startCall(selected.id, kind: kind),
+    );
+  }
+
+  Future<AppFailure?> updateCall({
+    required String callId,
+    required String action,
+  }) {
+    final CommunicationsConversation? selected =
+        _currentState?.selectedConversation;
+    if (selected == null) {
+      return Future<AppFailure?>.value(_missingSelectionFailure());
+    }
+    return _submitConversationMutation(
+      () => _repository.updateCall(
+        selected.id,
+        callId: callId,
+        action: action,
+      ),
+    );
+  }
+
   Future<AppFailure?> createConversation(CommunicationConversationDraft draft) {
     return _submitAction(() => _repository.createConversation(draft), (
       CommunicationsWorkspaceState current,

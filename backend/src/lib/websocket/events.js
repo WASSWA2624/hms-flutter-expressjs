@@ -208,6 +208,7 @@ const NOTIFICATION_EVENTS = {
   CONVERSATION_MESSAGE_CREATED: 'conversation.message_created',
   CONVERSATION_THREAD_UPDATED: 'conversation.thread_updated',
   CONVERSATION_READ_STATE_UPDATED: 'conversation.read_state_updated',
+  CONVERSATION_CALL_UPDATED: 'conversation.call_updated',
   NOTIFICATION_DELIVERY_UPDATED: 'notification.delivery_updated'
 };
 

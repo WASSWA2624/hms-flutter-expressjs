@@ -2090,7 +2090,12 @@ const listIpdFlows = async (
             contacts: {
               some: {
                 deleted_at: null,
-                value: { contains: searchText }}}}},
+                value: { contains: searchText },
+              },
+            },
+          },
+        },
+      },
       {
         patient: {
           is: {
@@ -2100,7 +2105,13 @@ const listIpdFlows = async (
                 OR: [
                   { phone: { contains: searchText } },
                   { email: { contains: searchText } },
-                  { name: { contains: searchText } }]}}}},
+                  { name: { contains: searchText } },
+                ],
+              },
+            },
+          },
+        },
+      },
       { encounter: { is: { human_friendly_id: { contains: searchText } } } },
       {
         bed_assignments: {
@@ -2112,7 +2123,14 @@ const listIpdFlows = async (
                 OR: [
                   { label: { contains: searchText } },
                   { human_friendly_id: { contains: searchText } },
-                  { ward: { is: { name: { contains: searchText } } } }]}}}}];
+                  { ward: { is: { name: { contains: searchText } } } },
+                ],
+              },
+            },
+          },
+        },
+      },
+    ];
   }
 
   if (filters.admitted_from || filters.admitted_to) {

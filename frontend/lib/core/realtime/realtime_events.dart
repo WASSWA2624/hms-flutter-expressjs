@@ -106,6 +106,7 @@ abstract final class RealtimeEvents {
   static const String conversationThreadUpdated = 'conversation.thread_updated';
   static const String conversationReadStateUpdated =
       'conversation.read_state_updated';
+  static const String conversationCallUpdated = 'conversation.call_updated';
 
   static const String subscriptionCreated = 'subscription.created';
   static const String subscriptionUpdated = 'subscription.updated';

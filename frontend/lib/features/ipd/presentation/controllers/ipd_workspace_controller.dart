@@ -802,9 +802,9 @@ final class IpdWorkspaceController
       _repository.getSummaryCounts(),
     ]);
     final Result<AppPage<IpdAdmissionSummary>> admissionsResult =
-        bootstrapResults[0]! as Result<AppPage<IpdAdmissionSummary>>;
+        bootstrapResults[0] as Result<AppPage<IpdAdmissionSummary>>;
     final Result<IpdFlowAggregateCounts> summaryResult =
-        bootstrapResults[1]! as Result<IpdFlowAggregateCounts>;
+        bootstrapResults[1] as Result<IpdFlowAggregateCounts>;
     final AppPage<IpdAdmissionSummary>? admissions = _successOrNull(
       admissionsResult,
     );

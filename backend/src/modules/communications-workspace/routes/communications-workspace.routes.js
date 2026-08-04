@@ -17,6 +17,8 @@ const {
   addParticipantSchema,
   listMessagesQuerySchema,
   createMessageSchema,
+  startCallSchema,
+  updateCallSchema,
 } = require('@validations/communications-workspace/communications-workspace.schema');
 
 const router = express.Router();
@@ -150,6 +152,26 @@ router.post(
   }),
   authorize(PERMISSIONS.COMMUNICATIONS_WRITE, 'permission'),
   communicationsWorkspaceController.createMessage
+);
+
+router.post(
+  '/conversations/:conversationIdentifier/calls',
+  validateRequest({
+    params: conversationIdentifierParamsSchema,
+    body: startCallSchema,
+  }),
+  authorize(PERMISSIONS.COMMUNICATIONS_WRITE, 'permission'),
+  communicationsWorkspaceController.startCall
+);
+
+router.post(
+  '/conversations/:conversationIdentifier/calls/update',
+  validateRequest({
+    params: conversationIdentifierParamsSchema,
+    body: updateCallSchema,
+  }),
+  authorize(PERMISSIONS.COMMUNICATIONS_WRITE, 'permission'),
+  communicationsWorkspaceController.updateCall
 );
 
 module.exports = router;

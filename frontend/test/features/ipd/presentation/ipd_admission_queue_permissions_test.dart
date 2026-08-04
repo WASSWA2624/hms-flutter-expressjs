@@ -137,6 +137,7 @@ void _stubRepository(
       ),
     );
   });
+  when(() => repository.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
   when(() => repository.listWards(search: any(named: 'search'))).thenAnswer(
     (_) async => const Result<List<IpdWardOption>>.success(<IpdWardOption>[
       IpdWardOption(id: 'ward-1', name: 'Medical Ward'),
@@ -685,6 +686,7 @@ void main() {
     when(() => repository.listAdmissions(any())).thenAnswer(
       (_) => listCompleter.future,
     );
+    when(() => repository.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
     when(() => repository.listWards(search: any(named: 'search'))).thenAnswer(
       (_) async => const Result<List<IpdWardOption>>.success(<IpdWardOption>[]),
     );
@@ -906,6 +908,7 @@ void main() {
             ),
           );
         });
+        when(() => repository.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
         return Result<IpdAdmissionDetail>.success(
           IpdAdmissionDetail(
             summary: _pendingBed.copyWith(

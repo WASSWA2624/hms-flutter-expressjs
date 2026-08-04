@@ -69,6 +69,40 @@ Future<void> showCommunicationsNewGroupDialog(
   );
 }
 
+Future<void> showCommunicationsNewScopedPostDialog(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!CommunicationsMessagesAtomPermissions.newGroup.isAllowed(policy)) {
+    return;
+  }
+  final GlobalKey<_NewScopedPostFieldsState> fieldsKey =
+      GlobalKey<_NewScopedPostFieldsState>();
+
+  final bool? saved = await showAppWorkspaceMutationDialog(
+    context: context,
+    title: Text(context.l10n.communicationsNewScopedPostAction),
+    icon: const Icon(Icons.campaign_outlined),
+    cancelLabel: context.l10n.commonCancelActionLabel,
+    submitLabel: context.l10n.communicationsCreateScopedPostAction,
+    submitIcon: Icons.campaign_outlined,
+    maxWidth: 560,
+    buildFields: (context, formKey, isSubmitting, [failure]) =>
+        _NewScopedPostFields(key: fieldsKey, ref: ref),
+    onSubmit: () =>
+        fieldsKey.currentState?.submit() ?? _missingScopedPostFields(),
+  );
+
+  if (saved == true && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.communicationsScopedPostCreatedMessage),
+      ),
+    );
+  }
+}
+
 Future<AppFailure?> _missingRecipient() {
   return Future<AppFailure?>.value(
     AppFailure.validation(validationFields: <String>{'recipient'}),
@@ -78,6 +112,12 @@ Future<AppFailure?> _missingRecipient() {
 Future<AppFailure?> _missingGroupFields() {
   return Future<AppFailure?>.value(
     AppFailure.validation(validationFields: <String>{'name', 'members'}),
+  );
+}
+
+Future<AppFailure?> _missingScopedPostFields() {
+  return Future<AppFailure?>.value(
+    AppFailure.validation(validationFields: <String>{'subject', 'roles'}),
   );
 }
 
@@ -306,6 +346,143 @@ class _NewGroupFieldsState extends ConsumerState<_NewGroupFields> {
                   label: Text(_memberLabel(memberId)),
                   onDeleted: () =>
                       setState(() => _selectedMemberIds.remove(memberId)),
+                ),
+            ],
+          ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(context.l10n.communicationsSensitiveConversationLabel),
+          value: _isSensitive,
+          onChanged: (bool value) => setState(() => _isSensitive = value),
+        ),
+      ],
+    );
+  }
+}
+
+class _NewScopedPostFields extends ConsumerStatefulWidget {
+  const _NewScopedPostFields({required this.ref, super.key});
+
+  final WidgetRef ref;
+
+  @override
+  ConsumerState<_NewScopedPostFields> createState() =>
+      _NewScopedPostFieldsState();
+}
+
+class _NewScopedPostFieldsState extends ConsumerState<_NewScopedPostFields> {
+  final TextEditingController _subjectController = TextEditingController();
+  final TextEditingController _messageController = TextEditingController();
+  final Set<String> _selectedRoleCodes = <String>{};
+  List<CommunicationRoleOption> _roleOptions = <CommunicationRoleOption>[];
+  bool _loadingRoles = false;
+  bool _isSensitive = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRoles();
+  }
+
+  @override
+  void dispose() {
+    _subjectController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadRoles() async {
+    setState(() => _loadingRoles = true);
+    final List<CommunicationRoleOption> options = await widget.ref
+        .read(communicationsWorkspaceControllerProvider.notifier)
+        .listRoles();
+    if (mounted) {
+      setState(() {
+        _loadingRoles = false;
+        _roleOptions = options;
+      });
+    }
+  }
+
+  Future<AppFailure?> submit() async {
+    final AppAccessPolicy policy = widget.ref.read(appAccessPolicyProvider);
+    if (!CommunicationsMessagesAtomPermissions.newGroup.isAllowed(policy)) {
+      return null;
+    }
+    final String subject = _subjectController.text.trim();
+    if (subject.isEmpty || _selectedRoleCodes.isEmpty) {
+      return AppFailure.validation(
+        validationFields: <String>{
+          if (subject.isEmpty) 'subject',
+          if (_selectedRoleCodes.isEmpty) 'roles',
+        },
+      );
+    }
+    return widget.ref
+        .read(communicationsWorkspaceControllerProvider.notifier)
+        .createConversation(
+          CommunicationConversationDraft(
+            subject: subject,
+            isSensitive: _isSensitive,
+            conversationType: 'GROUP',
+            visibilityRoles: _selectedRoleCodes.toList(growable: false),
+            initialMessage: _messageController.text.trim().isEmpty
+                ? null
+                : _messageController.text.trim(),
+          ),
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          context.l10n.communicationsScopedPostHelper,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        SizedBox(height: Theme.of(context).spacing.sm),
+        AppTextField(
+          controller: _subjectController,
+          labelText: context.l10n.communicationsScopedPostSubjectLabel,
+          isRequired: true,
+        ),
+        SizedBox(height: Theme.of(context).spacing.sm),
+        AppTextField(
+          controller: _messageController,
+          labelText: context.l10n.communicationsScopedPostMessageLabel,
+          minLines: 3,
+          maxLines: 6,
+        ),
+        SizedBox(height: Theme.of(context).spacing.sm),
+        Text(
+          context.l10n.communicationsScopedPostRolesLabel,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        if (_loadingRoles)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else
+          Wrap(
+            spacing: Theme.of(context).spacing.xs,
+            runSpacing: Theme.of(context).spacing.xs,
+            children: <Widget>[
+              for (final CommunicationRoleOption role in _roleOptions)
+                FilterChip(
+                  label: Text(role.label),
+                  selected: _selectedRoleCodes.contains(role.code),
+                  onSelected: (bool selected) {
+                    setState(() {
+                      if (selected) {
+                        _selectedRoleCodes.add(role.code);
+                      } else {
+                        _selectedRoleCodes.remove(role.code);
+                      }
+                    });
+                  },
                 ),
             ],
           ),

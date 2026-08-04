@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/core/utils/person_display_name.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -311,12 +313,28 @@ final class CommunicationMessage {
   final List<CommunicationAttachment> attachments;
 
   String get preview {
+    final CommunicationCallEvent? call = parseCommunicationCallContent(content);
+    if (call != null) {
+      final String kind = call.isVideo ? 'Video' : 'Voice';
+      return switch (call.action) {
+        'started' => '$kind call started',
+        'accepted' => '$kind call accepted',
+        'declined' => '$kind call declined',
+        'ended' => '$kind call ended',
+        _ => '$kind call',
+      };
+    }
     final String? text = _nonEmpty(content);
     if (text != null) {
       return text;
     }
     return attachments.isEmpty ? '' : attachments.first.fileName;
   }
+
+  bool get isSystem => (messageType ?? '').trim().toUpperCase() == 'SYSTEM';
+
+  CommunicationCallEvent? get callEvent =>
+      parseCommunicationCallContent(content);
 }
 
 @immutable
@@ -695,6 +713,80 @@ final class CommunicationsWorkspaceState {
 }
 
 @immutable
+final class CommunicationCallEvent {
+  const CommunicationCallEvent({
+    required this.id,
+    required this.kind,
+    required this.action,
+    this.startedBy,
+    this.updatedBy,
+    this.startedAt,
+    this.updatedAt,
+  });
+
+  final String id;
+  final String kind;
+  final String action;
+  final String? startedBy;
+  final String? updatedBy;
+  final DateTime? startedAt;
+  final DateTime? updatedAt;
+
+  bool get isVideo => kind.toUpperCase() == 'VIDEO';
+  bool get isActive =>
+      action == 'started' || action == 'accepted' || action == 'ringing';
+}
+
+const String _callContentPrefix = '__hms_call__:';
+
+CommunicationCallEvent? parseCommunicationCallContent(String? content) {
+  final String raw = (content ?? '').trim();
+  if (!raw.startsWith(_callContentPrefix)) {
+    return null;
+  }
+  try {
+    final Object? decoded = jsonDecode(raw.substring(_callContentPrefix.length));
+    if (decoded is! Map) {
+      return null;
+    }
+    final Map<String, Object?> map = decoded.map(
+      (Object? key, Object? value) =>
+          MapEntry<String, Object?>(key.toString(), value),
+    );
+    final String id = (map['id']?.toString() ?? '').trim();
+    final String kind = (map['kind']?.toString() ?? 'VOICE').trim().toUpperCase();
+    final String action = (map['action']?.toString() ?? '').trim().toLowerCase();
+    if (id.isEmpty || action.isEmpty) {
+      return null;
+    }
+    return CommunicationCallEvent(
+      id: id,
+      kind: kind,
+      action: action,
+      startedBy: map['started_by']?.toString(),
+      updatedBy: map['updated_by']?.toString(),
+      startedAt: DateTime.tryParse(map['started_at']?.toString() ?? ''),
+      updatedAt: DateTime.tryParse(map['updated_at']?.toString() ?? ''),
+    );
+  } catch (_) {
+    return null;
+  }
+}
+
+@immutable
+final class CommunicationRoleOption {
+  const CommunicationRoleOption({
+    required this.id,
+    required this.label,
+    required this.code,
+  });
+
+  final String id;
+  final String label;
+  final String code;
+}
+
+@immutable
 final class CommunicationMessageDraft {
   const CommunicationMessageDraft({
     required this.content,
@@ -712,16 +804,20 @@ final class CommunicationMessageDraft {
 @immutable
 final class CommunicationConversationDraft {
   const CommunicationConversationDraft({
-    required this.participantIds,
+    this.participantIds = const <String>[],
     this.subject,
     this.isSensitive = false,
     this.conversationType,
+    this.visibilityRoles = const <String>[],
+    this.initialMessage,
   });
 
   final List<String> participantIds;
   final String? subject;
   final bool isSensitive;
   final String? conversationType;
+  final List<String> visibilityRoles;
+  final String? initialMessage;
 }
 
 bool _boolParam(String? value) {

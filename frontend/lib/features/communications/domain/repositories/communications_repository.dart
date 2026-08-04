@@ -41,6 +41,8 @@ abstract interface class CommunicationsRepository {
     String search = '',
   });
 
+  Future<Result<List<CommunicationRoleOption>>> getReferenceRoles();
+
   Future<Result<CommunicationsConversation>> addParticipant(
     String conversationId,
     String userId,
@@ -50,4 +52,15 @@ abstract interface class CommunicationsRepository {
     String conversationId,
     String participantId,
   );
+
+  Future<Result<CommunicationsConversation>> startCall(
+    String conversationId, {
+    required String kind,
+  });
+
+  Future<Result<CommunicationsConversation>> updateCall(
+    String conversationId, {
+    required String callId,
+    required String action,
+  });
 }

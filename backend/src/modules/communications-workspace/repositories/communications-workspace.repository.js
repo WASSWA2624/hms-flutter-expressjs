@@ -547,29 +547,92 @@ const countTemplates = async ({ tenantId }) =>
     },
   });
 
-const listReferenceUsers = async ({ tenantId, search }) => {
+/**
+ * Facility IDs the viewer can address for staff directory / mentions / groups.
+ * Mirrors auth facility resolution (direct facility + role / user_role facilities).
+ */
+const resolveViewerFacilityIds = async ({ tenantId, userId }) => {
+  const facilityIds = new Set();
+  const user = await prisma.user.findFirst({
+    where: { id: userId, tenant_id: tenantId, deleted_at: null },
+    select: { facility_id: true },
+  });
+  if (user?.facility_id) facilityIds.add(user.facility_id);
+
+  const userRoles = await prisma.user_role.findMany({
+    where: { user_id: userId, tenant_id: tenantId, deleted_at: null },
+    include: { role: { select: { facility_id: true } } },
+  });
+  for (const entry of userRoles) {
+    if (entry.facility_id) facilityIds.add(entry.facility_id);
+    if (entry.role?.facility_id) facilityIds.add(entry.role.facility_id);
+  }
+  return Array.from(facilityIds);
+};
+
+const buildAccessibleUserWhere = ({ tenantId, facilityIds, search }) => {
   const normalizedSearch = normalizeSearch(search);
-  return prisma.user.findMany({
-    where: {
-      tenant_id: tenantId,
-      deleted_at: null,
-      ...(normalizedSearch
-        ? {
+  const where = {
+    tenant_id: tenantId,
+    deleted_at: null,
+    status: 'ACTIVE',
+  };
+
+  if (Array.isArray(facilityIds)) {
+    if (facilityIds.length === 0) {
+      where.id = '__none__';
+    } else {
+      where.OR = [
+        { facility_id: { in: facilityIds } },
+        {
+          roles: {
+            some: {
+              deleted_at: null,
+              OR: [
+                { facility_id: { in: facilityIds } },
+                { role: { facility_id: { in: facilityIds } } },
+              ],
+            },
+          },
+        },
+      ];
+    }
+  }
+
+  if (normalizedSearch) {
+    const searchClause = {
+      OR: [
+        { email: { contains: normalizedSearch } },
+        { human_friendly_id: { contains: normalizedSearch.toUpperCase() } },
+        {
+          profile: {
             OR: [
-              { email: { contains: normalizedSearch } },
-              { human_friendly_id: { contains: normalizedSearch.toUpperCase() } },
-              {
-                profile: {
-                  OR: [
-                    { first_name: { contains: normalizedSearch } },
-                    { last_name: { contains: normalizedSearch } },
-                  ],
-                },
-              },
+              { first_name: { contains: normalizedSearch } },
+              { last_name: { contains: normalizedSearch } },
             ],
-          }
-        : {}),
-    },
+          },
+        },
+      ],
+    };
+    where.AND = [...(where.AND || []), searchClause];
+  }
+
+  return where;
+};
+
+const listReferenceUsers = async ({
+  tenantId,
+  search,
+  viewerUserId,
+  unrestricted = false,
+}) => {
+  let facilityIds = null;
+  if (!unrestricted && viewerUserId) {
+    facilityIds = await resolveViewerFacilityIds({ tenantId, userId: viewerUserId });
+  }
+
+  return prisma.user.findMany({
+    where: buildAccessibleUserWhere({ tenantId, facilityIds, search }),
     select: {
       ...BASE_USER_SELECT,
       roles: {
@@ -585,6 +648,49 @@ const listReferenceUsers = async ({ tenantId, search }) => {
     },
     orderBy: { email: 'asc' },
     take: 50,
+  });
+};
+
+const listReferenceRoles = async ({ tenantId }) => {
+  return prisma.role.findMany({
+    where: {
+      deleted_at: null,
+      OR: [{ tenant_id: tenantId }, { tenant_id: null }],
+    },
+    select: {
+      id: true,
+      name: true,
+      display_name: true,
+    },
+    orderBy: { name: 'asc' },
+    take: 80,
+  });
+};
+
+const listUsersByRoleCodes = async ({ tenantId, roleCodes, facilityIds }) => {
+  const normalizedCodes = (roleCodes || [])
+    .map((entry) => normalizeRole(entry))
+    .filter(Boolean);
+  if (normalizedCodes.length === 0) return [];
+
+  const where = buildAccessibleUserWhere({
+    tenantId,
+    facilityIds: Array.isArray(facilityIds) ? facilityIds : null,
+  });
+  where.roles = {
+    some: {
+      deleted_at: null,
+      role: {
+        deleted_at: null,
+        name: { in: normalizedCodes },
+      },
+    },
+  };
+
+  return prisma.user.findMany({
+    where,
+    select: { id: true },
+    take: 100,
   });
 };
 
@@ -676,6 +782,9 @@ module.exports = {
   listTemplates,
   countTemplates,
   listReferenceUsers,
+  listReferenceRoles,
+  listUsersByRoleCodes,
+  resolveViewerFacilityIds,
   findExistingDirectConversation,
   findConversationUnreadStats,
 };

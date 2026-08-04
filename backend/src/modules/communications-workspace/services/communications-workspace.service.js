@@ -18,8 +18,10 @@ const {
 
 const DEFAULT_PANEL = 'inbox';
 const MAX_ATTACHMENTS = 5;
+const ATTACHMENTS_ENABLED = false;
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const ADMIN_ROLES = new Set([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN]);
+const CALL_CONTENT_PREFIX = '__hms_call__:';
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.heic']);
 const DOCUMENT_EXTENSIONS = new Set(['.pdf', '.doc', '.docx']);
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic']);
@@ -35,6 +37,19 @@ const currentUserId = (user = {}) => text(user.id || user.user_id || user.userId
 const currentRoles = (user = {}) =>
   (Array.isArray(user.roles) ? user.roles : [user.role]).map((entry) => text(entry).toUpperCase()).filter(Boolean);
 const isAdminUser = (user = {}) => currentRoles(user).some((entry) => ADMIN_ROLES.has(entry));
+const isUnrestrictedDirectoryUser = (user = {}) =>
+  currentRoles(user).some((entry) => entry === ROLES.SUPER_ADMIN || entry === ROLES.TENANT_ADMIN);
+
+const encodeCallContent = (payload) => `${CALL_CONTENT_PREFIX}${JSON.stringify(payload)}`;
+const parseCallContent = (content) => {
+  const raw = text(content);
+  if (!raw.startsWith(CALL_CONTENT_PREFIX)) return null;
+  try {
+    return JSON.parse(raw.slice(CALL_CONTENT_PREFIX.length));
+  } catch (_error) {
+    return null;
+  }
+};
 
 const requireTenant = (user = {}) => {
   const tenantId = currentTenantId(user);
@@ -72,6 +87,14 @@ const buildSummary = ({ conversationStats, notifications, deliveries, templates 
 ];
 
 const validateAttachments = (files = []) => {
+  if (!ATTACHMENTS_ENABLED) {
+    if (Array.isArray(files) && files.length > 0) {
+      throw new HttpError('errors.validation.invalid', 400, [
+        { field: 'attachments', message: 'Multimedia attachments are disabled for text-only communications.' },
+      ]);
+    }
+    return [];
+  }
   if (!Array.isArray(files)) return [];
   if (files.length > MAX_ATTACHMENTS) {
     throw new HttpError('errors.validation.invalid', 400, [{ field: 'attachments' }]);
@@ -213,7 +236,17 @@ const getWorkspace = async (filters = {}, page = 1, limit = 30, _sortBy, _order,
 
 const getReferenceData = async (query = {}, user = {}) => {
   const tenantId = requireTenant(user);
-  const users = await repository.listReferenceUsers({ tenantId, search: query.search });
+  const userId = requireUserId(user);
+  const unrestricted = isUnrestrictedDirectoryUser(user);
+  const [users, roles] = await Promise.all([
+    repository.listReferenceUsers({
+      tenantId,
+      search: query.search,
+      viewerUserId: userId,
+      unrestricted,
+    }),
+    repository.listReferenceRoles({ tenantId }),
+  ]);
   return {
     users: users.map((entry) => ({
       id: resolvePublicIdentifier(entry.human_friendly_id, entry.id),
@@ -222,9 +255,73 @@ const getReferenceData = async (query = {}, user = {}) => {
       position_title: text(entry.position_title) || null,
       roles: (entry.roles || []).map((row) => text(row?.role?.name)).filter(Boolean),
     })),
+    roles: roles.map((entry) => ({
+      id: text(entry.name).toUpperCase(),
+      label: text(entry.display_name) || text(entry.name),
+      code: text(entry.name).toUpperCase(),
+    })),
     channels: ['IN_APP', 'EMAIL', 'SMS', 'WHATSAPP'],
     filters: ['UNREAD', 'SENSITIVE', 'ARCHIVED', 'FAVORITES', 'FLAGGED', 'FAILED'],
+    attachments_enabled: ATTACHMENTS_ENABLED,
+    calls_enabled: true,
   };
+};
+
+const assertAccessibleParticipantIds = async ({
+  tenantId,
+  viewerUserId,
+  participantIds,
+  unrestricted,
+}) => {
+  const uniqueIds = Array.from(new Set((participantIds || []).filter(Boolean)));
+  if (uniqueIds.length === 0) return [];
+  if (unrestricted) return uniqueIds;
+
+  const facilityIds = await repository.resolveViewerFacilityIds({
+    tenantId,
+    userId: viewerUserId,
+  });
+  const accessible = await repository.listReferenceUsers({
+    tenantId,
+    viewerUserId,
+    unrestricted: false,
+    search: '',
+  });
+  // listReferenceUsers is capped at 50 — also allow explicit overlap check per id
+  const accessibleSet = new Set(accessible.map((entry) => entry.id));
+  for (const participantId of uniqueIds) {
+    if (participantId === viewerUserId) continue;
+    if (accessibleSet.has(participantId)) continue;
+    const target = await repository.prisma.user.findFirst({
+      where: {
+        id: participantId,
+        tenant_id: tenantId,
+        deleted_at: null,
+        status: 'ACTIVE',
+        OR: [
+          { facility_id: { in: facilityIds.length ? facilityIds : ['__none__'] } },
+          {
+            roles: {
+              some: {
+                deleted_at: null,
+                OR: [
+                  { facility_id: { in: facilityIds.length ? facilityIds : ['__none__'] } },
+                  { role: { facility_id: { in: facilityIds.length ? facilityIds : ['__none__'] } } },
+                ],
+              },
+            },
+          },
+        ],
+      },
+      select: { id: true },
+    });
+    if (!target) {
+      throw new HttpError('errors.auth.insufficient_permissions', 403, [
+        { field: 'participant_ids', message: 'One or more users are outside your access scope.' },
+      ]);
+    }
+  }
+  return uniqueIds;
 };
 
 const resolveLegacyRoute = async (resource, identifier, user = {}) => {
@@ -295,16 +392,66 @@ const getConversation = async (identifier, user = {}) => {
 const createConversation = async (payload = {}, user = {}) => {
   const tenantId = requireTenant(user);
   const userId = requireUserId(user);
+  const unrestricted = isUnrestrictedDirectoryUser(user);
+  const visibilityRoles = Array.from(
+    new Set((payload.visibility_roles || []).map((entry) => text(entry).toUpperCase()).filter(Boolean))
+  );
+  const isScopedPost = visibilityRoles.length > 0;
+
   const resolvedParticipants = await Promise.all(
     (payload.participant_ids || []).map((entry) => repository.resolveUserId(entry, tenantId))
   );
-  const participantIds = Array.from(
+
+  let participantIds = Array.from(
     new Set([userId, ...resolvedParticipants].filter(Boolean))
   );
-  if (participantIds.length < 2) throw new HttpError('errors.validation.invalid', 400, [{ field: 'participant_ids' }]);
+
+  if (isScopedPost) {
+    const facilityIds = unrestricted
+      ? null
+      : await repository.resolveViewerFacilityIds({ tenantId, userId });
+    const roleUsers = await repository.listUsersByRoleCodes({
+      tenantId,
+      roleCodes: visibilityRoles,
+      facilityIds,
+    });
+    participantIds = Array.from(
+      new Set([userId, ...participantIds, ...roleUsers.map((entry) => entry.id)])
+    );
+  }
+
+  await assertAccessibleParticipantIds({
+    tenantId,
+    viewerUserId: userId,
+    participantIds: participantIds.filter((id) => id !== userId),
+    unrestricted,
+  });
+
+  if (participantIds.length < 2) {
+    throw new HttpError('errors.validation.invalid', 400, [
+      {
+        field: isScopedPost ? 'visibility_roles' : 'participant_ids',
+        message: isScopedPost
+          ? 'No accessible users found for the selected roles.'
+          : 'At least one other participant is required.',
+      },
+    ]);
+  }
+
   const subject = text(payload.subject) || null;
-  const conversationType = text(payload.conversation_type).toUpperCase() || (participantIds.length > 2 || subject ? 'GROUP' : 'DIRECT');
-  if (conversationType === 'DIRECT' && participantIds.length !== 2) throw new HttpError('errors.validation.invalid', 400, [{ field: 'participant_ids' }]);
+  if (isScopedPost && !subject) {
+    throw new HttpError('errors.validation.invalid', 400, [{ field: 'subject' }]);
+  }
+
+  const conversationType =
+    text(payload.conversation_type).toUpperCase() ||
+    (participantIds.length > 2 || subject || isScopedPost ? 'GROUP' : 'DIRECT');
+  if (conversationType === 'DIRECT' && participantIds.length !== 2) {
+    throw new HttpError('errors.validation.invalid', 400, [{ field: 'participant_ids' }]);
+  }
+  if (conversationType === 'DIRECT' && isScopedPost) {
+    throw new HttpError('errors.validation.invalid', 400, [{ field: 'visibility_roles' }]);
+  }
   if (conversationType === 'DIRECT') {
     const existing = await repository.findExistingDirectConversation({ tenantId, participantIds });
     if (existing) return getConversation(resolvePublicIdentifier(existing.human_friendly_id, existing.id), user);
@@ -331,21 +478,40 @@ const createConversation = async (payload = {}, user = {}) => {
         },
       });
     }
-    for (const roleCode of payload.visibility_roles || []) {
+    for (const roleCode of visibilityRoles) {
       await tx.conversation_visibility_role.create({
         data: {
           human_friendly_id: repository.createPublicId('CVR'),
           tenant_id: tenantId,
           conversation_id: conversation.id,
-          role_code: text(roleCode).toUpperCase(),
+          role_code: roleCode,
         },
       });
     }
     return conversation;
   });
 
-  await createAuditLog({ tenant_id: tenantId, user_id: userId, action: 'CREATE', entity: 'communications_workspace_conversation', entity_id: created.id, diff: { after: { participant_count: participantIds.length } } });
-  return getConversation(resolvePublicIdentifier(created.human_friendly_id, created.id), user);
+  const publicId = resolvePublicIdentifier(created.human_friendly_id, created.id);
+  const initialMessage = text(payload.initial_message);
+  if (initialMessage) {
+    await createConversationMessage(publicId, { content: initialMessage }, [], user);
+  }
+
+  await createAuditLog({
+    tenant_id: tenantId,
+    user_id: userId,
+    action: 'CREATE',
+    entity: 'communications_workspace_conversation',
+    entity_id: created.id,
+    diff: {
+      after: {
+        participant_count: participantIds.length,
+        scoped_post: isScopedPost,
+        visibility_roles: visibilityRoles,
+      },
+    },
+  });
+  return getConversation(publicId, user);
 };
 
 const markConversationRead = async (identifier, user = {}) => {
@@ -395,6 +561,12 @@ const addConversationParticipant = async (identifier, payload = {}, user = {}) =
   requireSensitiveManageAccess(conversation, user);
   const targetUserId = await repository.resolveUserId(payload.user_id, tenantId);
   if (!targetUserId) throw new HttpError('errors.user.not_found', 404);
+  await assertAccessibleParticipantIds({
+    tenantId,
+    viewerUserId: userId,
+    participantIds: [targetUserId],
+    unrestricted: isUnrestrictedDirectoryUser(user),
+  });
   const exists = (conversation.participants || []).some((entry) => entry.user_id === targetUserId && entry.deleted_at == null);
   if (!exists) {
     await repository.prisma.conversation_participant.create({
@@ -557,14 +729,16 @@ const createConversationMessage = async (identifier, payload = {}, files = [], u
   const mentionedIds = await Promise.all(
     (payload.mentioned_user_ids || []).map((entry) => repository.resolveUserId(entry, tenantId))
   );
-  const uniqueMentionIds = Array.from(
-    new Set(
-      mentionedIds.filter(
-        (entry) => entry && entry !== userId && !recipientUserIds.includes(entry)
-      )
-    )
+  const candidateMentionIds = Array.from(
+    new Set(mentionedIds.filter((entry) => entry && entry !== userId))
   );
-  for (const mentionedUserId of uniqueMentionIds) {
+  await assertAccessibleParticipantIds({
+    tenantId,
+    viewerUserId: userId,
+    participantIds: candidateMentionIds,
+    unrestricted: isUnrestrictedDirectoryUser(user),
+  });
+  for (const mentionedUserId of candidateMentionIds) {
     const mentionedUser = await repository.prisma.user.findFirst({
       where: { id: mentionedUserId, tenant_id: tenantId, deleted_at: null },
       select: { id: true, email: true, human_friendly_id: true, profile: { select: { first_name: true, last_name: true } } },
@@ -575,10 +749,10 @@ const createConversationMessage = async (identifier, payload = {}, files = [], u
         human_friendly_id: repository.createPublicId('NTF'),
         tenant_id: tenantId,
         user_id: mentionedUserId,
-        notification_type: 'MENTION',
+        notification_type: 'SYSTEM',
         priority: conversation.is_sensitive ? 'HIGH' : 'MEDIUM',
         title: 'You were mentioned',
-        message: content || 'Sent an attachment',
+        message: content || 'You were mentioned in a message',
         target_path: buildConversationPath(publicConversationId),
         context_type: 'conversation',
         context_public_id: publicConversationId,
@@ -607,6 +781,179 @@ const createConversationMessage = async (identifier, payload = {}, files = [], u
   return getConversation(publicConversationId, user);
 };
 
+const postCallSystemMessage = async ({
+  conversation,
+  user,
+  callPayload,
+  notifyTitle,
+}) => {
+  const tenantId = requireTenant(user);
+  const userId = requireUserId(user);
+  const publicConversationId = resolvePublicIdentifier(
+    conversation.human_friendly_id,
+    conversation.id
+  );
+  const content = encodeCallContent(callPayload);
+  const senderParticipant = (conversation.participants || []).find(
+    (entry) => entry.user_id === userId
+  );
+  const recipientParticipants = (conversation.participants || []).filter(
+    (entry) => entry.user_id !== userId && entry.deleted_at == null
+  );
+
+  const message = await repository.prisma.$transaction(async (tx) => {
+    const createdMessage = await tx.message.create({
+      data: {
+        human_friendly_id: repository.createPublicId('MSG'),
+        conversation_id: conversation.id,
+        sender_user_id: userId,
+        content,
+        message_type: 'SYSTEM',
+      },
+    });
+    await tx.conversation.update({
+      where: { id: conversation.id },
+      data: { last_message_at: new Date(), status: 'OPEN', archived_at: null },
+    });
+    if (senderParticipant) {
+      await tx.conversation_participant.update({
+        where: { id: senderParticipant.id },
+        data: {
+          last_read_message_id: createdMessage.id,
+          last_read_at: new Date(),
+          archived_at: null,
+        },
+      });
+    }
+    for (const participant of recipientParticipants) {
+      const notification = await tx.notification.create({
+        data: {
+          human_friendly_id: repository.createPublicId('NTF'),
+          tenant_id: tenantId,
+          user_id: participant.user_id,
+          notification_type: 'SYSTEM',
+          priority: 'HIGH',
+          title: notifyTitle,
+          message: `${callPayload.kind === 'VIDEO' ? 'Video' : 'Voice'} call ${callPayload.action}`,
+          target_path: buildConversationPath(publicConversationId),
+          context_type: 'conversation',
+          context_public_id: publicConversationId,
+        },
+      });
+      await tx.notification_delivery.create({
+        data: {
+          human_friendly_id: repository.createPublicId('NDL'),
+          notification_id: notification.id,
+          channel: 'IN_APP',
+          status: 'DELIVERED',
+          recipient_target: participant.user?.email || participant.user_id,
+          provider_name: 'IN_APP',
+          attempt_count: 1,
+          last_attempt_at: new Date(),
+          sent_at: new Date(),
+          delivered_at: new Date(),
+        },
+      });
+    }
+    return createdMessage;
+  });
+
+  const freshConversation = await repository.getConversation({
+    tenantId,
+    identifier: publicConversationId,
+  });
+  const serializedConversation = serializeConversation(freshConversation, userId);
+  const recipientUserIds = (freshConversation?.participants || [])
+    .map((entry) => entry.user_id)
+    .filter(Boolean);
+  const callEvent = {
+    conversation_id: publicConversationId,
+    call: callPayload,
+    message_id: resolvePublicIdentifier(message.human_friendly_id, message.id),
+  };
+  emitToUsers(recipientUserIds, NOTIFICATION_EVENTS.CONVERSATION_THREAD_UPDATED, {
+    conversation: serializedConversation,
+  });
+  emitToUsers(recipientUserIds, NOTIFICATION_EVENTS.CONVERSATION_MESSAGE_CREATED, {
+    conversation_id: publicConversationId,
+  });
+  emitToUsers(recipientUserIds, NOTIFICATION_EVENTS.CONVERSATION_CALL_UPDATED, callEvent);
+  return {
+    conversation: await getConversation(publicConversationId, user),
+    call: callPayload,
+  };
+};
+
+const startConversationCall = async (identifier, payload = {}, user = {}) => {
+  const tenantId = requireTenant(user);
+  const userId = requireUserId(user);
+  const conversation = await repository.getConversation({ tenantId, identifier });
+  if (!conversation) throw new HttpError('errors.conversation.not_found', 404);
+  requireConversationAccess(conversation, userId);
+  const kind = text(payload.kind).toUpperCase() === 'VIDEO' ? 'VIDEO' : 'VOICE';
+  const callPayload = {
+    id: repository.createPublicId('CALL'),
+    kind,
+    action: 'started',
+    started_by: userId,
+    started_at: new Date().toISOString(),
+  };
+  return postCallSystemMessage({
+    conversation,
+    user,
+    callPayload,
+    notifyTitle: kind === 'VIDEO' ? 'Incoming video call' : 'Incoming voice call',
+  });
+};
+
+const updateConversationCall = async (identifier, payload = {}, user = {}) => {
+  const tenantId = requireTenant(user);
+  const userId = requireUserId(user);
+  const conversation = await repository.getConversation({ tenantId, identifier });
+  if (!conversation) throw new HttpError('errors.conversation.not_found', 404);
+  requireConversationAccess(conversation, userId);
+
+  const action = text(payload.action).toLowerCase();
+  if (!['accept', 'decline', 'end'].includes(action)) {
+    throw new HttpError('errors.validation.invalid', 400, [{ field: 'action' }]);
+  }
+  const callId = text(payload.call_id);
+  if (!callId) {
+    throw new HttpError('errors.validation.invalid', 400, [{ field: 'call_id' }]);
+  }
+
+  const recentMessages = conversation.messages || [];
+  let prior = null;
+  for (let index = recentMessages.length - 1; index >= 0; index -= 1) {
+    const parsed = parseCallContent(recentMessages[index]?.content);
+    if (parsed?.id === callId) {
+      prior = parsed;
+      break;
+    }
+  }
+  if (!prior) {
+    throw new HttpError('errors.validation.invalid', 400, [{ field: 'call_id' }]);
+  }
+
+  const callPayload = {
+    ...prior,
+    action: action === 'accept' ? 'accepted' : action === 'decline' ? 'declined' : 'ended',
+    updated_by: userId,
+    updated_at: new Date().toISOString(),
+  };
+  return postCallSystemMessage({
+    conversation,
+    user,
+    callPayload,
+    notifyTitle:
+      callPayload.action === 'accepted'
+        ? 'Call accepted'
+        : callPayload.action === 'declined'
+          ? 'Call declined'
+          : 'Call ended',
+  });
+};
+
 module.exports = {
   getWorkspace,
   getReferenceData,
@@ -622,4 +969,7 @@ module.exports = {
   toggleConversationFlag,
   listConversationMessages,
   createConversationMessage,
+  startConversationCall,
+  updateConversationCall,
+  parseCallContent,
 };

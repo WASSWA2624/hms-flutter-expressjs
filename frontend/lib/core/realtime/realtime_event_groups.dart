@@ -112,6 +112,7 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.conversationMessageCreated,
     RealtimeEvents.conversationThreadUpdated,
     RealtimeEvents.conversationReadStateUpdated,
+    RealtimeEvents.conversationCallUpdated,
   };
 
   static const Set<String> patientRegistry = <String>{

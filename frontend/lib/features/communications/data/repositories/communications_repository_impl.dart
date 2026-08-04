@@ -332,9 +332,97 @@ final class CommunicationsRepositoryImpl implements CommunicationsRepository {
         'subject': draft.subject,
         'is_sensitive': draft.isSensitive,
         'conversation_type': draft.conversationType,
+        'visibility_roles': draft.visibilityRoles.isEmpty
+            ? null
+            : draft.visibilityRoles,
+        'initial_message': draft.initialMessage,
       }),
       decoder: (Object? data) {
         return CommunicationsConversationDto.fromResponse(data).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<List<CommunicationRoleOption>>> getReferenceRoles() {
+    return _apiClient.get<List<CommunicationRoleOption>>(
+      ApiEndpoints.nested(
+        HmsApiResource.communicationsWorkspace,
+        'reference-data',
+        const <String>[],
+      ),
+      decoder: (Object? data) {
+        final CommunicationsJsonMap map = _responseMap(data);
+        return _list(map['roles'])
+            .map((Object? item) {
+              if (item is! Map) {
+                return const CommunicationRoleOption(
+                  id: '',
+                  label: '',
+                  code: '',
+                );
+              }
+              final Map<String, Object?> roleMap = item.map(
+                (Object? key, Object? value) =>
+                    MapEntry<String, Object?>(key.toString(), value),
+              );
+              final String code =
+                  (roleMap['code'] ?? roleMap['id'] ?? '').toString().trim();
+              final String label =
+                  (roleMap['label'] ?? code).toString().trim();
+              return CommunicationRoleOption(
+                id: code,
+                label: label,
+                code: code,
+              );
+            })
+            .where((CommunicationRoleOption item) => item.code.isNotEmpty)
+            .toList(growable: false);
+      },
+    );
+  }
+
+  @override
+  Future<Result<CommunicationsConversation>> startCall(
+    String conversationId, {
+    required String kind,
+  }) {
+    return _apiClient.post<CommunicationsConversation>(
+      ApiEndpoints.nested(
+        HmsApiResource.communicationsWorkspace,
+        'conversations',
+        <String>[conversationId, 'calls'],
+      ),
+      data: <String, Object?>{'kind': kind},
+      decoder: (Object? data) {
+        final CommunicationsJsonMap map = _responseMap(data);
+        final Object? conversation = map['conversation'] ?? data;
+        return CommunicationsConversationDto.fromResponse(
+          conversation,
+        ).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<CommunicationsConversation>> updateCall(
+    String conversationId, {
+    required String callId,
+    required String action,
+  }) {
+    return _apiClient.post<CommunicationsConversation>(
+      ApiEndpoints.nested(
+        HmsApiResource.communicationsWorkspace,
+        'conversations',
+        <String>[conversationId, 'calls', 'update'],
+      ),
+      data: <String, Object?>{'call_id': callId, 'action': action},
+      decoder: (Object? data) {
+        final CommunicationsJsonMap map = _responseMap(data);
+        final Object? conversation = map['conversation'] ?? data;
+        return CommunicationsConversationDto.fromResponse(
+          conversation,
+        ).toEntity();
       },
     );
   }

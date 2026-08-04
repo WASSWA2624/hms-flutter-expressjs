@@ -1,4 +1,3 @@
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -20,7 +19,7 @@ class CommunicationsComposeBar extends ConsumerStatefulWidget {
     this.onCancelReply,
     this.autofocus = false,
     this.onAutofocusHandled,
-    this.maxAttachments = 5,
+    this.maxAttachments = 0,
     this.onSent,
     super.key,
   });
@@ -43,8 +42,6 @@ class _CommunicationsComposeBarState
     extends ConsumerState<CommunicationsComposeBar> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  final List<CommunicationAttachmentUpload> _attachments =
-      <CommunicationAttachmentUpload>[];
   List<CommunicationStaffOption> _mentionOptions = <CommunicationStaffOption>[];
   MentionQuery? _activeMention;
 
@@ -103,22 +100,11 @@ class _CommunicationsComposeBarState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             if (widget.replyToMessage != null) _replyQuote(context),
-            if (_attachments.isNotEmpty) _attachmentChips(context),
             if (_activeMention != null && _mentionOptions.isNotEmpty)
               _mentionOverlay(context),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: <Widget>[
-                AppButton(
-                  iconOnly: true,
-                  icon: Icons.attach_file_outlined,
-                  label: context.l10n.communicationsAttachFileAction,
-                  semanticLabel: context.l10n.communicationsAttachFileAction,
-                  tooltip: context.l10n.communicationsAttachFileAction,
-                  enabled: !widget.isSaving,
-                  onPressed: _pickAttachments,
-                ),
-                SizedBox(width: theme.spacing.xs),
                 Expanded(
                   child: AppTextField(
                     controller: _controller,
@@ -149,8 +135,7 @@ class _CommunicationsComposeBarState
     );
   }
 
-  bool get _canSend =>
-      _controller.text.trim().isNotEmpty || _attachments.isNotEmpty;
+  bool get _canSend => _controller.text.trim().isNotEmpty;
 
   Widget _replyQuote(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -188,26 +173,6 @@ class _CommunicationsComposeBarState
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _attachmentChips(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.only(bottom: theme.spacing.xs),
-      child: Wrap(
-        spacing: theme.spacing.xs,
-        runSpacing: theme.spacing.xs,
-        children: <Widget>[
-          for (int index = 0; index < _attachments.length; index++)
-            InputChip(
-              label: Text(_attachments[index].fileName),
-              onDeleted: widget.isSaving
-                  ? null
-                  : () => setState(() => _attachments.removeAt(index)),
-            ),
-        ],
       ),
     );
   }
@@ -293,31 +258,6 @@ class _CommunicationsComposeBarState
     _focusNode.requestFocus();
   }
 
-  Future<void> _pickAttachments() async {
-    try {
-      final List<XFile> files = await openFiles();
-      if (!mounted || files.isEmpty) {
-        return;
-      }
-      final int remaining = widget.maxAttachments - _attachments.length;
-      if (remaining <= 0) {
-        return;
-      }
-      final List<CommunicationAttachmentUpload> uploads =
-          <CommunicationAttachmentUpload>[];
-      for (final XFile file in files.take(remaining)) {
-        uploads.add(
-          CommunicationAttachmentUpload(
-            fileName: file.name,
-            bytes: await file.readAsBytes(),
-            contentType: file.mimeType,
-          ),
-        );
-      }
-      setState(() => _attachments.addAll(uploads));
-    } catch (_) {}
-  }
-
   Future<void> _send() async {
     // Re-check before mutation — stale grants must not fire write paths.
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
@@ -330,7 +270,6 @@ class _CommunicationsComposeBarState
       content: content,
       replyToMessageId: widget.replyToMessage?.id,
       mentionedUserIds: extractMentionedUserIds(content),
-      attachments: List<CommunicationAttachmentUpload>.from(_attachments),
     );
     final AppFailure? failure = await ref
         .read(communicationsWorkspaceControllerProvider.notifier)
@@ -341,7 +280,6 @@ class _CommunicationsComposeBarState
     if (failure == null) {
       _controller.clear();
       setState(() {
-        _attachments.clear();
         _activeMention = null;
         _mentionOptions = <CommunicationStaffOption>[];
       });

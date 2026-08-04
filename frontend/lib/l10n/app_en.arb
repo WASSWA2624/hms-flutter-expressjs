@@ -11538,6 +11538,118 @@
   "@ipdAllWardsOption": {
     "description": "IPD ward filter option for all wards."
   },
+  "ipdSearchFieldFilterLabel": "Search in",
+  "@ipdSearchFieldFilterLabel": {
+    "description": "IPD advanced filter label for search field scope."
+  },
+  "ipdAllFieldsFilterLabel": "All fields",
+  "@ipdAllFieldsFilterLabel": {
+    "description": "IPD search field option for all fields."
+  },
+  "ipdPatientIdFilterLabel": "Patient ID",
+  "@ipdPatientIdFilterLabel": {
+    "description": "IPD patient ID filter label."
+  },
+  "ipdPatientIdFilterHint": "Patient number or ID",
+  "@ipdPatientIdFilterHint": {
+    "description": "IPD patient ID filter hint."
+  },
+  "ipdAdmissionIdFilterLabel": "Admission ID",
+  "@ipdAdmissionIdFilterLabel": {
+    "description": "IPD admission ID filter label."
+  },
+  "ipdAdmissionIdFilterHint": "Admission number or ID",
+  "@ipdAdmissionIdFilterHint": {
+    "description": "IPD admission ID filter hint."
+  },
+  "ipdEncounterIdFilterLabel": "Encounter ID",
+  "@ipdEncounterIdFilterLabel": {
+    "description": "IPD encounter ID filter label."
+  },
+  "ipdEncounterIdFilterHint": "Encounter number or ID",
+  "@ipdEncounterIdFilterHint": {
+    "description": "IPD encounter ID filter hint."
+  },
+  "ipdPhoneFilterLabel": "Phone",
+  "@ipdPhoneFilterLabel": {
+    "description": "IPD phone filter label."
+  },
+  "ipdPhoneFilterHint": "Patient or contact phone",
+  "@ipdPhoneFilterHint": {
+    "description": "IPD phone filter hint."
+  },
+  "ipdTransferStatusFilterLabel": "Transfer status",
+  "@ipdTransferStatusFilterLabel": {
+    "description": "IPD transfer status filter label."
+  },
+  "ipdTransferStatusRequested": "Requested",
+  "@ipdTransferStatusRequested": {
+    "description": "IPD transfer status option: requested."
+  },
+  "ipdTransferStatusApproved": "Approved",
+  "@ipdTransferStatusApproved": {
+    "description": "IPD transfer status option: approved."
+  },
+  "ipdTransferStatusInProgress": "In progress",
+  "@ipdTransferStatusInProgress": {
+    "description": "IPD transfer status option: in progress."
+  },
+  "ipdHasActiveBedFilterLabel": "Bed assignment",
+  "@ipdHasActiveBedFilterLabel": {
+    "description": "IPD active bed assignment filter label."
+  },
+  "ipdHasActiveBedYes": "Has active bed",
+  "@ipdHasActiveBedYes": {
+    "description": "IPD has-active-bed filter yes option."
+  },
+  "ipdHasActiveBedNo": "No active bed",
+  "@ipdHasActiveBedNo": {
+    "description": "IPD has-active-bed filter no option."
+  },
+  "ipdCriticalAlertFilterLabel": "Critical alerts",
+  "@ipdCriticalAlertFilterLabel": {
+    "description": "IPD critical alert filter label."
+  },
+  "ipdCriticalAlertYes": "Has critical alert",
+  "@ipdCriticalAlertYes": {
+    "description": "IPD critical alert filter yes option."
+  },
+  "ipdCriticalAlertNo": "No critical alert",
+  "@ipdCriticalAlertNo": {
+    "description": "IPD critical alert filter no option."
+  },
+  "ipdCriticalSeverityFilterLabel": "Alert severity",
+  "@ipdCriticalSeverityFilterLabel": {
+    "description": "IPD critical severity filter label."
+  },
+  "ipdIcuQueueFilterLabel": "ICU stay",
+  "@ipdIcuQueueFilterLabel": {
+    "description": "IPD ICU queue scope filter label."
+  },
+  "ipdIcuQueueWithIcu": "With ICU stay",
+  "@ipdIcuQueueWithIcu": {
+    "description": "IPD ICU queue option: with ICU."
+  },
+  "ipdIcuQueueActive": "Active ICU stay",
+  "@ipdIcuQueueActive": {
+    "description": "IPD ICU queue option: active ICU."
+  },
+  "ipdIcuStatusFilterLabel": "ICU status",
+  "@ipdIcuStatusFilterLabel": {
+    "description": "IPD ICU status filter label."
+  },
+  "ipdIcuStatusActive": "Active",
+  "@ipdIcuStatusActive": {
+    "description": "IPD ICU status option: active."
+  },
+  "ipdIcuStatusEnded": "Ended",
+  "@ipdIcuStatusEnded": {
+    "description": "IPD ICU status option: ended."
+  },
+  "ipdIcuStatusNone": "No ICU",
+  "@ipdIcuStatusNone": {
+    "description": "IPD ICU status option: none."
+  },
   "ipdBoardTitle": "Inpatient board",
   "@ipdBoardTitle": {
     "description": "IPD admissions board title."
@@ -21924,6 +22036,79 @@
   "communicationsNewGroupAction": "New group",
   "@communicationsNewGroupAction": {
     "description": "Action label for creating a group conversation."
+  },
+  "communicationsNewScopedPostAction": "New scoped post",
+  "@communicationsNewScopedPostAction": {
+    "description": "Action label for creating a role-scoped internal post."
+  },
+  "communicationsCreateScopedPostAction": "Create post",
+  "@communicationsCreateScopedPostAction": {
+    "description": "Submit label for the scoped post dialog."
+  },
+  "communicationsScopedPostHelper": "Posts reach staff in your access scope who have the selected roles.",
+  "@communicationsScopedPostHelper": {
+    "description": "Helper text explaining scoped post audience."
+  },
+  "communicationsScopedPostSubjectLabel": "Subject",
+  "@communicationsScopedPostSubjectLabel": {
+    "description": "Subject field for a scoped post."
+  },
+  "communicationsScopedPostMessageLabel": "Message",
+  "@communicationsScopedPostMessageLabel": {
+    "description": "Optional first message for a scoped post."
+  },
+  "communicationsScopedPostRolesLabel": "Audience roles",
+  "@communicationsScopedPostRolesLabel": {
+    "description": "Role multi-select label for scoped posts."
+  },
+  "communicationsScopedPostCreatedMessage": "Scoped post created.",
+  "@communicationsScopedPostCreatedMessage": {
+    "description": "Snackbar after creating a scoped post."
+  },
+  "communicationsVoiceCallAction": "Voice call",
+  "@communicationsVoiceCallAction": {
+    "description": "Start a voice call in the conversation thread."
+  },
+  "communicationsVideoCallAction": "Video call",
+  "@communicationsVideoCallAction": {
+    "description": "Start a video call in the conversation thread."
+  },
+  "communicationsVoiceCallTitle": "Voice call",
+  "@communicationsVoiceCallTitle": {
+    "description": "Title for the voice call sheet."
+  },
+  "communicationsVideoCallTitle": "Video call",
+  "@communicationsVideoCallTitle": {
+    "description": "Title for the video call sheet."
+  },
+  "communicationsCallStatusLabel": "Status: {status}",
+  "@communicationsCallStatusLabel": {
+    "description": "Call status line in the call sheet.",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "communicationsCallSignalingHint": "Call signaling is available now. Media (microphone/camera) will follow in a later release.",
+  "@communicationsCallSignalingHint": {
+    "description": "Hint that calls are signaling-only for now."
+  },
+  "communicationsAcceptCallAction": "Accept",
+  "@communicationsAcceptCallAction": {
+    "description": "Accept an incoming call."
+  },
+  "communicationsDeclineCallAction": "Decline",
+  "@communicationsDeclineCallAction": {
+    "description": "Decline an incoming call."
+  },
+  "communicationsEndCallAction": "End call",
+  "@communicationsEndCallAction": {
+    "description": "End the active call."
+  },
+  "communicationsCallFailedMessage": "Could not start the call.",
+  "@communicationsCallFailedMessage": {
+    "description": "Snackbar when call start fails."
   },
   "communicationsFavoritesFilterLabel": "Favorites",
   "@communicationsFavoritesFilterLabel": {

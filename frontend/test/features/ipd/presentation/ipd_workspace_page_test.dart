@@ -185,6 +185,17 @@ void _stubRepository(_MockIpdRepository repository) {
       ),
     );
   });
+  when(() => repository.getSummaryCounts()).thenAnswer(
+    (_) async => const Result<IpdFlowAggregateCounts>.success(
+      IpdFlowAggregateCounts(
+        admissionQueue: 1,
+        activePatients: 1,
+        transferPending: 1,
+        dischargePlanned: 1,
+        activeTotal: 4,
+      ),
+    ),
+  );
   when(() => repository.listWards(search: any(named: 'search'))).thenAnswer(
     (_) async => const Result<List<IpdWardOption>>.success(<IpdWardOption>[
       IpdWardOption(id: 'ward-1', name: 'Medical Ward'),

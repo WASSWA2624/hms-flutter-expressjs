@@ -68,13 +68,34 @@ const listConversationsQuerySchema = listQuerySchema.extend({
   unreadOnly: booleanStringSchema.optional(),
 });
 
-const createConversationSchema = z.object({
-  subject: z.string().trim().max(255).optional().nullable(),
-  participant_ids: z.array(uuidOrFriendlyIdentifierSchema).min(1).max(25),
-  is_sensitive: z.coerce.boolean().optional().default(false),
-  conversation_type: z.enum(['DIRECT', 'GROUP']).optional(),
-  visibility_roles: z.array(nonEmptyStringSchema.max(80)).max(12).optional(),
-});
+const createConversationSchema = z
+  .object({
+    subject: z.string().trim().max(255).optional().nullable(),
+    participant_ids: z.array(uuidOrFriendlyIdentifierSchema).max(25).optional().default([]),
+    is_sensitive: z.coerce.boolean().optional().default(false),
+    conversation_type: z.enum(['DIRECT', 'GROUP']).optional(),
+    visibility_roles: z.array(nonEmptyStringSchema.max(80)).max(12).optional(),
+    initial_message: z.string().trim().max(12000).optional().nullable(),
+  })
+  .superRefine((value, ctx) => {
+    const hasRoles = Array.isArray(value.visibility_roles) && value.visibility_roles.length > 0;
+    const hasParticipants =
+      Array.isArray(value.participant_ids) && value.participant_ids.length > 0;
+    if (!hasRoles && !hasParticipants) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['participant_ids'],
+        message: 'At least one participant or visibility role is required.',
+      });
+    }
+    if (hasRoles && !String(value.subject || '').trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['subject'],
+        message: 'Scoped posts require a subject.',
+      });
+    }
+  });
 
 const addParticipantSchema = z.object({
   user_id: uuidOrFriendlyIdentifierSchema,
@@ -91,6 +112,15 @@ const createMessageSchema = z.object({
   mentioned_user_ids: z.array(uuidOrFriendlyIdentifierSchema).max(12).optional(),
 });
 
+const startCallSchema = z.object({
+  kind: z.enum(['VOICE', 'VIDEO']).optional().default('VOICE'),
+});
+
+const updateCallSchema = z.object({
+  call_id: nonEmptyStringSchema.max(64),
+  action: z.enum(['accept', 'decline', 'end']),
+});
+
 module.exports = {
   communicationsPanelSchema,
   communicationsActionSchema,
@@ -105,4 +135,6 @@ module.exports = {
   addParticipantSchema,
   listMessagesQuerySchema,
   createMessageSchema,
+  startCallSchema,
+  updateCallSchema,
 };

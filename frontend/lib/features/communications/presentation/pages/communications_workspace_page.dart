@@ -315,6 +315,11 @@ class _CommunicationsWorkspaceContentState
         icon: Icons.group_add_outlined,
         onPressed: () => showCommunicationsNewGroupDialog(context, ref),
       ),
+      AppTabToolbarAction(
+        label: l10n.communicationsNewScopedPostAction,
+        icon: Icons.campaign_outlined,
+        onPressed: () => showCommunicationsNewScopedPostDialog(context, ref),
+      ),
     ];
   }
 
