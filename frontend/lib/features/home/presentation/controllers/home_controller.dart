@@ -73,7 +73,9 @@ final homeControllerProvider =
         },
       );
 
-      return ref.read(homeRepositoryProvider).loadDashboard(request);
+      // Watch (not read) so /auth/me enrichment and role/permission updates
+      // rebuild the dashboard instead of leaving a stale limited fallback.
+      return ref.watch(homeRepositoryProvider).loadDashboard(request);
     });
 
 final homeLookupsControllerProvider =

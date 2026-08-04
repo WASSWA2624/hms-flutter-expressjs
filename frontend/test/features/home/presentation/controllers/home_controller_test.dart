@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/secure_session_storage.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
@@ -139,6 +140,87 @@ void main() {
       secondResult.when(
         success: (HomeDashboard loaded) => expect(loaded, same(second)),
         failure: (_) => fail('Expected second dashboard.'),
+      );
+      expect(repository.callCount, greaterThanOrEqualTo(2));
+    });
+    test('reloads when authorization enrichment updates the session', () async {
+      final limited = _dashboardFixture(role: AppRole.other);
+      final lab = _dashboardFixture(role: AppRole.labTech);
+      final repository = _SequencedHomeRepository(<Result<HomeDashboard>>[
+        Result<HomeDashboard>.success(limited),
+        Result<HomeDashboard>.success(lab),
+      ]);
+      final jwtSession = AuthSession(
+        tokens: SessionTokens(accessToken: 'token-1'),
+        user: const AuthUserProfile(
+          id: 'user-1',
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+          roles: <String>['LAB_TECH'],
+        ),
+        isAuthorizationHydrated: false,
+        isModuleCatalogHydrated: false,
+      );
+      final enrichedSession = AuthSession(
+        tokens: SessionTokens(accessToken: 'token-1'),
+        user: const AuthUserProfile(
+          id: 'user-1',
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+          roles: <String>['LAB_TECH'],
+        ),
+        permissions: <AppPermission>{
+          const AppPermission('lab.read'),
+          const AppPermission('profile.read'),
+        },
+        moduleEntitlements: const <AppModuleEntitlement>[
+          AppModuleEntitlement(code: 'lab'),
+        ],
+        isAuthorizationHydrated: true,
+        isModuleCatalogHydrated: true,
+      );
+      final container = ProviderContainer(
+        overrides: [
+          initialSessionStateProvider.overrideWithValue(
+            SessionState.authenticated(session: jwtSession),
+          ),
+          secureSessionStorageProvider.overrideWithValue(
+            SecureAppSessionStorage(_MemorySecureStorage()),
+          ),
+          sessionIsolationServiceProvider.overrideWith(
+            (Ref ref) => _EpochOnlySessionIsolation(ref),
+          ),
+          homeRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final subscription = container.listen(
+        homeControllerProvider(HomeDashboardRequest.empty),
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+
+      final Result<HomeDashboard> firstResult = await container.read(
+        homeControllerProvider(HomeDashboardRequest.empty).future,
+      );
+      firstResult.when(
+        success: (HomeDashboard loaded) => expect(loaded, same(limited)),
+        failure: (_) => fail('Expected limited dashboard.'),
+      );
+      expect(repository.callCount, 1);
+
+      await container
+          .read(sessionStateProvider.notifier)
+          .persistSession(enrichedSession);
+
+      final Result<HomeDashboard> secondResult = await container.read(
+        homeControllerProvider(HomeDashboardRequest.empty).future,
+      );
+      secondResult.when(
+        success: (HomeDashboard loaded) => expect(loaded, same(lab)),
+        failure: (_) => fail('Expected enriched lab dashboard.'),
       );
       expect(repository.callCount, greaterThanOrEqualTo(2));
     });

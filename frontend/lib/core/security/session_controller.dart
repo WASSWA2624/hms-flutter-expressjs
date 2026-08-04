@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/security/session_manager.dart';
@@ -106,14 +107,43 @@ String? _normalizedContextId(String? value) {
 
 /// Session identity used to invalidate keep-alive dashboard/workspace loads.
 ///
-/// Watches [sessionEpochProvider] plus user/tenant/facility so login after
-/// logout reloads even when providers were not auto-disposed.
+/// Watches [sessionEpochProvider] plus user/tenant/facility/roles/auth hydration
+/// so login, account switch, and `/auth/me` enrichment all reload the dashboard
+/// without requiring a browser refresh.
 String watchSessionDashboardScope(Ref ref) {
   watchSessionEpoch(ref);
   return ref.watch(
     sessionStateProvider.select((SessionState state) {
-      final user = state.session?.user;
-      return '${user?.id ?? ''}|${user?.tenantId ?? ''}|${user?.facilityId ?? ''}';
+      return _dashboardSessionScope(state);
     }),
   );
+}
+
+String dashboardSessionScope(SessionState state) => _dashboardSessionScope(state);
+
+String _dashboardSessionScope(SessionState state) {
+  final AuthSession? session = state.session;
+  final user = session?.user;
+  final List<String> roles = List<String>.of(user?.roles ?? const <String>[]);
+  roles.sort();
+  final List<String> permissionValues =
+      (session?.permissions ?? const <AppPermission>{})
+          .map((AppPermission permission) => permission.value)
+          .toList(growable: true);
+  permissionValues.sort();
+  final List<String> moduleCodes = List<String>.of(
+    session?.moduleEntitlements.keys ?? const <String>[],
+  );
+  moduleCodes.sort();
+  return <String>[
+    state.status.name,
+    user?.id ?? '',
+    user?.tenantId ?? '',
+    user?.facilityId ?? '',
+    roles.join(','),
+    permissionValues.join(','),
+    session?.isAuthorizationHydrated == true ? '1' : '0',
+    session?.isModuleCatalogHydrated == true ? '1' : '0',
+    moduleCodes.join(','),
+  ].join('|');
 }

@@ -4,9 +4,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
-import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
-import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_access.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
@@ -43,7 +41,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final HomeDashboardRequest request = widget.request;
     final String sessionScope = ref.watch(
-      sessionStateProvider.select(_homeSessionScope),
+      sessionStateProvider.select(dashboardSessionScope),
     );
     if (_boundSessionScope != sessionScope) {
       if (_boundSessionScope != null) {
@@ -117,11 +115,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
     );
   }
-}
-
-String _homeSessionScope(SessionState state) {
-  final AuthUserProfile? user = state.session?.user;
-  return '${user?.id ?? ''}|${user?.tenantId ?? ''}|${user?.facilityId ?? ''}';
 }
 
 class _HomeDashboardContent extends ConsumerWidget {
