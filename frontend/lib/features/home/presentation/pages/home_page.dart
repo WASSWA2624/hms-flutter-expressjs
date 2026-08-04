@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
@@ -11,7 +10,6 @@ import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_access.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
-import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_sync.dart';
@@ -36,8 +34,10 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   String? _boundSessionScope;
-  /// When set, hide prior-account metrics until the dashboard finishes loading.
-  String? _pendingFreshSessionScope;
+  /// Hides keep-alive metrics from the previous account until the new load
+  /// finishes. Cleared in-build when the provider leaves loading — never blocks
+  /// forever and never invalidates in a mismatch loop.
+  bool _hidePreviousAccountData = false;
 
   @override
   Widget build(BuildContext context) {
@@ -47,38 +47,24 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
     if (_boundSessionScope != sessionScope) {
       if (_boundSessionScope != null) {
-        _pendingFreshSessionScope = sessionScope;
-        _scheduleClearOptimisticPatch(request);
-      }
-      _boundSessionScope = sessionScope;
-    }
-
-    final AsyncValue<Result<HomeDashboard>> dashboard = ref.watch(
-      homeControllerProvider(request),
-    );
-    if (_pendingFreshSessionScope == null) {
-      final HomeDashboard? loaded = switch (dashboard) {
-        AsyncData<Result<HomeDashboard>>(:final value) => value.when(
-          success: (HomeDashboard data) => data,
-          failure: (_) => null,
-        ),
-        _ => null,
-      };
-      if (loaded != null &&
-          !_dashboardMatchesSession(
-            loaded,
-            ref.read(sessionStateProvider),
-          )) {
-        _pendingFreshSessionScope = sessionScope;
-        _scheduleClearOptimisticPatch(request);
+        _hidePreviousAccountData = true;
         Future<void>.microtask(() {
           if (!mounted) {
             return;
           }
-          ref.invalidate(homeControllerProvider(request));
+          homeClearDashboardOptimisticPatch(ref, request);
         });
       }
+      _boundSessionScope = sessionScope;
     }
+
+    final dashboard = ref.watch(homeControllerProvider(request));
+    if (_hidePreviousAccountData &&
+        !dashboard.isLoading &&
+        (dashboard.hasValue || dashboard.hasError)) {
+      _hidePreviousAccountData = false;
+    }
+
     final HomeDashboardOptimisticPatchState? optimisticState = ref.watch(
       homeDashboardOptimisticPatchProvider(request),
     );
@@ -88,13 +74,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       AsyncValue<Result<HomeDashboard>>? previous,
       AsyncValue<Result<HomeDashboard>> next,
     ) {
-      if (_pendingFreshSessionScope != null &&
-          !next.isLoading &&
-          (next.hasValue || next.hasError)) {
-        setState(() {
-          _pendingFreshSessionScope = null;
-        });
-      }
       next.whenOrNull(
         data: (Result<HomeDashboard> result) {
           result.when(
@@ -110,21 +89,16 @@ class _HomePageState extends ConsumerState<HomePage> {
       );
     });
 
-    // While switching accounts, ignore keep-alive AsyncData from the previous
-    // user so the loading chrome shows until the new dashboard resolves.
-    final AsyncValue<Result<HomeDashboard>> displayValue =
-        _pendingFreshSessionScope == null
-        ? dashboard
-        : const AsyncLoading<Result<HomeDashboard>>();
-
     // Tab read = profile:read (matrix). Per-atom Dashboard.md gates apply inside
     // [_HomeDashboardContent] via [filterHomeDashboardForAccess].
     return AppAccessGate(
       requirement: homeTabReadRequirement,
       child: AsyncStateScaffold<HomeDashboard>(
         key: ValueKey<String>('home-dashboard-$sessionScope'),
-        value: displayValue,
-        keepPreviousDataDuringRefresh: _pendingFreshSessionScope == null,
+        value: dashboard,
+        // Same-session realtime refresh keeps metrics visible; account switches
+        // hide the prior account until the new dashboard resolves.
+        keepPreviousDataDuringRefresh: !_hidePreviousAccountData,
         loadingTitle: l10n.homeLoadingTitle,
         loadingBody: l10n.homeLoadingBody,
         maxWidth: PageMaxWidth.dataHeavy,
@@ -143,61 +117,11 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
     );
   }
-
-  void _scheduleClearOptimisticPatch(HomeDashboardRequest request) {
-    Future<void>.microtask(() {
-      if (!mounted) {
-        return;
-      }
-      homeClearDashboardOptimisticPatch(ref, request);
-    });
-  }
 }
 
 String _homeSessionScope(SessionState state) {
   final AuthUserProfile? user = state.session?.user;
   return '${user?.id ?? ''}|${user?.tenantId ?? ''}|${user?.facilityId ?? ''}';
-}
-
-bool _dashboardMatchesSession(HomeDashboard dashboard, SessionState state) {
-  final AuthSession? session = state.session;
-  final AuthUserProfile? user = session?.user;
-  if (user == null) {
-    return false;
-  }
-
-  final HomeDashboardProfile expectedProfile = homeProfileForAccessPolicy(
-    AppAccessPolicy.fromSession(session),
-  );
-  if (dashboard.profile.role != expectedProfile.role) {
-    return false;
-  }
-
-  final HomeDashboardContext context = dashboard.context;
-  final String? sessionTenantId = _normalizedId(user.tenantId);
-  final String? sessionFacilityId = _normalizedId(user.facilityId);
-  final String? dashboardTenantId = _normalizedId(context.tenantId);
-  final String? dashboardFacilityId = _normalizedId(context.facilityId);
-
-  if (sessionTenantId != null &&
-      dashboardTenantId != null &&
-      sessionTenantId != dashboardTenantId) {
-    return false;
-  }
-  if (sessionFacilityId != null &&
-      dashboardFacilityId != null &&
-      sessionFacilityId != dashboardFacilityId) {
-    return false;
-  }
-  return true;
-}
-
-String? _normalizedId(String? value) {
-  final String? trimmed = value?.trim();
-  if (trimmed == null || trimmed.isEmpty) {
-    return null;
-  }
-  return trimmed;
 }
 
 class _HomeDashboardContent extends ConsumerWidget {
@@ -326,14 +250,14 @@ class _HomeDashboardContent extends ConsumerWidget {
                                 BuildContext context,
                                 BoxConstraints constraints,
                               ) {
-                            return DashboardChartsRow(
-                              data: homeDashboardChartsData(
-                                dashboard: authorized,
-                                l10n: l10n,
-                              ),
-                              twoColumns: constraints.maxWidth >= 980,
-                            );
-                          },
+                                return DashboardChartsRow(
+                                  data: homeDashboardChartsData(
+                                    dashboard: authorized,
+                                    l10n: l10n,
+                                  ),
+                                  twoColumns: constraints.maxWidth >= 980,
+                                );
+                              },
                         ),
                       )
                     : const SizedBox.shrink(),
