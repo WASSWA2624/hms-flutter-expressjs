@@ -101,19 +101,28 @@ class PharmacyPrintHistoryOptionsSection extends StatelessWidget {
                 ),
               ],
             ),
-            if (totalCount > 1) ...<Widget>[
+            if (totalCount > 0) ...<Widget>[
               SizedBox(height: theme.spacing.xs),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: selectedCount == totalCount
-                      ? controller.clearAll
-                      : controller.selectAll,
-                  child: Text(
-                    selectedCount == totalCount
-                        ? l10n.commonClearActionLabel
-                        : l10n.pharmacyPrintSelectAllHistoryLabel,
-                  ),
+              Material(
+                type: MaterialType.transparency,
+                child: CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  tristate: true,
+                  value: selectedCount == 0
+                      ? false
+                      : selectedCount == totalCount
+                      ? true
+                      : null,
+                  title: Text(l10n.pharmacyPrintSelectAllHistoryLabel),
+                  onChanged: (bool? checked) {
+                    if (checked == true) {
+                      controller.selectAll();
+                    } else {
+                      controller.clearAll();
+                    }
+                  },
                 ),
               ),
             ],
@@ -161,6 +170,7 @@ class PharmacyPrintHistoryOptionsSection extends StatelessWidget {
 
                     return PharmacyPrintSelectableTile(
                       selected: controller.selectedHistoryIds.contains(item.id),
+                      emphasizeTitle: false,
                       icon: Icons.history_outlined,
                       title: pharmacyTimelineEventLabel(context, item),
                       subtitle: medicationLabel.isEmpty ? null : medicationLabel,

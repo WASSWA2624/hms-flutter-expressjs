@@ -361,6 +361,7 @@ class PharmacyPrintSelectableTile extends StatelessWidget {
     required this.onChanged,
     this.subtitle,
     this.meta,
+    this.emphasizeTitle = true,
     super.key,
   });
 
@@ -370,6 +371,9 @@ class PharmacyPrintSelectableTile extends StatelessWidget {
   final String? subtitle;
   final String? meta;
   final ValueChanged<bool> onChanged;
+
+  /// When true (default), title uses semibold weight.
+  final bool emphasizeTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -381,7 +385,7 @@ class PharmacyPrintSelectableTile extends StatelessWidget {
         resolvedSubtitle != null && resolvedSubtitle.isNotEmpty;
     final bool hasMeta = resolvedMeta != null && resolvedMeta.isNotEmpty;
     final TextStyle? titleStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontWeight: FontWeight.w600,
+      fontWeight: emphasizeTitle ? FontWeight.w600 : FontWeight.w400,
       height: 1.2,
     );
     final TextStyle? subtitleStyle = theme.textTheme.bodySmall?.copyWith(
@@ -390,7 +394,7 @@ class PharmacyPrintSelectableTile extends StatelessWidget {
     );
     final TextStyle? metaStyle = theme.textTheme.labelSmall?.copyWith(
       color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w600,
+      fontWeight: emphasizeTitle ? FontWeight.w600 : FontWeight.w400,
       height: 1.2,
     );
     final TextStyle? separatorStyle = theme.textTheme.bodySmall?.copyWith(
