@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/layout/shell_navigation_loading.dart';
 
 void main() {
   group('ShellRouteChildRetention', () {
-    testWidgets('keeps the previous route visible while loading', (
+    testWidgets('swaps to the destination on the same frame as the route change', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -28,103 +31,19 @@ void main() {
             home: _RetentionHarness(
               routeKey: '/patients',
               isLoading: true,
-              child: Text('Patients'),
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Home'), findsOneWidget);
-      expect(find.text('Patients', skipOffstage: false), findsOneWidget);
-      expect(tester.takeException(), isNull);
-
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: _RetentionHarness(
-              routeKey: '/patients',
-              isLoading: false,
-              child: Text('Patients'),
+              child: Text('Patients loading'),
             ),
           ),
         ),
       );
 
       expect(find.text('Home'), findsNothing);
-      expect(find.text('Patients'), findsOneWidget);
+      expect(find.text('Patients loading'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
     testWidgets(
-      'does not flash a blank deferred child before loading is reported',
-      (WidgetTester tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(
-              home: _RetentionHarness(
-                routeKey: '/home',
-                isLoading: false,
-                child: Text('Home'),
-              ),
-            ),
-          ),
-        );
-
-        // Route swap with isLoading still false — previously committed blank.
-        await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(
-              home: _RetentionHarness(
-                routeKey: '/radiology',
-                isLoading: false,
-                child: ColoredBox(
-                  color: Color(0x00000000),
-                  child: SizedBox.shrink(),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        expect(find.text('Home'), findsOneWidget);
-
-        await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(
-              home: _RetentionHarness(
-                routeKey: '/radiology',
-                isLoading: true,
-                child: ColoredBox(
-                  color: Color(0x00000000),
-                  child: SizedBox.shrink(),
-                ),
-              ),
-            ),
-          ),
-        );
-        // Flush/cancel any never-loaded settle timers from the prior frame.
-        await tester.pump(Duration.zero);
-        expect(find.text('Home'), findsOneWidget);
-
-        await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(
-              home: _RetentionHarness(
-                routeKey: '/radiology',
-                isLoading: false,
-                child: Text('Radiology'),
-              ),
-            ),
-          ),
-        );
-
-        expect(find.text('Home'), findsNothing);
-        expect(find.text('Radiology'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'commits destinations that never report shell loading after settle',
+      'does not keep a previous route when destination shows loading chrome',
       (WidgetTester tester) async {
         await tester.pumpWidget(
           const ProviderScope(
@@ -142,77 +61,140 @@ void main() {
           const ProviderScope(
             child: MaterialApp(
               home: _RetentionHarness(
-                routeKey: '/settings',
-                isLoading: false,
-                child: Text('Settings'),
+                routeKey: '/radiology',
+                isLoading: true,
+                child: Text('Radiology loading'),
               ),
             ),
           ),
         );
 
-        expect(find.text('Home'), findsOneWidget);
-
-        await tester.pump(Duration.zero);
-        await tester.pump(Duration.zero);
-        await tester.pump();
-
         expect(find.text('Home'), findsNothing);
-        expect(find.text('Settings'), findsOneWidget);
+        expect(find.text('Radiology loading'), findsOneWidget);
       },
     );
 
+    testWidgets('keys the child by route so identity updates with navigation', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: _RetentionHarness(
+              routeKey: '/home',
+              isLoading: false,
+              child: Text('Home'),
+            ),
+          ),
+        ),
+      );
+
+      final Key homeKey = tester
+          .widget<KeyedSubtree>(find.byType(KeyedSubtree))
+          .key!;
+      expect(homeKey, const ValueKey<String>('/home'));
+
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: _RetentionHarness(
+              routeKey: '/settings',
+              isLoading: false,
+              child: Text('Settings'),
+            ),
+          ),
+        ),
+      );
+
+      final Key settingsKey = tester
+          .widget<KeyedSubtree>(find.byType(KeyedSubtree))
+          .key!;
+      expect(settingsKey, const ValueKey<String>('/settings'));
+      expect(find.text('Settings'), findsOneWidget);
+    });
+  });
+
+  group('ShellLoadingReporter', () {
+    testWidgets('marks shell loading after the destination mounts', (
+      WidgetTester tester,
+    ) async {
+      final ProviderContainer container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: ShellLoadingReporter(
+              isLoading: true,
+              child: Text('Loading child'),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(container.read(shellNavigationLoadingProvider), isTrue);
+      expect(find.text('Loading child'), findsOneWidget);
+    });
+
+    testWidgets('clears shell loading after dispose settles', (
+      WidgetTester tester,
+    ) async {
+      final ProviderContainer container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: ShellLoadingReporter(
+              isLoading: true,
+              child: Text('Loading child'),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(container.read(shellNavigationLoadingProvider), isTrue);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: Text('Gone')),
+        ),
+      );
+      await tester.pump();
+
+      expect(container.read(shellNavigationLoadingProvider), isFalse);
+    });
+  });
+
+  group('AsyncStateScaffold deferred shell loading', () {
     testWidgets(
-      'preserves pending route State across offstage commit',
+      'paints loading chrome instead of an empty content area',
       (WidgetTester tester) async {
-        final GlobalKey<_ProbeState> probeKey = GlobalKey<_ProbeState>();
-
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
-              home: _RetentionHarness(
-                routeKey: '/home',
-                isLoading: false,
-                child: const Text('Home'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: ShellNavigationScope(
+                deferLoadingToShell: true,
+                child: AsyncStateScaffold<String>(
+                  value: const AsyncValue<Result<String>>.loading(),
+                  loadingTitle: 'Loading patients',
+                  loadingBody: 'Fetching the registry.',
+                  dataBuilder: (_, String data) => Text(data),
+                ),
               ),
             ),
           ),
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            child: MaterialApp(
-              home: _RetentionHarness(
-                routeKey: '/ipd',
-                isLoading: true,
-                child: _Probe(key: probeKey, label: 'IPD'),
-              ),
-            ),
-          ),
-        );
-
-        final _ProbeState offstageState = probeKey.currentState!;
-        expect(find.text('IPD', skipOffstage: false), findsOneWidget);
-
-        await tester.pumpWidget(
-          ProviderScope(
-            child: MaterialApp(
-              home: _RetentionHarness(
-                routeKey: '/ipd',
-                isLoading: false,
-                child: _Probe(key: probeKey, label: 'IPD'),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('IPD'), findsOneWidget);
-        expect(
-          identical(offstageState, probeKey.currentState),
-          isTrue,
-          reason: 'Route Element/State must survive Offstage → visible commit',
-        );
-        expect(tester.takeException(), isNull);
+        expect(find.text('Loading patients'), findsOneWidget);
+        expect(find.text('Fetching the registry.'), findsOneWidget);
+        expect(find.byType(AppStateScaffold), findsOneWidget);
       },
     );
   });
@@ -237,18 +219,4 @@ class _RetentionHarness extends StatelessWidget {
       child: child,
     );
   }
-}
-
-class _Probe extends StatefulWidget {
-  const _Probe({required this.label, super.key});
-
-  final String label;
-
-  @override
-  State<_Probe> createState() => _ProbeState();
-}
-
-class _ProbeState extends State<_Probe> {
-  @override
-  Widget build(BuildContext context) => Text(widget.label);
 }

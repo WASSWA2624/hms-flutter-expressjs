@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -34,7 +32,7 @@ class ShellNavigationLoadingController extends Notifier<bool> {
   }
 }
 
-/// Enables [AsyncStateScaffold] to defer full-page loading UI to the shell bar.
+/// Enables [AsyncStateScaffold] to also drive the shell navigation loading bar.
 class ShellNavigationScope extends InheritedWidget {
   const ShellNavigationScope({
     required this.deferLoadingToShell,
@@ -91,14 +89,14 @@ class AppShellLoadingBar extends StatelessWidget {
   }
 }
 
-/// Keeps the previous route visible while the destination workspace loads.
+/// Stable identity wrapper for the active shell route child.
 ///
-/// On route change the previous child stays painted while the destination
-/// mounts offstage (so it can fetch and report loading). The pending route is
-/// committed when shell loading finishes, or after a short settle delay when
-/// the destination never reports shell loading—never on the same frame as the
-/// route swap, which previously flashed a blank deferred-loading child.
-class ShellRouteChildRetention extends StatefulWidget {
+/// Swaps immediately on navigation. Destinations must paint their own loading
+/// chrome (via [AsyncStateScaffold]) so the content area updates on the same
+/// frame as the sidebar selection. Previous Offstage retention was removed —
+/// it raced deferred loading reports (flashing empty white) and reparenting
+/// large workspace trees froze Flutter web on module switches.
+class ShellRouteChildRetention extends StatelessWidget {
   const ShellRouteChildRetention({
     required this.routeKey,
     required this.isLoading,
@@ -111,159 +109,14 @@ class ShellRouteChildRetention extends StatefulWidget {
   final Widget child;
 
   @override
-  State<ShellRouteChildRetention> createState() =>
-      _ShellRouteChildRetentionState();
-}
-
-class _ShellRouteChildRetentionState extends State<ShellRouteChildRetention> {
-  String? _visibleRouteKey;
-  Widget? _visibleChild;
-  String? _pendingRouteKey;
-  bool _sawLoadingForPending = false;
-  int _pendingGeneration = 0;
-  Timer? _neverLoadedCommitTimer;
-  /// Stable identity for the *pending* route only, so deep-link work started
-  /// while offstage keeps the same [Element] after commit.
-  ///
-  /// Do not GlobalKey the visible/previous route: reparenting a large
-  /// workspace Element into a Stack beside a second heavy Offstage workspace
-  /// freezes Flutter web (Chrome "Page Unresponsive") on module switches such
-  /// as Radiology → Pharmacy.
-  GlobalKey? _pendingRouteKeyHandle;
-  String? _pendingRouteKeyHandleFor;
-
-  @override
-  void initState() {
-    super.initState();
-    _visibleRouteKey = widget.routeKey;
-    _visibleChild = widget.child;
-  }
-
-  @override
-  void dispose() {
-    _neverLoadedCommitTimer?.cancel();
-    super.dispose();
-  }
-
-  GlobalKey _pendingKeyFor(String routeKey) {
-    if (_pendingRouteKeyHandleFor != routeKey || _pendingRouteKeyHandle == null) {
-      _pendingRouteKeyHandle = GlobalKey();
-      _pendingRouteKeyHandleFor = routeKey;
-    }
-    return _pendingRouteKeyHandle!;
-  }
-
-  Widget _pendingChild(Widget child) {
-    return KeyedSubtree(
-      key: _pendingKeyFor(widget.routeKey),
-      child: child,
-    );
-  }
-
-  @override
-  void didUpdateWidget(ShellRouteChildRetention oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (widget.routeKey != oldWidget.routeKey) {
-      _pendingRouteKey = widget.routeKey;
-      _sawLoadingForPending = widget.isLoading;
-      _pendingGeneration += 1;
-      final int generation = _pendingGeneration;
-      if (_sawLoadingForPending) {
-        _cancelNeverLoadedCommit();
-      } else {
-        _scheduleCommitIfNeverLoaded(generation);
-      }
-      return;
-    }
-
-    if (_pendingRouteKey == null) {
-      if (widget.routeKey == _visibleRouteKey) {
-        _visibleChild = widget.child;
-      }
-      return;
-    }
-
-    if (widget.isLoading) {
-      _sawLoadingForPending = true;
-      _cancelNeverLoadedCommit();
-      return;
-    }
-
-    if (_sawLoadingForPending) {
-      _commitPending();
-    }
-  }
-
-  void _cancelNeverLoadedCommit() {
-    _neverLoadedCommitTimer?.cancel();
-    _neverLoadedCommitTimer = null;
-  }
-
-  void _scheduleCommitIfNeverLoaded(int generation) {
-    _cancelNeverLoadedCommit();
-    // Two zero-delay ticks so [ShellLoadingReporter] can mark loading after
-    // the destination mounts. Destinations that never report then commit.
-    _neverLoadedCommitTimer = Timer(Duration.zero, () {
-      _neverLoadedCommitTimer = Timer(Duration.zero, () {
-        _neverLoadedCommitTimer = null;
-        if (!mounted || generation != _pendingGeneration) {
-          return;
-        }
-        _commitIfPendingNeverLoaded();
-      });
-    });
-  }
-
-  void _commitIfPendingNeverLoaded() {
-    if (_pendingRouteKey == null || _sawLoadingForPending) {
-      return;
-    }
-    if (widget.routeKey != _pendingRouteKey || widget.isLoading) {
-      return;
-    }
-    _commitPending();
-  }
-
-  void _commitPending() {
-    _cancelNeverLoadedCommit();
-    setState(() {
-      _visibleRouteKey = widget.routeKey;
-      _visibleChild = widget.child;
-      _pendingRouteKey = null;
-      _sawLoadingForPending = false;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final bool retainPrevious =
-        _pendingRouteKey != null && _visibleChild != null;
-
-    if (!retainPrevious) {
-      // Keep the destination GlobalKey after Offstage → visible commit so
-      // deep-link State (and dialog contexts) survive the reparent.
-      if (_pendingRouteKeyHandle != null &&
-          _pendingRouteKeyHandleFor == widget.routeKey) {
-        return _pendingChild(widget.child);
-      }
-      return widget.child;
-    }
-
-    return Stack(
-      fit: StackFit.expand,
-      children: <Widget>[
-        // Previous route: no GlobalKey (avoid large-tree reparent into Stack).
-        _visibleChild!,
-        Offstage(
-          // Tickers off while hidden: destination only needs to mount enough
-          // to report shell loading / hydrate providers.
-          child: TickerMode(
-            enabled: false,
-            child: _pendingChild(widget.child),
-          ),
-        ),
-      ],
+    return Semantics(
+      container: true,
+      liveRegion: isLoading,
+      child: KeyedSubtree(
+        key: ValueKey<String>(routeKey),
+        child: child,
+      ),
     );
   }
 }
@@ -309,6 +162,9 @@ class _ShellLoadingReporterState extends ConsumerState<ShellLoadingReporter> {
   }
 
   void _syncLoading() {
+    // Riverpod forbids provider writes during initState/build; schedule for
+    // the end of this frame so the shell bar still appears immediately after
+    // the destination's loading chrome paints.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;

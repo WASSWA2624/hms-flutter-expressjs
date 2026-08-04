@@ -391,8 +391,11 @@ class AsyncStateScaffold<T> extends StatelessWidget {
   final bool scrollable;
   final bool safeArea;
 
-  /// When true, initial load shows the shell bar instead of a full-page spinner.
-  /// Defaults to [ShellNavigationScope.deferLoadingToShellOf] when null.
+  /// When true, initial load also drives the shell navigation bar.
+  ///
+  /// Page loading chrome is still painted immediately so sidebar switches never
+  /// flash an empty content area. Defaults to
+  /// [ShellNavigationScope.deferLoadingToShellOf] when null.
   final bool? deferLoadingToShell;
 
   /// When true, a background refresh keeps the last successful payload visible
@@ -420,26 +423,30 @@ class AsyncStateScaffold<T> extends StatelessWidget {
     );
   }
 
+  Widget _loadingChrome() {
+    return AppStateScaffold(
+      appBarTitle: appBarTitle,
+      variant: AppStateViewVariant.loading,
+      title: loadingTitle,
+      body: loadingBody,
+      maxWidth: maxWidth,
+      centerVertically: centerVertically,
+      scrollable: scrollable,
+      safeArea: safeArea,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (value.isLoading && !value.hasValue) {
+      final Widget loadingChrome = _loadingChrome();
       if (_shouldDeferLoadingToShell(context)) {
-        return const ShellLoadingReporter(
+        return ShellLoadingReporter(
           isLoading: true,
-          child: SizedBox.shrink(),
+          child: loadingChrome,
         );
       }
-
-      return AppStateScaffold(
-        appBarTitle: appBarTitle,
-        variant: AppStateViewVariant.loading,
-        title: loadingTitle,
-        body: loadingBody,
-        maxWidth: maxWidth,
-        centerVertically: centerVertically,
-        scrollable: scrollable,
-        safeArea: safeArea,
-      );
+      return loadingChrome;
     }
 
     return ShellLoadingReporter(
@@ -489,20 +496,7 @@ class AsyncStateScaffold<T> extends StatelessWidget {
             return previousData;
           }
 
-          if (_shouldDeferLoadingToShell(context)) {
-            return const SizedBox.shrink();
-          }
-
-          return AppStateScaffold(
-            appBarTitle: appBarTitle,
-            variant: AppStateViewVariant.loading,
-            title: loadingTitle,
-            body: loadingBody,
-            maxWidth: maxWidth,
-            centerVertically: centerVertically,
-            scrollable: scrollable,
-            safeArea: safeArea,
-          );
+          return _loadingChrome();
         },
       ),
     );
