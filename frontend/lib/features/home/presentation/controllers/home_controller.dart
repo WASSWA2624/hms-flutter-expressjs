@@ -6,7 +6,6 @@ import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/realtime/realtime_scope.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
-import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/features/home/data/repositories/home_repository_impl.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
@@ -17,7 +16,7 @@ final homeControllerProvider =
       ref,
       request,
     ) {
-      watchSessionEpoch(ref);
+      watchSessionDashboardScope(ref);
       listenForRealtimeRefresh(
         ref: ref,
         events: _homeDashboardRealtimeEvents,
@@ -82,7 +81,7 @@ final homeLookupsControllerProvider =
       ref,
       request,
     ) {
-      watchSessionEpoch(ref);
+      watchSessionDashboardScope(ref);
       return ref.watch(homeRepositoryProvider).loadLookups(request);
     });
 

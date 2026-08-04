@@ -40,8 +40,15 @@ final class SessionController extends Notifier<SessionState> {
                 _normalizedContextId(session.user?.tenantId) ||
             _normalizedContextId(previousSession.user?.facilityId) !=
                 _normalizedContextId(session.user?.facilityId));
+    // Logout/expiry leave keep-alive providers (e.g. home dashboard) holding
+    // the prior account. Isolate again when logging into a cleared session so
+    // dashboards and workspace caches reload for the new account immediately.
+    final bool reauthAfterClearedSession =
+        previousSession == null &&
+        (previousState.status == SessionStatus.unauthenticated ||
+            previousState.status == SessionStatus.expired);
 
-    if (contextChanged) {
+    if (contextChanged || reauthAfterClearedSession) {
       state = const SessionState.notReady();
       await ref
           .read(sessionIsolationServiceProvider)
@@ -95,4 +102,18 @@ String? _normalizedContextId(String? value) {
     return null;
   }
   return trimmed;
+}
+
+/// Session identity used to invalidate keep-alive dashboard/workspace loads.
+///
+/// Watches [sessionEpochProvider] plus user/tenant/facility so login after
+/// logout reloads even when providers were not auto-disposed.
+String watchSessionDashboardScope(Ref ref) {
+  watchSessionEpoch(ref);
+  return ref.watch(
+    sessionStateProvider.select((SessionState state) {
+      final user = state.session?.user;
+      return '${user?.id ?? ''}|${user?.tenantId ?? ''}|${user?.facilityId ?? ''}';
+    }),
+  );
 }

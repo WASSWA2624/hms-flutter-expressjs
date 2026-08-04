@@ -153,6 +153,49 @@ void main() {
       expect(container.read(sessionStateProvider).session, same(nextSession));
     });
 
+    test(
+      'login after logout isolates keep-alive providers for the new account',
+      () async {
+        final storage = _MemorySecureStorage();
+        final nextSession = AuthSession(
+          tokens: SessionTokens(accessToken: 'next-token'),
+          user: const AuthUserProfile(
+            id: 'user-2',
+            tenantId: 'tenant-2',
+            facilityId: 'facility-2',
+          ),
+        );
+        late _RecordingSessionIsolation isolation;
+        final container = ProviderContainer(
+          overrides: [
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.unauthenticated(),
+            ),
+            secureSessionStorageProvider.overrideWithValue(
+              SecureAppSessionStorage(storage),
+            ),
+            sessionIsolationServiceProvider.overrideWith((Ref ref) {
+              return isolation = _RecordingSessionIsolation(ref);
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final Future<void> loginFuture = container
+            .read(sessionStateProvider.notifier)
+            .persistSession(nextSession);
+
+        expect(isolation.disposeCalls, 1);
+        expect(container.read(sessionEpochProvider), 1);
+
+        isolation.complete();
+        await loginFuture;
+
+        expect(container.read(sessionStateProvider).isAuthenticated, isTrue);
+        expect(container.read(sessionStateProvider).session, same(nextSession));
+      },
+    );
+
     test('session-scoped controller state cannot survive an epoch bump', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);

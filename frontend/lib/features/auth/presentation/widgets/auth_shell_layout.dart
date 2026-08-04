@@ -49,39 +49,39 @@ class AuthShellLayout extends StatelessWidget {
                 },
               );
 
-              return CustomScrollView(
-                slivers: <Widget>[
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: maxFormWidth),
-                        child: Padding(
-                          padding: pagePadding,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: <Widget>[
-                              _AuthBrandHeader(
-                                isLarge: isLarge,
-                                displayName: displayName,
-                              ),
-                              SizedBox(
-                                height: switch (breakpoint) {
-                                  AppBreakpoint.xs ||
-                                  AppBreakpoint.sm => theme.spacing.lg,
-                                  _ => theme.spacing.xl,
-                                },
-                              ),
-                              child,
-                            ],
-                          ),
+              // SliverFillRemaining(hasScrollBody: false) probes intrinsic height
+              // through the shell Navigator/Overlay LayoutBuilder and throws.
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: maxFormWidth),
+                      child: Padding(
+                        padding: pagePadding,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            _AuthBrandHeader(
+                              isLarge: isLarge,
+                              displayName: displayName,
+                            ),
+                            SizedBox(
+                              height: switch (breakpoint) {
+                                AppBreakpoint.xs ||
+                                AppBreakpoint.sm => theme.spacing.lg,
+                                _ => theme.spacing.xl,
+                              },
+                            ),
+                            child,
+                          ],
                         ),
                       ),
                     ),
                   ),
-                ],
+                ),
               );
             },
           ),

@@ -3,6 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/secure_session_storage.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_isolation.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/core/storage/secure/app_secure_storage.dart';
 import 'package:hosspi_hms/features/home/data/repositories/home_repository_impl.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
@@ -66,16 +73,89 @@ void main() {
       );
       expect(repository.callCount, 1);
     });
+
+    test('reloads when session identity changes after account switch', () async {
+      final first = _dashboardFixture(role: AppRole.doctor);
+      final second = _dashboardFixture(role: AppRole.nurse);
+      final repository = _SequencedHomeRepository(<Result<HomeDashboard>>[
+        Result<HomeDashboard>.success(first),
+        Result<HomeDashboard>.success(second),
+      ]);
+      final firstSession = AuthSession(
+        tokens: SessionTokens(accessToken: 'token-1'),
+        user: const AuthUserProfile(
+          id: 'user-1',
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+        ),
+      );
+      final secondSession = AuthSession(
+        tokens: SessionTokens(accessToken: 'token-2'),
+        user: const AuthUserProfile(
+          id: 'user-2',
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          initialSessionStateProvider.overrideWithValue(
+            SessionState.authenticated(session: firstSession),
+          ),
+          secureSessionStorageProvider.overrideWithValue(
+            SecureAppSessionStorage(_MemorySecureStorage()),
+          ),
+          sessionIsolationServiceProvider.overrideWith(
+            (Ref ref) => _EpochOnlySessionIsolation(ref),
+          ),
+          homeRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final subscription = container.listen(
+        homeControllerProvider(HomeDashboardRequest.empty),
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+
+      final Result<HomeDashboard> firstResult = await container.read(
+        homeControllerProvider(HomeDashboardRequest.empty).future,
+      );
+      firstResult.when(
+        success: (HomeDashboard loaded) => expect(loaded, same(first)),
+        failure: (_) => fail('Expected first dashboard.'),
+      );
+      expect(repository.callCount, 1);
+
+      await container
+          .read(sessionStateProvider.notifier)
+          .persistSession(secondSession);
+
+      final Result<HomeDashboard> secondResult = await container.read(
+        homeControllerProvider(HomeDashboardRequest.empty).future,
+      );
+      secondResult.when(
+        success: (HomeDashboard loaded) => expect(loaded, same(second)),
+        failure: (_) => fail('Expected second dashboard.'),
+      );
+      expect(repository.callCount, greaterThanOrEqualTo(2));
+    });
   });
 }
 
-HomeDashboard _dashboardFixture() {
-  final profile = homeProfileForRole(AppRole.tenantAdmin);
+HomeDashboard _dashboardFixture({AppRole role = AppRole.tenantAdmin}) {
+  final profile = homeProfileForRole(role);
 
   return HomeDashboard(
     state: HomeDashboardLoadState.ready,
     profile: profile,
-    context: const HomeDashboardContext(roleValue: 'TENANT_ADMIN'),
+    context: HomeDashboardContext(
+      roleValue: profile.role.value,
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+    ),
     statusCards: profile.fallbackStatusCards(),
     trend: HomeDashboardTrend.empty,
     distribution: HomeDashboardDistribution.empty,
@@ -109,5 +189,64 @@ final class _FakeHomeRepository implements HomeRepository {
     HomeDashboardRequest request,
   ) async {
     return const Result<HomeDashboardLookups>.success(HomeDashboardLookups());
+  }
+}
+
+final class _SequencedHomeRepository implements HomeRepository {
+  _SequencedHomeRepository(this.results);
+
+  final List<Result<HomeDashboard>> results;
+  int callCount = 0;
+
+  @override
+  Future<Result<HomeDashboard>> loadDashboard(
+    HomeDashboardRequest request,
+  ) async {
+    final int index = callCount.clamp(0, results.length - 1);
+    callCount += 1;
+    return results[index];
+  }
+
+  @override
+  Future<Result<HomeDashboardLookups>> loadLookups(
+    HomeDashboardRequest request,
+  ) async {
+    return const Result<HomeDashboardLookups>.success(HomeDashboardLookups());
+  }
+}
+
+final class _EpochOnlySessionIsolation extends SessionIsolationService {
+  _EpochOnlySessionIsolation(super.ref);
+
+  @override
+  Future<void> disposeAuthenticatedState({
+    bool closeNetwork = true,
+    bool clearLocalCaches = true,
+  }) async {
+    ref.read(sessionEpochProvider.notifier).bump();
+  }
+}
+
+final class _MemorySecureStorage implements AppSecureStorage {
+  final Map<String, String> values = <String, String>{};
+
+  @override
+  Future<void> delete(String key) async {
+    values.remove(key);
+  }
+
+  @override
+  Future<void> deleteAll() async {
+    values.clear();
+  }
+
+  @override
+  Future<String?> read(String key) async {
+    return values[key];
+  }
+
+  @override
+  Future<void> write({required String key, required String value}) async {
+    values[key] = value;
   }
 }
