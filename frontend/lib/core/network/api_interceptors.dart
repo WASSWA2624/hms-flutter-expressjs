@@ -11,6 +11,7 @@ const authorizationHeaderName = 'Authorization';
 const csrfHeaderName = 'x-csrf-token';
 const localeHeaderName = 'x-locale';
 const authRetryExtraKey = 'auth_retry';
+const csrfRetryExtraKey = 'csrf_retry';
 
 typedef RequestLocaleReader = String? Function();
 
@@ -120,10 +121,13 @@ final class AuthInterceptor extends Interceptor {
   }
 }
 
-final class CsrfInterceptor extends QueuedInterceptor {
-  CsrfInterceptor({required Dio tokenDio}) : _tokenDio = tokenDio;
+final class CsrfInterceptor extends Interceptor {
+  CsrfInterceptor({required Dio tokenDio, Dio? retryClient})
+    : _tokenDio = tokenDio,
+      _retryClient = retryClient;
 
   final Dio _tokenDio;
+  final Dio? _retryClient;
   String? _token;
   Future<String>? _pendingTokenRequest;
 
@@ -144,15 +148,37 @@ final class CsrfInterceptor extends QueuedInterceptor {
   }
 
   @override
-  void onError(DioException err, ErrorInterceptorHandler handler) {
-    if (err.response?.statusCode == 403 &&
-        _isCsrfFailure(err.response?.data)) {
-      // Drop the cached token so the next state-changing call fetches a
-      // fresh CSRF token bound to the current session cookie.
-      _token = null;
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    if (err.response?.statusCode != 403 ||
+        !_isCsrfFailure(err.response?.data)) {
+      handler.next(err);
+      return;
     }
 
-    handler.next(err);
+    // Drop the cached token so the retry (and later calls) fetch a fresh
+    // CSRF token bound to the current session cookie. Common after backend
+    // restarts wipe the in-memory session store.
+    _token = null;
+
+    if (err.requestOptions.extra[csrfRetryExtraKey] == true) {
+      handler.next(err);
+      return;
+    }
+
+    try {
+      final String freshToken = await _readToken();
+      final RequestOptions requestOptions = err.requestOptions;
+      requestOptions.extra[csrfRetryExtraKey] = true;
+      requestOptions.headers[csrfHeaderName] = freshToken;
+
+      final Dio client = _retryClient ?? Dio();
+      final Response<dynamic> response = await client.fetch<dynamic>(
+        requestOptions,
+      );
+      handler.resolve(response);
+    } catch (_) {
+      handler.next(err);
+    }
   }
 
   Future<String> _readToken() async {

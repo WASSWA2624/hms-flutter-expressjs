@@ -94,7 +94,7 @@ void main() {
       expect(tokenAdapter.lastOptions, isNull);
     });
 
-    test('refreshes token after CSRF failure responses', () async {
+    test('retries once after CSRF failure responses', () async {
       var tokenRequestCount = 0;
       final tokenAdapter = _StaticHttpClientAdapter((_) {
         tokenRequestCount += 1;
@@ -113,7 +113,7 @@ void main() {
         sentTokens.add(options.headers[csrfHeaderName]);
         if (requestCount == 1) {
           return ResponseBody.fromString(
-            '{"code":"INVALID"}',
+            '{"code":"INVALID","messageKey":"errors.csrf.invalid"}',
             403,
             headers: <String, List<String>>{
               Headers.contentTypeHeader: <String>[Headers.jsonContentType],
@@ -126,16 +126,55 @@ void main() {
       final tokenDio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
         ..httpClientAdapter = tokenAdapter;
       final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
-        ..httpClientAdapter = requestAdapter
-        ..interceptors.add(CsrfInterceptor(tokenDio: tokenDio));
+        ..httpClientAdapter = requestAdapter;
+      dio.interceptors.add(
+        CsrfInterceptor(tokenDio: tokenDio, retryClient: dio),
+      );
+
+      await dio.post<Object?>('/api/v1/branches');
+
+      expect(sentTokens, <Object?>['csrf-token-1', 'csrf-token-2']);
+      expect(tokenRequestCount, 2);
+    });
+
+    test('does not retry CSRF failures more than once', () async {
+      var tokenRequestCount = 0;
+      final tokenAdapter = _StaticHttpClientAdapter((_) {
+        tokenRequestCount += 1;
+        return ResponseBody.fromString(
+          '{"data":{"token":"csrf-token-$tokenRequestCount"}}',
+          200,
+          headers: <String, List<String>>{
+            Headers.contentTypeHeader: <String>[Headers.jsonContentType],
+          },
+        );
+      });
+      var requestCount = 0;
+      final requestAdapter = _StaticHttpClientAdapter((options) {
+        requestCount += 1;
+        return ResponseBody.fromString(
+          '{"code":"MISSING","messageKey":"errors.csrf.missing"}',
+          403,
+          headers: <String, List<String>>{
+            Headers.contentTypeHeader: <String>[Headers.jsonContentType],
+          },
+        );
+      });
+      final tokenDio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = tokenAdapter;
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = requestAdapter;
+      dio.interceptors.add(
+        CsrfInterceptor(tokenDio: tokenDio, retryClient: dio),
+      );
 
       await expectLater(
         dio.post<Object?>('/api/v1/branches'),
         throwsA(isA<DioException>()),
       );
-      await dio.post<Object?>('/api/v1/branches');
 
-      expect(sentTokens, <Object?>['csrf-token-1', 'csrf-token-2']);
+      expect(requestCount, 2);
+      expect(tokenRequestCount, 2);
     });
 
     test('clears cached token for problem-details CSRF codes', () async {
@@ -169,13 +208,11 @@ void main() {
       final tokenDio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
         ..httpClientAdapter = tokenAdapter;
       final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
-        ..httpClientAdapter = requestAdapter
-        ..interceptors.add(CsrfInterceptor(tokenDio: tokenDio));
-
-      await expectLater(
-        dio.post<Object?>('/api/v1/lab-tests'),
-        throwsA(isA<DioException>()),
+        ..httpClientAdapter = requestAdapter;
+      dio.interceptors.add(
+        CsrfInterceptor(tokenDio: tokenDio, retryClient: dio),
       );
+
       await dio.post<Object?>('/api/v1/lab-tests');
 
       expect(sentTokens, <Object?>['csrf-token-1', 'csrf-token-2']);

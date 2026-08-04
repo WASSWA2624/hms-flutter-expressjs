@@ -97,6 +97,14 @@ final class NetworkFailureMapper {
           statusCode: statusCode,
         );
       }
+      if (_isCsrfFailure(response?.data)) {
+        // Stale/missing CSRF after session reset looks like forbidden, but the
+        // user usually just needs to retry or sign in again.
+        return AppFailure.unauthorized(
+          code: 'auth.csrf',
+          statusCode: statusCode,
+        );
+      }
       return AppFailure.forbidden(statusCode: statusCode);
     }
 
@@ -262,5 +270,31 @@ final class NetworkFailureMapper {
       'INVALID_CREDENTIALS' => 'auth.invalid_credentials',
       _ => 'auth.unauthorized',
     };
+  }
+
+  bool _isCsrfFailure(Object? data) {
+    if (data is! Map<Object?, Object?>) {
+      return false;
+    }
+
+    final String? code = _responseCode(data);
+    if (code == 'MISSING' ||
+        code == 'INVALID' ||
+        code == 'CSRF_MISSING' ||
+        code == 'CSRF_INVALID') {
+      return true;
+    }
+
+    final Object? type = data['type'];
+    if (type is String && type.toLowerCase().contains('csrf')) {
+      return true;
+    }
+
+    final Object? messageKey = data['messageKey'];
+    if (messageKey is String && messageKey.toLowerCase().contains('csrf')) {
+      return true;
+    }
+
+    return false;
   }
 }

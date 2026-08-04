@@ -38,7 +38,7 @@ final publicDioProvider = Provider<Dio>((ref) {
   configureDioAdapter(dio);
   dio.interceptors.addAll(<Interceptor>[
     LocaleInterceptor(readLocale: () => _readRequestLocale(ref)),
-    CsrfInterceptor(tokenDio: csrfDio),
+    CsrfInterceptor(tokenDio: csrfDio, retryClient: dio),
     SafeDiagnosticsInterceptor(
       enabled: !config.isProduction && config.logLevel == AppLogLevel.debug,
     ),
@@ -71,7 +71,7 @@ final dioProvider = Provider<Dio>((ref) {
   configureDioAdapter(dio);
   dio.interceptors.addAll(<Interceptor>[
     LocaleInterceptor(readLocale: () => _readRequestLocale(ref)),
-    CsrfInterceptor(tokenDio: csrfDio),
+    CsrfInterceptor(tokenDio: csrfDio, retryClient: dio),
     AuthInterceptor(
       readAccessToken: tokenProvider.readAccessToken,
       onTokenRefresh: () async {
