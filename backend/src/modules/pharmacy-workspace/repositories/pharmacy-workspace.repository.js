@@ -106,6 +106,11 @@ const txUpdateOrder = async (tx, id, data) =>
     where: { id },
     data});
 
+const txUpdateOrderItem = async (tx, id, data) =>
+  tx.pharmacy_order_item.update({
+    where: { id },
+    data});
+
 const txFindStockByInventoryItemAndFacility = async (tx, inventoryItemId, facilityId = null, include) =>
   tx.inventory_stock.findFirst({
     where: {
@@ -361,6 +366,7 @@ module.exports = {
   withTransaction,
   txFindOrderById,
   txUpdateOrder,
+  txUpdateOrderItem,
   txFindStockByInventoryItemAndFacility,
   txCreateInventoryStock,
   txUpdateInventoryStock,

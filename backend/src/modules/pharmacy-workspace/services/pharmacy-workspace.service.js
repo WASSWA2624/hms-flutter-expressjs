@@ -754,15 +754,18 @@ const normalizeStockDeductionQuantity = (requestedQuantity, deductionFactor) => 
 
 const rollupOrderStatus = (orderRecord) => {
   const items = Array.isArray(orderRecord?.items) ? orderRecord.items : [];
+  const activeItems = items.filter(
+    (item) => String(item?.status || '').toUpperCase() !== 'CANCELLED'
+  );
 
-  if (!items.length) {
-    return 'ORDERED';
+  if (!activeItems.length) {
+    return items.length ? 'CANCELLED' : 'ORDERED';
   }
 
   let allComplete = true;
   let anyDispensed = false;
 
-  for (const item of items) {
+  for (const item of activeItems) {
     const metrics = computeItemDispensedMetrics(item);
     if (metrics.netDispensed > 0) anyDispensed = true;
     if (metrics.netDispensed < metrics.prescribed) allComplete = false;
@@ -790,8 +793,31 @@ const listPendingAttestationBatchRefs = (orderRecord) => {
   });
 
   return Array.from(phasesByBatch.entries())
-    .filter(([ phases]) => phases.has('PREPARE') && !phases.has('ATTEST'))
+    .filter(([, phases]) => phases.has('PREPARE') && !phases.has('ATTEST'))
     .map(([batchRef]) => batchRef);
+};
+
+const syncOrderItemStatusesAfterDispense = async (tx, orderRecord) => {
+  const items = Array.isArray(orderRecord?.items) ? orderRecord.items : [];
+  for (const item of items) {
+    const currentStatus = String(item?.status || '').toUpperCase();
+    if (currentStatus === 'CANCELLED' || !item?.id) {
+      continue;
+    }
+
+    const metrics = computeItemDispensedMetrics(item);
+    const nextStatus =
+      metrics.prescribed > 0 && metrics.netDispensed >= metrics.prescribed
+        ? 'COMPLETED'
+        : 'ACTIVE';
+
+    if (currentStatus === nextStatus) {
+      continue;
+    }
+
+    await pharmacyWorkspaceRepository.txUpdateOrderItem(tx, item.id, {
+      status: nextStatus});
+  }
 };
 
 // Billing writes `PENDING` for auto-built pharmacy billing, while older records
@@ -801,6 +827,100 @@ const PHARMACY_PENDING_PAYMENT_STATUSES = Object.freeze([
   'PENDING',
   'PARTIAL',
   'UNPAID']);
+
+const buildDispensedQuantityBillingPatch = (orderRecord) => {
+  const snapshot = extractStoredClinicalBilling(orderRecord);
+  if (!snapshot) {
+    return null;
+  }
+
+  const paymentStatus = String(snapshot.payment_status || '').toUpperCase();
+  if (!PHARMACY_PENDING_PAYMENT_STATUSES.includes(paymentStatus)) {
+    return null;
+  }
+
+  const lineItems = Array.isArray(snapshot.line_items) ? snapshot.line_items : [];
+  if (!lineItems.length) {
+    return null;
+  }
+
+  const dispensedByDrugKey = new Map();
+  for (const item of Array.isArray(orderRecord?.items) ? orderRecord.items : []) {
+    if (String(item?.status || '').toUpperCase() === 'CANCELLED') {
+      continue;
+    }
+    const metrics = computeItemDispensedMetrics(item);
+    if (metrics.netDispensed <= 0) {
+      continue;
+    }
+    const keys = [
+      item.drug?.human_friendly_id,
+      item.drug_id,
+      item.drug?.id]
+      .map((value) => String(value || '').trim())
+      .filter(Boolean);
+    for (const key of keys) {
+      dispensedByDrugKey.set(key, (dispensedByDrugKey.get(key) || 0) + metrics.netDispensed);
+    }
+  }
+
+  let changed = false;
+  let subtotal = 0;
+  const nextLines = lineItems.map((line) => {
+    const lineId = String(line?.id || '').trim();
+    const dispensedQty = dispensedByDrugKey.get(lineId);
+    if (dispensedQty == null || dispensedQty <= 0) {
+      const existingQty = Math.max(0, Number(line?.quantity) || 0);
+      const unitPrice = Number(line?.unit_price) || 0;
+      const lineTotal = Number(line?.line_total);
+      subtotal += Number.isFinite(lineTotal) ? lineTotal : unitPrice * existingQty;
+      return line;
+    }
+
+    const unitPrice = Number(line?.unit_price) || 0;
+    const nextTotal = unitPrice * dispensedQty;
+    subtotal += nextTotal;
+    if (Number(line?.quantity) === dispensedQty) {
+      return line;
+    }
+    changed = true;
+    return {
+      ...line,
+      quantity: dispensedQty,
+      line_total: Number.isFinite(nextTotal) ? String(nextTotal) : line.line_total};
+  });
+
+  if (!changed) {
+    return null;
+  }
+
+  return {
+    ...snapshot,
+    line_items: nextLines,
+    total_amount: String(subtotal),
+    ...(snapshot.subtotal !== undefined ? { subtotal: String(subtotal) } : {}),
+    ...(snapshot.total !== undefined ? { total: String(subtotal) } : {})};
+};
+
+const reconcilePendingPharmacyBillingAfterDispense = async (tx, orderRecord) => {
+  const patchedBilling = buildDispensedQuantityBillingPatch(orderRecord);
+  if (!patchedBilling) {
+    return false;
+  }
+
+  const patient = orderRecord?.patient || {};
+  await persistPharmacyOrderBilling(tx, {
+    orderId: orderRecord.id,
+    billing: patchedBilling,
+    existingSnapshot: extractStoredClinicalBilling(orderRecord),
+    tenantId: patient.tenant_id || null,
+    facilityId: patient.facility_id || null,
+    patientId: orderRecord.patient_id || patient.id || null,
+    encounterId: orderRecord.encounter_id || orderRecord.encounter?.id || null,
+    description: 'Pharmacy dispense reconciliation'});
+
+  return true;
+};
 
 const buildPendingPaymentStatusClause = () => ({
   OR: PHARMACY_PENDING_PAYMENT_STATUSES.map((paymentStatus) => ({
@@ -1678,10 +1798,18 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
         PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
       );
 
+      await syncOrderItemStatusesAfterDispense(tx, refreshedOrder);
+
       const rolledUpStatus = rollupOrderStatus(refreshedOrder);
+      const billingReconciled = await reconcilePendingPharmacyBillingAfterDispense(
+        tx,
+        refreshedOrder
+      );
       if (refreshedOrder.status !== rolledUpStatus) {
         await pharmacyWorkspaceRepository.txUpdateOrder(tx, order.id, {
           status: rolledUpStatus});
+      }
+      if (refreshedOrder.status !== rolledUpStatus || billingReconciled) {
         refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
           tx,
           order.id,
@@ -2037,10 +2165,18 @@ const returnDispense = async (identifier, payload = {}, userId, userRole, ipAddr
         PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
       );
 
+      await syncOrderItemStatusesAfterDispense(tx, refreshedOrder);
+
       const rolledUpStatus = rollupOrderStatus(refreshedOrder);
+      const billingReconciled = await reconcilePendingPharmacyBillingAfterDispense(
+        tx,
+        refreshedOrder
+      );
       if (refreshedOrder.status !== rolledUpStatus) {
         await pharmacyWorkspaceRepository.txUpdateOrder(tx, order.id, {
           status: rolledUpStatus});
+      }
+      if (refreshedOrder.status !== rolledUpStatus || billingReconciled) {
         refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
           tx,
           order.id,
