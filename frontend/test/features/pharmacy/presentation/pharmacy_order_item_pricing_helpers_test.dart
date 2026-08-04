@@ -71,6 +71,52 @@ void main() {
       expect(resolvePharmacyItemUnitPrice(order: order, item: item), 500);
     });
 
+    test('matches billing lines by drug id and prefers dispensed billable qty', () {
+      const PharmacyOrderItem partialItem = PharmacyOrderItem(
+        id: 'poi-1',
+        drugId: 'DRG-001',
+        drugDisplayName: 'Artemether Tablet',
+        quantityPrescribed: 24,
+        quantityDispensed: 8,
+        quantityRemaining: 16,
+        pharmacyUnitPrice: 500,
+        pharmacyCurrency: 'TZS',
+      );
+      const PharmacyOrder order = PharmacyOrder(
+        id: 'order-partial',
+        orderSource: 'PHARMACY',
+        billing: <String, Object?>{
+          'line_items': <Map<String, Object?>>[
+            <String, Object?>{
+              'id': 'DRG-001',
+              'label': 'Artemether Tablet',
+              'quantity': 8,
+              'unit_price': 500,
+              'price_source': 'PHARMACY',
+            },
+          ],
+        },
+        items: <PharmacyOrderItem>[partialItem],
+      );
+
+      expect(
+        pharmacyBillingLineItemForOrderItem(order, partialItem)?.quantity,
+        8,
+      );
+      expect(
+        resolvePharmacyItemBillableQuantity(order: order, item: partialItem),
+        8,
+      );
+      expect(
+        resolvePharmacyItemLineTotal(order: order, item: partialItem),
+        4000,
+      );
+      expect(
+        pharmacyOrderBillingLineItems(order).single.quantity,
+        8,
+      );
+    });
+
     test('builds billing payload when switching price source', () {
       const PharmacyOrder order = PharmacyOrder(
         id: 'order-4',

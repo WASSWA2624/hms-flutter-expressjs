@@ -274,7 +274,10 @@ class PharmacyPrintOptionsSection extends StatelessWidget {
                 icon: Icons.medication_outlined,
                 title: controller.items[index].medicationLabel,
                 subtitle: controller.items[index].simplifiedDoseLine,
-                meta: pharmacyOrderItemQuantityLabel(controller.items[index]),
+                meta: pharmacyOrderItemQuantityLabel(
+                  controller.items[index],
+                  l10n: context.l10n,
+                ),
                 onChanged: (bool selected) {
                   controller.setItemSelected(
                     controller.items[index].id,

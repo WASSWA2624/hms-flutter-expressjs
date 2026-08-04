@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_instructions_print_helpers.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_order_item_pricing_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_prescription_display.dart';
 
@@ -97,6 +98,57 @@ void main() {
       expect(html, contains('three times daily'));
       expect(html, isNot(contains('TID')));
       expect(html, isNot(contains('Grand total')));
+    });
+
+    testWidgets('shows dispense progress and bills dispensed qty on partial fills', (
+      tester,
+    ) async {
+      late String html;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (BuildContext context) {
+              html = pharmacyInstructionsHtml(
+                context,
+                PharmacyOrderWorkflow(
+                  order: _sampleOrder().copyWith(status: 'PARTIALLY_DISPENSED'),
+                  items: <PharmacyOrderItem>[
+                    _sampleItem(
+                      frequency: 'TID',
+                      pharmacyUnitPrice: 1000,
+                      pharmacyCurrency: 'UGX',
+                      quantityDispensed: 2,
+                      quantityRemaining: 2,
+                    ),
+                  ],
+                ),
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(html, contains('4 tablets (2 / 4)'));
+      expect(html, contains('Total amount sold'));
+      expect(html, contains('UGX'));
+      // Amount column uses dispensed qty (2 × 1000), not full prescribed.
+      expect(
+        resolvePharmacyItemLineTotal(
+          order: _sampleOrder().copyWith(status: 'PARTIALLY_DISPENSED'),
+          item: _sampleItem(
+            frequency: 'TID',
+            pharmacyUnitPrice: 1000,
+            pharmacyCurrency: 'UGX',
+            quantityDispensed: 2,
+            quantityRemaining: 2,
+          ),
+        ),
+        2000,
+      );
     });
 
     testWidgets('applies selected-item and zero-quantity filters', (
@@ -292,6 +344,8 @@ PharmacyOrderItem _sampleItem({
   required String frequency,
   num? pharmacyUnitPrice,
   String? pharmacyCurrency,
+  num quantityDispensed = 0,
+  num? quantityRemaining,
 }) {
   return PharmacyOrderItem(
     id: 'item-1',
@@ -305,6 +359,8 @@ PharmacyOrderItem _sampleItem({
     durationUnit: 'days',
     instructions: 'Take with food.',
     quantityPrescribed: 4,
+    quantityDispensed: quantityDispensed,
+    quantityRemaining: quantityRemaining ?? 4,
     quantityUnit: 'tablets',
     pharmacyUnitPrice: pharmacyUnitPrice,
     pharmacyCurrency: pharmacyCurrency,

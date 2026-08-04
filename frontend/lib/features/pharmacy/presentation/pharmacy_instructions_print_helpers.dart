@@ -11,12 +11,25 @@ import 'package:hosspi_hms/shared/printing/printing.dart';
 
 const String pharmacyPrintPriceUnavailable = '—';
 
-String pharmacyOrderItemQuantityLabel(PharmacyOrderItem item) {
-  final num quantity = resolvePharmacyItemQuantity(item);
-  return clinicalActionJoinDisplay(<String?>[
-    _trimQuantity(quantity),
+String pharmacyOrderItemQuantityLabel(
+  PharmacyOrderItem item, {
+  AppLocalizations? l10n,
+}) {
+  final num prescribed = resolvePharmacyItemQuantity(item);
+  final String base = clinicalActionJoinDisplay(<String?>[
+    _trimQuantity(prescribed),
     clinicalActionTrimmedOrNull(item.quantityUnit),
   ], separator: ' ');
+
+  if (l10n == null || item.quantityDispensed <= 0) {
+    return base;
+  }
+
+  final String progress = l10n.pharmacyDispenseProgressLabel(
+    _trimQuantity(item.quantityDispensed),
+    _trimQuantity(prescribed),
+  );
+  return '$base ($progress)';
 }
 
 String pharmacyOrderItemReadableInstructions(PharmacyOrderItem item) {
@@ -94,7 +107,7 @@ String pharmacyInstructionsHtml(
     rows.add(<String>[
       (index + 1).toString(),
       item.medicationLabel,
-      pharmacyOrderItemQuantityLabel(item),
+      pharmacyOrderItemQuantityLabel(item, l10n: l10n),
       _printInstructionsCell(item),
       _printPriceLabel(context, unitPrice: unitPrice, currency: currency),
       _printPriceLabel(context, unitPrice: lineTotal, currency: currency),
@@ -153,6 +166,7 @@ String pharmacyDispenseHistoryHtml(
     l10n.pharmacyHistoryEventColumnLabel,
     l10n.pharmacyHistoryBatchColumnLabel,
     l10n.pharmacyMedicationColumnLabel,
+    l10n.pharmacyQuantityColumnLabel,
   ];
 
   final List<List<String>> rows = <List<String>>[];
@@ -169,6 +183,15 @@ String pharmacyDispenseHistoryHtml(
         .map((PharmacyDispenseBatchLine line) => line.item.medicationLabel)
         .where((String label) => label.trim().isNotEmpty)
         .join(', ');
+    final String quantities = lines
+        .map((PharmacyDispenseBatchLine line) {
+          return clinicalActionJoinDisplay(<String?>[
+            _trimQuantity(line.quantityDispensed),
+            clinicalActionTrimmedOrNull(line.item.quantityUnit),
+          ], separator: ' ');
+        })
+        .where((String label) => label.trim().isNotEmpty)
+        .join(', ');
     rows.add(<String>[
       (index + 1).toString(),
       item.at == null
@@ -177,6 +200,7 @@ String pharmacyDispenseHistoryHtml(
       pharmacyTimelineEventLabel(context, item),
       (batch == null || batch.isEmpty) ? '—' : batch,
       medications.isEmpty ? '—' : medications,
+      quantities.isEmpty ? '—' : quantities,
     ]);
   }
 

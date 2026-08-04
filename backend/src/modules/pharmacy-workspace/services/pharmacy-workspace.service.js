@@ -1060,7 +1060,18 @@ const buildDispensedQuantityBillingPatch = (orderRecord) => {
     return null;
   }
 
-  const dispensedByDrugKey = new Map();
+  const existingByKey = new Map();
+  for (const line of lineItems) {
+    const lineId = String(line?.id || '').trim();
+    if (lineId) {
+      existingByKey.set(lineId, line);
+    }
+  }
+
+  // Bill only what has been net-dispensed so partial fills do not charge the
+  // full prescribed course for undelivered medicines.
+  const nextLines = [];
+  let anyDispensed = false;
   for (const item of Array.isArray(orderRecord?.items) ? orderRecord.items : []) {
     if (String(item?.status || '').toUpperCase() === 'CANCELLED') {
       continue;
@@ -1069,44 +1080,58 @@ const buildDispensedQuantityBillingPatch = (orderRecord) => {
     if (metrics.netDispensed <= 0) {
       continue;
     }
+    anyDispensed = true;
+
     const keys = [
       item.drug?.human_friendly_id,
       item.drug_id,
       item.drug?.id]
       .map((value) => String(value || '').trim())
       .filter(Boolean);
-    for (const key of keys) {
-      dispensedByDrugKey.set(key, (dispensedByDrugKey.get(key) || 0) + metrics.netDispensed);
+    const existing =
+      keys.map((key) => existingByKey.get(key)).find(Boolean) || null;
+    const unitPrice = Number(existing?.unit_price ?? 0) || 0;
+    const nextTotal = unitPrice * metrics.netDispensed;
+    const lineId = String(existing?.id || keys[0] || item.id || '').trim();
+    if (!lineId) {
+      continue;
     }
+
+    nextLines.push({
+      ...(existing || {}),
+      id: lineId,
+      label:
+        existing?.label ||
+        item.drug?.name ||
+        item.drug?.generic_name ||
+        lineId,
+      quantity: metrics.netDispensed,
+      unit_price: existing?.unit_price ?? unitPrice,
+      line_total: Number.isFinite(nextTotal) ? String(nextTotal) : existing?.line_total,
+      ...(existing?.currency ? { currency: existing.currency } : {}),
+      ...(existing?.price_source ? { price_source: existing.price_source } : {})});
   }
 
-  let changed = false;
-  let subtotal = 0;
-  const nextLines = lineItems.map((line) => {
-    const lineId = String(line?.id || '').trim();
-    const dispensedQty = dispensedByDrugKey.get(lineId);
-    if (dispensedQty == null || dispensedQty <= 0) {
-      const existingQty = Math.max(0, Number(line?.quantity) || 0);
-      const unitPrice = Number(line?.unit_price) || 0;
-      const lineTotal = Number(line?.line_total);
-      subtotal += Number.isFinite(lineTotal) ? lineTotal : unitPrice * existingQty;
-      return line;
-    }
+  if (!anyDispensed) {
+    return null;
+  }
 
+  const subtotal = nextLines.reduce((sum, line) => {
+    const lineTotal = Number(line?.line_total);
+    if (Number.isFinite(lineTotal)) {
+      return sum + lineTotal;
+    }
     const unitPrice = Number(line?.unit_price) || 0;
-    const nextTotal = unitPrice * dispensedQty;
-    subtotal += nextTotal;
-    if (Number(line?.quantity) === dispensedQty) {
-      return line;
-    }
-    changed = true;
-    return {
-      ...line,
-      quantity: dispensedQty,
-      line_total: Number.isFinite(nextTotal) ? String(nextTotal) : line.line_total};
-  });
+    return sum + unitPrice * (Number(line?.quantity) || 0);
+  }, 0);
 
-  if (!changed) {
+  const priorSignature = JSON.stringify(
+    lineItems.map((line) => [String(line?.id || ''), Number(line?.quantity) || 0])
+  );
+  const nextSignature = JSON.stringify(
+    nextLines.map((line) => [String(line?.id || ''), Number(line?.quantity) || 0])
+  );
+  if (priorSignature === nextSignature) {
     return null;
   }
 

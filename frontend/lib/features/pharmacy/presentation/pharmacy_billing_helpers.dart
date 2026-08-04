@@ -12,13 +12,15 @@ List<ClinicalRequestBillingLineItem> pharmacyOrderBillingLineItems(
   }
 
   return order.items
+      .where((PharmacyOrderItem item) => !pharmacyItemIsCancelled(item))
       .map(
         (PharmacyOrderItem item) => ClinicalRequestBillingLineItem(
-          id: item.id,
+          id: item.drugId ?? item.displayId ?? item.id,
           label: item.medicationLabel,
-          quantity: item.quantityPrescribed > 0
-              ? item.quantityPrescribed
-              : item.quantity,
+          quantity: resolvePharmacyItemBillableQuantity(
+            order: order,
+            item: item,
+          ),
           unitPrice: item.pharmacyUnitPrice ?? item.facilityUnitPrice,
           currency: item.pharmacyCurrency ?? item.facilityCurrency,
           priceSource: pharmacyItemPriceSourceValue(
@@ -26,7 +28,10 @@ List<ClinicalRequestBillingLineItem> pharmacyOrderBillingLineItems(
           ),
         ),
       )
-      .where((ClinicalRequestBillingLineItem item) => item.label.isNotEmpty)
+      .where(
+        (ClinicalRequestBillingLineItem item) =>
+            item.label.isNotEmpty && item.quantity > 0,
+      )
       .toList(growable: false);
 }
 

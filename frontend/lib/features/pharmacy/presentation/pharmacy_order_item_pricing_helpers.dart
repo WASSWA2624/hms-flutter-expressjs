@@ -45,21 +45,32 @@ ClinicalRequestBillingLineItem? pharmacyBillingLineItemForOrderItem(
     return null;
   }
 
+  final Set<String> itemKeys = <String>{
+    item.id,
+    if ((item.displayId ?? '').trim().isNotEmpty) item.displayId!.trim(),
+    if ((item.drugId ?? '').trim().isNotEmpty) item.drugId!.trim(),
+  };
+
   for (final Object? entry in raw) {
-    if (entry is! Map<String, Object?>) {
+    if (entry is! Map) {
       continue;
     }
-    final String? id = entry['id']?.toString();
-    if (id == item.id || id == item.displayId) {
-      return ClinicalRequestBillingLineItem(
-        id: id ?? item.id,
-        label: entry['label']?.toString() ?? item.medicationLabel,
-        quantity: _asNum(entry['quantity']) ?? item.quantityPrescribed,
-        unitPrice: _asNum(entry['unit_price']),
-        currency: entry['currency']?.toString(),
-        priceSource: entry['price_source']?.toString(),
-      );
+    final Map<String, Object?> normalized = <String, Object?>{
+      for (final MapEntry<Object?, Object?> pair in entry.entries)
+        if (pair.key != null) pair.key.toString(): pair.value,
+    };
+    final String? id = normalized['id']?.toString().trim();
+    if (id == null || id.isEmpty || !itemKeys.contains(id)) {
+      continue;
     }
+    return ClinicalRequestBillingLineItem(
+      id: id,
+      label: normalized['label']?.toString() ?? item.medicationLabel,
+      quantity: _asNum(normalized['quantity']) ?? item.quantityPrescribed,
+      unitPrice: _asNum(normalized['unit_price']),
+      currency: normalized['currency']?.toString(),
+      priceSource: normalized['price_source']?.toString(),
+    );
   }
   return null;
 }
@@ -115,6 +126,24 @@ num resolvePharmacyItemQuantity(PharmacyOrderItem item) {
   return 1;
 }
 
+/// Quantity used for billing/print amounts: prefer snapshot qty, then net
+/// dispensed for partial/full fills, otherwise prescribed.
+num resolvePharmacyItemBillableQuantity({
+  required PharmacyOrder order,
+  required PharmacyOrderItem item,
+}) {
+  final ClinicalRequestBillingLineItem? billingLine =
+      pharmacyBillingLineItemForOrderItem(order, item);
+  final num? billingQuantity = billingLine?.quantity;
+  if (billingQuantity != null && billingQuantity > 0) {
+    return billingQuantity;
+  }
+  if (item.quantityDispensed > 0) {
+    return item.quantityDispensed;
+  }
+  return resolvePharmacyItemQuantity(item);
+}
+
 num? resolvePharmacyItemUnitPrice({
   required PharmacyOrder order,
   required PharmacyOrderItem item,
@@ -159,7 +188,7 @@ num? resolvePharmacyItemLineTotal({
   if (unitPrice == null || unitPrice <= 0) {
     return null;
   }
-  return unitPrice * resolvePharmacyItemQuantity(item);
+  return unitPrice * resolvePharmacyItemBillableQuantity(order: order, item: item);
 }
 
 bool pharmacyItemHasSelectablePrices(PharmacyOrderItem item) {
