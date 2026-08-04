@@ -33,12 +33,30 @@ final class IpdRepositoryImpl implements IpdRepository {
         'stage': _stageFor(query.scope),
         'stage_any': _stageAnyFor(query.scope),
         'ward_id': query.wardId,
+        'transfer_status': query.transferStatus,
+        'has_active_bed': query.hasActiveBed,
+        'has_critical_alert': query.hasCriticalAlert,
+        'critical_severity': query.criticalSeverity,
+        'icu_queue_scope': query.icuQueueScope,
+        'icu_status': query.icuStatus,
+        'patient_id': query.patientId,
+        'admitted_from': query.admittedFrom?.toUtc().toIso8601String(),
+        'admitted_to': query.admittedTo?.toUtc().toIso8601String(),
         'include_icu': 'true',
         'sort_by': 'admitted_at',
         'order': 'desc',
       }),
       decoder: (Object? data) =>
           IpdAdmissionPageDto.fromResponse(data, request).page,
+    );
+  }
+
+  @override
+  Future<Result<IpdFlowAggregateCounts>> getSummaryCounts() {
+    return _apiClient.get<IpdFlowAggregateCounts>(
+      ApiEndpoints.nested(HmsApiResource.ipdFlows, 'summary', const <String>[]),
+      decoder: (Object? data) =>
+          IpdFlowAggregateCountsDto.fromResponse(data).toEntity(),
     );
   }
 

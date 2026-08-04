@@ -7,6 +7,8 @@ abstract interface class IpdRepository {
     IpdAdmissionQuery query,
   );
 
+  Future<Result<IpdFlowAggregateCounts>> getSummaryCounts();
+
   Future<Result<IpdAdmissionDetail>> getAdmission(String admissionId);
 
   Future<Result<List<IpdWardOption>>> listWards({String? search});

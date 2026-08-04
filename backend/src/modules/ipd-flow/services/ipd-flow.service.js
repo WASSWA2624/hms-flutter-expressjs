@@ -2084,7 +2084,54 @@ const listIpdFlows = async (
       { patient: { is: { human_friendly_id: { contains: searchText } } } },
       { patient: { is: { first_name: { contains: searchText } } } },
       { patient: { is: { last_name: { contains: searchText } } } },
-      { encounter: { is: { human_friendly_id: { contains: searchText } } } }];
+      {
+        patient: {
+          is: {
+            contacts: {
+              some: {
+                deleted_at: null,
+                value: { contains: searchText }}}}},
+      {
+        patient: {
+          is: {
+            guardians: {
+              some: {
+                deleted_at: null,
+                OR: [
+                  { phone: { contains: searchText } },
+                  { email: { contains: searchText } },
+                  { name: { contains: searchText } }]}}}},
+      { encounter: { is: { human_friendly_id: { contains: searchText } } } },
+      {
+        bed_assignments: {
+          some: {
+            deleted_at: null,
+            released_at: null,
+            bed: {
+              is: {
+                OR: [
+                  { label: { contains: searchText } },
+                  { human_friendly_id: { contains: searchText } },
+                  { ward: { is: { name: { contains: searchText } } } }]}}}}];
+  }
+
+  if (filters.admitted_from || filters.admitted_to) {
+    where.admitted_at = {};
+    if (filters.admitted_from) {
+      const from = new Date(filters.admitted_from);
+      if (!Number.isNaN(from.getTime())) {
+        where.admitted_at.gte = from;
+      }
+    }
+    if (filters.admitted_to) {
+      const to = new Date(filters.admitted_to);
+      if (!Number.isNaN(to.getTime())) {
+        where.admitted_at.lte = to;
+      }
+    }
+    if (!Object.keys(where.admitted_at).length) {
+      delete where.admitted_at;
+    }
   }
 
   let wardId = null;
@@ -2649,6 +2696,15 @@ const startIpdFlow = async (data, context = {}) => {
                 id: true,
                 status: true}}}}}});
 
+    // Only reuse a pending REQUESTED admission. Active ADMITTED / transfer /
+    // discharge-planned rows must not be restarted as a second admit.
+    if (
+      existingAdmission &&
+      String(existingAdmission.status || "").toUpperCase() !== "REQUESTED"
+    ) {
+      throw new HttpError("errors.ipd_flow.active_admission_exists", 400);
+    }
+
     const admission = existingAdmission
       ? await tx.admission.update({
           where: { id: existingAdmission.id },
@@ -2667,6 +2723,22 @@ const startIpdFlow = async (data, context = {}) => {
             admitted_at: admittedAt}});
 
     const compatibilitySignals = ["PATIENT_ADMITTED"];
+    const closedOpd = await closeOpenOpdEncountersForAdmission(tx, {
+      patientId: patient.id,
+      tenantId,
+      facilityId,
+      admissionId: admission.id,
+      preferredEncounterId: encounterId || existingAdmission?.encounter_id || null,
+      closedAt: admittedAt});
+    if (closedOpd.closedCount > 0) {
+      compatibilitySignals.push("OPD_ENCOUNTER_CLOSED", "OPD_ADMITTED");
+    }
+    if (closedOpd.linkedEncounterId && !admission.encounter_id) {
+      await tx.admission.update({
+        where: { id: admission.id },
+        data: { encounter_id: closedOpd.linkedEncounterId }});
+    }
+
     const activeBedAssignment = existingAdmission
       ? getActiveBedAssignment(existingAdmission)
       : null;
@@ -3985,6 +4057,18 @@ const OPEN_APPOINTMENT_STATUSES = new Set([
 const OPEN_QUEUE_STATUSES = new Set(["SCHEDULED", "CONFIRMED", "IN_PROGRESS"]);
 
 const closeEncounterForPatientDischarge = async (tx, encounter, closedAt) => {
+  return closeEncounterWithOpdStage(tx, encounter, closedAt, {
+    stage: "DISCHARGED",
+    reason: "Closed on IPD discharge",
+    closedEarly: true});
+};
+
+const closeEncounterWithOpdStage = async (
+  tx,
+  encounter,
+  closedAt,
+  { stage, reason, closedEarly = false, admissionId = null } = {},
+) => {
   if (!encounter?.id) return false;
 
   const status = String(encounter.status || "").toUpperCase();
@@ -4024,11 +4108,15 @@ const closeEncounterForPatientDischarge = async (tx, encounter, closedAt) => {
       data: { status: "CLOSED" }});
   }
 
-  if (flow.stage) {
-    flow.stage = "DISCHARGED";
+  if (flow.stage || stage) {
+    flow.stage = stage || flow.stage;
     flow.closed_at = closedAt.toISOString();
-    flow.closed_early = true;
-    flow.close_reason_notes = "Closed on IPD discharge";
+    flow.closed_early = Boolean(closedEarly);
+    flow.close_reason_notes = reason || flow.close_reason_notes || null;
+    if (admissionId) {
+      flow.admission_id = admissionId;
+      flow.admission_pending = false;
+    }
     extensionJson.opd_flow = flow;
   }
 
@@ -4041,6 +4129,62 @@ const closeEncounterForPatientDischarge = async (tx, encounter, closedAt) => {
       extension_json: extensionJson}});
 
   return true;
+};
+
+/**
+ * Close open OPD (or other open) encounters when starting an IPD admission so
+ * the patient is not simultaneously active in OPD and IPD.
+ */
+const closeOpenOpdEncountersForAdmission = async (
+  tx,
+  {
+    patientId,
+    tenantId,
+    facilityId = null,
+    admissionId = null,
+    preferredEncounterId = null,
+    closedAt = new Date()} = {},
+) => {
+  const result = { closedCount: 0, linkedEncounterId: null };
+  if (!patientId || !tenantId || !tx.encounter?.findMany) {
+    return result;
+  }
+
+  const openEncounters = await tx.encounter.findMany({
+    where: {
+      patient_id: patientId,
+      tenant_id: tenantId,
+      deleted_at: null,
+      status: { notIn: ["CLOSED", "CANCELLED"] },
+      ...(facilityId
+        ? { OR: [{ facility_id: facilityId }, { facility_id: null }] }
+        : {})},
+    orderBy: { started_at: "desc" }});
+
+  for (const encounter of openEncounters) {
+    const closed = await closeEncounterWithOpdStage(tx, encounter, closedAt, {
+      stage: "ADMITTED",
+      reason: "Closed on IPD admission",
+      closedEarly: true,
+      admissionId});
+    if (closed) {
+      result.closedCount += 1;
+      if (
+        !result.linkedEncounterId &&
+        (preferredEncounterId
+          ? encounter.id === preferredEncounterId
+          : true)
+      ) {
+        result.linkedEncounterId = encounter.id;
+      }
+    }
+  }
+
+  if (!result.linkedEncounterId && preferredEncounterId) {
+    result.linkedEncounterId = preferredEncounterId;
+  }
+
+  return result;
 };
 
 const closePatientOpenWorkOnDischarge = async (
@@ -4520,10 +4664,93 @@ const requestTherapy = async (id, data, context = {}) => {
   return getIpdFlowById(id);
 };
 
+/**
+ * Facility-wide IPD tab counts (derived stages), independent of the active
+ * worklist page so badges match database totals for each board section.
+ */
+const getIpdFlowSummaryCounts = async (filters = {}, context = {}) => {
+  const tenantId = context?.tenant_id || null;
+  const facilityId = context?.facility_id || null;
+  const where = {
+    deleted_at: null,
+    status: { notIn: Array.from(TERMINAL_ADMISSION_STATUSES) }};
+
+  if (tenantId) {
+    const tenant = await resolveTenantByIdentifier(prisma, tenantId);
+    if (!tenant) {
+      throw new HttpError("errors.tenant.not_found", 404, [
+        { field: "tenant_id" }]);
+    }
+    where.tenant_id = tenant.id;
+  }
+
+  if (facilityId) {
+    const facility = await resolveFacilityByIdentifier(
+      prisma,
+      facilityId,
+      where.tenant_id || null,
+    );
+    if (!facility) {
+      throw new HttpError("errors.facility.not_found", 404, [
+        { field: "facility_id" }]);
+    }
+    where.facility_id = facility.id;
+    if (!where.tenant_id) where.tenant_id = facility.tenant_id;
+  }
+
+  if (filters.ward_id) {
+    // Counts stay facility-wide; ward is applied by the list query, not badges.
+  }
+
+  const rows = await ipdFlowRepository.findMany(where, 0, 500, {
+    admitted_at: "desc"});
+  const counts = {
+    admission_queue: 0,
+    active_patients: 0,
+    transfer_pending: 0,
+    discharge_planned: 0,
+    in_procedure_ot: 0,
+    critical_alerts: 0,
+    active_total: 0};
+
+  for (const row of rows) {
+    const snapshot = buildIpdSnapshot(row, { include_icu: true });
+    const stage = sanitizeIdentifier(snapshot?.flow?.stage);
+    counts.active_total += 1;
+    if (snapshot?.has_critical_alert || snapshot?.icu?.has_critical_alert) {
+      counts.critical_alerts += 1;
+    }
+    switch (stage) {
+      case STAGES.ADMISSION_REQUESTED:
+      case STAGES.ADMITTED_PENDING_BED:
+        counts.admission_queue += 1;
+        break;
+      case STAGES.ADMITTED_IN_BED:
+        counts.active_patients += 1;
+        break;
+      case STAGES.TRANSFER_REQUESTED:
+      case STAGES.TRANSFER_IN_PROGRESS:
+        counts.transfer_pending += 1;
+        break;
+      case STAGES.DISCHARGE_PLANNED:
+        counts.discharge_planned += 1;
+        break;
+      case STAGES.IN_PROCEDURE_OT:
+        counts.in_procedure_ot += 1;
+        break;
+      default:
+        break;
+    }
+  }
+
+  return counts;
+};
+
 module.exports = {
   STAGES,
   TRANSFER_ACTIONS,
   listIpdFlows,
+  getIpdFlowSummaryCounts,
   resolveLegacyRoute,
   getIpdFlowById,
   startIpdFlow,

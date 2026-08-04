@@ -30,6 +30,8 @@ const listIpdFlows = asyncHandler(async (req, res) => {
     icu_status,
     critical_severity,
     has_critical_alert,
+    admitted_from,
+    admitted_to,
     search,
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
@@ -52,6 +54,8 @@ const listIpdFlows = asyncHandler(async (req, res) => {
       icu_status,
       critical_severity,
       has_critical_alert,
+      admitted_from,
+      admitted_to,
       search},
     Number(page),
     Number(limit),
@@ -60,6 +64,17 @@ const listIpdFlows = asyncHandler(async (req, res) => {
   );
 
   return sendPaginated(res, 'messages.ipd_flow.list.success', result.items, result.pagination);
+});
+
+const getIpdFlowSummaryCounts = asyncHandler(async (req, res) => {
+  const counts = await ipdFlowService.getIpdFlowSummaryCounts(
+    {
+      ward_id: req.query?.ward_id},
+    {
+      tenant_id: req.query?.tenant_id || req.user?.tenant_id,
+      facility_id: req.query?.facility_id || req.user?.facility_id}
+  );
+  return sendSuccess(res, 200, 'messages.ipd_flow.summary.success', counts);
 });
 
 const getIpdFlowById = asyncHandler(async (req, res) => {
@@ -203,6 +218,7 @@ const resolveCriticalAlert = asyncHandler(async (req, res) => {
 
 module.exports = {
   listIpdFlows,
+  getIpdFlowSummaryCounts,
   resolveLegacyRoute,
   getIpdFlowById,
   startIpdFlow,

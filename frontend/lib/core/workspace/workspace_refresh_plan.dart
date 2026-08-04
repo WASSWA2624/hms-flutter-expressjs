@@ -69,6 +69,7 @@ final class WorkspaceRefreshPlan {
         primaryList: true,
         selectedDetail: true,
         referenceData: true,
+        summaryCounts: true,
       );
 
   bool get isEmpty =>

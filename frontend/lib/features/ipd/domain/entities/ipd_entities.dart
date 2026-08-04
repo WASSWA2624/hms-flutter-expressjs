@@ -67,8 +67,18 @@ extension IpdWorkspaceSectionX on IpdWorkspaceSection {
 final class IpdAdmissionQuery {
   const IpdAdmissionQuery({
     this.search = '',
+    this.searchField,
     this.scope = IpdQueueScope.admissionQueue,
     this.wardId,
+    this.transferStatus,
+    this.hasActiveBed,
+    this.hasCriticalAlert,
+    this.criticalSeverity,
+    this.icuQueueScope,
+    this.icuStatus,
+    this.patientId,
+    this.admittedFrom,
+    this.admittedTo,
     this.pageRequest = const AppPageRequest(),
     this.focusAdmissionId,
     this.focusPanel,
@@ -77,8 +87,18 @@ final class IpdAdmissionQuery {
   });
 
   final String search;
+  final String? searchField;
   final IpdQueueScope scope;
   final String? wardId;
+  final String? transferStatus;
+  final bool? hasActiveBed;
+  final bool? hasCriticalAlert;
+  final String? criticalSeverity;
+  final String? icuQueueScope;
+  final String? icuStatus;
+  final String? patientId;
+  final DateTime? admittedFrom;
+  final DateTime? admittedTo;
   final AppPageRequest pageRequest;
 
   /// Deep-link target: pre-select this admission (display id or uuid).
@@ -107,6 +127,8 @@ final class IpdAdmissionQuery {
       search: admissionId ?? params['search'] ?? '',
       scope: section.queueScope ?? IpdQueueScope.admissionQueue,
       wardId: _nonEmpty(params['wardId'] ?? params['ward']),
+      transferStatus: _nonEmpty(params['transferStatus'] ?? params['transfer_status']),
+      patientId: _nonEmpty(params['patientId'] ?? params['patient_id']),
       focusAdmissionId: admissionId,
       focusPanel: IpdDetailPanelX.fromToken(params['panel']),
       focusAction: _nonEmpty(params['action'])?.toLowerCase(),
@@ -126,22 +148,74 @@ final class IpdAdmissionQuery {
         (focusPanel != null || (focusAction ?? '').isNotEmpty);
   }
 
+  bool get hasAdvancedFilters {
+    return wardId != null ||
+        transferStatus != null ||
+        hasActiveBed != null ||
+        hasCriticalAlert != null ||
+        criticalSeverity != null ||
+        icuQueueScope != null ||
+        icuStatus != null ||
+        patientId != null ||
+        admittedFrom != null ||
+        admittedTo != null ||
+        (searchField != null && searchField!.trim().isNotEmpty);
+  }
+
   IpdAdmissionQuery copyWith({
     String? search,
+    String? searchField,
     IpdQueueScope? scope,
     String? wardId,
+    String? transferStatus,
+    bool? hasActiveBed,
+    bool? hasCriticalAlert,
+    String? criticalSeverity,
+    String? icuQueueScope,
+    String? icuStatus,
+    String? patientId,
+    DateTime? admittedFrom,
+    DateTime? admittedTo,
     AppPageRequest? pageRequest,
     String? focusAdmissionId,
     IpdDetailPanel? focusPanel,
     String? focusAction,
     IpdWorkspaceSection? section,
     bool clearWard = false,
+    bool clearTransferStatus = false,
+    bool clearHasActiveBed = false,
+    bool clearHasCriticalAlert = false,
+    bool clearCriticalSeverity = false,
+    bool clearIcuQueueScope = false,
+    bool clearIcuStatus = false,
+    bool clearPatientId = false,
+    bool clearAdmittedFrom = false,
+    bool clearAdmittedTo = false,
+    bool clearSearchField = false,
     bool clearFocus = false,
   }) {
     return IpdAdmissionQuery(
       search: search ?? this.search,
+      searchField: clearSearchField ? null : searchField ?? this.searchField,
       scope: scope ?? this.scope,
       wardId: clearWard ? null : wardId ?? this.wardId,
+      transferStatus: clearTransferStatus
+          ? null
+          : transferStatus ?? this.transferStatus,
+      hasActiveBed: clearHasActiveBed ? null : hasActiveBed ?? this.hasActiveBed,
+      hasCriticalAlert: clearHasCriticalAlert
+          ? null
+          : hasCriticalAlert ?? this.hasCriticalAlert,
+      criticalSeverity: clearCriticalSeverity
+          ? null
+          : criticalSeverity ?? this.criticalSeverity,
+      icuQueueScope: clearIcuQueueScope
+          ? null
+          : icuQueueScope ?? this.icuQueueScope,
+      icuStatus: clearIcuStatus ? null : icuStatus ?? this.icuStatus,
+      patientId: clearPatientId ? null : patientId ?? this.patientId,
+      admittedFrom: clearAdmittedFrom ? null : admittedFrom ?? this.admittedFrom,
+      admittedTo: clearAdmittedTo ? null : admittedTo ?? this.admittedTo,
       pageRequest: pageRequest ?? this.pageRequest,
       focusAdmissionId: clearFocus
           ? null
@@ -802,11 +876,35 @@ final class IpdReferenceData {
 }
 
 @immutable
+final class IpdFlowAggregateCounts {
+  const IpdFlowAggregateCounts({
+    this.admissionQueue = 0,
+    this.activePatients = 0,
+    this.transferPending = 0,
+    this.dischargePlanned = 0,
+    this.inProcedureOt = 0,
+    this.criticalAlerts = 0,
+    this.activeTotal = 0,
+  });
+
+  static const IpdFlowAggregateCounts empty = IpdFlowAggregateCounts();
+
+  final int admissionQueue;
+  final int activePatients;
+  final int transferPending;
+  final int dischargePlanned;
+  final int inProcedureOt;
+  final int criticalAlerts;
+  final int activeTotal;
+}
+
+@immutable
 final class IpdWorkspaceState {
   const IpdWorkspaceState({
     required this.query,
     required this.admissions,
     this.referenceData = const IpdReferenceData(),
+    this.summaryCounts = IpdFlowAggregateCounts.empty,
     this.selectedAdmission,
     this.lastFailure,
     this.isRefreshing = false,
@@ -822,6 +920,7 @@ final class IpdWorkspaceState {
   final IpdAdmissionQuery query;
   final AppPage<IpdAdmissionSummary> admissions;
   final IpdReferenceData referenceData;
+  final IpdFlowAggregateCounts summaryCounts;
   final IpdAdmissionDetail? selectedAdmission;
   final Object? lastFailure;
   final bool isRefreshing;
@@ -833,44 +932,27 @@ final class IpdWorkspaceState {
   final bool isLoadingBedBoard;
   final bool bedBoardLoaded;
 
-  int get admissionQueueCount => admissions.items
-      .where(
-        (IpdAdmissionSummary item) =>
-            item.stage == 'ADMISSION_REQUESTED' ||
-            item.stage == 'ADMITTED_PENDING_BED',
-      )
-      .length;
+  int get admissionQueueCount => summaryCounts.admissionQueue;
 
-  int get activePatientCount => admissions.items
-      .where((IpdAdmissionSummary item) => item.stage == 'ADMITTED_IN_BED')
-      .length;
+  int get activePatientCount => summaryCounts.activePatients;
 
-  int get transferPendingCount => admissions.items
-      .where(
-        (IpdAdmissionSummary item) =>
-            item.stage == 'TRANSFER_REQUESTED' ||
-            item.stage == 'TRANSFER_IN_PROGRESS',
-      )
-      .length;
+  int get transferPendingCount => summaryCounts.transferPending;
 
-  int get dischargePlannedCount => admissions.items
-      .where((IpdAdmissionSummary item) => item.stage == 'DISCHARGE_PLANNED')
-      .length;
+  int get dischargePlannedCount => summaryCounts.dischargePlanned;
 
-  int get criticalAlertCount => admissions.items
-      .where((IpdAdmissionSummary item) => item.hasCriticalAlert)
-      .length;
+  int get criticalAlertCount => summaryCounts.criticalAlerts;
 
-  int get workloadCount {
-    return admissions.items
-        .where((IpdAdmissionSummary item) => !item.isTerminal)
-        .length;
-  }
+  int get workloadCount => summaryCounts.activeTotal > 0
+      ? summaryCounts.activeTotal
+      : admissions.items
+            .where((IpdAdmissionSummary item) => !item.isTerminal)
+            .length;
 
   IpdWorkspaceState copyWith({
     IpdAdmissionQuery? query,
     AppPage<IpdAdmissionSummary>? admissions,
     IpdReferenceData? referenceData,
+    IpdFlowAggregateCounts? summaryCounts,
     IpdAdmissionDetail? selectedAdmission,
     Object? lastFailure,
     bool? isRefreshing,
@@ -890,6 +972,7 @@ final class IpdWorkspaceState {
       query: query ?? this.query,
       admissions: admissions ?? this.admissions,
       referenceData: referenceData ?? this.referenceData,
+      summaryCounts: summaryCounts ?? this.summaryCounts,
       selectedAdmission: clearSelectedAdmission
           ? null
           : selectedAdmission ?? this.selectedAdmission,

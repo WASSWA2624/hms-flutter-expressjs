@@ -3,6 +3,29 @@ import 'package:hosspi_hms/shared/data/data.dart';
 
 typedef IpdJsonMap = Map<String, Object?>;
 
+final class IpdFlowAggregateCountsDto {
+  const IpdFlowAggregateCountsDto(this.json);
+
+  final IpdJsonMap json;
+
+  factory IpdFlowAggregateCountsDto.fromResponse(Object? responseData) {
+    final IpdJsonMap response = _expectMap(responseData);
+    return IpdFlowAggregateCountsDto(_map(response['data']));
+  }
+
+  IpdFlowAggregateCounts toEntity() {
+    return IpdFlowAggregateCounts(
+      admissionQueue: _int(json['admission_queue']),
+      activePatients: _int(json['active_patients']),
+      transferPending: _int(json['transfer_pending']),
+      dischargePlanned: _int(json['discharge_planned']),
+      inProcedureOt: _int(json['in_procedure_ot']),
+      criticalAlerts: _int(json['critical_alerts']),
+      activeTotal: _int(json['active_total']),
+    );
+  }
+}
+
 final class IpdAdmissionPageDto {
   const IpdAdmissionPageDto({required this.page});
 

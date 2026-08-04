@@ -176,6 +176,22 @@ final class IpdWorkspaceController
     return _refreshWorklist(showLoading: true);
   }
 
+  Future<AppFailure?> applyFilters(IpdAdmissionQuery query) async {
+    final IpdWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        query: query.copyWith(pageRequest: query.pageRequest.first()),
+        isRefreshing: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorklist(showLoading: true);
+  }
+
   Future<AppFailure?> changePage(AppPageRequest request) async {
     final IpdWorkspaceState? current = _currentState;
     if (current == null) {
@@ -307,6 +323,7 @@ final class IpdWorkspaceController
           _emit(refreshed.copyWith(referenceData: referenceData));
         }
         unawaited(_refreshWorklist(showLoading: false));
+        unawaited(_refreshSummaryCounts());
         unawaited(_loadBedBoardIfActive());
         // Bed occupancy also appears on rooms & beds boards; realtime excludes
         // the mutating user, so reconcile from HTTP success when a bed was set.
@@ -780,8 +797,14 @@ final class IpdWorkspaceController
   Future<Result<IpdWorkspaceState>> _loadInitialState([
     IpdAdmissionQuery query = const IpdAdmissionQuery(),
   ]) async {
+    final List<Object> bootstrapResults = await Future.wait<Object>(<Future<Object>>[
+      _repository.listAdmissions(query),
+      _repository.getSummaryCounts(),
+    ]);
     final Result<AppPage<IpdAdmissionSummary>> admissionsResult =
-        await _repository.listAdmissions(query);
+        bootstrapResults[0]! as Result<AppPage<IpdAdmissionSummary>>;
+    final Result<IpdFlowAggregateCounts> summaryResult =
+        bootstrapResults[1]! as Result<IpdFlowAggregateCounts>;
     final AppPage<IpdAdmissionSummary>? admissions = _successOrNull(
       admissionsResult,
     );
@@ -797,6 +820,8 @@ final class IpdWorkspaceController
         query: query,
         admissions: admissions,
         referenceData: referenceData,
+        summaryCounts:
+            _successOrNull(summaryResult) ?? IpdFlowAggregateCounts.empty,
       ),
     );
   }
@@ -853,6 +878,20 @@ final class IpdWorkspaceController
         if (failure != null) {
           return failure;
         }
+      }
+
+      if (plan.summaryCounts) {
+        final Result<IpdFlowAggregateCounts> countsResult = await _repository
+            .getSummaryCounts();
+        countsResult.when(
+          success: (IpdFlowAggregateCounts counts) {
+            final IpdWorkspaceState? latest = _currentState;
+            if (latest != null) {
+              _emit(latest.copyWith(summaryCounts: counts));
+            }
+          },
+          failure: (_) {},
+        );
       }
 
       if (refreshRefs) {
@@ -980,6 +1019,7 @@ final class IpdWorkspaceController
           _reconcileRoomsBedsWorkspace();
         }
         unawaited(_refreshWorklist(showLoading: false));
+        unawaited(_refreshSummaryCounts());
         return null;
       },
       failure: (AppFailure failure) {
@@ -989,6 +1029,20 @@ final class IpdWorkspaceController
         }
         return failure;
       },
+    );
+  }
+
+  Future<void> _refreshSummaryCounts() async {
+    final Result<IpdFlowAggregateCounts> result = await _repository
+        .getSummaryCounts();
+    result.when(
+      success: (IpdFlowAggregateCounts counts) {
+        final IpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(summaryCounts: counts));
+        }
+      },
+      failure: (_) {},
     );
   }
 

@@ -15,6 +15,7 @@ const { STAFF_PATIENT_FLOW_DENIED_ROLES } = require('@config/roles');
 const {
   listIpdFlowsQuerySchema,
   getIpdFlowQuerySchema,
+  ipdSummaryQuerySchema,
   resolveLegacyRouteParamsSchema,
   admissionIdParamsSchema,
   startIpdFlowSchema,
@@ -54,6 +55,14 @@ router.get(
   authenticate(),
   authorize(IPD_READ_SCOPES, 'permission'),
   ipdFlowController.listIpdFlows
+);
+
+router.get(
+  '/summary',
+  validateRequest({ query: ipdSummaryQuerySchema }),
+  authenticate(),
+  authorize(IPD_READ_SCOPES, 'permission'),
+  ipdFlowController.getIpdFlowSummaryCounts
 );
 
 router.get(

@@ -130,7 +130,14 @@ const listIpdFlowsQuerySchema = listQuerySchema.extend({
   icu_status: icuStatusSchema.optional(),
   critical_severity: criticalSeveritySchema.optional(),
   has_critical_alert: booleanFlagSchema,
+  admitted_from: z.string().datetime().optional(),
+  admitted_to: z.string().datetime().optional(),
   search: z.string().trim().optional()});
+
+const ipdSummaryQuerySchema = z.object({
+  tenant_id: identifierSchema.optional(),
+  facility_id: identifierSchema.optional(),
+  ward_id: identifierSchema.optional()});
 
 const admissionIdParamsSchema = z.object({
   id: identifierSchema});
@@ -278,6 +285,7 @@ const resolveCriticalAlertSchema = z.object({
 
 module.exports = {
   listIpdFlowsQuerySchema,
+  ipdSummaryQuerySchema,
   getIpdFlowQuerySchema,
   admissionIdParamsSchema,
   startIpdFlowSchema,

@@ -1077,6 +1077,7 @@
   "messages.ipd_flow.finalize_discharge.success": "Discharge finalized successfully",
   "messages.ipd_flow.get.success": "IPD flow retrieved successfully",
   "messages.ipd_flow.list.success": "IPD flows retrieved successfully",
+  "messages.ipd_flow.summary.success": "IPD summary counts retrieved successfully",
   "messages.ipd_flow.plan_discharge.success": "Discharge plan updated successfully",
   "messages.ipd_flow.reject_admission.success": "Admission request rejected successfully",
   "messages.ipd_flow.release_bed.success": "Bed released successfully",

@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/app_permission_catalog_localizations.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
@@ -21,6 +22,7 @@ import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 /// Account and security tab (`/settings?tab=account`).
 ///
@@ -103,7 +105,6 @@ class _SettingsAccountSectionState
   Future<void> _changePassword(BuildContext context) async {
     final bool? changed = await showAppDialog<bool>(
       context: context,
-      barrierDismissible: false,
       builder: (_) => const ChangePasswordDialog(),
     );
 
@@ -270,6 +271,8 @@ class _ProfilePanelContent extends ConsumerWidget {
 
   final UserProfileState state;
 
+  static const int _permissionsCollapseThreshold = 8;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
@@ -288,64 +291,111 @@ class _ProfilePanelContent extends ConsumerWidget {
 
     final List<String> roles = view.roles;
     final List<AppPermission> permissions = view.permissions;
-    final List<_ProfileKvItem> accountItems = <_ProfileKvItem>[
-      _ProfileKvItem(
-        label: l10n.profilePhoneLabel,
-        value: _value(profile.phone, l10n),
+    final List<AppInfoTileData> accountItems = <AppInfoTileData>[
+      AppInfoTileData(
+        label: l10n.profileEmailLabel,
+        value: _optionalValue(profile.email),
+        icon: Icons.mail_outline,
       ),
-      _ProfileKvItem(
+      AppInfoTileData(
+        label: l10n.profilePhoneLabel,
+        value: _optionalValue(profile.phone),
+        icon: Icons.phone_outlined,
+      ),
+      AppInfoTileData(
         label: l10n.profileUserIdLabel,
-        value: _value(profile.displayId ?? profile.id, l10n),
+        value: _optionalValue(profile.displayId ?? profile.id),
+        icon: Icons.badge_outlined,
         copyable: true,
         copyTooltip: l10n.copyUserIdAction,
         copiedMessage: l10n.userIdCopiedMessage,
       ),
+      AppInfoTileData(
+        label: l10n.profileStatusLabel,
+        value: _optionalValue(_formatProfileToken(profile.status)),
+        icon: Icons.verified_user_outlined,
+      ),
     ];
-    final List<_ProfileKvItem> professionalItems = <_ProfileKvItem>[
-      _ProfileKvItem(
+    final List<AppInfoTileData> professionalItems = <AppInfoTileData>[
+      AppInfoTileData(
         label: l10n.profileOverallRoleLabel,
-        value: _value(profile.overallRole, l10n),
+        value: _optionalValue(profile.overallRole),
+        icon: Icons.work_outline,
       ),
-      _ProfileKvItem(
+      AppInfoTileData(
         label: l10n.profileUserTypeLabel,
-        value: _value(profile.userType, l10n),
+        value: _optionalValue(profile.userType),
+        icon: Icons.manage_accounts_outlined,
       ),
-      _ProfileKvItem(
+      AppInfoTileData(
+        label: l10n.profileTitleLabel,
+        value: _optionalValue(profile.effectiveTitle),
+        icon: Icons.medical_services_outlined,
+      ),
+      AppInfoTileData(
         label: l10n.profileTenantLabel,
-        value: _value(profile.tenantName, l10n),
+        value: _optionalValue(profile.tenantName),
+        icon: Icons.business_outlined,
       ),
-      _ProfileKvItem(
+      AppInfoTileData(
+        label: l10n.profileFacilityLabel,
+        value: _optionalValue(profile.facilityName),
+        icon: Icons.local_hospital_outlined,
+      ),
+      AppInfoTileData(
         label: l10n.profileFacilityTypeLabel,
-        value: _value(_formatProfileToken(profile.facilityType), l10n),
+        value: _optionalValue(_formatProfileToken(profile.facilityType)),
+        icon: Icons.apartment_outlined,
       ),
-      _ProfileKvItem(
+      AppInfoTileData(
         label: l10n.profileStaffNumberLabel,
-        value: _value(profile.staffNumber, l10n),
+        value: _optionalValue(profile.staffNumber),
+        icon: Icons.pin_outlined,
         copyable: true,
         copyTooltip: l10n.copyIdentifierAction,
         copiedMessage: l10n.identifierCopiedMessage,
       ),
     ];
+    final List<AppPermissionAssignmentOption> permissionOptions =
+        <AppPermissionAssignmentOption>[
+          for (final AppPermission permission in permissions)
+            AppPermissionAssignmentOption(
+              id: permission.value,
+              code: permission.value,
+              label: l10n.permissionCatalogLabel(permission),
+            ),
+        ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _ProfileSummary(profile: profile),
-        SizedBox(height: theme.spacing.lg),
-        _ProfileSectionPair(
-          leading: _ProfileBlock(
+        SizedBox(height: theme.spacing.md),
+        ...appCollapsibleSectionSpacing(context, <Widget>[
+          AppCollapsibleSection(
             title: l10n.profileAccountSectionTitle,
-            child: _ProfileKvList(items: accountItems),
+            description: l10n.profileAccountSectionBody,
+            titleIcon: Icons.person_outline,
+            child: AppInfoTileGrid(
+              emptyValue: l10n.profileUnknownValue,
+              maxColumns: 3,
+              items: accountItems,
+            ),
           ),
-          trailing: _ProfileBlock(
+          AppCollapsibleSection(
             title: l10n.profileProfessionalSectionTitle,
-            child: _ProfileKvList(items: professionalItems),
+            description: l10n.profileProfessionalSectionBody,
+            titleIcon: Icons.work_outline,
+            child: AppInfoTileGrid(
+              emptyValue: l10n.profileUnknownValue,
+              maxColumns: 3,
+              items: professionalItems,
+            ),
           ),
-        ),
-        SizedBox(height: theme.spacing.lg),
-        _ProfileSectionPair(
-          leading: _ProfileBlock(
+          AppCollapsibleSection(
             title: l10n.profileRolesSectionTitle,
+            description: l10n.profileRolesSectionBody,
+            titleIcon: Icons.groups_outlined,
             child: _ProfileChipGroup(
               emptyLabel: l10n.profileRolesEmpty,
               labels: <String>[
@@ -354,17 +404,28 @@ class _ProfilePanelContent extends ConsumerWidget {
               ],
             ),
           ),
-          trailing: _ProfileBlock(
+          AppCollapsibleSection(
             title: l10n.profilePermissionsSectionTitle,
-            child: _ProfileChipGroup(
-              emptyLabel: l10n.profilePermissionsEmpty,
-              labels: <String>[
-                for (final AppPermission permission in permissions)
-                  permission.value,
-              ],
-            ),
+            description: l10n.profilePermissionsSectionBody,
+            titleIcon: Icons.lock_outline,
+            initiallyExpanded:
+                permissions.isEmpty ||
+                permissions.length <= _permissionsCollapseThreshold,
+            child: permissions.length > _permissionsCollapseThreshold
+                ? AppPermissionGroupedView(
+                    permissions: permissionOptions,
+                    emptyMessage: l10n.profilePermissionsEmpty,
+                  )
+                : _ProfileChipGroup(
+                    emptyLabel: l10n.profilePermissionsEmpty,
+                    labels: <String>[
+                      for (final AppPermissionAssignmentOption option
+                          in permissionOptions)
+                        option.label,
+                    ],
+                  ),
           ),
-        ),
+        ]),
       ],
     );
   }
@@ -387,7 +448,6 @@ class _ProfileSummary extends StatelessWidget {
     final String displayName = _value(profile.displayName, l10n);
     final String? statusLabel = _formatProfileToken(profile.status);
     final List<String> metaParts = <String>[
-      if ((profile.email ?? '').trim().isNotEmpty) profile.email!.trim(),
       if ((profile.effectiveTitle ?? '').trim().isNotEmpty)
         profile.effectiveTitle!.trim(),
       if ((profile.facilityName ?? '').trim().isNotEmpty)
@@ -397,7 +457,6 @@ class _ProfileSummary extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(theme.radius.md),
         border: theme.borders.all(),
       ),
       child: Padding(
@@ -432,7 +491,7 @@ class _ProfileSummary extends StatelessWidget {
                         ),
                       ),
                       if (statusLabel != null)
-                        _ProfileBadge(
+                        AppStatusBadge(
                           label: statusLabel,
                           tone: _statusTone(profile.status),
                         ),
@@ -456,181 +515,15 @@ class _ProfileSummary extends StatelessWidget {
     );
   }
 
-  _ProfileBadgeTone _statusTone(String? status) {
+  AppWorkspaceStatusTone _statusTone(String? status) {
     final String normalized = (status ?? '').trim().toUpperCase();
     if (normalized == 'ACTIVE') {
-      return _ProfileBadgeTone.success;
+      return AppWorkspaceStatusTone.success;
     }
     if (normalized == 'INACTIVE' || normalized == 'SUSPENDED') {
-      return _ProfileBadgeTone.warning;
+      return AppWorkspaceStatusTone.warning;
     }
-    return _ProfileBadgeTone.neutral;
-  }
-}
-
-enum _ProfileBadgeTone { neutral, success, warning }
-
-class _ProfileBadge extends StatelessWidget {
-  const _ProfileBadge({
-    required this.label,
-    this.tone = _ProfileBadgeTone.neutral,
-  });
-
-  final String label;
-  final _ProfileBadgeTone tone;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color background;
-    final Color foreground;
-    switch (tone) {
-      case _ProfileBadgeTone.success:
-        background = colorScheme.primaryContainer.withValues(alpha: 0.7);
-        foreground = colorScheme.onPrimaryContainer;
-      case _ProfileBadgeTone.warning:
-        background = colorScheme.tertiaryContainer.withValues(alpha: 0.7);
-        foreground = colorScheme.onTertiaryContainer;
-      case _ProfileBadgeTone.neutral:
-        background = colorScheme.secondaryContainer.withValues(alpha: 0.55);
-        foreground = colorScheme.onSecondaryContainer;
-    }
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: theme.borders.all(),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs / 2,
-        ),
-        child: Text(
-          label,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: foreground,
-            fontWeight: AppFontWeight.emphasis,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileBlock extends StatelessWidget {
-  const _ProfileBlock({
-    required this.title,
-    required this.child,
-  });
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(theme.radius.md),
-        border: theme.borders.all(),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(
-              title,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: AppFontWeight.strong,
-              ),
-            ),
-            SizedBox(height: theme.spacing.sm),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-final class _ProfileKvItem {
-  const _ProfileKvItem({
-    required this.label,
-    required this.value,
-    this.copyable = false,
-    this.copyTooltip,
-    this.copiedMessage,
-  });
-
-  final String label;
-  final String value;
-  final bool copyable;
-  final String? copyTooltip;
-  final String? copiedMessage;
-}
-
-class _ProfileKvList extends StatelessWidget {
-  const _ProfileKvList({required this.items});
-
-  final List<_ProfileKvItem> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        for (var index = 0; index < items.length; index += 1) ...<Widget>[
-          if (index > 0) SizedBox(height: theme.spacing.sm),
-          _ProfileKvRow(item: items[index]),
-        ],
-      ],
-    );
-  }
-}
-
-class _ProfileKvRow extends StatelessWidget {
-  const _ProfileKvRow({required this.item});
-
-  final _ProfileKvItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: colorScheme.onSurfaceVariant,
-    );
-    final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontWeight: AppFontWeight.emphasis,
-      color: colorScheme.onSurface,
-    );
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text('${item.label}:', style: labelStyle),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(
-          child: item.copyable
-              ? AppCopyableIdentifier(
-                  value: item.value,
-                  tooltip: item.copyTooltip,
-                  copiedMessage: item.copiedMessage,
-                  textStyle: valueStyle,
-                )
-              : Text(item.value, style: valueStyle),
-        ),
-      ],
-    );
+    return AppWorkspaceStatusTone.neutral;
   }
 }
 
@@ -660,50 +553,12 @@ class _ProfileChipGroup extends StatelessWidget {
       spacing: theme.spacing.sm,
       runSpacing: theme.spacing.sm,
       children: <Widget>[
-        for (final String label in labels) _ProfileBadge(label: label),
+        for (final String label in labels)
+          AppStatusBadge(
+            label: label,
+            tone: AppWorkspaceStatusTone.info,
+          ),
       ],
-    );
-  }
-}
-
-class _ProfileSectionPair extends StatelessWidget {
-  const _ProfileSectionPair({
-    required this.leading,
-    required this.trailing,
-  });
-
-  final Widget leading;
-  final Widget trailing;
-
-  static const double _sideBySideBreakpoint = 760;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool sideBySide = constraints.maxWidth >= _sideBySideBreakpoint;
-        if (!sideBySide) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              leading,
-              SizedBox(height: theme.spacing.md),
-              trailing,
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(child: leading),
-            SizedBox(width: theme.spacing.md),
-            Expanded(child: trailing),
-          ],
-        );
-      },
     );
   }
 }
@@ -712,11 +567,13 @@ class _ProfileSectionPair extends StatelessWidget {
 // Helpers
 // ---------------------------------------------------------------------------
 
-String _value(String? value, AppLocalizations l10n) {
+String? _optionalValue(String? value) {
   final String? normalized = value?.trim();
-  return normalized == null || normalized.isEmpty
-      ? l10n.profileUnknownValue
-      : normalized;
+  return normalized == null || normalized.isEmpty ? null : normalized;
+}
+
+String _value(String? value, AppLocalizations l10n) {
+  return _optionalValue(value) ?? l10n.profileUnknownValue;
 }
 
 String? _formatProfileToken(String? value) {

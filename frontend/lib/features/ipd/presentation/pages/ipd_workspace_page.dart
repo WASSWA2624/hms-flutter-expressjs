@@ -182,6 +182,8 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
   late final AppListTableColumnVisibilityController<IpdAdmissionSummary>
   _tableColumnController;
   late IpdWorkspaceSection _section;
+  final Map<IpdWorkspaceSection, IpdAdmissionQuery> _sectionQueries =
+      <IpdWorkspaceSection, IpdAdmissionQuery>{};
 
   @override
   void initState() {
@@ -190,6 +192,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     _tableColumnController =
         AppListTableColumnVisibilityController<IpdAdmissionSummary>();
     _section = widget.initialQuery?.section ?? widget.state.query.section;
+    _sectionQueries[_section] = widget.state.query;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -205,21 +208,45 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     final IpdWorkspaceController controller = ref.read(
       ipdWorkspaceControllerProvider.notifier,
     );
-    final IpdQueueScope? scope = section.queueScope;
-    if (scope != null) {
-      if (scope != widget.state.query.scope) {
-        unawaited(controller.applyScope(scope));
-      }
-    } else if (section.isBedBoard) {
+    if (section.isBedBoard) {
       unawaited(controller.loadBedBoard());
+      return;
     }
+    final IpdQueueScope? scope = section.queueScope;
+    if (scope == null) {
+      return;
+    }
+    final IpdAdmissionQuery saved =
+        _sectionQueries[section] ??
+        IpdAdmissionQuery(scope: scope, section: section);
+    final IpdAdmissionQuery next = saved.copyWith(
+      scope: scope,
+      section: section,
+      pageRequest: saved.pageRequest.first(),
+    );
+    _sectionQueries[section] = next;
+    if (_searchController.text != next.search) {
+      _searchController.text = next.search;
+    }
+    unawaited(controller.applyFilters(next));
   }
 
   void _selectSection(IpdWorkspaceSection section) {
     if (_section == section) return;
+    // Persist independent filters for the tab being left.
+    if (!_section.isFollowUps && !_section.isBedBoard) {
+      _sectionQueries[_section] = widget.state.query.copyWith(section: _section);
+    }
     setState(() => _section = section);
     _applySectionFilter(section);
     _updateUrlForSection(section);
+  }
+
+  void _rememberSectionQuery(IpdAdmissionQuery query) {
+    if (_section.isFollowUps || _section.isBedBoard) {
+      return;
+    }
+    _sectionQueries[_section] = query.copyWith(section: _section);
   }
 
   void _updateUrlForSection(IpdWorkspaceSection section) {
@@ -305,6 +332,8 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
                               const FollowUpWorklistScope(encounterType: 'IPD'),
                             ),
                           )
+                        : section.isBedBoard
+                        ? null
                         : _sectionCount(state, section),
                     countTone: _sectionCountTone(section),
                   ),
@@ -317,12 +346,8 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
                 );
                 _selectSection(section);
               },
-              primaryAction: _buildPrimaryAction(l10n, state, canManageBeds),
-              secondaryActions: _buildSecondaryActions(
-                l10n,
-                state,
-                canManageBeds,
-              ),
+              primaryAction: _buildPrimaryAction(l10n, canManageBeds),
+              secondaryActions: const <Widget>[],
             ),
             SizedBox(height: theme.spacing.sm),
             if (_section.isFollowUps)
@@ -336,6 +361,9 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
               IpdBedBoardPanel(
                 state: state,
                 canManageBeds: canManageBeds,
+                onStartAdmission: canStartIpdAdmission(policy, _section)
+                    ? () => unawaited(_openStartAdmissionDialog(context))
+                    : null,
                 onOpenAdmission: (IpdBedBoardEntry bed) {
                   final String? admissionId =
                       bed.occupantAdmissionId ?? bed.occupantAdmissionDisplayId;
@@ -353,6 +381,10 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
                 searchController: _searchController,
                 columnVisibilityController: _tableColumnController,
                 showNextAction: showNextAction,
+                onStartAdmission: canStartIpdAdmission(policy, _section)
+                    ? () => unawaited(_openStartAdmissionDialog(context))
+                    : null,
+                onQueryRemembered: _rememberSectionQuery,
               ),
           ],
         ),
@@ -384,12 +416,10 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
 
   static int? _sectionCount(IpdWorkspaceState state, IpdWorkspaceSection section) {
     return switch (section) {
-      IpdWorkspaceSection.admissionQueue => _tabCount(state.admissionQueueCount),
-      IpdWorkspaceSection.activePatients => _tabCount(state.activePatientCount),
-      IpdWorkspaceSection.transferPending =>
-        _tabCount(state.transferPendingCount),
-      IpdWorkspaceSection.dischargePlanned =>
-        _tabCount(state.dischargePlannedCount),
+      IpdWorkspaceSection.admissionQueue => state.admissionQueueCount,
+      IpdWorkspaceSection.activePatients => state.activePatientCount,
+      IpdWorkspaceSection.transferPending => state.transferPendingCount,
+      IpdWorkspaceSection.dischargePlanned => state.dischargePlannedCount,
       IpdWorkspaceSection.bedBoard || IpdWorkspaceSection.followUps => null,
     };
   }
@@ -404,81 +434,46 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     };
   }
 
-  Widget? _buildPrimaryAction(
-    AppLocalizations l10n,
-    IpdWorkspaceState state,
-    bool canManageBeds,
-  ) {
-    if (_section.isFollowUps) {
+  Widget? _buildPrimaryAction(AppLocalizations l10n, bool canManageBeds) {
+    if (!_section.isBedBoard || !canManageBeds) {
       return null;
     }
-    if (_section.isBedBoard && canManageBeds) {
-      // Nested manage ∪ — rooms-beds admin (source; matrix also lists
-      // unit:manage — keep source). Unauthorized control does not mount.
-      return AppAccessActionGate(
-        requirement: IpdBedBoardAtomPermissions.manageBeds,
-        builder: (BuildContext context, bool _) {
-          return AppTabToolbarPrimary(
-            label: l10n.ipdBedBoardManageBedsAction,
-            icon: Icons.open_in_new,
-            tooltip: l10n.ipdBedBoardManageBedsAction,
-            semanticLabel: l10n.ipdBedBoardManageBedsAction,
-            onPressed: () => context.go(AppRoutes.roomsBeds.path),
-          );
-        },
-      );
-    }
+    // Nested manage ∪ — rooms-beds admin (source; matrix also lists
+    // unit:manage — keep source). Unauthorized control does not mount.
     return AppAccessActionGate(
-      requirement: switch (_section) {
-        IpdWorkspaceSection.bedBoard =>
-          IpdBedBoardAtomPermissions.startAdmission,
-        IpdWorkspaceSection.dischargePlanned =>
-          IpdDischargeAtomPermissions.startAdmission,
-        IpdWorkspaceSection.transferPending =>
-          IpdTransfersAtomPermissions.startAdmission,
-        IpdWorkspaceSection.activePatients =>
-          IpdActivePatientsAtomPermissions.startAdmission,
-        _ => IpdAdmissionQueueAtomPermissions.startAdmission,
-      },
+      requirement: IpdBedBoardAtomPermissions.manageBeds,
       builder: (BuildContext context, bool _) {
         return AppTabToolbarPrimary(
-          label: l10n.ipdStartAdmissionAction,
-          icon: AppActionIcons.personAdd,
-          tooltip: l10n.ipdStartAdmissionAction,
-          semanticLabel: l10n.ipdStartAdmissionAction,
-          enabled: !state.isSaving,
-          onPressed: () => unawaited(_openStartAdmissionDialog(context)),
+          label: l10n.ipdBedBoardManageBedsAction,
+          icon: Icons.open_in_new,
+          tooltip: l10n.ipdBedBoardManageBedsAction,
+          semanticLabel: l10n.ipdBedBoardManageBedsAction,
+          onPressed: () => context.go(AppRoutes.roomsBeds.path),
         );
       },
     );
   }
 
-  List<Widget> _buildSecondaryActions(
-    AppLocalizations l10n,
-    IpdWorkspaceState state,
-    bool canManageBeds,
-  ) {
-    if (!_section.isBedBoard || !canManageBeds) {
-      return const <Widget>[];
-    }
-    return <Widget>[
-      AppAccessActionGate(
-        requirement: IpdBedBoardAtomPermissions.startAdmission,
-        builder: (BuildContext context, bool _) {
-          return AppTabToolbarAction(
-            label: l10n.ipdStartAdmissionAction,
-            icon: AppActionIcons.personAdd,
-            tooltip: l10n.ipdStartAdmissionAction,
-            semanticLabel: l10n.ipdStartAdmissionAction,
-            enabled: !state.isSaving,
-            onPressed: () => unawaited(_openStartAdmissionDialog(context)),
-          );
-        },
-      ),
-    ];
+  static AccessRequirement _startAdmissionRequirement(IpdWorkspaceSection section) {
+    return switch (section) {
+      IpdWorkspaceSection.bedBoard => IpdBedBoardAtomPermissions.startAdmission,
+      IpdWorkspaceSection.dischargePlanned =>
+        IpdDischargeAtomPermissions.startAdmission,
+      IpdWorkspaceSection.transferPending =>
+        IpdTransfersAtomPermissions.startAdmission,
+      IpdWorkspaceSection.activePatients =>
+        IpdActivePatientsAtomPermissions.startAdmission,
+      IpdWorkspaceSection.followUps => IpdAdmissionQueueAtomPermissions.startAdmission,
+      _ => IpdAdmissionQueueAtomPermissions.startAdmission,
+    };
   }
 
-  static int? _tabCount(int count) => count > 0 ? count : null;
+  bool canStartIpdAdmission(AppAccessPolicy policy, IpdWorkspaceSection section) {
+    if (section.isFollowUps) {
+      return false;
+    }
+    return _startAdmissionRequirement(section).isAllowed(policy);
+  }
 
   Future<void> _openStartAdmissionDialog(BuildContext context) async {
     final IpdWorkspaceState state = widget.state;
@@ -499,6 +494,8 @@ class _IpdBoardPanel extends ConsumerWidget {
     required this.searchController,
     required this.columnVisibilityController,
     this.showNextAction = true,
+    this.onStartAdmission,
+    this.onQueryRemembered,
   });
 
   final IpdWorkspaceState state;
@@ -507,6 +504,8 @@ class _IpdBoardPanel extends ConsumerWidget {
   final AppListTableColumnVisibilityController<IpdAdmissionSummary>
   columnVisibilityController;
   final bool showNextAction;
+  final VoidCallback? onStartAdmission;
+  final ValueChanged<IpdAdmissionQuery>? onQueryRemembered;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -523,6 +522,9 @@ class _IpdBoardPanel extends ConsumerWidget {
         );
     final List<AppListTableColumn<IpdAdmissionSummary>> optionalColumns =
         _ipdAdmissionOptionalColumns(context);
+    final AppSearchBarFilterValue filterValue = _ipdFilterValueFromQuery(
+      state.query,
+    );
 
     return AppListTable<IpdAdmissionSummary>(
       page: state.admissions,
@@ -532,6 +534,25 @@ class _IpdBoardPanel extends ConsumerWidget {
       columnWidthStorageKey: 'ipd_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      enableExport: true,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      exportConfig: AppListTableExportConfig<IpdAdmissionSummary>(
+        fileNameStem: 'ipd_${section.name}',
+        dateOf: (IpdAdmissionSummary item) => item.admittedAt,
+        sheetName: _sectionLabel(l10n, section),
+      ),
       columns: defaultColumns,
       columnChoices: optionalColumns,
       search: AppListTableSearch<IpdAdmissionSummary>(
@@ -539,40 +560,71 @@ class _IpdBoardPanel extends ConsumerWidget {
         semanticLabel: l10n.ipdSearchLabel,
         hintText: l10n.ipdSearchHint,
         matcher: (IpdAdmissionSummary admission, String query) =>
-            _ipdAdmissionMatchesSearch(context, admission, query),
-        onSubmitted: controller.applySearch,
-        onClear: () => controller.applySearch(''),
+            _ipdAdmissionMatchesSearch(
+              context,
+              admission,
+              query,
+              field: state.query.searchField,
+            ),
+        onSubmitted: (String value) {
+          final IpdAdmissionQuery next = state.query.copyWith(
+            search: value.trim(),
+            pageRequest: state.query.pageRequest.first(),
+          );
+          onQueryRemembered?.call(next);
+          unawaited(controller.applyFilters(next));
+        },
+        onClear: () {
+          final IpdAdmissionQuery next = state.query.copyWith(
+            search: '',
+            pageRequest: state.query.pageRequest.first(),
+          );
+          onQueryRemembered?.call(next);
+          unawaited(controller.applyFilters(next));
+        },
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.ipdFiltersLabel,
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
-        enableDateFilter: false,
-        allFieldsLabel: l10n.ipdAllWardsOption,
-        filterGroups: <AppSearchBarFilterGroup>[
-          AppSearchBarFilterGroup(
-            key: _ipdWardFilterKey,
-            label: l10n.ipdWardFilterLabel,
-            allLabel: l10n.ipdAllWardsOption,
-            choices: _ipdWardFilterChoices(state.referenceData.wards),
-          ),
-        ],
-        filterValue: AppSearchBarFilterValue(
-          options: <String, String>{
-            if (state.query.wardId != null)
-              _ipdWardFilterKey: state.query.wardId!,
-          },
-        ),
-        hasActiveFilters: state.query.wardId != null,
+        enableDateFilter: true,
+        dateFilterLabel: l10n.ipdAdmittedAtColumnLabel,
+        dateFromLabel: l10n.opdDateFromLabel,
+        dateToLabel: l10n.opdDateToLabel,
+        datePickerButtonLabel: l10n.opdDatePickerButtonLabel,
+        invalidDateMessage: l10n.opdInvalidDateMessage,
+        firstDate: DateTime(DateTime.now().year - 10),
+        lastDate: DateTime(DateTime.now().year + 1, 12, 31),
+        currentDate: DateTime.now(),
+        searchFields: _ipdSearchFields(l10n),
+        searchFieldLabel: l10n.ipdSearchFieldFilterLabel,
+        allFieldsLabel: l10n.ipdAllFieldsFilterLabel,
+        textFilters: _ipdTextFilters(l10n),
+        filterGroups: _ipdFilterGroups(l10n, state.referenceData.wards, section),
+        filterValue: filterValue,
+        hasActiveFilters: state.query.hasAdvancedFilters,
         onFilterChanged: (AppSearchBarFilterValue value) async {
-          final String? nextWardId = value.option(_ipdWardFilterKey);
-          if (nextWardId != state.query.wardId) {
-            final AppFailure? failure = await controller.applyWard(nextWardId);
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
+          final IpdAdmissionQuery next = _ipdQueryFromFilterValue(
+            state.query,
+            value,
+            search: searchController.text,
+          );
+          onQueryRemembered?.call(next);
+          final AppFailure? failure = await controller.applyFilters(next);
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
           }
         },
+        trailingActions: <AppSearchBarAction>[
+          if (onStartAdmission != null)
+            AppSearchBarAction(
+              icon: AppActionIcons.personAdd,
+              label: l10n.ipdStartAdmissionAction,
+              tooltip: l10n.ipdStartAdmissionAction,
+              enabled: !state.isSaving,
+              onPressed: onStartAdmission!,
+            ),
+        ],
       ),
       previousPageLabel: l10n.opdPreviousPageLabel,
       nextPageLabel: l10n.opdNextPageLabel,
@@ -603,6 +655,17 @@ class _IpdBoardPanel extends ConsumerWidget {
         );
       },
     );
+  }
+
+  static String _sectionLabel(AppLocalizations l10n, IpdWorkspaceSection section) {
+    return switch (section) {
+      IpdWorkspaceSection.admissionQueue => l10n.ipdAdmissionQueueTabLabel,
+      IpdWorkspaceSection.activePatients => l10n.ipdActivePatientsTabLabel,
+      IpdWorkspaceSection.transferPending => l10n.ipdTransfersTabLabel,
+      IpdWorkspaceSection.dischargePlanned => l10n.ipdDischargeTabLabel,
+      IpdWorkspaceSection.bedBoard => l10n.ipdBedBoardTab,
+      IpdWorkspaceSection.followUps => l10n.opdFollowUpsTitle,
+    };
   }
 }
 
@@ -699,13 +762,47 @@ List<AppListTableColumn<IpdAdmissionSummary>> _ipdAdmissionOptionalColumns(
 bool _ipdAdmissionMatchesSearch(
   BuildContext context,
   IpdAdmissionSummary admission,
-  String query,
-) {
-  if (admission.matchesSearch(query)) {
-    return true;
-  }
+  String query, {
+  String? field,
+}) {
   final String needle = query.trim().toLowerCase();
   if (needle.isEmpty) {
+    return true;
+  }
+  final String normalizedField = (field ?? '').trim().toLowerCase();
+  bool matches(Iterable<String?> values) {
+    return values.whereType<String>().any(
+      (String value) => value.toLowerCase().contains(needle),
+    );
+  }
+
+  switch (normalizedField) {
+    case 'patient':
+      return matches(<String?>[admission.displayTitle, admission.patientDisplayName]);
+    case 'patient_id':
+      return matches(<String?>[admission.patientId]);
+    case 'admission':
+      return matches(<String?>[admission.displayId, admission.id]);
+    case 'encounter':
+      return matches(<String?>[admission.encounterId]);
+    case 'ward':
+      return matches(<String?>[admission.wardDisplayName, admission.location]);
+    case 'bed':
+      return matches(<String?>[admission.bedDisplayLabel, admission.bedId]);
+    case 'status':
+      return matches(<String?>[
+        admission.stage,
+        _stageLabel(context, admission.stage),
+      ]);
+    case 'transfer':
+      return matches(<String?>[admission.transferStatus]);
+    case 'icu':
+      return matches(<String?>[admission.icuStatus, admission.criticalSeverity]);
+    default:
+      break;
+  }
+
+  if (admission.matchesSearch(query)) {
     return true;
   }
   return <String>[
@@ -714,6 +811,9 @@ bool _ipdAdmissionMatchesSearch(
     _lengthOfStayLabel(context, admission),
     _stageLabel(context, admission.stage),
     _nextStepLabel(context, admission.nextStep),
+    admission.transferStatus ?? '',
+    admission.icuStatus ?? '',
+    admission.criticalSeverity ?? '',
   ].any((String value) => value.toLowerCase().contains(needle));
 }
 
@@ -2365,6 +2465,271 @@ class _MedicationAdministrationDialogState
 }
 
 const String _ipdWardFilterKey = 'ward';
+const String _ipdTransferStatusFilterKey = 'transfer_status';
+const String _ipdHasActiveBedFilterKey = 'has_active_bed';
+const String _ipdCriticalAlertFilterKey = 'has_critical_alert';
+const String _ipdCriticalSeverityFilterKey = 'critical_severity';
+const String _ipdIcuQueueFilterKey = 'icu_queue_scope';
+const String _ipdIcuStatusFilterKey = 'icu_status';
+const String _ipdPatientIdTextKey = 'patient_id';
+const String _ipdEncounterIdTextKey = 'encounter_id';
+const String _ipdAdmissionIdTextKey = 'admission_id';
+const String _ipdPhoneTextKey = 'phone';
+
+List<AppSearchBarFieldChoice> _ipdSearchFields(AppLocalizations l10n) {
+  return <AppSearchBarFieldChoice>[
+    AppSearchBarFieldChoice(value: 'patient', label: l10n.opdPatientColumnLabel),
+    AppSearchBarFieldChoice(
+      value: 'patient_id',
+      label: l10n.ipdPatientIdFilterLabel,
+    ),
+    AppSearchBarFieldChoice(
+      value: 'admission',
+      label: l10n.ipdAdmissionIdFilterLabel,
+    ),
+    AppSearchBarFieldChoice(
+      value: 'encounter',
+      label: l10n.ipdEncounterIdFilterLabel,
+    ),
+    AppSearchBarFieldChoice(value: 'ward', label: l10n.ipdWardFilterLabel),
+    AppSearchBarFieldChoice(value: 'bed', label: l10n.ipdBedColumnLabel),
+    AppSearchBarFieldChoice(value: 'status', label: l10n.opdStatusColumnLabel),
+    AppSearchBarFieldChoice(
+      value: 'transfer',
+      label: l10n.ipdTransferStatusFilterLabel,
+    ),
+    AppSearchBarFieldChoice(value: 'icu', label: l10n.ipdIcuStatusFilterLabel),
+  ];
+}
+
+List<AppSearchBarTextFilter> _ipdTextFilters(AppLocalizations l10n) {
+  return <AppSearchBarTextFilter>[
+    AppSearchBarTextFilter(
+      key: _ipdPatientIdTextKey,
+      label: l10n.ipdPatientIdFilterLabel,
+      hintText: l10n.ipdPatientIdFilterHint,
+    ),
+    AppSearchBarTextFilter(
+      key: _ipdAdmissionIdTextKey,
+      label: l10n.ipdAdmissionIdFilterLabel,
+      hintText: l10n.ipdAdmissionIdFilterHint,
+    ),
+    AppSearchBarTextFilter(
+      key: _ipdEncounterIdTextKey,
+      label: l10n.ipdEncounterIdFilterLabel,
+      hintText: l10n.ipdEncounterIdFilterHint,
+    ),
+    AppSearchBarTextFilter(
+      key: _ipdPhoneTextKey,
+      label: l10n.ipdPhoneFilterLabel,
+      hintText: l10n.ipdPhoneFilterHint,
+    ),
+  ];
+}
+
+List<AppSearchBarFilterGroup> _ipdFilterGroups(
+  AppLocalizations l10n,
+  List<IpdWardOption> wards,
+  IpdWorkspaceSection section,
+) {
+  return <AppSearchBarFilterGroup>[
+    AppSearchBarFilterGroup(
+      key: _ipdWardFilterKey,
+      label: l10n.ipdWardFilterLabel,
+      allLabel: l10n.ipdAllWardsOption,
+      choices: _ipdWardFilterChoices(wards),
+    ),
+    if (section == IpdWorkspaceSection.transferPending ||
+        section == IpdWorkspaceSection.activePatients ||
+        section == IpdWorkspaceSection.admissionQueue)
+      AppSearchBarFilterGroup(
+        key: _ipdTransferStatusFilterKey,
+        label: l10n.ipdTransferStatusFilterLabel,
+        allLabel: l10n.ipdScopeAll,
+        choices: <AppSearchBarFilterChoice>[
+          AppSearchBarFilterChoice(
+            value: 'REQUESTED',
+            label: l10n.ipdTransferStatusRequested,
+            icon: Icons.pending_actions_outlined,
+          ),
+          AppSearchBarFilterChoice(
+            value: 'APPROVED',
+            label: l10n.ipdTransferStatusApproved,
+            icon: Icons.check_circle_outline,
+          ),
+          AppSearchBarFilterChoice(
+            value: 'IN_PROGRESS',
+            label: l10n.ipdTransferStatusInProgress,
+            icon: Icons.swap_horiz,
+          ),
+        ],
+      ),
+    AppSearchBarFilterGroup(
+      key: _ipdHasActiveBedFilterKey,
+      label: l10n.ipdHasActiveBedFilterLabel,
+      allLabel: l10n.ipdScopeAll,
+      choices: <AppSearchBarFilterChoice>[
+        AppSearchBarFilterChoice(
+          value: 'true',
+          label: l10n.ipdHasActiveBedYes,
+          icon: Icons.bed_outlined,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'false',
+          label: l10n.ipdHasActiveBedNo,
+          icon: Icons.hotel_outlined,
+        ),
+      ],
+    ),
+    AppSearchBarFilterGroup(
+      key: _ipdCriticalAlertFilterKey,
+      label: l10n.ipdCriticalAlertFilterLabel,
+      allLabel: l10n.ipdScopeAll,
+      choices: <AppSearchBarFilterChoice>[
+        AppSearchBarFilterChoice(
+          value: 'true',
+          label: l10n.ipdCriticalAlertYes,
+          icon: Icons.warning_amber_outlined,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'false',
+          label: l10n.ipdCriticalAlertNo,
+          icon: Icons.check_circle_outline,
+        ),
+      ],
+    ),
+    AppSearchBarFilterGroup(
+      key: _ipdCriticalSeverityFilterKey,
+      label: l10n.ipdCriticalSeverityFilterLabel,
+      allLabel: l10n.ipdScopeAll,
+      choices: <AppSearchBarFilterChoice>[
+        for (final String severity in const <String>[
+          'LOW',
+          'MEDIUM',
+          'HIGH',
+          'CRITICAL',
+        ])
+          AppSearchBarFilterChoice(
+            value: severity,
+            label: severity,
+            icon: Icons.priority_high,
+          ),
+      ],
+    ),
+    AppSearchBarFilterGroup(
+      key: _ipdIcuQueueFilterKey,
+      label: l10n.ipdIcuQueueFilterLabel,
+      allLabel: l10n.ipdScopeAll,
+      choices: <AppSearchBarFilterChoice>[
+        AppSearchBarFilterChoice(
+          value: 'WITH_ICU',
+          label: l10n.ipdIcuQueueWithIcu,
+          icon: Icons.monitor_heart_outlined,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'ACTIVE',
+          label: l10n.ipdIcuQueueActive,
+          icon: Icons.favorite_outline,
+        ),
+      ],
+    ),
+    AppSearchBarFilterGroup(
+      key: _ipdIcuStatusFilterKey,
+      label: l10n.ipdIcuStatusFilterLabel,
+      allLabel: l10n.ipdScopeAll,
+      choices: <AppSearchBarFilterChoice>[
+        AppSearchBarFilterChoice(
+          value: 'ACTIVE',
+          label: l10n.ipdIcuStatusActive,
+          icon: Icons.monitor_heart_outlined,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'ENDED',
+          label: l10n.ipdIcuStatusEnded,
+          icon: Icons.event_available_outlined,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'NONE',
+          label: l10n.ipdIcuStatusNone,
+          icon: Icons.remove_circle_outline,
+        ),
+      ],
+    ),
+  ];
+}
+
+AppSearchBarFilterValue _ipdFilterValueFromQuery(IpdAdmissionQuery query) {
+  return AppSearchBarFilterValue(
+    field: query.searchField,
+    dateFrom: query.admittedFrom,
+    dateTo: query.admittedTo,
+    texts: <String, String>{
+      if (query.patientId != null) _ipdPatientIdTextKey: query.patientId!,
+    },
+    options: <String, String>{
+      if (query.wardId != null) _ipdWardFilterKey: query.wardId!,
+      if (query.transferStatus != null)
+        _ipdTransferStatusFilterKey: query.transferStatus!,
+      if (query.hasActiveBed != null)
+        _ipdHasActiveBedFilterKey: query.hasActiveBed! ? 'true' : 'false',
+      if (query.hasCriticalAlert != null)
+        _ipdCriticalAlertFilterKey: query.hasCriticalAlert! ? 'true' : 'false',
+      if (query.criticalSeverity != null)
+        _ipdCriticalSeverityFilterKey: query.criticalSeverity!,
+      if (query.icuQueueScope != null)
+        _ipdIcuQueueFilterKey: query.icuQueueScope!,
+      if (query.icuStatus != null) _ipdIcuStatusFilterKey: query.icuStatus!,
+    },
+  );
+}
+
+IpdAdmissionQuery _ipdQueryFromFilterValue(
+  IpdAdmissionQuery current,
+  AppSearchBarFilterValue value, {
+  required String search,
+}) {
+  final String? hasActiveBedRaw = value.option(_ipdHasActiveBedFilterKey);
+  final String? hasCriticalAlertRaw = value.option(_ipdCriticalAlertFilterKey);
+  final String? patientId = value.text(_ipdPatientIdTextKey)?.trim();
+  final String? admissionId = value.text(_ipdAdmissionIdTextKey)?.trim();
+  final String? encounterId = value.text(_ipdEncounterIdTextKey)?.trim();
+  final String? phone = value.text(_ipdPhoneTextKey)?.trim();
+  final String composedSearch = <String?>[
+    search.trim().isEmpty ? null : search.trim(),
+    admissionId,
+    encounterId,
+    phone,
+  ].whereType<String>().where((String part) => part.isNotEmpty).join(' ');
+
+  return current.copyWith(
+    search: composedSearch,
+    searchField: value.field,
+    clearSearchField: value.field == null || value.field!.trim().isEmpty,
+    wardId: value.option(_ipdWardFilterKey),
+    clearWard: value.option(_ipdWardFilterKey) == null,
+    transferStatus: value.option(_ipdTransferStatusFilterKey),
+    clearTransferStatus: value.option(_ipdTransferStatusFilterKey) == null,
+    hasActiveBed: hasActiveBedRaw == null ? null : hasActiveBedRaw == 'true',
+    clearHasActiveBed: hasActiveBedRaw == null,
+    hasCriticalAlert: hasCriticalAlertRaw == null
+        ? null
+        : hasCriticalAlertRaw == 'true',
+    clearHasCriticalAlert: hasCriticalAlertRaw == null,
+    criticalSeverity: value.option(_ipdCriticalSeverityFilterKey),
+    clearCriticalSeverity: value.option(_ipdCriticalSeverityFilterKey) == null,
+    icuQueueScope: value.option(_ipdIcuQueueFilterKey),
+    clearIcuQueueScope: value.option(_ipdIcuQueueFilterKey) == null,
+    icuStatus: value.option(_ipdIcuStatusFilterKey),
+    clearIcuStatus: value.option(_ipdIcuStatusFilterKey) == null,
+    patientId: (patientId == null || patientId.isEmpty) ? null : patientId,
+    clearPatientId: patientId == null || patientId.isEmpty,
+    admittedFrom: value.dateFrom,
+    clearAdmittedFrom: value.dateFrom == null,
+    admittedTo: value.dateTo,
+    clearAdmittedTo: value.dateTo == null,
+    pageRequest: current.pageRequest.first(),
+  );
+}
 
 List<AppSearchBarFilterChoice> _ipdWardFilterChoices(
   List<IpdWardOption> wards,
