@@ -360,6 +360,7 @@ class _CommunicationsWorkspaceContentState
 
     return AppWorkspace(
       title: l10n.communicationsWorkspaceTitle,
+      scrollable: false,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
