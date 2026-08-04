@@ -25,10 +25,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockTheaterRepository extends Mock implements TheaterRepository {}
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _scheduleCaseAction() => find.text('Schedule case');
 
 AppListTable<TheaterCase> _table(WidgetTester tester) {
   return tester.widget<AppListTable<TheaterCase>>(
@@ -273,8 +270,8 @@ void main() {
     expect(find.text('Sam Scheduled'), findsOneWidget);
     expect(find.text('Ira InTheater'), findsOneWidget);
     expect(find.text('Riley Recovery'), findsOneWidget);
-    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
-    expect(_toolbarPrimary('Schedule case'), findsOneWidget);
+    expect(find.byType(AppTabToolbarPrimary), findsNothing);
+    expect(_scheduleCaseAction(), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
     expect(find.byType(AppTabToolbarAction), findsNothing);
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
@@ -355,7 +352,7 @@ void main() {
       queries.any((TheaterCaseQuery q) => q.status == null && q.stage == null),
       isTrue,
     );
-    expect(_toolbarPrimary('Schedule case'), findsOneWidget);
+    expect(_scheduleCaseAction(), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
   });
 
@@ -380,7 +377,7 @@ void main() {
     );
     expect(find.text('Ira InTheater'), findsOneWidget);
     expect(find.text('Sam Scheduled'), findsNothing);
-    expect(_toolbarPrimary('Schedule case'), findsOneWidget);
+    expect(_scheduleCaseAction(), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
   });
 
@@ -413,7 +410,7 @@ void main() {
     );
 
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
-    expect(_toolbarPrimary('Schedule case'), findsNothing);
+    expect(_scheduleCaseAction(), findsNothing);
     expect(find.text('Refresh'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Update readiness'), findsNothing);
     expect(find.text('Update readiness'), findsNothing);

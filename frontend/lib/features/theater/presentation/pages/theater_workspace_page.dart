@@ -295,34 +295,6 @@ class _TheaterWorkspaceContentState
     };
   }
 
-  Widget? _buildPrimaryAction(
-    AppLocalizations l10n,
-    TheaterWorkspaceState state,
-    bool canSchedule,
-  ) {
-    // Follow-ups has no Schedule case primary (matrix / inventory).
-    if (!canSchedule || _section.isFollowUps) {
-      return null;
-    }
-    return AppTabToolbarPrimary(
-      label: l10n.theaterScheduleCaseAction,
-      icon: Icons.add,
-      semanticLabel: l10n.theaterScheduleCaseAction,
-      tooltip: l10n.theaterScheduleCaseAction,
-      enabled: !state.isMutating,
-      onPressed: state.isMutating
-          ? null
-          : () => _showScheduleCaseDialog(
-              context,
-              ref,
-              initialPatientId: widget.initialQuery?.initialPatientId,
-              initialEncounterId: widget.initialQuery?.initialEncounterId,
-              initialEmergencyCaseId:
-                  widget.initialQuery?.initialEmergencyCaseId,
-            ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -332,7 +304,6 @@ class _TheaterWorkspaceContentState
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool canWrite =
         theaterWriteRequirementForSection(_section).isAllowed(accessPolicy);
-    final bool canSchedule = canScheduleTheaterCase(accessPolicy);
     final bool showNextAction = theaterBoardShowsNextActionColumn(
       accessPolicy,
       _section,
@@ -398,7 +369,6 @@ class _TheaterWorkspaceContentState
                   _applyTabFilter(section);
                 }
               },
-              primaryAction: _buildPrimaryAction(l10n, state, canSchedule),
             ),
             SizedBox(height: theme.spacing.sm),
             if (lastFailure != null && !_section.isFollowUps) ...<Widget>[
@@ -424,6 +394,7 @@ class _TheaterWorkspaceContentState
                 searchController: _searchController,
                 columnVisibilityController: _tableColumnController,
                 onPageChanged: controller.changePage,
+                initialQuery: widget.initialQuery,
               ),
           ],
         ),
@@ -441,6 +412,7 @@ class _TheaterCaseBoard extends ConsumerWidget {
     required this.searchController,
     required this.columnVisibilityController,
     required this.onPageChanged,
+    this.initialQuery,
   });
 
   final TheaterWorkspaceState state;
@@ -451,6 +423,37 @@ class _TheaterCaseBoard extends ConsumerWidget {
   final AppListTableColumnVisibilityController<TheaterCase>
   columnVisibilityController;
   final ValueChanged<AppPageRequest> onPageChanged;
+  final TheaterBoardQuery? initialQuery;
+
+  /// Schedule case lives after Export in the search bar (not the tab toolbar).
+  List<AppSearchBarAction> _scheduleCaseSearchActions(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    if (!canScheduleTheaterCase(policy)) {
+      return const <AppSearchBarAction>[];
+    }
+    final String label = context.l10n.theaterScheduleCaseAction;
+    final bool enabled = !state.isMutating;
+    return <AppSearchBarAction>[
+      AppSearchBarAction(
+        icon: Icons.add,
+        label: label,
+        tooltip: label,
+        enabled: enabled,
+        onPressed: enabled
+            ? () => _showScheduleCaseDialog(
+                context,
+                ref,
+                initialPatientId: initialQuery?.initialPatientId,
+                initialEncounterId: initialQuery?.initialEncounterId,
+                initialEmergencyCaseId: initialQuery?.initialEmergencyCaseId,
+              )
+            : null,
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -528,6 +531,8 @@ class _TheaterCaseBoard extends ConsumerWidget {
         ],
         filterValue: _theaterFilterValue(state.query, section),
         hasActiveFilters: _hasTheaterFilters(state.query, section),
+        // Filters → Settings → Export → Schedule case.
+        trailingActions: _scheduleCaseSearchActions(context, ref),
         onFilterChanged: (AppSearchBarFilterValue value) async {
           final String? nextStatus = value.option(_theaterStatusFilterKey);
           final String? nextStage = value.option(_theaterStageFilterKey);

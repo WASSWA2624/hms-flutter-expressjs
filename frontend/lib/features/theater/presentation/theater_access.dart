@@ -115,7 +115,7 @@ const AccessRequirement theaterRoomContextReadRequirement =
 const AccessRequirement theaterOperationsReadRequirement =
     theaterRoomContextReadRequirement;
 
-/// Schedule case primary — matrix ∩ `clinical:write`.
+/// Schedule case search-bar action — matrix ∩ `clinical:write`.
 const AccessRequirement theaterScheduleCaseRequirement =
     theaterClinicalWriteRequirement;
 
@@ -349,7 +349,7 @@ AccessRequirement theaterNextActionRequirement(TheaterNextActionKind kind) {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | All cases tab / count badge | navigate | read ∪ ([tab]) |
-/// | Schedule case (toolbar) | create | write ∩ ([scheduleCase]) |
+/// | Schedule case (search bar) | create | write ∩ ([scheduleCase]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
 /// | Status / stage filters (All only) | read chrome | ([filters]) |
 /// | Room / surgeon / anesthetist filters | read chrome | ([filters]) |
@@ -438,8 +438,9 @@ abstract final class TheaterAllAtomPermissions {
 /// Scheduled tab atom → permission mapping (inventory + matrix).
 ///
 /// Pre-op board (`/theater?section=scheduled`, status=SCHEDULED owned by the
-/// tab — no status/stage filter groups). Schedule case is the tab primary
-/// (matrix create ∩ `clinical:write` + `theatre-anesthesia`); reschedule /
+/// tab — no status/stage filter groups). Schedule case is the search-bar
+/// primary after Export (matrix create ∩ `clinical:write` + `theatre-anesthesia`);
+/// reschedule /
 /// stage / readiness / start / cancel use the same write ∩. Nested
 /// cross-module matrix rows are _(n/a)_ — [nestedWrite] / [nestedRead] reuse
 /// theater write/read only. Billing holds on schedule form need
@@ -453,7 +454,7 @@ abstract final class TheaterAllAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Scheduled tab / count badge | navigate | read ∪ ([tab]) |
-/// | Schedule case (toolbar primary) | create | write ∩ ([scheduleCase]) |
+/// | Schedule case (search bar) | create | write ∩ ([scheduleCase]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
 /// | Date / room / surgeon / anesthetist filters | read chrome | ([filters]) |
 /// | Time column (default) | read | ([timeColumn]) |
@@ -549,7 +550,7 @@ abstract final class TheaterScheduledAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | In theater tab / count badge | navigate | read ∪ ([tab]) |
-/// | Schedule case (toolbar) | create | write ∩ ([scheduleCase]) |
+/// | Schedule case (search bar) | create | write ∩ ([scheduleCase]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
 /// | Room / surgeon / anesthetist filters | read chrome | ([filters]) |
 /// | Room column (default) | read | ([roomColumn]) |
@@ -641,14 +642,14 @@ abstract final class TheaterInTheaterAtomPermissions {
 /// cross-module matrix rows are _(n/a)_ — [nestedWrite] / [nestedRead] reuse
 /// Theater write ∩ / read ∪ only. Billing hold / operations room context are
 /// documented for reuse and are not mounted on this panel. Schedule case
-/// primary is absent on this tab. Route entry catalog ∩ is [routeEntry];
+/// search-bar action is absent on this tab. Route entry catalog ∩ is [routeEntry];
 /// AppRoutes ∪ is [routeEntryUnion]. Tab chrome stays ∪ `clinical:read` |
 /// `patient:read`. No row next-action / case detail on this tab.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Follow-ups tab / count badge | navigate | read ∪ ([tab]) |
-/// | Schedule case (toolbar) | create | write ∩ — not mounted ([scheduleCase]) |
+/// | Schedule case (search bar) | create | write ∩ — not mounted ([scheduleCase]) |
 /// | Search / Clear / Settings / columns | read chrome | ([listChrome]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
@@ -718,7 +719,7 @@ abstract final class TheaterFollowUpsAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Recovery tab / count badge | navigate | read ∪ ([tab]) |
-/// | Schedule case (toolbar) | create | write ∩ ([scheduleCase]) |
+/// | Schedule case (search bar) | create | write ∩ ([scheduleCase]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
 /// | Room / surgeon / anesthetist filters | read chrome | ([filters]) |
 /// | Room column (default) | read | ([roomColumn]) |

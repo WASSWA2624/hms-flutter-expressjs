@@ -291,6 +291,7 @@ class _RoomsBedsWorkspaceContentState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            // Room/bed catalog CRUD lives in admin setup → Facility only.
             AppTabStrip(
               tabs: <AppTabItem>[
                 for (final RoomsBedsSection section in visibleSections)
@@ -311,7 +312,6 @@ class _RoomsBedsWorkspaceContentState
                   }
                 }
               },
-              // Room/bed catalog CRUD lives in Tenant setup → Facility only.
             ),
             SizedBox(height: theme.spacing.sm),
             if (lastFailure != null) ...<Widget>[

@@ -48,10 +48,7 @@ const TheaterCase _recoveryCase = TheaterCase(
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _scheduleCaseAction() => find.text('Schedule case');
 
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
@@ -451,7 +448,7 @@ void main() {
       expect(_tab('Recovery'), findsNothing);
       expect(find.text('Rita Pacu'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
-      expect(_toolbarPrimary('Schedule case'), findsNothing);
+      expect(_scheduleCaseAction(), findsNothing);
       // Every board tab is read-gated; the strip collapses entirely.
       expect(find.byType(AppTabStrip), findsNothing);
     },
@@ -470,7 +467,7 @@ void main() {
 
       expect(_tab('Recovery'), findsOneWidget);
       expect(find.text('Rita Pacu'), findsOneWidget);
-      expect(_toolbarPrimary('Schedule case'), findsNothing);
+      expect(_scheduleCaseAction(), findsNothing);
       expect(find.widgetWithText(AppButton, 'Post-op'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
@@ -499,7 +496,7 @@ void main() {
 
       expect(_tab('Recovery'), findsOneWidget);
       expect(find.text('Rita Pacu'), findsOneWidget);
-      expect(_toolbarPrimary('Schedule case'), findsNothing);
+      expect(_scheduleCaseAction(), findsNothing);
       expect(find.widgetWithText(AppButton, 'Post-op'), findsNothing);
 
       await tester.tap(find.text('Rita Pacu'));
@@ -525,7 +522,7 @@ void main() {
       );
 
       expect(find.text('Rita Pacu'), findsOneWidget);
-      expect(_toolbarPrimary('Schedule case'), findsOneWidget);
+      expect(_scheduleCaseAction(), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Post-op'), findsOneWidget);
 
       await tester.tap(find.text('Rita Pacu'));
@@ -668,7 +665,7 @@ void main() {
 
     expect(find.textContaining('Try again'), findsWidgets);
     expect(find.widgetWithText(AppButton, 'Post-op'), findsNothing);
-    expect(_toolbarPrimary('Schedule case'), findsNothing);
+    expect(_scheduleCaseAction(), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });
 
@@ -687,7 +684,7 @@ void main() {
 
     expect(find.text('No theater cases'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Post-op'), findsNothing);
-    expect(_toolbarPrimary('Schedule case'), findsNothing);
+    expect(_scheduleCaseAction(), findsNothing);
   });
 
   testWidgets('authorized loading chrome remains observable on Recovery', (
@@ -811,7 +808,7 @@ void main() {
 
     expect(find.text('Rita Pacu'), findsOneWidget);
     expect(_tab('Recovery'), findsOneWidget);
-    expect(_toolbarPrimary('Schedule case'), findsOneWidget);
+    expect(_scheduleCaseAction(), findsOneWidget);
   });
 
   testWidgets('light theme: authorized Recovery chrome remains', (

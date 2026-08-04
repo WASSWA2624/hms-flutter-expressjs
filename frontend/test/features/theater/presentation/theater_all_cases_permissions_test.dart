@@ -55,10 +55,7 @@ const TheaterCase _readyScheduledCase = TheaterCase(
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _scheduleCaseAction() => find.text('Schedule case');
 
 AppListTable<TheaterCase> _table(WidgetTester tester) {
   return tester.widget<AppListTable<TheaterCase>>(
@@ -482,7 +479,7 @@ void main() {
       expect(_tab('All cases'), findsNothing);
       expect(_tab('In theater'), findsNothing);
       expect(_tab('Scheduled'), findsNothing);
-      expect(_toolbarPrimary('Schedule case'), findsNothing);
+      expect(_scheduleCaseAction(), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
       // Every board tab is read-gated; the strip collapses entirely.
       expect(find.byType(AppTabStrip), findsNothing);
@@ -504,7 +501,7 @@ void main() {
       expect(_tab('All cases'), findsOneWidget);
       expect(find.byType(AppListTable<TheaterCase>), findsOneWidget);
       expect(find.text('All Cases Patient'), findsOneWidget);
-      expect(_toolbarPrimary('Schedule case'), findsNothing);
+      expect(_scheduleCaseAction(), findsNothing);
       expect(find.widgetWithText(AppButton, 'Update readiness'), findsNothing);
       expect(_table(tester).columnVisibilityStorageKey, 'theater_all');
       expect(_table(tester).search?.filterGroups.length, 2);
@@ -537,7 +534,7 @@ void main() {
 
       expect(_tab('All cases'), findsOneWidget);
       expect(find.text('All Cases Patient'), findsOneWidget);
-      expect(_toolbarPrimary('Schedule case'), findsNothing);
+      expect(_scheduleCaseAction(), findsNothing);
       expect(find.widgetWithText(AppButton, 'Update readiness'), findsNothing);
 
       await tester.tap(find.text('All Cases Patient'));
@@ -563,7 +560,7 @@ void main() {
       );
 
       expect(find.text('All Cases Patient'), findsOneWidget);
-      expect(_toolbarPrimary('Schedule case'), findsOneWidget);
+      expect(_scheduleCaseAction(), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Update readiness'), findsWidgets);
 
       await tester.tap(find.text('All Cases Patient'));
@@ -609,7 +606,7 @@ void main() {
         ),
       );
 
-      await tester.tap(_toolbarPrimary('Schedule case'));
+      await tester.tap(_scheduleCaseAction());
       await _pumpAfterAction(tester);
 
       expect(find.byType(AppDialog), findsOneWidget);
@@ -633,7 +630,7 @@ void main() {
         ),
       );
 
-      await tester.tap(_toolbarPrimary('Schedule case'));
+      await tester.tap(_scheduleCaseAction());
       await _pumpAfterAction(tester);
 
       expect(find.byType(AppDialog), findsOneWidget);
@@ -745,7 +742,7 @@ void main() {
     );
 
     expect(find.textContaining('Try again'), findsWidgets);
-    expect(_toolbarPrimary('Schedule case'), findsNothing);
+    expect(_scheduleCaseAction(), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });
 
@@ -763,7 +760,7 @@ void main() {
     );
 
     expect(find.text('No theater cases'), findsOneWidget);
-    expect(_toolbarPrimary('Schedule case'), findsNothing);
+    expect(_scheduleCaseAction(), findsNothing);
     expect(find.widgetWithText(AppButton, 'Update readiness'), findsNothing);
   });
 
@@ -833,7 +830,7 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('Loading'), findsWidgets);
-      expect(_toolbarPrimary('Schedule case'), findsNothing);
+      expect(_scheduleCaseAction(), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
       listCompleter.complete(
@@ -887,7 +884,7 @@ void main() {
 
     expect(find.text('All Cases Patient'), findsOneWidget);
     expect(_tab('All cases'), findsOneWidget);
-    expect(_toolbarPrimary('Schedule case'), findsOneWidget);
+    expect(_scheduleCaseAction(), findsOneWidget);
   });
 
   testWidgets('light theme: authorized All cases chrome remains', (
@@ -977,7 +974,7 @@ void main() {
 
       expect(_tab('All cases'), findsNothing);
       expect(_tab('In theater'), findsNothing);
-      expect(_toolbarPrimary('Schedule case'), findsNothing);
+      expect(_scheduleCaseAction(), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
       // Inactive module strips every board tab; the strip collapses.
       expect(find.byType(AppTabStrip), findsNothing);

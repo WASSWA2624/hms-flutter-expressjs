@@ -50,10 +50,7 @@ final ReceptionFollowUpEntry _followUp = ReceptionFollowUpEntry(
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _scheduleCaseAction() => find.text('Schedule case');
 
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
@@ -442,7 +439,7 @@ void main() {
       expect(find.byType(FollowUpWorklistPanel), findsNothing);
       expect(find.text('Follow Up Patient'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
-      expect(_toolbarPrimary('Schedule case'), findsNothing);
+      expect(_scheduleCaseAction(), findsNothing);
       // Every board tab is read-gated; the strip collapses entirely.
       expect(find.byType(AppTabStrip), findsNothing);
     },
@@ -465,7 +462,7 @@ void main() {
       expect(find.text('Follow Up Patient'), findsOneWidget);
       expect(find.text('Reschedule follow-up'), findsNothing);
       expect(find.text('Mark completed'), findsNothing);
-      expect(_toolbarPrimary('Schedule case'), findsNothing);
+      expect(_scheduleCaseAction(), findsNothing);
 
       await tester.tap(find.text('Follow Up Patient'));
       await tester.pumpAndSettle();
@@ -493,7 +490,7 @@ void main() {
       expect(_tab('Follow-ups'), findsOneWidget);
       expect(find.byType(FollowUpWorklistPanel), findsOneWidget);
       expect(find.text('Follow Up Patient'), findsOneWidget);
-      expect(_toolbarPrimary('Schedule case'), findsNothing);
+      expect(_scheduleCaseAction(), findsNothing);
 
       await tester.tap(find.text('Follow Up Patient'));
       await tester.pumpAndSettle();
@@ -527,7 +524,7 @@ void main() {
       );
 
       expect(find.text('Follow Up Patient'), findsOneWidget);
-      expect(_toolbarPrimary('Schedule case'), findsNothing);
+      expect(_scheduleCaseAction(), findsNothing);
 
       await tester.tap(find.text('Follow Up Patient'));
       await tester.pumpAndSettle();
