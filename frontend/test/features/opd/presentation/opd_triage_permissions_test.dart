@@ -829,7 +829,7 @@ void main() {
     });
 
     testWidgets(
-      'row select opens Flow Actions omitting Record vitals duplicate',
+      'row select opens Flow Actions with Record vitals among patient actions',
       (WidgetTester tester) async {
         await _pumpTriageTab(
           tester,
@@ -844,9 +844,24 @@ void main() {
         expect(
           find.descendant(
             of: find.byType(AppQuickActions),
-            matching: find.text('Record vitals'),
+            matching: find.textContaining('Record vitals'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.byType(AppWorkflowStepper), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Correct stage'),
           ),
           findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Print summary'),
+          ),
+          findsOneWidget,
         );
       },
     );

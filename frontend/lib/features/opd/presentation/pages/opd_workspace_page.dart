@@ -319,11 +319,9 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       return;
     }
 
-    final String omitKey = resolveOpdFlowNextActionKey(flow);
     final bool? changed = await showFlowActionsDialog(
       context: context,
       flow: flow,
-      omitNextActionKey: omitKey,
     );
     if (changed == true && mounted) {
       ScaffoldMessenger.of(
@@ -2463,11 +2461,9 @@ Future<void> _openOpdTableItemActions(
 }) async {
   final OpdFlowSummary? flow = item.flow;
   if (flow != null) {
-    final String omitKey = resolveOpdFlowNextActionKey(flow);
     final bool? changed = await showFlowActionsDialog(
       context: context,
       flow: flow,
-      omitNextActionKey: omitKey,
     );
     if (changed == true && context.mounted) {
       ScaffoldMessenger.of(

@@ -34,6 +34,7 @@ class OpdWorkflowContextPanel extends StatelessWidget {
     this.expandedChild,
     this.showTitle = true,
     this.showJourneyStepper = true,
+    this.initiallyExpanded = false,
     super.key,
   });
 
@@ -53,6 +54,7 @@ class OpdWorkflowContextPanel extends StatelessWidget {
   final Widget? expandedChild;
   final bool showTitle;
   final bool showJourneyStepper;
+  final bool initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +115,7 @@ class OpdWorkflowContextPanel extends StatelessWidget {
           showAvatar: false,
           semanticLabel: patientName,
           persistExpandPreference: false,
+          initiallyExpanded: initiallyExpanded,
         ),
         if (showJourneyStepper && steps.isNotEmpty) ...<Widget>[
           SizedBox(height: theme.spacing.md),
@@ -133,6 +136,7 @@ class OpdActionContextPanel extends StatelessWidget {
     this.showTitle = true,
     this.showJourneyStepper = true,
     this.showPayment = true,
+    this.initiallyExpanded = false,
     super.key,
   });
 
@@ -141,6 +145,7 @@ class OpdActionContextPanel extends StatelessWidget {
   final bool showTitle;
   final bool showJourneyStepper;
   final bool showPayment;
+  final bool initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
@@ -197,6 +202,7 @@ class OpdActionContextPanel extends StatelessWidget {
           : OpdEncounterSummaryRow(pairs: expandedPairs),
       showTitle: showTitle,
       showJourneyStepper: showJourneyStepper,
+      initiallyExpanded: initiallyExpanded,
     );
   }
 }

@@ -63,7 +63,7 @@ void main() {
     expect(find.text('Next · Pay consultation'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
-    expect(find.byType(AppWorkflowStepper), findsOneWidget);
+    expect(find.byType(AppWorkflowStepper), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byType(LinearProgressIndicator), findsNothing);
   });
@@ -158,7 +158,7 @@ void main() {
 
     expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
-    expect(find.text('Record vitals'), findsWidgets);
+    expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
   });
 
@@ -236,7 +236,6 @@ void main() {
         findsNothing,
       );
       expect(find.widgetWithText(AppButton, 'Follow up'), findsOneWidget);
-      expect(find.widgetWithText(AppButton, 'Correct stage'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
     },
@@ -369,7 +368,7 @@ void main() {
       expect(find.text('Blood Pressure'), findsNothing);
       expect(find.text('CBC'), findsNothing);
       expect(find.textContaining('80/50'), findsNothing);
-      expect(find.byType(AppWorkflowStepper), findsOneWidget);
+      expect(find.byType(AppWorkflowStepper), findsNothing);
       expect(find.text('Cancel'), findsOneWidget);
     },
   );
@@ -400,7 +399,6 @@ void main() {
 
     expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Correct stage'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
   });

@@ -802,7 +802,7 @@ void main() {
     });
 
     testWidgets(
-      'row select opens Flow Actions omitting Record vitals duplicate',
+      'row select opens Flow Actions with Record vitals among patient actions',
       (WidgetTester tester) async {
         await _pumpActiveTab(
           tester,
@@ -814,7 +814,10 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('FLOW ACTIONS'), findsOneWidget);
-        expect(find.text('Record vitals'), findsNothing);
+        expect(find.textContaining('Record vitals'), findsWidgets);
+        expect(find.byType(AppWorkflowStepper), findsNothing);
+        expect(find.text('Correct stage'), findsNothing);
+        expect(find.text('Print summary'), findsOneWidget);
       },
     );
 

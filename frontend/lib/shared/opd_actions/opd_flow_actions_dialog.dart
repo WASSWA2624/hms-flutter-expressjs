@@ -102,6 +102,9 @@ const AccessRequirement opdAdmissionHandoffRequirement = AccessRequirement(
 );
 
 /// Shared OPD queue/flow stage actions hub for OPD, Reception, and Patients.
+///
+/// Shows expanded patient/encounter context (without the visit journey
+/// stepper) plus stage-appropriate quick actions including Print summary.
 Future<bool?> showFlowActionsDialog({
   required BuildContext context,
   required OpdFlowSummary flow,
@@ -140,8 +143,7 @@ class FlowActionsDialog extends ConsumerStatefulWidget {
   final bool allowVitalsActions;
 
   /// When false (Reception), clinician write actions and the clinical-services
-  /// panel are omitted while Follow up, Correct stage, and Print summary remain.
-  /// The workflow stepper stays read-only guidance.
+  /// panel are omitted while Follow up and Print summary remain.
   final bool allowClinicalActions;
 
   /// When set, omits the matching stage next-action from Quick Actions so the
@@ -204,7 +206,12 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               context: context,
               failure: failure,
             ),
-          OpdActionContextPanel(flow: flow, detail: detail),
+          OpdActionContextPanel(
+            flow: flow,
+            detail: detail,
+            showJourneyStepper: false,
+            initiallyExpanded: true,
+          ),
           if (isBusy)
             AppLoadingIndicator.compact(
               title: l10n.opdLoadingTitle,
@@ -547,11 +554,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           ),
           'disposition': dispositionAction,
           'admission_handoff': admissionHandoffAction,
-          'correct_stage': () => _correctStageAction(
-            context,
-            flow,
-            actionsEnabled: actionsEnabled,
-          ),
           'print': () => AppPermissionActionItem(
             requirement: opdFrontDeskActionRequirement,
             label: l10n.opdPrintSummaryAction,
@@ -619,7 +621,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               (canDispose || nextActionKey == 'disposition'),
         'admission_handoff' =>
           widget.allowClinicalActions && hasPendingAdmission,
-        'correct_stage' => true,
         'print' => true,
         _ => false,
       };
@@ -640,7 +641,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       'follow_up',
       'disposition',
       'admission_handoff',
-      'correct_stage',
       'print',
     ];
 
@@ -662,28 +662,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     return AppQuickActions(
       title: l10n.patientsQuickActionsTitle,
       permissionActions: actions,
-    );
-  }
-
-  AppPermissionActionItem _correctStageAction(
-    BuildContext context,
-    OpdFlowSummary flow, {
-    required bool actionsEnabled,
-  }) {
-    return AppPermissionActionItem(
-      // Reception and nursing may correct stage; clinician writes stay separate.
-      requirement: opdReceptionActionRequirement,
-      label: context.l10n.opdCorrectStageAction,
-      icon: AppActionIcons.move,
-      fullWidth: true,
-      hideWhenDenied: true,
-      enabled: actionsEnabled,
-      onPressed: actionsEnabled
-          ? () => _openNestedOpener(
-              context,
-              () => showCorrectStageDialog(context: context, flow: flow),
-            )
-          : null,
     );
   }
 

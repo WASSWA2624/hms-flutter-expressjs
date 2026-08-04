@@ -4,7 +4,8 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 ///
 /// Keys match Flow Actions quick-action ids: `billing`, `vitals`,
 /// `assign_doctor`, `doctor_review`, `handoff`, `disposition`,
-/// `admission_handoff`, `correct_stage`.
+/// `admission_handoff`. Returns an empty string when no stage next-action
+/// applies.
 String resolveOpdFlowNextActionKey(
   OpdFlowSummary flow, {
   OpdFlowDetail? detail,
@@ -27,7 +28,7 @@ String resolveOpdFlowNextActionKey(
   final bool hasPendingAdmission = opdFlowHasPendingAdmission(flow, detail);
 
   return switch (displayCode) {
-    'PAYMENT_DUE' => canPayNow ? 'billing' : 'correct_stage',
+    'PAYMENT_DUE' => canPayNow ? 'billing' : '',
     'VITALS_NEEDED' => 'vitals',
     'DOCTOR_NEEDED' => 'assign_doctor',
     'WITH_DOCTOR' => 'doctor_review',
@@ -43,8 +44,7 @@ String resolveOpdFlowNextActionKey(
     'DECISION_NEEDED' => 'disposition',
     'ADMISSION_PENDING' => 'admission_handoff',
     _ => switch (stage) {
-      'WAITING_CONSULTATION_PAYMENT' =>
-        canPayNow ? 'billing' : 'correct_stage',
+      'WAITING_CONSULTATION_PAYMENT' => canPayNow ? 'billing' : '',
       'WAITING_VITALS' => 'vitals',
       'WAITING_DOCTOR_ASSIGNMENT' =>
         hasAssignedProvider ? 'doctor_review' : 'assign_doctor',
@@ -55,7 +55,7 @@ String resolveOpdFlowNextActionKey(
       'RADIOLOGY_REQUESTED' ||
       'LAB_AND_RADIOLOGY_REQUESTED' ||
       'PHARMACY_REQUESTED' => 'handoff',
-      _ => 'correct_stage',
+      _ => '',
     },
   };
 }
