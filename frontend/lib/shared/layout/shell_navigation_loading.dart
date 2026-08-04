@@ -122,6 +122,7 @@ class _ShellRouteChildRetentionState extends State<ShellRouteChildRetention> {
   bool _sawLoadingForPending = false;
   int _pendingGeneration = 0;
   Timer? _neverLoadedCommitTimer;
+  final Map<String, GlobalKey> _routeKeys = <String, GlobalKey>{};
 
   @override
   void initState() {
@@ -134,6 +135,23 @@ class _ShellRouteChildRetentionState extends State<ShellRouteChildRetention> {
   void dispose() {
     _neverLoadedCommitTimer?.cancel();
     super.dispose();
+  }
+
+  GlobalKey _keyFor(String routeKey) {
+    return _routeKeys.putIfAbsent(routeKey, GlobalKey.new);
+  }
+
+  void _pruneRouteKeys() {
+    final Set<String> keep = <String>{
+      ?_visibleRouteKey,
+      ?_pendingRouteKey,
+      widget.routeKey,
+    };
+    _routeKeys.removeWhere((String key, _) => !keep.contains(key));
+  }
+
+  Widget _keyedChild(String routeKey, Widget child) {
+    return KeyedSubtree(key: _keyFor(routeKey), child: child);
   }
 
   @override
@@ -217,15 +235,22 @@ class _ShellRouteChildRetentionState extends State<ShellRouteChildRetention> {
         _pendingRouteKey != null && _visibleChild != null;
 
     if (!retainPrevious) {
-      return widget.child;
+      _pruneRouteKeys();
+      // Keep a stable GlobalKey so deep-link work started while the route was
+      // pending/offstage keeps the same Element after commit (avoids using a
+      // deactivated context for showDialog / Navigator lookups).
+      return _keyedChild(widget.routeKey, widget.child);
     }
 
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        _visibleChild!,
+        _keyedChild(_visibleRouteKey!, _visibleChild!),
         Offstage(
-          child: TickerMode(enabled: true, child: widget.child),
+          child: TickerMode(
+            enabled: true,
+            child: _keyedChild(widget.routeKey, widget.child),
+          ),
         ),
       ],
     );

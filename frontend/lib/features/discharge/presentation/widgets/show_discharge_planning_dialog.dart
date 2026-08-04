@@ -47,6 +47,16 @@ Future<bool?> showDischargePlanningDialog({
     return null;
   }
 
+  // Prefer the root navigator's context so an intermediate route commit
+  // (shell retention) cannot leave us holding a deactivated page element.
+  final NavigatorState? navigator = Navigator.maybeOf(
+    context,
+    rootNavigator: true,
+  );
+  if (navigator == null || !navigator.mounted) {
+    return null;
+  }
+
   final AppLocalizations l10n = context.l10n;
   final Widget resolvedTitle =
       title ??
@@ -62,8 +72,7 @@ Future<bool?> showDischargePlanningDialog({
       );
 
   return showAppDialog<bool>(
-    context: context,
-    barrierDismissible: false,
+    context: navigator.context,
     builder: (_) => DischargePlanningDialog(
       admissionId: normalizedAdmissionId,
       title: resolvedTitle,

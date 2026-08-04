@@ -874,16 +874,28 @@ Future<T?> showAppDialog<T>({
     },
   );
 
-  if (previousFocus case final FocusNode node) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final BuildContext? previousContext = node.context;
-      if (previousContext != null &&
-          previousContext.mounted &&
-          node.canRequestFocus) {
-        node.requestFocus();
-      }
-    });
-  }
+  _restoreFocusAfterDialog(previousFocus);
 
   return result;
+}
+
+/// Restores focus without touching deactivated widget ancestors.
+///
+/// `BuildContext.mounted` stays true while an element is only deactivated, so
+/// it is not a safe guard for ancestor lookups. Prefer focus-tree attachment
+/// (`enclosingScope`) before calling [FocusNode.requestFocus].
+void _restoreFocusAfterDialog(FocusNode? previousFocus) {
+  if (previousFocus == null) {
+    return;
+  }
+  final FocusNode node = previousFocus;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!node.canRequestFocus || node.enclosingScope == null) {
+      return;
+    }
+    if (node.context == null) {
+      return;
+    }
+    node.requestFocus();
+  });
 }

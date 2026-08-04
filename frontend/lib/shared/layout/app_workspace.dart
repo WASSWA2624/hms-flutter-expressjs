@@ -2236,12 +2236,14 @@ Future<T?> showAppWorkspaceDetailDrawer<T>({
 
   if (previousFocus case final FocusNode node) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final BuildContext? previousContext = node.context;
-      if (previousContext != null &&
-          previousContext.mounted &&
-          node.canRequestFocus) {
-        node.requestFocus();
+      // Prefer focus-tree attachment over context.mounted: deactivated
+      // elements are still "mounted" but unsafe for ancestor lookups.
+      if (!node.canRequestFocus ||
+          node.enclosingScope == null ||
+          node.context == null) {
+        return;
       }
+      node.requestFocus();
     });
   }
 

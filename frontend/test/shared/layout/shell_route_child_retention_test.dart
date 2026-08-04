@@ -160,6 +160,61 @@ void main() {
         expect(find.text('Settings'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'preserves pending route State across offstage commit',
+      (WidgetTester tester) async {
+        final GlobalKey<_ProbeState> probeKey = GlobalKey<_ProbeState>();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              home: _RetentionHarness(
+                routeKey: '/home',
+                isLoading: false,
+                child: const Text('Home'),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              home: _RetentionHarness(
+                routeKey: '/ipd',
+                isLoading: true,
+                child: _Probe(key: probeKey, label: 'IPD'),
+              ),
+            ),
+          ),
+        );
+
+        final _ProbeState offstageState = probeKey.currentState!;
+        expect(find.text('IPD', skipOffstage: false), findsOneWidget);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              home: _RetentionHarness(
+                routeKey: '/ipd',
+                isLoading: false,
+                child: _Probe(key: probeKey, label: 'IPD'),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('IPD'), findsOneWidget);
+        expect(
+          identical(offstageState, probeKey.currentState),
+          isTrue,
+          reason: 'Route Element/State must survive Offstage → visible commit',
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }
 
@@ -182,4 +237,18 @@ class _RetentionHarness extends StatelessWidget {
       child: child,
     );
   }
+}
+
+class _Probe extends StatefulWidget {
+  const _Probe({required this.label, super.key});
+
+  final String label;
+
+  @override
+  State<_Probe> createState() => _ProbeState();
+}
+
+class _ProbeState extends State<_Probe> {
+  @override
+  Widget build(BuildContext context) => Text(widget.label);
 }

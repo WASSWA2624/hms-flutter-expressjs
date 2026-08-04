@@ -82,19 +82,27 @@ class _IpdWorkspacePageState extends ConsumerState<IpdWorkspacePage> {
   }
 
   Future<void> _applyRouteQuery(IpdAdmissionQuery query) async {
+    final NavigatorState? navigator = Navigator.maybeOf(
+      context,
+      rootNavigator: true,
+    );
     final IpdWorkspaceController controller = ref.read(
       ipdWorkspaceControllerProvider.notifier,
     );
     await controller.applyRouteQuery(query);
-    if (!mounted) {
+    if (!mounted || navigator == null || !navigator.mounted) {
       return;
     }
     if (query.section.isBedBoard) {
       await controller.loadBedBoard();
     }
-    if (!mounted || query.focusAdmissionId == null) {
+    if (!mounted ||
+        !navigator.mounted ||
+        query.focusAdmissionId == null) {
       return;
     }
+
+    final BuildContext dialogContext = navigator.context;
 
     // Panel / action deep links open the mutation dialog directly (no empty
     // detail shell). Bare admission links open detail with the stage
@@ -115,20 +123,34 @@ class _IpdWorkspacePageState extends ConsumerState<IpdWorkspacePage> {
         return;
       }
       final bool handled = await runIpdFocusedMutation(
-        context,
+        dialogContext,
         ref,
         fallbackState: state,
         admissionId: query.focusAdmissionId!,
         panel: query.focusPanel,
         action: query.focusAction,
       );
-      if (!handled && mounted) {
-        await _openIpdDetailDialogById(context, ref, query.focusAdmissionId!);
+      if (!handled &&
+          mounted &&
+          navigator.mounted &&
+          dialogContext.mounted) {
+        await _openIpdDetailDialogById(
+          dialogContext,
+          ref,
+          query.focusAdmissionId!,
+        );
       }
       return;
     }
 
-    await _openIpdDetailDialogById(context, ref, query.focusAdmissionId!);
+    if (!dialogContext.mounted || !navigator.mounted) {
+      return;
+    }
+    await _openIpdDetailDialogById(
+      dialogContext,
+      ref,
+      query.focusAdmissionId!,
+    );
   }
 
   String? _querySignature(IpdAdmissionQuery? query) {
