@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_token_provider.dart';
 import 'package:hosspi_hms/features/home/data/dtos/home_dashboard_dtos.dart';
 import 'package:hosspi_hms/features/home/data/dtos/home_dashboard_lookups_dtos.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
@@ -24,6 +25,9 @@ final homeRepositoryProvider = Provider<HomeRepository>((ref) {
     apiClient: () => ref.read(apiClientProvider),
     accessPolicy: ref.watch(appAccessPolicyProvider),
     session: ref.watch(sessionStateProvider.select((state) => state.session)),
+    ensureAccessTokenReady: () {
+      return ref.read(sessionTokenProvider).ensureAccessTokenReady();
+    },
   );
 });
 
@@ -32,13 +36,16 @@ final class HomeRepositoryImpl implements HomeRepository {
     required ApiClient Function() apiClient,
     required AppAccessPolicy accessPolicy,
     required AuthSession? session,
+    Future<String?> Function()? ensureAccessTokenReady,
   }) : _apiClient = apiClient,
        _accessPolicy = accessPolicy,
-       _session = session;
+       _session = session,
+       _ensureAccessTokenReady = ensureAccessTokenReady;
 
   final ApiClient Function() _apiClient;
   final AppAccessPolicy _accessPolicy;
   final AuthSession? _session;
+  final Future<String?> Function()? _ensureAccessTokenReady;
 
   @override
   Future<Result<HomeDashboard>> loadDashboard(
@@ -54,6 +61,10 @@ final class HomeRepositoryImpl implements HomeRepository {
         _localDashboard(localProfile, usesFallbackData: true),
       );
     }
+
+    // After logout isolation the authenticated Dio is recreated; wait for the
+    // bearer token so the first workspace fetch is not anonymous → 403 fallback.
+    await _ensureAccessTokenReady?.call();
 
     final result = await _apiClient().get<HomeDashboard>(
       ApiEndpoints.nested(

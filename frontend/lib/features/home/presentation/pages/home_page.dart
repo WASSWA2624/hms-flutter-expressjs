@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_access.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_scope.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_sync.dart';
@@ -32,10 +35,9 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   String? _boundSessionScope;
-  /// Hides keep-alive metrics from the previous account until the new load
-  /// finishes. Cleared in-build when the provider leaves loading — never blocks
-  /// forever and never invalidates in a mismatch loop.
-  bool _hidePreviousAccountData = false;
+  /// True after an account/auth-scope change until a fresh load cycle finishes.
+  bool _awaitingFreshDashboard = false;
+  bool _sawLoadingAfterScopeChange = false;
 
   @override
   Widget build(BuildContext context) {
@@ -45,28 +47,74 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
     if (_boundSessionScope != sessionScope) {
       if (_boundSessionScope != null) {
-        _hidePreviousAccountData = true;
+        _awaitingFreshDashboard = true;
+        _sawLoadingAfterScopeChange = false;
         Future<void>.microtask(() {
           if (!mounted) {
             return;
           }
           homeClearDashboardOptimisticPatch(ref, request);
+          ref.invalidate(homeControllerProvider(request));
+          ref.invalidate(homeLookupsControllerProvider(request));
         });
       }
       _boundSessionScope = sessionScope;
     }
 
     final dashboard = ref.watch(homeControllerProvider(request));
-    if (_hidePreviousAccountData &&
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final HomeDashboardProfile expectedProfile = homeProfileForAccessPolicy(
+      accessPolicy,
+    );
+    if (_awaitingFreshDashboard && dashboard.isLoading) {
+      _sawLoadingAfterScopeChange = true;
+    }
+    final HomeDashboard? loadedDashboard = switch (dashboard) {
+      AsyncData<Result<HomeDashboard>>(:final value) => value.when(
+        success: (HomeDashboard data) => data,
+        failure: (_) => null,
+      ),
+      _ => null,
+    };
+    // Clear only after a fresh load cycle, or when the keep-alive payload
+    // already matches the live role (sync local dashboards may skip loading).
+    if (_awaitingFreshDashboard &&
         !dashboard.isLoading &&
         (dashboard.hasValue || dashboard.hasError)) {
-      _hidePreviousAccountData = false;
+      final bool roleMatches =
+          loadedDashboard == null ||
+          loadedDashboard.profile.role == expectedProfile.role;
+      if (_sawLoadingAfterScopeChange || roleMatches) {
+        _awaitingFreshDashboard = false;
+        _sawLoadingAfterScopeChange = false;
+      }
     }
 
     final HomeDashboardOptimisticPatchState? optimisticState = ref.watch(
       homeDashboardOptimisticPatchProvider(request),
     );
     final l10n = context.l10n;
+
+    ref.listen(appAccessPolicyProvider, (
+      AppAccessPolicy? previous,
+      AppAccessPolicy next,
+    ) {
+      final HomeDashboard? loaded = readSuccessfulHomeDashboard(ref, request);
+      if (loaded == null || _awaitingFreshDashboard) {
+        return;
+      }
+      final HomeDashboardProfile expected = homeProfileForAccessPolicy(next);
+      if (loaded.profile.role == expected.role) {
+        return;
+      }
+      setState(() {
+        _awaitingFreshDashboard = true;
+        _sawLoadingAfterScopeChange = false;
+      });
+      homeClearDashboardOptimisticPatch(ref, request);
+      ref.invalidate(homeControllerProvider(request));
+      ref.invalidate(homeLookupsControllerProvider(request));
+    });
 
     ref.listen(homeControllerProvider(request), (
       AsyncValue<Result<HomeDashboard>>? previous,
@@ -87,16 +135,24 @@ class _HomePageState extends ConsumerState<HomePage> {
       );
     });
 
+    final bool suppressStaleAccountData =
+        _awaitingFreshDashboard &&
+        !_sawLoadingAfterScopeChange &&
+        loadedDashboard != null &&
+        loadedDashboard.profile.role != expectedProfile.role;
+    final AsyncValue<Result<HomeDashboard>> displayValue =
+        suppressStaleAccountData
+        ? const AsyncLoading<Result<HomeDashboard>>()
+        : dashboard;
+
     // Tab read = profile:read (matrix). Per-atom Dashboard.md gates apply inside
     // [_HomeDashboardContent] via [filterHomeDashboardForAccess].
     return AppAccessGate(
       requirement: homeTabReadRequirement,
       child: AsyncStateScaffold<HomeDashboard>(
         key: ValueKey<String>('home-dashboard-$sessionScope'),
-        value: dashboard,
-        // Same-session realtime refresh keeps metrics visible; account switches
-        // hide the prior account until the new dashboard resolves.
-        keepPreviousDataDuringRefresh: !_hidePreviousAccountData,
+        value: displayValue,
+        keepPreviousDataDuringRefresh: !_awaitingFreshDashboard,
         loadingTitle: l10n.homeLoadingTitle,
         loadingBody: l10n.homeLoadingBody,
         maxWidth: PageMaxWidth.dataHeavy,
@@ -128,8 +184,23 @@ class _HomeDashboardContent extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final AppSpacingTokens spacing = theme.spacing;
     final policy = ref.watch(appAccessPolicyProvider);
+    final HomeDashboardProfile expectedProfile = homeProfileForAccessPolicy(
+      policy,
+    );
+    // Keep-alive loads can briefly retain another role's dashboard while the
+    // shell already reflects the current grants. Align chrome to the live
+    // policy immediately; HomePage invalidates on session-scope changes for
+    // fresh metrics.
+    final HomeDashboard roleAligned =
+        dashboard.profile.role == expectedProfile.role
+        ? dashboard
+        : mergeHomeDashboardForProfile(
+            profile: expectedProfile,
+            dashboard: dashboard,
+            policy: policy,
+          );
     final HomeDashboard authorized = filterHomeDashboardForAccess(
-      dashboard,
+      roleAligned,
       policy,
     );
     final profile = authorized.profile;
