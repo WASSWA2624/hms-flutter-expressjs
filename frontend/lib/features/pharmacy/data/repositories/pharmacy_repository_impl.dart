@@ -326,6 +326,9 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
         'dispense_batch_ref': dispenseBatchRef,
         'statement': statement,
         'reason': reason,
+        // Complete stock deduction and status rollup in one step so Dispense
+        // matches partial/full dispense expectations without a second user.
+        'finalize': true,
         'items': items
             .map((PharmacyDispenseLineInput item) {
               return _withoutEmpty(item.toJson());

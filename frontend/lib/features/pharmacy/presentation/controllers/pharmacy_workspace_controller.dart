@@ -1274,6 +1274,7 @@ final class PharmacyWorkspaceController
         statement: statement,
         reason: reason,
       ),
+      refreshDrugsAfter: true,
     );
   }
 

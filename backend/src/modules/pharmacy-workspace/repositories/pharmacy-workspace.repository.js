@@ -161,6 +161,11 @@ const txCreateDispenseAttestation = async (tx, data) =>
   tx.pharmacy_dispense_attestation.create({
     data});
 
+const txSoftDeleteDispenseAttestation = async (tx, id, deletedAt = new Date()) =>
+  tx.pharmacy_dispense_attestation.update({
+    where: { id },
+    data: { deleted_at: deletedAt }});
+
 const txFindDispenseAttestation = async (tx, pharmacyOrderId, batchRef, phase) =>
   tx.pharmacy_dispense_attestation.findFirst({
     where: {
@@ -376,6 +381,7 @@ module.exports = {
   txUpdateManyDispenseLogs,
   txFindDispenseLogsByBatch,
   txCreateDispenseAttestation,
+  txSoftDeleteDispenseAttestation,
   txFindDispenseAttestation,
   txFindManyDispenseAttestations,
   txFindInventoryMapByDrug,

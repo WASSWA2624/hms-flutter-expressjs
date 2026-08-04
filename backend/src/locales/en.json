@@ -298,6 +298,7 @@
   "errors.pharmacy_workspace.invalid_transition": "Invalid pharmacy workspace workflow transition",
   "errors.pharmacy_workspace.inventory_map.required": "A mapped inventory item is required for this medication",
   "errors.pharmacy_workspace.nothing_to_dispense": "No remaining quantity is available for dispense preparation",
+  "errors.pharmacy_workspace.quantity_exceeds_remaining": "Dispense quantity cannot exceed the remaining dispensable quantity",
   "errors.pharmacy_workspace.stock.not_found": "No stock record found for mapped inventory item",
   "errors.phi_access_log.not_found": "PHI access log not found",
   "errors.post_op_note.not_found": "Post-op note not found",

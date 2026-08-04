@@ -2357,7 +2357,9 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
                           isDense: true,
                           enabled: !_isSaving,
                           keyboardType: TextInputType.number,
-                          inputFormatters: _integerFormatters,
+                          inputFormatters: _quantityInputFormatters(
+                            line.item.quantityRemaining,
+                          ),
                           validator: (String? value) {
                             final int quantity =
                                 int.tryParse((value ?? '').trim()) ?? 0;
@@ -2414,7 +2416,20 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
                         isDense: true,
                         enabled: !_isSaving,
                         keyboardType: TextInputType.number,
-                        inputFormatters: _integerFormatters,
+                        inputFormatters: _quantityInputFormatters(
+                          line.item.quantityRemaining,
+                        ),
+                        validator: (String? value) {
+                          final int quantity =
+                              int.tryParse((value ?? '').trim()) ?? 0;
+                          if (quantity < 0 ||
+                              quantity > line.item.quantityRemaining) {
+                            return l10n.pharmacyQuantityValidationLabel(
+                              _wholeNumber(line.item.quantityRemaining),
+                            );
+                          }
+                          return null;
+                        },
                       ),
                     ),
                   ],
@@ -3199,6 +3214,12 @@ class _LineEditState {
     if (quantity <= 0) {
       return null;
     }
+    final int maxQuantity = item.quantityRemaining.isFinite
+        ? item.quantityRemaining.floor()
+        : 0;
+    if (quantity > maxQuantity) {
+      return null;
+    }
     return PharmacyDispenseLineInput(
       orderItemId: item.id,
       quantity: quantity,
@@ -3255,7 +3276,7 @@ class _LineEditTileState extends State<_LineEditTile> {
           labelText: l10n.pharmacyQuantityFieldLabel,
           enabled: !widget.isSaving,
           keyboardType: TextInputType.number,
-          inputFormatters: _integerFormatters,
+          inputFormatters: _quantityInputFormatters(maxQuantity),
           validator: (String? value) {
             final int quantity = int.tryParse((value ?? '').trim()) ?? 0;
             if (quantity < 0 || quantity > maxQuantity) {
@@ -4492,6 +4513,42 @@ void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
   showAppFailureSnackBar(context, failure);
 }
 
-final List<TextInputFormatter> _integerFormatters = <TextInputFormatter>[
-  FilteringTextInputFormatter.digitsOnly,
-];
+List<TextInputFormatter> _quantityInputFormatters(num maximum) {
+  final int maxValue = maximum.isFinite ? maximum.floor().clamp(0, 1 << 30) : 0;
+  return <TextInputFormatter>[
+    FilteringTextInputFormatter.digitsOnly,
+    _MaxIntInputFormatter(maxValue),
+  ];
+}
+
+/// Rejects or clamps typed integers so they cannot exceed [maxValue].
+final class _MaxIntInputFormatter extends TextInputFormatter {
+  const _MaxIntInputFormatter(this.maxValue);
+
+  final int maxValue;
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final String next = newValue.text.trim();
+    if (next.isEmpty) {
+      return newValue;
+    }
+
+    final int? parsed = int.tryParse(next);
+    if (parsed == null) {
+      return oldValue;
+    }
+    if (parsed <= maxValue) {
+      return newValue;
+    }
+
+    final String clamped = maxValue.toString();
+    return TextEditingValue(
+      text: clamped,
+      selection: TextSelection.collapsed(offset: clamped.length),
+    );
+  }
+}

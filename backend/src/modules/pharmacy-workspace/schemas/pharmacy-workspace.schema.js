@@ -66,6 +66,9 @@ const prepareDispenseSchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   statement: z.string().trim().max(65535).optional().nullable(),
   reason: z.string().trim().max(255).optional().nullable(),
+  // Dispense UI finalizes stock in the same request. Set false to prepare only
+  // and require a separate attest step (dual control).
+  finalize: z.coerce.boolean().optional().default(true),
   items: z.array(prepareDispenseLineSchema).min(1).optional()});
 
 const attestDispenseSchema = z.object({

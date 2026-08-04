@@ -183,6 +183,7 @@ describe('pharmacy-workspace.service', () => {
       'PHO0000001',
       {
         dispense_batch_ref: 'DSPBATCH001',
+        finalize: false,
         items: [{ order_item_id: 'POI0000001', quantity: 2 }]},
       'actor-1',
       'PHARMACIST',
@@ -231,6 +232,7 @@ describe('pharmacy-workspace.service', () => {
         'PHO0000001',
         {
           dispense_batch_ref: 'DSPBATCH002',
+          finalize: false,
           items: [{ order_item_id: 'POI0000001', quantity: 2 }]},
         'actor-2',
         'PHARMACIST',
@@ -243,6 +245,176 @@ describe('pharmacy-workspace.service', () => {
 
     expect(pharmacyWorkspaceRepository.txCreateDispenseLog).not.toHaveBeenCalled();
     expect(pharmacyWorkspaceRepository.txCreateDispenseAttestation).not.toHaveBeenCalled();
+  });
+
+  it('prepareDispense finalize voids a stuck pending batch and completes dispense', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+
+    const pendingOrder = buildOrder({
+      items: [
+        {
+          ...buildOrder().items[0],
+          quantity: 11,
+          dispense_logs: [
+            {
+              id: 'dlog-pending-1',
+              human_friendly_id: 'DLOG0099',
+              pharmacy_order_item_id: 'item-internal-1',
+              dispense_batch_ref: 'DSPBATCH001',
+              status: 'PENDING',
+              quantity_dispensed: 1,
+              created_at: now,
+              updated_at: now}]}],
+      dispense_attestations: [
+        {
+          id: 'att-prep-open-1',
+          human_friendly_id: 'PDA000099',
+          pharmacy_order_id: 'order-internal-1',
+          dispense_batch_ref: 'DSPBATCH001',
+          phase: 'PREPARE',
+          attested_by_user_id: 'actor-1',
+          attested_role: 'PHARMACIST',
+          attested_at: now,
+          created_at: now,
+          updated_at: now}]});
+
+    const afterVoid = buildOrder({
+      items: [
+        {
+          ...buildOrder().items[0],
+          quantity: 11,
+          dispense_logs: [
+            {
+              id: 'dlog-pending-1',
+              human_friendly_id: 'DLOG0099',
+              pharmacy_order_item_id: 'item-internal-1',
+              dispense_batch_ref: 'DSPBATCH001',
+              status: 'CANCELLED',
+              quantity_dispensed: 1,
+              created_at: now,
+              updated_at: now}]}],
+      dispense_attestations: []});
+
+    const afterPrepare = {
+      ...afterVoid,
+      dispense_attestations: [
+        {
+          id: 'att-prep-2',
+          human_friendly_id: 'PDA000100',
+          pharmacy_order_id: 'order-internal-1',
+          dispense_batch_ref: 'DSPBATCH002',
+          phase: 'PREPARE',
+          attested_by_user_id: 'actor-1',
+          attested_role: 'PHARMACIST',
+          attested_at: now,
+          created_at: now,
+          updated_at: now}],
+      items: [
+        {
+          ...afterVoid.items[0],
+          dispense_logs: [
+            ...afterVoid.items[0].dispense_logs,
+            {
+              id: 'dlog-2',
+              human_friendly_id: 'DLOG0100',
+              pharmacy_order_item_id: 'item-internal-1',
+              dispense_batch_ref: 'DSPBATCH002',
+              status: 'PENDING',
+              quantity_dispensed: 1,
+              created_at: now,
+              updated_at: now}]}]};
+
+    const afterFinalize = {
+      ...afterPrepare,
+      status: 'PARTIALLY_DISPENSED',
+      dispense_attestations: [
+        ...afterPrepare.dispense_attestations,
+        {
+          id: 'att-attest-2',
+          human_friendly_id: 'PDA000101',
+          pharmacy_order_id: 'order-internal-1',
+          dispense_batch_ref: 'DSPBATCH002',
+          phase: 'ATTEST',
+          attested_by_user_id: 'actor-1',
+          attested_role: 'PHARMACIST',
+          attested_at: now,
+          created_at: now,
+          updated_at: now}],
+      items: [
+        {
+          ...afterPrepare.items[0],
+          dispense_logs: afterPrepare.items[0].dispense_logs.map((entry) =>
+            entry.id === 'dlog-2'
+              ? { ...entry, status: 'DISPENSED', dispensed_at: now }
+              : entry
+          )}]};
+
+    pharmacyWorkspaceRepository.withTransaction.mockImplementation(async (callback) => callback({}));
+    pharmacyWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(pendingOrder)
+      .mockResolvedValueOnce(afterVoid)
+      .mockResolvedValueOnce(afterFinalize)
+      .mockResolvedValueOnce(afterFinalize);
+    pharmacyWorkspaceRepository.txFindDispenseAttestation
+      .mockResolvedValueOnce(null) // existing prepare for new batch
+      .mockResolvedValueOnce(null) // existing attest for new batch
+      .mockResolvedValueOnce(pendingOrder.dispense_attestations[0]) // void pending prepare
+      .mockResolvedValueOnce(afterPrepare.dispense_attestations[0]) // finalize prepare lookup
+      .mockResolvedValueOnce(null); // finalize existing attest
+    pharmacyWorkspaceRepository.txUpdateManyDispenseLogs.mockResolvedValue({ count: 1 });
+    pharmacyWorkspaceRepository.txSoftDeleteDispenseAttestation.mockResolvedValue({});
+    pharmacyWorkspaceRepository.txCreateDispenseLog.mockResolvedValue({ id: 'dlog-2' });
+    pharmacyWorkspaceRepository.txCreateDispenseAttestation
+      .mockResolvedValueOnce({ id: 'att-prep-2' })
+      .mockResolvedValueOnce({ id: 'att-attest-2' });
+    pharmacyWorkspaceRepository.txFindDispenseLogsByBatch.mockResolvedValue([
+      {
+        id: 'dlog-2',
+        status: 'PENDING',
+        quantity_dispensed: 1,
+        pharmacy_order_item: afterPrepare.items[0]}]);
+    pharmacyWorkspaceRepository.txFindStockByInventoryItemAndFacility.mockResolvedValue({
+      id: 'stock-1',
+      quantity: 100,
+      inventory_item_id: 'inventory-item-internal-1',
+      facility_id: 'facility-internal-1',
+      inventory_item: {
+        id: 'inventory-item-internal-1',
+        human_friendly_id: 'INV0000001',
+        tenant_id: 'tenant-internal-1',
+        name: 'Paracetamol 500mg',
+        category: 'MEDICATION',
+        sku: 'PCM',
+        unit: 'tablet'},
+      facility: {
+        id: 'facility-internal-1',
+        human_friendly_id: 'FAC0000001',
+        name: 'Main'}});
+    pharmacyWorkspaceRepository.txUpdateInventoryStock.mockResolvedValue({ quantity: 99 });
+    pharmacyWorkspaceRepository.txCreateStockMovement.mockResolvedValue({ id: 'move-1' });
+    pharmacyWorkspaceRepository.txUpdateDispenseLog.mockResolvedValue({ id: 'dlog-2' });
+    pharmacyWorkspaceRepository.txUpdateOrder.mockResolvedValue({ id: 'order-internal-1' });
+    pharmacyWorkspaceRepository.findInventoryStockMetrics.mockResolvedValue([]);
+    pharmacyWorkspaceRepository.countOrders.mockResolvedValue(0);
+    pharmacyWorkspaceRepository.countDispenseAttestations.mockResolvedValue(0);
+
+    const result = await pharmacyWorkspaceService.prepareDispense(
+      'PHO0000001',
+      {
+        dispense_batch_ref: 'DSPBATCH002',
+        finalize: true,
+        items: [{ order_item_id: 'POI0000001', quantity: 1 }]},
+      'actor-1',
+      'PHARMACIST',
+      '127.0.0.1',
+      mockUser
+    );
+
+    expect(result.dispense_batch_ref).toBe('DSPBATCH002');
+    expect(pharmacyWorkspaceRepository.txUpdateManyDispenseLogs).toHaveBeenCalled();
+    expect(pharmacyWorkspaceRepository.txSoftDeleteDispenseAttestation).toHaveBeenCalled();
+    expect(pharmacyWorkspaceRepository.txCreateDispenseAttestation).toHaveBeenCalledTimes(2);
+    expect(pharmacyWorkspaceRepository.txUpdateInventoryStock).toHaveBeenCalled();
   });
 
   it('prepareDispense allows a new batch after a prior batch was fully attested', async () => {
@@ -332,6 +504,7 @@ describe('pharmacy-workspace.service', () => {
       'PHO0000001',
       {
         dispense_batch_ref: 'DSPBATCH002',
+        finalize: false,
         items: [{ order_item_id: 'POI0000001', quantity: 6 }]},
       'actor-1',
       'PHARMACIST',

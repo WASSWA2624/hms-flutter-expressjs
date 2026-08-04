@@ -797,6 +797,222 @@ const listPendingAttestationBatchRefs = (orderRecord) => {
     .map(([batchRef]) => batchRef);
 };
 
+const voidPendingPrepareBatches = async (tx, orderRecord) => {
+  const pendingBatchRefs = listPendingAttestationBatchRefs(orderRecord);
+  if (!pendingBatchRefs.length) {
+    return [];
+  }
+
+  for (const batchRef of pendingBatchRefs) {
+    await pharmacyWorkspaceRepository.txUpdateManyDispenseLogs(
+      tx,
+      {
+        status: 'PENDING',
+        dispense_batch_ref: batchRef,
+        pharmacy_order_item: {
+          pharmacy_order_id: orderRecord.id,
+          deleted_at: null}},
+      { status: 'CANCELLED' }
+    );
+
+    const prepareAttestation = await pharmacyWorkspaceRepository.txFindDispenseAttestation(
+      tx,
+      orderRecord.id,
+      batchRef,
+      'PREPARE'
+    );
+    if (prepareAttestation?.id) {
+      await pharmacyWorkspaceRepository.txSoftDeleteDispenseAttestation(
+        tx,
+        prepareAttestation.id
+      );
+    }
+  }
+
+  return pendingBatchRefs;
+};
+
+const finalizePendingDispenseBatch = async ({
+  tx,
+  order,
+  scope,
+  batchRef,
+  userId,
+  userRole,
+  ipAddress,
+  payload = {},
+  allowSameUser = false}) => {
+  const prepareAttestation = await pharmacyWorkspaceRepository.txFindDispenseAttestation(
+    tx,
+    order.id,
+    batchRef,
+    'PREPARE'
+  );
+  assertTransition(Boolean(prepareAttestation), {
+    reason: 'prepare_required',
+    dispense_batch_ref: batchRef});
+
+  const existingAttest = await pharmacyWorkspaceRepository.txFindDispenseAttestation(
+    tx,
+    order.id,
+    batchRef,
+    'ATTEST'
+  );
+  if (existingAttest) {
+    const refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
+      tx,
+      order.id,
+      PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
+    );
+    return {
+      order: refreshedOrder,
+      batchRef,
+      stockRecords: [],
+      attestation: existingAttest};
+  }
+
+  if (
+    !allowSameUser &&
+    String(prepareAttestation.attested_by_user_id || '') === String(userId || '')
+  ) {
+    throw new HttpError('errors.pharmacy_workspace.attestation.same_user', 400);
+  }
+
+  const pendingLogs = await pharmacyWorkspaceRepository.txFindDispenseLogsByBatch(
+    tx,
+    order.id,
+    batchRef,
+    {
+      pharmacy_order_item: {
+        include: {
+          drug: {
+            include: {
+              inventory_maps: {
+                where: { deleted_at: null },
+                orderBy: [{ is_default: 'desc' }, { created_at: 'asc' }],
+                include: {
+                  inventory_item: true}}}}}}}
+  );
+
+  const pendingOnly = pendingLogs.filter(
+    (entry) => String(entry.status || '').toUpperCase() === 'PENDING'
+  );
+  assertTransition(pendingOnly.length > 0, {
+    reason: 'pending_logs_required',
+    dispense_batch_ref: batchRef});
+
+  const resolvedFacilityId = await resolveScopedFacilityId(
+    payload.facility_id || order.patient?.facility_id || null,
+    scope,
+    true
+  );
+
+  const attestedAt = toDateOrNull(payload.attested_at, new Date());
+  const stockRecords = [];
+
+  for (const log of pendingOnly) {
+    const orderItem = log.pharmacy_order_item;
+    if (!orderItem) {
+      throw new HttpError('errors.pharmacy_order_item.not_found', 404);
+    }
+
+    const inventoryMap = await resolveInventoryMapForItem({
+      tx,
+      item: orderItem,
+      tenantId: order.patient?.tenant_id || null,
+      inventoryItemIdentifier: null});
+
+    if (!inventoryMap) {
+      throw new HttpError('errors.pharmacy_workspace.inventory_map.required', 400, [
+        { order_item_id: orderItem.id }]);
+    }
+
+    const stockDelta = normalizeStockDeductionQuantity(
+      log.quantity_dispensed,
+      inventoryMap.deduction_factor
+    );
+
+    const stockRecord = await pharmacyWorkspaceRepository.txFindStockByInventoryItemAndFacility(
+      tx,
+      inventoryMap.inventory_item_id,
+      resolvedFacilityId,
+      INVENTORY_STOCK_WITH_RELATIONS_INCLUDE
+    );
+    if (!stockRecord) {
+      throw new HttpError('errors.pharmacy_workspace.stock.not_found', 404, [
+        { inventory_item_id: inventoryMap.inventory_item_id }]);
+    }
+    const stock = ensureScopedInventoryStockRecord(stockRecord, scope);
+
+    assertTransition(Number(stock.quantity || 0) >= stockDelta, {
+      reason: 'insufficient_stock',
+      inventory_item_id: inventoryMap.inventory_item_id,
+      available: Number(stock.quantity || 0),
+      required: stockDelta});
+
+    const updatedStock = await pharmacyWorkspaceRepository.txUpdateInventoryStock(tx, stock.id, {
+      quantity: Number(stock.quantity || 0) - stockDelta});
+
+    await pharmacyWorkspaceRepository.txCreateStockMovement(tx, {
+      inventory_item_id: inventoryMap.inventory_item_id,
+      facility_id: resolvedFacilityId,
+      movement_type: 'OUTBOUND',
+      reason: 'DISPENSE',
+      quantity: stockDelta,
+      occurred_at: attestedAt});
+
+    await pharmacyWorkspaceRepository.txUpdateDispenseLog(tx, log.id, {
+      status: 'DISPENSED',
+      dispensed_at: attestedAt});
+
+    stockRecords.push({
+      ...stock,
+      ...updatedStock});
+  }
+
+  const attestRecord = await pharmacyWorkspaceRepository.txCreateDispenseAttestation(tx, {
+    pharmacy_order_id: order.id,
+    dispense_batch_ref: batchRef,
+    phase: 'ATTEST',
+    attested_by_user_id: userId,
+    attested_role: userRole || null,
+    statement: payload.statement || null,
+    reason: payload.reason || (allowSameUser ? 'DISPENSE' : null),
+    ip_address: ipAddress || null,
+    attested_at: attestedAt});
+
+  let refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
+    tx,
+    order.id,
+    PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
+  );
+
+  await syncOrderItemStatusesAfterDispense(tx, refreshedOrder);
+
+  const rolledUpStatus = rollupOrderStatus(refreshedOrder);
+  const billingReconciled = await reconcilePendingPharmacyBillingAfterDispense(
+    tx,
+    refreshedOrder
+  );
+  if (refreshedOrder.status !== rolledUpStatus) {
+    await pharmacyWorkspaceRepository.txUpdateOrder(tx, order.id, {
+      status: rolledUpStatus});
+  }
+  if (refreshedOrder.status !== rolledUpStatus || billingReconciled) {
+    refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
+      tx,
+      order.id,
+      PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
+    );
+  }
+
+  return {
+    order: refreshedOrder,
+    batchRef,
+    stockRecords,
+    attestation: attestRecord};
+};
+
 const syncOrderItemStatusesAfterDispense = async (tx, orderRecord) => {
   const items = Array.isArray(orderRecord?.items) ? orderRecord.items : [];
   for (const item of items) {
@@ -1509,27 +1725,47 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
         return {
           order: refreshedOrder,
           batchRef,
-          prepareAttestation: existingPrepare};
+          prepareAttestation: existingPrepare,
+          stockRecords: [],
+          finalized: Boolean(existingAttest)};
       }
 
-      const pendingBatchRefs = listPendingAttestationBatchRefs(order).filter(
-        (entry) => entry !== batchRef
-      );
-      assertTransition(pendingBatchRefs.length === 0, {
-        reason: 'pending_attestation_exists',
-        requested_batch_ref: batchRef,
-        pending_batch_refs: pendingBatchRefs});
+      // Dispense finalizes immediately by default. Replace any abandoned pending
+      // prepare so pharmacists are not stuck after a prior incomplete attempt.
+      const shouldFinalize = payload.finalize !== false;
+      let workingOrder = order;
+      if (shouldFinalize) {
+        const voided = await voidPendingPrepareBatches(tx, workingOrder);
+        if (voided.length) {
+          workingOrder = ensureScopedOrderRecord(
+            await pharmacyWorkspaceRepository.txFindOrderById(
+              tx,
+              order.id,
+              PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
+            ),
+            scope
+          );
+        }
+      } else {
+        const pendingBatchRefs = listPendingAttestationBatchRefs(workingOrder).filter(
+          (entry) => entry !== batchRef
+        );
+        assertTransition(pendingBatchRefs.length === 0, {
+          reason: 'pending_attestation_exists',
+          requested_batch_ref: batchRef,
+          pending_batch_refs: pendingBatchRefs});
+      }
 
       const explicitLines = Array.isArray(payload.items) && payload.items.length ? payload.items : null;
       const sourceItems = explicitLines
         ? explicitLines
-        : (order.items || []).map((item) => ({
+        : (workingOrder.items || []).map((item) => ({
             order_item_id: item.human_friendly_id || item.id,
             quantity: computeItemDispensedMetrics(item).remaining}));
 
       const targetLines = [];
       for (const line of sourceItems) {
-        const orderItem = resolveOrderItemByIdentifier(order, line.order_item_id);
+        const orderItem = resolveOrderItemByIdentifier(workingOrder, line.order_item_id);
         if (!orderItem) {
           throw new HttpError('errors.pharmacy_order_item.not_found', 404);
         }
@@ -1540,16 +1776,19 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
           order_item_id: line.order_item_id});
 
         const metrics = computeItemDispensedMetrics(orderItem);
-        assertTransition(quantity <= metrics.remaining, {
-          reason: 'quantity_exceeds_remaining',
-          order_item_id: line.order_item_id,
-          remaining: metrics.remaining,
-          requested: quantity});
+        if (quantity > metrics.remaining) {
+          throw new HttpError('errors.pharmacy_workspace.quantity_exceeds_remaining', 400, [
+            {
+              field: 'quantity',
+              order_item_id: line.order_item_id,
+              remaining: metrics.remaining,
+              requested: quantity}]);
+        }
 
         const inventoryMap = await resolveInventoryMapForItem({
           tx,
           item: orderItem,
-          tenantId: order.patient?.tenant_id || null,
+          tenantId: workingOrder.patient?.tenant_id || null,
           inventoryItemIdentifier: line.inventory_item_id || null});
         if (!inventoryMap) {
           throw new HttpError('errors.pharmacy_workspace.inventory_map.required', 400, [
@@ -1574,7 +1813,7 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
       }
 
       const prepareAttestation = await pharmacyWorkspaceRepository.txCreateDispenseAttestation(tx, {
-        pharmacy_order_id: order.id,
+        pharmacy_order_id: workingOrder.id,
         dispense_batch_ref: batchRef,
         phase: 'PREPARE',
         attested_by_user_id: userId,
@@ -1584,26 +1823,46 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
         ip_address: ipAddress || null,
         attested_at: new Date()});
 
-      const refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
+      if (!shouldFinalize) {
+        const refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
+          tx,
+          workingOrder.id,
+          PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
+        );
+        return {
+          order: refreshedOrder,
+          batchRef,
+          prepareAttestation,
+          stockRecords: [],
+          finalized: false};
+      }
+
+      const finalized = await finalizePendingDispenseBatch({
         tx,
-        order.id,
-        PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
-      );
+        order: workingOrder,
+        scope,
+        batchRef,
+        userId,
+        userRole,
+        ipAddress,
+        payload,
+        allowSameUser: true});
 
       return {
-        order: refreshedOrder,
-        batchRef,
-        prepareAttestation};
+        ...finalized,
+        prepareAttestation,
+        finalized: true};
     });
 
     createAuditLog({
       user_id: userId,
-      action: 'PREPARE_DISPENSE',
+      action: mutation.finalized ? 'DISPENSE' : 'PREPARE_DISPENSE',
       entity: 'pharmacy_order',
       entity_id: mutation.order?.id,
       diff: {
         metadata: {
           dispense_batch_ref: mutation.batchRef,
+          finalized: Boolean(mutation.finalized),
           line_count: Array.isArray(payload.items) ? payload.items.length : null}},
       ip_address: ipAddress}).catch(() => {});
 
@@ -1613,19 +1872,32 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
       workflow,
       orderRecord: mutation.order,
       actorUserId: userId || null,
-      action: 'PREPARE_DISPENSE',
+      action: mutation.finalized ? 'DISPENSE' : 'PREPARE_DISPENSE',
       resourceType: 'dispense_batch',
       resourceId: mutation.batchRef,
-      batchRef: mutation.batchRef}).catch(() => {});
+      batchRef: mutation.batchRef,
+      stockRecords: mutation.stockRecords || []}).catch(() => {});
 
     const orderSummary = await buildWorkbenchSummary(
       await buildWorkbenchOrderWhere({}, scope, { includeSearch: false })
     );
 
-    return {
+    const response = {
       workflow,
       dispense_batch_ref: mutation.batchRef,
       order_summary: orderSummary};
+
+    if (mutation.finalized) {
+      const stockSummaryWhere = await buildInventoryStockWhere({}, scope, { includeSearch: false });
+      response.stocks = (mutation.stockRecords || [])
+        .map((record) => mapInventoryStockRecord(record))
+        .filter(Boolean);
+      response.stock_summary = summarizeStockMetrics(
+        await pharmacyWorkspaceRepository.findInventoryStockMetrics(stockSummaryWhere)
+      );
+    }
+
+    return response;
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -1656,172 +1928,16 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
         from: order.status,
         to: 'ATTEST_DISPENSE'});
 
-      const prepareAttestation = await pharmacyWorkspaceRepository.txFindDispenseAttestation(
+      return finalizePendingDispenseBatch({
         tx,
-        order.id,
-        batchRef,
-        'PREPARE'
-      );
-      assertTransition(Boolean(prepareAttestation), {
-        reason: 'prepare_required',
-        dispense_batch_ref: batchRef});
-
-      const existingAttest = await pharmacyWorkspaceRepository.txFindDispenseAttestation(
-        tx,
-        order.id,
-        batchRef,
-        'ATTEST'
-      );
-      if (existingAttest) {
-        const refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
-          tx,
-          order.id,
-          PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
-        );
-        return {
-          order: refreshedOrder,
-          batchRef,
-          stockRecords: [],
-          attestation: existingAttest};
-      }
-
-      if (String(prepareAttestation.attested_by_user_id || '') === String(userId || '')) {
-        throw new HttpError('errors.pharmacy_workspace.attestation.same_user', 400);
-      }
-
-      const pendingLogs = await pharmacyWorkspaceRepository.txFindDispenseLogsByBatch(
-        tx,
-        order.id,
-        batchRef,
-        {
-          pharmacy_order_item: {
-            include: {
-              drug: {
-                include: {
-                  inventory_maps: {
-                    where: { deleted_at: null },
-                    orderBy: [{ is_default: 'desc' }, { created_at: 'asc' }],
-                    include: {
-                      inventory_item: true}}}}}}}
-      );
-
-      const pendingOnly = pendingLogs.filter(
-        (entry) => String(entry.status || '').toUpperCase() === 'PENDING'
-      );
-      assertTransition(pendingOnly.length > 0, {
-        reason: 'pending_logs_required',
-        dispense_batch_ref: batchRef});
-
-      const resolvedFacilityId = await resolveScopedFacilityId(
-        payload.facility_id || order.patient?.facility_id || null,
+        order,
         scope,
-        true
-      );
-
-      const attestedAt = toDateOrNull(payload.attested_at, new Date());
-      const stockRecords = [];
-
-      for (const log of pendingOnly) {
-        const orderItem = log.pharmacy_order_item;
-        if (!orderItem) {
-          throw new HttpError('errors.pharmacy_order_item.not_found', 404);
-        }
-
-        const inventoryMap = await resolveInventoryMapForItem({
-          tx,
-          item: orderItem,
-          tenantId: order.patient?.tenant_id || null,
-          inventoryItemIdentifier: null});
-
-        if (!inventoryMap) {
-          throw new HttpError('errors.pharmacy_workspace.inventory_map.required', 400, [
-            { order_item_id: orderItem.id }]);
-        }
-
-        const stockDelta = normalizeStockDeductionQuantity(
-          log.quantity_dispensed,
-          inventoryMap.deduction_factor
-        );
-
-        const stockRecord = await pharmacyWorkspaceRepository.txFindStockByInventoryItemAndFacility(
-          tx,
-          inventoryMap.inventory_item_id,
-          resolvedFacilityId,
-          INVENTORY_STOCK_WITH_RELATIONS_INCLUDE
-        );
-        if (!stockRecord) {
-          throw new HttpError('errors.pharmacy_workspace.stock.not_found', 404, [
-            { inventory_item_id: inventoryMap.inventory_item_id }]);
-        }
-        const stock = ensureScopedInventoryStockRecord(stockRecord, scope);
-
-        assertTransition(Number(stock.quantity || 0) >= stockDelta, {
-          reason: 'insufficient_stock',
-          inventory_item_id: inventoryMap.inventory_item_id,
-          available: Number(stock.quantity || 0),
-          required: stockDelta});
-
-        const updatedStock = await pharmacyWorkspaceRepository.txUpdateInventoryStock(tx, stock.id, {
-          quantity: Number(stock.quantity || 0) - stockDelta});
-
-        await pharmacyWorkspaceRepository.txCreateStockMovement(tx, {
-          inventory_item_id: inventoryMap.inventory_item_id,
-          facility_id: resolvedFacilityId,
-          movement_type: 'OUTBOUND',
-          reason: 'DISPENSE',
-          quantity: stockDelta,
-          occurred_at: attestedAt});
-
-        await pharmacyWorkspaceRepository.txUpdateDispenseLog(tx, log.id, {
-          status: 'DISPENSED',
-          dispensed_at: attestedAt});
-
-        stockRecords.push({
-          ...stock,
-          ...updatedStock});
-      }
-
-      const attestRecord = await pharmacyWorkspaceRepository.txCreateDispenseAttestation(tx, {
-        pharmacy_order_id: order.id,
-        dispense_batch_ref: batchRef,
-        phase: 'ATTEST',
-        attested_by_user_id: userId,
-        attested_role: userRole || null,
-        statement: payload.statement || null,
-        reason: payload.reason || null,
-        ip_address: ipAddress || null,
-        attested_at: attestedAt});
-
-      let refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
-        tx,
-        order.id,
-        PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
-      );
-
-      await syncOrderItemStatusesAfterDispense(tx, refreshedOrder);
-
-      const rolledUpStatus = rollupOrderStatus(refreshedOrder);
-      const billingReconciled = await reconcilePendingPharmacyBillingAfterDispense(
-        tx,
-        refreshedOrder
-      );
-      if (refreshedOrder.status !== rolledUpStatus) {
-        await pharmacyWorkspaceRepository.txUpdateOrder(tx, order.id, {
-          status: rolledUpStatus});
-      }
-      if (refreshedOrder.status !== rolledUpStatus || billingReconciled) {
-        refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
-          tx,
-          order.id,
-          PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
-        );
-      }
-
-      return {
-        order: refreshedOrder,
         batchRef,
-        stockRecords,
-        attestation: attestRecord};
+        userId,
+        userRole,
+        ipAddress,
+        payload,
+        allowSameUser: false});
     });
 
     createAuditLog({
