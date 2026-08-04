@@ -70,7 +70,7 @@ void main() {
     expect(find.text('Hide partially dispensed items'), findsOneWidget);
     expect(find.text('Include dispense history'), findsOneWidget);
     expect(find.text('Medications to include'), findsOneWidget);
-    expect(find.text('Med A'), findsOneWidget);
+    expect(find.textContaining('Med A'), findsOneWidget);
     expect(find.text('2 / 2'), findsOneWidget);
     expect(find.byType(AppReportSectionTile), findsWidgets);
     expect(find.byType(SwitchListTile), findsNothing);

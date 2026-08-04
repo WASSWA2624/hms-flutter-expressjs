@@ -379,6 +379,23 @@ class _PharmacyPrintSelectableTile extends StatelessWidget {
     final bool hasSubtitle =
         resolvedSubtitle != null && resolvedSubtitle.isNotEmpty;
     final bool hasMeta = resolvedMeta != null && resolvedMeta.isNotEmpty;
+    final TextStyle? titleStyle = theme.textTheme.bodyMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+      height: 1.2,
+    );
+    final TextStyle? subtitleStyle = theme.textTheme.bodySmall?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+      height: 1.25,
+    );
+    final TextStyle? metaStyle = theme.textTheme.labelSmall?.copyWith(
+      color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+      height: 1.2,
+    );
+    final TextStyle? separatorStyle = theme.textTheme.bodySmall?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+      height: 1.25,
+    );
 
     return Semantics(
       button: true,
@@ -409,7 +426,7 @@ class _PharmacyPrintSelectableTile extends StatelessWidget {
                 vertical: theme.spacing.xs,
               ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
                   Checkbox(
                     value: selected,
@@ -426,45 +443,23 @@ class _PharmacyPrintSelectableTile extends StatelessWidget {
                   ),
                   SizedBox(width: theme.spacing.sm),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            height: 1.2,
-                          ),
-                        ),
-                        if (hasSubtitle) ...<Widget>[
-                          SizedBox(height: 2),
-                          Text(
-                            resolvedSubtitle,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                              height: 1.25,
+                    child: Text.rich(
+                      TextSpan(
+                        children: <InlineSpan>[
+                          TextSpan(text: title, style: titleStyle),
+                          if (hasSubtitle) ...<InlineSpan>[
+                            TextSpan(text: ' · ', style: separatorStyle),
+                            TextSpan(
+                              text: resolvedSubtitle,
+                              style: subtitleStyle,
                             ),
-                          ),
+                          ],
+                          if (hasMeta) ...<InlineSpan>[
+                            TextSpan(text: ' · ', style: separatorStyle),
+                            TextSpan(text: resolvedMeta, style: metaStyle),
+                          ],
                         ],
-                        if (hasMeta) ...<Widget>[
-                          SizedBox(height: theme.spacing.xs),
-                          Text(
-                            resolvedMeta,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: selected
-                                  ? colorScheme.primary
-                                  : colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
                   ),
                 ],
