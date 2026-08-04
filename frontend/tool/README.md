@@ -40,10 +40,12 @@ On Windows the script defaults to `-d web-server`, binds `--web-hostname=0.0.0.0
 (so phones on the same Wi‑Fi can connect), and opens `http://127.0.0.1:5201/`
 in your default browser once the dev server is listening (the first compile can take
 1-2 minutes with little terminal output). The terminal also prints a LAN URL such as
-`http://192.168.x.x:5201/` for mobile testing. In development, when the app is opened
-from that LAN host, `API_BASE_URL` values that point at `localhost`/`127.0.0.1` are
-rewritten to the same host automatically—no separate env file is required. Pass
-`-ChromeDebug` when you need Chrome hot reload and the
+`http://192.168.x.x:5201/` for mobile testing. **Phone/tablet browsers need
+`-Profile` or `-Release`** (dart2js). A plain debug `web-server` build depends on
+DWDS and will show a blank white page on mobile. In development, when the app is
+opened from that LAN host, `API_BASE_URL` values that point at
+`localhost`/`127.0.0.1` are rewritten to the same host automatically—no separate
+env file is required. Pass `-ChromeDebug` when you need Chrome hot reload and the
 debugger; the script still retries with a fresh profile and falls back to
 web-server if DWDS cannot attach.
 

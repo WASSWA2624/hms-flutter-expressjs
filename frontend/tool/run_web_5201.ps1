@@ -9,7 +9,11 @@ param(
   [switch]$WebServerOnly,
   [switch]$ChromeDebug,
   [switch]$NoWebServerFallback,
-  [switch]$ReleaseOnly
+  [switch]$ReleaseOnly,
+  # Profile/release compile to dart2js so phones on LAN can load the app.
+  # Debug web-server builds need DWDS and show a blank page on mobile browsers.
+  [switch]$Profile,
+  [switch]$Release
 )
 
 $ErrorActionPreference = 'Stop'
@@ -109,6 +113,12 @@ function Get-FlutterWebRunArgs {
 
   if (-not $EnableExpressionEvaluation) {
     $args += '--no-web-enable-expression-evaluation'
+  }
+
+  if ($Release) {
+    $args += '--release'
+  } elseif ($Profile) {
+    $args += '--profile'
   }
 
   if ($IncludeBrowserFlags -and ($RunDevice -eq 'chrome' -or $RunDevice -eq 'edge')) {

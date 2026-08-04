@@ -103,26 +103,7 @@ class _AuthBrandHeader extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final double logoSize = isLarge ? 56 : 48;
 
-    final Widget logo = DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(
-          context.responsiveRadius(theme.radius.md),
-        ),
-        border: theme.borders.all(),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
-        child: AppLogo(size: logoSize - theme.spacing.sm * 2),
-      ),
-    );
+    final Widget logo = AppLogo(size: logoSize);
 
     if (isLarge) {
       return Row(

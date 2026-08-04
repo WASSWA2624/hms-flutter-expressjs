@@ -18,27 +18,27 @@ class AppLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final Color resolvedBackground = backgroundColor ?? colorScheme.surface;
+
+    final Widget image = Image.asset(
+      assetPath,
+      fit: BoxFit.contain,
+      errorBuilder: (_, _, _) {
+        return ColoredBox(
+          color: colorScheme.primaryContainer,
+          child: Icon(
+            icon,
+            color: colorScheme.onPrimaryContainer,
+            size: size * 0.55,
+          ),
+        );
+      },
+    );
 
     return SizedBox.square(
       dimension: size,
-      child: ColoredBox(
-        color: resolvedBackground,
-        child: Image.asset(
-          assetPath,
-          fit: BoxFit.contain,
-          errorBuilder: (_, _, _) {
-            return ColoredBox(
-              color: colorScheme.primaryContainer,
-              child: Icon(
-                icon,
-                color: colorScheme.onPrimaryContainer,
-                size: size * 0.55,
-              ),
-            );
-          },
-        ),
-      ),
+      child: backgroundColor == null
+          ? image
+          : ColoredBox(color: backgroundColor!, child: image),
     );
   }
 }
