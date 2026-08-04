@@ -69,6 +69,7 @@ const resolvePendingAccountError = (user = {}) => {
       reason: 'platform_approval_required',
       email: user.email || null,
       phone: user.phone || null,
+      platform_admin_contact: resolvePlatformAdminContact(),
     }],
   };
 };
@@ -1533,6 +1534,9 @@ const verifyEmail = async (data) => {
     already_active: alreadyActive,
     awaiting_platform_approval: !alreadyActive,
     next_path: alreadyActive ? '/login' : '/login',
+    ...(alreadyActive
+      ? {}
+      : { platform_admin_contact: resolvePlatformAdminContact() }),
   };
 };
 

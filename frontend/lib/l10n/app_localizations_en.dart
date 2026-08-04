@@ -7816,6 +7816,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Email verified. Awaiting platform approval before sign-in.';
 
   @override
+  String get authAccountPendingApprovalContactHint =>
+      'If approval is delayed, contact the platform admin:';
+
+  @override
+  String authAccountPendingApprovalEmailLine(String email) {
+    return 'Email: $email';
+  }
+
+  @override
+  String authAccountPendingApprovalPhoneLine(String phone) {
+    return 'Phone: $phone';
+  }
+
+  @override
   String get authTenantNameLabel => 'Organization name';
 
   @override

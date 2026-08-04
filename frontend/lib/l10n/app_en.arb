@@ -9928,6 +9928,30 @@
   "@authAccountPendingApprovalMessage": {
     "description": "Login failure message when email is verified but platform approval is pending."
   },
+  "authAccountPendingApprovalContactHint": "If approval is delayed, contact the platform admin:",
+  "@authAccountPendingApprovalContactHint": {
+    "description": "Hint shown under pending-approval message when platform admin contact is available."
+  },
+  "authAccountPendingApprovalEmailLine": "Email: {email}",
+  "@authAccountPendingApprovalEmailLine": {
+    "description": "Platform admin email line on pending-approval auth messages.",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "admin@hosspi.com"
+      }
+    }
+  },
+  "authAccountPendingApprovalPhoneLine": "Phone: {phone}",
+  "@authAccountPendingApprovalPhoneLine": {
+    "description": "Platform admin phone line on pending-approval auth messages.",
+    "placeholders": {
+      "phone": {
+        "type": "String",
+        "example": "+256700000000"
+      }
+    }
+  },
   "authTenantNameLabel": "Organization name",
   "@authTenantNameLabel": {
     "description": "Tenant display name collected during self-registration."

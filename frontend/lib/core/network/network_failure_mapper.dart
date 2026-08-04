@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -95,6 +96,7 @@ final class NetworkFailureMapper {
         return AppFailure.forbidden(
           code: 'auth.account_pending_approval',
           statusCode: statusCode,
+          detailMessage: _platformAdminContactDetail(response?.data),
         );
       }
       if (_isCsrfFailure(response?.data)) {
@@ -262,6 +264,54 @@ final class NetworkFailureMapper {
       }
     }
     return matches;
+  }
+
+  /// Encodes platform admin contact from pending-approval error details.
+  ///
+  /// Stored as JSON in [AppFailure.detailMessage] for localized presentation.
+  String? _platformAdminContactDetail(Object? data) {
+    if (data is! Map<Object?, Object?>) {
+      return null;
+    }
+
+    Map<Object?, Object?>? contactMap;
+    final Object? topLevel =
+        data['platform_admin_contact'] ?? data['platformAdminContact'];
+    if (topLevel is Map<Object?, Object?>) {
+      contactMap = topLevel;
+    } else {
+      final Object? errors = data['errors'];
+      if (errors is List<Object?>) {
+        for (final Object? entry in errors) {
+          if (entry is! Map<Object?, Object?>) {
+            continue;
+          }
+          final Object? nested =
+              entry['platform_admin_contact'] ?? entry['platformAdminContact'];
+          if (nested is Map<Object?, Object?>) {
+            contactMap = nested;
+            break;
+          }
+        }
+      }
+    }
+
+    if (contactMap == null) {
+      return null;
+    }
+
+    final String? email = contactMap['email']?.toString().trim();
+    final String? phone = contactMap['phone']?.toString().trim();
+    final bool hasEmail = email != null && email.isNotEmpty;
+    final bool hasPhone = phone != null && phone.isNotEmpty;
+    if (!hasEmail && !hasPhone) {
+      return null;
+    }
+
+    return jsonEncode(<String, String>{
+      if (hasEmail) 'email': email,
+      if (hasPhone) 'phone': phone,
+    });
   }
 
   String _unauthorizedFailureCode(Object? data) {

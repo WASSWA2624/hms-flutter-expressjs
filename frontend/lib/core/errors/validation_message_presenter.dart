@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -107,7 +109,11 @@ abstract final class ValidationMessagePresenter {
   static String? _authMessage(AppLocalizations l10n, AppFailure failure) {
     return switch (failure.code) {
       'auth.account_pending' => l10n.authAccountPendingMessage,
-      'auth.account_pending_approval' => l10n.authAccountPendingApprovalMessage,
+      'auth.account_pending_approval' => pendingApprovalMessage(
+        l10n,
+        email: _platformAdminContactField(failure.detailMessage, 'email'),
+        phone: _platformAdminContactField(failure.detailMessage, 'phone'),
+      ),
       'auth.account_not_found' => l10n.authAccountNotFoundMessage,
       'auth.wrong_password' => l10n.authWrongPasswordMessage,
       'network.rate_limited' => _rateLimitedMessage(l10n, failure),
@@ -115,6 +121,57 @@ abstract final class ValidationMessagePresenter {
       'auth.token_invalid' => l10n.authResetPasswordInvalidTokenMessage,
       _ => null,
     };
+  }
+
+  /// Login / verify-email copy when the account still needs platform approval.
+  static String pendingApprovalMessage(
+    AppLocalizations l10n, {
+    String? email,
+    String? phone,
+  }) {
+    final String? trimmedEmail = email?.trim();
+    final String? trimmedPhone = phone?.trim();
+    final bool hasEmail =
+        trimmedEmail != null && trimmedEmail.isNotEmpty;
+    final bool hasPhone =
+        trimmedPhone != null && trimmedPhone.isNotEmpty;
+
+    if (!hasEmail && !hasPhone) {
+      return l10n.authAccountPendingApprovalMessage;
+    }
+
+    final List<String> lines = <String>[
+      l10n.authAccountPendingApprovalMessage,
+      l10n.authAccountPendingApprovalContactHint,
+      if (hasEmail) l10n.authAccountPendingApprovalEmailLine(trimmedEmail),
+      if (hasPhone) l10n.authAccountPendingApprovalPhoneLine(trimmedPhone),
+    ];
+    return lines.join('\n');
+  }
+
+  static String? _platformAdminContactField(
+    String? detailMessage,
+    String field,
+  ) {
+    final String? raw = detailMessage?.trim();
+    if (raw == null || raw.isEmpty || !raw.startsWith('{')) {
+      return null;
+    }
+
+    try {
+      final Object? decoded = jsonDecode(raw);
+      if (decoded is! Map<Object?, Object?>) {
+        return null;
+      }
+      final Object? value = decoded[field];
+      if (value == null) {
+        return null;
+      }
+      final String text = value.toString().trim();
+      return text.isEmpty ? null : text;
+    } on FormatException {
+      return null;
+    }
   }
 
   static String _rateLimitedMessage(AppLocalizations l10n, AppFailure failure) {

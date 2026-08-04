@@ -14428,6 +14428,24 @@ abstract class AppLocalizations {
   /// **'Email verified. Awaiting platform approval before sign-in.'**
   String get authAccountPendingApprovalMessage;
 
+  /// Hint shown under pending-approval message when platform admin contact is available.
+  ///
+  /// In en, this message translates to:
+  /// **'If approval is delayed, contact the platform admin:'**
+  String get authAccountPendingApprovalContactHint;
+
+  /// Platform admin email line on pending-approval auth messages.
+  ///
+  /// In en, this message translates to:
+  /// **'Email: {email}'**
+  String authAccountPendingApprovalEmailLine(String email);
+
+  /// Platform admin phone line on pending-approval auth messages.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone: {phone}'**
+  String authAccountPendingApprovalPhoneLine(String phone);
+
   /// Tenant display name collected during self-registration.
   ///
   /// In en, this message translates to:

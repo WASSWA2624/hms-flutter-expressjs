@@ -67,5 +67,32 @@ void main() {
         'Invalid email format',
       );
     });
+
+    test('appends platform admin contact for pending approval', () {
+      final AppFailure failure = AppFailure.forbidden(
+        code: 'auth.account_pending_approval',
+        detailMessage:
+            '{"email":"admin@hosspi.com","phone":"+256700000000"}',
+      );
+
+      expect(
+        ValidationMessagePresenter.displayMessage(failure, l10n),
+        'Email verified. Awaiting platform approval before sign-in.\n'
+        'If approval is delayed, contact the platform admin:\n'
+        'Email: admin@hosspi.com\n'
+        'Phone: +256700000000',
+      );
+    });
+
+    test('keeps base pending approval message without contact', () {
+      const AppFailure failure = AppFailure.forbidden(
+        code: 'auth.account_pending_approval',
+      );
+
+      expect(
+        ValidationMessagePresenter.displayMessage(failure, l10n),
+        'Email verified. Awaiting platform approval before sign-in.',
+      );
+    });
   });
 }

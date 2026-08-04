@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/config/app_config_provider.dart';
+import 'package:hosspi_hms/core/errors/validation_message_presenter.dart';
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_primary_button.dart';
@@ -59,11 +61,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       } else if (showEmailVerified) {
         auth.clearEmailVerificationCompleted();
         final l10n = context.l10n;
+        final config = ref.read(appConfigProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               '${l10n.authEmailVerifiedTitle}. '
-              '${l10n.authEmailVerifiedAwaitingApprovalBody}',
+              '${ValidationMessagePresenter.pendingApprovalMessage(
+                l10n,
+                email: config.appAdministratorEmail,
+                phone: config.appAdministratorPhone,
+              )}',
             ),
           ),
         );

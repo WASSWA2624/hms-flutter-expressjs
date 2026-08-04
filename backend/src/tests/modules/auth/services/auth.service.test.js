@@ -27,8 +27,8 @@ jest.mock('@lib/subscriptions/tenant-subscription-summary', () => ({
     next_plan_label: 'Basic',
     next_tier_code: 'BASIC'}),
   resolvePlatformAdminContact: jest.fn().mockReturnValue({
-    email: null,
-    phone: null})}));
+    email: 'platform.admin@hosspi.com',
+    phone: '+256700000000'})}));
 jest.mock('@lib/authorization/org-admin-contacts', () => ({
   resolveOrgAdminContacts: jest.fn().mockResolvedValue({
     tenant_admins: [],
@@ -317,6 +317,33 @@ describe('Auth Service', () => {
         .toMatchObject({
           statusCode: 403,
           messageKey: 'errors.auth.email_verification_required'});
+    });
+
+    it('should include platform admin contact when email is verified but approval is pending', async () => {
+      const loginData = {
+        email: 'pending-approved-email@example.com',
+        password: 'Password123!'};
+
+      authRepository.findUsersByIdentifier.mockResolvedValue([
+        {
+          id: 'user-pending-2',
+          email: 'pending-approved-email@example.com',
+          tenant_id: 'tenant-123',
+          status: 'PENDING',
+          email_verified_at: new Date('2026-01-01T00:00:00.000Z'),
+          password_hash: 'hashedpassword'}]);
+
+      await expect(authService.login(loginData))
+        .rejects
+        .toMatchObject({
+          statusCode: 403,
+          messageKey: 'errors.auth.account_pending_approval',
+          errors: [
+            expect.objectContaining({
+              reason: 'platform_approval_required',
+              platform_admin_contact: {
+                email: 'platform.admin@hosspi.com',
+                phone: '+256700000000'}})]});
     });
 
     it('hydrates roles before issuing a token when tenant selection is implicit', async () => {

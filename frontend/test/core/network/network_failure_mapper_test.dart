@@ -209,7 +209,18 @@ void main() {
           response: Response<Object?>(
             requestOptions: requestOptions,
             statusCode: 403,
-            data: <String, Object?>{'code': 'ACCOUNT_PENDING_APPROVAL'},
+            data: <String, Object?>{
+              'code': 'ACCOUNT_PENDING_APPROVAL',
+              'errors': <Object?>[
+                <String, Object?>{
+                  'reason': 'platform_approval_required',
+                  'platform_admin_contact': <String, Object?>{
+                    'email': 'admin@hosspi.com',
+                    'phone': '+256700000000',
+                  },
+                },
+              ],
+            },
           ),
           type: DioExceptionType.badResponse,
         ),
@@ -218,6 +229,10 @@ void main() {
 
       expect(failure.category, AppFailureCategory.forbidden);
       expect(failure.code, 'auth.account_pending_approval');
+      expect(
+        failure.detailMessage,
+        '{"email":"admin@hosspi.com","phone":"+256700000000"}',
+      );
     });
 
     test('maps connection and cancellation errors to typed failures', () {
