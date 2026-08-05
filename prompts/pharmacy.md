@@ -1,73 +1,70 @@
 # Pharmacy: Walk-In Orders and Comprehensive Pharmacy Reporting
 
-Enable pharmacy walk-in order creation (no clinical encounter) and period-based pharmacy reporting—consumption, stock risk/suggestions, throughput, source mix—via Pharmacy analytics and Reports create/run, delivered with built-in print plus PDF, Excel, and CSV. Deny pharmacist-focused `/patients` access while allowing required patient detail reads inside Pharmacy and the pharmacy dashboard.
+Enable pharmacy walk-in order creation (no clinical encounter), period-based pharmacy reporting (print + PDF/Excel/CSV), and **print of pharmacy order invoices/receipts**. On the pharmacy dashboard, show a last-month most-sold-drugs **bar chart** with qty/amount/profit toggle, and **remove** the **Pending orders** section. Deny pharmacist-focused `/patients` while allowing required patient detail reads inside Pharmacy and the pharmacy dashboard.
 
 ## Context
 
 **Current behavior**
 
-- `/pharmacy` is operational (queues, catalog, threshold stock alerts). Orders come from clinical modules; Flutter has **no** walk-in create API/CTA. Backend create allows `patient_id` + optional `encounter_id`; no encounter → `order_source` `PHARMACY` (“Walk-in pharmacy”). Home `record_pharmacy_sale` → `?section=sales` is a stub.
-- Pharmacists with `reports:read` can open `/reports`, but catalog/runs stay **empty** even when Pharmacy already lists **dispensed** orders. Only dataset near pharmacy is `inventory_stock_risk` (thresholds)—no consumption, suggestions, throughput, returns, expiry, or source-mix datasets from `pharmacy_order` / `dispense_log`. No Pharmacy analytics panel or Pharmacy → Reports deep link. Print/PDF/CSV/XLSX exist for completed runs, but pharmacy has nothing to run.
-- Default `PHARMACIST` includes `patient:read` and `patients:read`; focused shell and home shortcuts include `/patients`.
+- `/pharmacy` is operational (queues, catalog, threshold stock alerts). Orders come from clinical modules; Flutter has **no** walk-in create API/CTA. Backend create allows `patient_id` + optional `encounter_id`; no encounter → `order_source` `PHARMACY`. Home `record_pharmacy_sale` → `?section=sales` is a stub. Pharmacy prints medication instructions / history, but **not** order **invoices/receipts**.
+- Pharmacist home: 7-day dispense trend, order-status mix, and a **Pending orders** queue—not a last-month most-sold **bar** with qty/amount/profit toggle.
+- `/reports` opens for `reports:read` but catalog/runs stay **empty** despite dispensed orders. Only nearby dataset is `inventory_stock_risk`. No pharmacy dispense datasets or Pharmacy → Reports deep link.
+- Default `PHARMACIST` includes `patient:read` and `patients:read`; focused shell/home include `/patients`.
 
 **Intended behavior**
 
-- Authorized users **create walk-in orders** from `/pharmacy`; dispense/payment unchanged.
-- Pharmacist-focused users **cannot** open `/patients`; they **can** read required patient fields for walk-in select, order rows/details, and pharmacy home KPIs inside `/pharmacy` and the pharmacy dashboard.
-- When Pharmacy has dispensed/order/stock data, entitled users **see** and **create/run** pharmacy reports (day/month/year/custom) with charts/tables—**`/reports` must not stay empty**—via seeded defaults and/or one-click create from pharmacy datasets. Present via **print**, **PDF**, **Excel (XLSX)**, **CSV**. Coverage: consumption (most/least), stock suggestions, stock/expiry risk, throughput, clinical vs walk-in mix. Reuse Reports—no parallel stack.
+- Authorized users **create walk-in orders** from `/pharmacy`; dispense/payment unchanged. Entitled users **print pharmacy order invoices/receipts** from order detail (built-in print), alongside existing medication-instruction prints.
+- Pharmacist-focused users **cannot** open `/patients`; they **can** read required patient fields inside `/pharmacy` and the pharmacy dashboard.
+- Pharmacy **dashboard**: last-month most-sold **bar** (X = drugs; Y = **qty** / **amount** / **profit** toggle). **No Pending orders** section; pending work stays on `/pharmacy` tabs.
+- With dispense data, entitled users **create/run** pharmacy reports (day/month/year/custom)—**`/reports` must not stay empty**—via **print**, **PDF**, **Excel (XLSX)**, **CSV**. Also cover consumption ranks, stock suggestions, stock/expiry risk, throughput, source mix. Reuse Reports and shared charts/print—no parallel stack.
 
 **Definitions**
 
 - *Pharmacist-focused user*: `isPharmacistFocusedShellUser`. *Patients registry*: `/patients`—not embedded pharmacy patient chrome.
-- *Required patient details (pharmacy)*: identity/search and fields needed to dispense safely—not registry CRUD.
+- *Pending orders section*: home queue titled “Pending orders” (incl. guided pending-dispense chrome)—not `/pharmacy` Ready/New orders tabs.
+- *Pharmacy order invoice/receipt*: printable sale document for an order (patient, lines, qty, prices, totals, paid/due when billing exists). Distinct from medication-instructions print and Reports exports.
 - *Walk-in pharmacy order*: registered `patient_id`, no `encounter_id`, `order_source` `PHARMACY`.
-- *Consumption*: sum of completed `quantity_dispensed` per drug, facility-scoped, in period.
-- *Highly / least consumed*: ranked lists; least-consumed uses a clear filter (e.g. stocked or previously dispensed).
-- *Stock suggestion*: advisory restock from consumption rate − on-hand (≥0), optionally vs `reorder_level`—not an auto PO.
-- *Operational throughput*: created, dispensed, partial, cancelled, pending, returns in period.
-- *Source mix*: counts/qty by `CLINICAL` vs `PHARMACY`.
-- *Stock/expiry risk*: extend `inventory_stock_risk` with near-expiry/expired pressure where data exists.
-- *Period*: day, month, year, or custom `from`–`to`. *Granularity*: daily short; monthly for year/multi-month.
-- *Present / deliver report*: built-in print and/or PDF, Excel (XLSX), CSV (`REPORT_FORMATS`). Do not omit PDF/XLSX/CSV/print for pharmacy datasets.
+- *Most sold (last one month)*: top N drugs by active metric over trailing ~30 days / last calendar month; facility-scoped from completed dispenses.
+- *Qty* / *Amount* / *Profit*: dispensed qty; sales revenue; amount − unit cost × qty when cost exists (else unavailable)—not invented COGS.
+- *Reports coverage / deliver*: consumption, suggestions, throughput, source mix, stock-expiry risk; day/month/year/custom; print + PDF/XLSX/CSV.
 
 ## Requirements
 
-1. Remove `AppRoutes.patients` from `pharmacistFocusedShellRoutes`; deny `/patients` for pharmacist-focused users. Drop default-pack `patients:read` from `PHARMACIST`; keep `patient:read` for embedded pharmacy/dashboard reads. Hide shell/home `/patients` actions (absence, not stubs). Dual-role registry users keep `/patients`.
-2. Add create-order gated by `pharmacy:write` ∩ `pharmacy-dispensing`: embedded patient search/select (no registry navigation), ≥1 drug line, omit encounter, optional billing. Wire to `POST /pharmacy-workspace/orders`; refresh; success feedback. Map `record_pharmacy_sale` / `section=sales` and an in-workspace CTA here. No auto-encounters; preserve clinical create elsewhere.
-3. Extend Reports datasets from **`pharmacy_order` / `dispense_log` / inventory** (keep/extend `inventory_stock_risk`): consumption ranks, suggestions, throughput, source mix, expiry risk. Facility/tenant scoped; period series/tables. Seed and/or expose one-click create so entitled pharmacists see catalog/run content when dispense data exists—not an empty `/reports` dead end.
-4. Support **day**, **month**, **year**, and **custom** `from`/`to` end-to-end; align enums so year/custom are not dropped.
-5. Expose analytics for `pharmacy:read` (and `reports:read` where charts/create require it): period selector, KPI strip, ≥2 chart types, suggestion/risk tables. Prefer Pharmacy analytics panel **and** Pharmacy → Reports deep link to pharmacy datasets.
-6. Enable create/run from Reports (and Pharmacy when entitled): dataset, period, visualization, **PDF** / **Excel (XLSX)** / **CSV**; completed runs support **built-in print** plus download (reuse Reports print/export gates). Unauthorized print/export/create/registry chrome absent.
-7. Progressive disclosure; cover loading, empty-only-when-no-data, error/retry, validation (create, invalid range/format), print/export feedback. Responsive; theme tokens; light/dark.
-8. Preserve dispense/attest/return/cancel, pending-payment, catalog, threshold stock tabs, Home today KPIs (no `/patients` shortcuts for focused pharmacists). Update tests for patients denial, embedded patient read, walk-in create, datasets reflecting dispensed orders, permissions, charts/create-run, print + PDF/XLSX/CSV.
+1. Remove `AppRoutes.patients` from `pharmacistFocusedShellRoutes`; deny `/patients` for pharmacist-focused users. Drop default-pack `patients:read`; keep `patient:read` for embedded pharmacy/dashboard reads. Hide shell/home `/patients` actions (absence, not stubs). Dual-role registry users keep `/patients`.
+2. Add create-order gated by `pharmacy:write` ∩ `pharmacy-dispensing`: embedded patient search/select, ≥1 drug line, omit encounter, optional billing. Wire to `POST /pharmacy-workspace/orders`; refresh; success feedback. Map `record_pharmacy_sale` / `section=sales` and an in-workspace CTA here. No auto-encounters; preserve clinical create elsewhere.
+3. From pharmacy order detail, enable **print invoice/receipt** via built-in print (reuse `PrintDocumentTemplates.invoice` / billing invoice helpers). Include patient, order id, lines (drug, qty, price), totals, payment status when available. Gate with `pharmacy:read` (money may need `billing:read` / pricing read—unauthorized chrome absent). Keep medication-instructions print. Loading, empty-lines validation, preview, success/error.
+4. On the **pharmacy home dashboard**: (a) last-month most-sold **bar chart** (qty/amount/profit toggle; gate `pharmacy:read`; money metrics may need pricing/billing/`reports:read`; loading/empty/error; reuse `DashboardChartsRow` / BAR_CHART); (b) **remove Pending orders** section—absence, not disabled. Keep `/pharmacy` Ready/New orders.
+5. Extend Reports datasets from **`pharmacy_order` / `dispense_log` / inventory** (keep/extend `inventory_stock_risk`): consumption, suggestions, throughput, source mix, expiry risk, most-sold series. Seed and/or one-click create so `/reports` is not empty when dispense data exists. Support **day**, **month**, **year**, **custom**; Pharmacy analytics + Reports deep link.
+6. Enable create/run from Reports (and Pharmacy when entitled): dataset, period, visualization, **PDF** / **Excel (XLSX)** / **CSV**; **built-in print**. Unauthorized print/export/create/registry chrome absent. Progressive disclosure; loading/empty/error/validation; responsive; light/dark.
+7. Preserve dispense/attest/return/cancel, pending-payment, catalog, threshold stock tabs, medication-instructions print, non-queue Home KPIs (no `/patients` shortcuts; no dashboard Pending orders). Update tests for patients denial, walk-in create, invoice/receipt print, bar toggle, pending-orders absence, dispensed→report data, permissions, report PDF/XLSX/CSV.
 
 ## Constraints
 
-- Reuse pharmacy-workspace create, embedded patient pickers/`patient:read`, `pharmacy_access`, focused-shell helpers, `datasets.js` / Reports print/export—no second order, analytics, print, or registry stack.
-- No purchasing/PO or general ledger; suggestions/risk stay advisory. Clinical prescribing stays encounter-linked; pharmacy create is **walk-in only**.
+- Reuse pharmacy-workspace create, embedded patient pickers/`patient:read`, `pharmacy_access`, focused-shell helpers, home charts, shared printing (`PrintDocumentTemplates`, billing invoice helpers), `datasets.js` / Reports—no second order, analytics, print, or registry stack.
+- No purchasing/PO or general ledger; profit stays a margin proxy. Clinical prescribing stays encounter-linked; pharmacy create is **walk-in only**.
 - Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `.cursor/access/default_user_roles.mdc`, `.cursor/flows/pharmacy-flow.mdc`, `prompts/.cursor/prompt.mdc`.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | Focused pharmacist: no `/patients`; `/pharmacy` allowed; embedded patient details/search work on desk + dashboard. | R1–R2 |
-| A2 | `pharmacy:write` creates walk-in order; CTA/`section=sales` opens create; unauthorized absent. | R2, R7 |
-| A3 | Day/month/year/custom shows consumption, suggestions, throughput, source mix, stock/expiry risk from existing dispense/order data. | R3–R5 |
-| A4 | With dispensed Pharmacy orders, `/reports` is not empty for entitled pharmacists; ≥2 charts; create/run with visual + tabular; **print** and **PDF**/**Excel**/**CSV**. | R3, R5–R6 |
-| A5 | Desk/clinical prescribing unchanged; dual-role keeps `/patients`; unauthorized export/print absent. | R1, R6, R8 |
-| A6 | Invalid create or empty/invalid periods/formats show validation/empty; loads show loading. | R7 |
-| A7 | Tests cover patients denial, embedded patient read, walk-in create, dispensed→report data, permissions, print/PDF/XLSX/CSV. | R8 |
+| A1 | Focused pharmacist: no `/patients`; `/pharmacy` allowed; embedded patient details/search work. | R1–R2 |
+| A2 | `pharmacy:write` creates walk-in order; CTA/`section=sales` opens create; unauthorized absent. | R2 |
+| A3 | Authorized user prints pharmacy order invoice/receipt from order detail; unauthorized print chrome absent; instructions print still works. | R3 |
+| A4 | Dashboard: last-month most-sold **bar** with qty/amount/profit toggle; **no Pending orders** section; empty/loading handled. | R4 |
+| A5 | Day/month/year/custom reports from dispense data; `/reports` not empty when orders exist; print + PDF/Excel/CSV. | R5–R6 |
+| A6 | Desk/clinical prescribing unchanged; dual-role keeps `/patients`; unauthorized money/export chrome absent. | R1, R6–R7 |
+| A7 | Tests cover patients denial, walk-in create, invoice/receipt print, bar toggle, pending-orders absence, dispensed→report data, permissions, report PDF/XLSX/CSV. | R3, R7 |
 
 ## Relevant Files
 
-- `frontend/lib/app/router/app_routes.dart` (`pharmacistFocusedShellRoutes`); shell/home profiles + actions
-- `frontend/lib/features/pharmacy/presentation/`; patient picker reuse; reports print/export + charts
-- `backend/src/config/permissions.js` (`PHARMACIST`); pharmacy-workspace / pharmacy-order; `lib/reports/datasets.js`, `constants.js`; report-definition seeds/runs
-- Tests: shell_route_access; pharmacy access/create; patients absence; reports datasets with dispense fixtures; print/export UI
+- `frontend/lib/features/home/` (pharmacist profile, guided queue/alerts, charts); `app_routes.dart` focused shell
+- `frontend/lib/features/pharmacy/presentation/`; `billing_invoice_print_helpers.dart`; `PrintDocumentTemplates`
+- `backend/src/config/permissions.js`; pharmacy-workspace / pharmacy-order; dashboard summary; `lib/reports/datasets.js`, `constants.js`
+- Tests: shell_route_access; home pharmacist charts/queue absence; pharmacy create; invoice/receipt print; reports datasets; print/export UI
 
 ## Verification
 
-- Backend: walk-in create; aggregation from dispensed orders; PDF/XLSX/CSV; pharmacist pack lacks `patients:read`.
-- Flutter: no `/patients` for focused pharmacist; embedded patient read; Reports shows pharmacy definitions/runs when Pharmacy has dispensed data; print/PDF/Excel/CSV when entitled.
-- Manual `PHARMACIST`: no Patients registry; walk-in → dispense; open Reports and run reports reflecting dispensed orders; queues/catalog work. Light/dark and narrow viewports.
+- Backend: last-month top drugs by qty/amount/profit; walk-in create; report aggregation; pharmacist pack lacks `patients:read`.
+- Flutter: invoice/receipt print from order detail; dashboard bar + metric toggle; **no Pending orders**; no `/patients` for focused pharmacist; Reports usable with dispensed data.
+- Manual `PHARMACIST`: print invoice/receipt; dashboard bar toggles metrics with no Pending orders; walk-in → dispense; Reports run/export; `/pharmacy` queues still work. Light/dark + narrow viewports.
