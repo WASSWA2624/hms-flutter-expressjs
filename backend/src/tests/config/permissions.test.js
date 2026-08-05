@@ -59,6 +59,9 @@ describe('permissions config', () => {
       PERMISSIONS.PATIENT_WRITE
     );
     expect(ROLE_PERMISSIONS[ROLES.PHARMACIST]).not.toContain(
+      PERMISSIONS.PATIENTS_READ
+    );
+    expect(ROLE_PERMISSIONS[ROLES.PHARMACIST]).not.toContain(
       PERMISSIONS.PRICING_FACILITY_WRITE
     );
   });

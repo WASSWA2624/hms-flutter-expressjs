@@ -24,8 +24,24 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
+@immutable
+final class ReportsWorkspacePageQuery {
+  const ReportsWorkspacePageQuery({this.dataset});
+
+  factory ReportsWorkspacePageQuery.fromUri(Uri uri) {
+    final String? dataset = uri.queryParameters['dataset']?.trim();
+    return ReportsWorkspacePageQuery(
+      dataset: (dataset == null || dataset.isEmpty) ? null : dataset,
+    );
+  }
+
+  final String? dataset;
+}
+
 class ReportsWorkspacePage extends ConsumerWidget {
-  const ReportsWorkspacePage({super.key});
+  const ReportsWorkspacePage({this.initialQuery, super.key});
+
+  final ReportsWorkspacePageQuery? initialQuery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,16 +61,23 @@ class ReportsWorkspacePage extends ConsumerWidget {
         ref.read(reportsWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, ReportsWorkspaceState data) {
-        return _ReportsWorkspaceContent(state: data);
+        return _ReportsWorkspaceContent(
+          state: data,
+          initialDataset: initialQuery?.dataset,
+        );
       },
     );
   }
 }
 
 class _ReportsWorkspaceContent extends ConsumerStatefulWidget {
-  const _ReportsWorkspaceContent({required this.state});
+  const _ReportsWorkspaceContent({
+    required this.state,
+    this.initialDataset,
+  });
 
   final ReportsWorkspaceState state;
+  final String? initialDataset;
 
   @override
   ConsumerState<_ReportsWorkspaceContent> createState() =>
@@ -70,6 +93,7 @@ class _ReportsWorkspaceContentState
   _complianceTableColumns;
   late final AppListTableColumnVisibilityController<ReportsWorkspaceItem>
   _scheduleTableColumns;
+  bool _appliedInitialDataset = false;
 
   @override
   void initState() {
@@ -81,6 +105,28 @@ class _ReportsWorkspaceContentState
         AppListTableColumnVisibilityController<ComplianceLogItem>();
     _scheduleTableColumns =
         AppListTableColumnVisibilityController<ReportsWorkspaceItem>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applyInitialDatasetIfNeeded();
+    });
+  }
+
+  void _applyInitialDatasetIfNeeded() {
+    if (_appliedInitialDataset || !mounted) {
+      return;
+    }
+    final String? dataset = widget.initialDataset?.trim();
+    if (dataset == null || dataset.isEmpty) {
+      return;
+    }
+    final ReportsWorkspaceState state = widget.state;
+    if (state.query.dataset == dataset) {
+      _appliedInitialDataset = true;
+      return;
+    }
+    _appliedInitialDataset = true;
+    unawaited(
+      ref.read(reportsWorkspaceControllerProvider.notifier).applyDataset(dataset),
+    );
   }
 
   @override

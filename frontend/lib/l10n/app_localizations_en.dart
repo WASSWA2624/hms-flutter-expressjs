@@ -12079,6 +12079,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyPrintInstructionsAction => 'Print';
 
   @override
+  String get pharmacyPrintInvoiceAction => 'Print invoice';
+
+  @override
+  String get pharmacyInvoiceTitle => 'Pharmacy invoice';
+
+  @override
+  String get pharmacyInvoiceReportFooter =>
+      'This receipt was generated from the pharmacy workspace.';
+
+  @override
+  String get pharmacyInvoiceEmptyLinesMessage =>
+      'Add at least one medication line before printing the invoice.';
+
+  @override
+  String get pharmacyOpenReportsAction => 'Open reports';
+
+  @override
+  String get pharmacyWalkInOrderAction => 'Walk-in order';
+
+  @override
+  String get pharmacyWalkInOrderDialogTitle => 'New pharmacy sale';
+
+  @override
+  String get pharmacyWalkInOrderSubmitAction => 'Create order';
+
+  @override
+  String get pharmacyWalkInOrderCreatedMessage => 'Pharmacy order created.';
+
+  @override
+  String get pharmacyWalkInOrderAddLineAction => 'Add medication';
+
+  @override
+  String get pharmacyWalkInOrderDrugLabel => 'Drug';
+
+  @override
+  String pharmacyWalkInOrderLineLabel(int index) {
+    return 'Line $index';
+  }
+
+  @override
+  String get pharmacyWalkInOrderPatientRequired =>
+      'Select a patient to continue.';
+
+  @override
+  String get pharmacyWalkInOrderDrugRequired => 'Select a drug for each line.';
+
+  @override
+  String get pharmacyWalkInOrderQuantityRequired =>
+      'Enter a quantity greater than zero.';
+
+  @override
+  String get pharmacyWalkInOrderDoseRequired =>
+      'Enter a dose or instructions for each line.';
+
+  @override
   String get pharmacyPrintPrescriptionsDialogTitle => 'Print prescriptions';
 
   @override

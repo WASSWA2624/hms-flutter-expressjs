@@ -366,10 +366,12 @@ DashboardChartsData homeDashboardChartsData({
     trend: DashboardTrendChartData(
       title: homeTrendTitle(profile.role, dashboard.trend.title),
       emptyMessage: profile.id == 'pharmacist'
-          ? 'No dispensing activity in the last 7 days.'
+          ? 'No dispensed drug sales in the last month.'
           : l10n.homeTrendEmptyMessage,
       subtitle: profile.id == 'pharmacist' && dashboard.trend.points.isNotEmpty
-          ? _pharmacyTrendSubtitle(dashboard.trend.points)
+          ? (dashboard.trend.subtitle.isNotEmpty
+                ? dashboard.trend.subtitle
+                : _pharmacyTrendSubtitle(dashboard.trend.points))
           : null,
       points: dashboard.trend.points
           .map(

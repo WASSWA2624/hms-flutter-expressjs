@@ -1229,6 +1229,54 @@ final class PharmacyWorkspaceController
     );
   }
 
+  /// Creates a walk-in pharmacy order (no encounter), then refreshes the
+  /// workbench and selects the new order workflow for detail follow-up.
+  Future<AppFailure?> createPharmacyOrder(Map<String, Object?> payload) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<PharmacyMutationResult> result = await _repository
+        .createPharmacyOrder(payload);
+    return result.when(
+      success: (PharmacyMutationResult mutation) async {
+        final PharmacyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              selectedWorkflow: mutation.workflow,
+              workbench: _replaceOrder(
+                latest.workbench.copyWith(
+                  summary: mutation.summary ?? latest.workbench.summary,
+                ),
+                mutation.workflow.order,
+              ),
+              isSaving: false,
+            ),
+          );
+        }
+        // Refresh the filtered worklist so the new order appears in queue tabs.
+        await _refreshOrders(showLoading: false);
+        final PharmacyWorkspaceState? afterRefresh = _currentState;
+        if (afterRefresh != null) {
+          _emit(
+            afterRefresh.copyWith(selectedWorkflow: mutation.workflow),
+          );
+        }
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final PharmacyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
   String? resolveTenantId() {
     final SessionState sessionState = ref.read(sessionStateProvider);
     return sessionState.session?.user?.tenantId;

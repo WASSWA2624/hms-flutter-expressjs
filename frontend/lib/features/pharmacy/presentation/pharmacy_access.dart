@@ -205,6 +205,18 @@ bool canPrintPharmacyInstructions(AppAccessPolicy policy) {
   return pharmacyPrintInstructionsRequirement.isAllowed(policy);
 }
 
+/// Print pharmacy order invoice/receipt (same read gate as instructions).
+bool canPrintPharmacyInvoice(AppAccessPolicy policy) {
+  return pharmacyPrintInstructionsRequirement.isAllowed(policy);
+}
+
+/// Open Reports filtered to pharmacy datasets (`reports:read` ∩ reporting module).
+bool canOpenPharmacyReportsAnalytics(AppAccessPolicy policy) {
+  return canReadPharmacy(policy) &&
+      policy.grants(AppPermissions.reportsRead) &&
+      policy.hasActiveModule('reporting-analytics');
+}
+
 bool canViewPharmacySection(AppAccessPolicy policy, PharmacyDeskSection section) {
   return pharmacySectionTabRequirement(section).isAllowed(policy);
 }

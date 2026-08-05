@@ -58,6 +58,18 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
   }
 
   @override
+  Future<Result<PharmacyMutationResult>> createPharmacyOrder(
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<PharmacyMutationResult>(
+      ApiEndpoints.apiV1(<String>[HmsApiResource.pharmacy.path, 'orders']),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) =>
+          PharmacyMutationResultDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
   Future<Result<AppPage<PharmacyDrug>>> searchDrugs(PharmacyDrugQuery query) {
     final AppPageRequest request = query.pageRequest;
     return _apiClient.get<AppPage<PharmacyDrug>>(

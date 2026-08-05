@@ -56,6 +56,7 @@ final class HomeDashboard {
     required this.tenantOptions,
     this.resultsPreview = const <HomeQueueItem>[],
     this.followUpPreview = const <HomeQueueItem>[],
+    this.mostSold = HomeMostSoldSeries.empty,
     this.generatedAt,
     this.usesFallbackData = false,
   });
@@ -74,6 +75,7 @@ final class HomeDashboard {
   final List<HomeTenantOption> tenantOptions;
   final List<HomeQueueItem> resultsPreview;
   final List<HomeQueueItem> followUpPreview;
+  final HomeMostSoldSeries mostSold;
   final DateTime? generatedAt;
   final bool usesFallbackData;
 
@@ -91,6 +93,7 @@ final class HomeDashboard {
     List<HomeTenantOption>? tenantOptions,
     List<HomeQueueItem>? resultsPreview,
     List<HomeQueueItem>? followUpPreview,
+    HomeMostSoldSeries? mostSold,
     DateTime? generatedAt,
     bool? usesFallbackData,
   }) {
@@ -109,6 +112,7 @@ final class HomeDashboard {
       tenantOptions: tenantOptions ?? this.tenantOptions,
       resultsPreview: resultsPreview ?? this.resultsPreview,
       followUpPreview: followUpPreview ?? this.followUpPreview,
+      mostSold: mostSold ?? this.mostSold,
       generatedAt: generatedAt ?? this.generatedAt,
       usesFallbackData: usesFallbackData ?? this.usesFallbackData,
     );
@@ -399,6 +403,36 @@ final class HomeTrendPoint {
   final DateTime? date;
   final num value;
   final String? label;
+}
+
+/// Last-month most-sold drug rankings for the pharmacy dashboard bar chart.
+enum HomeMostSoldMetric { qty, amount, profit }
+
+final class HomeMostSoldSeries {
+  const HomeMostSoldSeries({
+    this.qty = const <HomeTrendPoint>[],
+    this.amount = const <HomeTrendPoint>[],
+    this.profit = const <HomeTrendPoint>[],
+  });
+
+  static const empty = HomeMostSoldSeries();
+
+  final List<HomeTrendPoint> qty;
+  final List<HomeTrendPoint> amount;
+  final List<HomeTrendPoint> profit;
+
+  bool get hasData =>
+      qty.any((HomeTrendPoint p) => p.value > 0) ||
+      amount.any((HomeTrendPoint p) => p.value > 0) ||
+      profit.any((HomeTrendPoint p) => p.value > 0);
+
+  List<HomeTrendPoint> forMetric(HomeMostSoldMetric metric) {
+    return switch (metric) {
+      HomeMostSoldMetric.qty => qty,
+      HomeMostSoldMetric.amount => amount,
+      HomeMostSoldMetric.profit => profit,
+    };
+  }
 }
 
 final class HomeDashboardDistribution {

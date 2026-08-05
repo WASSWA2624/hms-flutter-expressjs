@@ -144,6 +144,10 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
   bool get showMetricsSection => true;
 
   bool get showQueuePanel {
+    // Pharmacy desk owns pending orders; home omits the Pending orders collapsible.
+    if (isPharmacistDepartmentDashboard) {
+      return false;
+    }
     return layoutTier != HomeDashboardLayoutTier.workforce;
   }
 

@@ -96,6 +96,9 @@ final class HomeDashboardDto {
     final HomeDashboardDistribution distribution = HomeDistributionDto(
       _firstMap(<Object?>[json['distribution'], overview['distribution']]),
     ).toEntity();
+    final HomeMostSoldSeries mostSold = HomeMostSoldDto(
+      _firstMap(<Object?>[json['most_sold'], overview['most_sold']]),
+    ).toEntity();
 
     return HomeDashboard(
       state: HomeDashboardLoadState.ready,
@@ -116,6 +119,7 @@ final class HomeDashboardDto {
           : statusCards,
       trend: trend,
       distribution: distribution,
+      mostSold: mostSold,
       quickActionIds: _quickActionIds(json, fallback: profile.quickActionIds),
       shortcutIds: profile.shortcutIds,
       queuePreview: queuePreview,
@@ -164,6 +168,28 @@ final class HomeTrendPointDto {
       date: _date(dateText),
       value: _num(json['value']) ?? 0,
       label: _string(json['label']),
+    );
+  }
+}
+
+final class HomeMostSoldDto {
+  const HomeMostSoldDto(this.json);
+
+  final HomeJsonMap json;
+
+  HomeMostSoldSeries toEntity() {
+    List<HomeTrendPoint> series(String key) {
+      return _list(json[key])
+          .map(HomeTrendPointDto.new)
+          .map((HomeTrendPointDto dto) => dto.toEntity())
+          .where((HomeTrendPoint point) => point.id.isNotEmpty)
+          .toList(growable: false);
+    }
+
+    return HomeMostSoldSeries(
+      qty: series('qty'),
+      amount: series('amount'),
+      profit: series('profit'),
     );
   }
 }

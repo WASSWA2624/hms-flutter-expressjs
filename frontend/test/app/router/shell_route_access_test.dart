@@ -115,7 +115,7 @@ void main() {
       final policy = policyForRole('PHARMACIST');
 
       expect(canAccess(AppRoutes.home, policy), isTrue);
-      expect(canAccess(AppRoutes.patients, policy), isTrue);
+      expect(canAccess(AppRoutes.patients, policy), isFalse);
       expect(canAccess(AppRoutes.pharmacy, policy), isTrue);
       expect(canAccess(AppRoutes.communications, policy), isTrue);
       expect(canAccess(AppRoutes.settings, policy), isTrue);

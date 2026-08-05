@@ -22,11 +22,13 @@ import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_billing_helpe
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_cancel_reasons.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_catalog_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_instructions_print_helpers.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_order_invoice_print_helpers.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_order_item_pricing_helpers.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_cancel_reasons_section.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_print_history_options_section.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_print_options_section.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_walk_in_order_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -89,6 +91,7 @@ class _PharmacyWorkspaceContentState
   _tableColumnController;
   late PharmacyDeskSection _section;
   bool _handledSectionDeepLink = false;
+  bool _handledSalesDeepLink = false;
   String? _appliedRouteSignature;
 
   @override
@@ -116,6 +119,13 @@ class _PharmacyWorkspaceContentState
           context,
         ).uri.queryParameters['section']?.trim().toLowerCase() ??
         '';
+    if (_isSalesSection(section)) {
+      if (!_handledSalesDeepLink) {
+        _handledSalesDeepLink = true;
+        await _openWalkInOrderDialog();
+      }
+      return;
+    }
     final PharmacyDeskSection? parsed = _sectionFromQuery(section);
     if (parsed != null) {
       _handledSectionDeepLink = true;
@@ -134,6 +144,49 @@ class _PharmacyWorkspaceContentState
     }
   }
 
+  static bool _isSalesSection(String raw) {
+    switch (raw.trim().toLowerCase()) {
+      case 'sales':
+      case 'sale':
+      case 'walk-in':
+      case 'walk_in':
+      case 'walkin':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  Future<void> _openWalkInOrderDialog() async {
+    if (!mounted) {
+      return;
+    }
+    final PharmacyOrderWorkflow? workflow = await showPharmacyWalkInOrderDialog(
+      context: context,
+      ref: ref,
+    );
+    if (!mounted || workflow == null) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final PharmacyOrder order = workflow.order;
+    final AccessRequirement writeRequirement =
+        pharmacySectionWriteRequirement(_section);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.pharmacyWalkInOrderCreatedMessage)),
+    );
+    if (!mounted) {
+      return;
+    }
+    await _openPharmacyDetailDialog(
+      context,
+      ref,
+      widget.state,
+      order,
+      writeRequirement,
+    );
+  }
+
   void _scheduleRouteQuery(PharmacyWorkspaceQuery? query) {
     if (query == null || !query.hasRouteTargeting) return;
     if (_appliedRouteSignature == query.signature) return;
@@ -149,14 +202,19 @@ class _PharmacyWorkspaceContentState
       pharmacyWorkspaceControllerProvider.notifier,
     );
     if (query.section.isNotEmpty) {
-      final PharmacyDeskSection? parsed = _sectionFromQuery(query.section);
-      if (parsed != null) {
-        if (parsed != _section) {
-          setState(() => _section = parsed);
-        }
-        // Skip if deep-link handler already synced this desk section.
-        if (!_handledSectionDeepLink) {
-          unawaited(_applySectionData(controller, parsed));
+      if (_isSalesSection(query.section) && !_handledSalesDeepLink) {
+        _handledSalesDeepLink = true;
+        await _openWalkInOrderDialog();
+      } else {
+        final PharmacyDeskSection? parsed = _sectionFromQuery(query.section);
+        if (parsed != null) {
+          if (parsed != _section) {
+            setState(() => _section = parsed);
+          }
+          // Skip if deep-link handler already synced this desk section.
+          if (!_handledSectionDeepLink) {
+            unawaited(_applySectionData(controller, parsed));
+          }
         }
       }
     }
@@ -531,6 +589,7 @@ class _PharmacyWorkspaceContentState
                         ),
                         searchController: _searchController,
                         columnVisibilityController: _tableColumnController,
+                        onWalkInOrder: () => unawaited(_openWalkInOrderDialog()),
                       ),
               ),
           ],
@@ -745,6 +804,7 @@ class _PharmacyQueuePanel extends ConsumerWidget {
     required this.writeRequirement,
     required this.searchController,
     required this.columnVisibilityController,
+    required this.onWalkInOrder,
   });
 
   final PharmacyWorkspaceState state;
@@ -753,6 +813,7 @@ class _PharmacyQueuePanel extends ConsumerWidget {
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<PharmacyOrder>
   columnVisibilityController;
+  final VoidCallback onWalkInOrder;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -762,6 +823,7 @@ class _PharmacyQueuePanel extends ConsumerWidget {
     );
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final bool includeBillingStatus = canReadPharmacyBillingStatus(policy);
+    final bool canCreateWalkIn = canWritePharmacy(policy);
 
     return AppListTable<PharmacyOrder>(
       page: state.workbench.orders,
@@ -791,6 +853,27 @@ class _PharmacyQueuePanel extends ConsumerWidget {
         firstDate: DateTime(2020),
         lastDate: DateTime(2100),
         currentDate: DateTime.now(),
+        trailingActions: <AppSearchBarAction>[
+          if (canOpenPharmacyReportsAnalytics(policy))
+            AppSearchBarAction(
+              icon: Icons.insights_outlined,
+              label: l10n.pharmacyOpenReportsAction,
+              tooltip: l10n.pharmacyOpenReportsAction,
+              onPressed: () {
+                context.go(
+                  '${AppRoutes.reports.path}?dataset=pharmacy_drug_consumption',
+                );
+              },
+            ),
+          if (canCreateWalkIn)
+            AppSearchBarAction(
+              icon: Icons.point_of_sale_outlined,
+              label: l10n.pharmacyWalkInOrderAction,
+              tooltip: l10n.pharmacyWalkInOrderAction,
+              enabled: !state.isSaving,
+              onPressed: state.isSaving ? null : onWalkInOrder,
+            ),
+        ],
         filterGroups: <AppSearchBarFilterGroup>[
           AppSearchBarFilterGroup(
             key: _pharmacyLocationFilterKey,
@@ -1199,6 +1282,18 @@ class _PharmacyActionPanel extends ConsumerWidget {
               context,
               ref,
               workflow,
+            ),
+          ),
+        if (canPrint)
+          AppReportActionButton.print(
+            label: l10n.pharmacyPrintInvoiceAction,
+            variant: AppButtonVariant.secondary,
+            onPressed: () => unawaited(
+              printPharmacyOrderInvoice(
+                ref: ref,
+                context: context,
+                workflow: workflow,
+              ),
             ),
           ),
       ],

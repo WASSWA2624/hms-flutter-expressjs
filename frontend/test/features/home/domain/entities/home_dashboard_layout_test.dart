@@ -58,10 +58,12 @@ void main() {
 
       expect(profile.layoutTier, HomeDashboardLayoutTier.departmentQueue);
       expect(profile.isPharmacistDepartmentDashboard, isTrue);
+      expect(profile.showQueuePanel, isFalse);
       expect(profile.effectiveMaxStatusCards, 4);
       expect(profile.maxQuickActions, 4);
       expect(profile.maxQueueItems, 5);
       expect(profile.emptyActionIds, isEmpty);
+      expect(profile.shortcutIds, isNot(contains('patients')));
       expect(
         profile.statusCards.take(4).map((template) => template.id),
         <String>[

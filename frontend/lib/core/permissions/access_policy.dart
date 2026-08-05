@@ -1053,13 +1053,13 @@ final class AppAccessPolicy {
         AppPermissions.patientsRead,
         AppPermissions.reportsRead,
       ],
+      // patients:read omitted — no Patients registry; patient:read for Pharmacy embeds.
       AppRole.pharmacist => const <AppPermission>[
         AppPermissions.pharmacyRead,
         AppPermissions.pharmacyWrite,
         AppPermissions.pricingPharmacyRead,
         AppPermissions.pricingPharmacyWrite,
         AppPermissions.patientRead,
-        AppPermissions.patientsRead,
         AppPermissions.reportsRead,
         AppPermissions.communicationsRead,
         AppPermissions.communicationsWrite,

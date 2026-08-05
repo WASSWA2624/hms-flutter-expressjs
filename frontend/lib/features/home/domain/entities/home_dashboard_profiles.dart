@@ -597,10 +597,9 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'receive_pharmacy_stock',
       'adjust_pharmacy_stock',
     ],
-    // Focused shell allows pharmacy/patients/comms/settings (not billing/reports).
+    // Focused shell: pharmacy/comms/reports/settings (not patients registry).
     shortcutIds: <String>[
       'pharmacy',
-      'patients',
       'communications',
       'settings',
       'billing',

@@ -5,12 +5,12 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_atom_per
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 
-/// Filters home dashboard atoms by [AccessRequirement] (all-of) before render.
-///
-/// Prefer filtering the permission-allowed **superset** of the ranked role
-/// profile rather than swapping whole role layouts when grants diverge.
-/// Quick actions / shortcuts are filtered separately via their libraries.
-HomeDashboard filterHomeDashboardForAccess(
+  /// Filters home dashboard atoms by [AccessRequirement] (all-of) before render.
+  ///
+  /// Prefer filtering the permission-allowed **superset** of the ranked role
+  /// profile rather than swapping whole role layouts when grants diverge.
+  /// Quick actions / shortcuts are filtered separately via their libraries.
+  HomeDashboard filterHomeDashboardForAccess(
   HomeDashboard dashboard,
   AppAccessPolicy policy,
 ) {
@@ -59,6 +59,9 @@ HomeDashboard filterHomeDashboardForAccess(
   final HomeDashboardDistribution distribution = chartsAllowed
       ? _withChartPermissionsDistribution(dashboard.distribution)
       : HomeDashboardDistribution.empty;
+  final HomeMostSoldSeries mostSold = chartsAllowed
+      ? dashboard.mostSold
+      : HomeMostSoldSeries.empty;
 
   return dashboard.copyWith(
     statusCards: statusCards,
@@ -69,6 +72,7 @@ HomeDashboard filterHomeDashboardForAccess(
     activity: activity,
     trend: trend,
     distribution: distribution,
+    mostSold: mostSold,
   );
 }
 

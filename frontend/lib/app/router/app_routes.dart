@@ -721,9 +721,10 @@ abstract final class AppRoutes {
   }
 
   /// Routes visible to [AppAccessPolicy.isPharmacistFocusedShellUser] in the shell.
+  ///
+  /// Patients registry is denied; patient details stay embedded in Pharmacy.
   static const List<AppRouteData> pharmacistFocusedShellRoutes = <AppRouteData>[
     home,
-    patients,
     pharmacy,
     communications,
     reports,

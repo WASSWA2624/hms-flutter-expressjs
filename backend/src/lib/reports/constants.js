@@ -82,10 +82,36 @@ const REPORT_DATASETS = Object.freeze([
     default_columns: ['bucket', 'claims', 'status'],
   },
   {
+    key: 'pharmacy_drug_consumption',
+    label: 'Pharmacy drug consumption',
+    category: 'pharmacy',
+    description:
+      'Top dispensed drugs by quantity and amount for a period, with order-source mix.',
+    visualization: 'BAR_CHART',
+    default_columns: ['drug', 'quantity_dispensed', 'amount', 'order_source'],
+  },
+  {
+    key: 'pharmacy_dispense_throughput',
+    label: 'Pharmacy dispense throughput',
+    category: 'pharmacy',
+    description:
+      'Order creation and dispense status throughput over time, including returns when logged.',
+    visualization: 'LINE_CHART',
+    default_columns: [
+      'date',
+      'orders_created',
+      'dispensed',
+      'partially_dispensed',
+      'cancelled',
+      'returns',
+    ],
+  },
+  {
     key: 'inventory_stock_risk',
     label: 'Inventory stock risk',
     category: 'inventory',
-    description: 'Low-stock and critical-stock pressure across facilities.',
+    description:
+      'Low-stock and critical-stock pressure across facilities; near-expiry risk when drug batch expiry data exists.',
     visualization: 'KPI',
     default_columns: ['facility', 'inventory_item', 'quantity', 'reorder_level', 'risk_state'],
   },

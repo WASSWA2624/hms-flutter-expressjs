@@ -258,6 +258,73 @@ const countLowStock = async (where, factor = 1) => {
   }).length;
 };
 
+/** Top drugs by qty / amount / profit for the last ~30 days (facility-scoped dispense logs). */
+const aggregateMostSoldDrugs = async (db, dispenseLogWhere, fromDate, limit = 8) => {
+  const empty = { qty: [], amount: [], profit: [] };
+  try {
+    const logs = await db.dispense_log.findMany({
+      where: {
+        ...dispenseLogWhere,
+        status: 'DISPENSED',
+        dispensed_at: { gte: fromDate },
+        quantity_dispensed: { gt: 0 }
+      },
+      select: {
+        quantity_dispensed: true,
+        pharmacy_order_item: {
+          select: {
+            drug: {
+              select: {
+                id: true,
+                name: true,
+                generic_name: true,
+                unit_price: true
+              }
+            }
+          }
+        }
+      },
+      take: 5000
+    });
+
+    const byDrug = new Map();
+    for (const log of logs) {
+      const drug = log.pharmacy_order_item?.drug;
+      if (!drug?.id) continue;
+      const qty = toNumber(log.quantity_dispensed);
+      const unitPrice = toNumber(drug.unit_price);
+      const amount = qty * unitPrice;
+      const label =
+        String(drug.name || drug.generic_name || 'Unknown').trim() || 'Unknown';
+      const current = byDrug.get(drug.id) || { id: drug.id, label, qty: 0, amount: 0 };
+      current.qty += qty;
+      current.amount += amount;
+      byDrug.set(drug.id, current);
+    }
+
+    const rows = Array.from(byDrug.values());
+    const rank = (metric) =>
+      [...rows]
+        .filter((row) => row[metric] > 0)
+        .sort((a, b) => b[metric] - a[metric])
+        .slice(0, limit)
+        .map((row) => ({
+          id: row.id,
+          label: row.label,
+          value: Number(row[metric].toFixed(2))
+        }));
+
+    // Profit requires unit cost (COGS). Drug catalog has no cost field — do not
+    // invent COGS by equating profit to amount; leave profit unavailable.
+    return {
+      qty: rank('qty'),
+      amount: rank('amount'),
+      profit: []
+    };
+  } catch {
+    return empty;
+  }
+};
 
 const patientPortalZeroSummary = () => ({
   metrics: {
@@ -1252,13 +1319,16 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } }
         ]
       };
-      const [ordersToday, pendingDispense, dispensedToday, lowStock, criticalStock, pendingBalanceAmount] = await Promise.all([
+      const monthStart = new Date(todayStart);
+      monthStart.setUTCDate(monthStart.getUTCDate() - 30);
+      const [ordersToday, pendingDispense, dispensedToday, lowStock, criticalStock, pendingBalanceAmount, mostSold] = await Promise.all([
         prisma.pharmacy_order.count({ where: { ...pharmacyOrderWhere, ordered_at: { gte: todayStart } } }),
         prisma.pharmacy_order.count({ where: { ...pharmacyOrderWhere, status: { in: ['ORDERED', 'PARTIALLY_DISPENSED'] } } }),
         prisma.dispense_log.count({ where: { ...dispenseLogWhere, status: 'DISPENSED', dispensed_at: { gte: todayStart } } }),
         countLowStock(inventoryStockWhere, 1),
         countLowStock(inventoryStockWhere, 0.5),
-        sumOutstandingBalance(openBalanceWhere)
+        sumOutstandingBalance(openBalanceWhere),
+        aggregateMostSoldDrugs(prisma, dispenseLogWhere, monthStart)
       ]);
       return {
         metrics: {
@@ -1270,6 +1340,7 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           pendingBalanceAmount,
           billingPending: pendingBalanceAmount
         },
+        mostSold,
         trendDates: await selectDateSeries(prisma.dispense_log, { ...dispenseLogWhere, dispensed_at: { gte: trendStart } }, 'dispensed_at'),
         statusCounts: await countByStatuses(prisma.pharmacy_order, pharmacyOrderWhere, ['ORDERED', 'PARTIALLY_DISPENSED', 'DISPENSED', 'CANCELLED']),
         activity: {

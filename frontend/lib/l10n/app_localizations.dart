@@ -22288,6 +22288,102 @@ abstract class AppLocalizations {
   /// **'Print'**
   String get pharmacyPrintInstructionsAction;
 
+  /// Pharmacy print order invoice/receipt action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Print invoice'**
+  String get pharmacyPrintInvoiceAction;
+
+  /// Title for a printed pharmacy order invoice/receipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy invoice'**
+  String get pharmacyInvoiceTitle;
+
+  /// Footer note on pharmacy order invoice/receipt prints.
+  ///
+  /// In en, this message translates to:
+  /// **'This receipt was generated from the pharmacy workspace.'**
+  String get pharmacyInvoiceReportFooter;
+
+  /// Shown when printing a pharmacy invoice with no order lines.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one medication line before printing the invoice.'**
+  String get pharmacyInvoiceEmptyLinesMessage;
+
+  /// Opens Reports filtered to pharmacy consumption datasets.
+  ///
+  /// In en, this message translates to:
+  /// **'Open reports'**
+  String get pharmacyOpenReportsAction;
+
+  /// Primary CTA to create a walk-in pharmacy sale/order.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk-in order'**
+  String get pharmacyWalkInOrderAction;
+
+  /// Title for the walk-in pharmacy order create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'New pharmacy sale'**
+  String get pharmacyWalkInOrderDialogTitle;
+
+  /// Submit action for the walk-in pharmacy order dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Create order'**
+  String get pharmacyWalkInOrderSubmitAction;
+
+  /// Success snackbar after creating a walk-in pharmacy order.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy order created.'**
+  String get pharmacyWalkInOrderCreatedMessage;
+
+  /// Adds another drug line on the walk-in order dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Add medication'**
+  String get pharmacyWalkInOrderAddLineAction;
+
+  /// Drug picker label on the walk-in order dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Drug'**
+  String get pharmacyWalkInOrderDrugLabel;
+
+  /// Walk-in order line heading with 1-based index.
+  ///
+  /// In en, this message translates to:
+  /// **'Line {index}'**
+  String pharmacyWalkInOrderLineLabel(int index);
+
+  /// Validation when walk-in order is missing a patient.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a patient to continue.'**
+  String get pharmacyWalkInOrderPatientRequired;
+
+  /// Validation when a walk-in order line is missing a drug.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a drug for each line.'**
+  String get pharmacyWalkInOrderDrugRequired;
+
+  /// Validation when a walk-in order line quantity is invalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a quantity greater than zero.'**
+  String get pharmacyWalkInOrderQuantityRequired;
+
+  /// Validation when a walk-in order line lacks dose/instructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a dose or instructions for each line.'**
+  String get pharmacyWalkInOrderDoseRequired;
+
   /// Title for the pharmacy medication-instructions print preview dialog.
   ///
   /// In en, this message translates to:

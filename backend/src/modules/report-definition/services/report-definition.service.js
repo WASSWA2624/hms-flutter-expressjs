@@ -59,6 +59,8 @@ const buildListWhere = async (filters = {}, user = {}) => {
 };
 
 const listReportDefinitions = async (filters = {}, page = 1, limit = 20, sortBy, order, user = {}) => {
+  await ensureDefaultPharmacyReportDefinitions(user).catch(() => {});
+
   const where = await buildListWhere(filters, user);
   const skip = (page - 1) * limit;
   const orderBy = buildSort(sortBy, order, 'updated_at', SORT_FIELDS);
@@ -70,6 +72,54 @@ const listReportDefinitions = async (filters = {}, page = 1, limit = 20, sortBy,
   return {
     reportDefinitions: records.map(serializeReportDefinition),
     pagination: buildPagination(page, limit, total)};
+};
+
+const PHARMACY_DEFAULT_DEFINITIONS = Object.freeze([
+  {
+    dataset_key: 'pharmacy_drug_consumption',
+    name: 'Pharmacy drug consumption',
+    description: 'Most dispensed drugs by quantity and amount for the selected period.',
+    default_format: 'PDF'},
+  {
+    dataset_key: 'pharmacy_dispense_throughput',
+    name: 'Pharmacy dispense throughput',
+    description: 'Orders created, dispensed, partial, cancelled, and returns over time.',
+    default_format: 'PDF'},
+  {
+    dataset_key: 'inventory_stock_risk',
+    name: 'Pharmacy inventory stock risk',
+    description: 'Low-stock and critical-stock pressure across the facility pharmacy.',
+    default_format: 'CSV'}
+]);
+
+const ensureDefaultPharmacyReportDefinitions = async (user = {}) => {
+  const scoped = await resolveScopedContext({}, user);
+  if (!scoped.tenant_id) return;
+
+  for (const entry of PHARMACY_DEFAULT_DEFINITIONS) {
+    const existing = await reportDefinitionRepository.count({
+      tenant_id: scoped.tenant_id,
+      dataset_key: entry.dataset_key});
+    if (existing > 0) continue;
+
+    const dataset = REPORT_DATASET_MAP[entry.dataset_key];
+    if (!dataset) continue;
+
+    await reportDefinitionRepository.create({
+      tenant_id: scoped.tenant_id,
+      facility_id: scoped.facility_id || null,
+      name: entry.name,
+      description: entry.description,
+      dataset_key: entry.dataset_key,
+      category: dataset.category || 'pharmacy',
+      status: 'ACTIVE',
+      default_format: entry.default_format || REPORT_FORMATS[0],
+      definition_json: ensureDatasetDefinition(entry.dataset_key, {
+        dataset_key: entry.dataset_key,
+        columns: dataset.default_columns,
+        visualization: dataset.visualization}),
+      created_by: user.id || user.user_id || null});
+  }
 };
 
 const getReportDefinitionById = async (id, user = {}) => {

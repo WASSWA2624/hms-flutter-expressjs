@@ -7,6 +7,11 @@ abstract interface class PharmacyRepository {
 
   Future<Result<PharmacyOrderWorkflow>> loadOrderWorkflow(String orderId);
 
+  /// Creates a pharmacy order (walk-in or clinical) via pharmacy-workspace.
+  Future<Result<PharmacyMutationResult>> createPharmacyOrder(
+    Map<String, Object?> payload,
+  );
+
   Future<Result<AppPage<PharmacyDrug>>> searchDrugs(PharmacyDrugQuery query);
 
   Future<Result<PharmacyInventoryWorkbench>> getInventoryStock(

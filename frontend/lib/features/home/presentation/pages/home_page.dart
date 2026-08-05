@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/home/presentation/home_access.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_context_panel.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_actions.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_mapper.dart';
+import 'package:hosspi_hms/features/home/presentation/widgets/pharmacy_most_sold_charts.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -307,6 +308,13 @@ class _HomeDashboardContent extends ConsumerWidget {
                                 BuildContext context,
                                 BoxConstraints constraints,
                               ) {
+                                if (authorized.profile.isPharmacistDepartmentDashboard) {
+                                  return PharmacyMostSoldCharts(
+                                    dashboard: authorized,
+                                    l10n: l10n,
+                                    twoColumns: constraints.maxWidth >= 980,
+                                  );
+                                }
                                 return DashboardChartsRow(
                                   data: homeDashboardChartsData(
                                     dashboard: authorized,

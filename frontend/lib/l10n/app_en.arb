@@ -15443,6 +15443,75 @@
   "@pharmacyPrintInstructionsAction": {
     "description": "Pharmacy print medication instructions action label."
   },
+  "pharmacyPrintInvoiceAction": "Print invoice",
+  "@pharmacyPrintInvoiceAction": {
+    "description": "Pharmacy print order invoice/receipt action label."
+  },
+  "pharmacyInvoiceTitle": "Pharmacy invoice",
+  "@pharmacyInvoiceTitle": {
+    "description": "Title for a printed pharmacy order invoice/receipt."
+  },
+  "pharmacyInvoiceReportFooter": "This receipt was generated from the pharmacy workspace.",
+  "@pharmacyInvoiceReportFooter": {
+    "description": "Footer note on pharmacy order invoice/receipt prints."
+  },
+  "pharmacyInvoiceEmptyLinesMessage": "Add at least one medication line before printing the invoice.",
+  "@pharmacyInvoiceEmptyLinesMessage": {
+    "description": "Shown when printing a pharmacy invoice with no order lines."
+  },
+  "pharmacyOpenReportsAction": "Open reports",
+  "@pharmacyOpenReportsAction": {
+    "description": "Opens Reports filtered to pharmacy consumption datasets."
+  },
+  "pharmacyWalkInOrderAction": "Walk-in order",
+  "@pharmacyWalkInOrderAction": {
+    "description": "Primary CTA to create a walk-in pharmacy sale/order."
+  },
+  "pharmacyWalkInOrderDialogTitle": "New pharmacy sale",
+  "@pharmacyWalkInOrderDialogTitle": {
+    "description": "Title for the walk-in pharmacy order create dialog."
+  },
+  "pharmacyWalkInOrderSubmitAction": "Create order",
+  "@pharmacyWalkInOrderSubmitAction": {
+    "description": "Submit action for the walk-in pharmacy order dialog."
+  },
+  "pharmacyWalkInOrderCreatedMessage": "Pharmacy order created.",
+  "@pharmacyWalkInOrderCreatedMessage": {
+    "description": "Success snackbar after creating a walk-in pharmacy order."
+  },
+  "pharmacyWalkInOrderAddLineAction": "Add medication",
+  "@pharmacyWalkInOrderAddLineAction": {
+    "description": "Adds another drug line on the walk-in order dialog."
+  },
+  "pharmacyWalkInOrderDrugLabel": "Drug",
+  "@pharmacyWalkInOrderDrugLabel": {
+    "description": "Drug picker label on the walk-in order dialog."
+  },
+  "pharmacyWalkInOrderLineLabel": "Line {index}",
+  "@pharmacyWalkInOrderLineLabel": {
+    "description": "Walk-in order line heading with 1-based index.",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "pharmacyWalkInOrderPatientRequired": "Select a patient to continue.",
+  "@pharmacyWalkInOrderPatientRequired": {
+    "description": "Validation when walk-in order is missing a patient."
+  },
+  "pharmacyWalkInOrderDrugRequired": "Select a drug for each line.",
+  "@pharmacyWalkInOrderDrugRequired": {
+    "description": "Validation when a walk-in order line is missing a drug."
+  },
+  "pharmacyWalkInOrderQuantityRequired": "Enter a quantity greater than zero.",
+  "@pharmacyWalkInOrderQuantityRequired": {
+    "description": "Validation when a walk-in order line quantity is invalid."
+  },
+  "pharmacyWalkInOrderDoseRequired": "Enter a dose or instructions for each line.",
+  "@pharmacyWalkInOrderDoseRequired": {
+    "description": "Validation when a walk-in order line lacks dose/instructions."
+  },
   "pharmacyPrintPrescriptionsDialogTitle": "Print prescriptions",
   "@pharmacyPrintPrescriptionsDialogTitle": {
     "description": "Title for the pharmacy medication-instructions print preview dialog."

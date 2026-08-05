@@ -357,7 +357,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.reports.path,
             name: AppRoutes.reports.name,
-            builder: (_, _) => const ReportsWorkspacePage(),
+            builder: (_, GoRouterState state) => ReportsWorkspacePage(
+              initialQuery: ReportsWorkspacePageQuery.fromUri(state.uri),
+            ),
           ),
           GoRoute(
             path: AppRoutes.settings.path,

@@ -100,7 +100,7 @@ const DASHBOARD_ALLOWLIST = Object.freeze({
     'scope',
     'route_target',
   ],
-  trendPoints: ['id', 'date', 'value'],
+  trendPoints: ['id', 'date', 'value', 'label'],
   distributionSegments: ['id', 'label', 'value', 'color'],
   highlights: ['id', 'label', 'value', 'context', 'variant'],
   queue: ['id', 'title', 'meta', 'statusLabel', 'statusVariant'],
@@ -1036,7 +1036,17 @@ const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
         : Promise.resolve(0),
     ]);
 
-    const trendPoints = buildTrendPoints(packData?.trendDates || [], days);
+    const isPlatformAdmin = packId === ROLE_PACKS.SUPER_ADMIN;
+    const isPharmacist = packId === ROLE_PACKS.PHARMACIST;
+
+    const trendPoints = isPharmacist && Array.isArray(packData?.mostSold?.qty) && packData.mostSold.qty.length
+      ? packData.mostSold.qty.map((item, index) => ({
+          id: item.id || `drug_${index}`,
+          label: item.label || item.id || `Drug ${index + 1}`,
+          value: Number(item.value || 0),
+          date: null
+        }))
+      : buildTrendPoints(packData?.trendDates || [], days);
     const distribution = buildDistribution(packData?.statusCounts || {});
     const summaryCards = metricsToRoleSummary(packId, packData?.metrics || {});
     const opdNotificationsPendingAttention = Number(unreadOpdNotifications || 0);
@@ -1143,21 +1153,18 @@ const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
       });
     }
 
-    const isPlatformAdmin = packId === ROLE_PACKS.SUPER_ADMIN;
-    const isPharmacist = packId === ROLE_PACKS.PHARMACIST;
-
     const sanitized = sanitizeSummaryPayload({
       summaryCards,
       trend: {
         title: isPlatformAdmin
           ? 'New tenant signups'
           : isPharmacist
-            ? 'Dispensing throughput trend'
+            ? 'Most sold drugs (last month)'
             : `${days}-day trend`,
         subtitle: isPlatformAdmin
           ? 'Tenants registered per day'
           : isPharmacist
-            ? 'Dispenses logged per day'
+            ? 'Top drugs by quantity dispensed'
             : 'Aggregate trend points',
         points: trendPoints,
       },
@@ -1191,6 +1198,7 @@ const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
           SUMMARY_METADATA_BY_PACK[ROLE_PACKS.LIMITED].scope,
       },
       ...sanitized,
+      most_sold: isPharmacist ? (packData?.mostSold || { qty: [], amount: [], profit: [] }) : undefined,
       hasLiveData,
       generatedAt: new Date().toISOString(),
       scope: {
