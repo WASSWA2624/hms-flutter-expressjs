@@ -223,129 +223,6 @@ void main() {
       expect(tenant.emptyMessage, isEmpty);
       expect(platform.emptyMessage, isEmpty);
     });
-
-    test('shortcut floor is at least 4 when catalog supplies them', () {
-      for (final AppRole role in <AppRole>[
-        AppRole.superAdmin,
-        AppRole.tenantAdmin,
-        AppRole.facilityAdmin,
-        AppRole.operations,
-        AppRole.labTech,
-        AppRole.pharmacist,
-        AppRole.hr,
-        AppRole.biomed,
-      ]) {
-        final HomeDashboardProfile profile = homeProfileForRole(role);
-        if (profile.shortcutIds.isEmpty) {
-          continue;
-        }
-        expect(
-          profile.maxShortcutTiles,
-          greaterThanOrEqualTo(4),
-          reason: role.value,
-        );
-        expect(
-          profile.shortcutIds.length,
-          greaterThanOrEqualTo(4),
-          reason: role.value,
-        );
-      }
-    });
-
-    test('authorized shortcuts reach at least 4 when grants allow', () {
-      final AppAccessPolicy policy = _policy(
-        roles: <String>['FACILITY_ADMIN'],
-        permissions: AppPermissions.all,
-      );
-      final HomeDashboardProfile profile = homeProfileForRole(
-        AppRole.facilityAdmin,
-      );
-      final List<HomeActionDefinition> quick = homeVisibleActions(
-        profile.quickActionIds,
-        policy,
-        maxCount: profile.maxQuickActions,
-      );
-      final List<HomeShortcutDefinition> shortcuts =
-          homeShortcutsExcludingQuickActions(
-            homeVisibleShortcuts(profile.shortcutIds, policy),
-            quick,
-            profile,
-          ).take(profile.maxShortcutTiles).toList(growable: false);
-
-      expect(shortcuts.length, greaterThanOrEqualTo(4));
-    });
-
-    test(
-      'role-default grants still yield ≥4 shortcuts when catalog permits',
-      () {
-        for (final String roleCode in <String>[
-          'HR',
-          'UNIT_MANAGER',
-          'MORTUARY_STAFF',
-          'MORTUARY_MANAGER',
-          'INTEGRATION_ADMIN',
-          'AMBULANCE_OPERATOR',
-          'LAB_TECH',
-          'PHARMACIST',
-        ]) {
-          final AppAccessPolicy policy = AppAccessPolicy.fromSession(
-            AuthSession(
-              tokens: SessionTokens(accessToken: 'token'),
-              user: AuthUserProfile(
-                tenantId: 'tenant-1',
-                facilityId: 'facility-1',
-                roles: <String>[roleCode],
-              ),
-              // Unhydrated + empty explicit set → client role pack defaults.
-              permissions: const <AppPermission>{},
-              moduleEntitlements: _activeModules,
-              isAuthorizationHydrated: false,
-            ),
-          );
-          final HomeDashboardProfile profile = homeProfileForRoles(policy.roles);
-          if (profile.shortcutIds.isEmpty) {
-            continue;
-          }
-          final List<HomeShortcutDefinition> shortcuts = homeVisibleShortcuts(
-            profile.shortcutIds,
-            policy,
-          );
-          expect(
-            shortcuts.length,
-            greaterThanOrEqualTo(4),
-            reason: '$roleCode authorized=${shortcuts.map((s) => s.id).toList()}',
-          );
-        }
-      },
-    );
-
-    test('lab shortcuts keep floor when quick actions share lab route', () {
-      final AppAccessPolicy policy = _policy(
-        roles: <String>['LAB_TECH'],
-        permissions: const <AppPermission>[
-          AppPermissions.labRead,
-          AppPermissions.labWrite,
-          AppPermissions.patientRead,
-          AppPermissions.reportsRead,
-          AppPermissions.profileRead,
-          AppPermissions.communicationsRead,
-        ],
-      );
-      final HomeDashboardProfile profile = homeProfileForRole(AppRole.labTech);
-      final List<HomeActionDefinition> quick = homeVisibleActions(
-        profile.quickActionIds,
-        policy,
-        maxCount: profile.maxQuickActions,
-      );
-      final List<HomeShortcutDefinition> shortcuts =
-          homeShortcutsExcludingQuickActions(
-            homeVisibleShortcuts(profile.shortcutIds, policy),
-            quick,
-            profile,
-          );
-
-      expect(shortcuts.length, greaterThanOrEqualTo(4));
-    });
   });
 
   group('dashboard metric strip readability', () {
@@ -485,19 +362,10 @@ void main() {
       }
     });
 
-    test('billing navigates via Quick links, not a second review strip', () {
+    test('billing keeps invoice quick actions without manage hubs', () {
       final HomeDashboardProfile profile = homeProfileForRole(AppRole.billing);
 
       expect(profile.emptyActionIds, isEmpty);
-      expect(profile.shortcutIds, <String>[
-        'billing',
-        'patients',
-        'claims',
-        'reports',
-        'settings',
-      ]);
-      expect(profile.shortcutIds.length, greaterThanOrEqualTo(4));
-      expect(profile.maxShortcutTiles, greaterThanOrEqualTo(4));
       expect(profile.quickActionIds, <String>[
         'create_invoice',
         'receive_payment',
@@ -524,7 +392,6 @@ void main() {
               showFollowUps: true,
               followUpTitle: 'Follow-ups',
               followUpItems: const <DashboardWorklistItemData>[],
-              showShortcuts: false,
             ),
           ),
         ),

@@ -18959,7 +18959,7 @@
   "@labEncounterIdLabel": {
     "description": "Localized text for labEncounterIdLabel."
   },
-  "labOrderContextDialogBody": "Select a patient. Encounter and existing order are optional.",
+  "labOrderContextDialogBody": "Select or register a patient. Encounter and existing order are optional.",
   "@labOrderContextDialogBody": {
     "description": "Body text for the lab order context selection dialog."
   },
@@ -18975,9 +18975,13 @@
   "@labEncounterContextLabel": {
     "description": "Label for selecting encounter context in lab order creation."
   },
-  "labEncounterContextHint": "Search or select encounter",
+  "labEncounterContextHint": "Optional — leave empty to create a Lab encounter",
   "@labEncounterContextHint": {
     "description": "Hint for selecting encounter context in lab order creation."
+  },
+  "labEncounterAutoCreateHint": "If no encounter is selected, an open Lab encounter is created or reused for this patient.",
+  "@labEncounterAutoCreateHint": {
+    "description": "Explains Lab walk-in encounter auto-create when encounter is omitted."
   },
   "labExistingOrderContextLabel": "Existing lab order context",
   "@labExistingOrderContextLabel": {

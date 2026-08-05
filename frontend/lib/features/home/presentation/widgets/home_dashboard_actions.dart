@@ -16,7 +16,6 @@ import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_adm
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_atom_permissions.dart';
-import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_mutation.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
 import 'package:hosspi_hms/features/home/presentation/home_access.dart';
@@ -1263,40 +1262,6 @@ List<HomeActionDefinition> homeVisibleActions(
   return actions.take(maxCount).toList(growable: false);
 }
 
-/// Drops Quick-link tiles that share a route with a visible Quick action when
-/// enough other authorized links remain; otherwise keeps hubs so the Quick
-/// links floor (≥4 when the catalog can supply them) is preserved.
-List<HomeShortcutDefinition> homeShortcutsExcludingQuickActions(
-  List<HomeShortcutDefinition> shortcuts,
-  List<HomeActionDefinition> actions,
-  HomeDashboardProfile profile,
-) {
-  if (!profile.showShortcutsSection(quickActionCount: actions.length)) {
-    return const <HomeShortcutDefinition>[];
-  }
-  if (actions.isEmpty || shortcuts.isEmpty) {
-    return shortcuts;
-  }
-  final Set<String> actionRoutes = actions
-      .map((HomeActionDefinition action) => action.route.path)
-      .toSet();
-  final List<HomeShortcutDefinition> withoutOverlap = shortcuts
-      .where(
-        (HomeShortcutDefinition shortcut) =>
-            !actionRoutes.contains(shortcut.route.path),
-      )
-      .toList(growable: false);
-  const int shortcutFloor = 4;
-  final int floor = shortcuts.length < shortcutFloor
-      ? shortcuts.length
-      : shortcutFloor;
-  if (withoutOverlap.length >= floor) {
-    return withoutOverlap;
-  }
-  // Prefer navigation hubs over dropping below the authorized-tile floor.
-  return shortcuts;
-}
-
 List<HomeShortcutDefinition> homeVisibleShortcuts(
   List<String> ids,
   AppAccessPolicy policy,
@@ -1529,25 +1494,6 @@ VoidCallback? homeWorklistTap(
   }
 
   return () => homeNavigateRouteTarget(context, ref, policy, target: target);
-}
-
-void homeNavigateShortcut(
-  BuildContext context,
-  WidgetRef ref,
-  AppAccessPolicy policy,
-  HomeShortcutDefinition shortcut,
-) {
-  if (shortcut.id == 'subscriptions' &&
-      homeTargetUsesTenantSubscriptionFallback(policy)) {
-    unawaited(homeOpenTenantSubscriptionSurface(context, ref, policy));
-    return;
-  }
-
-  if (!canAccessShellRoute(shortcut.route, policy)) {
-    return;
-  }
-
-  homeGoToRoute(context, shortcut.route);
 }
 
 void homeInvokeAction(

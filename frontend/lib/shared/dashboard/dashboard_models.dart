@@ -73,19 +73,6 @@ final class DashboardWorklistItemData {
 }
 
 @immutable
-final class DashboardShortcutData {
-  const DashboardShortcutData({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-}
-
-@immutable
 final class DashboardTrendPointData {
   const DashboardTrendPointData({required this.value, this.label, this.date});
 
@@ -156,14 +143,10 @@ final class DashboardPriorityPanelData {
     this.followUpTitle,
     this.followUpItems = const <DashboardWorklistItemData>[],
     this.maxFollowUpItems = 0,
-    this.shortcuts = const <DashboardShortcutData>[],
-    this.maxShortcuts = 3,
     this.showQueue = true,
     this.showAlerts = true,
     this.showResults = false,
     this.showFollowUps = false,
-    this.showShortcuts = false,
-    this.shortcutsTitle = 'Quick links',
     this.viewAllLabel = 'View all',
     this.onViewAll,
     this.onViewAllResults,
@@ -184,14 +167,10 @@ final class DashboardPriorityPanelData {
   final String? followUpTitle;
   final List<DashboardWorklistItemData> followUpItems;
   final int maxFollowUpItems;
-  final List<DashboardShortcutData> shortcuts;
-  final int maxShortcuts;
   final bool showQueue;
   final bool showAlerts;
   final bool showResults;
   final bool showFollowUps;
-  final bool showShortcuts;
-  final String shortcutsTitle;
   final String viewAllLabel;
   final VoidCallback? onViewAll;
   final VoidCallback? onViewAllResults;

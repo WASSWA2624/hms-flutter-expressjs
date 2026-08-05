@@ -825,6 +825,32 @@ void main() {
       expect(nurse.canMutateLabCatalog(), isFalse);
     });
 
+    test('LAB_TECH role pack includes patient:write for walk-in registration', () {
+      final labTech = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['LAB_TECH'],
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+          ),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'lab-workflows',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'patient-registry',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        ),
+      );
+
+      expect(labTech.grants(AppPermissions.patientWrite), isTrue);
+      expect(labTech.grants(AppPermissions.patientsRead), isTrue);
+    });
+
     test('canMutateLabCatalog respects explicit permission ceiling', () {
       final policy = AppAccessPolicy.fromSession(
         AuthSession(

@@ -35,7 +35,7 @@ const {
  * @queryParams {string} [facility_id] - Filter by facility ID (UUID)
  * @queryParams {string} [patient_id] - Filter by patient ID (UUID)
  * @queryParams {string} [provider_user_id] - Filter by provider user ID (UUID)
- * @queryParams {string} [encounter_type] - Filter by encounter type (OPD, IPD, ICU, THEATRE, EMERGENCY, TELEMEDICINE)
+ * @queryParams {string} [encounter_type] - Filter by encounter type (OPD, IPD, ICU, THEATRE, EMERGENCY, TELEMEDICINE, LAB)
  * @queryParams {string} [status] - Filter by status (OPEN, CLOSED, CANCELLED)
  * @bodyParams None
  * @returns {Object} Paginated list of encounters
@@ -84,7 +84,7 @@ router.get(
  * @bodyParams {string} [facility_id] - Facility ID (UUID)
  * @bodyParams {string} patient_id - Patient ID (required, UUID)
  * @bodyParams {string} [provider_user_id] - Provider user ID (UUID)
- * @bodyParams {string} encounter_type - Encounter type (required, OPD/IPD/ICU/THEATRE/EMERGENCY/TELEMEDICINE)
+ * @bodyParams {string} encounter_type - Encounter type (required, OPD/IPD/ICU/THEATRE/EMERGENCY/TELEMEDICINE/LAB)
  * @bodyParams {string} status - Status (required, OPEN/CLOSED/CANCELLED)
  * @bodyParams {string} started_at - Start datetime (required, ISO 8601)
  * @bodyParams {string} [ended_at] - End datetime (ISO 8601)
@@ -113,7 +113,7 @@ router.post(
  * @queryParams None
  * @bodyParams {string} [facility_id] - Facility ID (UUID)
  * @bodyParams {string} [provider_user_id] - Provider user ID (UUID)
- * @bodyParams {string} [encounter_type] - Encounter type (OPD/IPD/ICU/THEATRE/EMERGENCY/TELEMEDICINE)
+ * @bodyParams {string} [encounter_type] - Encounter type (OPD/IPD/ICU/THEATRE/EMERGENCY/TELEMEDICINE/LAB)
  * @bodyParams {string} [status] - Status (OPEN/CLOSED/CANCELLED)
  * @bodyParams {string} [started_at] - Start datetime (ISO 8601)
  * @bodyParams {string} [ended_at] - End datetime (ISO 8601)

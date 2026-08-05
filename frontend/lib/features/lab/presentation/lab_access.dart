@@ -66,6 +66,11 @@ const AccessRequirement labCriticalNotifyRequirement = AccessRequirement(
 const AccessRequirement labRequestFromClinicalWriteRequirement =
     clinicalLabOrderWriteRequirement;
 
+/// Nested patient registration inside create-lab-request (∩ `patient:write`).
+const AccessRequirement labCreatePatientRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.patientWrite],
+);
+
 /// Navigation catalog entry — ∩ `lab:read` ([RouteAccessCatalog.labEntry]).
 const AccessRequirement labWorkspaceCatalogEntryRequirement =
     RouteAccessCatalog.labEntry;
@@ -147,6 +152,10 @@ bool canNotifyLabCritical(AppAccessPolicy policy) {
 
 bool canRequestLabFromClinical(AppAccessPolicy policy) {
   return labRequestFromClinicalWriteRequirement.isAllowed(policy);
+}
+
+bool canCreatePatientViaLab(AppAccessPolicy policy) {
+  return labCreatePatientRequirement.isAllowed(policy);
 }
 
 bool canViewLabFollowUps(AppAccessPolicy policy) {
@@ -248,6 +257,7 @@ abstract final class LabAllAtomPermissions {
   static const AccessRequirement nextAction = labWorkspaceReadRequirement;
   static const AccessRequirement viewToggle = labWorkspaceReadRequirement;
   static const AccessRequirement create = labWorkspaceWriteRequirement;
+  static const AccessRequirement createPatient = labCreatePatientRequirement;
   static const AccessRequirement update = labWorkspaceWriteRequirement;
   static const AccessRequirement delete = labWorkspaceWriteRequirement;
   static const AccessRequirement write = labWorkspaceWriteRequirement;
@@ -327,6 +337,7 @@ abstract final class LabAwaitingResultsAtomPermissions {
   static const AccessRequirement nextAction = labWorkspaceReadRequirement;
   static const AccessRequirement viewToggle = labWorkspaceReadRequirement;
   static const AccessRequirement create = labWorkspaceWriteRequirement;
+  static const AccessRequirement createPatient = labCreatePatientRequirement;
   static const AccessRequirement update = labWorkspaceWriteRequirement;
   static const AccessRequirement delete = labWorkspaceWriteRequirement;
   static const AccessRequirement write = labWorkspaceWriteRequirement;
@@ -390,6 +401,7 @@ abstract final class LabCriticalAtomPermissions {
   static const AccessRequirement nextAction = labWorkspaceReadRequirement;
   static const AccessRequirement viewToggle = labWorkspaceReadRequirement;
   static const AccessRequirement create = labWorkspaceWriteRequirement;
+  static const AccessRequirement createPatient = labCreatePatientRequirement;
   static const AccessRequirement update = labWorkspaceWriteRequirement;
   static const AccessRequirement delete = labWorkspaceWriteRequirement;
   static const AccessRequirement write = labWorkspaceWriteRequirement;
@@ -474,6 +486,7 @@ abstract final class LabVerifiedAtomPermissions {
   static const AccessRequirement nextAction = labWorkspaceReadRequirement;
   static const AccessRequirement viewToggle = labWorkspaceReadRequirement;
   static const AccessRequirement create = labWorkspaceWriteRequirement;
+  static const AccessRequirement createPatient = labCreatePatientRequirement;
   static const AccessRequirement update = labWorkspaceWriteRequirement;
   static const AccessRequirement delete = labWorkspaceWriteRequirement;
   static const AccessRequirement write = labWorkspaceWriteRequirement;
@@ -546,6 +559,7 @@ abstract final class LabFollowUpsAtomPermissions {
   static const AccessRequirement detail = labFollowUpsRequirement;
   static const AccessRequirement close = labFollowUpsRequirement;
   static const AccessRequirement create = labFollowUpsWriteRequirement;
+  static const AccessRequirement createPatient = labCreatePatientRequirement;
   static const AccessRequirement update = labFollowUpsWriteRequirement;
   static const AccessRequirement delete = labFollowUpsWriteRequirement;
   static const AccessRequirement reschedule = labFollowUpsWriteRequirement;

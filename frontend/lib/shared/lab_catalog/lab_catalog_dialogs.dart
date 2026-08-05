@@ -6,11 +6,11 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
-import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
+import 'package:hosspi_hms/features/lab/presentation/lab_access.dart';
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -19,13 +19,10 @@ import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_constants.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_fields.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_reference_range_list_field.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_test_definition_form.dart';
-import 'package:hosspi_hms/shared/patient_actions/patient_registration_scope.dart';
-import 'package:hosspi_hms/shared/patient_actions/register_new_patient_dialog.dart';
 
 const int _maxVisibleLabCatalogDialogItems = 160;
 
@@ -104,10 +101,15 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
   AppFailure? _failure;
   bool _isLoadingPatients = false;
   bool _isLoadingPatientContext = false;
+  bool _isRegisteringPatient = false;
   int _patientSearchGeneration = 0;
   int _patientContextGeneration = 0;
 
   bool get _isEditing => widget.order != null;
+
+  bool get _canRegisterPatient {
+    return canCreatePatientViaLab(ref.watch(appAccessPolicyProvider));
+  }
 
   @override
   void initState() {
@@ -169,27 +171,36 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
               labelText: l10n.labPatientSearchLabel,
               hintText: l10n.labPatientSearchHint,
               isRequired: true,
-              isLoading: _isLoadingPatients,
+              isLoading: _isLoadingPatients || _isRegisteringPatient,
+              enabled: !_isRegisteringPatient,
               options: _toSelectOptions(_patientOptions),
               validator: AppValidators.requiredValue(l10n.validationRequired),
               onSearchTextChanged: _schedulePatientSearch,
               onChanged: _selectPatient,
             ),
+            if (!_isEditing && _canRegisterPatient)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: AppButton.secondary(
+                  label: l10n.patientsRegisterNewPatientTitle,
+                  leadingIcon: AppActionIcons.personAdd,
+                  isLoading: _isRegisteringPatient,
+                  enabled: !_isRegisteringPatient,
+                  onPressed: _registerNewPatient,
+                ),
+              ),
             AppResponsiveFieldRow.two(
               gap: AppResponsiveFieldRowGap.form,
               left: AppSelectField<String>.searchable(
                 value: _selectedEncounterId,
                 labelText: l10n.labEncounterContextLabel,
                 hintText: l10n.labEncounterContextHint,
-                isRequired: true,
                 enabled:
+                    !_isRegisteringPatient &&
                     _selectedPatientId != null &&
                     _selectedPatientId!.trim().isNotEmpty,
                 isLoading: _isLoadingPatientContext,
                 options: _toSelectOptions(_encounterOptions),
-                validator: AppValidators.requiredValue(
-                  l10n.labEncounterRequiredValidation,
-                ),
                 onChanged: (String? value) {
                   setState(() => _selectedEncounterId = value);
                 },
@@ -198,8 +209,15 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
                 value: _selectedOrderId,
                 labelText: l10n.labExistingOrderContextLabel,
                 hintText: l10n.labExistingOrderContextHint,
+                enabled: !_isRegisteringPatient,
                 options: _toSelectOptions(_orderOptions),
                 onChanged: _selectOrderContext,
+              ),
+            ),
+            Text(
+              l10n.labEncounterAutoCreateHint,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -213,7 +231,8 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
         AppButton.primary(
           label: l10n.commonNextActionLabel,
           leadingIcon: Icons.arrow_forward_outlined,
-          onPressed: _submit,
+          enabled: !_isRegisteringPatient,
+          onPressed: _isRegisteringPatient ? null : _submit,
         ),
       ],
     );
@@ -547,6 +566,97 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
         existingOrderId: _emptyToNull(_selectedOrderId),
       ),
     );
+  }
+
+  Future<void> _registerNewPatient() async {
+    if (_isRegisteringPatient || !_canRegisterPatient) {
+      return;
+    }
+    setState(() {
+      _isRegisteringPatient = true;
+      _failure = null;
+    });
+    final Result<PatientReferenceData> referenceResult = await ref
+        .read(patientRepositoryProvider)
+        .loadReferenceData();
+    if (!mounted) {
+      return;
+    }
+    final PatientReferenceData? referenceData = referenceResult.when(
+      success: (PatientReferenceData data) => data,
+      failure: (AppFailure failure) {
+        setState(() {
+          _isRegisteringPatient = false;
+          _failure = failure;
+        });
+        return null;
+      },
+    );
+    if (referenceData == null || !mounted) {
+      return;
+    }
+
+    final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+    final PatientRegistrationResult? registration =
+        await showRegisterNewPatientDialog(
+          context: context,
+          referenceData: referenceData,
+          registrationScope: PatientRegistrationScope.resolve(
+            referenceData: referenceData,
+            accessPolicy: accessPolicy,
+          ),
+          onSubmit: (Map<String, Object?> payload) {
+            return ref.read(patientRepositoryProvider).createPatient(payload);
+          },
+          onLookupDuplicates: (PatientDuplicateQuery query) {
+            return ref
+                .read(patientRepositoryProvider)
+                .listDuplicateCandidates(query);
+          },
+        );
+    if (!mounted) {
+      return;
+    }
+    if (registration == null) {
+      setState(() => _isRegisteringPatient = false);
+      return;
+    }
+
+    final Patient patient = registration.patient;
+    final String patientId = _firstNonEmpty(<String?>[
+      patient.publicId,
+      patient.id,
+    ]);
+    final _LabContextOption option = _LabContextOption(
+      value: patientId,
+      label: patient.effectiveDisplayName.isEmpty
+          ? patientId
+          : patient.effectiveDisplayName,
+      subtitle: patient.effectiveIdentifier,
+      icon: Icons.person_outline,
+      searchText: _joinNonEmpty(<String?>[
+        patient.effectiveDisplayName,
+        patient.publicId,
+        patient.id,
+        patient.primaryPhone,
+      ]),
+    );
+    setState(() {
+      _isRegisteringPatient = false;
+      _selectedPatientId = patientId;
+      _selectedPatientOption = option;
+      _searchedPatientOptions
+        ..removeWhere(
+          (_LabContextOption item) =>
+              item.value.toLowerCase() == patientId.toLowerCase(),
+        )
+        ..insert(0, option);
+      _selectedEncounterId = null;
+      _selectedOrderId = null;
+      _patientEncounters.clear();
+      _failure = null;
+    });
+    unawaited(_loadPatientContext(patientId));
   }
 }
 

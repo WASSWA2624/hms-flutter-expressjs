@@ -267,7 +267,6 @@ void main() {
         expect(profile.maxStatusCards, 5);
         expect(profile.effectiveMaxStatusCards, 5);
         expect(profile.maxQuickActions, 8);
-        expect(profile.maxShortcutTiles, 6);
         expect(profile.maxQueueItems, 5);
         expect(
           profile.statusCards.map((template) => template.id),

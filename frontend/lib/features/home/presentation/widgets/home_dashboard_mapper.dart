@@ -143,7 +143,6 @@ DashboardPriorityPanelData homeDashboardPriorityData({
   required WidgetRef ref,
   required HomeDashboard dashboard,
   required List<HomeActionDefinition> actions,
-  required List<HomeShortcutDefinition> shortcuts,
   required AppAccessPolicy policy,
   required AppLocalizations l10n,
   HomeDashboardRequest request = HomeDashboardRequest.empty,
@@ -152,9 +151,6 @@ DashboardPriorityPanelData homeDashboardPriorityData({
   final bool queuePanelAllowed = profile.showQueuePanel;
   final bool alertsAllowed =
       profile.showQueuePanel && profile.showAlertsInPriorityPanel;
-  final bool showShortcutsConfigured = profile.showShortcutsSection(
-    quickActionCount: actions.length,
-  );
   final List<DashboardWorklistItemData> worklistItems = queuePanelAllowed
       ? homeDashboardWorklistItems(
           context: context,
@@ -235,20 +231,6 @@ DashboardPriorityPanelData homeDashboardPriorityData({
         )
       : const <DashboardWorklistItemData>[];
   final bool showFollowUps = followUpItems.isNotEmpty;
-  final List<DashboardShortcutData> shortcutTiles = showShortcutsConfigured
-      ? shortcuts
-            .take(profile.maxShortcutTiles)
-            .map(
-              (HomeShortcutDefinition shortcut) => DashboardShortcutData(
-                label: shortcut.label,
-                icon: shortcut.icon,
-                onTap: () =>
-                    homeNavigateShortcut(context, ref, policy, shortcut),
-              ),
-            )
-            .toList(growable: false)
-      : const <DashboardShortcutData>[];
-  final bool showShortcuts = shortcutTiles.isNotEmpty;
 
   return DashboardPriorityPanelData(
     queueTitle: showQueue && profile.showQueuePanelTitle
@@ -269,14 +251,10 @@ DashboardPriorityPanelData homeDashboardPriorityData({
     followUpTitle: showFollowUps ? homeFollowUpTitle(profile.role) : null,
     followUpItems: followUpItems,
     maxFollowUpItems: profile.maxFollowUpItems,
-    shortcuts: shortcutTiles,
-    maxShortcuts: profile.maxShortcutTiles,
-    shortcutsTitle: l10n.homeDashboardQuickLinksTitle,
     showQueue: showQueue,
     showAlerts: showAlerts,
     showResults: showResults,
     showFollowUps: showFollowUps,
-    showShortcuts: showShortcuts,
     viewAllLabel: l10n.homeViewAllAction,
     onViewAll: homeQueueListTarget(dashboard.queuePreview) == null
         ? null
@@ -350,7 +328,6 @@ DashboardPriorityPanelData homeDashboardAlertsPanelData({
     alertItems: alertItems,
     showQueue: false,
     showAlerts: alertItems.isNotEmpty,
-    showShortcuts: false,
   );
 }
 

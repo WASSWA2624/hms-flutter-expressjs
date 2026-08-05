@@ -27191,7 +27191,7 @@ abstract class AppLocalizations {
   /// Body text for the lab order context selection dialog.
   ///
   /// In en, this message translates to:
-  /// **'Select a patient. Encounter and existing order are optional.'**
+  /// **'Select or register a patient. Encounter and existing order are optional.'**
   String get labOrderContextDialogBody;
 
   /// Label for the patient search field in lab order creation.
@@ -27215,8 +27215,14 @@ abstract class AppLocalizations {
   /// Hint for selecting encounter context in lab order creation.
   ///
   /// In en, this message translates to:
-  /// **'Search or select encounter'**
+  /// **'Optional — leave empty to create a Lab encounter'**
   String get labEncounterContextHint;
+
+  /// Explains Lab walk-in encounter auto-create when encounter is omitted.
+  ///
+  /// In en, this message translates to:
+  /// **'If no encounter is selected, an open Lab encounter is created or reused for this patient.'**
+  String get labEncounterAutoCreateHint;
 
   /// Label for selecting an existing lab order as context.
   ///

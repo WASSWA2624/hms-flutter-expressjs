@@ -75,6 +75,54 @@ void main() {
       expect(canConfigureLab(writer), isTrue);
     });
 
+    test('create patient via lab ∩ needs patient:write', () {
+      final AppAccessPolicy withoutWrite = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.labRead,
+          AppPermissions.labWrite,
+          AppPermissions.patientRead,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: labWorkflowsModule,
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'patient-registry',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      final AppAccessPolicy withWrite = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.labRead,
+          AppPermissions.labWrite,
+          AppPermissions.patientWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: labWorkflowsModule,
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'patient-registry',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+
+      expect(canCreatePatientViaLab(withoutWrite), isFalse);
+      expect(canCreatePatientViaLab(withWrite), isTrue);
+      expect(
+        LabAllAtomPermissions.createPatient.isAllowed(withWrite),
+        isTrue,
+      );
+      expect(
+        LabAllAtomPermissions.createPatient.isAllowed(withoutWrite),
+        isFalse,
+      );
+    });
+
     test(
       'route entry ∪ allows lab:read | clinical:read | clinical:write '
       '(matrix view ∩ remains lab:read)',
@@ -216,6 +264,13 @@ void main() {
       );
       expect(
         identical(LabAllAtomPermissions.create, labWorkspaceWriteRequirement),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabAllAtomPermissions.createPatient,
+          labCreatePatientRequirement,
+        ),
         isTrue,
       );
       expect(

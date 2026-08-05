@@ -783,7 +783,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'process_refund',
       'close_shift',
     ],
-    // Navigation hubs live in Quick links (not a second review strip).
+    // Hubs are reached via shell navigation / quick actions — not a second
+    // review strip on the dashboard.
     shortcutIds: <String>[
       'billing',
       'patients',

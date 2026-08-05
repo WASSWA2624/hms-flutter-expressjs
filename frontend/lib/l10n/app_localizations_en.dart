@@ -14785,7 +14785,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labOrderContextDialogBody =>
-      'Select a patient. Encounter and existing order are optional.';
+      'Select or register a patient. Encounter and existing order are optional.';
 
   @override
   String get labPatientSearchLabel => 'Patient';
@@ -14798,7 +14798,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labEncounterContextLabel => 'Encounter';
 
   @override
-  String get labEncounterContextHint => 'Search or select encounter';
+  String get labEncounterContextHint =>
+      'Optional — leave empty to create a Lab encounter';
+
+  @override
+  String get labEncounterAutoCreateHint =>
+      'If no encounter is selected, an open Lab encounter is created or reused for this patient.';
 
   @override
   String get labExistingOrderContextLabel => 'Existing lab order context';

@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -36,14 +34,9 @@ class DashboardPriorityPanel extends StatelessWidget {
         data.showFollowUps &&
         data.followUpTitle != null &&
         data.followUpItems.isNotEmpty;
-    final bool hasShortcuts = data.showShortcuts && data.shortcuts.isNotEmpty;
     final bool hasAlertContent = hasAlerts;
 
-    if (!hasQueue &&
-        !hasAlerts &&
-        !hasResults &&
-        !hasFollowUps &&
-        !hasShortcuts) {
+    if (!hasQueue && !hasAlerts && !hasResults && !hasFollowUps) {
       return const SizedBox.shrink();
     }
 
@@ -144,15 +137,6 @@ class DashboardPriorityPanel extends StatelessWidget {
                   ))
                 SizedBox(height: gap),
               followUpPanel,
-            ],
-            if (hasShortcuts) ...<Widget>[
-              if (hasQueue || hasAlerts || hasResults || hasFollowUps)
-                SizedBox(height: gap),
-              _DashboardShortcutsSection(
-                title: data.shortcutsTitle,
-                shortcuts: data.shortcuts,
-                maxTiles: data.maxShortcuts,
-              ),
             ],
           ],
         );
@@ -407,60 +391,6 @@ class _DashboardWorklistGroup extends StatelessWidget {
   }
 }
 
-class _DashboardShortcutsSection extends StatelessWidget {
-  const _DashboardShortcutsSection({
-    required this.title,
-    required this.shortcuts,
-    required this.maxTiles,
-  });
-
-  final String title;
-  final List<DashboardShortcutData> shortcuts;
-  final int maxTiles;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final double gap = theme.spacing.sm;
-
-    return _DashboardSectionShell(
-      child: AppSectionPanel(
-        title: title,
-        leadingIcon: Icons.link_rounded,
-        density: AppContentPanelDensity.spacious,
-        backgroundColor: Colors.transparent,
-        borderColor: Colors.transparent,
-        children: <Widget>[
-          LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final bool wide = constraints.maxWidth >= 640;
-              final int columns = wide ? math.min(3, shortcuts.length) : 1;
-              final double tileWidth = columns <= 1
-                  ? constraints.maxWidth
-                  : (constraints.maxWidth - (gap * (columns - 1))) / columns;
-              final List<DashboardShortcutData> visible = shortcuts
-                  .take(maxTiles)
-                  .toList(growable: false);
-
-              return Wrap(
-                spacing: gap,
-                runSpacing: gap,
-                children: <Widget>[
-                  for (final DashboardShortcutData shortcut in visible)
-                    SizedBox(
-                      width: columns <= 1 ? constraints.maxWidth : tileWidth,
-                      child: _DashboardShortcutTile(shortcut: shortcut),
-                    ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _DashboardWorklistRow extends StatelessWidget {
   const _DashboardWorklistRow({required this.item});
 
@@ -538,68 +468,6 @@ class _DashboardWorklistRow extends StatelessWidget {
         onTap: item.onTap,
         hoverColor: colorScheme.primary.withValues(alpha: 0.04),
         child: row,
-      ),
-    );
-  }
-}
-
-class _DashboardShortcutTile extends StatelessWidget {
-  const _DashboardShortcutTile({required this.shortcut});
-
-  final DashboardShortcutData shortcut;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Material(
-      color: colorScheme.surfaceContainerLowest,
-      borderRadius: BorderRadius.circular(theme.radius.lg),
-      child: InkWell(
-        onTap: shortcut.onTap,
-        borderRadius: BorderRadius.circular(theme.radius.lg),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(theme.radius.lg),
-            border: theme.borders.all(),
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.md,
-              vertical: theme.spacing.lg,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: dashboardAccentIconDecoration(
-                    theme,
-                    colorScheme.primary,
-                  ),
-                  child: Icon(
-                    shortcut.icon,
-                    size: 20,
-                    color: colorScheme.primary,
-                  ),
-                ),
-                SizedBox(height: theme.spacing.sm),
-                Text(
-                  shortcut.label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: AppFontWeight.emphasis,
-                    height: 1.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

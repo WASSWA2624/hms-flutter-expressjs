@@ -110,28 +110,6 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
   int get maxFollowUpItems =>
       isDoctorClinicalDashboard || isReceptionistFrontDeskDashboard ? 3 : 0;
 
-  int get maxShortcutTiles {
-    if (suppressHomeShortcuts || shortcutIds.isEmpty) {
-      return 0;
-    }
-    if (isDoctorClinicalDashboard || isNurseClinicalDashboard) {
-      return 6;
-    }
-    if (isReceptionistFrontDeskDashboard || isBillingDepartmentDashboard) {
-      return 5;
-    }
-    // Floor of 4 authorized tiles when the catalog can supply them; prefer 5
-    // for admin / facility-command surfaces with denser destinations.
-    return switch (layoutTier) {
-      HomeDashboardLayoutTier.platform ||
-      HomeDashboardLayoutTier.organization ||
-      HomeDashboardLayoutTier.facilityCommand ||
-      HomeDashboardLayoutTier.workforce => 5,
-      HomeDashboardLayoutTier.patient => 0,
-      _ => 4,
-    };
-  }
-
   bool get compactMetrics {
     return layoutTier != HomeDashboardLayoutTier.workforce &&
         layoutTier != HomeDashboardLayoutTier.platform &&
@@ -162,13 +140,6 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
   bool showActivityPanel({required bool hasQueueItems}) => false;
 
   bool showAlertsPanel(List<HomeAlertItem> alerts) => showQueuePanel;
-
-  bool showShortcutsSection({required int quickActionCount}) {
-    if (suppressHomeShortcuts || shortcutIds.isEmpty || maxShortcutTiles == 0) {
-      return false;
-    }
-    return true;
-  }
 
   bool get showMetricsSection => true;
 

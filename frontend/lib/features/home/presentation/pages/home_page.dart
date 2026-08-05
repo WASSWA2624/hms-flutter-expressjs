@@ -213,18 +213,12 @@ class _HomeDashboardContent extends ConsumerWidget {
       profile.emptyActionIds,
       policy,
     );
-    final shortcuts = homeShortcutsExcludingQuickActions(
-      homeVisibleShortcuts(authorized.shortcutIds, policy),
-      actions,
-      profile,
-    );
     final l10n = context.l10n;
     final DashboardPriorityPanelData priorityData = homeDashboardPriorityData(
       context: context,
       ref: ref,
       dashboard: authorized,
       actions: actions,
-      shortcuts: shortcuts,
       policy: policy,
       l10n: l10n,
       request: request,
@@ -234,7 +228,6 @@ class _HomeDashboardContent extends ConsumerWidget {
         priorityData.showAlerts ||
         priorityData.showResults ||
         priorityData.showFollowUps ||
-        priorityData.showShortcuts ||
         priorityData.emptyMessage.isNotEmpty ||
         priorityData.emptyActions.isNotEmpty;
     final bool chartsAllowed = homeAllows(policy, homeChartsRequirement);

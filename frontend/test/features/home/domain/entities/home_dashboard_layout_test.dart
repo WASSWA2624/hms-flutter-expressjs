@@ -14,13 +14,11 @@ void main() {
       expect(profile.alertsBeforeMetrics, isTrue);
       expect(profile.effectiveMaxStatusCards, 4);
       expect(profile.maxQuickActions, 5);
-      expect(profile.showShortcutsSection(quickActionCount: 2), isTrue);
-      expect(profile.maxShortcutTiles, 6);
       expect(profile.maxResultsItems, 3);
       expect(profile.maxFollowUpItems, 3);
     });
 
-    test('HR profile caps status cards and enables shortcuts', () {
+    test('HR profile caps status cards and suppresses queue', () {
       final profile = homeProfileForRole(AppRole.hr);
 
       expect(profile.layoutTier, HomeDashboardLayoutTier.workforce);
@@ -29,31 +27,25 @@ void main() {
       expect(profile.effectiveMaxStatusCards, 4);
       expect(profile.maxQuickActions, 0);
       expect(profile.suppressHomeQuickActions, isTrue);
-      expect(profile.showShortcutsSection(quickActionCount: 0), isTrue);
     });
 
-    test('facility admin keeps admin shortcuts', () {
+    test('facility admin keeps facility command layout', () {
       final profile = homeProfileForRole(AppRole.facilityAdmin);
 
       expect(profile.layoutTier, HomeDashboardLayoutTier.facilityCommand);
       expect(profile.showCharts, isTrue);
       expect(profile.effectiveMaxStatusCards, 4);
-      expect(profile.maxShortcutTiles, 5);
-      expect(profile.shortcutIds.length, greaterThanOrEqualTo(4));
       expect(profile.showQueuePanelFor(const []), isTrue);
     });
 
-    test('department roles can show shortcuts when configured', () {
+    test('department roles keep queue and metric routing', () {
       final profile = homeProfileForRole(AppRole.labTech);
 
       expect(profile.layoutTier, HomeDashboardLayoutTier.departmentQueue);
       expect(profile.effectiveMaxStatusCards, 6);
       expect(profile.maxQuickActions, 0);
       expect(profile.showActivityPanel(hasQueueItems: true), isFalse);
-      expect(profile.showShortcutsSection(quickActionCount: 2), isTrue);
-      expect(profile.maxShortcutTiles, greaterThanOrEqualTo(4));
       expect(profile.showQueuePanelFor(const []), isTrue);
-      expect(profile.shortcutIds, contains('reports'));
       expect(profile.metricRouteTargets.keys, contains('lab_pending'));
       expect(
         profile.metricRouteTargets['lab_pending']!.queryParameters,
@@ -87,12 +79,10 @@ void main() {
       ]);
       expect(profile.metricRouteTargets.keys, contains('pending_dispense'));
       expect(profile.emptyMessage, 'No pending orders.');
-      expect(profile.maxShortcutTiles, greaterThanOrEqualTo(4));
-      expect(profile.shortcutIds.length, greaterThanOrEqualTo(4));
     });
 
     test(
-      'receptionist dashboard emphasizes meetings follow-up and quick links',
+      'receptionist dashboard emphasizes meetings follow-up and desk queue',
       () {
         final profile = homeProfileForRole(AppRole.receptionist);
 
@@ -102,7 +92,6 @@ void main() {
         expect(profile.maxQuickActions, 4);
         expect(profile.maxQueueItems, 5);
         expect(profile.maxFollowUpItems, 3);
-        expect(profile.maxShortcutTiles, 5);
         expect(profile.emptyActionIds, isEmpty);
         expect(
           profile.statusCards.take(4).map((template) => template.id),
@@ -117,13 +106,6 @@ void main() {
           'register_patient',
           'book_appointment',
           'route_patient',
-        ]);
-        expect(profile.shortcutIds, <String>[
-          'reception',
-          'patients',
-          'communications',
-          'reports',
-          'settings',
         ]);
         expect(profile.metricRouteTargets.keys, contains('appointments_today'));
         expect(profile.emptyMessage, 'No desk queue items right now.');
