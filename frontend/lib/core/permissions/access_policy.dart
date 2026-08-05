@@ -1039,6 +1039,7 @@ final class AppAccessPolicy {
         AppPermissions.communicationsWrite,
         AppPermissions.profileRead,
         AppPermissions.patientRead,
+        AppPermissions.patientWrite,
         AppPermissions.patientsRead,
         AppPermissions.reportsRead,
       ],

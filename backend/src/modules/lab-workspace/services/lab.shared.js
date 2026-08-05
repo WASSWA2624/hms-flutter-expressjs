@@ -227,6 +227,65 @@ const applyDateRangeFilter = (where, field, fromValue, toValue) => {
 };
 
 /**
+ * Find or create an open Lab walk-in encounter for a patient.
+ * Reuses an existing OPEN LAB encounter at the same facility when present.
+ *
+ * @param {Object} options
+ * @param {Object} options.patientRecord
+ * @param {string|null} [options.userId]
+ * @param {string|null} [options.ipAddress]
+ * @returns {Promise<string>} Internal encounter id
+ */
+const ensureLabEncounterForPatient = async ({
+  patientRecord,
+  userId = null,
+  ipAddress = null} = {}) => {
+  if (!patientRecord?.id || !patientRecord?.tenant_id) {
+    throw new HttpError('errors.patient.not_found', 404, [{ field: 'patient_id' }]);
+  }
+
+  const facilityId = patientRecord.facility_id || null;
+  const existing = await prisma.encounter.findFirst({
+    where: {
+      deleted_at: null,
+      patient_id: patientRecord.id,
+      tenant_id: patientRecord.tenant_id,
+      ...(facilityId ? { facility_id: facilityId } : {}),
+      encounter_type: 'LAB',
+      status: 'OPEN'
+    },
+    orderBy: { started_at: 'desc' },
+    select: { id: true }
+  });
+  if (existing?.id) {
+    return existing.id;
+  }
+
+  const encounterService = require('@services/encounter/encounter.service');
+  const created = await encounterService.createEncounter(
+    {
+      tenant_id: patientRecord.tenant_id,
+      facility_id: facilityId,
+      patient_id: patientRecord.id,
+      encounter_type: 'LAB',
+      status: 'OPEN',
+      started_at: new Date().toISOString(),
+      extension_json: {
+        lab_walk_in: true,
+        source: 'LAB_ORDER'
+      }
+    },
+    userId,
+    ipAddress
+  );
+  const encounterId = created?.id;
+  if (!encounterId) {
+    throw new HttpError('errors.encounter.not_found', 404, [{ field: 'encounter_id' }]);
+  }
+  return encounterId;
+};
+
+/**
  * Resolve a clinical context identifier to an encounter id.
  * Accepts encounter, visit queue (VIS…), or admission public ids.
  *
@@ -322,6 +381,7 @@ module.exports = {
   LAB_QC_LOG_WITH_RELATIONS_INCLUDE,
   LAB_TEST_WITH_RELATIONS_INCLUDE,
   LAB_PANEL_WITH_RELATIONS_INCLUDE,
+  ensureLabEncounterForPatient,
   buildPagination,
   normalizeSearchTerm,
   toDateOrNull,

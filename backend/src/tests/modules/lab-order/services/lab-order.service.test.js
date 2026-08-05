@@ -17,7 +17,8 @@ jest.mock('@services/lab-workspace/lab.shared', () => {
     ...actual,
     resolveModelIdOrThrow: jest.fn(),
     resolveModelRecordOrThrow: jest.fn(),
-    resolveLabOrderEncounterId: jest.fn()};
+    resolveLabOrderEncounterId: jest.fn(),
+    ensureLabEncounterForPatient: jest.fn()};
 });
 
 const labOrderRepository = require('@repositories/lab-order/lab-order.repository');
@@ -25,7 +26,8 @@ const { createAuditLog } = require('@lib/audit');
 const {
   resolveModelIdOrThrow,
   resolveModelRecordOrThrow,
-  resolveLabOrderEncounterId} = require('@services/lab-workspace/lab.shared');
+  resolveLabOrderEncounterId,
+  ensureLabEncounterForPatient} = require('@services/lab-workspace/lab.shared');
 const labOrderService = require('@services/lab-order/lab-order.service');
 
 const mockUserId = 'user-123';
@@ -277,22 +279,45 @@ describe('lab-order.service', () => {
     );
   });
 
-  it('rejects lab order create without encounter_id', async () => {
-    resolveModelRecordOrThrow.mockResolvedValueOnce({
-      id: 'patient-internal-1',
-      tenant_id: 'tenant-1'});
+  it('creates a lab order with an auto-generated Lab encounter when encounter_id is omitted', async () => {
+    resolveModelRecordOrThrow
+      .mockResolvedValueOnce({
+        id: 'patient-internal-1',
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1'})
+      .mockResolvedValueOnce({
+        id: 'lab-test-1',
+        human_friendly_id: 'LBT0000001'});
+    ensureLabEncounterForPatient.mockResolvedValueOnce('lab-encounter-1');
+    labOrderRepository.create.mockResolvedValue({
+      id: 'order-internal-1',
+      human_friendly_id: 'LAB0000001'});
+    labOrderRepository.findById.mockResolvedValue(
+      buildOrderRecord({ encounter_id: 'lab-encounter-1' })
+    );
 
-    await expect(
-      labOrderService.createLabOrder(
-        {
-          patient_id: 'PAT0000001',
-          requested_tests: [{ lab_test_id: 'LBT0000001' }]},
-        mockUserId,
-        mockIpAddress
-      )
-    ).rejects.toMatchObject({
-      message: 'errors.lab_order.encounter_required',
-      statusCode: 400});
+    const result = await labOrderService.createLabOrder(
+      {
+        patient_id: 'PAT0000001',
+        requested_tests: [{ lab_test_id: 'LBT0000001' }]},
+      mockUserId,
+      mockIpAddress
+    );
+
+    expect(ensureLabEncounterForPatient).toHaveBeenCalledWith({
+      patientRecord: {
+        id: 'patient-internal-1',
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1'},
+      userId: mockUserId,
+      ipAddress: mockIpAddress});
+    expect(resolveLabOrderEncounterId).not.toHaveBeenCalled();
+    expect(labOrderRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        patient_id: 'patient-internal-1',
+        encounter_id: 'lab-encounter-1'})
+    );
+    expect(result.id).toBe('LAB0000001');
   });
 
   it('models the standard CBC offering as a multi-test panel', () => {

@@ -67,7 +67,7 @@ describe('Encounter Schemas', () => {
     });
 
     it('should validate encounter_type enum values', () => {
-      const types = ['OPD', 'IPD', 'ICU', 'THEATRE', 'EMERGENCY', 'TELEMEDICINE'];
+      const types = ['OPD', 'IPD', 'ICU', 'THEATRE', 'EMERGENCY', 'TELEMEDICINE', 'LAB'];
       types.forEach(type => {
         const data = { ...validData, encounter_type: type };
         const result = createEncounterSchema.safeParse(data);

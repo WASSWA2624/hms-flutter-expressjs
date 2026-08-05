@@ -3,43 +3,48 @@ description: Lab order execution and result workflow boundaries for module chang
 globs:
   - "frontend/lib/features/lab/**"
   - "backend/src/modules/lab-workspace/**"
+  - "backend/src/modules/lab-order/**"
 alwaysApply: false
 ---
 
 # Laboratory Patient Flow
 
-Lab owns sample-to-result execution for encounter-linked orders; keep the lab workbench focused on receiving orders, collecting samples, processing tests, and releasing verified results.
+Lab owns sample-to-result execution for encounter-linked orders; keep the lab workbench focused on receiving orders, collecting samples, processing tests, and releasing verified results. Lab may also place walk-in orders by creating patients and Lab encounters from the create-lab-request flow.
 
 ## Stage Sequence
 
-- Order received from OPD, IPD, ICU, or clinical dialog.
+- Order received from OPD, IPD, ICU, clinical dialog, or Lab walk-in create.
 - Billing gate checked when required.
 - Sample collected, labeled, and received or rejected.
 - Test processed and results entered.
 - Supervisor verifies or releases the result.
-- Critical results notify the receiving clinician.
+- Critical results notify the receiving clinician (when a clinical encounter owns the order).
 
 ## Handoffs
 
-- Doctor or clinical user owns order placement.
-- Lab tech owns collection, accession, processing, and result entry.
+- Doctor or clinical user owns clinical order placement on OPD/IPD/ICU encounters.
+- Lab tech owns walk-in order create (patient + Lab encounter when needed), collection, accession, processing, and result entry.
 - Lab supervisor owns verification and release.
-- OPD or IPD orchestrators own stage progression after results return.
+- OPD or IPD orchestrators own stage progression after results return on clinical encounters.
 
 ## Hard Invariants
 
-- Must not create encounters or advance OPD/IPD stages directly.
+- Must not advance OPD/IPD stages directly; may signal diagnostics sync for clinical encounters only.
 - Must not duplicate orders already posted through the encounter.
-- Must keep every row tied to a clinical encounter id.
-- Must not hide critical results from the clinician workflow.
+- Must keep every order tied to an encounter id (clinical or Lab walk-in).
+- When creating encounters from Lab, use `encounter_type` `LAB` only—not OPD/IPD/EMERGENCY/THEATRE.
+- Must not hide critical results from the clinician workflow when a clinical recipient exists.
 
 ## Allowed Critical Actions
 
 - Use the workbench route as the canonical lab workspace.
+- Create lab orders for existing patients; create or reuse an open Lab encounter when none is selected.
+- Create patients through the create-lab-request flow when `patient:write` is granted.
 - May support pay-now or bill-later at order time when policy requires it.
 - Flag critical results immediately for notification.
-- Keep OPD and IPD order contexts distinct in the queue.
+- Keep OPD and IPD order contexts distinct in the queue; Lab walk-in rows remain Lab-encounter scoped.
 
 ## Related
 
 - `opd-flow.mdc`, `ipd-flow.mdc`, `radiology-flow.mdc`, `pharmacy-flow.mdc`
+- `prompts/lab.md`

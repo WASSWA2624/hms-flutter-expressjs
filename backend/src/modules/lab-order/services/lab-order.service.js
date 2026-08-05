@@ -12,6 +12,7 @@ const {
   resolveModelIdOrThrow,
   resolveModelRecordOrThrow,
   resolveLabOrderEncounterId,
+  ensureLabEncounterForPatient,
   toDateOrNull
 } = require('@services/lab-workspace/lab.shared');
 const { mapLabOrderRecord } = require('@services/lab-workspace/lab.serializer');
@@ -46415,15 +46416,20 @@ const createLabOrder = async (data, userId, ipAddress) => {
     });
     payload.patient_id = patientRecord.id;
 
-    if (!payload.encounter_id) {
-      throw new HttpError('errors.lab_order.encounter_required', 400, [
-        { field: 'encounter_id' }]);
+    const encounterIdentifier =
+      typeof payload.encounter_id === 'string' ? payload.encounter_id.trim() : '';
+    if (encounterIdentifier) {
+      payload.encounter_id = await resolveLabOrderEncounterId({
+        identifier: encounterIdentifier,
+        patientId: patientRecord.id,
+        tenantId: patientRecord.tenant_id,
+        facilityId: patientRecord.facility_id || null});
+    } else {
+      payload.encounter_id = await ensureLabEncounterForPatient({
+        patientRecord,
+        userId,
+        ipAddress});
     }
-    payload.encounter_id = await resolveLabOrderEncounterId({
-      identifier: payload.encounter_id,
-      patientId: patientRecord.id,
-      tenantId: patientRecord.tenant_id,
-      facilityId: patientRecord.facility_id || null});
 
     payload.status = payload.status || 'ORDERED';
     delete payload.ordered_at;

@@ -14,6 +14,16 @@ const {
   isoDateSchema
 } = require('@lib/validation/zod');
 
+const encounterTypeSchema = z.enum([
+  'OPD',
+  'IPD',
+  'ICU',
+  'THEATRE',
+  'EMERGENCY',
+  'TELEMEDICINE',
+  'LAB'
+]);
+
 // ==================== Body Schemas ====================
 
 /**
@@ -25,7 +35,7 @@ const createEncounterSchema = z.object({
   facility_id: uuidSchema.optional().nullable(),
   patient_id: uuidSchema,
   provider_user_id: uuidSchema.optional().nullable(),
-  encounter_type: z.enum(['OPD', 'IPD', 'ICU', 'THEATRE', 'EMERGENCY', 'TELEMEDICINE']),
+  encounter_type: encounterTypeSchema,
   status: z.enum(['OPEN', 'CLOSED', 'CANCELLED']),
   started_at: isoDateSchema,
   ended_at: isoDateSchema.optional().nullable()
@@ -39,7 +49,7 @@ const createEncounterSchema = z.object({
 const updateEncounterSchema = z.object({
   facility_id: uuidSchema.optional().nullable(),
   provider_user_id: uuidSchema.optional().nullable(),
-  encounter_type: z.enum(['OPD', 'IPD', 'ICU', 'THEATRE', 'EMERGENCY', 'TELEMEDICINE']).optional(),
+  encounter_type: encounterTypeSchema.optional(),
   status: z.enum(['OPEN', 'CLOSED', 'CANCELLED']).optional(),
   started_at: isoDateSchema.optional(),
   ended_at: isoDateSchema.optional().nullable()
@@ -67,7 +77,7 @@ const listEncountersQuerySchema = listQuerySchema.extend({
   facility_id: uuidSchema.optional(),
   patient_id: uuidSchema.optional(),
   provider_user_id: uuidSchema.optional(),
-  encounter_type: z.enum(['OPD', 'IPD', 'ICU', 'THEATRE', 'EMERGENCY', 'TELEMEDICINE']).optional(),
+  encounter_type: encounterTypeSchema.optional(),
   status: z.enum(['OPEN', 'CLOSED', 'CANCELLED']).optional()
 });
 

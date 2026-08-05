@@ -43,17 +43,19 @@ describe('Lab Order Schemas', () => {
       expect(result.data.status).toBe('ORDERED');
     });
 
-    it('should require encounter_id', () => {
+    it('should allow omitting encounter_id for Lab walk-in auto-create', () => {
       const data = { ...validData };
       delete data.encounter_id;
       const result = createLabOrderSchema.safeParse(data);
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
+      expect(result.data.encounter_id).toBeUndefined();
     });
 
-    it('should reject null encounter_id', () => {
+    it('should allow null encounter_id for Lab walk-in auto-create', () => {
       const data = { ...validData, encounter_id: null };
       const result = createLabOrderSchema.safeParse(data);
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
+      expect(result.data.encounter_id).toBeNull();
     });
 
     it('should allow ordered_at to be omitted for server clock assignment', () => {

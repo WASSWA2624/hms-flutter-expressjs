@@ -175,6 +175,7 @@ enum EncounterType {
   THEATRE
   EMERGENCY
   TELEMEDICINE
+  LAB
 }
 
 enum EncounterStatus {

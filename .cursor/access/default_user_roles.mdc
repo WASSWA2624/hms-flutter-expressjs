@@ -21,7 +21,7 @@ Seed on install; see `permissions.mdc` for semantics.
 - `receptionist`: `patient_registry`, queues/OPD desk; billing view; reception reporting.
 - `accountant`: `billing`, `claims`; finance reporting.
 - `pharmacist`: `pharmacy` dispense and stock; billing view; pharmacy reporting; no Patients registry (`/patients`)—patient details only via pharmacy/dashboard embeds.
-- `laboratory_technician`: `lab` specimen and workflow; lab reporting.
+- `laboratory_technician`: `lab` specimen and workflow; walk-in lab orders (create/reuse Lab encounters; create patients via create-lab-request when entitled); lab reporting.
 - `radiographer`: `radiology` scan acquisition; scan-scope reporting.
 - `radiologist`: `radiology` interpretation and review; interpretation reporting.
 - `physiotherapist`: `physiotherapy` sessions and workflow; physiotherapy reporting.
