@@ -20,6 +20,8 @@ const {
   REPORT_FORMATS,
   REPORT_RUN_STATUSES} = require('@lib/reports/constants');
 const { serializeReportRun } = require('@lib/reports/serializers');
+const { executeReportDataset } = require('@lib/reports/datasets');
+const prisma = require('@prisma/client');
 
 const SORT_FIELDS = ['queued_at', 'created_at', 'updated_at', 'completed_at', 'status', 'format'];
 
@@ -231,6 +233,44 @@ const downloadReportRun = async (id, context = {}) => {
     mime_type: run.output_mime_type || 'application/octet-stream'};
 };
 
+const previewReportRun = async (id, user = {}) => {
+  const run = await assertScopedRun(id, user);
+  const definition = run.report_definition;
+  if (!definition) {
+    throw new HttpError('errors.report_run.not_found', 404);
+  }
+
+  let facilityLabel = null;
+  if (run.facility_id) {
+    const facility = await prisma.facility.findFirst({
+      where: { id: run.facility_id, deleted_at: null },
+      select: { name: true },
+    });
+    facilityLabel = facility?.name || null;
+  }
+
+  const result = await executeReportDataset({
+    dataset_key: definition.dataset_key || definition.definition_json?.dataset_key,
+    scope: {
+      tenant_id: run.tenant_id,
+      facility_id: run.facility_id || definition.facility_id || null,
+      facility_label: facilityLabel,
+    },
+    definition_json: definition.definition_json || {},
+    parameters: run.parameters_json || {},
+  });
+
+  return {
+    run: serializeReportRun(run),
+    dataset_key: result.dataset?.key || definition.dataset_key || null,
+    visualization: result.dataset?.visualization || null,
+    title: result.title,
+    subtitle: result.subtitle,
+    columns: result.columns,
+    rows: result.rows,
+  };
+};
+
 module.exports = {
   cancelReportRunById,
   createReportRun,
@@ -238,5 +278,6 @@ module.exports = {
   downloadReportRun,
   getReportRunById,
   listReportRuns,
+  previewReportRun,
   retryReportRun,
   updateReportRun};

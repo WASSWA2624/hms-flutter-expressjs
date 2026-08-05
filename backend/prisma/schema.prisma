@@ -158,6 +158,11 @@ enum AppointmentStatus {
   NO_SHOW
 }
 
+enum AppointmentSubjectType {
+  PATIENT
+  VISITOR
+}
+
 enum ProviderScheduleType {
   RECURRING
   OVERRIDE
@@ -2094,27 +2099,32 @@ model terms_acceptance {
 }
 
 model appointment {
-  id                String            @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id String?           @db.VarChar(32)
-  tenant_id         String            @db.VarChar(36)
-  facility_id       String?           @db.VarChar(36)
-  patient_id        String            @db.VarChar(36)
-  provider_user_id  String?           @db.VarChar(36)
-  status            AppointmentStatus
-  scheduled_start   DateTime
-  scheduled_end     DateTime
-  reason            String?           @db.Text
-  created_at        DateTime          @default(now())
-  updated_at        DateTime          @updatedAt
-  deleted_at        DateTime?
-  version           Int               @default(1)
+  id                   String                 @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id    String?                @db.VarChar(32)
+  tenant_id            String                 @db.VarChar(36)
+  facility_id          String?                @db.VarChar(36)
+  patient_id           String?                @db.VarChar(36)
+  provider_user_id     String?                @db.VarChar(36)
+  subject_type         AppointmentSubjectType @default(PATIENT)
+  visitor_name         String?                @db.VarChar(160)
+  visitor_phone        String?                @db.VarChar(40)
+  visitor_email        String?                @db.VarChar(160)
+  visitor_organization String?                @db.VarChar(160)
+  status               AppointmentStatus
+  scheduled_start      DateTime
+  scheduled_end        DateTime
+  reason               String?                @db.Text
+  created_at           DateTime               @default(now())
+  updated_at           DateTime               @updatedAt
+  deleted_at           DateTime?
+  version              Int                    @default(1)
 
-  tenant        tenant                    @relation(fields: [tenant_id], references: [id])
-  facility      facility?                 @relation(fields: [facility_id], references: [id])
-  patient       patient                   @relation(fields: [patient_id], references: [id])
-  provider      user?                     @relation(fields: [provider_user_id], references: [id])
-  participants  appointment_participant[]
-  reminders     appointment_reminder[]
+  tenant       tenant                    @relation(fields: [tenant_id], references: [id])
+  facility     facility?                 @relation(fields: [facility_id], references: [id])
+  patient      patient?                  @relation(fields: [patient_id], references: [id])
+  provider     user?                     @relation(fields: [provider_user_id], references: [id])
+  participants appointment_participant[]
+  reminders    appointment_reminder[]
   queue_entries visit_queue[]
 
   @@unique([tenant_id, human_friendly_id])
@@ -2122,6 +2132,7 @@ model appointment {
   @@index([facility_id])
   @@index([patient_id])
   @@index([provider_user_id])
+  @@index([subject_type])
   @@index([status])
   @@index([scheduled_start])
   @@index([deleted_at])

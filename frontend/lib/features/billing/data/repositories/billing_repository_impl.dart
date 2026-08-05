@@ -45,6 +45,29 @@ final class BillingRepositoryImpl implements BillingRepository {
   }
 
   @override
+  Future<Result<BillingFinancialAnalytics>> getFinancialAnalytics(
+    BillingAnalyticsQuery query,
+  ) {
+    return _apiClient.get<BillingFinancialAnalytics>(
+      ApiEndpoints.nested(
+        HmsApiResource.billing,
+        'financial-analytics',
+        const <String>[],
+      ),
+      queryParameters: <String, Object?>{
+        'date_preset': query.period.serverValue,
+        if (query.period == BillingAnalyticsPeriod.custom) ...<String, Object?>{
+          'from': query.from?.toUtc().toIso8601String(),
+          'to': query.to?.toUtc().toIso8601String(),
+        },
+      },
+      decoder: (Object? data) {
+        return BillingFinancialAnalyticsDto.fromResponse(data).toEntity();
+      },
+    );
+  }
+
+  @override
   Future<Result<AppPage<BillingWorkItem>>> listWorkItems(
     BillingWorkspaceQuery query,
   ) {

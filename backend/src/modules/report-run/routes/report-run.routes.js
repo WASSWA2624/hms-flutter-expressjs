@@ -76,4 +76,12 @@ router.get(
   reportRunController.downloadReportRun
 );
 
+router.get(
+  '/:id/preview',
+  validateRequest({ params: reportRunIdParamsSchema }),
+  authenticate(),
+  authorize(PERMISSIONS.REPORTS_READ, 'permission'),
+  reportRunController.previewReportRun
+);
+
 module.exports = router;

@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_invoice_print_helpers.dart';
 import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_controller.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_detail_widgets.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_financial_analytics_panel.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_form_dialogs.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_ledger_dialog.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_receive_payment_dialog.dart';
@@ -304,6 +305,8 @@ class _BillingWorkspaceContentState
               },
             ),
             SizedBox(height: theme.spacing.sm),
+            const BillingFinancialAnalyticsPanel(),
+            SizedBox(height: theme.spacing.md),
             if (lastFailure != null) ...<Widget>[
               AppFailureStateView(
                 failure: lastFailure,

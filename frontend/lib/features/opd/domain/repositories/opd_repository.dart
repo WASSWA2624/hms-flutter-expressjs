@@ -152,6 +152,9 @@ abstract interface class OpdRepository {
 
   Future<Result<List<OpdProviderOption>>> listProviders({String? search});
 
+  /// Active facility staff hosts for visitor/staff meetings (not clinical-only).
+  Future<Result<List<OpdProviderOption>>> listMeetingHosts({String? search});
+
   Future<Result<List<OpdProviderSchedule>>> listProviderSchedules();
 
   Future<Result<List<OpdAvailabilitySlot>>> listAvailabilitySlots(

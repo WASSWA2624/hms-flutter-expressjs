@@ -14,7 +14,9 @@ const includeShape = {
       name: true,
       dataset_key: true,
       default_format: true,
-      facility_id: true}},
+      facility_id: true,
+      tenant_id: true,
+      definition_json: true}},
   requested_by: {
     select: {
       id: true,

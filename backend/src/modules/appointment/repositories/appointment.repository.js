@@ -21,7 +21,7 @@ const { withActivePatient } = require('@lib/patient-query-filters');
 const findById = async (id, include = {}) => {
   try {
     return await prisma.appointment.findFirst({
-      where: withActivePatient({ id }),
+      where: withActivePatient({ id }, { allowNullPatient: true }),
       include
     });
   } catch (error) {
@@ -41,7 +41,7 @@ const findById = async (id, include = {}) => {
  */
 const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
   try {
-    const where = withActivePatient(filters);
+    const where = withActivePatient(filters, { allowNullPatient: true });
 
     return await prisma.appointment.findMany({
       where,
@@ -63,7 +63,7 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_a
  */
 const count = async (filters = {}) => {
   try {
-    const where = withActivePatient(filters);
+    const where = withActivePatient(filters, { allowNullPatient: true });
 
     return await prisma.appointment.count({ where });
   } catch (error) {
@@ -151,11 +151,63 @@ const softDelete = async (id) => {
   }
 };
 
+/**
+ * Find overlapping active appointments for a host in a time window.
+ *
+ * @param {Object} params
+ * @param {string} params.providerUserId
+ * @param {Date|string} params.scheduledStart
+ * @param {Date|string} params.scheduledEnd
+ * @param {string} [params.excludeAppointmentId]
+ * @param {string} [params.tenantId]
+ * @returns {Promise<Object|null>}
+ */
+const findOverlappingForProvider = async ({
+  providerUserId,
+  scheduledStart,
+  scheduledEnd,
+  excludeAppointmentId,
+  tenantId,
+}) => {
+  try {
+    if (!providerUserId || !scheduledStart || !scheduledEnd) {
+      return null;
+    }
+    const start = new Date(scheduledStart);
+    const end = new Date(scheduledEnd);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+      return null;
+    }
+
+    return await prisma.appointment.findFirst({
+      where: {
+        deleted_at: null,
+        provider_user_id: providerUserId,
+        ...(tenantId ? { tenant_id: tenantId } : {}),
+        ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {}),
+        status: { notIn: ['CANCELLED', 'NO_SHOW', 'COMPLETED'] },
+        scheduled_start: { lt: end },
+        scheduled_end: { gt: start },
+      },
+      select: {
+        id: true,
+        human_friendly_id: true,
+        scheduled_start: true,
+        scheduled_end: true,
+        status: true,
+      },
+    });
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   findById,
   findMany,
   count,
   create,
   update,
-  softDelete
+  softDelete,
+  findOverlappingForProvider,
 };

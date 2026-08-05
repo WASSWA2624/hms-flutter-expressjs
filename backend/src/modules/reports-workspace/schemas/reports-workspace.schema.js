@@ -22,8 +22,34 @@ const workspaceQuerySchema = listQuerySchema.extend({
   ownerId: uuidOrFriendlyIdentifierSchema.optional(),
   owner_id: uuidOrFriendlyIdentifierSchema.optional(),
   trigger: z.enum(REPORT_TRIGGER_TYPES).optional(),
-  datePreset: z.enum(['today', 'last_7_days', 'last_30_days', 'due', 'custom']).optional(),
-  date_preset: z.enum(['today', 'last_7_days', 'last_30_days', 'due', 'custom']).optional(),
+  datePreset: z
+    .enum([
+      'today',
+      'day',
+      'month',
+      'this_month',
+      'year',
+      'this_year',
+      'last_7_days',
+      'last_30_days',
+      'due',
+      'custom',
+    ])
+    .optional(),
+  date_preset: z
+    .enum([
+      'today',
+      'day',
+      'month',
+      'this_month',
+      'year',
+      'this_year',
+      'last_7_days',
+      'last_30_days',
+      'due',
+      'custom',
+    ])
+    .optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional()});
 

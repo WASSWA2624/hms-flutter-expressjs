@@ -554,6 +554,22 @@ final class OpdRepositoryImpl implements OpdRepository {
   }
 
   @override
+  Future<Result<List<OpdProviderOption>>> listMeetingHosts({String? search}) {
+    return _apiClient.get<List<OpdProviderOption>>(
+      ApiEndpoints.collection(HmsApiResource.doctors),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': 1,
+        'limit': 50,
+        'search': search,
+        'meeting_hosts': 'true',
+        'sort_by': 'created_at',
+        'order': 'desc',
+      }),
+      decoder: decodeProviderOptions,
+    );
+  }
+
+  @override
   Future<Result<List<OpdProviderSchedule>>> listProviderSchedules() {
     final int dayOfWeek = DateTime.now().weekday % 7;
     return _apiClient.get<List<OpdProviderSchedule>>(

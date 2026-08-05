@@ -471,10 +471,40 @@ final class ReportsWorkspaceState {
 
 @immutable
 final class ReportRunDraft {
-  const ReportRunDraft({this.format, this.retentionDays});
+  const ReportRunDraft({
+    this.format,
+    this.retentionDays,
+    this.datePreset,
+    this.from,
+    this.to,
+  });
 
   final String? format;
   final int? retentionDays;
+  final String? datePreset;
+  final DateTime? from;
+  final DateTime? to;
+}
+
+@immutable
+final class ReportRunPreview {
+  const ReportRunPreview({
+    this.datasetKey,
+    this.visualization,
+    this.title = '',
+    this.subtitle = '',
+    this.columns = const <String>[],
+    this.rows = const <Map<String, Object?>>[],
+  });
+
+  final String? datasetKey;
+  final String? visualization;
+  final String title;
+  final String subtitle;
+  final List<String> columns;
+  final List<Map<String, Object?>> rows;
+
+  bool get isEmpty => rows.isEmpty;
 }
 
 @immutable

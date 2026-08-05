@@ -52,6 +52,38 @@ const patientLedgerQuerySchema = listQuerySchema.extend({
   to: z.string().datetime().optional(),
 });
 
+const financialAnalyticsQuerySchema = z.object({
+  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
+  date_preset: z
+    .enum([
+      'today',
+      'day',
+      'month',
+      'this_month',
+      'year',
+      'this_year',
+      'last_7_days',
+      'last_30_days',
+      'custom',
+    ])
+    .optional(),
+  datePreset: z
+    .enum([
+      'today',
+      'day',
+      'month',
+      'this_month',
+      'year',
+      'this_year',
+      'last_7_days',
+      'last_30_days',
+      'custom',
+    ])
+    .optional(),
+  from: z.string().datetime().optional(),
+  to: z.string().datetime().optional(),
+});
+
 const invoiceIdentifierParamsSchema = z.object({
   invoiceIdentifier: uuidOrFriendlyIdentifierSchema,
 });
@@ -135,6 +167,7 @@ module.exports = {
   workItemsQuerySchema,
   patientLedgerParamsSchema,
   patientLedgerQuerySchema,
+  financialAnalyticsQuerySchema,
   invoiceIdentifierParamsSchema,
   paymentIdentifierParamsSchema,
   approvalIdentifierParamsSchema,

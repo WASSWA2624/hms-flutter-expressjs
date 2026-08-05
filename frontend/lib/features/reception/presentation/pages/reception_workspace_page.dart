@@ -901,6 +901,7 @@ class _ReceptionWorkspaceContentState
             _canShowHighPriorityEmergencyNested &&
             row.flow != null &&
             isReceptionEmergencyFlow(row.flow!);
+        final bool showVisitorBadge = row.appointment?.isVisitorMeeting == true;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -909,6 +910,15 @@ class _ReceptionWorkspaceContentState
               title: row.patientName(context),
               subtitle: row.patientIdentifier,
             ),
+            if (showVisitorBadge) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(
+                  label: l10n.receptionVisitorMeetingBadge,
+                  tone: AppWorkspaceStatusTone.info,
+                ),
+              ),
+            ],
             if (prioritized) ...<Widget>[
               SizedBox(height: theme.spacing.xs),
               AppWorkspaceStatusBadge(
@@ -1931,6 +1941,14 @@ class _ReceptionWorkspaceContentState
     final bool? changed;
     switch (primary) {
       case OpdAppointmentPrimaryAction.startEncounter:
+        if (appointment.isVisitorMeeting) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.l10n.receptionVisitorMeetingBannerBody),
+            ),
+          );
+          return;
+        }
         changed = await _checkInAppointment(appointment);
       case OpdAppointmentPrimaryAction.reschedule:
         changed = await showOpdRescheduleAppointmentDialog(

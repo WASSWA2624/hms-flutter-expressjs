@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/reports/data/repositories/reports_repository_impl.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/presentation/controllers/reports_workspace_controller.dart';
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
@@ -16,6 +17,8 @@ import 'package:hosspi_hms/features/reports/presentation/widgets/reports_workspa
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/dashboard/dashboard_charts_row.dart';
+import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -839,14 +842,77 @@ class _ComplianceDetailPanel extends ConsumerWidget {
   }
 }
 
-class _ReportPreviewBody extends StatelessWidget {
+class _ReportPreviewBody extends ConsumerStatefulWidget {
   const _ReportPreviewBody({required this.item});
 
   final ReportsWorkspaceItem item;
 
   @override
+  ConsumerState<_ReportPreviewBody> createState() => _ReportPreviewBodyState();
+}
+
+class _ReportPreviewBodyState extends ConsumerState<_ReportPreviewBody> {
+  ReportRunPreview? _preview;
+  AppFailure? _previewFailure;
+  bool _loadingPreview = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreviewIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ReportPreviewBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.id != widget.item.id) {
+      _loadPreviewIfNeeded();
+    }
+  }
+
+  Future<void> _loadPreviewIfNeeded() async {
+    final ReportsWorkspaceItem item = widget.item;
+    final bool isRun =
+        item.kind == ReportItemKind.run &&
+        (item.status ?? '').toUpperCase() == 'COMPLETED';
+    if (!isRun || item.id.trim().isEmpty) {
+      setState(() {
+        _preview = null;
+        _previewFailure = null;
+        _loadingPreview = false;
+      });
+      return;
+    }
+    setState(() {
+      _loadingPreview = true;
+      _previewFailure = null;
+    });
+    final Result<ReportRunPreview> result = await ref
+        .read(reportsRepositoryProvider)
+        .previewReportRun(item.id);
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (ReportRunPreview preview) {
+        setState(() {
+          _preview = preview;
+          _loadingPreview = false;
+        });
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _previewFailure = failure;
+          _loadingPreview = false;
+        });
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ReportsWorkspaceItem item = widget.item;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -892,9 +958,157 @@ class _ReportPreviewBody extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],
+        if (_loadingPreview) ...<Widget>[
+          SizedBox(height: Theme.of(context).spacing.md),
+          AppLoadingIndicator.compact(
+            title: l10n.reportsPreviewLoadingTitle,
+            body: l10n.reportsPreviewLoadingBody,
+          ),
+        ] else if (_previewFailure != null) ...<Widget>[
+          SizedBox(height: Theme.of(context).spacing.md),
+          AppFailureStateView(
+            failure: _previewFailure!,
+            onRetry: _loadPreviewIfNeeded,
+          ),
+        ] else if (_preview != null) ...<Widget>[
+          SizedBox(height: Theme.of(context).spacing.md),
+          _ReportSeriesPreview(preview: _preview!),
+        ],
       ],
     );
   }
+}
+
+class _ReportSeriesPreview extends StatelessWidget {
+  const _ReportSeriesPreview({required this.preview});
+
+  final ReportRunPreview preview;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    if (preview.isEmpty) {
+      return AppStateView(
+        variant: AppStateViewVariant.empty,
+        title: l10n.reportsPreviewSeriesTitle,
+        body: l10n.reportsPreviewEmptyBody,
+      );
+    }
+
+    final bool isBilling =
+        (preview.datasetKey ?? '').contains('billing_collections');
+    final List<DashboardTrendPointData> points = <DashboardTrendPointData>[];
+    final List<DashboardDistributionSegmentData> segments =
+        <DashboardDistributionSegmentData>[];
+
+    if (isBilling) {
+      num collections = 0;
+      num expenditures = 0;
+      num profit = 0;
+      for (final Map<String, Object?> row in preview.rows) {
+        final String date = '${row['date'] ?? ''}';
+        final num collectionsValue = _previewAsNum(row['collections']);
+        points.add(
+          DashboardTrendPointData(value: collectionsValue, label: date),
+        );
+        collections += collectionsValue;
+        expenditures += _previewAsNum(row['expenditures']);
+        profit += _previewAsNum(row['profit_proxy']);
+      }
+      if (collections > 0) {
+        segments.add(
+          DashboardDistributionSegmentData(
+            label: l10n.billingAnalyticsCollectionsLabel,
+            value: collections,
+          ),
+        );
+      }
+      if (expenditures > 0) {
+        segments.add(
+          DashboardDistributionSegmentData(
+            label: l10n.billingAnalyticsExpendituresLabel,
+            value: expenditures,
+          ),
+        );
+      }
+      if (profit > 0) {
+        segments.add(
+          DashboardDistributionSegmentData(
+            label: l10n.billingAnalyticsProfitProxyLabel,
+            value: profit,
+          ),
+        );
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(l10n.reportsPreviewSeriesTitle, style: theme.textTheme.titleSmall),
+        if (preview.subtitle.trim().isNotEmpty)
+          Text(
+            preview.subtitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        if (isBilling && points.isNotEmpty) ...<Widget>[
+          SizedBox(height: theme.spacing.sm),
+          DashboardChartsRow(
+            data: DashboardChartsData(
+              trend: DashboardTrendChartData(
+                title: l10n.billingAnalyticsTrendTitle,
+                points: points,
+                emptyMessage: l10n.reportsPreviewEmptyBody,
+              ),
+              distribution: DashboardDistributionChartData(
+                title: l10n.billingAnalyticsMixTitle,
+                total: segments.fold<num>(
+                  0,
+                  (num sum, DashboardDistributionSegmentData s) =>
+                      sum + s.value,
+                ),
+                segments: segments,
+                emptyMessage: l10n.reportsPreviewEmptyBody,
+                totalLabel: l10n.billingAnalyticsMixTotalLabel,
+              ),
+            ),
+            twoColumns: MediaQuery.sizeOf(context).width >= 900,
+          ),
+        ],
+        SizedBox(height: theme.spacing.sm),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            columns: <DataColumn>[
+              for (final String column in preview.columns)
+                DataColumn(label: Text(column)),
+            ],
+            rows: <DataRow>[
+              for (final Map<String, Object?> row in preview.rows.take(40))
+                DataRow(
+                  cells: <DataCell>[
+                    for (final String column in preview.columns)
+                      DataCell(Text('${row[column] ?? ''}')),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+num _previewAsNum(Object? value) {
+  if (value is num) {
+    return value;
+  }
+  if (value is String) {
+    return num.tryParse(value) ?? 0;
+  }
+  return 0;
 }
 
 class _CompliancePreviewBody extends StatelessWidget {
@@ -1035,6 +1249,8 @@ class _RunReportDialogState extends ConsumerState<_RunReportDialog> {
   late final TextEditingController _retentionController;
   AppFailure? _failure;
   bool _isSaving = false;
+  String _datePreset = 'month';
+  DateTimeRange? _customRange;
 
   @override
   void initState() {
@@ -1086,6 +1302,59 @@ class _RunReportDialogState extends ConsumerState<_RunReportDialog> {
               ],
               onChanged: (String? value) => setState(() => _format = value),
             ),
+            AppSelectField<String>(
+              value: _datePreset,
+              labelText: l10n.reportsPeriodFieldLabel,
+              enabled: !_isSaving,
+              options: <AppSelectOption<String>>[
+                AppSelectOption<String>(
+                  value: 'day',
+                  label: l10n.reportsPeriodDay,
+                ),
+                AppSelectOption<String>(
+                  value: 'month',
+                  label: l10n.reportsPeriodMonth,
+                ),
+                AppSelectOption<String>(
+                  value: 'year',
+                  label: l10n.reportsPeriodYear,
+                ),
+                AppSelectOption<String>(
+                  value: 'custom',
+                  label: l10n.reportsPeriodCustom,
+                ),
+              ],
+              onChanged: (String? value) async {
+                final String next = value ?? 'month';
+                if (next == 'custom') {
+                  final DateTimeRange? range = await showDateRangePicker(
+                    context: context,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime.now().add(const Duration(days: 1)),
+                    initialDateRange:
+                        _customRange ??
+                        DateTimeRange(
+                          start: DateTime.now().subtract(
+                            const Duration(days: 29),
+                          ),
+                          end: DateTime.now(),
+                        ),
+                  );
+                  if (range == null) {
+                    return;
+                  }
+                  setState(() {
+                    _datePreset = next;
+                    _customRange = range;
+                  });
+                  return;
+                }
+                setState(() {
+                  _datePreset = next;
+                  _customRange = null;
+                });
+              },
+            ),
             AppTextField(
               controller: _retentionController,
               labelText: l10n.reportsRetentionDaysFieldLabel,
@@ -1117,6 +1386,9 @@ class _RunReportDialogState extends ConsumerState<_RunReportDialog> {
     final ReportRunDraft draft = ReportRunDraft(
       format: _format,
       retentionDays: int.tryParse(_retentionController.text.trim()),
+      datePreset: _datePreset,
+      from: _datePreset == 'custom' ? _customRange?.start : null,
+      to: _datePreset == 'custom' ? _customRange?.end : null,
     );
     final AppFailure? failure = widget.isRetry
         ? await ref

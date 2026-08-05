@@ -1021,6 +1021,7 @@ final class AppAccessPolicy {
         AppPermissions.profileRead,
         AppPermissions.patientRead,
         AppPermissions.patientsRead,
+        AppPermissions.reportsRead,
       ],
       AppRole.radiologyTech => const <AppPermission>[
         AppPermissions.radiologyRead,
@@ -1030,6 +1031,7 @@ final class AppAccessPolicy {
         AppPermissions.profileRead,
         AppPermissions.patientRead,
         AppPermissions.patientsRead,
+        AppPermissions.reportsRead,
       ],
       AppRole.pharmacist => const <AppPermission>[
         AppPermissions.pharmacyRead,
@@ -1043,6 +1045,8 @@ final class AppAccessPolicy {
         AppPermissions.communicationsWrite,
         AppPermissions.profileRead,
       ],
+      // Keep emergency:read for in-Reception High priority nested chrome only;
+      // focused shell omits /opd and /emergency. Drop opd:read / emergency:write.
       AppRole.receptionist => const <AppPermission>[
         AppPermissions.profileRead,
         AppPermissions.profileUpdate,
@@ -1052,11 +1056,10 @@ final class AppAccessPolicy {
         AppPermissions.patientWrite,
         AppPermissions.patientsRead,
         AppPermissions.receptionRead,
-        AppPermissions.opdRead,
         AppPermissions.emergencyRead,
-        AppPermissions.emergencyWrite,
         AppPermissions.lastOfficeRead,
         AppPermissions.lastOfficeWrite,
+        AppPermissions.reportsRead,
       ],
       AppRole.billing => const <AppPermission>[
         AppPermissions.billingRead,

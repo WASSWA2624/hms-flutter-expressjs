@@ -36,6 +36,7 @@ const List<AppModuleEntitlement> _activeShellModules = <AppModuleEntitlement>[
   AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'ACTIVE'),
   AppModuleEntitlement(code: 'mortuary', licenseStatus: 'ACTIVE'),
   AppModuleEntitlement(code: 'subscription-controls', licenseStatus: 'ACTIVE'),
+  AppModuleEntitlement(code: 'reporting-analytics', licenseStatus: 'ACTIVE'),
 ];
 
 void main() {
@@ -103,11 +104,11 @@ void main() {
       expect(canAccess(AppRoutes.lab, policy), isTrue);
       expect(canAccess(AppRoutes.communications, policy), isTrue);
       expect(canAccess(AppRoutes.settings, policy), isTrue);
+      expect(canAccess(AppRoutes.reports, policy), isTrue);
       expect(canAccess(AppRoutes.opd, policy), isFalse);
       expect(canAccess(AppRoutes.nursing, policy), isFalse);
       expect(canAccess(AppRoutes.physiotherapy, policy), isFalse);
       expect(canAccess(AppRoutes.theater, policy), isFalse);
-      expect(canAccess(AppRoutes.reports, policy), isFalse);
     });
 
     test('pharmacist shell is limited to pharmacy-focused routes', () {
@@ -118,7 +119,7 @@ void main() {
       expect(canAccess(AppRoutes.pharmacy, policy), isTrue);
       expect(canAccess(AppRoutes.communications, policy), isTrue);
       expect(canAccess(AppRoutes.settings, policy), isTrue);
-      expect(canAccess(AppRoutes.reports, policy), isFalse);
+      expect(canAccess(AppRoutes.reports, policy), isTrue);
       expect(canAccess(AppRoutes.opd, policy), isFalse);
       expect(canAccess(AppRoutes.nursing, policy), isFalse);
       expect(canAccess(AppRoutes.lab, policy), isFalse);
@@ -132,8 +133,9 @@ void main() {
       expect(canAccess(AppRoutes.home, policy), isTrue);
       expect(canAccess(AppRoutes.reception, policy), isTrue);
       expect(canAccess(AppRoutes.patients, policy), isTrue);
-      expect(canAccess(AppRoutes.opd, policy), isTrue);
-      expect(canAccess(AppRoutes.emergency, policy), isTrue);
+      expect(canAccess(AppRoutes.opd, policy), isFalse);
+      expect(canAccess(AppRoutes.emergency, policy), isFalse);
+      expect(canAccess(AppRoutes.reports, policy), isTrue);
       expect(canAccess(AppRoutes.communications, policy), isTrue);
       expect(canAccess(AppRoutes.settings, policy), isTrue);
       expect(canAccess(AppRoutes.ipd, policy), isFalse);
@@ -248,7 +250,8 @@ void main() {
       expect(canAccess(AppRoutes.patients, policy), isFalse);
       expect(canAccess(AppRoutes.opd, policy), isFalse);
       expect(canAccess(AppRoutes.nursing, policy), isFalse);
-      expect(canAccess(AppRoutes.ipd, policy), isFalse);
+      // Catalog maps IPD entry to clinical:read (shared with Clinical).
+      expect(canAccess(AppRoutes.ipd, policy), isTrue);
       expect(canAccess(AppRoutes.icu, policy), isFalse);
       expect(canAccess(AppRoutes.theater, policy), isFalse);
       expect(canAccess(AppRoutes.physiotherapy, policy), isFalse);

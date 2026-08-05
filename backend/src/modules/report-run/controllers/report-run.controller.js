@@ -61,6 +61,11 @@ const downloadReportRun = asyncHandler(async (req, res) => {
   res.status(200).send(result.buffer);
 });
 
+const previewReportRun = asyncHandler(async (req, res) => {
+  const result = await reportRunService.previewReportRun(req.params.id, req.user);
+  sendSuccess(res, 200, 'messages.report_run.preview_success', result);
+});
+
 module.exports = {
   cancelReportRun,
   createReportRun,
@@ -68,5 +73,6 @@ module.exports = {
   downloadReportRun,
   getReportRunById,
   listReportRuns,
+  previewReportRun,
   retryReportRun,
   updateReportRun};

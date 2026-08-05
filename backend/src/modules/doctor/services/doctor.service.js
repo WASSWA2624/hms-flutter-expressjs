@@ -608,6 +608,12 @@ const listDoctors = async (filters = {}, page = 1, limit = 20, sortBy = 'created
     facilityId = facility.id;
   }
 
+  const includeAllStaffHosts =
+    filters.meeting_hosts === true ||
+    filters.meeting_hosts === 'true' ||
+    filters.meeting_hosts === 1 ||
+    filters.meeting_hosts === '1';
+
   const clinicalRoleFilter = {
     OR: [
       {
@@ -634,8 +640,9 @@ const listDoctors = async (filters = {}, page = 1, limit = 20, sortBy = 'created
 
   const where = {
     deleted_at: null,
+    status: 'ACTIVE',
     staff_profile: { isNot: null },
-    AND: [clinicalRoleFilter]
+    AND: includeAllStaffHosts ? [] : [clinicalRoleFilter],
   };
 
   if (tenantId) where.tenant_id = tenantId;

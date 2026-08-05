@@ -98,7 +98,11 @@ void main() {
       () {
         final session = AuthSession(
           tokens: SessionTokens(accessToken: 'access-token'),
-          user: const AuthUserProfile(roles: <String>['PHARMACIST']),
+          user: const AuthUserProfile(
+            roles: <String>['PHARMACIST'],
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+          ),
           moduleEntitlements: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: 'pharmacy-dispensing',
@@ -519,6 +523,10 @@ void main() {
               code: 'notifications-communications',
               licenseStatus: 'ACTIVE',
             ),
+            AppModuleEntitlement(
+              code: 'reporting-analytics',
+              licenseStatus: 'ACTIVE',
+            ),
           ],
         ),
       );
@@ -535,7 +543,10 @@ void main() {
 
       expect(receptionistPolicy.isReceptionistFocusedShellUser, isTrue);
       expect(receptionistPolicy.grants(AppPermissions.patientWrite), isTrue);
-      expect(receptionistPolicy.grants(AppPermissions.emergencyWrite), isTrue);
+      expect(receptionistPolicy.grants(AppPermissions.emergencyRead), isTrue);
+      expect(receptionistPolicy.grants(AppPermissions.emergencyWrite), isFalse);
+      expect(receptionistPolicy.grants(AppPermissions.opdRead), isFalse);
+      expect(receptionistPolicy.grants(AppPermissions.reportsRead), isTrue);
       expect(receptionistPolicy.grants(AppPermissions.operationsRead), isFalse);
       expect(doctorPolicy.isReceptionistFocusedShellUser, isFalse);
     });

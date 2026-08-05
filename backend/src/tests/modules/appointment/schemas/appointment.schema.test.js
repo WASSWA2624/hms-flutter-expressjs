@@ -46,6 +46,41 @@ describe('Appointment Schemas', () => {
       expect(result.success).toBe(false);
     });
 
+    it('should accept visitor appointments without a patient', () => {
+      const data = {
+        ...validData,
+        subject_type: 'VISITOR',
+        patient_id: null,
+        visitor_name: 'Ada Guest',
+        visitor_phone: '+256700000000',
+      };
+      delete data.patient_id;
+      const result = createAppointmentSchema.safeParse({
+        ...data,
+        patient_id: undefined,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject visitor appointments without a host or visitor name', () => {
+      const missingHost = createAppointmentSchema.safeParse({
+        ...validData,
+        subject_type: 'VISITOR',
+        patient_id: null,
+        provider_user_id: null,
+        visitor_name: 'Ada Guest',
+      });
+      expect(missingHost.success).toBe(false);
+
+      const missingName = createAppointmentSchema.safeParse({
+        ...validData,
+        subject_type: 'VISITOR',
+        patient_id: null,
+        visitor_name: '',
+      });
+      expect(missingName.success).toBe(false);
+    });
+
     it('should require status', () => {
       const data = { ...validData };
       delete data.status;

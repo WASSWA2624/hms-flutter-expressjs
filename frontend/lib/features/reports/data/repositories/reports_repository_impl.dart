@@ -218,12 +218,33 @@ final class ReportsRepositoryImpl implements ReportsRepository {
       },
     );
   }
+
+  @override
+  Future<Result<ReportRunPreview>> previewReportRun(String reportRunId) {
+    return _apiClient.get<ReportRunPreview>(
+      ApiEndpoints.nested(
+        HmsApiResource.reportRuns,
+        reportRunId,
+        const <String>['preview'],
+      ),
+      decoder: (Object? data) {
+        return ReportRunPreviewDto.fromResponse(data).toEntity();
+      },
+    );
+  }
 }
 
 Map<String, Object?> _reportRunPayload(ReportRunDraft draft) {
+  final Map<String, Object?> parameters = <String, Object?>{
+    if (draft.datePreset != null && draft.datePreset!.trim().isNotEmpty)
+      'date_preset': draft.datePreset,
+    if (draft.from != null) 'from': draft.from!.toUtc().toIso8601String(),
+    if (draft.to != null) 'to': draft.to!.toUtc().toIso8601String(),
+  };
   return _withoutEmpty(<String, Object?>{
     'format': draft.format,
     'retention_days': draft.retentionDays,
+    if (parameters.isNotEmpty) 'parameters_json': parameters,
   });
 }
 

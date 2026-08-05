@@ -56,11 +56,22 @@ const REPORT_DATASETS = Object.freeze([
   },
   {
     key: 'billing_collections_open_balances',
-    label: 'Billing collections and open balances',
+    label: 'Billing collections, expenditures, and profit',
     category: 'billing',
-    description: 'Collections, invoice issuance, and open-balance workload.',
+    description:
+      'Period collections, expenditures (refunds and write-offs), profit proxy, and invoice workload.',
     visualization: 'AREA_CHART',
-    default_columns: ['date', 'collections', 'open_invoices', 'issued_invoices'],
+    default_columns: [
+      'date',
+      'collections',
+      'expenditures',
+      'profit_proxy',
+      'refunds',
+      'write_offs',
+      'net_collections',
+      'issued_invoices',
+      'open_invoices',
+    ],
   },
   {
     key: 'insurance_claims_aging',

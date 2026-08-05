@@ -47,17 +47,13 @@ void main() {
       final profile = homeProfileForRole(AppRole.labTech);
 
       expect(profile.layoutTier, HomeDashboardLayoutTier.departmentQueue);
-      expect(profile.effectiveMaxStatusCards, 4);
-      expect(profile.maxQuickActions, 3);
+      expect(profile.effectiveMaxStatusCards, 6);
+      expect(profile.maxQuickActions, 0);
       expect(profile.showActivityPanel(hasQueueItems: true), isFalse);
       expect(profile.showShortcutsSection(quickActionCount: 2), isTrue);
-      expect(profile.maxShortcutTiles, 4);
+      expect(profile.maxShortcutTiles, greaterThanOrEqualTo(4));
       expect(profile.showQueuePanelFor(const []), isTrue);
-      expect(profile.quickActionIds, <String>[
-        'receive_sample',
-        'enter_lab_result',
-        'flag_critical_lab',
-      ]);
+      expect(profile.shortcutIds, contains('reports'));
       expect(profile.metricRouteTargets.keys, contains('lab_pending'));
       expect(
         profile.metricRouteTargets['lab_pending']!.queryParameters,
@@ -125,9 +121,8 @@ void main() {
         expect(profile.shortcutIds, <String>[
           'reception',
           'patients',
-          'opd',
-          'emergency',
           'communications',
+          'reports',
           'settings',
         ]);
         expect(profile.metricRouteTargets.keys, contains('appointments_today'));

@@ -10,6 +10,7 @@ import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart'
 import 'package:hosspi_hms/features/claims/presentation/widgets/claims_insurance_config_dialogs.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
+import 'package:hosspi_hms/features/reception/presentation/widgets/reception_visitor_appointment_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -123,7 +124,7 @@ Future<bool> openReceptionScheduleAppointment({
   return saved == true;
 }
 
-enum _SchedulePatientMode { existing, newPatient }
+enum _SchedulePatientMode { existing, newPatient, visitor }
 
 class _ReceptionScheduleAppointmentDialog extends ConsumerStatefulWidget {
   const _ReceptionScheduleAppointmentDialog({
@@ -162,14 +163,30 @@ class _ReceptionScheduleAppointmentDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final bool showVisitorForm =
+        _patient == null && _mode == _SchedulePatientMode.visitor;
     return AppDialog(
       title: Text(l10n.patientsAppointmentDialogTitle),
       icon: const Icon(AppActionIcons.calendar),
       scrollable: true,
-      pinActionsToBottom: _patient == null,
+      pinActionsToBottom: _patient == null && !showVisitorForm,
       closeEnabled: !_isBusy,
       maxWidth: 720,
-      content: _patient == null
+      content: showVisitorForm
+          ? ReceptionVisitorAppointmentDialog(
+              embedded: true,
+              onCancel: () => setState(() {
+                _mode = _SchedulePatientMode.existing;
+                _isAppointmentBusy = false;
+              }),
+              onBusyChanged: (bool value) {
+                if (mounted && value != _isAppointmentBusy) {
+                  setState(() => _isAppointmentBusy = value);
+                }
+              },
+              onSaved: () => Navigator.of(context).pop(true),
+            )
+          : _patient == null
           ? _buildPatientStep(context)
           : PatientAppointmentQuickDialog(
               patient: _patient!,
@@ -188,7 +205,7 @@ class _ReceptionScheduleAppointmentDialogState
               },
               onSaved: () => Navigator.of(context).pop(true),
             ),
-      actions: _patient == null
+      actions: _patient == null && !showVisitorForm
           ? _patientStepActions(context)
           : const <Widget>[],
     );
@@ -209,6 +226,10 @@ class _ReceptionScheduleAppointmentDialogState
             AppTabItem(
               id: _SchedulePatientMode.newPatient.name,
               label: l10n.receptionScheduleNewPatientTab,
+            ),
+            AppTabItem(
+              id: _SchedulePatientMode.visitor.name,
+              label: l10n.receptionScheduleVisitorTab,
             ),
           ],
           selectedId: _mode.name,
@@ -231,7 +252,7 @@ class _ReceptionScheduleAppointmentDialogState
               }
             },
           )
-        else
+        else if (_mode == _SchedulePatientMode.newPatient)
           AppFormShell(
             formKey: _registrationFormKey,
             enabled: !_isRegistering,

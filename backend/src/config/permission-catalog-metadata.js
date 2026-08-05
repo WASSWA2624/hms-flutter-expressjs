@@ -211,7 +211,7 @@ const ROLE_OVERRIDES = Object.freeze({
   RECEPTIONIST: {
     displayName: 'Receptionist',
     description:
-      'Front-desk staff handling patient registration, OPD/emergency intake, doctor assignment, communications, and desk setup.',
+      'Front-desk staff handling patient registration, visitor/staff meetings, desk queues, communications, and reporting.',
   },
   BILLING: {
     displayName: 'Billing Officer',

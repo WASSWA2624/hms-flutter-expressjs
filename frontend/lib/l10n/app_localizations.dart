@@ -2920,6 +2920,150 @@ abstract class AppLocalizations {
   /// **'Invoices, payments, claims, and approvals.'**
   String get billingWorklistDescription;
 
+  /// Title for the billing period financial analytics panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Financial analytics'**
+  String get billingAnalyticsTitle;
+
+  /// Supporting text under the billing analytics panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Collections, expenditures, and operating surplus for the selected period.'**
+  String get billingAnalyticsSubtitle;
+
+  /// Loading title while billing analytics are fetched.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading financial analytics'**
+  String get billingAnalyticsLoadingTitle;
+
+  /// Loading body while billing analytics are fetched.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarizing collections and expenditures...'**
+  String get billingAnalyticsLoadingBody;
+
+  /// Empty-state title when the selected period has no payments or expenditures.
+  ///
+  /// In en, this message translates to:
+  /// **'No financial activity'**
+  String get billingAnalyticsEmptyTitle;
+
+  /// Empty-state body when the selected period has no financial series.
+  ///
+  /// In en, this message translates to:
+  /// **'No collections or expenditures were recorded for this period.'**
+  String get billingAnalyticsEmptyBody;
+
+  /// Billing analytics period preset for today / day.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get billingAnalyticsPeriodDay;
+
+  /// Billing analytics period preset for this month.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get billingAnalyticsPeriodMonth;
+
+  /// Billing analytics period preset for this year.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get billingAnalyticsPeriodYear;
+
+  /// Billing analytics period preset for a custom date range.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get billingAnalyticsPeriodCustom;
+
+  /// KPI label for gross collections in the period.
+  ///
+  /// In en, this message translates to:
+  /// **'Collections'**
+  String get billingAnalyticsCollectionsLabel;
+
+  /// KPI label for refunds plus write-offs in the period.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenditures'**
+  String get billingAnalyticsExpendituresLabel;
+
+  /// KPI label for collections minus expenditures (not full P&L).
+  ///
+  /// In en, this message translates to:
+  /// **'Operating surplus'**
+  String get billingAnalyticsProfitProxyLabel;
+
+  /// Breakdown label for refunds in the period.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunds'**
+  String get billingAnalyticsRefundsLabel;
+
+  /// Breakdown label for negative adjustments in the period.
+  ///
+  /// In en, this message translates to:
+  /// **'Write-offs'**
+  String get billingAnalyticsWriteOffsLabel;
+
+  /// Breakdown label for collections net of refunds.
+  ///
+  /// In en, this message translates to:
+  /// **'Net collections'**
+  String get billingAnalyticsNetCollectionsLabel;
+
+  /// Breakdown label for invoices issued in the period.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued invoices'**
+  String get billingAnalyticsIssuedInvoicesLabel;
+
+  /// Breakdown label for still-open invoices issued in the period.
+  ///
+  /// In en, this message translates to:
+  /// **'Open invoices'**
+  String get billingAnalyticsOpenInvoicesLabel;
+
+  /// Expansion title for secondary billing analytics breakdowns.
+  ///
+  /// In en, this message translates to:
+  /// **'More detail'**
+  String get billingAnalyticsBreakdownTitle;
+
+  /// Title for payment-method collection breakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Collections by method'**
+  String get billingAnalyticsByMethodTitle;
+
+  /// Trend chart title for billing collections over the period.
+  ///
+  /// In en, this message translates to:
+  /// **'Collections trend'**
+  String get billingAnalyticsTrendTitle;
+
+  /// Distribution chart title for collections vs expenditures vs surplus.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue mix'**
+  String get billingAnalyticsMixTitle;
+
+  /// Total label for the billing analytics distribution chart.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get billingAnalyticsMixTotalLabel;
+
+  /// Action that opens Reports filtered to billing financial datasets.
+  ///
+  /// In en, this message translates to:
+  /// **'Open reports'**
+  String get billingAnalyticsOpenReportsAction;
+
   /// Label for all billing work items queue.
   ///
   /// In en, this message translates to:
@@ -5943,6 +6087,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New patient'**
   String get receptionScheduleNewPatientTab;
+
+  /// Tab for booking a non-patient visitor meeting with staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Visitor / staff meeting'**
+  String get receptionScheduleVisitorTab;
+
+  /// Title for the visitor appointment booking dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Visitor meeting'**
+  String get receptionVisitorMeetingTitle;
+
+  /// Banner title explaining visitor meetings.
+  ///
+  /// In en, this message translates to:
+  /// **'Non-patient meeting'**
+  String get receptionVisitorMeetingBannerTitle;
+
+  /// Banner body for visitor meeting booking.
+  ///
+  /// In en, this message translates to:
+  /// **'Book a visitor or guest with any facility staff. Availability is checked against the host schedule before booking.'**
+  String get receptionVisitorMeetingBannerBody;
+
+  /// Label for visitor display name.
+  ///
+  /// In en, this message translates to:
+  /// **'Visitor name'**
+  String get receptionVisitorNameLabel;
+
+  /// Label for visitor phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Visitor phone'**
+  String get receptionVisitorPhoneLabel;
+
+  /// Label for visitor organization.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get receptionVisitorOrganizationLabel;
+
+  /// Label for the staff host picker on visitor meetings.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff host'**
+  String get receptionStaffHostLabel;
+
+  /// Badge shown on visitor appointment rows in Reception.
+  ///
+  /// In en, this message translates to:
+  /// **'Visitor meeting'**
+  String get receptionVisitorMeetingBadge;
 
   /// Error when claims lookups fail during reception insurance capture.
   ///
@@ -30942,6 +31140,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retention days'**
   String get reportsRetentionDaysFieldLabel;
+
+  /// Label for the report run period preset selector.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get reportsPeriodFieldLabel;
+
+  /// Report run period preset for today.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get reportsPeriodDay;
+
+  /// Report run period preset for this month.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get reportsPeriodMonth;
+
+  /// Report run period preset for this year.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get reportsPeriodYear;
+
+  /// Report run period preset for a custom date range.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get reportsPeriodCustom;
+
+  /// Title above tabular/chart preview of a completed report run.
+  ///
+  /// In en, this message translates to:
+  /// **'Result series'**
+  String get reportsPreviewSeriesTitle;
+
+  /// Empty message when a report run preview has no series rows.
+  ///
+  /// In en, this message translates to:
+  /// **'No rows were returned for this run period.'**
+  String get reportsPreviewEmptyBody;
+
+  /// Loading title while re-fetching report run series for preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading report preview'**
+  String get reportsPreviewLoadingTitle;
+
+  /// Loading body while re-fetching report run series for preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Building visual and tabular results...'**
+  String get reportsPreviewLoadingBody;
 
   /// Schedule name field label.
   ///

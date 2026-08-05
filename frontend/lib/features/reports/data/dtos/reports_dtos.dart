@@ -3,6 +3,52 @@ import 'package:hosspi_hms/shared/data/data.dart';
 
 typedef ReportsJsonMap = Map<String, Object?>;
 
+final class ReportRunPreviewDto {
+  const ReportRunPreviewDto(this.json);
+
+  final ReportsJsonMap json;
+
+  factory ReportRunPreviewDto.fromResponse(Object? responseData) {
+    return ReportRunPreviewDto(_dataMap(responseData));
+  }
+
+  ReportRunPreview toEntity() {
+    return ReportRunPreview(
+      datasetKey: _string(json['dataset_key']),
+      visualization: _string(json['visualization']),
+      title: _string(json['title']) ?? '',
+      subtitle: _string(json['subtitle']) ?? '',
+      columns: _stringList(json['columns']),
+      rows: _objectList(json['rows']),
+    );
+  }
+}
+
+List<String> _stringList(Object? value) {
+  if (value is! List) {
+    return const <String>[];
+  }
+  return value
+      .map((Object? entry) => _string(entry) ?? '')
+      .where((String entry) => entry.isNotEmpty)
+      .toList(growable: false);
+}
+
+List<Map<String, Object?>> _objectList(Object? value) {
+  if (value is! List) {
+    return const <Map<String, Object?>>[];
+  }
+  return value
+      .whereType<Map>()
+      .map(
+        (Map<dynamic, dynamic> entry) => <String, Object?>{
+          for (final MapEntry<dynamic, dynamic> item in entry.entries)
+            item.key.toString(): item.value,
+        },
+      )
+      .toList(growable: false);
+}
+
 final class ReportsWorkspaceOverviewDto {
   const ReportsWorkspaceOverviewDto(this.json, {required this.request});
 

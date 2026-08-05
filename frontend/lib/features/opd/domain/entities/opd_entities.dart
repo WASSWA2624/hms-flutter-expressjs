@@ -212,6 +212,11 @@ final class OpdAppointment {
     this.facilityId,
     this.patientId,
     this.providerUserId,
+    this.subjectType,
+    this.visitorName,
+    this.visitorPhone,
+    this.visitorEmail,
+    this.visitorOrganization,
     this.status,
     this.scheduledStart,
     this.scheduledEnd,
@@ -232,6 +237,11 @@ final class OpdAppointment {
   final String? facilityId;
   final String? patientId;
   final String? providerUserId;
+  final String? subjectType;
+  final String? visitorName;
+  final String? visitorPhone;
+  final String? visitorEmail;
+  final String? visitorOrganization;
   final String? status;
   final DateTime? scheduledStart;
   final DateTime? scheduledEnd;
@@ -247,9 +257,17 @@ final class OpdAppointment {
 
   String get apiId => publicId ?? id;
 
+  bool get isVisitorMeeting {
+    final String normalized = (subjectType ?? '').trim().toUpperCase();
+    return normalized == 'VISITOR' ||
+        ((patientId == null || patientId!.trim().isEmpty) &&
+            (visitorName ?? '').trim().isNotEmpty);
+  }
+
   String get displayTitle {
     return _firstNonEmpty(<String?>[
           patientDisplayName,
+          visitorName,
           patientIdentifier,
           id,
         ]) ??
@@ -263,6 +281,11 @@ final class OpdAppointment {
     String? facilityId,
     String? patientId,
     String? providerUserId,
+    String? subjectType,
+    String? visitorName,
+    String? visitorPhone,
+    String? visitorEmail,
+    String? visitorOrganization,
     String? status,
     DateTime? scheduledStart,
     DateTime? scheduledEnd,
@@ -283,6 +306,11 @@ final class OpdAppointment {
       facilityId: facilityId ?? this.facilityId,
       patientId: patientId ?? this.patientId,
       providerUserId: providerUserId ?? this.providerUserId,
+      subjectType: subjectType ?? this.subjectType,
+      visitorName: visitorName ?? this.visitorName,
+      visitorPhone: visitorPhone ?? this.visitorPhone,
+      visitorEmail: visitorEmail ?? this.visitorEmail,
+      visitorOrganization: visitorOrganization ?? this.visitorOrganization,
       status: status ?? this.status,
       scheduledStart: scheduledStart ?? this.scheduledStart,
       scheduledEnd: scheduledEnd ?? this.scheduledEnd,

@@ -29,6 +29,79 @@ final class BillingWorkspaceOverviewDto {
   }
 }
 
+final class BillingFinancialAnalyticsDto {
+  const BillingFinancialAnalyticsDto(this.json);
+
+  final BillingJsonMap json;
+
+  factory BillingFinancialAnalyticsDto.fromResponse(Object? responseData) {
+    return BillingFinancialAnalyticsDto(_dataMap(responseData));
+  }
+
+  BillingFinancialAnalytics toEntity() {
+    final BillingJsonMap summary = _map(json['summary']);
+    final BillingJsonMap breakdown = _map(json['breakdown']);
+    return BillingFinancialAnalytics(
+      preset: BillingAnalyticsPeriod.fromServer(_string(json['preset'])),
+      granularity: _string(json['granularity']) ?? 'day',
+      from: _date(json['from']),
+      to: _date(json['to']),
+      title: _string(json['title']) ?? '',
+      subtitle: _string(json['subtitle']) ?? '',
+      collections: _num(summary['collections']) ?? 0,
+      expenditures: _num(summary['expenditures']) ?? 0,
+      profitProxy: _num(summary['profit_proxy']) ?? 0,
+      refunds: _num(summary['refunds']) ?? 0,
+      writeOffs: _num(summary['write_offs']) ?? 0,
+      netCollections: _num(summary['net_collections']) ?? 0,
+      issuedInvoices: _int(summary['issued_invoices']) ?? 0,
+      openInvoices: _int(summary['open_invoices']) ?? 0,
+      series: _list(json['series'])
+          .map(BillingAnalyticsPointDto.new)
+          .map((BillingAnalyticsPointDto dto) => dto.toEntity())
+          .toList(growable: false),
+      collectionsByMethod: _list(breakdown['collections_by_method'])
+          .map(BillingAnalyticsMethodBreakdownDto.new)
+          .map((BillingAnalyticsMethodBreakdownDto dto) => dto.toEntity())
+          .toList(growable: false),
+      generatedAt: _date(json['generated_at']),
+    );
+  }
+}
+
+final class BillingAnalyticsPointDto {
+  const BillingAnalyticsPointDto(this.json);
+
+  final BillingJsonMap json;
+
+  BillingAnalyticsPoint toEntity() {
+    return BillingAnalyticsPoint(
+      date: _string(json['date']) ?? '',
+      collections: _num(json['collections']) ?? 0,
+      expenditures: _num(json['expenditures']) ?? 0,
+      profitProxy: _num(json['profit_proxy']) ?? 0,
+      refunds: _num(json['refunds']) ?? 0,
+      writeOffs: _num(json['write_offs']) ?? 0,
+      netCollections: _num(json['net_collections']) ?? 0,
+      issuedInvoices: _int(json['issued_invoices']) ?? 0,
+      openInvoices: _int(json['open_invoices']) ?? 0,
+    );
+  }
+}
+
+final class BillingAnalyticsMethodBreakdownDto {
+  const BillingAnalyticsMethodBreakdownDto(this.json);
+
+  final BillingJsonMap json;
+
+  BillingAnalyticsMethodBreakdown toEntity() {
+    return BillingAnalyticsMethodBreakdown(
+      method: _string(json['method']) ?? 'UNKNOWN',
+      amount: _num(json['amount']) ?? 0,
+    );
+  }
+}
+
 final class BillingWorkItemPageDto {
   const BillingWorkItemPageDto({required this.page});
 

@@ -416,7 +416,10 @@ void main() {
         'section': 'appointments',
       });
       expect(registrations?.route, AppRoutes.patients);
-      expect(emergency?.route, AppRoutes.emergency);
+      expect(emergency?.route, AppRoutes.reception);
+      expect(emergency?.queryParameters, <String, String>{
+        'section': 'high-priority',
+      });
     });
 
     test('receptionist pending payments navigates to billing when granted', () {

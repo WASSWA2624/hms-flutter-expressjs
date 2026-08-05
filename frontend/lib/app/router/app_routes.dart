@@ -225,8 +225,12 @@ abstract final class AppRoutes {
     ...adminShellRoles,
     AppRole.doctor,
     AppRole.nurse,
+    AppRole.labTech,
+    AppRole.radiologyTech,
     AppRole.pharmacist,
+    AppRole.receptionist,
     AppRole.billing,
+    AppRole.operations,
     AppRole.hr,
     AppRole.biomed,
     AppRole.houseKeeper,
@@ -737,6 +741,7 @@ abstract final class AppRoutes {
     patients,
     lab,
     communications,
+    reports,
     settings,
   ];
 
@@ -752,6 +757,7 @@ abstract final class AppRoutes {
     patients,
     pharmacy,
     communications,
+    reports,
     settings,
   ];
 
@@ -762,14 +768,16 @@ abstract final class AppRoutes {
   }
 
   /// Routes visible to [AppAccessPolicy.isReceptionistFocusedShellUser] in the shell.
+  ///
+  /// OPD and Emergency workspaces are denied; desk context stays on Reception.
+  /// Reports is included when the role pack grants `reports:read`.
   static const List<AppRouteData> receptionistFocusedShellRoutes =
       <AppRouteData>[
         home,
         reception,
         patients,
-        opd,
-        emergency,
         communications,
+        reports,
         settings,
       ];
 

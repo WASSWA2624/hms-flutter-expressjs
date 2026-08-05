@@ -1960,6 +1960,102 @@
   "@billingWorklistDescription": {
     "description": "Description for the billing worklist panel."
   },
+  "billingAnalyticsTitle": "Financial analytics",
+  "@billingAnalyticsTitle": {
+    "description": "Title for the billing period financial analytics panel."
+  },
+  "billingAnalyticsSubtitle": "Collections, expenditures, and operating surplus for the selected period.",
+  "@billingAnalyticsSubtitle": {
+    "description": "Supporting text under the billing analytics panel title."
+  },
+  "billingAnalyticsLoadingTitle": "Loading financial analytics",
+  "@billingAnalyticsLoadingTitle": {
+    "description": "Loading title while billing analytics are fetched."
+  },
+  "billingAnalyticsLoadingBody": "Summarizing collections and expenditures...",
+  "@billingAnalyticsLoadingBody": {
+    "description": "Loading body while billing analytics are fetched."
+  },
+  "billingAnalyticsEmptyTitle": "No financial activity",
+  "@billingAnalyticsEmptyTitle": {
+    "description": "Empty-state title when the selected period has no payments or expenditures."
+  },
+  "billingAnalyticsEmptyBody": "No collections or expenditures were recorded for this period.",
+  "@billingAnalyticsEmptyBody": {
+    "description": "Empty-state body when the selected period has no financial series."
+  },
+  "billingAnalyticsPeriodDay": "Day",
+  "@billingAnalyticsPeriodDay": {
+    "description": "Billing analytics period preset for today / day."
+  },
+  "billingAnalyticsPeriodMonth": "Month",
+  "@billingAnalyticsPeriodMonth": {
+    "description": "Billing analytics period preset for this month."
+  },
+  "billingAnalyticsPeriodYear": "Year",
+  "@billingAnalyticsPeriodYear": {
+    "description": "Billing analytics period preset for this year."
+  },
+  "billingAnalyticsPeriodCustom": "Custom",
+  "@billingAnalyticsPeriodCustom": {
+    "description": "Billing analytics period preset for a custom date range."
+  },
+  "billingAnalyticsCollectionsLabel": "Collections",
+  "@billingAnalyticsCollectionsLabel": {
+    "description": "KPI label for gross collections in the period."
+  },
+  "billingAnalyticsExpendituresLabel": "Expenditures",
+  "@billingAnalyticsExpendituresLabel": {
+    "description": "KPI label for refunds plus write-offs in the period."
+  },
+  "billingAnalyticsProfitProxyLabel": "Operating surplus",
+  "@billingAnalyticsProfitProxyLabel": {
+    "description": "KPI label for collections minus expenditures (not full P&L)."
+  },
+  "billingAnalyticsRefundsLabel": "Refunds",
+  "@billingAnalyticsRefundsLabel": {
+    "description": "Breakdown label for refunds in the period."
+  },
+  "billingAnalyticsWriteOffsLabel": "Write-offs",
+  "@billingAnalyticsWriteOffsLabel": {
+    "description": "Breakdown label for negative adjustments in the period."
+  },
+  "billingAnalyticsNetCollectionsLabel": "Net collections",
+  "@billingAnalyticsNetCollectionsLabel": {
+    "description": "Breakdown label for collections net of refunds."
+  },
+  "billingAnalyticsIssuedInvoicesLabel": "Issued invoices",
+  "@billingAnalyticsIssuedInvoicesLabel": {
+    "description": "Breakdown label for invoices issued in the period."
+  },
+  "billingAnalyticsOpenInvoicesLabel": "Open invoices",
+  "@billingAnalyticsOpenInvoicesLabel": {
+    "description": "Breakdown label for still-open invoices issued in the period."
+  },
+  "billingAnalyticsBreakdownTitle": "More detail",
+  "@billingAnalyticsBreakdownTitle": {
+    "description": "Expansion title for secondary billing analytics breakdowns."
+  },
+  "billingAnalyticsByMethodTitle": "Collections by method",
+  "@billingAnalyticsByMethodTitle": {
+    "description": "Title for payment-method collection breakdown."
+  },
+  "billingAnalyticsTrendTitle": "Collections trend",
+  "@billingAnalyticsTrendTitle": {
+    "description": "Trend chart title for billing collections over the period."
+  },
+  "billingAnalyticsMixTitle": "Revenue mix",
+  "@billingAnalyticsMixTitle": {
+    "description": "Distribution chart title for collections vs expenditures vs surplus."
+  },
+  "billingAnalyticsMixTotalLabel": "Total",
+  "@billingAnalyticsMixTotalLabel": {
+    "description": "Total label for the billing analytics distribution chart."
+  },
+  "billingAnalyticsOpenReportsAction": "Open reports",
+  "@billingAnalyticsOpenReportsAction": {
+    "description": "Action that opens Reports filtered to billing financial datasets."
+  },
   "billingAllWorkItems": "All billing work items",
   "@billingAllWorkItems": {
     "description": "Label for all billing work items queue."
@@ -4015,6 +4111,42 @@
   "receptionScheduleNewPatientTab": "New patient",
   "@receptionScheduleNewPatientTab": {
     "description": "Tab for registering a patient before scheduling."
+  },
+  "receptionScheduleVisitorTab": "Visitor / staff meeting",
+  "@receptionScheduleVisitorTab": {
+    "description": "Tab for booking a non-patient visitor meeting with staff."
+  },
+  "receptionVisitorMeetingTitle": "Visitor meeting",
+  "@receptionVisitorMeetingTitle": {
+    "description": "Title for the visitor appointment booking dialog."
+  },
+  "receptionVisitorMeetingBannerTitle": "Non-patient meeting",
+  "@receptionVisitorMeetingBannerTitle": {
+    "description": "Banner title explaining visitor meetings."
+  },
+  "receptionVisitorMeetingBannerBody": "Book a visitor or guest with any facility staff. Availability is checked against the host schedule before booking.",
+  "@receptionVisitorMeetingBannerBody": {
+    "description": "Banner body for visitor meeting booking."
+  },
+  "receptionVisitorNameLabel": "Visitor name",
+  "@receptionVisitorNameLabel": {
+    "description": "Label for visitor display name."
+  },
+  "receptionVisitorPhoneLabel": "Visitor phone",
+  "@receptionVisitorPhoneLabel": {
+    "description": "Label for visitor phone."
+  },
+  "receptionVisitorOrganizationLabel": "Organization",
+  "@receptionVisitorOrganizationLabel": {
+    "description": "Label for visitor organization."
+  },
+  "receptionStaffHostLabel": "Staff host",
+  "@receptionStaffHostLabel": {
+    "description": "Label for the staff host picker on visitor meetings."
+  },
+  "receptionVisitorMeetingBadge": "Visitor meeting",
+  "@receptionVisitorMeetingBadge": {
+    "description": "Badge shown on visitor appointment rows in Reception."
   },
 
   "receptionInsuranceLookupFailed": "Could not load insurance lookups for enrollment.",
@@ -21555,6 +21687,42 @@
   "reportsRetentionDaysFieldLabel": "Retention days",
   "@reportsRetentionDaysFieldLabel": {
     "description": "Retention days field label."
+  },
+  "reportsPeriodFieldLabel": "Period",
+  "@reportsPeriodFieldLabel": {
+    "description": "Label for the report run period preset selector."
+  },
+  "reportsPeriodDay": "Day",
+  "@reportsPeriodDay": {
+    "description": "Report run period preset for today."
+  },
+  "reportsPeriodMonth": "Month",
+  "@reportsPeriodMonth": {
+    "description": "Report run period preset for this month."
+  },
+  "reportsPeriodYear": "Year",
+  "@reportsPeriodYear": {
+    "description": "Report run period preset for this year."
+  },
+  "reportsPeriodCustom": "Custom",
+  "@reportsPeriodCustom": {
+    "description": "Report run period preset for a custom date range."
+  },
+  "reportsPreviewSeriesTitle": "Result series",
+  "@reportsPreviewSeriesTitle": {
+    "description": "Title above tabular/chart preview of a completed report run."
+  },
+  "reportsPreviewEmptyBody": "No rows were returned for this run period.",
+  "@reportsPreviewEmptyBody": {
+    "description": "Empty message when a report run preview has no series rows."
+  },
+  "reportsPreviewLoadingTitle": "Loading report preview",
+  "@reportsPreviewLoadingTitle": {
+    "description": "Loading title while re-fetching report run series for preview."
+  },
+  "reportsPreviewLoadingBody": "Building visual and tabular results...",
+  "@reportsPreviewLoadingBody": {
+    "description": "Loading body while re-fetching report run series for preview."
   },
   "reportsScheduleNameFieldLabel": "Schedule name",
   "@reportsScheduleNameFieldLabel": {

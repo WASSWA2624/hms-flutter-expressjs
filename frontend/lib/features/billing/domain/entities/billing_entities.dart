@@ -1017,6 +1017,137 @@ const List<String> billingPaymentMethods = <String>[
   'OTHER',
 ];
 
+enum BillingAnalyticsPeriod {
+  day('day'),
+  month('month'),
+  year('year'),
+  custom('custom');
+
+  const BillingAnalyticsPeriod(this.serverValue);
+
+  final String serverValue;
+
+  static BillingAnalyticsPeriod fromServer(String? value) {
+    final String normalized = (value ?? '').trim().toLowerCase();
+    return switch (normalized) {
+      'day' || 'today' => BillingAnalyticsPeriod.day,
+      'year' || 'this_year' => BillingAnalyticsPeriod.year,
+      'custom' => BillingAnalyticsPeriod.custom,
+      _ => BillingAnalyticsPeriod.month,
+    };
+  }
+}
+
+@immutable
+final class BillingAnalyticsQuery {
+  const BillingAnalyticsQuery({
+    this.period = BillingAnalyticsPeriod.month,
+    this.from,
+    this.to,
+  });
+
+  final BillingAnalyticsPeriod period;
+  final DateTime? from;
+  final DateTime? to;
+
+  BillingAnalyticsQuery copyWith({
+    BillingAnalyticsPeriod? period,
+    DateTime? from,
+    DateTime? to,
+    bool clearFrom = false,
+    bool clearTo = false,
+  }) {
+    return BillingAnalyticsQuery(
+      period: period ?? this.period,
+      from: clearFrom ? null : from ?? this.from,
+      to: clearTo ? null : to ?? this.to,
+    );
+  }
+}
+
+@immutable
+final class BillingAnalyticsMethodBreakdown {
+  const BillingAnalyticsMethodBreakdown({
+    required this.method,
+    required this.amount,
+  });
+
+  final String method;
+  final num amount;
+}
+
+@immutable
+final class BillingAnalyticsPoint {
+  const BillingAnalyticsPoint({
+    required this.date,
+    this.collections = 0,
+    this.expenditures = 0,
+    this.profitProxy = 0,
+    this.refunds = 0,
+    this.writeOffs = 0,
+    this.netCollections = 0,
+    this.issuedInvoices = 0,
+    this.openInvoices = 0,
+  });
+
+  final String date;
+  final num collections;
+  final num expenditures;
+  final num profitProxy;
+  final num refunds;
+  final num writeOffs;
+  final num netCollections;
+  final int issuedInvoices;
+  final int openInvoices;
+}
+
+@immutable
+final class BillingFinancialAnalytics {
+  const BillingFinancialAnalytics({
+    this.preset = BillingAnalyticsPeriod.month,
+    this.granularity = 'day',
+    this.from,
+    this.to,
+    this.title = '',
+    this.subtitle = '',
+    this.collections = 0,
+    this.expenditures = 0,
+    this.profitProxy = 0,
+    this.refunds = 0,
+    this.writeOffs = 0,
+    this.netCollections = 0,
+    this.issuedInvoices = 0,
+    this.openInvoices = 0,
+    this.series = const <BillingAnalyticsPoint>[],
+    this.collectionsByMethod = const <BillingAnalyticsMethodBreakdown>[],
+    this.generatedAt,
+  });
+
+  final BillingAnalyticsPeriod preset;
+  final String granularity;
+  final DateTime? from;
+  final DateTime? to;
+  final String title;
+  final String subtitle;
+  final num collections;
+  final num expenditures;
+  final num profitProxy;
+  final num refunds;
+  final num writeOffs;
+  final num netCollections;
+  final int issuedInvoices;
+  final int openInvoices;
+  final List<BillingAnalyticsPoint> series;
+  final List<BillingAnalyticsMethodBreakdown> collectionsByMethod;
+  final DateTime? generatedAt;
+
+  bool get isEmpty =>
+      series.isEmpty &&
+      collections == 0 &&
+      expenditures == 0 &&
+      profitProxy == 0;
+}
+
 String? _nonEmpty(String? value) {
   final String? normalized = value?.trim();
   return normalized == null || normalized.isEmpty ? null : normalized;

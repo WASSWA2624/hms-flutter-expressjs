@@ -7,6 +7,10 @@ abstract interface class BillingRepository {
     BillingWorkspaceQuery query,
   );
 
+  Future<Result<BillingFinancialAnalytics>> getFinancialAnalytics(
+    BillingAnalyticsQuery query,
+  );
+
   Future<Result<AppPage<BillingWorkItem>>> listWorkItems(
     BillingWorkspaceQuery query,
   );

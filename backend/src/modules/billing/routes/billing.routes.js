@@ -11,6 +11,7 @@ const {
   workItemsQuerySchema,
   patientLedgerParamsSchema,
   patientLedgerQuerySchema,
+  financialAnalyticsQuerySchema,
   invoiceIdentifierParamsSchema,
   paymentIdentifierParamsSchema,
   approvalIdentifierParamsSchema,
@@ -52,6 +53,13 @@ router.get(
   validateRequest({ query: workspaceQuerySchema }),
   authorize(BILLING_READ_SCOPES, 'permission'),
   billingController.getWorkspace
+);
+
+router.get(
+  '/financial-analytics',
+  validateRequest({ query: financialAnalyticsQuerySchema }),
+  authorize(BILLING_READ_SCOPES, 'permission'),
+  billingController.getFinancialAnalytics
 );
 
 router.get(

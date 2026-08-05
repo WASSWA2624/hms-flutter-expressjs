@@ -38,6 +38,21 @@ const getWorkspace = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.billing.workspace.success', data);
 });
 
+const getFinancialAnalytics = asyncHandler(async (req, res) => {
+  const { facility_id, date_preset, datePreset, from, to } = req.query;
+  const data = await billingService.getFinancialAnalytics(
+    {
+      facility_id,
+      date_preset: date_preset || datePreset,
+      datePreset: datePreset || date_preset,
+      from,
+      to,
+    },
+    req.user
+  );
+  return sendSuccess(res, 200, 'messages.billing.financial_analytics.success', data);
+});
+
 const getWorkItems = asyncHandler(async (req, res) => {
   const {
     queue,
@@ -201,6 +216,7 @@ const getInvoiceDocument = asyncHandler(async (req, res) => {
 
 module.exports = {
   getWorkspace,
+  getFinancialAnalytics,
   getWorkItems,
   getPatientLedger,
   issueInvoice,

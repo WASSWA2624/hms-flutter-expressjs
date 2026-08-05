@@ -26,6 +26,7 @@ const {
 } = require('@services/radiology-workspace/radiology-workspace.service');
 const { BILLING_EVENTS, PAYMENT_EVENTS } = require('@lib/websocket');
 const { publishBillingRealtimeUpdate } = require('@lib/billing/realtime');
+const { buildBillingFinancialAnalytics } = require('@lib/reports/datasets');
 
 const QUEUE_TYPES = {
   NEEDS_ISSUE: 'NEEDS_ISSUE',
@@ -1544,10 +1545,67 @@ const getInvoiceDocument = async (invoiceIdentifier, user = {}) => {
   return { buffer, file_name: `invoice-${displayId(invoice) || invoice.id}.pdf` };
 };
 
+const getFinancialAnalytics = async (filters = {}, user = {}) => {
+  assertEnabled();
+  assertBillingRead(user);
+  const scope = await resolveScope(filters, user);
+  const analytics = await buildBillingFinancialAnalytics(scope, {
+    date_preset: filters.date_preset || filters.datePreset || 'month',
+    from: filters.from,
+    to: filters.to,
+  });
+
+  if (analytics.invalid) {
+    throw new HttpError('errors.validation.invalid', 400, [
+      { field: 'from', message: analytics.reason || 'invalid_range' },
+    ]);
+  }
+
+  return {
+    preset: analytics.preset,
+    granularity: analytics.granularity,
+    from: analytics.from?.toISOString() || null,
+    to: analytics.to?.toISOString() || null,
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    summary: {
+      collections: toMoneyString(analytics.summary.collections),
+      expenditures: toMoneyString(analytics.summary.expenditures),
+      profit_proxy: toMoneyString(analytics.summary.profit_proxy),
+      refunds: toMoneyString(analytics.summary.refunds),
+      write_offs: toMoneyString(analytics.summary.write_offs),
+      net_collections: toMoneyString(analytics.summary.net_collections),
+      issued_invoices: analytics.summary.issued_invoices,
+      open_invoices: analytics.summary.open_invoices,
+    },
+    series: analytics.rows.map((row) => ({
+      date: row.date,
+      collections: toMoneyString(row.collections),
+      expenditures: toMoneyString(row.expenditures),
+      profit_proxy: toMoneyString(row.profit_proxy),
+      refunds: toMoneyString(row.refunds),
+      write_offs: toMoneyString(row.write_offs),
+      net_collections: toMoneyString(row.net_collections),
+      issued_invoices: row.issued_invoices,
+      open_invoices: row.open_invoices,
+    })),
+    breakdown: {
+      refunds: toMoneyString(analytics.breakdown.refunds),
+      write_offs: toMoneyString(analytics.breakdown.write_offs),
+      collections_by_method: (analytics.breakdown.collections_by_method || []).map((entry) => ({
+        method: entry.method,
+        amount: toMoneyString(entry.amount),
+      })),
+    },
+    generated_at: new Date().toISOString(),
+  };
+};
+
 module.exports = {
   getWorkspace,
   getWorkItems,
   getPatientLedger,
+  getFinancialAnalytics,
   issueInvoice,
   sendInvoice,
   requestInvoiceVoid,

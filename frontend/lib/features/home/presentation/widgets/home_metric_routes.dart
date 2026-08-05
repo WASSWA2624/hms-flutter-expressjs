@@ -233,12 +233,10 @@ AppRouteData? _clinicalMetricRoute({
       'desk_queue' ||
       'turnaround_pressure' ||
       'no_show_pressure' ||
-      'opd_notifications_attention'
+      'opd_notifications_attention' ||
+      'emergency_cases_today'
           when policy.grants(AppPermissions.patientRead) =>
         AppRoutes.reception,
-      'emergency_cases_today'
-          when policy.grants(AppPermissions.emergencyRead) =>
-        AppRoutes.emergency,
       'pending_balance_amount' when policy.grants(AppPermissions.billingRead) =>
         AppRoutes.billing,
       _ => null,

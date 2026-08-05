@@ -36,4 +36,6 @@ abstract interface class ReportsRepository {
   Future<Result<ReportsWorkspaceItem>> resumeSchedule(String scheduleId);
 
   Future<Result<List<int>>> downloadReportRun(String reportRunId);
+
+  Future<Result<ReportRunPreview>> previewReportRun(String reportRunId);
 }

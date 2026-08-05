@@ -1512,6 +1512,81 @@ class AppLocalizationsEn extends AppLocalizations {
       'Invoices, payments, claims, and approvals.';
 
   @override
+  String get billingAnalyticsTitle => 'Financial analytics';
+
+  @override
+  String get billingAnalyticsSubtitle =>
+      'Collections, expenditures, and operating surplus for the selected period.';
+
+  @override
+  String get billingAnalyticsLoadingTitle => 'Loading financial analytics';
+
+  @override
+  String get billingAnalyticsLoadingBody =>
+      'Summarizing collections and expenditures...';
+
+  @override
+  String get billingAnalyticsEmptyTitle => 'No financial activity';
+
+  @override
+  String get billingAnalyticsEmptyBody =>
+      'No collections or expenditures were recorded for this period.';
+
+  @override
+  String get billingAnalyticsPeriodDay => 'Day';
+
+  @override
+  String get billingAnalyticsPeriodMonth => 'Month';
+
+  @override
+  String get billingAnalyticsPeriodYear => 'Year';
+
+  @override
+  String get billingAnalyticsPeriodCustom => 'Custom';
+
+  @override
+  String get billingAnalyticsCollectionsLabel => 'Collections';
+
+  @override
+  String get billingAnalyticsExpendituresLabel => 'Expenditures';
+
+  @override
+  String get billingAnalyticsProfitProxyLabel => 'Operating surplus';
+
+  @override
+  String get billingAnalyticsRefundsLabel => 'Refunds';
+
+  @override
+  String get billingAnalyticsWriteOffsLabel => 'Write-offs';
+
+  @override
+  String get billingAnalyticsNetCollectionsLabel => 'Net collections';
+
+  @override
+  String get billingAnalyticsIssuedInvoicesLabel => 'Issued invoices';
+
+  @override
+  String get billingAnalyticsOpenInvoicesLabel => 'Open invoices';
+
+  @override
+  String get billingAnalyticsBreakdownTitle => 'More detail';
+
+  @override
+  String get billingAnalyticsByMethodTitle => 'Collections by method';
+
+  @override
+  String get billingAnalyticsTrendTitle => 'Collections trend';
+
+  @override
+  String get billingAnalyticsMixTitle => 'Revenue mix';
+
+  @override
+  String get billingAnalyticsMixTotalLabel => 'Total';
+
+  @override
+  String get billingAnalyticsOpenReportsAction => 'Open reports';
+
+  @override
   String get billingAllWorkItems => 'All billing work items';
 
   @override
@@ -3098,6 +3173,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get receptionScheduleNewPatientTab => 'New patient';
+
+  @override
+  String get receptionScheduleVisitorTab => 'Visitor / staff meeting';
+
+  @override
+  String get receptionVisitorMeetingTitle => 'Visitor meeting';
+
+  @override
+  String get receptionVisitorMeetingBannerTitle => 'Non-patient meeting';
+
+  @override
+  String get receptionVisitorMeetingBannerBody =>
+      'Book a visitor or guest with any facility staff. Availability is checked against the host schedule before booking.';
+
+  @override
+  String get receptionVisitorNameLabel => 'Visitor name';
+
+  @override
+  String get receptionVisitorPhoneLabel => 'Visitor phone';
+
+  @override
+  String get receptionVisitorOrganizationLabel => 'Organization';
+
+  @override
+  String get receptionStaffHostLabel => 'Staff host';
+
+  @override
+  String get receptionVisitorMeetingBadge => 'Visitor meeting';
 
   @override
   String get receptionInsuranceLookupFailed =>
@@ -16740,6 +16843,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsRetentionDaysFieldLabel => 'Retention days';
+
+  @override
+  String get reportsPeriodFieldLabel => 'Period';
+
+  @override
+  String get reportsPeriodDay => 'Day';
+
+  @override
+  String get reportsPeriodMonth => 'Month';
+
+  @override
+  String get reportsPeriodYear => 'Year';
+
+  @override
+  String get reportsPeriodCustom => 'Custom';
+
+  @override
+  String get reportsPreviewSeriesTitle => 'Result series';
+
+  @override
+  String get reportsPreviewEmptyBody =>
+      'No rows were returned for this run period.';
+
+  @override
+  String get reportsPreviewLoadingTitle => 'Loading report preview';
+
+  @override
+  String get reportsPreviewLoadingBody =>
+      'Building visual and tabular results...';
 
   @override
   String get reportsScheduleNameFieldLabel => 'Schedule name';

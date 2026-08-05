@@ -98,6 +98,23 @@ bool canReadBilling(AppAccessPolicy policy) {
   return billingWorkspaceReadRequirement.isAllowed(policy);
 }
 
+/// Period analytics KPIs — billing read ∩ payments module.
+bool canReadBillingAnalytics(AppAccessPolicy policy) {
+  return canReadBilling(policy);
+}
+
+/// Charts and Reports deep-link — also requires `reports:read`.
+bool canViewBillingAnalyticsCharts(AppAccessPolicy policy) {
+  return canReadBillingAnalytics(policy) &&
+      policy.grants(AppPermissions.reportsRead);
+}
+
+/// Open Reports catalog filtered to billing financial datasets.
+bool canOpenBillingReportsAnalytics(AppAccessPolicy policy) {
+  return canViewBillingAnalyticsCharts(policy) &&
+      policy.hasActiveModule('reporting-analytics');
+}
+
 bool canWriteBilling(AppAccessPolicy policy) {
   return billingWorkspaceWriteRequirement.isAllowed(policy);
 }

@@ -44,17 +44,25 @@ final class OpdAppointmentDto {
       providerUserId:
           _string(json['provider_human_friendly_id']) ??
           _string(json['provider_user_id']),
+      subjectType: _string(json['subject_type']),
+      visitorName: _string(json['visitor_name']),
+      visitorPhone: _string(json['visitor_phone']),
+      visitorEmail: _string(json['visitor_email']),
+      visitorOrganization: _string(json['visitor_organization']),
       status: _string(json['status']),
       scheduledStart: _date(json['scheduled_start']),
       scheduledEnd: _date(json['scheduled_end']),
       reason: _string(json['reason']),
       patientDisplayName:
           _string(json['patient_display_name']) ??
+          _string(json['visitor_name']) ??
           _patientDisplayName(_nullableMap(json['patient'])),
       patientIdentifier:
           _string(json['patient_primary_identifier']) ??
           _string(_nullableMap(json['patient'])?['human_friendly_id']),
-      patientPhone: _string(json['patient_primary_phone']),
+      patientPhone:
+          _string(json['patient_primary_phone']) ??
+          _string(json['visitor_phone']),
       patientDateOfBirth:
           _date(json['patient_date_of_birth']) ??
           _date(_nullableMap(json['patient'])?['date_of_birth']),

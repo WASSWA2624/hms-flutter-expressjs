@@ -103,6 +103,8 @@ const AccessRequirement receptionPaymentGateCollectRequirement =
 ///
 /// Matrix nested cross-module read ∪ `emergency:read` (+ `scheduling-queue`).
 /// Does not unlock the High priority tab itself (tab stays ∩ `patient:read`).
+/// Receptionist packs keep `emergency:read` for this nested chrome only; the
+/// focused shell omits `/emergency` so workspace entry stays denied.
 const AccessRequirement receptionHighPriorityEmergencyNestedReadRequirement =
     AccessRequirement(
       anyPermissions: <AppPermission>[AppPermissions.emergencyRead],

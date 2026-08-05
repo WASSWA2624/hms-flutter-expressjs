@@ -39,25 +39,364 @@ const resolveDateRange = (parameters = {}) => {
   const preset = normalizeString(parameters.date_preset || parameters.datePreset).toLowerCase();
   const fromInput = normalizeString(parameters.from);
   const toInput = normalizeString(parameters.to);
+  const wantsCustom = preset === 'custom' || Boolean(fromInput) || Boolean(toInput);
 
-  if (fromInput || toInput) {
+  if (wantsCustom) {
+    if (preset === 'custom' && !fromInput && !toInput) {
+      return { from: null, to: null, preset: 'custom', invalid: true, reason: 'missing_bounds' };
+    }
+    const from = fromInput
+      ? startOfDay(new Date(fromInput))
+      : shiftDays(startOfDay(now), -29);
+    const to = toInput ? endOfDay(new Date(toInput)) : endOfDay(now);
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+      return { from: null, to: null, preset: 'custom', invalid: true, reason: 'invalid_date' };
+    }
+    if (from.getTime() > to.getTime()) {
+      return { from, to, preset: 'custom', invalid: true, reason: 'from_after_to' };
+    }
+    return { from, to, preset: 'custom', invalid: false };
+  }
+
+  if (preset === 'today' || preset === 'day') {
+    return { from: startOfDay(now), to: endOfDay(now), preset: 'day', invalid: false };
+  }
+  if (preset === 'this_month' || preset === 'month') {
+    const from = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { from, to: endOfDay(now), preset: 'month', invalid: false };
+  }
+  if (preset === 'this_year' || preset === 'year') {
+    const from = new Date(now.getFullYear(), 0, 1);
+    return { from, to: endOfDay(now), preset: 'year', invalid: false };
+  }
+  if (preset === 'last_7_days') {
     return {
-      from: fromInput ? startOfDay(new Date(fromInput)) : shiftDays(startOfDay(now), -29),
-      to: toInput ? endOfDay(new Date(toInput)) : endOfDay(now),
+      from: shiftDays(startOfDay(now), -6),
+      to: endOfDay(now),
+      preset: 'last_7_days',
+      invalid: false,
     };
   }
-
-  if (preset === 'today') {
-    return { from: startOfDay(now), to: endOfDay(now) };
-  }
-  if (preset === 'this_month') {
-    const from = new Date(now.getFullYear(), now.getMonth(), 1);
-    return { from, to: endOfDay(now) };
+  if (preset === 'last_30_days') {
+    return {
+      from: shiftDays(startOfDay(now), -29),
+      to: endOfDay(now),
+      preset: 'last_30_days',
+      invalid: false,
+    };
   }
 
   return {
     from: shiftDays(startOfDay(now), -29),
     to: endOfDay(now),
+    preset: preset || 'last_30_days',
+    invalid: false,
+  };
+};
+
+const rangeSpanDays = (range) => {
+  if (!range?.from || !range?.to) return 0;
+  return Math.max(0, (range.to.getTime() - range.from.getTime()) / (24 * 60 * 60 * 1000));
+};
+
+const shouldUseMonthlyGranularity = (range) => {
+  if (!range || range.invalid) return false;
+  if (range.preset === 'year' || range.preset === 'this_year') return true;
+  return rangeSpanDays(range) > 45;
+};
+
+const periodBucketKey = (dateValue, monthly) => {
+  const parsed = dateValue ? new Date(dateValue) : null;
+  if (!parsed || Number.isNaN(parsed.getTime())) return null;
+  if (monthly) {
+    const year = parsed.getUTCFullYear();
+    const month = String(parsed.getUTCMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+  }
+  return parsed.toISOString().slice(0, 10);
+};
+
+const aggregateByPeriod = (rows = [], dateField, keyMap, { monthly = false } = {}) => {
+  const index = new Map();
+
+  rows.forEach((row) => {
+    const key = periodBucketKey(row?.[dateField], monthly);
+    if (!key) return;
+    if (!index.has(key)) {
+      index.set(key, { date: key });
+    }
+    const target = index.get(key);
+    Object.entries(keyMap).forEach(([field, source]) => {
+      if (typeof source === 'function') {
+        target[field] = asNumber(target[field]) + asNumber(source(row));
+        return;
+      }
+      target[field] = asNumber(target[field]) + asNumber(row?.[source]);
+    });
+  });
+
+  return Array.from(index.values()).sort((left, right) => String(left.date).localeCompare(String(right.date)));
+};
+
+const APPLIED_ADJUSTMENT_STATUSES = new Set(['ISSUED', 'PAID', 'PARTIAL']);
+const COUNTED_PAYMENT_STATUSES = new Set(['COMPLETED', 'REFUNDED']);
+
+const emptyBillingBucket = (date) => ({
+  date,
+  collections: 0,
+  refunds: 0,
+  write_offs: 0,
+  expenditures: 0,
+  profit_proxy: 0,
+  net_collections: 0,
+  issued_invoices: 0,
+  open_invoices: 0,
+});
+
+const mergeBillingBuckets = (entries = []) => {
+  const index = new Map();
+  entries.forEach((entry) => {
+    if (!entry?.date) return;
+    if (!index.has(entry.date)) {
+      index.set(entry.date, emptyBillingBucket(entry.date));
+    }
+    const target = index.get(entry.date);
+    target.collections += asNumber(entry.collections);
+    target.refunds += asNumber(entry.refunds);
+    target.write_offs += asNumber(entry.write_offs);
+    target.issued_invoices += asNumber(entry.issued_invoices);
+    target.open_invoices += asNumber(entry.open_invoices);
+  });
+
+  return Array.from(index.values())
+    .map((entry) => {
+      const expenditures = asNumber(entry.refunds) + asNumber(entry.write_offs);
+      const collections = asNumber(entry.collections);
+      return {
+        ...entry,
+        expenditures: Math.round(expenditures * 100) / 100,
+        net_collections: Math.round((collections - asNumber(entry.refunds)) * 100) / 100,
+        // Profit uses gross collections − expenditures so refunds are not double-counted.
+        profit_proxy: Math.round((collections - expenditures) * 100) / 100,
+        collections: Math.round(collections * 100) / 100,
+        refunds: Math.round(asNumber(entry.refunds) * 100) / 100,
+        write_offs: Math.round(asNumber(entry.write_offs) * 100) / 100,
+      };
+    })
+    .sort((left, right) => String(left.date).localeCompare(String(right.date)));
+};
+
+const summarizeBillingSeries = (rows = []) => {
+  const totals = rows.reduce(
+    (acc, row) => {
+      acc.collections += asNumber(row.collections);
+      acc.refunds += asNumber(row.refunds);
+      acc.write_offs += asNumber(row.write_offs);
+      acc.expenditures += asNumber(row.expenditures);
+      acc.profit_proxy += asNumber(row.profit_proxy);
+      acc.net_collections += asNumber(row.net_collections);
+      acc.issued_invoices += asNumber(row.issued_invoices);
+      acc.open_invoices += asNumber(row.open_invoices);
+      return acc;
+    },
+    {
+      collections: 0,
+      refunds: 0,
+      write_offs: 0,
+      expenditures: 0,
+      profit_proxy: 0,
+      net_collections: 0,
+      issued_invoices: 0,
+      open_invoices: 0,
+    }
+  );
+
+  return {
+    collections: Math.round(totals.collections * 100) / 100,
+    refunds: Math.round(totals.refunds * 100) / 100,
+    write_offs: Math.round(totals.write_offs * 100) / 100,
+    expenditures: Math.round(totals.expenditures * 100) / 100,
+    profit_proxy: Math.round(totals.profit_proxy * 100) / 100,
+    net_collections: Math.round(totals.net_collections * 100) / 100,
+    issued_invoices: totals.issued_invoices,
+    open_invoices: totals.open_invoices,
+  };
+};
+
+/**
+ * Facility billing financial analytics for a period.
+ * Collections = COMPLETED/REFUNDED payment amounts (gross).
+ * Expenditures = refunds + abs(negative applied adjustments).
+ * Profit proxy = collections − expenditures.
+ */
+const buildBillingFinancialAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  if (range.invalid) {
+    return {
+      invalid: true,
+      reason: range.reason || 'invalid_range',
+      preset: range.preset,
+      from: range.from,
+      to: range.to,
+      granularity: 'day',
+      title: 'Billing collections, expenditures, and profit',
+      subtitle: 'Invalid date range',
+      columns: [
+        'date',
+        'collections',
+        'expenditures',
+        'profit_proxy',
+        'refunds',
+        'write_offs',
+        'net_collections',
+        'issued_invoices',
+        'open_invoices',
+      ],
+      rows: [],
+      summary: summarizeBillingSeries([]),
+      breakdown: { refunds: 0, write_offs: 0 },
+    };
+  }
+
+  const monthly = shouldUseMonthlyGranularity(range);
+  const tenantWhere = buildTenantWhere(scope);
+
+  const [payments, refunds, adjustments, invoices] = await Promise.all([
+    prisma.payment.findMany({
+      where: {
+        ...tenantWhere,
+        status: { in: Array.from(COUNTED_PAYMENT_STATUSES) },
+        paid_at: { gte: range.from, lte: range.to },
+      },
+      select: {
+        paid_at: true,
+        amount: true,
+        method: true,
+      },
+    }),
+    prisma.refund.findMany({
+      where: {
+        deleted_at: null,
+        refunded_at: { gte: range.from, lte: range.to },
+        payment: {
+          deleted_at: null,
+          tenant_id: scope.tenant_id,
+          ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+        },
+      },
+      select: {
+        refunded_at: true,
+        amount: true,
+      },
+    }),
+    prisma.billing_adjustment.findMany({
+      where: {
+        deleted_at: null,
+        adjusted_at: { gte: range.from, lte: range.to },
+        status: { in: Array.from(APPLIED_ADJUSTMENT_STATUSES) },
+        amount: { lt: 0 },
+        invoice: {
+          deleted_at: null,
+          tenant_id: scope.tenant_id,
+          ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+        },
+      },
+      select: {
+        adjusted_at: true,
+        amount: true,
+      },
+    }),
+    prisma.invoice.findMany({
+      where: {
+        ...tenantWhere,
+        issued_at: { gte: range.from, lte: range.to },
+      },
+      select: {
+        issued_at: true,
+        status: true,
+      },
+    }),
+  ]);
+
+  const paymentBuckets = aggregateByPeriod(
+    payments,
+    'paid_at',
+    { collections: (row) => asNumber(row.amount) },
+    { monthly }
+  );
+  const refundBuckets = aggregateByPeriod(
+    refunds,
+    'refunded_at',
+    { refunds: (row) => asNumber(row.amount) },
+    { monthly }
+  );
+  const writeOffBuckets = aggregateByPeriod(
+    adjustments,
+    'adjusted_at',
+    { write_offs: (row) => Math.abs(asNumber(row.amount)) },
+    { monthly }
+  );
+  const invoiceBuckets = aggregateByPeriod(
+    invoices,
+    'issued_at',
+    {
+      issued_invoices: () => 1,
+      open_invoices: (row) =>
+        ['DRAFT', 'SENT', 'OVERDUE'].includes(String(row.status || '').toUpperCase()) ? 1 : 0,
+    },
+    { monthly }
+  );
+
+  const rows = mergeBillingBuckets([
+    ...paymentBuckets,
+    ...refundBuckets,
+    ...writeOffBuckets,
+    ...invoiceBuckets,
+  ]);
+  const summary = summarizeBillingSeries(rows);
+
+  const methodIndex = new Map();
+  payments.forEach((payment) => {
+    const method = normalizeString(payment.method) || 'UNKNOWN';
+    methodIndex.set(method, asNumber(methodIndex.get(method)) + asNumber(payment.amount));
+  });
+  const collections_by_method = Array.from(methodIndex.entries())
+    .map(([method, amount]) => ({
+      method,
+      amount: Math.round(asNumber(amount) * 100) / 100,
+    }))
+    .sort((left, right) => right.amount - left.amount);
+
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    reason: null,
+    preset: range.preset,
+    from: range.from,
+    to: range.to,
+    granularity: monthly ? 'month' : 'day',
+    title: 'Billing collections, expenditures, and profit',
+    subtitle: `${fromLabel} to ${toLabel} (${monthly ? 'monthly' : 'daily'})`,
+    columns: [
+      'date',
+      'collections',
+      'expenditures',
+      'profit_proxy',
+      'refunds',
+      'write_offs',
+      'net_collections',
+      'issued_invoices',
+      'open_invoices',
+    ],
+    rows,
+    summary,
+    breakdown: {
+      refunds: summary.refunds,
+      write_offs: summary.write_offs,
+      collections_by_method,
+    },
   };
 };
 
@@ -146,55 +485,12 @@ const runAppointmentDataset = async (scope, parameters = {}) => {
 };
 
 const runBillingDataset = async (scope, parameters = {}) => {
-  const range = resolveDateRange(parameters);
-  const [payments, invoices] = await Promise.all([
-    prisma.payment.findMany({
-      where: {
-        ...buildTenantWhere(scope),
-        paid_at: { gte: range.from, lte: range.to },
-      },
-      select: {
-        paid_at: true,
-        amount: true,
-      },
-    }),
-    prisma.invoice.findMany({
-      where: {
-        ...buildTenantWhere(scope),
-        issued_at: { gte: range.from, lte: range.to },
-      },
-      select: {
-        issued_at: true,
-        status: true,
-      },
-    }),
-  ]);
-
-  const paymentsByDate = aggregateByDate(payments, 'paid_at', {
-    collections: (row) => asNumber(row.amount),
-  });
-  const invoicesByDate = aggregateByDate(invoices, 'issued_at', {
-    issued_invoices: () => 1,
-    open_invoices: (row) =>
-      ['DRAFT', 'SENT', 'OVERDUE'].includes(String(row.status || '').toUpperCase()) ? 1 : 0,
-  });
-
-  const index = new Map();
-  [...paymentsByDate, ...invoicesByDate].forEach((entry) => {
-    if (!index.has(entry.date)) {
-      index.set(entry.date, { date: entry.date, collections: 0, issued_invoices: 0, open_invoices: 0 });
-    }
-    const target = index.get(entry.date);
-    target.collections += asNumber(entry.collections);
-    target.issued_invoices += asNumber(entry.issued_invoices);
-    target.open_invoices += asNumber(entry.open_invoices);
-  });
-
+  const analytics = await buildBillingFinancialAnalytics(scope, parameters);
   return {
-    title: 'Billing collections and open balances',
-    subtitle: `${range.from.toISOString().slice(0, 10)} to ${range.to.toISOString().slice(0, 10)}`,
-    columns: ['date', 'collections', 'issued_invoices', 'open_invoices'],
-    rows: Array.from(index.values()).sort((left, right) => left.date.localeCompare(right.date)),
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
   };
 };
 
@@ -445,6 +741,9 @@ const executeReportDataset = async ({ dataset_key, scope, definition_json = {}, 
 };
 
 module.exports = {
+  buildBillingFinancialAnalytics,
   executeReportDataset,
   resolveDateRange,
+  shouldUseMonthlyGranularity,
+  summarizeBillingSeries,
 };

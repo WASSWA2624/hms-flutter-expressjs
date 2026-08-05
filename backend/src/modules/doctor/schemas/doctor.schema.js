@@ -91,6 +91,10 @@ const listDoctorsQuerySchema = listQuerySchema.extend({
   practitioner_type: practitionerTypeSchema.optional(),
   position_title: z.string().trim().optional(),
   search: z.string().trim().optional(),
+  // When true, include any active staff host (not only clinical providers).
+  meeting_hosts: z
+    .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
+    .optional(),
 });
 
 module.exports = {

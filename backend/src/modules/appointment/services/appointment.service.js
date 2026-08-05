@@ -123,6 +123,10 @@ const withAppointmentProjection = (appointment) => {
     null,
     appointment?.patient?.last_name
   );
+  const visitorDisplayName =
+    typeof appointment?.visitor_name === 'string'
+      ? appointment.visitor_name.trim()
+      : '';
   const primaryContact = resolvePrimaryRecord(appointment?.patient?.contacts);
   const primaryIdentifier = resolvePrimaryRecord(appointment?.patient?.identifiers);
   const providerDisplayName = resolveDisplayName(
@@ -137,12 +141,16 @@ const withAppointmentProjection = (appointment) => {
   appendIfPresent(projected, 'facility_human_friendly_id', appointment?.facility?.human_friendly_id);
   appendIfPresent(projected, 'facility_name', appointment?.facility?.name);
   appendIfPresent(projected, 'patient_human_friendly_id', appointment?.patient?.human_friendly_id);
-  appendIfPresent(projected, 'patient_display_name', patientDisplayName);
+  appendIfPresent(
+    projected,
+    'patient_display_name',
+    patientDisplayName || visitorDisplayName
+  );
   appendIfPresent(projected, 'patient_first_name', appointment?.patient?.first_name);
   appendIfPresent(projected, 'patient_last_name', appointment?.patient?.last_name);
   appendIfPresent(projected, 'patient_date_of_birth', appointment?.patient?.date_of_birth);
   appendIfPresent(projected, 'patient_gender', appointment?.patient?.gender);
-  appendIfPresent(projected, 'patient_primary_phone', primaryContact?.value);
+  appendIfPresent(projected, 'patient_primary_phone', primaryContact?.value || appointment?.visitor_phone);
   appendIfPresent(projected, 'patient_primary_contact_type', primaryContact?.contact_type);
   appendIfPresent(projected, 'patient_primary_identifier', primaryIdentifier?.identifier_value);
   appendIfPresent(projected, 'patient_primary_identifier_type', primaryIdentifier?.identifier_type);
@@ -150,6 +158,11 @@ const withAppointmentProjection = (appointment) => {
   appendIfPresent(projected, 'provider_display_name', providerDisplayName);
   appendIfPresent(projected, 'provider_email', appointment?.provider?.email);
   appendIfPresent(projected, 'provider_phone', appointment?.provider?.phone);
+  appendIfPresent(projected, 'subject_type', appointment?.subject_type || 'PATIENT');
+  appendIfPresent(projected, 'visitor_name', appointment?.visitor_name);
+  appendIfPresent(projected, 'visitor_phone', appointment?.visitor_phone);
+  appendIfPresent(projected, 'visitor_email', appointment?.visitor_email);
+  appendIfPresent(projected, 'visitor_organization', appointment?.visitor_organization);
   return projected;
 };
 
@@ -291,6 +304,7 @@ const resolveAppointmentPayloadIdentifiers = async (data = {}, existing = null) 
       field: 'patient_id',
       model: 'patient',
       where: tenantId ? { tenant_id: tenantId } : {},
+      nullable: true,
     });
   }
 
@@ -305,7 +319,58 @@ const resolveAppointmentPayloadIdentifiers = async (data = {}, existing = null) 
     });
   }
 
+  if (payload.subject_type !== undefined) {
+    payload.subject_type = String(payload.subject_type || 'PATIENT')
+      .trim()
+      .toUpperCase();
+  }
+
+  if (payload.visitor_email === '') {
+    payload.visitor_email = null;
+  }
+
   return payload;
+};
+
+const assertHostAvailable = async ({
+  providerUserId,
+  scheduledStart,
+  scheduledEnd,
+  excludeAppointmentId,
+  tenantId,
+}) => {
+  if (!providerUserId || !scheduledStart || !scheduledEnd) {
+    return;
+  }
+  const start = new Date(scheduledStart);
+  const end = new Date(scheduledEnd);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    throw new HttpError('errors.validation.invalid', 400, [
+      { field: 'scheduled_start' },
+    ]);
+  }
+  if (end <= start) {
+    throw new HttpError('errors.validation.invalid', 400, [
+      { field: 'scheduled_end' },
+    ]);
+  }
+
+  const overlap = await appointmentRepository.findOverlappingForProvider({
+    providerUserId,
+    scheduledStart: start,
+    scheduledEnd: end,
+    excludeAppointmentId,
+    tenantId,
+  });
+  if (overlap) {
+    throw new HttpError('errors.appointment.host_unavailable', 409, [
+      {
+        field: 'provider_user_id',
+        conflicting_appointment_id:
+          overlap.human_friendly_id || overlap.id || null,
+      },
+    ]);
+  }
 };
 
 const normalizeStatus = (value) => String(value || '').trim().toUpperCase();
@@ -331,6 +396,14 @@ const shouldAutoStartOpdFlow = (before, appointment, updateData = {}) => {
 
 const maybeAutoStartOpdFlow = async ({ before, appointment, updateData, userId, ipAddress }) => {
   if (!appointment?.id) return;
+  const subjectType = String(
+    appointment?.subject_type || updateData?.subject_type || 'PATIENT'
+  )
+    .trim()
+    .toUpperCase();
+  if (subjectType === 'VISITOR' || !appointment.patient_id) {
+    return;
+  }
   if (!shouldAutoStartOpdFlow(before, appointment, updateData)) return;
 
   try {
@@ -529,6 +602,33 @@ const getAppointmentById = async (id, userId, ipAddress) => {
 const createAppointment = async (data, userId, ipAddress) => {
   try {
     const payload = await resolveAppointmentPayloadIdentifiers(data);
+    const subjectType = String(payload.subject_type || 'PATIENT').toUpperCase();
+    payload.subject_type = subjectType;
+    if (subjectType === 'VISITOR') {
+      payload.patient_id = null;
+      if (!payload.visitor_name || !String(payload.visitor_name).trim()) {
+        throw new HttpError('errors.validation.invalid', 400, [
+          { field: 'visitor_name' },
+        ]);
+      }
+      if (!payload.provider_user_id) {
+        throw new HttpError('errors.validation.invalid', 400, [
+          { field: 'provider_user_id' },
+        ]);
+      }
+    } else if (!payload.patient_id) {
+      throw new HttpError('errors.validation.invalid', 400, [
+        { field: 'patient_id' },
+      ]);
+    }
+
+    await assertHostAvailable({
+      providerUserId: payload.provider_user_id,
+      scheduledStart: payload.scheduled_start,
+      scheduledEnd: payload.scheduled_end,
+      tenantId: payload.tenant_id,
+    });
+
     const createdAppointment = await appointmentRepository.create(payload);
     const appointment = await appointmentRepository.findById(createdAppointment.id, APPOINTMENT_INCLUDE);
     const projectedAppointment = withAppointmentProjection(appointment || createdAppointment);
@@ -570,6 +670,32 @@ const updateAppointment = async (id, data, userId, ipAddress) => {
     }
 
     const payload = await resolveAppointmentPayloadIdentifiers(data, before);
+    const nextProviderId =
+      payload.provider_user_id !== undefined
+        ? payload.provider_user_id
+        : before.provider_user_id;
+    const nextStart =
+      payload.scheduled_start !== undefined
+        ? payload.scheduled_start
+        : before.scheduled_start;
+    const nextEnd =
+      payload.scheduled_end !== undefined
+        ? payload.scheduled_end
+        : before.scheduled_end;
+    const scheduleTouched =
+      payload.provider_user_id !== undefined ||
+      payload.scheduled_start !== undefined ||
+      payload.scheduled_end !== undefined;
+    if (scheduleTouched) {
+      await assertHostAvailable({
+        providerUserId: nextProviderId,
+        scheduledStart: nextStart,
+        scheduledEnd: nextEnd,
+        excludeAppointmentId: before.id,
+        tenantId: before.tenant_id,
+      });
+    }
+
     const updatedAppointment = await appointmentRepository.update(before.id, payload);
     const appointment = await appointmentRepository.findById(updatedAppointment.id, APPOINTMENT_INCLUDE);
     const projectedAppointment = withAppointmentProjection(appointment || updatedAppointment);

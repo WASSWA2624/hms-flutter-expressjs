@@ -689,9 +689,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     shortcutIds: <String>[
       'reception',
       'patients',
-      'opd',
-      'emergency',
       'communications',
+      'reports',
       'settings',
     ],
     emptyActionIds: const <String>[],
@@ -709,8 +708,12 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         queryParameters: <String, String>{'section': 'follow-up'},
       ),
       'registrations_today': HomeMetricRouteTarget(),
-      'emergency_cases_today': HomeMetricRouteTarget(),
-      'opd_notifications_attention': HomeMetricRouteTarget(),
+      'emergency_cases_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'high-priority'},
+      ),
+      'opd_notifications_attention': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'desk-queue'},
+      ),
       'pending_balance_amount': HomeMetricRouteTarget(
         queryParameters: <String, String>{'queue': 'pendingPayment'},
       ),
@@ -1730,6 +1733,12 @@ HomeDashboardProfile expandHomeProfileForPermissions(
           sameDomainCards.containsKey(template.id)) {
         continue;
       }
+      // Receptionist front desk: omit profile KPI cards from portal/other packs.
+      if (base.id == 'receptionist' &&
+          (template.id == 'profile_status' ||
+              template.id == 'my_profile_status')) {
+        continue;
+      }
       final List<AppPermission> required =
           template.effectiveRequiredPermissions;
       if (required.isEmpty || !policy.grantsAll(required)) {
@@ -1746,6 +1755,11 @@ HomeDashboardProfile expandHomeProfileForPermissions(
       }
     }
     for (final String id in profile.shortcutIds) {
+      // Receptionist shell: no profile tile; OPD/Emergency stay on Reception.
+      if (base.id == 'receptionist' &&
+          (id == 'profile' || id == 'opd' || id == 'emergency')) {
+        continue;
+      }
       shortcutIds.add(id);
     }
     for (final MapEntry<String, HomeMetricRouteTarget> entry
