@@ -1,78 +1,79 @@
-# Reception: Deny OPD and Emergency Workspace Access
+# Reception: Front-Desk Access, Visitor Booking, and Staff Reports
 
-Confine the `RECEPTIONIST` / receptionist-focused shell to front-desk work. Deny the OPD and Emergency **workspaces** while preserving OPD- and emergency-related **information and front-desk actions** already owned by Reception.
+Confine receptionist-focused users to front-desk work (deny OPD/Emergency **workspaces**), extend appointment booking to visitors and any staff with availability checks, grant default Reports access to all staff, and remove the receptionist home profile card.
 
 ## Context
 
 **Current behavior**
 
-- `AppRoutes.receptionistFocusedShellRoutes` includes `/opd` and `/emergency`, so focused receptionists see and open those screens.
-- Default receptionist packs grant `opd:read`, `emergency:read`, and `emergency:write` (frontend `AppAccessPolicy` + backend `permissions.js`).
-- Home receptionist shortcuts include `opd` and `emergency`; the `emergency_cases_today` metric navigates to `AppRoutes.emergency`.
-- Reception already surfaces relevant visit/queue/emergency context inside `/reception` (Appointments, Desk queue, High priority, Active visits, Follow-ups, Payment gate) without requiring the OPD or Emergency workspace pages.
+- `receptionistFocusedShellRoutes` includes `/opd` and `/emergency`; default packs grant `opd:read` / `emergency:*`.
+- Home shortcuts include OPD/Emergency; `emergency_cases_today` opens Emergency.
+- Book appointment is patient-centric (`PatientAppointmentQuickDialog` / OPD encounter) and provider pickers lean clinical; visitor↔any-staff meetings are not a first-class flow.
+- Provider schedule hints exist for clinical booking (`OpdProviderSchedule`); staff availability/roster APIs exist under HR/availability-slots but are not the Reception meeting gate.
+- `RECEPTIONIST` lacks `reports:read`; focused shells omit `/reports`. Other staff packs often include it, but role lists / focused shells are incomplete.
+- Receptionist home can surface a **profile** shortcut/card via `expandHomeProfileForPermissions` (cross-profile `profile` / `profile_status` merge).
 
 **Intended behavior**
 
-- Reception role users must not open the OPD or Emergency screens (nav, shortcuts, metrics, workflow “open in …” actions, or deep links).
-- They must still see and act on relevant OPD / emergency desk information **inside Reception**.
-- Existing Reception front-desk mutations (register, schedule, check-in, queue, assign provider, follow-ups, etc.) must remain unless they exclusively navigate to `/opd` or `/emergency`.
+- No OPD/Emergency workspace access for receptionist-focused users; keep OPD/emergency **desk info** and front-desk actions inside `/reception`.
+- Receptionists book appointments for **visitors** (non-patients) with **any facility staff** (admins, clinical, non-clinical), after confirming the host’s schedule/availability.
+- Existing patient clinical booking remains; visitor/staff meetings must not force a patient record or clinical encounter.
+- All **staff** roles get `reports:read` by default and can open Reports when entitled; focused shells must not hide Reports when the grant is present.
+- Receptionist dashboard must not show the profile card/shortcut.
 
 **Definitions**
 
-- *Receptionist-focused user*: `AppAccessPolicy.isReceptionistFocusedShellUser` (canonical `RECEPTIONIST` or equivalent front-desk-only custom role).
-- *OPD / Emergency screen*: workspace routes `AppRoutes.opd` (`/opd`) and `AppRoutes.emergency` (`/emergency`), including deep links and query panels.
-- *Reception-surfaced info*: rows, badges, filters, detail hubs, and guidance already shown on `/reception` (including emergency indicators on High priority / Active visits).
+- *Receptionist-focused user*: `isReceptionistFocusedShellUser`.
+- *OPD/Emergency screen*: `/opd`, `/emergency` (incl. deep links).
+- *Visitor appointment*: scheduled meeting whose subject is not a patient (guest/visitor identity), hosted by a staff user.
+- *Staff host*: any active facility staff user eligible for meetings (not limited to clinical providers).
+- *Availability check*: reject or block booking when the host has a conflicting appointment, blocked slot, or is outside declared availability/roster for the requested interval (backend authoritative).
 
 ## Requirements
 
-1. Remove `AppRoutes.opd` and `AppRoutes.emergency` from `receptionistFocusedShellRoutes` so focused shell users cannot access those destinations via `canAccessShellRoute`.
-2. Ensure route guards reject direct `/opd` and `/emergency` navigation for receptionist-focused users (forbidden / redirect), matching other unauthorized shell destinations.
-3. Hide (do not render) shell nav items, home shortcuts, quick actions, metric cards, and workflow actions that navigate to `/opd` or `/emergency` for receptionist-focused users. Prefer absence over disabled “no access” chrome per prompt standards.
-4. Retarget receptionist home metric `emergency_cases_today` (and any other receptionist KPI that currently opens Emergency or OPD) to the appropriate Reception section (prefer High priority / desk queue) with query params already supported by `ReceptionWorkspaceQuery`.
-5. Preserve Reception workspace tabs, lists, badges, and front-desk hubs that display OPD visit / queue / emergency-priority data. Do not remove emergency indicators or visit stage guidance from Reception solely because OPD/Emergency workspaces are denied.
-6. Keep shared OPD action dialogs usable **from Reception** for allowed front-desk stages; strip or gate only controls whose sole purpose is routing into the OPD or Emergency workspace.
-7. Align default receptionist permission packs (frontend + backend) with screen denial: drop grants that exist only to unlock OPD/Emergency workspaces (`opd:read`, and emergency workspace write/entry as applicable). Retain rights required for Reception data and mutations (`patient:*`, `reception:read`, `last_office:*`, communications/profile). If High priority nested emergency chrome still needs a grant, either keep `emergency:read` **without** shell/route access, or retarget that chrome to existing Reception read gates—document the choice in code comments and tests.
-8. Do not change access for multi-role users who are **not** receptionist-focused (e.g. receptionist + doctor/nurse); they must retain OPD/Emergency when their other roles/permissions allow it.
-9. Update authorization and shell tests that currently assert receptionist access to OPD/Emergency so they expect denial; add coverage that Reception remains allowed and that unauthorized OPD/Emergency UI atoms are absent for receptionist-focused policies.
-10. Cover permission, loading, empty, error, success, validation, and visible-feedback states only where UI changes; reuse existing Reception patterns—no new design system.
+1. Remove `AppRoutes.opd` and `AppRoutes.emergency` from `receptionistFocusedShellRoutes`; route guards must deny those destinations for receptionist-focused users.
+2. Hide shell nav, home shortcuts, metrics, and workflow actions that navigate to `/opd` or `/emergency` for receptionist-focused users (absence, not disabled stubs). Retarget `emergency_cases_today` (and similar) to Reception (prefer High priority / desk queue).
+3. Preserve Reception tabs and front-desk hubs that show visit/queue/emergency-priority data; keep in-Reception OPD dialogs for allowed desk stages; strip only controls whose sole purpose is opening OPD/Emergency workspaces.
+4. Align receptionist packs: drop workspace-only `opd:read` / emergency entry-write as needed; keep Reception rights (`patient:*`, `reception:read`, `last_office:*`, communications/profile). Document nested High-priority emergency chrome (`emergency:read` without shell access vs Reception read gates). Dual-role non-focused users keep OPD/Emergency when otherwise authorized.
+5. Extend Book appointment / Schedule so receptionists can create **visitor appointments** with **any staff host** (e.g. admin meetings), without requiring a patient registry record or clinical encounter pathway.
+6. Before confirming a booking (and on reschedule), validate the host’s **schedule/availability** and conflicts; surface loading, validation, and error states; succeed only when the backend accepts the slot. Reuse existing schedule/availability contracts where possible.
+7. Keep visitor meetings visible on Reception Appointments (and related desk lists) with clear non-patient labeling; do not auto-create OPD clinical visits for visitor/staff meetings.
+8. Add `reports:read` to default packs for **all staff** roles that lack it (including `RECEPTIONIST`); include `AppRoutes.reports` in receptionist (and other) focused shells so entitled staff can open Reports. Keep authorization permission-based—do not open Reports without the grant.
+9. On the receptionist home profile, omit the profile status card and profile shortcut (suppress cross-profile merge of `profile` / `profile_status` / `my_profile_status` for receptionist). Profile remains reachable from Settings/shell where already allowed—not as a dashboard card.
+10. Update shell, home, reception, and booking tests; cover unauthorized UI absence and authorized Reception/Reports/visitor-booking presence. Reuse design-system patterns; cover permission/loading/empty/error/success/validation/feedback where UI changes.
 
 ## Constraints
 
-- Reuse `canAccessShellRoute`, `AppAccessPolicy`, `AccessRequirement`, Reception atom permissions, and home `isAllowed` / metric routing—do not invent parallel gates.
-- Backend remains authoritative; UI hiding alone is insufficient if APIs uniquely serve OPD/Emergency workspace entry for this role.
-- No unrelated refactors of OPD, Emergency, or Reception feature modules beyond access and navigation retargeting.
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `prompts/.cursor/prompt.mdc`, and Reception access comments in `reception_access.dart`.
-- Unauthorized controls must not render; forbidden feedback only for direct restricted deep links or backend denial.
+- Reuse `canAccessShellRoute`, `AppAccessPolicy`, Reception atoms, home filters, and existing appointment/availability APIs—no parallel auth stacks.
+- Backend RBAC/ABAC remains authoritative; UI hide alone is insufficient.
+- No unrelated OPD/Emergency/HR refactors beyond access, booking, reports entitlement, and dashboard chrome.
+- Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `prompts/.cursor/prompt.mdc`.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | Focused receptionist `canAccessShellRoute` is false for `AppRoutes.opd` and `AppRoutes.emergency`, true for `AppRoutes.reception`. | R1, R2 |
-| A2 | Shell nav, home shortcuts, and receptionist metrics do not offer OPD/Emergency destinations; emergency KPI opens Reception (or is omitted if unauthorized). | R3, R4 |
-| A3 | `/reception` still shows OPD/queue/emergency-relevant desk data and allowed front-desk actions for a receptionist with the default pack. | R5, R6 |
-| A4 | Controls that only navigate to `/opd` or `/emergency` are absent for receptionist-focused users; dual-role clinical users still reach those screens when authorized. | R3, R6, R8 |
-| A5 | Default receptionist packs no longer rely on OPD/Emergency workspace entry permissions unless explicitly retained for in-Reception nested read (documented + tested). | R7 |
-| A6 | Unit/widget tests prove unauthorized OPD/Emergency UI absent and authorized Reception UI present; shell/route tests updated. | R9 |
-| A7 | Changed surfaces remain responsive and themed; no new unauthorized disabled stubs. | R3, R10 |
+| A1 | Focused receptionist: no `/opd` or `/emergency` via shell/deep link; `/reception` allowed. | R1–R2 |
+| A2 | No OPD/Emergency nav/shortcuts/actions; emergency KPI opens Reception or is omitted. | R2 |
+| A3 | Reception still shows desk OPD/queue/emergency-relevant data and allowed front-desk actions. | R3–R4 |
+| A4 | Receptionist can book a visitor↔staff meeting without a patient; clinical patient booking still works. | R5, R7 |
+| A5 | Booking/reschedule blocked with validation feedback when host unavailable or conflicted; success when free. | R6 |
+| A6 | All staff default packs include `reports:read`; focused receptionist (and peers) can open `/reports` with that grant. | R8 |
+| A7 | Receptionist home has no profile card/shortcut; Settings profile access unchanged if previously allowed. | R9 |
+| A8 | Tests prove denials/absences and authorized flows; dual-role clinical users retain OPD/Emergency. | R4, R10 |
 
 ## Relevant Files
 
-- `frontend/lib/app/router/app_routes.dart` — `receptionistFocusedShellRoutes`, OPD/Emergency role lists
-- `frontend/lib/app/router/shell_route_access.dart` — focused-shell gate
-- `frontend/lib/core/permissions/access_policy.dart` — receptionist pack + `isReceptionistFocusedShellUser`
-- `frontend/lib/core/permissions/route_access_catalog.dart` — `opdEntry` / `emergencyEntry`
-- `frontend/lib/features/reception/presentation/reception_access.dart` — desk atoms; High priority nested emergency read
-- `frontend/lib/features/home/domain/entities/home_dashboard_profiles.dart` — receptionist shortcuts / metrics
-- `frontend/lib/features/home/presentation/widgets/home_dashboard_actions.dart` — shortcut library
-- `frontend/lib/features/home/presentation/widgets/home_metric_routes.dart` — `emergency_cases_today` target
-- `frontend/lib/shared/workflow_actions/workflow_action_registry.dart` — actions routing to OPD/Emergency
-- `backend/src/config/permissions.js` — `[ROLES.RECEPTIONIST]` pack
-- Tests: `frontend/test/app/router/shell_route_access_test.dart`, `frontend/test/features/reception/presentation/reception_access_test.dart`, home metric/shortcut tests, high-priority permissions tests
+- `frontend/lib/app/router/app_routes.dart`, `shell_route_access.dart`
+- `frontend/lib/core/permissions/access_policy.dart`, `route_access_catalog.dart`
+- `frontend/lib/features/reception/presentation/reception_access.dart`, workspace/appointment widgets
+- `frontend/lib/shared/opd_actions/patient_appointment_quick_dialog.dart`, `opd_provider_options.dart`, encounter/reschedule dialogs
+- `frontend/lib/features/home/domain/entities/home_dashboard_profiles.dart`, `home_metric_routes.dart`, `home_dashboard_actions.dart`
+- `backend/src/config/permissions.js`; appointment + availability/roster modules as reused by booking
+- Tests: `shell_route_access_test.dart`, reception/home permission & metric tests, appointment dialog tests
 
 ## Verification
 
-- Run focused Flutter tests for shell route access, reception access, home metric routes, and high-priority / workflow action gates.
-- Manually: sign in as `RECEPTIONIST` — confirm no OPD/Emergency nav or shortcuts; Reception tabs still show queue/visit/emergency-priority info; deep-link `/opd` and `/emergency` are blocked.
-- Manually: dual-role doctor+receptionist (or doctor alone) still opens OPD/Emergency.
-- Confirm light/dark and narrow viewport: no leftover disabled OPD/Emergency controls in receptionist chrome.
+- Flutter tests: shell access, reception access, home shortcuts/metrics, reports entitlement, visitor booking + availability validation.
+- Manual `RECEPTIONIST`: no OPD/Emergency; book visitor with admin when free / blocked when busy; Reports opens; no home profile card.
+- Manual dual-role doctor: OPD/Emergency still open. Check light/dark and narrow viewports.
