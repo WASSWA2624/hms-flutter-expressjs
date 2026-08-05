@@ -254,7 +254,6 @@ class _ReportItemsPanel extends ConsumerWidget {
 
     return AppCollapsibleSection(
       title: _panelLabel(l10n, state.query.panel),
-      description: l10n.reportsWorklistDescription,
       child: AppListTable<ReportsWorkspaceItem>(
         page: state.overview.items,
         isLoading: state.isRefreshing,
@@ -453,7 +452,6 @@ class _ComplianceLogPanel extends ConsumerWidget {
 
     return AppCollapsibleSection(
       title: _panelLabel(l10n, state.query.panel),
-      description: l10n.reportsComplianceDescription,
       child: AppListTable<ComplianceLogItem>(
         page: state.complianceLogs,
         isLoading: state.isRefreshing,
@@ -609,7 +607,6 @@ class _ReportSchedulesPanel extends ConsumerWidget {
 
     return AppCollapsibleSection(
       title: l10n.reportsSchedulesTitle,
-      description: l10n.reportsSchedulesDescription,
       child: AppListTable<ReportsWorkspaceItem>(
         page: state.overview.schedules,
         isLoading: state.isRefreshing,

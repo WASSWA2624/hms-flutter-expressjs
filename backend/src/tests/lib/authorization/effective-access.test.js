@@ -123,6 +123,24 @@ describe('effective-access', () => {
       roles: [ROLES.SUPER_ADMIN],
       permissions: ['system:admin']});
 
-    expect(permissions).toEqual(['system:admin']);
+    expect(permissions).toEqual(
+      expect.arrayContaining(['system:admin', 'reports:read'])
+    );
+  });
+
+  test('always grants reports:read even when role_permission rows omit it', () => {
+    const access = resolveEffectiveAccess(
+      {
+        roles: [ROLES.RECEPTIONIST],
+        role_permissions: ['patient:read', 'patient:write', 'reception:read'],
+        tenant_id: 'tenant-1'},
+      {
+        moduleEntitlements: [
+          { module_slug: 'patient-registry', is_active: true },
+          { module_slug: 'scheduling-queue', is_active: true }]}
+    );
+
+    expect(access.permissions).toContain('reports:read');
+    expect(access.permissions).not.toContain('opd:read');
   });
 });

@@ -135,10 +135,12 @@ class _ReceptionVisitorAppointmentDialogState
         AppSelectField<String>.searchable(
           value: _hostId,
           labelText: l10n.receptionStaffHostLabel,
+          hintText: l10n.receptionStaffHostSearchHint,
           options: hostOptions,
           enabled: !_isBusy,
           isLoading: _isLoadingHosts,
           isRequired: true,
+          enableSpeechToText: false,
           onChanged: (String? value) => setState(() => _hostId = value),
           validator: (String? value) {
             if ((value ?? '').trim().isEmpty) {

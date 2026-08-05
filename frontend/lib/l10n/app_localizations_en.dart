@@ -3197,7 +3197,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receptionVisitorOrganizationLabel => 'Organization';
 
   @override
-  String get receptionStaffHostLabel => 'Staff host';
+  String get receptionStaffHostLabel => 'Hosting staff';
+
+  @override
+  String get receptionStaffHostSearchHint => 'Search by name, role, or contact';
 
   @override
   String get receptionVisitorMeetingBadge => 'Visitor meeting';

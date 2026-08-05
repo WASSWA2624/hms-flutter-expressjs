@@ -4140,9 +4140,13 @@
   "@receptionVisitorOrganizationLabel": {
     "description": "Label for visitor organization."
   },
-  "receptionStaffHostLabel": "Staff host",
+  "receptionStaffHostLabel": "Hosting staff",
   "@receptionStaffHostLabel": {
-    "description": "Label for the staff host picker on visitor meetings."
+    "description": "Label for the hosting staff picker on visitor meetings."
+  },
+  "receptionStaffHostSearchHint": "Search by name, role, or contact",
+  "@receptionStaffHostSearchHint": {
+    "description": "Hint shown in the searchable hosting staff picker."
   },
   "receptionVisitorMeetingBadge": "Visitor meeting",
   "@receptionVisitorMeetingBadge": {

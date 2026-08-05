@@ -367,12 +367,13 @@ abstract final class RouteAccessCatalog {
 
   /// Reports is platform infrastructure: available on every subscription package.
   /// Entry stays permission-gated (`reports:read` ∪ `compliance:read`) for all roles.
+  /// Facility context is preferred but not required so every entitled user can open
+  /// the workspace from any shell (including focused receptionists).
   static const AccessRequirement reportsEntry = AccessRequirement(
     anyPermissions: <AppPermission>[
       AppPermissions.reportsRead,
       AppPermissions.complianceRead,
     ],
-    requiresFacilityContext: true,
   );
   static const RouteAccessAtom reports = RouteAccessAtom(
     routeName: 'reports',

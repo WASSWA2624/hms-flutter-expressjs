@@ -6130,11 +6130,17 @@ abstract class AppLocalizations {
   /// **'Organization'**
   String get receptionVisitorOrganizationLabel;
 
-  /// Label for the staff host picker on visitor meetings.
+  /// Label for the hosting staff picker on visitor meetings.
   ///
   /// In en, this message translates to:
-  /// **'Staff host'**
+  /// **'Hosting staff'**
   String get receptionStaffHostLabel;
+
+  /// Hint shown in the searchable hosting staff picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name, role, or contact'**
+  String get receptionStaffHostSearchHint;
 
   /// Badge shown on visitor appointment rows in Reception.
   ///

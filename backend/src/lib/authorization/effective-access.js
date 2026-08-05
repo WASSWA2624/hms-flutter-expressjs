@@ -12,7 +12,7 @@
  */
 
 const { ROLES } = require('@config/roles');
-const { ROLE_PERMISSIONS } = require('@config/permissions');
+const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
 const { normalizeRoleName } = require('@config/roles');
 const {
   filterPermissionNamesByPlanModules,
@@ -150,15 +150,24 @@ const resolveRolePermissionNames = (user = {}) => {
   }
 
   if (fromEmbeddedRoles.length > 0) {
-    return uniqueValues(fromEmbeddedRoles);
+    // Union shipped ROLE_PERMISSIONS so pack additions (e.g. reports:read) apply
+    // immediately even when tenant role_permission rows are stale.
+    const fromPack = getRoleNames(user).flatMap(
+      (roleName) => ROLE_PERMISSIONS[roleName] || []
+    );
+    return uniqueValues([...fromEmbeddedRoles, ...fromPack]);
   }
 
   if (Array.isArray(user.role_permissions) || Array.isArray(user.rolePermissions)) {
-    return uniqueValues(
+    const fromDb = uniqueValues(
       [...(user.role_permissions || []), ...(user.rolePermissions || [])].map(
         extractPermissionName
       )
     );
+    const fromPack = getRoleNames(user).flatMap(
+      (roleName) => ROLE_PERMISSIONS[roleName] || []
+    );
+    return uniqueValues([...fromDb, ...fromPack]);
   }
 
   return uniqueValues(
@@ -309,6 +318,13 @@ const resolveEffectiveAccess = (user = {}, options = {}) => {
     );
   }
 
+  // Reports is platform infrastructure: available to every authenticated role
+  // on every subscription package (temporary baseline until plan packaging
+  // differentiates reporting again).
+  if (getRoleNames(user).length > 0 || grantUnion.length > 0) {
+    permissions = uniqueValues([...permissions, PERMISSIONS.REPORTS_READ]);
+  }
+
   return {
     direct_permissions: directPermissions,
     role_permissions: rolePermissions,
@@ -357,11 +373,12 @@ const resolveRequestPermissionNames = (user = {}) => {
   if (tokenPermissions.length > 0 && !tokenLooksLikeOrmJoin) {
     const hasTenantContext = Boolean(user.tenant_id || user.tenantId);
     if (userHasSuperAdminRole(user) && !hasTenantContext) {
-      return tokenPermissions;
+      return uniqueValues([...tokenPermissions, PERMISSIONS.REPORTS_READ]);
     }
 
+    let permissions = tokenPermissions;
     if (moduleEntitlements != null) {
-      return filterPermissionNamesBySubscriptionPermissions(
+      permissions = filterPermissionNamesBySubscriptionPermissions(
         filterPermissionNamesByPlanModules(
           tokenPermissions,
           normalizeEnabledModuleSet(moduleEntitlements)
@@ -370,7 +387,11 @@ const resolveRequestPermissionNames = (user = {}) => {
       );
     }
 
-    return tokenPermissions;
+    // Reports remains available on every plan for every authenticated role.
+    if (getRoleNames(user).length > 0 || permissions.length > 0) {
+      permissions = uniqueValues([...permissions, PERMISSIONS.REPORTS_READ]);
+    }
+    return permissions;
   }
 
   return resolveEffectivePermissionNames(user, {

@@ -573,6 +573,42 @@ void main() {
     });
 
     test(
+      'grants reports:read to hydrated receptionist sessions even when omitted from API grants',
+      () {
+        final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: const AuthUserProfile(
+              tenantId: 'tenant-1',
+              facilityId: 'facility-1',
+              roles: <String>['RECEPTIONIST'],
+            ),
+            permissions: <AppPermission>[
+              AppPermissions.patientRead,
+              AppPermissions.patientWrite,
+              AppPermissions.patientsRead,
+              AppPermissions.receptionRead,
+              AppPermissions.profileRead,
+            ],
+            isAuthorizationHydrated: true,
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'patient-registry',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'scheduling-queue',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+        );
+
+        expect(policy.grants(AppPermissions.reportsRead), isTrue);
+      },
+    );
+
+    test(
       'detects expanded grants outside the focused shell base pack',
       () {
         final AppAccessPolicy basePolicy = AppAccessPolicy.fromSession(

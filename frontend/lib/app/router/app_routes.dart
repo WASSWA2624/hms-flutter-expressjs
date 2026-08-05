@@ -533,7 +533,6 @@ abstract final class AppRoutes {
       AppPermissions.systemAdmin,
     ],
     requiredAnyRoles: reportsWorkspaceRoles,
-    requiresFacilityContext: true,
   );
   static const AppRouteData mortuary = AppRouteData(
     name: 'mortuary',

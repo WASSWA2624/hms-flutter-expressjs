@@ -248,6 +248,11 @@ final class AppAccessPolicy {
         ...explicitPermissions
       else
         ...rolePermissions,
+      // Reports is platform infrastructure for every role on every plan.
+      if (roles.isNotEmpty ||
+          explicitPermissions.isNotEmpty ||
+          rolePermissions.isNotEmpty)
+        AppPermissions.reportsRead,
     };
 
     // Plan modules take precedence: strip module-scoped rights the plan does

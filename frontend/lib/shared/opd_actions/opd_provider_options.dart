@@ -182,6 +182,14 @@ List<AppSelectOption<String>> opdProviderSelectOptions({
     options[value] = AppSelectOption<String>(
       value: value,
       label: _joinDisplay(<String?>[title, subtitle]),
+      searchText: _joinDisplay(<String?>[
+        title,
+        provider.displayName,
+        provider.email,
+        provider.phone,
+        provider.positionTitle,
+        provider.practitionerType,
+      ]),
       leadingIcon: Icon(
         isAvailable
             ? Icons.event_available_outlined
@@ -221,6 +229,11 @@ List<AppSelectOption<String>> opdProviderSelectOptions({
     options[value] = AppSelectOption<String>(
       value: value,
       label: _joinDisplay(<String?>[title, scheduleSubtitle]),
+      searchText: _joinDisplay(<String?>[
+        title,
+        schedule.providerDisplayName,
+        schedule.facilityName,
+      ]),
       leadingIcon: const Icon(
         Icons.event_available_outlined,
         color: Color(0xFF4CAF50),
