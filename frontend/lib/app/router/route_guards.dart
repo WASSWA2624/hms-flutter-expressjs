@@ -71,6 +71,16 @@ final class AppRouteGuards {
     }
 
     if (!_hasRequiredAccess(targetRoute, request.grantedPermissions)) {
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        sessionState.session,
+      );
+      if (policy.isReceptionistFocusedShellUser &&
+          isReceptionistDeniedWorkspaceRoute(targetRoute)) {
+        return receptionistDeskLocationForWorkspace(
+          request.location.toString(),
+          policy: policy,
+        );
+      }
       return AppRoutes.forbidden.locationWithFrom(request.location);
     }
 

@@ -194,6 +194,33 @@ class _ReceptionWorkspaceContentState
         await _openFlowActions(flow);
       }
     }
+
+    final String action = query.action.trim().toLowerCase();
+    if (action.isEmpty || !mounted) {
+      return;
+    }
+    // Drop one-shot dialog intent from the URL so refresh does not re-open.
+    _replaceUrlForSection(_section);
+
+    if (action == 'register' ||
+        action == 'register_patient' ||
+        action == 'new_patient') {
+      await _openRegisterPatient();
+      return;
+    }
+    if (action == 'schedule' ||
+        action == 'book' ||
+        action == 'book_appointment') {
+      await _scheduleAppointment();
+      return;
+    }
+    if (action == 'route' ||
+        action == 'route_patient' ||
+        action == 'walk_in' ||
+        action == 'walk-in' ||
+        action == 'start') {
+      await _openRoutePatientWalkIn();
+    }
   }
 
   void _updateUrlForSection(ReceptionDeskSection section) {
@@ -205,6 +232,18 @@ class _ReceptionWorkspaceContentState
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
     context.go(location);
+  }
+
+  void _replaceUrlForSection(ReceptionDeskSection section) {
+    if (!mounted) {
+      return;
+    }
+    final String tab = receptionDeskSectionToQueryValue(section);
+    GoRouter.of(context).replace<void>(
+      AppRoutes.reception.location(
+        queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
+      ),
+    );
   }
 
   OpdFlowSummary? _findFlow(String id) {
@@ -1922,6 +1961,51 @@ class _ReceptionWorkspaceContentState
       context,
     ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
     await _refreshWorkspace();
+  }
+
+  /// Walk-in / start-encounter surface used by the home "Route patient" action.
+  Future<void> _openRoutePatientWalkIn() async {
+    if (!ReceptionDeskQueueAtomPermissions.frontDesk.isAllowed(
+      ref.read(appAccessPolicyProvider),
+    )) {
+      return;
+    }
+    OpdFlowSummary? activeEncounterToOpen;
+    final OpdEncounterDialogResult? result = await showOpdEncounterDialog(
+      context: context,
+      dialog: buildOpdWorkspaceEncounterDialog(
+        ref: ref,
+        state: widget.state,
+        includeEncounterLifecycleCallbacks: false,
+        onExistingActiveEncounter: (OpdFlowSummary flow) {
+          activeEncounterToOpen = flow;
+        },
+      ),
+    );
+    if (result == null || !mounted) {
+      return;
+    }
+
+    if (result.action == OpdEncounterDialogAction.continueWorkflow &&
+        result.flow != null) {
+      await _openFlowActions(result.flow!);
+      return;
+    }
+    if (result.action == OpdEncounterDialogAction.submit ||
+        result.action == OpdEncounterDialogAction.cancelled ||
+        result.action == OpdEncounterDialogAction.closed) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+      await _refreshWorkspace();
+      return;
+    }
+
+    final OpdFlowSummary? existingFlow = result.flow ?? activeEncounterToOpen;
+    if (existingFlow != null) {
+      await _openFlowActions(existingFlow);
+      return;
+    }
   }
 
   Future<void> _runAppointmentNextAction(

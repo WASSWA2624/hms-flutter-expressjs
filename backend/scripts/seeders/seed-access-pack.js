@@ -135,6 +135,22 @@ const seedAccessPack = async (ctx, orgPack) => {
           }
         );
       }
+
+      // Drop pack leftovers (e.g. opd:read on RECEPTIONIST) so re-seed clears
+      // workspace grants that moved to Reception-only chrome.
+      const allowedPermissionIds = (ROLE_PERMISSION_MAP[roleName] || [])
+        .map((permissionName) => result.permissions[`${scenario.key}:${permissionName}`]?.id)
+        .filter(Boolean);
+      if (allowedPermissionIds.length > 0) {
+        await ctx.prisma.role_permission.updateMany({
+          where: {
+            role_id: role.id,
+            deleted_at: null,
+            permission_id: { notIn: allowedPermissionIds },
+          },
+          data: { deleted_at: new Date() },
+        });
+      }
     }
 
     const passwordHash = await ctx.passwordHash();

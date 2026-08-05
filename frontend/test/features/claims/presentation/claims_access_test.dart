@@ -617,10 +617,10 @@ void main() {
 
       expect(ClaimsSettledAtomPermissions.export.isAllowed(readerOnly), isFalse);
       expect(ClaimsSettledAtomPermissions.export.isAllowed(withReports), isTrue);
-      // reports:read is plan-gated by reporting-analytics via grants().
+      // Reporting is platform infrastructure — reports:read is not package-gated.
       expect(
         ClaimsSettledAtomPermissions.export.isAllowed(reportsWithoutModule),
-        isFalse,
+        isTrue,
       );
       expect(
         ClaimsSettledAtomPermissions.export.isAllowed(withEvidence),

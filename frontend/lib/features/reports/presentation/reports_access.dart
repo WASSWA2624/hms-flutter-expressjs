@@ -3,7 +3,7 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 
-/// Subscription module for the Reports workspace route.
+/// Platform infrastructure module for the Reports workspace (all packages).
 const String reportsActiveModule = 'reporting-analytics';
 
 /// Admin keys documented in `screens/reports.md` write/export gates.
@@ -14,18 +14,17 @@ const List<AppPermission> _reportsAdminPermissions = <AppPermission>[
 ];
 
 /// Route / workspace entry (matrix ∪): `reports:read` or `compliance:read`.
+/// Module is platform infrastructure — not package-gated.
 const AccessRequirement reportsWorkspaceReadRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[
     AppPermissions.reportsRead,
     AppPermissions.complianceRead,
   ],
-  activeModules: <String>[reportsActiveModule],
 );
 
 /// Catalog / delivery / dashboards / monitor / activity / schedules / timeline.
 const AccessRequirement reportsCatalogReadRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[AppPermissions.reportsRead],
-  activeModules: <String>[reportsActiveModule],
 );
 
 /// Compliance panels (audit / PHI / processing): `compliance:read` or review.
@@ -34,21 +33,18 @@ const AccessRequirement reportsComplianceReadRequirement = AccessRequirement(
     AppPermissions.complianceRead,
     AppPermissions.complianceReview,
   ],
-  activeModules: <String>[reportsActiveModule],
 );
 
 /// Create/update (run, schedule, retry, cancel). Matrix ∩: `reports:write`.
 /// Source inventory also allows tenant/facility/system admin (see [canWriteReports]).
 const AccessRequirement reportsWriteRequirement = AccessRequirement(
   allPermissions: <AppPermission>[AppPermissions.reportsWrite],
-  activeModules: <String>[reportsActiveModule],
 );
 
 /// Hard-delete of definitions/schedules/runs. Matrix ∩: `reports:delete`.
 /// No delete affordance on this tab yet; reserved for nested delete entry points.
 const AccessRequirement reportsDeleteRequirement = AccessRequirement(
   allPermissions: <AppPermission>[AppPermissions.reportsDelete],
-  activeModules: <String>[reportsActiveModule],
 );
 
 /// Export / download / print. Source: `evidence:export` (or admin).
@@ -56,16 +52,10 @@ const AccessRequirement reportsDeleteRequirement = AccessRequirement(
 /// `evidence:export` — keep source and note that mapping in tests.
 const AccessRequirement reportsExportRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[AppPermissions.evidenceExport],
-  activeModules: <String>[reportsActiveModule],
 );
 
-bool _hasReportsModule(AppAccessPolicy policy) {
-  return policy.hasActiveModule(reportsActiveModule);
-}
-
 bool _isReportsAdmin(AppAccessPolicy policy) {
-  return _hasReportsModule(policy) &&
-      policy.grantsAny(_reportsAdminPermissions);
+  return policy.grantsAny(_reportsAdminPermissions);
 }
 
 bool canReadReportsWorkspace(AppAccessPolicy policy) {
@@ -88,7 +78,7 @@ bool canWriteReports(AppAccessPolicy policy) {
   return reportsWriteRequirement.isAllowed(policy) || _isReportsAdmin(policy);
 }
 
-/// Delete gate (matrix ∩ `reports:delete`); admins with module also qualify.
+/// Delete gate (matrix ∩ `reports:delete`); admins also qualify.
 bool canDeleteReports(AppAccessPolicy policy) {
   return reportsDeleteRequirement.isAllowed(policy) || _isReportsAdmin(policy);
 }

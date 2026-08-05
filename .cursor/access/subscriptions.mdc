@@ -3,7 +3,7 @@ description: Subscription package tiers and access limits.
 globs:
   - "backend/**"
   - "frontend/**"
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Subscriptions
@@ -12,9 +12,9 @@ Package tiers are the hard upper bound on access. See `permissions.mdc` for the 
 
 ## Tiers
 
-- `Free`: `app_shell`, `auth_session`, `general_settings`, `patient_registry`, `reports_audit`.
+- `Free`: `app_shell`, `auth_session`, `general_settings`, `patient_registry`. Reporting (`reports_audit` / `reporting-analytics`) is platform infrastructure on every package.
 - `Basic`: Free plus tenant, facility, access admin, rooms/beds, OPD, triage, clinical, limited IPD, pharmacy dispense, billing, communications.
-- `Advanced`: Basic plus full IPD, nursing, discharge, emergency, lab, radiology, physiotherapy, pharmacy clinical, claims, and reports.
+- `Advanced`: Basic plus full IPD, nursing, discharge, emergency, lab, radiology, physiotherapy, pharmacy clinical, and claims.
 - `Pro`: Advanced plus ICU, theater, HR, biomedical, operations, housekeeping, mortuary, integrations, and dental when enabled.
 - `Custom`: Tenant-specific subset or extension of Pro; every entitlement must be explicit.
 - `Developer`: Non-production only; may include `demo_seed` manage.

@@ -133,6 +133,27 @@ void main() {
       },
     );
 
+    test('reporting-analytics is always active regardless of entitlements', () {
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['PATIENT'],
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+          ),
+          permissions: <AppPermission>{AppPermissions.reportsRead},
+          moduleEntitlements: const <AppModuleEntitlement>[],
+          isAuthorizationHydrated: true,
+        ),
+      );
+
+      expect(policy.hasActiveModule('reporting-analytics'), isTrue);
+      expect(policy.hasActiveModule('reports'), isTrue);
+      expect(policy.grants(AppPermissions.reportsRead), isTrue);
+      expect(AppRoutes.reports.accessRequirement.isAllowed(policy), isTrue);
+    });
+
     test('normalizes display-form elevated role names', () {
       final session = AuthSession(
         tokens: SessionTokens(accessToken: 'access-token'),

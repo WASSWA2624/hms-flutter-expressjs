@@ -14,21 +14,36 @@ describe('plan-module-matrix', () => {
     }
   });
 
-  test('Free tier is limited to identity, registry, and minimal reports', () => {
+  test('Free tier is limited to identity and registry commercial modules', () => {
     const freeSlugs = modulesForPlanTier('FREE', {
       includeLegacyAliases: false}).map((entry) => entry.slug);
 
     expect(freeSlugs).toEqual(
       expect.arrayContaining([
         'auth-rbac-basics',
-        'patient-registry',
-        'reporting-analytics'])
+        'patient-registry'])
     );
+    expect(freeSlugs).not.toContain('reporting-analytics');
     expect(freeSlugs).not.toContain('radiology-workflows');
     expect(freeSlugs).not.toContain('inpatient-bed-management');
     expect(freeSlugs).not.toContain('hr-rosters');
     expect(freeSlugs).not.toContain('subscription-controls');
     expect(freeSlugs).not.toContain('developer-tools');
+  });
+
+  test('reporting-analytics is platform infrastructure for every package', () => {
+    const reporting = PLATFORM_INFRASTRUCTURE_MODULES.find(
+      (entry) => entry.slug === 'reporting-analytics'
+    );
+    expect(reporting).toBeDefined();
+    expect(reporting.extension_json.is_platform_infrastructure).toBe(true);
+    expect(reporting.extension_json.api_path_segments).toEqual(
+      expect.arrayContaining([
+        'report-definitions',
+        'report-runs',
+        'report-schedules',
+        'reports-workspace'])
+    );
   });
 
   test('Basic adds core administration and outpatient operations', () => {
@@ -70,7 +85,6 @@ describe('plan-module-matrix', () => {
         'theatre-anesthesia',
         'physiotherapy',
         'facilities-maintenance',
-        'reporting-analytics',
         'icu-critical-care',
         'hr-rosters',
         'integrations-core'])

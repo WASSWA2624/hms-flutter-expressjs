@@ -465,7 +465,61 @@ void main() {
         guards.redirect(
           AppRouteGuardRequest(location: Uri(path: AppRoutes.opd.path)),
         ),
-        isNull,
+        AppRoutes.reception.location(
+          queryParameters: const <String, String>{'section': 'queue'},
+        ),
+      );
+    });
+
+    test('redirects receptionist OPD deep links to Reception', () {
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        permissions: <AppPermission>[
+          ...AppAccessPolicy.fromSession(
+            AuthSession(
+              tokens: SessionTokens(accessToken: 'access-token'),
+              user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+            ),
+          ).permissions,
+          AppPermissions.opdRead,
+        ],
+        isAuthorizationHydrated: true,
+        moduleEntitlements: const <AppModuleEntitlement>[
+          AppModuleEntitlement(code: 'patient-registry'),
+          AppModuleEntitlement(code: 'scheduling-queue'),
+          AppModuleEntitlement(code: 'notifications-communications'),
+          AppModuleEntitlement(code: 'reporting-analytics'),
+        ],
+        user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+      );
+      final AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.authenticated(session: session),
+        routes: const <AppRouteData>[AppRoutes.opd, AppRoutes.emergency],
+      );
+
+      expect(
+        guards.redirect(
+          AppRouteGuardRequest(
+            location: Uri(
+              path: AppRoutes.opd.path,
+              queryParameters: const <String, String>{'flowId': 'flow-9'},
+            ),
+          ),
+        ),
+        AppRoutes.reception.location(
+          queryParameters: const <String, String>{
+            'flowId': 'flow-9',
+            'section': 'active',
+          },
+        ),
+      );
+      expect(
+        guards.redirect(
+          AppRouteGuardRequest(location: Uri(path: AppRoutes.emergency.path)),
+        ),
+        AppRoutes.reception.location(
+          queryParameters: const <String, String>{'section': 'high-priority'},
+        ),
       );
     });
 

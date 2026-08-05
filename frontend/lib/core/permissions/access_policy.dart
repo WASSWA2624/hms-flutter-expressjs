@@ -747,6 +747,13 @@ final class AppAccessPolicy {
     if (isPlatformElevated) {
       return true;
     }
+    // Reporting is platform infrastructure — available on every package.
+    final String resolvedForPlatform = AppModuleEntitlement.resolveModuleCode(
+      moduleCode,
+    );
+    if (resolvedForPlatform == 'REPORTING_ANALYTICS') {
+      return true;
+    }
     if (moduleEntitlements.isEmpty) {
       // No plan entitlements loaded: deny commercial modules for tenant users.
       return !hasTenantContext;
@@ -794,6 +801,13 @@ final class AppAccessPolicy {
       permission,
     );
     if (moduleCode == null) {
+      return true;
+    }
+    // Reporting is platform infrastructure — not package-gated.
+    final String resolvedModule = AppModuleEntitlement.resolveModuleCode(
+      moduleCode,
+    );
+    if (resolvedModule == 'REPORTING_ANALYTICS') {
       return true;
     }
     if (entitlements.isEmpty) {

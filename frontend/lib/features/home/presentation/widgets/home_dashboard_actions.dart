@@ -118,6 +118,10 @@ homeActionLibrary = <String, HomeActionDefinition>{
     label: 'Register patient',
     icon: Icons.person_add_alt_1_outlined,
     route: AppRoutes.reception,
+    routeQuery: <String, String>{
+      'section': 'appointments',
+      'action': 'register',
+    },
     allowedRoles: <AppRole>[AppRole.facilityAdmin, AppRole.receptionist],
     requiredPermissions: <AppPermission>[AppPermissions.patientWrite],
     requiredModules: <String>['patients'],
@@ -127,7 +131,10 @@ homeActionLibrary = <String, HomeActionDefinition>{
     label: 'Book appointment',
     icon: Icons.event_available_outlined,
     route: AppRoutes.reception,
-    routeQuery: <String, String>{'section': 'appointments'},
+    routeQuery: <String, String>{
+      'section': 'appointments',
+      'action': 'schedule',
+    },
     allowedRoles: <AppRole>[AppRole.facilityAdmin, AppRole.receptionist],
     requiredPermissions: <AppPermission>[AppPermissions.patientWrite],
     requiredModules: <String>['scheduling'],
@@ -151,7 +158,7 @@ homeActionLibrary = <String, HomeActionDefinition>{
     label: 'Route patient',
     icon: Icons.alt_route_outlined,
     route: AppRoutes.reception,
-    routeQuery: <String, String>{'section': 'queue'},
+    routeQuery: <String, String>{'section': 'queue', 'action': 'route'},
     allowedRoles: <AppRole>[AppRole.receptionist, AppRole.nurse],
     requiredPermissions: <AppPermission>[AppPermissions.patientWrite],
     requiredModules: <String>['scheduling'],
@@ -986,7 +993,7 @@ const Map<String, HomeShortcutDefinition> homeShortcutLibrary =
         label: 'OPD',
         icon: Icons.event_note_outlined,
         route: AppRoutes.opd,
-        requiredPermissions: <AppPermission>[AppPermissions.patientRead],
+        requiredPermissions: <AppPermission>[AppPermissions.opdRead],
       ),
       'emergency': HomeShortcutDefinition(
         id: 'emergency',
@@ -1347,13 +1354,16 @@ HomeRouteTarget? homeQueueListTarget(List<HomeQueueItem> items) {
   );
 }
 
-AppRouteData? homeRouteForTarget(HomeRouteTarget? target) {
+AppRouteData? homeRouteForTarget(
+  HomeRouteTarget? target, {
+  AppAccessPolicy? policy,
+}) {
   final String moduleSlug = (target?.moduleSlug ?? '').trim().toLowerCase();
   if (moduleSlug.isEmpty) {
     return null;
   }
 
-  return switch (moduleSlug) {
+  final AppRouteData? route = switch (moduleSlug) {
     'patients' || 'patient' => AppRoutes.patients,
     'scheduling' || 'opd' || 'appointments' => AppRoutes.opd,
     'emergency' => AppRoutes.emergency,
@@ -1378,8 +1388,18 @@ AppRouteData? homeRouteForTarget(HomeRouteTarget? target) {
     'subscriptions' => AppRoutes.subscriptions,
     'settings' => AppRoutes.settings,
     'profile' => AppRoutes.profile,
+    'reception' => AppRoutes.reception,
     _ => null,
   };
+  if (route == null) {
+    return null;
+  }
+  if (policy != null &&
+      policy.isReceptionistFocusedShellUser &&
+      isReceptionistDeniedWorkspaceRoute(route)) {
+    return AppRoutes.reception;
+  }
+  return route;
 }
 
 void homeGoToRoute(
@@ -1444,7 +1464,7 @@ void homeNavigateRouteTarget(
   AppAccessPolicy policy, {
   HomeRouteTarget? target,
 }) {
-  final AppRouteData? route = homeRouteForTarget(target);
+  final AppRouteData? route = homeRouteForTarget(target, policy: policy);
   if (homeTargetUsesTenantSubscriptionFallback(
     policy,
     target: target,
@@ -1462,7 +1482,32 @@ void homeNavigateRouteTarget(
     return;
   }
 
-  homeGoToRoute(context, route, queryParameters: homeRouteQueryForTarget(target));
+  final Map<String, String> query = homeRouteQueryForTarget(target);
+  if (route == AppRoutes.reception &&
+      policy.isReceptionistFocusedShellUser &&
+      query.isEmpty) {
+    final String moduleSlug = (target?.moduleSlug ?? '').trim().toLowerCase();
+    if (moduleSlug == 'emergency') {
+      homeGoToRoute(
+        context,
+        route,
+        queryParameters: const <String, String>{'section': 'high-priority'},
+      );
+      return;
+    }
+    if (moduleSlug == 'scheduling' ||
+        moduleSlug == 'opd' ||
+        moduleSlug == 'appointments') {
+      homeGoToRoute(
+        context,
+        route,
+        queryParameters: const <String, String>{'section': 'queue'},
+      );
+      return;
+    }
+  }
+
+  homeGoToRoute(context, route, queryParameters: query);
 }
 
 VoidCallback? homeWorklistTap(
@@ -1475,7 +1520,7 @@ VoidCallback? homeWorklistTap(
     return null;
   }
 
-  final AppRouteData? route = homeRouteForTarget(target);
+  final AppRouteData? route = homeRouteForTarget(target, policy: policy);
   if (homeTargetUsesTenantSubscriptionFallback(policy, target: target)) {
     return () => homeNavigateRouteTarget(context, ref, policy, target: target);
   }

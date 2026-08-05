@@ -87,6 +87,14 @@ describe('permissions config', () => {
     expect(normalizeRoleName('Administrator')).toBe(ROLES.TENANT_ADMIN);
   });
 
+  it('grants reports:read to every default role pack', () => {
+    for (const [role, permissions] of Object.entries(ROLE_PERMISSIONS)) {
+      expect(permissions).toEqual(
+        expect.arrayContaining([PERMISSIONS.REPORTS_READ])
+      );
+    }
+  });
+
   it('exposes atomic domain:action permission keys only', () => {
     const values = Object.values(PERMISSIONS);
     expect(values).toHaveLength(82);

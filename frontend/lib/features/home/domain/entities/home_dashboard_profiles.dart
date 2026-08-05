@@ -1505,7 +1505,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       // (radiology:read) — no dedicated portal KPI payloads yet.
     ],
     quickActionIds: <String>['update_own_profile', 'contact_facility'],
-    shortcutIds: <String>[],
+    shortcutIds: <String>['reports', 'settings', 'profile'],
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'my_open_bills': HomeMetricRouteTarget(
@@ -1587,7 +1587,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: <String>['update_own_profile', 'contact_facility'],
-    shortcutIds: <String>['profile', 'settings'],
+    shortcutIds: <String>['reports', 'profile', 'settings'],
     emptyActionIds: const <String>[],
   ),
 };

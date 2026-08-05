@@ -9,6 +9,7 @@ final class RouteAccessAtom {
     required this.path,
     required this.requirement,
     this.entryPermission,
+    this.additionalScopedDomains = const <String>{},
   });
 
   final String routeName;
@@ -18,15 +19,24 @@ final class RouteAccessAtom {
   final AppPermission? entryPermission;
   final AccessRequirement requirement;
 
+  /// Extra domains for custom-role shell scoping (e.g. Reports ∪ compliance).
+  final Set<String> additionalScopedDomains;
+
   /// Domain for custom-role shell scoping (`null` = core always allowed).
   Set<String>? get permissionScopedDomains {
-    if (entryPermission == null) {
+    if (entryPermission == null && additionalScopedDomains.isEmpty) {
       return null;
     }
-    final String value = entryPermission!.value;
-    final int sep = value.indexOf(':');
-    final String domain = sep > 0 ? value.substring(0, sep) : value;
-    return <String>{domain};
+    final Set<String> domains = <String>{...additionalScopedDomains};
+    if (entryPermission != null) {
+      final String value = entryPermission!.value;
+      final int sep = value.indexOf(':');
+      final String domain = sep > 0 ? value.substring(0, sep) : value;
+      if (domain.isNotEmpty) {
+        domains.add(domain);
+      }
+    }
+    return domains;
   }
 }
 
@@ -355,15 +365,20 @@ abstract final class RouteAccessCatalog {
     requirement: integrationsEntry,
   );
 
+  /// Reports is platform infrastructure: available on every subscription package.
+  /// Entry stays permission-gated (`reports:read` ∪ `compliance:read`) for all roles.
   static const AccessRequirement reportsEntry = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.reportsRead],
-    activeModules: <String>['reporting-analytics'],
+    anyPermissions: <AppPermission>[
+      AppPermissions.reportsRead,
+      AppPermissions.complianceRead,
+    ],
     requiresFacilityContext: true,
   );
   static const RouteAccessAtom reports = RouteAccessAtom(
     routeName: 'reports',
     path: '/reports',
     entryPermission: AppPermissions.reportsRead,
+    additionalScopedDomains: <String>{'compliance'},
     requirement: reportsEntry,
   );
 

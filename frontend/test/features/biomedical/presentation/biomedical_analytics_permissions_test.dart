@@ -248,7 +248,7 @@ void main() {
       expect(canEnterBiomedicalWorkspace(policy), isFalse);
     });
 
-    test('reports:read without reporting-analytics module denies nested ∪', () {
+    test('reports:read without reporting-analytics module still allows nested ∪', () {
       final AppAccessPolicy policy = _policy(
         permissions: <AppPermission>{
           AppPermissions.biomedRead,
@@ -256,11 +256,12 @@ void main() {
         },
         modules: const <AppModuleEntitlement>[_biomedModule],
       );
+      // Reporting is platform infrastructure — not package-gated.
       expect(
         BiomedicalAnalyticsAtomPermissions.nestedRead.isAllowed(policy),
-        isFalse,
+        isTrue,
       );
-      expect(BiomedicalAnalyticsAtomPermissions.tab.isAllowed(policy), isFalse);
+      expect(BiomedicalAnalyticsAtomPermissions.tab.isAllowed(policy), isTrue);
     });
 
     test('route entry ∪: biomed:write alone enters workspace', () {

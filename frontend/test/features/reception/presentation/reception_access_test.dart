@@ -52,6 +52,28 @@ void main() {
       expect(query.hasRouteTargeting, isTrue);
     });
 
+    test('parses modal action deep links', () {
+      final ReceptionWorkspaceQuery query = ReceptionWorkspaceQuery.fromUri(
+        Uri.parse('/reception?section=appointments&action=register'),
+      );
+
+      expect(query.section, 'appointments');
+      expect(query.action, 'register');
+      expect(query.hasRouteTargeting, isTrue);
+      expect(
+        ReceptionWorkspaceQuery.fromUri(
+          Uri.parse('/reception?action=schedule'),
+        ).action,
+        'schedule',
+      );
+      expect(
+        ReceptionWorkspaceQuery.fromUri(
+          Uri.parse('/reception?section=queue&dialog=route'),
+        ).action,
+        'route',
+      );
+    });
+
     test('parses canonical section query aliases', () {
       expect(
         ReceptionWorkspaceQuery.fromUri(

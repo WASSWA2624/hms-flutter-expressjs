@@ -140,14 +140,7 @@ const filterPermissionRecordsByPlanModules = (
 
   return permissions.filter((entry) => {
     const name = entry?.name || entry?.label || '';
-    const moduleSlug = moduleForPermissionName(name);
-    if (!moduleSlug) {
-      return true;
-    }
-    return (
-      enabledModules.has(moduleSlug) ||
-      enabledModules.has(normalizeModuleCode(moduleSlug))
-    );
+    return isPermissionAllowedByPlan(name, enabledModules);
   });
 };
 
@@ -212,6 +205,13 @@ const isPermissionAllowedByPlan = (permissionName, enabledModules = null) => {
   }
   const moduleSlug = moduleForPermissionName(permissionName);
   if (!moduleSlug) {
+    return true;
+  }
+  // Reporting is platform infrastructure — available on every package.
+  if (
+    moduleSlug === 'reporting-analytics' ||
+    normalizeModuleCode(moduleSlug) === 'reporting-analytics'
+  ) {
     return true;
   }
   return (

@@ -100,7 +100,6 @@ abstract final class AppRoutes {
     ...adminShellRoles,
     AppRole.doctor,
     AppRole.nurse,
-    AppRole.receptionist,
     AppRole.wardManager,
     AppRole.icuManager,
     AppRole.theatreManager,
@@ -122,7 +121,6 @@ abstract final class AppRoutes {
     ...adminShellRoles,
     AppRole.doctor,
     AppRole.nurse,
-    AppRole.receptionist,
     AppRole.ambulanceOperator,
   ];
   static const List<AppRole> roomsBedsWorkspaceRoles = <AppRole>[
@@ -221,29 +219,8 @@ abstract final class AppRoutes {
     AppRole.mortuaryStaff,
     AppRole.mortuaryManager,
   ];
-  static const List<AppRole> reportsWorkspaceRoles = <AppRole>[
-    ...adminShellRoles,
-    AppRole.doctor,
-    AppRole.nurse,
-    AppRole.labTech,
-    AppRole.radiologyTech,
-    AppRole.pharmacist,
-    AppRole.receptionist,
-    AppRole.billing,
-    AppRole.operations,
-    AppRole.hr,
-    AppRole.biomed,
-    AppRole.houseKeeper,
-    AppRole.ambulanceOperator,
-    AppRole.wardManager,
-    AppRole.icuManager,
-    AppRole.theatreManager,
-    AppRole.housekeepingManager,
-    AppRole.biomedManager,
-    AppRole.mortuaryStaff,
-    AppRole.mortuaryManager,
-    AppRole.unitManager,
-  ];
+  /// Every known role may open Reports when `reports:read` is granted.
+  static const List<AppRole> reportsWorkspaceRoles = AppRole.values;
   static const List<AppRole> mortuaryWorkspaceRoles = <AppRole>[
     ...adminShellRoles,
     AppRole.mortuaryStaff,
@@ -315,13 +292,7 @@ abstract final class AppRoutes {
     name: 'opd',
     path: '/opd',
     access: AppRouteAccess.authenticated,
-    requiredAnyPermissions: <AppPermission>[
-      AppPermissions.patientRead,
-      AppPermissions.clinicalRead,
-      AppPermissions.billingRead,
-      AppPermissions.operationsRead,
-      AppPermissions.emergencyRead,
-    ],
+    requiredPermissions: <AppPermission>[AppPermissions.opdRead],
     requiredAnyRoles: patientFlowWorkspaceRoles,
     requiredActiveModules: <String>['scheduling-queue'],
   );
@@ -332,7 +303,6 @@ abstract final class AppRoutes {
     requiredAnyPermissions: <AppPermission>[
       AppPermissions.emergencyRead,
       AppPermissions.emergencyWrite,
-      AppPermissions.operationsRead,
     ],
     requiredAnyRoles: emergencyWorkspaceRoles,
     requiredActiveModules: <String>['scheduling-queue'],
@@ -563,7 +533,7 @@ abstract final class AppRoutes {
       AppPermissions.systemAdmin,
     ],
     requiredAnyRoles: reportsWorkspaceRoles,
-    requiredActiveModules: <String>['reporting-analytics'],
+    requiresFacilityContext: true,
   );
   static const AppRouteData mortuary = AppRouteData(
     name: 'mortuary',

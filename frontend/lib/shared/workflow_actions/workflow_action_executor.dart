@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/shell_route_access.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -92,7 +93,7 @@ final class WorkflowActionExecutor {
         case WorkflowActionMode.route:
         case WorkflowActionMode.inlineCommand:
         case WorkflowActionMode.readOnly:
-          _executeRouteAction(context, action);
+          _executeRouteAction(context, action, ref: ref);
           return WorkflowActionResult.started;
       }
     } finally {
@@ -160,14 +161,24 @@ final class WorkflowActionExecutor {
     }
 
     if (!context.mounted) return WorkflowActionResult.stale;
-    _executeRouteAction(context, action);
+    _executeRouteAction(context, action, ref: ref);
     return WorkflowActionResult.started;
   }
 
-  void _executeRouteAction(BuildContext context, WorkflowAction action) {
-    if (action.route != null) {
-      GoRouter.of(context).go(action.route!);
+  void _executeRouteAction(
+    BuildContext context,
+    WorkflowAction action, {
+    WidgetRef? ref,
+  }) {
+    final String? route = action.route;
+    if (route == null) {
+      return;
     }
+    final AppAccessPolicy? policy = ref?.read(appAccessPolicyProvider);
+    final String location = policy == null
+        ? route
+        : receptionistDeskLocationForWorkspace(route, policy: policy);
+    GoRouter.of(context).go(location);
   }
 
   void _showUnavailableSnackBar(BuildContext context, WorkflowAction action) {

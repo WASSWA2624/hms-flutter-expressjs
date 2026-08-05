@@ -293,7 +293,7 @@ void main() {
   );
 
   testWidgets(
-    'reports:read without reporting-analytics module omits Print (plan ∩)',
+    'reports:read without reporting-analytics module still shows Print',
     (WidgetTester tester) async {
       final AppAccessPolicy reportsNoModule = _policy(
         permissions: <AppPermission>{
@@ -301,9 +301,10 @@ void main() {
           AppPermissions.reportsRead,
         },
       );
+      // Reporting is platform infrastructure — not package-gated.
       expect(
         ClaimsSettledAtomPermissions.export.isAllowed(reportsNoModule),
-        isFalse,
+        isTrue,
       );
 
       await _pumpSettledTab(
@@ -314,7 +315,7 @@ void main() {
 
       await tester.tap(find.text('CLM-PAID'));
       await tester.pumpAndSettle();
-      expect(find.text('Print statement'), findsNothing);
+      expect(find.text('Print statement'), findsOneWidget);
     },
   );
 

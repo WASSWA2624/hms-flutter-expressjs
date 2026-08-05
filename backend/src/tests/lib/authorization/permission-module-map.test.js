@@ -53,6 +53,10 @@ describe('permission-module-map', () => {
     expect(isPermissionAllowedByPlan(PERMISSIONS.PROFILE_READ, enabled)).toBe(
       true
     );
+    // Reporting is platform infrastructure on every package.
+    expect(isPermissionAllowedByPlan(PERMISSIONS.REPORTS_READ, enabled)).toBe(
+      true
+    );
   });
 
   it('filters permission name lists by plan modules', () => {

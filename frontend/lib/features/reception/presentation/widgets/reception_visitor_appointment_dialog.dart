@@ -132,7 +132,7 @@ class _ReceptionVisitorAppointmentDialogState
             ),
           ],
         ),
-        AppSelectField<String>(
+        AppSelectField<String>.searchable(
           value: _hostId,
           labelText: l10n.receptionStaffHostLabel,
           options: hostOptions,

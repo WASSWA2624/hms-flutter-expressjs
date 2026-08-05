@@ -138,7 +138,7 @@ void main() {
       );
     });
 
-    test('subscription module strips write even when permission string present', () {
+    test('reports read/write work without reporting-analytics entitlement', () {
       final AppAccessPolicy noModule = _policy(
         permissions: <AppPermission>{
           AppPermissions.reportsRead,
@@ -147,9 +147,10 @@ void main() {
         modules: const <AppModuleEntitlement>[],
       );
 
-      expect(reportsWriteRequirement.isAllowed(noModule), isFalse);
-      expect(canWriteReports(noModule), isFalse);
-      expect(canReadReportsCatalog(noModule), isFalse);
+      // Reporting is platform infrastructure — not package-gated.
+      expect(reportsWriteRequirement.isAllowed(noModule), isTrue);
+      expect(canWriteReports(noModule), isTrue);
+      expect(canReadReportsCatalog(noModule), isTrue);
     });
 
     test('allowed panels union catalog and compliance grants', () {
@@ -211,6 +212,29 @@ void main() {
       expect(canDeleteReports(tenantAdmin), isTrue);
       expect(canReadReportsCatalog(tenantAdmin), isTrue);
       expect(canReadReportsCompliance(tenantAdmin), isTrue);
+    });
+
+    test('reports route opens without reporting-analytics entitlement', () {
+      final AppAccessPolicy policy = _policy(
+        permissions: <AppPermission>{AppPermissions.reportsRead},
+        modules: const <AppModuleEntitlement>[],
+        roles: const <String>['PATIENT'],
+      );
+
+      expect(canReadReportsWorkspace(policy), isTrue);
+      expect(canAccessShellRoute(AppRoutes.reports, policy), isTrue);
+      expect(AppRoutes.reports.accessRequirement.isAllowed(policy), isTrue);
+    });
+
+    test('patient and other roles can open reports with reports:read', () {
+      for (final String role in <String>['PATIENT', 'OTHER', 'VISITOR_GUEST']) {
+        final AppAccessPolicy policy = _policy(
+          permissions: <AppPermission>{AppPermissions.reportsRead},
+          modules: const <AppModuleEntitlement>[],
+          roles: <String>[role],
+        );
+        expect(canAccessShellRoute(AppRoutes.reports, policy), isTrue);
+      }
     });
   });
 }

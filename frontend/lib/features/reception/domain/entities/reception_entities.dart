@@ -483,6 +483,7 @@ final class ReceptionWorkspaceQuery {
     this.search = '',
     this.patientId = '',
     this.flowId = '',
+    this.action = '',
   });
 
   factory ReceptionWorkspaceQuery.fromUri(Uri uri) {
@@ -502,6 +503,7 @@ final class ReceptionWorkspaceQuery {
       search: pick(<String>['search', 'q', 'patient']),
       patientId: pick(<String>['patientId', 'patient_id']),
       flowId: pick(<String>['flowId', 'flow_id', 'encounter', 'id']),
+      action: pick(<String>['action', 'dialog', 'open']),
     );
   }
 
@@ -510,13 +512,17 @@ final class ReceptionWorkspaceQuery {
   final String patientId;
   final String flowId;
 
+  /// Home / deep-link modal intent (`register`, `schedule`, `route`, …).
+  final String action;
+
   bool get hasRouteTargeting =>
       section.isNotEmpty ||
       search.isNotEmpty ||
       patientId.isNotEmpty ||
-      flowId.isNotEmpty;
+      flowId.isNotEmpty ||
+      action.isNotEmpty;
 
-  String get signature => '$section|$search|$patientId|$flowId';
+  String get signature => '$section|$search|$patientId|$flowId|$action';
 }
 
 /// Desk worklist sections for high-volume reception workflows.

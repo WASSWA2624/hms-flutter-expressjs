@@ -125,13 +125,6 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     module_group: 15,
     minimum_plan_tier_code: 'PRO',
   },
-  {
-    code: 'reporting_analytics',
-    slug: 'reporting-analytics',
-    name: 'Reporting and Analytics',
-    module_group: 17,
-    minimum_plan_tier_code: 'FREE',
-  },
 
   // —— Advanced ——
   {
@@ -329,6 +322,22 @@ const PLATFORM_INFRASTRUCTURE_MODULES = Object.freeze([
         'license',
         'licenses',
         'subscriptions-workspace',
+      ],
+    },
+  },
+  {
+    code: 'reporting_analytics',
+    slug: 'reporting-analytics',
+    name: 'Reporting and Analytics',
+    module_group: 17,
+    minimum_plan_tier_code: 'FREE',
+    extension_json: {
+      is_platform_infrastructure: true,
+      api_path_segments: [
+        'report-definitions',
+        'report-runs',
+        'report-schedules',
+        'reports-workspace',
       ],
     },
   },

@@ -152,6 +152,34 @@ void main() {
       expect(canAccess(AppRoutes.billing, policy), isFalse);
     });
 
+    test(
+      'receptionist focused shell hard-denies OPD/Emergency despite stale opd:read',
+      () {
+        final AppAccessPolicy base = policyForRole('RECEPTIONIST');
+        final AppAccessPolicy withStaleOpd = base.copyWithPermissions(
+          <AppPermission>{...base.permissions, AppPermissions.opdRead},
+        );
+
+        expect(withStaleOpd.isReceptionistFocusedShellUser, isTrue);
+        expect(withStaleOpd.grants(AppPermissions.opdRead), isTrue);
+        expect(canAccess(AppRoutes.opd, withStaleOpd), isFalse);
+        expect(canAccess(AppRoutes.emergency, withStaleOpd), isFalse);
+        expect(canAccess(AppRoutes.reception, withStaleOpd), isTrue);
+        expect(
+          receptionistDeskLocationForWorkspace(
+            '/opd?flowId=flow-1',
+            policy: withStaleOpd,
+          ),
+          AppRoutes.reception.location(
+            queryParameters: const <String, String>{
+              'flowId': 'flow-1',
+              'section': 'active',
+            },
+          ),
+        );
+      },
+    );
+
     test('billing access follows billing permission pack', () {
       final policy = policyForRole('BILLING');
 
