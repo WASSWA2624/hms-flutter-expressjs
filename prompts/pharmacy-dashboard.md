@@ -1,68 +1,68 @@
-# Pharmacy Dashboard: Most-Sold Section Layout, Defaults, and Custom Period
+# Pharmacy Dashboard: Quick Actions and Denser Home Layout
 
-Redesign the pharmacist **Most sold drugs** block so its filters sit cleanly in a shared collapsible section (actions below chart + sold-drugs list), with clearer defaults, line/bar charts, quantity-first metrics, and a custom date-range option—without changing summary cards, Quick actions, or order-status mix behavior beyond what this section needs.
+Align the pharmacist home Quick actions with real destinations (new-orders queue, create-order dialog, single stock entry) and tighten home section spacing/padding—without changing KPI cards, Most sold drugs, or Order status mix beyond shared layout density.
 
 ## Context
 
 **Current behavior (codebase)**
 
-- Most-sold UI: `PharmacyMostSoldCharts` → `DashboardChartsRow` / `AppSectionPanel` with period, top-N, chart type, and quantity/amount(profit) controls in `headerTrailing` (`_MostSoldHeaderControls`). A sold-drugs list is already a `footer` under the chart.
-- Controls wrap awkwardly in the header on narrow widths; selects are ad-hoc `_HeaderDropdown`s, not the shared collapsible section action slot.
-- Defaults today: period **last month**, top **10**, chart **bar**, metric **qty**. Backend `buildDashboardSummary` / `resolveMostSoldWindow` / `normalizeMostSoldLimit` default to `last_month` and `10`.
-- Periods: `HomeMostSoldPeriod` presets only (today → last 5 years). No **custom** from/to window for most-sold aggregation.
-- Shared chrome: `AppCollapsibleSection` already supports `headerActions` (header) and `actions` (body), but **`actions` render above `child`**, not below the content/table.
+- Pharmacist Quick actions (max 4): `dispense_medication` labeled **Dispense medication** → `/pharmacy?section=orders`; `record_pharmacy_sale` labeled **Record pharmacy sale** → `/pharmacy?section=sales`; `receive_pharmacy_stock` and `adjust_pharmacy_stock` both → `/pharmacy?section=inventory` (duplicate targets).
+- Walk-in create flow already exists: `showPharmacyWalkInOrderDialog` / `PharmacyWalkInOrderDialog` (pharmacy write gated). It picks an **existing** patient and line items; it does not yet expose a clear existing / new / anonymous patient mode, and it is not wired as the dashboard “Record pharmacy sale” action.
+- Clinical/OPD medication ordering elsewhere must be reused for drug lines and validation where possible—do not invent a second pharmaceuticals picker stack.
+- Home shell (`RoleDashboardScaffold`) uses large inter-section gaps (`spacing.xl`). Chart/section panels often use spacious content density; pharmacist home feels padded relative to the intended denser dashboard.
 
 **Intended behavior**
 
-- Globally: collapsible section optional **action** controls appear **below** the section body (after chart/table content), while `headerActions` stay in the header. Existing call sites keep working aside from that actions placement.
-- Most sold: host the block in that collapsible section; move period, top-N, chart type, and metric controls into the section **actions** area under the chart and sold-drugs list so they align cleanly on all breakpoints.
-- Defaults: period **Today**, top **5**, chart **line** (bar still available), metric **Quantity**. Unauthorized money metrics remain absent.
-- Period includes a **Custom** option that collects from/to and reloads most-sold for that window. Preset periods keep working. Selects are polished and responsive.
+- **New orders**: rename Dispense medication; navigate to the pharmacy new/queue orders surface (same destination the current dispense action already uses).
+- **Create order** (rename Record pharmacy sale appropriately): open a create-order dialog supporting **existing patient**, **new patient**, and **anonymous (walk-in) pharmacy order**. Anonymous orders are pharmacy-module only (pharmacists / pharmacy write). Reuse the clinical pharmaceuticals ordering procedure for lines; extend walk-in for anonymous when patient is omitted.
+- **Stock**: one Quick action that covers receive and adjust (single inventory entry point).
+- **Density**: reduce gap between home sections and reduce inner content padding for dashboard sections (shared shell/section tokens), keeping hierarchy readable on mobile/tablet/desktop and light/dark.
 
 **Definitions**
 
-- *Most sold drugs*: ranked dispensed-drug series (qty / amount / profit when allowed) for the selected window and top-N.
-- *Section actions*: optional controls in `AppCollapsibleSection.actions`, placed after the body content.
-- *Custom period*: user-chosen inclusive or exclusive date range (`from`/`to`) scoped to the facility, not a preset key.
-- *Top-N*: allowed set remains `5 | 10 | 20 | 100` unless product already constrains otherwise.
+- *New orders*: pharmacy desk section for newly queued / ready-to-work orders (today’s `section=orders` / queue equivalent—keep the working route the dispense action already uses).
+- *Create order*: dialog that creates a pharmacy order for an existing patient, a newly registered patient, or an anonymous walk-in (no patient record), then syncs pharmacy/home state.
+- *Anonymous pharmacy order*: order without a linked patient; visible/creatable only with pharmacy write (and pharmacy module entitlement).
+- *Stock action*: single Quick action opening pharmacy inventory where receive and adjust already live.
 
 ## Requirements
 
-1. Update `AppCollapsibleSection` so `actions` render **below** `child` (and description stays readable—prefer description above child, actions after child). Keep `headerActions` in the header. Do not break non-pharmacy section usages beyond the intentional actions reorder.
-2. Rebuild Most sold drugs with that collapsible section: title/subtitle for the series; chart + sold-drugs list in the body; period, top-N, chart type, and metric controls as section actions under the list—not in the chart header trailing.
-3. Set defaults to **Today**, **Top 5**, **Line**, **Quantity**. Align initial client state and backend summary defaults (`most_sold_period` / `most_sold_limit`) so first paint matches without an extra round-trip when possible.
-4. Keep bar chart support; default chart style is line. Metric radios/toggles: Quantity default; Amount/Profit only when pricing/billing/`reports:read` (and profit data) allow—unauthorized controls absent.
-5. Add **Custom** period: UI to pick from/to; pass range to dashboard most-sold load; extend backend aggregation to honor custom from/to (facility-scoped). Presets continue via `most_sold_period`.
-6. Restyle period/top-N/chart selects for readable, consistent layout on mobile, tablet, and desktop (theme tokens; no overflow/clip of controls).
-7. Preserve loading, empty (“no sales in period”), and error refresh states; money metrics gated; light/dark. Do not redesign status-mix, summary strip, or Quick actions.
+1. Rename `dispense_medication` label to **New orders** (keep id unless a rename is required for inventory/tests). Keep navigation to the pharmacy new-orders/queue section; unauthorized users must not see the action.
+2. Replace **Record pharmacy sale** with a **Create order** (or equivalent clear label) Quick action that opens the create-order dialog on the pharmacist home (and remains available where pharmacy already opens walk-in). Support existing patient, new patient, and anonymous walk-in. Reuse clinical pharmaceuticals line UX/contracts via the existing pharmacy walk-in / drug-picker path; extend for anonymous (patient optional) without a parallel order API. Gate on `pharmacy:write` (+ pharmacy module); hide when unauthorized. On success: close dialog, refresh pharmacy/home data, show standard success feedback; validation/error/forbidden use existing patterns.
+3. Merge `receive_pharmacy_stock` and `adjust_pharmacy_stock` into **one** stock Quick action (single label/icon/route to inventory). Remove the duplicate from the pharmacist quick-action list so max four slots stay coherent (expect three actions after merge unless product adds another).
+4. Reduce inter-section spacing on the home role dashboard scaffold and reduce section content padding for titled dashboard panels (theme tokens; no hard-coded px). Apply denser layout without clipping filters, charts, or Quick actions on narrow widths; preserve light/dark.
+5. Do not change KPI strip, Most sold defaults/controls, or Order status mix behavior except incidental shared density from R4.
 
 ## Constraints
 
-- Scope: `AppCollapsibleSection` actions placement + pharmacist most-sold section/controls/defaults/custom range (+ minimal API/query for custom window).
-- Reuse existing most-sold aggregation, dashboard request/query params, chart painters, sold-drugs list, and permissions—no parallel analytics stack.
+- Scope: pharmacist Quick actions + create-order/anonymous walk-in wiring + home section density.
+- Reuse `PharmacyWalkInOrderDialog` / pharmacy workspace create path, existing inventory section, home action catalog, permissions, and sync—no new analytics or parallel pharmaceuticals stack.
 - Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `prompts/.cursor/prompt.mdc`.
+- Anonymous create must remain unavailable outside pharmacy write/module; no “no access” placeholders for missing actions.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | Collapsible section `actions` appear below body content globally. | R1 |
-| A2 | Most-sold filters sit under chart + sold list, not cramped in the header. | R2, R6 |
-| A3 | First load defaults: Today, Top 5, Line, Quantity (money metrics gated). | R3, R4 |
-| A4 | User can switch bar/line and presets; Custom from/to refreshes ranked drugs. | R4, R5 |
-| A5 | Loading/empty/error and unauthorized money controls behave correctly; other dashboard sections unchanged. | R7 |
+| A1 | Pharmacist sees **New orders**; tap opens pharmacy new-orders/queue; action absent without write/module. | R1 |
+| A2 | **Create order** opens dialog with existing / new / anonymous paths; success syncs; unauthorized UI absent; clinical-style drug lines reused. | R2 |
+| A3 | One stock Quick action to inventory; receive+adjust duplicates gone from the strip. | R3 |
+| A4 | Home section gaps and section content padding are visibly tighter; no overflow on mobile/desktop; light/dark OK. | R4 |
+| A5 | KPI strip, Most sold, and Order status mix behavior unchanged aside from shared density. | R5 |
 
 ## Relevant Files
 
-- `frontend/lib/shared/components/app_collapsible_section.dart`
-- `frontend/lib/features/home/presentation/widgets/pharmacy_most_sold_charts.dart`
-- `frontend/lib/shared/dashboard/dashboard_charts_row.dart`, `dashboard_models.dart`
-- `frontend/lib/features/home/domain/entities/home_dashboard.dart` (periods / request)
-- `backend/src/lib/dashboard/summary.js`; `dashboard-widget.repository.js` / schema (`most_sold_*`, custom from/to)
-- Tests: collapsible actions order; most-sold defaults; custom range query; money metric gating
+- `frontend/lib/features/home/presentation/widgets/home_dashboard_actions.dart`
+- `frontend/lib/features/home/domain/entities/home_dashboard_profiles.dart`
+- `frontend/lib/features/home/domain/entities/home_dashboard_billing_inventory.dart`
+- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_walk_in_order_dialog.dart`
+- `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart`
+- `frontend/lib/shared/dashboard/role_dashboard_scaffold.dart`
+- `frontend/lib/shared/components/app_collapsible_section.dart` / `app_content_panel.dart` (section padding)
+- Tests: home quick-action labels/routes; walk-in existing/new/anonymous; stock action uniqueness; layout density smoke
 
 ## Verification
 
-- Widget tests: section actions below child; most-sold defaults; line/bar toggle; custom range triggers reload params.
-- Backend: custom from/to facility-scoped; preset windows unchanged; default period/limit today/5.
-- Manual pharmacist: filters readable on narrow/wide; light/dark; empty and loading; Amount absent without money permission.
+- Widget/unit: New orders label+route; Create order opens dialog; anonymous create allowed only with pharmacy write; stock actions merged; unauthorized actions absent.
+- Integration: create order (existing / new / anonymous) refreshes pharmacy/home; inventory action lands on stock section.
+- Manual pharmacist: three coherent Quick actions; denser section spacing/padding; light/dark; mobile and desktop without clip/overflow.
