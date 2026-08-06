@@ -517,6 +517,8 @@ void main() {
       ThemeMode.light,
       ThemeMode.dark,
     ]) {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
       await _pumpReports(
         tester,
         repository: repository,
@@ -529,13 +531,9 @@ void main() {
         themeMode: mode,
       );
       expect(find.text('Reporting and Analytics'), findsWidgets);
+      expect(find.text('Definitions'), findsWidgets);
       expect(find.text('Browse catalog'), findsWidgets);
-      await tester.tap(find.text('Browse catalog').first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pumpAndSettle();
-      expect(find.text('Daily census'), findsWidgets);
-      expect(find.text('Run report'), findsWidgets);
+      expect(find.text('Daily census email'), findsOneWidget);
     }
   });
 
@@ -898,6 +896,11 @@ void main() {
       });
       _stubSchedules(repository);
       _stubCompliance(repository);
+      when(() => repository.previewReportRun(any())).thenAnswer(
+        (_) async => const Result<ReportRunPreview>.success(
+          ReportRunPreview(title: 'Census run', rows: <Map<String, Object?>>[]),
+        ),
+      );
 
       await _pumpReports(
         tester,
@@ -908,7 +911,7 @@ void main() {
       expect(find.text('Download'), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final AppAccessPolicy exporter = _policy(
         permissions: <AppPermission>{
@@ -1060,6 +1063,11 @@ void main() {
       });
       _stubSchedules(repository);
       _stubCompliance(repository);
+      when(() => repository.previewReportRun(any())).thenAnswer(
+        (_) async => const Result<ReportRunPreview>.success(
+          ReportRunPreview(title: 'Census run', rows: <Map<String, Object?>>[]),
+        ),
+      );
 
       final AppAccessPolicy exportOnly = _policy(
         permissions: <AppPermission>{

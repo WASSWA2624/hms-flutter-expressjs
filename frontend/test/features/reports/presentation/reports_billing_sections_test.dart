@@ -69,8 +69,11 @@ const ComplianceLogItem _auditLog = ComplianceLogItem(
 AppAccessPolicy _policy({
   Set<AppPermission>? permissions,
   bool includeModule = true,
+  bool preserveExactPermissions = false,
 }) {
-  return AppAccessPolicy.fromSession(
+  final Set<AppPermission> effective =
+      permissions ?? <AppPermission>{AppPermissions.reportsRead};
+  final AppAccessPolicy policy = AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
       user: const AuthUserProfile(
@@ -78,7 +81,7 @@ AppAccessPolicy _policy({
         facilityId: 'facility-1',
         roles: <String>['REPORTING'],
       ),
-      permissions: permissions ?? <AppPermission>{AppPermissions.reportsRead},
+      permissions: effective,
       moduleEntitlements: includeModule
           ? const <AppModuleEntitlement>[
               AppModuleEntitlement(
@@ -87,8 +90,13 @@ AppAccessPolicy _policy({
               ),
             ]
           : const <AppModuleEntitlement>[],
+      isAuthorizationHydrated: true,
     ),
   );
+  if (!preserveExactPermissions) {
+    return policy;
+  }
+  return policy.copyWithPermissions(effective);
 }
 
 void _stubWorkspace(
@@ -467,6 +475,7 @@ void main() {
         repository: repository,
         policy: _policy(
           permissions: <AppPermission>{AppPermissions.complianceRead},
+          preserveExactPermissions: true,
         ),
       );
       expect(find.text('EXPORT | REPORT_RUN'), findsWidgets);
@@ -486,6 +495,11 @@ void main() {
         ),
       );
 
+      await tester.tap(find.text('Browse catalog'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
       await tester.tap(find.text('Run report').first);
       await tester.pumpAndSettle();
       expectFlatSections(tester);
@@ -502,6 +516,11 @@ void main() {
           },
         ),
       );
+
+      await tester.tap(find.text('Browse catalog'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       final AppListTable<ReportsWorkspaceItem> table = tester
           .widgetList<AppListTable<ReportsWorkspaceItem>>(
