@@ -56,13 +56,19 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
   bool _loadingMostSold = false;
   String? _mostSoldError;
 
-  HomeMostSoldMetric _statusMetric = HomeMostSoldMetric.qty;
   HomeMostSoldPeriod _statusPeriod = HomeMostSoldPeriod.today;
-  int _statusTopN = 5;
   DashboardTrendChartStyle _statusChartStyle = DashboardTrendChartStyle.pie;
   HomeDashboardDistribution? _distributionOverride;
   bool _loadingStatus = false;
   String? _statusError;
+
+  static const List<({String id, String label})> _statusCatalog =
+      <({String id, String label})>[
+        (id: 'ordered', label: 'Ordered'),
+        (id: 'partially_dispensed', label: 'Partially dispensed'),
+        (id: 'dispensed', label: 'Dispensed'),
+        (id: 'cancelled', label: 'Cancelled'),
+      ];
 
   @override
   void initState() {
@@ -75,7 +81,6 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     _period = initial;
     _statusPeriod = initial;
     _topN = _normalizeTopN(widget.request.mostSoldLimit ?? 5);
-    _statusTopN = _normalizeTopN(widget.request.mostSoldLimit ?? 5);
   }
 
   @override
@@ -152,16 +157,11 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     );
   }
 
-  Future<void> _reloadStatusMix({
-    HomeMostSoldPeriod? period,
-    int? topN,
-  }) async {
+  Future<void> _reloadStatusMix({HomeMostSoldPeriod? period}) async {
     final HomeMostSoldPeriod nextPeriod = period ?? _statusPeriod;
-    final int nextTopN = topN ?? _statusTopN;
 
     setState(() {
       _statusPeriod = nextPeriod;
-      _statusTopN = nextTopN;
       _loadingStatus = true;
       _statusError = null;
     });
@@ -170,7 +170,7 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     final Result<HomeDashboard> result = await repository.loadDashboard(
       widget.request.copyWith(
         mostSoldPeriod: nextPeriod,
-        mostSoldLimit: nextTopN,
+        mostSoldLimit: _topN,
         clearMostSoldFrom: true,
         clearMostSoldTo: true,
       ),
@@ -220,30 +220,23 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     );
   }
 
-  List<HomeDistributionSegment> _statusSegmentsForMetric(
-    HomeMostSoldMetric metric,
-  ) {
-    final List<HomeDistributionSegment> source = _distribution.segments;
-    final bool useAmount = metric == HomeMostSoldMetric.amount;
-    final bool hasAmount = source.any(
-      (HomeDistributionSegment segment) => (segment.amount ?? 0) > 0,
-    );
-    final List<HomeDistributionSegment> mapped = <HomeDistributionSegment>[
-      for (final HomeDistributionSegment segment in source)
+  /// Always returns the four pharmacy order statuses (qty counts, zeros filled).
+  List<HomeDistributionSegment> _statusSegments() {
+    final Map<String, HomeDistributionSegment> byId =
+        <String, HomeDistributionSegment>{
+          for (final HomeDistributionSegment segment in _distribution.segments)
+            segment.id.trim().toLowerCase(): segment,
+        };
+    return <HomeDistributionSegment>[
+      for (final ({String id, String label}) entry in _statusCatalog)
         HomeDistributionSegment(
-          id: segment.id,
-          label: segment.label,
-          value: useAmount && hasAmount
-              ? (segment.amount ?? 0)
-              : segment.value,
-          amount: segment.amount,
-          color: segment.color,
+          id: entry.id,
+          label: byId[entry.id]?.label ?? entry.label,
+          value: byId[entry.id]?.value ?? 0,
+          amount: byId[entry.id]?.amount,
+          color: byId[entry.id]?.color,
         ),
-    ]..sort(
-        (HomeDistributionSegment a, HomeDistributionSegment b) =>
-            b.value.compareTo(a.value),
-      );
-    return mapped.take(_statusTopN).toList(growable: false);
+    ];
   }
 
   @override
@@ -266,14 +259,6 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     final HomeMostSoldMetric active = allowed.contains(_metric)
         ? _metric
         : allowed.first;
-
-    final List<HomeMostSoldMetric> statusAllowed = <HomeMostSoldMetric>[
-      HomeMostSoldMetric.qty,
-      if (canSeeMoney) HomeMostSoldMetric.amount,
-    ];
-    final HomeMostSoldMetric statusActive = statusAllowed.contains(_statusMetric)
-        ? _statusMetric
-        : statusAllowed.first;
 
     final List<HomeTrendPoint> ranked = _series.hasData
         ? _series.forMetric(active).take(_topN).toList(growable: false)
@@ -301,8 +286,7 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
               ),
           ];
 
-    final List<HomeDistributionSegment> statusSegments =
-        _statusSegmentsForMetric(statusActive);
+    final List<HomeDistributionSegment> statusSegments = _statusSegments();
     final num statusTotal = statusSegments.fold<num>(
       0,
       (num sum, HomeDistributionSegment segment) => sum + segment.value,
@@ -343,6 +327,8 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
           DashboardTrendChartStyle.line,
           DashboardTrendChartStyle.pie,
         ],
+        showTopN: true,
+        showMetrics: true,
         topNTooltip: 'Top drugs',
         onPeriodChanged: (HomeMostSoldPeriod value) =>
             _reloadMostSold(period: value),
@@ -359,29 +345,20 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     final List<Widget> statusFilterActions = <Widget>[
       _PharmacyChartToolbar(
         period: _statusPeriod,
-        topN: _statusTopN,
         chartStyle: _statusChartStyle,
-        metric: statusActive,
-        allowedMetrics: statusAllowed,
         loading: _loadingStatus,
         periodOptions: _periodOptions,
-        topNOptions: _topNOptions,
         chartStyles: const <DashboardTrendChartStyle>[
           DashboardTrendChartStyle.pie,
           DashboardTrendChartStyle.bar,
           DashboardTrendChartStyle.line,
         ],
-        topNTooltip: 'Top statuses',
+        showTopN: false,
+        showMetrics: false,
         onPeriodChanged: (HomeMostSoldPeriod value) =>
             _reloadStatusMix(period: value),
-        onTopNChanged: (int value) {
-          setState(() => _statusTopN = value);
-        },
         onChartStyleChanged: (DashboardTrendChartStyle value) {
           setState(() => _statusChartStyle = value);
-        },
-        onMetricChanged: (HomeMostSoldMetric value) {
-          setState(() => _statusMetric = value);
         },
       ),
     ];
@@ -396,12 +373,10 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
       ),
       distribution: DashboardDistributionChartData(
         title: charts.distribution.title,
-        total: statusTotal > 0 ? statusTotal : charts.distribution.total,
+        total: statusTotal,
         segments: charts.distribution.segments,
-        emptyMessage: charts.distribution.emptyMessage,
-        totalLabel: statusActive == HomeMostSoldMetric.amount
-            ? 'amount'
-            : charts.distribution.totalLabel,
+        emptyMessage: '',
+        totalLabel: charts.distribution.totalLabel,
         onSegmentSelected: _openStatusSection,
         chartStyle: _statusChartStyle,
         sectionActions: statusFilterActions,
@@ -469,19 +444,21 @@ String? pharmacyOrderStatusSection({String? segmentId, String? label}) {
 class _PharmacyChartToolbar extends StatelessWidget {
   const _PharmacyChartToolbar({
     required this.period,
-    required this.topN,
     required this.chartStyle,
-    required this.metric,
-    required this.allowedMetrics,
     required this.loading,
     required this.periodOptions,
-    required this.topNOptions,
     required this.chartStyles,
-    required this.topNTooltip,
     required this.onPeriodChanged,
-    required this.onTopNChanged,
     required this.onChartStyleChanged,
-    required this.onMetricChanged,
+    this.topN = 5,
+    this.metric = HomeMostSoldMetric.qty,
+    this.allowedMetrics = const <HomeMostSoldMetric>[],
+    this.topNOptions = const <int>[],
+    this.topNTooltip = 'Top',
+    this.showTopN = true,
+    this.showMetrics = true,
+    this.onTopNChanged,
+    this.onMetricChanged,
   });
 
   final HomeMostSoldPeriod period;
@@ -494,10 +471,12 @@ class _PharmacyChartToolbar extends StatelessWidget {
   final List<int> topNOptions;
   final List<DashboardTrendChartStyle> chartStyles;
   final String topNTooltip;
+  final bool showTopN;
+  final bool showMetrics;
   final ValueChanged<HomeMostSoldPeriod> onPeriodChanged;
-  final ValueChanged<int> onTopNChanged;
+  final ValueChanged<int>? onTopNChanged;
   final ValueChanged<DashboardTrendChartStyle> onChartStyleChanged;
-  final ValueChanged<HomeMostSoldMetric> onMetricChanged;
+  final ValueChanged<HomeMostSoldMetric>? onMetricChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -517,13 +496,14 @@ class _PharmacyChartToolbar extends StatelessWidget {
             labelOf: (HomeMostSoldPeriod value) => value.label,
             onChanged: loading ? null : onPeriodChanged,
           ),
-          _CompactDropdown<int>(
-            tooltip: topNTooltip,
-            value: topN,
-            items: topNOptions,
-            labelOf: (int value) => 'Top $value',
-            onChanged: loading ? null : onTopNChanged,
-          ),
+          if (showTopN)
+            _CompactDropdown<int>(
+              tooltip: topNTooltip,
+              value: topN,
+              items: topNOptions,
+              labelOf: (int value) => 'Top $value',
+              onChanged: loading ? null : onTopNChanged,
+            ),
           _CompactDropdown<DashboardTrendChartStyle>(
             tooltip: 'Chart type',
             value: chartStyles.contains(chartStyle)
@@ -533,7 +513,7 @@ class _PharmacyChartToolbar extends StatelessWidget {
             labelOf: _chartStyleLabel,
             onChanged: loading ? null : onChartStyleChanged,
           ),
-          if (allowedMetrics.length > 1)
+          if (showMetrics && allowedMetrics.length > 1)
             _MetricRadioToggle(
               metric: metric,
               allowed: allowedMetrics,

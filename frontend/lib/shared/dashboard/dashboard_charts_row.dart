@@ -336,11 +336,14 @@ class _DashboardDistributionPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final bool hasData =
+    final bool hasSegments = chart.segments.isNotEmpty;
+    final bool hasValues =
         chart.total > 0 ||
         chart.segments.any(
           (DashboardDistributionSegmentData s) => s.value != 0,
         );
+    final bool showEmptyCopy =
+        !hasValues && chart.emptyMessage.trim().isNotEmpty;
 
     return DecoratedBox(
       decoration: dashboardSurfaceCardDecoration(theme, colorScheme),
@@ -361,10 +364,12 @@ class _DashboardDistributionPanel extends StatelessWidget {
                 children: chart.sectionActions,
               ),
             ),
-          if (!hasData)
+          if (showEmptyCopy)
             _DashboardChartEmptyState(message: chart.emptyMessage)
+          else if (hasSegments)
+            _DashboardDistributionChart(chart: chart)
           else
-            _DashboardDistributionChart(chart: chart),
+            _DashboardChartEmptyState(message: chart.emptyMessage),
         ],
       ),
     );

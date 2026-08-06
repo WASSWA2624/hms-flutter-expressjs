@@ -88,11 +88,11 @@ void main() {
           ),
         );
 
-        expect(find.text('Qty'), findsNWidgets(2));
-        expect(find.text('Amount'), findsNWidgets(2));
+        expect(find.text('Qty'), findsOneWidget);
+        expect(find.text('Amount'), findsOneWidget);
         expect(find.text('Profit'), findsNothing);
         expect(find.text('Today'), findsWidgets);
-        expect(find.text('Top 5'), findsWidgets);
+        expect(find.text('Top 5'), findsOneWidget);
         expect(find.text('Bar'), findsOneWidget);
         expect(find.text('Pie'), findsOneWidget);
         expect(find.text('Sold drugs'), findsNothing);
@@ -100,6 +100,7 @@ void main() {
         expect(find.text('Period'), findsNothing);
         expect(find.text('Chart'), findsNothing);
         expect(find.textContaining('Top 5 by'), findsNothing);
+        expect(find.text('amount'), findsNothing);
 
         // Most-sold controls sit above the trend chart.
         final Finder chart = find.byKey(const ValueKey<String>('dashboard-trend-chart'));
@@ -118,18 +119,18 @@ void main() {
         expect((todayY - lineY).abs(), lessThan(12));
         expect((todayY - qtyY).abs(), lessThan(12));
 
-        // Order status mix has the same control set (defaults to Pie).
+        // Order status mix: period + chart type only; all four statuses rendered.
         final double statusTodayY = tester.getCenter(find.text('Today').at(1)).dy;
-        final double statusTopY = tester.getCenter(find.text('Top 5').at(1)).dy;
         final double statusPieY = tester.getCenter(find.text('Pie').first).dy;
-        final double statusQtyY = tester.getCenter(find.text('Qty').at(1)).dy;
-        expect((statusTodayY - statusTopY).abs(), lessThan(12));
         expect((statusTodayY - statusPieY).abs(), lessThan(12));
-        expect((statusTodayY - statusQtyY).abs(), lessThan(12));
+        expect(find.textContaining('Ordered'), findsWidgets);
+        expect(find.textContaining('Dispensed'), findsWidgets);
+        expect(find.textContaining('Cancelled'), findsWidgets);
+        expect(find.text('orders'), findsOneWidget);
 
-        await tester.tap(find.text('Amount').first);
+        await tester.tap(find.text('Amount'));
         await tester.pumpAndSettle();
-        expect(find.text('Amount'), findsNWidgets(2));
+        expect(find.text('Amount'), findsOneWidget);
       },
     );
 
