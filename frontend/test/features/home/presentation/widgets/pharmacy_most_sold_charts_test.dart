@@ -94,11 +94,22 @@ void main() {
         expect(find.text('Line'), findsWidgets);
         expect(find.text('Sold drugs'), findsOneWidget);
         expect(find.text('Para'), findsWidgets);
+        expect(find.text('Period'), findsNothing);
+        expect(find.text('Chart'), findsNothing);
 
         final double listBottom =
             tester.getBottomLeft(find.text('Sold drugs')).dy;
-        final double periodTop = tester.getTopLeft(find.text('Period')).dy;
-        expect(periodTop, greaterThan(listBottom));
+        final double todayTop = tester.getTopLeft(find.text('Today').first).dy;
+        expect(todayTop, greaterThan(listBottom));
+
+        // Controls share one horizontal band (period / top / chart / metric).
+        final double todayY = tester.getCenter(find.text('Today').first).dy;
+        final double topY = tester.getCenter(find.text('Top 5').first).dy;
+        final double lineY = tester.getCenter(find.text('Line').first).dy;
+        final double qtyY = tester.getCenter(find.text('Qty')).dy;
+        expect((todayY - topY).abs(), lessThan(12));
+        expect((todayY - lineY).abs(), lessThan(12));
+        expect((todayY - qtyY).abs(), lessThan(12));
 
         await tester.tap(find.text('Amount'));
         await tester.pumpAndSettle();

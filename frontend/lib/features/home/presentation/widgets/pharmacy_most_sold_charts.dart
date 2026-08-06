@@ -220,79 +220,36 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     );
 
     final List<Widget> filterActions = <Widget>[
-      _FilterDropdown<HomeMostSoldPeriod>(
-        label: 'Period',
-        value: _period,
-        items: HomeMostSoldPeriod.values,
-        labelOf: (HomeMostSoldPeriod value) => value.label,
-        onChanged: _loadingMostSold
-            ? null
-            : (HomeMostSoldPeriod value) {
-                if (value == HomeMostSoldPeriod.custom) {
-                  _ensureCustomDefaults();
-                }
-                _reloadMostSold(period: value);
-              },
-      ),
-      _FilterDropdown<int>(
-        label: 'Top',
-        value: _topN,
-        items: _topNOptions,
-        labelOf: (int value) => 'Top $value',
-        onChanged: _loadingMostSold
-            ? null
-            : (int value) => _reloadMostSold(topN: value),
-      ),
-      _FilterDropdown<DashboardTrendChartStyle>(
-        label: 'Chart',
-        value: _chartStyle == DashboardTrendChartStyle.line
+      _MostSoldToolbar(
+        period: _period,
+        topN: _topN,
+        chartStyle: _chartStyle == DashboardTrendChartStyle.line
             ? DashboardTrendChartStyle.line
             : DashboardTrendChartStyle.bar,
-        items: const <DashboardTrendChartStyle>[
-          DashboardTrendChartStyle.line,
-          DashboardTrendChartStyle.bar,
-        ],
-        labelOf: (DashboardTrendChartStyle value) =>
-            value == DashboardTrendChartStyle.line ? 'Line' : 'Bar',
-        onChanged: _loadingMostSold
-            ? null
-            : (DashboardTrendChartStyle value) {
-                setState(() => _chartStyle = value);
-              },
+        metric: active,
+        allowedMetrics: allowed,
+        loading: _loadingMostSold,
+        customFrom: _customFrom,
+        customTo: _customTo,
+        topNOptions: _topNOptions,
+        onPeriodChanged: (HomeMostSoldPeriod value) {
+          if (value == HomeMostSoldPeriod.custom) {
+            _ensureCustomDefaults();
+          }
+          _reloadMostSold(period: value);
+        },
+        onTopNChanged: (int value) => _reloadMostSold(topN: value),
+        onChartStyleChanged: (DashboardTrendChartStyle value) {
+          setState(() => _chartStyle = value);
+        },
+        onMetricChanged: (HomeMostSoldMetric value) {
+          setState(() => _metric = value);
+        },
+        onCustomFromChanged: (DateTime value) =>
+            _reloadMostSold(customFrom: value),
+        onCustomToChanged: (DateTime value) =>
+            _reloadMostSold(customTo: value),
       ),
-      if (allowed.length > 1)
-        _MetricCheckToggle(
-          metric: active,
-          allowed: allowed,
-          onChanged: _loadingMostSold
-              ? null
-              : (HomeMostSoldMetric value) {
-                  setState(() => _metric = value);
-                },
-        ),
-      if (_period == HomeMostSoldPeriod.custom) ...<Widget>[
-        _CustomDateChip(
-          label: 'From',
-          value: _customFrom,
-          enabled: !_loadingMostSold,
-          onPicked: (DateTime value) => _reloadMostSold(customFrom: value),
-        ),
-        _CustomDateChip(
-          label: 'To',
-          value: _customTo,
-          enabled: !_loadingMostSold,
-          onPicked: (DateTime value) => _reloadMostSold(customTo: value),
-        ),
-      ],
-      if (_loadingMostSold)
-        SizedBox(
-          width: 16,
-          height: 16,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: theme.colorScheme.primary,
-          ),
-        ),
     ];
 
     final DashboardChartsData decorated = DashboardChartsData(
@@ -392,16 +349,123 @@ String? pharmacyOrderStatusSection({String? segmentId, String? label}) {
   };
 }
 
-class _FilterDropdown<T> extends StatelessWidget {
-  const _FilterDropdown({
-    required this.label,
+/// Compact unlabeled dashboard controls in one horizontal strip.
+class _MostSoldToolbar extends StatelessWidget {
+  const _MostSoldToolbar({
+    required this.period,
+    required this.topN,
+    required this.chartStyle,
+    required this.metric,
+    required this.allowedMetrics,
+    required this.loading,
+    required this.customFrom,
+    required this.customTo,
+    required this.topNOptions,
+    required this.onPeriodChanged,
+    required this.onTopNChanged,
+    required this.onChartStyleChanged,
+    required this.onMetricChanged,
+    required this.onCustomFromChanged,
+    required this.onCustomToChanged,
+  });
+
+  final HomeMostSoldPeriod period;
+  final int topN;
+  final DashboardTrendChartStyle chartStyle;
+  final HomeMostSoldMetric metric;
+  final List<HomeMostSoldMetric> allowedMetrics;
+  final bool loading;
+  final DateTime? customFrom;
+  final DateTime? customTo;
+  final List<int> topNOptions;
+  final ValueChanged<HomeMostSoldPeriod> onPeriodChanged;
+  final ValueChanged<int> onTopNChanged;
+  final ValueChanged<DashboardTrendChartStyle> onChartStyleChanged;
+  final ValueChanged<HomeMostSoldMetric> onMetricChanged;
+  final ValueChanged<DateTime> onCustomFromChanged;
+  final ValueChanged<DateTime> onCustomToChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Wrap(
+        spacing: theme.spacing.sm,
+        runSpacing: theme.spacing.sm,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: <Widget>[
+          _CompactDropdown<HomeMostSoldPeriod>(
+            tooltip: 'Period',
+            value: period,
+            items: HomeMostSoldPeriod.values,
+            labelOf: (HomeMostSoldPeriod value) => value.label,
+            onChanged: loading ? null : onPeriodChanged,
+          ),
+          _CompactDropdown<int>(
+            tooltip: 'Top drugs',
+            value: topN,
+            items: topNOptions,
+            labelOf: (int value) => 'Top $value',
+            onChanged: loading ? null : onTopNChanged,
+          ),
+          _CompactDropdown<DashboardTrendChartStyle>(
+            tooltip: 'Chart type',
+            value: chartStyle,
+            items: const <DashboardTrendChartStyle>[
+              DashboardTrendChartStyle.line,
+              DashboardTrendChartStyle.bar,
+            ],
+            labelOf: (DashboardTrendChartStyle value) =>
+                value == DashboardTrendChartStyle.line ? 'Line' : 'Bar',
+            onChanged: loading ? null : onChartStyleChanged,
+          ),
+          if (allowedMetrics.length > 1)
+            _MetricRadioToggle(
+              metric: metric,
+              allowed: allowedMetrics,
+              onChanged: loading ? null : onMetricChanged,
+            ),
+          if (period == HomeMostSoldPeriod.custom) ...<Widget>[
+            _CustomDateChip(
+              label: 'From',
+              value: customFrom,
+              enabled: !loading,
+              onPicked: onCustomFromChanged,
+            ),
+            _CustomDateChip(
+              label: 'To',
+              value: customTo,
+              enabled: !loading,
+              onPicked: onCustomToChanged,
+            ),
+          ],
+          if (loading)
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompactDropdown<T> extends StatelessWidget {
+  const _CompactDropdown({
+    required this.tooltip,
     required this.value,
     required this.items,
     required this.labelOf,
     required this.onChanged,
   });
 
-  final String label;
+  final String tooltip;
   final T value;
   final List<T> items;
   final String Function(T value) labelOf;
@@ -412,43 +476,40 @@ class _FilterDropdown<T> extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-    return InputDecorator(
-      decoration: InputDecoration(
-        labelText: label,
-        isDense: true,
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
-        ),
-        border: OutlineInputBorder(
+    return Tooltip(
+      message: tooltip,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(theme.radius.md),
+          border: theme.borders.all(color: theme.borders.faint),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(theme.radius.md),
-          borderSide: BorderSide(color: theme.borders.faint),
-        ),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<T>(
-          value: value,
-          isDense: true,
-          isExpanded: false,
-          borderRadius: BorderRadius.circular(theme.radius.md),
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: colorScheme.onSurface,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<T>(
+              value: value,
+              isDense: true,
+              borderRadius: BorderRadius.circular(theme.radius.md),
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: colorScheme.onSurface,
+              ),
+              items: <DropdownMenuItem<T>>[
+                for (final T item in items)
+                  DropdownMenuItem<T>(
+                    value: item,
+                    child: Text(labelOf(item)),
+                  ),
+              ],
+              onChanged: onChanged == null
+                  ? null
+                  : (T? next) {
+                      if (next == null) {
+                        return;
+                      }
+                      onChanged!(next);
+                    },
+            ),
           ),
-          items: <DropdownMenuItem<T>>[
-            for (final T item in items)
-              DropdownMenuItem<T>(value: item, child: Text(labelOf(item))),
-          ],
-          onChanged: onChanged == null
-              ? null
-              : (T? next) {
-                  if (next == null) {
-                    return;
-                  }
-                  onChanged!(next);
-                },
         ),
       ),
     );
@@ -472,7 +533,8 @@ class _CustomDateChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final DateFormat format = DateFormat.yMMMd();
-    final String text = value == null ? label : '$label ${format.format(value!)}';
+    final String text =
+        value == null ? label : '$label ${format.format(value!)}';
 
     return OutlinedButton.icon(
       onPressed: enabled
@@ -503,9 +565,9 @@ class _CustomDateChip extends StatelessWidget {
   }
 }
 
-/// Borderless checkbox-like metric toggle (no segment track/fill).
-class _MetricCheckToggle extends StatelessWidget {
-  const _MetricCheckToggle({
+/// Compact radio-style metric picker for qty / amount / profit.
+class _MetricRadioToggle extends StatelessWidget {
+  const _MetricRadioToggle({
     required this.metric,
     required this.allowed,
     required this.onChanged,
@@ -518,47 +580,62 @@ class _MetricCheckToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Wrap(
-      spacing: theme.spacing.xs,
-      children: <Widget>[
-        for (final HomeMostSoldMetric option in allowed)
-          InkWell(
-            onTap: onChanged == null ? null : () => onChanged!(option),
-            borderRadius: BorderRadius.circular(theme.radius.sm),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: theme.spacing.xs,
-                vertical: theme.spacing.xs,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        border: theme.borders.all(color: theme.borders.faint),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          for (int index = 0; index < allowed.length; index += 1) ...<Widget>[
+            if (index > 0)
+              Container(
+                width: 1,
+                height: 28,
+                color: theme.borders.faint,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(
-                    option == metric
-                        ? Icons.check_box_outlined
-                        : Icons.check_box_outline_blank,
-                    size: 18,
-                    color: option == metric
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
-                  SizedBox(width: theme.spacing.xs),
-                  Text(
-                    _metricLabel(option),
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: option == metric
+            InkWell(
+              onTap: onChanged == null
+                  ? null
+                  : () => onChanged!(allowed[index]),
+              borderRadius: BorderRadius.circular(theme.radius.sm),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: theme.spacing.sm,
+                  vertical: theme.spacing.xs,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(
+                      allowed[index] == metric
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_off,
+                      size: 16,
+                      color: allowed[index] == metric
                           ? theme.colorScheme.primary
                           : theme.colorScheme.onSurfaceVariant,
-                      fontWeight: option == metric
-                          ? AppFontWeight.emphasis
-                          : null,
                     ),
-                  ),
-                ],
+                    SizedBox(width: theme.spacing.xs),
+                    Text(
+                      _metricLabel(allowed[index]),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: allowed[index] == metric
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurfaceVariant,
+                        fontWeight: allowed[index] == metric
+                            ? AppFontWeight.emphasis
+                            : null,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-      ],
+          ],
+        ],
+      ),
     );
   }
 
