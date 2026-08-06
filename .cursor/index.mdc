@@ -30,6 +30,7 @@ When rules conflict, you must apply this order:
 - `access/subscriptions.mdc` defines package tiers and limits.
 - `access/default_user_roles.mdc` defines shipped role defaults.
 - `access/version-disabled-screens.mdc` defines screens withheld until a later release.
+- `access/demo-data.mdc` defines demo seed volume, scenario coverage, and safety.
 - `app-write-up.mdc` defines product scope and module responsibilities.
 
 ## Stack Indexes

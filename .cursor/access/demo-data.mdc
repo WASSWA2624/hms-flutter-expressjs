@@ -1,0 +1,54 @@
+---
+description: Demo seed volume, scenario coverage, and safety rules for demonstration databases.
+globs:
+  - "backend/scripts/seed-demo-data.js"
+  - "backend/scripts/clear-demo-data.js"
+  - "backend/scripts/verify-demo-data.js"
+  - "backend/scripts/demo-safety.js"
+  - "backend/scripts/seeders/**"
+  - "backend/src/tests/scripts/seed-*.test.js"
+  - "backend/src/tests/scripts/verify-demo-data.test.js"
+  - "backend/src/tests/scripts/clear-demo-data.test.js"
+  - "backend/src/tests/scripts/demo-safety.test.js"
+alwaysApply: false
+---
+
+# Demo Data
+
+Owns curated + volume demo seeding for local/demo environments. Never seed production.
+
+## Workflow
+
+- Commands: `db:clear:demo` → `db:seed:demo` → `db:verify:demo` (or `db:reset:demo`).
+- Orchestrator: `seed-demo-data.js` with P012 pack order, then `seed-volume-pack`, then optional filler when volume is skipped.
+- Gate all clear/seed work with `demo-safety.js` (refuse production / live DB URLs).
+
+## Volume
+
+- `SEED_RECORD_COUNT` defaults to **1000**; `0` is curated-only.
+- Applicable operational tables must reach the volume target after a full seed (patients, appointments, encounters, admissions, lab/pharmacy/radiology, invoices/payments, emergencies, stock movements, biomed work orders, mortuary cases, notifications).
+- Exclude intentional singletons/catalogs: one demo tenant/facility/subscription/license; plan/add-on/module catalogs; role/permission catalogs; `_prisma_migrations`.
+
+## Scenario Coverage
+
+- Keep curated hero scenarios asserted by `verify-demo-data` (roles/emails, subscription health, communications variants, biomedical/compliance baselines, break-glass pending + **ACTIVE** approved).
+- Volume rows must diversify statuses so demo role logins see non-empty, filterable queues.
+- Prefer FK-valid related graphs and deterministic upserts (`deterministicUuid` / pack keys). Do not invent orphan foreign keys.
+
+## Safety And Verify
+
+- Break-glass ACTIVE rows must use real-world-future `expires_at` so expiry sweeps do not flip them before verify.
+- Verify raises volume floors when `SEED_RECORD_COUNT > 0`; curated invariants always apply.
+- Seed remains deterministic for a fixed `SEED_RANDOM_SEED`.
+
+## Canonical Files
+
+- `backend/scripts/seed-demo-data.js`, `clear-demo-data.js`, `verify-demo-data.js`, `demo-safety.js`
+- `backend/scripts/seeders/seed-volume-pack.js`, `seed-*-pack.js`, `seed-catalog.js`, `seed-runtime.js`, `seed-filler-pack.js`
+- `backend/src/config/env.js` (`SEED_RECORD_COUNT`, `SEED_RANDOM_SEED`)
+- `backend/dev-plan/P012_seeder.md`
+
+## Related Rules
+
+- `permissions.mdc`, `default_user_roles.mdc`, `subscriptions.mdc`
+- `backend/dev-plan/P012_seeder.md`
