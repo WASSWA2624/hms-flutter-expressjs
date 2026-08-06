@@ -25,16 +25,32 @@ final class DashboardMetricCardData {
     required this.label,
     required this.value,
     required this.icon,
-    required this.accent,
     required this.semanticsLabel,
+    this.accent,
+    this.tone,
+    this.colorCode,
     this.onTap,
     this.compact = false,
-  });
+  }) : assert(
+         accent != null || tone != null || colorCode != null,
+         'DashboardMetricCardData requires accent, tone, or colorCode.',
+       );
 
   final String label;
   final String value;
   final IconData icon;
-  final Color accent;
+
+  /// Explicit accent color. Used when [tone] / [colorCode] do not resolve.
+  final Color? accent;
+
+  /// Semantic status tone mapped to [AppStatusColors] in the metric strip.
+  final AppWorkspaceStatusTone? tone;
+
+  /// Color code: `#RRGGBB` / `RRGGBB` hex, or a named token
+  /// (`success`, `warning`, `error`, `danger`, `info`, `neutral`,
+  /// `primary`, `secondary`, `tertiary`).
+  final String? colorCode;
+
   final String semanticsLabel;
   final VoidCallback? onTap;
   final bool compact;

@@ -4,6 +4,7 @@ import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dar
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 IconData reportsSummaryCardIcon(String id) {
   return switch (id) {
@@ -24,6 +25,16 @@ Color reportsSummaryCardAccent(ColorScheme scheme, String id) {
     'schedules_due' => scheme.secondary,
     'activity_24h' => scheme.primary,
     _ => scheme.primary,
+  };
+}
+
+AppWorkspaceStatusTone reportsSummaryCardTone(String id) {
+  return switch (id) {
+    'kpi_critical' => AppWorkspaceStatusTone.error,
+    'runs_queued' => AppWorkspaceStatusTone.warning,
+    'schedules_due' => AppWorkspaceStatusTone.info,
+    'activity_24h' => AppWorkspaceStatusTone.success,
+    _ => AppWorkspaceStatusTone.info,
   };
 }
 
@@ -52,6 +63,7 @@ List<DashboardMetricCardData> reportsOverviewMetrics({
       label: card.label,
       value: '${card.value}',
       icon: reportsSummaryCardIcon(card.id),
+      tone: reportsSummaryCardTone(card.id),
       accent: reportsSummaryCardAccent(scheme, card.id),
       semanticsLabel: '${card.label}: ${card.value}',
       onTap: target == null ? null : () => onOpenPanel(target),

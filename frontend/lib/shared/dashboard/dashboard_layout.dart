@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 /// Faint elevated surface used by dashboard section panels.
 Color dashboardSectionBackgroundColor(ColorScheme colorScheme) {
@@ -71,6 +72,76 @@ BoxDecoration dashboardMetricCardDecoration(
       stops: const <double>[0, 0.42, 1],
     ),
   );
+}
+
+/// Resolves metric accent from [colorCode], then [tone], then [accent].
+Color dashboardResolveMetricAccent(
+  ThemeData theme, {
+  Color? accent,
+  AppWorkspaceStatusTone? tone,
+  String? colorCode,
+}) {
+  final Color? fromCode = dashboardColorFromCode(theme, colorCode);
+  if (fromCode != null) {
+    return fromCode;
+  }
+  if (tone != null) {
+    return dashboardToneAccent(theme, tone);
+  }
+  return accent ?? theme.colorScheme.primary;
+}
+
+/// Maps a semantic workspace tone to theme status / surface colors.
+Color dashboardToneAccent(ThemeData theme, AppWorkspaceStatusTone tone) {
+  final ColorScheme colorScheme = theme.colorScheme;
+  final AppStatusColors statusColors = theme.statusColors;
+  return switch (tone) {
+    AppWorkspaceStatusTone.neutral => colorScheme.onSurfaceVariant,
+    AppWorkspaceStatusTone.success => statusColors.success,
+    AppWorkspaceStatusTone.warning => statusColors.warning,
+    AppWorkspaceStatusTone.error => statusColors.error,
+    AppWorkspaceStatusTone.info => statusColors.info,
+  };
+}
+
+/// Parses a hex (`#RRGGBB` / `RRGGBBAA`) or named color code for metric cards.
+Color? dashboardColorFromCode(ThemeData theme, String? value) {
+  final String raw = (value ?? '').trim();
+  if (raw.isEmpty) {
+    return null;
+  }
+
+  final Color? hex = dashboardColorFromHex(raw);
+  if (hex != null) {
+    return hex;
+  }
+
+  final ColorScheme colorScheme = theme.colorScheme;
+  final AppStatusColors statusColors = theme.statusColors;
+  return switch (raw.toLowerCase()) {
+    'success' => statusColors.success,
+    'warning' => statusColors.warning,
+    'error' => statusColors.error,
+    'danger' => statusColors.danger,
+    'info' => statusColors.info,
+    'neutral' => colorScheme.onSurfaceVariant,
+    'primary' => colorScheme.primary,
+    'secondary' => colorScheme.secondary,
+    'tertiary' => colorScheme.tertiary,
+    _ => null,
+  };
+}
+
+Color? dashboardColorFromHex(String? value) {
+  final String normalized = (value ?? '').trim().replaceFirst('#', '');
+  if (normalized.length != 6 && normalized.length != 8) {
+    return null;
+  }
+  final int? parsed = int.tryParse(normalized, radix: 16);
+  if (parsed == null) {
+    return null;
+  }
+  return Color(normalized.length == 6 ? 0xFF000000 | parsed : parsed);
 }
 
 BoxDecoration dashboardMetricIconDecoration(ThemeData theme, Color accent) {

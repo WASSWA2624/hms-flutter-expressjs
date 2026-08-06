@@ -87,6 +87,12 @@ class _DashboardMetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final Color accent = dashboardResolveMetricAccent(
+      theme,
+      accent: card.accent,
+      tone: card.tone,
+      colorCode: card.colorCode,
+    );
     final bool isActionable = card.onTap != null;
     final double iconBox = compact ? 28 : 32;
     final double iconGlyph = compact ? 16 : 18;
@@ -100,7 +106,7 @@ class _DashboardMetricCard extends StatelessWidget {
     final TextStyle valueStyle =
         (compact ? theme.textTheme.titleMedium : theme.textTheme.titleLarge)!
             .copyWith(
-              color: card.accent,
+              color: accent,
               fontWeight: AppFontWeight.emphasis,
               height: 1.1,
               letterSpacing: -0.2,
@@ -130,8 +136,8 @@ class _DashboardMetricCard extends StatelessWidget {
                   width: iconBox,
                   height: iconBox,
                   alignment: Alignment.center,
-                  decoration: dashboardMetricIconDecoration(theme, card.accent),
-                  child: Icon(card.icon, color: card.accent, size: iconGlyph),
+                  decoration: dashboardMetricIconDecoration(theme, accent),
+                  child: Icon(card.icon, color: accent, size: iconGlyph),
                 ),
                 SizedBox(width: theme.spacing.sm),
                 Expanded(
@@ -181,7 +187,7 @@ class _DashboardMetricCard extends StatelessWidget {
     final BoxDecoration decoration = dashboardMetricCardDecoration(
       theme,
       colorScheme,
-      card.accent,
+      accent,
     );
     final BorderRadius borderRadius = BorderRadius.circular(theme.radius.lg);
 

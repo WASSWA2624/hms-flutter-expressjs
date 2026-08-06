@@ -28,6 +28,7 @@ import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facil
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/dashboard/dashboard_layout.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
@@ -1728,14 +1729,7 @@ String homeFollowUpTitle(AppRole role) {
 }
 
 Color homeToneColor(ThemeData theme, AppWorkspaceStatusTone tone) {
-  final ColorScheme colorScheme = theme.colorScheme;
-  return switch (tone) {
-    AppWorkspaceStatusTone.success => colorScheme.tertiary,
-    AppWorkspaceStatusTone.warning => colorScheme.secondary,
-    AppWorkspaceStatusTone.error => colorScheme.error,
-    AppWorkspaceStatusTone.info => colorScheme.primary,
-    AppWorkspaceStatusTone.neutral => colorScheme.onSurfaceVariant,
-  };
+  return dashboardToneAccent(theme, tone);
 }
 
 String homeFormatMetricValue(HomeStatusCard card) {

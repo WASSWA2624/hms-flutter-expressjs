@@ -12,9 +12,11 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_actions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_en.dart';
+import 'package:hosspi_hms/shared/dashboard/dashboard_layout.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_metric_strip.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_priority_panel.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 const List<AppModuleEntitlement> _activeModules = <AppModuleEntitlement>[
   AppModuleEntitlement(code: 'patient-registry', licenseStatus: 'ACTIVE'),
@@ -361,6 +363,74 @@ void main() {
         expect((shortBottom - pendingBottom).abs(), lessThan(1.0));
       },
     );
+
+    testWidgets('applies tone and named color codes to metric accents', (
+      WidgetTester tester,
+    ) async {
+      late ThemeData capturedTheme;
+      await tester.pumpWidget(
+        _harness(
+          Builder(
+            builder: (BuildContext context) {
+              capturedTheme = Theme.of(context);
+              return SizedBox(
+                width: 720,
+                child: DashboardMetricStrip(
+                  maxCards: 3,
+                  cards: <DashboardMetricCardData>[
+                    DashboardMetricCardData(
+                      label: 'Critical stock',
+                      value: '3',
+                      icon: Icons.warning_amber_outlined,
+                      tone: AppWorkspaceStatusTone.error,
+                      semanticsLabel: 'Critical stock: 3',
+                    ),
+                    DashboardMetricCardData(
+                      label: 'Healthy',
+                      value: '9',
+                      icon: Icons.check_circle_outline,
+                      colorCode: 'success',
+                      semanticsLabel: 'Healthy: 9',
+                    ),
+                    DashboardMetricCardData(
+                      label: 'Custom',
+                      value: '1',
+                      icon: Icons.circle_outlined,
+                      colorCode: '#336699',
+                      semanticsLabel: 'Custom: 1',
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Color errorAccent = dashboardToneAccent(
+        capturedTheme,
+        AppWorkspaceStatusTone.error,
+      );
+      final Color successAccent = dashboardColorFromCode(
+        capturedTheme,
+        'success',
+      )!;
+      final Color hexAccent = dashboardColorFromHex('#336699')!;
+
+      expect(
+        tester.widget<Text>(find.text('3')).style?.color,
+        errorAccent,
+      );
+      expect(
+        tester.widget<Text>(find.text('9')).style?.color,
+        successAccent,
+      );
+      expect(
+        tester.widget<Text>(find.text('1')).style?.color,
+        hexAccent,
+      );
+    });
   });
 
   group('management empty strip copy', () {

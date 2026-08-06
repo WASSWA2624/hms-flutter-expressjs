@@ -59,6 +59,7 @@ List<DashboardMetricCardData> homeDashboardMetrics({
           label: label,
           value: value,
           icon: homeMetricIcon(card.id),
+          tone: tone,
           accent: accent,
           compact: compact,
           semanticsLabel: isActionable
