@@ -15,6 +15,9 @@ const { ROLES } = require('@config/roles');
 const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
 const { normalizeRoleName } = require('@config/roles');
 const {
+  filterVersionDisabledPermissionNames,
+} = require('@config/version-disabled-permissions');
+const {
   filterPermissionNamesByPlanModules,
   filterPermissionNamesBySubscriptionPermissions,
   moduleForPermissionName,
@@ -325,6 +328,9 @@ const resolveEffectiveAccess = (user = {}, options = {}) => {
     permissions = uniqueValues([...permissions, PERMISSIONS.REPORTS_READ]);
   }
 
+  // Version-disabled domains are withheld from every actor until re-enabled.
+  permissions = filterVersionDisabledPermissionNames(permissions);
+
   return {
     direct_permissions: directPermissions,
     role_permissions: rolePermissions,
@@ -356,8 +362,12 @@ const resolveRequestPermissionNames = (user = {}) => {
   }
 
   if (user.auth_type === 'api_key' || user.api_key_id) {
-    return uniqueValues(
-      (Array.isArray(user.permissions) ? user.permissions : []).map(extractPermissionName)
+    return filterVersionDisabledPermissionNames(
+      uniqueValues(
+        (Array.isArray(user.permissions) ? user.permissions : []).map(
+          extractPermissionName
+        )
+      )
     );
   }
 
@@ -373,7 +383,9 @@ const resolveRequestPermissionNames = (user = {}) => {
   if (tokenPermissions.length > 0 && !tokenLooksLikeOrmJoin) {
     const hasTenantContext = Boolean(user.tenant_id || user.tenantId);
     if (userHasSuperAdminRole(user) && !hasTenantContext) {
-      return uniqueValues([...tokenPermissions, PERMISSIONS.REPORTS_READ]);
+      return filterVersionDisabledPermissionNames(
+        uniqueValues([...tokenPermissions, PERMISSIONS.REPORTS_READ])
+      );
     }
 
     let permissions = tokenPermissions;
@@ -391,7 +403,7 @@ const resolveRequestPermissionNames = (user = {}) => {
     if (getRoleNames(user).length > 0 || permissions.length > 0) {
       permissions = uniqueValues([...permissions, PERMISSIONS.REPORTS_READ]);
     }
-    return permissions;
+    return filterVersionDisabledPermissionNames(permissions);
   }
 
   return resolveEffectivePermissionNames(user, {

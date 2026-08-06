@@ -29,6 +29,7 @@ When rules conflict, you must apply this order:
 - `access/permissions.mdc` defines access vocabulary, ABAC, and enforcement.
 - `access/subscriptions.mdc` defines package tiers and limits.
 - `access/default_user_roles.mdc` defines shipped role defaults.
+- `access/version-disabled-screens.mdc` defines screens withheld until a later release.
 - `app-write-up.mdc` defines product scope and module responsibilities.
 
 ## Stack Indexes

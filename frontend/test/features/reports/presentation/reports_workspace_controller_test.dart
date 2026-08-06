@@ -33,8 +33,9 @@ AppAccessPolicy _policy(Set<AppPermission> permissions) {
       ),
       permissions: permissions,
       moduleEntitlements: _reportsModule,
+      isAuthorizationHydrated: true,
     ),
-  );
+  ).copyWithPermissions(permissions);
 }
 
 void main() {

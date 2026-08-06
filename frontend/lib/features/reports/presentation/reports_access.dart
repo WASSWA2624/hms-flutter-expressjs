@@ -2,6 +2,9 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
+import 'package:hosspi_hms/features/reports/presentation/reports_role_tailoring.dart';
+
+export 'package:hosspi_hms/features/reports/presentation/reports_role_tailoring.dart';
 
 /// Platform infrastructure module for the Reports workspace (all packages).
 const String reportsActiveModule = 'reporting-analytics';
@@ -98,22 +101,38 @@ bool canAccessReportsPanel(
   AppAccessPolicy policy,
   ReportsWorkspacePanel panel,
 ) {
-  return panel.isCompliance
-      ? canReadReportsCompliance(policy)
-      : canReadReportsCatalog(policy);
+  if (panel.isCompliance) {
+    return canReadReportsCompliance(policy);
+  }
+  if (!canReadReportsCatalog(policy)) {
+    return false;
+  }
+  return reportsTailoredCatalogPanels(policy).contains(panel);
 }
 
 /// Panels the user may open; empty when neither catalog nor compliance read.
+///
+/// Catalog panels are role-tailored by domain permissions (union for
+/// multi-role). Compliance panels remain behind compliance grants.
 List<ReportsWorkspacePanel> reportsAllowedPanels(AppAccessPolicy policy) {
-  return ReportsWorkspacePanel.values
-      .where((ReportsWorkspacePanel panel) => canAccessReportsPanel(policy, panel))
-      .toList(growable: false);
+  final List<ReportsWorkspacePanel> panels = <ReportsWorkspacePanel>[
+    if (canReadReportsCatalog(policy)) ...reportsTailoredCatalogPanels(policy),
+    if (canReadReportsCompliance(policy)) ...<ReportsWorkspacePanel>[
+      ReportsWorkspacePanel.audit,
+      ReportsWorkspacePanel.phi,
+      ReportsWorkspacePanel.processing,
+    ],
+  ];
+  return panels;
 }
 
 ReportsWorkspacePanel? reportsFallbackPanel(AppAccessPolicy policy) {
   final List<ReportsWorkspacePanel> allowed = reportsAllowedPanels(policy);
   if (allowed.isEmpty) {
     return null;
+  }
+  if (allowed.contains(ReportsWorkspacePanel.overview)) {
+    return ReportsWorkspacePanel.overview;
   }
   return allowed.first;
 }

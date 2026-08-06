@@ -1,0 +1,35 @@
+---
+description: Screens and menu destinations withheld via permissions until a later release.
+alwaysApply: true
+---
+
+# Version-Disabled Screens
+
+These workspaces are shipped in code but must stay unreachable for every user and every subscription package until a later version re-enables them.
+
+## Disabled destinations
+
+Emergency, Rooms & beds, Physiotherapy, Operations, Housekeeping, Biomedical Engineering, Mortuary, Communications, Integrations.
+
+## Permission domains (hard deny)
+
+`emergency`, `rooms_beds`, `physiotherapy`, `operations`, `housekeeping`, `biomed`, `mortuary`, `communications`, `integration`.
+
+## Enforcement
+
+- Strip these domains from effective access on API and UI (including elevated roles).
+- Omit them from all `PLAN_PERMISSION_CAPS` / `PlanPermissionCaps` tiers.
+- Menu items and routes stay permission-gated; denied keys must hide shell destinations.
+- Do not re-grant via role packs, custom plans, module entitlements, or direct user grants.
+- To re-enable: remove the domain from `version-disabled-permissions` (BE + FE), restore plan caps, then drop this rule.
+
+## Canonical files
+
+- `backend/src/config/version-disabled-permissions.js`
+- `frontend/lib/core/permissions/version_disabled_permissions.dart`
+- `backend/src/lib/subscriptions/subscription-permission-caps.js`
+- `frontend/lib/core/permissions/plan_permission_caps.dart`
+
+## Related Rules
+
+- `permissions.mdc`, `subscriptions.mdc`, `modules.mdc`

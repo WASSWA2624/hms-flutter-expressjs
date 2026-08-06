@@ -4714,16 +4714,16 @@ abstract class AppLocalizations {
   /// **'Mortuary'**
   String get navigationMortuaryShortLabel;
 
-  /// Navigation label for the reports workspace.
+  /// Navigation label for the reporting and analytics workspace.
   ///
   /// In en, this message translates to:
-  /// **'Reports'**
+  /// **'Reporting and Analytics'**
   String get navigationReportsLabel;
 
-  /// Compact navigation label for the reports workspace.
+  /// Compact navigation label for the reporting and analytics workspace.
   ///
   /// In en, this message translates to:
-  /// **'Reports'**
+  /// **'Reporting'**
   String get navigationReportsShortLabel;
 
   /// Navigation label for the rooms and beds workspace.
@@ -30721,23 +30721,113 @@ abstract class AppLocalizations {
   /// **'Integration changes saved.'**
   String get integrationsSavedMessage;
 
-  /// Title for the reports and audit workspace.
+  /// Title for the reporting and analytics workspace.
   ///
   /// In en, this message translates to:
-  /// **'Reports and audit'**
+  /// **'Reporting and Analytics'**
   String get reportsTitle;
 
-  /// Loading title for the reports workspace.
+  /// Loading title for the reporting and analytics workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading reports workspace'**
+  /// **'Loading reporting and analytics'**
   String get reportsLoadingTitle;
 
-  /// Loading body for the reports workspace.
+  /// Loading body for the reporting and analytics workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading reports, schedules, and dashboards...'**
+  /// **'Loading reports, schedules, and analytics dashboards...'**
   String get reportsLoadingBody;
+
+  /// Subtitle under the Overview reporting dashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility reporting summary and shortcuts to create or run reports for your role.'**
+  String get reportsOverviewSubtitle;
+
+  /// Empty title when overview summary and queues have no data.
+  ///
+  /// In en, this message translates to:
+  /// **'No reporting signals yet'**
+  String get reportsOverviewEmptyTitle;
+
+  /// Empty body when overview summary and queues have no data.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a report definition or wait for scheduled runs to populate analytics.'**
+  String get reportsOverviewEmptyBody;
+
+  /// Title for overview queue shortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Attention queues'**
+  String get reportsOverviewQueuesTitle;
+
+  /// Title for role-tailored dataset shortcuts on Overview.
+  ///
+  /// In en, this message translates to:
+  /// **'Your domain reports'**
+  String get reportsOverviewDatasetsTitle;
+
+  /// Progressive disclosure title for recent report runs on Overview.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent runs'**
+  String get reportsOverviewRecentTitle;
+
+  /// Quick action to open the report catalog panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse catalog'**
+  String get reportsOverviewBrowseCatalogAction;
+
+  /// Quick action to open the runs and delivery panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs and delivery'**
+  String get reportsOverviewViewDeliveryAction;
+
+  /// Semantics label for opening a domain dataset in catalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Open dataset'**
+  String get reportsOverviewOpenDatasetAction;
+
+  /// Trend chart title on the reports Overview dashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace activity'**
+  String get reportsOverviewTrendTitle;
+
+  /// Distribution chart title on the reports Overview dashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue mix'**
+  String get reportsOverviewDistributionTitle;
+
+  /// Empty message for the Overview trend chart.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity signals to chart yet.'**
+  String get reportsOverviewTrendEmpty;
+
+  /// Empty message for the Overview distribution chart.
+  ///
+  /// In en, this message translates to:
+  /// **'No queue pressure right now.'**
+  String get reportsOverviewDistributionEmpty;
+
+  /// Quick actions title on the reports Overview dashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Create and run'**
+  String get reportsOverviewNextStepsTitle;
+
+  /// Overview CTA that opens Catalog to create or run a report.
+  ///
+  /// In en, this message translates to:
+  /// **'Create or run report'**
+  String get reportsOverviewCreateReportAction;
 
   /// Status label when the reports workspace is live.
   ///

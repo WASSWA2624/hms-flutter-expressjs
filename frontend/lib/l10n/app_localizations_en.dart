@@ -2453,10 +2453,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationMortuaryShortLabel => 'Mortuary';
 
   @override
-  String get navigationReportsLabel => 'Reports';
+  String get navigationReportsLabel => 'Reporting and Analytics';
 
   @override
-  String get navigationReportsShortLabel => 'Reports';
+  String get navigationReportsShortLabel => 'Reporting';
 
   @override
   String get navigationRoomsBedsLabel => 'Rooms & beds';
@@ -16630,14 +16630,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String get integrationsSavedMessage => 'Integration changes saved.';
 
   @override
-  String get reportsTitle => 'Reports and audit';
+  String get reportsTitle => 'Reporting and Analytics';
 
   @override
-  String get reportsLoadingTitle => 'Loading reports workspace';
+  String get reportsLoadingTitle => 'Loading reporting and analytics';
 
   @override
   String get reportsLoadingBody =>
-      'Loading reports, schedules, and dashboards...';
+      'Loading reports, schedules, and analytics dashboards...';
+
+  @override
+  String get reportsOverviewSubtitle =>
+      'Facility reporting summary and shortcuts to create or run reports for your role.';
+
+  @override
+  String get reportsOverviewEmptyTitle => 'No reporting signals yet';
+
+  @override
+  String get reportsOverviewEmptyBody =>
+      'Create a report definition or wait for scheduled runs to populate analytics.';
+
+  @override
+  String get reportsOverviewQueuesTitle => 'Attention queues';
+
+  @override
+  String get reportsOverviewDatasetsTitle => 'Your domain reports';
+
+  @override
+  String get reportsOverviewRecentTitle => 'Recent runs';
+
+  @override
+  String get reportsOverviewBrowseCatalogAction => 'Browse catalog';
+
+  @override
+  String get reportsOverviewViewDeliveryAction => 'Runs and delivery';
+
+  @override
+  String get reportsOverviewOpenDatasetAction => 'Open dataset';
+
+  @override
+  String get reportsOverviewTrendTitle => 'Workspace activity';
+
+  @override
+  String get reportsOverviewDistributionTitle => 'Queue mix';
+
+  @override
+  String get reportsOverviewTrendEmpty => 'No activity signals to chart yet.';
+
+  @override
+  String get reportsOverviewDistributionEmpty => 'No queue pressure right now.';
+
+  @override
+  String get reportsOverviewNextStepsTitle => 'Create and run';
+
+  @override
+  String get reportsOverviewCreateReportAction => 'Create or run report';
 
   @override
   String get reportsLiveStatus => 'Live';

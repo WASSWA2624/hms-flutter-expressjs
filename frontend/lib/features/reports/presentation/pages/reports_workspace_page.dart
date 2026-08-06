@@ -13,6 +13,7 @@ import 'package:hosspi_hms/features/reports/data/repositories/reports_repository
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/presentation/controllers/reports_workspace_controller.dart';
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
+import 'package:hosspi_hms/features/reports/presentation/widgets/reports_overview_dashboard.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_workspace_table_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -175,6 +176,7 @@ class _ReportsWorkspaceContentState
     return AppWorkspace(
       title: l10n.reportsTitle,
       leadingIcon: AppRouteIcons.reports,
+      showHeader: true,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -262,12 +264,95 @@ class _ReportsPrimaryPanel extends ConsumerWidget {
       );
     }
 
+    if (panel == ReportsWorkspacePanel.overview) {
+      return _ReportsOverviewPanel(
+        state: state,
+        searchController: searchController,
+        policy: policy,
+        allowedPanels: allowedPanels,
+      );
+    }
+
     return _ReportItemsPanel(
       state: state,
       searchController: searchController,
       columnVisibilityController: reportTableColumns,
       policy: policy,
       allowedPanels: allowedPanels,
+    );
+  }
+}
+
+class _ReportsOverviewPanel extends ConsumerWidget {
+  const _ReportsOverviewPanel({
+    required this.state,
+    required this.searchController,
+    required this.policy,
+    required this.allowedPanels,
+  });
+
+  final ReportsWorkspaceState state;
+  final TextEditingController searchController;
+  final AppAccessPolicy policy;
+  final List<ReportsWorkspacePanel> allowedPanels;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final ReportsWorkspaceController controller = ref.read(
+      reportsWorkspaceControllerProvider.notifier,
+    );
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          l10n.reportsPanelOverview,
+          style: theme.textTheme.titleMedium,
+        ),
+        SizedBox(height: theme.spacing.sm),
+        AppSearchBar(
+          controller: searchController,
+          semanticLabel: l10n.reportsSearchLabel,
+          hintText: l10n.reportsSearchHint,
+          clearLabel: l10n.reportsClearSearchLabel,
+          onSubmitted: controller.applySearch,
+          onClear: () => controller.applySearch(''),
+          enableDateFilter: false,
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+          advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+          advancedFilterResetLabel: l10n.opdClearFiltersAction,
+          filterGroups: <AppSearchBarFilterGroup>[
+            AppSearchBarFilterGroup(
+              key: _panelFilterKey,
+              label: l10n.reportsPanelFilterLabel,
+              allLabel: l10n.reportsPanelOverview,
+              choices: _panelChoices(l10n, allowedPanels),
+            ),
+          ],
+          filterValue: AppSearchBarFilterValue.empty,
+          hasActiveFilters: false,
+          onFilterChanged: (AppSearchBarFilterValue value) {
+            final ReportsWorkspacePanel panel =
+                ReportsWorkspacePanel.fromServer(
+                  value.option(_panelFilterKey),
+                );
+            if (panel != state.query.panel &&
+                allowedPanels.contains(panel)) {
+              controller.applyPanel(panel);
+            }
+          },
+        ),
+        SizedBox(height: theme.spacing.md),
+        ReportsOverviewDashboard(
+          state: state,
+          policy: policy,
+          allowedPanels: allowedPanels,
+        ),
+      ],
     );
   }
 }
@@ -445,7 +530,9 @@ class _ReportItemsPanel extends ConsumerWidget {
           key: _datasetFilterKey,
           label: l10n.reportsDatasetFilterLabel,
           allLabel: l10n.reportsAllDatasetsLabel,
-          choices: _lookupChoices(state.overview.lookups.datasets),
+          choices: _lookupChoices(
+            reportsTailoredDatasets(policy, state.overview.lookups.datasets),
+          ),
         ),
       ],
       filterValue: _reportFilterValue(state.query),

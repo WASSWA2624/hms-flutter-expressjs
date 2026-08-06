@@ -312,6 +312,11 @@ void main() {
         ),
       );
 
+      await tester.tap(find.text('Browse catalog'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
       final AppListTable<ReportsWorkspaceItem> table = tester
           .widgetList<AppListTable<ReportsWorkspaceItem>>(
             find.byType(AppListTable<ReportsWorkspaceItem>),
@@ -350,6 +355,11 @@ void main() {
           ),
         ),
       );
+
+      await tester.tap(find.text('Browse catalog'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text('Run report').first);
       await tester.pumpAndSettle();
@@ -396,6 +406,11 @@ void main() {
         ),
         items: const <ReportsWorkspaceItem>[_completedRun],
       );
+
+      await tester.tap(find.text('Browse catalog'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       when(() => repository.downloadReportRun(any())).thenAnswer(
         (_) async => const Result<List<int>>.success(<int>[1, 2, 3]),
@@ -573,6 +588,11 @@ void main() {
         stubDefaults: false,
       );
 
+      expect(find.text('No reporting signals yet'), findsOneWidget);
+      await tester.tap(find.text('Browse catalog'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
       expect(find.text('No report records'), findsOneWidget);
       expect(find.textContaining('Receive payment'), findsNothing);
     });

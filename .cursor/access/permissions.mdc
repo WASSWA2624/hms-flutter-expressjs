@@ -26,6 +26,7 @@ Owns the access vocabulary and enforcement model. Always enforce permission-base
 - Effective access = `union(role/module/user grants) ∩ subscription ∩ assigned modules ∩ ABAC`.
 - Grants must not exceed the active package or actor ceiling.
 - Users may hold multiple scoped roles via `user_role`.
+- Version-disabled domains in `version-disabled-screens.mdc` are stripped from effective access for all users and packages.
 
 ## ABAC
 
@@ -42,5 +43,5 @@ Owns the access vocabulary and enforcement model. Always enforce permission-base
 
 ## Related Rules
 
-- `modules.mdc`, `subscriptions.mdc`, `default_user_roles.mdc`
+- `modules.mdc`, `subscriptions.mdc`, `default_user_roles.mdc`, `version-disabled-screens.mdc`
 - `frontend/.cursor/permissions.mdc`, `backend/.cursor/auth-security.mdc`

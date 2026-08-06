@@ -3184,13 +3184,13 @@
   "@navigationMortuaryShortLabel": {
     "description": "Compact navigation label for the mortuary workspace."
   },
-  "navigationReportsLabel": "Reports",
+  "navigationReportsLabel": "Reporting and Analytics",
   "@navigationReportsLabel": {
-    "description": "Navigation label for the reports workspace."
+    "description": "Navigation label for the reporting and analytics workspace."
   },
-  "navigationReportsShortLabel": "Reports",
+  "navigationReportsShortLabel": "Reporting",
   "@navigationReportsShortLabel": {
-    "description": "Compact navigation label for the reports workspace."
+    "description": "Compact navigation label for the reporting and analytics workspace."
   },
   "navigationRoomsBedsLabel": "Rooms & beds",
   "@navigationRoomsBedsLabel": {
@@ -21402,17 +21402,77 @@
   "@integrationsSavedMessage": {
     "description": "Localized text for integrationsSavedMessage."
   },
-  "reportsTitle": "Reports and audit",
+  "reportsTitle": "Reporting and Analytics",
   "@reportsTitle": {
-    "description": "Title for the reports and audit workspace."
+    "description": "Title for the reporting and analytics workspace."
   },
-  "reportsLoadingTitle": "Loading reports workspace",
+  "reportsLoadingTitle": "Loading reporting and analytics",
   "@reportsLoadingTitle": {
-    "description": "Loading title for the reports workspace."
+    "description": "Loading title for the reporting and analytics workspace."
   },
-  "reportsLoadingBody": "Loading reports, schedules, and dashboards...",
+  "reportsLoadingBody": "Loading reports, schedules, and analytics dashboards...",
   "@reportsLoadingBody": {
-    "description": "Loading body for the reports workspace."
+    "description": "Loading body for the reporting and analytics workspace."
+  },
+  "reportsOverviewSubtitle": "Facility reporting summary and shortcuts to create or run reports for your role.",
+  "@reportsOverviewSubtitle": {
+    "description": "Subtitle under the Overview reporting dashboard."
+  },
+  "reportsOverviewEmptyTitle": "No reporting signals yet",
+  "@reportsOverviewEmptyTitle": {
+    "description": "Empty title when overview summary and queues have no data."
+  },
+  "reportsOverviewEmptyBody": "Create a report definition or wait for scheduled runs to populate analytics.",
+  "@reportsOverviewEmptyBody": {
+    "description": "Empty body when overview summary and queues have no data."
+  },
+  "reportsOverviewQueuesTitle": "Attention queues",
+  "@reportsOverviewQueuesTitle": {
+    "description": "Title for overview queue shortcuts."
+  },
+  "reportsOverviewDatasetsTitle": "Your domain reports",
+  "@reportsOverviewDatasetsTitle": {
+    "description": "Title for role-tailored dataset shortcuts on Overview."
+  },
+  "reportsOverviewRecentTitle": "Recent runs",
+  "@reportsOverviewRecentTitle": {
+    "description": "Progressive disclosure title for recent report runs on Overview."
+  },
+  "reportsOverviewBrowseCatalogAction": "Browse catalog",
+  "@reportsOverviewBrowseCatalogAction": {
+    "description": "Quick action to open the report catalog panel."
+  },
+  "reportsOverviewViewDeliveryAction": "Runs and delivery",
+  "@reportsOverviewViewDeliveryAction": {
+    "description": "Quick action to open the runs and delivery panel."
+  },
+  "reportsOverviewOpenDatasetAction": "Open dataset",
+  "@reportsOverviewOpenDatasetAction": {
+    "description": "Semantics label for opening a domain dataset in catalog."
+  },
+  "reportsOverviewTrendTitle": "Workspace activity",
+  "@reportsOverviewTrendTitle": {
+    "description": "Trend chart title on the reports Overview dashboard."
+  },
+  "reportsOverviewDistributionTitle": "Queue mix",
+  "@reportsOverviewDistributionTitle": {
+    "description": "Distribution chart title on the reports Overview dashboard."
+  },
+  "reportsOverviewTrendEmpty": "No activity signals to chart yet.",
+  "@reportsOverviewTrendEmpty": {
+    "description": "Empty message for the Overview trend chart."
+  },
+  "reportsOverviewDistributionEmpty": "No queue pressure right now.",
+  "@reportsOverviewDistributionEmpty": {
+    "description": "Empty message for the Overview distribution chart."
+  },
+  "reportsOverviewNextStepsTitle": "Create and run",
+  "@reportsOverviewNextStepsTitle": {
+    "description": "Quick actions title on the reports Overview dashboard."
+  },
+  "reportsOverviewCreateReportAction": "Create or run report",
+  "@reportsOverviewCreateReportAction": {
+    "description": "Overview CTA that opens Catalog to create or run a report."
   },
   "reportsLiveStatus": "Live",
   "@reportsLiveStatus": {

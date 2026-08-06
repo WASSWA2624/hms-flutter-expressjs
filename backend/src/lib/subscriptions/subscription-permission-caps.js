@@ -18,8 +18,7 @@ const BASIC = Object.freeze([
   'opd:read',
   'clinical:read',
   'clinical:write',
-  'emergency:read',
-  'emergency:write',
+  // emergency:* and communications:* withheld — version-disabled-screens.
   'pharmacy:read',
   'pharmacy:write',
   'billing:read',
@@ -28,8 +27,6 @@ const BASIC = Object.freeze([
   'pricing:pharmacy_write',
   'pricing:facility_read',
   'pricing:facility_write',
-  'communications:read',
-  'communications:write',
   'subscriptions:read',
   'subscriptions:write',
 ]);
@@ -44,19 +41,17 @@ const ADVANCED = Object.freeze([
   'financial:approve',
   'claims:read',
   'ipd:read',
-  'rooms_beds:read',
+  // rooms_beds:* and physiotherapy:* withheld — version-disabled-screens.
   'nursing:read',
   'icu:read',
   'discharge:read',
-  'physiotherapy:read',
   'theater:read',
 ]);
 
 const PRO = Object.freeze([
   ...ADVANCED,
-  'operations:read',
-  'operations:write',
-  'housekeeping:read',
+  // operations:*, housekeeping:*, biomed:*, mortuary:*, integration:*
+  // withheld — version-disabled-screens.
   'hr:read',
   'hr:write',
   'unit:read',
@@ -65,20 +60,6 @@ const PRO = Object.freeze([
   'roster:write',
   'roster:publish',
   'roster:approve',
-  'biomed:read',
-  'biomed:write',
-  'mortuary:read',
-  'mortuary:write',
-  'mortuary:release',
-  'mortuary:manage_storage',
-  'mortuary:post_mortem_request',
-  'mortuary:approve',
-  'mortuary:billing_event',
-  'mortuary:export',
-  'mortuary:audit',
-  'integration:read',
-  'integration:write',
-  'integration:delete',
 ]);
 
 const PLAN_PERMISSION_CAPS = Object.freeze({
@@ -93,6 +74,9 @@ const PLAN_PERMISSION_CAPS = Object.freeze({
 const {
   expandPermissionNamesWithRequiredReads,
 } = require('@lib/authorization/permission-read-dependency');
+const {
+  filterVersionDisabledPermissionNames,
+} = require('@config/version-disabled-permissions');
 
 const normalizePermissions = (values = []) =>
   Array.from(
@@ -108,7 +92,9 @@ const resolveSubscriptionPermissionCap = ({
   allowed_permissions,
   node_env = process.env.NODE_ENV,
 } = {}) => {
-  const explicit = normalizePermissions(allowed_permissions);
+  const explicit = filterVersionDisabledPermissionNames(
+    normalizePermissions(allowed_permissions)
+  );
   if (explicit.length > 0) {
     return new Set(expandPermissionNamesWithRequiredReads(explicit));
   }

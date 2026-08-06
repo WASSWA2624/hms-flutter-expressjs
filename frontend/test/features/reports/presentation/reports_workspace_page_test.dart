@@ -203,28 +203,18 @@ void main() {
     registerFallbackValue(const ReportsWorkspaceQuery());
   });
 
-  testWidgets('overview tables use adaptive mode and four default columns', (
+  testWidgets('overview opens as reporting dashboard with KPIs and shortcuts', (
     WidgetTester tester,
   ) async {
     await _pumpReportsWorkspace(tester, repository: repository);
 
-    final AppListTable<ReportsWorkspaceItem> itemsTable = _itemsTable(tester);
-    expect(itemsTable.displayMode, AppListTableDisplayMode.adaptive);
-    expect(itemsTable.columnVisibilityStorageKey, 'reports_items_overview');
-    expect(itemsTable.columnWidthStorageKey, 'reports_items_cw_overview');
-    expect(itemsTable.columnVisibilityTitle, 'Table Settings');
-    expect(itemsTable.search?.advancedFilterButtonLabel, 'Filters');
-    expect(itemsTable.search?.advancedFilterTitle, 'Advanced filters');
-    // Read-only: next_action column must not mount (no write/export).
-    expect(itemsTable.columns.length, 4);
-    expect(
-      itemsTable.columns.any(
-        (AppListTableColumn<ReportsWorkspaceItem> column) =>
-            column.id == 'next_action',
-      ),
-      isFalse,
-    );
-    expect(find.text('Daily census'), findsWidgets);
+    expect(find.text('Reporting and Analytics'), findsWidgets);
+    expect(find.text('Definitions'), findsWidgets);
+    expect(find.text('Browse catalog'), findsOneWidget);
+    expect(find.text('Runs and delivery'), findsWidgets);
+    expect(find.text('Workspace activity'), findsOneWidget);
+    expect(find.text('Queue mix'), findsOneWidget);
+    expect(find.text('Filters'), findsWidgets);
 
     final AppListTable<ReportsWorkspaceItem> schedulesTable = _schedulesTable(
       tester,
@@ -236,7 +226,35 @@ void main() {
     expect(find.text('Daily census email'), findsOneWidget);
   });
 
-  testWidgets('writer mounts next_action column on items and schedules', (
+  testWidgets('catalog panel tables use adaptive mode and four default columns', (
+    WidgetTester tester,
+  ) async {
+    await _pumpReportsWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Browse catalog'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    final AppListTable<ReportsWorkspaceItem> itemsTable = _itemsTable(tester);
+    expect(itemsTable.displayMode, AppListTableDisplayMode.adaptive);
+    expect(itemsTable.columnVisibilityStorageKey, 'reports_items_catalog');
+    expect(itemsTable.columnWidthStorageKey, 'reports_items_cw_catalog');
+    expect(itemsTable.columnVisibilityTitle, 'Table Settings');
+    expect(itemsTable.search?.advancedFilterButtonLabel, 'Filters');
+    expect(itemsTable.search?.advancedFilterTitle, 'Advanced filters');
+    expect(itemsTable.columns.length, 4);
+    expect(
+      itemsTable.columns.any(
+        (AppListTableColumn<ReportsWorkspaceItem> column) =>
+            column.id == 'next_action',
+      ),
+      isFalse,
+    );
+    expect(find.text('Daily census'), findsWidgets);
+  });
+
+  testWidgets('writer mounts next_action column on catalog and schedules', (
     WidgetTester tester,
   ) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -278,6 +296,12 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Create or run report'), findsWidgets);
+    await tester.tap(find.text('Browse catalog'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
@@ -415,6 +439,11 @@ void main() {
     WidgetTester tester,
   ) async {
     await _pumpReportsWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Browse catalog'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
 
     final AppListTable<ReportsWorkspaceItem> table = _itemsTable(tester);
     expect(table.onRowSelected, isNotNull);

@@ -175,7 +175,7 @@ void main() {
 
     expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.text('Refresh'), findsNothing);
-    expect(find.text('Definitions'), findsNothing);
+    // Overview dashboard may show summary KPI labels; toolbar chips stay gone.
     expect(
       find.descendant(
         of: find.byType(AppWorkspaceToolbar),
@@ -189,6 +189,15 @@ void main() {
     WidgetTester tester,
   ) async {
     await _pumpReports(tester, repository: repository);
+
+    expect(find.text('Filters'), findsWidgets);
+    expect(find.text('Browse catalog'), findsOneWidget);
+    expect(find.text('Reporting and Analytics'), findsWidgets);
+
+    await tester.tap(find.text('Browse catalog'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
 
     final AppListTable<ReportsWorkspaceItem> itemsTable = tester
         .widgetList<AppListTable<ReportsWorkspaceItem>>(
@@ -218,6 +227,13 @@ void main() {
       repository: repository,
       policy: _reportsPolicy(write: true, export: true),
     );
+
+    expect(find.text('Create or run report'), findsWidgets);
+
+    await tester.tap(find.text('Browse catalog'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
 
     expect(find.text('Run report'), findsWidgets);
 
@@ -263,6 +279,11 @@ void main() {
       ),
       isNull,
     );
+
+    await tester.tap(find.text('Browse catalog'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
 
     final AppListTable<ReportsWorkspaceItem> table = tester
         .widgetList<AppListTable<ReportsWorkspaceItem>>(

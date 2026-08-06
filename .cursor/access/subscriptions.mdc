@@ -13,16 +13,17 @@ Package tiers are the hard upper bound on access. See `permissions.mdc` for the 
 ## Tiers
 
 - `Free`: `app_shell`, `auth_session`, `general_settings`, `patient_registry`. Reporting (`reports_audit` / `reporting-analytics`) is platform infrastructure on every package.
-- `Basic`: Free plus tenant, facility, access admin, rooms/beds, OPD, triage, clinical, limited IPD, pharmacy dispense, billing, communications.
-- `Advanced`: Basic plus full IPD, nursing, discharge, emergency, lab, radiology, physiotherapy, pharmacy clinical, and claims.
-- `Pro`: Advanced plus ICU, theater, HR, biomedical, operations, housekeeping, mortuary, integrations, and dental when enabled.
-- `Custom`: Tenant-specific subset or extension of Pro; every entitlement must be explicit.
+- `Basic`: Free plus tenant, facility, access admin, OPD, triage, clinical, limited IPD, pharmacy dispense, billing. Emergency, rooms/beds, and communications are version-disabled.
+- `Advanced`: Basic plus full IPD, nursing, discharge, lab, radiology, pharmacy clinical, and claims. Physiotherapy is version-disabled.
+- `Pro`: Advanced plus ICU, theater, HR, and dental when enabled. Biomedical, operations, housekeeping, mortuary, and integrations are version-disabled.
+- `Custom`: Tenant-specific subset or extension of Pro; every entitlement must be explicit and still respect version-disabled domains.
 - `Developer`: Non-production only; may include `demo_seed` manage.
 
 ## Enforcement
 
 - Package checks must run in UI and API paths.
 - Grants must not exceed the active package.
+- Version-disabled domains must stay omitted from plan caps and effective access.
 - Package changes, resets, upgrades, and downgrades must be atomic and auditable.
 - Failed changes must roll back completely.
 
@@ -31,3 +32,4 @@ Package tiers are the hard upper bound on access. See `permissions.mdc` for the 
 - `modules.mdc`
 - `permissions.mdc`
 - `default_user_roles.mdc`
+- `version-disabled-screens.mdc`

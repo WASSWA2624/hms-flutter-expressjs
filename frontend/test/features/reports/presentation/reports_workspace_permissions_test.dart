@@ -57,8 +57,11 @@ const ComplianceLogItem _auditLog = ComplianceLogItem(
 AppAccessPolicy _policy({
   Set<AppPermission>? permissions,
   bool includeModule = true,
+  bool preserveExactPermissions = false,
 }) {
-  return AppAccessPolicy.fromSession(
+  final Set<AppPermission> effective =
+      permissions ?? <AppPermission>{AppPermissions.reportsRead};
+  final AppAccessPolicy policy = AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
       user: const AuthUserProfile(
@@ -66,7 +69,7 @@ AppAccessPolicy _policy({
         facilityId: 'facility-1',
         roles: <String>['REPORTING'],
       ),
-      permissions: permissions ?? <AppPermission>{AppPermissions.reportsRead},
+      permissions: effective,
       moduleEntitlements: includeModule
           ? const <AppModuleEntitlement>[
               AppModuleEntitlement(
@@ -75,8 +78,13 @@ AppAccessPolicy _policy({
               ),
             ]
           : const <AppModuleEntitlement>[],
+      isAuthorizationHydrated: true,
     ),
   );
+  if (!preserveExactPermissions) {
+    return policy;
+  }
+  return policy.copyWithPermissions(effective);
 }
 
 void _stubWorkspace(_MockReportsRepository repository) {
@@ -221,7 +229,8 @@ void main() {
 
     expect(canWriteReports(_policy()), isFalse);
     expect(find.text('Run report'), findsNothing);
-    expect(find.text('Daily census'), findsWidgets);
+    expect(find.text('Reporting and Analytics'), findsWidgets);
+    expect(find.text('Browse catalog'), findsOneWidget);
     expect(find.text('Daily census email'), findsOneWidget);
   });
 
@@ -237,6 +246,12 @@ void main() {
     await _pumpReports(tester, repository: repository, policy: writer);
 
     expect(canWriteReports(writer), isTrue);
+    expect(find.text('Create or run report'), findsWidgets);
+    await tester.tap(find.text('Browse catalog'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+    expect(find.text('Daily census'), findsWidgets);
     expect(find.text('Run report'), findsWidgets);
   });
 
@@ -245,6 +260,7 @@ void main() {
   ) async {
     final AppAccessPolicy complianceOnly = _policy(
       permissions: <AppPermission>{AppPermissions.complianceRead},
+      preserveExactPermissions: true,
     );
     await _pumpReports(
       tester,
@@ -291,6 +307,11 @@ void main() {
   ) async {
     await _pumpReports(tester, repository: repository, policy: _policy());
 
+    await tester.tap(find.text('Browse catalog'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
     final AppListTable<ReportsWorkspaceItem> itemsTable = tester
         .widgetList<AppListTable<ReportsWorkspaceItem>>(
           find.byType(AppListTable<ReportsWorkspaceItem>),
@@ -317,6 +338,7 @@ void main() {
   ) async {
     final AppAccessPolicy complianceReader = _policy(
       permissions: <AppPermission>{AppPermissions.complianceRead},
+      preserveExactPermissions: true,
     );
     await _pumpReports(
       tester,
@@ -350,6 +372,7 @@ void main() {
         AppPermissions.complianceRead,
         AppPermissions.evidenceExport,
       },
+      preserveExactPermissions: true,
     );
     await _pumpReports(tester, repository: repository, policy: exporter);
     await tester.pumpAndSettle();
@@ -363,6 +386,11 @@ void main() {
     WidgetTester tester,
   ) async {
     await _pumpReports(tester, repository: repository, policy: _policy());
+
+    await tester.tap(find.text('Browse catalog'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
 
     final AppListTable<ReportsWorkspaceItem> table = tester
         .widgetList<AppListTable<ReportsWorkspaceItem>>(
@@ -390,6 +418,10 @@ void main() {
       },
     );
     await _pumpReports(tester, repository: repository, policy: exporter);
+    await tester.tap(find.text('Browse catalog'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
     final AppListTable<ReportsWorkspaceItem> exportTable = tester
         .widgetList<AppListTable<ReportsWorkspaceItem>>(
           find.byType(AppListTable<ReportsWorkspaceItem>),
@@ -469,7 +501,12 @@ void main() {
       stubDefaults: false,
     );
 
-    expect(find.text('Run report'), findsNothing);
+    expect(find.text('Create or run report'), findsWidgets);
+    await tester.tap(find.text('Browse catalog'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+    expect(find.text('No report records'), findsOneWidget);
     expect(find.byType(AppListTable<ReportsWorkspaceItem>), findsWidgets);
   });
 
@@ -491,6 +528,12 @@ void main() {
         ),
         themeMode: mode,
       );
+      expect(find.text('Reporting and Analytics'), findsWidgets);
+      expect(find.text('Browse catalog'), findsWidgets);
+      await tester.tap(find.text('Browse catalog').first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
       expect(find.text('Daily census'), findsWidgets);
       expect(find.text('Run report'), findsWidgets);
     }
@@ -512,6 +555,11 @@ void main() {
     );
 
     expect(find.byType(ReportsWorkspacePage), findsOneWidget);
+    expect(find.text('Create or run report'), findsWidgets);
+    await tester.tap(find.text('Browse catalog'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
     expect(find.byType(AppListTable<ReportsWorkspaceItem>), findsWidgets);
     expect(find.text('Run report'), findsWidgets);
     expect(canWriteReports(_policy(
@@ -557,7 +605,7 @@ void main() {
     expect(find.textContaining('Try again'), findsWidgets);
   });
 
-  testWidgets('module strip hides write affordances despite permission string', (
+  testWidgets('module strip does not gate platform reports write affordances', (
     WidgetTester tester,
   ) async {
     final AppAccessPolicy stripped = _policy(
@@ -569,8 +617,9 @@ void main() {
     );
     await _pumpReports(tester, repository: repository, policy: stripped);
 
-    expect(canWriteReports(stripped), isFalse);
-    expect(find.text('Run report'), findsNothing);
+    // reporting-analytics is platform infrastructure — write stays effective.
+    expect(canWriteReports(stripped), isTrue);
+    expect(find.text('Create or run report'), findsWidgets);
   });
 
   testWidgets(
@@ -583,6 +632,11 @@ void main() {
         },
       );
       await _pumpReports(tester, repository: repository, policy: both);
+
+      await tester.tap(find.text('Browse catalog'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       final AppListTable<ReportsWorkspaceItem> itemsTable = tester
           .widgetList<AppListTable<ReportsWorkspaceItem>>(
@@ -627,6 +681,11 @@ void main() {
         ),
       );
 
+      await tester.tap(find.text('Browse catalog'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
       await tester.tap(find.text('Run report').first);
       await tester.pumpAndSettle();
 
@@ -659,6 +718,11 @@ void main() {
           },
         ),
       );
+
+      await tester.tap(find.text('Browse catalog'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       final AppListTable<ReportsWorkspaceItem> itemsTable = tester
           .widgetList<AppListTable<ReportsWorkspaceItem>>(
@@ -726,8 +790,9 @@ void main() {
     );
 
     expect(find.byType(ReportsWorkspacePage), findsOneWidget);
-    expect(find.byType(AppListTable<ReportsWorkspaceItem>), findsWidgets);
     expect(find.text('Run report'), findsNothing);
+    expect(find.text('Create or run report'), findsNothing);
+    expect(find.byType(AppListTable<ReportsWorkspaceItem>), findsWidgets);
     final List<AppListTable<ReportsWorkspaceItem>> tables = tester
         .widgetList<AppListTable<ReportsWorkspaceItem>>(
           find.byType(AppListTable<ReportsWorkspaceItem>),
@@ -742,7 +807,7 @@ void main() {
     );
   });
 
-  testWidgets('module strip hides export affordances despite evidence:export', (
+  testWidgets('module strip does not gate evidence:export when not module-mapped', (
     WidgetTester tester,
   ) async {
     final AppAccessPolicy stripped = _policy(
@@ -751,11 +816,13 @@ void main() {
         AppPermissions.evidenceExport,
       },
       includeModule: false,
+      preserveExactPermissions: true,
     );
     await _pumpReports(tester, repository: repository, policy: stripped);
 
-    expect(canExportEvidence(stripped), isFalse);
-    expect(find.text('Export evidence'), findsNothing);
+    // evidence:export is core/platform — not stripped by reporting module absence.
+    expect(canExportEvidence(stripped), isTrue);
+    expect(find.text('Export evidence'), findsWidgets);
   });
 
   testWidgets(
@@ -763,6 +830,7 @@ void main() {
     (WidgetTester tester) async {
       final AppAccessPolicy reviewer = _policy(
         permissions: <AppPermission>{AppPermissions.complianceReview},
+        preserveExactPermissions: true,
       );
       await _pumpReports(tester, repository: repository, policy: reviewer);
       await tester.pumpAndSettle();
@@ -779,6 +847,7 @@ void main() {
     (WidgetTester tester) async {
       final AppAccessPolicy complianceOnly = _policy(
         permissions: <AppPermission>{AppPermissions.complianceRead},
+        preserveExactPermissions: true,
       );
       await _pumpReports(
         tester,
@@ -853,6 +922,9 @@ void main() {
         policy: exporter,
         stubDefaults: false,
       );
+      await tester.tap(find.text('Browse catalog'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 800));
       expect(find.text('Download'), findsWidgets);
 
       final AppListTable<ReportsWorkspaceItem> table = tester
@@ -861,7 +933,8 @@ void main() {
           )
           .first;
       table.onRowSelected!(completedRun);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
 
       // Download is the row next-action; detail omits it but keeps Print.
       expect(
@@ -887,7 +960,10 @@ void main() {
     await _pumpReports(
       tester,
       repository: repository,
-      policy: _policy(permissions: <AppPermission>{AppPermissions.complianceRead}),
+      policy: _policy(
+        permissions: <AppPermission>{AppPermissions.complianceRead},
+        preserveExactPermissions: true,
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -922,6 +998,7 @@ void main() {
         AppPermissions.complianceRead,
         AppPermissions.evidenceExport,
       },
+      preserveExactPermissions: true,
     );
     await _pumpReports(tester, repository: repository, policy: exporter);
     await tester.pumpAndSettle();
@@ -998,6 +1075,11 @@ void main() {
       );
 
       expect(find.text('Run report'), findsNothing);
+      expect(find.text('Create or run report'), findsNothing);
+      await tester.tap(find.text('Browse catalog'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
       expect(find.text('Download'), findsWidgets);
       final AppListTable<ReportsWorkspaceItem> itemsTable = tester
           .widgetList<AppListTable<ReportsWorkspaceItem>>(

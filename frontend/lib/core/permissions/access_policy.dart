@@ -2,6 +2,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/commercial_module_tiers.dart';
 import 'package:hosspi_hms/core/permissions/permission_module_map.dart';
 import 'package:hosspi_hms/core/permissions/plan_permission_caps.dart';
+import 'package:hosspi_hms/core/permissions/version_disabled_permissions.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 
 enum AppRole {
@@ -278,9 +279,14 @@ final class AppAccessPolicy {
             PlanPermissionCaps.resolveFromSession(session),
           );
 
+    // Version-disabled domains stay denied for every actor (including
+    // platform-elevated paths that skip plan caps).
+    final Set<AppPermission> versionGated =
+        VersionDisabledPermissions.apply(planGated);
+
     return AppAccessPolicy._(
       roles: roles,
-      permissions: Set<AppPermission>.unmodifiable(planGated),
+      permissions: Set<AppPermission>.unmodifiable(versionGated),
       tenantId: tenantId,
       facilityId: _nonEmpty(user?.facilityId),
       moduleEntitlements: entitlements,

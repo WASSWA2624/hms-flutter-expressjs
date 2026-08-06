@@ -22,6 +22,7 @@ Frontend RBAC, ABAC, entitlements, and platform permissions — aligned with `ba
 - Shipped defaults live in [`.cursor/access/`](../../.cursor/access/); admin changes must be versioned, auditable, and atomically restorable.
 - Authority order (strict): active **subscription package** → assigned **roles/modules** → **permissions** → tenant/facility ABAC scope.
 - Effective permissions = union(role/module/user grants) ∩ subscription package ∩ assigned modules ∩ ABAC scope. No grant may unlock excluded modules, menus, routes, actions, or workflows.
+- Version-disabled domains (see `.cursor/access/version-disabled-screens.mdc`) must stay stripped from `AppAccessPolicy` and plan caps for every user and package.
 - `AppAccessPolicy.grants` and route/action gates must enforce this formula before rendering or enabling UI.
 - Must hide/disable menus, components, actions, and workflows unauthorized users cannot access; backend authorization remains mandatory.
 - Must separate platform permissions (camera, etc.) from app authorization.

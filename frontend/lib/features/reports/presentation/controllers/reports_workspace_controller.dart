@@ -142,14 +142,30 @@ final class ReportsWorkspaceController
   }
 
   Future<AppFailure?> applyDataset(String? value) {
+    final String? trimmed = value?.trim();
+    final bool hasDataset = trimmed != null && trimmed.isNotEmpty;
+    final bool openCatalog =
+        hasDataset &&
+        canAccessReportsPanel(_policy, ReportsWorkspacePanel.catalog);
     return _applyQuery(
       (ReportsWorkspaceQuery current) => current.copyWith(
-        dataset: value,
+        panel: openCatalog ? ReportsWorkspacePanel.catalog : null,
+        resource: openCatalog
+            ? ReportsWorkspaceResource.reportDefinitions
+            : null,
+        dataset: trimmed,
         pageRequest: current.pageRequest.first(),
-        clearDataset: value == null || value.trim().isEmpty,
+        clearDataset: !hasDataset,
+        clearStatus: openCatalog,
+        clearFormat: openCatalog,
       ),
       clearSelections: true,
     );
+  }
+
+  /// Open Catalog pre-filtered to a domain dataset (Overview / deep-link path).
+  Future<AppFailure?> openCatalogDataset(String datasetKey) {
+    return applyDataset(datasetKey);
   }
 
   Future<AppFailure?> changePage(AppPageRequest request) {

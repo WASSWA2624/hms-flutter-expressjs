@@ -1,5 +1,6 @@
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_module_map.dart';
+import 'package:hosspi_hms/core/permissions/version_disabled_permissions.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 
 /// Mirrors backend `subscription-permission-caps.js`.
@@ -20,8 +21,7 @@ abstract final class PlanPermissionCaps {
     'opd:read',
     'clinical:read',
     'clinical:write',
-    'emergency:read',
-    'emergency:write',
+    // emergency:* and communications:* withheld — version-disabled-screens.
     'pharmacy:read',
     'pharmacy:write',
     'billing:read',
@@ -30,8 +30,6 @@ abstract final class PlanPermissionCaps {
     'pricing:pharmacy_write',
     'pricing:facility_read',
     'pricing:facility_write',
-    'communications:read',
-    'communications:write',
     'subscriptions:read',
     'subscriptions:write',
   };
@@ -46,19 +44,17 @@ abstract final class PlanPermissionCaps {
     'financial:approve',
     'claims:read',
     'ipd:read',
-    'rooms_beds:read',
+    // rooms_beds:* and physiotherapy:* withheld — version-disabled-screens.
     'nursing:read',
     'icu:read',
     'discharge:read',
-    'physiotherapy:read',
     'theater:read',
   };
 
   static const Set<String> pro = <String>{
     ...advanced,
-    'operations:read',
-    'operations:write',
-    'housekeeping:read',
+    // operations:*, housekeeping:*, biomed:*, mortuary:*, integration:*
+    // withheld — version-disabled-screens.
     'hr:read',
     'hr:write',
     'unit:read',
@@ -67,20 +63,6 @@ abstract final class PlanPermissionCaps {
     'roster:write',
     'roster:publish',
     'roster:approve',
-    'biomed:read',
-    'biomed:write',
-    'mortuary:read',
-    'mortuary:write',
-    'mortuary:release',
-    'mortuary:manage_storage',
-    'mortuary:post_mortem_request',
-    'mortuary:approve',
-    'mortuary:billing_event',
-    'mortuary:export',
-    'mortuary:audit',
-    'integration:read',
-    'integration:write',
-    'integration:delete',
   };
 
   static const Map<String, Set<String>> byTier = <String, Set<String>>{
@@ -98,10 +80,12 @@ abstract final class PlanPermissionCaps {
     String? planTierCode,
     Iterable<String> allowedPermissions = const <String>[],
   }) {
-    final List<String> explicit = allowedPermissions
-        .map((String value) => value.trim())
-        .where((String value) => value.isNotEmpty)
-        .toList(growable: false);
+    final List<String> explicit = VersionDisabledPermissions.applyNames(
+      allowedPermissions
+          .map((String value) => value.trim())
+          .where((String value) => value.isNotEmpty)
+          .toSet(),
+    ).toList(growable: false);
     if (explicit.isNotEmpty) {
       return Set<String>.unmodifiable(explicit);
     }
@@ -147,15 +131,15 @@ abstract final class PlanPermissionCaps {
     Set<AppPermission> permissions,
     Set<String>? cap,
   ) {
-    if (cap == null) {
-      return permissions;
-    }
-    return permissions
-        .where(
-          (AppPermission permission) =>
-              !PermissionModuleMap.isModuleScoped(permission.value) ||
-              cap.contains(permission.value),
-        )
-        .toSet();
+    final Set<AppPermission> capped = cap == null
+        ? permissions
+        : permissions
+              .where(
+                (AppPermission permission) =>
+                    !PermissionModuleMap.isModuleScoped(permission.value) ||
+                    cap.contains(permission.value),
+              )
+              .toSet();
+    return VersionDisabledPermissions.apply(capped);
   }
 }

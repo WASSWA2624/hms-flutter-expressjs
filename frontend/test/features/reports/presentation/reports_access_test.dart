@@ -12,6 +12,22 @@ const List<AppModuleEntitlement> _reportsModule = <AppModuleEntitlement>[
   AppModuleEntitlement(code: 'reporting-analytics', licenseStatus: 'ACTIVE'),
 ];
 
+const List<AppModuleEntitlement> _billingModules = <AppModuleEntitlement>[
+  AppModuleEntitlement(code: 'reporting-analytics', licenseStatus: 'ACTIVE'),
+  AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+];
+
+const List<AppModuleEntitlement> _pharmacyModules = <AppModuleEntitlement>[
+  AppModuleEntitlement(code: 'reporting-analytics', licenseStatus: 'ACTIVE'),
+  AppModuleEntitlement(code: 'pharmacy-dispensing', licenseStatus: 'ACTIVE'),
+];
+
+const List<AppModuleEntitlement> _receptionModules = <AppModuleEntitlement>[
+  AppModuleEntitlement(code: 'reporting-analytics', licenseStatus: 'ACTIVE'),
+  AppModuleEntitlement(code: 'patient-registry', licenseStatus: 'ACTIVE'),
+  AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
+];
+
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement> modules = _reportsModule,
@@ -27,6 +43,7 @@ AppAccessPolicy _policy({
       ),
       permissions: permissions,
       moduleEntitlements: modules,
+      isAuthorizationHydrated: true,
     ),
   );
 }
@@ -40,8 +57,10 @@ void main() {
       final AppAccessPolicy complianceOnly = _policy(
         permissions: <AppPermission>{AppPermissions.complianceRead},
       );
+      // Empty session: no platform reports:read injection.
       final AppAccessPolicy neither = _policy(
-        permissions: <AppPermission>{AppPermissions.evidenceExport},
+        permissions: const <AppPermission>{},
+        roles: const <String>[],
       );
 
       expect(reportsWorkspaceReadRequirement.isAllowed(reportsOnly), isTrue);
@@ -163,8 +182,11 @@ void main() {
       final AppAccessPolicy catalogOnly = _policy(
         permissions: <AppPermission>{AppPermissions.reportsRead},
       );
+      // Platform always injects reports:read when any permission is present, so
+      // a compliance JWT without reports still opens catalog + compliance.
       final AppAccessPolicy complianceOnly = _policy(
         permissions: <AppPermission>{AppPermissions.complianceRead},
+        roles: const <String>[],
       );
 
       expect(
@@ -178,14 +200,15 @@ void main() {
         isFalse,
       );
       expect(
-        reportsAllowedPanels(complianceOnly).every(
-          (ReportsWorkspacePanel panel) => panel.isCompliance,
-        ),
-        isTrue,
+        reportsAllowedPanels(complianceOnly),
+        containsAll(<ReportsWorkspacePanel>[
+          ReportsWorkspacePanel.overview,
+          ReportsWorkspacePanel.audit,
+        ]),
       );
       expect(
         reportsFallbackPanel(complianceOnly),
-        ReportsWorkspacePanel.audit,
+        ReportsWorkspacePanel.overview,
       );
     });
 
@@ -235,6 +258,139 @@ void main() {
         );
         expect(canAccessShellRoute(AppRoutes.reports, policy), isTrue);
       }
+    });
+
+    test('accountant finance pack hides monitor/activity; keeps create path', () {
+      final AppAccessPolicy accountant = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.reportsRead,
+          AppPermissions.reportsWrite,
+          AppPermissions.billingRead,
+        },
+        modules: _billingModules,
+        roles: const <String>['BILLING'],
+      );
+
+      final List<ReportsWorkspacePanel> panels = reportsAllowedPanels(
+        accountant,
+      );
+      expect(panels, contains(ReportsWorkspacePanel.overview));
+      expect(panels, contains(ReportsWorkspacePanel.catalog));
+      expect(panels, contains(ReportsWorkspacePanel.delivery));
+      expect(panels, contains(ReportsWorkspacePanel.dashboards));
+      expect(panels, isNot(contains(ReportsWorkspacePanel.monitor)));
+      expect(panels, isNot(contains(ReportsWorkspacePanel.activity)));
+      expect(canWriteReports(accountant), isTrue);
+      expect(
+        canAccessReportsDatasetCategory(accountant, 'billing'),
+        isTrue,
+      );
+      expect(
+        canAccessReportsDatasetCategory(accountant, 'pharmacy'),
+        isFalse,
+      );
+    });
+
+    test('pharmacist pack shows pharmacy datasets and omits dashboards', () {
+      final AppAccessPolicy pharmacist = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.reportsRead,
+          AppPermissions.pharmacyRead,
+        },
+        modules: _pharmacyModules,
+        roles: const <String>['PHARMACIST'],
+      );
+
+      final List<ReportsWorkspacePanel> panels = reportsAllowedPanels(
+        pharmacist,
+      );
+      expect(panels, contains(ReportsWorkspacePanel.overview));
+      expect(panels, contains(ReportsWorkspacePanel.catalog));
+      expect(panels, contains(ReportsWorkspacePanel.delivery));
+      expect(panels, isNot(contains(ReportsWorkspacePanel.dashboards)));
+      expect(panels, isNot(contains(ReportsWorkspacePanel.monitor)));
+      expect(
+        canAccessReportsDatasetCategory(pharmacist, 'pharmacy'),
+        isTrue,
+      );
+      expect(
+        canAccessReportsDatasetCategory(pharmacist, 'billing'),
+        isFalse,
+      );
+      expect(
+        reportsPrimaryDatasetKeys(pharmacist),
+        contains('pharmacy_drug_consumption'),
+      );
+    });
+
+    test('receptionist pack prefers patients and appointments datasets', () {
+      final AppAccessPolicy receptionist = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.reportsRead,
+          AppPermissions.receptionRead,
+        },
+        modules: _receptionModules,
+        roles: const <String>['RECEPTIONIST'],
+      );
+
+      expect(
+        reportsAllowedPanels(receptionist),
+        containsAll(<ReportsWorkspacePanel>[
+          ReportsWorkspacePanel.overview,
+          ReportsWorkspacePanel.catalog,
+          ReportsWorkspacePanel.delivery,
+        ]),
+      );
+      expect(
+        canAccessReportsDatasetCategory(receptionist, 'patients'),
+        isTrue,
+      );
+      expect(
+        canAccessReportsDatasetCategory(receptionist, 'billing'),
+        isFalse,
+      );
+    });
+
+    test('multi-role union merges finance and pharmacy panels and datasets', () {
+      final AppAccessPolicy both = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.reportsRead,
+          AppPermissions.billingRead,
+          AppPermissions.pharmacyRead,
+        },
+        modules: <AppModuleEntitlement>[
+          ..._billingModules,
+          const AppModuleEntitlement(
+            code: 'pharmacy-dispensing',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+        roles: const <String>['BILLING', 'PHARMACIST'],
+      );
+
+      final List<ReportsWorkspacePanel> panels = reportsAllowedPanels(both);
+      expect(panels, contains(ReportsWorkspacePanel.dashboards));
+      expect(panels, isNot(contains(ReportsWorkspacePanel.monitor)));
+      expect(canAccessReportsDatasetCategory(both, 'billing'), isTrue);
+      expect(canAccessReportsDatasetCategory(both, 'pharmacy'), isTrue);
+    });
+
+    test('reports:read without domain keeps full infra panel set', () {
+      final AppAccessPolicy reporting = _policy(
+        permissions: <AppPermission>{AppPermissions.reportsRead},
+      );
+      expect(
+        reportsAllowedPanels(reporting),
+        containsAll(<ReportsWorkspacePanel>[
+          ReportsWorkspacePanel.overview,
+          ReportsWorkspacePanel.catalog,
+          ReportsWorkspacePanel.delivery,
+          ReportsWorkspacePanel.dashboards,
+          ReportsWorkspacePanel.monitor,
+          ReportsWorkspacePanel.activity,
+        ]),
+      );
+      expect(reportsFallbackPanel(reporting), ReportsWorkspacePanel.overview);
     });
   });
 }
