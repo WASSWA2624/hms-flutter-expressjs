@@ -163,7 +163,7 @@ void main() {
     await tester.pumpAndSettle();
 
     selectButton = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Select patine'),
+      find.widgetWithText(AppButton, 'Select patient'),
     );
     expect(selectButton.enabled, isTrue);
 

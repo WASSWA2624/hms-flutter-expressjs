@@ -614,7 +614,19 @@ void main() {
       final Offset chevronCenter = tester.getCenter(
         find.byIcon(Icons.expand_less),
       );
+      final Offset titleCenter = tester.getCenter(find.text('CBC PANEL'));
       expect(chevronCenter.dx, greaterThan(deleteCenter.dx));
+      // Trailing controls stay flush-right (not mid-header).
+      expect(chevronCenter.dx, greaterThan(400));
+      // Chevron stays vertically centered with the delete action.
+      expect(
+        (chevronCenter.dy - deleteCenter.dy).abs(),
+        lessThan(1),
+      );
+      expect(
+        (chevronCenter.dy - titleCenter.dy).abs(),
+        lessThan(8),
+      );
 
       final Text title = tester.widget<Text>(find.text('CBC PANEL'));
       expect(title.style?.fontWeight, AppFontWeight.strong);

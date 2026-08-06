@@ -167,28 +167,14 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                       vertical: theme.spacing.xs / 2,
                     ),
                     child: Row(
-                      crossAxisAlignment: widget.headerMetaInline
-                          ? CrossAxisAlignment.center
-                          : CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: <Widget>[
                         if (widget.titleIcon != null) ...<Widget>[
-                          if (!widget.headerMetaInline)
-                            Padding(
-                              padding: EdgeInsets.only(
-                                top: theme.spacing.xs / 2,
-                              ),
-                              child: Icon(
-                                widget.titleIcon,
-                                size: theme.appTokens.listIconSize,
-                                color: accent,
-                              ),
-                            )
-                          else
-                            Icon(
-                              widget.titleIcon,
-                              size: theme.appTokens.listIconSize,
-                              color: accent,
-                            ),
+                          Icon(
+                            widget.titleIcon,
+                            size: theme.appTokens.listIconSize,
+                            color: accent,
+                          ),
                           SizedBox(width: theme.spacing.sm),
                         ],
                         Expanded(
@@ -202,66 +188,64 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                                 inline: widget.headerMetaInline,
                               ),
                         ),
-                        if (widget.headerActions.isNotEmpty) ...<Widget>[
+                        if (widget.headerActions.isNotEmpty ||
+                            widget.collapsible) ...<Widget>[
                           SizedBox(width: theme.spacing.sm),
-                          // Keep header actions tappable without toggling.
-                          // Flexible so full-width children (or many chips) do
-                          // not receive unbounded Row width and crash layout.
+                          // Keep trailing controls flush-right and vertically
+                          // centered. Flexible bounds wide action children so
+                          // the header Row never gets unbounded width.
                           Flexible(
-                            child: Builder(
-                              builder: (BuildContext context) {
-                                final bool compact =
-                                    AppBreakpoints.of(context).isMobile;
-                                final AppActionLabelScope? ambient =
-                                    AppActionLabelScope.maybeOf(context);
-                                return AppActionLabelScope(
-                                  showLabels: compact
-                                      ? false
-                                      : (ambient?.showLabels ?? true),
-                                  forceIconOnly: compact,
-                                  plainChrome: true,
-                                  child: Wrap(
-                                    alignment: WrapAlignment.end,
-                                    crossAxisAlignment:
-                                        WrapCrossAlignment.center,
-                                    spacing: theme.spacing.xs,
-                                    runSpacing: theme.spacing.xs,
-                                    children: widget.headerActions,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: <Widget>[
+                                if (widget.headerActions.isNotEmpty)
+                                  Flexible(
+                                    child: Builder(
+                                      builder: (BuildContext context) {
+                                        final bool compact =
+                                            AppBreakpoints.of(context).isMobile;
+                                        final AppActionLabelScope? ambient =
+                                            AppActionLabelScope.maybeOf(
+                                          context,
+                                        );
+                                        return AppActionLabelScope(
+                                          showLabels: compact
+                                              ? false
+                                              : (ambient?.showLabels ?? true),
+                                          forceIconOnly: compact,
+                                          plainChrome: true,
+                                          child: Wrap(
+                                            alignment: WrapAlignment.end,
+                                            crossAxisAlignment:
+                                                WrapCrossAlignment.center,
+                                            spacing: theme.spacing.xs,
+                                            runSpacing: theme.spacing.xs,
+                                            children: widget.headerActions,
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ),
-                                );
-                              },
+                                if (widget.collapsible) ...<Widget>[
+                                  if (widget.headerActions.isNotEmpty)
+                                    SizedBox(width: theme.spacing.xs),
+                                  Icon(
+                                    _resolvedExpanded
+                                        ? Icons.expand_less
+                                        : Icons.expand_more,
+                                    size: theme.appTokens.listIconSize,
+                                    color: chevron,
+                                    semanticLabel: _resolvedExpanded
+                                        ? context
+                                            .l10n.commonShowLessActionLabel
+                                        : context
+                                            .l10n.commonShowMoreActionLabel,
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
-                        ],
-                        if (widget.collapsible) ...<Widget>[
-                          SizedBox(width: theme.spacing.xs),
-                          if (!widget.headerMetaInline)
-                            Padding(
-                              padding: EdgeInsets.only(
-                                top: theme.spacing.xs / 2,
-                              ),
-                              child: Icon(
-                                _resolvedExpanded
-                                    ? Icons.expand_less
-                                    : Icons.expand_more,
-                                size: theme.appTokens.listIconSize,
-                                color: chevron,
-                                semanticLabel: _resolvedExpanded
-                                    ? context.l10n.commonShowLessActionLabel
-                                    : context.l10n.commonShowMoreActionLabel,
-                              ),
-                            )
-                          else
-                            Icon(
-                              _resolvedExpanded
-                                  ? Icons.expand_less
-                                  : Icons.expand_more,
-                              size: theme.appTokens.listIconSize,
-                              color: chevron,
-                              semanticLabel: _resolvedExpanded
-                                  ? context.l10n.commonShowLessActionLabel
-                                  : context.l10n.commonShowMoreActionLabel,
-                            ),
                         ],
                       ],
                     ),
