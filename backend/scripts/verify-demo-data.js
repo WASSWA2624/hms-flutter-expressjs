@@ -262,6 +262,19 @@ const verifyDemoData = async () => {
       prisma.patient_report_job.count({ where: { deleted_at: null } }),
       prisma.shift.count({ where: { deleted_at: null } }),
       prisma.message.count({ where: { deleted_at: null } }),
+      prisma.clinical_note.count({ where: { deleted_at: null } }),
+      prisma.patient_allergy.count({ where: { deleted_at: null } }),
+      prisma.care_plan.count({ where: { deleted_at: null } }),
+      prisma.clinical_alert.count({ where: { deleted_at: null } }),
+      prisma.theatre_case.count({ where: { deleted_at: null } }),
+      prisma.patient_insurance_enrollment.count({ where: { deleted_at: null } }),
+      prisma.price_book_entry.count({ where: { deleted_at: null } }),
+      prisma.bed_assignment.count({ where: { deleted_at: null } }),
+      prisma.imaging_study.count({ where: { deleted_at: null } }),
+      prisma.referral.count({ where: { deleted_at: null } }),
+      prisma.follow_up.count({ where: { deleted_at: null } }),
+      prisma.report_schedule.count({ where: { deleted_at: null } }),
+      prisma.bed.count({ where: { deleted_at: null } }),
     ]),
   ]);
 
@@ -450,6 +463,16 @@ const verifyDemoData = async () => {
       ['analytics_events', extendedVolumeCounts[12], highFloor],
       ['patient_report_jobs', extendedVolumeCounts[13], highFloor],
       ['shifts', extendedVolumeCounts[14], highFloor],
+      ['clinical_notes', extendedVolumeCounts[16], highFloor],
+      ['patient_allergies', extendedVolumeCounts[17], highFloor],
+      ['care_plans', extendedVolumeCounts[18], highFloor],
+      ['clinical_alerts', extendedVolumeCounts[19], highFloor],
+      ['theatre_cases', extendedVolumeCounts[20], highFloor],
+      ['patient_insurance_enrollments', extendedVolumeCounts[21], highFloor],
+      ['bed_assignments', extendedVolumeCounts[23], highFloor],
+      ['imaging_studies', extendedVolumeCounts[24], highFloor],
+      ['referrals', extendedVolumeCounts[25], highFloor],
+      ['follow_ups', extendedVolumeCounts[26], highFloor],
     ];
     for (const [label, count, floor] of highTrafficChecks) {
       if (count < floor) {
@@ -464,6 +487,9 @@ const verifyDemoData = async () => {
       ['equipment_work_orders', workOrderCount, secondaryFloor],
       ['mortuary_cases', mortuaryCaseCount, secondaryFloor],
       ['messages', extendedVolumeCounts[15], Math.min(secondaryFloor, 500)],
+      ['price_book_entries', extendedVolumeCounts[22], Math.min(secondaryFloor, 80)],
+      ['report_schedules', extendedVolumeCounts[27], Math.min(secondaryFloor, 48)],
+      ['beds', extendedVolumeCounts[28], Math.min(secondaryFloor, 40)],
     ];
     for (const [label, count, floor] of secondaryChecks) {
       if (count < floor) {

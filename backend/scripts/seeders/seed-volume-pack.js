@@ -198,6 +198,7 @@ const seedVolumePack = async (
   const invoices = [];
   const payments = [];
   const emergencies = [];
+  const radiologyOrders = [];
   const created = {
     patients: 0,
     appointments: 0,
@@ -447,6 +448,7 @@ const seedVolumePack = async (
         },
         { publicIdPrefix: 'RDR', seedMeta: false }
       );
+      radiologyOrders.push(order);
       created.radiology_results += 1;
       created.radiology_orders += 1;
     });
@@ -731,6 +733,7 @@ const seedVolumePack = async (
     invoices,
     payments,
     emergencies,
+    radiology_orders: radiologyOrders,
     facility,
     doctor,
     nurse,

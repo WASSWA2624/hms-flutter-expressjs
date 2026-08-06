@@ -122,6 +122,7 @@ const seedDemoData = async ({
     orgPack,
     accessPack,
     operationsPack,
+    clinicalCatalogPack,
     volumeSummary,
     communicationsPack,
   });

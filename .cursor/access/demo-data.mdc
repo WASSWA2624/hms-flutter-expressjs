@@ -27,7 +27,7 @@ Owns curated + volume demo seeding for local/demo environments. Never seed produ
 
 - `SEED_RECORD_COUNT` defaults to **1000**; `0` is curated-only.
 - Core volume tables must reach the target: patients, appointments, encounters, admissions, lab/pharmacy/radiology, invoices/payments, emergencies, stock movements, biomed work orders, mortuary cases, notifications.
-- Extended volume (lived-in facility): diagnoses, vitals, procedures, nursing notes/ward rounds/MAR/discharges, visit queues, refunds/adjustments/insurance claims/pre-auths, triage/ambulance trips, shifts/payroll, audit/PHI logs, report definitions/runs, KPIs, analytics events, patient report jobs, messages.
+- Extended volume (lived-in facility): diagnoses, vitals, procedures, nursing notes/ward rounds/MAR/discharges, visit queues, refunds/adjustments/insurance claims/pre-auths/enrollments, triage/ambulance trips, shifts/payroll, audit/PHI logs, report definitions/runs/schedules, KPIs, analytics events, patient report jobs, messages, clinical notes/care plans/alerts/allergies, theatre cases, beds/assignments, imaging studies, referrals/follow-ups, price books/scheme offers.
 - Exclude intentional singletons/catalogs: one demo tenant/facility/subscription/license; plan/add-on/module catalogs; role/permission catalogs; `_prisma_migrations`.
 
 ## Scenario Coverage

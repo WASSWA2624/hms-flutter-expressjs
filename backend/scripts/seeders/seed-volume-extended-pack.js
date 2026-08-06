@@ -65,6 +65,41 @@ const ACCESS_SCOPES = Object.freeze(['TENANT', 'FACILITY', 'DEPARTMENT', 'PATIEN
 const RUN_STATUSES = Object.freeze(['QUEUED', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED']);
 const WIDGET_TYPES = Object.freeze(['KPI', 'LINE_CHART', 'BAR_CHART', 'TABLE', 'DONUT']);
 const KPI_STATES = Object.freeze(['NORMAL', 'WARNING', 'CRITICAL']);
+const ALLERGENS = Object.freeze([
+  ['Penicillin', 'SEVERE', 'Anaphylaxis'],
+  ['Sulfa drugs', 'MODERATE', 'Rash'],
+  ['Latex', 'MILD', 'Contact dermatitis'],
+  ['Peanuts', 'SEVERE', 'Urticaria'],
+  ['Iodine contrast', 'MODERATE', 'Itching'],
+  ['Aspirin', 'MILD', 'GI upset'],
+]);
+const HISTORY_CONDITIONS = Object.freeze([
+  'Hypertension', 'Type 2 diabetes', 'Asthma', 'HIV on ART', 'Sickle cell trait', 'Peptic ulcer disease',
+]);
+const THEATRE_STATUSES = Object.freeze(['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']);
+const THEATRE_PROCEDURES = Object.freeze([
+  'Appendectomy', 'Caesarean section', 'Hernia repair', 'Debridement', 'ORIF tibia', 'Tonsillectomy',
+]);
+const IMAGING_MODALITIES = Object.freeze([
+  'XRAY', 'CT', 'MRI', 'ULTRASOUND', 'FLUOROSCOPY', 'MAMMOGRAPHY',
+]);
+const REFERRAL_STATUSES = Object.freeze([
+  'REQUESTED', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED',
+]);
+const FOLLOW_UP_STATUSES = Object.freeze(['SCHEDULED', 'COMPLETED', 'CANCELLED']);
+const ALERT_STATUSES = Object.freeze(['NEW', 'ACKNOWLEDGED', 'RESOLVED']);
+const ALERT_SEVERITIES = Object.freeze(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
+const ENROLLMENT_STATUSES = Object.freeze(['ACTIVE', 'EXPIRED', 'SUSPENDED', 'PENDING']);
+const CONSENT_TYPES = Object.freeze(['TREATMENT', 'DATA_SHARING', 'RESEARCH', 'BILLING', 'OTHER']);
+const CONSENT_STATUSES = Object.freeze(['GRANTED', 'REVOKED', 'PENDING']);
+const WARD_TYPES = Object.freeze(['GENERAL', 'ICU', 'MATERNITY', 'PEDIATRIC', 'SURGICAL']);
+const BED_STATUSES = Object.freeze([
+  'AVAILABLE', 'OCCUPIED', 'RESERVED', 'CLEANING', 'MAINTENANCE', 'BLOCKED',
+]);
+const APPROVAL_TYPES = Object.freeze(['REFUND', 'VOID', 'ADJUSTMENT']);
+const APPROVAL_STATUSES = Object.freeze(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']);
+const STOCK_REASONS = Object.freeze(['PURCHASE', 'DISPENSE', 'RETURN', 'DAMAGE', 'EXPIRY', 'OTHER']);
+const RECORD_STATUSES = Object.freeze(['DRAFT', 'FINAL']);
 
 const pick = (values, index) => values[index % values.length];
 const pad = (value, width = 4) => String(value).padStart(width, '0');
@@ -92,6 +127,7 @@ const seedVolumeExtendedPack = async (
     orgPack,
     accessPack,
     operationsPack,
+    clinicalCatalogPack,
     volumeSummary,
     communicationsPack,
   } = {}
@@ -127,6 +163,16 @@ const seedVolumeExtendedPack = async (
   const invoices = volumeSummary.invoices || [];
   const payments = volumeSummary.payments || [];
   const emergencies = volumeSummary.emergencies || [];
+  const radiologyOrders = volumeSummary.radiology_orders || [];
+
+  const catalogLabTests = Object.values(clinicalCatalogPack?.lab?.tests || {}).filter(Boolean);
+  const catalogDrugs = Object.values(clinicalCatalogPack?.pharmacy?.drugs || {}).filter(Boolean);
+  const catalogRadTests = Object.values(clinicalCatalogPack?.radiology?.tests || {}).filter(Boolean);
+  const inventoryItems = [
+    ...Object.values(clinicalCatalogPack?.pharmacy?.inventoryItems || {}),
+    ...Object.values(operationsPack?.inventoryItems || {}),
+  ].filter(Boolean);
+  const departmentList = Object.values(orgPack?.departments || {}).filter(Boolean);
 
   const seedOpts = {
     tenantCode: scenario.tenant_code,
@@ -173,7 +219,7 @@ const seedVolumeExtendedPack = async (
         vitalPayload.diastolic_value = 70 + (index % 15);
         vitalPayload.map_value = 90 + (index % 10);
       }
-      await ctx.upsert(
+      const vital = await ctx.upsert(
         'vital_sign',
         `${scenario.key}:volx:vital:${pad(index)}`,
         vitalPayload,
@@ -193,6 +239,131 @@ const seedVolumeExtendedPack = async (
         { publicIdPrefix: 'PRC', seedMeta: false }
       );
       bump('procedures');
+
+      if (doctor) {
+        await ctx.upsert(
+          'clinical_note',
+          `${scenario.key}:volx:clinical-note:${pad(index)}`,
+          {
+            encounter_id: encounter.id,
+            author_user_id: doctor.id,
+            note: `Volume clinical note #${index}: history reviewed; plan discussed with patient.`,
+          },
+          { publicIdPrefix: 'CNOTE', seedMeta: false }
+        );
+        bump('clinical_notes');
+      }
+
+      await ctx.upsert(
+        'care_plan',
+        `${scenario.key}:volx:care-plan:${pad(index)}`,
+        {
+          encounter_id: encounter.id,
+          plan: `Volume care plan #${index}: continue meds, review labs, follow up in clinic.`,
+          start_date: ctx.date(-((index % 60) + 1), 10),
+          end_date: index % 4 === 0 ? ctx.date(-((index % 30) + 1), 70) : null,
+        },
+        { publicIdPrefix: 'CPLN', seedMeta: false }
+      );
+      bump('care_plans');
+
+      await ctx.upsert(
+        'clinical_alert',
+        `${scenario.key}:volx:clinical-alert:${pad(index)}`,
+        {
+          encounter_id: encounter.id,
+          severity: pick(ALERT_SEVERITIES, index),
+          status: pick(ALERT_STATUSES, index),
+          source: index % 5 === 0 ? 'AUTO_VITAL' : 'MANUAL',
+          message: `Volume clinical alert #${index}`,
+          vital_sign_id: index % 5 === 0 ? vital.id : null,
+          acknowledged_at: index % 3 === 0 ? ctx.date(-((index % 40) + 1), 35) : null,
+        },
+        { publicIdPrefix: 'CALR', seedMeta: false }
+      );
+      bump('clinical_alerts');
+
+      await ctx.upsert(
+        'referral',
+        `${scenario.key}:volx:referral:${pad(index)}`,
+        {
+          encounter_id: encounter.id,
+          external_facility_name: index % 4 === 0 ? 'Regional Referral Hospital' : null,
+          from_department_id: at(departmentList, index)?.id || null,
+          to_department_id: at(departmentList, index + 1)?.id || null,
+          reason: `Volume referral #${index}`,
+          referral_reason_code: `REF-${(index % 12) + 1}`,
+          status: pick(REFERRAL_STATUSES, index),
+        },
+        { publicIdPrefix: 'REF', seedMeta: false }
+      );
+      bump('referrals');
+
+      await ctx.upsert(
+        'follow_up',
+        `${scenario.key}:volx:follow-up:${pad(index)}`,
+        {
+          encounter_id: encounter.id,
+          scheduled_at: ctx.date((index % 30) + 1, 9 * 60),
+          status: pick(FOLLOW_UP_STATUSES, index),
+          completed_at: index % 3 === 0 ? ctx.date(-((index % 20) + 1), 50) : null,
+          completed_by_user_id: index % 3 === 0 ? (doctor?.id || null) : null,
+          notes: `Volume follow-up #${index}`,
+        },
+        { publicIdPrefix: 'FUP', seedMeta: false }
+      );
+      bump('follow_ups');
+    });
+  }
+
+  if (patients.length > 0) {
+    await runInBatches(n, 10, async (index) => {
+      const patientId = at(patients, index)?.id;
+      if (!patientId) return;
+      const [allergen, severity, reaction] = pick(ALLERGENS, index);
+      await ctx.upsert(
+        'patient_allergy',
+        `${scenario.key}:volx:allergy:${pad(index)}`,
+        {
+          tenant_id: facility.tenant_id,
+          patient_id: patientId,
+          allergen,
+          severity,
+          reaction,
+          notes: `Volume allergy record #${index}`,
+        },
+        { ...seedOpts, publicIdPrefix: 'ALG' }
+      );
+      bump('patient_allergies');
+
+      await ctx.upsert(
+        'patient_medical_history',
+        `${scenario.key}:volx:history:${pad(index)}`,
+        {
+          tenant_id: facility.tenant_id,
+          patient_id: patientId,
+          condition: pick(HISTORY_CONDITIONS, index),
+          diagnosis_date: ctx.date(-((index % 900) + 30)),
+          notes: `Volume medical history #${index}`,
+        },
+        { ...seedOpts, publicIdPrefix: 'PMH' }
+      );
+      bump('patient_medical_histories');
+
+      await ctx.upsert(
+        'consent',
+        `${scenario.key}:volx:consent:${pad(index)}`,
+        {
+          tenant_id: facility.tenant_id,
+          patient_id: patientId,
+          consent_type: pick(CONSENT_TYPES, index),
+          status: pick(CONSENT_STATUSES, index),
+          granted_at: index % 4 === 3 ? null : ctx.date(-((index % 200) + 1), 20),
+          revoked_at: index % 7 === 0 ? ctx.date(-((index % 40) + 1), 60) : null,
+        },
+        { ...seedOpts, publicIdPrefix: 'CNS' }
+      );
+      bump('consents');
     });
   }
 
@@ -410,7 +581,102 @@ const seedVolumeExtendedPack = async (
     });
   }
 
-  // --- ED triage + ambulance graph ---
+  if (plans.length > 0 && patients.length > 0) {
+    await runInBatches(n, 10, async (index) => {
+      const plan = at(plans, index);
+      const patientId = at(patients, index)?.id;
+      if (!plan || !patientId) return;
+      await ctx.upsert(
+        'patient_insurance_enrollment',
+        `${scenario.key}:volx:enrollment:${pad(index)}`,
+        {
+          tenant_id: facility.tenant_id,
+          facility_id: facility.id,
+          patient_id: patientId,
+          coverage_plan_id: plan.id,
+          member_id: `MEM-${pad(index, 6)}`,
+          status: pick(ENROLLMENT_STATUSES, index),
+          valid_from: ctx.date(-365),
+          valid_to: index % 5 === 0 ? ctx.date(-10) : ctx.date(180),
+          copay_type: index % 3 === 0 ? 'PERCENT' : 'NONE',
+          copay_value: index % 3 === 0 ? 10 : null,
+          is_primary: index % 4 !== 0,
+          notes: `Volume insurance enrollment #${index}`,
+          verified_at: index % 2 === 0 ? ctx.date(-((index % 90) + 1), 40) : null,
+        },
+        { ...seedOpts, publicIdPrefix: 'PIE' }
+      );
+      bump('patient_insurance_enrollments');
+    });
+  }
+
+  // --- Price book + scheme offers (pricing screens) ---
+  const catalogPairs = [];
+  for (const item of catalogLabTests.slice(0, 40)) {
+    catalogPairs.push({ catalog_type: 'LAB_TEST', catalog_item_id: item.id });
+  }
+  for (const item of catalogDrugs.slice(0, 40)) {
+    catalogPairs.push({ catalog_type: 'DRUG', catalog_item_id: item.id });
+  }
+  for (const item of catalogRadTests.slice(0, 40)) {
+    catalogPairs.push({ catalog_type: 'RADIOLOGY_TEST', catalog_item_id: item.id });
+  }
+  if (catalogPairs.length > 0) {
+    const priceCount = Math.min(n, catalogPairs.length * 2);
+    await runInBatches(priceCount, 10, async (index) => {
+      const pair = at(catalogPairs, index);
+      if (!pair) return;
+      const plan = at(plans, index);
+      const company = at(insurers, index);
+      await ctx.upsert(
+        'price_book_entry',
+        `${scenario.key}:volx:price-book:${pad(index)}`,
+        {
+          tenant_id: facility.tenant_id,
+          facility_id: facility.id,
+          catalog_type: pair.catalog_type,
+          catalog_item_id: pair.catalog_item_id,
+          payment_mode: index % 2 === 0 ? 'SELF_PAY' : 'INSURANCE',
+          coverage_plan_id: index % 2 === 0 ? null : (plan?.id || null),
+          insurance_company_id: index % 2 === 0 ? null : (company?.id || null),
+          billing_entity: 'FACILITY',
+          unit_price: 5000 + (index % 80) * 500,
+          currency: 'UGX',
+          effective_from: ctx.date(-180),
+          is_active: index % 11 !== 0,
+          notes: `Volume price book entry #${index}`,
+        },
+        { ...seedOpts, publicIdPrefix: 'PBE' }
+      );
+      bump('price_book_entries');
+
+      if (plan) {
+        await ctx.upsert(
+          'scheme_offer',
+          `${scenario.key}:volx:scheme-offer:${pad(index)}`,
+          {
+            tenant_id: facility.tenant_id,
+            coverage_plan_id: plan.id,
+            catalog_type: pair.catalog_type,
+            catalog_item_id: pair.catalog_item_id,
+            billing_entity: 'FACILITY',
+            unit_price: 4000 + (index % 60) * 400,
+            currency: 'UGX',
+            coverage_percentage: 50 + (index % 5) * 10,
+            copay_type: index % 4 === 0 ? 'FIXED' : 'NONE',
+            copay_value: index % 4 === 0 ? 5000 : null,
+            requires_pre_auth: index % 7 === 0,
+            is_excluded: index % 19 === 0,
+            is_active: true,
+            effective_from: ctx.date(-120),
+            notes: `Volume scheme offer #${index}`,
+          },
+          { ...seedOpts, publicIdPrefix: 'SOFF' }
+        );
+        bump('scheme_offers');
+      }
+    });
+  }
   if (emergencies.length > 0) {
     await runInBatches(n, 10, async (index) => {
       const emergency = at(emergencies, index);
@@ -835,6 +1101,379 @@ const seedVolumeExtendedPack = async (
         { ...seedOpts, publicIdPrefix: 'PRJ' }
       );
       bump('patient_report_jobs');
+    });
+  }
+
+  // --- Inpatient beds + assignments ---
+  const beds = [];
+  const wardCount = Math.min(5, Math.max(2, Math.ceil(n / 200)));
+  for (let w = 1; w <= wardCount; w += 1) {
+    const ward = await ctx.upsert(
+      'ward',
+      `${scenario.key}:volx:ward:${pad(w)}`,
+      {
+        tenant_id: facility.tenant_id,
+        facility_id: facility.id,
+        department_id: orgPack?.departments?.[`${scenario.key}:Inpatient`]?.id || null,
+        name: `Volume ${pick(WARD_TYPES, w)} Ward ${w}`,
+        ward_type: pick(WARD_TYPES, w),
+        is_active: true,
+      },
+      { ...seedOpts, publicIdPrefix: 'WRD' }
+    );
+    bump('wards');
+
+    const roomsPerWard = 4;
+    for (let r = 1; r <= roomsPerWard; r += 1) {
+      const room = await ctx.upsert(
+        'room',
+        `${scenario.key}:volx:room:${pad(w)}:${pad(r)}`,
+        {
+          tenant_id: facility.tenant_id,
+          facility_id: facility.id,
+          ward_id: ward.id,
+          name: `W${w}-R${r}`,
+          floor: String(((w - 1) % 3) + 1),
+        },
+        { ...seedOpts, publicIdPrefix: 'ROM' }
+      );
+      bump('rooms');
+
+      for (let b = 1; b <= 4; b += 1) {
+        const bed = await ctx.upsert(
+          'bed',
+          `${scenario.key}:volx:bed:${pad(w)}:${pad(r)}:${pad(b)}`,
+          {
+            tenant_id: facility.tenant_id,
+            facility_id: facility.id,
+            ward_id: ward.id,
+            room_id: room.id,
+            label: `B${b}`,
+            status: pick(BED_STATUSES, w + r + b),
+          },
+          { ...seedOpts, publicIdPrefix: 'BED' }
+        );
+        beds.push(bed);
+        bump('beds');
+      }
+    }
+  }
+
+  if (admissions.length > 0 && beds.length > 0) {
+    await runInBatches(n, 10, async (index) => {
+      const admission = at(admissions, index);
+      const bed = at(beds, index);
+      if (!admission || !bed) return;
+      const released = index % 3 === 0;
+      await ctx.upsert(
+        'bed_assignment',
+        `${scenario.key}:volx:bed-asg:${pad(index)}`,
+        {
+          admission_id: admission.id,
+          bed_id: bed.id,
+          assigned_at: ctx.date(-((index % 50) + 1), 8),
+          released_at: released ? ctx.date(-((index % 40) + 1), 70) : null,
+        },
+        { publicIdPrefix: 'BASG', seedMeta: false }
+      );
+      bump('bed_assignments');
+
+      if (index % 8 === 0) {
+        await ctx.upsert(
+          'transfer_request',
+          `${scenario.key}:volx:transfer:${pad(index)}`,
+          {
+            admission_id: admission.id,
+            from_ward_id: at(beds, index)?.ward_id || null,
+            to_ward_id: at(beds, index + 1)?.ward_id || null,
+            status: pick(REFERRAL_STATUSES, index),
+            requested_at: ctx.date(-((index % 30) + 1), 20),
+          },
+          { publicIdPrefix: 'XFER', seedMeta: false }
+        );
+        bump('transfer_requests');
+      }
+
+      if (index % 10 === 0) {
+        const stay = await ctx.upsert(
+          'icu_stay',
+          `${scenario.key}:volx:icu:${pad(index)}`,
+          {
+            admission_id: admission.id,
+            started_at: ctx.date(-((index % 20) + 1), 12),
+            ended_at: index % 20 === 0 ? null : ctx.date(-((index % 15) + 1), 80),
+          },
+          { publicIdPrefix: 'ICU', seedMeta: false }
+        );
+        bump('icu_stays');
+        await ctx.upsert(
+          'icu_observation',
+          `${scenario.key}:volx:icu-obs:${pad(index)}`,
+          {
+            icu_stay_id: stay.id,
+            observed_at: ctx.date(-((index % 20) + 1), 30),
+            observation: `Volume ICU observation #${index}`,
+          },
+          { publicIdPrefix: 'IUO', seedMeta: false }
+        );
+        bump('icu_observations');
+      }
+    });
+  }
+
+  // --- Theatre / OR graph ---
+  if (encounters.length > 0) {
+    await runInBatches(n, 10, async (index) => {
+      const encounter = at(encounters, index);
+      if (!encounter) return;
+      const status = pick(THEATRE_STATUSES, index);
+      const theatreCase = await ctx.upsert(
+        'theatre_case',
+        `${scenario.key}:volx:theatre:${pad(index)}`,
+        {
+          encounter_id: encounter.id,
+          admission_id: at(admissions, index)?.id || null,
+          emergency_case_id: index % 9 === 0 ? (at(emergencies, index)?.id || null) : null,
+          procedure_name: pick(THEATRE_PROCEDURES, index),
+          source_kind: index % 5 === 0 ? 'EMERGENCY' : 'ELECTIVE',
+          handover_destination: index % 4 === 0 ? 'ICU' : 'WARD',
+          scheduled_at: ctx.date(-((index % 60) + 1), 7 * 60),
+          status,
+          surgeon_user_id: doctor?.id || null,
+          anesthetist_user_id: nurse?.id || doctor?.id || null,
+          started_at: status === 'SCHEDULED' || status === 'CANCELLED'
+            ? null
+            : ctx.date(-((index % 60) + 1), 8 * 60),
+          completed_at: status === 'COMPLETED'
+            ? ctx.date(-((index % 60) + 1), 11 * 60)
+            : null,
+          cancelled_at: status === 'CANCELLED'
+            ? ctx.date(-((index % 60) + 1), 9 * 60)
+            : null,
+          workflow_stage: status,
+          stage_notes: `Volume theatre case #${index}`,
+        },
+        { publicIdPrefix: 'THC', seedMeta: false }
+      );
+      bump('theatre_cases');
+
+      await ctx.upsert(
+        'anesthesia_record',
+        `${scenario.key}:volx:anesthesia:${pad(index)}`,
+        {
+          theatre_case_id: theatreCase.id,
+          anesthetist_user_id: nurse?.id || doctor?.id || null,
+          notes: `Volume anesthesia record #${index}`,
+          record_status: pick(RECORD_STATUSES, index),
+          finalized_at: index % 2 === 0 ? ctx.date(-((index % 50) + 1), 90) : null,
+        },
+        { publicIdPrefix: 'ANS', seedMeta: false }
+      );
+      bump('anesthesia_records');
+
+      await ctx.upsert(
+        'post_op_note',
+        `${scenario.key}:volx:post-op:${pad(index)}`,
+        {
+          theatre_case_id: theatreCase.id,
+          note: `Volume post-op note #${index}: procedure tolerated; recovery uneventful.`,
+          record_status: pick(RECORD_STATUSES, index),
+          finalized_at: index % 2 === 0 ? ctx.date(-((index % 50) + 1), 100) : null,
+        },
+        { publicIdPrefix: 'PON', seedMeta: false }
+      );
+      bump('post_op_notes');
+    });
+  }
+
+  // --- Imaging studies for radiology orders ---
+  if (radiologyOrders.length > 0) {
+    await runInBatches(Math.min(n, radiologyOrders.length || n), 10, async (index) => {
+      const order = at(radiologyOrders, index);
+      if (!order) return;
+      const study = await ctx.upsert(
+        'imaging_study',
+        `${scenario.key}:volx:imaging:${pad(index)}`,
+        {
+          radiology_order_id: order.id,
+          modality: pick(IMAGING_MODALITIES, index),
+          room: `IMG-${(index % 6) + 1}`,
+          performed_at: ctx.date(-((index % 70) + 1), 55),
+          started_at: ctx.date(-((index % 70) + 1), 50),
+          completed_at: index % 4 === 0 ? null : ctx.date(-((index % 70) + 1), 70),
+        },
+        { publicIdPrefix: 'IMG', seedMeta: false }
+      );
+      bump('imaging_studies');
+
+      await ctx.upsert(
+        'imaging_asset',
+        `${scenario.key}:volx:imaging-asset:${pad(index)}`,
+        {
+          imaging_study_id: study.id,
+          storage_key: `demo/imaging/vol-${pad(index)}.dcm`,
+          file_name: `vol-study-${pad(index)}.dcm`,
+          content_type: 'application/dicom',
+        },
+        { publicIdPrefix: 'IMGA', seedMeta: false }
+      );
+      bump('imaging_assets');
+
+      await ctx.upsert(
+        'pacs_link',
+        `${scenario.key}:volx:pacs:${pad(index)}`,
+        {
+          imaging_study_id: study.id,
+          url: `https://pacs.demo.local/studies/vol-${pad(index)}`,
+          expires_at: ctx.date(30),
+        },
+        { publicIdPrefix: 'PACS', seedMeta: false }
+      );
+      bump('pacs_links');
+    });
+  }
+
+  // --- Provider schedules + slots ---
+  if (doctor) {
+    const scheduleCount = Math.min(n, 140);
+    await runInBatches(scheduleCount, 10, async (index) => {
+      const schedule = await ctx.upsert(
+        'provider_schedule',
+        `${scenario.key}:volx:prov-sched:${pad(index)}`,
+        {
+          tenant_id: facility.tenant_id,
+          facility_id: facility.id,
+          provider_user_id: doctor.id,
+          schedule_type: 'RECURRING',
+          timezone: 'Africa/Kampala',
+          effective_from: ctx.date(-90),
+          effective_to: ctx.date(180),
+          day_of_week: index % 7,
+          start_time: ctx.date(0, 8 * 60),
+          end_time: ctx.date(0, 16 * 60),
+        },
+        { ...seedOpts, publicIdPrefix: 'PSCH' }
+      );
+      bump('provider_schedules');
+
+      await ctx.upsert(
+        'availability_slot',
+        `${scenario.key}:volx:slot:${pad(index)}`,
+        {
+          schedule_id: schedule.id,
+          start_time: ctx.date(-((index % 30) + 1), 9 * 60),
+          end_time: ctx.date(-((index % 30) + 1), 9 * 60 + 30),
+          is_available: index % 5 !== 0,
+        },
+        { publicIdPrefix: 'SLOT', seedMeta: false }
+      );
+      bump('availability_slots');
+    });
+  }
+
+  // --- Report schedules ---
+  if (definitions.length > 0) {
+    const scheduleTarget = Math.min(n, Math.max(definitions.length, 48));
+    await runInBatches(scheduleTarget, 10, async (index) => {
+      const definition = at(definitions, index);
+      if (!definition) return;
+      await ctx.upsert(
+        'report_schedule',
+        `${scenario.key}:volx:report-sched:${pad(index)}`,
+        {
+          tenant_id: facility.tenant_id,
+          facility_id: facility.id,
+          report_definition_id: definition.id,
+          created_by: billing?.id || doctor?.id || null,
+          name: `Volume schedule #${index}`,
+          status: index % 5 === 0 ? 'PAUSED' : 'ACTIVE',
+          frequency: pick(['DAILY', 'WEEKLY', 'MONTHLY'], index),
+          time_of_day: '07:00',
+          day_of_week: index % 7,
+          day_of_month: (index % 28) + 1,
+          timezone: 'Africa/Kampala',
+          format: pick(REPORT_FORMATS, index),
+          next_run_at: ctx.date((index % 14) + 1, 7 * 60),
+          last_run_at: ctx.date(-((index % 20) + 1), 7 * 60),
+          retention_days: 30,
+        },
+        { ...seedOpts, publicIdPrefix: 'RSCH' }
+      );
+      bump('report_schedules');
+    });
+  }
+
+  // --- Billing approvals ---
+  if ((payments.length > 0 || invoices.length > 0) && billing) {
+    await runInBatches(n, 10, async (index) => {
+      const payment = at(payments, index);
+      const invoice = at(invoices, index);
+      const target = index % 2 === 0 && payment
+        ? { entity: 'payment', id: payment.id }
+        : invoice
+          ? { entity: 'invoice', id: invoice.id }
+          : null;
+      if (!target) return;
+      await ctx.upsert(
+        'billing_approval',
+        `${scenario.key}:volx:billing-approval:${pad(index)}`,
+        {
+          tenant_id: facility.tenant_id,
+          facility_id: facility.id,
+          approval_type: pick(APPROVAL_TYPES, index),
+          target_entity: target.entity,
+          target_entity_id: target.id,
+          requested_by_user_id: billing.id,
+          approved_by_user_id: index % 3 === 0 ? (doctor?.id || null) : null,
+          status: pick(APPROVAL_STATUSES, index),
+          reason: `Volume billing approval #${index}`,
+          payload_json: { volume: true, index },
+          requested_at: ctx.date(-((index % 80) + 1), 40),
+          decided_at: index % 3 === 0 ? ctx.date(-((index % 70) + 1), 55) : null,
+        },
+        { ...seedOpts, publicIdPrefix: 'BAPP' }
+      );
+      bump('billing_approvals');
+    });
+  }
+
+  // --- Stock adjustments ---
+  if (inventoryItems.length > 0) {
+    await runInBatches(n, 10, async (index) => {
+      const item = at(inventoryItems, index);
+      if (!item) return;
+      await ctx.upsert(
+        'stock_adjustment',
+        `${scenario.key}:volx:stock-adj:${pad(index)}`,
+        {
+          inventory_item_id: item.id,
+          facility_id: facility.id,
+          quantity: (index % 2 === 0 ? 1 : -1) * (1 + (index % 8)),
+          reason: pick(STOCK_REASONS, index),
+          adjusted_at: ctx.date(-((index % 100) + 1), 25),
+        },
+        { publicIdPrefix: 'SADJ', seedMeta: false }
+      );
+      bump('stock_adjustments');
+    });
+  }
+
+  // --- Emergency responses ---
+  if (emergencies.length > 0) {
+    await runInBatches(n, 10, async (index) => {
+      const emergency = at(emergencies, index);
+      if (!emergency) return;
+      await ctx.upsert(
+        'emergency_response',
+        `${scenario.key}:volx:ed-response:${pad(index)}`,
+        {
+          emergency_case_id: emergency.id,
+          response_at: ctx.date(-((index % 40) + 1), 18),
+          notes: `Volume emergency response #${index}`,
+        },
+        { publicIdPrefix: 'ERSP', seedMeta: false }
+      );
+      bump('emergency_responses');
     });
   }
 
