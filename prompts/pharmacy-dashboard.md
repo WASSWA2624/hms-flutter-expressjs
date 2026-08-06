@@ -1,78 +1,62 @@
-# Pharmacy Dashboard: Summary Cards Clarity, Sales KPIs, and Deep-Links
+# Dashboard Summary Cards: Full Labels and Bottom-Aligned Values
 
-Make the pharmacist home **summary metric strip** clear, facility-scoped, and clickable into the exact `/pharmacy` desk tab (and filters) that explain each number—without changing Quick actions, most-sold charts, or order-status mix beyond what the cards require.
+Update the shared dashboard **summary metric cards** so every label is fully readable (wrapping when needed) and metric values sit uniformly near the bottom of each card—without changing which KPIs appear, their routing, permissions, or other dashboard sections.
 
 ## Context
 
-**Current behavior (screenshot + codebase)**
+**Current behavior (codebase)**
 
-- Pharmacist strip: **Orders**, **Pending**, **Dispensed**, **Low stock**. Backend already computes facility-scoped `ordersToday`, `pendingDispense` (ORDERED + PARTIALLY_DISPENSED), `dispensedToday`, and `lowStock` in the pharmacist pack.
-- Labels omit period (“Orders” / “Dispensed”), so zeros look broken when “today” is empty. Demo often shows Orders/Dispensed/Low stock at **0** while Pending ~500 and status mix ~1K—seed/window mismatch or missing reseed.
-- Metric routes are wrong/vague: order cards → `section=orders` (not a desk section); low stock → `section=inventory` (should be `low-stock`). Desk sections include `queue`, `in-progress`, `completed`, `all`, `low-stock`; order list API already supports `from`/`to` on `ordered_at`.
-- No **Total sales today** / **Total sales this week**. `maxStatusCards` is 4 (cap 6).
+- Home and other dashboards render KPIs through `DashboardMetricStrip` → `_DashboardMetricCard` (`frontend/lib/shared/dashboard/dashboard_metric_strip.dart`), fed by mappers such as `homeDashboardMetrics`.
+- Labels use `maxLines: 1`, `softWrap: false`, and `TextOverflow.ellipsis`, so longer copy (e.g. **Orders today**, **Total sales (last 7 days)**) truncates with “…” on narrow cards.
+- Values sit in an `Expanded` region with `Alignment.centerLeft`, so the number floats mid-card rather than a consistent bottom baseline across the strip.
+- Cards use fixed heights (`_compactHeight` / `_regularHeight`). Wide layout is an equal-width `Row`; narrow stacks in a `Column`. Compact mode and icon/chevron chrome are unchanged in intent.
 
 **Intended behavior**
 
-- Labels state period where needed (**Orders today**, **Dispensed today**). Pending = open dispense workload (not today-only). Low stock = current facility at/below reorder.
-- Add **Total sales today** and **Total sales this week** (facility money totals; gate with pricing/billing/`reports:read`).
-- Each card opens `/pharmacy` on the matching desk section **and** filters matching the KPI. Facility-scoped to the logged-in facility. Demo non-zeros when data exists.
-- **Only** the summary strip—no Quick actions / most-sold / status-mix redesign.
+- The full label text is always visible: when the label does not fit one line, wrap to additional line(s) instead of ellipsis (unless a single word still overflows—then allow soft wrap / visible clipping only as a last resort; prefer readable wrap over “…”).
+- The metric **value** aligns near the **bottom** of each card, consistently across cards in the same strip (same vertical rhythm regardless of one- vs multi-line labels).
+- Change is **global** for this shared strip (home pharmacist and all other roles/pages that use `DashboardMetricStrip`), not a pharmacy-only fork.
+- Do **not** alter KPI sets, labels’ wording (except layout), deep-links, Quick actions, charts, or worklists.
 
 **Definitions**
 
-- *Orders today*: facility `pharmacy_order` with `ordered_at` in facility-local today.
-- *Pending*: facility orders in `ORDERED` or `PARTIALLY_DISPENSED`.
-- *Dispensed today*: facility `dispense_log` `DISPENSED` with `dispensed_at` today.
-- *Low stock*: facility rows at/below reorder (existing `countLowStock` factor 1).
-- *Total sales today / this week*: facility sum of pharmacy sale amounts for today or trailing week (document Mon–today vs last 7 days in labels). Prefer completed dispenses × unit price (most-sold amount basis); no invented COGS.
-- *Deep-link*: `/pharmacy?section=…` plus `from`/`to` (and status as needed) so the opened table matches the card.
+- *Summary card / metric card*: one tile in `DashboardMetricStrip` showing icon, label, and value.
+- *Fully visible label*: complete `card.label` string readable without ellipsis truncation under normal strip widths (md+ and stacked compact).
+- *Uniform bottom value*: values share a common bottom alignment within the card body (e.g. bottom-start), not vertically centered in leftover space.
 
 ## Requirements
 
-1. Clarify pharmacist strip labels: Orders today; Pending (or Pending dispense); Dispensed today; Low stock—aligned with backend metrics above.
-2. Add Total sales today and Total sales this week (currency) to the pharmacist strip. Compute in the pharmacist pack; gate with money permissions. Keep ops cards first; `maxStatusCards` ≤ 6.
-3. Wire deep-links to correct `/pharmacy` sections + filters:
-   - Orders today → all-orders (or equivalent) with today’s `ordered_at` range.
-   - Pending → queue and/or in-progress covering pending workload (not `section=orders`).
-   - Dispensed today → completed with today’s range as the table supports.
-   - Low stock → `section=low-stock`.
-   - Sales today/week → completed (or sales desk if present) with matching range; unauthorized money cards absent.
-4. Extend `PharmacyWorkspaceQuery` / desk hydration to honor deep-link `from`/`to` (and needed status). Reuse backend list date filters.
-5. Keep all metrics facility-scoped to the session facility.
-6. Align demo seed/verify so today/stock/sales KPIs are non-zero when volume seed is on.
-7. Preserve Quick actions and charts. Cover loading, legitimate empty zero, error, permission absence. Responsive; theme tokens; light/dark.
-8. Tests: labels/ids; sales permission presence/absence; card route queries; workspace from/to; facility scope; seed/fixture non-zeros.
+1. In `_DashboardMetricCard`, stop ellipsis-truncating labels: allow soft wrap and enough `maxLines` for typical KPI labels (at least 2). Keep hierarchy (label secondary; value emphasis).
+2. Pin the value to the bottom of the card content area so all cards in a strip share a uniform value baseline; keep `FittedBox` scale-down for long currency/number strings on one line.
+3. Adjust layout/height only as needed so wrapped labels do not clip the value or overflow the card; preserve equal-width wide row and stacked narrow behavior, icon, chevron, tap/semantics, and theme tokens (light/dark).
+4. Apply via the shared strip only—no duplicate pharmacy-specific card widget. Leave mappers, permissions, and metric data unchanged unless required for layout.
+5. Cover loading/empty (strip still hidden when no cards), authorized/unauthorized (unchanged gating), and responsive widths without clipping actionable chrome.
 
 ## Constraints
 
-- Change **only** pharmacist summary cards, aggregation, labels, routes, and minimal pharmacy query wiring for deep-links.
-- Reuse home metric strip, pharmacist profile, dashboard summary, `/pharmacy` sections, existing date-range filters—no parallel KPI stack.
-- Backend RBAC authoritative; unauthorized UI absent.
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `.cursor/access/demo-data.mdc` (if seeding), `prompts/.cursor/prompt.mdc`.
+- Scope is **summary metric card layout** in `DashboardMetricStrip` / `_DashboardMetricCard` (and tests for that widget). No KPI content, routes, backend, or unrelated dashboard redesign.
+- Reuse existing `DashboardMetricCardData`, decorations, and home/reports consumers—no parallel card system.
+- Follow `.cursor/mandatories.mdc`, `prompts/.cursor/prompt.mdc`. Theme tokens only; supported light/dark; mobile/tablet/desktop.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | Labels make today vs open-pending vs stock unambiguous. | R1 |
-| A2 | Authorized users see sales today/week; unauthorized money cards absent. | R2, R7 |
-| A3 | Each card opens matching `/pharmacy` section + filters. | R3–R4 |
-| A4 | Metrics facility-scoped to the logged-in facility. | R5 |
-| A5 | Demo shows non-zero today/stock/sales when data exists. | R6 |
-| A6 | Quick actions and charts unchanged. | R7 |
-| A7 | Tests cover labels, permissions, deep-links, and scope. | R8 |
+| A1 | Long labels (e.g. multi-word sales/period titles) wrap and remain fully readable—no ellipsis for normal wrap cases. | R1 |
+| A2 | Values align near the bottom consistently across cards in the strip. | R2 |
+| A3 | Wrapped labels do not clip values or break wide/narrow strip layout; taps and semantics still work. | R3, R5 |
+| A4 | All dashboards using `DashboardMetricStrip` pick up the change; no pharmacy-only fork. | R4 |
+| A5 | Unauthorized/empty strip behavior unchanged; light/dark and narrow viewport OK. | R4, R5 |
 
 ## Relevant Files
 
-- `frontend/lib/features/home/domain/entities/home_dashboard_profiles.dart`
-- `frontend/lib/features/home/presentation/widgets/home_metric_routes.dart`, metric strip/mapper
-- `frontend/lib/features/pharmacy/domain/entities/pharmacy_entities.dart`; `pharmacy_workspace_page.dart`
-- `backend/src/modules/dashboard-widget/repositories/dashboard-widget.repository.js`
-- `backend/src/lib/dashboard/summary.js`; pharmacy-workspace list `from`/`to`
-- Demo seeders/verify; profile route + workspace query + summary tests
+- `frontend/lib/shared/dashboard/dashboard_metric_strip.dart`
+- `frontend/lib/shared/dashboard/dashboard_models.dart`, `dashboard_layout.dart`
+- Consumers: `home_page.dart`, `reports_overview_dashboard.dart` (verify only)
+- Tests: `home_dashboard_summary_simplify_test.dart` or a focused metric-strip widget test
 
 ## Verification
 
-- Backend: today/pending/dispensed/low-stock/sales aggregates facility-scoped; week rule documented.
-- Flutter: labels; taps land on correct section + filters; money cards gated; strip ≤6.
-- Manual pharmacist: each card’s table matches KPI; reseed if demo zeros persist. Light/dark; narrow viewport.
+- Widget/golden or layout test: multi-line label visible (no `…`); value bottom-aligned vs sibling cards.
+- Manual: pharmacist (and one other role) home strip with long labels; wide and narrow; light/dark; currency values still scale down cleanly.
+- Confirm Quick actions / charts untouched; strip still absent when filtered empty.
