@@ -1,78 +1,69 @@
-# Pharmacy Create Order: Reuse Clinical Prescribe Medicines Flow
+# Pharmacy Stock Tabs: Open Catalog Inventory With Filters
 
-Replace the pharmacy walk-in medicine line form with the shared clinical Prescribe medicines workflow, keep a pharmacy-owned patient shell, and default new orders to Anonymous.
+Route Low stock, Near expiry, Expired, and Out of stock into Catalog and stock → Inventory with the matching stock filters applied, and stop using the separate alert-only stock tables.
 
 ## Context
 
-**Current behavior (Create order)**
+**Current behavior**
 
-- Entry points: pharmacy workspace walk-in / Create order, and home quick action `record_pharmacy_sale` → `showPharmacyWalkInOrderDialog` (`pharmacy_walk_in_order_dialog.dart`).
-- Patient modes: Existing, New (when `patient:write`), Anonymous. Default today is **Existing**.
-- Medicines: stacked inline lines (searchable drug dropdown, quantity, free-text dose, instructions). No medicines table, catalog multi-add, filters, column settings, structured dosing, or Review billing.
-- Submit: `POST /api/v1/pharmacy/orders` via `createPharmacyOrder` with optional `patient_id` (omitted when Anonymous), no `encounter_id`. Backend already allows nullable `patient_id` (`20260806140000_pharmacy_order_optional_patient`).
-
-**Current behavior (clinical Prescribe)**
-
-- Shared `ClinicalPrescriptionActionDialog` (+ catalog / dosing / Review billing) used from clinical, OPD, nursing, IPD, ICU.
-- Medicines table, empty state (“No medicines added yet”), Add medicine → catalog, search/filters/settings, structured Rx, Review billing.
-- Submit goes through clinical/pharmacy-order callers with encounter + patient; pharmacy walk-in does not use this UI today.
+- Desk sections `low-stock`, `near-expiry`, `expired`, and `out-of-stock` (`PharmacyDeskSection.lowStock` / `nearExpiry` / `expired` / `outOfStock`) call `applyDeskStockFilter` and render `_PharmacyStockPanel` on the pharmacy workspace.
+- That panel reuses inventory stock data (`GET .../pharmacy/inventory/stock`) but is a **second table**: order-style search hint, no inventory Filters UI, **no Adjust / Clear** row actions, and stock-alert empty copy (“No stock alerts”).
+- Catalog and stock → **Inventory** (`PharmacyCatalogPanel` / `_InventoryCatalogTab`) already shows the full inventory table: inventory search (“Search item, SKU, or stock ID”), Filters (including LOW_STOCK, OUT_OF_STOCK, expiring, expired), Settings/Export, and Adjust / Clear.
+- Controller already has `applyInventoryFilter` / `prepareCatalogTab(PharmacyCatalogTab.inventory)` for opening Inventory with a query; desk stock tabs do not use that path today.
+- Home KPI deep links (e.g. `section=low-stock`) and desk badge counts from `stockAlertSummary` remain valid entry points.
 
 **Intended behavior**
 
-- Create order keeps a **pharmacy patient shell** (Existing / New / Anonymous) with default **Anonymous**.
-- Medicines UX matches clinical Prescribe (reuse the shared dialog/widgets—do not rebuild a parallel table).
-- On success, continue today’s pharmacy outcomes: create order, snackbar/feedback, open order detail / refresh worklist as today.
-- Anonymous stays **encounter-less** and **patient-less** (`patient_id` null). Do not invent a sentinel “anonymous patient” record.
+- Selecting Low stock, Near expiry, Expired, or Out of stock (tab, overflow, or deep link) opens **Catalog and stock** with the **Inventory** nested tab active and the **equivalent inventory stock filter** applied so the Catalog Inventory table (with Adjust / Clear) is what the user sees.
+- Filters chrome reflects the active filter (badge / selected choices). Clearing or changing filters behaves like normal Inventory.
+- Do not keep a parallel stock-alert worklist as the primary UI for those sections.
 
 **Definitions**
 
-- *Pharmacy Create order*: facility walk-in / OTC order from pharmacy or home Create order; not a clinical encounter prescription.
-- *Prescribe medicines flow*: `ClinicalPrescriptionActionDialog` + catalog + dosing helpers (+ Review billing when a patient exists).
-- *Anonymous order*: `patient_id` omitted/null; no encounter; no auto-billing attachment.
+- *Stock alert tabs*: desk entries Low stock, Near expiry, Expired, Out of stock (and their `section=` deep links).
+- *Catalog Inventory*: nested Inventory tab under Catalog and stock (`PharmacyCatalogTab.inventory`).
+- *Matching filter*: the same stock constraint the desk section uses today via `PharmacyDeskSection.stockQuery` (low stock / out of stock / expiring-within window / expired-only), applied through the catalog inventory query path so Filters and actions stay consistent.
 
 ## Requirements
 
-1. Open Create order from pharmacy and home with patient mode defaulting to **Anonymous**. Preserve Existing and New (New only when patient registry write is allowed; unauthorized New absent).
-2. Replace the walk-in inline medicine line UI with the shared Prescribe medicines flow (table, empty state, Add medicine → catalog, search/filters/settings, structured dosing, remove selected). Reuse `ClinicalPrescriptionActionDialog` (or extract a shared medicines host it already owns)—do not duplicate catalog/dosing/billing widgets.
-3. Wire submit to the existing pharmacy create path (`createPharmacyOrder` / `POST /api/v1/pharmacy/orders`): map Prescribe item payloads into that create contract; omit `encounter_id`; include `patient_id` only for Existing/New.
-4. Review billing: available for Existing/New when payer context exists; for Anonymous hide or omit billing submit (backend already skips billing without a patient). Do not block Anonymous create solely because billing is absent.
-5. Load drug reference data for the Prescribe catalog from existing pharmacy/clinical drug catalog sources already used by workspace or clinical reference data—no second catalog stack.
-6. Remove obsolete walk-in-only medicine form code once callers use the shared flow; keep patient shell, create API, and post-create UX (detail dialog / snackbar / list refresh).
-7. Cover permission, loading, empty, error, success, validation, and visible feedback. Responsive; theme tokens; light/dark.
-8. Tests: default Anonymous; Existing/New still create with `patient_id`; Anonymous omits `patient_id`; medicines added via catalog/Prescribe path; unauthorized New absent; billing gated for Anonymous; clinical Prescribe callers unchanged.
+1. On stock-alert tab select or deep link (`section=low-stock|near-expiry|expired|out-of-stock`), navigate to Catalog and stock → Inventory and apply that section’s stock filter to `inventoryQuery` / inventory load (reuse `applyInventoryFilter` or equivalent—do not invent a second filter stack).
+2. Render the existing Catalog Inventory table (search, Filters, Settings, Export, Adjust, Clear). Do not show `_PharmacyStockPanel` as the destination UI for these entries.
+3. Keep desk tab labels and badge counts from `stockAlertSummary` unless a small wiring change is required so counts still match filtered Inventory results.
+4. Preserve deep links and home KPI routes that use these `section=` values so they land on filtered Inventory (not the old alert panel).
+5. Preserve unauthorized absence of Catalog / stock controls; loading, empty, error, success, and mutation feedback must match Catalog Inventory (inventory empty copy when no rows; Adjust/Clear sync after success).
+6. Remove or stop mounting obsolete `_PharmacyStockPanel` primary flows once redirected; avoid duplicate stock tables.
+7. Responsive; theme tokens; light/dark.
+8. Tests: each stock `section=` opens Inventory with the correct filter; Adjust/Clear visible when permitted; Filters badge/active state reflects the filter; home/`section=low-stock` deep link; unauthorized inventory actions absent; order tabs unchanged.
 
 ## Constraints
 
-- Reuse shared clinical prescription UI and pharmacy create order service/schema. No parallel medicine editor.
-- Do not require `encounter_id` for pharmacy Create order.
-- Do not create or hard-code a sentinel anonymous patient id; keep nullable `patient_id`.
-- Do not change clinical/OPD/nursing/IPD/ICU Prescribe entry contracts beyond shared-widget extraction if needed.
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `.cursor/flows/pharmacy-flow.mdc` (if present), `prompts/.cursor/prompt.mdc`.
+- Reuse Catalog Inventory widgets, controller filter APIs, and `GET .../pharmacy/inventory/stock`—no parallel inventory table.
+- Prefer desk/`stockQuery` and Catalog Filters stock-status semantics (aligned `stockStatus` / expiry flags)—do not silently switch to a broader `lowStockOnly` meaning without matching Filters UI.
+- Do not remove order desk tabs or Catalog Drugs/Formulary/Rooms/Shelves behavior.
+- Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `prompts/.cursor/prompt.mdc`.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | Create order opens with Anonymous selected by default. | R1 |
-| A2 | Medicines UI matches Prescribe: empty state, Add medicine → catalog, table edit/remove, structured dosing. | R2, R5 |
-| A3 | Anonymous create succeeds without `patient_id` / encounter; order appears on pharmacy worklist. | R3, R4 |
-| A4 | Existing (and New when allowed) create includes `patient_id`; New mode absent without write access. | R1, R3, R8 |
-| A5 | Review billing usable with patient; Anonymous create does not require billing. | R4 |
-| A6 | Clinical Prescribe paths still work; pharmacy no longer shows the old inline Line 1 form. | R2, R6, R8 |
-| A7 | Loading/validation/error/success feedback present; unauthorized chrome absent; usable on narrow + light/dark. | R7 |
+| A1 | Low stock tab/deep link opens Catalog → Inventory filtered to low stock; Adjust/Clear present when entitled. | R1–R2, R4–R5 |
+| A2 | Near expiry / Expired / Out of stock likewise open Inventory with matching filters. | R1–R2, R4 |
+| A3 | Inventory search hint and Filters UI are used (not order search / alert-only empty panel). | R2, R5 |
+| A4 | `_PharmacyStockPanel` is no longer the primary UI for those desk sections. | R2, R6 |
+| A5 | Order tabs and other catalog tabs unchanged; unauthorized Adjust/Clear absent. | R5, R8 |
+| A6 | Loading/empty/error/success feedback work on narrow + light/dark. | R5, R7 |
 
 ## Relevant Files
 
-- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_walk_in_order_dialog.dart`
-- `frontend/lib/shared/clinical_actions/dialogs/clinical_prescription_action_dialog.dart`
-- `frontend/lib/shared/clinical_actions/dialogs/clinical_prescription_catalog_dialog.dart`
-- `frontend/lib/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart`
-- `frontend/lib/features/home/presentation/widgets/home_dashboard_actions.dart` (`record_pharmacy_sale`)
-- `backend/src/modules/pharmacy-order/schemas/pharmacy-order.schema.js`; pharmacy-workspace create route/service
-- Tests: `pharmacy_walk_in_order_payload_test.dart`, `clinical_prescription_action_dialog_test.dart`, pharmacy/home create-order tests; backend pharmacy-order schema anonymous `patient_id`
+- `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart` (`_applySectionData`, stock sections, `_PharmacyStockPanel`)
+- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart` (Inventory tab, Filters, Adjust/Clear)
+- `frontend/lib/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart` (`applyDeskStockFilter`, `applyInventoryFilter`, `prepareCatalogTab`)
+- `frontend/lib/features/pharmacy/domain/entities/pharmacy_entities.dart` (`PharmacyDeskSection.stockQuery`)
+- `frontend/lib/features/home/presentation/widgets/home_metric_routes.dart` (KPI → `low-stock`)
+- `frontend/lib/features/pharmacy/presentation/pharmacy_access.dart`
+- Tests: `pharmacy_workspace_page_test.dart`, `pharmacy_workbench_query_test.dart`, home metric route tests
 
 ## Verification
 
-- Flutter: Anonymous default; add medicines via catalog; create without patient; Existing/New with patient; New gated; clinical Prescribe regression.
-- Backend: create with null/omitted `patient_id` still valid; with `patient_id` unchanged.
-- Manual: pharmacy Create order and home Create order → Prescribe-style medicines → create → order detail/worklist; light/dark and narrow viewport.
+- Flutter: each stock section deep link → Inventory + filter + Adjust/Clear; Filters badge active; order tabs unaffected.
+- Manual: Low stock (non-empty), Near expiry / Expired / Out of stock (empty or seeded) all show Catalog Inventory, not “No stock alerts” panel; light/dark and narrow viewport.
