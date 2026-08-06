@@ -515,6 +515,75 @@ const seedVolumePack = async (
       created.pharmacy_orders += 1;
       created.dispense_logs += 1;
     });
+
+    // Dedicated most-sold chart bundle: clear ranked qty/amount series for
+    // Today (default), last week, and last month dashboard windows.
+    const chartDrugs = catalogValues(clinicalCatalogPack?.pharmacy?.drugs, 12);
+    const chartQtyRanks = Object.freeze([
+      120, 96, 78, 64, 52, 41, 33, 26, 19, 14, 9, 6,
+    ]);
+
+    for (let drugIndex = 0; drugIndex < chartDrugs.length; drugIndex += 1) {
+      const drug = chartDrugs[drugIndex];
+      if (!drug?.id) continue;
+
+      const targetQty = chartQtyRanks[drugIndex] || 6;
+      const chunks = Math.max(4, Math.min(8, Math.ceil(targetQty / 15)));
+      const perChunk = Math.max(1, Math.floor(targetQty / chunks));
+      let remaining = targetQty;
+
+      for (let chunk = 0; chunk < chunks; chunk += 1) {
+        const qty = chunk === chunks - 1 ? remaining : perChunk;
+        remaining -= qty;
+        // Keep most volume on today for the default Top-5 chart.
+        const dayOffset = chunk < 3
+          ? 0
+          : -([1, 2, 3, 5, 8, 12, 18, 24][chunk - 3] || 6);
+        const patient = patientAt(drugIndex * 10 + chunk + 1) || patientAt(1);
+        if (!patient || qty <= 0) continue;
+
+        const order = await ctx.upsert(
+          'pharmacy_order',
+          `${scenario.key}:vol:rx-chart:${pad(drugIndex)}:${pad(chunk)}`,
+          {
+            encounter_id: encounterAt(drugIndex * 10 + chunk + 1)?.id || null,
+            patient_id: patient.id,
+            status: 'DISPENSED',
+            ordered_at: ctx.nowDate(dayOffset, 20 + chunk),
+          },
+          { publicIdPrefix: 'RXO', seedMeta: false }
+        );
+
+        const item = await ctx.upsert(
+          'pharmacy_order_item',
+          `${scenario.key}:vol:rx-chart-item:${pad(drugIndex)}:${pad(chunk)}`,
+          {
+            pharmacy_order_id: order.id,
+            drug_id: drug.id,
+            quantity: qty,
+            dosage: '1 tab',
+            instructions: `Most-sold chart seed #${drugIndex + 1}.${chunk + 1}`,
+          },
+          { publicIdPrefix: 'RXI', seedMeta: false }
+        );
+
+        await ctx.upsert(
+          'dispense_log',
+          `${scenario.key}:vol:rx-chart-dispense:${pad(drugIndex)}:${pad(chunk)}`,
+          {
+            pharmacy_order_item_id: item.id,
+            dispense_batch_ref: `CHART-BATCH-${pad(drugIndex, 3)}-${pad(chunk)}`,
+            status: 'DISPENSED',
+            dispensed_at: ctx.nowDate(dayOffset, 40 + chunk * 3),
+            quantity_dispensed: qty,
+          },
+          { publicIdPrefix: 'DSP', seedMeta: false }
+        );
+
+        created.pharmacy_orders += 1;
+        created.dispense_logs += 1;
+      }
+    }
   }
 
   await runInBatches(targets.highTraffic, 10, async (index) => {

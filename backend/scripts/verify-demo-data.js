@@ -465,6 +465,30 @@ const verifyDemoData = async () => {
         `Expected at least 1 dispense today for dashboard KPIs but found ${dispensedTodayCount}.`
       );
     }
+
+    const todayDispenses = await prisma.dispense_log.findMany({
+      where: {
+        deleted_at: null,
+        status: 'DISPENSED',
+        dispensed_at: { gte: todayStart },
+        quantity_dispensed: { gt: 0 },
+      },
+      select: {
+        quantity_dispensed: true,
+        pharmacy_order_item: { select: { drug_id: true } },
+      },
+      take: 500,
+    });
+    const distinctDrugsToday = new Set(
+      todayDispenses
+        .map((row) => row.pharmacy_order_item?.drug_id)
+        .filter(Boolean)
+    );
+    if (distinctDrugsToday.size < 5) {
+      errors.push(
+        `Expected at least 5 distinct drugs dispensed today for most-sold charts but found ${distinctDrugsToday.size}.`
+      );
+    }
     if (lowStockCount < 1) {
       errors.push(
         `Expected at least 1 low-stock inventory row for pharmacy dashboard but found ${lowStockCount}.`

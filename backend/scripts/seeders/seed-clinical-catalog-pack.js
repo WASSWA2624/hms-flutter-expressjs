@@ -352,7 +352,8 @@ const seedPharmacyCatalogForTenant = async (
     ? storageByFacility[normalizedFacilityIds[0]]
     : null;
 
-  for (const spec of DRUG_CATALOG) {
+  for (let drugCatalogIndex = 0; drugCatalogIndex < DRUG_CATALOG.length; drugCatalogIndex += 1) {
+    const spec = DRUG_CATALOG[drugCatalogIndex];
     const drug = await ctx.upsert(
       'drug',
       `${seedKey}:drug:${spec.key}`,
@@ -362,6 +363,9 @@ const seedPharmacyCatalogForTenant = async (
         code: spec.code,
         form: spec.form,
         strength: spec.strength,
+        // Distinct prices so pharmacy most-sold amount charts have visible ranks.
+        unit_price: 1200 + (drugCatalogIndex + 1) * 850,
+        currency: 'UGX',
       },
       {
         tenantCode,

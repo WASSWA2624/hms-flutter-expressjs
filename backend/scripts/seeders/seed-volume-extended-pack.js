@@ -978,7 +978,10 @@ const seedVolumeExtendedPack = async (
   if (definitions.length > 0) {
     await runInBatches(n, 10, async (index) => {
       const definition = at(definitions, index);
-      const status = pick(RUN_STATUSES, index);
+      // Guarantee every verify status appears (batch index starts at 1).
+      const status = index <= RUN_STATUSES.length
+        ? RUN_STATUSES[index - 1]
+        : pick(RUN_STATUSES, index);
       await ctx.upsert(
         'report_run',
         `${scenario.key}:volx:report-run:${pad(index)}`,
