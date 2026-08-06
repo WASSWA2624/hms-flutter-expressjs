@@ -303,6 +303,64 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets(
+      'long labels wrap without ellipsis and values share a bottom baseline',
+      (WidgetTester tester) async {
+        final Color accent = Colors.teal.shade700;
+        await tester.pumpWidget(
+          _harness(
+            SizedBox(
+              width: 900,
+              child: DashboardMetricStrip(
+                maxCards: 3,
+                cards: <DashboardMetricCardData>[
+                  DashboardMetricCardData(
+                    label: 'Orders today',
+                    value: '12',
+                    icon: Icons.medication_outlined,
+                    accent: accent,
+                    semanticsLabel: 'Orders today: 12',
+                  ),
+                  DashboardMetricCardData(
+                    label: 'Total sales (last 7 days)',
+                    value: 'UGX1.2M',
+                    icon: Icons.payments_outlined,
+                    accent: accent,
+                    semanticsLabel: 'Total sales (last 7 days): UGX1.2M',
+                  ),
+                  DashboardMetricCardData(
+                    label: 'Pending',
+                    value: '4',
+                    icon: Icons.hourglass_empty,
+                    accent: accent,
+                    semanticsLabel: 'Pending: 4',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Total sales (last 7 days)'), findsOneWidget);
+        expect(find.textContaining('…'), findsNothing);
+        expect(find.textContaining('Total sales'), findsOneWidget);
+
+        final Text label = tester.widget<Text>(
+          find.text('Total sales (last 7 days)'),
+        );
+        expect(label.maxLines, greaterThanOrEqualTo(2));
+        expect(label.softWrap, isTrue);
+        expect(label.overflow, isNot(TextOverflow.ellipsis));
+
+        final double shortBottom = tester.getBottomLeft(find.text('12')).dy;
+        final double longBottom = tester.getBottomLeft(find.text('UGX1.2M')).dy;
+        final double pendingBottom = tester.getBottomLeft(find.text('4')).dy;
+        expect((shortBottom - longBottom).abs(), lessThan(1.0));
+        expect((shortBottom - pendingBottom).abs(), lessThan(1.0));
+      },
+    );
   });
 
   group('management empty strip copy', () {

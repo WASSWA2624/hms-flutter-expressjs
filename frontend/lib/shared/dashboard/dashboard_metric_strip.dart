@@ -76,9 +76,12 @@ class _DashboardMetricCard extends StatelessWidget {
   final DashboardMetricCardData card;
   final bool compact;
 
-  /// Fixed height so the value region can expand and auto-fit type.
-  static const double _compactHeight = 96;
-  static const double _regularHeight = 112;
+  /// Fixed height so wrapped labels and bottom-aligned values share one rhythm.
+  static const double _compactHeight = 112;
+  static const double _regularHeight = 128;
+
+  /// Enough lines for typical KPI titles (e.g. "Total sales (last 7 days)").
+  static const int _labelMaxLines = 2;
 
   @override
   Widget build(BuildContext context) {
@@ -121,6 +124,7 @@ class _DashboardMetricCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Container(
                   width: iconBox,
@@ -133,9 +137,9 @@ class _DashboardMetricCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     card.label,
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: _labelMaxLines,
+                    softWrap: true,
+                    overflow: TextOverflow.fade,
                     textHeightBehavior: tightTextHeight,
                     style: labelStyle,
                   ),
@@ -151,13 +155,13 @@ class _DashboardMetricCard extends StatelessWidget {
               ],
             ),
             SizedBox(height: theme.spacing.xs),
-            // Value keeps remaining width; shrinks only when text overflows.
+            // Value pinned to the bottom; shrinks only when text overflows.
             Expanded(
               child: Align(
-                alignment: Alignment.centerLeft,
+                alignment: Alignment.bottomLeft,
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
+                  alignment: Alignment.bottomLeft,
                   child: Text(
                     card.value,
                     maxLines: 1,
