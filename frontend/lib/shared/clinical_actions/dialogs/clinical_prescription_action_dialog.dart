@@ -662,7 +662,12 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
 
   num? _unitPrice(_PrescriptionLineFormState line) {
     final ClinicalActionCatalogOption? option = _drugOption(line);
-    return option == null ? null : clinicalCatalogOptionUnitPrice(option);
+    return option == null
+        ? null
+        : clinicalCatalogOptionUnitPrice(
+            option,
+            billingEntity: widget.defaultBillingEntity,
+          );
   }
 
   String _priceLabel(BuildContext context, _PrescriptionLineFormState line) {
@@ -670,7 +675,11 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
     if (option == null) {
       return '—';
     }
-    return clinicalRequestCatalogPriceLabel(context, option);
+    return clinicalRequestCatalogPriceLabel(
+      context,
+      option,
+      billingEntity: widget.defaultBillingEntity,
+    );
   }
 
   Future<void> _openCatalogPicker() async {
@@ -1215,6 +1224,8 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
     return clinicalRequestBillingLineItems(
       options: options,
       quantities: quantities,
+      catalogType: 'DRUG',
+      billingEntity: widget.defaultBillingEntity,
     );
   }
 }

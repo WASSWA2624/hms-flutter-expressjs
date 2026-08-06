@@ -563,8 +563,15 @@ final class ClinicalCatalogOptionDto {
         _string(json['procedure_type']),
         _string(json['source']),
       ]),
-      unitPrice: _num(json['unit_price']) ?? _num(json['price']),
-      currency: _string(json['currency']),
+      unitPrice:
+          _num(json['facility_unit_price']) ??
+          _num(json['pharmacy_unit_price']) ??
+          _num(json['unit_price']) ??
+          _num(json['price']),
+      currency:
+          _string(json['facility_currency']) ??
+          _string(json['pharmacy_currency']) ??
+          _string(json['currency']),
       metadata: _withoutNullValues(<String, Object?>{
         'modality': _string(json['modality']),
         'body_region': _string(json['body_region']),
@@ -578,7 +585,14 @@ final class ClinicalCatalogOptionDto {
         'form': _string(json['form']),
         'brand_name': _string(json['brand_name']),
         'unit_price': _num(json['unit_price']) ?? _num(json['price']),
+        'pharmacy_unit_price':
+            _num(json['pharmacy_unit_price']) ?? _num(json['unit_price']),
+        'facility_unit_price': _num(json['facility_unit_price']),
         'currency': _string(json['currency']),
+        'pharmacy_currency':
+            _string(json['pharmacy_currency']) ?? _string(json['currency']),
+        'facility_currency': _string(json['facility_currency']),
+        'catalog_type': 'DRUG',
       }),
       childIds: panelItems
           .map((ClinicalJsonMap item) => _string(item['lab_test_id']))
@@ -723,7 +737,13 @@ List<ClinicalRelatedRecord> decodeRelatedRecords(
 
 List<ClinicalCatalogOption> decodeCatalogOptions(Object? responseData) {
   final ClinicalJsonMap response = _expectMap(responseData);
-  return _list(response['data'])
+  final Object? data = response['data'];
+  final List<ClinicalJsonMap> items = data is ClinicalJsonMap
+      ? (_list(data['drugs']).isNotEmpty
+            ? _list(data['drugs'])
+            : _list(data['items']))
+      : _list(data);
+  return items
       .map(ClinicalCatalogOptionDto.new)
       .map((ClinicalCatalogOptionDto dto) => dto.toEntity())
       .where((ClinicalCatalogOption item) => item.id.isNotEmpty)

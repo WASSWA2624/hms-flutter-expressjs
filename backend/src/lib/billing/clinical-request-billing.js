@@ -2105,11 +2105,13 @@ const buildPharmacyOrderBillingFromRequest = async ({
   items = [],
   tenantId,
   facilityId = null,
+  billingEntity = 'FACILITY',
 }) => {
   const { resolveUnitPrice } = require('@lib/billing/price-resolver');
   if (!tenantId || !Array.isArray(items) || items.length === 0) {
     return null;
   }
+  const entity = normalizeBillingEntity(billingEntity);
   const lineItems = [];
   let currency = 'USD';
   for (const item of items) {
@@ -2138,11 +2140,13 @@ const buildPharmacyOrderBillingFromRequest = async ({
       catalogItemId: drug.id,
       tenantId,
       facilityId,
-      billingEntity: 'FACILITY',
+      billingEntity: entity,
     });
     const unitPrice =
       pricing?.unitPrice ??
-      (drug.unit_price != null ? toMoneyString(drug.unit_price) : null);
+      (entity === 'PHARMACY' && drug.unit_price != null
+        ? toMoneyString(drug.unit_price)
+        : null);
     if (unitPrice == null || toDecimalNumber(unitPrice) <= 0) {
       continue;
     }
@@ -2160,10 +2164,19 @@ const buildPharmacyOrderBillingFromRequest = async ({
       unit_price: unitPrice,
       line_total: lineTotal,
       catalog_type: 'DRUG',
-      price_source: pricing?.priceSource || 'FACILITY',
+      catalog_item_id: drug.id,
+      price_source: pricing?.priceSource || entity,
+      billing_entity: entity,
     });
   }
-  return buildPendingClinicalRequestBilling({ lineItems, currency });
+  const pending = buildPendingClinicalRequestBilling({ lineItems, currency });
+  if (!pending) {
+    return null;
+  }
+  return {
+    ...pending,
+    billing_entity: entity,
+  };
 };
 
 /**

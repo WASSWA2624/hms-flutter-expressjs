@@ -315,10 +315,16 @@ const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
           select: { id: true, tenant_id: true, facility_id: true }})
       : null;
     if (!billing && patientRecord && items.length > 0) {
+      const inferredEntity =
+        payload.encounter_id || data.encounter_id ? 'FACILITY' : 'PHARMACY';
       billing = await buildPharmacyOrderBillingFromRequest({
         items,
         tenantId: patientRecord.tenant_id,
         facilityId: patientRecord.facility_id || scope.facility_id || null,
+        billingEntity:
+          data.billing_entity ||
+          data.billingEntity ||
+          inferredEntity,
       });
     }
     if (billing && patientRecord) {
@@ -329,7 +335,12 @@ const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
           tenantId: patientRecord.tenant_id,
           facilityId: patientRecord.facility_id || scope.facility_id || null,
           patientId: patientRecord.id,
-          description: 'Pharmacy prescription'});
+          description: 'Pharmacy prescription',
+          billingEntity:
+            billing.billing_entity ||
+            data.billing_entity ||
+            (payload.encounter_id || data.encounter_id ? 'FACILITY' : 'PHARMACY'),
+        });
       });
     }
 

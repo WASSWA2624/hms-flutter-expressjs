@@ -270,7 +270,10 @@ List<ClinicalRequestBillingLineItem> clinicalRequestBillingLineItems({
         id: option.apiId,
         label: option.displayTitle,
         quantity: quantities?[option.apiId] ?? 1,
-        unitPrice: clinicalCatalogOptionUnitPrice(option),
+        unitPrice: clinicalCatalogOptionUnitPrice(
+          option,
+          billingEntity: billingEntity,
+        ),
         currency: clinicalCatalogOptionCurrency(option) ?? currency,
         catalogType: catalogType ?? clinicalCatalogOptionCatalogType(option),
         billingEntity: billingEntity,
@@ -297,16 +300,41 @@ String? clinicalCatalogOptionCatalogType(ClinicalActionCatalogOption option) {
   return token;
 }
 
-num? clinicalCatalogOptionUnitPrice(ClinicalActionCatalogOption option) {
+num? clinicalCatalogOptionUnitPrice(
+  ClinicalActionCatalogOption option, {
+  String? billingEntity,
+}) {
+  num? fromMetadata(String key) {
+    final Object? raw = option.metadata[key];
+    if (raw is num) {
+      return raw;
+    }
+    if (raw is String) {
+      return num.tryParse(raw.trim());
+    }
+    return null;
+  }
+
+  final String entity = (billingEntity ?? '').trim().toUpperCase();
+  if (entity == 'FACILITY') {
+    final num? facilityPrice = fromMetadata('facility_unit_price');
+    if (facilityPrice != null && facilityPrice > 0) {
+      return facilityPrice;
+    }
+  }
+  if (entity == 'PHARMACY') {
+    final num? pharmacyPrice = fromMetadata('pharmacy_unit_price');
+    if (pharmacyPrice != null && pharmacyPrice > 0) {
+      return pharmacyPrice;
+    }
+  }
+
   if (option.unitPrice != null && option.unitPrice! > 0) {
     return option.unitPrice;
   }
-  final Object? raw = option.metadata['unit_price'] ?? option.metadata['price'];
-  if (raw is num) {
-    return raw;
-  }
-  if (raw is String) {
-    return num.tryParse(raw.trim());
+  final num? fallback = fromMetadata('unit_price') ?? fromMetadata('price');
+  if (fallback != null && fallback > 0) {
+    return fallback;
   }
   return null;
 }

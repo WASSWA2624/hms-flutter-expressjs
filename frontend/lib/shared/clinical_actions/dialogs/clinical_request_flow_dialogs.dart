@@ -870,11 +870,12 @@ class ClinicalRequestSelectedCatalogRow extends StatelessWidget {
 
 String clinicalRequestCatalogPriceLabel(
   BuildContext context,
-  ClinicalActionCatalogOption option,
-) {
+  ClinicalActionCatalogOption option, {
+  String? billingEntity,
+}) {
   return clinicalRequestPriceLabel(
     context,
-    clinicalCatalogOptionUnitPrice(option),
+    clinicalCatalogOptionUnitPrice(option, billingEntity: billingEntity),
     clinicalCatalogOptionCurrency(option),
   );
 }

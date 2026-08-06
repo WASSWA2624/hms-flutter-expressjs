@@ -95,19 +95,62 @@ describe('clinical Results ready billing-sections scan', () => {
       items: [{ drug_id: 'drug-uuid-1', quantity: 10 }],
       tenantId: 'tenant-1',
       facilityId: 'facility-1',
+      billingEntity: 'FACILITY',
     });
 
     expect(billing).toEqual(
       expect.objectContaining({
         payment_status: 'PENDING',
         total_amount: '25.00',
+        billing_entity: 'FACILITY',
       })
     );
     expect(billing.line_items[0]).toEqual(
       expect.objectContaining({
         quantity: 10,
         unit_price: '2.50',
+        catalog_type: 'DRUG',
+        billing_entity: 'FACILITY',
       })
+    );
+    expect(resolveUnitPrice).toHaveBeenCalledWith(
+      expect.objectContaining({ billingEntity: 'FACILITY' })
+    );
+  });
+
+  it('buildPharmacyOrderBillingFromRequest uses PHARMACY entity for walk-in', async () => {
+    const prisma = require('@prisma/client');
+    prisma.drug = {
+      findFirst: jest.fn().mockResolvedValue({
+        id: 'drug-uuid-1',
+        human_friendly_id: 'DRUG-1',
+        name: 'Amoxicillin',
+        unit_price: '2.50',
+        currency: 'USD',
+      }),
+    };
+    resolveUnitPrice.mockResolvedValue({
+      unitPrice: '2.50',
+      currency: 'USD',
+      source: 'CATALOG',
+      priceSource: 'PHARMACY',
+    });
+
+    const billing = await buildPharmacyOrderBillingFromRequest({
+      items: [{ drug_id: 'drug-uuid-1', quantity: 4 }],
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+      billingEntity: 'PHARMACY',
+    });
+
+    expect(billing).toEqual(
+      expect.objectContaining({
+        billing_entity: 'PHARMACY',
+        total_amount: '10.00',
+      })
+    );
+    expect(resolveUnitPrice).toHaveBeenCalledWith(
+      expect.objectContaining({ billingEntity: 'PHARMACY' })
     );
   });
 

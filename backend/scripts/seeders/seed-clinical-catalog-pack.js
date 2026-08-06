@@ -368,7 +368,7 @@ const seedPharmacyCatalogForTenant = async (
         form: spec.form,
         strength: spec.strength,
         // Distinct prices so pharmacy most-sold amount/profit charts have visible ranks.
-        // Ladder: buy (COGS) < transfer (pharmacy→facility) < pharmacy sell.
+        // Ladder: buy (COGS) < transfer (pharmacy→facility) < pharmacy sell < facility patient sell.
         buy_unit_price: 400 + (drugCatalogIndex + 1) * 250,
         unit_price: 1200 + (drugCatalogIndex + 1) * 850,
         transfer_unit_price: 800 + (drugCatalogIndex + 1) * 450,
@@ -381,6 +381,10 @@ const seedPharmacyCatalogForTenant = async (
       }
     );
     result.drugs[spec.key] = drug;
+
+    const transferPrice = 800 + (drugCatalogIndex + 1) * 450;
+    // Facility patient tariff sits above transfer so facility margin is positive.
+    const facilityPatientPrice = transferPrice + 350 + (drugCatalogIndex + 1) * 200;
 
     const formularyItem = await ctx.upsert(
       'formulary_item',
@@ -508,6 +512,27 @@ const seedPharmacyCatalogForTenant = async (
         }
       );
       result.stockMovements[stockKey] = stockMovement;
+
+      const facilityStorage = storageByFacility[facilityId];
+      await ctx.upsert(
+        'facility_pharmacy_offering',
+        `${seedKey}:facility-pharmacy-offering:${stockKey}`,
+        {
+          tenant_id: tenantId,
+          facility_id: facilityId,
+          drug_id: drug.id,
+          is_active: true,
+          sort_order: drugCatalogIndex,
+          unit_price: facilityPatientPrice,
+          currency: 'UGX',
+          default_storage_shelf_id: facilityStorage?.shelf?.id || null,
+        },
+        {
+          tenantCode,
+          scenarioKey,
+          publicIdPrefix: 'FPO',
+        }
+      );
     }
   }
 

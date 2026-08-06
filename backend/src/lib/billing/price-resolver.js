@@ -265,35 +265,54 @@ const resolveCatalogFallback = async ({
   }
 
   if (catalogType === 'DRUG') {
-    if (billingEntity === 'FACILITY' && facilityId) {
+    // Accept UUID or human-friendly drug id from clinical/pharmacy clients.
+    const drug = await prisma.drug.findFirst({
+      where: {
+        tenant_id: tenantId,
+        deleted_at: null,
+        OR: [
+          { id: catalogItemId },
+          { human_friendly_id: catalogItemId },
+          { human_friendly_id: String(catalogItemId).trim().toUpperCase() },
+        ],
+      },
+      select: { id: true, unit_price: true, currency: true },
+    });
+    if (!drug) {
+      return null;
+    }
+
+    if (billingEntity === 'FACILITY') {
+      if (!facilityId) {
+        return null;
+      }
       const offering = await prisma.facility_pharmacy_offering.findFirst({
         where: {
           deleted_at: null,
           is_active: true,
           facility_id: facilityId,
-          drug_id: catalogItemId,
+          drug_id: drug.id,
         },
         select: { unit_price: true, currency: true },
       });
       if (offering?.unit_price != null && toDecimalNumber(offering.unit_price) > 0) {
         return {
           unitPrice: toMoneyString(offering.unit_price),
-          currency: offering.currency || null,
+          currency: offering.currency || drug.currency || null,
           source: 'FACILITY_OFFERING',
           priceSource: 'FACILITY',
         };
       }
+      // Do not fall back to pharmacy retail for facility patient billing.
+      return null;
     }
-    const drug = await prisma.drug.findFirst({
-      where: { id: catalogItemId, tenant_id: tenantId, deleted_at: null },
-      select: { unit_price: true, currency: true },
-    });
-    if (drug?.unit_price != null && toDecimalNumber(drug.unit_price) > 0) {
+
+    if (drug.unit_price != null && toDecimalNumber(drug.unit_price) > 0) {
       return {
         unitPrice: toMoneyString(drug.unit_price),
         currency: drug.currency || null,
         source: 'CATALOG',
-        priceSource: billingEntity === 'PHARMACY' ? 'PHARMACY' : 'FACILITY',
+        priceSource: 'PHARMACY',
       };
     }
   }

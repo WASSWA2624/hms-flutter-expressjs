@@ -131,7 +131,11 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
       Future<List<ClinicalCatalogOption>>.value(
         const <ClinicalCatalogOption>[],
       ),
-      _catalogOrEmpty(HmsApiResource.drugs),
+      _catalogOrEmpty(
+        HmsApiResource.pharmacy,
+        pathSegments: const <String>['drugs'],
+        limit: 500,
+      ),
       _catalogOrEmpty(
         HmsApiResource.beds,
         queryParameters: const <String, Object?>{'status': 'AVAILABLE'},
@@ -534,11 +538,14 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   Future<List<ClinicalCatalogOption>> _catalogOrEmpty(
     HmsApiResource resource, {
     Map<String, Object?> queryParameters = const <String, Object?>{},
+    List<String> pathSegments = const <String>[],
     int limit = _defaultCatalogPageSize,
   }) async {
     final Result<List<ClinicalCatalogOption>> result = await _apiClient
         .get<List<ClinicalCatalogOption>>(
-          ApiEndpoints.collection(resource),
+          pathSegments.isEmpty
+              ? ApiEndpoints.collection(resource)
+              : ApiEndpoints.apiV1(<String>[resource.path, ...pathSegments]),
           queryParameters: _withoutEmpty(<String, Object?>{
             'page': 1,
             'limit': limit,
