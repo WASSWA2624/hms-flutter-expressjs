@@ -21502,29 +21502,29 @@
   "@reportsOverviewCreateReportAction": {
     "description": "Overview CTA that opens Catalog to create or run a report."
   },
-  "reportsPharmacyOverviewSubtitle": "Pharmacy analysis, analytics insights, and shared report runs for your facility.",
+  "reportsPharmacyOverviewSubtitle": "Pharmacy analytics insights and shared report runs for your facility.",
   "@reportsPharmacyOverviewSubtitle": {
     "description": "Overview subtitle when the pharmacist pharmacy domain pack is active."
   },
-  "reportsPharmacyAnalysisTitle": "Analysis",
-  "@reportsPharmacyAnalysisTitle": {
-    "description": "Pharmacist Overview section for interactive pharmacy dataset exploration."
-  },
-  "reportsPharmacyAnalysisBody": "Explore consumption, dispense throughput, stock and expiry risk, and walk-in vs clinical mix with charts and tables for a selected period.",
-  "@reportsPharmacyAnalysisBody": {
-    "description": "Pharmacist Analysis section supporting copy."
-  },
-  "reportsPharmacyAnalysisEmpty": "No pharmacy analysis datasets are available for your access.",
-  "@reportsPharmacyAnalysisEmpty": {
-    "description": "Empty state when pharmacist Analysis chips cannot be shown."
-  },
   "reportsPharmacyAnalyticsTitle": "Analytics",
   "@reportsPharmacyAnalyticsTitle": {
-    "description": "Pharmacist Overview section for pharmacy insights and projections."
+    "description": "Pharmacist Overview tab for pharmacy datasets and insights."
   },
-  "reportsPharmacyAnalyticsBody": "Open insights for top consumed drugs, stock-out and expiry risk, stocking focus, walk-in vs clinical mix, and margin when buy cost is configured.",
+  "reportsPharmacyAnalyticsBody": "Explore consumption, dispense throughput, stock and expiry risk, walk-in vs clinical mix, and margin when buy cost is configured.",
   "@reportsPharmacyAnalyticsBody": {
-    "description": "Pharmacist Analytics section supporting copy."
+    "description": "Pharmacist Analytics tab supporting copy."
+  },
+  "reportsPharmacyAnalyticsEmpty": "No pharmacy analytics datasets are available for your access.",
+  "@reportsPharmacyAnalyticsEmpty": {
+    "description": "Empty state when pharmacist Analytics chips cannot be shown."
+  },
+  "reportsPharmacyReportingTitle": "Reporting",
+  "@reportsPharmacyReportingTitle": {
+    "description": "Pharmacist Overview tab for report definitions, runs, and schedules."
+  },
+  "reportsPharmacyReportingBody": "Create, run, schedule, and download pharmacy reports using the shared reporting pipeline.",
+  "@reportsPharmacyReportingBody": {
+    "description": "Pharmacist Reporting tab supporting copy."
   },
   "reportsPharmacyAnalyticsTopConsumedLabel": "Top consumed drugs",
   "@reportsPharmacyAnalyticsTopConsumedLabel": {
@@ -21549,14 +21549,6 @@
   "reportsPharmacyAnalyticsMarginLabel": "Revenue and margin",
   "@reportsPharmacyAnalyticsMarginLabel": {
     "description": "Insight chip for pharmacy revenue and margin when buy cost exists."
-  },
-  "reportsPharmacyReportingTitle": "Reporting",
-  "@reportsPharmacyReportingTitle": {
-    "description": "Pharmacist Overview section for report definitions, runs, and schedules."
-  },
-  "reportsPharmacyReportingBody": "Create, run, schedule, and download pharmacy reports using the shared reporting pipeline.",
-  "@reportsPharmacyReportingBody": {
-    "description": "Pharmacist Reporting section supporting copy."
   },
   "reportsLiveStatus": "Live",
   "@reportsLiveStatus": {

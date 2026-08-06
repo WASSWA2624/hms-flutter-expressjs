@@ -7,8 +7,8 @@ import 'package:hosspi_hms/features/reports/presentation/reports_role_tailoring.
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
-/// Pharmacist Overview groups: Analysis, Analytics, and Reporting shortcuts.
-class ReportsPharmacyDomainGroups extends StatelessWidget {
+/// Pharmacist Overview: Analytics and Reporting tabs for pharmacy datasets.
+class ReportsPharmacyDomainGroups extends StatefulWidget {
   const ReportsPharmacyDomainGroups({
     required this.l10n,
     required this.policy,
@@ -32,11 +32,24 @@ class ReportsPharmacyDomainGroups extends StatelessWidget {
     return reportsDomainPacks(policy).contains(ReportsDomainPack.pharmacy);
   }
 
+  static const String analyticsTabId = 'analytics';
+  static const String reportingTabId = 'reporting';
+
+  @override
+  State<ReportsPharmacyDomainGroups> createState() =>
+      _ReportsPharmacyDomainGroupsState();
+}
+
+class _ReportsPharmacyDomainGroupsState
+    extends State<ReportsPharmacyDomainGroups> {
+  String _selectedTabId = ReportsPharmacyDomainGroups.analyticsTabId;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final bool canWrite = canWriteReports(policy);
-    final List<ReportsLookupOption> analysisDatasets = datasetShortcuts
+    final AppLocalizations l10n = widget.l10n;
+    final bool canWrite = canWriteReports(widget.policy);
+    final List<ReportsLookupOption> analyticsDatasets = widget.datasetShortcuts
         .where(
           (ReportsLookupOption option) =>
               option.id == 'pharmacy_drug_consumption' ||
@@ -80,109 +93,135 @@ class ReportsPharmacyDomainGroups extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppSectionPanel(
-          title: l10n.reportsPharmacyAnalysisTitle,
-          leadingIcon: Icons.query_stats_outlined,
-          density: AppContentPanelDensity.compact,
-          children: <Widget>[
-            Text(
-              l10n.reportsPharmacyAnalysisBody,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+        AppTabStrip(
+          variant: AppTabStripVariant.nested,
+          tabs: <AppTabItem>[
+            AppTabItem(
+              id: ReportsPharmacyDomainGroups.analyticsTabId,
+              label: l10n.reportsPharmacyAnalyticsTitle,
+              icon: Icons.insights_outlined,
             ),
-            SizedBox(height: theme.spacing.sm),
-            if (analysisDatasets.isEmpty)
-              AppMutedText(l10n.reportsPharmacyAnalysisEmpty)
-            else
-              Wrap(
-                spacing: theme.spacing.sm,
-                runSpacing: theme.spacing.sm,
-                children: <Widget>[
-                  for (final ReportsLookupOption dataset in analysisDatasets)
-                    ActionChip(
-                      avatar: const Icon(Icons.bar_chart_outlined, size: 18),
-                      label: Text(dataset.label),
-                      onPressed: () => onOpenDataset(dataset.id),
-                    ),
-                ],
-              ),
+            AppTabItem(
+              id: ReportsPharmacyDomainGroups.reportingTabId,
+              label: l10n.reportsPharmacyReportingTitle,
+              icon: Icons.description_outlined,
+            ),
           ],
+          selectedId: _selectedTabId,
+          onTabTapped: (String tabId) {
+            setState(() => _selectedTabId = tabId);
+          },
         ),
         SizedBox(height: theme.spacing.md),
-        AppSectionPanel(
-          title: l10n.reportsPharmacyAnalyticsTitle,
-          leadingIcon: Icons.insights_outlined,
-          density: AppContentPanelDensity.compact,
-          children: <Widget>[
-            Text(
-              l10n.reportsPharmacyAnalyticsBody,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            SizedBox(height: theme.spacing.sm),
-            Wrap(
-              spacing: theme.spacing.sm,
-              runSpacing: theme.spacing.sm,
+        if (_selectedTabId == ReportsPharmacyDomainGroups.analyticsTabId)
+          _PharmacyTabBody(
+            body: l10n.reportsPharmacyAnalyticsBody,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                for (final _PharmacyInsightAction insight in insights)
-                  ActionChip(
-                    avatar: Icon(insight.icon, size: 18),
-                    label: Text(insight.label),
-                    onPressed: () => onOpenDataset(insight.datasetId),
+                if (analyticsDatasets.isEmpty)
+                  AppMutedText(l10n.reportsPharmacyAnalyticsEmpty)
+                else
+                  Wrap(
+                    spacing: theme.spacing.sm,
+                    runSpacing: theme.spacing.sm,
+                    children: <Widget>[
+                      for (final ReportsLookupOption dataset
+                          in analyticsDatasets)
+                        ActionChip(
+                          avatar: const Icon(
+                            Icons.bar_chart_outlined,
+                            size: 18,
+                          ),
+                          label: Text(dataset.label),
+                          onPressed: () => widget.onOpenDataset(dataset.id),
+                        ),
+                    ],
                   ),
+                SizedBox(height: theme.spacing.sm),
+                Wrap(
+                  spacing: theme.spacing.sm,
+                  runSpacing: theme.spacing.sm,
+                  children: <Widget>[
+                    for (final _PharmacyInsightAction insight in insights)
+                      ActionChip(
+                        avatar: Icon(insight.icon, size: 18),
+                        label: Text(insight.label),
+                        onPressed: () =>
+                            widget.onOpenDataset(insight.datasetId),
+                      ),
+                  ],
+                ),
               ],
             ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.md),
-        AppSectionPanel(
-          title: l10n.reportsPharmacyReportingTitle,
-          leadingIcon: Icons.description_outlined,
-          density: AppContentPanelDensity.compact,
-          children: <Widget>[
-            Text(
-              l10n.reportsPharmacyReportingBody,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            SizedBox(height: theme.spacing.sm),
-            Wrap(
+          )
+        else
+          _PharmacyTabBody(
+            body: l10n.reportsPharmacyReportingBody,
+            child: Wrap(
               spacing: theme.spacing.sm,
               runSpacing: theme.spacing.sm,
               children: <Widget>[
-                if (allowedPanels.contains(ReportsWorkspacePanel.catalog))
+                if (widget.allowedPanels.contains(
+                  ReportsWorkspacePanel.catalog,
+                ))
                   ActionChip(
                     avatar: const Icon(Icons.library_books_outlined, size: 18),
                     label: Text(l10n.reportsOverviewBrowseCatalogAction),
                     onPressed: () {
-                      onOpenPanel(ReportsWorkspacePanel.catalog);
+                      widget.onOpenPanel(ReportsWorkspacePanel.catalog);
                     },
                   ),
-                if (allowedPanels.contains(ReportsWorkspacePanel.delivery))
+                if (widget.allowedPanels.contains(
+                  ReportsWorkspacePanel.delivery,
+                ))
                   ActionChip(
                     avatar: const Icon(Icons.local_shipping_outlined, size: 18),
                     label: Text(l10n.reportsOverviewViewDeliveryAction),
                     onPressed: () {
-                      onOpenPanel(ReportsWorkspacePanel.delivery);
+                      widget.onOpenPanel(ReportsWorkspacePanel.delivery);
                     },
                   ),
                 if (canWrite &&
-                    allowedPanels.contains(ReportsWorkspacePanel.catalog))
+                    widget.allowedPanels.contains(
+                      ReportsWorkspacePanel.catalog,
+                    ))
                   ActionChip(
                     avatar: const Icon(Icons.play_arrow_outlined, size: 18),
                     label: Text(l10n.reportsOverviewCreateReportAction),
                     onPressed: () {
-                      onOpenPanel(ReportsWorkspacePanel.catalog);
-                      onOpenCatalogDefinition?.call();
+                      widget.onOpenPanel(ReportsWorkspacePanel.catalog);
+                      widget.onOpenCatalogDefinition?.call();
                     },
                   ),
               ],
             ),
-          ],
+          ),
+      ],
+    );
+  }
+}
+
+class _PharmacyTabBody extends StatelessWidget {
+  const _PharmacyTabBody({required this.body, required this.child});
+
+  final String body;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          body,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
+        SizedBox(height: theme.spacing.sm),
+        child,
       ],
     );
   }

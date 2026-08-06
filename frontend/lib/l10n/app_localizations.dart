@@ -30874,38 +30874,38 @@ abstract class AppLocalizations {
   /// Overview subtitle when the pharmacist pharmacy domain pack is active.
   ///
   /// In en, this message translates to:
-  /// **'Pharmacy analysis, analytics insights, and shared report runs for your facility.'**
+  /// **'Pharmacy analytics insights and shared report runs for your facility.'**
   String get reportsPharmacyOverviewSubtitle;
 
-  /// Pharmacist Overview section for interactive pharmacy dataset exploration.
-  ///
-  /// In en, this message translates to:
-  /// **'Analysis'**
-  String get reportsPharmacyAnalysisTitle;
-
-  /// Pharmacist Analysis section supporting copy.
-  ///
-  /// In en, this message translates to:
-  /// **'Explore consumption, dispense throughput, stock and expiry risk, and walk-in vs clinical mix with charts and tables for a selected period.'**
-  String get reportsPharmacyAnalysisBody;
-
-  /// Empty state when pharmacist Analysis chips cannot be shown.
-  ///
-  /// In en, this message translates to:
-  /// **'No pharmacy analysis datasets are available for your access.'**
-  String get reportsPharmacyAnalysisEmpty;
-
-  /// Pharmacist Overview section for pharmacy insights and projections.
+  /// Pharmacist Overview tab for pharmacy datasets and insights.
   ///
   /// In en, this message translates to:
   /// **'Analytics'**
   String get reportsPharmacyAnalyticsTitle;
 
-  /// Pharmacist Analytics section supporting copy.
+  /// Pharmacist Analytics tab supporting copy.
   ///
   /// In en, this message translates to:
-  /// **'Open insights for top consumed drugs, stock-out and expiry risk, stocking focus, walk-in vs clinical mix, and margin when buy cost is configured.'**
+  /// **'Explore consumption, dispense throughput, stock and expiry risk, walk-in vs clinical mix, and margin when buy cost is configured.'**
   String get reportsPharmacyAnalyticsBody;
+
+  /// Empty state when pharmacist Analytics chips cannot be shown.
+  ///
+  /// In en, this message translates to:
+  /// **'No pharmacy analytics datasets are available for your access.'**
+  String get reportsPharmacyAnalyticsEmpty;
+
+  /// Pharmacist Overview tab for report definitions, runs, and schedules.
+  ///
+  /// In en, this message translates to:
+  /// **'Reporting'**
+  String get reportsPharmacyReportingTitle;
+
+  /// Pharmacist Reporting tab supporting copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Create, run, schedule, and download pharmacy reports using the shared reporting pipeline.'**
+  String get reportsPharmacyReportingBody;
 
   /// Insight chip that opens pharmacy drug consumption.
   ///
@@ -30942,18 +30942,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Revenue and margin'**
   String get reportsPharmacyAnalyticsMarginLabel;
-
-  /// Pharmacist Overview section for report definitions, runs, and schedules.
-  ///
-  /// In en, this message translates to:
-  /// **'Reporting'**
-  String get reportsPharmacyReportingTitle;
-
-  /// Pharmacist Reporting section supporting copy.
-  ///
-  /// In en, this message translates to:
-  /// **'Create, run, schedule, and download pharmacy reports using the shared reporting pipeline.'**
-  String get reportsPharmacyReportingBody;
 
   /// Status label when the reports workspace is live.
   ///

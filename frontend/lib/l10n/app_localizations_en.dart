@@ -16710,25 +16710,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsPharmacyOverviewSubtitle =>
-      'Pharmacy analysis, analytics insights, and shared report runs for your facility.';
-
-  @override
-  String get reportsPharmacyAnalysisTitle => 'Analysis';
-
-  @override
-  String get reportsPharmacyAnalysisBody =>
-      'Explore consumption, dispense throughput, stock and expiry risk, and walk-in vs clinical mix with charts and tables for a selected period.';
-
-  @override
-  String get reportsPharmacyAnalysisEmpty =>
-      'No pharmacy analysis datasets are available for your access.';
+      'Pharmacy analytics insights and shared report runs for your facility.';
 
   @override
   String get reportsPharmacyAnalyticsTitle => 'Analytics';
 
   @override
   String get reportsPharmacyAnalyticsBody =>
-      'Open insights for top consumed drugs, stock-out and expiry risk, stocking focus, walk-in vs clinical mix, and margin when buy cost is configured.';
+      'Explore consumption, dispense throughput, stock and expiry risk, walk-in vs clinical mix, and margin when buy cost is configured.';
+
+  @override
+  String get reportsPharmacyAnalyticsEmpty =>
+      'No pharmacy analytics datasets are available for your access.';
+
+  @override
+  String get reportsPharmacyReportingTitle => 'Reporting';
+
+  @override
+  String get reportsPharmacyReportingBody =>
+      'Create, run, schedule, and download pharmacy reports using the shared reporting pipeline.';
 
   @override
   String get reportsPharmacyAnalyticsTopConsumedLabel => 'Top consumed drugs';
@@ -16749,13 +16749,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsPharmacyAnalyticsMarginLabel => 'Revenue and margin';
-
-  @override
-  String get reportsPharmacyReportingTitle => 'Reporting';
-
-  @override
-  String get reportsPharmacyReportingBody =>
-      'Create, run, schedule, and download pharmacy reports using the shared reporting pipeline.';
 
   @override
   String get reportsLiveStatus => 'Live';
