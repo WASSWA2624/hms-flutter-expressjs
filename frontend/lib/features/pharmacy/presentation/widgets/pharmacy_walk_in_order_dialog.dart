@@ -247,13 +247,15 @@ class _PharmacyWalkInOrderDialogState
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final bool canRegisterPatient = canWritePatientRegistry(policy);
     final Patient? patient = _patient;
-    final String patientLabel = patient == null
-        ? l10n.receptionPatientPickerTitle
+    final bool existingSelected = _patientMode == _WalkInPatientMode.existing;
+    final bool selectEnabled = existingSelected && !_isRegisteringPatient;
+    final String? patientLabel = patient == null
+        ? null
         : () {
             final String name = patient.effectiveDisplayName.trim();
             final String? identifier = patient.effectiveIdentifier?.trim();
             if (identifier == null || identifier.isEmpty) {
-              return name.isEmpty ? l10n.receptionPatientPickerTitle : name;
+              return name.isEmpty ? null : name;
             }
             if (name.isEmpty) {
               return identifier;
@@ -278,57 +280,62 @@ class _PharmacyWalkInOrderDialogState
           ),
         ];
 
-    return AppFormSection(
-      title: l10n.pharmacyPatientColumnLabel,
-      density: AppFormSectionDensity.compact,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppRadioGroup<_WalkInPatientMode>(
-          value: _patientMode,
-          enabled: !_isRegisteringPatient,
-          dense: true,
-          layout: AppRadioGroupLayout.wrap,
-          presentation: AppRadioGroupPresentation.borderless,
-          itemMinWidth: 140,
-          options: modeOptions,
-          onChanged: _isRegisteringPatient ? null : _setPatientMode,
-        ),
-        SizedBox(height: theme.spacing.sm),
-        if (_patientMode == _WalkInPatientMode.anonymous)
-          Text(
-            l10n.pharmacyWalkInOrderAnonymousHint,
-            style: theme.textTheme.bodyMedium,
-          )
-        else if (_patientMode == _WalkInPatientMode.newPatient)
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(patientLabel, style: theme.textTheme.bodyLarge),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Flexible(
+              child: AppRadioGroup<_WalkInPatientMode>(
+                value: _patientMode,
+                enabled: !_isRegisteringPatient,
+                dense: true,
+                layout: AppRadioGroupLayout.horizontal,
+                presentation: AppRadioGroupPresentation.borderless,
+                itemMinWidth: 120,
+                options: modeOptions,
+                onChanged: _isRegisteringPatient ? null : _setPatientMode,
               ),
+            ),
+            if (existingSelected && patientLabel != null) ...<Widget>[
               SizedBox(width: theme.spacing.sm),
+              Flexible(
+                child: Text(
+                  patientLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyLarge,
+                ),
+              ),
+            ],
+            SizedBox(width: theme.spacing.sm),
+            if (_patientMode == _WalkInPatientMode.newPatient)
               AppButton.secondary(
                 label: l10n.pharmacyWalkInOrderRegisterPatientAction,
                 leadingIcon: Icons.person_add_outlined,
                 enabled: !_isRegisteringPatient,
                 isLoading: _isRegisteringPatient,
                 onPressed: _isRegisteringPatient ? null : _registerNewPatient,
-              ),
-            ],
-          )
-        else
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(patientLabel, style: theme.textTheme.bodyLarge),
-              ),
-              SizedBox(width: theme.spacing.sm),
+              )
+            else
               AppButton.secondary(
                 label: l10n.commonSelectActionLabel,
                 leadingIcon: Icons.person_search_outlined,
-                enabled: !_isRegisteringPatient,
-                onPressed: _isRegisteringPatient ? null : _pickPatient,
+                enabled: selectEnabled,
+                onPressed: selectEnabled ? _pickPatient : null,
               ),
-            ],
+          ],
+        ),
+        if (_patientMode == _WalkInPatientMode.anonymous) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            l10n.pharmacyWalkInOrderAnonymousHint,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
+        ],
       ],
     );
   }

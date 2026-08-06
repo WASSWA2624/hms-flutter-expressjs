@@ -14,6 +14,8 @@ import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_reposi
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_walk_in_order_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/components/app_collapsible_section.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockClinicalRepository extends Mock implements ClinicalRepository {}
@@ -103,10 +105,18 @@ void main() {
     expect(find.text('Anonymous'), findsOneWidget);
     expect(find.text('Existing patient'), findsOneWidget);
     expect(find.text('New patient'), findsNothing);
+    expect(find.text('Patient'), findsNothing);
+    expect(find.byType(AppCollapsibleSection), findsNothing);
     expect(find.text('No medicines added yet'), findsOneWidget);
     expect(find.text('Add medicine'), findsWidgets);
     expect(find.text('Review billing'), findsNothing);
     expect(find.text('Line 1'), findsNothing);
+
+    final AppButton selectButton = tester.widget<AppButton>(
+      find.widgetWithText(AppButton, 'Select'),
+    );
+    expect(selectButton.enabled, isFalse);
+    expect(selectButton.onPressed, isNull);
   });
 
   testWidgets('shows New patient mode when registry write is allowed', (
@@ -120,13 +130,24 @@ void main() {
     expect(find.text('New patient'), findsOneWidget);
   });
 
-  testWidgets('shows Review billing after selecting Existing patient mode', (
+  testWidgets('enables Select only for Existing patient mode', (
     WidgetTester tester,
   ) async {
     await pumpCreateOrder(tester);
 
+    AppButton selectButton = tester.widget<AppButton>(
+      find.widgetWithText(AppButton, 'Select'),
+    );
+    expect(selectButton.enabled, isFalse);
+
     await tester.tap(find.text('Existing patient'));
     await tester.pumpAndSettle();
+
+    selectButton = tester.widget<AppButton>(
+      find.widgetWithText(AppButton, 'Select'),
+    );
+    expect(selectButton.enabled, isTrue);
+    expect(selectButton.onPressed, isNotNull);
 
     // Review billing stays hidden until a patient is selected.
     expect(find.text('Review billing'), findsNothing);
