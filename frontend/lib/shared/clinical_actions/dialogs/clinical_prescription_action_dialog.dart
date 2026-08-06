@@ -26,7 +26,7 @@ class ClinicalPrescriptionActionDialog extends StatefulWidget {
     this.dialogTitle,
     this.submitLabel,
     this.dialogIcon,
-    this.maxWidth = 1100,
+    this.maxWidth = 1280,
     this.enableBilling = true,
     this.defaultBillingEntity = 'FACILITY',
     this.allowAddMedicines = true,
@@ -77,7 +77,7 @@ class ClinicalPrescriptionActionDialog extends StatefulWidget {
 
 class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   static const String _columnVisibilityStorageKey =
-      'clinical_prescription_medicines_table_v2';
+      'clinical_prescription_medicines_table_v3';
   static const String _selectColumnKey = 'select';
   static const String _medicineColumnKey = 'medicine';
   static const String _quantityColumnKey = 'quantity';
@@ -87,6 +87,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   static const String _routeColumnKey = 'route';
   static const String _frequencyColumnKey = 'frequency';
   static const String _durationColumnKey = 'duration';
+  static const String _durationUnitColumnKey = 'duration_unit';
   static const String _instructionsColumnKey = 'instructions';
   static const String _priceColumnKey = 'unit_price';
   static const String _lineTotalColumnKey = 'line_total';
@@ -307,12 +308,16 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   ) {
     final AppLocalizations l10n = context.l10n;
     final bool enabled = !_isSaving;
+    final String qtyLabel = l10n.billingLineItemQtyColumn;
+    final String unitLabel = l10n.patientsVitalUnitLabel;
+    final String amountLabel = l10n.billingLineItemAmountColumn;
     return <AppListTableColumn<_PrescriptionLineFormState>>[
       _selectionColumn(context),
       AppListTableColumn<_PrescriptionLineFormState>(
         id: _medicineColumnKey,
         label: l10n.clinicalPrescriptionMedicineLabel,
         alwaysVisible: true,
+        preferredWidth: 260,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(
@@ -322,51 +327,58 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
           return Text(
             _medicineIdentity(line, l10n),
-            maxLines: 2,
+            softWrap: true,
+            maxLines: 3,
             overflow: TextOverflow.ellipsis,
           );
         },
+        exportValue: (_PrescriptionLineFormState line) =>
+            _medicineIdentity(line, l10n),
       ),
       AppListTableColumn<_PrescriptionLineFormState>(
         id: _quantityColumnKey,
-        label: l10n.opdDrugQuantityLabel,
+        label: qtyLabel,
         alwaysVisible: true,
         numeric: true,
+        fixedWidth: 72,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 (_lineQuantity(left) ?? 0).compareTo(_lineQuantity(right) ?? 0),
         cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
-          return SizedBox(
-            width: 72,
-            child: AppTextField(
-              controller: line.quantityController,
-              labelText: l10n.opdDrugQuantityLabel,
-              enabled: enabled,
-              isDense: true,
-              keyboardType: TextInputType.number,
-              inputFormatters: _integerFormatters,
-              errorText: line.quantityError ?? line.consistencyError,
-              onChanged: (_) {
-                _applyLineDosingSync(
-                  line,
-                  edited: ClinicalPrescriptionDosingField.quantity,
-                );
-                setState(() {});
-              },
-            ),
+          return AppTextField(
+            controller: line.quantityController,
+            semanticLabel: l10n.opdDrugQuantityLabel,
+            useFloatingLabel: false,
+            enabled: enabled,
+            isDense: true,
+            keyboardType: TextInputType.number,
+            inputFormatters: _integerFormatters,
+            errorText: line.quantityError ?? line.consistencyError,
+            onChanged: (_) {
+              _applyLineDosingSync(
+                line,
+                edited: ClinicalPrescriptionDosingField.quantity,
+              );
+              setState(() {});
+            },
           );
         },
       ),
       AppListTableColumn<_PrescriptionLineFormState>(
         id: _quantityUnitColumnKey,
-        label: l10n.clinicalPrescriptionQuantityUnitLabel,
+        label: unitLabel,
         alwaysVisible: true,
+        fixedWidth: 80,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(left.quantityUnit, right.quantityUnit),
         cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
           final String unit = (line.quantityUnit ?? '').trim();
-          return Text(unit.isEmpty ? '—' : unit);
+          return Text(
+            unit.isEmpty ? '—' : unit,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
         },
       ),
       AppListTableColumn<_PrescriptionLineFormState>(
@@ -374,28 +386,27 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         label: l10n.clinicalDoseAmountLabel,
         alwaysVisible: true,
         numeric: true,
+        fixedWidth: 88,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(_doseLabel(left), _doseLabel(right)),
         cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
-          return SizedBox(
-            width: 80,
-            child: AppTextField(
-              controller: line.doseAmountController,
-              labelText: l10n.clinicalDoseAmountLabel,
-              enabled: enabled,
-              isDense: true,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: _decimalFormatters,
-              errorText: line.doseAmountError,
-              onChanged: (_) {
-                _applyLineDosingSync(
-                  line,
-                  edited: ClinicalPrescriptionDosingField.doseAmount,
-                );
-                setState(() {});
-              },
-            ),
+          return AppTextField(
+            controller: line.doseAmountController,
+            semanticLabel: l10n.clinicalDoseAmountLabel,
+            useFloatingLabel: false,
+            enabled: enabled,
+            isDense: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: _decimalFormatters,
+            errorText: line.doseAmountError,
+            onChanged: (_) {
+              _applyLineDosingSync(
+                line,
+                edited: ClinicalPrescriptionDosingField.doseAmount,
+              );
+              setState(() {});
+            },
           );
         },
       ),
@@ -403,29 +414,27 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         id: _doseUnitColumnKey,
         label: l10n.clinicalDoseUnitLabel,
         alwaysVisible: true,
+        preferredWidth: 140,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(left.doseUnit, right.doseUnit),
         cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
-          return SizedBox(
-            width: 100,
-            child: AppSelectField<String>.searchable(
-              value: line.doseUnit,
-              labelText: l10n.clinicalDoseUnitLabel,
-              enabled: enabled,
-              isDense: true,
-              options: _unitOptions(_doseUnits),
-              errorText: line.doseUnitError,
-              onChanged: (String? value) {
-                line.doseUnit = value;
-                line.doseUnitError = null;
-                _applyLineDosingSync(
-                  line,
-                  edited: ClinicalPrescriptionDosingField.doseUnit,
-                );
-                setState(() {});
-              },
-            ),
+          return AppSelectField<String>.searchable(
+            value: line.doseUnit,
+            semanticLabel: l10n.clinicalDoseUnitLabel,
+            enabled: enabled,
+            isDense: true,
+            options: _unitOptions(_doseUnits),
+            errorText: line.doseUnitError,
+            onChanged: (String? value) {
+              line.doseUnit = value;
+              line.doseUnitError = null;
+              _applyLineDosingSync(
+                line,
+                edited: ClinicalPrescriptionDosingField.doseUnit,
+              );
+              setState(() {});
+            },
           );
         },
       ),
@@ -433,6 +442,8 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         id: _durationColumnKey,
         label: l10n.clinicalDurationValueLabel,
         alwaysVisible: true,
+        numeric: true,
+        fixedWidth: 72,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(
@@ -440,24 +451,50 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
                   _durationLabel(right),
                 ),
         cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
-          return SizedBox(
-            width: 88,
-            child: AppTextField(
-              controller: line.durationController,
-              labelText: l10n.clinicalDurationValueLabel,
-              enabled: enabled,
-              isDense: true,
-              keyboardType: TextInputType.number,
-              inputFormatters: _integerFormatters,
-              errorText: line.durationValueError,
-              onChanged: (_) {
-                _applyLineDosingSync(
-                  line,
-                  edited: ClinicalPrescriptionDosingField.durationValue,
-                );
-                setState(() {});
-              },
-            ),
+          return AppTextField(
+            controller: line.durationController,
+            semanticLabel: l10n.clinicalDurationValueLabel,
+            useFloatingLabel: false,
+            enabled: enabled,
+            isDense: true,
+            keyboardType: TextInputType.number,
+            inputFormatters: _integerFormatters,
+            errorText: line.durationValueError,
+            onChanged: (_) {
+              _applyLineDosingSync(
+                line,
+                edited: ClinicalPrescriptionDosingField.durationValue,
+              );
+              setState(() {});
+            },
+          );
+        },
+      ),
+      AppListTableColumn<_PrescriptionLineFormState>(
+        id: _durationUnitColumnKey,
+        label: l10n.clinicalDurationUnitLabel,
+        alwaysVisible: true,
+        preferredWidth: 120,
+        sortComparator:
+            (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
+                appListTableCompareText(left.durationUnit, right.durationUnit),
+        cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
+          return AppSelectField<String>.searchable(
+            value: line.durationUnit,
+            semanticLabel: l10n.clinicalDurationUnitLabel,
+            enabled: enabled,
+            isDense: true,
+            options: _durationUnitOptions(),
+            errorText: line.durationUnitError,
+            onChanged: (String? value) {
+              line.durationUnit = value;
+              line.durationUnitError = null;
+              _applyLineDosingSync(
+                line,
+                edited: ClinicalPrescriptionDosingField.durationUnit,
+              );
+              setState(() {});
+            },
           );
         },
       ),
@@ -466,6 +503,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         label: l10n.clinicalRequestSelectedPriceColumnLabel,
         alwaysVisible: true,
         numeric: true,
+        preferredWidth: 120,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) {
               return (_unitPrice(left) ?? 0).compareTo(_unitPrice(right) ?? 0);
@@ -474,14 +512,17 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
           return Text(
             _priceLabel(context, line),
             textAlign: TextAlign.end,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           );
         },
       ),
       AppListTableColumn<_PrescriptionLineFormState>(
         id: _lineTotalColumnKey,
-        label: l10n.pharmacyLineTotalLabel,
+        label: amountLabel,
         alwaysVisible: true,
         numeric: true,
+        preferredWidth: 120,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) {
               return (_lineTotal(left) ?? 0).compareTo(_lineTotal(right) ?? 0);
@@ -490,6 +531,8 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
           return Text(
             _lineTotalLabel(context, line),
             textAlign: TextAlign.end,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: AppFontWeight.emphasis,
             ),
@@ -510,89 +553,57 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       AppListTableColumn<_PrescriptionLineFormState>(
         id: _routeColumnKey,
         label: l10n.opdMedicationRouteLabel,
+        preferredWidth: 120,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(left.route, right.route),
         cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
-          return SizedBox(
-            width: 120,
-            child: AppSelectField<String>.searchable(
-              value: line.route,
-              labelText: l10n.opdMedicationRouteLabel,
-              enabled: enabled,
-              isDense: true,
-              options: _medicationRouteOptions(),
-              errorText: line.routeError,
-              onChanged: (String? value) {
-                line.route = value;
-                line.routeError = null;
-                setState(() {});
-              },
-            ),
+          return AppSelectField<String>.searchable(
+            value: line.route,
+            semanticLabel: l10n.opdMedicationRouteLabel,
+            enabled: enabled,
+            isDense: true,
+            options: _medicationRouteOptions(),
+            errorText: line.routeError,
+            onChanged: (String? value) {
+              line.route = value;
+              line.routeError = null;
+              setState(() {});
+            },
           );
         },
       ),
       AppListTableColumn<_PrescriptionLineFormState>(
         id: _frequencyColumnKey,
         label: l10n.opdFrequencyLabel,
+        preferredWidth: 140,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(left.frequency, right.frequency),
         cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
-          return SizedBox(
-            width: 140,
-            child: AppSelectField<String>.searchable(
-              value: line.frequency,
-              labelText: l10n.opdFrequencyLabel,
-              enabled: enabled,
-              isDense: true,
-              options: _medicationFrequencyOptions(),
-              errorText: line.frequencyError,
-              onChanged: (String? value) {
-                line.frequency = value;
-                line.frequencyError = null;
-                _applyLineDosingSync(
-                  line,
-                  edited: ClinicalPrescriptionDosingField.frequency,
-                );
-                setState(() {});
-              },
-            ),
-          );
-        },
-      ),
-      AppListTableColumn<_PrescriptionLineFormState>(
-        id: 'duration_unit',
-        label: l10n.clinicalDurationUnitLabel,
-        sortComparator:
-            (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
-                appListTableCompareText(left.durationUnit, right.durationUnit),
-        cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
-          return SizedBox(
-            width: 110,
-            child: AppSelectField<String>.searchable(
-              value: line.durationUnit,
-              labelText: l10n.clinicalDurationUnitLabel,
-              enabled: enabled,
-              isDense: true,
-              options: _durationUnitOptions(),
-              errorText: line.durationUnitError,
-              onChanged: (String? value) {
-                line.durationUnit = value;
-                line.durationUnitError = null;
-                _applyLineDosingSync(
-                  line,
-                  edited: ClinicalPrescriptionDosingField.durationUnit,
-                );
-                setState(() {});
-              },
-            ),
+          return AppSelectField<String>.searchable(
+            value: line.frequency,
+            semanticLabel: l10n.opdFrequencyLabel,
+            enabled: enabled,
+            isDense: true,
+            options: _medicationFrequencyOptions(),
+            errorText: line.frequencyError,
+            onChanged: (String? value) {
+              line.frequency = value;
+              line.frequencyError = null;
+              _applyLineDosingSync(
+                line,
+                edited: ClinicalPrescriptionDosingField.frequency,
+              );
+              setState(() {});
+            },
           );
         },
       ),
       AppListTableColumn<_PrescriptionLineFormState>(
         id: _instructionsColumnKey,
         label: l10n.clinicalInstructionsLabel,
+        preferredWidth: 180,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(
@@ -600,15 +611,13 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
                   right.instructionsController.text,
                 ),
         cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
-          return SizedBox(
-            width: 160,
-            child: AppTextField(
-              controller: line.instructionsController,
-              labelText: l10n.clinicalInstructionsLabel,
-              enabled: enabled,
-              isDense: true,
-              onChanged: (_) => setState(() {}),
-            ),
+          return AppTextField(
+            controller: line.instructionsController,
+            semanticLabel: l10n.clinicalInstructionsLabel,
+            useFloatingLabel: false,
+            enabled: enabled,
+            isDense: true,
+            onChanged: (_) => setState(() {}),
           );
         },
       ),
@@ -629,6 +638,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       id: _selectColumnKey,
       label: '',
       alwaysVisible: true,
+      fixedWidth: 44,
       headerBuilder: (BuildContext context) {
         final bool allSelected =
             visibleLines.isNotEmpty &&
@@ -651,6 +661,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
               ? null
               : (bool? checked) => _toggleAllVisible(checked ?? false),
           visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         );
       },
       cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
@@ -661,6 +672,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
               ? null
               : (bool? value) => _toggleKey(key, value ?? false),
           visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         );
       },
     );
@@ -675,11 +687,13 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       id: _actionsColumnKey,
       label: l10n.clinicalRequestSelectedActionsColumnLabel,
       alwaysVisible: true,
+      fixedWidth: 240,
       cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             AppButton.tertiary(
+              dense: true,
               leadingIcon: Icons.edit_outlined,
               label: l10n.commonEditActionLabel,
               semanticLabel: l10n.commonEditActionLabel,
@@ -692,6 +706,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
                     ),
             ),
             AppButton.tertiary(
+              dense: true,
               leadingIcon: Icons.delete_outline,
               label: l10n.commonDeleteActionLabel,
               semanticLabel: l10n.commonDeleteActionLabel,
@@ -1605,7 +1620,7 @@ class _PrescriptionRxListTile extends StatelessWidget {
       if (unitPriceLabel.trim().isNotEmpty && unitPriceLabel != '—')
         '${l10n.clinicalRequestSelectedPriceColumnLabel}: $unitPriceLabel',
       if (lineTotalLabel.trim().isNotEmpty && lineTotalLabel != '—')
-        '${l10n.pharmacyLineTotalLabel}: $lineTotalLabel',
+        '${l10n.billingLineItemAmountColumn}: $lineTotalLabel',
     ].join(' · ');
 
     return Padding(
@@ -1643,7 +1658,8 @@ class _PrescriptionRxListTile extends StatelessWidget {
                   Text(
                     title,
                     style: titleStyle,
-                    maxLines: 2,
+                    softWrap: true,
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (priceSummary.isNotEmpty)

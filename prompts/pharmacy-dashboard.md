@@ -1,35 +1,30 @@
-# Prescribe Dialog Editable Medicines Table
+# Prescribe Dialog Compact Medicines Table
 
-Replace the Create Order / Prescribe medicine collapsible cards with a compact editable table that shows unit price, line total, and order total—without changing catalog pick, billing APIs, or submit pipelines.
+Tighten the Create Order / Prescribe medicines table: narrower chrome columns, wider wrapping medicine names with brand, short Qty/Unit/Amount labels, always-visible duration unit, and reliable horizontal scroll—without changing catalog pick, billing APIs, or submit pipelines.
 
 ## Context
 
 **Current behavior**
 
-- Clinical Prescribe and Pharmacy Create order both use `ClinicalPrescriptionActionDialog`.
-- Medicines were shown as collapsible cards (`_PrescriptionRxListTile`) via `AppListTableDisplayMode.list`.
-- Unit price existed only as an optional unused table column; cards showed no prices or totals.
+- Clinical Prescribe and Pharmacy Create order share `ClinicalPrescriptionActionDialog` with an editable priced table.
+- Checkbox, quantity, and quantity-unit columns were too wide; dose unit and price/amount could clip without a usable bottom scrollbar.
+- Medicine cells showed identity text without wrapping; quantity fields used full “Quantity” / “Quantity unit” / “Line total” labels.
 
 **Intended behavior**
 
-- Default view is an **editable table**: medicine, quantity, quantity unit (read-only), dose amount, dose unit, route, frequency, **unit price**, **line total**, actions.
-- Duration and instructions remain available via column settings (optional columns).
-- Footer shows **order total** (sum of line totals using the active billing entity price).
-- Mobile / narrow: keep expandable card rows, but surface unit price and line total on the collapsed header.
-- Quantity unit stays catalog-fixed (non-editable). Dose unit stays prefilled and editable.
-- Quantity defaults to **0**; create/prescribe is blocked until quantity is a positive integer.
-- Row actions show **Edit** and **Delete** labels (not icon-only).
-- Keep catalog-selected drug options (name + facility/pharmacy price) on the prescribe table even when clinical `referenceData.drugs` is sparse.
+- Compact default columns: checkbox-only select, wide wrapping **Medicine** (`Generic (Brand) - strength`), **Qty**, **Unit**, dose amount, dose unit, duration, **Duration unit**, price, **Amount**, actions.
+- Table content wider than the dialog scrolls horizontally with a bottom scrollbar; narrow viewports keep mobile cards.
+- Quantity stays default **0** and must be positive to submit; Edit/Delete stay labeled.
 
 ## Requirements
 
-1. Use `AppListTable` in table mode (`forceCompact`) for the medicine list on Create Order / Prescribe.
-2. Make quantity, dose amount, dose unit, route, and frequency editable inline in cells; keep medicine identity and quantity unit read-only.
-3. Always show **unit price** and **line total** columns (entity-aware via `defaultBillingEntity` / `clinicalCatalogOptionUnitPrice`).
-4. Show a table **footer total** using existing billing helpers (`clinicalRequestBillingTotal` / `clinicalRequestPriceLabel`).
-5. Preserve toolbar (search, filters, settings, export, Remove selected, Add medicine, Review billing when enabled) and footer submit/cancel.
-6. Preserve dosing sync/validation and submit payload shape; do not change pharmacy vs clinical create APIs.
-7. Update tests for table presence, prices/totals visibility, editable qty, and existing validation.
+1. Set fixed/preferred column widths so select, Qty, Unit, and Duration stay narrow; Medicine and Dose unit stay fully readable.
+2. Show medicine as `clinicalPrescriptionDrugIdentityLabel` with soft wrap (up to 3 lines).
+3. Rename column headers to **Qty**, **Unit**, and **Amount**; keep field semantics for a11y.
+4. Always show Duration unit beside Duration; keep route/frequency/instructions optional via Settings.
+5. Use dense inline editors without floating labels so cells fit their columns.
+6. Preserve horizontal scroll at the bottom of the table viewport and responsive dialog sizing.
+7. Update tests for new headers, brand identity, duration unit, and semantic field lookup.
 
 ## Constraints
 
@@ -40,15 +35,14 @@ Replace the Create Order / Prescribe medicine collapsible cards with a compact e
 
 | # | Criterion |
 | --- | --- |
-| A1 | Medicines render as an editable table with price and line total columns. |
-| A2 | Order total footer updates when quantity changes. |
-| A3 | Quantity unit remains non-editable; dose unit editable; dosing sync still works. |
-| A4 | Clinical Prescribe and Pharmacy Create order share the same dialog behavior. |
-| A5 | Tests cover table/prices/totals and validation. |
+| A1 | Select column is checkbox-width; Medicine wraps with generic and brand when present. |
+| A2 | Headers show Qty, Unit, Amount; Duration unit is visible by default. |
+| A3 | Dose unit and price/amount remain fully readable; table scrolls horizontally when needed. |
+| A4 | Clinical and Pharmacy share the same table behavior; existing validation still blocks qty ≤ 0. |
+| A5 | Tests cover compact labels, brand identity, duration unit, prices, and validation. |
 
 ## Relevant Files
 
 - `frontend/lib/shared/clinical_actions/dialogs/clinical_prescription_action_dialog.dart`
-- `frontend/lib/shared/clinical_actions/clinical_request_billing_state.dart`
-- `frontend/lib/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart`
+- `frontend/lib/shared/clinical_actions/clinical_prescription_display.dart`
 - Tests: `frontend/test/shared/clinical_actions/clinical_prescription_action_dialog_test.dart`

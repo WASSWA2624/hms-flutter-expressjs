@@ -193,11 +193,13 @@ void main() {
       ]);
 
       expect(find.byType(AppCollapsibleSection), findsNothing);
-      expect(find.textContaining('Amoxicillin - 500 mg'), findsWidgets);
-      expect(find.textContaining('Ibuprofen - 200 mg'), findsWidgets);
+      expect(find.textContaining('Amoxicillin (Amoxil) - 500 mg'), findsWidgets);
+      expect(find.textContaining('Ibuprofen (Brufen) - 200 mg'), findsWidgets);
       expect(find.text('Price'), findsWidgets);
-      expect(find.text('Line total'), findsWidgets);
-      expect(find.text('Total'), findsWidgets);
+      expect(find.text('Amount'), findsWidgets);
+      expect(find.text('Qty'), findsWidgets);
+      expect(find.text('Unit'), findsWidgets);
+      expect(find.text('Duration unit'), findsWidgets);
       expect(_fieldWithLabel('Dose amount'), findsWidgets);
       expect(_fieldWithLabel('Quantity'), findsWidgets);
       expect(find.text('capsule'), findsWidgets);
@@ -463,14 +465,20 @@ Future<void> _addMedicinesFromCatalog(
 
 Finder _fieldWithLabel(String label) {
   return find.byWidgetPredicate(
-    (Widget widget) => widget is AppTextField && widget.labelText == label,
+    (Widget widget) =>
+        widget is AppTextField &&
+        (widget.labelText == label || widget.semanticLabel == label),
   );
 }
 
 Finder _selectWithLabel(String label) {
   return find.byWidgetPredicate((Widget widget) {
-    return widget.runtimeType.toString().startsWith('AppSelectField') &&
-        ((widget as dynamic).labelText as String?) == label;
+    if (!widget.runtimeType.toString().startsWith('AppSelectField')) {
+      return false;
+    }
+    final dynamic field = widget;
+    return (field.labelText as String?) == label ||
+        (field.semanticLabel as String?) == label;
   });
 }
 
@@ -523,6 +531,7 @@ Future<void> _pumpPrescribeDialog(
                       currency: 'USD',
                       metadata: <String, Object?>{
                         'generic_name': 'Amoxicillin',
+                        'brand_name': 'Amoxil',
                         'strength': '500 mg',
                         'form': 'Capsule',
                       },
@@ -536,6 +545,7 @@ Future<void> _pumpPrescribeDialog(
                       currency: 'USD',
                       metadata: <String, Object?>{
                         'generic_name': 'Ibuprofen',
+                        'brand_name': 'Brufen',
                         'strength': '200 mg',
                         'form': 'Tablet',
                       },
