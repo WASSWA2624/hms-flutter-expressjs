@@ -78,13 +78,11 @@ String clinicalPrescriptionDrugBrandName(ClinicalActionCatalogOption? option) {
       '';
 }
 
-/// Collapsible card title: `Generic (Brand) - strength - Qty: N`.
+/// Catalog / card identity: `Generic (Brand) - strength`.
 ///
 /// Omits brand parentheses when brand is missing or identical to generic.
-/// Quantity is the numeric value only (no unit). Title is plain text (not bold).
-String clinicalPrescriptionCardTitle({
-  required ClinicalActionCatalogOption? drug,
-  Object? quantity,
+String clinicalPrescriptionDrugIdentityLabel(
+  ClinicalActionCatalogOption? drug, {
   String fallbackDrugName = 'Medication',
 }) {
   final String generic = clinicalPrescriptionDrugGenericName(drug);
@@ -103,6 +101,26 @@ String clinicalPrescriptionCardTitle({
     namePart = generic;
   }
 
+  return clinicalActionJoinDisplay(<String?>[
+    namePart,
+    if (strength.isNotEmpty) strength,
+  ], separator: ' - ');
+}
+
+/// Collapsible card title: `Generic (Brand) - strength - Qty: N`.
+///
+/// Omits brand parentheses when brand is missing or identical to generic.
+/// Quantity is the numeric value only (no unit). Title is plain text (not bold).
+String clinicalPrescriptionCardTitle({
+  required ClinicalActionCatalogOption? drug,
+  Object? quantity,
+  String fallbackDrugName = 'Medication',
+}) {
+  final String identity = clinicalPrescriptionDrugIdentityLabel(
+    drug,
+    fallbackDrugName: fallbackDrugName,
+  );
+
   final String? qtyRaw = clinicalActionTrimmedOrNull(quantity?.toString());
   final int? qtyNumber = qtyRaw == null ? null : int.tryParse(qtyRaw);
   final String? qtyPart = qtyNumber == null && qtyRaw == null
@@ -110,8 +128,7 @@ String clinicalPrescriptionCardTitle({
       : 'Qty: ${qtyNumber ?? qtyRaw}';
 
   return clinicalActionJoinDisplay(<String?>[
-    namePart,
-    if (strength.isNotEmpty) strength,
+    identity,
     qtyPart,
   ], separator: ' - ');
 }

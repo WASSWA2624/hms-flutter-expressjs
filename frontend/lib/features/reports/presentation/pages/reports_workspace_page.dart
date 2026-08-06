@@ -15,6 +15,7 @@ import 'package:hosspi_hms/features/reports/presentation/controllers/reports_wor
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_overview_dashboard.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_overview_shortcut_dialogs.dart';
+import 'package:hosspi_hms/features/reports/presentation/widgets/reports_pharmacy_domain_groups.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_workspace_table_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -174,10 +175,14 @@ class _ReportsWorkspaceContentState
         !state.query.panel.isCompliance &&
         state.overview.timeline.isNotEmpty;
 
+    final bool showPharmacyOverview =
+        ReportsPharmacyDomainGroups.shouldShow(policy) &&
+        state.query.panel == ReportsWorkspacePanel.overview;
+
     return AppWorkspace(
       title: l10n.reportsTitle,
       leadingIcon: AppRouteIcons.reports,
-      showHeader: true,
+      showHeader: !showPharmacyOverview,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -304,50 +309,55 @@ class _ReportsOverviewPanel extends ConsumerWidget {
       reportsWorkspaceControllerProvider.notifier,
     );
     final ThemeData theme = Theme.of(context);
+    final bool showPharmacyGroups = ReportsPharmacyDomainGroups.shouldShow(
+      policy,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Text(
-          l10n.reportsPanelOverview,
-          style: theme.textTheme.titleMedium,
-        ),
-        SizedBox(height: theme.spacing.sm),
-        AppSearchBar(
-          controller: searchController,
-          semanticLabel: l10n.reportsSearchLabel,
-          hintText: l10n.reportsSearchHint,
-          clearLabel: l10n.reportsClearSearchLabel,
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-          enableDateFilter: false,
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-          advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-          advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          filterGroups: <AppSearchBarFilterGroup>[
-            AppSearchBarFilterGroup(
-              key: _panelFilterKey,
-              label: l10n.reportsPanelFilterLabel,
-              allLabel: l10n.reportsPanelOverview,
-              choices: _panelChoices(l10n, allowedPanels),
-            ),
-          ],
-          filterValue: AppSearchBarFilterValue.empty,
-          hasActiveFilters: false,
-          onFilterChanged: (AppSearchBarFilterValue value) {
-            final ReportsWorkspacePanel panel =
-                ReportsWorkspacePanel.fromServer(
-                  value.option(_panelFilterKey),
-                );
-            if (panel != state.query.panel &&
-                allowedPanels.contains(panel)) {
-              controller.applyPanel(panel);
-            }
-          },
-        ),
-        SizedBox(height: theme.spacing.md),
+        if (!showPharmacyGroups) ...<Widget>[
+          Text(
+            l10n.reportsPanelOverview,
+            style: theme.textTheme.titleMedium,
+          ),
+          SizedBox(height: theme.spacing.sm),
+          AppSearchBar(
+            controller: searchController,
+            semanticLabel: l10n.reportsSearchLabel,
+            hintText: l10n.reportsSearchHint,
+            clearLabel: l10n.reportsClearSearchLabel,
+            onSubmitted: controller.applySearch,
+            onClear: () => controller.applySearch(''),
+            enableDateFilter: false,
+            showAdvancedFilterButton: true,
+            advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+            advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+            advancedFilterResetLabel: l10n.opdClearFiltersAction,
+            filterGroups: <AppSearchBarFilterGroup>[
+              AppSearchBarFilterGroup(
+                key: _panelFilterKey,
+                label: l10n.reportsPanelFilterLabel,
+                allLabel: l10n.reportsPanelOverview,
+                choices: _panelChoices(l10n, allowedPanels),
+              ),
+            ],
+            filterValue: AppSearchBarFilterValue.empty,
+            hasActiveFilters: false,
+            onFilterChanged: (AppSearchBarFilterValue value) {
+              final ReportsWorkspacePanel panel =
+                  ReportsWorkspacePanel.fromServer(
+                    value.option(_panelFilterKey),
+                  );
+              if (panel != state.query.panel &&
+                  allowedPanels.contains(panel)) {
+                controller.applyPanel(panel);
+              }
+            },
+          ),
+          SizedBox(height: theme.spacing.md),
+        ],
         ReportsOverviewDashboard(
           state: state,
           policy: policy,

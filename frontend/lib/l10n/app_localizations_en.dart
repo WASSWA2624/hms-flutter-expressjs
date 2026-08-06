@@ -23300,6 +23300,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalPrescriptionCatalogCodeLabel => 'Code';
 
   @override
+  String get clinicalPrescriptionCatalogPharmacyUnitPriceLabel =>
+      'Pharmacy unit price';
+
+  @override
+  String get clinicalPrescriptionCatalogFacilityUnitPriceLabel =>
+      'Facility unit price';
+
+  @override
   String get clinicalRequestBillingNoItemsLabel => 'Add items to see pricing.';
 
   @override

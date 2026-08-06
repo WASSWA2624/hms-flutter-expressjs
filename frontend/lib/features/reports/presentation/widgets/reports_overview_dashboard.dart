@@ -125,15 +125,15 @@ class ReportsOverviewDashboard extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Text(
-          showPharmacyGroups
-              ? l10n.reportsPharmacyOverviewSubtitle
-              : l10n.reportsOverviewSubtitle,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+        if (!showPharmacyGroups) ...<Widget>[
+          Text(
+            l10n.reportsOverviewSubtitle,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
-        SizedBox(height: theme.spacing.md),
+          SizedBox(height: theme.spacing.md),
+        ],
         if (showPharmacyGroups) ...<Widget>[
           ReportsPharmacyDomainGroups(
             l10n: l10n,

@@ -15,6 +15,10 @@ void main() {
         },
       );
       expect(
+        clinicalPrescriptionDrugIdentityLabel(withBrand),
+        'Acyclovir (Zovirax) - 400 mg',
+      );
+      expect(
         clinicalPrescriptionCardTitle(drug: withBrand, quantity: 14),
         'Acyclovir (Zovirax) - 400 mg - Qty: 14',
       );

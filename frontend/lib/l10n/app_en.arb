@@ -29927,6 +29927,14 @@
   "@clinicalPrescriptionCatalogCodeLabel": {
     "description": "Prescribe catalog picker column for drug code."
   },
+  "clinicalPrescriptionCatalogPharmacyUnitPriceLabel": "Pharmacy unit price",
+  "@clinicalPrescriptionCatalogPharmacyUnitPriceLabel": {
+    "description": "Catalog price column when billing entity is pharmacy (walk-in / OTC sell)."
+  },
+  "clinicalPrescriptionCatalogFacilityUnitPriceLabel": "Facility unit price",
+  "@clinicalPrescriptionCatalogFacilityUnitPriceLabel": {
+    "description": "Catalog price column when billing entity is facility (clinical prescribe)."
+  },
   "clinicalRequestBillingNoItemsLabel": "Add items to see pricing.",
   "@clinicalRequestBillingNoItemsLabel": {
     "description": "Empty billing panel message."

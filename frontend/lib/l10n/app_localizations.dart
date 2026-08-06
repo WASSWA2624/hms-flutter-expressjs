@@ -42976,6 +42976,18 @@ abstract class AppLocalizations {
   /// **'Code'**
   String get clinicalPrescriptionCatalogCodeLabel;
 
+  /// Catalog price column when billing entity is pharmacy (walk-in / OTC sell).
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy unit price'**
+  String get clinicalPrescriptionCatalogPharmacyUnitPriceLabel;
+
+  /// Catalog price column when billing entity is facility (clinical prescribe).
+  ///
+  /// In en, this message translates to:
+  /// **'Facility unit price'**
+  String get clinicalPrescriptionCatalogFacilityUnitPriceLabel;
+
   /// Empty billing panel message.
   ///
   /// In en, this message translates to:

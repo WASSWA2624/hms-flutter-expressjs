@@ -5,6 +5,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_prescription_display.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -217,7 +218,7 @@ class _ClinicalPrescriptionCatalogDialogState
                                 MaterialTapTargetSize.shrinkWrap,
                           ),
                         ),
-                        title: item.name ?? item.displayTitle,
+                        title: clinicalPrescriptionDrugIdentityLabel(item),
                         caption: item.code,
                         meta: <AppListTableMobileMeta>[
                           if ((item.displaySubtitle ?? '').isNotEmpty)
@@ -227,14 +228,15 @@ class _ClinicalPrescriptionCatalogDialogState
                               label: _availabilityLabel(context, item),
                             ),
                           AppListTableMobileMeta(
-                            label: clinicalRequestPriceLabel(
+                            label:
+                                '${_unitPriceColumnLabel(l10n)}: ${clinicalRequestPriceLabel(
                               context,
                               clinicalCatalogOptionUnitPrice(
                                 item,
                                 billingEntity: widget.billingEntity,
                               ),
                               clinicalCatalogOptionCurrency(item),
-                            ),
+                            )}',
                           ),
                         ],
                         showAvatar: false,
@@ -418,8 +420,8 @@ class _ClinicalPrescriptionCatalogDialogState
           return bySelected;
         }
         return appListTableCompareText(
-          left.name ?? left.displayTitle,
-          right.name ?? right.displayTitle,
+          clinicalPrescriptionDrugIdentityLabel(left),
+          clinicalPrescriptionDrugIdentityLabel(right),
         );
       },
     );
@@ -441,11 +443,11 @@ class _ClinicalPrescriptionCatalogDialogState
               ClinicalActionCatalogOption left,
               ClinicalActionCatalogOption right,
             ) => appListTableCompareText(
-              left.name ?? left.displayTitle,
-              right.name ?? right.displayTitle,
+              clinicalPrescriptionDrugIdentityLabel(left),
+              clinicalPrescriptionDrugIdentityLabel(right),
             ),
         cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
-          return Text(item.name ?? item.displayTitle);
+          return Text(clinicalPrescriptionDrugIdentityLabel(item));
         },
       ),
       AppListTableColumn<ClinicalActionCatalogOption>(
@@ -484,7 +486,7 @@ class _ClinicalPrescriptionCatalogDialogState
       ),
       AppListTableColumn<ClinicalActionCatalogOption>(
         id: _priceColumnKey,
-        label: l10n.clinicalRequestUnitPriceLabel,
+        label: _unitPriceColumnLabel(l10n),
         numeric: true,
         sortComparator:
             (
@@ -523,6 +525,17 @@ class _ClinicalPrescriptionCatalogDialogState
         },
       ),
     ];
+  }
+
+  String _unitPriceColumnLabel(AppLocalizations l10n) {
+    final String entity = widget.billingEntity.trim().toUpperCase();
+    if (entity == 'PHARMACY') {
+      return l10n.clinicalPrescriptionCatalogPharmacyUnitPriceLabel;
+    }
+    if (entity == 'FACILITY') {
+      return l10n.clinicalPrescriptionCatalogFacilityUnitPriceLabel;
+    }
+    return l10n.clinicalRequestUnitPriceLabel;
   }
 
   AppListTableColumn<ClinicalActionCatalogOption> _selectionColumn(
