@@ -98,10 +98,7 @@ void main() {
         expect(find.textContaining('Para'), findsWidgets);
         expect(find.text('Period'), findsNothing);
         expect(find.text('Chart'), findsNothing);
-        expect(
-          find.textContaining('Top 5 by quantity dispensed'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('Top 5 by'), findsNothing);
 
         // Controls sit above the chart.
         final Finder chart = find.byKey(const ValueKey<String>('dashboard-trend-chart'));

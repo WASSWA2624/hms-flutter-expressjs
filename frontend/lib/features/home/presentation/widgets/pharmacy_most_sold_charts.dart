@@ -48,7 +48,7 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     HomeMostSoldPeriod.lastFiveYears,
   ];
 
-  HomeMostSoldMetric _metric = HomeMostSoldMetric.qty;
+  HomeMostSoldMetric _metric = HomeMostSoldMetric.amount;
   HomeMostSoldPeriod _period = HomeMostSoldPeriod.today;
   int _topN = 5;
   DashboardTrendChartStyle _chartStyle = DashboardTrendChartStyle.bar;
@@ -175,7 +175,7 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     ];
     final HomeMostSoldMetric active = allowed.contains(_metric)
         ? _metric
-        : HomeMostSoldMetric.qty;
+        : allowed.first;
 
     final List<HomeTrendPoint> ranked = _series.hasData
         ? _series.forMetric(active).take(_topN).toList(growable: false)
@@ -208,7 +208,7 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
         mostSold: _series,
         trend: HomeDashboardTrend(
           title: 'Most sold drugs',
-          subtitle: _subtitle(active),
+          subtitle: '',
           points: ranked,
           requiredPermissions: widget.dashboard.trend.requiredPermissions,
         ),
@@ -241,7 +241,6 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     final DashboardChartsData decorated = DashboardChartsData(
       trend: DashboardTrendChartData(
         title: charts.trend.title,
-        subtitle: _subtitle(active),
         points: chartPoints,
         emptyMessage: '',
         chartStyle: _chartStyle,
@@ -273,15 +272,6 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
         DashboardChartsRow(data: decorated, twoColumns: widget.twoColumns),
       ],
     );
-  }
-
-  String _subtitle(HomeMostSoldMetric metric) {
-    final String metricLabel = switch (metric) {
-      HomeMostSoldMetric.qty => 'quantity dispensed',
-      HomeMostSoldMetric.amount => 'sales amount',
-      HomeMostSoldMetric.profit => 'profit proxy',
-    };
-    return 'Top $_topN by $metricLabel · ${_period.label}';
   }
 }
 
