@@ -10,6 +10,7 @@
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 const { sumBalancesDue } = require('@lib/billing/financials');
+const { pharmacyRetailMarginUnit } = require('@lib/billing/pharmacy-drug-margins');
 const pharmacyWorkspaceRepository = require('@modules/pharmacy-workspace/repositories/pharmacy-workspace.repository');
 
 /** Align with pharmacy desk Near expiry window (30 days). */
@@ -407,7 +408,9 @@ const aggregateMostSoldDrugs = async (
                 brand_name: true,
                 generic_name: true,
                 strength: true,
-                unit_price: true
+                unit_price: true,
+                buy_unit_price: true,
+                transfer_unit_price: true
               }
             }
           }
@@ -422,16 +425,27 @@ const aggregateMostSoldDrugs = async (
       if (!drug?.id) continue;
       const qty = toNumber(log.quantity_dispensed);
       const unitPrice = toNumber(drug.unit_price);
+      const marginUnit = pharmacyRetailMarginUnit({
+        unitPrice: drug.unit_price,
+        buyUnitPrice: drug.buy_unit_price,
+      });
       const amount = qty * unitPrice;
       const current = byDrug.get(drug.id) || {
         id: drug.id,
         label: formatMostSoldDrugLabel(drug),
         summary_label: mostSoldSummaryLabel(drug),
         qty: 0,
-        amount: 0
+        amount: 0,
+        profit: 0,
+        hasCost: false
       };
       current.qty += qty;
       current.amount += amount;
+      // Pharmacy margin = external sell − buy when COGS is configured.
+      if (marginUnit != null) {
+        current.hasCost = true;
+        current.profit += qty * marginUnit;
+      }
       byDrug.set(drug.id, current);
     }
 
@@ -448,12 +462,21 @@ const aggregateMostSoldDrugs = async (
           value: Number(row[metric].toFixed(2))
         }));
 
-    // Profit requires unit cost (COGS). Drug catalog has no cost field — do not
-    // invent COGS by equating profit to amount; leave profit unavailable.
+    const profitRank = [...rows]
+      .filter((row) => row.hasCost && row.profit !== 0)
+      .sort((a, b) => b.profit - a.profit)
+      .slice(0, limit)
+      .map((row) => ({
+        id: row.id,
+        label: row.label,
+        summary_label: row.summary_label,
+        value: Number(row.profit.toFixed(2))
+      }));
+
     return {
       qty: rank('qty'),
       amount: rank('amount'),
-      profit: []
+      profit: profitRank
     };
   } catch {
     return empty;

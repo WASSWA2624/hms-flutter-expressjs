@@ -3778,7 +3778,12 @@ model drug {
   code              String?   @db.VarChar(80)
   form              String?   @db.VarChar(80)
   strength          String?   @db.VarChar(80)
+  /// Pharmacy supplier / landed cost (COGS) for retail margin.
+  buy_unit_price    Decimal?  @db.Decimal(12, 2)
+  /// Pharmacy external / walk-in sell price.
   unit_price        Decimal?  @db.Decimal(12, 2)
+  /// Pharmacy→facility transfer price (= facility buy); distinct from patient tariff.
+  transfer_unit_price Decimal? @db.Decimal(12, 2)
   currency          String?   @db.VarChar(10)
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt

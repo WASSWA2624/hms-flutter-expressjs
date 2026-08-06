@@ -124,4 +124,53 @@ describe('pharmacy summary sales KPIs', () => {
     expect(total).toBe(350);
     expect(db.dispense_log.findMany).toHaveBeenCalled();
   });
+
+  it('ranks most-sold profit from pharmacy sell − buy when COGS present', async () => {
+    const {
+      __private__: { aggregateMostSoldDrugs },
+    } = require('@modules/dashboard-widget/repositories/dashboard-widget.repository');
+    const db = {
+      dispense_log: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            quantity_dispensed: 2,
+            pharmacy_order_item: {
+              drug: {
+                id: 'd1',
+                name: 'Para',
+                generic_name: 'Paracetamol',
+                unit_price: 100,
+                buy_unit_price: 40,
+              },
+            },
+          },
+          {
+            quantity_dispensed: 1,
+            pharmacy_order_item: {
+              drug: {
+                id: 'd2',
+                name: 'Ibuprofen',
+                generic_name: 'Ibuprofen',
+                unit_price: 80,
+                buy_unit_price: null,
+              },
+            },
+          },
+        ]),
+      },
+    };
+    const result = await aggregateMostSoldDrugs(
+      db,
+      {},
+      new Date('2026-08-01'),
+      5,
+      new Date('2026-08-07')
+    );
+    expect(result.profit).toEqual([
+      expect.objectContaining({ id: 'd1', value: 120 }),
+    ]);
+    expect(result.amount.map((row) => row.id)).toEqual(
+      expect.arrayContaining(['d1', 'd2'])
+    );
+  });
 });

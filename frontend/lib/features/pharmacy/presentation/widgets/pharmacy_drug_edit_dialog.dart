@@ -57,7 +57,9 @@ class _PharmacyDrugEditDialogState
   late final TextEditingController _brandNameController;
   late final TextEditingController _genericNameController;
   late final TextEditingController _codeController;
+  late final TextEditingController _buyPriceController;
   late final TextEditingController _pharmacyPriceController;
+  late final TextEditingController _transferPriceController;
   late final TextEditingController _facilityPriceController;
   late final TextEditingController _onHandQuantityController;
   late final TextEditingController _initialStockController;
@@ -95,8 +97,14 @@ class _PharmacyDrugEditDialogState
     _strength = _emptyToNull(drug?.strength ?? '');
     _inventoryUnit = _resolveInventoryUnit(drug) ??
         pharmacyDefaultInventoryUnitForForm(_form);
+    _buyPriceController = TextEditingController(
+      text: _priceText(drug?.buyUnitPrice),
+    );
     _pharmacyPriceController = TextEditingController(
       text: _priceText(drug?.pharmacyUnitPrice ?? drug?.unitPrice),
+    );
+    _transferPriceController = TextEditingController(
+      text: _priceText(drug?.transferUnitPrice),
     );
     _facilityPriceController = TextEditingController(
       text: _priceText(drug?.facilityUnitPrice),
@@ -142,7 +150,9 @@ class _PharmacyDrugEditDialogState
     _brandNameController.dispose();
     _genericNameController.dispose();
     _codeController.dispose();
+    _buyPriceController.dispose();
     _pharmacyPriceController.dispose();
+    _transferPriceController.dispose();
     _facilityPriceController.dispose();
     _onHandQuantityController.dispose();
     _initialStockController.dispose();
@@ -749,41 +759,86 @@ class _PharmacyDrugEditDialogState
               return AppFormSection(
                 title: l10n.pharmacyDrugPricingSectionTitle,
                 children: <Widget>[
-                  AppResponsiveFieldRow.two(
-                    gap: AppResponsiveFieldRowGap.form,
-                    left: canWritePharmacyPrice
-                        ? AppCurrencyAmountField(
-                            amountController: _pharmacyPriceController,
-                            currency: _pharmacyCurrency,
-                            amountLabelText: l10n.pharmacyPharmacyPriceLabel,
-                            currencyLabelText: l10n.opdCurrencyLabel,
-                            enabled: !_isSaving,
-                            onCurrencyChanged: (String? value) {
-                              setState(() {
-                                _pharmacyCurrency =
-                                    value ?? appDefaultCurrencyCode;
-                              });
-                            },
-                            validator: _optionalPositiveAmountValidator,
-                          )
-                        : const SizedBox.shrink(),
-                    right: canWriteFacilityPrice
-                        ? AppCurrencyAmountField(
-                            amountController: _facilityPriceController,
-                            currency: _facilityCurrency,
-                            amountLabelText: l10n.pharmacyFacilityPriceLabel,
-                            currencyLabelText: l10n.opdCurrencyLabel,
-                            enabled: !_isSaving,
-                            onCurrencyChanged: (String? value) {
-                              setState(() {
-                                _facilityCurrency =
-                                    value ?? appDefaultCurrencyCode;
-                              });
-                            },
-                            validator: _optionalPositiveAmountValidator,
-                          )
-                        : const SizedBox.shrink(),
-                  ),
+                  if (canWritePharmacyPrice) ...<Widget>[
+                    AppResponsiveFieldRow.two(
+                      gap: AppResponsiveFieldRowGap.form,
+                      left: AppCurrencyAmountField(
+                        amountController: _buyPriceController,
+                        currency: _pharmacyCurrency,
+                        amountLabelText: l10n.pharmacyBuyPriceLabel,
+                        currencyLabelText: l10n.opdCurrencyLabel,
+                        enabled: !_isSaving,
+                        onCurrencyChanged: (String? value) {
+                          setState(() {
+                            _pharmacyCurrency =
+                                value ?? appDefaultCurrencyCode;
+                          });
+                        },
+                        validator: _optionalPositiveAmountValidator,
+                      ),
+                      right: AppCurrencyAmountField(
+                        amountController: _pharmacyPriceController,
+                        currency: _pharmacyCurrency,
+                        amountLabelText: l10n.pharmacyPharmacyPriceLabel,
+                        currencyLabelText: l10n.opdCurrencyLabel,
+                        enabled: !_isSaving,
+                        onCurrencyChanged: (String? value) {
+                          setState(() {
+                            _pharmacyCurrency =
+                                value ?? appDefaultCurrencyCode;
+                          });
+                        },
+                        validator: _optionalPositiveAmountValidator,
+                      ),
+                    ),
+                    AppResponsiveFieldRow.two(
+                      gap: AppResponsiveFieldRowGap.form,
+                      left: AppCurrencyAmountField(
+                        amountController: _transferPriceController,
+                        currency: _pharmacyCurrency,
+                        amountLabelText: l10n.pharmacyTransferPriceLabel,
+                        currencyLabelText: l10n.opdCurrencyLabel,
+                        enabled: !_isSaving,
+                        onCurrencyChanged: (String? value) {
+                          setState(() {
+                            _pharmacyCurrency =
+                                value ?? appDefaultCurrencyCode;
+                          });
+                        },
+                        validator: _optionalPositiveAmountValidator,
+                      ),
+                      right: canWriteFacilityPrice
+                          ? AppCurrencyAmountField(
+                              amountController: _facilityPriceController,
+                              currency: _facilityCurrency,
+                              amountLabelText: l10n.pharmacyFacilityPriceLabel,
+                              currencyLabelText: l10n.opdCurrencyLabel,
+                              enabled: !_isSaving,
+                              onCurrencyChanged: (String? value) {
+                                setState(() {
+                                  _facilityCurrency =
+                                      value ?? appDefaultCurrencyCode;
+                                });
+                              },
+                              validator: _optionalPositiveAmountValidator,
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ] else if (canWriteFacilityPrice)
+                    AppCurrencyAmountField(
+                      amountController: _facilityPriceController,
+                      currency: _facilityCurrency,
+                      amountLabelText: l10n.pharmacyFacilityPriceLabel,
+                      currencyLabelText: l10n.opdCurrencyLabel,
+                      enabled: !_isSaving,
+                      onCurrencyChanged: (String? value) {
+                        setState(() {
+                          _facilityCurrency =
+                              value ?? appDefaultCurrencyCode;
+                        });
+                      },
+                      validator: _optionalPositiveAmountValidator,
+                    ),
                 ],
               );
             },
@@ -1027,13 +1082,20 @@ class _PharmacyDrugEditDialogState
     String? code = _emptyToNull(_codeController.text);
     String? form = _form;
     String? strength = _strength;
+    final num? buyPrice = canWritePharmacyPrice
+        ? _parsePrice(_buyPriceController.text)
+        : null;
     final num? pharmacyPrice = canWritePharmacyPrice
         ? _parsePrice(_pharmacyPriceController.text)
+        : null;
+    final num? transferPrice = canWritePharmacyPrice
+        ? _parsePrice(_transferPriceController.text)
         : null;
     final num? facilityPrice = canWriteFacilityPrice
         ? _parsePrice(_facilityPriceController.text)
         : null;
-    final String? pharmacyCurrency = pharmacyPrice == null
+    final String? pharmacyCurrency =
+        pharmacyPrice == null && buyPrice == null && transferPrice == null
         ? null
         : _pharmacyCurrency;
     final PharmacyFacilityOfferingInput? facilityOffering =
@@ -1162,7 +1224,9 @@ class _PharmacyDrugEditDialogState
                     code: code,
                     form: form,
                     strength: strength,
+                    buyUnitPrice: buyPrice,
                     unitPrice: pharmacyPrice,
+                    transferUnitPrice: transferPrice,
                     currency: pharmacyCurrency,
                   ),
                   facilityOffering: facilityOffering,
@@ -1224,7 +1288,9 @@ class _PharmacyDrugEditDialogState
             code: code,
             form: form,
             strength: strength,
+            buyUnitPrice: buyPrice,
             unitPrice: pharmacyPrice,
+            transferUnitPrice: transferPrice,
             currency: pharmacyCurrency,
             inventoryUnit: _inventoryUnit,
             initialStock: int.tryParse(_initialStockController.text.trim()),
@@ -1386,7 +1452,9 @@ class _PharmacyDrugEditDialogState
                     code: code,
                     form: form,
                     strength: strength,
+                    buyUnitPrice: buyPrice,
                     unitPrice: pharmacyPrice,
+                    transferUnitPrice: transferPrice,
                     currency: pharmacyCurrency,
                     confirmSimilar: true,
                   ),
@@ -1450,7 +1518,9 @@ class _PharmacyDrugEditDialogState
             code: code,
             form: form,
             strength: strength,
+            buyUnitPrice: buyPrice,
             unitPrice: pharmacyPrice,
+            transferUnitPrice: transferPrice,
             currency: pharmacyCurrency,
             confirmSimilar: true,
           ),

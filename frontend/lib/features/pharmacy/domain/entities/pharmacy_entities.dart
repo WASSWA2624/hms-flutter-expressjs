@@ -401,7 +401,9 @@ final class PharmacyDrugInput {
     this.code,
     this.form,
     this.strength,
+    this.buyUnitPrice,
     this.unitPrice,
+    this.transferUnitPrice,
     this.currency,
     this.inventoryUnit,
     this.initialStock,
@@ -424,7 +426,9 @@ final class PharmacyDrugInput {
   final String? code;
   final String? form;
   final String? strength;
+  final num? buyUnitPrice;
   final num? unitPrice;
+  final num? transferUnitPrice;
   final String? currency;
   final String? inventoryUnit;
   final int? initialStock;
@@ -457,7 +461,9 @@ final class PharmacyDrugInput {
       'code': code,
       'form': form,
       'strength': strength,
+      if (buyUnitPrice != null) 'buy_unit_price': buyUnitPrice,
       if (unitPrice != null) 'unit_price': unitPrice,
+      if (transferUnitPrice != null) 'transfer_unit_price': transferUnitPrice,
       if (currency != null) 'currency': currency,
       if (confirmSimilar) 'confirm_similar': true,
     };
@@ -495,7 +501,9 @@ final class PharmacyDrugUpdateInput {
     this.code,
     this.form,
     this.strength,
+    this.buyUnitPrice,
     this.unitPrice,
+    this.transferUnitPrice,
     this.currency,
     this.confirmSimilar = false,
   });
@@ -506,7 +514,9 @@ final class PharmacyDrugUpdateInput {
   final String? code;
   final String? form;
   final String? strength;
+  final num? buyUnitPrice;
   final num? unitPrice;
+  final num? transferUnitPrice;
   final String? currency;
   final bool confirmSimilar;
 
@@ -518,7 +528,9 @@ final class PharmacyDrugUpdateInput {
       if (code != null) 'code': code,
       if (form != null) 'form': form,
       if (strength != null) 'strength': strength,
+      if (buyUnitPrice != null) 'buy_unit_price': buyUnitPrice,
       if (unitPrice != null) 'unit_price': unitPrice,
+      if (transferUnitPrice != null) 'transfer_unit_price': transferUnitPrice,
       if (currency != null) 'currency': currency,
       if (confirmSimilar) 'confirm_similar': true,
     };
@@ -1407,7 +1419,9 @@ final class PharmacyDrug {
     this.form,
     this.strength,
     this.unitPrice,
+    this.buyUnitPrice,
     this.pharmacyUnitPrice,
+    this.transferUnitPrice,
     this.facilityUnitPrice,
     this.currency,
     this.pharmacyCurrency,
@@ -1445,7 +1459,9 @@ final class PharmacyDrug {
   final String? form;
   final String? strength;
   final num? unitPrice;
+  final num? buyUnitPrice;
   final num? pharmacyUnitPrice;
+  final num? transferUnitPrice;
   final num? facilityUnitPrice;
   final String? currency;
   final String? pharmacyCurrency;

@@ -366,10 +366,22 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
           exportValue: (PharmacyDrug item) => item.strength ?? '',
         ),
         AppListTableColumn<PharmacyDrug>(
+          id: 'buy_price',
+          label: l10n.pharmacyBuyPriceLabel,
+          cellBuilder: (_, PharmacyDrug item) =>
+              Text(_priceText(item.buyUnitPrice)),
+        ),
+        AppListTableColumn<PharmacyDrug>(
           id: 'pharmacy_price',
           label: l10n.pharmacyPharmacyPriceLabel,
           cellBuilder: (_, PharmacyDrug item) =>
               Text(_priceText(item.pharmacyUnitPrice ?? item.unitPrice)),
+        ),
+        AppListTableColumn<PharmacyDrug>(
+          id: 'transfer_price',
+          label: l10n.pharmacyTransferPriceLabel,
+          cellBuilder: (_, PharmacyDrug item) =>
+              Text(_priceText(item.transferUnitPrice)),
         ),
         AppListTableColumn<PharmacyDrug>(
           id: 'facility_price',

@@ -13516,10 +13516,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyRemainingQtyColumnLabel => 'Remaining qty';
 
   @override
-  String get pharmacyPharmacyPriceLabel => 'Pharmacy price';
+  String get pharmacyPharmacyPriceLabel => 'Pharmacy sell';
 
   @override
-  String get pharmacyFacilityPriceLabel => 'Facility price';
+  String get pharmacyBuyPriceLabel => 'Pharmacy buy';
+
+  @override
+  String get pharmacyTransferPriceLabel => 'Transfer price';
+
+  @override
+  String get pharmacyFacilityPriceLabel => 'Facility patient price';
 
   @override
   String get pharmacyPriceTierPharmacyLabel => 'Pharmacy retail';

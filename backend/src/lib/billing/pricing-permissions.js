@@ -24,11 +24,17 @@ const assertPricingFacilityWrite = (user = {}) => {
 };
 
 /**
- * Reject payloads that mutate pharmacy retail price fields without permission.
+ * Reject payloads that mutate pharmacy pricing fields without permission.
+ * Covers buy (COGS), external sell, and transfer (pharmacy→facility).
  * Identity/stock updates that omit these keys are allowed.
  */
 const assertPharmacyRetailPriceMutationAllowed = (user = {}, payload = {}) => {
-  if (!hasOwn(payload, 'unit_price') && !hasOwn(payload, 'currency')) {
+  const touchesPharmacyPricing =
+    hasOwn(payload, 'unit_price') ||
+    hasOwn(payload, 'buy_unit_price') ||
+    hasOwn(payload, 'transfer_unit_price') ||
+    hasOwn(payload, 'currency');
+  if (!touchesPharmacyPricing) {
     return;
   }
   assertPricingPharmacyWrite(user);

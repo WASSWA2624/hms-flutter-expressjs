@@ -44,6 +44,32 @@ describe('pricing-permissions', () => {
     ).not.toThrow();
   });
 
+  it('rejects pharmacy buy/transfer mutation without pricing:pharmacy_write', () => {
+    getUserPermissions.mockReturnValue([PERMISSIONS.PHARMACY_WRITE]);
+    expect(() =>
+      assertPharmacyRetailPriceMutationAllowed(
+        { id: 'u1' },
+        { buy_unit_price: 5 }
+      )
+    ).toThrow(HttpError);
+    expect(() =>
+      assertPharmacyRetailPriceMutationAllowed(
+        { id: 'u1' },
+        { transfer_unit_price: 8 }
+      )
+    ).toThrow(HttpError);
+  });
+
+  it('allows pharmacy buy and transfer when pricing:pharmacy_write is granted', () => {
+    getUserPermissions.mockReturnValue([PERMISSIONS.PRICING_PHARMACY_WRITE]);
+    expect(() =>
+      assertPharmacyRetailPriceMutationAllowed(
+        { id: 'u1' },
+        { buy_unit_price: 5, transfer_unit_price: 8, unit_price: 12 }
+      )
+    ).not.toThrow();
+  });
+
   it('rejects facility tariff mutation without pricing:facility_write', () => {
     getUserPermissions.mockReturnValue([PERMISSIONS.BILLING_WRITE]);
     expect(() =>

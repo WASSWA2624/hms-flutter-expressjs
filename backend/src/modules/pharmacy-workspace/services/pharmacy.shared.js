@@ -68,7 +68,9 @@ const DRUG_PUBLIC_SELECT = {
   code: true,
   form: true,
   strength: true,
+  buy_unit_price: true,
   unit_price: true,
+  transfer_unit_price: true,
   currency: true};
 
 const INVENTORY_ITEM_PUBLIC_SELECT = {

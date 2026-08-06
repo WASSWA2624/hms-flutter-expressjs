@@ -168,8 +168,10 @@ void main() {
     );
 
     expect(find.text('Pricing'), findsOneWidget);
-    expect(find.textContaining('Pharmacy price'), findsOneWidget);
-    expect(find.textContaining('Facility price'), findsNothing);
+    expect(find.textContaining('Pharmacy buy'), findsOneWidget);
+    expect(find.textContaining('Pharmacy sell'), findsOneWidget);
+    expect(find.textContaining('Transfer price'), findsOneWidget);
+    expect(find.textContaining('Facility patient price'), findsNothing);
   });
 
   testWidgets('shows facility price only when pricing:facility_write granted', (
@@ -188,8 +190,10 @@ void main() {
     );
 
     expect(find.text('Pricing'), findsOneWidget);
-    expect(find.textContaining('Facility price'), findsOneWidget);
-    expect(find.textContaining('Pharmacy price'), findsNothing);
+    expect(find.textContaining('Facility patient price'), findsOneWidget);
+    expect(find.textContaining('Pharmacy sell'), findsNothing);
+    expect(find.textContaining('Pharmacy buy'), findsNothing);
+    expect(find.textContaining('Transfer price'), findsNothing);
   });
 
   testWidgets('shows both price fields for admin with both pricing writes', (
@@ -208,8 +212,10 @@ void main() {
     );
 
     expect(find.text('Pricing'), findsOneWidget);
-    expect(find.textContaining('Pharmacy price'), findsOneWidget);
-    expect(find.textContaining('Facility price'), findsOneWidget);
+    expect(find.textContaining('Pharmacy buy'), findsOneWidget);
+    expect(find.textContaining('Pharmacy sell'), findsOneWidget);
+    expect(find.textContaining('Transfer price'), findsOneWidget);
+    expect(find.textContaining('Facility patient price'), findsOneWidget);
   });
 
   testWidgets('hides pricing section when neither pricing write is granted', (
@@ -224,7 +230,7 @@ void main() {
     );
 
     expect(find.text('Pricing'), findsNothing);
-    expect(find.textContaining('Pharmacy price'), findsNothing);
-    expect(find.textContaining('Facility price'), findsNothing);
+    expect(find.textContaining('Pharmacy sell'), findsNothing);
+    expect(find.textContaining('Facility patient price'), findsNothing);
   });
 }

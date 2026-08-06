@@ -2790,7 +2790,9 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
         code: data.code || null,
         form: data.form || null,
         strength: data.strength || null,
+        buy_unit_price: data.buy_unit_price ?? null,
         unit_price: data.unit_price ?? null,
+        transfer_unit_price: data.transfer_unit_price ?? null,
         currency: data.currency || null});
 
       const inventoryName = [data.name, data.strength, data.form]

@@ -140,11 +140,21 @@ class _PharmacyDrugDetailsDialogState
         value: displayOrEmpty(current.strength),
       ),
       _DrugDetailMetaItem(
+        icon: Icons.shopping_cart_outlined,
+        label: l10n.pharmacyBuyPriceLabel,
+        value: _drugDetailsPriceText(current.buyUnitPrice),
+      ),
+      _DrugDetailMetaItem(
         icon: Icons.payments_outlined,
         label: l10n.pharmacyPharmacyPriceLabel,
         value: _drugDetailsPriceText(
           current.pharmacyUnitPrice ?? current.unitPrice,
         ),
+      ),
+      _DrugDetailMetaItem(
+        icon: Icons.swap_horiz_outlined,
+        label: l10n.pharmacyTransferPriceLabel,
+        value: _drugDetailsPriceText(current.transferUnitPrice),
       ),
       _DrugDetailMetaItem(
         icon: Icons.account_balance_outlined,

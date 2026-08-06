@@ -17252,13 +17252,21 @@
   "@pharmacyRemainingQtyColumnLabel": {
     "description": "Pharmacy remaining quantity optional column label."
   },
-  "pharmacyPharmacyPriceLabel": "Pharmacy price",
+  "pharmacyPharmacyPriceLabel": "Pharmacy sell",
   "@pharmacyPharmacyPriceLabel": {
-    "description": "Retail pharmacy price label for catalog items."
+    "description": "Pharmacy walk-in / OTC external sell price label."
   },
-  "pharmacyFacilityPriceLabel": "Facility price",
+  "pharmacyBuyPriceLabel": "Pharmacy buy",
+  "@pharmacyBuyPriceLabel": {
+    "description": "Pharmacy supplier / landed cost (COGS) price label."
+  },
+  "pharmacyTransferPriceLabel": "Transfer price",
+  "@pharmacyTransferPriceLabel": {
+    "description": "Pharmacy to facility transfer price (facility buy) label."
+  },
+  "pharmacyFacilityPriceLabel": "Facility patient price",
   "@pharmacyFacilityPriceLabel": {
-    "description": "Facility billing price label for catalog items."
+    "description": "Facility cash patient tariff for catalog drugs."
   },
   "pharmacyPriceTierPharmacyLabel": "Pharmacy retail",
   "@pharmacyPriceTierPharmacyLabel": {

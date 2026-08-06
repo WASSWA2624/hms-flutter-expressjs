@@ -27,7 +27,9 @@ const createDrugSchema = z.object({
   code: z.string().trim().max(80).optional().nullable(),
   form: z.string().trim().max(80).optional().nullable(),
   strength: z.string().trim().max(80).optional().nullable(),
+  buy_unit_price: z.coerce.number().min(0).optional().nullable(),
   unit_price: z.coerce.number().min(0).optional().nullable(),
+  transfer_unit_price: z.coerce.number().min(0).optional().nullable(),
   currency: z.string().trim().max(10).optional().nullable(),
   confirm_similar: z.coerce.boolean().optional(),
 });
@@ -44,7 +46,9 @@ const updateDrugSchema = z.object({
   code: z.string().trim().max(80).optional().nullable(),
   form: z.string().trim().max(80).optional().nullable(),
   strength: z.string().trim().max(80).optional().nullable(),
+  buy_unit_price: z.coerce.number().min(0).optional().nullable(),
   unit_price: z.coerce.number().min(0).optional().nullable(),
+  transfer_unit_price: z.coerce.number().min(0).optional().nullable(),
   currency: z.string().trim().max(10).optional().nullable(),
   confirm_similar: z.coerce.boolean().optional(),
 });

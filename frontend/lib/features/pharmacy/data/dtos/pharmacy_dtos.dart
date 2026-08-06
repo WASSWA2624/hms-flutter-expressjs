@@ -412,8 +412,10 @@ final class PharmacyDrugDto {
       form: _string(json['form']),
       strength: _string(json['strength']),
       unitPrice: _number(json['unit_price']) ?? _number(json['price']),
+      buyUnitPrice: _number(json['buy_unit_price']),
       pharmacyUnitPrice:
           _number(json['pharmacy_unit_price']) ?? _number(json['unit_price']),
+      transferUnitPrice: _number(json['transfer_unit_price']),
       facilityUnitPrice: _number(json['facility_unit_price']),
       currency: _string(json['currency']),
       pharmacyCurrency:

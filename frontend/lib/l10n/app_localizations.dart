@@ -24838,16 +24838,28 @@ abstract class AppLocalizations {
   /// **'Remaining qty'**
   String get pharmacyRemainingQtyColumnLabel;
 
-  /// Retail pharmacy price label for catalog items.
+  /// Pharmacy walk-in / OTC external sell price label.
   ///
   /// In en, this message translates to:
-  /// **'Pharmacy price'**
+  /// **'Pharmacy sell'**
   String get pharmacyPharmacyPriceLabel;
 
-  /// Facility billing price label for catalog items.
+  /// Pharmacy supplier / landed cost (COGS) price label.
   ///
   /// In en, this message translates to:
-  /// **'Facility price'**
+  /// **'Pharmacy buy'**
+  String get pharmacyBuyPriceLabel;
+
+  /// Pharmacy to facility transfer price (facility buy) label.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer price'**
+  String get pharmacyTransferPriceLabel;
+
+  /// Facility cash patient tariff for catalog drugs.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility patient price'**
   String get pharmacyFacilityPriceLabel;
 
   /// Walk-in dispense price tier: pharmacy retail.

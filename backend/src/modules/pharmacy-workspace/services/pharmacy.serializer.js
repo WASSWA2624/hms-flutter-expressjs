@@ -244,11 +244,19 @@ const mapDrugRecord = (record) => {
     ...mapCatalogUnitPriceFields({
       unit_price: record.pharmacy_unit_price ?? record.unit_price,
       currency: record.pharmacy_currency ?? record.currency}),
+    buy_unit_price:
+      mapCatalogUnitPriceFields({
+        unit_price: record.buy_unit_price,
+        currency: record.pharmacy_currency ?? record.currency}).unit_price || null,
     pharmacy_unit_price:
       mapCatalogUnitPriceFields({
         unit_price: record.pharmacy_unit_price ?? record.unit_price,
         currency: record.pharmacy_currency ?? record.currency}).unit_price || null,
     pharmacy_currency: toText(record.pharmacy_currency ?? record.currency).toUpperCase() || null,
+    transfer_unit_price:
+      mapCatalogUnitPriceFields({
+        unit_price: record.transfer_unit_price,
+        currency: record.pharmacy_currency ?? record.currency}).unit_price || null,
     facility_unit_price:
       mapCatalogUnitPriceFields({
         unit_price: record.facility_unit_price,
