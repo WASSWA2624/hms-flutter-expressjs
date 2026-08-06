@@ -330,6 +330,7 @@ const metricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'pending_dispense', label: 'Pending', value: metrics.pendingDispense || 0 },
       { id: 'dispensed_today', label: 'Dispensed today', value: metrics.dispensedToday || 0 },
       { id: 'low_stock', label: 'Low stock', value: metrics.lowStock || 0 },
+      { id: 'out_of_stock', label: 'Out of stock', value: metrics.outOfStock || 0 },
       { id: 'near_expiry', label: 'Near expiry', value: metrics.nearExpiry || 0 },
       { id: 'expired', label: 'Expired', value: metrics.expiredStock || metrics.expired || 0 },
       { id: 'sales_today', label: 'Total sales today', value: metrics.salesToday || 0, format: 'currency' },

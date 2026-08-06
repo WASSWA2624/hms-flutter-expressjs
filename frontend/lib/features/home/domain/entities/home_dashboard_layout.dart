@@ -65,6 +65,10 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     // Dashboard.md recommends 4–6 KPIs. Role profiles set [maxStatusCards];
     // [expandHomeProfileForPermissions] may raise it to 6 so cross-domain
     // grants (e.g. doctor + billing:read) can surface without a new role.
+    // Pharmacist keeps a wider stock/order strip (orders + stock risk cards).
+    if (isPharmacistDepartmentDashboard) {
+      return maxStatusCards;
+    }
     const int kpiCap = 6;
     return math.min(maxStatusCards, kpiCap);
   }

@@ -314,6 +314,15 @@ void main() {
         'section': 'low-stock',
       });
 
+      final HomeMetricNavigation? outOfStock = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'out_of_stock',
+          label: 'Out of stock',
+          value: 3,
+        ),
+        policy: policy,
+      );
       final HomeMetricNavigation? nearExpiry = homeMetricNavigation(
         profile: profile,
         card: const HomeStatusCard(
@@ -332,6 +341,10 @@ void main() {
         ),
         policy: policy,
       );
+      expect(outOfStock?.route, AppRoutes.pharmacy);
+      expect(outOfStock?.queryParameters, <String, String>{
+        'section': 'out-of-stock',
+      });
       expect(nearExpiry?.route, AppRoutes.pharmacy);
       expect(nearExpiry?.queryParameters, <String, String>{
         'section': 'near-expiry',

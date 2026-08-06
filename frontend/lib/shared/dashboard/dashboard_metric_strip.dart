@@ -18,6 +18,17 @@ class DashboardMetricStrip extends StatelessWidget {
   final int maxCards;
   final bool compact;
 
+  /// Columns per row: 1 on mobile, 3 on tablet, 5 on desktop.
+  static int columnsForWidth(double width) {
+    if (width < AppBreakpoints.md) {
+      return 1;
+    }
+    if (width < AppBreakpoints.xl) {
+      return 3;
+    }
+    return 5;
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<DashboardMetricCardData> visibleCards = cards
@@ -32,64 +43,104 @@ class DashboardMetricStrip extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) {
         final ThemeData theme = Theme.of(context);
         final double gap = theme.spacing.sm;
-        final bool wide = constraints.maxWidth >= AppBreakpoints.md;
-        final bool useCompact = compact || !wide;
-
-        if (!wide) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              for (
-                int index = 0;
-                index < visibleCards.length;
-                index += 1
-              ) ...<Widget>[
-                if (index > 0) SizedBox(height: gap),
-                _DashboardMetricCard(
-                  card: visibleCards[index],
-                  compact: useCompact,
-                ),
-              ],
-            ],
-          );
-        }
-
-        final int count = visibleCards.length;
-        final double cardWidth = count <= 0
+        final int columns = columnsForWidth(constraints.maxWidth);
+        final bool useCompact = compact || columns == 1;
+        final double cardWidth = columns <= 1
             ? constraints.maxWidth
-            : (constraints.maxWidth - gap * (count - 1)) / count;
+            : (constraints.maxWidth - gap * (columns - 1)) / columns;
         final double uniformHeight = visibleCards
             .map(
-              (DashboardMetricCardData card) => _DashboardMetricCard.measureHeight(
-                context: context,
-                card: card,
-                maxWidth: cardWidth,
-                compact: useCompact,
-              ),
+              (DashboardMetricCardData card) =>
+                  _DashboardMetricCard.measureHeight(
+                    context: context,
+                    card: card,
+                    maxWidth: cardWidth,
+                    compact: useCompact,
+                  ),
             )
             .fold<double>(0, math.max);
 
-        return SizedBox(
-          height: uniformHeight,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              for (int index = 0; index < visibleCards.length; index += 1) ...<
-                Widget
-              >[
-                if (index > 0) SizedBox(width: gap),
-                Expanded(
-                  child: _DashboardMetricCard(
-                    card: visibleCards[index],
-                    compact: useCompact,
-                    height: uniformHeight,
-                  ),
-                ),
-              ],
-            ],
-          ),
+        final List<Widget> rows = <Widget>[];
+        for (
+          int start = 0;
+          start < visibleCards.length;
+          start += columns
+        ) {
+          final int end = math.min(start + columns, visibleCards.length);
+          final List<DashboardMetricCardData> rowCards = visibleCards.sublist(
+            start,
+            end,
+          );
+          if (rows.isNotEmpty) {
+            rows.add(SizedBox(height: gap));
+          }
+          rows.add(
+            _MetricStripRow(
+              cards: rowCards,
+              cardWidth: cardWidth,
+              cardHeight: uniformHeight,
+              gap: gap,
+              compact: useCompact,
+              stretchSingleColumn: columns == 1,
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: rows,
         );
       },
+    );
+  }
+}
+
+class _MetricStripRow extends StatelessWidget {
+  const _MetricStripRow({
+    required this.cards,
+    required this.cardWidth,
+    required this.cardHeight,
+    required this.gap,
+    required this.compact,
+    required this.stretchSingleColumn,
+  });
+
+  final List<DashboardMetricCardData> cards;
+  final double cardWidth;
+  final double cardHeight;
+  final double gap;
+  final bool compact;
+  final bool stretchSingleColumn;
+
+  @override
+  Widget build(BuildContext context) {
+    if (stretchSingleColumn) {
+      return _DashboardMetricCard(
+        card: cards.first,
+        compact: compact,
+        height: cardHeight,
+      );
+    }
+
+    return SizedBox(
+      height: cardHeight,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (int index = 0; index < cards.length; index += 1) ...<Widget>[
+            if (index > 0) SizedBox(width: gap),
+            SizedBox(
+              width: cardWidth,
+              child: _DashboardMetricCard(
+                card: cards[index],
+                compact: compact,
+                height: cardHeight,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -155,8 +206,7 @@ class _DashboardMetricCard extends StatelessWidget {
     final double iconBox = _iconBox(compact);
     final double gap = theme.spacing.xs;
     final bool isActionable = card.onTap != null;
-    final double trailing =
-        isActionable ? theme.spacing.xs + 18 : 0;
+    final double trailing = isActionable ? theme.spacing.xs + 18 : 0;
     final double labelMaxWidth = math.max(
       0,
       maxWidth - hPad * 2 - iconBox - theme.spacing.sm - trailing,

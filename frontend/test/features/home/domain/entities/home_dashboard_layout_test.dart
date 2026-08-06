@@ -57,26 +57,27 @@ void main() {
       );
     });
 
-    test('pharmacist dashboard shows six metrics and quick actions', () {
+    test('pharmacist dashboard shows pharmacy order and stock metrics', () {
       final profile = homeProfileForRole(AppRole.pharmacist);
 
       expect(profile.layoutTier, HomeDashboardLayoutTier.departmentQueue);
       expect(profile.isPharmacistDepartmentDashboard, isTrue);
       expect(profile.showQueuePanel, isFalse);
-      expect(profile.effectiveMaxStatusCards, 6);
+      expect(profile.effectiveMaxStatusCards, 9);
       expect(profile.maxQuickActions, 4);
       expect(profile.maxQueueItems, 5);
       expect(profile.emptyActionIds, isEmpty);
       expect(profile.shortcutIds, isNot(contains('patients')));
       expect(
-        profile.statusCards.take(6).map((template) => template.id),
+        profile.statusCards.take(7).map((template) => template.id),
         <String>[
           'orders_today',
           'pending_dispense',
           'dispensed_today',
           'low_stock',
-          'sales_today',
-          'sales_this_week',
+          'out_of_stock',
+          'near_expiry',
+          'expired',
         ],
       );
       expect(profile.statusCards.first.label, 'Orders today');
@@ -90,6 +91,10 @@ void main() {
       expect(profile.metricRouteTargets['low_stock']!.queryParameters, <String, String>{
         'section': 'low-stock',
       });
+      expect(
+        profile.metricRouteTargets['out_of_stock']!.queryParameters,
+        <String, String>{'section': 'out-of-stock'},
+      );
       expect(profile.emptyMessage, 'No pending orders.');
     });
 
@@ -137,7 +142,7 @@ void main() {
             .toList(growable: false);
 
         expect(expanded.id, 'pharmacist');
-        expect(expanded.effectiveMaxStatusCards, 6);
+        expect(expanded.effectiveMaxStatusCards, 9);
         expect(ids, isNot(contains('appointments_today')));
         expect(ids, isNot(contains('active_admissions')));
         expect(
@@ -147,6 +152,7 @@ void main() {
             'pending_dispense',
             'dispensed_today',
             'low_stock',
+            'out_of_stock',
           ]),
         );
       },

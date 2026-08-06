@@ -89,6 +89,7 @@ abstract final class HomeDashboardAtomPermissions {
         'pending_dispense': <AppPermission>[AppPermissions.pharmacyWrite],
         'dispensed_today': <AppPermission>[AppPermissions.pharmacyRead],
         'low_stock': <AppPermission>[AppPermissions.pharmacyRead],
+        'out_of_stock': <AppPermission>[AppPermissions.pharmacyRead],
         'critical_stock': <AppPermission>[AppPermissions.pharmacyRead],
         'near_expiry': <AppPermission>[AppPermissions.pharmacyRead],
         'expired': <AppPermission>[AppPermissions.pharmacyRead],

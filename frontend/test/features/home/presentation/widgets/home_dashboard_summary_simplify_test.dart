@@ -229,7 +229,7 @@ void main() {
 
   group('dashboard metric strip readability', () {
     testWidgets(
-      'six cards keep currency and long labels readable at desktop width',
+      'desktop wraps past five cards per row and keeps labels readable',
       (WidgetTester tester) async {
         final Color accent = Colors.teal.shade700;
         await tester.pumpWidget(
@@ -289,13 +289,33 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
+        expect(DashboardMetricStrip.columnsForWidth(1200), 5);
         expect(find.text('Facilities'), findsOneWidget);
         expect(find.text('Adoption'), findsOneWidget);
         expect(find.text('UGX 1.2M'), findsOneWidget);
         expect(find.text('Pending balances'), findsOneWidget);
+        expect(find.text('Users'), findsOneWidget);
         expect(find.textContaining('Facilit…'), findsNothing);
         expect(find.textContaining('Adopti…'), findsNothing);
         expect(find.textContaining('U…'), findsNothing);
+
+        // First row uses five equal slots; sixth card overflows to the next row.
+        final List<Size> cardSizes = tester
+            .widgetList<Material>(
+              find.descendant(
+                of: find.byType(DashboardMetricStrip),
+                matching: find.byType(Material),
+              ),
+            )
+            .map((Material material) => tester.getSize(find.byWidget(material)))
+            .toList(growable: false);
+        expect(cardSizes.length, 6);
+        expect(cardSizes[0].width, closeTo(cardSizes[4].width, 0.5));
+        expect(cardSizes[5].width, closeTo(cardSizes[0].width, 0.5));
+        expect(
+          tester.getTopLeft(find.text('Users')).dy,
+          greaterThan(tester.getTopLeft(find.text('Facilities')).dy),
+        );
 
         // Values stay at title size (scale down only when needed).
         final Size shortValue = tester.getSize(find.text('128'));
@@ -305,6 +325,14 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    test('columnsForWidth maps mobile tablet and desktop', () {
+      expect(DashboardMetricStrip.columnsForWidth(359), 1);
+      expect(DashboardMetricStrip.columnsForWidth(599), 1);
+      expect(DashboardMetricStrip.columnsForWidth(600), 3);
+      expect(DashboardMetricStrip.columnsForWidth(1199), 3);
+      expect(DashboardMetricStrip.columnsForWidth(1200), 5);
+    });
 
     testWidgets(
       'long labels wrap without ellipsis and values share a bottom baseline',

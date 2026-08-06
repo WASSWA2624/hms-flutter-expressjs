@@ -364,6 +364,15 @@ const countLowStock = async (where, factor = 1) => {
   }).length;
 };
 
+/** Facility-scoped inventory rows with quantity at or below zero. */
+const countOutOfStock = async (where) => {
+  const rows = await prisma.inventory_stock.findMany({
+    where,
+    select: { quantity: true },
+  });
+  return rows.filter((row) => toNumber(row.quantity) <= 0).length;
+};
+
 /** Top drugs by qty / amount / profit for a dispense window (facility-scoped). */
 const formatMostSoldDrugLabel = (drug = {}) => {
   const generic =
@@ -1551,6 +1560,7 @@ const getDashboardSummaryByPack = async ({
         pendingDispense,
         dispensedToday,
         lowStock,
+        outOfStock,
         criticalStock,
         nearExpiry,
         expiredStock,
@@ -1565,6 +1575,7 @@ const getDashboardSummaryByPack = async ({
         prisma.pharmacy_order.count({ where: { ...pharmacyOrderWhere, status: { in: ['ORDERED', 'PARTIALLY_DISPENSED'] } } }),
         prisma.dispense_log.count({ where: { ...dispenseLogWhere, status: 'DISPENSED', dispensed_at: { gte: todayStart } } }),
         countLowStock(inventoryStockWhere, 1),
+        countOutOfStock(inventoryStockWhere),
         countLowStock(inventoryStockWhere, 0.5),
         pharmacyWorkspaceRepository.countInventoryRowsWithExpiringBatches(
           scope.tenant_id,
@@ -1594,6 +1605,7 @@ const getDashboardSummaryByPack = async ({
           pendingDispense,
           dispensedToday,
           lowStock,
+          outOfStock,
           criticalStock,
           nearExpiry,
           expiredStock,

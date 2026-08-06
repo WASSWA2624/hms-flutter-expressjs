@@ -1807,7 +1807,9 @@ AppWorkspaceStatusTone homeMetricTone(HomeStatusCard card) {
       id.contains('warning') ||
       id.contains('risk') ||
       id == 'expired' ||
-      id.contains('expired_')) {
+      id.contains('expired_') ||
+      id == 'out_of_stock' ||
+      id.contains('out_of_stock')) {
     return card.numericValue > 0
         ? AppWorkspaceStatusTone.error
         : AppWorkspaceStatusTone.success;

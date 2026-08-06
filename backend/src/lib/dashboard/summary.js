@@ -766,6 +766,7 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'pending_dispense', label: 'Pending', value: metrics.pendingDispense || 0, required_permissions: ['pharmacy:write'] },
       { id: 'dispensed_today', label: 'Dispensed today', value: metrics.dispensedToday || 0, required_permissions: ['pharmacy:read'] },
       { id: 'low_stock', label: 'Low stock', value: metrics.lowStock || 0, required_permissions: ['pharmacy:read'] },
+      { id: 'out_of_stock', label: 'Out of stock', value: metrics.outOfStock || 0, required_permissions: ['pharmacy:read'] },
       { id: 'near_expiry', label: 'Near expiry', value: metrics.nearExpiry || 0, required_permissions: ['pharmacy:read'] },
       { id: 'expired', label: 'Expired', value: metrics.expiredStock || metrics.expired || 0, required_permissions: ['pharmacy:read'] },
       {
