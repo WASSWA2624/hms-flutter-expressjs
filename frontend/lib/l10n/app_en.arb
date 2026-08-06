@@ -15618,7 +15618,7 @@
   },
   "pharmacyPrintHideZeroQuantityLabel": "Hide zero-quantity items",
   "@pharmacyPrintHideZeroQuantityLabel": {
-    "description": "Print option to hide medications with zero remaining quantity."
+    "description": "Print option to hide medications whose prescribed quantity is zero."
   },
   "pharmacyPrintHidePartialLabel": "Hide partially dispensed items",
   "@pharmacyPrintHidePartialLabel": {

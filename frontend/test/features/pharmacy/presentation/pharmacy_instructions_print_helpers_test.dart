@@ -164,10 +164,21 @@ void main() {
         frequency: 'BID',
         route: 'ORAL',
       );
+      const PharmacyOrderItem fullyDispensed = PharmacyOrderItem(
+        id: 'full',
+        drugDisplayName: 'Fully Dispensed Medicine',
+        quantityPrescribed: 4,
+        quantityUnit: 'tablets',
+        quantityDispensed: 4,
+        quantityRemaining: 0,
+        frequency: 'BID',
+        route: 'ORAL',
+      );
       const PharmacyOrderItem hiddenZero = PharmacyOrderItem(
         id: 'zero',
-        drugDisplayName: 'Zero Remaining',
-        quantityPrescribed: 4,
+        drugDisplayName: 'Zero Quantity Medicine',
+        quantityPrescribed: 0,
+        quantity: 0,
         quantityUnit: 'tablets',
         quantityRemaining: 0,
         frequency: 'BID',
@@ -200,9 +211,14 @@ void main() {
                     patientDisplayName: 'Noah Demo-Echo',
                     status: 'DISPENSED',
                   ),
-                  items: <PharmacyOrderItem>[kept, hiddenZero, unselected],
+                  items: <PharmacyOrderItem>[
+                    kept,
+                    fullyDispensed,
+                    hiddenZero,
+                    unselected,
+                  ],
                 ),
-                selectedItemIds: <String>{'kept', 'zero'},
+                selectedItemIds: <String>{'kept', 'full', 'zero'},
                 hideZeroQuantity: true,
               );
               return const SizedBox.shrink();
@@ -212,7 +228,8 @@ void main() {
       );
 
       expect(html, contains('Kept Medicine'));
-      expect(html, isNot(contains('Zero Remaining')));
+      expect(html, contains('Fully Dispensed Medicine'));
+      expect(html, isNot(contains('Zero Quantity Medicine')));
       expect(html, isNot(contains('Unselected Medicine')));
     });
   });

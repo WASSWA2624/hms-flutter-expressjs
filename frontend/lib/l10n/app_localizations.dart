@@ -22540,7 +22540,7 @@ abstract class AppLocalizations {
   /// **'This removes the medication from the active pharmacy workflow. Select one or more reasons to continue.'**
   String get pharmacyCancelItemDialogBody;
 
-  /// Print option to hide medications with zero remaining quantity.
+  /// Print option to hide medications whose prescribed quantity is zero.
   ///
   /// In en, this message translates to:
   /// **'Hide zero-quantity items'**

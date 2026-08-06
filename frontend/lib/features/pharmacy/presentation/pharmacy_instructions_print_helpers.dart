@@ -62,7 +62,10 @@ String pharmacyInstructionsHtml(
     if (selectedItemIds != null && !selectedItemIds.contains(item.id)) {
       return false;
     }
-    if (hideZeroQuantity && item.quantityRemaining <= 0) {
+    // Hide lines with no prescribed quantity — not fully dispensed (remaining 0).
+    if (hideZeroQuantity &&
+        item.quantityPrescribed <= 0 &&
+        item.quantity <= 0) {
       return false;
     }
     if (hidePartiallyDispensed &&
