@@ -181,6 +181,34 @@ const seedDemoData = async ({
     });
   }
 
+  // Report runner may drain QUEUED → PROCESSING/COMPLETED while volume seed runs.
+  // Restore a small QUEUED slice so verify status coverage remains deterministic.
+  if (demoTenantId && prisma.report_run?.findMany && prisma.report_run?.updateMany) {
+    const queuedCandidates = await prisma.report_run.findMany({
+      where: {
+        tenant_id: demoTenantId,
+        deleted_at: null,
+        status: { in: ['COMPLETED', 'FAILED', 'PROCESSING', 'CANCELLED'] },
+      },
+      select: { id: true },
+      orderBy: { created_at: 'asc' },
+      take: 8,
+    });
+    if (queuedCandidates.length > 0) {
+      await prisma.report_run.updateMany({
+        where: { id: { in: queuedCandidates.map((row) => row.id) } },
+        data: {
+          status: 'QUEUED',
+          started_at: null,
+          completed_at: null,
+          error_message: null,
+          output_file_name: null,
+          output_mime_type: null,
+        },
+      });
+    }
+  }
+
   const verification = await verifyDemoData();
 
   if (!verification.ok) {

@@ -367,8 +367,11 @@ const seedPharmacyCatalogForTenant = async (
         code: spec.code,
         form: spec.form,
         strength: spec.strength,
-        // Distinct prices so pharmacy most-sold amount charts have visible ranks.
+        // Distinct prices so pharmacy most-sold amount/profit charts have visible ranks.
+        // Ladder: buy (COGS) < transfer (pharmacy→facility) < pharmacy sell.
+        buy_unit_price: 400 + (drugCatalogIndex + 1) * 250,
         unit_price: 1200 + (drugCatalogIndex + 1) * 850,
+        transfer_unit_price: 800 + (drugCatalogIndex + 1) * 450,
         currency: 'UGX',
       },
       {
