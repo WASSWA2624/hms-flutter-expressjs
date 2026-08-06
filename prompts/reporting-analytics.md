@@ -1,69 +1,67 @@
-# Pharmacy Reporting and Analytics Overview Layout
+# Pharmacy Reports Overview: In-Place Dialogs
 
-Redesign the pharmacist Reports Overview so pharmacy domain content is exactly two tabs—**Analytics** and **Reporting**—merging today’s overlapping Analysis and Analytics panels without changing dataset, permission, or reporting-pipeline behavior.
+Keep the pharmacist `/reports` Overview on Analytics | Reporting tabs, but remove tab instructional copy and open analytics/reporting actions in dialogs so the workspace stays on Overview instead of navigating to Catalog or Delivery panels.
 
 ## Context
 
-**Current behavior**
+**Current behavior (screenshots + code)**
 
-- Pharmacy desk exposes **Open reports** when `pharmacy:read` ∩ `reports:read` ∩ module `reporting-analytics`; deep-links to `/reports?dataset=pharmacy_drug_consumption`.
-- Pharmacist domain pack (`ReportsDomainPack.pharmacy`) limits Reports panels to Overview, Catalog, Delivery and primary datasets: `pharmacy_drug_consumption`, `pharmacy_dispense_throughput`, `inventory_stock_risk`.
-- `ReportsPharmacyDomainGroups` on Overview renders **three stacked panels**: Analysis (dataset chips), Analytics (insight chips that open the same datasets), Reporting (browse catalog / delivery / create-or-run when `reports:write`).
-- Analysis and Analytics duplicate the same destinations; there is no tab strip—only stacked `AppSectionPanel`s.
-- Backend builders already support consumption (incl. source mix + profit when `buy_unit_price` present), dispense throughput, and inventory stock/expiry risk.
+- Pharmacist Overview shows subtitle *“Pharmacy analytics insights…”*, nested **Analytics** | **Reporting** tabs (`ReportsPharmacyDomainGroups`), then Overview **Create and run** (Browse catalog / Runs and delivery) plus metric cards (definitions, queued runs, due schedules, pinned widgets) and Attention queues.
+- **Analytics** tab shows a long body (“Explore consumption…”) plus chips for datasets (`pharmacy_drug_consumption`, `pharmacy_dispense_throughput`, `inventory_stock_risk`) and insight shortcuts (top consumed, stock-out/expiry, stocking focus, walk-in vs clinical, revenue/margin). Chips call `openCatalogDataset` → switches panel to **Catalog** with dataset filter (leaves Overview).
+- **Reporting** tab shows body (“Create, run, schedule…”) plus Browse catalog / Runs and delivery (and create-or-run when writable) via `applyPanel` → **Catalog** / **Delivery** (leaves Overview). Those actions duplicate Overview Create and run.
+- Catalog/Delivery already expose definitions, runs, schedules, and detail/run/schedule via `AppDialog` / `showAppDialog` on the Reports workspace page. Overview itself is not dialog-hosted.
 
 **Intended behavior**
 
-- Pharmacist Overview pharmacy chrome is a **two-tab** layout: **Analytics** | **Reporting** (not three sections; do not keep a separate **Analysis** tab or panel).
-- **Analytics** holds interactive exploration and insights for the pharmacy datasets (former Analysis chips + Analytics insight chips in one place).
-- **Reporting** holds shared report definition / run / schedule / download entry points (catalog, delivery, create-or-run when entitled).
-- Preserve deep-link, RBAC, datasets, and non-pharmacy Overview behavior for other domain packs.
+- Drop the Analytics and Reporting **tab body descriptions** (the explore / create-run instructional paragraphs). Keep the Analytics | Reporting tab strip and action chips; keep page chrome (workspace title, search) unless a requirement below changes it.
+- Every pharmacy Analytics / Reporting shortcut that today navigates away must instead open a **dialog** over Overview with the resources and actions needed for that task (dataset explore/run, catalog browse, delivery/runs)—user remains on Overview and the parent Analytics/Reporting tab.
+- Prefer existing shared `AppDialog` / `showAppDialog` and Reports detail/run/schedule patterns; do not invent a parallel dialog system.
+- Preserve dataset keys, RBAC (`reports:read`/`write`, pharmacy pack), deep-link `?dataset=`, and non-pharmacy Overview behavior.
 
 **Definitions**
 
-- *Analytics tab:* In-period pharmacy insights and dataset shortcuts (consumption, throughput, stock/expiry risk, walk-in vs clinical mix, margin when buy cost exists).
-- *Reporting tab:* Shared reporting pipeline surfaces (catalog, delivery, create/run) scoped by allowed panels and write permission.
-- *Pharmacy domain groups:* Overview chrome shown when `reportsDomainPacks` includes `pharmacy` (and not admin-only overlay).
+- *Parent tab:* Analytics or Reporting nested tab on Overview; must stay selected when a shortcut dialog opens/closes.
+- *In-place dialog:* Modal over current Overview (not `applyPanel` / route change to Catalog or Delivery).
+- *Analytics shortcut:* Dataset or insight chip under Analytics.
+- *Reporting shortcut:* Browse catalog, Runs and delivery, Create or run (when entitled) under Reporting.
 
 ## Requirements
 
-1. Replace the three stacked pharmacy Overview panels with an `AppTabStrip` (or equivalent design-system tabs) of exactly two tabs: **Analytics** and **Reporting**. Default to Analytics.
-2. Move former Analysis dataset chips and Analytics insight chips into the **Analytics** tab only; remove the separate Analysis title/panel and unused Analysis-only copy if superseded. Keep insight labels (top consumed, stock-out risk, expiry risk, stocking focus, walk-in vs clinical mix, revenue/margin) and open the same dataset keys as today.
-3. Keep the **Reporting** tab contents as today’s Reporting panel: Browse catalog, View delivery, and Create or run report only when `canWriteReports` and Catalog is allowed. Hide unauthorized chips entirely.
-4. Preserve pharmacy Overview subtitle intent (analytics + reporting for the facility); update copy so it does not imply a third “Analysis” product area.
-5. Do not change pharmacy desk **Open reports** gate or deep-link query, dataset builders, role-tailoring dataset lists, or non-pharmacy Overview layout.
-6. Cover permission, loading, empty (no pharmacy datasets), error/success from existing Reports workspace flows, and visible feedback. Responsive; theme tokens; light/dark. Unauthorized pharmacy groups and write chips must not render.
-7. Tests: two tabs only (no Analysis heading); Analytics actions open correct datasets; Reporting create chip absent without write; `shouldShow` unchanged for pharmacy vs non-pharmacy packs.
+1. Remove Analytics and Reporting tab supporting body text from `ReportsPharmacyDomainGroups` (and unused l10n if superseded). Do not remove the tab labels or Overview pharmacy subtitle unless product copy is otherwise broken.
+2. Wire Analytics shortcuts to open in-place dialogs that surface the selected pharmacy dataset (and insight intent) with entitled actions (view/run/export as already allowed)—do **not** call `openCatalogDataset` / `applyPanel` for those chips.
+3. Wire Reporting shortcuts (Browse catalog, Runs and delivery, Create or run when `canWriteReports`) to in-place dialogs that expose the same entitled catalog/delivery capabilities without switching Overview → Catalog/Delivery panels.
+4. When pharmacy domain groups are shown, stop Overview **Create and run** (and equivalent metric-card taps that only duplicate Reporting) from panel-navigating for the same targets; open the same dialogs or hide the duplicate Create and run row so Reporting is the single entry. Keep Attention queues / charts if they remain useful without forcing a panel leave for pharmacy shortcuts.
+5. Reuse `AppDialog` / `showAppDialog` and existing Reports run/schedule/detail dialogs or extract shared content into dialog shells under reports presentation / shared components—no new reports microservice or route family.
+6. Cover permission, loading, empty, error, success, validation, and visible feedback inside dialogs. Unauthorized chips/actions absent. Responsive; theme tokens; light/dark. Soft-refresh Overview after mutations without blank remount.
+7. Tests: tab bodies absent; Analytics/Reporting chip taps do not change workspace panel away from Overview; dialogs open with correct dataset/panel intent; write-gated create absent without write; non-pharmacy Overview unchanged.
 
 ## Constraints
 
-- Reuse `ReportsPharmacyDomainGroups`, Reports workspace controller (`openCatalogDataset` / `applyPanel`), role-tailoring, and existing pharmacy datasets—no parallel analytics API or pharmacy-only reports microservice.
-- Do not broaden pharmacist panel set beyond Overview / Catalog / Delivery unless already granted by another pack.
+- Do not remove Catalog/Delivery panels or deep-link dataset handling for non-Overview entry points (e.g. pharmacy desk Open reports may still land on a dataset); Overview pharmacy shortcuts must stay in-place.
+- Do not broaden pharmacist panel entitlements.
 - Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `prompts/.cursor/prompt.mdc`.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | Pharmacist Overview shows Analytics and Reporting tabs only; no Analysis panel/heading. | R1–R2, R4, R7 |
-| A2 | Analytics tab exposes dataset/insight actions that open consumption, throughput, or stock-risk as today. | R2, R5 |
-| A3 | Reporting tab shows catalog/delivery; create-or-run only with write + catalog panel. | R3, R6 |
-| A4 | Non-pharmacy packs and pharmacy Open-reports deep-link unchanged. | R5 |
-| A5 | Unauthorized groups/chips absent; light/dark and narrow viewport usable. | R6–R7 |
+| A1 | Analytics/Reporting tabs have no explore/create instructional body under the strip. | R1 |
+| A2 | Analytics chips open dialogs; Overview panel stays selected. | R2, R5–R7 |
+| A3 | Reporting shortcuts open dialogs (catalog/delivery/create) without leaving Overview. | R3–R5, R7 |
+| A4 | No duplicate panel-navigate Create and run for pharmacy Overview when Reporting covers those actions. | R4 |
+| A5 | Unauthorized actions absent; light/dark + narrow usable; non-pharmacy Overview unchanged. | R5–R7 |
 
 ## Relevant Files
 
 - `frontend/lib/features/reports/presentation/widgets/reports_pharmacy_domain_groups.dart`
 - `frontend/lib/features/reports/presentation/widgets/reports_overview_dashboard.dart`
-- `frontend/lib/features/reports/presentation/reports_role_tailoring.dart`
-- `frontend/lib/features/pharmacy/presentation/pharmacy_access.dart` (`canOpenPharmacyReportsAnalytics`)
-- `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart` (Open reports action)
-- `frontend/lib/l10n/app_en.arb` (`reportsPharmacy*` keys)
+- `frontend/lib/features/reports/presentation/pages/reports_workspace_page.dart` (existing `AppDialog` run/schedule/detail)
+- `frontend/lib/features/reports/presentation/controllers/reports_workspace_controller.dart` (`openCatalogDataset`, `applyPanel`)
+- `frontend/lib/shared/components/app_dialog.dart`
+- `frontend/lib/l10n/app_en.arb` (`reportsPharmacyAnalyticsBody`, `reportsPharmacyReportingBody`, …)
 - `frontend/test/features/reports/presentation/reports_pharmacy_domain_groups_test.dart`
-- `backend/src/lib/reports/datasets.js` (pharmacy builders; no behavior change expected)
 
 ## Verification
 
-- FE widget tests: Analytics + Reporting tabs present; Analysis absent; insight taps → dataset ids; read-only hides create; `shouldShow` true/false.
-- Manual: pharmacist Overview → switch tabs → open insights and catalog/delivery; pharmacy desk Open reports still lands on consumption dataset; light/dark + narrow width.
-- Confirm admin/finance/other Overviews unchanged.
+- Widget/integration: body copy gone; chip → dialog; panel remains Overview; read-only hides create; reception/admin Overview unchanged.
+- Manual: Analytics chip → dialog dismiss → still on Analytics; Reporting Browse/Runs → dialog; no Catalog/Delivery tab switch from those shortcuts; light/dark + narrow width.
