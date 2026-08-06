@@ -192,6 +192,12 @@ const seedVolumePack = async (
   };
 
   const patients = [];
+  const encounters = [];
+  const admissions = [];
+  const appointments = [];
+  const invoices = [];
+  const payments = [];
+  const emergencies = [];
   const created = {
     patients: 0,
     appointments: 0,
@@ -264,7 +270,7 @@ const seedVolumePack = async (
     if (!patient) return;
     const status = pick(APPOINTMENT_STATUSES, index);
     const startOffset = -((index % 120) + 1);
-    await ctx.upsert(
+    const appointment = await ctx.upsert(
       'appointment',
       `${scenario.key}:vol:appointment:${pad(index)}`,
       {
@@ -279,10 +285,10 @@ const seedVolumePack = async (
       },
       { ...seedOpts, publicIdPrefix: 'APT' }
     );
+    appointments.push(appointment);
     created.appointments += 1;
   });
 
-  const encounters = [];
   await runInBatches(targets.highTraffic, 10, async (index) => {
     const patient = patientAt(index);
     if (!patient) return;
@@ -315,7 +321,7 @@ const seedVolumePack = async (
     const encounter = encounterAt(index);
     if (!patient) return;
     const status = pick(ADMISSION_STATUSES, index);
-    await ctx.upsert(
+    const admission = await ctx.upsert(
       'admission',
       `${scenario.key}:vol:admission:${pad(index)}`,
       {
@@ -329,6 +335,7 @@ const seedVolumePack = async (
       },
       { ...seedOpts, publicIdPrefix: 'ADM' }
     );
+    admissions.push(admission);
     created.admissions += 1;
   });
 
@@ -551,7 +558,7 @@ const seedVolumePack = async (
         ? 'FAILED'
         : pick(PAYMENT_STATUSES, index);
 
-    await ctx.upsert(
+    const payment = await ctx.upsert(
       'payment',
       `${scenario.key}:vol:payment:${pad(index)}`,
       {
@@ -568,6 +575,8 @@ const seedVolumePack = async (
       { ...seedOpts, publicIdPrefix: 'PAY' }
     );
 
+    invoices.push(invoice);
+    payments.push(payment);
     created.invoices += 1;
     created.payments += 1;
   });
@@ -575,7 +584,7 @@ const seedVolumePack = async (
   await runInBatches(targets.secondary, 10, async (index) => {
     const patient = patientAt(index);
     if (!patient) return;
-    await ctx.upsert(
+    const emergency = await ctx.upsert(
       'emergency_case',
       `${scenario.key}:vol:emergency:${pad(index)}`,
       {
@@ -588,6 +597,7 @@ const seedVolumePack = async (
       },
       { ...seedOpts, publicIdPrefix: 'EMC' }
     );
+    emergencies.push(emergency);
     created.emergency_cases += 1;
   });
 
@@ -715,6 +725,15 @@ const seedVolumePack = async (
     created,
     patients: patients.length,
     patient_ids: patients.map((patient) => patient.id),
+    encounters,
+    admissions,
+    appointments,
+    invoices,
+    payments,
+    emergencies,
+    facility,
+    doctor,
+    nurse,
   };
 };
 

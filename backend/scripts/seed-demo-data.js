@@ -29,6 +29,7 @@ const {
   DEFAULT_DEMO_VOLUME_TARGET,
   seedVolumePack,
 } = require('./seeders/seed-volume-pack');
+const { seedVolumeExtendedPack } = require('./seeders/seed-volume-extended-pack');
 const { seedFillerPack } = require('./seeders/seed-filler-pack');
 const { assertDemoTaskAllowed } = require('./demo-safety');
 const { verifyDemoData } = require('./verify-demo-data');
@@ -117,6 +118,13 @@ const seedDemoData = async ({
     biomedicalPack,
     mortuaryPack,
   });
+  const volumeExtendedSummary = await seedVolumeExtendedPack(ctx, resolvedTargetCount, {
+    orgPack,
+    accessPack,
+    operationsPack,
+    volumeSummary,
+    communicationsPack,
+  });
 
   const demoFacility = orgPack.facilities?.[`${Object.keys(orgPack.tenants || {})[0] || 'demo'}:main`]
     || Object.values(orgPack.facilities || {})[0];
@@ -198,6 +206,7 @@ const seedDemoData = async ({
       biomedical_assets: Object.keys(biomedicalPack.registries).length,
       mortuary_cases: Object.keys(mortuaryPack.cases).length,
       volume: volumeSummary,
+      volume_extended: volumeExtendedSummary,
       filler: fillerSummary,
       compliance: Boolean(compliancePack.integration),
       governance: {

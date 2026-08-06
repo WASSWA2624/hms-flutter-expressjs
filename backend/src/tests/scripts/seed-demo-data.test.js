@@ -132,6 +132,13 @@ describe('seed-demo-data script', () => {
       seedVolumePack,
       DEFAULT_DEMO_VOLUME_TARGET: 1000,
     }));
+    jest.doMock('../../../scripts/seeders/seed-volume-extended-pack', () => ({
+      seedVolumeExtendedPack: jest.fn(async () => ({
+        skipped: true,
+        reason: 'target_count_zero',
+        created: {},
+      })),
+    }));
     jest.doMock('../../../scripts/seeders/seed-filler-pack', () => ({ seedFillerPack }));
     jest.doMock('../../../scripts/verify-demo-data', () => ({ verifyDemoData }));
 
@@ -185,6 +192,11 @@ describe('seed-demo-data script', () => {
       skipped: true,
       reason: 'target_count_zero',
       targets: { skipped: true, highTraffic: 0, secondary: 0 },
+      created: {},
+    });
+    expect(result.summary.volume_extended).toEqual({
+      skipped: true,
+      reason: 'target_count_zero',
       created: {},
     });
     expect(result.summary.filler).toEqual({
@@ -276,6 +288,18 @@ describe('seed-demo-data script', () => {
       targets: { skipped: false, highTraffic: 100, secondary: 100 },
       created: { patients: 100 },
       patients: 100,
+      patient_ids: [],
+      encounters: [],
+      admissions: [],
+      appointments: [],
+      invoices: [],
+      payments: [],
+      emergencies: [],
+    }));
+    const seedVolumeExtendedPack = jest.fn(async () => ({
+      skipped: false,
+      created: { diagnoses: 100 },
+      targets: { skipped: false, highTraffic: 100, secondary: 100 },
     }));
     const seedFillerPack = jest.fn(async () => ({ skipped: false, created: 0, processed: 0 }));
     const verifyDemoData = jest.fn(async () => ({ ok: true, errors: [], summary: {} }));
@@ -302,6 +326,9 @@ describe('seed-demo-data script', () => {
       seedVolumePack,
       DEFAULT_DEMO_VOLUME_TARGET: 1000,
     }));
+    jest.doMock('../../../scripts/seeders/seed-volume-extended-pack', () => ({
+      seedVolumeExtendedPack,
+    }));
     jest.doMock('../../../scripts/seeders/seed-filler-pack', () => ({ seedFillerPack }));
     jest.doMock('../../../scripts/verify-demo-data', () => ({ verifyDemoData }));
 
@@ -309,9 +336,15 @@ describe('seed-demo-data script', () => {
     const result = await seedDemoData({ targetCount: 100, randomSeed: 20260302 });
 
     expect(seedVolumePack).toHaveBeenCalledWith(expect.any(Object), 100, expect.any(Object));
+    expect(seedVolumeExtendedPack).toHaveBeenCalledWith(
+      expect.any(Object),
+      100,
+      expect.objectContaining({ volumeSummary: expect.any(Object) })
+    );
     expect(seedFillerPack).not.toHaveBeenCalled();
     expect(result.summary.target_count).toBe(100);
     expect(result.summary.volume.skipped).toBe(false);
+    expect(result.summary.volume_extended.skipped).toBe(false);
     expect(result.summary.filler).toEqual({
       skipped: true,
       reason: 'volume_pack_satisfies_applicable_targets',

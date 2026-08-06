@@ -20,13 +20,14 @@ Owns curated + volume demo seeding for local/demo environments. Never seed produ
 ## Workflow
 
 - Commands: `db:clear:demo` → `db:seed:demo` → `db:verify:demo` (or `db:reset:demo`).
-- Orchestrator: `seed-demo-data.js` with P012 pack order, then `seed-volume-pack`, then optional filler when volume is skipped.
+- Orchestrator: `seed-demo-data.js` with P012 pack order, then `seed-volume-pack`, then `seed-volume-extended-pack`, then optional filler when volume is skipped.
 - Gate all clear/seed work with `demo-safety.js` (refuse production / live DB URLs).
 
 ## Volume
 
 - `SEED_RECORD_COUNT` defaults to **1000**; `0` is curated-only.
-- Applicable operational tables must reach the volume target after a full seed (patients, appointments, encounters, admissions, lab/pharmacy/radiology, invoices/payments, emergencies, stock movements, biomed work orders, mortuary cases, notifications).
+- Core volume tables must reach the target: patients, appointments, encounters, admissions, lab/pharmacy/radiology, invoices/payments, emergencies, stock movements, biomed work orders, mortuary cases, notifications.
+- Extended volume (lived-in facility): diagnoses, vitals, procedures, nursing notes/ward rounds/MAR/discharges, visit queues, refunds/adjustments/insurance claims/pre-auths, triage/ambulance trips, shifts/payroll, audit/PHI logs, report definitions/runs, KPIs, analytics events, patient report jobs, messages.
 - Exclude intentional singletons/catalogs: one demo tenant/facility/subscription/license; plan/add-on/module catalogs; role/permission catalogs; `_prisma_migrations`.
 
 ## Scenario Coverage
@@ -44,7 +45,7 @@ Owns curated + volume demo seeding for local/demo environments. Never seed produ
 ## Canonical Files
 
 - `backend/scripts/seed-demo-data.js`, `clear-demo-data.js`, `verify-demo-data.js`, `demo-safety.js`
-- `backend/scripts/seeders/seed-volume-pack.js`, `seed-*-pack.js`, `seed-catalog.js`, `seed-runtime.js`, `seed-filler-pack.js`
+- `backend/scripts/seeders/seed-volume-pack.js`, `seed-volume-extended-pack.js`, `seed-*-pack.js`, `seed-catalog.js`, `seed-runtime.js`, `seed-filler-pack.js`
 - `backend/src/config/env.js` (`SEED_RECORD_COUNT`, `SEED_RANDOM_SEED`)
 - `backend/dev-plan/P012_seeder.md`
 

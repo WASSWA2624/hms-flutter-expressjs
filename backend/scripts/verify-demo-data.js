@@ -42,6 +42,7 @@ const assertStatusCoverage = async (modelName, fieldName, requiredStatuses, erro
     where: { deleted_at: null },
     _count: { _all: true },
   });
+  if (!Array.isArray(groups)) return;
   const present = new Set(groups.map((entry) => entry[fieldName]).filter(Boolean));
   const missing = requiredStatuses.filter((status) => !present.has(status));
   if (missing.length > 0) {
@@ -118,6 +119,8 @@ const verifyDemoData = async () => {
     complianceCounts,
     accessControlState,
     lastOfficeState,
+    paymentTotalCount,
+    extendedVolumeCounts,
   ] = await Promise.all([
     prisma.tenant.findMany({
       where: { deleted_at: null },
@@ -240,6 +243,25 @@ const verifyDemoData = async () => {
       prisma.handover.findMany({ where: { deleted_at: null }, select: { status: true } }),
       prisma.custody_snapshot.findMany({ where: { deleted_at: null }, select: { status: true } }),
       prisma.closeout_pack.findMany({ where: { deleted_at: null }, select: { status: true } }),
+    ]),
+    prisma.payment.count({ where: { deleted_at: null } }),
+    Promise.all([
+      prisma.diagnosis.count({ where: { deleted_at: null } }),
+      prisma.vital_sign.count({ where: { deleted_at: null } }),
+      prisma.procedure.count({ where: { deleted_at: null } }),
+      prisma.nursing_note.count({ where: { deleted_at: null } }),
+      prisma.visit_queue.count({ where: { deleted_at: null } }),
+      prisma.refund.count({ where: { deleted_at: null } }),
+      prisma.billing_adjustment.count({ where: { deleted_at: null } }),
+      prisma.insurance_claim.count({ where: { deleted_at: null } }),
+      prisma.pre_authorization.count({ where: { deleted_at: null } }),
+      prisma.triage_assessment.count({ where: { deleted_at: null } }),
+      prisma.report_run.count({ where: { deleted_at: null } }),
+      prisma.kpi_snapshot.count({ where: { deleted_at: null } }),
+      prisma.analytics_event.count({ where: { deleted_at: null } }),
+      prisma.patient_report_job.count({ where: { deleted_at: null } }),
+      prisma.shift.count({ where: { deleted_at: null } }),
+      prisma.message.count({ where: { deleted_at: null } }),
     ]),
   ]);
 
@@ -410,8 +432,24 @@ const verifyDemoData = async () => {
       ['pharmacy_orders', pharmacyOrderCount, highFloor],
       ['dispense_logs', dispenseLogCount, highFloor],
       ['invoices', invoiceCount, highFloor],
+      ['payments', paymentTotalCount, highFloor],
       ['notifications', notificationCount, highFloor],
       ['stock_movements', stockMovementCount, highFloor],
+      ['diagnoses', extendedVolumeCounts[0], highFloor],
+      ['vital_signs', extendedVolumeCounts[1], highFloor],
+      ['procedures', extendedVolumeCounts[2], highFloor],
+      ['nursing_notes', extendedVolumeCounts[3], highFloor],
+      ['visit_queues', extendedVolumeCounts[4], highFloor],
+      ['refunds', extendedVolumeCounts[5], highFloor],
+      ['billing_adjustments', extendedVolumeCounts[6], highFloor],
+      ['insurance_claims', extendedVolumeCounts[7], highFloor],
+      ['pre_authorizations', extendedVolumeCounts[8], highFloor],
+      ['triage_assessments', extendedVolumeCounts[9], highFloor],
+      ['report_runs', extendedVolumeCounts[10], highFloor],
+      ['kpi_snapshots', extendedVolumeCounts[11], highFloor],
+      ['analytics_events', extendedVolumeCounts[12], highFloor],
+      ['patient_report_jobs', extendedVolumeCounts[13], highFloor],
+      ['shifts', extendedVolumeCounts[14], highFloor],
     ];
     for (const [label, count, floor] of highTrafficChecks) {
       if (count < floor) {
@@ -425,6 +463,7 @@ const verifyDemoData = async () => {
       ['emergency_cases', emergencyCaseCount, secondaryFloor],
       ['equipment_work_orders', workOrderCount, secondaryFloor],
       ['mortuary_cases', mortuaryCaseCount, secondaryFloor],
+      ['messages', extendedVolumeCounts[15], Math.min(secondaryFloor, 500)],
     ];
     for (const [label, count, floor] of secondaryChecks) {
       if (count < floor) {
@@ -461,6 +500,24 @@ const verifyDemoData = async () => {
       'mortuary_case',
       'status',
       ['RECEIVED', 'IDENTIFICATION_PENDING', 'IN_STORAGE', 'READY_FOR_RELEASE', 'RELEASED'],
+      errors
+    );
+    await assertStatusCoverage(
+      'visit_queue',
+      'status',
+      ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW'],
+      errors
+    );
+    await assertStatusCoverage(
+      'insurance_claim',
+      'status',
+      ['SUBMITTED', 'APPROVED', 'PARTIAL', 'REJECTED', 'PAID', 'CANCELLED'],
+      errors
+    );
+    await assertStatusCoverage(
+      'report_run',
+      'status',
+      ['QUEUED', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED'],
       errors
     );
   }
