@@ -1271,22 +1271,16 @@ class _PrescriptionRxListTile extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final String heading = clinicalPrescriptionDrugHeading(drug).isEmpty
-        ? (drug?.displayTitle ?? l10n.clinicalPrescriptionMedicineLabel)
-        : clinicalPrescriptionDrugHeading(drug);
-    final String headerMeta = clinicalPrescriptionCompactHeaderMeta(
-      route: line.route,
-      frequency: line.frequency,
+    final String title = clinicalPrescriptionCardTitle(
+      drug: drug,
       quantity: clinicalActionTrimmedOrNull(line.quantityController.text),
-      quantityUnit: line.quantityUnit,
+      fallbackDrugName:
+          drug?.displayTitle ?? l10n.clinicalPrescriptionMedicineLabel,
     );
     final TextStyle? titleStyle = theme.textTheme.titleMedium?.copyWith(
-      fontWeight: AppFontWeight.strong,
-      letterSpacing: 0.2,
-    );
-    final TextStyle? metaStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: colorScheme.onSurfaceVariant,
-      fontWeight: AppFontWeight.emphasis,
+      fontWeight: AppFontWeight.regular,
+      color: colorScheme.onSurface,
+      letterSpacing: 0.1,
     );
 
     return Padding(
@@ -1318,14 +1312,9 @@ class _PrescriptionRxListTile extends StatelessWidget {
             ),
             SizedBox(width: theme.spacing.xs),
             Expanded(
-              child: Text.rich(
-                TextSpan(
-                  children: <InlineSpan>[
-                    TextSpan(text: heading, style: titleStyle),
-                    if (headerMeta.isNotEmpty)
-                      TextSpan(text: ' · $headerMeta', style: metaStyle),
-                  ],
-                ),
+              child: Text(
+                title,
+                style: titleStyle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -1336,9 +1325,9 @@ class _PrescriptionRxListTile extends StatelessWidget {
           AppButton(
             dense: true,
             leadingIcon: Icons.delete_outline,
-            label: l10n.clinicalRequestRemoveItemAction,
-            semanticLabel: l10n.clinicalRequestRemoveItemAction,
-            tooltip: l10n.clinicalRequestRemoveItemAction,
+            label: l10n.commonRemoveActionLabel,
+            semanticLabel: l10n.commonRemoveActionLabel,
+            tooltip: l10n.commonRemoveActionLabel,
             enabled: enabled,
             color: colorScheme.error,
             onPressed: enabled ? onRemove : null,
@@ -1367,84 +1356,12 @@ class _PrescriptionRxListTile extends StatelessWidget {
                 AppSelectField<String>.searchable(
                   value: line.quantityUnit,
                   labelText: l10n.clinicalPrescriptionQuantityUnitLabel,
-                  enabled: enabled,
+                  enabled: false,
                   isDense: true,
                   isRequired: true,
                   options: _unitOptions(_quantityUnits),
                   errorText: line.quantityUnitError,
-                  onChanged: (String? value) {
-                    line.quantityUnit = value;
-                    line.quantityUnitError = null;
-                    onChanged();
-                  },
-                ),
-              ],
-            ),
-            AppResponsiveFieldRow(
-              gap: AppResponsiveFieldRowGap.form,
-              children: <Widget>[
-                AppTextField(
-                  controller: line.doseAmountController,
-                  labelText: l10n.clinicalDoseAmountLabel,
-                  prefixIcon: const Icon(Icons.science_outlined),
-                  enabled: enabled,
-                  isDense: true,
-                  isRequired: true,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  inputFormatters: _decimalFormatters,
-                  errorText: line.doseAmountError,
-                  onChanged: (_) => onFieldEdited(
-                    ClinicalPrescriptionDosingField.doseAmount,
-                  ),
-                ),
-                AppSelectField<String>.searchable(
-                  value: line.doseUnit,
-                  labelText: l10n.clinicalDoseUnitLabel,
-                  enabled: enabled,
-                  isDense: true,
-                  isRequired: true,
-                  options: _unitOptions(_doseUnits),
-                  errorText: line.doseUnitError,
-                  onChanged: (String? value) {
-                    line.doseUnit = value;
-                    line.doseUnitError = null;
-                    onFieldEdited(ClinicalPrescriptionDosingField.doseUnit);
-                  },
-                ),
-              ],
-            ),
-            AppResponsiveFieldRow(
-              gap: AppResponsiveFieldRowGap.form,
-              children: <Widget>[
-                AppSelectField<String>.searchable(
-                  value: line.route,
-                  labelText: l10n.opdMedicationRouteLabel,
-                  enabled: enabled,
-                  isDense: true,
-                  isRequired: true,
-                  options: _medicationRouteOptions(),
-                  errorText: line.routeError,
-                  onChanged: (String? value) {
-                    line.route = value;
-                    line.routeError = null;
-                    onChanged();
-                  },
-                ),
-                AppSelectField<String>.searchable(
-                  value: line.frequency,
-                  labelText: l10n.opdFrequencyLabel,
-                  enabled: enabled,
-                  isDense: true,
-                  isRequired: true,
-                  options: _medicationFrequencyOptions(),
-                  errorText: line.frequencyError,
-                  onChanged: (String? value) {
-                    line.frequency = value;
-                    line.frequencyError = null;
-                    onFieldEdited(ClinicalPrescriptionDosingField.frequency);
-                  },
+                  onChanged: (_) {},
                 ),
               ],
             ),
@@ -1483,6 +1400,70 @@ class _PrescriptionRxListTile extends StatelessWidget {
                     onFieldEdited(
                       ClinicalPrescriptionDosingField.durationUnit,
                     );
+                  },
+                ),
+              ],
+            ),
+            AppResponsiveFieldRow(
+              gap: AppResponsiveFieldRowGap.form,
+              children: <Widget>[
+                AppTextField(
+                  controller: line.doseAmountController,
+                  labelText: l10n.clinicalDoseAmountLabel,
+                  prefixIcon: const Icon(Icons.science_outlined),
+                  enabled: enabled,
+                  isDense: true,
+                  isRequired: true,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: _decimalFormatters,
+                  errorText: line.doseAmountError,
+                  onChanged: (_) => onFieldEdited(
+                    ClinicalPrescriptionDosingField.doseAmount,
+                  ),
+                ),
+                AppSelectField<String>.searchable(
+                  value: line.doseUnit,
+                  labelText: l10n.clinicalDoseUnitLabel,
+                  enabled: false,
+                  isDense: true,
+                  isRequired: true,
+                  options: _unitOptions(_doseUnits),
+                  errorText: line.doseUnitError,
+                  onChanged: (_) {},
+                ),
+              ],
+            ),
+            AppResponsiveFieldRow(
+              gap: AppResponsiveFieldRowGap.form,
+              children: <Widget>[
+                AppSelectField<String>.searchable(
+                  value: line.route,
+                  labelText: l10n.opdMedicationRouteLabel,
+                  enabled: enabled,
+                  isDense: true,
+                  isRequired: true,
+                  options: _medicationRouteOptions(),
+                  errorText: line.routeError,
+                  onChanged: (String? value) {
+                    line.route = value;
+                    line.routeError = null;
+                    onChanged();
+                  },
+                ),
+                AppSelectField<String>.searchable(
+                  value: line.frequency,
+                  labelText: l10n.opdFrequencyLabel,
+                  enabled: enabled,
+                  isDense: true,
+                  isRequired: true,
+                  options: _medicationFrequencyOptions(),
+                  errorText: line.frequencyError,
+                  onChanged: (String? value) {
+                    line.frequency = value;
+                    line.frequencyError = null;
+                    onFieldEdited(ClinicalPrescriptionDosingField.frequency);
                   },
                 ),
               ],
@@ -1629,15 +1610,12 @@ class _PrescriptionLineCard extends StatelessWidget {
                 AppSelectField<String>.searchable(
                   value: line.quantityUnit,
                   labelText: l10n.clinicalPrescriptionQuantityUnitLabel,
-                  enabled: enabled,
+                  enabled: false,
                   isDense: true,
                   isRequired: true,
                   options: _unitOptions(_quantityUnits),
                   validator: AppValidators.requiredValue(l10n.validationRequired),
-                  onChanged: (String? value) {
-                    line.quantityUnit = value;
-                    onChanged();
-                  },
+                  onChanged: (_) {},
                 ),
               ],
             ),
@@ -1661,15 +1639,12 @@ class _PrescriptionLineCard extends StatelessWidget {
                 AppSelectField<String>.searchable(
                   value: line.doseUnit,
                   labelText: l10n.clinicalDoseUnitLabel,
-                  enabled: enabled,
+                  enabled: false,
                   isDense: true,
                   isRequired: true,
                   options: _unitOptions(_doseUnits),
                   validator: AppValidators.requiredValue(l10n.validationRequired),
-                  onChanged: (String? value) {
-                    line.doseUnit = value;
-                    onChanged();
-                  },
+                  onChanged: (_) {},
                 ),
               ],
             ),
