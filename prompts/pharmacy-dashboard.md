@@ -1,77 +1,74 @@
-# Pharmacy and Facility Medicines Pricing Engine
+# Prescribe Dialog Medicine Card Layout
 
-Align pharmacy product pricing with buy, sell, and transfer lanes plus insurance overlays—extend the existing dual sell prices and `price_book` / scheme-offer engine without inventing a parallel pricing stack.
+Simplify the shared Prescribe / Create order medicine cards so each line shows a clear drug identity, stays collapsed by default, and exposes only editable dosing fields—without changing catalog pick, billing, or submit pipelines.
 
 ## Context
 
 **Current behavior**
 
-- **Pharmacy sell (walk-in / OTC):** `drug.unit_price` (UI: “Pharmacy price”), gated by `pricing:pharmacy_write`. Walk-in Create order bills with `billing_entity` / default **PHARMACY**.
-- **Facility sell (encounter / cash tariff):** `facility_pharmacy_offering.unit_price` (UI: “Facility price”), gated by `pricing:facility_write`. Clinical prescribe defaults **FACILITY**.
-- **Insurance differentials:** `price_book_entry` + `scheme_offer` for `catalog_type=DRUG` with `billing_entity` FACILITY|PHARMACY and SELF_PAY|INSURANCE, resolved by `price-resolver` (scheme → book → catalog fallback). Configured mainly from Claims insurance surfaces—not in the drug edit dialog.
-- Catalog/drug dialog exposes the two sell prices; details are read-only. No pharmacy **buy/cost** field; no explicit **pharmacy→facility transfer** price. Dashboard sales often use `qty × drug.unit_price` only.
+- Clinical Prescribe and Pharmacy Create order both use `ClinicalPrescriptionActionDialog` with collapsible line cards (`_PrescriptionRxListTile` / `AppCollapsibleSection`).
+- Screenshots show titles like `DRG-… · Oral · BID · Qty 1 tablet`: identity falls back to drug code/`displayTitle`, and compact meta (route · frequency · qty) is appended in the title.
+- Card chrome: checkbox + title on the left; **Remove item** in `headerActions` (left of expand chevron). Chevron is already rightmost in `AppCollapsibleSection`.
+- Expanded body field order today: Quantity | Quantity unit → Dose amount | Dose unit → Route | Frequency → Duration | Duration unit → Instructions. Quantity unit and dose unit are editable selects.
+- New lines may open expanded (`line.expanded = true` on add). `expanded` defaults to `false`, but add-flow forces open.
+- Helpers already exist: `clinicalPrescriptionDrugHeading`, `clinicalPrescriptionDrugGenericName`, `clinicalPrescriptionDrugStrength`, brand/generic/strength in catalog metadata (`pharmacy_drug_catalog_mapper` / clinical drug DTOs).
+- Toolbar (search, filters, settings, export, Remove selected, Add medicine, Review billing) and footer (Cancel / Prescribe) stay as today unless noted below.
 
 **Intended behavior**
 
-- Model and configure, at drug / inventory entry (and catalog edit), the prices needed for:
-  1. **Pharmacy buy** — what pharmacy pays suppliers (COGS).
-  2. **Pharmacy sell (external)** — walk-in / OTC sell to clients (existing pharmacy retail).
-  3. **Pharmacy sell to facility** — transfer price that is the facility’s buy cost (new; do not overload facility patient tariff).
-  4. **Facility sell** — what the facility charges cash patients (existing facility offering).
-  5. **Insurance overlays** — facility (and pharmacy where configured) differentials via existing price_book / scheme_offer by billing entity.
-- Profit views: pharmacy margin = external sell − buy; facility margin = facility sell − transfer (pharmacy→facility) buy. Walk-in uses PHARMACY path; encounter/prescribe uses FACILITY path.
-- Preserve unauthorized absence of pricing controls; unauthorized chrome must not render.
+- Each card title shows **drug code**, **generic name**, **brand in parentheses** (when present), and **strength**—not route/frequency/qty body text.
+- Cards are **collapsed by default** (including after Add medicine). Expand via chevron only.
+- Header actions: **Remove item** immediately left of the expand chevron; chevron remains rightmost.
+- Expanded form is more compact and reordered: quantity pair → duration pair → dose pair → route/frequency → instructions.
+- Catalog-fixed units (**quantity unit**, **dose unit**) are read-only/inactive; **quantity**, **dose amount**, **duration**, **duration unit**, **route**, **frequency**, and **instructions** remain editable.
+- **Remove selected** stays enabled only when one or more line checkboxes are selected; per-line Remove still removes that line.
 
 **Definitions**
 
-- *Pharmacy buy:* supplier/landed cost used as COGS for pharmacy retail sales.
-- *Pharmacy external sell:* OTC/walk-in sell price (`drug.unit_price` today).
-- *Transfer price:* pharmacy→facility charge (= facility buy); distinct from facility patient sell.
-- *Facility sell:* cash patient tariff (`facility_pharmacy_offering.unit_price` today).
-- *Insurance overlay:* price_book / scheme_offer row for DRUG + billing entity + payment mode.
+- *Card title:* Collapsed header identity string for one medicine line.
+- *Catalog-fixed unit:* Unit seeded from the selected drug (form → quantity unit; strength → dose unit) that must not be user-editable.
+- *Body meta:* Route / frequency / qty summary previously appended after the drug name in the title.
 
 ## Requirements
 
-1. Persist and expose **pharmacy buy** (cost) on the drug/catalog pricing surface with `pricing:pharmacy_write` (or the existing pharmacy pricing permission). Optional on create if product policy allows; validate non-negative.
-2. Persist and expose **transfer price** (pharmacy→facility) as its own field—not by redefining `facility_pharmacy_offering.unit_price`. Gate write with the appropriate pricing permission(s); facility read of transfer for margin context when entitled.
-3. Keep **pharmacy external sell** and **facility sell** as today (pharmacy retail + facility offering); clarify labels/copy so “Facility price” means patient tariff, not transfer.
-4. Keep walk-in / Create order on **PHARMACY** billing entity (external sell + pharmacy insurance book when configured) and clinical prescribe on **FACILITY** (facility sell + facility insurance book). Resolver fallbacks unchanged in spirit: FACILITY → offering then retail; PHARMACY → retail.
-5. Reuse `price_book_entry` / `scheme_offer` for insurance differentials by billing entity; do not build a second insurance price table. Prefer surfacing or linking insurance DRUG tariffs from pharmacy catalog/drug edit when Claims config already owns CRUD.
-6. Wire profit/sales/dashboard Amount paths that claim pharmacy or facility margin to use buy and transfer appropriately (pharmacy: external sell − buy; facility: facility sell − transfer). Do not leave Amount/profit using retail-only when cost lanes exist.
-7. Cover permission, loading, empty, error, success, validation, and visible feedback on pricing edit and order billing resolve. Responsive; theme tokens; light/dark.
-8. Tests: schema/API for buy + transfer; permissions (unauthorized fields absent); resolver PHARMACY vs FACILITY (+ insurance when configured); walk-in vs prescribe billing entity; catalog/drug dialog labels; margin/dashboard math when cost present; clinical callers unchanged aside from shared resolver.
+1. Update card title to: `{code} {generic} ({brand}) {strength}` when those values exist; omit empty parts and parentheses when brand is missing. Prefer catalog `code` / `generic_name` / `brand_name` / `strength` (and existing display helpers). Do not fall back to a bare `DRG-…` id when a human name is available.
+2. Remove body meta (route · frequency · qty) from the title. Keep the title compact (single primary line; ellipsis on overflow). Do not add a subtitle under the title for that meta unless an existing dense pattern already requires it—prefer omission.
+3. Keep checkbox leading; keep **Remove item** in `headerActions` immediately left of the expand chevron; chevron remains the rightmost control. Per-line Remove deletes that line and updates selection state.
+4. Default every new and existing line card to **collapsed**. Stop forcing `expanded = true` on add (or equivalent). Expanding one card must not expand others.
+5. Reorder expanded fields to: **Quantity | Quantity unit** → **Duration | Duration unit** → **Dose amount | Dose unit** → **Route | Frequency** → **Instructions**. Tighten spacing/density so the expanded card is more compact than today without clipping on mobile/tablet/desktop.
+6. Make **quantity unit** and **dose unit** inactive/read-only once seeded from the drug; keep **quantity**, **dose amount**, **duration**, **duration unit**, **route**, **frequency**, and **instructions** editable. Preserve dosing sync/validation that depends on those values.
+7. Preserve dialog shell: search, filters, settings, export, Add medicine, Review billing (when billing enabled), Cancel, Prescribe/Create order submit, and shared use from Clinical and Pharmacy walk-in. **Remove selected** enables only when ≥1 checkbox is selected; unauthorized/disabled write states keep existing gates.
+8. Cover loading/empty/error/success/validation feedback already used by this dialog; theme tokens; light/dark; no overflow of header actions on narrow widths.
+9. Tests: title format (code + generic + brand + strength; no route/qty body); cards start collapsed after add; quantity/dose unit controls not editable; field order; Remove item and Remove selected behavior; existing dosing validation still passes.
 
 ## Constraints
 
-- Reuse price-resolver, pricing permissions, facility offering, and price_book—no parallel drug-price microservice.
-- Do not treat facility patient tariff as the pharmacy→facility transfer price.
-- Do not require encounter on pharmacy walk-in create; do not force FACILITY billing on walk-in.
-- Migrations required for new columns; follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `prompts/.cursor/prompt.mdc`.
+- Reuse `ClinicalPrescriptionActionDialog`, `AppCollapsibleSection`, `clinical_prescription_display.dart` / dosing helpers, and catalog metadata—no second prescribe UI.
+- Do not change pharmacy vs clinical create APIs, catalog picker, billing review payload shape, or anonymous/patient shell outside this card/title/form layout.
+- Follow `.cursor/mandatories.mdc` and `prompts/.cursor/prompt.mdc`. Prefer extending display helpers over one-off string logic in the tile.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | Authorized user sets pharmacy buy and sees it on drug/catalog pricing UI; unauthorized control absent. | R1, R7–R8 |
-| A2 | Authorized user sets transfer (pharmacy→facility) distinct from facility patient sell. | R2–R3, R8 |
-| A3 | Walk-in charges pharmacy external sell (PHARMACY); prescribe uses facility sell (FACILITY) with existing resolver/insurance path. | R3–R5 |
-| A4 | Insurance DRUG overlays still resolve via price_book/scheme_offer by billing entity. | R5 |
-| A5 | Pharmacy/facility margin or Amount paths that depend on cost use buy/transfer when present. | R6 |
-| A6 | Labels distinguish buy, external sell, transfer, and facility patient sell; light/dark + narrow usable. | R3, R7 |
+| A1 | Card title shows code, generic, optional `(brand)`, and strength; no route/frequency/qty body in the title. | R1, R2 |
+| A2 | Chevron is rightmost; Remove item sits immediately left of it; checkbox remains leading. | R3 |
+| A3 | Cards are collapsed by default after add and on open; expand is user-driven. | R4 |
+| A4 | Expanded field order is quantity → duration → dose → route/frequency → instructions; quantity unit and dose unit are inactive. | R5, R6 |
+| A5 | Toolbar/footer and Clinical/Pharmacy shared dialog behavior unchanged aside from card layout; Remove selected requires a selection. | R7 |
+| A6 | Tests/manual checks cover title, collapse, read-only units, order, remove actions, validation, viewports, and themes. | R8, R9 |
 
 ## Relevant Files
 
-- `backend/prisma/schema.prisma` (`drug`, `facility_pharmacy_offering`, `price_book_entry`)
-- `backend/src/lib/billing/price-resolver.js`; `pricing-permissions.js`; `clinical-request-billing.js`
-- `backend/src/modules/pharmacy-workspace/`; `facility-pharmacy-catalog.merge.js` / serializer
-- `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_drug_edit_dialog.dart`
-- `pharmacy_catalog_panel.dart`; `pharmacy_walk_in_order_dialog.dart`; `pharmacy_order_item_pricing_helpers.dart`; `pharmacy_access.dart`
 - `frontend/lib/shared/clinical_actions/dialogs/clinical_prescription_action_dialog.dart`
-- Claims insurance config dialogs (price_book DRUG)
-- Tests: drug edit pricing permissions; order item pricing helpers; facility-pharmacy-catalog / price-book / pricing-permissions BE tests
+- `frontend/lib/shared/clinical_actions/clinical_prescription_display.dart`
+- `frontend/lib/shared/clinical_actions/clinical_prescription_dosing.dart`
+- `frontend/lib/shared/components/app_collapsible_section.dart`
+- `frontend/lib/features/pharmacy/presentation/pharmacy_drug_catalog_mapper.dart`
+- Tests: `frontend/test/shared/clinical_actions/clinical_prescription_action_dialog_test.dart`, display/dosing tests
 
 ## Verification
 
-- BE: migrate buy + transfer; create/update drug with all lanes; resolver PHARMACY vs FACILITY ± insurance; permission denials.
-- FE: catalog/drug dialog shows four conceptual lanes (buy, external sell, transfer, facility sell) with correct gates; walk-in vs prescribe billing entity; unauthorized fields absent.
-- Manual: configure prices → walk-in OTC vs clinical prescribe → invoice/line prices; optional insurance row; light/dark and narrow viewport.
+- FE: title identity; collapsed-by-default; field order; inactive units; Remove item / Remove selected; dosing validation still blocks bad submit.
+- Manual: Clinical Prescribe and Pharmacy Create order—add medicine, expand one card, edit quantity/duration/dose/route/frequency, remove one vs selected, submit still succeeds.
+- Responsive light/dark: header actions and title do not clip; expanded form usable on narrow width.
