@@ -14,7 +14,6 @@ import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_map
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_charts_row.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
-import 'package:intl/intl.dart' hide TextDirection;
 
 /// Pharmacy home charts: most-sold series with period / top-N / chart controls.
 class PharmacyMostSoldCharts extends ConsumerStatefulWidget {
@@ -181,24 +180,28 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     final List<HomeTrendPoint> ranked = _series.hasData
         ? _series.forMetric(active).take(_topN).toList(growable: false)
         : const <HomeTrendPoint>[];
+    final Color seed = Theme.of(context).colorScheme.primary;
     final List<DashboardTrendPointData> chartPoints = ranked.isEmpty
         ? List<DashboardTrendPointData>.generate(
             _topN,
             (int index) => DashboardTrendPointData(
               value: 0,
               label: '#${index + 1}',
+              summaryLabel: '#${index + 1}',
+              color: _mostSoldColor(seed, index),
             ),
             growable: false,
           )
-        : ranked
-            .map(
-              (HomeTrendPoint point) => DashboardTrendPointData(
-                value: point.value,
-                label: point.label,
-                date: point.date,
+        : <DashboardTrendPointData>[
+            for (int index = 0; index < ranked.length; index += 1)
+              DashboardTrendPointData(
+                value: ranked[index].value,
+                label: ranked[index].label,
+                summaryLabel: ranked[index].summaryLabel ?? ranked[index].label,
+                date: ranked[index].date,
+                color: _mostSoldColor(seed, index),
               ),
-            )
-            .toList(growable: false);
+          ];
 
     final DashboardChartsData charts = homeDashboardChartsData(
       dashboard: widget.dashboard.copyWith(
@@ -238,17 +241,11 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     final DashboardChartsData decorated = DashboardChartsData(
       trend: DashboardTrendChartData(
         title: charts.trend.title,
-        subtitle: charts.trend.subtitle,
+        subtitle: _subtitle(active),
         points: chartPoints,
         emptyMessage: '',
         chartStyle: _chartStyle,
         sectionActions: filterActions,
-        footer: ranked.isEmpty
-            ? null
-            : _SoldDrugsList(
-                points: ranked,
-                metric: active,
-              ),
       ),
       distribution: DashboardDistributionChartData(
         title: charts.distribution.title,
@@ -286,6 +283,16 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     };
     return 'Top $_topN by $metricLabel · ${_period.label}';
   }
+}
+
+Color _mostSoldColor(Color seed, int index) {
+  final HSLColor hsl = HSLColor.fromColor(seed);
+  final double hue = (hsl.hue + (index * 42)) % 360;
+  return hsl
+      .withHue(hue)
+      .withSaturation((hsl.saturation + 0.18).clamp(0.35, 0.9))
+      .withLightness(hsl.lightness.clamp(0.35, 0.62))
+      .toColor();
 }
 
 /// Maps order-status mix segment id/label → `/pharmacy?section=` value.
@@ -542,69 +549,5 @@ class _MetricRadioToggle extends StatelessWidget {
       HomeMostSoldMetric.amount => 'Amount',
       HomeMostSoldMetric.profit => 'Profit',
     };
-  }
-}
-
-class _SoldDrugsList extends StatelessWidget {
-  const _SoldDrugsList({required this.points, required this.metric});
-
-  final List<HomeTrendPoint> points;
-  final HomeMostSoldMetric metric;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final NumberFormat compact = NumberFormat.compact();
-    final String unit = switch (metric) {
-      HomeMostSoldMetric.qty => 'qty',
-      HomeMostSoldMetric.amount => 'amount',
-      HomeMostSoldMetric.profit => 'profit',
-    };
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text(
-          'Sold drugs',
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: AppFontWeight.emphasis,
-          ),
-        ),
-        SizedBox(height: theme.spacing.sm),
-        for (int index = 0; index < points.length; index += 1) ...<Widget>[
-          if (index > 0) SizedBox(height: theme.spacing.xs),
-          Row(
-            children: <Widget>[
-              SizedBox(
-                width: 28,
-                child: Text(
-                  '${index + 1}.',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  points[index].label?.trim().isNotEmpty == true
-                      ? points[index].label!.trim()
-                      : points[index].id,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ),
-              Text(
-                '${compact.format(points[index].value)} $unit',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: AppFontWeight.emphasis,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
   }
 }

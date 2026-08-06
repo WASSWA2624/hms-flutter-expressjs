@@ -63,6 +63,7 @@ class AppSectionPanel extends StatelessWidget {
   const AppSectionPanel({
     required this.children,
     this.title,
+    this.subtitle,
     this.description,
     this.leadingIcon,
     this.trailing,
@@ -79,6 +80,9 @@ class AppSectionPanel extends StatelessWidget {
   });
 
   final String? title;
+
+  /// Secondary line under [title] in the section header.
+  final String? subtitle;
   final String? description;
   final IconData? leadingIcon;
   final Widget? trailing;
@@ -119,6 +123,7 @@ class AppSectionPanel extends StatelessWidget {
     if (resolvedTitle != null) {
       return AppCollapsibleSection(
         title: resolvedTitle,
+        subtitle: subtitle,
         description: description,
         titleIcon: leadingIcon,
         headerActions: trailing == null

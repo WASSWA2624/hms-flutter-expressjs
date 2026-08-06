@@ -1065,6 +1065,7 @@ const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
       ? packData.mostSold.qty.map((item, index) => ({
           id: item.id || `drug_${index}`,
           label: item.label || item.id || `Drug ${index + 1}`,
+          summary_label: item.summary_label || item.label || item.id || `Drug ${index + 1}`,
           value: Number(item.value || 0),
           date: null
         }))

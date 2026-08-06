@@ -17,6 +17,8 @@ class DashboardTrendChartPainter extends CustomPainter {
     required this.textStyle,
     required this.labelBuilder,
     this.style = DashboardTrendChartStyle.combined,
+    this.pointColors = const <Color>[],
+    this.showValues = false,
   });
 
   final List<DashboardTrendPointData> points;
@@ -27,6 +29,17 @@ class DashboardTrendChartPainter extends CustomPainter {
   final TextStyle? textStyle;
   final DashboardTrendPointLabelBuilder labelBuilder;
   final DashboardTrendChartStyle style;
+  final List<Color> pointColors;
+  final bool showValues;
+
+  Color _colorFor(int index) {
+    if (index < pointColors.length) {
+      return pointColors[index];
+    }
+    final DashboardTrendPointData? point =
+        index < points.length ? points[index] : null;
+    return point?.color ?? lineColor;
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -34,7 +47,10 @@ class DashboardTrendChartPainter extends CustomPainter {
       return;
     }
 
-    final double chartHeight = math.max(0, size.height - 26);
+    final double labelBand = points.length <= 12 ? 36 : 18;
+    final double valueBand = showValues ? 18 : 0;
+    final double chartHeight = math.max(0, size.height - labelBand - valueBand);
+    final double chartTop = valueBand;
     final double maxValue = math.max(
       1,
       points
@@ -44,16 +60,14 @@ class DashboardTrendChartPainter extends CustomPainter {
     final Paint gridPaint = Paint()
       ..color = gridColor.withValues(alpha: 0.7)
       ..strokeWidth = 1;
-    final Paint barPaint = Paint()..color = barColor;
     final Paint linePaint = Paint()
       ..color = lineColor
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
-    final Paint dotPaint = Paint()..color = lineColor;
     final double slotWidth = size.width / points.length;
-    final double barWidth = math.max(6, math.min(22, slotWidth * 0.42));
+    final double barWidth = math.max(8, math.min(28, slotWidth * 0.48));
     final Path path = Path();
     final bool drawBars =
         style == DashboardTrendChartStyle.combined ||
@@ -63,25 +77,26 @@ class DashboardTrendChartPainter extends CustomPainter {
         style == DashboardTrendChartStyle.line;
 
     for (int i = 0; i <= 3; i += 1) {
-      final double y = chartHeight * (i / 3);
+      final double y = chartTop + chartHeight * (i / 3);
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
 
     for (int index = 0; index < points.length; index += 1) {
       final DashboardTrendPointData point = points[index];
+      final Color pointColor = _colorFor(index);
       final double centerX = slotWidth * index + (slotWidth / 2);
       final double normalized = point.value.toDouble() / maxValue;
-      final double y = chartHeight - (chartHeight * normalized);
+      final double y = chartTop + chartHeight - (chartHeight * normalized);
       if (drawBars) {
         final Rect barRect = Rect.fromLTWH(
           centerX - (barWidth / 2),
           y,
           barWidth,
-          chartHeight - y,
+          chartTop + chartHeight - y,
         );
         canvas.drawRRect(
           RRect.fromRectAndRadius(barRect, const Radius.circular(8)),
-          barPaint,
+          Paint()..color = pointColor.withValues(alpha: 0.82),
         );
       }
 
@@ -91,7 +106,37 @@ class DashboardTrendChartPainter extends CustomPainter {
         } else {
           path.lineTo(centerX, y);
         }
-        canvas.drawCircle(Offset(centerX, y), 3.5, dotPaint);
+        canvas.drawCircle(
+          Offset(centerX, y),
+          4,
+          Paint()..color = pointColor,
+        );
+      }
+
+      if (showValues) {
+        final String valueText = _compactValue(point.value);
+        final TextPainter valuePainter = TextPainter(
+          text: TextSpan(
+            text: valueText,
+            style:
+                textStyle?.copyWith(
+                  color: pointColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 10,
+                ) ??
+                AppFontFamily.style(
+                  color: pointColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          textDirection: TextDirection.ltr,
+          maxLines: 1,
+        )..layout(maxWidth: slotWidth);
+        valuePainter.paint(
+          canvas,
+          Offset(centerX - (valuePainter.width / 2), math.max(0, y - 16)),
+        );
       }
 
       if (points.length <= 12) {
@@ -103,11 +148,15 @@ class DashboardTrendChartPainter extends CustomPainter {
                 AppFontFamily.style(color: labelColor, fontSize: 10),
           ),
           textDirection: TextDirection.ltr,
-          maxLines: 1,
-        )..layout(maxWidth: slotWidth);
+          maxLines: 2,
+          ellipsis: '…',
+        )..layout(maxWidth: math.max(24, slotWidth - 4));
         painter.paint(
           canvas,
-          Offset(centerX - (painter.width / 2), chartHeight + 8),
+          Offset(
+            centerX - (painter.width / 2),
+            chartTop + chartHeight + 6,
+          ),
         );
       }
     }
@@ -117,13 +166,28 @@ class DashboardTrendChartPainter extends CustomPainter {
     }
   }
 
+  String _compactValue(num value) {
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(value % 1000000 == 0 ? 0 : 1)}M';
+    }
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(value % 1000 == 0 ? 0 : 1)}K';
+    }
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
+    }
+    return value.toStringAsFixed(1);
+  }
+
   @override
   bool shouldRepaint(covariant DashboardTrendChartPainter oldDelegate) {
     return oldDelegate.points != points ||
         oldDelegate.barColor != barColor ||
         oldDelegate.lineColor != lineColor ||
         oldDelegate.gridColor != gridColor ||
-        oldDelegate.style != style;
+        oldDelegate.style != style ||
+        oldDelegate.pointColors != pointColors ||
+        oldDelegate.showValues != showValues;
   }
 }
 

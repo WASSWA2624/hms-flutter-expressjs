@@ -305,6 +305,18 @@ const countLowStock = async (where, factor = 1) => {
 };
 
 /** Top drugs by qty / amount / profit for a dispense window (facility-scoped). */
+const formatMostSoldDrugLabel = (drug = {}) => {
+  const generic =
+    String(drug.generic_name || drug.name || '').trim() || 'Unknown';
+  const brand = String(drug.brand_name || '').trim();
+  const strength = String(drug.strength || '').trim();
+  const withBrand = brand ? `${generic} (${brand})` : generic;
+  return strength ? `${withBrand}-${strength}` : withBrand;
+};
+
+const mostSoldSummaryLabel = (drug = {}) =>
+  String(drug.generic_name || drug.name || '').trim() || 'Unknown';
+
 const aggregateMostSoldDrugs = async (
   db,
   dispenseLogWhere,
@@ -333,7 +345,9 @@ const aggregateMostSoldDrugs = async (
               select: {
                 id: true,
                 name: true,
+                brand_name: true,
                 generic_name: true,
+                strength: true,
                 unit_price: true
               }
             }
@@ -350,9 +364,13 @@ const aggregateMostSoldDrugs = async (
       const qty = toNumber(log.quantity_dispensed);
       const unitPrice = toNumber(drug.unit_price);
       const amount = qty * unitPrice;
-      const label =
-        String(drug.name || drug.generic_name || 'Unknown').trim() || 'Unknown';
-      const current = byDrug.get(drug.id) || { id: drug.id, label, qty: 0, amount: 0 };
+      const current = byDrug.get(drug.id) || {
+        id: drug.id,
+        label: formatMostSoldDrugLabel(drug),
+        summary_label: mostSoldSummaryLabel(drug),
+        qty: 0,
+        amount: 0
+      };
       current.qty += qty;
       current.amount += amount;
       byDrug.set(drug.id, current);
@@ -367,6 +385,7 @@ const aggregateMostSoldDrugs = async (
         .map((row) => ({
           id: row.id,
           label: row.label,
+          summary_label: row.summary_label,
           value: Number(row[metric].toFixed(2))
         }));
 
@@ -2199,5 +2218,7 @@ module.exports = {
     normalizeMostSoldLimit,
     aggregateMostSoldDrugs,
     sumDispenseSalesAmount,
+    formatMostSoldDrugLabel,
+    mostSoldSummaryLabel,
   }
 };

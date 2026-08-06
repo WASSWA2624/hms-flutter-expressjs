@@ -168,6 +168,8 @@ final class HomeTrendPointDto {
       date: _date(dateText),
       value: _num(json['value']) ?? 0,
       label: _string(json['label']),
+      summaryLabel:
+          _string(json['summary_label']) ?? _string(json['summaryLabel']),
     );
   }
 }

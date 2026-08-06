@@ -90,11 +90,23 @@ final class DashboardWorklistItemData {
 
 @immutable
 final class DashboardTrendPointData {
-  const DashboardTrendPointData({required this.value, this.label, this.date});
+  const DashboardTrendPointData({
+    required this.value,
+    this.label,
+    this.summaryLabel,
+    this.date,
+    this.color,
+  });
 
   final num value;
+
+  /// Full chart label (e.g. "Paracetamol (Panadol)-500 mg").
   final String? label;
+
+  /// Compact axis / summary label (e.g. generic name).
+  final String? summaryLabel;
   final DateTime? date;
+  final Color? color;
 }
 
 /// How [DashboardTrendChartPainter] / trend panel renders series points.

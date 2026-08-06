@@ -516,12 +516,16 @@ final class HomeTrendPoint {
     required this.date,
     required this.value,
     this.label,
+    this.summaryLabel,
   });
 
   final String id;
   final DateTime? date;
   final num value;
   final String? label;
+
+  /// Short chart-axis label (generic name for most-sold drugs).
+  final String? summaryLabel;
 }
 
 /// Last-month most-sold drug rankings for the pharmacy dashboard bar chart.

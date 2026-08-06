@@ -36,6 +36,33 @@ describe('pharmacy most-sold window helpers', () => {
     expect(day(resolveMostSoldWindow('custom', today))).toBe('2026-08-06');
     expect(day(resolveMostSoldWindow(undefined, today))).toBe('2026-08-06');
   });
+
+  it('formats most-sold drug labels as generic (brand)-strength', () => {
+    const {
+      __private__: { formatMostSoldDrugLabel, mostSoldSummaryLabel },
+    } = require('@modules/dashboard-widget/repositories/dashboard-widget.repository');
+
+    expect(
+      formatMostSoldDrugLabel({
+        generic_name: 'Paracetamol',
+        brand_name: 'Panadol',
+        strength: '500 mg',
+      })
+    ).toBe('Paracetamol (Panadol)-500 mg');
+    expect(
+      formatMostSoldDrugLabel({
+        name: 'Ibuprofen',
+        strength: '400 mg',
+      })
+    ).toBe('Ibuprofen-400 mg');
+    expect(
+      mostSoldSummaryLabel({
+        generic_name: 'Paracetamol',
+        brand_name: 'Panadol',
+        strength: '500 mg',
+      })
+    ).toBe('Paracetamol');
+  });
 });
 
 describe('pharmacy summary sales KPIs', () => {

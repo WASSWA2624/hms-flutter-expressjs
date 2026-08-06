@@ -57,13 +57,14 @@ void main() {
                     body: SingleChildScrollView(
                       child: PharmacyMostSoldCharts(
                         dashboard: _dashboard(
-                          mostSold: HomeMostSoldSeries(
+                        mostSold: HomeMostSoldSeries(
                             qty: <HomeTrendPoint>[
                               HomeTrendPoint(
                                 id: 'para',
                                 date: null,
                                 value: 12,
-                                label: 'Para',
+                                label: 'Paracetamol (Panadol)-500 mg',
+                                summaryLabel: 'Paracetamol',
                               ),
                             ],
                             amount: <HomeTrendPoint>[
@@ -71,7 +72,8 @@ void main() {
                                 id: 'para',
                                 date: null,
                                 value: 120,
-                                label: 'Para',
+                                label: 'Paracetamol (Panadol)-500 mg',
+                                summaryLabel: 'Paracetamol',
                               ),
                             ],
                           ),
@@ -92,21 +94,22 @@ void main() {
         expect(find.text('Today'), findsWidgets);
         expect(find.text('Top 5'), findsWidgets);
         expect(find.text('Bar'), findsWidgets);
-        expect(find.text('Sold drugs'), findsOneWidget);
-        expect(find.text('Para'), findsWidgets);
+        expect(find.text('Sold drugs'), findsNothing);
+        expect(find.textContaining('Para'), findsWidgets);
         expect(find.text('Period'), findsNothing);
         expect(find.text('Chart'), findsNothing);
+        expect(
+          find.textContaining('Top 5 by quantity dispensed'),
+          findsOneWidget,
+        );
 
-        // Controls sit above the chart; sold-drugs list stays under the chart.
+        // Controls sit above the chart.
         final Finder chart = find.byKey(const ValueKey<String>('dashboard-trend-chart'));
         expect(chart, findsOneWidget);
         final double todayBottom =
             tester.getBottomLeft(find.text('Today').first).dy;
         final double chartTop = tester.getTopLeft(chart).dy;
         expect(chartTop, greaterThan(todayBottom));
-
-        final double listTop = tester.getTopLeft(find.text('Sold drugs')).dy;
-        expect(listTop, greaterThan(chartTop));
 
         // Controls share one horizontal band (period / top / chart / metric).
         final double todayY = tester.getCenter(find.text('Today').first).dy;
@@ -171,7 +174,6 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Sold drugs'), findsNothing);
-      expect(find.text('#1'), findsWidgets);
 
       await tester.tap(find.text('Bar'));
       await tester.pumpAndSettle();

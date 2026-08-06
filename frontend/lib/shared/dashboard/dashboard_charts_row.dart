@@ -73,22 +73,13 @@ class _DashboardTrendPanel extends StatelessWidget {
       decoration: dashboardSurfaceCardDecoration(theme, colorScheme),
       child: AppSectionPanel(
         title: chart.title,
+        subtitle: chart.subtitle,
         leadingIcon: Icons.show_chart_outlined,
         trailing: chart.headerTrailing,
         density: AppContentPanelDensity.spacious,
         backgroundColor: Colors.transparent,
         borderColor: Colors.transparent,
         children: <Widget>[
-          if (chart.subtitle != null && chart.subtitle!.trim().isNotEmpty)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                chart.subtitle!.trim(),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
           if (chart.sectionActions.isNotEmpty)
             Align(
               alignment: AlignmentDirectional.centerStart,
@@ -127,9 +118,14 @@ class _DashboardTrendChart extends StatelessWidget {
     final List<DashboardTrendPointData> visiblePoints = points
         .take(100)
         .toList(growable: false);
+    final List<Color> pointColors = <Color>[
+      for (int index = 0; index < visiblePoints.length; index += 1)
+        visiblePoints[index].color ??
+            _fallbackSegmentColor(colorScheme.primary, index),
+    ];
     final double minWidth = math.max(
-      MediaQuery.sizeOf(context).width * 0.4,
-      visiblePoints.length * 28.0,
+      MediaQuery.sizeOf(context).width * 0.45,
+      visiblePoints.length * 72.0,
     );
 
     return Semantics(
@@ -138,61 +134,95 @@ class _DashboardTrendChart extends StatelessWidget {
       child: KeyedSubtree(
         key: const ValueKey<String>('dashboard-trend-chart'),
         child: Column(
-        children: <Widget>[
-          SizedBox(
-            height: 180,
-            width: double.infinity,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: minWidth,
-                height: 180,
-                child: CustomPaint(
-                  painter: DashboardTrendChartPainter(
-                    points: visiblePoints,
-                    style: style,
-                    barColor: colorScheme.primary.withValues(alpha: 0.18),
-                    lineColor: colorScheme.primary,
-                    gridColor: theme.borders.faint,
-                    labelColor: colorScheme.onSurfaceVariant,
-                    textStyle: theme.textTheme.labelSmall,
-                    labelBuilder: _trendPointLabel,
+          children: <Widget>[
+            SizedBox(
+              height: 210,
+              width: double.infinity,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: minWidth,
+                  height: 210,
+                  child: CustomPaint(
+                    painter: DashboardTrendChartPainter(
+                      points: visiblePoints,
+                      style: style,
+                      barColor: colorScheme.primary.withValues(alpha: 0.18),
+                      lineColor: colorScheme.primary,
+                      gridColor: theme.borders.faint,
+                      labelColor: colorScheme.onSurfaceVariant,
+                      textStyle: theme.textTheme.labelSmall,
+                      labelBuilder: _trendPointSummaryLabel,
+                      pointColors: pointColors,
+                      showValues: true,
+                    ),
                   ),
                 ),
               ),
             ),
+            SizedBox(height: theme.spacing.sm),
+            Wrap(
+              spacing: theme.spacing.sm,
+              runSpacing: theme.spacing.xs,
+              children: <Widget>[
+                for (int index = 0; index < visiblePoints.length; index += 1)
+                  _TrendLegendItem(
+                    point: visiblePoints[index],
+                    color: pointColors[index],
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TrendLegendItem extends StatelessWidget {
+  const _TrendLegendItem({required this.point, required this.color});
+
+  final DashboardTrendPointData point;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String name = _trendPointFullLabel(point);
+    final String value = NumberFormat.compact().format(point.value);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(theme.radius.md),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
-          SizedBox(height: theme.spacing.xs),
-          Row(
-            children: <Widget>[
-              if (visiblePoints.isNotEmpty)
-                Flexible(
-                  child: Text(
-                    _trendPointLabel(visiblePoints.first),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              const Spacer(),
-              if (visiblePoints.length > 1)
-                Flexible(
-                  child: Text(
-                    _trendPointLabel(visiblePoints.last),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.end,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-            ],
+          SizedBox(width: theme.spacing.xs),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 220),
+            child: Text(
+              '$name · $value',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: AppFontWeight.emphasis,
+              ),
+            ),
           ),
         ],
-        ),
       ),
     );
   }
@@ -210,13 +240,19 @@ class _DashboardTrendPieChart extends StatelessWidget {
     final List<DashboardTrendPointData> visiblePoints = points
         .take(100)
         .toList(growable: false);
+    final List<Color> pointColors = <Color>[
+      for (int index = 0; index < visiblePoints.length; index += 1)
+        visiblePoints[index].color ??
+            _fallbackSegmentColor(colorScheme.primary, index),
+    ];
     final List<DashboardDistributionSegmentData> segments = <
       DashboardDistributionSegmentData
     >[
       for (int index = 0; index < visiblePoints.length; index += 1)
         DashboardDistributionSegmentData(
-          label: _trendPointLabel(visiblePoints[index]),
+          label: _trendPointFullLabel(visiblePoints[index]),
           value: visiblePoints[index].value,
+          colorHex: _colorToHex(pointColors[index]),
         ),
     ];
     final num total = segments.fold<num>(
@@ -277,11 +313,10 @@ class _DashboardTrendPieChart extends StatelessWidget {
               spacing: theme.spacing.sm,
               runSpacing: theme.spacing.xs,
               children: <Widget>[
-                for (int index = 0; index < segments.length; index += 1)
-                  _DistributionLegendItem(
-                    segment: segments[index],
-                    total: total,
-                    color: _fallbackSegmentColor(colorScheme.primary, index),
+                for (int index = 0; index < visiblePoints.length; index += 1)
+                  _TrendLegendItem(
+                    point: visiblePoints[index],
+                    color: pointColors[index],
                   ),
               ],
             ),
@@ -514,15 +549,46 @@ class _DashboardChartEmptyState extends StatelessWidget {
   }
 }
 
-String _trendPointLabel(DashboardTrendPointData point, {bool compact = false}) {
+String _trendPointFullLabel(DashboardTrendPointData point) {
   final String? label = point.label?.trim();
   if (label != null && label.isNotEmpty) {
     return label;
   }
+  return _trendPointSummaryLabel(point);
+}
+
+String _trendPointSummaryLabel(
+  DashboardTrendPointData point, {
+  bool compact = false,
+}) {
+  final String? summary = point.summaryLabel?.trim();
+  if (summary != null && summary.isNotEmpty) {
+    return summary;
+  }
+  final String? label = point.label?.trim();
+  if (label != null && label.isNotEmpty) {
+    // Prefer the generic portion before " (" when summarizing a full drug label.
+    final int brandStart = label.indexOf(' (');
+    if (brandStart > 0) {
+      return label.substring(0, brandStart);
+    }
+    final int strengthStart = label.indexOf('-');
+    if (strengthStart > 0) {
+      return label.substring(0, strengthStart);
+    }
+    return label;
+  }
   if (point.date == null) {
-    return '0';
+    return compact ? '—' : '0';
   }
   return DateFormat(compact ? 'E' : 'MMM d').format(point.date!.toLocal());
+}
+
+String _colorToHex(Color color) {
+  final int rgb = ((color.r * 255).round() << 16) |
+      ((color.g * 255).round() << 8) |
+      (color.b * 255).round();
+  return '#${rgb.toRadixString(16).padLeft(6, '0')}';
 }
 
 Color _segmentColor(
