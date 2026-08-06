@@ -70,7 +70,7 @@ void main() {
       expect(find.byType(PatientBillingQuickDialog), findsOneWidget);
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.text('CONSULTATION BILLING'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.text('Billing'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.payment), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
@@ -106,7 +106,7 @@ void main() {
     expect(find.text('Payment received'), findsNothing);
   });
 
-  testWidgets('Cancel pops false without calling startOpdFlow', (
+  testWidgets('Close pops false without calling startOpdFlow', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -119,7 +119,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -279,7 +279,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(PatientBillingQuickDialog), findsOneWidget);
     expect(find.text('CONSULTATION BILLING'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Billing'), findsOneWidget);
     expect(find.text('Payment received'), findsOneWidget);
   });

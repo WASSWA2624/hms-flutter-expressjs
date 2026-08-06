@@ -1349,9 +1349,9 @@
   "@commonGoHomeActionLabel": {
     "description": "Label for actions that navigate back to the dashboard route."
   },
-  "commonCancelActionLabel": "Cancel",
+  "commonCancelActionLabel": "Close",
   "@commonCancelActionLabel": {
-    "description": "Label for actions that dismiss the current dialog or flow."
+    "description": "Label for actions that dismiss the current dialog or flow (Close)."
   },
   "workflowStepHelpActionLabel": "Help",
   "@workflowStepHelpActionLabel": {

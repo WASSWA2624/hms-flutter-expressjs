@@ -98,7 +98,7 @@ void main() {
     expect(find.byType(ClinicalFollowUpActionDialog), findsOneWidget);
     expect(find.text('FOLLOW UP'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Save follow-up'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
     expect(find.byType(AppDateField), findsOneWidget);
     expect(find.byType(AppTimeField), findsOneWidget);
     expect(find.byIcon(AppActionIcons.followUp), findsWidgets);
@@ -106,7 +106,7 @@ void main() {
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
   });
 
-  testWidgets('Cancel pops false without creating a follow-up', (
+  testWidgets('Close pops false without creating a follow-up', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -123,7 +123,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -309,7 +309,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('FOLLOW UP'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Save follow-up'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
     expect(find.byType(AppPhoneField), findsOneWidget);
     expect(find.byType(AppEmailField), findsOneWidget);
   });

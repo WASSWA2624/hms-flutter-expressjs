@@ -370,7 +370,7 @@ void main() {
     expect(find.byType(AppDialog), findsOneWidget);
     verify(() => repository.getAdmissionDetail('adm-pending')).called(1);
     // Planning dialog uses Save plan / disposition chrome, not detail title alone.
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets('unauthorized write hides plan next-action and keeps print', (

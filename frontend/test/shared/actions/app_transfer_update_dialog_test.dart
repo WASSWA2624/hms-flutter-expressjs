@@ -30,7 +30,7 @@ void main() {
     expect(find.byType(AppTransferUpdateDialog), findsOneWidget);
     expect(find.byType(AppDialog), findsOneWidget);
     expect(find.text('MANAGE TRANSFER'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Edit'), findsOneWidget);
     expect(find.byIcon(AppActionIcons.transfer), findsWidgets);
     expect(find.byIcon(AppActionIcons.edit), findsWidgets);
@@ -42,7 +42,7 @@ void main() {
     expect(dialog.pinActionsToBottom, isTrue);
   });
 
-  testWidgets('Cancel pops false without calling onSubmit', (
+  testWidgets('Close pops false without calling onSubmit', (
     WidgetTester tester,
   ) async {
     var submitCount = 0;
@@ -57,7 +57,7 @@ void main() {
       },
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -99,7 +99,7 @@ void main() {
     expect(dialog.closeEnabled, isFalse);
 
     final AppButton cancel = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Cancel'),
+      find.widgetWithText(AppButton, 'Close'),
     );
     expect(cancel.enabled, isFalse);
 

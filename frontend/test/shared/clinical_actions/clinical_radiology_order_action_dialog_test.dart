@@ -75,7 +75,7 @@ void main() {
       expect(find.byType(AppCopyableIdentifier), findsNWidgets(2));
       expect(find.text('Add study'), findsOneWidget);
       expect(find.text('Review billing'), findsOneWidget);
-      expect(find.text('Cancel'), findsNothing);
+      expect(find.text('Close'), findsNothing);
     },
   );
 
@@ -209,7 +209,7 @@ void main() {
     await tester.tap(find.text('Add study'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Cancel'), findsNothing);
+    expect(find.text('Close'), findsNothing);
     expect(find.text('0 selected'), findsNothing);
     expect(find.text('Confirm selected studies'), findsOneWidget);
     expect(find.text('#'), findsNothing);

@@ -24,7 +24,7 @@ void main() {
       expect(find.byType(RegisterNewPatientDialog), findsOneWidget);
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.text('REGISTER NEW PATIENT'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.text('Register patient'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.personAdd), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
@@ -45,7 +45,7 @@ void main() {
     expect(find.text('REGISTER NEW PATIENT'), findsOneWidget);
   });
 
-  testWidgets('Cancel pops null without calling onSubmit', (
+  testWidgets('Close pops null without calling onSubmit', (
     WidgetTester tester,
   ) async {
     var submitCount = 0;
@@ -60,7 +60,7 @@ void main() {
       },
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isNull);
@@ -252,7 +252,7 @@ void main() {
     expect(dialog.closeEnabled, isFalse);
 
     final AppButton cancel = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Cancel'),
+      find.widgetWithText(AppButton, 'Close'),
     );
     expect(cancel.enabled, isFalse);
 
@@ -279,7 +279,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(RegisterNewPatientDialog), findsOneWidget);
     expect(find.text('REGISTER NEW PATIENT'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Register patient'), findsOneWidget);
   });
 }

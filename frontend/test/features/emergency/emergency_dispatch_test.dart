@@ -156,7 +156,7 @@ void main() {
 
       expect(submitted?.ambulanceId, 'AMB000001');
       expect(submitted?.status, 'DISPATCHED');
-      expect(_button(tester, 'Cancel').enabled, isFalse);
+      expect(_button(tester, 'Close').enabled, isFalse);
       expect(_button(tester, 'Dispatch').isLoading, isTrue);
 
       completer.complete(const AppFailure.network());
@@ -164,7 +164,7 @@ void main() {
 
       expect(find.byType(DispatchDialog), findsOneWidget);
       expect(find.text('Ambulance 1 | AMB000001'), findsOneWidget);
-      expect(_button(tester, 'Cancel').enabled, isTrue);
+      expect(_button(tester, 'Close').enabled, isTrue);
     },
   );
 

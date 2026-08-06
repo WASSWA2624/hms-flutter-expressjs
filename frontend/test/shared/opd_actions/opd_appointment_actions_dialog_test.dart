@@ -63,7 +63,7 @@ void main() {
       find.widgetWithText(AppButton, 'Start OPD encounter'),
       findsOneWidget,
     );
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byType(AppWorkflowStepper), findsOneWidget);
     expect(find.text('Current step'), findsOneWidget);
@@ -124,7 +124,7 @@ void main() {
     expect(find.text('Start OPD encounter'), findsNothing);
     expect(find.text('Reschedule'), findsNothing);
     expect(find.text('Cancel appointment'), findsNothing);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets('permission gate hides appointment mutations when denied', (
@@ -147,7 +147,7 @@ void main() {
     expect(find.text('Cancel appointment'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Start OPD encounter'), findsNothing);
     expect(find.text('Quick actions'), findsNothing);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets('doctor front-desk roles can see Start OPD encounter', (
@@ -198,7 +198,7 @@ void main() {
     );
   });
 
-  testWidgets('Cancel pops false without mutating the appointment', (
+  testWidgets('Close pops false without mutating the appointment', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -212,7 +212,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -238,7 +238,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('RESCHEDULE'), findsOneWidget);
-    expect(find.text('Cancel'), findsWidgets);
+    expect(find.text('Close'), findsWidgets);
   });
 
   testWidgets('Cancel appointment opens the canonical child dialog', (
@@ -249,7 +249,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('CANCEL APPOINTMENT'), findsOneWidget);
-    expect(find.text('Cancel'), findsWidgets);
+    expect(find.text('Close'), findsWidgets);
   });
 
   testWidgets('remains usable on a compact dark high-text-scale surface', (
@@ -269,7 +269,7 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byType(AppQuickActions), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 }
 

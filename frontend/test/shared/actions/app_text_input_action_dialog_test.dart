@@ -28,7 +28,7 @@ void main() {
                         description: 'WARNING: Permanently deleting Joking.',
                         fieldLabel: "Type 'Joking' to confirm permanent delete",
                         submitLabel: 'Permanent delete',
-                        cancelLabel: 'Cancel',
+                        cancelLabel: 'Close',
                         requiredMessage: 'Required',
                         confirmExactValue: 'Joking',
                         confirmMismatchMessage:

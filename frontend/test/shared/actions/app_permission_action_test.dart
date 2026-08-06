@@ -146,7 +146,7 @@ void main() {
       expect(find.text('DELETE ORDER?'), findsOneWidget);
       expect(find.text('This cannot be undone.'), findsOneWidget);
 
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.text('Close'));
       await tester.pumpAndSettle();
       expect(pressed, 0);
       expect(find.text('DELETE ORDER?'), findsNothing);
@@ -331,7 +331,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('This cannot be undone.'), findsOneWidget);
 
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.text('Close'));
       await tester.pumpAndSettle();
 
       expect(calls, 0);

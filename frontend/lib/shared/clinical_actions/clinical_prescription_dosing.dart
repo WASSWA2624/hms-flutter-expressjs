@@ -41,20 +41,39 @@ class ClinicalPrescriptionDosingSyncResult {
   bool get isConsistent => inconsistency == null;
 }
 
-/// Parses strings like `500 mg`, `400mg`, `1.5 g`.
+/// Parses strings like `500 mg`, `400mg`, `1.5 g`, `1 mg/mL`, `400 mg/5 mL`.
+///
+/// For concentrations, uses the first amount/unit pair (e.g. `1` + `mg` from
+/// `1 mg/mL`) so dose fields can always be seeded.
 ClinicalParsedStrength? clinicalParseDrugStrength(String? raw) {
   final String? normalized = raw?.trim();
   if (normalized == null || normalized.isEmpty) {
     return null;
   }
-  final Match? match = RegExp(
+  final Match? exact = RegExp(
     r'^\s*(\d+(?:\.\d+)?)\s*([A-Za-zµu]+)\s*$',
   ).firstMatch(normalized);
-  if (match == null) {
-    return null;
+  if (exact != null) {
+    return _parsedStrength(exact.group(1)!, exact.group(2)!);
   }
-  final num? amount = num.tryParse(match.group(1)!);
-  final String unit = _normalizeUnit(match.group(2)!);
+  final Match? concentration = RegExp(
+    r'(\d+(?:\.\d+)?)\s*([A-Za-zµu]+)\s*/',
+  ).firstMatch(normalized);
+  if (concentration != null) {
+    return _parsedStrength(concentration.group(1)!, concentration.group(2)!);
+  }
+  final Match? loose = RegExp(
+    r'(\d+(?:\.\d+)?)\s*([A-Za-zµu]+)',
+  ).firstMatch(normalized);
+  if (loose != null) {
+    return _parsedStrength(loose.group(1)!, loose.group(2)!);
+  }
+  return null;
+}
+
+ClinicalParsedStrength? _parsedStrength(String amountRaw, String unitRaw) {
+  final num? amount = num.tryParse(amountRaw);
+  final String unit = _normalizeUnit(unitRaw);
   if (amount == null || amount <= 0 || unit.isEmpty) {
     return null;
   }
@@ -114,22 +133,49 @@ String? clinicalPrescriptionQuantityUnitFromForm(String? form) {
       return unit;
     }
   }
-  if (normalized.contains('capsule') || normalized.contains('cap')) {
+  if (normalized.contains('capsule') ||
+      RegExp(r'\bcaps?\b').hasMatch(normalized)) {
     return 'capsule';
   }
-  if (normalized.contains('tablet') || normalized.contains('tab')) {
+  if (normalized.contains('tablet') ||
+      RegExp(r'\btabs?\b').hasMatch(normalized)) {
     return 'tablet';
   }
   if (normalized.contains('vial')) {
     return 'vial';
   }
-  if (normalized.contains('ampoule') || normalized.contains('ampule')) {
+  if (normalized.contains('ampoule') ||
+      normalized.contains('ampule') ||
+      RegExp(r'\bamps?\b').hasMatch(normalized)) {
     return 'ampoule';
+  }
+  if (normalized.contains('injection') ||
+      normalized.contains('injectable') ||
+      RegExp(r'\binj\b').hasMatch(normalized)) {
+    return 'ampoule';
+  }
+  if (normalized.contains('syrup') ||
+      normalized.contains('suspension') ||
+      normalized.contains('solution') ||
+      normalized.contains('liquid') ||
+      normalized.contains('elixir')) {
+    return 'bottle';
+  }
+  if (normalized.contains('cream') ||
+      normalized.contains('ointment') ||
+      normalized.contains('gel') ||
+      normalized.contains('lotion')) {
+    return 'tube';
+  }
+  if (normalized.contains('inhaler') ||
+      normalized.contains('spray') ||
+      normalized.contains('puff')) {
+    return 'dose';
   }
   if (normalized.contains('bottle')) {
     return 'bottle';
   }
-  if (normalized.contains('sachet')) {
+  if (normalized.contains('sachet') || normalized.contains('powder')) {
     return 'sachet';
   }
   if (normalized.contains('patch')) {
@@ -139,6 +185,93 @@ String? clinicalPrescriptionQuantityUnitFromForm(String? form) {
     return 'drop';
   }
   if (normalized == 'ml' || normalized.contains('millilit')) {
+    return 'mL';
+  }
+  return null;
+}
+
+/// Resolves a dispense quantity unit from catalog form/strength metadata.
+///
+/// Always returns a known unit so the prescribe card can prefill quantity unit.
+String clinicalPrescriptionResolveQuantityUnit({
+  String? form,
+  String? strength,
+  String? secondaryText,
+}) {
+  return clinicalPrescriptionQuantityUnitFromForm(form) ??
+      clinicalPrescriptionQuantityUnitFromForm(secondaryText) ??
+      clinicalPrescriptionQuantityUnitFromStrength(strength) ??
+      'dose';
+}
+
+/// Infers quantity unit from strength text when form is missing.
+String? clinicalPrescriptionQuantityUnitFromStrength(String? strength) {
+  final String normalized = (strength ?? '').trim().toLowerCase();
+  if (normalized.isEmpty) {
+    return null;
+  }
+  if (normalized.contains('/ml') ||
+      normalized.contains('/ ml') ||
+      normalized.contains('mg/ml') ||
+      normalized.contains('iu/ml')) {
+    return 'ampoule';
+  }
+  if (RegExp(r'\bml\b').hasMatch(normalized) &&
+      !normalized.contains('mg') &&
+      !normalized.contains('mcg')) {
+    return 'mL';
+  }
+  if (normalized.contains('puff')) {
+    return 'dose';
+  }
+  if (normalized.contains('drop')) {
+    return 'drop';
+  }
+  if (normalized.contains('patch')) {
+    return 'patch';
+  }
+  if (normalized.contains('mg') ||
+      normalized.contains('mcg') ||
+      normalized.contains('µg') ||
+      RegExp(r'\bg\b').hasMatch(normalized)) {
+    return 'tablet';
+  }
+  return null;
+}
+
+/// Canonicalizes a dose unit onto known prescribe dose-unit tokens.
+String? clinicalPrescriptionCanonicalDoseUnit(String? unit) {
+  final String normalized = (unit ?? '').trim();
+  if (normalized.isEmpty) {
+    return null;
+  }
+  final String key = normalized.toLowerCase();
+  const List<String> known = <String>[
+    'mg',
+    'g',
+    'mcg',
+    'mL',
+    'IU',
+    'unit',
+    'tablet',
+    'capsule',
+    'drop',
+    'puff',
+    'sachet',
+    'patch',
+  ];
+  for (final String candidate in known) {
+    if (candidate.toLowerCase() == key) {
+      return candidate;
+    }
+  }
+  if (key == 'µg' || key == 'ug') {
+    return 'mcg';
+  }
+  if (key == 'iu') {
+    return 'IU';
+  }
+  if (key == 'ml') {
     return 'mL';
   }
   return null;

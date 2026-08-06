@@ -20,7 +20,7 @@ void main() {
   );
 
   testWidgets(
-    'uses AppConfirmActionDialog with Cancel and Open inpatient admission',
+    'uses AppConfirmActionDialog with Close and Open inpatient admission',
     (WidgetTester tester) async {
       await _pumpDialog(tester, flow: flow);
 
@@ -35,7 +35,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.text('Open inpatient admission'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.bed), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
@@ -45,18 +45,18 @@ void main() {
       expect(dialog.scrollable, isTrue);
       expect(dialog.pinActionsToBottom, isTrue);
 
-      // Footer order: Cancel (secondary) then Open admission (primary).
+      // Footer order: primary then Close — was Cancel (secondary) then Open admission (primary).
       final List<AppButton> actions = tester
           .widgetList<AppButton>(find.byType(AppButton))
           .where(
             (AppButton button) =>
-                button.label == 'Cancel' ||
+                button.label == 'Close' ||
                 button.label == 'Open inpatient admission',
           )
           .toList();
       expect(actions, hasLength(2));
-      expect(actions.first.label, 'Cancel');
-      expect(actions.last.label, 'Open inpatient admission');
+      expect(actions.first.label, 'Open inpatient admission');
+      expect(actions.last.label, 'Close');
     },
   );
 
@@ -82,7 +82,7 @@ void main() {
     expect(result, isTrue);
   });
 
-  testWidgets('Cancel pops false without navigating', (WidgetTester tester) async {
+  testWidgets('Close pops false without navigating', (WidgetTester tester) async {
     bool? result;
 
     await _pumpDialog(
@@ -91,7 +91,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    final Finder cancel = find.widgetWithText(AppButton, 'Cancel');
+    final Finder cancel = find.widgetWithText(AppButton, 'Close');
     await tester.ensureVisible(cancel);
     await tester.tap(cancel);
     await tester.pumpAndSettle();
@@ -138,7 +138,7 @@ void main() {
     );
 
     expect(find.byType(AppConfirmActionDialog), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Open inpatient admission'), findsOneWidget);
     expect(find.byType(AppDialog), findsOneWidget);
   });

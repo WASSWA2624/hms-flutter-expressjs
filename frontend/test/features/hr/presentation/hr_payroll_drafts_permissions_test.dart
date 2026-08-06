@@ -547,7 +547,7 @@ void main() {
       expect(find.text('Process payroll'), findsWidgets);
       expect(find.text('Quick actions'), findsNothing);
 
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.text('Close'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('run-1').first);

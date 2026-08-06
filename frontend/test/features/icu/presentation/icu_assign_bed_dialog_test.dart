@@ -219,7 +219,7 @@ void main() {
 
       expect(find.byType(ClinicalAdmissionActionDialog), findsOneWidget);
       expect(find.text('ASSIGN ICU BED'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.text('Assign ICU bed'), findsWidgets);
       expect(find.text('Ward'), findsOneWidget);
       expect(find.text('Room'), findsOneWidget);
@@ -255,7 +255,7 @@ void main() {
       await tester.tap(find.text('Assign ICU bed').last);
       await tester.pump();
 
-      expect(_button(tester, 'Cancel').enabled, isFalse);
+      expect(_button(tester, 'Close').enabled, isFalse);
       expect(_button(tester, 'Assign ICU bed').isLoading, isTrue);
 
       completer.complete(const AppFailure.network());
@@ -263,7 +263,7 @@ void main() {
 
       expect(find.byType(ClinicalAdmissionActionDialog), findsOneWidget);
       expect(find.text('ASSIGN ICU BED'), findsOneWidget);
-      expect(_button(tester, 'Cancel').enabled, isTrue);
+      expect(_button(tester, 'Close').enabled, isTrue);
     },
   );
 }

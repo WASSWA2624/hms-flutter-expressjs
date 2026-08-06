@@ -48,7 +48,7 @@ void main() {
     expect(find.byType(CorrectStageDialog), findsOneWidget);
     expect(find.text('CORRECT STAGE'), findsOneWidget);
     expect(find.text('Correct stage'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.text('PATIENT EXAMPLE'), findsNothing);
     expect(find.byType(AppSelectField<String>), findsOneWidget);
@@ -59,7 +59,7 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsNothing);
   });
 
-  testWidgets('Cancel pops false without mutating the stage', (
+  testWidgets('Close pops false without mutating the stage', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -73,7 +73,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -214,7 +214,7 @@ void main() {
     final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
     expect(dialog.closeEnabled, isFalse);
     final AppButton cancel = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Cancel'),
+      find.widgetWithText(AppButton, 'Close'),
     );
     expect(cancel.enabled, isFalse);
     final AppButton submit = tester.widget<AppButton>(
@@ -247,7 +247,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('CORRECT STAGE'), findsOneWidget);
     expect(find.text('Correct stage'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 }
 

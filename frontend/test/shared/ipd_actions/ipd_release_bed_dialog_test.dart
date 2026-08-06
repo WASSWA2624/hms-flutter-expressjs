@@ -11,7 +11,7 @@ import 'package:hosspi_hms/shared/ipd_actions/ipd_actions.dart';
 
 void main() {
   testWidgets(
-    'uses AppConfirmActionDialog with Cancel and Release bed',
+    'uses AppConfirmActionDialog with Close and Release bed',
     (WidgetTester tester) async {
       await _pumpDialog(tester);
 
@@ -23,7 +23,7 @@ void main() {
         find.text('Release the current bed assignment for this admission?'),
         findsOneWidget,
       );
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.text('Release bed'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.cleaning), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
@@ -70,7 +70,7 @@ void main() {
     expect(result, isTrue);
   });
 
-  testWidgets('Cancel pops false without confirming', (WidgetTester tester) async {
+  testWidgets('Close pops false without confirming', (WidgetTester tester) async {
     bool? result;
     var confirmed = false;
 
@@ -83,7 +83,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    final Finder cancel = find.widgetWithText(AppButton, 'Cancel');
+    final Finder cancel = find.widgetWithText(AppButton, 'Close');
     await tester.ensureVisible(cancel);
     await tester.tap(cancel);
     await tester.pumpAndSettle();
@@ -111,7 +111,7 @@ void main() {
     expect(result, isNull);
     expect(find.byType(AppConfirmActionDialog), findsOneWidget);
     expect(find.text('Release bed'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets('blocks dismiss while release is in flight', (
@@ -130,7 +130,7 @@ void main() {
     expect(dialog.closeEnabled, isFalse);
 
     final AppButton cancel = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Cancel'),
+      find.widgetWithText(AppButton, 'Close'),
     );
     expect(cancel.enabled, isFalse);
 
@@ -153,7 +153,7 @@ void main() {
     );
 
     expect(find.byType(AppConfirmActionDialog), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Release bed'), findsOneWidget);
     expect(find.byType(AppDialog), findsOneWidget);
   });

@@ -438,7 +438,7 @@ void main() {
 
     await tester.tap(find.text('Quinn Queue'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Cancel'));
+    await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
 
     expect(find.text('QUEUE ACTIONS'), findsNothing);

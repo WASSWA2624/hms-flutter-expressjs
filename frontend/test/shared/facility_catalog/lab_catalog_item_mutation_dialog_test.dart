@@ -26,7 +26,7 @@ void main() {
       expect(find.text('Add reference range'), findsOneWidget);
       expect(find.text('All ages'), findsWidgets);
       expect(find.widgetWithText(AppButton, 'Save'), findsOneWidget);
-      expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
       expect(
         find.byWidgetPredicate(
           (Widget widget) =>
@@ -492,12 +492,12 @@ void main() {
 
       expect(find.text('Checking similarity'), findsWidgets);
       final AppButton cancel = tester.widget<AppButton>(
-        find.widgetWithText(AppButton, 'Cancel'),
+        find.widgetWithText(AppButton, 'Close'),
       );
       expect(cancel.onPressed, isNotNull);
       expect(cancel.enabled, isTrue);
 
-      await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+      await tester.tap(find.widgetWithText(AppButton, 'Close'));
       await tester.pump();
       // Flush the similarity paint delay so no pending timers remain.
       await tester.pump(const Duration(seconds: 2));

@@ -405,7 +405,7 @@ void main() {
     expect(find.text('REVERT WORKFLOW?'), findsOneWidget);
     expect(find.text('This rolls the order back one step.'), findsOneWidget);
 
-    await tester.tap(find.text('Cancel'));
+    await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
     expect(pressed, isFalse);
   });

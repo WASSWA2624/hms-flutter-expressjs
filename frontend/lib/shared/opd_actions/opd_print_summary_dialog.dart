@@ -286,7 +286,7 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
           ),
         ],
       ),
-      // Secondary (copy) → Cancel → primary (print). Client-side only; no patch.
+      // Copy → print → Close (extreme right). Client-side only; no patch.
       actions: <Widget>[
         AppReportActionButton.copy(
           label: l10n.opdCopySummaryAction,
@@ -294,12 +294,6 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
           enabled: canExport,
           isLoading: _isCopying,
           onPressed: canExport ? () => _copySummary(summaryText) : null,
-        ),
-        AppButton.secondary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isBusy,
-          onPressed: _isBusy ? null : () => Navigator.of(context).pop(false),
         ),
         AppReportActionButton.print(
           label: l10n.opdPrintAction,
@@ -309,6 +303,12 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
           onPressed: canExport
               ? () => _printSummaryDocument(selected)
               : null,
+        ),
+        AppButton.secondary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isBusy,
+          onPressed: _isBusy ? null : () => Navigator.of(context).pop(false),
         ),
       ],
     );

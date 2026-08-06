@@ -71,7 +71,7 @@ void main() {
       expect(find.byType(AppSelectField<String>), findsNothing);
       expect(find.text('SELECT PATIENT'), findsOneWidget);
       expect(find.text('Ada Lovelace'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.text('Select'), findsOneWidget);
       expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
       expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
@@ -106,7 +106,7 @@ void main() {
       onSelected: (Patient? value) => selected = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsNothing);

@@ -539,7 +539,7 @@ void main() {
       findsNothing,
     );
     expect(
-      find.descendant(of: find.byType(AppDialog), matching: find.text('Cancel')),
+      find.descendant(of: find.byType(AppDialog), matching: find.text('Close')),
       findsOneWidget,
     );
     expect(

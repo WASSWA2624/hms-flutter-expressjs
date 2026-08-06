@@ -44,7 +44,9 @@ class ClinicalFreeTextActionDialog extends StatefulWidget {
   final bool autofocus;
   final bool isRequired;
 
-  /// When true, Cancel is rendered to the right of the primary submit button.
+  /// When true, Close is rendered to the right of the primary in the list.
+  /// Prefer false: author [Close, Primary] so [AppDialog] reverses two-action
+  /// footers and shows Close extreme-right.
   final bool cancelAfterPrimary;
   final Future<AppFailure?> Function(String value) onSubmit;
 

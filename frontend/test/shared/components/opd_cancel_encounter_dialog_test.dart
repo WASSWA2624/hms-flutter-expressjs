@@ -36,7 +36,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.widgetWithText(AppButton, 'Cancel encounter'), findsOneWidget);
-      expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.delete), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
 
@@ -59,7 +59,7 @@ void main() {
     expect(find.text('JANE DOE'), findsNothing);
   });
 
-  testWidgets('Cancel pops false without confirming', (WidgetTester tester) async {
+  testWidgets('Close pops false without confirming', (WidgetTester tester) async {
     bool? result;
     var confirmed = false;
 
@@ -72,7 +72,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    final Finder cancel = find.widgetWithText(AppButton, 'Cancel');
+    final Finder cancel = find.widgetWithText(AppButton, 'Close');
     await tester.ensureVisible(cancel);
     await tester.tap(cancel);
     await tester.pumpAndSettle();
@@ -204,7 +204,7 @@ void main() {
     expect(result, isNull);
     expect(find.byType(AppDialog), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Cancel encounter'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
   });
 
   testWidgets('blocks dismiss while cancel is in flight', (
@@ -223,7 +223,7 @@ void main() {
     expect(dialog.closeEnabled, isFalse);
 
     final AppButton cancel = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Cancel'),
+      find.widgetWithText(AppButton, 'Close'),
     );
     expect(cancel.enabled, isFalse);
 
@@ -248,7 +248,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('CANCEL ENCOUNTER'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Cancel encounter'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
   });
 }
 

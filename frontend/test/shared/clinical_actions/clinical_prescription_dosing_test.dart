@@ -15,9 +15,44 @@ void main() {
       expect(parsed?.unit, 'mg');
     });
 
+    test('parses concentration strengths for dose seeding', () {
+      final ClinicalParsedStrength? perMl = clinicalParseDrugStrength(
+        '1 mg/mL',
+      );
+      expect(perMl?.amount, 1);
+      expect(perMl?.unit, 'mg');
+
+      final ClinicalParsedStrength? compound = clinicalParseDrugStrength(
+        '400 mg/5 mL',
+      );
+      expect(compound?.amount, 400);
+      expect(compound?.unit, 'mg');
+    });
+
     test('returns null for unparsable strength', () {
       expect(clinicalParseDrugStrength('variable'), isNull);
       expect(clinicalParseDrugStrength(''), isNull);
+    });
+  });
+
+  group('clinicalPrescriptionResolveQuantityUnit', () {
+    test('maps injection form and concentration strength', () {
+      expect(
+        clinicalPrescriptionResolveQuantityUnit(form: 'Injection'),
+        'ampoule',
+      );
+      expect(
+        clinicalPrescriptionResolveQuantityUnit(strength: '1 mg/mL'),
+        'ampoule',
+      );
+      expect(
+        clinicalPrescriptionResolveQuantityUnit(form: 'Tablet'),
+        'tablet',
+      );
+      expect(
+        clinicalPrescriptionResolveQuantityUnit(),
+        'dose',
+      );
     });
   });
 

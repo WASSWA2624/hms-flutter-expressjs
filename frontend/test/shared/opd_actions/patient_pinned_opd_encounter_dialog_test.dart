@@ -104,7 +104,7 @@ void main() {
       expect(find.textContaining('Ada Lovelace'), findsWidgets);
       expect(find.text('Search patient *'), findsNothing);
       expect(find.text('Start encounter'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
       expect(find.byIcon(AppActionIcons.start), findsWidgets);
       expect(
@@ -116,11 +116,11 @@ void main() {
           .widgetList<AppButton>(find.byType(AppButton))
           .where(
             (AppButton button) =>
-                button.label == 'Cancel' || button.label == 'Start encounter',
+                button.label == 'Close' || button.label == 'Start encounter',
           );
       expect(footerButtons.map((AppButton button) => button.label).toList(), [
-        'Cancel',
         'Start encounter',
+        'Close',
       ]);
 
       final ModalRoute<Object?>? route = ModalRoute.of(
@@ -186,7 +186,7 @@ void main() {
       expect(find.text('START OPD ENCOUNTER'), findsOneWidget);
       expect(find.byType(PatientPinnedOpdEncounterDialog), findsNothing);
 
-      await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+      await tester.tap(find.widgetWithText(AppButton, 'Close'));
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsNothing);
@@ -276,7 +276,7 @@ void main() {
     expect(find.byType(AppDialog), findsOneWidget);
     expect(find.byType(AppFormInformationBanner), findsWidgets);
     expect(find.widgetWithText(AppButton, 'Try again'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
 
     _stubLookups(

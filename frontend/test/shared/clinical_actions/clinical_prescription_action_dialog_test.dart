@@ -93,7 +93,7 @@ void main() {
       expect(find.text('Add medicine'), findsWidgets);
       expect(find.text('Review billing'), findsWidgets);
       expect(find.text('Remove selected'), findsWidgets);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.text('Prescribe'), findsWidgets);
     });
 
@@ -134,7 +134,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Amoxicillin').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(AppButton, 'Cancel').last);
+      await tester.tap(find.widgetWithText(AppButton, 'Close').last);
       await tester.pumpAndSettle();
 
       expect(find.text('No medicines added yet'), findsOneWidget);
@@ -277,7 +277,7 @@ void main() {
       expect(find.text('Amoxicillin'), findsNothing);
       expect(find.text('Ibuprofen'), findsWidgets);
 
-      await tester.tap(find.widgetWithText(AppButton, 'Cancel').last);
+      await tester.tap(find.widgetWithText(AppButton, 'Close').last);
       await tester.pumpAndSettle();
     });
 

@@ -66,7 +66,7 @@ void main() {
     expect(find.text('FLOW ACTIONS'), findsOneWidget);
     expect(find.text('Encounter context'), findsNothing);
     expect(find.text('Next · Pay consultation'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byType(AppWorkflowStepper), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -100,7 +100,7 @@ void main() {
     );
 
     expect(find.text('Pay consultation'), findsNothing);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets('permission gate omits the unauthorized billing action', (
@@ -120,7 +120,7 @@ void main() {
     );
 
     expect(find.widgetWithText(AppButton, 'Pay consultation'), findsNothing);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets('reception context removes billing actions for billing users', (
@@ -132,7 +132,7 @@ void main() {
     expect(find.text('Manage consultation billing'), findsNothing);
     expect(find.text('Update consultation billing'), findsNothing);
     expect(find.text('Payment due'), findsWidgets);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets('reception context omits record vitals for clinical users', (
@@ -164,7 +164,7 @@ void main() {
     expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets(
@@ -204,7 +204,7 @@ void main() {
       expect(find.widgetWithText(AppButton, 'Refer'), findsNothing);
       expect(find.widgetWithText(AppButton, 'Follow up'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
     },
   );
 
@@ -242,7 +242,7 @@ void main() {
       );
       expect(find.widgetWithText(AppButton, 'Follow up'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
     },
   );
 
@@ -274,7 +274,7 @@ void main() {
       find.widgetWithText(AppButton, 'Next · Clinical notes'),
       findsOneWidget,
     );
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets(
@@ -325,7 +325,7 @@ void main() {
       expect(find.widgetWithText(AppButton, 'Refer'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Follow up'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
     },
   );
 
@@ -426,7 +426,7 @@ void main() {
       expect(find.text('CBC'), findsNothing);
       expect(find.textContaining('80/50'), findsNothing);
       expect(find.byType(AppWorkflowStepper), findsNothing);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
     },
   );
 
@@ -457,7 +457,7 @@ void main() {
     expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets('nurse at vitals-needed sees record vitals and change doctor', (
@@ -486,7 +486,7 @@ void main() {
 
     expect(find.widgetWithText(AppButton, 'Next · Record vitals'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets('shows shared loading while encounter detail refreshes', (
@@ -624,7 +624,7 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byType(AppQuickActions), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 }
 

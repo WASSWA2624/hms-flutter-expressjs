@@ -730,7 +730,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       verify(() => repository.getAdmissionDetail('adm-pending')).called(1);
     },
   );

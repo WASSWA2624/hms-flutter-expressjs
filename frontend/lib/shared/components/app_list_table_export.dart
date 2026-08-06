@@ -806,18 +806,18 @@ class _AppListTableExportDialogState<T>
         ),
       ),
       actions: <Widget>[
+        AppButton.tertiary(
+          label: widget.cancelLabel,
+          leadingIcon: Icons.close,
+          enabled: canInteract,
+          onPressed: canInteract ? () => Navigator.of(context).pop() : null,
+        ),
         AppButton.primary(
           label: widget.exportLabel,
           leadingIcon: AppActionIcons.export,
           isLoading: _isExporting,
           enabled: canInteract,
           onPressed: canInteract ? _export : null,
-        ),
-        AppButton.tertiary(
-          label: widget.cancelLabel,
-          leadingIcon: Icons.close,
-          enabled: canInteract,
-          onPressed: canInteract ? () => Navigator.of(context).pop() : null,
         ),
       ],
     );

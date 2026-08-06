@@ -54,7 +54,7 @@ void main() {
       await _pumpLabOrderDialog(tester);
 
       expect(find.text('Request lab'), findsWidgets);
-      expect(find.text('Cancel'), findsNothing);
+      expect(find.text('Close'), findsNothing);
       expect(
         find.text(
           'Review your selection below. Use Add Lab Panels to browse the catalog, then review billing before submitting.',
@@ -302,7 +302,7 @@ void main() {
 
         expect(find.text('REMOVE LAB REQUEST?'), findsOneWidget);
 
-        await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+        await tester.tap(find.widgetWithText(AppButton, 'Close'));
         await tester.pumpAndSettle();
 
         expect(find.text('REMOVE LAB REQUEST?'), findsNothing);
@@ -370,7 +370,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('1 selected'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+      await tester.tap(find.widgetWithText(AppButton, 'Close'));
       await tester.pumpAndSettle();
 
       expect(find.text('Complete blood count'), findsNothing);

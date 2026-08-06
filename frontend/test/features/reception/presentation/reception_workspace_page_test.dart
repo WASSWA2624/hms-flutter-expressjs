@@ -1000,13 +1000,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(FlowActionsDialog), findsOneWidget);
       expect(find.text('Collect sample'), findsWidgets);
-      await tester.tap(find.text('Cancel').last);
+      await tester.tap(find.text('Close').last);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Quinn Queue'));
       await tester.pumpAndSettle();
       expect(find.text('QUEUE ACTIONS'), findsOneWidget);
-      await tester.tap(find.text('Cancel').last);
+      await tester.tap(find.text('Close').last);
       await tester.pumpAndSettle();
 
       final Finder searchField = find.descendant(
@@ -1058,7 +1058,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('QUEUE ACTIONS'), findsOneWidget);
       expect(find.text('Prioritize'), findsOneWidget);
-      await tester.tap(find.text('Cancel').last);
+      await tester.tap(find.text('Close').last);
       await tester.pumpAndSettle();
     },
   );

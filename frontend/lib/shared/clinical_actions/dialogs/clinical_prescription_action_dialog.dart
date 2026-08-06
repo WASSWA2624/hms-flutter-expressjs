@@ -1049,24 +1049,38 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
     ClinicalActionCatalogOption option,
   ) {
     line.drugId = option.apiId.trim();
+    final String strengthLabel = clinicalPrescriptionDrugStrength(option);
     final ClinicalParsedStrength? strength = clinicalParseDrugStrength(
-      clinicalPrescriptionDrugStrength(option),
+      strengthLabel,
     );
     if (strength != null) {
-      final bool doseEmpty = line.doseAmountController.text.trim().isEmpty;
-      final bool unitEmpty = (line.doseUnit ?? '').trim().isEmpty;
-      if (doseEmpty) {
+      if (line.doseAmountController.text.trim().isEmpty) {
         line.doseAmountController.text = _formatDoseAmount(strength.amount);
       }
-      if (unitEmpty) {
-        line.doseUnit = strength.unit;
+      if ((line.doseUnit ?? '').trim().isEmpty) {
+        line.doseUnit =
+            clinicalPrescriptionCanonicalDoseUnit(strength.unit) ?? 'unit';
       }
     }
-    if ((line.quantityUnit ?? '').trim().isEmpty) {
-      line.quantityUnit = clinicalPrescriptionQuantityUnitFromForm(
-        option.metadata['form']?.toString(),
-      );
+    if ((line.doseUnit ?? '').trim().isEmpty) {
+      line.doseUnit =
+          clinicalPrescriptionCanonicalDoseUnit(
+            strengthLabel
+                .replaceFirst(RegExp(r'^\s*\d+(?:\.\d+)?\s*'), '')
+                .split('/')
+                .first
+                .trim(),
+          ) ??
+          'unit';
     }
+    if (line.doseAmountController.text.trim().isEmpty) {
+      line.doseAmountController.text = '1';
+    }
+    line.quantityUnit = clinicalPrescriptionResolveQuantityUnit(
+      form: option.metadata['form']?.toString(),
+      strength: strengthLabel,
+      secondaryText: option.secondaryText,
+    );
     // Seed a standard course so BID/etc. lines are submit-ready; quantity syncs.
     if (!clinicalPrescriptionDurationOptional(line.frequency) &&
         line.durationController.text.trim().isEmpty) {

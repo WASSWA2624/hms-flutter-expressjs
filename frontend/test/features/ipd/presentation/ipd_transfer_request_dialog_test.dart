@@ -56,7 +56,7 @@ void main() {
   });
 
   testWidgets(
-    'uses AppTransferRequestDialog with Cancel and Request transfer chrome',
+    'uses AppTransferRequestDialog with Close and Request transfer chrome',
     (WidgetTester tester) async {
       final _MockIpdRepository repository = _MockIpdRepository();
       await _pumpDialog(tester, repository: repository);
@@ -65,7 +65,7 @@ void main() {
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.text('REQUEST TRANSFER'), findsOneWidget);
       expect(find.text('Request transfer'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.transfer), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
 
@@ -104,7 +104,7 @@ void main() {
     expect(find.text('Jane Doe'), findsNothing);
   });
 
-  testWidgets('Cancel pops false without mutating transfer state', (
+  testWidgets('Close pops false without mutating transfer state', (
     WidgetTester tester,
   ) async {
     final _MockIpdRepository repository = _MockIpdRepository();
@@ -116,7 +116,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -243,7 +243,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(AppTransferRequestDialog), findsOneWidget);
     expect(find.text('REQUEST TRANSFER'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Request transfer'), findsOneWidget);
   });
 }

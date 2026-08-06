@@ -55,26 +55,26 @@ void main() {
     expect(find.byType(OpdDispositionDialog), findsOneWidget);
     expect(find.text('DISPOSITION'), findsOneWidget);
     expect(find.text('Save disposition'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byType(AppSelectField<String>), findsOneWidget);
     expect(find.byIcon(AppActionIcons.complete), findsWidgets);
     expect(find.byIcon(AppActionIcons.save), findsWidgets);
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
 
-    // Footer order: Cancel (secondary) then Save disposition (primary).
+    // Footer order: primary then Close — was Cancel (secondary) then Save disposition (primary).
     final List<String> footerLabels = tester
         .widgetList<AppButton>(find.byType(AppButton))
         .map((AppButton button) => button.label)
         .where(
           (String label) =>
-              label == 'Cancel' || label == 'Save disposition',
+              label == 'Close' || label == 'Save disposition',
         )
         .toList();
-    expect(footerLabels, <String>['Cancel', 'Save disposition']);
+    expect(footerLabels, <String>['Save disposition', 'Close']);
   });
 
-  testWidgets('Cancel pops false without mutating disposition', (
+  testWidgets('Close pops false without mutating disposition', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -88,7 +88,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -273,7 +273,7 @@ void main() {
     final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
     expect(dialog.closeEnabled, isFalse);
     final AppButton cancel = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Cancel'),
+      find.widgetWithText(AppButton, 'Close'),
     );
     expect(cancel.enabled, isFalse);
 
@@ -311,7 +311,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('DISPOSITION'), findsOneWidget);
     expect(find.text('Save disposition'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 }
 

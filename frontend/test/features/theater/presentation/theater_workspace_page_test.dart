@@ -449,7 +449,7 @@ void main() {
       expect(find.text('CASE DETAIL'), findsNothing);
       expect(find.text('UPDATE READINESS'), findsOneWidget);
 
-      await tester.tap(find.text('Cancel').first);
+      await tester.tap(find.text('Close').first);
       await _pumpAfterAction(tester);
 
       await tester.tap(find.text('Sam Scheduled'));

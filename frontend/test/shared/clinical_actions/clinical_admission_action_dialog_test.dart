@@ -94,7 +94,7 @@ void main() {
     );
 
     expect(find.text('Request admission'), findsWidgets);
-    expect(find.text('Cancel'), findsNothing);
+    expect(find.text('Close'), findsNothing);
     expect(find.byIcon(Icons.fullscreen_exit), findsWidgets);
     expect(find.byIcon(Icons.local_hospital_outlined), findsWidgets);
   });

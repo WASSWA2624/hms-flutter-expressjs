@@ -183,7 +183,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('reuses ClinicalAdmissionActionDialog with Cancel and bed icon', (
+  testWidgets('reuses ClinicalAdmissionActionDialog with Close and bed icon', (
     WidgetTester tester,
   ) async {
     final _MockPatientRepository patients = _MockPatientRepository();
@@ -193,7 +193,7 @@ void main() {
     expect(find.byType(PatientAdmissionQuickDialog), findsOneWidget);
     expect(find.byType(ClinicalAdmissionActionDialog), findsOneWidget);
     expect(find.text('Request admission'), findsWidgets);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.byIcon(AppActionIcons.bed), findsWidgets);
     expect(find.byIcon(Icons.fullscreen_exit), findsWidgets);
     expect(find.textContaining('Amina'), findsNothing);
@@ -248,6 +248,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(PatientAdmissionQuickDialog), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 }

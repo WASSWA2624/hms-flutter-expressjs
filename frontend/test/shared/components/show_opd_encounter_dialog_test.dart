@@ -111,7 +111,7 @@ void main() {
       expect(find.textContaining('PAT000001'), findsWidgets);
       expect(find.text('Search patient *'), findsNothing);
       expect(find.text('Start encounter'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
       expect(find.byType(CircularProgressIndicator), findsNothing);
     },
@@ -158,7 +158,7 @@ void main() {
       );
       expect(
         tester
-            .widget<AppButton>(find.widgetWithText(AppButton, 'Cancel'))
+            .widget<AppButton>(find.widgetWithText(AppButton, 'Close'))
             .enabled,
         isFalse,
       );
@@ -213,7 +213,7 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsNothing);
@@ -350,7 +350,7 @@ void main() {
 
     expect(find.byType(AppDialog), findsOneWidget);
     expect(find.text('START OPD ENCOUNTER'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Start encounter'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

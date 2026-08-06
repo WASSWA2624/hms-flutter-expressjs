@@ -55,7 +55,7 @@ void main() {
     expect(find.text('Change status'), findsOneWidget);
     expect(find.text('Change doctor'), findsOneWidget);
     expect(find.text('Start consultation'), findsNothing);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byType(AppWorkflowStepper), findsOneWidget);
     expect(find.text('Current step'), findsOneWidget);
@@ -76,7 +76,7 @@ void main() {
     expect(find.text('Change doctor'), findsNothing);
     expect(find.text('Assign doctor'), findsNothing);
     expect(find.text('Start consultation'), findsNothing);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets('permission gate hides queue mutations when denied', (
@@ -99,7 +99,7 @@ void main() {
     expect(find.text('Change doctor'), findsNothing);
     expect(find.text('Assign doctor'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Start consultation'), findsNothing);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets('Change status opens radio status dialog without provider search', (
@@ -126,7 +126,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Search doctor'), findsNothing);
-    expect(find.text('Cancel'), findsWidgets);
+    expect(find.text('Close'), findsWidgets);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byType(LinearProgressIndicator), findsNothing);
   });
@@ -148,7 +148,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('CHANGE DOCTOR'), findsOneWidget);
-    expect(find.text('Cancel'), findsWidgets);
+    expect(find.text('Close'), findsWidgets);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(
       find.byWidgetPredicate(
@@ -207,7 +207,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('PRIORITIZE QUEUE ENTRY'), findsOneWidget);
-    expect(find.text('Cancel'), findsWidgets);
+    expect(find.text('Close'), findsWidgets);
   });
 
   testWidgets('remains usable on a compact dark high-text-scale surface', (
@@ -227,7 +227,7 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byType(AppQuickActions), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 }
 

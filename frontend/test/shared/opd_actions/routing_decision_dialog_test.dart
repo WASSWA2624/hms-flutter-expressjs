@@ -51,7 +51,7 @@ void main() {
     expect(find.byType(ClinicalRoutingActionDialog), findsOneWidget);
     expect(find.text('ROUTE DECISION'), findsOneWidget);
     expect(find.text('Save routing decision'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byType(AppTriageDecisionField), findsOneWidget);
     expect(find.byIcon(AppActionIcons.route), findsWidgets);
@@ -59,7 +59,7 @@ void main() {
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
   });
 
-  testWidgets('Cancel pops false without mutating triage route', (
+  testWidgets('Close pops false without mutating triage route', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -73,7 +73,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -188,7 +188,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('ROUTE DECISION'), findsOneWidget);
     expect(find.text('Save routing decision'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 }
 

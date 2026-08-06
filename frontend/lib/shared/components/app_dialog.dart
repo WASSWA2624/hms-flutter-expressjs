@@ -800,19 +800,25 @@ class _DialogActions extends StatelessWidget {
     ).copyWith(top: theme.spacing.sm);
 
     final Widget actionRow;
+    // Two-action footers are authored [Close/dismiss, primary]. Reverse for
+    // display so Close sits extreme-right (desktop) / last (stacked mobile).
+    // Longer footers (wizards, etc.) already place Close last.
+    final List<Widget> displayActions = actions.length == 2
+        ? actions.reversed.toList(growable: false)
+        : actions;
     if (compact && stackWhenCompact) {
       // Stack full-width actions on phones so long action sets stay tappable
       // without horizontal squeeze or unreadably scaled labels.
       actionRow = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          for (int i = 0; i < actions.length; i++) ...<Widget>[
+          for (int i = 0; i < displayActions.length; i++) ...<Widget>[
             if (i > 0) SizedBox(height: theme.spacing.sm),
-            SizedBox(width: double.infinity, child: actions[i]),
+            SizedBox(width: double.infinity, child: displayActions[i]),
           ],
         ],
       );
-    } else if (actions.length <= 2) {
+    } else if (displayActions.length <= 2) {
       actionRow = Align(
         alignment: AlignmentDirectional.centerEnd,
         child: FittedBox(
@@ -821,12 +827,12 @@ class _DialogActions extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              for (int i = 0; i < actions.length; i++)
+              for (int i = 0; i < displayActions.length; i++)
                 Padding(
                   padding: EdgeInsetsDirectional.only(
                     start: i == 0 ? 0 : theme.spacing.sm,
                   ),
-                  child: actions[i],
+                  child: displayActions[i],
                 ),
             ],
           ),
@@ -838,7 +844,7 @@ class _DialogActions extends StatelessWidget {
         overflowAlignment: OverflowBarAlignment.end,
         spacing: theme.spacing.sm,
         overflowSpacing: theme.spacing.sm,
-        children: actions,
+        children: displayActions,
       );
     }
 

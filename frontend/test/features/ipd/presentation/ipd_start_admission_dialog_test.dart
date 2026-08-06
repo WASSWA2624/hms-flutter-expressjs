@@ -61,7 +61,7 @@ void main() {
   });
 
   testWidgets(
-    'reuses ClinicalAdmissionActionDialog with Cancel and Start admission chrome',
+    'reuses ClinicalAdmissionActionDialog with Close and Start admission chrome',
     (WidgetTester tester) async {
       final _MockIpdRepository ipdRepository = _MockIpdRepository();
       final _MockPatientRepository patientRepository = _MockPatientRepository();
@@ -79,7 +79,7 @@ void main() {
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.text('START ADMISSION'), findsOneWidget);
       expect(find.text('Start admission'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.personAdd), findsWidgets);
       expect(find.byIcon(AppActionIcons.add), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
@@ -138,7 +138,7 @@ void main() {
     expect(find.textContaining('Ada Active'), findsWidgets);
   });
 
-  testWidgets('Cancel pops without mutating admissions', (
+  testWidgets('Close pops without mutating admissions', (
     WidgetTester tester,
   ) async {
     final _MockIpdRepository ipdRepository = _MockIpdRepository();
@@ -154,7 +154,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -318,7 +318,7 @@ void main() {
 
     final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
     expect(dialog.closeEnabled, isFalse);
-    expect(_button(tester, 'Cancel').enabled, isFalse);
+    expect(_button(tester, 'Close').enabled, isFalse);
     expect(_button(tester, 'Start admission').isLoading, isTrue);
 
     completer.complete(
@@ -362,7 +362,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(ClinicalAdmissionActionDialog), findsOneWidget);
     expect(find.text('START ADMISSION'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Start admission'), findsOneWidget);
   });
 }

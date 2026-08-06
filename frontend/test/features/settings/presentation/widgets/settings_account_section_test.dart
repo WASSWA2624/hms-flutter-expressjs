@@ -98,7 +98,7 @@ void main() {
         findsNothing,
       );
 
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.text('Close'));
       await tester.pumpAndSettle();
       expect(find.byType(AppDialog), findsNothing);
       expect(find.text('Change password'), findsOneWidget);

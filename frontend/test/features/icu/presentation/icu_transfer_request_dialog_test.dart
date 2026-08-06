@@ -59,7 +59,7 @@ void main() {
       expect(find.byType(AppTransferRequestDialog), findsOneWidget);
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.text('REQUEST TRANSFER'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.text('Request transfer'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.transfer), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
@@ -76,13 +76,13 @@ void main() {
     },
   );
 
-  testWidgets('Cancel pops without requesting transfer', (
+  testWidgets('Close pops without requesting transfer', (
     WidgetTester tester,
   ) async {
     final _MockIcuRepository repository = _MockIcuRepository();
     await _pumpOpenTransfer(tester, repository: repository);
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     verifyNever(

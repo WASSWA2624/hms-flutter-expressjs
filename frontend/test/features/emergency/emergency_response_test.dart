@@ -158,7 +158,7 @@ void main() {
       await tester.pump();
 
       expect(submitted, 'Airway secured');
-      expect(_button(tester, 'Cancel').enabled, isFalse);
+      expect(_button(tester, 'Close').enabled, isFalse);
       expect(_button(tester, 'Mark response').isLoading, isTrue);
       expect(find.byType(AppTextActionDialog), findsOneWidget);
 
@@ -167,7 +167,7 @@ void main() {
 
       expect(find.byType(AppTextActionDialog), findsOneWidget);
       expect(find.text('Airway secured'), findsOneWidget);
-      expect(_button(tester, 'Cancel').enabled, isTrue);
+      expect(_button(tester, 'Close').enabled, isTrue);
       expect(find.byType(AppFormInformationBanner), findsOneWidget);
     },
   );
@@ -205,7 +205,7 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(EditableText), 'Should not save');
-    await tester.tap(find.text('Cancel'));
+    await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
 
     expect(submitted, isFalse);

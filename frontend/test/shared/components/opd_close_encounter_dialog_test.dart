@@ -11,7 +11,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 
 void main() {
   testWidgets(
-    'uses AppTextActionDialog with Cancel and Close encounter',
+    'uses AppTextActionDialog with Close and Close encounter',
     (WidgetTester tester) async {
       await _pumpDialog(tester);
 
@@ -20,7 +20,7 @@ void main() {
       expect(find.text('CLOSE ENCOUNTER'), findsOneWidget);
       expect(find.text('Close reason (optional)'), findsOneWidget);
       expect(find.text('ENC000001'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.text('Close encounter'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.success), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
@@ -87,7 +87,7 @@ void main() {
     expect(submitted, containsPair('reason_notes', null));
   });
 
-  testWidgets('Cancel pops false without confirming', (WidgetTester tester) async {
+  testWidgets('Close pops false without confirming', (WidgetTester tester) async {
     bool? result;
     var confirmed = false;
 
@@ -100,7 +100,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    final Finder cancel = find.widgetWithText(AppButton, 'Cancel');
+    final Finder cancel = find.widgetWithText(AppButton, 'Close');
     await tester.ensureVisible(cancel);
     await tester.tap(cancel);
     await tester.pumpAndSettle();
@@ -128,7 +128,7 @@ void main() {
     expect(result, isNull);
     expect(find.byType(AppTextActionDialog), findsOneWidget);
     expect(find.text('Close encounter'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets('blocks dismiss while close is in flight', (
@@ -147,7 +147,7 @@ void main() {
     expect(dialog.closeEnabled, isFalse);
 
     final AppButton cancel = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Cancel'),
+      find.widgetWithText(AppButton, 'Close'),
     );
     expect(cancel.enabled, isFalse);
 
@@ -170,7 +170,7 @@ void main() {
     );
 
     expect(find.byType(AppTextActionDialog), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Close encounter'), findsOneWidget);
     expect(find.byType(AppDialog), findsOneWidget);
   });

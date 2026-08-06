@@ -86,7 +86,7 @@ void main() {
   });
 
   testWidgets(
-    'buildAppDialogFormActions keeps Cancel enabled while Save loads',
+    'buildAppDialogFormActions keeps Close enabled while Save loads',
     (WidgetTester tester) async {
       var cancelCount = 0;
       var submitCount = 0;
@@ -95,7 +95,7 @@ void main() {
         tester,
         Row(
           children: buildAppDialogFormActions(
-            cancelLabel: 'Cancel',
+            cancelLabel: 'Close',
             submitLabel: 'Save',
             isSubmitting: true,
             cancelEnabled: true,
@@ -110,12 +110,12 @@ void main() {
       );
 
       final AppButton cancel = tester.widget<AppButton>(
-        find.widgetWithText(AppButton, 'Cancel'),
+        find.widgetWithText(AppButton, 'Close'),
       );
       expect(cancel.enabled, isTrue);
       expect(cancel.onPressed, isNotNull);
 
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.text('Close'));
       await tester.tap(find.text('Save'));
       await tester.pump();
 

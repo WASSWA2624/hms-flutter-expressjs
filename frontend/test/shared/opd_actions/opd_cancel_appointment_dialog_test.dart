@@ -55,7 +55,7 @@ void main() {
         find.widgetWithText(AppButton, 'Cancel appointment'),
         findsOneWidget,
       );
-      expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
       expect(find.text('Patient Example'), findsOneWidget);
       expect(find.byType(AppTextField), findsOneWidget);
       expect(find.byIcon(AppActionIcons.delete), findsWidgets);
@@ -75,7 +75,7 @@ void main() {
     expect(find.text('PATIENT EXAMPLE'), findsNothing);
   });
 
-  testWidgets('Cancel pops false without mutating the appointment', (
+  testWidgets('Close pops false without mutating the appointment', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -89,7 +89,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -181,7 +181,7 @@ void main() {
     expect(dialog.closeEnabled, isFalse);
     expect(
       tester
-          .widget<AppButton>(find.widgetWithText(AppButton, 'Cancel'))
+          .widget<AppButton>(find.widgetWithText(AppButton, 'Close'))
           .enabled,
       isFalse,
     );
@@ -212,7 +212,7 @@ void main() {
       find.widgetWithText(AppButton, 'Cancel appointment'),
       findsOneWidget,
     );
-    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
   });
 }
 

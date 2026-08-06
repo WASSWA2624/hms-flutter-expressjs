@@ -1033,7 +1033,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonGoHomeActionLabel => 'Go to dashboard';
 
   @override
-  String get commonCancelActionLabel => 'Cancel';
+  String get commonCancelActionLabel => 'Close';
 
   @override
   String get workflowStepHelpActionLabel => 'Help';

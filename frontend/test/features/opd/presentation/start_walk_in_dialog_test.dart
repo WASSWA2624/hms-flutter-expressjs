@@ -514,7 +514,7 @@ void main() {
       );
       expect(
         tester
-            .widget<AppButton>(find.widgetWithText(AppButton, 'Cancel'))
+            .widget<AppButton>(find.widgetWithText(AppButton, 'Close'))
             .enabled,
         isFalse,
       );

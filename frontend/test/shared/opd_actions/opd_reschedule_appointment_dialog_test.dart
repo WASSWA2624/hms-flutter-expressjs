@@ -74,7 +74,7 @@ void main() {
     expect(dialog.pinActionsToBottom, isTrue);
     expect(find.text('RESCHEDULE'), findsOneWidget);
     expect(find.text('Edit'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.byType(AppPatientDetails), findsOneWidget);
     expect(find.byType(AppTriageSummaryPanel), findsNothing);
     expect(find.text('Patient Example'), findsWidgets);
@@ -121,7 +121,7 @@ void main() {
     expect(find.textContaining('Provider Example'), findsWidgets);
   });
 
-  testWidgets('Cancel pops false without mutating the schedule', (
+  testWidgets('Close pops false without mutating the schedule', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -135,7 +135,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -355,7 +355,7 @@ void main() {
     while (tester.takeException() != null) {}
     expect(find.text('RESCHEDULE'), findsOneWidget);
     expect(find.text('Edit'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.byType(AppPatientDetails), findsOneWidget);
   });
 }

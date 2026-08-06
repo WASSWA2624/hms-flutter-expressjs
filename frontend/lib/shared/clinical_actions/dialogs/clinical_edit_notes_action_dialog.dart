@@ -105,7 +105,6 @@ class _ClinicalEditNotesActionDialogState
         _isSaving,
         _submit,
         submitLeadingIcon: AppActionIcons.save,
-        cancelAfterPrimary: true,
         borderRadius: 0,
       ),
     );

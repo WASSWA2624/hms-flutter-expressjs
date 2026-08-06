@@ -256,7 +256,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(AppDialog),
-          matching: find.text('Cancel'),
+          matching: find.text('Close'),
         ),
         findsNothing,
       );

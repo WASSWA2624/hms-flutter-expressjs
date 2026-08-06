@@ -966,7 +966,7 @@ void main() {
         expect(find.text('Change status'), findsNothing);
         expect(find.text('Change doctor'), findsNothing);
         expect(find.text('Assign doctor'), findsNothing);
-        expect(find.text('Cancel'), findsOneWidget);
+        expect(find.text('Close'), findsOneWidget);
         expect(find.textContaining('no access'), findsNothing);
       },
     );

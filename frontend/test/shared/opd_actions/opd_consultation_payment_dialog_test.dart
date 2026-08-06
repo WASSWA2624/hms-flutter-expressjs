@@ -65,7 +65,7 @@ void main() {
       expect(dialog.pinActionsToBottom, isTrue);
       expect(find.text('MANAGE CONSULTATION BILLING'), findsOneWidget);
       expect(find.text('Pay consultation'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.text('Patient Example'), findsOneWidget);
       expect(find.byType(AppFormShell), findsOneWidget);
       expect(find.byIcon(AppActionIcons.payment), findsWidgets);
@@ -99,7 +99,7 @@ void main() {
     expect(find.text('Pay consultation'), findsNothing);
   });
 
-  testWidgets('Cancel pops false without calling payConsultation', (
+  testWidgets('Close pops false without calling payConsultation', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -113,7 +113,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -214,7 +214,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('MANAGE CONSULTATION BILLING'), findsOneWidget);
     expect(find.text('Pay consultation'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 }
 

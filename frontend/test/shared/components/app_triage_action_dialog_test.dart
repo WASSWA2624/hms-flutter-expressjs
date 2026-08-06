@@ -56,7 +56,7 @@ void main() {
       expect(find.byType(AppTriageActionDialog), findsOneWidget);
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.text('RECORD TRIAGE'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.text('Save triage'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.save), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
@@ -70,7 +70,7 @@ void main() {
     },
   );
 
-  testWidgets('Cancel pops without invoking onSubmit', (
+  testWidgets('Close pops without invoking onSubmit', (
     WidgetTester tester,
   ) async {
     var submitted = false;
@@ -115,7 +115,7 @@ void main() {
           widget is AppTextField && widget.labelText == 'Triage notes',
     );
     await tester.enterText(notesField, 'Should not save');
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(submitted, isFalse);
@@ -176,7 +176,7 @@ void main() {
       await tester.pump();
 
       expect(submitted?.notes, 'Chest pain');
-      expect(_button(tester, 'Cancel').enabled, isFalse);
+      expect(_button(tester, 'Close').enabled, isFalse);
       expect(_button(tester, 'Save triage').isLoading, isTrue);
 
       final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
@@ -187,7 +187,7 @@ void main() {
 
       expect(find.byType(AppTriageActionDialog), findsOneWidget);
       expect(find.text('Chest pain'), findsOneWidget);
-      expect(_button(tester, 'Cancel').enabled, isTrue);
+      expect(_button(tester, 'Close').enabled, isTrue);
       expect(find.byType(AppFormInformationBanner), findsOneWidget);
     },
   );
@@ -256,7 +256,7 @@ void main() {
 
     final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
     expect(dialog.closeEnabled, isFalse);
-    expect(_button(tester, 'Cancel').enabled, isFalse);
+    expect(_button(tester, 'Close').enabled, isFalse);
     expect(_button(tester, 'Save triage').enabled, isFalse);
   });
 
@@ -356,7 +356,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('RECORD TRIAGE'), findsOneWidget);
     expect(find.text('Save triage'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 }
 

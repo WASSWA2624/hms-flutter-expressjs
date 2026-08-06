@@ -671,7 +671,6 @@ void main() {
     expect(resetAction, findsOneWidget);
     expect(applyAction, findsOneWidget);
     expect(closeAction, findsOneWidget);
-    expect(find.text('Cancel'), findsNothing);
     final Offset applyPosition = tester.getTopLeft(applyAction);
     final Offset closePosition = tester.getTopLeft(closeAction);
     expect(

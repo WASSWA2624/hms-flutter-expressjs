@@ -345,7 +345,7 @@ void main() {
       expect(submitted?.destination, 'OPD');
       expect(submitted?.notes, 'Ready for OPD');
       expect(submitted?.closeCase, isTrue);
-      expect(_button(tester, 'Cancel').enabled, isFalse);
+      expect(_button(tester, 'Close').enabled, isFalse);
       expect(_button(tester, 'Handoff').isLoading, isTrue);
       expect(
         tester.widget<AppDialog>(find.byType(AppDialog)).closeEnabled,
@@ -357,7 +357,7 @@ void main() {
 
       expect(find.byType(HandoffDialog), findsOneWidget);
       expect(find.text('Ready for OPD'), findsOneWidget);
-      expect(_button(tester, 'Cancel').enabled, isTrue);
+      expect(_button(tester, 'Close').enabled, isTrue);
     },
   );
 
@@ -408,7 +408,7 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(submitted, isFalse);
@@ -429,7 +429,7 @@ void main() {
     );
 
     expect(find.byType(HandoffDialog), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Handoff'), findsOneWidget);
     expect(find.byType(AppDialog), findsOneWidget);
   });

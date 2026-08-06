@@ -679,7 +679,7 @@ void main() {
       expect(find.text('Role name'), findsOneWidget);
       expect(find.text('Save'), findsOneWidget);
 
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.text('Close'));
       await tester.pumpAndSettle();
 
       clearInteractions(repository);

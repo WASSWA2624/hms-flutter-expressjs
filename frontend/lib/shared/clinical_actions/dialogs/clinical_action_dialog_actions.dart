@@ -12,23 +12,25 @@ List<Widget> clinicalActionDialogActions(
   IconData? submitLeadingIcon,
   bool destructive = false,
 
-  /// When false, Cancel and primary stay disabled without a submit spinner
+  /// When false, Close and primary stay disabled without a submit spinner
   /// (e.g. parent reference-data load). [isSaving] still drives isLoading.
   bool enabled = true,
   String? cancelLabel,
   VoidCallback? onCancel,
 
-  /// Value popped when Cancel is pressed. Defaults to `false` for bool
+  /// Value popped when Close is pressed. Defaults to `false` for bool
   /// confirmation dialogs; pass `null` when the route returns an entity.
   Object? cancelResult = false,
 
-  /// When true, Cancel is placed after the primary submit action.
+  /// When true, Close is placed after the primary in the actions list.
+  /// Prefer false (default): author [Close, Primary] so [AppDialog] can
+  /// reverse two-action footers and render Close extreme-right.
   bool cancelAfterPrimary = false,
   double? borderRadius,
 }) {
   final bool canInteract = enabled && !isSaving;
   final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+  final ColorScheme colorScheme = theme.colorScheme;
   final Widget? cancelButton = showCancel
       ? AppButton.secondary(
           label: cancelLabel ?? context.l10n.commonCancelActionLabel,

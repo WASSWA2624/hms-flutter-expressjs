@@ -2044,10 +2044,10 @@ abstract class AppLocalizations {
   /// **'Go to dashboard'**
   String get commonGoHomeActionLabel;
 
-  /// Label for actions that dismiss the current dialog or flow.
+  /// Label for actions that dismiss the current dialog or flow (Close).
   ///
   /// In en, this message translates to:
-  /// **'Cancel'**
+  /// **'Close'**
   String get commonCancelActionLabel;
 
   /// Accessible label for workflow step help that works with keyboard and touch.

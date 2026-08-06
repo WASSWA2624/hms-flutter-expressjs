@@ -141,7 +141,7 @@ void main() {
         expect(find.byType(AppSelectActionDialog<String>), findsOneWidget);
         expect(find.text('PRIORITY'), findsOneWidget);
         expect(find.text('Edit'), findsOneWidget);
-        expect(find.text('Cancel'), findsOneWidget);
+        expect(find.text('Close'), findsOneWidget);
         expect(find.text('Jane Doe'), findsNothing);
         expect(find.byIcon(AppActionIcons.priority), findsWidgets);
         expect(find.byIcon(AppActionIcons.edit), findsWidgets);
@@ -149,7 +149,7 @@ void main() {
       },
     );
 
-    testWidgets('Cancel pops false without mutating priority', (
+    testWidgets('Close pops false without mutating priority', (
       WidgetTester tester,
     ) async {
       bool? result;
@@ -180,7 +180,7 @@ void main() {
 
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+      await tester.tap(find.widgetWithText(AppButton, 'Close'));
       await tester.pumpAndSettle();
 
       expect(result, isFalse);
@@ -225,7 +225,7 @@ void main() {
         await tester.pump();
 
         expect(submittedSeverity, 'HIGH');
-        expect(_button(tester, 'Cancel').enabled, isFalse);
+        expect(_button(tester, 'Close').enabled, isFalse);
         expect(_button(tester, 'Edit').isLoading, isTrue);
         expect(
           tester.widget<AppDialog>(find.byType(AppDialog)).closeEnabled,
@@ -237,7 +237,7 @@ void main() {
 
         expect(find.byType(AppSelectActionDialog<String>), findsOneWidget);
         expect(find.text('PRIORITY'), findsOneWidget);
-        expect(_button(tester, 'Cancel').enabled, isTrue);
+        expect(_button(tester, 'Close').enabled, isTrue);
         expect(_button(tester, 'Edit').isLoading, isFalse);
       },
     );

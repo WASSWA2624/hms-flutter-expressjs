@@ -51,19 +51,19 @@ void main() {
     expect(dialog.pinActionsToBottom, isTrue);
     expect(find.text('TRIAGE MAINTENANCE HANDOFF'), findsOneWidget);
     expect(find.text('Triage maintenance request'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.byType(HousekeepingTriageForm), findsOneWidget);
     expect(find.byIcon(AppActionIcons.triage), findsWidgets);
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
   });
 
-  testWidgets('Cancel pops without mutating triage', (WidgetTester tester) async {
+  testWidgets('Close pops without mutating triage', (WidgetTester tester) async {
     final _MockHousekeepingRepository repository = _MockHousekeepingRepository();
     _stubWorkspace(repository);
 
     await _pumpDialog(tester, repository: repository);
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsNothing);
@@ -144,7 +144,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('TRIAGE MAINTENANCE HANDOFF'), findsOneWidget);
     expect(find.text('Triage maintenance request'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 }
 

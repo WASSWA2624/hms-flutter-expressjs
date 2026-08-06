@@ -156,16 +156,15 @@ class _AppWorkspaceMutationDialogState
   }
 
   List<Widget> _buildActions(BuildContext context) {
-    final List<Widget> actions = <Widget>[
-      if (widget.showCancelButton)
-        AppButton.tertiary(
-          label: widget.cancelLabel,
-          leadingIcon: widget.cancelIcon,
-          enabled: !_isSubmitting,
-          onPressed: _isSubmitting
-              ? null
-              : () => Navigator.of(context).pop(false),
-        ),
+    final Widget closeButton = AppButton.tertiary(
+      label: widget.cancelLabel,
+      leadingIcon: widget.cancelIcon,
+      enabled: !_isSubmitting,
+      onPressed: _isSubmitting
+          ? null
+          : () => Navigator.of(context).pop(false),
+    );
+    final List<Widget> body = <Widget>[
       for (final AppWorkspaceMutationAction action in widget.extraActions)
         action.isDestructive
             ? AppButton.tertiary(
@@ -201,7 +200,15 @@ class _AppWorkspaceMutationDialogState
       ),
     ];
 
-    return actions;
+    if (!widget.showCancelButton) {
+      return body;
+    }
+    // Two-action: [Close, Primary] so AppDialog reverses Close to the right.
+    // Longer footers keep Close trailing (no reverse for length > 2).
+    if (widget.extraActions.isEmpty) {
+      return <Widget>[closeButton, ...body];
+    }
+    return <Widget>[...body, closeButton];
   }
 
   @override

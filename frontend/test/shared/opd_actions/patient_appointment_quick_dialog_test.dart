@@ -57,7 +57,7 @@ void main() {
       find.widgetWithText(AppButton, 'Schedule appointment'),
       findsOneWidget,
     );
-    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
     expect(find.text('Ada Lovelace'), findsNothing);
     expect(find.byType(AppDateField), findsOneWidget);
     expect(find.byType(AppTimeField), findsOneWidget);
@@ -65,7 +65,7 @@ void main() {
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
   });
 
-  testWidgets('Cancel pops false without creating an appointment', (
+  testWidgets('Close pops false without creating an appointment', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -79,7 +79,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -238,7 +238,7 @@ void main() {
       find.widgetWithText(AppButton, 'Schedule appointment'),
       findsOneWidget,
     );
-    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
   });
 }
 

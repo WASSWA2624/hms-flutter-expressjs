@@ -754,7 +754,7 @@ void main() {
         expect(find.text('Cancel appointment'), findsOneWidget);
 
         // Close without mutating — list remains; refresh runs only on success.
-        await tester.tap(find.text('Cancel'));
+        await tester.tap(find.text('Close'));
         await tester.pumpAndSettle();
         expect(find.text('Ada Appointment'), findsOneWidget);
         expect(find.byType(ReceptionAppointmentActionsDialog), findsNothing);
@@ -820,7 +820,7 @@ void main() {
       expect(find.text('Reschedule'), findsNothing);
       expect(find.text('Cancel appointment'), findsNothing);
       expect(find.text('Quick actions'), findsNothing);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
     });
 
     testWidgets('next-action requirement maps to source front-desk', (

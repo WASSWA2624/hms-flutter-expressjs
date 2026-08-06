@@ -86,6 +86,6 @@ void main() {
     expect(find.text('Queue'), findsNothing);
     expect(find.text('Reschedule'), findsOneWidget);
     expect(find.text('Cancel appointment'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 }

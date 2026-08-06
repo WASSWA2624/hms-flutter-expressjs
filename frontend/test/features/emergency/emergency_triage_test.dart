@@ -182,7 +182,7 @@ void main() {
       await tester.pump();
 
       expect(submitted?.notes, 'Airway risk');
-      expect(_button(tester, 'Cancel').enabled, isFalse);
+      expect(_button(tester, 'Close').enabled, isFalse);
       expect(_button(tester, 'Save triage').isLoading, isTrue);
       expect(find.byType(AppTriageActionDialog), findsOneWidget);
 
@@ -191,7 +191,7 @@ void main() {
 
       expect(find.byType(AppTriageActionDialog), findsOneWidget);
       expect(find.text('Airway risk'), findsOneWidget);
-      expect(_button(tester, 'Cancel').enabled, isTrue);
+      expect(_button(tester, 'Close').enabled, isTrue);
       expect(find.byType(AppFormInformationBanner), findsOneWidget);
     },
   );
@@ -243,7 +243,7 @@ void main() {
           widget is AppTextField && widget.labelText == 'Triage notes',
     );
     await tester.enterText(notesField, 'Should not save');
-    await tester.tap(find.text('Cancel'));
+    await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
 
     expect(submitted, isFalse);

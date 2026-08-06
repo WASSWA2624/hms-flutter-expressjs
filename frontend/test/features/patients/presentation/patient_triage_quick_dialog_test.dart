@@ -71,7 +71,7 @@ void main() {
       expect(find.byType(AppTriageActionDialog), findsOneWidget);
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.text('TRIAGE INTAKE'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.text('Save triage'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.save), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
@@ -85,7 +85,7 @@ void main() {
     },
   );
 
-  testWidgets('Cancel pops without starting an OPD encounter', (
+  testWidgets('Close pops without starting an OPD encounter', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -94,7 +94,7 @@ void main() {
 
     await _pumpOpenDialog(tester, repository: repository);
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsNothing);
@@ -268,7 +268,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('TRIAGE INTAKE'), findsOneWidget);
     expect(find.text('Save triage'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 }
 

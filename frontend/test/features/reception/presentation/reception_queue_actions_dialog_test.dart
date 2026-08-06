@@ -49,7 +49,7 @@ void main() {
     expect(find.text('Change status'), findsOneWidget);
     expect(find.text('Assign doctor'), findsOneWidget);
     expect(find.text('Start consultation'), findsNothing);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -68,7 +68,7 @@ void main() {
     expect(find.text('Change doctor'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Start consultation'), findsNothing);
     expect(find.text('Start consultation'), findsNothing);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets('permission gate hides queue mutations when denied', (
@@ -92,7 +92,7 @@ void main() {
     expect(find.text('Change doctor'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Start consultation'), findsNothing);
     expect(find.text('Start consultation'), findsNothing);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   testWidgets('opens child prioritize dialog through showAppDialog', (
@@ -104,7 +104,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('PRIORITIZE QUEUE ENTRY'), findsOneWidget);
-    expect(find.text('Cancel'), findsWidgets);
+    expect(find.text('Close'), findsWidgets);
     expect(find.byType(AlertDialog), findsNothing);
   });
 
@@ -125,7 +125,7 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byType(AppQuickActions), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 }
 

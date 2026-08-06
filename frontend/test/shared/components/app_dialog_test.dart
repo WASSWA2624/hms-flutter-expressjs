@@ -562,7 +562,7 @@ void main() {
 
     expect(clearAction, findsOneWidget);
     expect(applyAction, findsOneWidget);
-    expect(find.text('Cancel'), findsNothing);
+    expect(find.text('Close'), findsNothing);
 
     expect(
       tester.getTopLeft(clearAction).dy,
@@ -597,7 +597,9 @@ void main() {
 
     final Offset preview = tester.getCenter(find.text('Preview report'));
     final Offset save = tester.getCenter(find.text('Save results'));
-    expect(save.dy, greaterThan(preview.dy));
+    // Source [secondary, primary] is reversed so primary is top / left and
+    // secondary (dismiss) is bottom / extreme-right.
+    expect(preview.dy, greaterThan(save.dy));
   });
 
   testWidgets('mobile AppDialog can keep footer actions horizontal', (
@@ -627,7 +629,7 @@ void main() {
     final Offset preview = tester.getCenter(find.text('Preview report'));
     final Offset save = tester.getCenter(find.text('Save results'));
     expect(preview.dy, closeTo(save.dy, 1));
-    expect(save.dx, greaterThan(preview.dx));
+    expect(preview.dx, greaterThan(save.dx));
   });
 
   testWidgets('scrollable dialog puts body padding on the scroll view', (

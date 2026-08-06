@@ -230,7 +230,7 @@ void main() {
     expect(find.widgetWithText(AppButton, 'Risk flags'), findsNothing);
     expect(find.byType(AppTriageRiskFlagSelector), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Record vitals'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
     expect(find.text('PATIENT EXAMPLE'), findsNothing);
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
     expect(find.byIcon(AppActionIcons.save), findsWidgets);
@@ -272,7 +272,7 @@ void main() {
     expect(find.textContaining('BMI 22.9'), findsWidgets);
   });
 
-  testWidgets('Cancel pops false without recording vitals', (
+  testWidgets('Close pops false without recording vitals', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -286,7 +286,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -391,7 +391,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('RECORD VITALS'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Record vitals'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
   });
 }
 

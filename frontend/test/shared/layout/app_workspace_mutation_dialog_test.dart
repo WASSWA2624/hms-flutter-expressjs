@@ -20,7 +20,7 @@ void main() {
                 context: context,
                 title: const Text('Short form'),
                 submitLabel: 'Save',
-                cancelLabel: 'Cancel',
+                cancelLabel: 'Close',
                 submitIcon: Icons.save_outlined,
                 cancelIcon: Icons.close_outlined,
                 buildFields:

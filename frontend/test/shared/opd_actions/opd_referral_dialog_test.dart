@@ -52,7 +52,7 @@ void main() {
     expect(find.byType(ClinicalReferralActionDialog), findsOneWidget);
     expect(find.text('REFER'), findsOneWidget);
     expect(find.text('Save referral'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byType(AppTextField), findsNWidgets(3));
     expect(find.byIcon(AppActionIcons.referral), findsWidgets);
@@ -75,7 +75,7 @@ void main() {
     expect(find.text('PATIENT EXAMPLE'), findsNothing);
   });
 
-  testWidgets('Cancel pops false without creating a referral', (
+  testWidgets('Close pops false without creating a referral', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -89,7 +89,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -208,7 +208,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('REFER'), findsOneWidget);
     expect(find.text('Save referral'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 }
 

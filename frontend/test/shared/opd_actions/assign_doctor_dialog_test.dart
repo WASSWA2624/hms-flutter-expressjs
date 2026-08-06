@@ -66,7 +66,7 @@ void main() {
     expect(find.byType(AssignDoctorDialog), findsOneWidget);
     expect(find.text('ASSIGN DOCTOR'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Assign doctor'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byIcon(AppActionIcons.assignDoctor), findsWidgets);
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
@@ -115,7 +115,7 @@ void main() {
     expect(find.textContaining('UGX'), findsNothing);
   });
 
-  testWidgets('Cancel pops false without assigning a doctor', (
+  testWidgets('Close pops false without assigning a doctor', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -129,7 +129,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -265,7 +265,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('ASSIGN DOCTOR'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Assign doctor'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
   });
 }
 

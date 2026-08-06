@@ -294,7 +294,7 @@ void main() {
       expect(find.text('REPLAY LOG?'), findsWidgets);
       expect(find.text('Replay log'), findsWidgets);
 
-      await tester.tap(find.text('Cancel').first);
+      await tester.tap(find.text('Close').first);
       await tester.pumpAndSettle();
 
       // Healthy row detail still exposes Replay when not the next-action.

@@ -100,7 +100,7 @@ void main() {
       expect(find.text('Payment'), findsWidgets);
       expect(find.text('Vitals'), findsWidgets);
       expect(find.text('Copy summary'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.text('Print'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.print), findsWidgets);
       expect(find.byIcon(AppActionIcons.copy), findsWidgets);
@@ -110,11 +110,11 @@ void main() {
           .map(_actionLabel)
           .whereType<String>()
           .toList();
-      expect(actionLabels, <String>['Copy summary', 'Cancel', 'Print']);
+      expect(actionLabels, <String>['Copy summary', 'Print', 'Close']);
     },
   );
 
-  testWidgets('Cancel pops false without treating print as saved', (
+  testWidgets('Close pops false without treating print as saved', (
     WidgetTester tester,
   ) async {
     bool? result;
@@ -126,7 +126,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(AppButton, 'Close'));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -340,7 +340,7 @@ void main() {
     expect(find.text('PRINT SUMMARY'), findsOneWidget);
     expect(find.byType(AppPrintPreviewWorkspace), findsOneWidget);
     expect(find.text('Copy summary'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.text('Print'), findsOneWidget);
   });
 

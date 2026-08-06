@@ -413,7 +413,7 @@ void main() {
 
       expect(find.byType(PatientTenantSelectField), findsOneWidget);
       expect(find.byType(PatientFacilitySelectField), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
     },
   );
 
@@ -1120,7 +1120,7 @@ void main() {
     expect(find.byType(PatientAdmissionQuickDialog), findsOneWidget);
     expect(find.byType(ClinicalAdmissionActionDialog), findsOneWidget);
     expect(find.text('Request admission'), findsWidgets);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(find.byIcon(Icons.fullscreen_exit), findsWidgets);
     expect(find.byIcon(AppActionIcons.bed), findsWidgets);
     expect(find.byType(PatientFacilitySelectField), findsNothing);

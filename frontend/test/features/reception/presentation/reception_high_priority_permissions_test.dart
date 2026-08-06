@@ -743,7 +743,7 @@ void main() {
       expect(find.text('Prioritize'), findsNothing);
       expect(find.text('Change status'), findsNothing);
       expect(find.text('Assign doctor'), findsNothing);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
     });
 
     testWidgets('authorized empty state remains observable', (
