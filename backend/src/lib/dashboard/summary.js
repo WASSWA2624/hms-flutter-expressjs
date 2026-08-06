@@ -101,7 +101,7 @@ const DASHBOARD_ALLOWLIST = Object.freeze({
     'route_target',
   ],
   trendPoints: ['id', 'date', 'value', 'label'],
-  distributionSegments: ['id', 'label', 'value', 'color'],
+  distributionSegments: ['id', 'label', 'value', 'amount', 'color'],
   highlights: ['id', 'label', 'value', 'context', 'variant'],
   queue: ['id', 'title', 'meta', 'statusLabel', 'statusVariant'],
   alerts: ['id', 'title', 'meta', 'severityLabel', 'severityVariant'],
@@ -277,7 +277,7 @@ const buildTrendPoints = (dateValues = [], days = 7) => {
   });
 };
 
-const buildDistribution = (statusCounts = {}) => {
+const buildDistribution = (statusCounts = {}, statusAmounts = {}) => {
   const colors = ['#2563eb', '#0ea5e9', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6'];
   const statusLabels = {
     ORDERED: 'Ordered',
@@ -292,10 +292,13 @@ const buildDistribution = (statusCounts = {}) => {
       .replace(/_/g, ' ')
       .toLowerCase()
       .replace(/\b\w/g, (char) => char.toUpperCase());
+    const amount =
+      Number(statusAmounts?.[status] ?? statusAmounts?.[key] ?? 0) || 0;
     return {
       id: String(status).toLowerCase(),
       label: statusLabels[key] || fallbackLabel,
       value: Number(value || 0),
+      amount,
       color: colors[index % colors.length],
     };
   });
@@ -1070,7 +1073,10 @@ const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
           date: null
         }))
       : buildTrendPoints(packData?.trendDates || [], days);
-    const distribution = buildDistribution(packData?.statusCounts || {});
+    const distribution = buildDistribution(
+      packData?.statusCounts || {},
+      packData?.statusAmounts || {}
+    );
     const summaryCards = metricsToRoleSummary(packId, packData?.metrics || {});
     const opdNotificationsPendingAttention = Number(unreadOpdNotifications || 0);
 

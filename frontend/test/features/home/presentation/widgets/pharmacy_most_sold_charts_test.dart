@@ -88,19 +88,20 @@ void main() {
           ),
         );
 
-        expect(find.text('Qty'), findsOneWidget);
-        expect(find.text('Amount'), findsOneWidget);
+        expect(find.text('Qty'), findsNWidgets(2));
+        expect(find.text('Amount'), findsNWidgets(2));
         expect(find.text('Profit'), findsNothing);
         expect(find.text('Today'), findsWidgets);
         expect(find.text('Top 5'), findsWidgets);
-        expect(find.text('Bar'), findsWidgets);
+        expect(find.text('Bar'), findsOneWidget);
+        expect(find.text('Pie'), findsOneWidget);
         expect(find.text('Sold drugs'), findsNothing);
         expect(find.textContaining('Para'), findsWidgets);
         expect(find.text('Period'), findsNothing);
         expect(find.text('Chart'), findsNothing);
         expect(find.textContaining('Top 5 by'), findsNothing);
 
-        // Controls sit above the chart.
+        // Most-sold controls sit above the trend chart.
         final Finder chart = find.byKey(const ValueKey<String>('dashboard-trend-chart'));
         expect(chart, findsOneWidget);
         final double todayBottom =
@@ -108,18 +109,27 @@ void main() {
         final double chartTop = tester.getTopLeft(chart).dy;
         expect(chartTop, greaterThan(todayBottom));
 
-        // Controls share one horizontal band (period / top / chart / metric).
+        // Most-sold controls share one horizontal band (period / top / chart / metric).
         final double todayY = tester.getCenter(find.text('Today').first).dy;
         final double topY = tester.getCenter(find.text('Top 5').first).dy;
         final double lineY = tester.getCenter(find.text('Bar').first).dy;
-        final double qtyY = tester.getCenter(find.text('Qty')).dy;
+        final double qtyY = tester.getCenter(find.text('Qty').first).dy;
         expect((todayY - topY).abs(), lessThan(12));
         expect((todayY - lineY).abs(), lessThan(12));
         expect((todayY - qtyY).abs(), lessThan(12));
 
-        await tester.tap(find.text('Amount'));
+        // Order status mix has the same control set (defaults to Pie).
+        final double statusTodayY = tester.getCenter(find.text('Today').at(1)).dy;
+        final double statusTopY = tester.getCenter(find.text('Top 5').at(1)).dy;
+        final double statusPieY = tester.getCenter(find.text('Pie').first).dy;
+        final double statusQtyY = tester.getCenter(find.text('Qty').at(1)).dy;
+        expect((statusTodayY - statusTopY).abs(), lessThan(12));
+        expect((statusTodayY - statusPieY).abs(), lessThan(12));
+        expect((statusTodayY - statusQtyY).abs(), lessThan(12));
+
+        await tester.tap(find.text('Amount').first);
         await tester.pumpAndSettle();
-        expect(find.text('Amount'), findsOneWidget);
+        expect(find.text('Amount'), findsNWidgets(2));
       },
     );
 

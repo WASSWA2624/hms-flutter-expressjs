@@ -270,6 +270,61 @@ const countByStatuses = async (model, where, statuses = [], field = 'status') =>
   }, {});
 };
 
+const extractBillingSnapshotTotal = (snapshot) => {
+  if (!snapshot || typeof snapshot !== 'object') {
+    return 0;
+  }
+  const direct = Number(
+    snapshot.total ??
+      snapshot.amount ??
+      snapshot.grand_total ??
+      snapshot.invoice_total ??
+      snapshot.amount_due ??
+      0
+  );
+  if (Number.isFinite(direct) && direct > 0) {
+    return direct;
+  }
+  const lines = Array.isArray(snapshot.line_items)
+    ? snapshot.line_items
+    : Array.isArray(snapshot.lines)
+      ? snapshot.lines
+      : [];
+  return lines.reduce(
+    (sum, line) =>
+      sum + Number(line?.line_total ?? line?.amount ?? line?.total ?? 0),
+    0
+  );
+};
+
+const sumPharmacyOrderBillingByStatus = async (where, statuses = []) => {
+  const totals = statuses.reduce((acc, status) => {
+    acc[status] = 0;
+    return acc;
+  }, {});
+  if (!statuses.length) {
+    return totals;
+  }
+  const rows = await prisma.pharmacy_order.findMany({
+    where: {
+      ...where,
+      status: { in: statuses },
+    },
+    select: {
+      status: true,
+      billing_snapshot: true,
+    },
+  });
+  for (const row of rows) {
+    const status = row.status;
+    if (totals[status] === undefined) {
+      continue;
+    }
+    totals[status] += extractBillingSnapshotTotal(row.billing_snapshot);
+  }
+  return totals;
+};
+
 const selectDateSeries = async (model, where, field) => {
   const rows = await model.findMany({
     where,
@@ -1451,6 +1506,19 @@ const getDashboardSummaryByPack = async ({
       // Trailing 7 calendar days including today (facility-local day start).
       const weekStart = shiftDays(todayStart, -6);
       const tomorrowStart = shiftDays(todayStart, 1);
+      const statusWindowWhere = {
+        ...pharmacyOrderWhere,
+        ordered_at: {
+          gte: mostSoldFromDate,
+          ...(mostSoldToDate ? { lte: mostSoldToDate } : {}),
+        },
+      };
+      const pharmacyStatuses = [
+        'ORDERED',
+        'PARTIALLY_DISPENSED',
+        'DISPENSED',
+        'CANCELLED',
+      ];
       const [
         ordersToday,
         pendingDispense,
@@ -1461,6 +1529,8 @@ const getDashboardSummaryByPack = async ({
         mostSold,
         salesToday,
         salesThisWeek,
+        statusCounts,
+        statusAmounts,
       ] = await Promise.all([
         prisma.pharmacy_order.count({ where: { ...pharmacyOrderWhere, ordered_at: { gte: todayStart } } }),
         prisma.pharmacy_order.count({ where: { ...pharmacyOrderWhere, status: { in: ['ORDERED', 'PARTIALLY_DISPENSED'] } } }),
@@ -1477,6 +1547,8 @@ const getDashboardSummaryByPack = async ({
         ),
         sumDispenseSalesAmount(prisma, dispenseLogWhere, todayStart, tomorrowStart),
         sumDispenseSalesAmount(prisma, dispenseLogWhere, weekStart, tomorrowStart),
+        countByStatuses(prisma.pharmacy_order, statusWindowWhere, pharmacyStatuses),
+        sumPharmacyOrderBillingByStatus(statusWindowWhere, pharmacyStatuses),
       ]);
       return {
         metrics: {
@@ -1492,7 +1564,8 @@ const getDashboardSummaryByPack = async ({
         },
         mostSold,
         trendDates: await selectDateSeries(prisma.dispense_log, { ...dispenseLogWhere, dispensed_at: { gte: trendStart } }, 'dispensed_at'),
-        statusCounts: await countByStatuses(prisma.pharmacy_order, pharmacyOrderWhere, ['ORDERED', 'PARTIALLY_DISPENSED', 'DISPENSED', 'CANCELLED']),
+        statusCounts,
+        statusAmounts,
         activity: {
           orders: await prisma.pharmacy_order.count({ where: { ...pharmacyOrderWhere, updated_at: { gte: window24h } } }),
           dispense: await prisma.dispense_log.count({ where: { ...dispenseLogWhere, updated_at: { gte: window24h } } }),

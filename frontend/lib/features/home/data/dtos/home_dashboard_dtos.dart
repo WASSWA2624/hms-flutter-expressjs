@@ -236,6 +236,7 @@ final class HomeDistributionSegmentDto {
       id: id,
       label: _string(json['label']) ?? _friendlyToken(id),
       value: _num(json['value']) ?? 0,
+      amount: _num(json['amount']),
       color: _string(json['color']),
     );
   }

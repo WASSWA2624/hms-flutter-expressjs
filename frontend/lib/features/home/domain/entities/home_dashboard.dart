@@ -592,12 +592,14 @@ final class HomeDistributionSegment {
     required this.id,
     required this.label,
     required this.value,
+    this.amount,
     this.color,
   });
 
   final String id;
   final String label;
   final num value;
+  final num? amount;
   final String? color;
 }
 

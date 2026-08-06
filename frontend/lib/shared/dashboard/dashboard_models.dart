@@ -167,6 +167,8 @@ final class DashboardDistributionChartData {
     required this.emptyMessage,
     required this.totalLabel,
     this.onSegmentSelected,
+    this.chartStyle = DashboardTrendChartStyle.pie,
+    this.sectionActions = const <Widget>[],
   });
 
   final String title;
@@ -175,6 +177,8 @@ final class DashboardDistributionChartData {
   final String emptyMessage;
   final String totalLabel;
   final ValueChanged<DashboardDistributionSegmentData>? onSegmentSelected;
+  final DashboardTrendChartStyle chartStyle;
+  final List<Widget> sectionActions;
 }
 
 @immutable

@@ -351,6 +351,16 @@ class _DashboardDistributionPanel extends StatelessWidget {
         backgroundColor: Colors.transparent,
         borderColor: Colors.transparent,
         children: <Widget>[
+          if (chart.sectionActions.isNotEmpty)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Wrap(
+                spacing: theme.spacing.sm,
+                runSpacing: theme.spacing.sm,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: chart.sectionActions,
+              ),
+            ),
           if (!hasData)
             _DashboardChartEmptyState(message: chart.emptyMessage)
           else
@@ -378,6 +388,41 @@ class _DashboardDistributionChart extends StatelessWidget {
             (num sum, DashboardDistributionSegmentData segment) =>
                 sum + segment.value,
           );
+
+    if (chart.chartStyle == DashboardTrendChartStyle.bar ||
+        chart.chartStyle == DashboardTrendChartStyle.line ||
+        chart.chartStyle == DashboardTrendChartStyle.combined) {
+      final List<DashboardTrendPointData> points = <DashboardTrendPointData>[
+        for (int index = 0; index < segments.length; index += 1)
+          DashboardTrendPointData(
+            value: segments[index].value,
+            label: segments[index].label,
+            summaryLabel: segments[index].label,
+            color: _segmentColor(theme, segments[index], index),
+          ),
+      ];
+      return Column(
+        children: <Widget>[
+          _DashboardTrendChart(points: points, style: chart.chartStyle),
+          SizedBox(height: theme.spacing.sm),
+          Wrap(
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.xs,
+            children: <Widget>[
+              for (int index = 0; index < segments.length; index += 1)
+                _DistributionLegendItem(
+                  segment: segments[index],
+                  total: total,
+                  color: _segmentColor(theme, segments[index], index),
+                  onTap: chart.onSegmentSelected == null
+                      ? null
+                      : () => chart.onSegmentSelected!(segments[index]),
+                ),
+            ],
+          ),
+        ],
+      );
+    }
 
     return Semantics(
       label:
