@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_layout.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 
@@ -19,15 +18,8 @@ class DashboardMetricStrip extends StatelessWidget {
   final bool compact;
 
   /// Columns per row: 1 on mobile, 3 on tablet, 5 on desktop.
-  static int columnsForWidth(double width) {
-    if (width < AppBreakpoints.md) {
-      return 1;
-    }
-    if (width < AppBreakpoints.xl) {
-      return 3;
-    }
-    return 5;
-  }
+  static int columnsForWidth(double width) =>
+      dashboardMetricColumnsForWidth(width);
 
   @override
   Widget build(BuildContext context) {
@@ -43,11 +35,23 @@ class DashboardMetricStrip extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) {
         final ThemeData theme = Theme.of(context);
         final double gap = theme.spacing.sm;
-        final int columns = columnsForWidth(constraints.maxWidth);
+        // Prefer the wider of content vs viewport so a desktop shell with a
+        // nav rail still gets 5 columns (content alone often sits under xl).
+        final double constraintWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : 0;
+        final double layoutWidth = math.max(
+          constraintWidth,
+          MediaQuery.sizeOf(context).width,
+        );
+        final int columns = columnsForWidth(layoutWidth);
+        final double rowWidth = constraintWidth > 0
+            ? constraintWidth
+            : layoutWidth;
         final bool useCompact = compact || columns == 1;
         final double cardWidth = columns <= 1
-            ? constraints.maxWidth
-            : (constraints.maxWidth - gap * (columns - 1)) / columns;
+            ? rowWidth
+            : (rowWidth - gap * (columns - 1)) / columns;
         final double uniformHeight = visibleCards
             .map(
               (DashboardMetricCardData card) =>

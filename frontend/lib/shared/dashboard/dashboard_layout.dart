@@ -189,14 +189,21 @@ BoxDecoration dashboardAlertsPanelDecoration(
   );
 }
 
-/// Desktop & tablet (≥ md): one column per visible card on a single row.
-/// Mobile (< md): one card per row.
+/// Summary KPI columns: 1 on mobile, 3 on tablet, 5 on desktop.
+int dashboardMetricColumnsForWidth(double width) {
+  if (width < AppBreakpoints.md) {
+    return 1;
+  }
+  if (width < AppBreakpoints.xl) {
+    return 3;
+  }
+  return 5;
+}
+
+/// Columns for [cardCount] cards, capped by the responsive column budget.
 int dashboardMetricColumnCount(double maxWidth, int cardCount) {
   final int count = math.max(1, cardCount);
-  if (maxWidth >= AppBreakpoints.md) {
-    return count;
-  }
-  return 1;
+  return math.min(count, dashboardMetricColumnsForWidth(maxWidth));
 }
 
 /// Desktop & tablet (≥ md): all actions on one row (max 8).
