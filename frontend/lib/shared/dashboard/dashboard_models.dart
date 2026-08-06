@@ -97,12 +97,13 @@ final class DashboardTrendPointData {
   final DateTime? date;
 }
 
-/// How [DashboardTrendChartPainter] renders series points.
+/// How [DashboardTrendChartPainter] / trend panel renders series points.
 enum DashboardTrendChartStyle {
   /// Bars plus overlay line (legacy home trend).
   combined,
   bar,
   line,
+  pie,
 }
 
 @immutable
@@ -125,7 +126,7 @@ final class DashboardTrendChartData {
   final DashboardTrendChartStyle chartStyle;
   final Widget? headerTrailing;
 
-  /// Controls rendered below the chart body via [AppCollapsibleSection.actions].
+  /// Controls rendered above the chart body (filters / style toggles).
   final List<Widget> sectionActions;
   final Widget? footer;
 }

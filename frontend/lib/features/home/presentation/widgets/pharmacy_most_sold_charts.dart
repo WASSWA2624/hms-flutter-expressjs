@@ -39,12 +39,20 @@ class PharmacyMostSoldCharts extends ConsumerStatefulWidget {
 class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts> {
   static const List<int> _topNOptions = <int>[5, 10, 20, 100];
 
+  static const List<HomeMostSoldPeriod> _periodOptions = <HomeMostSoldPeriod>[
+    HomeMostSoldPeriod.today,
+    HomeMostSoldPeriod.lastWeek,
+    HomeMostSoldPeriod.lastMonth,
+    HomeMostSoldPeriod.lastThreeMonths,
+    HomeMostSoldPeriod.lastSixMonths,
+    HomeMostSoldPeriod.lastYear,
+    HomeMostSoldPeriod.lastFiveYears,
+  ];
+
   HomeMostSoldMetric _metric = HomeMostSoldMetric.qty;
   HomeMostSoldPeriod _period = HomeMostSoldPeriod.today;
   int _topN = 5;
   DashboardTrendChartStyle _chartStyle = DashboardTrendChartStyle.line;
-  DateTime? _customFrom;
-  DateTime? _customTo;
   HomeMostSoldSeries? _mostSoldOverride;
   bool _loadingMostSold = false;
   String? _mostSoldError;
@@ -52,13 +60,12 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
   @override
   void initState() {
     super.initState();
-    _period = widget.request.mostSoldPeriod ?? HomeMostSoldPeriod.today;
+    final HomeMostSoldPeriod requested =
+        widget.request.mostSoldPeriod ?? HomeMostSoldPeriod.today;
+    _period = _periodOptions.contains(requested)
+        ? requested
+        : HomeMostSoldPeriod.today;
     _topN = _normalizeTopN(widget.request.mostSoldLimit ?? 5);
-    _customFrom = widget.request.mostSoldFrom;
-    _customTo = widget.request.mostSoldTo;
-    if (_period == HomeMostSoldPeriod.custom) {
-      _ensureCustomDefaults();
-    }
   }
 
   @override
@@ -82,43 +89,16 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     );
   }
 
-  void _ensureCustomDefaults() {
-    final DateTime now = DateTime.now();
-    final DateTime today = DateTime(now.year, now.month, now.day);
-    _customFrom ??= today.subtract(const Duration(days: 6));
-    _customTo ??= today;
-  }
-
   Future<void> _reloadMostSold({
     HomeMostSoldPeriod? period,
     int? topN,
-    DateTime? customFrom,
-    DateTime? customTo,
   }) async {
     final HomeMostSoldPeriod nextPeriod = period ?? _period;
     final int nextTopN = topN ?? _topN;
-    DateTime? nextFrom = customFrom ?? _customFrom;
-    DateTime? nextTo = customTo ?? _customTo;
-
-    if (nextPeriod == HomeMostSoldPeriod.custom) {
-      nextFrom ??= DateTime.now().subtract(const Duration(days: 6));
-      nextTo ??= DateTime.now();
-      final DateTime fromDay = DateTime(
-        nextFrom.year,
-        nextFrom.month,
-        nextFrom.day,
-      );
-      final DateTime toDay = DateTime(nextTo.year, nextTo.month, nextTo.day);
-      if (toDay.isBefore(fromDay)) {
-        nextTo = fromDay;
-      }
-    }
 
     setState(() {
       _period = nextPeriod;
       _topN = nextTopN;
-      _customFrom = nextPeriod == HomeMostSoldPeriod.custom ? nextFrom : null;
-      _customTo = nextPeriod == HomeMostSoldPeriod.custom ? nextTo : null;
       _loadingMostSold = true;
       _mostSoldError = null;
     });
@@ -128,12 +108,8 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
       widget.request.copyWith(
         mostSoldPeriod: nextPeriod,
         mostSoldLimit: nextTopN,
-        mostSoldFrom: nextPeriod == HomeMostSoldPeriod.custom ? nextFrom : null,
-        mostSoldTo: nextPeriod == HomeMostSoldPeriod.custom
-            ? nextTo?.add(const Duration(days: 1))
-            : null,
-        clearMostSoldFrom: nextPeriod != HomeMostSoldPeriod.custom,
-        clearMostSoldTo: nextPeriod != HomeMostSoldPeriod.custom,
+        clearMostSoldFrom: true,
+        clearMostSoldTo: true,
       ),
     );
 
@@ -205,6 +181,24 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     final List<HomeTrendPoint> ranked = _series.hasData
         ? _series.forMetric(active).take(_topN).toList(growable: false)
         : const <HomeTrendPoint>[];
+    final List<DashboardTrendPointData> chartPoints = ranked.isEmpty
+        ? List<DashboardTrendPointData>.generate(
+            _topN,
+            (int index) => DashboardTrendPointData(
+              value: 0,
+              label: '#${index + 1}',
+            ),
+            growable: false,
+          )
+        : ranked
+            .map(
+              (HomeTrendPoint point) => DashboardTrendPointData(
+                value: point.value,
+                label: point.label,
+                date: point.date,
+              ),
+            )
+            .toList(growable: false);
 
     final DashboardChartsData charts = homeDashboardChartsData(
       dashboard: widget.dashboard.copyWith(
@@ -223,21 +217,14 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
       _MostSoldToolbar(
         period: _period,
         topN: _topN,
-        chartStyle: _chartStyle == DashboardTrendChartStyle.line
-            ? DashboardTrendChartStyle.line
-            : DashboardTrendChartStyle.bar,
+        chartStyle: _chartStyle,
         metric: active,
         allowedMetrics: allowed,
         loading: _loadingMostSold,
-        customFrom: _customFrom,
-        customTo: _customTo,
+        periodOptions: _periodOptions,
         topNOptions: _topNOptions,
-        onPeriodChanged: (HomeMostSoldPeriod value) {
-          if (value == HomeMostSoldPeriod.custom) {
-            _ensureCustomDefaults();
-          }
-          _reloadMostSold(period: value);
-        },
+        onPeriodChanged: (HomeMostSoldPeriod value) =>
+            _reloadMostSold(period: value),
         onTopNChanged: (int value) => _reloadMostSold(topN: value),
         onChartStyleChanged: (DashboardTrendChartStyle value) {
           setState(() => _chartStyle = value);
@@ -245,10 +232,6 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
         onMetricChanged: (HomeMostSoldMetric value) {
           setState(() => _metric = value);
         },
-        onCustomFromChanged: (DateTime value) =>
-            _reloadMostSold(customFrom: value),
-        onCustomToChanged: (DateTime value) =>
-            _reloadMostSold(customTo: value),
       ),
     ];
 
@@ -256,19 +239,8 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
       trend: DashboardTrendChartData(
         title: charts.trend.title,
         subtitle: charts.trend.subtitle,
-        points: ranked
-            .map(
-              (HomeTrendPoint point) => DashboardTrendPointData(
-                value: point.value,
-                label: point.label,
-                date: point.date,
-              ),
-            )
-            .toList(growable: false),
-        emptyMessage: _loadingMostSold
-            ? 'Loading most-sold drugs…'
-            : (_mostSoldError ??
-                  'No dispensed drug sales in the selected period.'),
+        points: chartPoints,
+        emptyMessage: '',
         chartStyle: _chartStyle,
         sectionActions: filterActions,
         footer: ranked.isEmpty
@@ -312,22 +284,7 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
       HomeMostSoldMetric.amount => 'sales amount',
       HomeMostSoldMetric.profit => 'profit proxy',
     };
-    final String periodLabel = switch (_period) {
-      HomeMostSoldPeriod.custom => _customRangeLabel(),
-      _ => _period.label,
-    };
-    return 'Top $_topN by $metricLabel · $periodLabel';
-  }
-
-  String _customRangeLabel() {
-    final DateFormat format = DateFormat.yMMMd();
-    final String from = _customFrom == null
-        ? '…'
-        : format.format(_customFrom!.toLocal());
-    final String to = _customTo == null
-        ? '…'
-        : format.format(_customTo!.toLocal());
-    return '$from – $to';
+    return 'Top $_topN by $metricLabel · ${_period.label}';
   }
 }
 
@@ -358,15 +315,12 @@ class _MostSoldToolbar extends StatelessWidget {
     required this.metric,
     required this.allowedMetrics,
     required this.loading,
-    required this.customFrom,
-    required this.customTo,
+    required this.periodOptions,
     required this.topNOptions,
     required this.onPeriodChanged,
     required this.onTopNChanged,
     required this.onChartStyleChanged,
     required this.onMetricChanged,
-    required this.onCustomFromChanged,
-    required this.onCustomToChanged,
   });
 
   final HomeMostSoldPeriod period;
@@ -375,15 +329,12 @@ class _MostSoldToolbar extends StatelessWidget {
   final HomeMostSoldMetric metric;
   final List<HomeMostSoldMetric> allowedMetrics;
   final bool loading;
-  final DateTime? customFrom;
-  final DateTime? customTo;
+  final List<HomeMostSoldPeriod> periodOptions;
   final List<int> topNOptions;
   final ValueChanged<HomeMostSoldPeriod> onPeriodChanged;
   final ValueChanged<int> onTopNChanged;
   final ValueChanged<DashboardTrendChartStyle> onChartStyleChanged;
   final ValueChanged<HomeMostSoldMetric> onMetricChanged;
-  final ValueChanged<DateTime> onCustomFromChanged;
-  final ValueChanged<DateTime> onCustomToChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -399,7 +350,7 @@ class _MostSoldToolbar extends StatelessWidget {
           _CompactDropdown<HomeMostSoldPeriod>(
             tooltip: 'Period',
             value: period,
-            items: HomeMostSoldPeriod.values,
+            items: periodOptions,
             labelOf: (HomeMostSoldPeriod value) => value.label,
             onChanged: loading ? null : onPeriodChanged,
           ),
@@ -416,9 +367,9 @@ class _MostSoldToolbar extends StatelessWidget {
             items: const <DashboardTrendChartStyle>[
               DashboardTrendChartStyle.line,
               DashboardTrendChartStyle.bar,
+              DashboardTrendChartStyle.pie,
             ],
-            labelOf: (DashboardTrendChartStyle value) =>
-                value == DashboardTrendChartStyle.line ? 'Line' : 'Bar',
+            labelOf: _chartStyleLabel,
             onChanged: loading ? null : onChartStyleChanged,
           ),
           if (allowedMetrics.length > 1)
@@ -427,20 +378,6 @@ class _MostSoldToolbar extends StatelessWidget {
               allowed: allowedMetrics,
               onChanged: loading ? null : onMetricChanged,
             ),
-          if (period == HomeMostSoldPeriod.custom) ...<Widget>[
-            _CustomDateChip(
-              label: 'From',
-              value: customFrom,
-              enabled: !loading,
-              onPicked: onCustomFromChanged,
-            ),
-            _CustomDateChip(
-              label: 'To',
-              value: customTo,
-              enabled: !loading,
-              onPicked: onCustomToChanged,
-            ),
-          ],
           if (loading)
             SizedBox(
               width: 16,
@@ -454,6 +391,15 @@ class _MostSoldToolbar extends StatelessWidget {
       ),
     );
   }
+}
+
+String _chartStyleLabel(DashboardTrendChartStyle style) {
+  return switch (style) {
+    DashboardTrendChartStyle.line => 'Line',
+    DashboardTrendChartStyle.bar => 'Bar',
+    DashboardTrendChartStyle.pie => 'Pie',
+    DashboardTrendChartStyle.combined => 'Combined',
+  };
 }
 
 class _CompactDropdown<T> extends StatelessWidget {
@@ -510,55 +456,6 @@ class _CompactDropdown<T> extends StatelessWidget {
                     },
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CustomDateChip extends StatelessWidget {
-  const _CustomDateChip({
-    required this.label,
-    required this.value,
-    required this.enabled,
-    required this.onPicked,
-  });
-
-  final String label;
-  final DateTime? value;
-  final bool enabled;
-  final ValueChanged<DateTime> onPicked;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final DateFormat format = DateFormat.yMMMd();
-    final String text =
-        value == null ? label : '$label ${format.format(value!)}';
-
-    return OutlinedButton.icon(
-      onPressed: enabled
-          ? () async {
-              final DateTime now = DateTime.now();
-              final DateTime initial = value ?? now;
-              final DateTime? picked = await showDatePicker(
-                context: context,
-                initialDate: initial,
-                firstDate: DateTime(now.year - 10),
-                lastDate: DateTime(now.year + 1),
-              );
-              if (picked != null) {
-                onPicked(picked);
-              }
-            }
-          : null,
-      icon: const Icon(Icons.calendar_today_outlined, size: 16),
-      label: Text(text),
-      style: OutlinedButton.styleFrom(
-        visualDensity: VisualDensity.compact,
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
         ),
       ),
     );

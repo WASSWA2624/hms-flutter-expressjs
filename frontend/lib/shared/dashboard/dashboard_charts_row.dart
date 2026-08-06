@@ -61,38 +61,49 @@ class _DashboardTrendPanel extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
+    final bool showEmptyCopy =
+        chart.points.isEmpty && chart.emptyMessage.trim().isNotEmpty;
+    final List<DashboardTrendPointData> chartPoints = chart.points.isEmpty
+        ? const <DashboardTrendPointData>[
+            DashboardTrendPointData(value: 0, label: '—'),
+          ]
+        : chart.points;
+
     return DecoratedBox(
       decoration: dashboardSurfaceCardDecoration(theme, colorScheme),
       child: AppSectionPanel(
         title: chart.title,
         leadingIcon: Icons.show_chart_outlined,
         trailing: chart.headerTrailing,
-        actions: chart.sectionActions,
         density: AppContentPanelDensity.spacious,
         backgroundColor: Colors.transparent,
         borderColor: Colors.transparent,
         children: <Widget>[
           if (chart.subtitle != null && chart.subtitle!.trim().isNotEmpty)
-            Padding(
-              padding: EdgeInsets.only(bottom: theme.spacing.sm),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  chart.subtitle!.trim(),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                chart.subtitle!.trim(),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
-          if (chart.points.isEmpty)
+          if (chart.sectionActions.isNotEmpty)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Wrap(
+                spacing: theme.spacing.sm,
+                runSpacing: theme.spacing.sm,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: chart.sectionActions,
+              ),
+            ),
+          if (showEmptyCopy)
             _DashboardChartEmptyState(message: chart.emptyMessage)
           else
-            _DashboardTrendChart(points: chart.points, style: chart.chartStyle),
-          if (chart.footer != null) ...<Widget>[
-            SizedBox(height: theme.spacing.md),
-            chart.footer!,
-          ],
+            _DashboardTrendChart(points: chartPoints, style: chart.chartStyle),
+          if (chart.footer != null) chart.footer!,
         ],
       ),
     );
@@ -107,6 +118,10 @@ class _DashboardTrendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (style == DashboardTrendChartStyle.pie) {
+      return _DashboardTrendPieChart(points: points);
+    }
+
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final List<DashboardTrendPointData> visiblePoints = points
@@ -118,8 +133,11 @@ class _DashboardTrendChart extends StatelessWidget {
     );
 
     return Semantics(
+      container: true,
       label: 'Trend chart with ${visiblePoints.length} points',
-      child: Column(
+      child: KeyedSubtree(
+        key: const ValueKey<String>('dashboard-trend-chart'),
+        child: Column(
         children: <Widget>[
           SizedBox(
             height: 180,
@@ -174,6 +192,101 @@ class _DashboardTrendChart extends StatelessWidget {
             ],
           ),
         ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardTrendPieChart extends StatelessWidget {
+  const _DashboardTrendPieChart({required this.points});
+
+  final List<DashboardTrendPointData> points;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<DashboardTrendPointData> visiblePoints = points
+        .take(100)
+        .toList(growable: false);
+    final List<DashboardDistributionSegmentData> segments = <
+      DashboardDistributionSegmentData
+    >[
+      for (int index = 0; index < visiblePoints.length; index += 1)
+        DashboardDistributionSegmentData(
+          label: _trendPointLabel(visiblePoints[index]),
+          value: visiblePoints[index].value,
+        ),
+    ];
+    final num total = segments.fold<num>(
+      0,
+      (num sum, DashboardDistributionSegmentData segment) => sum + segment.value,
+    );
+
+    return Semantics(
+      container: true,
+      label: 'Pie chart with ${visiblePoints.length} slices',
+      child: KeyedSubtree(
+        key: const ValueKey<String>('dashboard-pie-chart'),
+        child: Column(
+          children: <Widget>[
+            SizedBox(
+              height: 170,
+              width: double.infinity,
+              child: Center(
+                child: SizedBox(
+                  width: 154,
+                  height: 154,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: <Widget>[
+                      CustomPaint(
+                        size: const Size.square(154),
+                        painter: DashboardDonutChartPainter(
+                          segments: segments,
+                          total: total,
+                          fallbackColor: colorScheme.primary,
+                          trackColor: colorScheme.surfaceContainerHighest,
+                        ),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            NumberFormat.compact().format(total),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: AppFontWeight.emphasis,
+                            ),
+                          ),
+                          Text(
+                            'total',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: theme.spacing.sm),
+            Wrap(
+              spacing: theme.spacing.sm,
+              runSpacing: theme.spacing.xs,
+              children: <Widget>[
+                for (int index = 0; index < segments.length; index += 1)
+                  _DistributionLegendItem(
+                    segment: segments[index],
+                    total: total,
+                    color: _fallbackSegmentColor(colorScheme.primary, index),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

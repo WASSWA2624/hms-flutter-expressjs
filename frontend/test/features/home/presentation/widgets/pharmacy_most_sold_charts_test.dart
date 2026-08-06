@@ -97,10 +97,16 @@ void main() {
         expect(find.text('Period'), findsNothing);
         expect(find.text('Chart'), findsNothing);
 
-        final double listBottom =
-            tester.getBottomLeft(find.text('Sold drugs')).dy;
-        final double todayTop = tester.getTopLeft(find.text('Today').first).dy;
-        expect(todayTop, greaterThan(listBottom));
+        // Controls sit above the chart; sold-drugs list stays under the chart.
+        final Finder chart = find.byKey(const ValueKey<String>('dashboard-trend-chart'));
+        expect(chart, findsOneWidget);
+        final double todayBottom =
+            tester.getBottomLeft(find.text('Today').first).dy;
+        final double chartTop = tester.getTopLeft(chart).dy;
+        expect(chartTop, greaterThan(todayBottom));
+
+        final double listTop = tester.getTopLeft(find.text('Sold drugs')).dy;
+        expect(listTop, greaterThan(chartTop));
 
         // Controls share one horizontal band (period / top / chart / metric).
         final double todayY = tester.getCenter(find.text('Today').first).dy;
@@ -118,7 +124,7 @@ void main() {
     );
 
     testWidgets(
-      'shows empty most-sold state without substituting trend zeros',
+      'always renders a zero chart when most-sold series is empty',
       (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -158,9 +164,23 @@ void main() {
 
       expect(
         find.text('No dispensed drug sales in the selected period.'),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('dashboard-trend-chart')),
         findsOneWidget,
       );
       expect(find.text('Sold drugs'), findsNothing);
+      expect(find.text('#1'), findsWidgets);
+
+      await tester.tap(find.text('Line'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pie').last);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('dashboard-pie-chart')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows profit toggle when profit series has data', (
