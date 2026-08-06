@@ -124,7 +124,7 @@ void main() {
     expect(find.text('Line 1'), findsNothing);
 
     final AppButton selectButton = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Select'),
+      find.widgetWithText(AppButton, 'Select patient'),
     );
     expect(selectButton.enabled, isFalse);
     expect(selectButton.onPressed, isNull);
@@ -147,7 +147,7 @@ void main() {
     await pumpCreateOrder(tester);
 
     AppButton selectButton = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Select'),
+      find.widgetWithText(AppButton, 'Select patient'),
     );
     expect(selectButton.enabled, isFalse);
 
@@ -163,7 +163,7 @@ void main() {
     await tester.pumpAndSettle();
 
     selectButton = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Select'),
+      find.widgetWithText(AppButton, 'Select patine'),
     );
     expect(selectButton.enabled, isTrue);
 

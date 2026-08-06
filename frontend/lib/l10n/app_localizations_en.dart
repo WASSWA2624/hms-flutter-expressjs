@@ -12124,6 +12124,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyWalkInOrderRegisterPatientAction => 'Register patient';
 
   @override
+  String get pharmacyWalkInOrderSelectPatientAction => 'Select patient';
+
+  @override
   String get pharmacyWalkInOrderAddLineAction => 'Add medication';
 
   @override

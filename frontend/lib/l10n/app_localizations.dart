@@ -22372,6 +22372,12 @@ abstract class AppLocalizations {
   /// **'Register patient'**
   String get pharmacyWalkInOrderRegisterPatientAction;
 
+  /// Opens patient picker from the pharmacy create-order dialog when Existing patient is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select patient'**
+  String get pharmacyWalkInOrderSelectPatientAction;
+
   /// Adds another drug line on the walk-in order dialog.
   ///
   /// In en, this message translates to:

@@ -349,7 +349,7 @@ class _PharmacyWalkInOrderDialogState
           )
         else
           AppButton.secondary(
-            label: l10n.commonSelectActionLabel,
+            label: l10n.pharmacyWalkInOrderSelectPatientAction,
             leadingIcon: Icons.person_search_outlined,
             enabled: selectEnabled,
             onPressed: selectEnabled ? _pickPatient : null,

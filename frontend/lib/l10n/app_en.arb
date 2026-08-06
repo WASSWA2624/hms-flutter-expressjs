@@ -15499,6 +15499,10 @@
   "@pharmacyWalkInOrderRegisterPatientAction": {
     "description": "Opens new-patient registration from the pharmacy create-order dialog."
   },
+  "pharmacyWalkInOrderSelectPatientAction": "Select patient",
+  "@pharmacyWalkInOrderSelectPatientAction": {
+    "description": "Opens patient picker from the pharmacy create-order dialog when Existing patient is selected."
+  },
   "pharmacyWalkInOrderAddLineAction": "Add medication",
   "@pharmacyWalkInOrderAddLineAction": {
     "description": "Adds another drug line on the walk-in order dialog."
