@@ -90,10 +90,11 @@ abstract final class HomeDashboardAtomPermissions {
         'dispensed_today': <AppPermission>[AppPermissions.pharmacyRead],
         'low_stock': <AppPermission>[AppPermissions.pharmacyRead],
         'critical_stock': <AppPermission>[AppPermissions.pharmacyRead],
+        'near_expiry': <AppPermission>[AppPermissions.pharmacyRead],
+        'expired': <AppPermission>[AppPermissions.pharmacyRead],
         'sales_today': <AppPermission>[AppPermissions.pricingPharmacyRead],
         'sales_this_week': <AppPermission>[AppPermissions.pricingPharmacyRead],
         'billing_pending': <AppPermission>[AppPermissions.billingRead],
-        // Gap: expiring_medicines / controlled_drugs — no live metric source yet.
 
         // Reception (Dashboard.md §8)
         'desk_queue': <AppPermission>[AppPermissions.patientRead],

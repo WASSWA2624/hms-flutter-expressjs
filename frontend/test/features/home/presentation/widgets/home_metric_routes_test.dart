@@ -314,6 +314,33 @@ void main() {
         'section': 'low-stock',
       });
 
+      final HomeMetricNavigation? nearExpiry = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'near_expiry',
+          label: 'Near expiry',
+          value: 4,
+        ),
+        policy: policy,
+      );
+      final HomeMetricNavigation? expired = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'expired',
+          label: 'Expired',
+          value: 1,
+        ),
+        policy: policy,
+      );
+      expect(nearExpiry?.route, AppRoutes.pharmacy);
+      expect(nearExpiry?.queryParameters, <String, String>{
+        'section': 'near-expiry',
+      });
+      expect(expired?.route, AppRoutes.pharmacy);
+      expect(expired?.queryParameters, <String, String>{
+        'section': 'expired',
+      });
+
       final HomeMetricNavigation? ordersToday = homeMetricNavigation(
         profile: profile,
         card: const HomeStatusCard(

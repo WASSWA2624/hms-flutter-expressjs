@@ -1805,12 +1805,17 @@ AppWorkspaceStatusTone homeMetricTone(HomeStatusCard card) {
   if (id.contains('critical') ||
       id.contains('overdue') ||
       id.contains('warning') ||
-      id.contains('risk')) {
+      id.contains('risk') ||
+      id == 'expired' ||
+      id.contains('expired_')) {
     return card.numericValue > 0
         ? AppWorkspaceStatusTone.error
         : AppWorkspaceStatusTone.success;
   }
-  if (id.contains('results') ||
+  if (id.contains('near_expir') ||
+      id.contains('expir') ||
+      id.contains('low_stock') ||
+      id.contains('results') ||
       id.contains('lab') ||
       id.contains('radiology')) {
     return card.numericValue > 0

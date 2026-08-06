@@ -125,6 +125,12 @@ Map<String, String> homePharmacyMetricQuery(String cardId) {
     'low_stock' || 'critical_stock' => <String, String>{
       'section': 'low-stock',
     },
+    'near_expiry' || 'near-expiry' || 'expiring' => <String, String>{
+      'section': 'near-expiry',
+    },
+    'expired' || 'expired_stock' => <String, String>{
+      'section': 'expired',
+    },
     _ => const <String, String>{},
   };
 }

@@ -72,12 +72,22 @@ describe('pharmacy summary sales KPIs', () => {
       pendingDispense: 5,
       dispensedToday: 1,
       lowStock: 3,
+      nearExpiry: 7,
+      expiredStock: 2,
       salesToday: 1200,
       salesThisWeek: 5400,
     });
     const byId = Object.fromEntries(cards.map((card) => [card.id, card]));
     expect(byId.orders_today.label).toBe('Orders today');
     expect(byId.dispensed_today.label).toBe('Dispensed today');
+    expect(byId.near_expiry).toMatchObject({
+      label: 'Near expiry',
+      value: 7,
+    });
+    expect(byId.expired).toMatchObject({
+      label: 'Expired',
+      value: 2,
+    });
     expect(byId.sales_today).toMatchObject({
       label: 'Total sales today',
       value: 1200,

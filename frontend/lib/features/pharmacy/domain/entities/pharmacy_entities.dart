@@ -34,8 +34,8 @@ enum PharmacyDeskSection {
 }
 
 extension PharmacyDeskSectionX on PharmacyDeskSection {
-  /// True for the stock-alert sections that render inventory rows instead of
-  /// order rows.
+  /// True for stock-alert desk sections that open Catalog → Inventory with a
+  /// matching stock filter (not a separate alert-only table).
   bool get isStockSection {
     return switch (this) {
       PharmacyDeskSection.nearExpiry ||

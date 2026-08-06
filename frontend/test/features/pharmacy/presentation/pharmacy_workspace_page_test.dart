@@ -126,6 +126,8 @@ const PharmacyInventoryWorkbench _inventoryWorkbench =
         lowStockRows: 2,
         almostOutOfStockRows: 1,
         expiringSoonRows: 3,
+        outOfStockRows: 0,
+        expiredRows: 0,
       ),
       stocks: AppPage<PharmacyInventoryStock>(
         items: <PharmacyInventoryStock>[],
@@ -535,6 +537,111 @@ void main() {
     expect(harness.router, isNotNull);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'deep link section=low-stock opens Catalog Inventory with filter and actions',
+    (WidgetTester tester) async {
+      await _pumpPharmacyWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/pharmacy?section=low-stock',
+        initialQuery: PharmacyWorkspaceQuery.fromUri(
+          Uri.parse('/pharmacy?section=low-stock'),
+        ),
+      );
+
+      expect(find.byType(PharmacyCatalogPanel), findsOneWidget);
+      expect(find.text('Inventory'), findsWidgets);
+      expect(find.text('No stock alerts'), findsNothing);
+      expect(find.text('No inventory rows'), findsOneWidget);
+
+      final List<Object?> captured = verify(
+        () => repository.getInventoryStock(captureAny()),
+      ).captured;
+      expect(
+        captured.any(
+          (Object? query) =>
+              (query as PharmacyInventoryStockQuery).stockStatus == 'LOW_STOCK',
+        ),
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets(
+    'deep link section=near-expiry opens Catalog Inventory with expiry filter',
+    (WidgetTester tester) async {
+      await _pumpPharmacyWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/pharmacy?section=near-expiry',
+        initialQuery: PharmacyWorkspaceQuery.fromUri(
+          Uri.parse('/pharmacy?section=near-expiry'),
+        ),
+      );
+
+      expect(find.byType(PharmacyCatalogPanel), findsOneWidget);
+      expect(find.text('No stock alerts'), findsNothing);
+
+      final List<Object?> captured = verify(
+        () => repository.getInventoryStock(captureAny()),
+      ).captured;
+      expect(
+        captured.any(
+          (Object? query) =>
+              (query as PharmacyInventoryStockQuery).expiringWithinDays == 30,
+        ),
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets(
+    'deep link section=expired opens Catalog Inventory with expired filter',
+    (WidgetTester tester) async {
+      await _pumpPharmacyWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/pharmacy?section=expired',
+        initialQuery: PharmacyWorkspaceQuery.fromUri(
+          Uri.parse('/pharmacy?section=expired'),
+        ),
+      );
+
+      expect(find.byType(PharmacyCatalogPanel), findsOneWidget);
+      expect(
+        verify(() => repository.getInventoryStock(captureAny())).captured.any(
+          (Object? query) =>
+              (query as PharmacyInventoryStockQuery).expiredOnly == true,
+        ),
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets(
+    'deep link section=out-of-stock opens Catalog Inventory with out-of-stock filter',
+    (WidgetTester tester) async {
+      await _pumpPharmacyWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/pharmacy?section=out-of-stock',
+        initialQuery: PharmacyWorkspaceQuery.fromUri(
+          Uri.parse('/pharmacy?section=out-of-stock'),
+        ),
+      );
+
+      expect(find.byType(PharmacyCatalogPanel), findsOneWidget);
+      expect(
+        verify(() => repository.getInventoryStock(captureAny())).captured.any(
+          (Object? query) =>
+              (query as PharmacyInventoryStockQuery).stockStatus ==
+              'OUT_OF_STOCK',
+        ),
+        isTrue,
+      );
+    },
+  );
 
   testWidgets('deep link orderId opens prescription detail dialog', (
     WidgetTester tester,

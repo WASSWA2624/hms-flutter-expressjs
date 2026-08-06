@@ -625,9 +625,10 @@ final class PharmacyWorkspaceController
     return _refreshInventory(showLoading: true);
   }
 
-  /// Loads the inventory rows for a stock desk tab (Near expiry, Expired, Low
-  /// stock, Out of stock). Reuses the inventory workbench for rows; badge counts
-  /// stay on [PharmacyWorkspaceState.stockAlertSummary].
+  /// Loads Catalog → Inventory with the desk stock-alert filter applied.
+  ///
+  /// Badge counts stay on [PharmacyWorkspaceState.stockAlertSummary]; the UI
+  /// reuses the Catalog Inventory table (Adjust / Clear / Filters).
   Future<AppFailure?> applyDeskStockFilter(
     PharmacyInventoryStockQuery query,
   ) async {
@@ -638,6 +639,7 @@ final class PharmacyWorkspaceController
 
     _emit(
       current.copyWith(
+        catalogTab: PharmacyCatalogTab.inventory,
         inventoryQuery: query.copyWith(facilityId: resolveFacilityId()),
         isRefreshingInventory: true,
         clearLastFailure: true,

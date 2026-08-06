@@ -413,7 +413,7 @@ class _PharmacyWorkspaceContentState
   }
 
   /// Applies the data source for a section: an order filter for order tabs, or
-  /// an inventory stock query for stock-alert tabs.
+  /// Catalog → Inventory with a stock filter for stock-alert tabs.
   ///
   /// When [dateFrom]/[dateTo] are set (home KPI deep-links), they override the
   /// section chip's `todayOnly` default so the worklist matches the KPI window.
@@ -443,18 +443,6 @@ class _PharmacyWorkspaceContentState
       );
     }
     return controller.applyAdvancedFilters(filter);
-  }
-
-  /// Switches to the inline Catalog and stock section and selects [tab].
-  void _goToCatalogTab(
-    PharmacyWorkspaceController controller,
-    PharmacyCatalogTab tab,
-  ) {
-    controller.prepareCatalogTab(tab);
-    if (_section != PharmacyDeskSection.catalog) {
-      setState(() => _section = PharmacyDeskSection.catalog);
-      _updateUrlForSection(PharmacyDeskSection.catalog);
-    }
   }
 
   static int _sectionCount(
@@ -619,17 +607,9 @@ class _PharmacyWorkspaceContentState
               )
             else
               Expanded(
-                child: effectiveSection.isCatalogSection
+                child: effectiveSection.isCatalogSection ||
+                        effectiveSection.isStockSection
                     ? PharmacyCatalogPanel(state: state, fillHeight: true)
-                    : effectiveSection.isStockSection
-                    ? _PharmacyStockPanel(
-                        state: state,
-                        section: effectiveSection,
-                        onOpenCatalogInventory: () => _goToCatalogTab(
-                          controller,
-                          PharmacyCatalogTab.inventory,
-                        ),
-                      )
                     : _PharmacyQueuePanel(
                         state: state,
                         section: effectiveSection,
@@ -646,204 +626,6 @@ class _PharmacyWorkspaceContentState
       ),
     );
   }
-}
-
-/// Renders the inventory stock rows for a stock-alert desk section (Near
-/// expiry, Expired, Low stock, Out of stock). Rows come from the shared
-/// inventory workbench filtered by the active section; badge counts stay on
-/// [PharmacyWorkspaceState.stockAlertSummary].
-class _PharmacyStockPanel extends ConsumerStatefulWidget {
-  const _PharmacyStockPanel({
-    required this.state,
-    required this.section,
-    required this.onOpenCatalogInventory,
-  });
-
-  final PharmacyWorkspaceState state;
-  final PharmacyDeskSection section;
-
-  /// Navigates to the inline Catalog and stock section's Inventory tab.
-  final VoidCallback onOpenCatalogInventory;
-
-  @override
-  ConsumerState<_PharmacyStockPanel> createState() =>
-      _PharmacyStockPanelState();
-}
-
-class _PharmacyStockPanelState extends ConsumerState<_PharmacyStockPanel> {
-  late final TextEditingController _stockSearchController;
-
-  @override
-  void initState() {
-    super.initState();
-    _stockSearchController = TextEditingController(
-      text: widget.state.inventoryQuery.search,
-    );
-  }
-
-  @override
-  void didUpdateWidget(covariant _PharmacyStockPanel oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final String search = widget.state.inventoryQuery.search;
-    if (oldWidget.state.inventoryQuery.search != search &&
-        _stockSearchController.text != search) {
-      _stockSearchController.text = search;
-    }
-  }
-
-  @override
-  void dispose() {
-    _stockSearchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final PharmacyWorkspaceController controller = ref.read(
-      pharmacyWorkspaceControllerProvider.notifier,
-    );
-    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    final bool canBrowseCatalog = canBrowsePharmacyCatalog(policy);
-
-    void openInventoryCatalog() => widget.onOpenCatalogInventory();
-
-    return AppListTable<PharmacyInventoryStock>(
-      page: widget.state.inventoryWorkbench.stocks,
-      isLoading: widget.state.isRefreshingInventory,
-      search: AppListTableSearch<PharmacyInventoryStock>(
-        controller: _stockSearchController,
-        semanticLabel: l10n.pharmacySearchLabel,
-        hintText: l10n.pharmacySearchHint,
-        matcher: (_, _) => true,
-        onSubmitted: controller.applyInventorySearch,
-        onClear: () => unawaited(controller.applyInventorySearch('')),
-        trailingActions: <AppSearchBarAction>[
-          if (canBrowseCatalog)
-            AppSearchBarAction(
-              icon: Icons.inventory_2_outlined,
-              label: l10n.pharmacyCatalogPanelTitle,
-              tooltip: l10n.pharmacyCatalogPanelTitle,
-              onPressed: openInventoryCatalog,
-            ),
-        ],
-      ),
-      onPageChanged: controller.changeInventoryPage,
-      onRowSelected: canBrowseCatalog
-          ? (PharmacyInventoryStock _) => openInventoryCatalog()
-          : null,
-      emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-        variant: AppStateViewVariant.empty,
-        title: l10n.pharmacyStockTabEmptyTitle,
-        body: l10n.pharmacyStockTabEmptyBody,
-        icon: _PharmacyWorkspaceContentState._sectionIcon(widget.section),
-      ),
-      columns: <AppListTableColumn<PharmacyInventoryStock>>[
-        AppListTableColumn<PharmacyInventoryStock>(
-          label: l10n.pharmacyInventoryItemLabel,
-          cellBuilder: (_, PharmacyInventoryStock item) =>
-              Text(item.inventoryItem?.displayTitle ?? item.displayId ?? '—'),
-        ),
-        AppListTableColumn<PharmacyInventoryStock>(
-          label: l10n.pharmacyStorageLocationColumnLabel,
-          cellBuilder: (_, PharmacyInventoryStock item) =>
-              Text(item.storageLocationLabel ?? '—'),
-        ),
-        AppListTableColumn<PharmacyInventoryStock>(
-          label: l10n.pharmacyInventoryQuantityColumnLabel,
-          numeric: true,
-          cellBuilder: (_, PharmacyInventoryStock item) =>
-              Text(item.quantity.toString()),
-        ),
-        AppListTableColumn<PharmacyInventoryStock>(
-          label: l10n.pharmacyReorderLevelColumnLabel,
-          numeric: true,
-          cellBuilder: (_, PharmacyInventoryStock item) =>
-              Text(item.reorderLevel.toString()),
-        ),
-        AppListTableColumn<PharmacyInventoryStock>(
-          label: l10n.pharmacyNextExpiryColumnLabel,
-          cellBuilder: (BuildContext context, PharmacyInventoryStock item) =>
-              _pharmacyStockExpiryCell(context, item),
-        ),
-        AppListTableColumn<PharmacyInventoryStock>(
-          label: l10n.pharmacyStockStatusFilterLabel,
-          cellBuilder: (BuildContext context, PharmacyInventoryStock item) =>
-              AppWorkspaceStatusBadge(
-                status: _pharmacyStockStatus(context, item.stockStatus),
-              ),
-        ),
-      ],
-      mobileItemBuilder: (BuildContext context, PharmacyInventoryStock item) {
-        return AppListTableMobileItem(
-          title: item.inventoryItem?.displayTitle ?? item.displayId ?? '—',
-          caption: item.storageLocationLabel,
-          meta: <AppListTableMobileMeta>[
-            AppListTableMobileMeta(
-              label:
-                  '${item.quantity} · ${l10n.pharmacyReorderLevelColumnLabel}: ${item.reorderLevel}',
-            ),
-            AppListTableMobileMeta(
-              label: _pharmacyStockStatus(context, item.stockStatus).label,
-            ),
-          ],
-          showAvatar: false,
-        );
-      },
-    );
-  }
-}
-
-AppWorkspaceStatus _pharmacyStockStatus(BuildContext context, String? value) {
-  final AppLocalizations l10n = context.l10n;
-  final String normalized = (value ?? '').toUpperCase();
-  final String label = switch (normalized) {
-    'IN_STOCK' => l10n.pharmacyStockInStock,
-    'ALMOST_OUT_OF_STOCK' => l10n.pharmacyStockAlmostOut,
-    'LOW_STOCK' => l10n.pharmacyStockLow,
-    'OUT_OF_STOCK' => l10n.pharmacyStockOut,
-    _ => l10n.pharmacyStockUnknown,
-  };
-  return AppWorkspaceStatus(
-    label: label,
-    tone: switch (normalized) {
-      'IN_STOCK' => AppWorkspaceStatusTone.success,
-      'ALMOST_OUT_OF_STOCK' => AppWorkspaceStatusTone.warning,
-      'LOW_STOCK' || 'OUT_OF_STOCK' => AppWorkspaceStatusTone.error,
-      _ => AppWorkspaceStatusTone.neutral,
-    },
-  );
-}
-
-Widget _pharmacyStockExpiryCell(
-  BuildContext context,
-  PharmacyInventoryStock item,
-) {
-  final AppLocalizations l10n = context.l10n;
-  if (item.nextExpiry == null) {
-    return const Text('—');
-  }
-  final String formatted = AppFormatters.dateTime(
-    item.nextExpiry!,
-    Localizations.localeOf(context),
-  );
-  if (item.expiryAlertStatus == 'EXPIRED') {
-    return AppWorkspaceStatusBadge(
-      status: AppWorkspaceStatus(
-        label: '$formatted · ${l10n.pharmacyStockExpiredLabel}',
-        tone: AppWorkspaceStatusTone.error,
-      ),
-    );
-  }
-  if (item.expiryAlertStatus == 'EXPIRING_SOON') {
-    return AppWorkspaceStatusBadge(
-      status: AppWorkspaceStatus(
-        label: '$formatted · ${l10n.pharmacyStockExpiringSoonLabel}',
-        tone: AppWorkspaceStatusTone.warning,
-      ),
-    );
-  }
-  return Text(formatted);
 }
 
 class _PharmacyQueuePanel extends ConsumerWidget {
@@ -3862,8 +3644,8 @@ List<AppListTableColumn<PharmacyOrder>> _columnsForSection(
         writeRequirement: writeRequirement,
       ),
     ],
-    // Catalog renders nested catalog tables; stock-alert sections render
-    // inventory rows via [_PharmacyStockPanel]. Neither uses order columns.
+    // Catalog and stock-alert sections render [PharmacyCatalogPanel] (Inventory
+    // for stock filters). Neither uses order columns.
     PharmacyDeskSection.catalog ||
     PharmacyDeskSection.nearExpiry ||
     PharmacyDeskSection.expired ||

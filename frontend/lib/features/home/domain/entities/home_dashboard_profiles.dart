@@ -556,7 +556,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     roleLabel: 'Pharmacist',
     homeTitle: 'Pharmacy',
     emptyMessage: 'No pending orders.',
-    maxStatusCards: 6,
+    maxStatusCards: 8,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'orders_today',
@@ -576,6 +576,16 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       HomeStatusCardTemplate(
         id: 'low_stock',
         label: 'Low stock',
+        requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'near_expiry',
+        label: 'Near expiry',
+        requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'expired',
+        label: 'Expired',
         requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
       ),
       HomeStatusCardTemplate(
@@ -629,6 +639,12 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
       'low_stock': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'low-stock'},
+      ),
+      'near_expiry': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'near-expiry'},
+      ),
+      'expired': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'expired'},
       ),
       'sales_today': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'completed'},

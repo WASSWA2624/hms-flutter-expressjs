@@ -10,6 +10,10 @@
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 const { sumBalancesDue } = require('@lib/billing/financials');
+const pharmacyWorkspaceRepository = require('@modules/pharmacy-workspace/repositories/pharmacy-workspace.repository');
+
+/** Align with pharmacy desk Near expiry window (30 days). */
+const PHARMACY_NEAR_EXPIRY_DAYS = 30;
 
 /** Include graph required to compute live Billing balance_due (parity with ledger). */
 const INVOICE_BALANCE_INCLUDE = Object.freeze({
@@ -1525,6 +1529,8 @@ const getDashboardSummaryByPack = async ({
         dispensedToday,
         lowStock,
         criticalStock,
+        nearExpiry,
+        expiredStock,
         pendingBalanceAmount,
         mostSold,
         salesToday,
@@ -1537,6 +1543,15 @@ const getDashboardSummaryByPack = async ({
         prisma.dispense_log.count({ where: { ...dispenseLogWhere, status: 'DISPENSED', dispensed_at: { gte: todayStart } } }),
         countLowStock(inventoryStockWhere, 1),
         countLowStock(inventoryStockWhere, 0.5),
+        pharmacyWorkspaceRepository.countInventoryRowsWithExpiringBatches(
+          scope.tenant_id,
+          scope.facility_id || null,
+          PHARMACY_NEAR_EXPIRY_DAYS
+        ),
+        pharmacyWorkspaceRepository.countInventoryRowsWithExpiredBatches(
+          scope.tenant_id,
+          scope.facility_id || null
+        ),
         sumOutstandingBalance(openBalanceWhere),
         aggregateMostSoldDrugs(
           prisma,
@@ -1557,6 +1572,8 @@ const getDashboardSummaryByPack = async ({
           dispensedToday,
           lowStock,
           criticalStock,
+          nearExpiry,
+          expiredStock,
           pendingBalanceAmount,
           billingPending: pendingBalanceAmount,
           salesToday,
