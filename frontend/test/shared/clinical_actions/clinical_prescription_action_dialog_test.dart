@@ -9,6 +9,55 @@ import 'package:hosspi_hms/shared/components/components.dart';
 
 void main() {
   group('ClinicalPrescriptionActionDialog', () {
+    testWidgets('hides review billing when enableBilling is false', (
+      WidgetTester tester,
+    ) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(1400, 900);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: Scaffold(
+              body: ClinicalPrescriptionActionDialog(
+                enableBilling: false,
+                dialogTitle: 'Create order',
+                submitLabel: 'Create order',
+                referenceData: const ClinicalActionReferenceData(
+                  drugs: <ClinicalActionCatalogOption>[
+                    ClinicalActionCatalogOption(
+                      id: 'amox',
+                      name: 'Amoxicillin',
+                      code: 'AMOX',
+                    ),
+                  ],
+                ),
+                onSubmit:
+                    ({
+                      required List<Map<String, Object?>> items,
+                      ClinicalRequestBillingSubmit? billing,
+                    }) async {
+                      return null;
+                    },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Create order'), findsWidgets);
+      expect(find.text('Review billing'), findsNothing);
+      expect(find.text('Add medicine'), findsWidgets);
+      expect(find.text('No medicines added yet'), findsOneWidget);
+    });
+
     testWidgets('hides help copy and payment mode controls', (
       WidgetTester tester,
     ) async {

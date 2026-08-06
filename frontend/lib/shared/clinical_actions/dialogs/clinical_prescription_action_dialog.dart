@@ -22,11 +22,39 @@ class ClinicalPrescriptionActionDialog extends StatefulWidget {
     required this.referenceData,
     required this.onSubmit,
     this.payerContext,
+    this.header,
+    this.dialogTitle,
+    this.submitLabel,
+    this.dialogIcon,
+    this.maxWidth = 880,
+    this.enableBilling = true,
+    this.defaultBillingEntity = 'FACILITY',
     super.key,
   });
 
   final ClinicalActionReferenceData referenceData;
   final ClinicalRequestPayerContext? payerContext;
+
+  /// Optional content above the medicines table (e.g. pharmacy patient shell).
+  final Widget? header;
+
+  /// Overrides [AppLocalizations.clinicalPrescribeAction] for the dialog title.
+  final String? dialogTitle;
+
+  /// Overrides the primary submit button label.
+  final String? submitLabel;
+
+  /// Overrides the dialog leading icon.
+  final IconData? dialogIcon;
+
+  final double maxWidth;
+
+  /// When false, hides Review billing and submits without a billing payload.
+  final bool enableBilling;
+
+  /// Billing entity stamped on review / bill-later payloads.
+  final String defaultBillingEntity;
+
   final Future<AppFailure?> Function({
     required List<Map<String, Object?>> items,
     ClinicalRequestBillingSubmit? billing,
@@ -96,9 +124,9 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         _columnChoices(context);
 
     return AppDialog(
-      title: Text(l10n.clinicalPrescribeAction),
-      icon: const Icon(Icons.medication_outlined),
-      maxWidth: 880,
+      title: Text(widget.dialogTitle ?? l10n.clinicalPrescribeAction),
+      icon: Icon(widget.dialogIcon ?? Icons.medication_outlined),
+      maxWidth: widget.maxWidth,
       pinActionsToBottom: true,
       closeEnabled: !_isSaving,
       content: Column(
@@ -109,6 +137,10 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
               context: context,
               failure: _failure!,
             ),
+          if (widget.header != null) ...<Widget>[
+            widget.header!,
+            SizedBox(height: theme.spacing.md),
+          ],
           Expanded(
             child: AppListTable<_PrescriptionLineFormState>(
               items: visibleLines,
@@ -197,8 +229,10 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
           onPressed: () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
-          label: l10n.clinicalPrescribeAction,
-          leadingIcon: Icons.send_outlined,
+          label: widget.submitLabel ?? l10n.clinicalPrescribeAction,
+          leadingIcon: widget.submitLabel == null
+              ? Icons.send_outlined
+              : Icons.add_shopping_cart_outlined,
           isLoading: _isSaving,
           enabled: !_isSaving && _lines.isNotEmpty,
           onPressed: _submit,
@@ -224,14 +258,15 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         enabled: !_isSaving,
         onPressed: _isSaving ? null : () => unawaited(_openCatalogPicker()),
       ),
-      AppSearchBarAction(
-        icon: Icons.payments_outlined,
-        label: l10n.clinicalRequestReviewBillingAction,
-        enabled: !_isSaving && _lines.isNotEmpty,
-        onPressed: _lines.isEmpty || _isSaving
-            ? null
-            : () => unawaited(_openBillingDialog()),
-      ),
+      if (widget.enableBilling)
+        AppSearchBarAction(
+          icon: Icons.payments_outlined,
+          label: l10n.clinicalRequestReviewBillingAction,
+          enabled: !_isSaving && _lines.isNotEmpty,
+          onPressed: _lines.isEmpty || _isSaving
+              ? null
+              : () => unawaited(_openBillingDialog()),
+        ),
     ];
   }
 
@@ -738,12 +773,13 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   }
 
   Future<void> _openBillingDialog() async {
+    final String billingEntity = widget.defaultBillingEntity;
     final List<ClinicalRequestBillingLineItem> fallback =
         _prescriptionBillingLineItems()
             .map(
               (ClinicalRequestBillingLineItem item) => item.copyWith(
                 catalogType: item.catalogType ?? 'DRUG',
-                billingEntity: item.billingEntity ?? 'FACILITY',
+                billingEntity: item.billingEntity ?? billingEntity,
               ),
             )
             .toList(growable: false);
@@ -751,7 +787,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         await resolveClinicalRequestBillingLineItems(
           context: context,
           catalogFallbackItems: fallback,
-          billingEntity: 'FACILITY',
+          billingEntity: billingEntity,
           payerContext: widget.payerContext,
         );
     if (!mounted) {
@@ -762,7 +798,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
           context: context,
           lineItems: resolved,
           initialBilling: _billingSubmit,
-          billingEntity: 'FACILITY',
+          billingEntity: billingEntity,
           payerContext: widget.payerContext,
           enabled: !_isSaving,
         );
@@ -893,8 +929,9 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         }),
     ];
 
-    // Always attach request-time billing (bill-later when not reviewed).
-    final ClinicalRequestBillingSubmit? billing = _pendingBillingSubmit();
+    // Attach request-time billing when enabled (bill-later when not reviewed).
+    final ClinicalRequestBillingSubmit? billing =
+        widget.enableBilling ? _pendingBillingSubmit() : null;
     final AppFailure? failure = await widget.onSubmit(
       items: items,
       billing: billing,
@@ -1141,7 +1178,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       currency: resolveClinicalRequestBillingCurrency(lineItems),
       paymentStatus: ClinicalRequestPaymentStatus.unpaid,
       lineItems: lineItems,
-      billingEntity: 'FACILITY',
+      billingEntity: widget.defaultBillingEntity,
     );
   }
 

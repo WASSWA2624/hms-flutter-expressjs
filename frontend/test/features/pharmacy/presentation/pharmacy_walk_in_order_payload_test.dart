@@ -29,7 +29,11 @@ void main() {
       <String, Object?>{
         'drug_id': 'drug-1',
         'quantity': 2,
-        'dosage': '1 tablet',
+        'dose_amount': 1,
+        'dose_unit': 'tablet',
+        'route': 'oral',
+        'frequency': 'OD',
+        'quantity_unit': 'tablet',
       },
     ];
 
@@ -40,6 +44,7 @@ void main() {
 
     expect(payload.containsKey('patient_id'), isFalse);
     expect(payload.containsKey('encounter_id'), isFalse);
+    expect(payload.containsKey('billing'), isFalse);
     expect(payload['items'], isA<List<Map<String, Object?>>>());
   });
 }
