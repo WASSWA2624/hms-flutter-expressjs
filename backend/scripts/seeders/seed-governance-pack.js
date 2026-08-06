@@ -302,7 +302,7 @@ const seedGovernancePack = async (ctx, orgPack, accessPack, clinicalPack, operat
       status: 'REQUESTED',
       review_status: 'PENDING',
       requested_at: ctx.date(0, 5),
-      expires_at: ctx.date(0, 65),
+      expires_at: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
       etag: ctx.hash(`${scenario.key}:break-glass-pending:etag`),
     },
     {
@@ -336,7 +336,8 @@ const seedGovernancePack = async (ctx, orgPack, accessPack, clinicalPack, operat
       requested_at: ctx.date(-1, 22 * 60),
       approved_at: ctx.date(-1, 22 * 60 + 10),
       starts_at: ctx.date(-1, 22 * 60 + 10),
-      expires_at: ctx.date(-1, 22 * 60 + 55),
+      // Must remain in the real-world future so break-glass expiry sweeps do not flip ACTIVE→EXPIRED before verify.
+      expires_at: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
       reviewed_at: ctx.date(-1, 22 * 60 + 10),
       etag: ctx.hash(`${scenario.key}:break-glass-approved:etag`),
     },

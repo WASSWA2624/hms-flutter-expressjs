@@ -33,6 +33,13 @@ const { seedFillerPack } = require('./seeders/seed-filler-pack');
 const { assertDemoTaskAllowed } = require('./demo-safety');
 const { verifyDemoData } = require('./verify-demo-data');
 
+try {
+  const { stopBreakGlassExpiryRuntime } = require('@lib/authorization/break-glass-expiry');
+  stopBreakGlassExpiryRuntime();
+} catch (_error) {
+  // Optional during seed; ignore if the runtime module is unavailable.
+}
+
 const getDeterministicDate = (sequence = 0, minuteOffset = 0, randomSeed = DEFAULT_RANDOM_SEED) => {
   const seedOffsetMs = (Math.abs(Number(randomSeed) || DEFAULT_RANDOM_SEED) % 100000) * 1000;
   return new Date(Date.UTC(2026, 1, 15, 9, 0, 0) + seedOffsetMs + (sequence + minuteOffset) * 60000);
@@ -110,7 +117,61 @@ const seedDemoData = async ({
     biomedicalPack,
     mortuaryPack,
   });
-  const fillerSummary = await seedFillerPack(ctx, resolvedTargetCount);
+
+  const demoFacility = orgPack.facilities?.[`${Object.keys(orgPack.tenants || {})[0] || 'demo'}:main`]
+    || Object.values(orgPack.facilities || {})[0];
+  const demoTenantId = demoFacility?.tenant_id || Object.values(orgPack.tenants || {})[0]?.id;
+  const patientIds = [
+    ...Object.values(clinicalPack?.patients || {}).map((patient) => patient.id),
+    ...(volumeSummary.patient_ids || []),
+  ].filter(Boolean);
+  const userIds = Object.values(accessPack?.users || {}).map((user) => user.id).filter(Boolean);
+  const staffProfileIds = Object.values(accessPack?.staffProfiles || {})
+    .map((profile) => profile.id)
+    .filter(Boolean);
+  const inventoryItemIds = [
+    ...Object.values(clinicalCatalogPack?.pharmacy?.inventoryItems || {}).map((item) => item.id),
+    ...Object.values(operationsPack?.inventoryItems || {}).map((item) => item.id),
+  ].filter(Boolean);
+  const equipmentRegistryId =
+    biomedicalPack?.registries?.[Object.keys(biomedicalPack?.registries || {})[0]]?.id
+    || Object.values(biomedicalPack?.registries || {})[0]?.id
+    || null;
+
+  const fillerSummary = volumeSummary.skipped
+    ? await seedFillerPack(ctx, resolvedTargetCount, {
+        tenant_id: demoTenantId,
+        facility_id: demoFacility?.id || null,
+        patient_ids: patientIds,
+        user_ids: userIds,
+        staff_profile_ids: staffProfileIds,
+        inventory_item_ids: inventoryItemIds,
+        inventory_item_id: inventoryItemIds[0] || null,
+        equipment_registry_id: equipmentRegistryId,
+        equipment_registry_ids: equipmentRegistryId ? [equipmentRegistryId] : [],
+      })
+    : {
+        skipped: true,
+        reason: 'volume_pack_satisfies_applicable_targets',
+        created: 0,
+        processed: 0,
+      };
+
+  // Heal hero break-glass ACTIVE row in case an expiry sweep flipped it during long volume seeding.
+  if (demoTenantId && prisma.break_glass_access?.updateMany) {
+    await prisma.break_glass_access.updateMany({
+      where: {
+        tenant_id: demoTenantId,
+        review_status: 'APPROVED',
+        deleted_at: null,
+      },
+      data: {
+        status: 'ACTIVE',
+        expires_at: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
+      },
+    });
+  }
+
   const verification = await verifyDemoData();
 
   if (!verification.ok) {

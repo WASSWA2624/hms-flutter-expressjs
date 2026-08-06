@@ -184,6 +184,20 @@ const parseSchemaMetadata = (schemaPath) => {
       fields,
       fieldByName: new Map(fields.map((field) => [field.name, field])),
     });
+
+    for (const rawLine of body.split(/\r?\n/)) {
+      const line = stripInlineComment(rawLine).trim();
+      const uniqueMatch = line.match(/^@@unique\(\[([^\]]+)\]/);
+      if (!uniqueMatch) continue;
+      const uniqueFields = uniqueMatch[1]
+        .split(',')
+        .map((entry) => entry.trim().replace(/[^a-zA-Z0-9_]/g, ''))
+        .filter(Boolean);
+      for (const fieldName of uniqueFields) {
+        const field = modelsByName.get(modelName)?.fieldByName.get(fieldName);
+        if (field) field.isUnique = true;
+      }
+    }
   }
 
   return { enumValuesByName, modelsByName };
@@ -242,6 +256,8 @@ const shouldAutofillField = (field) => {
   if (field.isList) return false;
   if (field.kind === 'object') return false;
   if (field.isId) return false;
+  // Never invent foreign keys — callers must supply real related ids.
+  if (String(field.name || '').endsWith('_id')) return false;
   return !field.isOptional && !field.hasDefault;
 };
 

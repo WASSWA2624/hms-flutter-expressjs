@@ -12,12 +12,12 @@ describe('seed-volume-pack', () => {
     expect(MIN_APPLICABLE_VOLUME).toBe(100);
   });
 
-  it('resolves secondary targets relative to high-traffic volume', () => {
+  it('resolves secondary targets equal to high-traffic volume', () => {
     expect(resolveVolumeTargets(0)).toEqual({ skipped: true, highTraffic: 0, secondary: 0 });
     expect(resolveVolumeTargets(1000)).toEqual({
       skipped: false,
       highTraffic: 1000,
-      secondary: 200,
+      secondary: 1000,
     });
     expect(resolveSecondaryTarget(100)).toBe(100);
     expect(resolveSecondaryTarget(50)).toBe(50);

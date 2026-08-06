@@ -4,8 +4,7 @@
  * Seeds status-diverse operational graphs for demonstrations.
  * Skipped when targetCount <= 0 (curated-only mode).
  *
- * High-traffic models target `targetCount` (default 1000).
- * Secondary applicable models target at least 100 (capped relative to target).
+ * Applicable operational models target `targetCount` (default 1000).
  *
  * Intentional exceptions (not volume-filled here): singleton tenant/facility/
  * subscription/license, plan/add-on/module catalogs, role/permission catalogs.
@@ -93,11 +92,8 @@ const pad = (value, width = 4) => String(value).padStart(width, '0');
 
 const resolveSecondaryTarget = (targetCount) => {
   if (!Number.isFinite(targetCount) || targetCount <= 0) return 0;
-  if (targetCount < MIN_APPLICABLE_VOLUME) return targetCount;
-  return Math.max(
-    MIN_APPLICABLE_VOLUME,
-    Math.min(targetCount, Math.floor(targetCount * 0.2) || MIN_APPLICABLE_VOLUME)
-  );
+  // All applicable volume tables use the same target (≥1000 by default).
+  return targetCount;
 };
 
 const resolveVolumeTargets = (targetCount) => {
@@ -221,7 +217,7 @@ const seedVolumePack = async (
     `Seeding demo volume pack (high-traffic=${targets.highTraffic}, secondary=${targets.secondary})...`
   );
 
-  await runInBatches(targets.highTraffic, 25, async (index) => {
+  await runInBatches(targets.highTraffic, 10, async (index) => {
     const key = `vol-${pad(index)}`;
     const patient = await ctx.upsert(
       'patient',
@@ -263,7 +259,7 @@ const seedVolumePack = async (
   const patientAt = (index) => patients[(index - 1) % patients.length]
     || clinicalPack?.patients?.[`${scenario.key}:p${((index - 1) % 5) + 1}`];
 
-  await runInBatches(targets.highTraffic, 25, async (index) => {
+  await runInBatches(targets.highTraffic, 10, async (index) => {
     const patient = patientAt(index);
     if (!patient) return;
     const status = pick(APPOINTMENT_STATUSES, index);
@@ -287,7 +283,7 @@ const seedVolumePack = async (
   });
 
   const encounters = [];
-  await runInBatches(targets.highTraffic, 20, async (index) => {
+  await runInBatches(targets.highTraffic, 10, async (index) => {
     const patient = patientAt(index);
     if (!patient) return;
     const status = pick(ENCOUNTER_STATUSES, index);
@@ -314,7 +310,7 @@ const seedVolumePack = async (
 
   const encounterAt = (index) => encounters[(index - 1) % Math.max(1, encounters.length)];
 
-  await runInBatches(targets.secondary, 20, async (index) => {
+  await runInBatches(targets.secondary, 10, async (index) => {
     const patient = patientAt(index);
     const encounter = encounterAt(index);
     if (!patient) return;
@@ -337,7 +333,7 @@ const seedVolumePack = async (
   });
 
   if (labTests.length > 0) {
-    await runInBatches(targets.highTraffic, 15, async (index) => {
+    await runInBatches(targets.highTraffic, 10, async (index) => {
       const patient = patientAt(index);
       const encounter = encounterAt(index);
       if (!patient) return;
@@ -408,7 +404,7 @@ const seedVolumePack = async (
   }
 
   if (radiologyProcedures.length > 0) {
-    await runInBatches(targets.secondary, 15, async (index) => {
+    await runInBatches(targets.secondary, 10, async (index) => {
       const patient = patientAt(index);
       if (!patient) return;
       const orderStatus = pick(RADIOLOGY_ORDER_STATUSES, index);
@@ -450,7 +446,7 @@ const seedVolumePack = async (
   }
 
   if (drugs.length > 0) {
-    await runInBatches(targets.highTraffic, 15, async (index) => {
+    await runInBatches(targets.highTraffic, 10, async (index) => {
       const patient = patientAt(index);
       if (!patient) return;
       const orderStatus = pick(PHARMACY_ORDER_STATUSES, index);
@@ -508,7 +504,7 @@ const seedVolumePack = async (
     });
   }
 
-  await runInBatches(targets.highTraffic, 20, async (index) => {
+  await runInBatches(targets.highTraffic, 10, async (index) => {
     const patient = patientAt(index);
     if (!patient) return;
     const invoiceStatus = pick(INVOICE_STATUSES, index);
@@ -576,7 +572,7 @@ const seedVolumePack = async (
     created.payments += 1;
   });
 
-  await runInBatches(targets.secondary, 20, async (index) => {
+  await runInBatches(targets.secondary, 10, async (index) => {
     const patient = patientAt(index);
     if (!patient) return;
     await ctx.upsert(
@@ -596,7 +592,7 @@ const seedVolumePack = async (
   });
 
   if (inventoryItems.length > 0) {
-    await runInBatches(targets.highTraffic, 25, async (index) => {
+    await runInBatches(targets.highTraffic, 10, async (index) => {
       const item = pick(inventoryItems, index);
       await ctx.upsert(
         'stock_movement',
@@ -616,7 +612,7 @@ const seedVolumePack = async (
   }
 
   if (equipmentRegistry) {
-    await runInBatches(targets.secondary, 20, async (index) => {
+    await runInBatches(targets.secondary, 10, async (index) => {
       const status = pick(WORK_ORDER_STATUSES, index);
       await ctx.upsert(
         'equipment_work_order',
@@ -644,7 +640,7 @@ const seedVolumePack = async (
     });
   }
 
-  await runInBatches(targets.secondary, 15, async (index) => {
+  await runInBatches(targets.secondary, 10, async (index) => {
     const patient = patientAt(index * 3);
     const status = pick(MORTUARY_CASE_STATUSES, index);
     await ctx.upsert(
@@ -674,7 +670,7 @@ const seedVolumePack = async (
     created.mortuary_cases += 1;
   });
 
-  await runInBatches(targets.highTraffic, 25, async (index) => {
+  await runInBatches(targets.highTraffic, 10, async (index) => {
     const user = pick(staffUsers.length > 0 ? staffUsers : [null], index);
     const notification = await ctx.upsert(
       'notification',
@@ -718,6 +714,7 @@ const seedVolumePack = async (
     targets,
     created,
     patients: patients.length,
+    patient_ids: patients.map((patient) => patient.id),
   };
 };
 

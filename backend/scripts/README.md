@@ -247,8 +247,8 @@ Seeds curated, deterministic demo data packs, an FK-aware volume expansion pack,
 
 | Setting | Behavior |
 | --- | --- |
-| unset / default | `SEED_RECORD_COUNT=1000` — high-traffic tables target 1000; secondary applicable tables ≥100 |
-| `SEED_RECORD_COUNT=100` | Minimum applicable volume |
+| unset / default | `SEED_RECORD_COUNT=1000` — applicable operational tables target 1000 rows each |
+| `SEED_RECORD_COUNT=100` | Lighter volume run |
 | `SEED_RECORD_COUNT=0` | Curated hero scenarios only |
 
 Intentional exceptions (not volume-filled): singleton tenant/facility/subscription/license, plan/add-on/module catalogs, role/permission catalogs.

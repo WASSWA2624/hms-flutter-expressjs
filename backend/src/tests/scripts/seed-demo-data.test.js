@@ -158,7 +158,7 @@ describe('seed-demo-data script', () => {
         clinicalPack: expect.any(Object),
       })
     );
-    expect(seedFillerPack).toHaveBeenCalledWith(expect.any(Object), 0);
+    expect(seedFillerPack).toHaveBeenCalledWith(expect.any(Object), 0, expect.any(Object));
     expect(verifyDemoData).toHaveBeenCalledTimes(1);
     expect(result.skipped).toBe(false);
     expect(result.summary.target_count).toBe(0);
@@ -309,8 +309,14 @@ describe('seed-demo-data script', () => {
     const result = await seedDemoData({ targetCount: 100, randomSeed: 20260302 });
 
     expect(seedVolumePack).toHaveBeenCalledWith(expect.any(Object), 100, expect.any(Object));
-    expect(seedFillerPack).toHaveBeenCalledWith(expect.any(Object), 100);
+    expect(seedFillerPack).not.toHaveBeenCalled();
     expect(result.summary.target_count).toBe(100);
     expect(result.summary.volume.skipped).toBe(false);
+    expect(result.summary.filler).toEqual({
+      skipped: true,
+      reason: 'volume_pack_satisfies_applicable_targets',
+      created: 0,
+      processed: 0,
+    });
   });
 });
