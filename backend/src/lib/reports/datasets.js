@@ -1,6 +1,19 @@
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 const { REPORT_DATASET_MAP } = require('@lib/reports/constants');
+const { pharmacyRetailMarginUnit } = require('@lib/billing/pharmacy-drug-margins');
+
+const resolveBatchExpiryAlertStatus = (expiryDate, expiringWithinDays = 30) => {
+  if (!expiryDate) return null;
+  const parsed = expiryDate instanceof Date ? expiryDate : new Date(expiryDate);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const now = new Date();
+  if (parsed.getTime() < now.getTime()) return 'EXPIRED';
+  const horizon = new Date(now);
+  horizon.setDate(horizon.getDate() + Number(expiringWithinDays || 30));
+  if (parsed.getTime() <= horizon.getTime()) return 'EXPIRING_SOON';
+  return null;
+};
 
 const normalizeString = (value) => String(value || '').trim();
 const asNumber = (value) => {
@@ -610,8 +623,11 @@ const summarizeConsumptionSeries = (rows = []) => {
  */
 const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => {
   const range = resolveDateRange(parameters);
-  const columns = ['drug', 'quantity_dispensed', 'amount', 'order_source'];
+  const columns = ['drug', 'quantity_dispensed', 'amount', 'profit', 'order_source'];
   const topLimit = Math.max(1, Math.min(100, asNumber(parameters.top_n || parameters.limit) || 25));
+  const orderSourceFilter = normalizeString(
+    parameters.order_source || parameters.orderSource
+  ).toUpperCase();
 
   if (range.invalid) {
     return {
@@ -649,6 +665,7 @@ const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => 
               human_friendly_id: true,
               name: true,
               unit_price: true,
+              buy_unit_price: true,
             },
           },
           pharmacy_order: {
@@ -671,23 +688,41 @@ const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => 
     if (qty <= 0) return;
     const unitPrice = resolveDispenseUnitPrice(log);
     const amount = Math.round(unitPrice * qty * 100) / 100;
+    const buyUnitPrice = log?.pharmacy_order_item?.drug?.buy_unit_price;
+    const marginUnit = pharmacyRetailMarginUnit({
+      unitPrice,
+      buyUnitPrice,
+    });
+    const profit =
+      marginUnit == null ? null : Math.round(marginUnit * qty * 100) / 100;
     const drugName =
       normalizeString(log?.pharmacy_order_item?.drug?.name) ||
       normalizeString(log?.pharmacy_order_item?.drug_id) ||
       'Unknown';
     const orderSource = resolveOrderSource(log?.pharmacy_order_item?.pharmacy_order?.encounter_id);
+    if (
+      orderSourceFilter &&
+      (orderSourceFilter === 'PHARMACY' || orderSourceFilter === 'CLINICAL') &&
+      orderSource !== orderSourceFilter
+    ) {
+      return;
+    }
 
     if (!drugIndex.has(drugName)) {
       drugIndex.set(drugName, {
         drug: drugName,
         quantity_dispensed: 0,
         amount: 0,
+        profit: null,
         sources: new Map(),
       });
     }
     const drugEntry = drugIndex.get(drugName);
     drugEntry.quantity_dispensed += qty;
     drugEntry.amount = Math.round((drugEntry.amount + amount) * 100) / 100;
+    if (profit != null) {
+      drugEntry.profit = Math.round((asNumber(drugEntry.profit) + profit) * 100) / 100;
+    }
     drugEntry.sources.set(orderSource, asNumber(drugEntry.sources.get(orderSource)) + qty);
 
     sourceIndex.set(orderSource, {
@@ -716,6 +751,7 @@ const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => 
         drug: entry.drug,
         quantity_dispensed: entry.quantity_dispensed,
         amount: Math.round(entry.amount * 100) / 100,
+        profit: entry.profit,
         order_source: orderSource,
       };
     })
@@ -745,6 +781,9 @@ const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => 
 
   const fromLabel = range.from.toISOString().slice(0, 10);
   const toLabel = range.to.toISOString().slice(0, 10);
+  const sourceLabel = orderSourceFilter
+    ? ` · source ${orderSourceFilter}`
+    : '';
 
   return {
     invalid: false,
@@ -754,10 +793,14 @@ const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => 
     to: range.to,
     granularity: monthly ? 'month' : 'day',
     title: 'Pharmacy drug consumption',
-    subtitle: `${fromLabel} to ${toLabel} (top ${rows.length} by quantity)`,
+    subtitle: `${fromLabel} to ${toLabel} (top ${rows.length} by quantity)${sourceLabel}`,
     columns,
     rows,
-    summary: summarizeConsumptionSeries(rows),
+    summary: {
+      ...summarizeConsumptionSeries(rows),
+      profit: rows.reduce((sum, row) => sum + asNumber(row.profit), 0),
+      source_mix,
+    },
     breakdown: {
       daily_totals,
       source_mix,
@@ -865,6 +908,8 @@ const runPharmacyDrugConsumptionDataset = async (scope, parameters = {}) => {
     subtitle: analytics.subtitle,
     columns: analytics.columns,
     rows: analytics.rows,
+    summary: analytics.summary,
+    breakdown: analytics.breakdown,
   };
 };
 
@@ -875,6 +920,7 @@ const runPharmacyDispenseThroughputDataset = async (scope, parameters = {}) => {
     subtitle: analytics.subtitle,
     columns: analytics.columns,
     rows: analytics.rows,
+    summary: analytics.summary,
   };
 };
 
@@ -940,7 +986,7 @@ const runInventoryDataset = async (scope) => {
     },
   });
 
-  const rows = stocks
+  const stockRows = stocks
     .filter((entry) => asNumber(entry.reorder_level) > 0 && asNumber(entry.quantity) <= asNumber(entry.reorder_level))
     .map((entry) => ({
       facility: entry?.facility?.name || scope.facility_label || 'Unassigned',
@@ -951,13 +997,106 @@ const runInventoryDataset = async (scope) => {
         asNumber(entry.quantity) <= Math.max(1, Math.floor(asNumber(entry.reorder_level) / 2))
           ? 'CRITICAL'
           : 'LOW',
+      expiry_date: null,
+      expiry_alert_status: null,
+      days_to_expiry: null,
+      batch_number: null,
     }));
+
+  const batchWhere = {
+    deleted_at: null,
+    quantity: { gt: 0 },
+    expiry_date: { not: null },
+    drug: {
+      deleted_at: null,
+      tenant_id: scope.tenant_id,
+    },
+  };
+  if (scope.facility_id) {
+    batchWhere.OR = [
+      { storage_room: { facility_id: scope.facility_id, deleted_at: null } },
+      { storage_room_id: null },
+    ];
+  }
+
+  const batches = await prisma.drug_batch.findMany({
+    where: batchWhere,
+    select: {
+      batch_number: true,
+      quantity: true,
+      expiry_date: true,
+      expiry_alert_lead_days: true,
+      drug: { select: { name: true } },
+      storage_room: { select: { facility: { select: { name: true } } } },
+    },
+  });
+
+  const now = Date.now();
+  const expiryRows = [];
+  for (const batch of batches) {
+    const leadDays =
+      batch.expiry_alert_lead_days != null
+        ? Number(batch.expiry_alert_lead_days)
+        : 30;
+    const status = resolveBatchExpiryAlertStatus(batch.expiry_date, leadDays);
+    if (!status) {
+      continue;
+    }
+    const expiryMs = new Date(batch.expiry_date).getTime();
+    const daysToExpiry = Number.isFinite(expiryMs)
+      ? Math.ceil((expiryMs - now) / (24 * 60 * 60 * 1000))
+      : null;
+    expiryRows.push({
+      facility:
+        batch?.storage_room?.facility?.name ||
+        scope.facility_label ||
+        'Unassigned',
+      inventory_item: normalizeString(batch?.drug?.name) || 'Unknown',
+      quantity: asNumber(batch.quantity),
+      reorder_level: null,
+      risk_state: status,
+      expiry_date: batch.expiry_date
+        ? new Date(batch.expiry_date).toISOString().slice(0, 10)
+        : null,
+      expiry_alert_status: status,
+      days_to_expiry: daysToExpiry,
+      batch_number: normalizeString(batch.batch_number) || null,
+    });
+  }
+
+  const rows = [...stockRows, ...expiryRows].sort((left, right) => {
+    const rank = (state) => {
+      if (state === 'EXPIRED' || state === 'CRITICAL') return 0;
+      if (state === 'EXPIRING_SOON' || state === 'LOW') return 1;
+      return 2;
+    };
+    const byRisk = rank(left.risk_state) - rank(right.risk_state);
+    if (byRisk !== 0) return byRisk;
+    return asNumber(left.days_to_expiry ?? 9999) - asNumber(right.days_to_expiry ?? 9999);
+  });
 
   return {
     title: 'Inventory stock risk',
-    subtitle: 'Current low-stock and critical-stock pressure',
-    columns: ['facility', 'inventory_item', 'quantity', 'reorder_level', 'risk_state'],
+    subtitle: 'Low-stock, critical-stock, near-expiry, and expired batch pressure',
+    columns: [
+      'facility',
+      'inventory_item',
+      'quantity',
+      'reorder_level',
+      'risk_state',
+      'expiry_date',
+      'expiry_alert_status',
+      'days_to_expiry',
+      'batch_number',
+    ],
     rows,
+    summary: {
+      low_stock: stockRows.filter((row) => row.risk_state === 'LOW').length,
+      critical_stock: stockRows.filter((row) => row.risk_state === 'CRITICAL').length,
+      expiring_soon: expiryRows.filter((row) => row.risk_state === 'EXPIRING_SOON').length,
+      expired: expiryRows.filter((row) => row.risk_state === 'EXPIRED').length,
+      total_risk_rows: rows.length,
+    },
   };
 };
 
@@ -1123,6 +1262,8 @@ const executeReportDataset = async ({ dataset_key, scope, definition_json = {}, 
     subtitle: result.subtitle || dataset.description,
     columns,
     rows: filteredRows,
+    summary: result.summary || null,
+    breakdown: result.breakdown || null,
   };
 };
 

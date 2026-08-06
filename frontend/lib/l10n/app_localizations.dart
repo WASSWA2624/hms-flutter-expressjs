@@ -30871,6 +30871,90 @@ abstract class AppLocalizations {
   /// **'Create or run report'**
   String get reportsOverviewCreateReportAction;
 
+  /// Overview subtitle when the pharmacist pharmacy domain pack is active.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy analysis, analytics insights, and shared report runs for your facility.'**
+  String get reportsPharmacyOverviewSubtitle;
+
+  /// Pharmacist Overview section for interactive pharmacy dataset exploration.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis'**
+  String get reportsPharmacyAnalysisTitle;
+
+  /// Pharmacist Analysis section supporting copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore consumption, dispense throughput, stock and expiry risk, and walk-in vs clinical mix with charts and tables for a selected period.'**
+  String get reportsPharmacyAnalysisBody;
+
+  /// Empty state when pharmacist Analysis chips cannot be shown.
+  ///
+  /// In en, this message translates to:
+  /// **'No pharmacy analysis datasets are available for your access.'**
+  String get reportsPharmacyAnalysisEmpty;
+
+  /// Pharmacist Overview section for pharmacy insights and projections.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics'**
+  String get reportsPharmacyAnalyticsTitle;
+
+  /// Pharmacist Analytics section supporting copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Open insights for top consumed drugs, stock-out and expiry risk, stocking focus, walk-in vs clinical mix, and margin when buy cost is configured.'**
+  String get reportsPharmacyAnalyticsBody;
+
+  /// Insight chip that opens pharmacy drug consumption.
+  ///
+  /// In en, this message translates to:
+  /// **'Top consumed drugs'**
+  String get reportsPharmacyAnalyticsTopConsumedLabel;
+
+  /// Insight chip that opens inventory stock risk.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock-out risk'**
+  String get reportsPharmacyAnalyticsStockRiskLabel;
+
+  /// Insight chip for near-expiry and expired batch risk.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiry risk'**
+  String get reportsPharmacyAnalyticsExpiryLabel;
+
+  /// Insight chip for suggested next stocking focus from stock risk.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested stocking focus'**
+  String get reportsPharmacyAnalyticsStockingLabel;
+
+  /// Insight chip for OTC/walk-in versus clinical dispense mix.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk-in vs clinical mix'**
+  String get reportsPharmacyAnalyticsSourceMixLabel;
+
+  /// Insight chip for pharmacy revenue and margin when buy cost exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue and margin'**
+  String get reportsPharmacyAnalyticsMarginLabel;
+
+  /// Pharmacist Overview section for report definitions, runs, and schedules.
+  ///
+  /// In en, this message translates to:
+  /// **'Reporting'**
+  String get reportsPharmacyReportingTitle;
+
+  /// Pharmacist Reporting section supporting copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Create, run, schedule, and download pharmacy reports using the shared reporting pipeline.'**
+  String get reportsPharmacyReportingBody;
+
   /// Status label when the reports workspace is live.
   ///
   /// In en, this message translates to:

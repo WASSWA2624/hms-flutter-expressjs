@@ -16709,6 +16709,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsOverviewCreateReportAction => 'Create or run report';
 
   @override
+  String get reportsPharmacyOverviewSubtitle =>
+      'Pharmacy analysis, analytics insights, and shared report runs for your facility.';
+
+  @override
+  String get reportsPharmacyAnalysisTitle => 'Analysis';
+
+  @override
+  String get reportsPharmacyAnalysisBody =>
+      'Explore consumption, dispense throughput, stock and expiry risk, and walk-in vs clinical mix with charts and tables for a selected period.';
+
+  @override
+  String get reportsPharmacyAnalysisEmpty =>
+      'No pharmacy analysis datasets are available for your access.';
+
+  @override
+  String get reportsPharmacyAnalyticsTitle => 'Analytics';
+
+  @override
+  String get reportsPharmacyAnalyticsBody =>
+      'Open insights for top consumed drugs, stock-out and expiry risk, stocking focus, walk-in vs clinical mix, and margin when buy cost is configured.';
+
+  @override
+  String get reportsPharmacyAnalyticsTopConsumedLabel => 'Top consumed drugs';
+
+  @override
+  String get reportsPharmacyAnalyticsStockRiskLabel => 'Stock-out risk';
+
+  @override
+  String get reportsPharmacyAnalyticsExpiryLabel => 'Expiry risk';
+
+  @override
+  String get reportsPharmacyAnalyticsStockingLabel =>
+      'Suggested stocking focus';
+
+  @override
+  String get reportsPharmacyAnalyticsSourceMixLabel =>
+      'Walk-in vs clinical mix';
+
+  @override
+  String get reportsPharmacyAnalyticsMarginLabel => 'Revenue and margin';
+
+  @override
+  String get reportsPharmacyReportingTitle => 'Reporting';
+
+  @override
+  String get reportsPharmacyReportingBody =>
+      'Create, run, schedule, and download pharmacy reports using the shared reporting pipeline.';
+
+  @override
   String get reportsLiveStatus => 'Live';
 
   @override

@@ -86,9 +86,9 @@ const REPORT_DATASETS = Object.freeze([
     label: 'Pharmacy drug consumption',
     category: 'pharmacy',
     description:
-      'Top dispensed drugs by quantity and amount for a period, with order-source mix.',
+      'Top dispensed drugs by quantity and amount for a period, with walk-in (PHARMACY) vs clinical order-source mix and profit when buy cost is configured.',
     visualization: 'BAR_CHART',
-    default_columns: ['drug', 'quantity_dispensed', 'amount', 'order_source'],
+    default_columns: ['drug', 'quantity_dispensed', 'amount', 'profit', 'order_source'],
   },
   {
     key: 'pharmacy_dispense_throughput',
@@ -111,9 +111,19 @@ const REPORT_DATASETS = Object.freeze([
     label: 'Inventory stock risk',
     category: 'inventory',
     description:
-      'Low-stock and critical-stock pressure across facilities; near-expiry risk when drug batch expiry data exists.',
+      'Low-stock and critical-stock pressure across facilities, plus near-expiry and expired drug batches when batch expiry data exists.',
     visualization: 'KPI',
-    default_columns: ['facility', 'inventory_item', 'quantity', 'reorder_level', 'risk_state'],
+    default_columns: [
+      'facility',
+      'inventory_item',
+      'quantity',
+      'reorder_level',
+      'risk_state',
+      'expiry_date',
+      'expiry_alert_status',
+      'days_to_expiry',
+      'batch_number',
+    ],
   },
   {
     key: 'hr_staffing_leave_coverage',

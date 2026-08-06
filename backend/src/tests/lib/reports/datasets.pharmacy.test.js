@@ -33,6 +33,23 @@ describe('reports datasets pharmacy analytics', () => {
     expect(shouldUseMonthlyGranularity(year)).toBe(true);
   });
 
+  test('inventory stock risk columns cover expiry analytics', () => {
+    expect(REPORT_DATASET_MAP.inventory_stock_risk.default_columns).toEqual(
+      expect.arrayContaining([
+        'risk_state',
+        'expiry_date',
+        'expiry_alert_status',
+        'days_to_expiry',
+      ])
+    );
+  });
+
+  test('pharmacy consumption columns include profit for margin analytics', () => {
+    expect(REPORT_DATASET_MAP.pharmacy_drug_consumption.default_columns).toEqual(
+      expect.arrayContaining(['profit', 'order_source'])
+    );
+  });
+
   test('summarizeConsumptionSeries totals quantity and amount', () => {
     const summary = summarizeConsumptionSeries([
       { drug: 'A', quantity_dispensed: 10, amount: 100.5, order_source: 'PHARMACY' },

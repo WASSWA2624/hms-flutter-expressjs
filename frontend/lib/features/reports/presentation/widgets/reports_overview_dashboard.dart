@@ -5,7 +5,9 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/presentation/controllers/reports_workspace_controller.dart';
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
+import 'package:hosspi_hms/features/reports/presentation/reports_role_tailoring.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_overview_mapper.dart';
+import 'package:hosspi_hms/features/reports/presentation/widgets/reports_pharmacy_domain_groups.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -37,6 +39,9 @@ class ReportsOverviewDashboard extends ConsumerWidget {
     );
     final ReportsWorkspaceOverview overview = state.overview;
     final bool canWrite = canWriteReports(policy);
+    final bool showPharmacyGroups = ReportsPharmacyDomainGroups.shouldShow(
+      policy,
+    );
     final List<ReportsLookupOption> datasetShortcuts =
         reportsOverviewDatasetShortcuts(policy, overview.lookups.datasets);
     final List<DashboardMetricCardData> metrics = reportsOverviewMetrics(
@@ -111,12 +116,26 @@ class ReportsOverviewDashboard extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Text(
-          l10n.reportsOverviewSubtitle,
+          showPharmacyGroups
+              ? l10n.reportsPharmacyOverviewSubtitle
+              : l10n.reportsOverviewSubtitle,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         SizedBox(height: theme.spacing.md),
+        if (showPharmacyGroups) ...<Widget>[
+          ReportsPharmacyDomainGroups(
+            l10n: l10n,
+            policy: policy,
+            allowedPanels: allowedPanels,
+            datasetShortcuts: datasetShortcuts,
+            onOpenDataset: controller.openCatalogDataset,
+            onOpenPanel: controller.applyPanel,
+            onOpenCatalogDefinition: onOpenCatalogDefinition,
+          ),
+          SizedBox(height: theme.spacing.xl),
+        ],
         AppQuickActions(
           title: l10n.reportsOverviewNextStepsTitle,
           leadingIcon: Icons.bolt_outlined,
@@ -148,7 +167,7 @@ class ReportsOverviewDashboard extends ConsumerWidget {
             priorityPanel: DashboardPriorityPanel(data: priority),
             charts: DashboardChartsRow(data: charts, twoColumns: wide),
           ),
-        if (datasetShortcuts.isNotEmpty) ...<Widget>[
+        if (!showPharmacyGroups && datasetShortcuts.isNotEmpty) ...<Widget>[
           SizedBox(height: theme.spacing.xl),
           AppSectionPanel(
             title: l10n.reportsOverviewDatasetsTitle,

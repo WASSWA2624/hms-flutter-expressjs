@@ -13,13 +13,14 @@ const REPORT_DATASET_SEEDS = Object.freeze([
   { key: 'appointment_throughput_no_shows', category: 'appointments', label: 'Appointment throughput', visualization: 'BAR_CHART' },
   { key: 'billing_collections_open_balances', category: 'billing', label: 'Billing collections', visualization: 'AREA_CHART' },
   { key: 'insurance_claims_aging', category: 'billing', label: 'Insurance claims aging', visualization: 'TABLE' },
-  { key: 'pharmacy_dispenses', category: 'pharmacy', label: 'Pharmacy dispenses', visualization: 'BAR_CHART' },
+  { key: 'pharmacy_drug_consumption', category: 'pharmacy', label: 'Pharmacy drug consumption', visualization: 'BAR_CHART' },
+  { key: 'pharmacy_dispense_throughput', category: 'pharmacy', label: 'Pharmacy dispense throughput', visualization: 'LINE_CHART' },
+  { key: 'inventory_stock_risk', category: 'inventory', label: 'Inventory stock risk', visualization: 'KPI' },
   { key: 'lab_turnaround', category: 'diagnostics', label: 'Lab turnaround', visualization: 'LINE_CHART' },
   { key: 'inpatient_occupancy', category: 'clinical', label: 'Inpatient occupancy', visualization: 'KPI' },
   { key: 'emergency_throughput', category: 'emergency', label: 'Emergency throughput', visualization: 'BAR_CHART' },
 ]);
 const REPORT_FORMATS = Object.freeze(['PDF', 'CSV', 'JSON', 'XLSX']);
-
 const DIAGNOSIS_TYPES = Object.freeze(['PRIMARY', 'SECONDARY', 'DIFFERENTIAL']);
 const DIAGNOSIS_CODES = Object.freeze([
   ['J45.901', 'Asthma, unspecified'],
