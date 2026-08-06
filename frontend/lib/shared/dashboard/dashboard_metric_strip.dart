@@ -204,12 +204,13 @@ class _DashboardMetricCard extends StatelessWidget {
 
     final Widget valueText = FittedBox(
       fit: BoxFit.scaleDown,
-      alignment: Alignment.bottomLeft,
+      alignment: Alignment.bottomCenter,
       child: Text(
         card.value,
         maxLines: 1,
         softWrap: false,
         overflow: TextOverflow.visible,
+        textAlign: TextAlign.center,
         textHeightBehavior: tightTextHeight,
         style: valueStyle,
       ),
@@ -259,13 +260,13 @@ class _DashboardMetricCard extends StatelessWidget {
           if (pinValueToBottom)
             Expanded(
               child: Align(
-                alignment: Alignment.bottomLeft,
+                alignment: Alignment.bottomCenter,
                 child: valueText,
               ),
             )
           else
             Align(
-              alignment: Alignment.centerLeft,
+              alignment: Alignment.center,
               child: valueText,
             ),
         ],
