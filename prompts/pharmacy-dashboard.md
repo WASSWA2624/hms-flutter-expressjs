@@ -1,74 +1,51 @@
-# Prescribe Dialog Medicine Card Layout
+# Prescribe Dialog Editable Medicines Table
 
-Simplify the shared Prescribe / Create order medicine cards so each line shows a clear drug identity, stays collapsed by default, and exposes only editable dosing fields—without changing catalog pick, billing, or submit pipelines.
+Replace the Create Order / Prescribe medicine collapsible cards with a compact editable table that shows unit price, line total, and order total—without changing catalog pick, billing APIs, or submit pipelines.
 
 ## Context
 
 **Current behavior**
 
-- Clinical Prescribe and Pharmacy Create order both use `ClinicalPrescriptionActionDialog` with collapsible line cards (`_PrescriptionRxListTile` / `AppCollapsibleSection`).
-- Screenshots show titles like `DRG-… · Oral · BID · Qty 1 tablet`: identity falls back to drug code/`displayTitle`, and compact meta (route · frequency · qty) is appended in the title.
-- Card chrome: checkbox + title on the left; **Remove item** in `headerActions` (left of expand chevron). Chevron is already rightmost in `AppCollapsibleSection`.
-- Expanded body field order today: Quantity | Quantity unit → Dose amount | Dose unit → Route | Frequency → Duration | Duration unit → Instructions. Quantity unit and dose unit are editable selects.
-- New lines may open expanded (`line.expanded = true` on add). `expanded` defaults to `false`, but add-flow forces open.
-- Helpers already exist: `clinicalPrescriptionDrugHeading`, `clinicalPrescriptionDrugGenericName`, `clinicalPrescriptionDrugStrength`, brand/generic/strength in catalog metadata (`pharmacy_drug_catalog_mapper` / clinical drug DTOs).
-- Toolbar (search, filters, settings, export, Remove selected, Add medicine, Review billing) and footer (Cancel / Prescribe) stay as today unless noted below.
+- Clinical Prescribe and Pharmacy Create order both use `ClinicalPrescriptionActionDialog`.
+- Medicines were shown as collapsible cards (`_PrescriptionRxListTile`) via `AppListTableDisplayMode.list`.
+- Unit price existed only as an optional unused table column; cards showed no prices or totals.
 
 **Intended behavior**
 
-- Each card title shows **drug code**, **generic name**, **brand in parentheses** (when present), and **strength**—not route/frequency/qty body text.
-- Cards are **collapsed by default** (including after Add medicine). Expand via chevron only.
-- Header actions: **Remove item** immediately left of the expand chevron; chevron remains rightmost.
-- Expanded form is more compact and reordered: quantity pair → duration pair → dose pair → route/frequency → instructions.
-- Catalog-fixed **quantity unit** is read-only/inactive; **dose unit** is prefilled from strength but editable; **quantity**, **dose amount**, **duration**, **duration unit**, **route**, **frequency**, and **instructions** remain editable.
-- **Remove selected** stays enabled only when one or more line checkboxes are selected; per-line Remove still removes that line.
-
-**Definitions**
-
-- *Card title:* Collapsed header identity string for one medicine line.
-- *Catalog-fixed unit:* Quantity unit seeded from the selected drug form/strength that must not be user-editable. Dose unit is prefilled from strength but remains editable.
-- *Body meta:* Route / frequency / qty summary previously appended after the drug name in the title.
+- Default view is an **editable table**: medicine, quantity, quantity unit (read-only), dose amount, dose unit, route, frequency, **unit price**, **line total**, actions.
+- Duration and instructions remain available via column settings (optional columns).
+- Footer shows **order total** (sum of line totals using the active billing entity price).
+- Mobile / narrow: keep expandable card rows, but surface unit price and line total on the collapsed header.
+- Quantity unit stays catalog-fixed (non-editable). Dose unit stays prefilled and editable.
 
 ## Requirements
 
-1. Update card title to: `{code} {generic} ({brand}) {strength}` when those values exist; omit empty parts and parentheses when brand is missing. Prefer catalog `code` / `generic_name` / `brand_name` / `strength` (and existing display helpers). Do not fall back to a bare `DRG-…` id when a human name is available.
-2. Remove body meta (route · frequency · qty) from the title. Keep the title compact (single primary line; ellipsis on overflow). Do not add a subtitle under the title for that meta unless an existing dense pattern already requires it—prefer omission.
-3. Keep checkbox leading; keep **Remove item** in `headerActions` immediately left of the expand chevron; chevron remains the rightmost control. Per-line Remove deletes that line and updates selection state.
-4. Default every new and existing line card to **collapsed**. Stop forcing `expanded = true` on add (or equivalent). Expanding one card must not expand others.
-5. Reorder expanded fields to: **Quantity | Quantity unit** → **Duration | Duration unit** → **Dose amount | Dose unit** → **Route | Frequency** → **Instructions**. Tighten spacing/density so the expanded card is more compact than today without clipping on mobile/tablet/desktop.
-6. Make **quantity unit** inactive/read-only once seeded from the drug. Prefill **dose unit** from strength but keep it editable. Keep **quantity**, **dose amount**, **duration**, **duration unit**, **route**, **frequency**, and **instructions** editable. Preserve dosing sync/validation that depends on those values.
-7. Preserve dialog shell: search, filters, settings, export, Add medicine, Review billing (when billing enabled), Cancel, Prescribe/Create order submit, and shared use from Clinical and Pharmacy walk-in. **Remove selected** enables only when ≥1 checkbox is selected; unauthorized/disabled write states keep existing gates.
-8. Cover loading/empty/error/success/validation feedback already used by this dialog; theme tokens; light/dark; no overflow of header actions on narrow widths.
-9. Tests: title format (code + generic + brand + strength; no route/qty body); cards start collapsed after add; quantity unit not editable; dose unit prefilled and editable; field order; Remove item and Remove selected behavior; existing dosing validation still passes.
+1. Use `AppListTable` in table mode (`forceCompact`) for the medicine list on Create Order / Prescribe.
+2. Make quantity, dose amount, dose unit, route, and frequency editable inline in cells; keep medicine identity and quantity unit read-only.
+3. Always show **unit price** and **line total** columns (entity-aware via `defaultBillingEntity` / `clinicalCatalogOptionUnitPrice`).
+4. Show a table **footer total** using existing billing helpers (`clinicalRequestBillingTotal` / `clinicalRequestPriceLabel`).
+5. Preserve toolbar (search, filters, settings, export, Remove selected, Add medicine, Review billing when enabled) and footer submit/cancel.
+6. Preserve dosing sync/validation and submit payload shape; do not change pharmacy vs clinical create APIs.
+7. Update tests for table presence, prices/totals visibility, editable qty, and existing validation.
 
 ## Constraints
 
-- Reuse `ClinicalPrescriptionActionDialog`, `AppCollapsibleSection`, `clinical_prescription_display.dart` / dosing helpers, and catalog metadata—no second prescribe UI.
-- Do not change pharmacy vs clinical create APIs, catalog picker, billing review payload shape, or anonymous/patient shell outside this card/title/form layout.
-- Follow `.cursor/mandatories.mdc` and `prompts/.cursor/prompt.mdc`. Prefer extending display helpers over one-off string logic in the tile.
+- Reuse `ClinicalPrescriptionActionDialog` for Clinical and Pharmacy walk-in—no second prescribe UI.
+- Follow `.cursor/mandatories.mdc` and `prompts/.cursor/prompt.mdc`.
 
 ## Acceptance Criteria
 
-| # | Criterion | Maps to |
-| --- | --- | --- |
-| A1 | Card title shows code, generic, optional `(brand)`, and strength; no route/frequency/qty body in the title. | R1, R2 |
-| A2 | Chevron is rightmost; Remove item sits immediately left of it; checkbox remains leading. | R3 |
-| A3 | Cards are collapsed by default after add and on open; expand is user-driven. | R4 |
-| A4 | Expanded field order is quantity → duration → dose → route/frequency → instructions; quantity unit and dose unit are inactive. | R5, R6 |
-| A5 | Toolbar/footer and Clinical/Pharmacy shared dialog behavior unchanged aside from card layout; Remove selected requires a selection. | R7 |
-| A6 | Tests/manual checks cover title, collapse, read-only units, order, remove actions, validation, viewports, and themes. | R8, R9 |
+| # | Criterion |
+| --- | --- |
+| A1 | Medicines render as an editable table with price and line total columns. |
+| A2 | Order total footer updates when quantity changes. |
+| A3 | Quantity unit remains non-editable; dose unit editable; dosing sync still works. |
+| A4 | Clinical Prescribe and Pharmacy Create order share the same dialog behavior. |
+| A5 | Tests cover table/prices/totals and validation. |
 
 ## Relevant Files
 
 - `frontend/lib/shared/clinical_actions/dialogs/clinical_prescription_action_dialog.dart`
-- `frontend/lib/shared/clinical_actions/clinical_prescription_display.dart`
-- `frontend/lib/shared/clinical_actions/clinical_prescription_dosing.dart`
-- `frontend/lib/shared/components/app_collapsible_section.dart`
-- `frontend/lib/features/pharmacy/presentation/pharmacy_drug_catalog_mapper.dart`
-- Tests: `frontend/test/shared/clinical_actions/clinical_prescription_action_dialog_test.dart`, display/dosing tests
-
-## Verification
-
-- FE: title identity; collapsed-by-default; field order; inactive units; Remove item / Remove selected; dosing validation still blocks bad submit.
-- Manual: Clinical Prescribe and Pharmacy Create order—add medicine, expand one card, edit quantity/duration/dose/route/frequency, remove one vs selected, submit still succeeds.
-- Responsive light/dark: header actions and title do not clip; expanded form usable on narrow width.
+- `frontend/lib/shared/clinical_actions/clinical_request_billing_state.dart`
+- `frontend/lib/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart`
+- Tests: `frontend/test/shared/clinical_actions/clinical_prescription_action_dialog_test.dart`

@@ -36,25 +36,33 @@ Future<PharmacyOrderWorkflow?> showPharmacyWalkInOrderDialog({
   if (!canWrite) {
     return null;
   }
+  PharmacyOrderWorkflow? createdWorkflow;
   final bool? created = await showAppDialog<bool>(
     context: context,
-    builder: (_) => const PharmacyWalkInOrderDialog(),
+    builder: (_) => PharmacyWalkInOrderDialog(
+      onCreated: (PharmacyOrderWorkflow workflow) {
+        createdWorkflow = workflow;
+      },
+    ),
   );
   if (created != true) {
     return null;
   }
-  return ref
-      .read(pharmacyWorkspaceControllerProvider)
-      .asData
-      ?.value
-      .when(
-        success: (PharmacyWorkspaceState state) => state.selectedWorkflow,
-        failure: (_) => null,
-      );
+  return createdWorkflow ??
+      ref
+          .read(pharmacyWorkspaceControllerProvider)
+          .asData
+          ?.value
+          .when(
+            success: (PharmacyWorkspaceState state) => state.selectedWorkflow,
+            failure: (_) => null,
+          );
 }
 
 class PharmacyWalkInOrderDialog extends ConsumerStatefulWidget {
-  const PharmacyWalkInOrderDialog({super.key});
+  const PharmacyWalkInOrderDialog({this.onCreated, super.key});
+
+  final ValueChanged<PharmacyOrderWorkflow>? onCreated;
 
   @override
   ConsumerState<PharmacyWalkInOrderDialog> createState() =>
@@ -272,7 +280,25 @@ class _PharmacyWalkInOrderDialogState
 
     return ref
         .read(pharmacyWorkspaceControllerProvider.notifier)
-        .createPharmacyOrder(payload);
+        .createPharmacyOrder(payload)
+        .then((AppFailure? failure) {
+          if (failure != null) {
+            return failure;
+          }
+          final PharmacyOrderWorkflow? workflow = ref
+              .read(pharmacyWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (PharmacyWorkspaceState state) =>
+                    state.selectedWorkflow,
+                failure: (_) => null,
+              );
+          if (workflow != null) {
+            widget.onCreated?.call(workflow);
+          }
+          return null;
+        });
   }
 
   Widget _buildPatientHeader(AppLocalizations l10n, ThemeData theme) {

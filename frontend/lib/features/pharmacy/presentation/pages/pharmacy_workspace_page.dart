@@ -214,8 +214,15 @@ class _PharmacyWorkspaceContentState
     final PharmacyOrder order = workflow.order;
     final AccessRequirement writeRequirement =
         pharmacySectionWriteRequirement(_section);
+    final String orderId = _pharmacyOrderIdentifier(order);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.pharmacyWalkInOrderCreatedMessage)),
+      SnackBar(
+        content: Text(
+          orderId.isEmpty
+              ? l10n.pharmacyWalkInOrderCreatedMessage
+              : '${l10n.pharmacyWalkInOrderCreatedMessage} $orderId',
+        ),
+      ),
     );
     if (!mounted) {
       return;
@@ -226,6 +233,7 @@ class _PharmacyWorkspaceContentState
       widget.state,
       order,
       writeRequirement,
+      preferredWorkflow: workflow,
     );
   }
 
@@ -928,13 +936,14 @@ class _PharmacyDetailPanel extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final bool includeBillingStatus = canReadPharmacyBillingStatus(policy);
+    final String orderId = _pharmacyOrderIdentifier(order);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         AppPatientDetails(
           patientName: order.displayTitle,
-          patientNumber: (order.patientId ?? '').trim(),
-          patientNumberLabel: l10n.opdPatientIdLabel,
+          patientNumber: orderId,
+          patientNumberLabel: l10n.pharmacyOrderFieldLabel,
           showAvatar: false,
           status: _orderStatus(context, order),
           copyPatientNumberTooltip: l10n.copyIdentifierAction,
@@ -967,36 +976,69 @@ Future<void> _openPharmacyDetailDialog(
   WidgetRef ref,
   PharmacyWorkspaceState fallbackState,
   PharmacyOrder order,
-  AccessRequirement writeRequirement,
-) async {
+  AccessRequirement writeRequirement, {
+  PharmacyOrderWorkflow? preferredWorkflow,
+}) async {
   final PharmacyWorkspaceController controller = ref.read(
     pharmacyWorkspaceControllerProvider.notifier,
   );
-  final AppFailure? failure = await controller.selectOrder(order);
-  if (context.mounted) {
-    _showFailureIfNeeded(context, failure);
-  }
-  if (failure != null || !context.mounted) {
-    return;
+  final bool alreadySelected =
+      preferredWorkflow != null &&
+      (preferredWorkflow.order.id == order.id ||
+          preferredWorkflow.order.displayId == order.displayId ||
+          preferredWorkflow.order.displayId == order.id ||
+          preferredWorkflow.order.id == order.displayId);
+  if (!alreadySelected) {
+    final AppFailure? failure = await controller.selectOrder(order);
+    if (context.mounted) {
+      _showFailureIfNeeded(context, failure);
+    }
+    if (failure != null || !context.mounted) {
+      return;
+    }
   }
 
   final PharmacyWorkspaceState state = _readPharmacyState(ref) ?? fallbackState;
-  if (state.selectedWorkflow == null) {
+  if (state.selectedWorkflow == null && preferredWorkflow == null) {
     return;
   }
 
+  final PharmacyOrderWorkflow detailWorkflow =
+      state.selectedWorkflow ?? preferredWorkflow!;
+  final String orderId = _pharmacyOrderIdentifier(detailWorkflow.order);
+
   await showAppDialog<void>(
     context: context,
-    builder: (_) => AppDialog(
-      title: Text(context.l10n.pharmacyPrescriptionDetailTitle),
-      icon: const Icon(Icons.receipt_long_outlined),
-      scrollable: true,
-      maxWidth: 980,
-      content: _PharmacyDetailDialogBody(
-        fallbackState: state,
-        writeRequirement: writeRequirement,
-      ),
-    ),
+    builder: (BuildContext dialogContext) {
+      final AppLocalizations l10n = dialogContext.l10n;
+      final ThemeData theme = Theme.of(dialogContext);
+      return AppDialog(
+        title: Text(l10n.pharmacyPrescriptionDetailTitle),
+        icon: const Icon(Icons.receipt_long_outlined),
+        scrollable: true,
+        maxWidth: 980,
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (orderId.isNotEmpty) ...<Widget>[
+              AppInfoTile(
+                label: l10n.pharmacyOrderFieldLabel,
+                value: orderId,
+                icon: Icons.tag_outlined,
+                copyable: true,
+                copyTooltip: l10n.copyIdentifierAction,
+                copiedMessage: l10n.identifierCopiedMessage,
+              ),
+              SizedBox(height: theme.spacing.md),
+            ],
+            _PharmacyDetailDialogBody(
+              fallbackState: state.copyWith(selectedWorkflow: detailWorkflow),
+              writeRequirement: writeRequirement,
+            ),
+          ],
+        ),
+      );
+    },
   );
 }
 
@@ -4343,6 +4385,8 @@ List<AppWorkspacePatientContextField> _pharmacyDetailExpandedFields(
   required bool includeBillingStatus,
 }) {
   final AppLocalizations l10n = context.l10n;
+  final String orderId = _pharmacyOrderIdentifier(order);
+  final String patientId = (order.patientId ?? '').trim();
 
   return <AppWorkspacePatientContextField>[
     if (order.hasPendingAttestation)
@@ -4364,13 +4408,22 @@ List<AppWorkspacePatientContextField> _pharmacyDetailExpandedFields(
             ? AppWorkspaceStatusTone.neutral
             : AppWorkspaceStatusTone.warning,
       ),
-    AppWorkspacePatientContextField(
-      label: l10n.pharmacyOrderFieldLabel,
-      value: order.displayId ?? '',
-      copyable: (order.displayId ?? '').isNotEmpty,
-      copyTooltip: l10n.copyIdentifierAction,
-      copiedMessage: l10n.identifierCopiedMessage,
-    ),
+    if (orderId.isNotEmpty)
+      AppWorkspacePatientContextField(
+        label: l10n.pharmacyOrderFieldLabel,
+        value: orderId,
+        copyable: true,
+        copyTooltip: l10n.copyIdentifierAction,
+        copiedMessage: l10n.identifierCopiedMessage,
+      ),
+    if (patientId.isNotEmpty)
+      AppWorkspacePatientContextField(
+        label: l10n.opdPatientIdLabel,
+        value: patientId,
+        copyable: true,
+        copyTooltip: l10n.copyIdentifierAction,
+        copiedMessage: l10n.identifierCopiedMessage,
+      ),
     if ((order.encounterId ?? '').isNotEmpty)
       AppWorkspacePatientContextField(
         label: l10n.pharmacyEncounterFieldLabel,
@@ -4420,6 +4473,14 @@ List<AppWorkspacePatientContextField> _pharmacyDetailExpandedFields(
       value: _dateTimeLabel(context, order.orderedAt),
     ),
   ];
+}
+
+String _pharmacyOrderIdentifier(PharmacyOrder order) {
+  final String? displayId = order.displayId?.trim();
+  if (displayId != null && displayId.isNotEmpty) {
+    return displayId;
+  }
+  return order.id.trim();
 }
 
 Future<void> _switchItemPriceSource(

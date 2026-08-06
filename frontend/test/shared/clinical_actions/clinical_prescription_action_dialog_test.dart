@@ -120,8 +120,8 @@ void main() {
 
       expect(find.text('CHOOSE MEDICINES'), findsOneWidget);
       expect(find.text('Available drug'), findsNothing);
-      expect(find.text('Amoxicillin'), findsWidgets);
-      expect(find.text('Ibuprofen'), findsWidgets);
+      expect(find.textContaining('Amoxicillin'), findsWidgets);
+      expect(find.textContaining('Ibuprofen'), findsWidgets);
       expect(find.text('Add selected medicines'), findsOneWidget);
     });
 
@@ -132,7 +132,7 @@ void main() {
 
       await tester.tap(find.text('Add medicine').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Amoxicillin').last);
+      await tester.tap(find.textContaining('Amoxicillin').last);
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(AppButton, 'Close').last);
       await tester.pumpAndSettle();
@@ -141,7 +141,7 @@ void main() {
       expect(find.textContaining('Amoxicillin'), findsNothing);
     });
 
-    testWidgets('adds collapsed collapsible cards with prescription summary', (
+    testWidgets('adds editable table rows with prices and order total', (
       WidgetTester tester,
     ) async {
       await _pumpPrescribeDialog(tester);
@@ -151,60 +151,51 @@ void main() {
         'Ibuprofen',
       ]);
 
-      expect(find.byType(AppCollapsibleSection), findsNWidgets(2));
-      expect(
-        find.textContaining('Amoxicillin - 500 mg - Qty: 14'),
-        findsWidgets,
-      );
-      expect(
-        find.textContaining('Ibuprofen - 200 mg - Qty: 14'),
-        findsWidgets,
-      );
-      expect(find.textContaining('Oral · BID'), findsNothing);
-      expect(find.text('Prescription details'), findsNothing);
-      expect(find.text('Edit details'), findsNothing);
-      expect(_fieldWithLabel('Dose amount'), findsNothing);
-      expect(find.text('Remove'), findsWidgets);
+      expect(find.byType(AppCollapsibleSection), findsNothing);
+      expect(find.textContaining('Amoxicillin - 500 mg'), findsWidgets);
+      expect(find.textContaining('Ibuprofen - 200 mg'), findsWidgets);
+      expect(find.text('Price'), findsWidgets);
+      expect(find.text('Line total'), findsWidgets);
+      expect(find.text('Total'), findsWidgets);
+      expect(_fieldWithLabel('Dose amount'), findsWidgets);
+      expect(_fieldWithLabel('Quantity'), findsWidgets);
+      expect(find.text('capsule'), findsWidgets);
+      expect(find.text('tablet'), findsWidgets);
     });
 
-    testWidgets('expanding a card reveals dosing fields without section title', (
+    testWidgets('table shows dosing editors without expanding cards', (
       WidgetTester tester,
     ) async {
       await _pumpPrescribeDialog(tester);
       await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
 
-      await _expandFirstMedicineCard(tester);
-
+      expect(find.byType(AppCollapsibleSection), findsNothing);
       expect(find.text('Prescription details'), findsNothing);
       expect(_fieldWithLabel('Dose amount'), findsWidgets);
-      expect(_selectWithLabel('Medication route'), findsWidgets);
       expect(_fieldWithLabel('Duration'), findsWidgets);
-      expect(_fieldWithLabel('Instructions'), findsWidgets);
+      expect(_fieldWithLabel('Quantity'), findsWidgets);
     });
 
     testWidgets('seeds dose amount and unit from catalog strength', (
       WidgetTester tester,
     ) async {
-      await _pumpPrescribeDialog(tester);
+      await _pumpPrescribeDialog(tester, width: 1800);
       await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
-      await _expandFirstMedicineCard(tester);
+      await tester.pumpAndSettle();
 
+      expect(find.byType(AppTextField), findsWidgets);
       final Finder doseAmountField = _fieldWithLabel('Dose amount');
+      expect(doseAmountField, findsWidgets);
       final AppTextField field = tester.widget<AppTextField>(
         doseAmountField.first,
       );
       expect(field.controller?.text, '500');
-      expect(find.text('mg'), findsWidgets);
 
-      final AppSelectField<String> quantityUnit = tester
-          .widget<AppSelectField<String>>(
-            _selectWithLabel('Quantity unit').first,
-          );
       final AppSelectField<String> doseUnit = tester
           .widget<AppSelectField<String>>(_selectWithLabel('Dose unit').first);
-      expect(quantityUnit.enabled, isFalse);
       expect(doseUnit.enabled, isTrue);
       expect(doseUnit.value, 'mg');
+      expect(find.text('capsule'), findsWidgets);
     });
 
     testWidgets('blocks prescribe when quantity is zero', (
@@ -224,7 +215,6 @@ void main() {
       );
 
       await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
-      await _expandFirstMedicineCard(tester);
       final Finder quantityField = _fieldWithLabel('Quantity');
       await tester.enterText(quantityField.first, '0');
       await tester.pumpAndSettle();
@@ -275,8 +265,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('CHOOSE MEDICINES'), findsOneWidget);
-      expect(find.text('Amoxicillin'), findsNothing);
-      expect(find.text('Ibuprofen'), findsWidgets);
+      // Already-added Amoxicillin remains on the order behind the catalog.
+      expect(find.textContaining('Amoxicillin'), findsWidgets);
+      expect(find.textContaining('Ibuprofen'), findsWidgets);
 
       await tester.tap(find.widgetWithText(AppButton, 'Close').last);
       await tester.pumpAndSettle();
@@ -299,7 +290,6 @@ void main() {
       );
 
       await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
-      await _expandFirstMedicineCard(tester);
       await _setDurationInline(tester, duration: '');
 
       await tester.tap(find.widgetWithIcon(AppButton, Icons.send_outlined));
@@ -335,7 +325,10 @@ void main() {
       );
 
       await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
-      expect(find.textContaining('Qty: 14'), findsWidgets);
+      final AppTextField quantityField = tester.widget<AppTextField>(
+        _fieldWithLabel('Quantity').first,
+      );
+      expect(quantityField.controller?.text, '14');
 
       await tester.tap(find.widgetWithIcon(AppButton, Icons.send_outlined));
       await tester.pumpAndSettle();
@@ -367,10 +360,12 @@ void main() {
       );
 
       await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
-      await _expandFirstMedicineCard(tester);
       await _setDurationInline(tester, duration: '5');
 
-      expect(find.textContaining('Qty: 10'), findsWidgets);
+      final AppTextField quantityField = tester.widget<AppTextField>(
+        _fieldWithLabel('Quantity').first,
+      );
+      expect(quantityField.controller?.text, '10');
 
       await tester.tap(find.widgetWithIcon(AppButton, Icons.send_outlined));
       await tester.pumpAndSettle();
@@ -395,8 +390,10 @@ Future<void> _addMedicinesFromCatalog(
   expect(find.text('CHOOSE MEDICINES'), findsOneWidget);
 
   for (final String name in medicineNames) {
-    await tester.ensureVisible(find.text(name).last);
-    await tester.tap(find.text(name).last);
+    final Finder row = find.textContaining(name);
+    expect(row, findsWidgets);
+    await tester.ensureVisible(row.last);
+    await tester.tap(row.last);
     await tester.pumpAndSettle();
   }
 
@@ -411,18 +408,6 @@ Future<void> _addMedicinesFromCatalog(
   expect(find.text('CHOOSE MEDICINES'), findsNothing);
 }
 
-Future<void> _expandFirstMedicineCard(WidgetTester tester) async {
-  final Finder section = find.byType(AppCollapsibleSection).first;
-  await tester.ensureVisible(section);
-  final Finder expandIcon = find.descendant(
-    of: section,
-    matching: find.byIcon(Icons.expand_more),
-  );
-  expect(expandIcon, findsOneWidget);
-  await tester.tap(expandIcon);
-  await tester.pumpAndSettle();
-}
-
 Finder _fieldWithLabel(String label) {
   return find.byWidgetPredicate(
     (Widget widget) => widget is AppTextField && widget.labelText == label,
@@ -430,10 +415,10 @@ Finder _fieldWithLabel(String label) {
 }
 
 Finder _selectWithLabel(String label) {
-  return find.byWidgetPredicate(
-    (Widget widget) =>
-        widget is AppSelectField<String> && widget.labelText == label,
-  );
+  return find.byWidgetPredicate((Widget widget) {
+    return widget.runtimeType.toString().startsWith('AppSelectField') &&
+        ((widget as dynamic).labelText as String?) == label;
+  });
 }
 
 Future<void> _setDurationInline(
@@ -454,9 +439,10 @@ Future<void> _pumpPrescribeDialog(
     ClinicalRequestBillingSubmit? billing,
   })?
   onSubmit,
+  double width = 1800,
 }) async {
   tester.view.devicePixelRatio = 1;
-  tester.view.physicalSize = const Size(1400, 900);
+  tester.view.physicalSize = Size(width, 1000);
   addTearDown(tester.view.resetDevicePixelRatio);
   addTearDown(tester.view.resetPhysicalSize);
 
