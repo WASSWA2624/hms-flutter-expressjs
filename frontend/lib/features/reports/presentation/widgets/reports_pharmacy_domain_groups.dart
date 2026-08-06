@@ -3,7 +3,6 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
-import 'package:hosspi_hms/features/reports/presentation/reports_role_tailoring.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
@@ -114,114 +113,72 @@ class _ReportsPharmacyDomainGroupsState
         ),
         SizedBox(height: theme.spacing.md),
         if (_selectedTabId == ReportsPharmacyDomainGroups.analyticsTabId)
-          _PharmacyTabBody(
-            body: l10n.reportsPharmacyAnalyticsBody,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                if (analyticsDatasets.isEmpty)
-                  AppMutedText(l10n.reportsPharmacyAnalyticsEmpty)
-                else
-                  Wrap(
-                    spacing: theme.spacing.sm,
-                    runSpacing: theme.spacing.sm,
-                    children: <Widget>[
-                      for (final ReportsLookupOption dataset
-                          in analyticsDatasets)
-                        ActionChip(
-                          avatar: const Icon(
-                            Icons.bar_chart_outlined,
-                            size: 18,
-                          ),
-                          label: Text(dataset.label),
-                          onPressed: () => widget.onOpenDataset(dataset.id),
-                        ),
-                    ],
-                  ),
-                SizedBox(height: theme.spacing.sm),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              if (analyticsDatasets.isEmpty)
+                AppMutedText(l10n.reportsPharmacyAnalyticsEmpty)
+              else
                 Wrap(
                   spacing: theme.spacing.sm,
                   runSpacing: theme.spacing.sm,
                   children: <Widget>[
-                    for (final _PharmacyInsightAction insight in insights)
+                    for (final ReportsLookupOption dataset in analyticsDatasets)
                       ActionChip(
-                        avatar: Icon(insight.icon, size: 18),
-                        label: Text(insight.label),
-                        onPressed: () =>
-                            widget.onOpenDataset(insight.datasetId),
+                        avatar: const Icon(Icons.bar_chart_outlined, size: 18),
+                        label: Text(dataset.label),
+                        onPressed: () => widget.onOpenDataset(dataset.id),
                       ),
                   ],
                 ),
-              ],
-            ),
+              SizedBox(height: theme.spacing.sm),
+              Wrap(
+                spacing: theme.spacing.sm,
+                runSpacing: theme.spacing.sm,
+                children: <Widget>[
+                  for (final _PharmacyInsightAction insight in insights)
+                    ActionChip(
+                      avatar: Icon(insight.icon, size: 18),
+                      label: Text(insight.label),
+                      onPressed: () => widget.onOpenDataset(insight.datasetId),
+                    ),
+                ],
+              ),
+            ],
           )
         else
-          _PharmacyTabBody(
-            body: l10n.reportsPharmacyReportingBody,
-            child: Wrap(
-              spacing: theme.spacing.sm,
-              runSpacing: theme.spacing.sm,
-              children: <Widget>[
-                if (widget.allowedPanels.contains(
-                  ReportsWorkspacePanel.catalog,
-                ))
-                  ActionChip(
-                    avatar: const Icon(Icons.library_books_outlined, size: 18),
-                    label: Text(l10n.reportsOverviewBrowseCatalogAction),
-                    onPressed: () {
-                      widget.onOpenPanel(ReportsWorkspacePanel.catalog);
-                    },
-                  ),
-                if (widget.allowedPanels.contains(
-                  ReportsWorkspacePanel.delivery,
-                ))
-                  ActionChip(
-                    avatar: const Icon(Icons.local_shipping_outlined, size: 18),
-                    label: Text(l10n.reportsOverviewViewDeliveryAction),
-                    onPressed: () {
-                      widget.onOpenPanel(ReportsWorkspacePanel.delivery);
-                    },
-                  ),
-                if (canWrite &&
-                    widget.allowedPanels.contains(
-                      ReportsWorkspacePanel.catalog,
-                    ))
-                  ActionChip(
-                    avatar: const Icon(Icons.play_arrow_outlined, size: 18),
-                    label: Text(l10n.reportsOverviewCreateReportAction),
-                    onPressed: () {
-                      widget.onOpenPanel(ReportsWorkspacePanel.catalog);
-                      widget.onOpenCatalogDefinition?.call();
-                    },
-                  ),
-              ],
-            ),
+          Wrap(
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.sm,
+            children: <Widget>[
+              if (widget.allowedPanels.contains(ReportsWorkspacePanel.catalog))
+                ActionChip(
+                  avatar: const Icon(Icons.library_books_outlined, size: 18),
+                  label: Text(l10n.reportsOverviewBrowseCatalogAction),
+                  onPressed: () {
+                    widget.onOpenPanel(ReportsWorkspacePanel.catalog);
+                  },
+                ),
+              if (widget.allowedPanels.contains(ReportsWorkspacePanel.delivery))
+                ActionChip(
+                  avatar: const Icon(Icons.local_shipping_outlined, size: 18),
+                  label: Text(l10n.reportsOverviewViewDeliveryAction),
+                  onPressed: () {
+                    widget.onOpenPanel(ReportsWorkspacePanel.delivery);
+                  },
+                ),
+              if (canWrite &&
+                  widget.allowedPanels.contains(ReportsWorkspacePanel.catalog))
+                ActionChip(
+                  avatar: const Icon(Icons.play_arrow_outlined, size: 18),
+                  label: Text(l10n.reportsOverviewCreateReportAction),
+                  onPressed: () {
+                    widget.onOpenPanel(ReportsWorkspacePanel.catalog);
+                    widget.onOpenCatalogDefinition?.call();
+                  },
+                ),
+            ],
           ),
-      ],
-    );
-  }
-}
-
-class _PharmacyTabBody extends StatelessWidget {
-  const _PharmacyTabBody({required this.body, required this.child});
-
-  final String body;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text(
-          body,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: theme.spacing.sm),
-        child,
       ],
     );
   }

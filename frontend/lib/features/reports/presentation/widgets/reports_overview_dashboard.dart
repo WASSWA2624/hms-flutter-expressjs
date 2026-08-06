@@ -5,7 +5,6 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/presentation/controllers/reports_workspace_controller.dart';
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
-import 'package:hosspi_hms/features/reports/presentation/reports_role_tailoring.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_overview_mapper.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_pharmacy_domain_groups.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -22,6 +21,8 @@ class ReportsOverviewDashboard extends ConsumerWidget {
     required this.policy,
     required this.allowedPanels,
     this.onOpenCatalogDefinition,
+    this.onPharmacyOpenDataset,
+    this.onPharmacyOpenPanel,
     super.key,
   });
 
@@ -29,6 +30,12 @@ class ReportsOverviewDashboard extends ConsumerWidget {
   final AppAccessPolicy policy;
   final List<ReportsWorkspacePanel> allowedPanels;
   final VoidCallback? onOpenCatalogDefinition;
+
+  /// When set (pharmacist Overview), opens dataset shortcuts in-place.
+  final ValueChanged<String>? onPharmacyOpenDataset;
+
+  /// When set (pharmacist Overview), opens catalog/delivery shortcuts in-place.
+  final ValueChanged<ReportsWorkspacePanel>? onPharmacyOpenPanel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,28 +51,35 @@ class ReportsOverviewDashboard extends ConsumerWidget {
     );
     final List<ReportsLookupOption> datasetShortcuts =
         reportsOverviewDatasetShortcuts(policy, overview.lookups.datasets);
+
+    void openPanel(ReportsWorkspacePanel panel) {
+      if (!allowedPanels.contains(panel)) {
+        return;
+      }
+      if (showPharmacyGroups && onPharmacyOpenPanel != null) {
+        if (panel == ReportsWorkspacePanel.catalog ||
+            panel == ReportsWorkspacePanel.delivery) {
+          onPharmacyOpenPanel!(panel);
+          return;
+        }
+      }
+      controller.applyPanel(panel);
+    }
+
     final List<DashboardMetricCardData> metrics = reportsOverviewMetrics(
       context: context,
       overview: overview,
-      onOpenPanel: (ReportsWorkspacePanel panel) {
-        if (allowedPanels.contains(panel)) {
-          controller.applyPanel(panel);
-        }
-      },
+      onOpenPanel: openPanel,
     );
     final DashboardPriorityPanelData priority = reportsOverviewPriorityData(
       l10n: l10n,
       policy: policy,
       overview: overview,
       onOpenQueue: (ReportsQueueSummary queue) {
-        if (allowedPanels.contains(queue.panel)) {
-          controller.applyPanel(queue.panel);
-        }
+        openPanel(queue.panel);
       },
       onViewDelivery: () {
-        if (allowedPanels.contains(ReportsWorkspacePanel.delivery)) {
-          controller.applyPanel(ReportsWorkspacePanel.delivery);
-        }
+        openPanel(ReportsWorkspacePanel.delivery);
       },
     );
     final DashboardChartsData charts = reportsOverviewChartsData(
@@ -87,18 +101,14 @@ class ReportsOverviewDashboard extends ConsumerWidget {
           label: l10n.reportsOverviewBrowseCatalogAction,
           leadingIcon: Icons.library_books_outlined,
           semanticLabel: l10n.reportsOverviewBrowseCatalogAction,
-          onPressed: () {
-            controller.applyPanel(ReportsWorkspacePanel.catalog);
-          },
+          onPressed: () => openPanel(ReportsWorkspacePanel.catalog),
         ),
       if (allowedPanels.contains(ReportsWorkspacePanel.delivery))
         AppActionItem(
           label: l10n.reportsOverviewViewDeliveryAction,
           leadingIcon: Icons.local_shipping_outlined,
           semanticLabel: l10n.reportsOverviewViewDeliveryAction,
-          onPressed: () {
-            controller.applyPanel(ReportsWorkspacePanel.delivery);
-          },
+          onPressed: () => openPanel(ReportsWorkspacePanel.delivery),
         ),
       if (canWrite && allowedPanels.contains(ReportsWorkspacePanel.catalog))
         AppActionItem(
@@ -106,7 +116,7 @@ class ReportsOverviewDashboard extends ConsumerWidget {
           leadingIcon: Icons.play_arrow_outlined,
           semanticLabel: l10n.reportsOverviewCreateReportAction,
           onPressed: () {
-            controller.applyPanel(ReportsWorkspacePanel.catalog);
+            openPanel(ReportsWorkspacePanel.catalog);
             onOpenCatalogDefinition?.call();
           },
         ),
@@ -130,19 +140,22 @@ class ReportsOverviewDashboard extends ConsumerWidget {
             policy: policy,
             allowedPanels: allowedPanels,
             datasetShortcuts: datasetShortcuts,
-            onOpenDataset: controller.openCatalogDataset,
-            onOpenPanel: controller.applyPanel,
+            onOpenDataset: onPharmacyOpenDataset ?? controller.openCatalogDataset,
+            onOpenPanel: onPharmacyOpenPanel ?? controller.applyPanel,
             onOpenCatalogDefinition: onOpenCatalogDefinition,
           ),
           SizedBox(height: theme.spacing.xl),
         ],
-        AppQuickActions(
-          title: l10n.reportsOverviewNextStepsTitle,
-          leadingIcon: Icons.bolt_outlined,
-          presentation: AppQuickActionsPresentation.plain,
-          actions: nextStepActions,
-        ),
-        SizedBox(height: theme.spacing.md),
+        // Reporting tab already covers browse/delivery/create for pharmacy.
+        if (!showPharmacyGroups) ...<Widget>[
+          AppQuickActions(
+            title: l10n.reportsOverviewNextStepsTitle,
+            leadingIcon: Icons.bolt_outlined,
+            presentation: AppQuickActionsPresentation.plain,
+            actions: nextStepActions,
+          ),
+          SizedBox(height: theme.spacing.md),
+        ],
         if (!reportsOverviewHasSignals(overview) && metrics.isEmpty)
           AppWorkspaceStatePanel.empty(
             title: l10n.reportsOverviewEmptyTitle,

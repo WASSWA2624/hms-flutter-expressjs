@@ -30883,12 +30883,6 @@ abstract class AppLocalizations {
   /// **'Analytics'**
   String get reportsPharmacyAnalyticsTitle;
 
-  /// Pharmacist Analytics tab supporting copy.
-  ///
-  /// In en, this message translates to:
-  /// **'Explore consumption, dispense throughput, stock and expiry risk, walk-in vs clinical mix, and margin when buy cost is configured.'**
-  String get reportsPharmacyAnalyticsBody;
-
   /// Empty state when pharmacist Analytics chips cannot be shown.
   ///
   /// In en, this message translates to:
@@ -30900,12 +30894,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reporting'**
   String get reportsPharmacyReportingTitle;
-
-  /// Pharmacist Reporting tab supporting copy.
-  ///
-  /// In en, this message translates to:
-  /// **'Create, run, schedule, and download pharmacy reports using the shared reporting pipeline.'**
-  String get reportsPharmacyReportingBody;
 
   /// Insight chip that opens pharmacy drug consumption.
   ///

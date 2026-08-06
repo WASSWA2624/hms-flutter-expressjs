@@ -14,6 +14,7 @@ import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dar
 import 'package:hosspi_hms/features/reports/presentation/controllers/reports_workspace_controller.dart';
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_overview_dashboard.dart';
+import 'package:hosspi_hms/features/reports/presentation/widgets/reports_overview_shortcut_dialogs.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_workspace_table_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -351,6 +352,55 @@ class _ReportsOverviewPanel extends ConsumerWidget {
           state: state,
           policy: policy,
           allowedPanels: allowedPanels,
+          onPharmacyOpenDataset: (String datasetKey) {
+            final String title = state.overview.lookups.datasets
+                .where((ReportsLookupOption option) => option.id == datasetKey)
+                .map((ReportsLookupOption option) => option.label)
+                .firstWhere(
+                  (String label) => label.isNotEmpty,
+                  orElse: () => datasetKey,
+                );
+            unawaited(
+              openReportsOverviewShortcutDialog(
+                context: context,
+                ref: ref,
+                kind: ReportsOverviewShortcutKind.dataset,
+                datasetKey: datasetKey,
+                title: title,
+                onOpenItem: (ReportsWorkspaceItem item) {
+                  return openReportDetailDialog(
+                    context,
+                    ref,
+                    state,
+                    item,
+                    policy,
+                  );
+                },
+              ),
+            );
+          },
+          onPharmacyOpenPanel: (ReportsWorkspacePanel panel) {
+            final ReportsOverviewShortcutKind kind =
+                panel == ReportsWorkspacePanel.delivery
+                ? ReportsOverviewShortcutKind.delivery
+                : ReportsOverviewShortcutKind.catalog;
+            unawaited(
+              openReportsOverviewShortcutDialog(
+                context: context,
+                ref: ref,
+                kind: kind,
+                onOpenItem: (ReportsWorkspaceItem item) {
+                  return openReportDetailDialog(
+                    context,
+                    ref,
+                    state,
+                    item,
+                    policy,
+                  );
+                },
+              ),
+            );
+          },
         ),
       ],
     );

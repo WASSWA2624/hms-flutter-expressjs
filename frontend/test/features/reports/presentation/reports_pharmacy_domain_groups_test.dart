@@ -81,7 +81,7 @@ Future<void> _pumpGroups(
 }
 
 void main() {
-  testWidgets('pharmacist overview shows Analytics and Reporting tabs only', (
+  testWidgets('pharmacist overview shows Analytics and Reporting tabs without body copy', (
     tester,
   ) async {
     final List<String> openedDatasets = <String>[];
@@ -97,20 +97,30 @@ void main() {
     expect(find.text('Analysis'), findsNothing);
     expect(find.text('Analytics'), findsOneWidget);
     expect(find.text('Reporting'), findsOneWidget);
+    expect(
+      find.textContaining('Explore consumption'),
+      findsNothing,
+    );
+    expect(
+      find.textContaining('Create, run, schedule'),
+      findsNothing,
+    );
     expect(find.text('Top consumed drugs'), findsOneWidget);
     expect(find.text('Suggested stocking focus'), findsOneWidget);
-    expect(find.text('Pharmacy drug consumption'), findsOneWidget);
     expect(find.text('Create or run report'), findsNothing);
 
     await tester.ensureVisible(find.text('Top consumed drugs'));
     await tester.tap(find.text('Top consumed drugs'));
     await tester.pump();
     expect(openedDatasets, contains('pharmacy_drug_consumption'));
+    // Callbacks record intent; Overview wiring opens dialogs without applyPanel.
+    expect(openedPanels, isEmpty);
 
     await tester.tap(find.text('Reporting'));
     await tester.pumpAndSettle();
     expect(find.text('Create or run report'), findsOneWidget);
     expect(find.text('Browse catalog'), findsOneWidget);
+    expect(find.textContaining('Create, run, schedule'), findsNothing);
     expect(find.text('Top consumed drugs'), findsNothing);
 
     await tester.ensureVisible(find.text('Create or run report'));

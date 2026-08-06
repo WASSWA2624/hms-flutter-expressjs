@@ -21510,10 +21510,6 @@
   "@reportsPharmacyAnalyticsTitle": {
     "description": "Pharmacist Overview tab for pharmacy datasets and insights."
   },
-  "reportsPharmacyAnalyticsBody": "Explore consumption, dispense throughput, stock and expiry risk, walk-in vs clinical mix, and margin when buy cost is configured.",
-  "@reportsPharmacyAnalyticsBody": {
-    "description": "Pharmacist Analytics tab supporting copy."
-  },
   "reportsPharmacyAnalyticsEmpty": "No pharmacy analytics datasets are available for your access.",
   "@reportsPharmacyAnalyticsEmpty": {
     "description": "Empty state when pharmacist Analytics chips cannot be shown."
@@ -21521,10 +21517,6 @@
   "reportsPharmacyReportingTitle": "Reporting",
   "@reportsPharmacyReportingTitle": {
     "description": "Pharmacist Overview tab for report definitions, runs, and schedules."
-  },
-  "reportsPharmacyReportingBody": "Create, run, schedule, and download pharmacy reports using the shared reporting pipeline.",
-  "@reportsPharmacyReportingBody": {
-    "description": "Pharmacist Reporting tab supporting copy."
   },
   "reportsPharmacyAnalyticsTopConsumedLabel": "Top consumed drugs",
   "@reportsPharmacyAnalyticsTopConsumedLabel": {

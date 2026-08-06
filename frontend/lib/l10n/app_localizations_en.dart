@@ -16716,19 +16716,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsPharmacyAnalyticsTitle => 'Analytics';
 
   @override
-  String get reportsPharmacyAnalyticsBody =>
-      'Explore consumption, dispense throughput, stock and expiry risk, walk-in vs clinical mix, and margin when buy cost is configured.';
-
-  @override
   String get reportsPharmacyAnalyticsEmpty =>
       'No pharmacy analytics datasets are available for your access.';
 
   @override
   String get reportsPharmacyReportingTitle => 'Reporting';
-
-  @override
-  String get reportsPharmacyReportingBody =>
-      'Create, run, schedule, and download pharmacy reports using the shared reporting pipeline.';
 
   @override
   String get reportsPharmacyAnalyticsTopConsumedLabel => 'Top consumed drugs';
