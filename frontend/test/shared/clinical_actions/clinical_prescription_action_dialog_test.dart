@@ -141,6 +141,47 @@ void main() {
       expect(find.textContaining('Amoxicillin'), findsNothing);
     });
 
+    testWidgets(
+      'keeps facility price from remote catalog when reference drugs lack it',
+      (WidgetTester tester) async {
+        await _pumpPrescribeDialog(
+          tester,
+          referenceData: const ClinicalActionReferenceData(
+            drugs: <ClinicalActionCatalogOption>[],
+          ),
+          loadCatalogDrugs: (String query) async {
+            return const <ClinicalActionCatalogOption>[
+              ClinicalActionCatalogOption(
+                id: 'uuid-amox',
+                publicId: 'DRG-D38D9D5D69',
+                name: 'Albendazole',
+                code: 'ALB400',
+                currency: 'UGX',
+                metadata: <String, Object?>{
+                  'generic_name': 'Albendazole',
+                  'strength': '400 mg',
+                  'form': 'Tablet',
+                  'facility_unit_price': 32650,
+                },
+              ),
+            ];
+          },
+        );
+
+        await _addMedicinesFromCatalog(tester, <String>['Albendazole']);
+
+        expect(find.textContaining('Albendazole'), findsWidgets);
+        expect(find.textContaining('32,650'), findsWidgets);
+        expect(find.text('DRG-D38D9D5D69'), findsNothing);
+
+        await tester.enterText(_fieldWithLabel('Quantity').first, '1');
+        await tester.pumpAndSettle();
+
+        expect(find.text('Price not set'), findsNothing);
+        expect(find.textContaining('32,650'), findsWidgets);
+      },
+    );
+
     testWidgets('adds editable table rows with prices and order total', (
       WidgetTester tester,
     ) async {
@@ -161,6 +202,8 @@ void main() {
       expect(_fieldWithLabel('Quantity'), findsWidgets);
       expect(find.text('capsule'), findsWidgets);
       expect(find.text('tablet'), findsWidgets);
+      expect(find.text('Edit'), findsWidgets);
+      expect(find.text('Delete'), findsWidgets);
     });
 
     testWidgets('table shows dosing editors without expanding cards', (
@@ -307,7 +350,7 @@ void main() {
       expect(durationField.errorText, 'This field is required.');
     });
 
-    testWidgets('seeds duration and derived quantity so prescribe succeeds', (
+    testWidgets('seeds duration with zero quantity until user enters it', (
       WidgetTester tester,
     ) async {
       List<Map<String, Object?>>? submittedItems;
@@ -328,7 +371,14 @@ void main() {
       final AppTextField quantityField = tester.widget<AppTextField>(
         _fieldWithLabel('Quantity').first,
       );
-      expect(quantityField.controller?.text, '14');
+      expect(quantityField.controller?.text, '0');
+
+      await tester.tap(find.widgetWithIcon(AppButton, Icons.send_outlined));
+      await tester.pumpAndSettle();
+      expect(submittedItems, isNull);
+
+      await tester.enterText(_fieldWithLabel('Quantity').first, '14');
+      await tester.pumpAndSettle();
 
       await tester.tap(find.widgetWithIcon(AppButton, Icons.send_outlined));
       await tester.pumpAndSettle();
@@ -342,7 +392,7 @@ void main() {
       expect(submittedItems!.single['quantity_unit'], 'capsule');
     });
 
-    testWidgets('duration edit updates quantity and allows prescribe', (
+    testWidgets('duration edit does not auto-fill quantity', (
       WidgetTester tester,
     ) async {
       List<Map<String, Object?>>? submittedItems;
@@ -365,7 +415,10 @@ void main() {
       final AppTextField quantityField = tester.widget<AppTextField>(
         _fieldWithLabel('Quantity').first,
       );
-      expect(quantityField.controller?.text, '10');
+      expect(quantityField.controller?.text, '0');
+
+      await tester.enterText(_fieldWithLabel('Quantity').first, '10');
+      await tester.pumpAndSettle();
 
       await tester.tap(find.widgetWithIcon(AppButton, Icons.send_outlined));
       await tester.pumpAndSettle();
@@ -439,6 +492,8 @@ Future<void> _pumpPrescribeDialog(
     ClinicalRequestBillingSubmit? billing,
   })?
   onSubmit,
+  ClinicalActionReferenceData? referenceData,
+  ClinicalPrescriptionCatalogLoader? loadCatalogDrugs,
   double width = 1800,
 }) async {
   tester.view.devicePixelRatio = 1;
@@ -455,36 +510,39 @@ Future<void> _pumpPrescribeDialog(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         home: Scaffold(
           body: ClinicalPrescriptionActionDialog(
-            referenceData: const ClinicalActionReferenceData(
-              drugs: <ClinicalActionCatalogOption>[
-                ClinicalActionCatalogOption(
-                  id: 'amox',
-                  publicId: 'DRG-AMOX',
-                  name: 'Amoxicillin',
-                  code: 'AMOX',
-                  unitPrice: 12,
-                  currency: 'USD',
-                  metadata: <String, Object?>{
-                    'generic_name': 'Amoxicillin',
-                    'strength': '500 mg',
-                    'form': 'Capsule',
-                  },
+            referenceData:
+                referenceData ??
+                const ClinicalActionReferenceData(
+                  drugs: <ClinicalActionCatalogOption>[
+                    ClinicalActionCatalogOption(
+                      id: 'amox',
+                      publicId: 'DRG-AMOX',
+                      name: 'Amoxicillin',
+                      code: 'AMOX',
+                      unitPrice: 12,
+                      currency: 'USD',
+                      metadata: <String, Object?>{
+                        'generic_name': 'Amoxicillin',
+                        'strength': '500 mg',
+                        'form': 'Capsule',
+                      },
+                    ),
+                    ClinicalActionCatalogOption(
+                      id: 'ibu',
+                      publicId: 'DRG-IBU',
+                      name: 'Ibuprofen',
+                      code: 'IBU',
+                      unitPrice: 8,
+                      currency: 'USD',
+                      metadata: <String, Object?>{
+                        'generic_name': 'Ibuprofen',
+                        'strength': '200 mg',
+                        'form': 'Tablet',
+                      },
+                    ),
+                  ],
                 ),
-                ClinicalActionCatalogOption(
-                  id: 'ibu',
-                  publicId: 'DRG-IBU',
-                  name: 'Ibuprofen',
-                  code: 'IBU',
-                  unitPrice: 8,
-                  currency: 'USD',
-                  metadata: <String, Object?>{
-                    'generic_name': 'Ibuprofen',
-                    'strength': '200 mg',
-                    'form': 'Tablet',
-                  },
-                ),
-              ],
-            ),
+            loadCatalogDrugs: loadCatalogDrugs,
             onSubmit:
                 onSubmit ??
                 ({

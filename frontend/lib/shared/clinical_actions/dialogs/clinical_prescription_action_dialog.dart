@@ -96,6 +96,10 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
 
   final List<_PrescriptionLineFormState> _lines =
       <_PrescriptionLineFormState>[];
+  /// Catalog rows chosen via Add medicine (pharmacy remote catalog). Kept so
+  /// price/name resolve even when [referenceData.drugs] is sparse (clinical).
+  final Map<String, ClinicalActionCatalogOption> _resolvedDrugsById =
+      <String, ClinicalActionCatalogOption>{};
   final Set<String> _selectedLineKeys = <String>{};
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<_PrescriptionLineFormState>
@@ -675,12 +679,11 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            AppButton(
-              iconOnly: true,
+            AppButton.tertiary(
               leadingIcon: Icons.edit_outlined,
-              label: l10n.clinicalPrescriptionEditDetailsAction,
-              semanticLabel: l10n.clinicalPrescriptionEditDetailsAction,
-              tooltip: l10n.clinicalPrescriptionEditDetailsAction,
+              label: l10n.commonEditActionLabel,
+              semanticLabel: l10n.commonEditActionLabel,
+              tooltip: l10n.commonEditActionLabel,
               enabled: !_isSaving,
               onPressed: _isSaving
                   ? null
@@ -688,12 +691,11 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
                       _openLineDialog(editIndex: _lineIndex(line)),
                     ),
             ),
-            AppButton(
-              iconOnly: true,
+            AppButton.tertiary(
               leadingIcon: Icons.delete_outline,
-              label: l10n.clinicalRequestRemoveItemAction,
-              semanticLabel: l10n.clinicalRequestRemoveItemAction,
-              tooltip: l10n.clinicalRequestRemoveItemAction,
+              label: l10n.commonDeleteActionLabel,
+              semanticLabel: l10n.commonDeleteActionLabel,
+              tooltip: l10n.commonDeleteActionLabel,
               enabled: !_isSaving,
               color: colorScheme.error,
               onPressed: _isSaving
@@ -822,10 +824,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
     if (heading.isNotEmpty) {
       return heading;
     }
-    return clinicalActionCatalogDisplayLabelById(
-          widget.referenceData.drugs,
-          line.drugId,
-        ) ??
+    return clinicalActionCatalogDisplayLabelById(_knownDrugs, line.drugId) ??
         l10n.clinicalPrescriptionMedicineLabel;
   }
 
@@ -877,10 +876,36 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
     ], separator: ' ');
   }
 
+  List<ClinicalActionCatalogOption> get _knownDrugs {
+    if (_resolvedDrugsById.isEmpty) {
+      return widget.referenceData.drugs;
+    }
+    final Map<String, ClinicalActionCatalogOption> byId =
+        <String, ClinicalActionCatalogOption>{
+          for (final ClinicalActionCatalogOption drug
+              in widget.referenceData.drugs)
+            if (drug.apiId.trim().isNotEmpty) drug.apiId.trim(): drug,
+        };
+    byId.addAll(_resolvedDrugsById);
+    return byId.values.toList(growable: false);
+  }
+
+  void _rememberDrugOption(ClinicalActionCatalogOption option) {
+    final String drugId = option.apiId.trim();
+    if (drugId.isEmpty) {
+      return;
+    }
+    _resolvedDrugsById[drugId] = option;
+  }
+
   ClinicalActionCatalogOption? _drugOption(_PrescriptionLineFormState line) {
     final String? drugId = line.drugId?.trim();
     if (drugId == null || drugId.isEmpty) {
       return null;
+    }
+    final ClinicalActionCatalogOption? resolved = _resolvedDrugsById[drugId];
+    if (resolved != null) {
+      return resolved;
     }
     for (final ClinicalActionCatalogOption drug
         in widget.referenceData.drugs) {
@@ -890,10 +915,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
     }
     return ClinicalActionCatalogOption(
       id: drugId,
-      name: clinicalActionCatalogDisplayLabelById(
-        widget.referenceData.drugs,
-        drugId,
-      ),
+      name: clinicalActionCatalogDisplayLabelById(_knownDrugs, drugId),
     );
   }
 
@@ -1013,8 +1035,9 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   }
 
   Future<void> _openLineDialog({required int editIndex}) async {
+    final List<ClinicalActionCatalogOption> knownDrugs = _knownDrugs;
     final List<AppSelectOption<String>> drugOptions = _drugCatalogOptions(
-      widget.referenceData.drugs,
+      knownDrugs,
     );
     final _PrescriptionLineFormState line = _lines[editIndex];
 
@@ -1037,7 +1060,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
               line: line,
               drugOptions: drugOptions,
               selectedDrugLabel: clinicalActionCatalogDisplayLabelById(
-                widget.referenceData.drugs,
+                knownDrugs,
                 line.drugId,
               ),
               enabled: !_isSaving,
@@ -1327,6 +1350,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
     _PrescriptionLineFormState line,
     ClinicalActionCatalogOption option,
   ) {
+    _rememberDrugOption(option);
     line.drugId = option.apiId.trim();
     final String strengthLabel = clinicalPrescriptionDrugStrength(option);
     final ClinicalParsedStrength? strength = clinicalParseDrugStrength(
@@ -1360,19 +1384,22 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       strength: strengthLabel,
       secondaryText: option.secondaryText,
     );
-    // Seed a standard course so BID/etc. lines are submit-ready; quantity syncs.
+    // Seed course defaults; quantity stays 0 until the user enters it.
     if (!clinicalPrescriptionDurationOptional(line.frequency) &&
         line.durationController.text.trim().isEmpty) {
       line.durationController.text = '$clinicalPrescriptionDefaultDurationDays';
       line.durationUnit =
           (line.durationUnit ?? '').trim().isEmpty ? 'days' : line.durationUnit;
     }
-    line.quantityAutoDerived = true;
+    if (line.quantityController.text.trim().isEmpty) {
+      line.quantityController.text = '0';
+    }
+    line.quantityAutoDerived = false;
     line.consistencyError = null;
     _refreshLineConsistency(
       line,
       edited: ClinicalPrescriptionDosingField.durationValue,
-      applyDerivedValues: true,
+      applyDerivedValues: false,
     );
   }
 
@@ -1435,15 +1462,10 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         );
 
     if (applyDerivedValues) {
-      if (sync.quantity != null &&
-          (line.quantityAutoDerived ||
-              lastEdited != ClinicalPrescriptionDosingField.quantity)) {
+      if (sync.quantity != null && line.quantityAutoDerived) {
         final String nextQty = sync.quantity!.toString();
         if (line.quantityController.text.trim() != nextQty) {
           line.quantityController.text = nextQty;
-        }
-        if (lastEdited != ClinicalPrescriptionDosingField.quantity) {
-          line.quantityAutoDerived = true;
         }
       }
       if (lastEdited == ClinicalPrescriptionDosingField.quantity &&
@@ -1808,7 +1830,7 @@ class _PrescriptionRxListTile extends StatelessWidget {
 
 class _PrescriptionLineFormState {
   _PrescriptionLineFormState({required this.id})
-    : quantityController = TextEditingController(text: '1'),
+    : quantityController = TextEditingController(text: '0'),
       doseAmountController = TextEditingController(),
       durationController = TextEditingController(),
       instructionsController = TextEditingController();
@@ -1825,7 +1847,7 @@ class _PrescriptionLineFormState {
   String? frequency = 'BID';
   String? durationUnit = 'days';
   bool expanded = false;
-  bool quantityAutoDerived = true;
+  bool quantityAutoDerived = false;
   ClinicalPrescriptionDosingField? lastEditedField;
   String? consistencyError;
   String? quantityError;

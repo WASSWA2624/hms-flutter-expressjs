@@ -17,6 +17,9 @@ Replace the Create Order / Prescribe medicine collapsible cards with a compact e
 - Footer shows **order total** (sum of line totals using the active billing entity price).
 - Mobile / narrow: keep expandable card rows, but surface unit price and line total on the collapsed header.
 - Quantity unit stays catalog-fixed (non-editable). Dose unit stays prefilled and editable.
+- Quantity defaults to **0**; create/prescribe is blocked until quantity is a positive integer.
+- Row actions show **Edit** and **Delete** labels (not icon-only).
+- Keep catalog-selected drug options (name + facility/pharmacy price) on the prescribe table even when clinical `referenceData.drugs` is sparse.
 
 ## Requirements
 
