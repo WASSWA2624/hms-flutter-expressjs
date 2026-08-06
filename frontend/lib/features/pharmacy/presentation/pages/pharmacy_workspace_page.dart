@@ -22,7 +22,6 @@ import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_billing_helpe
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_cancel_reasons.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_catalog_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_instructions_print_helpers.dart';
-import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_order_invoice_print_helpers.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_order_item_pricing_helpers.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_cancel_reasons_section.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart';
@@ -1205,18 +1204,6 @@ class _PharmacyActionPanel extends ConsumerWidget {
               context,
               ref,
               workflow,
-            ),
-          ),
-        if (canPrint)
-          AppReportActionButton.print(
-            label: l10n.pharmacyPrintInvoiceAction,
-            variant: AppButtonVariant.secondary,
-            onPressed: () => unawaited(
-              printPharmacyOrderInvoice(
-                ref: ref,
-                context: context,
-                workflow: workflow,
-              ),
             ),
           ),
       ],
