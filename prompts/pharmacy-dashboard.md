@@ -1,74 +1,78 @@
-# Pharmacy Dashboard: KPIs, Most-Sold Analytics, and Status Navigation
+# Pharmacy Dashboard: Summary Cards Clarity, Sales KPIs, and Deep-Links
 
-Refine the pharmacist home dashboard so KPIs and charts reflect real pharmacy workload, most-sold analytics are controllable, and order-status segments deep-link into filtered pharmacy tables—without removing Quick actions or breaking pharmacy / Reports flows.
+Make the pharmacist home **summary metric strip** clear, facility-scoped, and clickable into the exact `/pharmacy` desk tab (and filters) that explain each number—without changing Quick actions, most-sold charts, or order-status mix beyond what the cards require.
 
 ## Context
 
-**Current behavior**
+**Current behavior (screenshot + codebase)**
 
-- Pharmacist profile defines four KPIs: `orders_today`, `pending_dispense`, `dispensed_today`, `low_stock`. `expandHomeProfileForPermissions` can raise the strip to six and surface cross-domain cards (Admissions, Appointments) when the session also grants `patient:read`—visible in current screenshots.
-- Demo/volume seed often leaves **today** metrics empty (Orders / Dispensed / Low stock at 0) while Pending is high. `aggregateMostSoldDrugs` (trailing ~30 days, limit 8) often returns empty; `PharmacyMostSoldCharts` falls back to the 7-day dispense trend, showing a flat zero line under “Most sold drugs (last month).”
-- Qty / Amount (/ Profit) uses a standalone `SegmentedButton` above the charts—not in the most-sold header. Order status mix is display-only. `/pharmacy` already maps status desks via query (`queue`, `in-progress`, `completed`, `cancelled`). Quick actions remain; keep them.
+- Pharmacist strip: **Orders**, **Pending**, **Dispensed**, **Low stock**. Backend already computes facility-scoped `ordersToday`, `pendingDispense` (ORDERED + PARTIALLY_DISPENSED), `dispensedToday`, and `lowStock` in the pharmacist pack.
+- Labels omit period (“Orders” / “Dispensed”), so zeros look broken when “today” is empty. Demo often shows Orders/Dispensed/Low stock at **0** while Pending ~500 and status mix ~1K—seed/window mismatch or missing reseed.
+- Metric routes are wrong/vague: order cards → `section=orders` (not a desk section); low stock → `section=inventory` (should be `low-stock`). Desk sections include `queue`, `in-progress`, `completed`, `all`, `low-stock`; order list API already supports `from`/`to` on `ordered_at`.
+- No **Total sales today** / **Total sales this week**. `maxStatusCards` is 4 (cap 6).
 
 **Intended behavior**
 
-- Pharmacist home shows a **pharmacy-only** KPI strip (no Admissions / Appointments). Seeded data makes Orders, Pending, Dispensed, and Low stock confirmable.
-- Most sold: period, top-N, and chart-type controls; Qty/Amount(/Profit) in that section header as a borderless checkbox-like toggle. Default **bar** chart of top drugs; optional line. Real ranked drugs when dispenses exist—not a mislabeled zero date-trend.
-- Order status mix segments/legend open `/pharmacy` filtered to that status.
-- Add a companion **sold-drugs list** for the same period (ranked table/list).
-- Preserve Quick actions, pharmacy KPI routing, money gating, and other role dashboards.
+- Labels state period where needed (**Orders today**, **Dispensed today**). Pending = open dispense workload (not today-only). Low stock = current facility at/below reorder.
+- Add **Total sales today** and **Total sales this week** (facility money totals; gate with pricing/billing/`reports:read`).
+- Each card opens `/pharmacy` on the matching desk section **and** filters matching the KPI. Facility-scoped to the logged-in facility. Demo non-zeros when data exists.
+- **Only** the summary strip—no Quick actions / most-sold / status-mix redesign.
 
 **Definitions**
 
-- *Pharmacy KPI strip*: the four pharmacist cards; excludes cross-domain clinical KPIs on pharmacist home.
-- *Most-sold period*: Today, Last week, Last month, Last 3 months, Last 6 months, Last year, Last 5 years (facility timezone per existing dashboard helpers).
-- *Top-N*: 5, 10, 20, 100 (default near current backend ~8).
-- *Chart type*: bar (default) or line (X = drug; Y = active metric).
-- *Checkbox-like metric toggle*: selected like a check—**no** border, fill, or segmented track; theme tokens only.
-- *Status deep-link*: `ORDERED`→queue/ready, `PARTIALLY_DISPENSED`→in-progress, `DISPENSED`→completed, `CANCELLED`→cancelled.
-- *Sold-drugs list*: ranked drugs + metric values for the same period/top-N/metric as the chart.
+- *Orders today*: facility `pharmacy_order` with `ordered_at` in facility-local today.
+- *Pending*: facility orders in `ORDERED` or `PARTIALLY_DISPENSED`.
+- *Dispensed today*: facility `dispense_log` `DISPENSED` with `dispensed_at` today.
+- *Low stock*: facility rows at/below reorder (existing `countLowStock` factor 1).
+- *Total sales today / this week*: facility sum of pharmacy sale amounts for today or trailing week (document Mon–today vs last 7 days in labels). Prefer completed dispenses × unit price (most-sold amount basis); no invented COGS.
+- *Deep-link*: `/pharmacy?section=…` plus `from`/`to` (and status as needed) so the opened table matches the card.
 
 ## Requirements
 
-1. On pharmacist department dashboard, omit Admissions/Appointments (and other non-pharmacy cross-domain cards) from the metric strip. Keep the four pharmacy KPIs; do not turn pharmacist home into a clinical command center.
-2. Align seed/verify (and/or summary windows) so demo facilities show non-empty pharmacy KPIs and most-sold series when dispenses/stock exist—not all zeros beside Pending.
-3. In the most-sold section header: period dropdown, top-N selector, chart-type (bar | line), and relocated Qty/Amount(/Profit) as checkbox-like (no border/background). Gate Amount/Profit with existing pricing/billing/`reports:read`; Profit only when cost data exists.
-4. Load ranked drugs for selected period and top-N from facility-scoped completed dispenses. If empty, show an explicit empty state—do not substitute a zero date trend under the most-sold title. Default bar; optional line.
-5. Add one companion sold-drugs list for the same period/top-N/metric. Progressive disclosure allowed; same chart permissions.
-6. Make order-status mix segments and legend activatable; navigate to the matching `/pharmacy` desk section. Unauthorized pharmacy chrome absent.
-7. Preserve Quick actions and existing pharmacy KPI deep-links. Cover loading, empty, error/retry. Responsive; theme tokens; light/dark.
-8. Tests: strip excludes admissions/appointments; period/top-N/chart-type/header toggle; empty most-sold behavior; status→section deep-links; fixtures/seed for non-empty most-sold; unauthorized money metrics absent.
+1. Clarify pharmacist strip labels: Orders today; Pending (or Pending dispense); Dispensed today; Low stock—aligned with backend metrics above.
+2. Add Total sales today and Total sales this week (currency) to the pharmacist strip. Compute in the pharmacist pack; gate with money permissions. Keep ops cards first; `maxStatusCards` ≤ 6.
+3. Wire deep-links to correct `/pharmacy` sections + filters:
+   - Orders today → all-orders (or equivalent) with today’s `ordered_at` range.
+   - Pending → queue and/or in-progress covering pending workload (not `section=orders`).
+   - Dispensed today → completed with today’s range as the table supports.
+   - Low stock → `section=low-stock`.
+   - Sales today/week → completed (or sales desk if present) with matching range; unauthorized money cards absent.
+4. Extend `PharmacyWorkspaceQuery` / desk hydration to honor deep-link `from`/`to` (and needed status). Reuse backend list date filters.
+5. Keep all metrics facility-scoped to the session facility.
+6. Align demo seed/verify so today/stock/sales KPIs are non-zero when volume seed is on.
+7. Preserve Quick actions and charts. Cover loading, legitimate empty zero, error, permission absence. Responsive; theme tokens; light/dark.
+8. Tests: labels/ids; sales permission presence/absence; card route queries; workspace from/to; facility scope; seed/fixture non-zeros.
 
 ## Constraints
 
-- Reuse `PharmacyMostSoldCharts`, shared dashboard charts, `aggregateMostSoldDrugs` / summary, pharmacist profile + metric routes, and `/pharmacy` section queries—no parallel stack.
-- Do not remove Quick actions. Backend RBAC authoritative; unauthorized UI absent.
+- Change **only** pharmacist summary cards, aggregation, labels, routes, and minimal pharmacy query wiring for deep-links.
+- Reuse home metric strip, pharmacist profile, dashboard summary, `/pharmacy` sections, existing date-range filters—no parallel KPI stack.
+- Backend RBAC authoritative; unauthorized UI absent.
 - Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `.cursor/access/demo-data.mdc` (if seeding), `prompts/.cursor/prompt.mdc`.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | Pharmacist strip has no Admissions/Appointments; pharmacy KPIs remain. | R1 |
-| A2 | Demo facility shows meaningful non-zero KPIs and most-sold when data exists. | R2, R4 |
-| A3 | Most-sold header hosts period, top-N, chart type, and borderless metric toggle. | R3 |
-| A4 | Bar/line shows top drugs; empty state when no sales—no mislabeled zero date line. | R4 |
-| A5 | Sold-drugs list matches period/top-N/metric. | R5 |
-| A6 | Status segment/legend opens the matching pharmacy table. | R6 |
-| A7 | Quick actions present; money metrics gated; unauthorized chrome absent. | R3, R7 |
-| A8 | Tests cover strip, controls, empty behavior, deep-links, permissions. | R8 |
+| A1 | Labels make today vs open-pending vs stock unambiguous. | R1 |
+| A2 | Authorized users see sales today/week; unauthorized money cards absent. | R2, R7 |
+| A3 | Each card opens matching `/pharmacy` section + filters. | R3–R4 |
+| A4 | Metrics facility-scoped to the logged-in facility. | R5 |
+| A5 | Demo shows non-zero today/stock/sales when data exists. | R6 |
+| A6 | Quick actions and charts unchanged. | R7 |
+| A7 | Tests cover labels, permissions, deep-links, and scope. | R8 |
 
 ## Relevant Files
 
-- `frontend/lib/features/home/domain/entities/home_dashboard_profiles.dart`, layout + expand-profile helpers
-- `frontend/lib/features/home/presentation/widgets/pharmacy_most_sold_charts.dart`, `home_dashboard_mapper.dart`, `home_metric_routes.dart`, `home_page.dart`
-- `frontend/lib/shared/dashboard/dashboard_charts_row.dart`, `dashboard_models.dart`
-- `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart`
-- `backend/src/modules/dashboard-widget/repositories/dashboard-widget.repository.js`; `backend/src/lib/dashboard/summary.js`; demo seeders / verify as needed
-- Tests: `pharmacy_most_sold_charts_test.dart`, `home_dashboard_layout_test.dart`, summary/seed verify
+- `frontend/lib/features/home/domain/entities/home_dashboard_profiles.dart`
+- `frontend/lib/features/home/presentation/widgets/home_metric_routes.dart`, metric strip/mapper
+- `frontend/lib/features/pharmacy/domain/entities/pharmacy_entities.dart`; `pharmacy_workspace_page.dart`
+- `backend/src/modules/dashboard-widget/repositories/dashboard-widget.repository.js`
+- `backend/src/lib/dashboard/summary.js`; pharmacy-workspace list `from`/`to`
+- Demo seeders/verify; profile route + workspace query + summary tests
 
 ## Verification
 
-- Backend: most-sold respects period + limit; demo seed populates pharmacist metrics; status counts feed the donut.
-- Flutter: pharmacy-only strip; header controls; bar/line + list; empty vs data; segment taps → correct `/pharmacy` section; Amount/Profit absent without grants.
-- Manual pharmacist home: confirm KPIs, switch period/top-N/chart type, open status tables, keep Quick actions. Light/dark and narrow viewport.
+- Backend: today/pending/dispensed/low-stock/sales aggregates facility-scoped; week rule documented.
+- Flutter: labels; taps land on correct section + filters; money cards gated; strip ≤6.
+- Manual pharmacist: each card’s table matches KPI; reseed if demo zeros persist. Light/dark; narrow viewport.
