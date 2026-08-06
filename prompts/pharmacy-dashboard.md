@@ -20,13 +20,13 @@ Simplify the shared Prescribe / Create order medicine cards so each line shows a
 - Cards are **collapsed by default** (including after Add medicine). Expand via chevron only.
 - Header actions: **Remove item** immediately left of the expand chevron; chevron remains rightmost.
 - Expanded form is more compact and reordered: quantity pair → duration pair → dose pair → route/frequency → instructions.
-- Catalog-fixed units (**quantity unit**, **dose unit**) are read-only/inactive; **quantity**, **dose amount**, **duration**, **duration unit**, **route**, **frequency**, and **instructions** remain editable.
+- Catalog-fixed **quantity unit** is read-only/inactive; **dose unit** is prefilled from strength but editable; **quantity**, **dose amount**, **duration**, **duration unit**, **route**, **frequency**, and **instructions** remain editable.
 - **Remove selected** stays enabled only when one or more line checkboxes are selected; per-line Remove still removes that line.
 
 **Definitions**
 
 - *Card title:* Collapsed header identity string for one medicine line.
-- *Catalog-fixed unit:* Unit seeded from the selected drug (form → quantity unit; strength → dose unit) that must not be user-editable.
+- *Catalog-fixed unit:* Quantity unit seeded from the selected drug form/strength that must not be user-editable. Dose unit is prefilled from strength but remains editable.
 - *Body meta:* Route / frequency / qty summary previously appended after the drug name in the title.
 
 ## Requirements
@@ -36,10 +36,10 @@ Simplify the shared Prescribe / Create order medicine cards so each line shows a
 3. Keep checkbox leading; keep **Remove item** in `headerActions` immediately left of the expand chevron; chevron remains the rightmost control. Per-line Remove deletes that line and updates selection state.
 4. Default every new and existing line card to **collapsed**. Stop forcing `expanded = true` on add (or equivalent). Expanding one card must not expand others.
 5. Reorder expanded fields to: **Quantity | Quantity unit** → **Duration | Duration unit** → **Dose amount | Dose unit** → **Route | Frequency** → **Instructions**. Tighten spacing/density so the expanded card is more compact than today without clipping on mobile/tablet/desktop.
-6. Make **quantity unit** and **dose unit** inactive/read-only once seeded from the drug; keep **quantity**, **dose amount**, **duration**, **duration unit**, **route**, **frequency**, and **instructions** editable. Preserve dosing sync/validation that depends on those values.
+6. Make **quantity unit** inactive/read-only once seeded from the drug. Prefill **dose unit** from strength but keep it editable. Keep **quantity**, **dose amount**, **duration**, **duration unit**, **route**, **frequency**, and **instructions** editable. Preserve dosing sync/validation that depends on those values.
 7. Preserve dialog shell: search, filters, settings, export, Add medicine, Review billing (when billing enabled), Cancel, Prescribe/Create order submit, and shared use from Clinical and Pharmacy walk-in. **Remove selected** enables only when ≥1 checkbox is selected; unauthorized/disabled write states keep existing gates.
 8. Cover loading/empty/error/success/validation feedback already used by this dialog; theme tokens; light/dark; no overflow of header actions on narrow widths.
-9. Tests: title format (code + generic + brand + strength; no route/qty body); cards start collapsed after add; quantity/dose unit controls not editable; field order; Remove item and Remove selected behavior; existing dosing validation still passes.
+9. Tests: title format (code + generic + brand + strength; no route/qty body); cards start collapsed after add; quantity unit not editable; dose unit prefilled and editable; field order; Remove item and Remove selected behavior; existing dosing validation still passes.
 
 ## Constraints
 

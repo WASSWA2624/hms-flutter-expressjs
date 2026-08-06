@@ -64,6 +64,7 @@ const buildOrderLocationWhere = (location) => {
 const DRUG_PUBLIC_SELECT = {
   id: true,
   human_friendly_id: true,
+  tenant_id: true,
   name: true,
   code: true,
   form: true,
@@ -252,12 +253,29 @@ const buildDrugScopeWhere = (scope = {}) => buildTenantScopeWhere(scope);
 
 const buildInventoryItemScopeWhere = (scope = {}) => buildTenantScopeWhere(scope);
 
+const buildAnonymousWalkInOrderScopeWhere = (scope = {}) => {
+  const drugWhere = buildDrugScopeWhere(scope);
+  if (!Object.keys(drugWhere).length) {
+    return { patient_id: null };
+  }
+
+  // Anonymous pharmacy walk-ins have no patient/facility row; scope by drug tenant.
+  return {
+    patient_id: null,
+    items: {
+      some: {
+        deleted_at: null,
+        drug: drugWhere}}};
+};
+
 const buildOrderScopeWhere = (scope = {}) => {
   const patientWhere = buildPatientScopeWhere(scope);
   if (!Object.keys(patientWhere).length) return {};
 
   return {
-    patient: patientWhere};
+    OR: [
+      { patient: patientWhere },
+      buildAnonymousWalkInOrderScopeWhere(scope)]};
 };
 
 const buildOrderItemScopeWhere = (scope = {}) => {
@@ -301,8 +319,34 @@ const matchesTenantFacilityScope = (
   return true;
 };
 
-const matchesOrderScope = (orderRecord = {}, scope = {}) =>
-  matchesTenantFacilityScope(orderRecord?.patient || {}, scope);
+const matchesAnonymousWalkInOrderScope = (orderRecord = {}, scope = {}) => {
+  if (scope?.can_manage_all_tenants) return true;
+  if (!scope?.tenant_id) return false;
+  if (orderRecord?.patient_id) return false;
+
+  const items = Array.isArray(orderRecord?.items) ? orderRecord.items : [];
+  if (!items.length) {
+    return false;
+  }
+
+  return items.some((item) => {
+    const tenantId = item?.drug?.tenant_id;
+    return tenantId && String(tenantId) === String(scope.tenant_id);
+  });
+};
+
+const matchesOrderScope = (orderRecord = {}, scope = {}) => {
+  if (scope?.can_manage_all_tenants) return true;
+  if (!scope?.tenant_id) return false;
+
+  const patient = orderRecord?.patient;
+  if (patient) {
+    return matchesTenantFacilityScope(patient, scope);
+  }
+
+  // Walk-in / anonymous orders have no patient relation to scope against.
+  return matchesAnonymousWalkInOrderScope(orderRecord, scope);
+};
 
 const matchesOrderItemScope = (orderItemRecord = {}, scope = {}) =>
   matchesOrderScope(orderItemRecord?.pharmacy_order || {}, scope);

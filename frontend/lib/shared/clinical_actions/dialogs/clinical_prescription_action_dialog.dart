@@ -1442,12 +1442,16 @@ class _PrescriptionRxListTile extends StatelessWidget {
                 AppSelectField<String>.searchable(
                   value: line.doseUnit,
                   labelText: l10n.clinicalDoseUnitLabel,
-                  enabled: false,
+                  enabled: enabled,
                   isDense: true,
                   isRequired: true,
                   options: _unitOptions(_doseUnits),
                   errorText: line.doseUnitError,
-                  onChanged: (_) {},
+                  onChanged: (String? value) {
+                    line.doseUnit = value;
+                    line.doseUnitError = null;
+                    onFieldEdited(ClinicalPrescriptionDosingField.doseUnit);
+                  },
                 ),
               ],
             ),
@@ -1655,12 +1659,16 @@ class _PrescriptionLineCard extends StatelessWidget {
                 AppSelectField<String>.searchable(
                   value: line.doseUnit,
                   labelText: l10n.clinicalDoseUnitLabel,
-                  enabled: false,
+                  enabled: enabled,
                   isDense: true,
                   isRequired: true,
                   options: _unitOptions(_doseUnits),
                   validator: AppValidators.requiredValue(l10n.validationRequired),
-                  onChanged: (_) {},
+                  onChanged: (String? value) {
+                    line.doseUnit = value;
+                    line.doseUnitError = null;
+                    onChanged();
+                  },
                 ),
               ],
             ),

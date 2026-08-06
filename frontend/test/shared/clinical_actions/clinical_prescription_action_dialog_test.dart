@@ -203,7 +203,8 @@ void main() {
       final AppSelectField<String> doseUnit = tester
           .widget<AppSelectField<String>>(_selectWithLabel('Dose unit').first);
       expect(quantityUnit.enabled, isFalse);
-      expect(doseUnit.enabled, isFalse);
+      expect(doseUnit.enabled, isTrue);
+      expect(doseUnit.value, 'mg');
     });
 
     testWidgets('blocks prescribe when quantity is zero', (
