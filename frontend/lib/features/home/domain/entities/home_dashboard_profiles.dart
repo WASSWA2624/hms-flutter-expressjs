@@ -607,7 +607,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'dispense_medication',
       'record_pharmacy_sale',
       'receive_pharmacy_stock',
-      'adjust_pharmacy_stock',
     ],
     // Focused shell: pharmacy/comms/reports/settings (not patients registry).
     shortcutIds: <String>[

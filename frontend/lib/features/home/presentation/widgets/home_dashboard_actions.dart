@@ -21,6 +21,8 @@ import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard
 import 'package:hosspi_hms/features/home/presentation/home_access.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_metric_routes.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
+import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_walk_in_order_dialog.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_report_admins_dialog.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_upgrade_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart'
@@ -28,6 +30,7 @@ import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facil
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_layout.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:intl/intl.dart' hide TextDirection;
@@ -372,7 +375,7 @@ homeActionLibrary = <String, HomeActionDefinition>{
   ),
   'dispense_medication': HomeActionDefinition(
     id: 'dispense_medication',
-    label: 'Dispense medication',
+    label: 'New orders',
     icon: Icons.medication_liquid_outlined,
     route: AppRoutes.pharmacy,
     routeQuery: <String, String>{'section': 'orders'},
@@ -382,8 +385,8 @@ homeActionLibrary = <String, HomeActionDefinition>{
   ),
   'record_pharmacy_sale': HomeActionDefinition(
     id: 'record_pharmacy_sale',
-    label: 'Record pharmacy sale',
-    icon: Icons.point_of_sale_outlined,
+    label: 'Create order',
+    icon: Icons.add_shopping_cart_outlined,
     route: AppRoutes.pharmacy,
     routeQuery: <String, String>{'section': 'sales'},
     allowedRoles: <AppRole>[AppRole.pharmacist],
@@ -392,7 +395,7 @@ homeActionLibrary = <String, HomeActionDefinition>{
   ),
   'receive_pharmacy_stock': HomeActionDefinition(
     id: 'receive_pharmacy_stock',
-    label: 'Receive pharmacy stock',
+    label: 'Pharmacy stock',
     icon: Icons.inventory_outlined,
     route: AppRoutes.pharmacy,
     routeQuery: <String, String>{'section': 'inventory'},
@@ -402,8 +405,8 @@ homeActionLibrary = <String, HomeActionDefinition>{
   ),
   'adjust_pharmacy_stock': HomeActionDefinition(
     id: 'adjust_pharmacy_stock',
-    label: 'Adjust pharmacy stock',
-    icon: Icons.tune_outlined,
+    label: 'Pharmacy stock',
+    icon: Icons.inventory_outlined,
     route: AppRoutes.pharmacy,
     routeQuery: <String, String>{'section': 'inventory'},
     allowedRoles: <AppRole>[AppRole.pharmacist],
@@ -1511,6 +1514,22 @@ void homeInvokeAction(
   if (action.id == 'add_staff_profile') {
     unawaited(
       showHrStaffOnboardingDialog(context, ref).then((bool? saved) {
+        homeOnDashboardDialogClosed(ref, request, saved);
+      }),
+    );
+    return;
+  }
+  if (action.id == 'record_pharmacy_sale') {
+    unawaited(
+      showPharmacyWalkInOrderDialog(context: context, ref: ref).then((
+        PharmacyOrderWorkflow? workflow,
+      ) {
+        final bool saved = workflow != null;
+        if (saved && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.l10n.pharmacyWalkInOrderCreatedMessage)),
+          );
+        }
         homeOnDashboardDialogClosed(ref, request, saved);
       }),
     );

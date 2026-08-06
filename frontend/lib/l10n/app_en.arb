@@ -15467,7 +15467,7 @@
   "@pharmacyWalkInOrderAction": {
     "description": "Primary CTA to create a walk-in pharmacy sale/order."
   },
-  "pharmacyWalkInOrderDialogTitle": "New pharmacy sale",
+  "pharmacyWalkInOrderDialogTitle": "Create order",
   "@pharmacyWalkInOrderDialogTitle": {
     "description": "Title for the walk-in pharmacy order create dialog."
   },
@@ -15478,6 +15478,26 @@
   "pharmacyWalkInOrderCreatedMessage": "Pharmacy order created.",
   "@pharmacyWalkInOrderCreatedMessage": {
     "description": "Success snackbar after creating a walk-in pharmacy order."
+  },
+  "pharmacyWalkInOrderPatientModeExisting": "Existing patient",
+  "@pharmacyWalkInOrderPatientModeExisting": {
+    "description": "Patient mode for linking a create-order to an existing patient."
+  },
+  "pharmacyWalkInOrderPatientModeNew": "New patient",
+  "@pharmacyWalkInOrderPatientModeNew": {
+    "description": "Patient mode for registering a patient before creating a pharmacy order."
+  },
+  "pharmacyWalkInOrderPatientModeAnonymous": "Anonymous",
+  "@pharmacyWalkInOrderPatientModeAnonymous": {
+    "description": "Patient mode for a walk-in pharmacy order without a patient record."
+  },
+  "pharmacyWalkInOrderAnonymousHint": "Creates a pharmacy order without linking a patient record.",
+  "@pharmacyWalkInOrderAnonymousHint": {
+    "description": "Helper text shown when anonymous walk-in mode is selected."
+  },
+  "pharmacyWalkInOrderRegisterPatientAction": "Register patient",
+  "@pharmacyWalkInOrderRegisterPatientAction": {
+    "description": "Opens new-patient registration from the pharmacy create-order dialog."
   },
   "pharmacyWalkInOrderAddLineAction": "Add medication",
   "@pharmacyWalkInOrderAddLineAction": {

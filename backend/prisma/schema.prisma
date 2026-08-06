@@ -3938,7 +3938,7 @@ model pharmacy_order {
   id                String              @id @default(uuid()) @db.VarChar(36)
   human_friendly_id String?             @db.VarChar(32)
   encounter_id      String?             @db.VarChar(36)
-  patient_id        String              @db.VarChar(36)
+  patient_id        String?             @db.VarChar(36)
   status            PharmacyOrderStatus
   billing_snapshot  Json?
   ordered_at        DateTime            @default(now())
@@ -3948,7 +3948,7 @@ model pharmacy_order {
   version           Int                 @default(1)
 
   encounter             encounter?                      @relation(fields: [encounter_id], references: [id])
-  patient               patient                         @relation(fields: [patient_id], references: [id])
+  patient               patient?                        @relation(fields: [patient_id], references: [id])
   items                 pharmacy_order_item[]
   dispense_attestations pharmacy_dispense_attestation[]
 

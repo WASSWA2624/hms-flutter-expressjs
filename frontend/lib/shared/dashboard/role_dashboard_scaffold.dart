@@ -34,7 +34,7 @@ class RoleDashboardScaffold extends StatelessWidget {
         return;
       }
       if (sections.isNotEmpty) {
-        sections.add(SizedBox(height: spacing.xl));
+        sections.add(SizedBox(height: spacing.lg));
       }
       sections.add(section);
     }

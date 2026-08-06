@@ -129,7 +129,7 @@ const pharmacyOrderItemSchema = z
  */
 const createPharmacyOrderSchema = z.object({
   encounter_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  patient_id: uuidOrFriendlyIdentifierSchema,
+  patient_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   ordered_at: z.string().datetime().optional(),
   items: z.array(pharmacyOrderItemSchema).min(1),
   billing: clinicalRequestBillingSchema.optional().nullable()});
@@ -144,7 +144,7 @@ const createPharmacyOrderSchema = z.object({
  */
 const updatePharmacyOrderSchema = z.object({
   encounter_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  patient_id: uuidOrFriendlyIdentifierSchema.optional(),
+  patient_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   status: z.enum(PHARMACY_ORDER_STATUS_VALUES).optional(),
   ordered_at: z.string().datetime().optional(),
   billing: clinicalRequestBillingSchema.optional().nullable()});

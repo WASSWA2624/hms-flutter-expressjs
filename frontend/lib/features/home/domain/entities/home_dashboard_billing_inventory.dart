@@ -141,7 +141,7 @@ abstract final class HomeDashboardBillingInventory {
         ),
         'record_pharmacy_sale': HomeDashboardBillingAtom(
           id: 'record_pharmacy_sale',
-          label: 'Record pharmacy sale',
+          label: 'Create order',
           actionClass: HomeBillingActionClass.createCharge,
           requiredPermissions: <AppPermission>[AppPermissions.pharmacyWrite],
           billingRoute: AppRoutes.pharmacy,
@@ -150,7 +150,7 @@ abstract final class HomeDashboardBillingInventory {
         ),
         'dispense_medication': HomeDashboardBillingAtom(
           id: 'dispense_medication',
-          label: 'Dispense medication',
+          label: 'New orders',
           actionClass: HomeBillingActionClass.createCharge,
           requiredPermissions: <AppPermission>[AppPermissions.pharmacyWrite],
           billingRoute: AppRoutes.pharmacy,

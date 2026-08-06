@@ -12099,13 +12099,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyWalkInOrderAction => 'Walk-in order';
 
   @override
-  String get pharmacyWalkInOrderDialogTitle => 'New pharmacy sale';
+  String get pharmacyWalkInOrderDialogTitle => 'Create order';
 
   @override
   String get pharmacyWalkInOrderSubmitAction => 'Create order';
 
   @override
   String get pharmacyWalkInOrderCreatedMessage => 'Pharmacy order created.';
+
+  @override
+  String get pharmacyWalkInOrderPatientModeExisting => 'Existing patient';
+
+  @override
+  String get pharmacyWalkInOrderPatientModeNew => 'New patient';
+
+  @override
+  String get pharmacyWalkInOrderPatientModeAnonymous => 'Anonymous';
+
+  @override
+  String get pharmacyWalkInOrderAnonymousHint =>
+      'Creates a pharmacy order without linking a patient record.';
+
+  @override
+  String get pharmacyWalkInOrderRegisterPatientAction => 'Register patient';
 
   @override
   String get pharmacyWalkInOrderAddLineAction => 'Add medication';

@@ -15,11 +15,16 @@ const {
 
 describe('Pharmacy Order Schemas', () => {
   describe('createPharmacyOrderSchema', () => {
+    const validItem = {
+      drug_id: '550e8400-e29b-41d4-a716-446655440002',
+      quantity: 1,
+      dosage: '1 tablet'
+    };
     const validData = {
       patient_id: '550e8400-e29b-41d4-a716-446655440000',
       encounter_id: '550e8400-e29b-41d4-a716-446655440001',
-      status: 'ORDERED',
-      ordered_at: '2026-01-19T12:00:00.000Z'
+      ordered_at: '2026-01-19T12:00:00.000Z',
+      items: [validItem]
     };
 
     it('should validate correct pharmacy order data', () => {
@@ -27,11 +32,17 @@ describe('Pharmacy Order Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should require patient_id', () => {
+    it('should allow omitted patient_id for anonymous walk-in orders', () => {
       const data = { ...validData };
       delete data.patient_id;
       const result = createPharmacyOrderSchema.safeParse(data);
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
+    });
+
+    it('should allow null patient_id for anonymous walk-in orders', () => {
+      const data = { ...validData, patient_id: null };
+      const result = createPharmacyOrderSchema.safeParse(data);
+      expect(result.success).toBe(true);
     });
 
     it('should allow optional encounter_id', () => {
@@ -47,26 +58,11 @@ describe('Pharmacy Order Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should allow optional status', () => {
-      const data = { ...validData };
-      delete data.status;
+    it('should ignore status on create (service forces ORDERED)', () => {
+      const data = { ...validData, status: 'DISPENSED' };
       const result = createPharmacyOrderSchema.safeParse(data);
       expect(result.success).toBe(true);
-    });
-
-    it('should validate status enum values', () => {
-      const data = { ...validData, status: 'INVALID' };
-      const result = createPharmacyOrderSchema.safeParse(data);
-      expect(result.success).toBe(false);
-    });
-
-    it('should accept all valid status values', () => {
-      const statuses = ['ORDERED', 'DISPENSED', 'PARTIALLY_DISPENSED', 'CANCELLED'];
-      statuses.forEach(status => {
-        const data = { ...validData, status };
-        const result = createPharmacyOrderSchema.safeParse(data);
-        expect(result.success).toBe(true);
-      });
+      expect(result.data.status).toBeUndefined();
     });
 
     it('should allow optional ordered_at', () => {
@@ -113,9 +109,21 @@ describe('Pharmacy Order Schemas', () => {
     });
 
     it('should accept minimal valid data', () => {
-      const data = { patient_id: '550e8400-e29b-41d4-a716-446655440000' };
+      const data = {
+        patient_id: '550e8400-e29b-41d4-a716-446655440000',
+        items: [validItem]
+      };
       const result = createPharmacyOrderSchema.safeParse(data);
       expect(result.success).toBe(true);
+    });
+
+    it('should require at least one item', () => {
+      const data = {
+        patient_id: '550e8400-e29b-41d4-a716-446655440000',
+        items: []
+      };
+      const result = createPharmacyOrderSchema.safeParse(data);
+      expect(result.success).toBe(false);
     });
   });
 

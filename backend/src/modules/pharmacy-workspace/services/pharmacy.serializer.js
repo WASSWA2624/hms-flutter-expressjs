@@ -476,7 +476,9 @@ const mapPharmacyOrderRecord = (record, options = {}) => {
     encounter_type: toText(record.encounter?.encounter_type).toUpperCase() || null,
     location: resolveOrderLocation(record.encounter?.encounter_type),
     patient_id: toPublicIdentifier(record.patient?.human_friendly_id, record.patient_id),
-    patient_display_name: toDisplayName(record.patient?.first_name, record.patient?.last_name),
+    patient_display_name:
+      toDisplayName(record.patient?.first_name, record.patient?.last_name) ||
+      (record.patient_id ? null : 'Walk-in'),
     order_source: record.encounter_id ? 'CLINICAL' : 'PHARMACY',
     priority: resolveOrderPriority(record.items || []),
     status: toText(record.status).toUpperCase() || null,

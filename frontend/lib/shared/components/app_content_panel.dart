@@ -49,7 +49,7 @@ class AppContentPanel extends StatelessWidget {
     return EdgeInsets.all(switch (density) {
       AppContentPanelDensity.compact => theme.spacing.sm,
       AppContentPanelDensity.regular => theme.spacing.md,
-      AppContentPanelDensity.spacious => theme.spacing.lg,
+      AppContentPanelDensity.spacious => theme.spacing.md,
     });
   }
 }
@@ -132,6 +132,7 @@ class AppSectionPanel extends StatelessWidget {
         actions: actions,
         collapsible: collapsible,
         initiallyExpanded: initiallyExpanded,
+        contentPadding: EdgeInsets.all(_contentPadding(theme)),
         child: body,
       );
     }
@@ -166,7 +167,15 @@ class AppSectionPanel extends StatelessWidget {
     return switch (density) {
       AppContentPanelDensity.compact => theme.spacing.sm,
       AppContentPanelDensity.regular => theme.spacing.md,
-      AppContentPanelDensity.spacious => theme.spacing.lg,
+      AppContentPanelDensity.spacious => theme.spacing.md,
+    };
+  }
+
+  double _contentPadding(ThemeData theme) {
+    return switch (density) {
+      AppContentPanelDensity.compact => theme.spacing.sm,
+      AppContentPanelDensity.regular => theme.spacing.md,
+      AppContentPanelDensity.spacious => theme.spacing.md,
     };
   }
 }

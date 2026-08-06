@@ -22327,7 +22327,7 @@ abstract class AppLocalizations {
   /// Title for the walk-in pharmacy order create dialog.
   ///
   /// In en, this message translates to:
-  /// **'New pharmacy sale'**
+  /// **'Create order'**
   String get pharmacyWalkInOrderDialogTitle;
 
   /// Submit action for the walk-in pharmacy order dialog.
@@ -22341,6 +22341,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pharmacy order created.'**
   String get pharmacyWalkInOrderCreatedMessage;
+
+  /// Patient mode for linking a create-order to an existing patient.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing patient'**
+  String get pharmacyWalkInOrderPatientModeExisting;
+
+  /// Patient mode for registering a patient before creating a pharmacy order.
+  ///
+  /// In en, this message translates to:
+  /// **'New patient'**
+  String get pharmacyWalkInOrderPatientModeNew;
+
+  /// Patient mode for a walk-in pharmacy order without a patient record.
+  ///
+  /// In en, this message translates to:
+  /// **'Anonymous'**
+  String get pharmacyWalkInOrderPatientModeAnonymous;
+
+  /// Helper text shown when anonymous walk-in mode is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Creates a pharmacy order without linking a patient record.'**
+  String get pharmacyWalkInOrderAnonymousHint;
+
+  /// Opens new-patient registration from the pharmacy create-order dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Register patient'**
+  String get pharmacyWalkInOrderRegisterPatientAction;
 
   /// Adds another drug line on the walk-in order dialog.
   ///

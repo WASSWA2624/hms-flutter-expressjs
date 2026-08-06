@@ -275,7 +275,7 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
           if (showBody)
             Padding(
               padding:
-                  widget.contentPadding ?? EdgeInsets.all(theme.spacing.lg),
+                  widget.contentPadding ?? EdgeInsets.all(theme.spacing.md),
               child: _buildBody(
                 theme: theme,
                 colorScheme: colorScheme,

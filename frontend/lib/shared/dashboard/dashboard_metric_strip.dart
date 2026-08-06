@@ -109,10 +109,10 @@ class _DashboardMetricCard extends StatelessWidget {
   static const int _labelMaxLines = 2;
 
   static TextStyle _valueStyle(ThemeData theme, Color accent, bool compact) {
-    return (compact ? theme.textTheme.titleMedium : theme.textTheme.titleLarge)!
+    return (compact ? theme.textTheme.titleLarge : theme.textTheme.headlineSmall)!
         .copyWith(
           color: accent,
-          fontWeight: AppFontWeight.emphasis,
+          fontWeight: AppFontWeight.strong,
           height: 1.05,
           letterSpacing: -0.2,
           leadingDistribution: TextLeadingDistribution.even,

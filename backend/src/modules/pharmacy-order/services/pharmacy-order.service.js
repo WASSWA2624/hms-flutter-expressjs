@@ -287,7 +287,7 @@ const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
     const items = Array.isArray(data.items) ? data.items : [];
     const payload = {
       ...data,
-      patient_id: await resolveScopedPatientId(data.patient_id, scope),
+      patient_id: await resolveScopedPatientId(data.patient_id, scope, true),
       status: 'ORDERED'};
     const orderedAt = normalizeOptionalDate(data.ordered_at);
     delete payload.items;
@@ -309,9 +309,11 @@ const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
     const pharmacyOrder = await pharmacyOrderRepository.create(payload, ORDER_SCOPE_INCLUDE);
 
     let billing = data.billing;
-    const patientRecord = await prisma.patient.findFirst({
-      where: { id: payload.patient_id, deleted_at: null },
-      select: { id: true, tenant_id: true, facility_id: true }});
+    const patientRecord = payload.patient_id
+      ? await prisma.patient.findFirst({
+          where: { id: payload.patient_id, deleted_at: null },
+          select: { id: true, tenant_id: true, facility_id: true }})
+      : null;
     if (!billing && patientRecord && items.length > 0) {
       billing = await buildPharmacyOrderBillingFromRequest({
         items,
@@ -382,7 +384,7 @@ const updatePharmacyOrder = async (id, data, userId, ipAddress, user = {}) => {
     }
 
     if (data.patient_id !== undefined) {
-      payload.patient_id = await resolveScopedPatientId(data.patient_id, scope);
+      payload.patient_id = await resolveScopedPatientId(data.patient_id, scope, true);
     }
 
     if (data.encounter_id !== undefined) {

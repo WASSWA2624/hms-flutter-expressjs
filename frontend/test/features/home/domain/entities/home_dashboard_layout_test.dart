@@ -85,7 +85,6 @@ void main() {
         'dispense_medication',
         'record_pharmacy_sale',
         'receive_pharmacy_stock',
-        'adjust_pharmacy_stock',
       ]);
       expect(profile.metricRouteTargets.keys, contains('pending_dispense'));
       expect(profile.metricRouteTargets['low_stock']!.queryParameters, <String, String>{

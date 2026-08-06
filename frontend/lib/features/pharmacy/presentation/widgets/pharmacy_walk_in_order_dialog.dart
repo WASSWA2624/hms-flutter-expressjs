@@ -6,8 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
+import 'package:hosspi_hms/features/patients/presentation/patient_registry_access.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_access.dart';
@@ -17,6 +20,8 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+
+enum _WalkInPatientMode { existing, newPatient, anonymous }
 
 /// Opens the walk-in pharmacy order dialog when the user can write pharmacy.
 ///
@@ -51,8 +56,10 @@ class _PharmacyWalkInOrderDialogState
   final List<_WalkInLineState> _lines = <_WalkInLineState>[
     _WalkInLineState(),
   ];
+  _WalkInPatientMode _patientMode = _WalkInPatientMode.existing;
   Patient? _patient;
   bool _isSaving = false;
+  bool _isRegisteringPatient = false;
   AppFailure? _failure;
   String? _validationMessage;
 
@@ -70,6 +77,20 @@ class _PharmacyWalkInOrderDialogState
     super.dispose();
   }
 
+  void _setPatientMode(_WalkInPatientMode? mode) {
+    if (mode == null || mode == _patientMode) {
+      return;
+    }
+    setState(() {
+      _patientMode = mode;
+      if (mode == _WalkInPatientMode.anonymous) {
+        _patient = null;
+      }
+      _validationMessage = null;
+      _failure = null;
+    });
+  }
+
   Future<void> _pickPatient() async {
     final Patient? selected = await showReceptionPatientPickerDialog(
       context: context,
@@ -79,8 +100,74 @@ class _PharmacyWalkInOrderDialogState
     }
     setState(() {
       _patient = selected;
+      _patientMode = _WalkInPatientMode.existing;
       _validationMessage = null;
       _failure = null;
+    });
+  }
+
+  Future<void> _registerNewPatient() async {
+    if (_isRegisteringPatient || _isSaving) {
+      return;
+    }
+    setState(() {
+      _isRegisteringPatient = true;
+      _failure = null;
+      _validationMessage = null;
+    });
+
+    final Result<PatientReferenceData> referenceResult = await ref
+        .read(patientRepositoryProvider)
+        .loadReferenceData();
+    if (!mounted) {
+      return;
+    }
+    final PatientReferenceData? referenceData = referenceResult.when(
+      success: (PatientReferenceData data) => data,
+      failure: (AppFailure failure) {
+        setState(() {
+          _isRegisteringPatient = false;
+          _failure = failure;
+        });
+        return null;
+      },
+    );
+    if (referenceData == null || !mounted) {
+      return;
+    }
+
+    final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+    final PatientRegistrationResult? registration =
+        await showRegisterNewPatientDialog(
+          context: context,
+          referenceData: referenceData,
+          registrationScope: PatientRegistrationScope.resolve(
+            referenceData: referenceData,
+            accessPolicy: accessPolicy,
+          ),
+          onSubmit: (Map<String, Object?> payload) {
+            return ref.read(patientRepositoryProvider).createPatient(payload);
+          },
+          onLookupDuplicates: (PatientDuplicateQuery query) {
+            return ref
+                .read(patientRepositoryProvider)
+                .listDuplicateCandidates(query);
+          },
+        );
+    if (!mounted) {
+      return;
+    }
+    if (registration == null) {
+      setState(() => _isRegisteringPatient = false);
+      return;
+    }
+
+    setState(() {
+      _isRegisteringPatient = false;
+      _patient = registration.patient;
+      _patientMode = _WalkInPatientMode.newPatient;
+      _failure = null;
+      _validationMessage = null;
     });
   }
 
@@ -190,14 +277,19 @@ class _PharmacyWalkInOrderDialogState
       return;
     }
     final AppLocalizations l10n = context.l10n;
-    final Patient? patient = _patient;
-    final String? patientId = patient == null ? null : _patientId(patient);
-    if (patientId == null) {
-      setState(() {
-        _validationMessage = l10n.pharmacyWalkInOrderPatientRequired;
-        _failure = null;
-      });
-      return;
+    String? patientId;
+    if (_patientMode == _WalkInPatientMode.anonymous) {
+      patientId = null;
+    } else {
+      final Patient? patient = _patient;
+      patientId = patient == null ? null : _patientId(patient);
+      if (patientId == null) {
+        setState(() {
+          _validationMessage = l10n.pharmacyWalkInOrderPatientRequired;
+          _failure = null;
+        });
+        return;
+      }
     }
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
@@ -213,13 +305,15 @@ class _PharmacyWalkInOrderDialogState
       _validationMessage = null;
     });
 
+    final Map<String, Object?> payload = <String, Object?>{
+      'ordered_at': DateTime.now().toUtc().toIso8601String(),
+      'items': items,
+      'patient_id': ?patientId,
+    };
+
     final AppFailure? failure = await ref
         .read(pharmacyWorkspaceControllerProvider.notifier)
-        .createPharmacyOrder(<String, Object?>{
-          'patient_id': patientId,
-          'ordered_at': DateTime.now().toUtc().toIso8601String(),
-          'items': items,
-        });
+        .createPharmacyOrder(payload);
 
     if (!mounted) {
       return;
@@ -247,6 +341,9 @@ class _PharmacyWalkInOrderDialogState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canRegisterPatient = canWritePatientRegistry(policy);
+    final bool busy = _isSaving || _isRegisteringPatient;
     final Patient? patient = _patient;
     final String patientLabel = patient == null
         ? l10n.receptionPatientPickerTitle
@@ -262,13 +359,30 @@ class _PharmacyWalkInOrderDialogState
             return '$name • $identifier';
           }();
 
+    final List<AppRadioOption<_WalkInPatientMode>> modeOptions =
+        <AppRadioOption<_WalkInPatientMode>>[
+          AppRadioOption<_WalkInPatientMode>(
+            value: _WalkInPatientMode.existing,
+            label: l10n.pharmacyWalkInOrderPatientModeExisting,
+          ),
+          if (canRegisterPatient)
+            AppRadioOption<_WalkInPatientMode>(
+              value: _WalkInPatientMode.newPatient,
+              label: l10n.pharmacyWalkInOrderPatientModeNew,
+            ),
+          AppRadioOption<_WalkInPatientMode>(
+            value: _WalkInPatientMode.anonymous,
+            label: l10n.pharmacyWalkInOrderPatientModeAnonymous,
+          ),
+        ];
+
     return AppDialog(
       title: Text(l10n.pharmacyWalkInOrderDialogTitle),
-      icon: const Icon(Icons.point_of_sale_outlined),
+      icon: const Icon(Icons.add_shopping_cart_outlined),
       maxWidth: 720,
       scrollable: true,
       pinActionsToBottom: true,
-      closeEnabled: !_isSaving,
+      closeEnabled: !busy,
       content: AppFormShell(
         formKey: _formKey,
         density: AppFormSectionDensity.compact,
@@ -284,23 +398,59 @@ class _PharmacyWalkInOrderDialogState
             title: l10n.pharmacyPatientColumnLabel,
             density: AppFormSectionDensity.compact,
             children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      patientLabel,
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                  ),
-                  SizedBox(width: theme.spacing.sm),
-                  AppButton.secondary(
-                    label: l10n.commonSelectActionLabel,
-                    leadingIcon: Icons.person_search_outlined,
-                    enabled: !_isSaving,
-                    onPressed: _isSaving ? null : _pickPatient,
-                  ),
-                ],
+              AppRadioGroup<_WalkInPatientMode>(
+                value: _patientMode,
+                enabled: !busy,
+                dense: true,
+                layout: AppRadioGroupLayout.wrap,
+                presentation: AppRadioGroupPresentation.borderless,
+                itemMinWidth: 140,
+                options: modeOptions,
+                onChanged: busy ? null : _setPatientMode,
               ),
+              SizedBox(height: theme.spacing.sm),
+              if (_patientMode == _WalkInPatientMode.anonymous)
+                Text(
+                  l10n.pharmacyWalkInOrderAnonymousHint,
+                  style: theme.textTheme.bodyMedium,
+                )
+              else if (_patientMode == _WalkInPatientMode.newPatient)
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        patientLabel,
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                    ),
+                    SizedBox(width: theme.spacing.sm),
+                    AppButton.secondary(
+                      label: l10n.pharmacyWalkInOrderRegisterPatientAction,
+                      leadingIcon: Icons.person_add_outlined,
+                      enabled: !busy,
+                      isLoading: _isRegisteringPatient,
+                      onPressed: busy ? null : _registerNewPatient,
+                    ),
+                  ],
+                )
+              else
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        patientLabel,
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                    ),
+                    SizedBox(width: theme.spacing.sm),
+                    AppButton.secondary(
+                      label: l10n.commonSelectActionLabel,
+                      leadingIcon: Icons.person_search_outlined,
+                      enabled: !busy,
+                      onPressed: busy ? null : _pickPatient,
+                    ),
+                  ],
+                ),
             ],
           ),
           AppFormSection(
@@ -313,7 +463,7 @@ class _PharmacyWalkInOrderDialogState
                   line: _lines[index],
                   index: index,
                   canRemove: _lines.length > 1,
-                  isSaving: _isSaving,
+                  isSaving: busy,
                   onSearch: (String raw) =>
                       _scheduleDrugSearch(_lines[index], raw),
                   onDrugChanged: (PharmacyDrug? drug) {
@@ -331,8 +481,8 @@ class _PharmacyWalkInOrderDialogState
                 child: AppButton.tertiary(
                   label: l10n.pharmacyWalkInOrderAddLineAction,
                   leadingIcon: Icons.add_outlined,
-                  enabled: !_isSaving,
-                  onPressed: _isSaving ? null : _addLine,
+                  enabled: !busy,
+                  onPressed: busy ? null : _addLine,
                 ),
               ),
             ],
@@ -342,15 +492,15 @@ class _PharmacyWalkInOrderDialogState
       actions: <Widget>[
         AppButton.secondary(
           label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: _isSaving ? null : () => Navigator.of(context).maybePop(),
+          enabled: !busy,
+          onPressed: busy ? null : () => Navigator.of(context).maybePop(),
         ),
         AppButton.primary(
           label: l10n.pharmacyWalkInOrderSubmitAction,
-          leadingIcon: Icons.point_of_sale_outlined,
-          enabled: !_isSaving,
+          leadingIcon: Icons.add_shopping_cart_outlined,
+          enabled: !busy,
           isLoading: _isSaving,
-          onPressed: _isSaving ? null : _submit,
+          onPressed: busy ? null : _submit,
         ),
       ],
     );
