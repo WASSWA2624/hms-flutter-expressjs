@@ -13,6 +13,7 @@ enum HomeMostSoldPeriod {
   lastSixMonths,
   lastYear,
   lastFiveYears,
+  custom,
 }
 
 extension HomeMostSoldPeriodX on HomeMostSoldPeriod {
@@ -24,6 +25,7 @@ extension HomeMostSoldPeriodX on HomeMostSoldPeriod {
     HomeMostSoldPeriod.lastSixMonths => 'last_6_months',
     HomeMostSoldPeriod.lastYear => 'last_year',
     HomeMostSoldPeriod.lastFiveYears => 'last_5_years',
+    HomeMostSoldPeriod.custom => 'custom',
   };
 
   String get label => switch (this) {
@@ -34,6 +36,7 @@ extension HomeMostSoldPeriodX on HomeMostSoldPeriod {
     HomeMostSoldPeriod.lastSixMonths => 'Last 6 months',
     HomeMostSoldPeriod.lastYear => 'Last year',
     HomeMostSoldPeriod.lastFiveYears => 'Last 5 years',
+    HomeMostSoldPeriod.custom => 'Custom',
   };
 
   static HomeMostSoldPeriod? tryParse(String? raw) {
@@ -49,6 +52,7 @@ extension HomeMostSoldPeriodX on HomeMostSoldPeriod {
       'last_year' || 'last-year' || 'year' => HomeMostSoldPeriod.lastYear,
       'last_5_years' || 'last-5-years' || '5_years' =>
         HomeMostSoldPeriod.lastFiveYears,
+      'custom' => HomeMostSoldPeriod.custom,
       _ => null,
     };
   }
@@ -60,6 +64,8 @@ final class HomeDashboardRequest {
     this.facilityId,
     this.mostSoldPeriod,
     this.mostSoldLimit,
+    this.mostSoldFrom,
+    this.mostSoldTo,
   });
 
   factory HomeDashboardRequest.fromQuery(Map<String, String> query) {
@@ -72,6 +78,12 @@ final class HomeDashboardRequest {
       mostSoldLimit: int.tryParse(
         (query['most_sold_limit'] ?? query['mostSoldLimit'] ?? '').trim(),
       ),
+      mostSoldFrom: DateTime.tryParse(
+        (query['most_sold_from'] ?? query['mostSoldFrom'] ?? '').trim(),
+      ),
+      mostSoldTo: DateTime.tryParse(
+        (query['most_sold_to'] ?? query['mostSoldTo'] ?? '').trim(),
+      ),
     );
   }
 
@@ -81,14 +93,23 @@ final class HomeDashboardRequest {
   final String? facilityId;
   final HomeMostSoldPeriod? mostSoldPeriod;
   final int? mostSoldLimit;
+  final DateTime? mostSoldFrom;
+  final DateTime? mostSoldTo;
 
   Map<String, Object?> toQueryParameters() {
     return <String, Object?>{
       if (tenantId != null) 'tenant_id': tenantId,
       if (facilityId != null) 'facility_id': facilityId,
       'limit': 5,
-      if (mostSoldPeriod != null) 'most_sold_period': mostSoldPeriod!.apiValue,
+      if (mostSoldPeriod != null && mostSoldPeriod != HomeMostSoldPeriod.custom)
+        'most_sold_period': mostSoldPeriod!.apiValue,
+      if (mostSoldPeriod == HomeMostSoldPeriod.custom)
+        'most_sold_period': 'custom',
       if (mostSoldLimit != null) 'most_sold_limit': mostSoldLimit,
+      if (mostSoldFrom != null)
+        'most_sold_from': mostSoldFrom!.toUtc().toIso8601String(),
+      if (mostSoldTo != null)
+        'most_sold_to': mostSoldTo!.toUtc().toIso8601String(),
     };
   }
 
@@ -97,12 +118,20 @@ final class HomeDashboardRequest {
     String? facilityId,
     HomeMostSoldPeriod? mostSoldPeriod,
     int? mostSoldLimit,
+    DateTime? mostSoldFrom,
+    DateTime? mostSoldTo,
+    bool clearMostSoldFrom = false,
+    bool clearMostSoldTo = false,
   }) {
     return HomeDashboardRequest(
       tenantId: tenantId ?? this.tenantId,
       facilityId: facilityId ?? this.facilityId,
       mostSoldPeriod: mostSoldPeriod ?? this.mostSoldPeriod,
       mostSoldLimit: mostSoldLimit ?? this.mostSoldLimit,
+      mostSoldFrom: clearMostSoldFrom
+          ? null
+          : mostSoldFrom ?? this.mostSoldFrom,
+      mostSoldTo: clearMostSoldTo ? null : mostSoldTo ?? this.mostSoldTo,
     );
   }
 
@@ -114,12 +143,20 @@ final class HomeDashboardRequest {
         other.tenantId == tenantId &&
         other.facilityId == facilityId &&
         other.mostSoldPeriod == mostSoldPeriod &&
-        other.mostSoldLimit == mostSoldLimit;
+        other.mostSoldLimit == mostSoldLimit &&
+        other.mostSoldFrom == mostSoldFrom &&
+        other.mostSoldTo == mostSoldTo;
   }
 
   @override
-  int get hashCode =>
-      Object.hash(tenantId, facilityId, mostSoldPeriod, mostSoldLimit);
+  int get hashCode => Object.hash(
+    tenantId,
+    facilityId,
+    mostSoldPeriod,
+    mostSoldLimit,
+    mostSoldFrom,
+    mostSoldTo,
+  );
 }
 
 final class HomeDashboard {

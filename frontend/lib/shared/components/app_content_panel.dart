@@ -66,6 +66,7 @@ class AppSectionPanel extends StatelessWidget {
     this.description,
     this.leadingIcon,
     this.trailing,
+    this.actions = const <Widget>[],
     this.tone = AppWorkspaceStatusTone.neutral,
     this.density = AppContentPanelDensity.regular,
     this.spacing,
@@ -81,6 +82,9 @@ class AppSectionPanel extends StatelessWidget {
   final String? description;
   final IconData? leadingIcon;
   final Widget? trailing;
+
+  /// Optional controls rendered below the section body (see [AppCollapsibleSection.actions]).
+  final List<Widget> actions;
   final List<Widget> children;
   final AppWorkspaceStatusTone tone;
   final AppContentPanelDensity density;
@@ -120,6 +124,7 @@ class AppSectionPanel extends StatelessWidget {
         headerActions: trailing == null
             ? const <Widget>[]
             : <Widget>[trailing!],
+        actions: actions,
         collapsible: collapsible,
         initiallyExpanded: initiallyExpanded,
         child: body,

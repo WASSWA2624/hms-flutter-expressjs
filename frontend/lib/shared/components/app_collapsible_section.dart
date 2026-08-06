@@ -304,28 +304,29 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        if (hasActions)
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: Wrap(
-              alignment: WrapAlignment.end,
-              spacing: theme.spacing.xs,
-              runSpacing: theme.spacing.xs,
-              children: widget.actions,
-            ),
-          ),
         if (description != null) ...<Widget>[
-          if (hasActions) SizedBox(height: theme.spacing.sm),
           Text(
             description,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: secondaryText,
             ),
           ),
-        ],
-        if (hasActions || description != null)
           SizedBox(height: theme.spacing.md),
+        ],
         widget.child,
+        if (hasActions) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Wrap(
+              alignment: WrapAlignment.start,
+              spacing: theme.spacing.sm,
+              runSpacing: theme.spacing.sm,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: widget.actions,
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -1738,10 +1738,8 @@ String homeFormatMetricValue(HomeStatusCard card) {
     return '${NumberFormat.compact().format(card.value)} / ${NumberFormat.compact().format(total)}';
   }
   if (card.format == 'currency') {
-    return NumberFormat.compactCurrency(
-      symbol: 'UGX',
-      decimalDigits: 0,
-    ).format(card.value);
+    // Keep unit and amount visually separate (e.g. "UGX 1.2M", not "UGX1.2M").
+    return 'UGX ${NumberFormat.compact().format(card.value)}';
   }
   if (card.format == 'percent') {
     final num value = card.value <= 1 && card.value >= 0

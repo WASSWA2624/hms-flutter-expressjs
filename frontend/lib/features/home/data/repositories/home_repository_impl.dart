@@ -158,6 +158,8 @@ final class HomeRepositoryImpl implements HomeRepository {
       facilityId: request.facilityId ?? _accessPolicy.facilityId,
       mostSoldPeriod: request.mostSoldPeriod,
       mostSoldLimit: request.mostSoldLimit,
+      mostSoldFrom: request.mostSoldFrom,
+      mostSoldTo: request.mostSoldTo,
     );
   }
 

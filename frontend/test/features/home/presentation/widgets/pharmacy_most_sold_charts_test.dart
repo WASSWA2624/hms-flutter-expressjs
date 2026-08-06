@@ -89,11 +89,16 @@ void main() {
         expect(find.text('Qty'), findsOneWidget);
         expect(find.text('Amount'), findsOneWidget);
         expect(find.text('Profit'), findsNothing);
-        expect(find.text('Last month'), findsWidgets);
-        expect(find.text('Top 10'), findsWidgets);
-        expect(find.text('Bar'), findsWidgets);
+        expect(find.text('Today'), findsWidgets);
+        expect(find.text('Top 5'), findsWidgets);
+        expect(find.text('Line'), findsWidgets);
         expect(find.text('Sold drugs'), findsOneWidget);
         expect(find.text('Para'), findsWidgets);
+
+        final double listBottom =
+            tester.getBottomLeft(find.text('Sold drugs')).dy;
+        final double periodTop = tester.getTopLeft(find.text('Period')).dy;
+        expect(periodTop, greaterThan(listBottom));
 
         await tester.tap(find.text('Amount'));
         await tester.pumpAndSettle();

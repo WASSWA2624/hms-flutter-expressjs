@@ -539,6 +539,28 @@ void main() {
     },
   );
 
+  testWidgets('AppCollapsibleSection renders actions below body content', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppCollapsibleSection(
+        title: 'Most sold drugs',
+        actions: <Widget>[
+          Text('Period filter'),
+        ],
+        child: Text('Chart body'),
+      ),
+      size: const Size(800, 500),
+    );
+
+    expect(find.text('Period filter'), findsOneWidget);
+    expect(find.text('Chart body'), findsOneWidget);
+    final double bodyBottom = tester.getBottomLeft(find.text('Chart body')).dy;
+    final double actionsTop = tester.getTopLeft(find.text('Period filter')).dy;
+    expect(actionsTop, greaterThan(bodyBottom));
+  });
+
   testWidgets('AppCollapsibleSection collapses to header by default', (
     WidgetTester tester,
   ) async {

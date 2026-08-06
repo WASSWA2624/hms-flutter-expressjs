@@ -2427,6 +2427,8 @@ const getWorkspace = async (
       days: 7,
       most_sold_period: filters.most_sold_period || filters.mostSoldPeriod,
       most_sold_limit: filters.most_sold_limit || filters.mostSoldLimit,
+      most_sold_from: filters.most_sold_from || filters.mostSoldFrom,
+      most_sold_to: filters.most_sold_to || filters.mostSoldTo,
     },
     user,
     repository: dashboardWidgetRepository,

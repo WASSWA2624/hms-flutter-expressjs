@@ -67,6 +67,7 @@ class _DashboardTrendPanel extends StatelessWidget {
         title: chart.title,
         leadingIcon: Icons.show_chart_outlined,
         trailing: chart.headerTrailing,
+        actions: chart.sectionActions,
         density: AppContentPanelDensity.spacious,
         backgroundColor: Colors.transparent,
         borderColor: Colors.transparent,

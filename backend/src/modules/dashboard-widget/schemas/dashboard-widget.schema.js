@@ -57,9 +57,12 @@ const dashboardSummaryQuerySchema = z.object({
       'last_6_months',
       'last_year',
       'last_5_years',
+      'custom',
     ])
     .optional(),
   most_sold_limit: z.coerce.number().int().refine((value) => [5, 10, 20, 100].includes(value)).optional(),
+  most_sold_from: z.string().datetime().optional(),
+  most_sold_to: z.string().datetime().optional(),
 });
 
 module.exports = {

@@ -110,7 +110,7 @@ const shiftDays = (value, dayOffset) => {
 };
 
 const resolveMostSoldWindow = (period, todayStart = startOfDay()) => {
-  const normalized = String(period || 'last_month')
+  const normalized = String(period || 'today')
     .trim()
     .toLowerCase()
     .replace(/-/g, '_');
@@ -134,17 +134,25 @@ const resolveMostSoldWindow = (period, todayStart = startOfDay()) => {
       return shiftDays(todayStart, -365 * 5);
     case 'last_month':
     case 'month':
-    default:
       return shiftDays(todayStart, -30);
+    case 'custom':
+    default:
+      return todayStart;
   }
 };
 
-const normalizeMostSoldLimit = (value, fallback = 10) => {
+const normalizeMostSoldLimit = (value, fallback = 5) => {
   const parsed = Number(value);
   if (![5, 10, 20, 100].includes(parsed)) {
     return fallback;
   }
   return parsed;
+};
+
+const parseMostSoldBound = (value) => {
+  if (value == null || value === '') return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 };
 
 const directScope = (scope = {}, options = {}) => {
@@ -296,15 +304,25 @@ const countLowStock = async (where, factor = 1) => {
   }).length;
 };
 
-/** Top drugs by qty / amount / profit for the last ~30 days (facility-scoped dispense logs). */
-const aggregateMostSoldDrugs = async (db, dispenseLogWhere, fromDate, limit = 8) => {
+/** Top drugs by qty / amount / profit for a dispense window (facility-scoped). */
+const aggregateMostSoldDrugs = async (
+  db,
+  dispenseLogWhere,
+  fromDate,
+  limit = 8,
+  toDate = null
+) => {
   const empty = { qty: [], amount: [], profit: [] };
   try {
+    const dispensedAt = { gte: fromDate };
+    if (toDate) {
+      dispensedAt.lt = toDate;
+    }
     const logs = await db.dispense_log.findMany({
       where: {
         ...dispenseLogWhere,
         status: 'DISPENSED',
-        dispensed_at: { gte: fromDate },
+        dispensed_at: dispensedAt,
         quantity_dispensed: { gt: 0 }
       },
       select: {
@@ -670,8 +688,10 @@ const getDashboardSummaryByPack = async ({
   days = 7,
   userId = null,
   user = {},
-  mostSoldPeriod = 'last_month',
-  mostSoldLimit = 10,
+  mostSoldPeriod = 'today',
+  mostSoldLimit = 5,
+  mostSoldFrom = null,
+  mostSoldTo = null,
 } = {}) => {
   try {
     const now = new Date();
@@ -1403,8 +1423,12 @@ const getDashboardSummaryByPack = async ({
           { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } }
         ]
       };
-      const mostSoldFrom = resolveMostSoldWindow(mostSoldPeriod, todayStart);
-      const mostSoldTopN = normalizeMostSoldLimit(mostSoldLimit, 10);
+      const customFrom = parseMostSoldBound(mostSoldFrom);
+      const customTo = parseMostSoldBound(mostSoldTo);
+      const mostSoldFromDate =
+        customFrom || resolveMostSoldWindow(mostSoldPeriod, todayStart);
+      const mostSoldToDate = customFrom ? customTo : null;
+      const mostSoldTopN = normalizeMostSoldLimit(mostSoldLimit, 5);
       // Trailing 7 calendar days including today (facility-local day start).
       const weekStart = shiftDays(todayStart, -6);
       const tomorrowStart = shiftDays(todayStart, 1);
@@ -1425,7 +1449,13 @@ const getDashboardSummaryByPack = async ({
         countLowStock(inventoryStockWhere, 1),
         countLowStock(inventoryStockWhere, 0.5),
         sumOutstandingBalance(openBalanceWhere),
-        aggregateMostSoldDrugs(prisma, dispenseLogWhere, mostSoldFrom, mostSoldTopN),
+        aggregateMostSoldDrugs(
+          prisma,
+          dispenseLogWhere,
+          mostSoldFromDate,
+          mostSoldTopN,
+          mostSoldToDate
+        ),
         sumDispenseSalesAmount(prisma, dispenseLogWhere, todayStart, tomorrowStart),
         sumDispenseSalesAmount(prisma, dispenseLogWhere, weekStart, tomorrowStart),
       ]);

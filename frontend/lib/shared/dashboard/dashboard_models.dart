@@ -114,6 +114,7 @@ final class DashboardTrendChartData {
     this.subtitle,
     this.chartStyle = DashboardTrendChartStyle.combined,
     this.headerTrailing,
+    this.sectionActions = const <Widget>[],
     this.footer,
   });
 
@@ -123,6 +124,9 @@ final class DashboardTrendChartData {
   final String emptyMessage;
   final DashboardTrendChartStyle chartStyle;
   final Widget? headerTrailing;
+
+  /// Controls rendered below the chart body via [AppCollapsibleSection.actions].
+  final List<Widget> sectionActions;
   final Widget? footer;
 }
 

@@ -40,9 +40,11 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
   static const List<int> _topNOptions = <int>[5, 10, 20, 100];
 
   HomeMostSoldMetric _metric = HomeMostSoldMetric.qty;
-  HomeMostSoldPeriod _period = HomeMostSoldPeriod.lastMonth;
-  int _topN = 10;
-  DashboardTrendChartStyle _chartStyle = DashboardTrendChartStyle.bar;
+  HomeMostSoldPeriod _period = HomeMostSoldPeriod.today;
+  int _topN = 5;
+  DashboardTrendChartStyle _chartStyle = DashboardTrendChartStyle.line;
+  DateTime? _customFrom;
+  DateTime? _customTo;
   HomeMostSoldSeries? _mostSoldOverride;
   bool _loadingMostSold = false;
   String? _mostSoldError;
@@ -50,8 +52,13 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
   @override
   void initState() {
     super.initState();
-    _period = widget.request.mostSoldPeriod ?? HomeMostSoldPeriod.lastMonth;
-    _topN = _normalizeTopN(widget.request.mostSoldLimit ?? 10);
+    _period = widget.request.mostSoldPeriod ?? HomeMostSoldPeriod.today;
+    _topN = _normalizeTopN(widget.request.mostSoldLimit ?? 5);
+    _customFrom = widget.request.mostSoldFrom;
+    _customTo = widget.request.mostSoldTo;
+    if (_period == HomeMostSoldPeriod.custom) {
+      _ensureCustomDefaults();
+    }
   }
 
   @override
@@ -75,15 +82,43 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     );
   }
 
+  void _ensureCustomDefaults() {
+    final DateTime now = DateTime.now();
+    final DateTime today = DateTime(now.year, now.month, now.day);
+    _customFrom ??= today.subtract(const Duration(days: 6));
+    _customTo ??= today;
+  }
+
   Future<void> _reloadMostSold({
     HomeMostSoldPeriod? period,
     int? topN,
+    DateTime? customFrom,
+    DateTime? customTo,
   }) async {
     final HomeMostSoldPeriod nextPeriod = period ?? _period;
     final int nextTopN = topN ?? _topN;
+    DateTime? nextFrom = customFrom ?? _customFrom;
+    DateTime? nextTo = customTo ?? _customTo;
+
+    if (nextPeriod == HomeMostSoldPeriod.custom) {
+      nextFrom ??= DateTime.now().subtract(const Duration(days: 6));
+      nextTo ??= DateTime.now();
+      final DateTime fromDay = DateTime(
+        nextFrom.year,
+        nextFrom.month,
+        nextFrom.day,
+      );
+      final DateTime toDay = DateTime(nextTo.year, nextTo.month, nextTo.day);
+      if (toDay.isBefore(fromDay)) {
+        nextTo = fromDay;
+      }
+    }
+
     setState(() {
       _period = nextPeriod;
       _topN = nextTopN;
+      _customFrom = nextPeriod == HomeMostSoldPeriod.custom ? nextFrom : null;
+      _customTo = nextPeriod == HomeMostSoldPeriod.custom ? nextTo : null;
       _loadingMostSold = true;
       _mostSoldError = null;
     });
@@ -93,6 +128,12 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
       widget.request.copyWith(
         mostSoldPeriod: nextPeriod,
         mostSoldLimit: nextTopN,
+        mostSoldFrom: nextPeriod == HomeMostSoldPeriod.custom ? nextFrom : null,
+        mostSoldTo: nextPeriod == HomeMostSoldPeriod.custom
+            ? nextTo?.add(const Duration(days: 1))
+            : null,
+        clearMostSoldFrom: nextPeriod != HomeMostSoldPeriod.custom,
+        clearMostSoldTo: nextPeriod != HomeMostSoldPeriod.custom,
       ),
     );
 
@@ -178,6 +219,82 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
       l10n: widget.l10n,
     );
 
+    final List<Widget> filterActions = <Widget>[
+      _FilterDropdown<HomeMostSoldPeriod>(
+        label: 'Period',
+        value: _period,
+        items: HomeMostSoldPeriod.values,
+        labelOf: (HomeMostSoldPeriod value) => value.label,
+        onChanged: _loadingMostSold
+            ? null
+            : (HomeMostSoldPeriod value) {
+                if (value == HomeMostSoldPeriod.custom) {
+                  _ensureCustomDefaults();
+                }
+                _reloadMostSold(period: value);
+              },
+      ),
+      _FilterDropdown<int>(
+        label: 'Top',
+        value: _topN,
+        items: _topNOptions,
+        labelOf: (int value) => 'Top $value',
+        onChanged: _loadingMostSold
+            ? null
+            : (int value) => _reloadMostSold(topN: value),
+      ),
+      _FilterDropdown<DashboardTrendChartStyle>(
+        label: 'Chart',
+        value: _chartStyle == DashboardTrendChartStyle.line
+            ? DashboardTrendChartStyle.line
+            : DashboardTrendChartStyle.bar,
+        items: const <DashboardTrendChartStyle>[
+          DashboardTrendChartStyle.line,
+          DashboardTrendChartStyle.bar,
+        ],
+        labelOf: (DashboardTrendChartStyle value) =>
+            value == DashboardTrendChartStyle.line ? 'Line' : 'Bar',
+        onChanged: _loadingMostSold
+            ? null
+            : (DashboardTrendChartStyle value) {
+                setState(() => _chartStyle = value);
+              },
+      ),
+      if (allowed.length > 1)
+        _MetricCheckToggle(
+          metric: active,
+          allowed: allowed,
+          onChanged: _loadingMostSold
+              ? null
+              : (HomeMostSoldMetric value) {
+                  setState(() => _metric = value);
+                },
+        ),
+      if (_period == HomeMostSoldPeriod.custom) ...<Widget>[
+        _CustomDateChip(
+          label: 'From',
+          value: _customFrom,
+          enabled: !_loadingMostSold,
+          onPicked: (DateTime value) => _reloadMostSold(customFrom: value),
+        ),
+        _CustomDateChip(
+          label: 'To',
+          value: _customTo,
+          enabled: !_loadingMostSold,
+          onPicked: (DateTime value) => _reloadMostSold(customTo: value),
+        ),
+      ],
+      if (_loadingMostSold)
+        SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+    ];
+
     final DashboardChartsData decorated = DashboardChartsData(
       trend: DashboardTrendChartData(
         title: charts.trend.title,
@@ -196,26 +313,7 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
             : (_mostSoldError ??
                   'No dispensed drug sales in the selected period.'),
         chartStyle: _chartStyle,
-        headerTrailing: _MostSoldHeaderControls(
-          period: _period,
-          topN: _topN,
-          chartStyle: _chartStyle,
-          metric: active,
-          allowedMetrics: allowed,
-          loading: _loadingMostSold,
-          onPeriodChanged: (HomeMostSoldPeriod value) {
-            _reloadMostSold(period: value);
-          },
-          onTopNChanged: (int value) {
-            _reloadMostSold(topN: value);
-          },
-          onChartStyleChanged: (DashboardTrendChartStyle value) {
-            setState(() => _chartStyle = value);
-          },
-          onMetricChanged: (HomeMostSoldMetric value) {
-            setState(() => _metric = value);
-          },
-        ),
+        sectionActions: filterActions,
         footer: ranked.isEmpty
             ? null
             : _SoldDrugsList(
@@ -257,7 +355,22 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
       HomeMostSoldMetric.amount => 'sales amount',
       HomeMostSoldMetric.profit => 'profit proxy',
     };
-    return 'Top $_topN by $metricLabel · ${_period.label}';
+    final String periodLabel = switch (_period) {
+      HomeMostSoldPeriod.custom => _customRangeLabel(),
+      _ => _period.label,
+    };
+    return 'Top $_topN by $metricLabel · $periodLabel';
+  }
+
+  String _customRangeLabel() {
+    final DateFormat format = DateFormat.yMMMd();
+    final String from = _customFrom == null
+        ? '…'
+        : format.format(_customFrom!.toLocal());
+    final String to = _customTo == null
+        ? '…'
+        : format.format(_customTo!.toLocal());
+    return '$from – $to';
   }
 }
 
@@ -279,113 +392,50 @@ String? pharmacyOrderStatusSection({String? segmentId, String? label}) {
   };
 }
 
-class _MostSoldHeaderControls extends StatelessWidget {
-  const _MostSoldHeaderControls({
-    required this.period,
-    required this.topN,
-    required this.chartStyle,
-    required this.metric,
-    required this.allowedMetrics,
-    required this.loading,
-    required this.onPeriodChanged,
-    required this.onTopNChanged,
-    required this.onChartStyleChanged,
-    required this.onMetricChanged,
-  });
-
-  final HomeMostSoldPeriod period;
-  final int topN;
-  final DashboardTrendChartStyle chartStyle;
-  final HomeMostSoldMetric metric;
-  final List<HomeMostSoldMetric> allowedMetrics;
-  final bool loading;
-  final ValueChanged<HomeMostSoldPeriod> onPeriodChanged;
-  final ValueChanged<int> onTopNChanged;
-  final ValueChanged<DashboardTrendChartStyle> onChartStyleChanged;
-  final ValueChanged<HomeMostSoldMetric> onMetricChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Wrap(
-      spacing: theme.spacing.sm,
-      runSpacing: theme.spacing.xs,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: <Widget>[
-        _HeaderDropdown<HomeMostSoldPeriod>(
-          value: period,
-          tooltip: 'Period',
-          items: HomeMostSoldPeriod.values,
-          labelOf: (HomeMostSoldPeriod value) => value.label,
-          onChanged: loading ? null : onPeriodChanged,
-        ),
-        _HeaderDropdown<int>(
-          value: topN,
-          tooltip: 'Top drugs',
-          items: _PharmacyMostSoldChartsState._topNOptions,
-          labelOf: (int value) => 'Top $value',
-          onChanged: loading ? null : onTopNChanged,
-        ),
-        _HeaderDropdown<DashboardTrendChartStyle>(
-          value: chartStyle == DashboardTrendChartStyle.line
-              ? DashboardTrendChartStyle.line
-              : DashboardTrendChartStyle.bar,
-          tooltip: 'Chart type',
-          items: const <DashboardTrendChartStyle>[
-            DashboardTrendChartStyle.bar,
-            DashboardTrendChartStyle.line,
-          ],
-          labelOf: (DashboardTrendChartStyle value) =>
-              value == DashboardTrendChartStyle.line ? 'Line' : 'Bar',
-          onChanged: loading ? null : onChartStyleChanged,
-        ),
-        if (allowedMetrics.length > 1)
-          _MetricCheckToggle(
-            metric: metric,
-            allowed: allowedMetrics,
-            onChanged: loading ? null : onMetricChanged,
-          ),
-        if (loading)
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _HeaderDropdown<T> extends StatelessWidget {
-  const _HeaderDropdown({
+class _FilterDropdown<T> extends StatelessWidget {
+  const _FilterDropdown({
+    required this.label,
     required this.value,
     required this.items,
     required this.labelOf,
     required this.onChanged,
-    required this.tooltip,
   });
 
+  final String label;
   final T value;
   final List<T> items;
   final String Function(T value) labelOf;
   final ValueChanged<T>? onChanged;
-  final String tooltip;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Tooltip(
-      message: tooltip,
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        isDense: true,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(theme.radius.md),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(theme.radius.md),
+          borderSide: BorderSide(color: theme.borders.faint),
+        ),
+      ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<T>(
           value: value,
           isDense: true,
+          isExpanded: false,
           borderRadius: BorderRadius.circular(theme.radius.md),
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.onSurface,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: colorScheme.onSurface,
           ),
           items: <DropdownMenuItem<T>>[
             for (final T item in items)
@@ -399,6 +449,54 @@ class _HeaderDropdown<T> extends StatelessWidget {
                   }
                   onChanged!(next);
                 },
+        ),
+      ),
+    );
+  }
+}
+
+class _CustomDateChip extends StatelessWidget {
+  const _CustomDateChip({
+    required this.label,
+    required this.value,
+    required this.enabled,
+    required this.onPicked,
+  });
+
+  final String label;
+  final DateTime? value;
+  final bool enabled;
+  final ValueChanged<DateTime> onPicked;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final DateFormat format = DateFormat.yMMMd();
+    final String text = value == null ? label : '$label ${format.format(value!)}';
+
+    return OutlinedButton.icon(
+      onPressed: enabled
+          ? () async {
+              final DateTime now = DateTime.now();
+              final DateTime initial = value ?? now;
+              final DateTime? picked = await showDatePicker(
+                context: context,
+                initialDate: initial,
+                firstDate: DateTime(now.year - 10),
+                lastDate: DateTime(now.year + 1),
+              );
+              if (picked != null) {
+                onPicked(picked);
+              }
+            }
+          : null,
+      icon: const Icon(Icons.calendar_today_outlined, size: 16),
+      label: Text(text),
+      style: OutlinedButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
         ),
       ),
     );

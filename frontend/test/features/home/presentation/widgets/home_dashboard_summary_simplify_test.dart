@@ -255,10 +255,10 @@ void main() {
                   ),
                   DashboardMetricCardData(
                     label: 'Revenue',
-                    value: 'UGX1.2M',
+                    value: 'UGX 1.2M',
                     icon: Icons.payments_outlined,
                     accent: accent,
-                    semanticsLabel: 'Revenue: UGX1.2M',
+                    semanticsLabel: 'Revenue: UGX 1.2M',
                   ),
                   DashboardMetricCardData(
                     label: 'Subscription',
@@ -269,10 +269,10 @@ void main() {
                   ),
                   DashboardMetricCardData(
                     label: 'Pending balances',
-                    value: 'UGX480K',
+                    value: 'UGX 480K',
                     icon: Icons.account_balance_wallet_outlined,
                     accent: accent,
-                    semanticsLabel: 'Pending balances: UGX480K',
+                    semanticsLabel: 'Pending balances: UGX 480K',
                   ),
                   DashboardMetricCardData(
                     label: 'Users',
@@ -291,7 +291,7 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.text('Facilities'), findsOneWidget);
         expect(find.text('Adoption'), findsOneWidget);
-        expect(find.text('UGX1.2M'), findsOneWidget);
+        expect(find.text('UGX 1.2M'), findsOneWidget);
         expect(find.text('Pending balances'), findsOneWidget);
         expect(find.textContaining('Facilit…'), findsNothing);
         expect(find.textContaining('Adopti…'), findsNothing);
@@ -299,7 +299,7 @@ void main() {
 
         // Values stay at title size (scale down only when needed).
         final Size shortValue = tester.getSize(find.text('128'));
-        final Size longValue = tester.getSize(find.text('UGX1.2M'));
+        final Size longValue = tester.getSize(find.text('UGX 1.2M'));
         expect(shortValue.height, lessThanOrEqualTo(36));
         expect(longValue.width, greaterThan(40));
         expect(tester.takeException(), isNull);
@@ -326,10 +326,10 @@ void main() {
                   ),
                   DashboardMetricCardData(
                     label: 'Total sales (last 7 days)',
-                    value: 'UGX1.2M',
+                    value: 'UGX 1.2M',
                     icon: Icons.payments_outlined,
                     accent: accent,
-                    semanticsLabel: 'Total sales (last 7 days): UGX1.2M',
+                    semanticsLabel: 'Total sales (last 7 days): UGX 1.2M',
                   ),
                   DashboardMetricCardData(
                     label: 'Pending',
@@ -357,7 +357,7 @@ void main() {
         expect(label.overflow, isNot(TextOverflow.ellipsis));
 
         final double shortBottom = tester.getBottomLeft(find.text('12')).dy;
-        final double longBottom = tester.getBottomLeft(find.text('UGX1.2M')).dy;
+        final double longBottom = tester.getBottomLeft(find.text('UGX 1.2M')).dy;
         final double pendingBottom = tester.getBottomLeft(find.text('4')).dy;
         expect((shortBottom - longBottom).abs(), lessThan(1.0));
         expect((shortBottom - pendingBottom).abs(), lessThan(1.0));

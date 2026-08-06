@@ -25,8 +25,16 @@ describe('pharmacy most-sold window helpers', () => {
     expect(normalizeMostSoldLimit(10)).toBe(10);
     expect(normalizeMostSoldLimit(20)).toBe(20);
     expect(normalizeMostSoldLimit(100)).toBe(100);
-    expect(normalizeMostSoldLimit(8)).toBe(10);
+    expect(normalizeMostSoldLimit(8)).toBe(5);
     expect(normalizeMostSoldLimit('bad', 20)).toBe(20);
+  });
+
+  it('defaults unknown periods to today start', () => {
+    const today = new Date(2026, 7, 6, 0, 0, 0, 0);
+    const day = (value) =>
+      `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+    expect(day(resolveMostSoldWindow('custom', today))).toBe('2026-08-06');
+    expect(day(resolveMostSoldWindow(undefined, today))).toBe('2026-08-06');
   });
 });
 
