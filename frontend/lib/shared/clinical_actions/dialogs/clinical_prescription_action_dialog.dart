@@ -183,6 +183,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
                 semanticLabel: l10n.clinicalPrescriptionSearchLabel,
                 hintText: l10n.clinicalPrescriptionSearchHint,
                 enabled: !_isSaving,
+                enableSpeechToText: false,
                 matcher: _matchesSearch,
                 showAdvancedFilterButton: true,
                 advancedFilterButtonLabel: l10n.clinicalFiltersLabel,
@@ -349,11 +350,11 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
             controller: line.quantityController,
             semanticLabel: l10n.opdDrugQuantityLabel,
             useFloatingLabel: false,
+            enableSpeechToText: false,
             enabled: enabled,
             isDense: true,
             keyboardType: TextInputType.number,
             inputFormatters: _integerFormatters,
-            errorText: line.quantityError ?? line.consistencyError,
             onChanged: (_) {
               _applyLineDosingSync(
                 line,
@@ -395,11 +396,11 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
             controller: line.doseAmountController,
             semanticLabel: l10n.clinicalDoseAmountLabel,
             useFloatingLabel: false,
+            enableSpeechToText: false,
             enabled: enabled,
             isDense: true,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: _decimalFormatters,
-            errorText: line.doseAmountError,
             onChanged: (_) {
               _applyLineDosingSync(
                 line,
@@ -419,13 +420,14 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(left.doseUnit, right.doseUnit),
         cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
-          return AppSelectField<String>.searchable(
+          return AppSelectField<String>(
             value: line.doseUnit,
             semanticLabel: l10n.clinicalDoseUnitLabel,
+            enableSpeechToText: false,
+            allowClear: false,
             enabled: enabled,
             isDense: true,
             options: _unitOptions(_doseUnits),
-            errorText: line.doseUnitError,
             onChanged: (String? value) {
               line.doseUnit = value;
               line.doseUnitError = null;
@@ -455,11 +457,11 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
             controller: line.durationController,
             semanticLabel: l10n.clinicalDurationValueLabel,
             useFloatingLabel: false,
+            enableSpeechToText: false,
             enabled: enabled,
             isDense: true,
             keyboardType: TextInputType.number,
             inputFormatters: _integerFormatters,
-            errorText: line.durationValueError,
             onChanged: (_) {
               _applyLineDosingSync(
                 line,
@@ -479,13 +481,14 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(left.durationUnit, right.durationUnit),
         cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
-          return AppSelectField<String>.searchable(
+          return AppSelectField<String>(
             value: line.durationUnit,
             semanticLabel: l10n.clinicalDurationUnitLabel,
+            enableSpeechToText: false,
+            allowClear: false,
             enabled: enabled,
             isDense: true,
             options: _durationUnitOptions(),
-            errorText: line.durationUnitError,
             onChanged: (String? value) {
               line.durationUnit = value;
               line.durationUnitError = null;
@@ -558,16 +561,18 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(left.route, right.route),
         cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
-          return AppSelectField<String>.searchable(
+          return AppSelectField<String>(
             value: line.route,
             semanticLabel: l10n.opdMedicationRouteLabel,
+            enableSpeechToText: false,
+            allowClear: false,
             enabled: enabled,
             isDense: true,
             options: _medicationRouteOptions(),
-            errorText: line.routeError,
             onChanged: (String? value) {
               line.route = value;
               line.routeError = null;
+              _failure = null;
               setState(() {});
             },
           );
@@ -581,13 +586,14 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(left.frequency, right.frequency),
         cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
-          return AppSelectField<String>.searchable(
+          return AppSelectField<String>(
             value: line.frequency,
             semanticLabel: l10n.opdFrequencyLabel,
+            enableSpeechToText: false,
+            allowClear: false,
             enabled: enabled,
             isDense: true,
             options: _medicationFrequencyOptions(),
-            errorText: line.frequencyError,
             onChanged: (String? value) {
               line.frequency = value;
               line.frequencyError = null;
@@ -615,9 +621,13 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
             controller: line.instructionsController,
             semanticLabel: l10n.clinicalInstructionsLabel,
             useFloatingLabel: false,
+            enableSpeechToText: false,
             enabled: enabled,
             isDense: true,
-            onChanged: (_) => setState(() {}),
+            onChanged: (_) {
+              _failure = null;
+              setState(() {});
+            },
           );
         },
       ),
@@ -1422,31 +1432,14 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
     _PrescriptionLineFormState line, {
     required ClinicalPrescriptionDosingField edited,
   }) {
+    _failure = null;
+    line.clearFieldErrors();
+    line.consistencyError = null;
     line.lastEditedField = edited;
     if (edited == ClinicalPrescriptionDosingField.quantity) {
       line.quantityAutoDerived = false;
-      line.quantityError = null;
-    } else if (edited == ClinicalPrescriptionDosingField.doseAmount) {
-      line.doseAmountError = null;
-    } else if (edited == ClinicalPrescriptionDosingField.doseUnit) {
-      line.doseUnitError = null;
-    } else if (edited == ClinicalPrescriptionDosingField.frequency) {
-      line.frequencyError = null;
-    } else if (edited == ClinicalPrescriptionDosingField.durationValue) {
-      line.durationValueError = null;
-    } else if (edited == ClinicalPrescriptionDosingField.durationUnit) {
-      line.durationUnitError = null;
     }
     _refreshLineConsistency(line, edited: edited, applyDerivedValues: true);
-    if (line.durationController.text.trim().isNotEmpty) {
-      line.durationValueError = null;
-    }
-    if ((line.durationUnit ?? '').trim().isNotEmpty) {
-      line.durationUnitError = null;
-    }
-    if (line.quantityController.text.trim().isNotEmpty) {
-      line.quantityError = null;
-    }
   }
 
   void _refreshLineConsistency(
@@ -1702,10 +1695,10 @@ class _PrescriptionRxListTile extends StatelessWidget {
                   prefixIcon: const Icon(Icons.inventory_2_outlined),
                   enabled: enabled,
                   isDense: true,
+                  enableSpeechToText: false,
                   isRequired: true,
                   keyboardType: TextInputType.number,
                   inputFormatters: _integerFormatters,
-                  errorText: line.quantityError ?? line.consistencyError,
                   onChanged: (_) =>
                       onFieldEdited(ClinicalPrescriptionDosingField.quantity),
                 ),
@@ -1714,9 +1707,9 @@ class _PrescriptionRxListTile extends StatelessWidget {
                   labelText: l10n.clinicalPrescriptionQuantityUnitLabel,
                   enabled: false,
                   isDense: true,
+                  enableSpeechToText: false,
                   isRequired: true,
                   options: _unitOptions(_quantityUnits),
-                  errorText: line.quantityUnitError,
                   onChanged: (_) {},
                 ),
               ],
@@ -1730,12 +1723,12 @@ class _PrescriptionRxListTile extends StatelessWidget {
                   prefixIcon: const Icon(Icons.timer_outlined),
                   enabled: enabled,
                   isDense: true,
+                  enableSpeechToText: false,
                   isRequired: !clinicalPrescriptionDurationOptional(
                     line.frequency,
                   ),
                   keyboardType: TextInputType.number,
                   inputFormatters: _integerFormatters,
-                  errorText: line.durationValueError,
                   onChanged: (_) => onFieldEdited(
                     ClinicalPrescriptionDosingField.durationValue,
                   ),
@@ -1745,11 +1738,11 @@ class _PrescriptionRxListTile extends StatelessWidget {
                   labelText: l10n.clinicalDurationUnitLabel,
                   enabled: enabled,
                   isDense: true,
+                  enableSpeechToText: false,
                   isRequired: !clinicalPrescriptionDurationOptional(
                     line.frequency,
                   ),
                   options: _durationUnitOptions(),
-                  errorText: line.durationUnitError,
                   onChanged: (String? value) {
                     line.durationUnit = value;
                     line.durationUnitError = null;
@@ -1769,12 +1762,12 @@ class _PrescriptionRxListTile extends StatelessWidget {
                   prefixIcon: const Icon(Icons.science_outlined),
                   enabled: enabled,
                   isDense: true,
+                  enableSpeechToText: false,
                   isRequired: true,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
                   inputFormatters: _decimalFormatters,
-                  errorText: line.doseAmountError,
                   onChanged: (_) => onFieldEdited(
                     ClinicalPrescriptionDosingField.doseAmount,
                   ),
@@ -1784,9 +1777,9 @@ class _PrescriptionRxListTile extends StatelessWidget {
                   labelText: l10n.clinicalDoseUnitLabel,
                   enabled: enabled,
                   isDense: true,
+                  enableSpeechToText: false,
                   isRequired: true,
                   options: _unitOptions(_doseUnits),
-                  errorText: line.doseUnitError,
                   onChanged: (String? value) {
                     line.doseUnit = value;
                     line.doseUnitError = null;
@@ -1803,9 +1796,9 @@ class _PrescriptionRxListTile extends StatelessWidget {
                   labelText: l10n.opdMedicationRouteLabel,
                   enabled: enabled,
                   isDense: true,
+                  enableSpeechToText: false,
                   isRequired: true,
                   options: _medicationRouteOptions(),
-                  errorText: line.routeError,
                   onChanged: (String? value) {
                     line.route = value;
                     line.routeError = null;
@@ -1817,9 +1810,9 @@ class _PrescriptionRxListTile extends StatelessWidget {
                   labelText: l10n.opdFrequencyLabel,
                   enabled: enabled,
                   isDense: true,
+                  enableSpeechToText: false,
                   isRequired: true,
                   options: _medicationFrequencyOptions(),
-                  errorText: line.frequencyError,
                   onChanged: (String? value) {
                     line.frequency = value;
                     line.frequencyError = null;
@@ -1833,6 +1826,7 @@ class _PrescriptionRxListTile extends StatelessWidget {
               labelText: l10n.clinicalInstructionsLabel,
               prefixIcon: const Icon(Icons.notes_outlined),
               enabled: enabled,
+              enableSpeechToText: false,
               maxLines: 3,
               textCapitalization: TextCapitalization.sentences,
               onChanged: (_) => onChanged(),
@@ -1943,6 +1937,7 @@ class _PrescriptionLineCard extends StatelessWidget {
               value: line.drugId,
               labelText: l10n.clinicalPrescriptionDrugLabel,
               enabled: enabled,
+              enableSpeechToText: false,
               isRequired: true,
               options: drugOptions,
               validator: AppValidators.requiredValue(l10n.validationRequired),
@@ -1961,6 +1956,7 @@ class _PrescriptionLineCard extends StatelessWidget {
                   enabled: enabled,
                   isRequired: true,
                   isDense: true,
+                  enableSpeechToText: false,
                   keyboardType: TextInputType.number,
                   inputFormatters: _integerFormatters,
                   errorText: line.consistencyError,
@@ -1972,6 +1968,7 @@ class _PrescriptionLineCard extends StatelessWidget {
                   labelText: l10n.clinicalPrescriptionQuantityUnitLabel,
                   enabled: false,
                   isDense: true,
+                  enableSpeechToText: false,
                   isRequired: true,
                   options: _unitOptions(_quantityUnits),
                   validator: AppValidators.requiredValue(l10n.validationRequired),
@@ -1989,6 +1986,7 @@ class _PrescriptionLineCard extends StatelessWidget {
                   enabled: enabled,
                   isRequired: true,
                   isDense: true,
+                  enableSpeechToText: false,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
@@ -2001,6 +1999,7 @@ class _PrescriptionLineCard extends StatelessWidget {
                   labelText: l10n.clinicalDoseUnitLabel,
                   enabled: enabled,
                   isDense: true,
+                  enableSpeechToText: false,
                   isRequired: true,
                   options: _unitOptions(_doseUnits),
                   validator: AppValidators.requiredValue(l10n.validationRequired),

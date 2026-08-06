@@ -268,7 +268,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(submitted, isFalse);
-      expect(find.text('This field is required.'), findsWidgets);
+      expect(find.text('Check the highlighted details.'), findsOneWidget);
+      expect(find.text('This field is required.'), findsNothing);
+
+      await tester.enterText(quantityField.first, '1');
+      await tester.pumpAndSettle();
+      expect(find.text('Check the highlighted details.'), findsNothing);
     });
 
     testWidgets('adds selected medicines from catalog and removes them', (
@@ -345,11 +350,11 @@ void main() {
       expect(find.textContaining('Amoxicillin'), findsWidgets);
       expect(_fieldWithLabel('Dose amount'), findsWidgets);
       expect(find.text('Check the highlighted details.'), findsOneWidget);
-      expect(find.text('This field is required.'), findsWidgets);
-      final AppTextField durationField = tester.widget<AppTextField>(
-        _fieldWithLabel('Duration').first,
-      );
-      expect(durationField.errorText, 'This field is required.');
+      expect(find.text('This field is required.'), findsNothing);
+
+      await tester.enterText(_fieldWithLabel('Duration').first, '7');
+      await tester.pumpAndSettle();
+      expect(find.text('Check the highlighted details.'), findsNothing);
     });
 
     testWidgets('seeds duration with zero quantity until user enters it', (

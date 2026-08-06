@@ -483,6 +483,7 @@ final class AppListTableSearch<T> {
     this.trailingActions = const <AppSearchBarAction>[],
     this.maxTrailingActions,
     this.trailingActionsOverflowLabel = 'More actions',
+    this.enableSpeechToText = true,
   });
 
   final TextEditingController controller;
@@ -526,6 +527,7 @@ final class AppListTableSearch<T> {
   final List<AppSearchBarAction> trailingActions;
   final int? maxTrailingActions;
   final String trailingActionsOverflowLabel;
+  final bool enableSpeechToText;
 
   Widget buildSearchBar(
     BuildContext context, {
@@ -580,6 +582,7 @@ final class AppListTableSearch<T> {
       maxTrailingActions: maxTrailingActions ?? this.maxTrailingActions,
       trailingActionsOverflowLabel:
           trailingActionsOverflowLabel ?? this.trailingActionsOverflowLabel,
+      enableSpeechToText: enableSpeechToText,
     );
   }
 }

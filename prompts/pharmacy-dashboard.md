@@ -15,6 +15,7 @@ Tighten the Create Order / Prescribe medicines table: narrower chrome columns, w
 - Compact default columns: checkbox-only select, wide wrapping **Medicine** (`Generic (Brand) - strength`), **Qty**, **Unit**, dose amount, dose unit, duration, **Duration unit**, price, **Amount**, actions.
 - Table content wider than the dialog scrolls horizontally with a bottom scrollbar; narrow viewports keep mobile cards.
 - Quantity stays default **0** and must be positive to submit; Edit/Delete stay labeled.
+- No speech-to-text (mic) on search or inline editors; validation uses the top banner only (no clipped cell error text); banner and field errors clear on typing.
 
 ## Requirements
 
