@@ -102,10 +102,21 @@ class _DashboardTrendPanel extends StatelessWidget {
 }
 
 class _DashboardTrendChart extends StatelessWidget {
-  const _DashboardTrendChart({required this.points, required this.style});
+  const _DashboardTrendChart({
+    required this.points,
+    required this.style,
+    this.showLegend = true,
+    this.showValues = true,
+    this.valueFormatter,
+    this.minSlotWidth = 72,
+  });
 
   final List<DashboardTrendPointData> points;
   final DashboardTrendChartStyle style;
+  final bool showLegend;
+  final bool showValues;
+  final String Function(num value)? valueFormatter;
+  final double minSlotWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +136,7 @@ class _DashboardTrendChart extends StatelessWidget {
     ];
     final double minWidth = math.max(
       MediaQuery.sizeOf(context).width * 0.45,
-      visiblePoints.length * 72.0,
+      visiblePoints.length * minSlotWidth,
     );
 
     return Semantics(
@@ -136,13 +147,13 @@ class _DashboardTrendChart extends StatelessWidget {
         child: Column(
           children: <Widget>[
             SizedBox(
-              height: 210,
+              height: 220,
               width: double.infinity,
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: SizedBox(
                   width: minWidth,
-                  height: 210,
+                  height: 220,
                   child: CustomPaint(
                     painter: DashboardTrendChartPainter(
                       points: visiblePoints,
@@ -154,24 +165,27 @@ class _DashboardTrendChart extends StatelessWidget {
                       textStyle: theme.textTheme.labelSmall,
                       labelBuilder: _trendPointSummaryLabel,
                       pointColors: pointColors,
-                      showValues: true,
+                      showValues: showValues,
+                      valueFormatter: valueFormatter,
                     ),
                   ),
                 ),
               ),
             ),
-            SizedBox(height: theme.spacing.sm),
-            Wrap(
-              spacing: theme.spacing.sm,
-              runSpacing: theme.spacing.xs,
-              children: <Widget>[
-                for (int index = 0; index < visiblePoints.length; index += 1)
-                  _TrendLegendItem(
-                    point: visiblePoints[index],
-                    color: pointColors[index],
-                  ),
-              ],
-            ),
+            if (showLegend) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              Wrap(
+                spacing: theme.spacing.sm,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  for (int index = 0; index < visiblePoints.length; index += 1)
+                    _TrendLegendItem(
+                      point: visiblePoints[index],
+                      color: pointColors[index],
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -394,13 +408,31 @@ class _DashboardDistributionChart extends StatelessWidget {
                 sum + segment.value,
           );
 
+    final Widget legend = Wrap(
+      spacing: theme.spacing.sm,
+      runSpacing: theme.spacing.xs,
+      children: <Widget>[
+        for (int index = 0; index < segments.length; index += 1)
+          _DistributionLegendItem(
+            segment: segments[index],
+            total: total,
+            color: _segmentColor(theme, segments[index], index),
+            onTap: chart.onSegmentSelected == null
+                ? null
+                : () => chart.onSegmentSelected!(segments[index]),
+          ),
+      ],
+    );
+
     if (chart.chartStyle == DashboardTrendChartStyle.bar ||
         chart.chartStyle == DashboardTrendChartStyle.line ||
         chart.chartStyle == DashboardTrendChartStyle.combined) {
       final List<DashboardTrendPointData> points = <DashboardTrendPointData>[
         for (int index = 0; index < segments.length; index += 1)
           DashboardTrendPointData(
-            value: segments[index].value,
+            value: total <= 0
+                ? 0
+                : (segments[index].value / total) * 100,
             label: segments[index].label,
             summaryLabel: segments[index].label,
             color: _segmentColor(theme, segments[index], index),
@@ -408,23 +440,15 @@ class _DashboardDistributionChart extends StatelessWidget {
       ];
       return Column(
         children: <Widget>[
-          _DashboardTrendChart(points: points, style: chart.chartStyle),
-          SizedBox(height: theme.spacing.sm),
-          Wrap(
-            spacing: theme.spacing.sm,
-            runSpacing: theme.spacing.xs,
-            children: <Widget>[
-              for (int index = 0; index < segments.length; index += 1)
-                _DistributionLegendItem(
-                  segment: segments[index],
-                  total: total,
-                  color: _segmentColor(theme, segments[index], index),
-                  onTap: chart.onSegmentSelected == null
-                      ? null
-                      : () => chart.onSegmentSelected!(segments[index]),
-                ),
-            ],
+          _DashboardTrendChart(
+            points: points,
+            style: chart.chartStyle,
+            showLegend: false,
+            minSlotWidth: 100,
+            valueFormatter: (num value) => '${value.round()}%',
           ),
+          SizedBox(height: theme.spacing.sm),
+          legend,
         ],
       );
     }
@@ -476,21 +500,7 @@ class _DashboardDistributionChart extends StatelessWidget {
             ),
           ),
           SizedBox(height: theme.spacing.sm),
-          Wrap(
-            spacing: theme.spacing.sm,
-            runSpacing: theme.spacing.xs,
-            children: <Widget>[
-              for (int index = 0; index < segments.length; index += 1)
-                _DistributionLegendItem(
-                  segment: segments[index],
-                  total: total,
-                  color: _segmentColor(theme, segments[index], index),
-                  onTap: chart.onSegmentSelected == null
-                      ? null
-                      : () => chart.onSegmentSelected!(segments[index]),
-                ),
-            ],
-          ),
+          legend,
         ],
       ),
     );
@@ -515,8 +525,9 @@ class _DistributionLegendItem extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final double percent = total <= 0 ? 0 : (segment.value / total) * 100;
+    final String valueText = NumberFormat.compact().format(segment.value);
     final String label =
-        '${_formatToken(segment.label)} ${percent.round()}%';
+        '${_formatToken(segment.label)} - $valueText(${percent.round()}%)';
 
     final Widget content = Container(
       padding: EdgeInsets.symmetric(

@@ -123,9 +123,10 @@ void main() {
         final double statusTodayY = tester.getCenter(find.text('Today').at(1)).dy;
         final double statusPieY = tester.getCenter(find.text('Pie').first).dy;
         expect((statusTodayY - statusPieY).abs(), lessThan(12));
-        expect(find.textContaining('Ordered'), findsWidgets);
-        expect(find.textContaining('Dispensed'), findsWidgets);
-        expect(find.textContaining('Cancelled'), findsWidgets);
+        expect(find.text('Ordered - 1(25%)'), findsOneWidget);
+        expect(find.text('Dispensed - 1(25%)'), findsOneWidget);
+        expect(find.text('Cancelled - 1(25%)'), findsOneWidget);
+        expect(find.text('Partially Dispensed - 1(25%)'), findsOneWidget);
         expect(find.text('orders'), findsOneWidget);
 
         await tester.tap(find.text('Amount'));

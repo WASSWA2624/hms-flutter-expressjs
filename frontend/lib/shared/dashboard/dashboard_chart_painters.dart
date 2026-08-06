@@ -19,6 +19,7 @@ class DashboardTrendChartPainter extends CustomPainter {
     this.style = DashboardTrendChartStyle.combined,
     this.pointColors = const <Color>[],
     this.showValues = false,
+    this.valueFormatter,
   });
 
   final List<DashboardTrendPointData> points;
@@ -31,6 +32,7 @@ class DashboardTrendChartPainter extends CustomPainter {
   final DashboardTrendChartStyle style;
   final List<Color> pointColors;
   final bool showValues;
+  final String Function(num value)? valueFormatter;
 
   Color _colorFor(int index) {
     if (index < pointColors.length) {
@@ -47,7 +49,7 @@ class DashboardTrendChartPainter extends CustomPainter {
       return;
     }
 
-    final double labelBand = points.length <= 12 ? 36 : 18;
+    final double labelBand = points.length <= 12 ? 44 : 22;
     final double valueBand = showValues ? 18 : 0;
     final double chartHeight = math.max(0, size.height - labelBand - valueBand);
     final double chartTop = valueBand;
@@ -114,7 +116,8 @@ class DashboardTrendChartPainter extends CustomPainter {
       }
 
       if (showValues) {
-        final String valueText = _compactValue(point.value);
+        final String valueText =
+            valueFormatter?.call(point.value) ?? _compactValue(point.value);
         final TextPainter valuePainter = TextPainter(
           text: TextSpan(
             text: valueText,
@@ -133,9 +136,12 @@ class DashboardTrendChartPainter extends CustomPainter {
           textDirection: TextDirection.ltr,
           maxLines: 1,
         )..layout(maxWidth: slotWidth);
+        final double valueLeft = (centerX - (valuePainter.width / 2))
+            .clamp(0.0, math.max(0.0, size.width - valuePainter.width))
+            .toDouble();
         valuePainter.paint(
           canvas,
-          Offset(centerX - (valuePainter.width / 2), math.max(0, y - 16)),
+          Offset(valueLeft, math.max(0, y - 16)),
         );
       }
 
@@ -150,11 +156,14 @@ class DashboardTrendChartPainter extends CustomPainter {
           textDirection: TextDirection.ltr,
           maxLines: 2,
           ellipsis: '…',
-        )..layout(maxWidth: math.max(24, slotWidth - 4));
+        )..layout(maxWidth: math.max(40, slotWidth - 2));
+        final double labelLeft = (centerX - (painter.width / 2))
+            .clamp(0.0, math.max(0.0, size.width - painter.width))
+            .toDouble();
         painter.paint(
           canvas,
           Offset(
-            centerX - (painter.width / 2),
+            labelLeft,
             chartTop + chartHeight + 6,
           ),
         );
@@ -187,7 +196,8 @@ class DashboardTrendChartPainter extends CustomPainter {
         oldDelegate.gridColor != gridColor ||
         oldDelegate.style != style ||
         oldDelegate.pointColors != pointColors ||
-        oldDelegate.showValues != showValues;
+        oldDelegate.showValues != showValues ||
+        oldDelegate.valueFormatter != valueFormatter;
   }
 }
 
