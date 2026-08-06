@@ -721,6 +721,33 @@ void main() {
         expect(ids, contains('orders_today'));
         expect(ids, contains('pending_dispense'));
         expect(ids, isNot(contains('billing_pending')));
+        expect(ids, isNot(contains('sales_today')));
+        expect(ids, isNot(contains('sales_this_week')));
+      },
+    );
+
+    test(
+      'pharmacy with pricing:pharmacy_read keeps sales KPIs',
+      () {
+        final AppAccessPolicy policy = _policy(
+          roles: <String>['PHARMACIST'],
+          permissions: <AppPermission>[
+            AppPermissions.pharmacyRead,
+            AppPermissions.pharmacyWrite,
+            AppPermissions.pricingPharmacyRead,
+          ],
+        );
+        final HomeDashboardProfile profile = homeProfileForRole(
+          AppRole.pharmacist,
+        );
+        final HomeDashboard filtered = filterHomeDashboardForAccess(
+          _dashboardForProfile(profile),
+          policy,
+        );
+        final Set<String> ids = _cardIds(filtered);
+
+        expect(ids, contains('sales_today'));
+        expect(ids, contains('sales_this_week'));
       },
     );
 

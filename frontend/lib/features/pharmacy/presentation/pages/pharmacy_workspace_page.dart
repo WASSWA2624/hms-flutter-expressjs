@@ -114,11 +114,9 @@ class _PharmacyWorkspaceContentState
     if (_handledSectionDeepLink || !mounted) {
       return;
     }
+    final Uri uri = GoRouterState.of(context).uri;
     final String section =
-        GoRouterState.of(
-          context,
-        ).uri.queryParameters['section']?.trim().toLowerCase() ??
-        '';
+        uri.queryParameters['section']?.trim().toLowerCase() ?? '';
     if (_isSalesSection(section)) {
       if (!_handledSalesDeepLink) {
         _handledSalesDeepLink = true;
@@ -140,7 +138,15 @@ class _PharmacyWorkspaceContentState
           (section == 'inventory' || section == 'stock')) {
         controller.prepareCatalogTab(PharmacyCatalogTab.inventory);
       }
-      await _applySectionData(controller, parsed);
+      final PharmacyWorkspaceQuery deepLink = PharmacyWorkspaceQuery.fromUri(
+        uri,
+      );
+      await _applySectionData(
+        controller,
+        parsed,
+        dateFrom: deepLink.from,
+        dateTo: deepLink.to,
+      );
     }
   }
 
@@ -213,10 +219,26 @@ class _PharmacyWorkspaceContentState
           }
           // Skip if deep-link handler already synced this desk section.
           if (!_handledSectionDeepLink) {
-            unawaited(_applySectionData(controller, parsed));
+            unawaited(
+              _applySectionData(
+                controller,
+                parsed,
+                dateFrom: query.from,
+                dateTo: query.to,
+              ),
+            );
           }
         }
       }
+    } else if (query.hasDateRange && !_handledSectionDeepLink) {
+      unawaited(
+        _applySectionData(
+          controller,
+          _section,
+          dateFrom: query.from,
+          dateTo: query.to,
+        ),
+      );
     }
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
@@ -380,10 +402,15 @@ class _PharmacyWorkspaceContentState
 
   /// Applies the data source for a section: an order filter for order tabs, or
   /// an inventory stock query for stock-alert tabs.
+  ///
+  /// When [dateFrom]/[dateTo] are set (home KPI deep-links), they override the
+  /// section chip's `todayOnly` default so the worklist matches the KPI window.
   Future<AppFailure?> _applySectionData(
     PharmacyWorkspaceController controller,
-    PharmacyDeskSection section,
-  ) {
+    PharmacyDeskSection section, {
+    DateTime? dateFrom,
+    DateTime? dateTo,
+  }) {
     if (section.isCatalogSection) {
       // Inline catalog section: hydrate the active nested catalog tab's data.
       controller.prepareCatalogTab(controller.currentCatalogTab);
@@ -393,7 +420,17 @@ class _PharmacyWorkspaceContentState
     if (section.isStockSection && stockQuery != null) {
       return controller.applyDeskStockFilter(stockQuery);
     }
-    return controller.applyFilter(_filterForSection(section));
+    PharmacyWorkbenchQuery filter = PharmacyWorkbenchQuery.fromChip(
+      _filterForSection(section),
+    );
+    if (dateFrom != null || dateTo != null) {
+      filter = filter.copyWith(
+        from: dateFrom,
+        to: dateTo,
+        clearTodayOnly: true,
+      );
+    }
+    return controller.applyAdvancedFilters(filter);
   }
 
   /// Switches to the inline Catalog and stock section and selects [tab].

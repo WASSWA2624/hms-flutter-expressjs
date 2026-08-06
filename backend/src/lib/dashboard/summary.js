@@ -759,10 +759,24 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
 
   if (packId === ROLE_PACKS.PHARMACIST) {
     return [
-      { id: 'orders_today', label: 'Orders', value: metrics.ordersToday || 0, required_permissions: ['pharmacy:read'] },
+      { id: 'orders_today', label: 'Orders today', value: metrics.ordersToday || 0, required_permissions: ['pharmacy:read'] },
       { id: 'pending_dispense', label: 'Pending', value: metrics.pendingDispense || 0, required_permissions: ['pharmacy:write'] },
-      { id: 'dispensed_today', label: 'Dispensed', value: metrics.dispensedToday || 0, required_permissions: ['pharmacy:read'] },
+      { id: 'dispensed_today', label: 'Dispensed today', value: metrics.dispensedToday || 0, required_permissions: ['pharmacy:read'] },
       { id: 'low_stock', label: 'Low stock', value: metrics.lowStock || 0, required_permissions: ['pharmacy:read'] },
+      {
+        id: 'sales_today',
+        label: 'Total sales today',
+        value: metrics.salesToday || 0,
+        format: 'currency',
+        required_permissions: ['pricing:pharmacy_read'],
+      },
+      {
+        id: 'sales_this_week',
+        label: 'Total sales (last 7 days)',
+        value: metrics.salesThisWeek || 0,
+        format: 'currency',
+        required_permissions: ['pricing:pharmacy_read'],
+      },
       { id: 'critical_stock', label: 'Critical stock', value: metrics.criticalStock || 0, required_permissions: ['pharmacy:read'] },
       // Dashboard.md §7 Billing Pending — live open invoice balances.
       {

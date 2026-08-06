@@ -364,6 +364,44 @@ const aggregateMostSoldDrugs = async (db, dispenseLogWhere, fromDate, limit = 8)
   }
 };
 
+/** Facility-scoped sales total: sum(qty × unit_price) for DISPENSED logs in range. */
+const sumDispenseSalesAmount = async (db, dispenseLogWhere, fromDate, toDate = null) => {
+  try {
+    const dispensedAt = { gte: fromDate };
+    if (toDate) {
+      dispensedAt.lt = toDate;
+    }
+    const logs = await db.dispense_log.findMany({
+      where: {
+        ...dispenseLogWhere,
+        status: 'DISPENSED',
+        dispensed_at: dispensedAt,
+        quantity_dispensed: { gt: 0 }
+      },
+      select: {
+        quantity_dispensed: true,
+        pharmacy_order_item: {
+          select: {
+            drug: {
+              select: { unit_price: true }
+            }
+          }
+        }
+      },
+      take: 10000
+    });
+    let total = 0;
+    for (const log of logs) {
+      const qty = toNumber(log.quantity_dispensed);
+      const unitPrice = toNumber(log.pharmacy_order_item?.drug?.unit_price);
+      total += qty * unitPrice;
+    }
+    return Number(total.toFixed(2));
+  } catch {
+    return 0;
+  }
+};
+
 const patientPortalZeroSummary = () => ({
   metrics: {
     myUpcomingAppointments: 0,
@@ -1367,14 +1405,29 @@ const getDashboardSummaryByPack = async ({
       };
       const mostSoldFrom = resolveMostSoldWindow(mostSoldPeriod, todayStart);
       const mostSoldTopN = normalizeMostSoldLimit(mostSoldLimit, 10);
-      const [ordersToday, pendingDispense, dispensedToday, lowStock, criticalStock, pendingBalanceAmount, mostSold] = await Promise.all([
+      // Trailing 7 calendar days including today (facility-local day start).
+      const weekStart = shiftDays(todayStart, -6);
+      const tomorrowStart = shiftDays(todayStart, 1);
+      const [
+        ordersToday,
+        pendingDispense,
+        dispensedToday,
+        lowStock,
+        criticalStock,
+        pendingBalanceAmount,
+        mostSold,
+        salesToday,
+        salesThisWeek,
+      ] = await Promise.all([
         prisma.pharmacy_order.count({ where: { ...pharmacyOrderWhere, ordered_at: { gte: todayStart } } }),
         prisma.pharmacy_order.count({ where: { ...pharmacyOrderWhere, status: { in: ['ORDERED', 'PARTIALLY_DISPENSED'] } } }),
         prisma.dispense_log.count({ where: { ...dispenseLogWhere, status: 'DISPENSED', dispensed_at: { gte: todayStart } } }),
         countLowStock(inventoryStockWhere, 1),
         countLowStock(inventoryStockWhere, 0.5),
         sumOutstandingBalance(openBalanceWhere),
-        aggregateMostSoldDrugs(prisma, dispenseLogWhere, mostSoldFrom, mostSoldTopN)
+        aggregateMostSoldDrugs(prisma, dispenseLogWhere, mostSoldFrom, mostSoldTopN),
+        sumDispenseSalesAmount(prisma, dispenseLogWhere, todayStart, tomorrowStart),
+        sumDispenseSalesAmount(prisma, dispenseLogWhere, weekStart, tomorrowStart),
       ]);
       return {
         metrics: {
@@ -1384,7 +1437,9 @@ const getDashboardSummaryByPack = async ({
           lowStock,
           criticalStock,
           pendingBalanceAmount,
-          billingPending: pendingBalanceAmount
+          billingPending: pendingBalanceAmount,
+          salesToday,
+          salesThisWeek,
         },
         mostSold,
         trendDates: await selectDateSeries(prisma.dispense_log, { ...dispenseLogWhere, dispensed_at: { gte: trendStart } }, 'dispensed_at'),
@@ -2113,5 +2168,6 @@ module.exports = {
     resolveMostSoldWindow,
     normalizeMostSoldLimit,
     aggregateMostSoldDrugs,
+    sumDispenseSalesAmount,
   }
 };

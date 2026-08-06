@@ -41,6 +41,40 @@ Map<String, String> homeDefaultBillingMetricQuery(String cardId) {
   };
 }
 
+/// Pharmacist home KPI → `/pharmacy` section + facility-local date range.
+///
+/// Sales week = trailing 7 calendar days including today.
+Map<String, String> homePharmacyMetricQuery(String cardId) {
+  final DateTime now = DateTime.now();
+  final DateTime startOfToday = DateTime(now.year, now.month, now.day);
+  final DateTime endExclusive = startOfToday.add(const Duration(days: 1));
+  final DateTime weekStart = startOfToday.subtract(const Duration(days: 6));
+  String iso(DateTime value) => value.toUtc().toIso8601String();
+
+  return switch (cardId.trim().toLowerCase()) {
+    'orders_today' => <String, String>{
+      'section': 'all',
+      'from': iso(startOfToday),
+      'to': iso(endExclusive),
+    },
+    'pending_dispense' => <String, String>{'section': 'queue'},
+    'dispensed_today' || 'sales_today' => <String, String>{
+      'section': 'completed',
+      'from': iso(startOfToday),
+      'to': iso(endExclusive),
+    },
+    'sales_this_week' => <String, String>{
+      'section': 'completed',
+      'from': iso(weekStart),
+      'to': iso(endExclusive),
+    },
+    'low_stock' || 'critical_stock' => <String, String>{
+      'section': 'low-stock',
+    },
+    _ => const <String, String>{},
+  };
+}
+
 /// Canonical Billing / Claims routes for balance and collection KPIs (any persona).
 HomeMetricNavigation? homeBillingMetricNavigation({
   required String cardId,
@@ -106,11 +140,15 @@ HomeMetricNavigation? homeMetricNavigation({
       policy: policy,
     );
     if (route != null && canAccessShellRoute(route, policy)) {
+      final Map<String, String> profileQuery =
+          profile.metricRouteTargets[card.id]?.queryParameters ??
+          const <String, String>{};
+      final Map<String, String> pharmacyQuery = profile.id == 'pharmacist'
+          ? homePharmacyMetricQuery(card.id)
+          : const <String, String>{};
       return HomeMetricNavigation(
         route: route,
-        queryParameters:
-            profile.metricRouteTargets[card.id]?.queryParameters ??
-            const <String, String>{},
+        queryParameters: pharmacyQuery.isNotEmpty ? pharmacyQuery : profileQuery,
       );
     }
     // Department / clinical packs declare routes explicitly — do not fall

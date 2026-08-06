@@ -326,11 +326,13 @@ const metricsToRoleSummary = (packId, metrics = {}) => {
 
   if (packId === ROLE_PACKS.PHARMACIST) {
     return [
-      { id: 'orders_today', label: 'Medication orders today', value: metrics.ordersToday || 0 },
-      { id: 'pending_dispense', label: 'Pending dispense workload', value: metrics.pendingDispense || 0 },
+      { id: 'orders_today', label: 'Orders today', value: metrics.ordersToday || 0 },
+      { id: 'pending_dispense', label: 'Pending', value: metrics.pendingDispense || 0 },
       { id: 'dispensed_today', label: 'Dispensed today', value: metrics.dispensedToday || 0 },
-      { id: 'low_stock', label: 'Low stock pressure', value: metrics.lowStock || 0 },
-      { id: 'critical_stock', label: 'Critical stock pressure', value: metrics.criticalStock || 0 }
+      { id: 'low_stock', label: 'Low stock', value: metrics.lowStock || 0 },
+      { id: 'sales_today', label: 'Total sales today', value: metrics.salesToday || 0, format: 'currency' },
+      { id: 'sales_this_week', label: 'Total sales (last 7 days)', value: metrics.salesThisWeek || 0, format: 'currency' },
+      { id: 'critical_stock', label: 'Critical stock', value: metrics.criticalStock || 0 }
     ];
   }
 

@@ -1991,6 +1991,8 @@ final class PharmacyWorkspaceQuery {
     this.encounterId = '',
     this.orderId = '',
     this.search = '',
+    this.from,
+    this.to,
   });
 
   factory PharmacyWorkspaceQuery.fromUri(Uri uri) {
@@ -2003,11 +2005,21 @@ final class PharmacyWorkspaceQuery {
       return '';
     }
 
+    DateTime? parseDate(String raw) {
+      final String value = raw.trim();
+      if (value.isEmpty) {
+        return null;
+      }
+      return DateTime.tryParse(value)?.toLocal();
+    }
+
     return PharmacyWorkspaceQuery(
       section: pick(<String>['section']),
       encounterId: pick(<String>['encounterId', 'encounter_id', 'encounter']),
       orderId: pick(<String>['orderId', 'order_id', 'order']),
       search: pick(<String>['search', 'q']),
+      from: parseDate(pick(<String>['from', 'date_from', 'ordered_from'])),
+      to: parseDate(pick(<String>['to', 'date_to', 'ordered_to'])),
     );
   }
 
@@ -2015,14 +2027,21 @@ final class PharmacyWorkspaceQuery {
   final String encounterId;
   final String orderId;
   final String search;
+  final DateTime? from;
+  final DateTime? to;
 
   bool get hasRouteTargeting =>
       section.isNotEmpty ||
       encounterId.isNotEmpty ||
       orderId.isNotEmpty ||
-      search.isNotEmpty;
+      search.isNotEmpty ||
+      from != null ||
+      to != null;
 
-  String get signature => '$section|$encounterId|$orderId|$search';
+  bool get hasDateRange => from != null || to != null;
+
+  String get signature =>
+      '$section|$encounterId|$orderId|$search|${from?.toIso8601String() ?? ''}|${to?.toIso8601String() ?? ''}';
 }
 
 @immutable

@@ -428,9 +428,52 @@ const verifyDemoData = async () => {
     errors.push('Expected emergency and ambulance demo records to be present.');
   }
 
+  // Pharmacy dashboard freshness: today orders/dispenses + some low stock when
+  // volume seed is on (wall-clock nowDate + forceLowStock catalog slice).
+  const volumeTargets = resolveVolumeTargets(resolveVerifyVolumeTarget());
+  if (!volumeTargets.skipped) {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const [ordersTodayCount, dispensedTodayCount, inventoryStocks] = await Promise.all([
+      prisma.pharmacy_order.count({
+        where: { deleted_at: null, ordered_at: { gte: todayStart } },
+      }),
+      prisma.dispense_log.count({
+        where: {
+          deleted_at: null,
+          status: 'DISPENSED',
+          dispensed_at: { gte: todayStart },
+        },
+      }),
+      prisma.inventory_stock.findMany({
+        where: { deleted_at: null },
+        select: { quantity: true, reorder_level: true },
+      }),
+    ]);
+    const lowStockCount = inventoryStocks.filter((row) => {
+      const reorder = Number(row.reorder_level || 0);
+      const qty = Number(row.quantity || 0);
+      return reorder > 0 && qty <= reorder;
+    }).length;
+    if (ordersTodayCount < 1) {
+      errors.push(
+        `Expected at least 1 pharmacy order ordered today for dashboard KPIs but found ${ordersTodayCount}.`
+      );
+    }
+    if (dispensedTodayCount < 1) {
+      errors.push(
+        `Expected at least 1 dispense today for dashboard KPIs but found ${dispensedTodayCount}.`
+      );
+    }
+    if (lowStockCount < 1) {
+      errors.push(
+        `Expected at least 1 low-stock inventory row for pharmacy dashboard but found ${lowStockCount}.`
+      );
+    }
+  }
+
   // Volume suite (SEED_RECORD_COUNT > 0). Curated-only seeds set SEED_RECORD_COUNT=0.
   // Singletons/catalogs (tenant, facility, plans, roles, subscription) are intentional exceptions.
-  const volumeTargets = resolveVolumeTargets(resolveVerifyVolumeTarget());
   const workOrderCount = biomedicalCounts[1] || 0;
   if (!volumeTargets.skipped) {
     const highFloor = volumeTargets.highTraffic;

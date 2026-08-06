@@ -556,11 +556,11 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     roleLabel: 'Pharmacist',
     homeTitle: 'Pharmacy',
     emptyMessage: 'No pending orders.',
-    maxStatusCards: 4,
+    maxStatusCards: 6,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'orders_today',
-        label: 'Orders',
+        label: 'Orders today',
         requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
       ),
       HomeStatusCardTemplate(
@@ -570,13 +570,25 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
       HomeStatusCardTemplate(
         id: 'dispensed_today',
-        label: 'Dispensed',
+        label: 'Dispensed today',
         requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
       ),
       HomeStatusCardTemplate(
         id: 'low_stock',
         label: 'Low stock',
         requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'sales_today',
+        label: 'Total sales today',
+        format: 'currency',
+        requiredPermissions: <AppPermission>[AppPermissions.pricingPharmacyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'sales_this_week',
+        label: 'Total sales (last 7 days)',
+        format: 'currency',
+        requiredPermissions: <AppPermission>[AppPermissions.pricingPharmacyRead],
       ),
       HomeStatusCardTemplate(
         id: 'critical_stock',
@@ -608,19 +620,25 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'orders_today': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'orders'},
+        queryParameters: <String, String>{'section': 'all'},
       ),
       'pending_dispense': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'orders'},
+        queryParameters: <String, String>{'section': 'queue'},
       ),
       'dispensed_today': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'orders'},
+        queryParameters: <String, String>{'section': 'completed'},
       ),
       'low_stock': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'inventory'},
+        queryParameters: <String, String>{'section': 'low-stock'},
+      ),
+      'sales_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'completed'},
+      ),
+      'sales_this_week': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'completed'},
       ),
       'critical_stock': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'inventory'},
+        queryParameters: <String, String>{'section': 'low-stock'},
       ),
       'billing_pending': HomeMetricRouteTarget(
         queryParameters: <String, String>{'queue': 'pendingPayment'},

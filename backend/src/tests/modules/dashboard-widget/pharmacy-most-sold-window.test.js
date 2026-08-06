@@ -1,6 +1,11 @@
 const {
-  __private__: { resolveMostSoldWindow, normalizeMostSoldLimit },
+  __private__: {
+    resolveMostSoldWindow,
+    normalizeMostSoldLimit,
+    sumDispenseSalesAmount,
+  },
 } = require('@modules/dashboard-widget/repositories/dashboard-widget.repository');
+const { ROLE_PACKS, metricsToRoleSummary } = require('@lib/dashboard/summary');
 
 describe('pharmacy most-sold window helpers', () => {
   it('maps period presets relative to today start', () => {
@@ -22,5 +27,56 @@ describe('pharmacy most-sold window helpers', () => {
     expect(normalizeMostSoldLimit(100)).toBe(100);
     expect(normalizeMostSoldLimit(8)).toBe(10);
     expect(normalizeMostSoldLimit('bad', 20)).toBe(20);
+  });
+});
+
+describe('pharmacy summary sales KPIs', () => {
+  it('includes sales today and last-7-days cards with currency format', () => {
+    const cards = metricsToRoleSummary(ROLE_PACKS.PHARMACIST, {
+      ordersToday: 2,
+      pendingDispense: 5,
+      dispensedToday: 1,
+      lowStock: 3,
+      salesToday: 1200,
+      salesThisWeek: 5400,
+    });
+    const byId = Object.fromEntries(cards.map((card) => [card.id, card]));
+    expect(byId.orders_today.label).toBe('Orders today');
+    expect(byId.dispensed_today.label).toBe('Dispensed today');
+    expect(byId.sales_today).toMatchObject({
+      label: 'Total sales today',
+      value: 1200,
+      format: 'currency',
+    });
+    expect(byId.sales_this_week).toMatchObject({
+      label: 'Total sales (last 7 days)',
+      value: 5400,
+      format: 'currency',
+    });
+  });
+
+  it('sums dispense sales amount from qty × unit_price', async () => {
+    const db = {
+      dispense_log: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            quantity_dispensed: 2,
+            pharmacy_order_item: { drug: { unit_price: 100 } },
+          },
+          {
+            quantity_dispensed: 3,
+            pharmacy_order_item: { drug: { unit_price: 50 } },
+          },
+        ]),
+      },
+    };
+    const total = await sumDispenseSalesAmount(
+      db,
+      {},
+      new Date('2026-08-01'),
+      new Date('2026-08-07')
+    );
+    expect(total).toBe(350);
+    expect(db.dispense_log.findMany).toHaveBeenCalled();
   });
 });

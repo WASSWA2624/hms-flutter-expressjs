@@ -33,6 +33,7 @@ const mockPrisma = {
   radiology_result: { count: jest.fn() },
   pharmacy_order: { count: jest.fn(), groupBy: jest.fn() },
   dispense_log: { count: jest.fn() },
+  inventory_stock: { findMany: jest.fn() },
   payment: { count: jest.fn() },
   invoice: { count: jest.fn(), groupBy: jest.fn() },
   lab_order: { count: jest.fn(), groupBy: jest.fn() },
@@ -173,6 +174,10 @@ describe('verify-demo-data', () => {
     mockPrisma.radiology_result.count.mockResolvedValue(1);
     mockPrisma.pharmacy_order.count.mockResolvedValue(2);
     mockPrisma.dispense_log.count.mockResolvedValue(2);
+    mockPrisma.inventory_stock.findMany.mockResolvedValue([
+      { quantity: 5, reorder_level: 40 },
+      { quantity: 180, reorder_level: 40 },
+    ]);
     mockPrisma.payment.count.mockResolvedValue(2);
     mockPrisma.invoice = { count: jest.fn().mockResolvedValue(2), groupBy: jest.fn().mockResolvedValue([]) };
     mockPrisma.lab_order = { count: jest.fn().mockResolvedValue(2), groupBy: jest.fn().mockResolvedValue([]) };

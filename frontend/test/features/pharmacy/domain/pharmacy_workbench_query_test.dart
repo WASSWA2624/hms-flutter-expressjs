@@ -40,6 +40,20 @@ void main() {
       expect(query.signature, contains('queue'));
     });
 
+    test('parses from/to date range from URI', () {
+      final PharmacyWorkspaceQuery query = PharmacyWorkspaceQuery.fromUri(
+        Uri.parse(
+          '/pharmacy?section=completed&from=2026-08-06T00:00:00.000Z&to=2026-08-07T00:00:00.000Z',
+        ),
+      );
+
+      expect(query.section, 'completed');
+      expect(query.from, isNotNull);
+      expect(query.to, isNotNull);
+      expect(query.hasDateRange, isTrue);
+      expect(query.signature, contains('2026-08-06'));
+    });
+
     test('parses section=in-progress with search', () {
       final PharmacyWorkspaceQuery query = PharmacyWorkspaceQuery.fromUri(
         Uri.parse('/pharmacy?section=in-progress&search=Noah'),

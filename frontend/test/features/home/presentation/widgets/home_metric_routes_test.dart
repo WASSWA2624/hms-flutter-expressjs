@@ -308,11 +308,39 @@ void main() {
       );
 
       expect(pending?.route, AppRoutes.pharmacy);
-      expect(pending?.queryParameters, <String, String>{'section': 'orders'});
+      expect(pending?.queryParameters['section'], 'queue');
       expect(lowStock?.route, AppRoutes.pharmacy);
       expect(lowStock?.queryParameters, <String, String>{
-        'section': 'inventory',
+        'section': 'low-stock',
       });
+
+      final HomeMetricNavigation? ordersToday = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'orders_today',
+          label: 'Orders today',
+          value: 3,
+        ),
+        policy: policy,
+      );
+      expect(ordersToday?.route, AppRoutes.pharmacy);
+      expect(ordersToday?.queryParameters['section'], 'all');
+      expect(ordersToday?.queryParameters.containsKey('from'), isTrue);
+      expect(ordersToday?.queryParameters.containsKey('to'), isTrue);
+
+      final HomeMetricNavigation? salesToday = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'sales_today',
+          label: 'Total sales today',
+          value: 100,
+          format: 'currency',
+        ),
+        policy: policy,
+      );
+      expect(salesToday?.route, AppRoutes.pharmacy);
+      expect(salesToday?.queryParameters['section'], 'completed');
+      expect(salesToday?.queryParameters.containsKey('from'), isTrue);
     });
 
     test('pharmacist billing_pending navigates to billing when granted', () {

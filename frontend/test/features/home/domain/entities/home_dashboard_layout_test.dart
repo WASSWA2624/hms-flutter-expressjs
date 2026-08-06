@@ -57,26 +57,30 @@ void main() {
       );
     });
 
-    test('pharmacist dashboard shows four metrics and quick actions', () {
+    test('pharmacist dashboard shows six metrics and quick actions', () {
       final profile = homeProfileForRole(AppRole.pharmacist);
 
       expect(profile.layoutTier, HomeDashboardLayoutTier.departmentQueue);
       expect(profile.isPharmacistDepartmentDashboard, isTrue);
       expect(profile.showQueuePanel, isFalse);
-      expect(profile.effectiveMaxStatusCards, 4);
+      expect(profile.effectiveMaxStatusCards, 6);
       expect(profile.maxQuickActions, 4);
       expect(profile.maxQueueItems, 5);
       expect(profile.emptyActionIds, isEmpty);
       expect(profile.shortcutIds, isNot(contains('patients')));
       expect(
-        profile.statusCards.take(4).map((template) => template.id),
+        profile.statusCards.take(6).map((template) => template.id),
         <String>[
           'orders_today',
           'pending_dispense',
           'dispensed_today',
           'low_stock',
+          'sales_today',
+          'sales_this_week',
         ],
       );
+      expect(profile.statusCards.first.label, 'Orders today');
+      expect(profile.statusCards[2].label, 'Dispensed today');
       expect(profile.quickActionIds, <String>[
         'dispense_medication',
         'record_pharmacy_sale',
@@ -84,6 +88,9 @@ void main() {
         'adjust_pharmacy_stock',
       ]);
       expect(profile.metricRouteTargets.keys, contains('pending_dispense'));
+      expect(profile.metricRouteTargets['low_stock']!.queryParameters, <String, String>{
+        'section': 'low-stock',
+      });
       expect(profile.emptyMessage, 'No pending orders.');
     });
 
@@ -131,7 +138,7 @@ void main() {
             .toList(growable: false);
 
         expect(expanded.id, 'pharmacist');
-        expect(expanded.effectiveMaxStatusCards, 4);
+        expect(expanded.effectiveMaxStatusCards, 6);
         expect(ids, isNot(contains('appointments_today')));
         expect(ids, isNot(contains('active_admissions')));
         expect(
