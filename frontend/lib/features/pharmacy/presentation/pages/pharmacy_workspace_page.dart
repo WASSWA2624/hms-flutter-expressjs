@@ -115,6 +115,13 @@ class _PharmacyWorkspaceContentState
       return;
     }
     final Uri uri = GoRouterState.of(context).uri;
+    final PharmacyWorkspaceQuery deepLink = PharmacyWorkspaceQuery.fromUri(uri);
+    // `_scheduleRouteQuery` already owns this URI signature — avoid a second
+    // apply that races `_ensureDefaultSectionFilter` / `_applyRouteQuery`.
+    if (deepLink.hasRouteTargeting &&
+        _appliedRouteSignature == deepLink.signature) {
+      return;
+    }
     final String section =
         uri.queryParameters['section']?.trim().toLowerCase() ?? '';
     if (_isSalesSection(section)) {
@@ -138,9 +145,6 @@ class _PharmacyWorkspaceContentState
           (section == 'inventory' || section == 'stock')) {
         controller.prepareCatalogTab(PharmacyCatalogTab.inventory);
       }
-      final PharmacyWorkspaceQuery deepLink = PharmacyWorkspaceQuery.fromUri(
-        uri,
-      );
       await _applySectionData(
         controller,
         parsed,
@@ -217,20 +221,27 @@ class _PharmacyWorkspaceContentState
           if (parsed != _section) {
             setState(() => _section = parsed);
           }
-          // Skip if deep-link handler already synced this desk section.
-          if (!_handledSectionDeepLink) {
-            unawaited(
-              _applySectionData(
-                controller,
-                parsed,
-                dateFrom: query.from,
-                dateTo: query.to,
-              ),
-            );
+          // Legacy inventory/stock deep links land on the catalog Inventory tab.
+          final String sectionKey = query.section.trim().toLowerCase();
+          if (parsed.isCatalogSection &&
+              (sectionKey == 'inventory' || sectionKey == 'stock')) {
+            controller.prepareCatalogTab(PharmacyCatalogTab.inventory);
           }
+          // Always apply: `_scheduleRouteQuery` already dedupes by signature.
+          // Skipping after the first deep link left later legend / KPI
+          // navigations on the previous worklist filter.
+          unawaited(
+            _applySectionData(
+              controller,
+              parsed,
+              dateFrom: query.from,
+              dateTo: query.to,
+            ),
+          );
+          _handledSectionDeepLink = true;
         }
       }
-    } else if (query.hasDateRange && !_handledSectionDeepLink) {
+    } else if (query.hasDateRange) {
       unawaited(
         _applySectionData(
           controller,
@@ -239,6 +250,7 @@ class _PharmacyWorkspaceContentState
           dateTo: query.to,
         ),
       );
+      _handledSectionDeepLink = true;
     }
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;

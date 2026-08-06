@@ -450,6 +450,52 @@ void main() {
   });
 
   testWidgets(
+    'subsequent section deep link reapplies workbench filter and date range',
+    (WidgetTester tester) async {
+      final _Harness harness = await _pumpPharmacyWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/pharmacy?section=in-progress',
+      );
+
+      clearInteractions(repository);
+
+      final DateTime from = DateTime(2026, 7, 31);
+      final DateTime to = DateTime(2026, 8, 7);
+      harness.router.go(
+        Uri(
+          path: '/pharmacy',
+          queryParameters: <String, String>{
+            'section': 'completed',
+            'from': from.toUtc().toIso8601String(),
+            'to': to.toUtc().toIso8601String(),
+          },
+        ).toString(),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Brian Done'), findsOneWidget);
+      expect(find.text('Amina Partial'), findsNothing);
+
+      final List<Object?> captured = verify(
+        () => repository.loadWorkbench(captureAny()),
+      ).captured;
+      expect(
+        captured.any((Object? raw) {
+          final PharmacyWorkbenchQuery query = raw as PharmacyWorkbenchQuery;
+          return query.status == 'DISPENSED' &&
+              query.todayOnly != true &&
+              query.from != null &&
+              query.to != null;
+        }),
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets(
     'deep link section=pending-payment keeps catalog search action (not Billing)',
     (WidgetTester tester) async {
       await _pumpPharmacyWorkspace(

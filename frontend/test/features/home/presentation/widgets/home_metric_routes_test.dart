@@ -343,6 +343,25 @@ void main() {
       expect(salesToday?.queryParameters.containsKey('from'), isTrue);
     });
 
+    test('status-mix legend query carries section and period window', () {
+      final DateTime now = DateTime(2026, 8, 6, 15, 30);
+      final Map<String, String> query = homePharmacyStatusMixQuery(
+        section: 'completed',
+        period: HomeMostSoldPeriod.lastWeek,
+        now: now,
+      );
+
+      expect(query['section'], 'completed');
+      expect(
+        DateTime.parse(query['from']!).toLocal(),
+        DateTime(2026, 7, 31),
+      );
+      expect(
+        DateTime.parse(query['to']!).toLocal(),
+        DateTime(2026, 8, 7),
+      );
+    });
+
     test('pharmacist billing_pending navigates to billing when granted', () {
       final HomeDashboardProfile profile = homeProfileForRole(
         AppRole.pharmacist,

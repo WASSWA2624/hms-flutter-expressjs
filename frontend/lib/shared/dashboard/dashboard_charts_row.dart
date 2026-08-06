@@ -134,10 +134,6 @@ class _DashboardTrendChart extends StatelessWidget {
         visiblePoints[index].color ??
             _fallbackSegmentColor(colorScheme.primary, index),
     ];
-    final double minWidth = math.max(
-      MediaQuery.sizeOf(context).width * 0.45,
-      visiblePoints.length * minSlotWidth,
-    );
 
     return Semantics(
       container: true,
@@ -149,27 +145,49 @@ class _DashboardTrendChart extends StatelessWidget {
             SizedBox(
               height: 220,
               width: double.infinity,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: minWidth,
-                  height: 220,
-                  child: CustomPaint(
-                    painter: DashboardTrendChartPainter(
-                      points: visiblePoints,
-                      style: style,
-                      barColor: colorScheme.primary.withValues(alpha: 0.18),
-                      lineColor: colorScheme.primary,
-                      gridColor: theme.borders.faint,
-                      labelColor: colorScheme.onSurfaceVariant,
-                      textStyle: theme.textTheme.labelSmall,
-                      labelBuilder: _trendPointSummaryLabel,
-                      pointColors: pointColors,
-                      showValues: showValues,
-                      valueFormatter: valueFormatter,
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final double available = constraints.maxWidth.isFinite &&
+                          constraints.maxWidth > 0
+                      ? constraints.maxWidth
+                      : MediaQuery.sizeOf(context).width * 0.4;
+                  // Few categorical points (e.g. order statuses): fill the panel
+                  // so every series is on-screen. Dense series keep horizontal scroll.
+                  final bool fitAllInPanel = visiblePoints.length <= 8;
+                  final double chartWidth = fitAllInPanel
+                      ? available
+                      : math.max(
+                          available,
+                          visiblePoints.length * minSlotWidth,
+                        );
+                  final Widget paint = SizedBox(
+                    width: chartWidth,
+                    height: 220,
+                    child: CustomPaint(
+                      painter: DashboardTrendChartPainter(
+                        points: visiblePoints,
+                        style: style,
+                        barColor: colorScheme.primary.withValues(alpha: 0.18),
+                        lineColor: colorScheme.primary,
+                        gridColor: theme.borders.faint,
+                        labelColor: colorScheme.onSurfaceVariant,
+                        textStyle: theme.textTheme.labelSmall,
+                        labelBuilder: _trendPointSummaryLabel,
+                        pointColors: pointColors,
+                        showValues: showValues,
+                        valueFormatter: valueFormatter,
+                        minBarHeight: fitAllInPanel ? 4 : 0,
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                  if (fitAllInPanel || chartWidth <= available + 0.5) {
+                    return paint;
+                  }
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: paint,
+                  );
+                },
               ),
             ),
             if (showLegend) ...<Widget>[
@@ -444,7 +462,7 @@ class _DashboardDistributionChart extends StatelessWidget {
             points: points,
             style: chart.chartStyle,
             showLegend: false,
-            minSlotWidth: 100,
+            minSlotWidth: 88,
             valueFormatter: (num value) => '${value.round()}%',
           ),
           SizedBox(height: theme.spacing.sm),

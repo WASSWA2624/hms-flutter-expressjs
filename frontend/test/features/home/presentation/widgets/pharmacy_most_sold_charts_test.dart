@@ -30,6 +30,10 @@ void main() {
         pharmacyOrderStatusSection(label: 'Cancelled'),
         'cancelled',
       );
+      expect(
+        pharmacyOrderStatusSection(label: 'Ordered - 250(24%)'),
+        'queue',
+      );
       expect(pharmacyOrderStatusSection(segmentId: 'unknown'), isNull);
     });
   });

@@ -11,6 +11,7 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/repositories/home_repository.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_actions.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_mapper.dart';
+import 'package:hosspi_hms/features/home/presentation/widgets/home_metric_routes.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_charts_row.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
@@ -216,7 +217,10 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
     homeGoToRoute(
       context,
       AppRoutes.pharmacy,
-      queryParameters: <String, String>{'section': section},
+      queryParameters: homePharmacyStatusMixQuery(
+        section: section,
+        period: _statusPeriod,
+      ),
     );
   }
 
@@ -424,20 +428,28 @@ Color _mostSoldColor(Color seed, int index) {
 
 /// Maps order-status mix segment id/label → `/pharmacy?section=` value.
 String? pharmacyOrderStatusSection({String? segmentId, String? label}) {
-  final String raw = (segmentId ?? label ?? '').trim().toLowerCase();
-  final String normalized = raw.replaceAll(RegExp(r'[\s-]+'), '_');
-  return switch (normalized) {
-    'ordered' || 'order' || 'ready' || 'queue' || 'new' => 'queue',
-    'partially_dispensed' ||
-    'partially dispensed' ||
-    'partial' ||
-    'in_progress' ||
-    'in-progress' =>
-      'in-progress',
-    'dispensed' || 'completed' => 'completed',
-    'cancelled' || 'canceled' => 'cancelled',
-    _ => null,
-  };
+  String? mapToken(String? raw) {
+    if (raw == null) {
+      return null;
+    }
+    // Legend copy may be `Ordered - 250(24%)`; prefer the status token only.
+    final String base = raw.split(' - ').first.trim().toLowerCase();
+    final String normalized = base.replaceAll(RegExp(r'[\s-]+'), '_');
+    return switch (normalized) {
+      'ordered' || 'order' || 'ready' || 'queue' || 'new' => 'queue',
+      'partially_dispensed' ||
+      'partially dispensed' ||
+      'partial' ||
+      'in_progress' ||
+      'in-progress' =>
+        'in-progress',
+      'dispensed' || 'completed' => 'completed',
+      'cancelled' || 'canceled' => 'cancelled',
+      _ => null,
+    };
+  }
+
+  return mapToken(segmentId) ?? mapToken(label);
 }
 
 /// Compact unlabeled dashboard controls in one horizontal strip.

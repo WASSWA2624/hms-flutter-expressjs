@@ -41,6 +41,60 @@ Map<String, String> homeDefaultBillingMetricQuery(String cardId) {
   };
 }
 
+/// Inclusive local-day start / exclusive next-day end for pharmacy date filters.
+({DateTime from, DateTime to}) homePharmacyMostSoldPeriodBounds(
+  HomeMostSoldPeriod period, {
+  DateTime? now,
+}) {
+  final DateTime clock = now ?? DateTime.now();
+  final DateTime startOfToday = DateTime(clock.year, clock.month, clock.day);
+  final DateTime endExclusive = startOfToday.add(const Duration(days: 1));
+  // Keep aligned with backend `resolveMostSoldWindow`.
+  final DateTime from = switch (period) {
+    HomeMostSoldPeriod.today => startOfToday,
+    HomeMostSoldPeriod.lastWeek =>
+      startOfToday.subtract(const Duration(days: 6)),
+    HomeMostSoldPeriod.lastMonth =>
+      startOfToday.subtract(const Duration(days: 30)),
+    HomeMostSoldPeriod.lastThreeMonths =>
+      startOfToday.subtract(const Duration(days: 90)),
+    HomeMostSoldPeriod.lastSixMonths =>
+      startOfToday.subtract(const Duration(days: 180)),
+    HomeMostSoldPeriod.lastYear =>
+      startOfToday.subtract(const Duration(days: 365)),
+    HomeMostSoldPeriod.lastFiveYears =>
+      startOfToday.subtract(const Duration(days: 365 * 5)),
+    HomeMostSoldPeriod.custom => startOfToday,
+  };
+  return (from: from, to: endExclusive);
+}
+
+/// `from` / `to` query params for a most-sold / status-mix period preset.
+Map<String, String> homePharmacyMostSoldPeriodQuery(
+  HomeMostSoldPeriod period, {
+  DateTime? now,
+}) {
+  final ({DateTime from, DateTime to}) bounds =
+      homePharmacyMostSoldPeriodBounds(period, now: now);
+  String iso(DateTime value) => value.toUtc().toIso8601String();
+  return <String, String>{
+    'from': iso(bounds.from),
+    'to': iso(bounds.to),
+  };
+}
+
+/// Order-status mix legend → `/pharmacy` section + matching period window.
+Map<String, String> homePharmacyStatusMixQuery({
+  required String section,
+  required HomeMostSoldPeriod period,
+  DateTime? now,
+}) {
+  return <String, String>{
+    'section': section,
+    ...homePharmacyMostSoldPeriodQuery(period, now: now),
+  };
+}
+
 /// Pharmacist home KPI → `/pharmacy` section + facility-local date range.
 ///
 /// Sales week = trailing 7 calendar days including today.

@@ -20,6 +20,7 @@ class DashboardTrendChartPainter extends CustomPainter {
     this.pointColors = const <Color>[],
     this.showValues = false,
     this.valueFormatter,
+    this.minBarHeight = 0,
   });
 
   final List<DashboardTrendPointData> points;
@@ -33,6 +34,9 @@ class DashboardTrendChartPainter extends CustomPainter {
   final List<Color> pointColors;
   final bool showValues;
   final String Function(num value)? valueFormatter;
+
+  /// Minimum painted bar height in logical pixels (keeps 0% categories visible).
+  final double minBarHeight;
 
   Color _colorFor(int index) {
     if (index < pointColors.length) {
@@ -88,13 +92,15 @@ class DashboardTrendChartPainter extends CustomPainter {
       final Color pointColor = _colorFor(index);
       final double centerX = slotWidth * index + (slotWidth / 2);
       final double normalized = point.value.toDouble() / maxValue;
-      final double y = chartTop + chartHeight - (chartHeight * normalized);
+      final double rawBarHeight = chartHeight * normalized;
+      final double barHeight = math.max(minBarHeight, rawBarHeight);
+      final double y = chartTop + chartHeight - barHeight;
       if (drawBars) {
         final Rect barRect = Rect.fromLTWH(
           centerX - (barWidth / 2),
           y,
           barWidth,
-          chartTop + chartHeight - y,
+          barHeight,
         );
         canvas.drawRRect(
           RRect.fromRectAndRadius(barRect, const Radius.circular(8)),
@@ -103,13 +109,15 @@ class DashboardTrendChartPainter extends CustomPainter {
       }
 
       if (drawLine) {
+        // Keep line markers on the true value; zero points sit on the baseline.
+        final double lineY = chartTop + chartHeight - rawBarHeight;
         if (index == 0) {
-          path.moveTo(centerX, y);
+          path.moveTo(centerX, lineY);
         } else {
-          path.lineTo(centerX, y);
+          path.lineTo(centerX, lineY);
         }
         canvas.drawCircle(
-          Offset(centerX, y),
+          Offset(centerX, lineY),
           4,
           Paint()..color = pointColor,
         );
@@ -197,7 +205,8 @@ class DashboardTrendChartPainter extends CustomPainter {
         oldDelegate.style != style ||
         oldDelegate.pointColors != pointColors ||
         oldDelegate.showValues != showValues ||
-        oldDelegate.valueFormatter != valueFormatter;
+        oldDelegate.valueFormatter != valueFormatter ||
+        oldDelegate.minBarHeight != minBarHeight;
   }
 }
 
