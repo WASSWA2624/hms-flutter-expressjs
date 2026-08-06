@@ -654,12 +654,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'expired': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'expired'},
       ),
-      'sales_today': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'completed'},
-      ),
-      'sales_this_week': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'completed'},
-      ),
       'critical_stock': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'low-stock'},
       ),

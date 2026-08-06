@@ -378,9 +378,18 @@ void main() {
         ),
         policy: policy,
       );
-      expect(salesToday?.route, AppRoutes.pharmacy);
-      expect(salesToday?.queryParameters['section'], 'completed');
-      expect(salesToday?.queryParameters.containsKey('from'), isTrue);
+      final HomeMetricNavigation? salesThisWeek = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'sales_this_week',
+          label: 'Total sales (last 7 days)',
+          value: 500,
+          format: 'currency',
+        ),
+        policy: policy,
+      );
+      expect(salesToday, isNull);
+      expect(salesThisWeek, isNull);
     });
 
     test('status-mix legend query carries section and period window', () {

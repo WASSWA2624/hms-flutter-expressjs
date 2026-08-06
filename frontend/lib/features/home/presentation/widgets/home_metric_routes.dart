@@ -97,12 +97,11 @@ Map<String, String> homePharmacyStatusMixQuery({
 
 /// Pharmacist home KPI → `/pharmacy` section + facility-local date range.
 ///
-/// Sales week = trailing 7 calendar days including today.
+/// Pharmacy KPI deep-link query for pharmacist home cards.
 Map<String, String> homePharmacyMetricQuery(String cardId) {
   final DateTime now = DateTime.now();
   final DateTime startOfToday = DateTime(now.year, now.month, now.day);
   final DateTime endExclusive = startOfToday.add(const Duration(days: 1));
-  final DateTime weekStart = startOfToday.subtract(const Duration(days: 6));
   String iso(DateTime value) => value.toUtc().toIso8601String();
 
   return switch (cardId.trim().toLowerCase()) {
@@ -112,14 +111,9 @@ Map<String, String> homePharmacyMetricQuery(String cardId) {
       'to': iso(endExclusive),
     },
     'pending_dispense' => <String, String>{'section': 'queue'},
-    'dispensed_today' || 'sales_today' => <String, String>{
+    'dispensed_today' => <String, String>{
       'section': 'completed',
       'from': iso(startOfToday),
-      'to': iso(endExclusive),
-    },
-    'sales_this_week' => <String, String>{
-      'section': 'completed',
-      'from': iso(weekStart),
       'to': iso(endExclusive),
     },
     'low_stock' || 'critical_stock' => <String, String>{
