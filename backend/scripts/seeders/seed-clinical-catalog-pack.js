@@ -452,8 +452,15 @@ const seedPharmacyCatalogForTenant = async (
 
     for (const facilityId of normalizedFacilityIds) {
       const stockKey = `${spec.key}:${facilityId}`;
-      const stockQuantity = spec.initial_stock || DEFAULT_DRUG_INITIAL_STOCK;
       const reorderLevel = spec.reorder_level || DEFAULT_DRUG_REORDER_LEVEL;
+      // Seed a predictable low-stock slice so pharmacy dashboard Low stock KPI is non-zero.
+      const forceLowStock =
+        typeof spec.force_low_stock === 'boolean'
+          ? spec.force_low_stock
+          : [...String(spec.key || '')].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % 5 === 0;
+      const stockQuantity = forceLowStock
+        ? Math.max(0, Math.floor(reorderLevel * 0.4))
+        : spec.initial_stock || DEFAULT_DRUG_INITIAL_STOCK;
 
       const stockRecord = await ctx.upsert(
         'inventory_stock',

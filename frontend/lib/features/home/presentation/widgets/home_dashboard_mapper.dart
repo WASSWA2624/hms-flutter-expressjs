@@ -398,6 +398,7 @@ DashboardChartsData homeDashboardChartsData({
           .map(
             (HomeDistributionSegment segment) =>
                 DashboardDistributionSegmentData(
+                  id: segment.id,
                   label: segment.label,
                   value: segment.value,
                   colorHex: segment.color,

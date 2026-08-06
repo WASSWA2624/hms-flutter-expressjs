@@ -66,6 +66,7 @@ class _DashboardTrendPanel extends StatelessWidget {
       child: AppSectionPanel(
         title: chart.title,
         leadingIcon: Icons.show_chart_outlined,
+        trailing: chart.headerTrailing,
         density: AppContentPanelDensity.spacious,
         backgroundColor: Colors.transparent,
         borderColor: Colors.transparent,
@@ -86,7 +87,11 @@ class _DashboardTrendPanel extends StatelessWidget {
           if (chart.points.isEmpty)
             _DashboardChartEmptyState(message: chart.emptyMessage)
           else
-            _DashboardTrendChart(points: chart.points),
+            _DashboardTrendChart(points: chart.points, style: chart.chartStyle),
+          if (chart.footer != null) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            chart.footer!,
+          ],
         ],
       ),
     );
@@ -94,17 +99,22 @@ class _DashboardTrendPanel extends StatelessWidget {
 }
 
 class _DashboardTrendChart extends StatelessWidget {
-  const _DashboardTrendChart({required this.points});
+  const _DashboardTrendChart({required this.points, required this.style});
 
   final List<DashboardTrendPointData> points;
+  final DashboardTrendChartStyle style;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final List<DashboardTrendPointData> visiblePoints = points
-        .take(14)
+        .take(100)
         .toList(growable: false);
+    final double minWidth = math.max(
+      MediaQuery.sizeOf(context).width * 0.4,
+      visiblePoints.length * 28.0,
+    );
 
     return Semantics(
       label: 'Trend chart with ${visiblePoints.length} points',
@@ -113,15 +123,23 @@ class _DashboardTrendChart extends StatelessWidget {
           SizedBox(
             height: 180,
             width: double.infinity,
-            child: CustomPaint(
-              painter: DashboardTrendChartPainter(
-                points: visiblePoints,
-                barColor: colorScheme.primary.withValues(alpha: 0.18),
-                lineColor: colorScheme.primary,
-                gridColor: theme.borders.faint,
-                labelColor: colorScheme.onSurfaceVariant,
-                textStyle: theme.textTheme.labelSmall,
-                labelBuilder: _trendPointLabel,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: minWidth,
+                height: 180,
+                child: CustomPaint(
+                  painter: DashboardTrendChartPainter(
+                    points: visiblePoints,
+                    style: style,
+                    barColor: colorScheme.primary.withValues(alpha: 0.18),
+                    lineColor: colorScheme.primary,
+                    gridColor: theme.borders.faint,
+                    labelColor: colorScheme.onSurfaceVariant,
+                    textStyle: theme.textTheme.labelSmall,
+                    labelBuilder: _trendPointLabel,
+                  ),
+                ),
               ),
             ),
           ),
@@ -129,18 +147,27 @@ class _DashboardTrendChart extends StatelessWidget {
           Row(
             children: <Widget>[
               if (visiblePoints.isNotEmpty)
-                Text(
-                  _trendPointLabel(visiblePoints.first),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                Flexible(
+                  child: Text(
+                    _trendPointLabel(visiblePoints.first),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               const Spacer(),
               if (visiblePoints.length > 1)
-                Text(
-                  _trendPointLabel(visiblePoints.last),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                Flexible(
+                  child: Text(
+                    _trendPointLabel(visiblePoints.last),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
             ],
@@ -259,6 +286,9 @@ class _DashboardDistributionChart extends StatelessWidget {
                   segment: segments[index],
                   total: total,
                   color: _segmentColor(theme, segments[index], index),
+                  onTap: chart.onSegmentSelected == null
+                      ? null
+                      : () => chart.onSegmentSelected!(segments[index]),
                 ),
             ],
           ),
@@ -273,19 +303,23 @@ class _DistributionLegendItem extends StatelessWidget {
     required this.segment,
     required this.total,
     required this.color,
+    this.onTap,
   });
 
   final DashboardDistributionSegmentData segment;
   final num total;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final double percent = total <= 0 ? 0 : (segment.value / total) * 100;
+    final String label =
+        '${_formatToken(segment.label)} ${percent.round()}%';
 
-    return Container(
+    final Widget content = Container(
       padding: EdgeInsets.symmetric(
         horizontal: theme.spacing.sm,
         vertical: theme.spacing.xs,
@@ -304,13 +338,30 @@ class _DistributionLegendItem extends StatelessWidget {
           ),
           SizedBox(width: theme.spacing.xs),
           Text(
-            '${_formatToken(segment.label)} ${percent.round()}%',
+            label,
             style: theme.textTheme.labelSmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
               fontWeight: AppFontWeight.emphasis,
             ),
           ),
         ],
+      ),
+    );
+
+    if (onTap == null) {
+      return content;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        child: Semantics(
+          button: true,
+          label: 'Open $label orders',
+          child: content,
+        ),
       ),
     );
   }

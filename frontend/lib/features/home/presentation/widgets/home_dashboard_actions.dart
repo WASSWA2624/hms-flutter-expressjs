@@ -1626,7 +1626,7 @@ String homeTrendTitle(AppRole role, String fallback) {
     AppRole.nurse => 'Medication rounds trend',
     AppRole.labTech => 'Sample throughput trend',
     AppRole.radiologyTech => 'Imaging throughput trend',
-    AppRole.pharmacist => 'Most sold drugs (last month)',
+    AppRole.pharmacist => 'Most sold drugs',
     AppRole.receptionist => 'Front desk arrivals trend',
     AppRole.billing => 'Collections trend',
     AppRole.operations => 'Facility readiness trend',

@@ -460,6 +460,10 @@ const seedVolumePack = async (
       if (!patient) return;
       const orderStatus = pick(PHARMACY_ORDER_STATUSES, index);
       const drug = pick(drugs, index);
+      // Wall-clock freshness: today + last ~28 days so pharmacy dashboard KPIs
+      // and most-sold charts are non-empty against live summary windows.
+      const recentDayOffset = index % 12 === 0 ? 0 : -((index % 28) + 1);
+      const orderedAt = ctx.nowDate(recentDayOffset, 35);
       const order = await ctx.upsert(
         'pharmacy_order',
         `${scenario.key}:vol:rx-order:${pad(index)}`,
@@ -467,7 +471,7 @@ const seedVolumePack = async (
           encounter_id: encounterAt(index)?.id || null,
           patient_id: patient.id,
           status: orderStatus,
-          ordered_at: ctx.date(-((index % 75) + 1), 35),
+          ordered_at: orderedAt,
         },
         { publicIdPrefix: 'RXO', seedMeta: false }
       );
@@ -499,7 +503,7 @@ const seedVolumePack = async (
           dispense_batch_ref: `VOL-BATCH-${pad(index, 5)}`,
           status: dispenseStatus,
           dispensed_at: dispenseStatus === 'DISPENSED' || dispenseStatus === 'RETURNED'
-            ? ctx.date(-((index % 75) + 1), 55)
+            ? ctx.nowDate(recentDayOffset, 55)
             : null,
           quantity_dispensed: dispenseStatus === 'PENDING' || dispenseStatus === 'CANCELLED'
             ? 0

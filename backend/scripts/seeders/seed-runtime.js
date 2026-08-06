@@ -341,6 +341,16 @@ const createSeedContext = ({
           minuteOffset * 60 * 1000
       );
     },
+    /** Wall-clock relative date for dashboard-fresh demo KPIs. */
+    nowDate(dayOffset = 0, minuteOffset = 0) {
+      const base = new Date();
+      base.setHours(9, 0, 0, 0);
+      return new Date(
+        base.getTime() +
+          dayOffset * 24 * 60 * 60 * 1000 +
+          minuteOffset * 60 * 1000
+      );
+    },
     publicId(modelName, key, prefix) {
       return createHumanFriendlyId(modelName, key, prefix);
     },

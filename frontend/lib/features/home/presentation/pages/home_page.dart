@@ -312,6 +312,7 @@ class _HomeDashboardContent extends ConsumerWidget {
                                   return PharmacyMostSoldCharts(
                                     dashboard: authorized,
                                     l10n: l10n,
+                                    request: request,
                                     twoColumns: constraints.maxWidth >= 980,
                                   );
                                 }

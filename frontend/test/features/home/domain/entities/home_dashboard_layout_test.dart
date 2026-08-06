@@ -1,5 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 
@@ -82,6 +86,65 @@ void main() {
       expect(profile.metricRouteTargets.keys, contains('pending_dispense'));
       expect(profile.emptyMessage, 'No pending orders.');
     });
+
+    test(
+      'pharmacist expand with patient:read omits admissions and appointments',
+      () {
+        final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'token'),
+            user: const AuthUserProfile(
+              roles: <String>['PHARMACIST'],
+              tenantId: 'tenant-1',
+              facilityId: 'facility-1',
+            ),
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+              AppPermissions.patientRead,
+            },
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'pharmacy-dispensing',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'patient-registry',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'scheduling-queue',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'inpatient-bed-management',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+            isAuthorizationHydrated: true,
+          ),
+        );
+        final HomeDashboardProfile expanded = homeProfileForAccessPolicy(policy);
+        final List<String> ids = expanded.statusCards
+            .take(expanded.effectiveMaxStatusCards)
+            .map((HomeStatusCardTemplate card) => card.id)
+            .toList(growable: false);
+
+        expect(expanded.id, 'pharmacist');
+        expect(expanded.effectiveMaxStatusCards, 4);
+        expect(ids, isNot(contains('appointments_today')));
+        expect(ids, isNot(contains('active_admissions')));
+        expect(
+          ids,
+          containsAll(<String>[
+            'orders_today',
+            'pending_dispense',
+            'dispensed_today',
+            'low_stock',
+          ]),
+        );
+      },
+    );
 
     test(
       'receptionist dashboard emphasizes meetings follow-up and desk queue',

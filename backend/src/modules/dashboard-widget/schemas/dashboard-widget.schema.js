@@ -48,6 +48,18 @@ const dashboardSummaryQuerySchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   days: z.coerce.number().int().min(1).max(30).default(7),
+  most_sold_period: z
+    .enum([
+      'today',
+      'last_week',
+      'last_month',
+      'last_3_months',
+      'last_6_months',
+      'last_year',
+      'last_5_years',
+    ])
+    .optional(),
+  most_sold_limit: z.coerce.number().int().refine((value) => [5, 10, 20, 100].includes(value)).optional(),
 });
 
 module.exports = {

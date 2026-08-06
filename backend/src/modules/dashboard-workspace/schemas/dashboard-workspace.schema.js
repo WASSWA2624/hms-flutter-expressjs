@@ -24,6 +24,18 @@ const workspaceQuerySchema = listQuerySchema.extend({
   date_preset: z.string().trim().max(80).optional(),
   from: z.string().trim().optional(),
   to: z.string().trim().optional(),
+  most_sold_period: z
+    .enum([
+      'today',
+      'last_week',
+      'last_month',
+      'last_3_months',
+      'last_6_months',
+      'last_year',
+      'last_5_years',
+    ])
+    .optional(),
+  most_sold_limit: z.coerce.number().int().refine((value) => [5, 10, 20, 100].includes(value)).optional(),
 });
 
 const lookupsQuerySchema = z.object({

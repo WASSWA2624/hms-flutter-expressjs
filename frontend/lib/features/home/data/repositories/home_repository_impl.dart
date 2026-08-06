@@ -156,6 +156,8 @@ final class HomeRepositoryImpl implements HomeRepository {
     return HomeDashboardRequest(
       tenantId: request.tenantId ?? _accessPolicy.tenantId,
       facilityId: request.facilityId ?? _accessPolicy.facilityId,
+      mostSoldPeriod: request.mostSoldPeriod,
+      mostSoldLimit: request.mostSoldLimit,
     );
   }
 

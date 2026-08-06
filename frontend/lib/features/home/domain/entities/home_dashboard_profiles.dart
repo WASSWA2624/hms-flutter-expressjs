@@ -1748,6 +1748,11 @@ HomeDashboardProfile expandHomeProfileForPermissions(
         (AppPermission permission) =>
             !basePermissionUniverse.contains(permission),
       );
+      // Pharmacist home stays pharmacy-focused — no Admissions/Appointments
+      // or other clinical cross-domain KPI cards on the strip.
+      if (base.id == 'pharmacist' && isCrossDomain) {
+        continue;
+      }
       if (isCrossDomain) {
         crossDomainCards[template.id] = template;
       } else {
@@ -1795,7 +1800,10 @@ HomeDashboardProfile expandHomeProfileForPermissions(
     shortcutIds: shortcutIds.toList(growable: false),
     metricRouteTargets: metricRoutes,
     metricActionTargets: metricActions,
-    maxStatusCards: math.min(6, math.max(base.maxStatusCards, ordered.length)),
+    // Keep pharmacist strip at the pharmacy KPI window (no clinical expand).
+    maxStatusCards: base.id == 'pharmacist'
+        ? base.maxStatusCards
+        : math.min(6, math.max(base.maxStatusCards, ordered.length)),
   );
 }
 

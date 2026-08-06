@@ -12,9 +12,31 @@ import 'package:hosspi_hms/features/home/presentation/widgets/pharmacy_most_sold
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
 void main() {
+  group('pharmacyOrderStatusSection', () {
+    test('maps order status ids and labels to pharmacy desk sections', () {
+      expect(
+        pharmacyOrderStatusSection(segmentId: 'ordered'),
+        'queue',
+      );
+      expect(
+        pharmacyOrderStatusSection(segmentId: 'partially_dispensed'),
+        'in-progress',
+      );
+      expect(
+        pharmacyOrderStatusSection(label: 'Dispensed'),
+        'completed',
+      );
+      expect(
+        pharmacyOrderStatusSection(label: 'Cancelled'),
+        'cancelled',
+      );
+      expect(pharmacyOrderStatusSection(segmentId: 'unknown'), isNull);
+    });
+  });
+
   group('PharmacyMostSoldCharts', () {
     testWidgets(
-      'shows qty and amount toggle when money allowed; hides profit without cost',
+      'shows header controls and qty/amount toggle when money allowed; hides profit without cost',
       (tester) async {
         await tester.pumpWidget(
           ProviderScope(
@@ -32,28 +54,30 @@ void main() {
               home: Builder(
                 builder: (BuildContext context) {
                   return Scaffold(
-                    body: PharmacyMostSoldCharts(
-                      dashboard: _dashboard(
-                        mostSold: HomeMostSoldSeries(
-                          qty: <HomeTrendPoint>[
-                            HomeTrendPoint(
-                              id: 'para',
-                              date: null,
-                              value: 12,
-                              label: 'Para',
-                            ),
-                          ],
-                          amount: <HomeTrendPoint>[
-                            HomeTrendPoint(
-                              id: 'para',
-                              date: null,
-                              value: 120,
-                              label: 'Para',
-                            ),
-                          ],
+                    body: SingleChildScrollView(
+                      child: PharmacyMostSoldCharts(
+                        dashboard: _dashboard(
+                          mostSold: HomeMostSoldSeries(
+                            qty: <HomeTrendPoint>[
+                              HomeTrendPoint(
+                                id: 'para',
+                                date: null,
+                                value: 12,
+                                label: 'Para',
+                              ),
+                            ],
+                            amount: <HomeTrendPoint>[
+                              HomeTrendPoint(
+                                id: 'para',
+                                date: null,
+                                value: 120,
+                                label: 'Para',
+                              ),
+                            ],
+                          ),
                         ),
+                        l10n: AppLocalizations.of(context)!,
                       ),
-                      l10n: AppLocalizations.of(context)!,
                     ),
                   );
                 },
@@ -65,12 +89,63 @@ void main() {
         expect(find.text('Qty'), findsOneWidget);
         expect(find.text('Amount'), findsOneWidget);
         expect(find.text('Profit'), findsNothing);
+        expect(find.text('Last month'), findsWidgets);
+        expect(find.text('Top 10'), findsWidgets);
+        expect(find.text('Bar'), findsWidgets);
+        expect(find.text('Sold drugs'), findsOneWidget);
+        expect(find.text('Para'), findsWidgets);
 
         await tester.tap(find.text('Amount'));
         await tester.pumpAndSettle();
         expect(find.text('Amount'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'shows empty most-sold state without substituting trend zeros',
+      (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appAccessPolicyProvider.overrideWithValue(
+              _policy(<AppPermission>{AppPermissions.pharmacyRead}),
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (BuildContext context) {
+                return Scaffold(
+                  body: SingleChildScrollView(
+                    child: PharmacyMostSoldCharts(
+                      dashboard: _dashboard(
+                        mostSold: HomeMostSoldSeries.empty,
+                        trendPoints: <HomeTrendPoint>[
+                          HomeTrendPoint(
+                            id: 'd1',
+                            date: DateTime(2026, 8, 1),
+                            value: 0,
+                            label: 'Aug 1',
+                          ),
+                        ],
+                      ),
+                      l10n: AppLocalizations.of(context)!,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        find.text('No dispensed drug sales in the selected period.'),
+        findsOneWidget,
+      );
+      expect(find.text('Sold drugs'), findsNothing);
+    });
 
     testWidgets('shows profit toggle when profit series has data', (
       tester,
@@ -91,36 +166,38 @@ void main() {
             home: Builder(
               builder: (BuildContext context) {
                 return Scaffold(
-                  body: PharmacyMostSoldCharts(
-                    dashboard: _dashboard(
-                      mostSold: HomeMostSoldSeries(
-                        qty: <HomeTrendPoint>[
-                          HomeTrendPoint(
-                            id: 'para',
-                            date: null,
-                            value: 12,
-                            label: 'Para',
-                          ),
-                        ],
-                        amount: <HomeTrendPoint>[
-                          HomeTrendPoint(
-                            id: 'para',
-                            date: null,
-                            value: 120,
-                            label: 'Para',
-                          ),
-                        ],
-                        profit: <HomeTrendPoint>[
-                          HomeTrendPoint(
-                            id: 'para',
-                            date: null,
-                            value: 40,
-                            label: 'Para',
-                          ),
-                        ],
+                  body: SingleChildScrollView(
+                    child: PharmacyMostSoldCharts(
+                      dashboard: _dashboard(
+                        mostSold: HomeMostSoldSeries(
+                          qty: <HomeTrendPoint>[
+                            HomeTrendPoint(
+                              id: 'para',
+                              date: null,
+                              value: 12,
+                              label: 'Para',
+                            ),
+                          ],
+                          amount: <HomeTrendPoint>[
+                            HomeTrendPoint(
+                              id: 'para',
+                              date: null,
+                              value: 120,
+                              label: 'Para',
+                            ),
+                          ],
+                          profit: <HomeTrendPoint>[
+                            HomeTrendPoint(
+                              id: 'para',
+                              date: null,
+                              value: 40,
+                              label: 'Para',
+                            ),
+                          ],
+                        ),
                       ),
+                      l10n: AppLocalizations.of(context)!,
                     ),
-                    l10n: AppLocalizations.of(context)!,
                   ),
                 );
               },
@@ -157,19 +234,48 @@ AppAccessPolicy _policy(Set<AppPermission> permissions) {
   );
 }
 
-HomeDashboard _dashboard({required HomeMostSoldSeries mostSold}) {
+HomeDashboard _dashboard({
+  required HomeMostSoldSeries mostSold,
+  List<HomeTrendPoint> trendPoints = const <HomeTrendPoint>[],
+}) {
   final HomeDashboardProfile profile = homeProfileForRole(AppRole.pharmacist);
   return HomeDashboard(
     state: HomeDashboardLoadState.ready,
     profile: profile,
     context: HomeDashboardContext(roleValue: profile.role.value),
     statusCards: const <HomeStatusCard>[],
-    trend: const HomeDashboardTrend(
-      title: 'Most sold drugs (last month)',
+    trend: HomeDashboardTrend(
+      title: 'Most sold drugs',
       subtitle: '',
-      points: <HomeTrendPoint>[],
+      points: trendPoints,
     ),
-    distribution: HomeDashboardDistribution.empty,
+    distribution: const HomeDashboardDistribution(
+      title: 'Order status mix',
+      subtitle: '',
+      total: 4,
+      segments: <HomeDistributionSegment>[
+        HomeDistributionSegment(
+          id: 'ordered',
+          label: 'Ordered',
+          value: 1,
+        ),
+        HomeDistributionSegment(
+          id: 'partially_dispensed',
+          label: 'Partially dispensed',
+          value: 1,
+        ),
+        HomeDistributionSegment(
+          id: 'dispensed',
+          label: 'Dispensed',
+          value: 1,
+        ),
+        HomeDistributionSegment(
+          id: 'cancelled',
+          label: 'Cancelled',
+          value: 1,
+        ),
+      ],
+    ),
     quickActionIds: const <String>[],
     shortcutIds: const <String>[],
     queuePreview: const <HomeQueueItem>[],

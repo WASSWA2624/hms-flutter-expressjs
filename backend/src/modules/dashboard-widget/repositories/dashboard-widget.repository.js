@@ -109,6 +109,44 @@ const shiftDays = (value, dayOffset) => {
   return date;
 };
 
+const resolveMostSoldWindow = (period, todayStart = startOfDay()) => {
+  const normalized = String(period || 'last_month')
+    .trim()
+    .toLowerCase()
+    .replace(/-/g, '_');
+  switch (normalized) {
+    case 'today':
+      return todayStart;
+    case 'last_week':
+    case 'week':
+      return shiftDays(todayStart, -6);
+    case 'last_3_months':
+    case '3_months':
+      return shiftDays(todayStart, -90);
+    case 'last_6_months':
+    case '6_months':
+      return shiftDays(todayStart, -180);
+    case 'last_year':
+    case 'year':
+      return shiftDays(todayStart, -365);
+    case 'last_5_years':
+    case '5_years':
+      return shiftDays(todayStart, -365 * 5);
+    case 'last_month':
+    case 'month':
+    default:
+      return shiftDays(todayStart, -30);
+  }
+};
+
+const normalizeMostSoldLimit = (value, fallback = 10) => {
+  const parsed = Number(value);
+  if (![5, 10, 20, 100].includes(parsed)) {
+    return fallback;
+  }
+  return parsed;
+};
+
 const directScope = (scope = {}, options = {}) => {
   const { includeTenant = true, includeFacility = true } = options;
   const where = { deleted_at: null };
@@ -588,7 +626,15 @@ const countUnreadOpdNotifications = async ({ scope = {}, userId = null } = {}) =
   }
 };
 
-const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = null, user = {} }) => {
+const getDashboardSummaryByPack = async ({
+  packId,
+  scope,
+  days = 7,
+  userId = null,
+  user = {},
+  mostSoldPeriod = 'last_month',
+  mostSoldLimit = 10,
+} = {}) => {
   try {
     const now = new Date();
     const todayStart = startOfDay(now);
@@ -1319,8 +1365,8 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } }
         ]
       };
-      const monthStart = new Date(todayStart);
-      monthStart.setUTCDate(monthStart.getUTCDate() - 30);
+      const mostSoldFrom = resolveMostSoldWindow(mostSoldPeriod, todayStart);
+      const mostSoldTopN = normalizeMostSoldLimit(mostSoldLimit, 10);
       const [ordersToday, pendingDispense, dispensedToday, lowStock, criticalStock, pendingBalanceAmount, mostSold] = await Promise.all([
         prisma.pharmacy_order.count({ where: { ...pharmacyOrderWhere, ordered_at: { gte: todayStart } } }),
         prisma.pharmacy_order.count({ where: { ...pharmacyOrderWhere, status: { in: ['ORDERED', 'PARTIALLY_DISPENSED'] } } }),
@@ -1328,7 +1374,7 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         countLowStock(inventoryStockWhere, 1),
         countLowStock(inventoryStockWhere, 0.5),
         sumOutstandingBalance(openBalanceWhere),
-        aggregateMostSoldDrugs(prisma, dispenseLogWhere, monthStart)
+        aggregateMostSoldDrugs(prisma, dispenseLogWhere, mostSoldFrom, mostSoldTopN)
       ]);
       return {
         metrics: {
@@ -2063,6 +2109,9 @@ module.exports = {
     buildDispenseLogScopeWhere,
     buildInventoryStockScopeWhere,
     buildAmbulanceDispatchScopeWhere,
-    buildAmbulanceTripScopeWhere
+    buildAmbulanceTripScopeWhere,
+    resolveMostSoldWindow,
+    normalizeMostSoldLimit,
+    aggregateMostSoldDrugs,
   }
 };

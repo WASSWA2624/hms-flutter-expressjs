@@ -16,6 +16,7 @@ class DashboardTrendChartPainter extends CustomPainter {
     required this.labelColor,
     required this.textStyle,
     required this.labelBuilder,
+    this.style = DashboardTrendChartStyle.combined,
   });
 
   final List<DashboardTrendPointData> points;
@@ -25,6 +26,7 @@ class DashboardTrendChartPainter extends CustomPainter {
   final Color labelColor;
   final TextStyle? textStyle;
   final DashboardTrendPointLabelBuilder labelBuilder;
+  final DashboardTrendChartStyle style;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -53,6 +55,12 @@ class DashboardTrendChartPainter extends CustomPainter {
     final double slotWidth = size.width / points.length;
     final double barWidth = math.max(6, math.min(22, slotWidth * 0.42));
     final Path path = Path();
+    final bool drawBars =
+        style == DashboardTrendChartStyle.combined ||
+        style == DashboardTrendChartStyle.bar;
+    final bool drawLine =
+        style == DashboardTrendChartStyle.combined ||
+        style == DashboardTrendChartStyle.line;
 
     for (int i = 0; i <= 3; i += 1) {
       final double y = chartHeight * (i / 3);
@@ -64,25 +72,29 @@ class DashboardTrendChartPainter extends CustomPainter {
       final double centerX = slotWidth * index + (slotWidth / 2);
       final double normalized = point.value.toDouble() / maxValue;
       final double y = chartHeight - (chartHeight * normalized);
-      final Rect barRect = Rect.fromLTWH(
-        centerX - (barWidth / 2),
-        y,
-        barWidth,
-        chartHeight - y,
-      );
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(barRect, const Radius.circular(8)),
-        barPaint,
-      );
-
-      if (index == 0) {
-        path.moveTo(centerX, y);
-      } else {
-        path.lineTo(centerX, y);
+      if (drawBars) {
+        final Rect barRect = Rect.fromLTWH(
+          centerX - (barWidth / 2),
+          y,
+          barWidth,
+          chartHeight - y,
+        );
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(barRect, const Radius.circular(8)),
+          barPaint,
+        );
       }
-      canvas.drawCircle(Offset(centerX, y), 3.5, dotPaint);
 
-      if (points.length <= 7) {
+      if (drawLine) {
+        if (index == 0) {
+          path.moveTo(centerX, y);
+        } else {
+          path.lineTo(centerX, y);
+        }
+        canvas.drawCircle(Offset(centerX, y), 3.5, dotPaint);
+      }
+
+      if (points.length <= 12) {
         final TextPainter painter = TextPainter(
           text: TextSpan(
             text: labelBuilder(point, compact: true),
@@ -100,7 +112,9 @@ class DashboardTrendChartPainter extends CustomPainter {
       }
     }
 
-    canvas.drawPath(path, linePaint);
+    if (drawLine) {
+      canvas.drawPath(path, linePaint);
+    }
   }
 
   @override
@@ -108,7 +122,8 @@ class DashboardTrendChartPainter extends CustomPainter {
     return oldDelegate.points != points ||
         oldDelegate.barColor != barColor ||
         oldDelegate.lineColor != lineColor ||
-        oldDelegate.gridColor != gridColor;
+        oldDelegate.gridColor != gridColor ||
+        oldDelegate.style != style;
   }
 }
 

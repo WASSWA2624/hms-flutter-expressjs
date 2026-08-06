@@ -81,6 +81,14 @@ final class DashboardTrendPointData {
   final DateTime? date;
 }
 
+/// How [DashboardTrendChartPainter] renders series points.
+enum DashboardTrendChartStyle {
+  /// Bars plus overlay line (legacy home trend).
+  combined,
+  bar,
+  line,
+}
+
 @immutable
 final class DashboardTrendChartData {
   const DashboardTrendChartData({
@@ -88,12 +96,18 @@ final class DashboardTrendChartData {
     required this.points,
     required this.emptyMessage,
     this.subtitle,
+    this.chartStyle = DashboardTrendChartStyle.combined,
+    this.headerTrailing,
+    this.footer,
   });
 
   final String title;
   final String? subtitle;
   final List<DashboardTrendPointData> points;
   final String emptyMessage;
+  final DashboardTrendChartStyle chartStyle;
+  final Widget? headerTrailing;
+  final Widget? footer;
 }
 
 @immutable
@@ -101,9 +115,11 @@ final class DashboardDistributionSegmentData {
   const DashboardDistributionSegmentData({
     required this.label,
     required this.value,
+    this.id,
     this.colorHex,
   });
 
+  final String? id;
   final String label;
   final num value;
   final String? colorHex;
@@ -117,6 +133,7 @@ final class DashboardDistributionChartData {
     required this.segments,
     required this.emptyMessage,
     required this.totalLabel,
+    this.onSegmentSelected,
   });
 
   final String title;
@@ -124,6 +141,7 @@ final class DashboardDistributionChartData {
   final List<DashboardDistributionSegmentData> segments;
   final String emptyMessage;
   final String totalLabel;
+  final ValueChanged<DashboardDistributionSegmentData>? onSegmentSelected;
 }
 
 @immutable

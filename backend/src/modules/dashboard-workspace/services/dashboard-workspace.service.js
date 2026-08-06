@@ -2422,7 +2422,12 @@ const getWorkspace = async (
 
   const scope = scopeResult.scope;
   const baseSummary = await buildDashboardSummary({
-    query: { ...scope, days: 7 },
+    query: {
+      ...scope,
+      days: 7,
+      most_sold_period: filters.most_sold_period || filters.mostSoldPeriod,
+      most_sold_limit: filters.most_sold_limit || filters.mostSoldLimit,
+    },
     user,
     repository: dashboardWidgetRepository,
   });

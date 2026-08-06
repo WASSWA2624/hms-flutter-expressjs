@@ -4,13 +4,74 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_atom_per
 
 enum HomeDashboardLoadState { ready, tenantContextRequired }
 
+/// Most-sold lookback presets for the pharmacist home dashboard.
+enum HomeMostSoldPeriod {
+  today,
+  lastWeek,
+  lastMonth,
+  lastThreeMonths,
+  lastSixMonths,
+  lastYear,
+  lastFiveYears,
+}
+
+extension HomeMostSoldPeriodX on HomeMostSoldPeriod {
+  String get apiValue => switch (this) {
+    HomeMostSoldPeriod.today => 'today',
+    HomeMostSoldPeriod.lastWeek => 'last_week',
+    HomeMostSoldPeriod.lastMonth => 'last_month',
+    HomeMostSoldPeriod.lastThreeMonths => 'last_3_months',
+    HomeMostSoldPeriod.lastSixMonths => 'last_6_months',
+    HomeMostSoldPeriod.lastYear => 'last_year',
+    HomeMostSoldPeriod.lastFiveYears => 'last_5_years',
+  };
+
+  String get label => switch (this) {
+    HomeMostSoldPeriod.today => 'Today',
+    HomeMostSoldPeriod.lastWeek => 'Last week',
+    HomeMostSoldPeriod.lastMonth => 'Last month',
+    HomeMostSoldPeriod.lastThreeMonths => 'Last 3 months',
+    HomeMostSoldPeriod.lastSixMonths => 'Last 6 months',
+    HomeMostSoldPeriod.lastYear => 'Last year',
+    HomeMostSoldPeriod.lastFiveYears => 'Last 5 years',
+  };
+
+  static HomeMostSoldPeriod? tryParse(String? raw) {
+    final String normalized = (raw ?? '').trim().toLowerCase();
+    return switch (normalized) {
+      'today' => HomeMostSoldPeriod.today,
+      'last_week' || 'last-week' || 'week' => HomeMostSoldPeriod.lastWeek,
+      'last_month' || 'last-month' || 'month' => HomeMostSoldPeriod.lastMonth,
+      'last_3_months' || 'last-3-months' || '3_months' =>
+        HomeMostSoldPeriod.lastThreeMonths,
+      'last_6_months' || 'last-6-months' || '6_months' =>
+        HomeMostSoldPeriod.lastSixMonths,
+      'last_year' || 'last-year' || 'year' => HomeMostSoldPeriod.lastYear,
+      'last_5_years' || 'last-5-years' || '5_years' =>
+        HomeMostSoldPeriod.lastFiveYears,
+      _ => null,
+    };
+  }
+}
+
 final class HomeDashboardRequest {
-  const HomeDashboardRequest({this.tenantId, this.facilityId});
+  const HomeDashboardRequest({
+    this.tenantId,
+    this.facilityId,
+    this.mostSoldPeriod,
+    this.mostSoldLimit,
+  });
 
   factory HomeDashboardRequest.fromQuery(Map<String, String> query) {
     return HomeDashboardRequest(
       tenantId: _string(query['tenant_id'] ?? query['tenantId']),
       facilityId: _string(query['facility_id'] ?? query['facilityId']),
+      mostSoldPeriod: HomeMostSoldPeriodX.tryParse(
+        query['most_sold_period'] ?? query['mostSoldPeriod'],
+      ),
+      mostSoldLimit: int.tryParse(
+        (query['most_sold_limit'] ?? query['mostSoldLimit'] ?? '').trim(),
+      ),
     );
   }
 
@@ -18,13 +79,31 @@ final class HomeDashboardRequest {
 
   final String? tenantId;
   final String? facilityId;
+  final HomeMostSoldPeriod? mostSoldPeriod;
+  final int? mostSoldLimit;
 
   Map<String, Object?> toQueryParameters() {
     return <String, Object?>{
       if (tenantId != null) 'tenant_id': tenantId,
       if (facilityId != null) 'facility_id': facilityId,
       'limit': 5,
+      if (mostSoldPeriod != null) 'most_sold_period': mostSoldPeriod!.apiValue,
+      if (mostSoldLimit != null) 'most_sold_limit': mostSoldLimit,
     };
+  }
+
+  HomeDashboardRequest copyWith({
+    String? tenantId,
+    String? facilityId,
+    HomeMostSoldPeriod? mostSoldPeriod,
+    int? mostSoldLimit,
+  }) {
+    return HomeDashboardRequest(
+      tenantId: tenantId ?? this.tenantId,
+      facilityId: facilityId ?? this.facilityId,
+      mostSoldPeriod: mostSoldPeriod ?? this.mostSoldPeriod,
+      mostSoldLimit: mostSoldLimit ?? this.mostSoldLimit,
+    );
   }
 
   bool get hasTenantContext => tenantId != null;
@@ -33,11 +112,14 @@ final class HomeDashboardRequest {
   bool operator ==(Object other) {
     return other is HomeDashboardRequest &&
         other.tenantId == tenantId &&
-        other.facilityId == facilityId;
+        other.facilityId == facilityId &&
+        other.mostSoldPeriod == mostSoldPeriod &&
+        other.mostSoldLimit == mostSoldLimit;
   }
 
   @override
-  int get hashCode => Object.hash(tenantId, facilityId);
+  int get hashCode =>
+      Object.hash(tenantId, facilityId, mostSoldPeriod, mostSoldLimit);
 }
 
 final class HomeDashboard {

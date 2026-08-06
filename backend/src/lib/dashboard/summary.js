@@ -1001,6 +1001,8 @@ const metricsToRoleSummary = (packId, metrics = {}) =>
 const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
   try {
     const days = Number(query.days || 7);
+    const mostSoldPeriod = query.most_sold_period || query.mostSoldPeriod || 'last_month';
+    const mostSoldLimit = query.most_sold_limit || query.mostSoldLimit || 10;
     const effectiveRole = resolveDashboardRole(user);
     const roleProfileId = resolveProfileId(effectiveRole);
     const packId = resolvePackId(roleProfileId);
@@ -1023,6 +1025,8 @@ const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
         packId,
         scope: effectiveScope,
         days,
+        mostSoldPeriod,
+        mostSoldLimit,
         userId: resolvedUserId,
         user,
       }),
