@@ -555,7 +555,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
               onPressed: _promptCancelEncounter,
             ),
         ],
-        AppButton.secondary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !_blocksDismiss,

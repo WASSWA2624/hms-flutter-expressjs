@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/forms/app_form_section.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 
-/// Standard Cancel + primary actions for [AppDialog.actions] footers.
+/// Standard Close + primary actions for [AppDialog.actions] footers.
 ///
-/// [isSubmitting] drives Save loading and disables Save. Cancel stays enabled
+/// [isSubmitting] drives Save loading and disables Save. Close stays enabled
 /// unless [cancelEnabled] is false (defaults to `!isSubmitting`).
 List<Widget> buildAppDialogFormActions({
   required String cancelLabel,
@@ -23,7 +24,7 @@ List<Widget> buildAppDialogFormActions({
     return <Widget>[
       OutlinedButton.icon(
         onPressed: canCancel ? onCancel : null,
-        icon: Icon(cancelIcon ?? Icons.close),
+        icon: Icon(cancelIcon ?? AppActionIcons.cancel),
         label: Text(cancelLabel),
       ),
       FilledButton.icon(
@@ -41,19 +42,12 @@ List<Widget> buildAppDialogFormActions({
   }
 
   return <Widget>[
-    if (cancelIcon != null)
-      AppButton.secondary(
-        label: cancelLabel,
-        leadingIcon: cancelIcon,
-        enabled: canCancel,
-        onPressed: canCancel ? onCancel : null,
-      )
-    else
-      AppButton.tertiary(
-        label: cancelLabel,
-        enabled: canCancel,
-        onPressed: canCancel ? onCancel : null,
-      ),
+    AppButton.close(
+      label: cancelLabel,
+      leadingIcon: cancelIcon ?? AppActionIcons.cancel,
+      enabled: canCancel,
+      onPressed: canCancel ? onCancel : null,
+    ),
     AppButton.primary(
       label: submitLabel,
       leadingIcon: submitIcon,
@@ -71,36 +65,39 @@ List<Widget> buildAppDialogWizardActions({
   VoidCallback? onCancel,
   String? backLabel,
   VoidCallback? onBack,
-  IconData cancelIcon = Icons.close,
+  IconData cancelIcon = AppActionIcons.cancel,
   IconData backIcon = Icons.arrow_back,
   IconData primaryIcon = Icons.arrow_forward,
   bool isSubmitting = false,
   bool showBack = false,
 }) {
-  return <Widget>[
-    OutlinedButton.icon(
-      onPressed: isSubmitting ? null : onCancel,
-      icon: Icon(cancelIcon, size: 18),
-      label: Text(cancelLabel),
-    ),
-    if (showBack && backLabel != null)
-      OutlinedButton.icon(
+  final Widget closeButton = AppButton.close(
+    label: cancelLabel,
+    leadingIcon: cancelIcon,
+    enabled: !isSubmitting,
+    onPressed: isSubmitting ? null : onCancel,
+  );
+  final Widget primaryButton = AppButton.primary(
+    label: primaryLabel,
+    leadingIcon: isSubmitting ? null : primaryIcon,
+    isLoading: isSubmitting,
+    onPressed: isSubmitting ? null : onPrimary,
+  );
+  if (showBack && backLabel != null) {
+    // Length > 2: AppDialog keeps source order; Close stays extreme-right.
+    return <Widget>[
+      AppButton.secondary(
+        label: backLabel,
+        leadingIcon: backIcon,
+        enabled: !isSubmitting,
         onPressed: isSubmitting ? null : onBack,
-        icon: Icon(backIcon, size: 18),
-        label: Text(backLabel),
       ),
-    FilledButton.icon(
-      onPressed: isSubmitting ? null : onPrimary,
-      icon: isSubmitting
-          ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : Icon(primaryIcon, size: 18),
-      label: Text(primaryLabel),
-    ),
-  ];
+      primaryButton,
+      closeButton,
+    ];
+  }
+  // Two-action: author [Close, Primary] so AppDialog reverses Close right.
+  return <Widget>[closeButton, primaryButton];
 }
 
 class AppFormShell extends StatelessWidget {
@@ -158,7 +155,7 @@ class AppFormShell extends StatelessWidget {
   }
 }
 
-/// Inline form action row (Cancel + primary submit).
+/// Inline form action row (Close + primary submit).
 ///
 /// For modal dialogs, use [AppDialog.actions] or [showAppWorkspaceMutationDialog]
 /// — not [AppFormActions].
@@ -169,6 +166,7 @@ class AppFormActions extends StatelessWidget {
     required this.onCancel,
     required this.onSubmit,
     this.submitIcon,
+    this.cancelIcon = AppActionIcons.cancel,
     this.isSubmitting = false,
     this.enabled = true,
     this.cancelSemanticLabel,
@@ -181,6 +179,7 @@ class AppFormActions extends StatelessWidget {
   final VoidCallback? onCancel;
   final VoidCallback? onSubmit;
   final IconData? submitIcon;
+  final IconData cancelIcon;
   final bool isSubmitting;
   final bool enabled;
   final String? cancelSemanticLabel;
@@ -196,8 +195,9 @@ class AppFormActions extends StatelessWidget {
       spacing: Theme.of(context).spacing.sm,
       overflowSpacing: Theme.of(context).spacing.sm,
       children: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
           label: cancelLabel,
+          leadingIcon: cancelIcon,
           semanticLabel: cancelSemanticLabel,
           enabled: canInteract,
           onPressed: canInteract ? onCancel : null,

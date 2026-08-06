@@ -3036,7 +3036,7 @@ class _ReturnLineEditDialogState extends State<_ReturnLineEditDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
           enabled: !widget.isSaving,
@@ -3325,7 +3325,7 @@ List<Widget> _dialogActions(
 }) {
   final AppLocalizations l10n = context.l10n;
   return <Widget>[
-    AppButton.tertiary(
+    AppButton.close(
       label: l10n.commonCancelActionLabel,
       leadingIcon: cancelLeadingIcon,
       enabled: !isSaving,

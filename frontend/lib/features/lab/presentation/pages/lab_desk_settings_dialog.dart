@@ -202,7 +202,8 @@ class _LabDeskSettingsDialogState<T> extends State<_LabDeskSettingsDialog<T>> {
             });
           },
         ),
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: widget.closeLabel,
           onPressed: () => Navigator.of(context).pop(),
         ),

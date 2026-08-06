@@ -662,7 +662,7 @@ class _StorageRoomDialogState extends ConsumerState<_StorageRoomDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
           enabled: !_isSaving,
@@ -1492,7 +1492,7 @@ class _StorageShelfDialogState extends ConsumerState<_StorageShelfDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
           enabled: !_isSaving,

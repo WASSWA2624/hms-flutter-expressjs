@@ -4,6 +4,7 @@ import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
 import 'package:hosspi_hms/shared/forms/app_form_shell.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 
 @immutable
 final class AppWorkspaceMutationAction {
@@ -156,9 +157,9 @@ class _AppWorkspaceMutationDialogState
   }
 
   List<Widget> _buildActions(BuildContext context) {
-    final Widget closeButton = AppButton.tertiary(
+    final Widget closeButton = AppButton.close(
       label: widget.cancelLabel,
-      leadingIcon: widget.cancelIcon,
+      leadingIcon: widget.cancelIcon ?? AppActionIcons.cancel,
       enabled: !_isSubmitting,
       onPressed: _isSubmitting
           ? null

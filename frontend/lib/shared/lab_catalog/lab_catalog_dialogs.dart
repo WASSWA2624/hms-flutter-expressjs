@@ -224,7 +224,8 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -3109,7 +3110,7 @@ class _LabDeleteReasonDialogState extends State<LabDeleteReasonDialog> {
       ),
       actions: <Widget>[
         if (widget.showCancelButton)
-          AppButton.secondary(
+          AppButton.close(
             label: l10n.commonCancelActionLabel,
             leadingIcon: Icons.close,
             enabled: !_isSaving,
@@ -3625,7 +3626,7 @@ List<Widget> _dialogActions(
 }) {
   final AppLocalizations l10n = context.l10n;
   return <Widget>[
-    AppButton.tertiary(
+    AppButton.close(
       label: l10n.commonCancelActionLabel,
       leadingIcon: Icons.close,
       enabled: !isSaving,

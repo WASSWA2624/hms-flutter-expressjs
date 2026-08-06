@@ -250,7 +250,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.secondary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !isBusy,
@@ -788,7 +788,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           style: Theme.of(dialogContext).textTheme.bodyMedium,
         ),
         actions: <Widget>[
-          AppButton.secondary(
+          AppButton.close(
             label: l10n.commonCancelActionLabel,
             leadingIcon: AppActionIcons.cancel,
             onPressed: () => Navigator.of(dialogContext).pop(false),

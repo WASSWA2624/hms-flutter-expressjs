@@ -112,7 +112,8 @@ class _ClinicalEditDiagnosisActionDialogState
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: !_isSaving,
           onPressed: () => Navigator.of(context).pop(false),

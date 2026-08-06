@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -127,7 +128,8 @@ class _IpdNursingNoteDialogState extends ConsumerState<IpdNursingNoteDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: !_submitting,
           onPressed: () => Navigator.of(context).pop(),

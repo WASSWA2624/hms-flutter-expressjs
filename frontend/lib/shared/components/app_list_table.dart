@@ -2788,7 +2788,7 @@ class _ColumnVisibilityDialogState<T>
             Navigator.of(context).pop(_visibleColumnKeys);
           },
         ),
-        AppButton.tertiary(
+        AppButton.close(
           label: widget.closeLabel,
           leadingIcon: Icons.close,
           onPressed: () => Navigator.of(context).pop(),

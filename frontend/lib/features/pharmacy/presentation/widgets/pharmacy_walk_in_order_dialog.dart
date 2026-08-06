@@ -375,7 +375,8 @@ class _PharmacyWalkInOrderDialogState
           ),
         ),
         actions: <Widget>[
-          AppButton.tertiary(
+          AppButton.close(
+            leadingIcon: AppActionIcons.cancel,
             label: l10n.commonCancelActionLabel,
             onPressed: () => Navigator.of(context).pop(false),
           ),
@@ -398,7 +399,8 @@ class _PharmacyWalkInOrderDialogState
           ],
         ),
         actions: <Widget>[
-          AppButton.tertiary(
+          AppButton.close(
+            leadingIcon: AppActionIcons.cancel,
             label: l10n.commonCancelActionLabel,
             onPressed: () => Navigator.of(context).pop(false),
           ),

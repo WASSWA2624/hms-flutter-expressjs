@@ -806,7 +806,7 @@ class _AppListTableExportDialogState<T>
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
           label: widget.cancelLabel,
           leadingIcon: Icons.close,
           enabled: canInteract,

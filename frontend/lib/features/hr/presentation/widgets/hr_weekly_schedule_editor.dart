@@ -335,7 +335,8 @@ class HrWeeklyScheduleEditor extends StatelessWidget {
                 ],
               ),
               actions: <Widget>[
-                AppButton.tertiary(
+                AppButton.close(
+                  leadingIcon: AppActionIcons.cancel,
                   label: l10n.commonCancelActionLabel,
                   onPressed: () => Navigator.of(dialogContext).pop(false),
                 ),

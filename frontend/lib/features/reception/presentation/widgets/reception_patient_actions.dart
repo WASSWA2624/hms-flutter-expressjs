@@ -289,7 +289,7 @@ class _ReceptionScheduleAppointmentDialogState
   List<Widget> _patientStepActions(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     return <Widget>[
-      AppButton.secondary(
+      AppButton.close(
         label: l10n.commonCancelActionLabel,
         leadingIcon: AppActionIcons.cancel,
         enabled: !_isBusy,
@@ -768,7 +768,7 @@ class _ReceptionPatientPickerDialogState
       maxWidth: 920,
       content: content,
       actions: <Widget>[
-        AppButton.secondary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !_isLoading,

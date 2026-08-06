@@ -239,7 +239,8 @@ class _ClinicalRequestRemoveItemsConfirmationDialog extends StatelessWidget {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           onPressed: () => Navigator.of(context).pop(false),
         ),
@@ -1004,7 +1005,8 @@ class _ClinicalRequestBillingDialogState
         },
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: widget.enabled,
           onPressed: () => Navigator.of(context).pop(),

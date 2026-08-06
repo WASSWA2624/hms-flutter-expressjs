@@ -128,7 +128,8 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           onPressed: state.isSubmitting
               ? null

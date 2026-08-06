@@ -138,7 +138,7 @@ class QueueActionsDialog extends ConsumerWidget {
         ],
       ),
       actions: <Widget>[
-        AppButton.secondary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           onPressed: () => Navigator.of(context).pop(false),

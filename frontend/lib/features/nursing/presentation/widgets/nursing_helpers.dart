@@ -188,7 +188,8 @@ List<Widget> nursingDialogActions(
 }) {
   final AppLocalizations l10n = context.l10n;
   return <Widget>[
-    AppButton.tertiary(
+    AppButton.close(
+      leadingIcon: AppActionIcons.cancel,
       label: l10n.commonCancelActionLabel,
       enabled: !isSaving,
       onPressed: () => Navigator.of(context).pop(false),

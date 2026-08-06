@@ -239,7 +239,7 @@ class _OpdAppointmentActionsDialogState
       // Cancel-only hub footer; domain mutations open child dialogs or run
       // in-body start/continue actions with AppButton.isLoading.
       actions: <Widget>[
-        AppButton.secondary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !_isSaving,

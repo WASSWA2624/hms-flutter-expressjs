@@ -600,7 +600,8 @@ class _ManageTransferDialogState extends ConsumerState<_ManageTransferDialog> {
         icon: const Icon(Icons.published_with_changes_outlined),
         content: Text(l10n.icuTransferNoOpenLabel),
         actions: <Widget>[
-          AppButton.tertiary(
+          AppButton.close(
+            leadingIcon: AppActionIcons.cancel,
             label: l10n.commonCancelActionLabel,
             onPressed: () => Navigator.of(context).pop(false),
           ),
@@ -650,7 +651,8 @@ class _ManageTransferDialogState extends ConsumerState<_ManageTransferDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: !_isSaving,
           onPressed: () => Navigator.of(context).pop(false),
@@ -1151,7 +1153,8 @@ class _IcuRoundActionDialogState extends ConsumerState<_IcuRoundActionDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: !_submitting,
           onPressed: () => Navigator.of(context).pop(false),
@@ -1254,7 +1257,8 @@ class _StartIcuStayDialogState extends ConsumerState<_StartIcuStayDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: !_submitting,
           onPressed: () => Navigator.of(context).pop(false),
@@ -1277,7 +1281,8 @@ List<Widget> _dialogActions(
 ) {
   final AppLocalizations l10n = context.l10n;
   return <Widget>[
-    AppButton.tertiary(
+    AppButton.close(
+      leadingIcon: AppActionIcons.cancel,
       label: l10n.commonCancelActionLabel,
       enabled: !isSaving,
       onPressed: () => Navigator.of(context).pop(false),

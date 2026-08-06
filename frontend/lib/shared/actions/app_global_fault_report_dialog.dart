@@ -123,7 +123,8 @@ class _AppGlobalFaultReportDialogState
   List<Widget> _buildActions(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     return <Widget>[
-      AppButton.tertiary(
+      AppButton.close(
+        leadingIcon: AppActionIcons.cancel,
         label: l10n.commonCancelActionLabel,
         enabled: !_isSubmitting,
         onPressed: _isSubmitting

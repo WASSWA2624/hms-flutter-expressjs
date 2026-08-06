@@ -1774,7 +1774,8 @@ class _WardRoundActionDialogState
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: !_submitting,
           onPressed: () => Navigator.of(context).pop(),
@@ -2232,7 +2233,8 @@ class _RequestTherapyDialogState extends ConsumerState<RequestTherapyDialog> {
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: !_isSaving,
           onPressed: () => Navigator.of(context).pop(false),
@@ -2415,7 +2417,8 @@ class _MedicationAdministrationDialogState
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: !_isSaving,
           onPressed: () => Navigator.of(context).pop(false),

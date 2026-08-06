@@ -478,7 +478,7 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
       ),
       actions: showingPreview
           ? <Widget>[
-              AppButton.tertiary(
+              AppButton.close(
                 label: l10n.commonCancelActionLabel,
                 leadingIcon: Icons.close,
                 onPressed: () => Navigator.of(context).pop(),
@@ -495,7 +495,7 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
               ),
             ]
           : <Widget>[
-              AppButton.tertiary(
+              AppButton.close(
                 label: l10n.commonCancelActionLabel,
                 leadingIcon: Icons.close,
                 enabled: !_controlsLocked,

@@ -1951,7 +1951,8 @@ Future<void> _confirmCancelRun(
       icon: const Icon(Icons.cancel_outlined),
       content: Text(l10n.reportsCancelRunDialogBody),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           onPressed: () => Navigator.of(context).pop(false),
         ),
@@ -1994,7 +1995,8 @@ Future<void> _confirmExportEvidence(
       icon: const Icon(Icons.ios_share_outlined),
       content: Text(l10n.reportsExportEvidenceDialogBody),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           onPressed: () => Navigator.of(context).pop(false),
         ),
@@ -2161,7 +2163,8 @@ List<Widget> _dialogActions(
 }) {
   final AppLocalizations l10n = context.l10n;
   return <Widget>[
-    AppButton.tertiary(
+    AppButton.close(
+      leadingIcon: AppActionIcons.cancel,
       label: l10n.commonCancelActionLabel,
       enabled: !isSaving,
       onPressed: () => Navigator.of(context).pop(false),

@@ -1160,7 +1160,7 @@ class _AppSearchBarFiltersDialogState
           enabled: canInteract,
           onPressed: canInteract ? _apply : null,
         ),
-        AppButton.tertiary(
+        AppButton.close(
           label: widget.closeLabel,
           leadingIcon: Icons.close,
           enabled: canInteract,

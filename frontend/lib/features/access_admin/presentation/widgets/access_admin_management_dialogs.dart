@@ -2797,7 +2797,7 @@ class _RolePermissionsEditorDialogState
         ],
       ),
       actions: <Widget>[
-        AppButton.secondary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
           enabled: !_saving,
@@ -3167,6 +3167,11 @@ class _AccessAdminUserDetailDialogState
                 ],
               ),
               actions: <Widget>[
+                AppButton.close(
+                  label: l10n.commonCancelActionLabel,
+                  leadingIcon: Icons.close,
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                ),
                 AppButton.primary(
                   label: l10n.accessAdminUserAccessAddRoleAction,
                   leadingIcon: Icons.check,
@@ -3175,11 +3180,6 @@ class _AccessAdminUserDetailDialogState
                       : () => Navigator.of(
                           dialogContext,
                         ).pop(Set<String>.from(selectedRoleIds)),
-                ),
-                AppButton.secondary(
-                  label: l10n.commonCancelActionLabel,
-                  leadingIcon: Icons.close,
-                  onPressed: () => Navigator.of(dialogContext).pop(),
                 ),
               ],
             );
@@ -3394,15 +3394,15 @@ class _AccessAdminUserDetailDialogState
                 ],
               ),
               actions: <Widget>[
+                AppButton.close(
+                  label: l10n.commonCancelActionLabel,
+                  leadingIcon: Icons.close,
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                ),
                 AppButton.primary(
                   label: l10n.commonSaveActionLabel,
                   leadingIcon: Icons.save_outlined,
                   onPressed: () => Navigator.of(dialogContext).pop(true),
-                ),
-                AppButton.secondary(
-                  label: l10n.commonCancelActionLabel,
-                  leadingIcon: Icons.close,
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
                 ),
               ],
             );

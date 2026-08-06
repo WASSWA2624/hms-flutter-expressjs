@@ -270,7 +270,7 @@ class _ClinicalPrintSummaryDialogState
           isLoading: _isCopying,
           onPressed: canExport ? () => _copySummary(summaryText) : null,
         ),
-        AppButton.secondary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !_isBusy,

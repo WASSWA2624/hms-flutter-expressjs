@@ -1038,7 +1038,7 @@ class _PharmacyDrugEditDialogState
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
           enabled: !_isSaving,

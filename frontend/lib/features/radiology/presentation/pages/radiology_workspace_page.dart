@@ -2865,7 +2865,8 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
             );
           },
         ),
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: !busy,
           onPressed: busy ? null : () => Navigator.of(context).pop(_draftSaved),

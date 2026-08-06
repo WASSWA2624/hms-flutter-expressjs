@@ -32,7 +32,7 @@ List<Widget> clinicalActionDialogActions(
   final ThemeData theme = Theme.of(context);
   final ColorScheme colorScheme = theme.colorScheme;
   final Widget? cancelButton = showCancel
-      ? AppButton.secondary(
+      ? AppButton.close(
           label: cancelLabel ?? context.l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: canInteract,

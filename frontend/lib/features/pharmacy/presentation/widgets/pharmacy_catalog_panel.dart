@@ -1212,7 +1212,7 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
           enabled: !_isSaving,
@@ -2020,7 +2020,7 @@ class _InventoryAdjustDialogState
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
           enabled: !_isSaving,
@@ -2997,7 +2997,7 @@ class _ClearSelectedInventoryDialogState
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
           onPressed: () => Navigator.of(context).pop(),

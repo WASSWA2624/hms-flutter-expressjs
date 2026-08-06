@@ -304,7 +304,7 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
               ? () => _printSummaryDocument(selected)
               : null,
         ),
-        AppButton.secondary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !_isBusy,

@@ -247,7 +247,8 @@ class _HrPayrollWizardDialogState
       ),
       actions: <Widget>[
         if (_step > 0)
-          AppButton.secondary(
+          AppButton.close(
+            leadingIcon: AppActionIcons.cancel,
             label: l10n.commonCancelActionLabel,
             enabled: !_isLoading,
             onPressed: () => setState(() => _step -= 1),

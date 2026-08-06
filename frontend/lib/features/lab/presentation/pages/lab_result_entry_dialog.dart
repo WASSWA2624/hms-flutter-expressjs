@@ -2696,7 +2696,7 @@ class _ReopenSavedResultDialogState
         ),
       ),
       actions: <Widget>[
-        AppButton.secondary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
           enabled: !_isSaving,

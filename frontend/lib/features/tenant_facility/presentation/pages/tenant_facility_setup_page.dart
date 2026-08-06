@@ -297,7 +297,7 @@ class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
       closeEnabled: !submission.isSubmitting,
       content: content,
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
           enabled: !submission.isSubmitting,
@@ -2401,7 +2401,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
             ],
           ),
           actions: <Widget>[
-            AppButton.tertiary(
+            AppButton.close(
               label: l10n.commonCancelActionLabel,
               leadingIcon: Icons.close,
               onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -8105,7 +8105,8 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: canEdit,
           onPressed: () => Navigator.of(context).pop(false),
@@ -8952,7 +8953,8 @@ class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: canEdit,
           onPressed: () => Navigator.of(context).pop(false),
@@ -9696,7 +9698,8 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: canEdit,
           onPressed: () => Navigator.of(context).pop(false),
@@ -10410,7 +10413,8 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: canEdit,
           onPressed: () => Navigator.of(context).pop(false),
@@ -11298,7 +11302,8 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: canEdit,
           onPressed: () => Navigator.of(context).pop(false),

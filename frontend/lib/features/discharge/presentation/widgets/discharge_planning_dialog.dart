@@ -330,7 +330,8 @@ class _DischargePlanningDialogState
               ),
             ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           enabled: !_submitting,
           onPressed: () => Navigator.of(context).pop(false),

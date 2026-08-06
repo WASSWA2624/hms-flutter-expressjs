@@ -643,7 +643,7 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
                 ),
               ),
               actions: <Widget>[
-                AppButton.tertiary(
+                AppButton.close(
                   label: l10n.commonCancelActionLabel,
                   leadingIcon: AppActionIcons.cancel,
                   onPressed: () => Navigator.of(dialogContext).pop(),
@@ -1351,7 +1351,7 @@ class _BodyMetricsEditorDialogState extends State<_BodyMetricsEditorDialog> {
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
           label: widget.cancelLabel,
           leadingIcon: AppActionIcons.cancel,
           onPressed: () => Navigator.of(context).pop(),

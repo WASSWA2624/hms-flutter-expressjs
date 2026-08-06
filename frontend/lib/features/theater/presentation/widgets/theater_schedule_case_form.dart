@@ -53,7 +53,8 @@ Future<Map<String, Object?>?> showTheaterScheduleCaseDialog({
       initialEmergencyCaseId: initialEmergencyCaseId,
     ),
     actions: <Widget>[
-      AppButton.tertiary(
+      AppButton.close(
+        leadingIcon: AppActionIcons.cancel,
         label: l10n.commonCancelActionLabel,
         onPressed: () => Navigator.of(context).maybePop(),
       ),

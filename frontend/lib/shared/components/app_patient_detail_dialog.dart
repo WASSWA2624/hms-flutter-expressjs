@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 
@@ -36,7 +37,8 @@ class AppPatientDetailDialog extends StatelessWidget {
       content: content,
       actions: <Widget>[
         ...actions,
-        AppButton.secondary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: closeLabel,
           onPressed: () => Navigator.of(context).maybePop(),
         ),

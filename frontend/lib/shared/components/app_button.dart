@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 
 enum AppButtonVariant { primary, secondary, tertiary }
 
@@ -58,6 +59,28 @@ class AppButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.leadingIcon,
+    this.icon,
+    this.isLoading = false,
+    this.enabled = true,
+    this.fullWidth = false,
+    this.semanticLabel,
+    this.tooltip,
+    this.autofocus = false,
+    this.iconOnly = false,
+    this.dense = false,
+    this.color,
+    this.iconWidget,
+    this.labelWidget,
+    this.borderRadius,
+    super.key,
+  }) : variant = AppButtonVariant.secondary;
+
+  /// Dialog dismiss control: bordered secondary chrome with a close icon.
+  /// Prefer this for [AppDialog] footers labeled Close.
+  const AppButton.close({
+    required this.label,
+    required this.onPressed,
+    this.leadingIcon = AppActionIcons.cancel,
     this.icon,
     this.isLoading = false,
     this.enabled = true,

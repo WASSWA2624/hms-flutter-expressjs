@@ -1633,7 +1633,8 @@ class _ScheduleSessionDialogState extends State<_ScheduleSessionDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           onPressed: () {
             Navigator.of(context).pop();
@@ -1981,7 +1982,8 @@ List<Widget> _dialogActions(
 }) {
   final l10n = context.l10n;
   return <Widget>[
-    AppButton.tertiary(
+    AppButton.close(
+      leadingIcon: AppActionIcons.cancel,
       label: l10n.commonCancelActionLabel,
       onPressed: () {
         Navigator.of(context).pop();

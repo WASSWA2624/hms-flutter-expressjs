@@ -423,7 +423,8 @@ class _CatalogFacilityScopePickerDialogState
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -745,7 +746,8 @@ class _RadiologyCatalogMutationDialogState
           ),
         ),
         actions: <Widget>[
-          AppButton.tertiary(
+          AppButton.close(
+            leadingIcon: AppActionIcons.cancel,
             label: l10n.commonCancelActionLabel,
             onPressed: () => Navigator.of(context).pop(),
           ),
@@ -818,7 +820,8 @@ class _RadiologyCatalogMutationDialogState
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           onPressed: formLocked ? null : () => Navigator.of(context).pop(),
         ),
@@ -1638,7 +1641,8 @@ class _LabCatalogItemMutationDialogState
           ),
         ),
         actions: <Widget>[
-          AppButton.tertiary(
+          AppButton.close(
+            leadingIcon: AppActionIcons.cancel,
             label: l10n.commonCancelActionLabel,
             onPressed: () => Navigator.of(context).pop(),
           ),
@@ -1925,7 +1929,8 @@ class _LabCatalogItemMutationDialogState
       ),
       actions: _isPanel && _panelStep == 0
           ? <Widget>[
-              AppButton.tertiary(
+              AppButton.close(
+                leadingIcon: AppActionIcons.cancel,
                 label: l10n.commonCancelActionLabel,
                 enabled: !_isSaving,
                 onPressed: _isSaving
@@ -2128,7 +2133,8 @@ class _DiagnosisCatalogMutationDialogState
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
         ),

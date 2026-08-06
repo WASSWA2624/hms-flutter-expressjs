@@ -362,7 +362,7 @@ class _AppSelectActionDialogState<T> extends State<AppSelectActionDialog<T>> {
                   widget.submitLeadingIcon ?? AppActionIcons.edit,
             )
           : <Widget>[
-              AppButton.secondary(
+              AppButton.close(
                 label: widget.cancelLabel,
                 leadingIcon: AppActionIcons.cancel,
                 enabled: !_isSaving,
@@ -600,8 +600,9 @@ class _AppTextInputActionDialogState extends State<AppTextInputActionDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
           label: widget.cancelLabel,
+          leadingIcon: AppActionIcons.cancel,
           onPressed: () => Navigator.of(context).pop(),
         ),
         AppButton.primary(
@@ -774,7 +775,7 @@ List<Widget> _actionDialogButtons(
   final bool compact = AppBreakpoints.of(context).isMobile;
 
   return <Widget>[
-    AppButton.secondary(
+    AppButton.close(
       label: l10n.commonCancelActionLabel,
       leadingIcon: cancelLeadingIcon,
       enabled: !isSaving,

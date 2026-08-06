@@ -4680,7 +4680,8 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           onPressed: _isSaving ? null : () => Navigator.of(context).maybePop(),
         ),
@@ -4825,7 +4826,8 @@ class _PatientRelatedRecordDialogState<T>
         children: _fieldsForResource(context),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           onPressed: _isSaving ? null : () => Navigator.of(context).maybePop(),
         ),
@@ -5339,7 +5341,8 @@ Future<bool?> _showDeleteDialog(
       icon: const Icon(Icons.warning_amber_outlined),
       content: Text(body),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           onPressed: () => Navigator.of(context).pop(false),
         ),

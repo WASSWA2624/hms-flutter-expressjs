@@ -1719,7 +1719,7 @@ List<Widget> _clinicalBatchHeaderActions({
           runSpacing: theme.spacing.xs,
           children: <Widget>[
             if (cancellableSelected.isNotEmpty)
-              AppButton.tertiary(
+              AppButton.close(
                 dense: true,
                 label: cancelLabel,
                 leadingIcon: Icons.block_outlined,

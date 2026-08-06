@@ -619,7 +619,8 @@ Future<void> showHrEndAssignmentDialog(
         },
       ),
       actions: <Widget>[
-        AppButton.secondary(
+        AppButton.close(
+          leadingIcon: AppActionIcons.cancel,
           label: l10n.commonCancelActionLabel,
           onPressed: () => Navigator.of(dialogContext).pop(false),
         ),

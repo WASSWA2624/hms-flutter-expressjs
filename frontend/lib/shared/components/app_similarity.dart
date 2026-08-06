@@ -619,7 +619,7 @@ class _AppSimilarityReviewDialogState<T>
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
           onPressed: () => Navigator.of(
