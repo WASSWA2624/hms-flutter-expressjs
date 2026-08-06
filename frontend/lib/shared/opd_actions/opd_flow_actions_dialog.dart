@@ -10,10 +10,13 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_encounter_dialog_controller.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
+import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_repository_impl.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_prescription_catalog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -1178,6 +1181,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       ClinicalPrescriptionActionDialog(
         referenceData: referenceData,
         payerContext: payerContext,
+        loadCatalogDrugs: pharmacyPrescriptionCatalogLoader(
+          repository: ref.read(pharmacyRepositoryProvider),
+          facilityId: ref.read(sessionStateProvider).session?.user?.facilityId,
+        ),
         onSubmit:
             ({
               required List<Map<String, Object?>> items,

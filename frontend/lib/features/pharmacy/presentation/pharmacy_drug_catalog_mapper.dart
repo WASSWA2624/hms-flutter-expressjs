@@ -43,6 +43,8 @@ ClinicalActionCatalogOption pharmacyDrugToClinicalCatalogOption(
       'unit_price': drug.unitPrice,
       'pharmacy_unit_price': drug.pharmacyUnitPrice ?? drug.unitPrice,
       'facility_unit_price': drug.facilityUnitPrice,
+      'buy_unit_price': drug.buyUnitPrice,
+      'transfer_unit_price': drug.transferUnitPrice,
       'currency': drug.currency,
       'pharmacy_currency': drug.pharmacyCurrency ?? drug.currency,
       'facility_currency': drug.facilityCurrency,

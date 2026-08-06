@@ -12,16 +12,14 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/features/patients/presentation/patient_registry_access.dart';
 import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_repository_impl.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
-import 'package:hosspi_hms/features/pharmacy/domain/repositories/pharmacy_repository.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_access.dart';
-import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_drug_catalog_mapper.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_prescription_catalog.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_patient_actions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
 enum _WalkInPatientMode { existing, newPatient, anonymous }
@@ -85,8 +83,17 @@ class _PharmacyWalkInOrderDialogState
       _loadFailure = null;
     });
 
+    final String? facilityId = ref
+        .read(sessionStateProvider)
+        .session
+        ?.user
+        ?.facilityId;
     final Result<List<ClinicalActionCatalogOption>> result =
-        await _searchPharmacyDrugs('');
+        await loadPharmacyPrescriptionCatalogOptions(
+          repository: ref.read(pharmacyRepositoryProvider),
+          query: '',
+          facilityId: facilityId,
+        );
     if (!mounted) {
       return;
     }
@@ -107,7 +114,7 @@ class _PharmacyWalkInOrderDialogState
     );
   }
 
-  Future<Result<List<ClinicalActionCatalogOption>>> _searchPharmacyDrugs(
+  Future<List<ClinicalActionCatalogOption>> _loadCatalogDrugs(
     String query,
   ) async {
     final String? facilityId = ref
@@ -115,36 +122,10 @@ class _PharmacyWalkInOrderDialogState
         .session
         ?.user
         ?.facilityId;
-    final Result<AppPage<PharmacyDrug>> result = await ref
-        .read(pharmacyRepositoryProvider)
-        .searchDrugs(
-          PharmacyDrugQuery(
-            search: query.trim(),
-            facilityId: facilityId,
-            pageRequest: const AppPageRequest(
-              pageSize: AppPageRequest.maxPageSize,
-            ),
-          ),
-        );
-    return result.when(
-      success: (AppPage<PharmacyDrug> page) =>
-          Result<List<ClinicalActionCatalogOption>>.success(
-            pharmacyDrugsToClinicalCatalogOptions(page.items),
-          ),
-      failure: (AppFailure failure) =>
-          Result<List<ClinicalActionCatalogOption>>.failure(failure),
-    );
-  }
-
-  Future<List<ClinicalActionCatalogOption>> _loadCatalogDrugs(
-    String query,
-  ) async {
-    final Result<List<ClinicalActionCatalogOption>> result =
-        await _searchPharmacyDrugs(query);
-    return result.when(
-      success: (List<ClinicalActionCatalogOption> drugs) => drugs,
-      failure: (_) => const <ClinicalActionCatalogOption>[],
-    );
+    return pharmacyPrescriptionCatalogLoader(
+      repository: ref.read(pharmacyRepositoryProvider),
+      facilityId: facilityId,
+    )(query);
   }
 
   bool get _billingEnabled =>
@@ -178,9 +159,11 @@ class _PharmacyWalkInOrderDialogState
     if (patientId == null) {
       return;
     }
-    final ClinicalRequestPayerContext? payer = await ref
-        .read(insuranceCatalogRepositoryProvider)
-        .resolvePayerContextForPatient(patientId);
+    final ClinicalRequestPayerContext? payer =
+        await resolvePharmacyPrescriptionPayerContext(
+          repository: ref.read(insuranceCatalogRepositoryProvider),
+          patientId: patientId,
+        );
     if (!mounted) {
       return;
     }

@@ -10,7 +10,9 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
@@ -25,6 +27,8 @@ import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_note_di
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_print_summary_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_transfer_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_vitals_dialog.dart';
+import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_repository_impl.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_prescription_catalog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -541,11 +545,36 @@ Future<void> _openPrescriptionDialog(
   BuildContext context,
   NursingWorkspaceController controller,
 ) async {
+  final ProviderContainer container = ProviderScope.containerOf(
+    context,
+    listen: false,
+  );
   final ClinicalReferenceData referenceData = await controller
       .prescriptionReferenceData();
   if (!context.mounted) {
     return;
   }
+  final NursingPatientSummary? summary = container
+      .read(nursingWorkspaceControllerProvider)
+      .value
+      ?.when(
+        success: (NursingWorkspaceState state) =>
+            state.selectedDetail?.summary,
+        failure: (_) => null,
+      );
+  final ClinicalRequestPayerContext? payerContext =
+      await resolvePharmacyPrescriptionPayerContext(
+        repository: container.read(insuranceCatalogRepositoryProvider),
+        patientId: summary?.patientId ?? summary?.patientDisplayId,
+      );
+  if (!context.mounted) {
+    return;
+  }
+  final String? facilityId = container
+      .read(sessionStateProvider)
+      .session
+      ?.user
+      ?.facilityId;
   await nursingShowActionResult(
     context,
     showAppDialog<bool>(
@@ -553,6 +582,11 @@ Future<void> _openPrescriptionDialog(
       barrierDismissible: false,
       builder: (_) => ClinicalPrescriptionActionDialog(
         referenceData: referenceData,
+        payerContext: payerContext,
+        loadCatalogDrugs: pharmacyPrescriptionCatalogLoader(
+          repository: container.read(pharmacyRepositoryProvider),
+          facilityId: facilityId,
+        ),
         onSubmit: controller.prescribeMedication,
       ),
     ),

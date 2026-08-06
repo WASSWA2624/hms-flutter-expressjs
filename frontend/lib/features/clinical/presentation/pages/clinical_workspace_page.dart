@@ -10,13 +10,17 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/presentation/clinical_access.dart';
 import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
 import 'package:hosspi_hms/features/clinical/presentation/widgets/clinical_encounter_detail_panels.dart';
 import 'package:hosspi_hms/features/discharge/presentation/widgets/show_discharge_planning_dialog.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
+import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_repository_impl.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_prescription_catalog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -2113,8 +2117,12 @@ class _ClinicalActionBar extends ConsumerWidget {
         AppActionItem(
           label: l10n.clinicalPrescribeAction,
           leadingIcon: Icons.medication_outlined,
-          onPressed: () =>
-              _openPrescriptionDialog(context, controller, referenceData),
+          onPressed: () => _openPrescriptionDialog(
+            context,
+            ref,
+            controller,
+            referenceData,
+          ),
         ),
       if (canWrite)
         AppActionItem(
@@ -3046,9 +3054,24 @@ Set<String> _clinicalRadiologyProceduresOrderedToday(
 
 Future<void> _openPrescriptionDialog(
   BuildContext context,
+  WidgetRef ref,
   ClinicalWorkspaceController controller,
   ClinicalReferenceData referenceData,
 ) async {
+  final String? patientId = _clinicalLabOrderPatientContext(context).patientId;
+  final ClinicalRequestPayerContext? payerContext =
+      await resolvePharmacyPrescriptionPayerContext(
+        repository: ref.read(insuranceCatalogRepositoryProvider),
+        patientId: patientId,
+      );
+  if (!context.mounted) {
+    return;
+  }
+  final String? facilityId = ref
+      .read(sessionStateProvider)
+      .session
+      ?.user
+      ?.facilityId;
   await _showActionResult(
     context,
     showAppDialog<bool>(
@@ -3056,6 +3079,11 @@ Future<void> _openPrescriptionDialog(
       barrierDismissible: false,
       builder: (_) => ClinicalPrescriptionActionDialog(
         referenceData: referenceData,
+        payerContext: payerContext,
+        loadCatalogDrugs: pharmacyPrescriptionCatalogLoader(
+          repository: ref.read(pharmacyRepositoryProvider),
+          facilityId: facilityId,
+        ),
         onSubmit: controller.prescribe,
       ),
     ),

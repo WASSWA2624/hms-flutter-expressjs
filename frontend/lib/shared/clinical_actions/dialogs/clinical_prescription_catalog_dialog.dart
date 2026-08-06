@@ -19,6 +19,7 @@ showClinicalPrescriptionCatalogDialog({
   required List<ClinicalActionCatalogOption> drugs,
   Set<String> alreadySelectedDrugIds = const <String>{},
   ClinicalPrescriptionCatalogLoader? loadDrugs,
+  String billingEntity = 'FACILITY',
 }) {
   return showAppDialog<List<ClinicalActionCatalogOption>>(
     context: context,
@@ -26,6 +27,7 @@ showClinicalPrescriptionCatalogDialog({
       drugs: drugs,
       alreadySelectedDrugIds: alreadySelectedDrugIds,
       loadDrugs: loadDrugs,
+      billingEntity: billingEntity,
     ),
   );
 }
@@ -35,12 +37,16 @@ class ClinicalPrescriptionCatalogDialog extends StatefulWidget {
     required this.drugs,
     this.alreadySelectedDrugIds = const <String>{},
     this.loadDrugs,
+    this.billingEntity = 'FACILITY',
     super.key,
   });
 
   final List<ClinicalActionCatalogOption> drugs;
   final Set<String> alreadySelectedDrugIds;
   final ClinicalPrescriptionCatalogLoader? loadDrugs;
+
+  /// Billing entity used for unit-price lane (FACILITY vs PHARMACY).
+  final String billingEntity;
 
   @override
   State<ClinicalPrescriptionCatalogDialog> createState() =>
@@ -52,6 +58,7 @@ class _ClinicalPrescriptionCatalogDialogState
   static const String _selectColumnKey = 'select';
   static const String _nameColumnKey = 'name';
   static const String _codeColumnKey = 'code';
+  static const String _availableColumnKey = 'available';
   static const String _priceColumnKey = 'price';
   static const String _columnVisibilityStorageKey =
       'clinical_prescription_catalog_columns';
@@ -215,6 +222,20 @@ class _ClinicalPrescriptionCatalogDialogState
                         meta: <AppListTableMobileMeta>[
                           if ((item.displaySubtitle ?? '').isNotEmpty)
                             AppListTableMobileMeta(label: item.displaySubtitle!),
+                          if (_availabilityLabel(context, item).isNotEmpty)
+                            AppListTableMobileMeta(
+                              label: _availabilityLabel(context, item),
+                            ),
+                          AppListTableMobileMeta(
+                            label: clinicalRequestPriceLabel(
+                              context,
+                              clinicalCatalogOptionUnitPrice(
+                                item,
+                                billingEntity: widget.billingEntity,
+                              ),
+                              clinicalCatalogOptionCurrency(item),
+                            ),
+                          ),
                         ],
                         showAvatar: false,
                       ),
@@ -241,6 +262,24 @@ class _ClinicalPrescriptionCatalogDialogState
         ),
       ],
     );
+  }
+
+  String _availabilityLabel(
+    BuildContext context,
+    ClinicalActionCatalogOption item,
+  ) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final num? available = clinicalCatalogOptionAvailableQuantity(item);
+    final String status = clinicalCatalogOptionStockStatusLabel(
+      clinicalCatalogOptionStockStatus(item),
+    );
+    if (available != null) {
+      final String quantityLabel = l10n.pharmacyAvailableQuantityLabel(
+        '$available',
+      );
+      return status.isEmpty ? quantityLabel : '$quantityLabel · $status';
+    }
+    return status;
   }
 
   void _scheduleRemoteSearch(String query) {
@@ -422,6 +461,28 @@ class _ClinicalPrescriptionCatalogDialogState
         },
       ),
       AppListTableColumn<ClinicalActionCatalogOption>(
+        id: _availableColumnKey,
+        label: l10n.pharmacyAvailableColumnLabel,
+        numeric: true,
+        sortComparator:
+            (
+              ClinicalActionCatalogOption left,
+              ClinicalActionCatalogOption right,
+            ) {
+              final num leftQty =
+                  clinicalCatalogOptionAvailableQuantity(left) ?? -1;
+              final num rightQty =
+                  clinicalCatalogOptionAvailableQuantity(right) ?? -1;
+              return leftQty.compareTo(rightQty);
+            },
+        cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
+          final String label = _availabilityLabel(context, item);
+          return Text(
+            label.isEmpty ? l10n.profileUnknownValue : label,
+          );
+        },
+      ),
+      AppListTableColumn<ClinicalActionCatalogOption>(
         id: _priceColumnKey,
         label: l10n.clinicalRequestUnitPriceLabel,
         numeric: true,
@@ -430,7 +491,19 @@ class _ClinicalPrescriptionCatalogDialogState
               ClinicalActionCatalogOption left,
               ClinicalActionCatalogOption right,
             ) {
-              return (left.unitPrice ?? 0).compareTo(right.unitPrice ?? 0);
+              final num leftPrice =
+                  clinicalCatalogOptionUnitPrice(
+                    left,
+                    billingEntity: widget.billingEntity,
+                  ) ??
+                  0;
+              final num rightPrice =
+                  clinicalCatalogOptionUnitPrice(
+                    right,
+                    billingEntity: widget.billingEntity,
+                  ) ??
+                  0;
+              return leftPrice.compareTo(rightPrice);
             },
         cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
           return Padding(
@@ -438,7 +511,10 @@ class _ClinicalPrescriptionCatalogDialogState
             child: Text(
               clinicalRequestPriceLabel(
                 context,
-                item.unitPrice,
+                clinicalCatalogOptionUnitPrice(
+                  item,
+                  billingEntity: widget.billingEntity,
+                ),
                 clinicalCatalogOptionCurrency(item),
               ),
               textAlign: TextAlign.end,

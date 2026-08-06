@@ -704,6 +704,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
           drugs: widget.referenceData.drugs,
           alreadySelectedDrugIds: alreadySelected,
           loadDrugs: widget.loadCatalogDrugs,
+          billingEntity: widget.defaultBillingEntity,
         );
     if (!mounted || selected == null || selected.isEmpty) {
       return;

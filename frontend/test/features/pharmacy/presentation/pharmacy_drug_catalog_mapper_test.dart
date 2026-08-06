@@ -14,6 +14,10 @@ void main() {
       strength: '500 mg',
       pharmacyUnitPrice: 12.5,
       pharmacyCurrency: 'UGX',
+      facilityUnitPrice: 10,
+      buyUnitPrice: 8,
+      availableQuantity: 42,
+      stockStatus: 'IN_STOCK',
       genericName: 'Amoxicillin',
     );
 
@@ -27,5 +31,9 @@ void main() {
     expect(option.currency, 'UGX');
     expect(option.secondaryText, contains('Capsule'));
     expect(option.searchText, contains('AMOX'));
+    expect(option.metadata['facility_unit_price'], 10);
+    expect(option.metadata['buy_unit_price'], 8);
+    expect(option.metadata['available_quantity'], 42);
+    expect(option.metadata['stock_status'], 'IN_STOCK');
   });
 }

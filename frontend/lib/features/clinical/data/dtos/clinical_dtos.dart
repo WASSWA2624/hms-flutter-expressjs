@@ -588,10 +588,15 @@ final class ClinicalCatalogOptionDto {
         'pharmacy_unit_price':
             _num(json['pharmacy_unit_price']) ?? _num(json['unit_price']),
         'facility_unit_price': _num(json['facility_unit_price']),
+        'buy_unit_price': _num(json['buy_unit_price']),
+        'transfer_unit_price': _num(json['transfer_unit_price']),
         'currency': _string(json['currency']),
         'pharmacy_currency':
             _string(json['pharmacy_currency']) ?? _string(json['currency']),
         'facility_currency': _string(json['facility_currency']),
+        'stock_status': _string(json['stock_status']),
+        'available_quantity':
+            _num(json['available_quantity']) ?? _num(json['quantity_on_hand']),
         'catalog_type': 'DRUG',
       }),
       childIds: panelItems

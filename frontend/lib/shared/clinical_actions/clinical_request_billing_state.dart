@@ -348,8 +348,45 @@ String? clinicalCatalogOptionCurrency(ClinicalActionCatalogOption option) {
   if (raw == null) {
     return null;
   }
-  final String normalized = raw.toString().trim().toUpperCase();
-  return normalized.isEmpty ? null : normalized;
+  final String value = raw.toString().trim();
+  return value.isEmpty ? null : value.toUpperCase();
+}
+
+/// Available quantity from catalog option metadata (pharmacy/clinical drugs).
+num? clinicalCatalogOptionAvailableQuantity(ClinicalActionCatalogOption option) {
+  final Object? raw = option.metadata['available_quantity'];
+  if (raw is num) {
+    return raw;
+  }
+  if (raw is String) {
+    return num.tryParse(raw.trim());
+  }
+  return null;
+}
+
+/// Stock status token from catalog option metadata.
+String? clinicalCatalogOptionStockStatus(ClinicalActionCatalogOption option) {
+  final Object? raw = option.metadata['stock_status'];
+  if (raw == null) {
+    return null;
+  }
+  final String value = raw.toString().trim();
+  return value.isEmpty ? null : value;
+}
+
+String clinicalCatalogOptionStockStatusLabel(String? status) {
+  final String token = (status ?? '').trim();
+  if (token.isEmpty) {
+    return '';
+  }
+  return token
+      .split(RegExp(r'[_\s]+'))
+      .where((String part) => part.isNotEmpty)
+      .map(
+        (String part) =>
+            '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+      )
+      .join(' ');
 }
 
 String clinicalRequestPriceLabel(

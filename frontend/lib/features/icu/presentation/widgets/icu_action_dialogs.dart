@@ -9,6 +9,8 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
@@ -16,6 +18,8 @@ import 'package:hosspi_hms/features/icu/presentation/icu_access.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_detail_panel.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_format.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_next_action_button.dart';
+import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_repository_impl.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_prescription_catalog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -1513,15 +1517,38 @@ Future<void> openIcuRadiologyOrderDialog(BuildContext context) async {
 }
 
 Future<void> openIcuPrescriptionDialog(BuildContext context) async {
-  final IcuWorkspaceController controller = ProviderScope.containerOf(
+  final ProviderContainer container = ProviderScope.containerOf(
     context,
     listen: false,
-  ).read(icuWorkspaceControllerProvider.notifier);
+  );
+  final IcuWorkspaceController controller = container.read(
+    icuWorkspaceControllerProvider.notifier,
+  );
   final ClinicalReferenceData referenceData = await controller
       .clinicalReferenceData();
   if (!context.mounted) {
     return;
   }
+  final IcuPatientSummary? summary = container
+      .read(icuWorkspaceControllerProvider)
+      .value
+      ?.when(
+        success: (IcuWorkspaceState state) => state.selectedDetail?.summary,
+        failure: (_) => null,
+      );
+  final ClinicalRequestPayerContext? payerContext =
+      await resolvePharmacyPrescriptionPayerContext(
+        repository: container.read(insuranceCatalogRepositoryProvider),
+        patientId: summary?.patientId,
+      );
+  if (!context.mounted) {
+    return;
+  }
+  final String? facilityId = container
+      .read(sessionStateProvider)
+      .session
+      ?.user
+      ?.facilityId;
   await _showActionResult(
     context,
     showAppDialog<bool>(
@@ -1529,6 +1556,11 @@ Future<void> openIcuPrescriptionDialog(BuildContext context) async {
       barrierDismissible: false,
       builder: (_) => ClinicalPrescriptionActionDialog(
         referenceData: referenceData,
+        payerContext: payerContext,
+        loadCatalogDrugs: pharmacyPrescriptionCatalogLoader(
+          repository: container.read(pharmacyRepositoryProvider),
+          facilityId: facilityId,
+        ),
         onSubmit: controller.prescribeMedication,
       ),
     ),
