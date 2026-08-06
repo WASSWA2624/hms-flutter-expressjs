@@ -361,6 +361,21 @@ void main() {
         final double pendingBottom = tester.getBottomLeft(find.text('4')).dy;
         expect((shortBottom - longBottom).abs(), lessThan(1.0));
         expect((shortBottom - pendingBottom).abs(), lessThan(1.0));
+
+        // Cards share one content-fit height (not a fixed tall chrome).
+        final List<Size> cardSizes = tester
+            .widgetList<Material>(
+              find.descendant(
+                of: find.byType(DashboardMetricStrip),
+                matching: find.byType(Material),
+              ),
+            )
+            .map((Material material) => tester.getSize(find.byWidget(material)))
+            .toList(growable: false);
+        expect(cardSizes.length, 3);
+        expect(cardSizes[0].height, equals(cardSizes[1].height));
+        expect(cardSizes[0].height, equals(cardSizes[2].height));
+        expect(cardSizes[0].height, lessThan(112));
       },
     );
 

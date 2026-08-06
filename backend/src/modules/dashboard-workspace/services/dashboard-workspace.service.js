@@ -2480,6 +2480,7 @@ const getWorkspace = async (
       summary_cards: statusStrip,
       trend: baseSummary.trend,
       distribution: baseSummary.distribution,
+      most_sold: baseSummary.most_sold || null,
       quick_actions: quickActionResolution.quickActions,
       quick_action_ids: quickActionResolution.quickActions.map((action) => action.id),
       hidden_reason_map: quickActionResolution.hiddenReasonMap,
@@ -2493,6 +2494,7 @@ const getWorkspace = async (
         checklist: { completed_count: 0, total_count: 0, items: [] },
         trend: baseSummary.trend,
         distribution: baseSummary.distribution,
+        most_sold: baseSummary.most_sold || null,
         alerts: patientAlerts,
         queue_preview: [],
         value_proof: [],
@@ -2585,6 +2587,7 @@ const getWorkspace = async (
     summary_cards: buildStatusStrip(baseSummary),
     trend: baseSummary.trend,
     distribution: baseSummary.distribution,
+    most_sold: baseSummary.most_sold || null,
     quick_actions: quickActionResolution.quickActions,
     quick_action_ids: quickActionResolution.quickActions.map((action) => action.id),
     hidden_reason_map: quickActionResolution.hiddenReasonMap,
@@ -2598,6 +2601,7 @@ const getWorkspace = async (
       checklist,
       trend: baseSummary.trend,
       distribution: baseSummary.distribution,
+      most_sold: baseSummary.most_sold || null,
       alerts,
       queue_preview:
         doctorQueueSplit?.queue_preview ||

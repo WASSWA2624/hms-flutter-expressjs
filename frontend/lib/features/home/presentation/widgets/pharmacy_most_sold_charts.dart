@@ -52,7 +52,7 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
   HomeMostSoldMetric _metric = HomeMostSoldMetric.qty;
   HomeMostSoldPeriod _period = HomeMostSoldPeriod.today;
   int _topN = 5;
-  DashboardTrendChartStyle _chartStyle = DashboardTrendChartStyle.line;
+  DashboardTrendChartStyle _chartStyle = DashboardTrendChartStyle.bar;
   HomeMostSoldSeries? _mostSoldOverride;
   bool _loadingMostSold = false;
   String? _mostSoldError;
@@ -365,8 +365,8 @@ class _MostSoldToolbar extends StatelessWidget {
             tooltip: 'Chart type',
             value: chartStyle,
             items: const <DashboardTrendChartStyle>[
-              DashboardTrendChartStyle.line,
               DashboardTrendChartStyle.bar,
+              DashboardTrendChartStyle.line,
               DashboardTrendChartStyle.pie,
             ],
             labelOf: _chartStyleLabel,

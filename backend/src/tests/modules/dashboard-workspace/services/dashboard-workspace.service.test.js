@@ -323,6 +323,62 @@ describe('dashboard-workspace service', () => {
     );
   });
 
+  it('forwards pharmacist most_sold series on the workspace payload', async () => {
+    repository.resolveWorkspaceScope.mockResolvedValue({
+      state: 'ready',
+      scope: {
+        tenant_id: 'TEN0001',
+        facility_id: 'FAC0001',
+      },
+    });
+    repository.findFacilityContext.mockResolvedValue({
+      id: 'facility-uuid',
+      human_friendly_id: 'FAC0001',
+      name: 'Central Hospital',
+      facility_type: 'HOSPITAL',
+    });
+    repository.findCurrentSubscription.mockResolvedValue(null);
+    repository.findLookups.mockResolvedValue({
+      tenants: [],
+      facilities: [],
+    });
+    repository.countRows.mockResolvedValue(0);
+    repository.sumRows.mockResolvedValue(0);
+    repository.findRows.mockResolvedValue([]);
+    const mostSold = {
+      qty: [{ id: 'drug-1', label: 'Paracetamol', value: 84 }],
+      amount: [{ id: 'drug-1', label: 'Paracetamol', value: 42000 }],
+      profit: [],
+    };
+    buildDashboardSummary.mockResolvedValueOnce({
+      roleProfile: { id: 'pharmacist', role: 'PHARMACIST', pack: 'pharmacist' },
+      summaryCards: [],
+      trend: { title: 'Most sold drugs', subtitle: '', points: mostSold.qty },
+      distribution: { title: 'Order status mix', subtitle: '', total: 4, segments: [] },
+      most_sold: mostSold,
+    });
+
+    const result = await subject.getWorkspace(
+      { panel: 'overview', most_sold_period: 'today', most_sold_limit: 5 },
+      1,
+      20,
+      'updated_at',
+      'desc',
+      { role: 'PHARMACIST' }
+    );
+
+    expect(buildDashboardSummary).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: expect.objectContaining({
+          most_sold_period: 'today',
+          most_sold_limit: 5,
+        }),
+      })
+    );
+    expect(result.most_sold).toEqual(mostSold);
+    expect(result.overview.most_sold).toEqual(mostSold);
+  });
+
   it('returns normalized lookups collections', async () => {
     repository.resolveWorkspaceScope.mockResolvedValue({
       state: 'ready',
