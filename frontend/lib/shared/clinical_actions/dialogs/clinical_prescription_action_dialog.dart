@@ -29,6 +29,7 @@ class ClinicalPrescriptionActionDialog extends StatefulWidget {
     this.maxWidth = 880,
     this.enableBilling = true,
     this.defaultBillingEntity = 'FACILITY',
+    this.allowAddMedicines = true,
     super.key,
   });
 
@@ -54,6 +55,10 @@ class ClinicalPrescriptionActionDialog extends StatefulWidget {
 
   /// Billing entity stamped on review / bill-later payloads.
   final String defaultBillingEntity;
+
+  /// When false, Add medicine stays inactive (e.g. Existing patient with no
+  /// patient selected yet on pharmacy Create order).
+  final bool allowAddMedicines;
 
   final Future<AppFailure?> Function({
     required List<Map<String, Object?>> items,
@@ -255,8 +260,10 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       AppSearchBarAction(
         icon: Icons.add_circle_outline,
         label: l10n.clinicalPrescriptionAddMedicineAction,
-        enabled: !_isSaving,
-        onPressed: _isSaving ? null : () => unawaited(_openCatalogPicker()),
+        enabled: !_isSaving && widget.allowAddMedicines,
+        onPressed: _isSaving || !widget.allowAddMedicines
+            ? null
+            : () => unawaited(_openCatalogPicker()),
       ),
       if (widget.enableBilling)
         AppSearchBarAction(

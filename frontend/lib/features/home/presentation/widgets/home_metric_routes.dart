@@ -110,7 +110,7 @@ Map<String, String> homePharmacyMetricQuery(String cardId) {
       'from': iso(startOfToday),
       'to': iso(endExclusive),
     },
-    'pending_dispense' => <String, String>{'section': 'queue'},
+    'pending_dispense' => <String, String>{'section': 'pending'},
     'dispensed_today' => <String, String>{
       'section': 'completed',
       'from': iso(startOfToday),

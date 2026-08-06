@@ -199,6 +199,14 @@ void _stubPharmacyRepository(_MockPharmacyRepository repository) {
                 (order.status ?? '').toUpperCase() == status,
           )
           .toList(growable: false);
+    } else if (query.openOrders == true) {
+      items = items
+          .where((PharmacyOrder order) {
+            final String orderStatus = (order.status ?? '').toUpperCase();
+            return orderStatus == 'ORDERED' ||
+                orderStatus == 'PARTIALLY_DISPENSED';
+          })
+          .toList(growable: false);
     }
     if (query.pendingPayment == true) {
       items = items

@@ -1337,7 +1337,9 @@ const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
       errorKey: 'errors.encounter.not_found'});
   }
 
-  if (filters.status) {
+  if (filters.open_orders === true) {
+    appendAnd(where, { status: { in: PHARMACY_OPEN_ORDER_STATUSES } });
+  } else if (filters.status) {
     where.status = filters.status;
   }
 
@@ -1655,6 +1657,7 @@ const getPharmacyWorkbench = async (filters, page, limit, sortBy, order, user = 
         {
           ...filters,
           status: undefined,
+          open_orders: undefined,
           pending_payment: undefined,
           payment_cleared: undefined,
           today_only: undefined},

@@ -47,7 +47,7 @@ void main() {
       find.byType(AppTabStrip),
     );
     expect(tabs.selectedId, 'existing');
-    expect(find.byType(AppSelectField<String>), findsOneWidget);
+    expect(find.byType(AppListTable<Patient>), findsOneWidget);
     expect(find.text('SELECT PATIENT'), findsNothing);
 
     await tester.tap(find.text('New patient'));
@@ -58,7 +58,7 @@ void main() {
   });
 
   testWidgets(
-    'showReceptionPatientPickerDialog uses AppDialog shell and shared select field',
+    'showReceptionPatientPickerDialog uses table with filters and settings',
     (WidgetTester tester) async {
       final _MockPatientRepository repository = _MockPatientRepository();
       _stubPatientLookups(repository, patients: const <Patient>[_patient]);
@@ -66,15 +66,17 @@ void main() {
       await _pumpOpenPicker(tester, repository: repository);
 
       expect(find.byType(AppDialog), findsOneWidget);
-      expect(find.byType(AppSelectField<String>), findsOneWidget);
-      expect(find.byType(AppFormShell), findsOneWidget);
+      expect(find.byType(AppListTable<Patient>), findsOneWidget);
+      expect(find.byType(AppSelectField<String>), findsNothing);
       expect(find.text('SELECT PATIENT'), findsOneWidget);
-      expect(find.text('Ada Lovelace'), findsNothing);
+      expect(find.text('Ada Lovelace'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Select'), findsOneWidget);
+      expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+      expect(find.text('Export'), findsNothing);
       expect(find.byIcon(AppActionIcons.person), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
-      expect(find.byType(ListTile), findsNothing);
       expect(find.byType(AlertDialog), findsNothing);
       expect(
         tester
@@ -83,12 +85,10 @@ void main() {
         isFalse,
       );
 
-      final AppSelectField<String> field = tester
-          .widget<AppSelectField<String>>(find.byType(AppSelectField<String>));
-      expect(
-        field.options.map((AppSelectOption<String> option) => option.value),
-        contains('PAT000001'),
+      final AppListTable<Patient> table = tester.widget<AppListTable<Patient>>(
+        find.byType(AppListTable<Patient>),
       );
+      expect(table.enableExport, isFalse);
     },
   );
 
@@ -126,11 +126,8 @@ void main() {
       onSelected: (Patient? value) => selected = value,
     );
 
-    final AppSelectField<String> field = tester.widget<AppSelectField<String>>(
-      find.byType(AppSelectField<String>),
-    );
-    field.onChanged?.call('PAT000001');
-    await tester.pump();
+    await tester.tap(find.text('Ada Lovelace'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(AppButton, 'Select'));
     await tester.pumpAndSettle();
@@ -173,20 +170,15 @@ void main() {
 
     await _pumpOpenPicker(tester, repository: repository);
 
-    final AppSelectField<String> field = tester.widget<AppSelectField<String>>(
-      find.byType(AppSelectField<String>),
-    );
-    field.onChanged?.call('PAT000001');
-    await tester.pump();
-    field.onSearchTextChanged?.call('missing');
+    await tester.tap(find.text('Ada Lovelace'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'missing');
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsOneWidget);
     expect(find.byType(AppFormInformationBanner), findsOneWidget);
-    final AppSelectField<String> updated = tester
-        .widget<AppSelectField<String>>(find.byType(AppSelectField<String>));
-    expect(updated.value, isNull);
     expect(find.widgetWithText(AppButton, 'Select'), findsOneWidget);
     final AppButton selectButton = tester.widget<AppButton>(
       find.widgetWithText(AppButton, 'Select'),
@@ -235,7 +227,7 @@ Future<void> _pumpOpenScheduler(
 Future<void> _pumpOpenPicker(
   WidgetTester tester, {
   required _MockPatientRepository repository,
-  void Function(Patient? selected)? onSelected,
+  ValueChanged<Patient?>? onSelected,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -247,24 +239,19 @@ Future<void> _pumpOpenPicker(
       ],
       child: MaterialApp(
         theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: Builder(
-            builder: (BuildContext context) {
-              return Center(
-                child: AppButton.primary(
-                  label: 'Open picker',
-                  leadingIcon: AppActionIcons.person,
-                  onPressed: () async {
-                    final Patient? selected =
-                        await showReceptionPatientPickerDialog(
-                          context: context,
-                        );
-                    onSelected?.call(selected);
-                  },
-                ),
+          body: Consumer(
+            builder: (BuildContext context, WidgetRef ref, Widget? child) {
+              return AppButton.primary(
+                label: 'Open picker',
+                onPressed: () async {
+                  final Patient? patient = await showReceptionPatientPickerDialog(
+                    context: context,
+                  );
+                  onSelected?.call(patient);
+                },
               );
             },
           ),

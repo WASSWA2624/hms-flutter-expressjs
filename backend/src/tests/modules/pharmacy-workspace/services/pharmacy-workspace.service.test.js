@@ -615,6 +615,29 @@ describe('pharmacy-workspace.service', () => {
     expect(JSON.stringify(whereArg)).toContain('NOT');
   });
 
+  it('getPharmacyWorkbench open_orders lists ORDERED and PARTIALLY_DISPENSED', async () => {
+    pharmacyWorkspaceRepository.findManyOrders.mockResolvedValue([]);
+    pharmacyWorkspaceRepository.countOrders.mockResolvedValue(0);
+    pharmacyWorkspaceRepository.countDispenseAttestations.mockResolvedValue(0);
+
+    await pharmacyWorkspaceService.getPharmacyWorkbench(
+      { open_orders: true },
+      1,
+      20,
+      null,
+      'desc',
+      mockUser
+    );
+
+    const [whereArg] = pharmacyWorkspaceRepository.findManyOrders.mock.calls[0];
+    expect(whereArg.status).toBeUndefined();
+    const serialized = JSON.stringify(whereArg);
+    expect(serialized).toContain('ORDERED');
+    expect(serialized).toContain('PARTIALLY_DISPENSED');
+    // Pending KPI includes unpaid opens — do not force payment_cleared.
+    expect(serialized).not.toContain('"NOT"');
+  });
+
   it('getPharmacyWorkbench summary buckets keep search filters', async () => {
     pharmacyWorkspaceRepository.findManyOrders.mockResolvedValue([]);
     pharmacyWorkspaceRepository.countOrders.mockResolvedValue(1);

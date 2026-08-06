@@ -32,6 +32,8 @@ const getPharmacyWorkbenchQuerySchema = listQuerySchema.extend({
   location: orderLocationSchema.optional(),
   pending_payment: z.coerce.boolean().optional(),
   payment_cleared: z.coerce.boolean().optional(),
+  /** ORDERED + PARTIALLY_DISPENSED (any payment state). Used by Pending KPI. */
+  open_orders: z.coerce.boolean().optional(),
   today_only: z.coerce.boolean().optional(),
   partial_stock: z.coerce.boolean().optional(),
   urgent: z.coerce.boolean().optional(),

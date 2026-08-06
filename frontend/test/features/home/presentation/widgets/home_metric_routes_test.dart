@@ -308,7 +308,7 @@ void main() {
       );
 
       expect(pending?.route, AppRoutes.pharmacy);
-      expect(pending?.queryParameters['section'], 'queue');
+      expect(pending?.queryParameters['section'], 'pending');
       expect(lowStock?.route, AppRoutes.pharmacy);
       expect(lowStock?.queryParameters, <String, String>{
         'section': 'low-stock',

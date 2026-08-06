@@ -637,7 +637,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         queryParameters: <String, String>{'section': 'all'},
       ),
       'pending_dispense': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'queue'},
+        queryParameters: <String, String>{'section': 'pending'},
       ),
       'dispensed_today': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'completed'},

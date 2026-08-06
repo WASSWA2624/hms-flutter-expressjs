@@ -40,6 +40,15 @@ void main() {
       expect(query.signature, contains('queue'));
     });
 
+    test('parses section=pending from URI', () {
+      final PharmacyWorkspaceQuery query = PharmacyWorkspaceQuery.fromUri(
+        Uri.parse('/pharmacy?section=pending'),
+      );
+
+      expect(query.section, 'pending');
+      expect(query.hasRouteTargeting, isTrue);
+    });
+
     test('parses from/to date range from URI', () {
       final PharmacyWorkspaceQuery query = PharmacyWorkspaceQuery.fromUri(
         Uri.parse(

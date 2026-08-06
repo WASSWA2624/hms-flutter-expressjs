@@ -106,6 +106,11 @@ class _PharmacyWalkInOrderDialogState
   bool get _billingEnabled =>
       _patientMode != _WalkInPatientMode.anonymous && _patient != null;
 
+  /// Medicines can be added for Anonymous immediately; Existing / New patient
+  /// require a linked patient first.
+  bool get _canAddMedicines =>
+      _patientMode == _WalkInPatientMode.anonymous || _patient != null;
+
   void _setPatientMode(_WalkInPatientMode? mode) {
     if (mode == null || mode == _patientMode) {
       return;
@@ -266,6 +271,10 @@ class _PharmacyWalkInOrderDialogState
     final List<AppRadioOption<_WalkInPatientMode>> modeOptions =
         <AppRadioOption<_WalkInPatientMode>>[
           AppRadioOption<_WalkInPatientMode>(
+            value: _WalkInPatientMode.anonymous,
+            label: l10n.pharmacyWalkInOrderPatientModeAnonymous,
+          ),
+          AppRadioOption<_WalkInPatientMode>(
             value: _WalkInPatientMode.existing,
             label: l10n.pharmacyWalkInOrderPatientModeExisting,
           ),
@@ -274,68 +283,50 @@ class _PharmacyWalkInOrderDialogState
               value: _WalkInPatientMode.newPatient,
               label: l10n.pharmacyWalkInOrderPatientModeNew,
             ),
-          AppRadioOption<_WalkInPatientMode>(
-            value: _WalkInPatientMode.anonymous,
-            label: l10n.pharmacyWalkInOrderPatientModeAnonymous,
-          ),
         ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Flexible(
-              child: AppRadioGroup<_WalkInPatientMode>(
-                value: _patientMode,
-                enabled: !_isRegisteringPatient,
-                dense: true,
-                layout: AppRadioGroupLayout.horizontal,
-                presentation: AppRadioGroupPresentation.borderless,
-                itemMinWidth: 120,
-                options: modeOptions,
-                onChanged: _isRegisteringPatient ? null : _setPatientMode,
-              ),
-            ),
-            if (existingSelected && patientLabel != null) ...<Widget>[
-              SizedBox(width: theme.spacing.sm),
-              Flexible(
-                child: Text(
-                  patientLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyLarge,
-                ),
-              ),
-            ],
-            SizedBox(width: theme.spacing.sm),
-            if (_patientMode == _WalkInPatientMode.newPatient)
-              AppButton.secondary(
-                label: l10n.pharmacyWalkInOrderRegisterPatientAction,
-                leadingIcon: Icons.person_add_outlined,
-                enabled: !_isRegisteringPatient,
-                isLoading: _isRegisteringPatient,
-                onPressed: _isRegisteringPatient ? null : _registerNewPatient,
-              )
-            else
-              AppButton.secondary(
-                label: l10n.commonSelectActionLabel,
-                leadingIcon: Icons.person_search_outlined,
-                enabled: selectEnabled,
-                onPressed: selectEnabled ? _pickPatient : null,
-              ),
-          ],
+        Flexible(
+          child: AppRadioGroup<_WalkInPatientMode>(
+            value: _patientMode,
+            enabled: !_isRegisteringPatient,
+            dense: true,
+            layout: AppRadioGroupLayout.horizontal,
+            presentation: AppRadioGroupPresentation.borderless,
+            itemMinWidth: 120,
+            options: modeOptions,
+            onChanged: _isRegisteringPatient ? null : _setPatientMode,
+          ),
         ),
-        if (_patientMode == _WalkInPatientMode.anonymous) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            l10n.pharmacyWalkInOrderAnonymousHint,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+        if (existingSelected && patientLabel != null) ...<Widget>[
+          SizedBox(width: theme.spacing.sm),
+          Flexible(
+            child: Text(
+              patientLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyLarge,
             ),
           ),
         ],
+        SizedBox(width: theme.spacing.sm),
+        if (_patientMode == _WalkInPatientMode.newPatient)
+          AppButton.secondary(
+            label: l10n.pharmacyWalkInOrderRegisterPatientAction,
+            leadingIcon: Icons.person_add_outlined,
+            enabled: !_isRegisteringPatient,
+            isLoading: _isRegisteringPatient,
+            onPressed: _isRegisteringPatient ? null : _registerNewPatient,
+          )
+        else
+          AppButton.secondary(
+            label: l10n.commonSelectActionLabel,
+            leadingIcon: Icons.person_search_outlined,
+            enabled: selectEnabled,
+            onPressed: selectEnabled ? _pickPatient : null,
+          ),
       ],
     );
   }
@@ -401,6 +392,7 @@ class _PharmacyWalkInOrderDialogState
       submitLabel: l10n.pharmacyWalkInOrderSubmitAction,
       dialogIcon: Icons.add_shopping_cart_outlined,
       enableBilling: _billingEnabled,
+      allowAddMedicines: _canAddMedicines,
       defaultBillingEntity: 'PHARMACY',
       onSubmit: _submitCreateOrder,
     );

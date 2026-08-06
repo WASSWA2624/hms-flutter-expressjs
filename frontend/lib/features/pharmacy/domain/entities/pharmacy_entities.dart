@@ -648,6 +648,7 @@ final class PharmacyWorkbenchQuery {
     this.status,
     this.location,
     this.pendingPayment,
+    this.openOrders,
     this.todayOnly,
     this.partialStock,
     this.urgent,
@@ -666,6 +667,10 @@ final class PharmacyWorkbenchQuery {
   /// `null` = no payment constraint.
   final bool? pendingPayment;
 
+  /// When true, lists all open orders (`ORDERED` + `PARTIALLY_DISPENSED`)
+  /// regardless of payment state — matches the pharmacist Pending KPI.
+  final bool? openOrders;
+
   /// Scopes Completed / Cancelled to the current server day.
   final bool? todayOnly;
   final bool? partialStock;
@@ -679,6 +684,7 @@ final class PharmacyWorkbenchQuery {
     return status == null &&
         location == null &&
         pendingPayment == null &&
+        openOrders != true &&
         todayOnly != true &&
         partialStock != true &&
         urgent != true &&
@@ -692,6 +698,7 @@ final class PharmacyWorkbenchQuery {
     String? status,
     String? location,
     bool? pendingPayment,
+    bool? openOrders,
     bool? todayOnly,
     bool? partialStock,
     bool? urgent,
@@ -702,6 +709,7 @@ final class PharmacyWorkbenchQuery {
     bool clearStatus = false,
     bool clearLocation = false,
     bool clearPendingPayment = false,
+    bool clearOpenOrders = false,
     bool clearTodayOnly = false,
     bool clearPartialStock = false,
     bool clearUrgent = false,
@@ -716,6 +724,7 @@ final class PharmacyWorkbenchQuery {
       pendingPayment: clearPendingPayment
           ? null
           : pendingPayment ?? this.pendingPayment,
+      openOrders: clearOpenOrders ? null : openOrders ?? this.openOrders,
       todayOnly: clearTodayOnly ? null : todayOnly ?? this.todayOnly,
       partialStock: clearPartialStock
           ? null

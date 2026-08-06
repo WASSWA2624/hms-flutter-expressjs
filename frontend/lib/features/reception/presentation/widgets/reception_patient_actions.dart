@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
@@ -364,14 +365,21 @@ class _ReceptionPatientPickerDialog extends ConsumerStatefulWidget {
 class _ReceptionPatientPickerDialogState
     extends ConsumerState<_ReceptionPatientPickerDialog> {
   static const Duration _searchDebounce = Duration(milliseconds: 250);
+  static const String _genderFilterKey = 'gender';
+  static const String _statusFilterKey = 'status';
 
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _searchController = TextEditingController();
+  final AppListTableColumnVisibilityController<Patient> _columnController =
+      AppListTableColumnVisibilityController<Patient>();
   Timer? _debounce;
   int _searchGeneration = 0;
   bool _isLoading = false;
   AppFailure? _failure;
   List<Patient> _patients = const <Patient>[];
+  AppPageRequest _pageRequest = const AppPageRequest(pageSize: 20);
+  int? _totalItemCount;
   Patient? _selected;
+  AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
 
   @override
   void initState() {
@@ -382,6 +390,8 @@ class _ReceptionPatientPickerDialogState
   @override
   void dispose() {
     _debounce?.cancel();
+    _searchController.dispose();
+    _columnController.dispose();
     super.dispose();
   }
 
@@ -391,24 +401,40 @@ class _ReceptionPatientPickerDialogState
       if (!mounted) {
         return;
       }
-      unawaited(_search(raw));
+      unawaited(_search(raw, resetPage: true));
     });
   }
 
-  Future<void> _search(String raw) async {
+  PatientListQuery _buildQuery(String raw, {AppPageRequest? pageRequest}) {
+    final String? gender = _filterValue.option(_genderFilterKey)?.trim();
+    final String? status = _filterValue.option(_statusFilterKey)?.trim();
+    return PatientListQuery(
+      search: raw.trim(),
+      gender: (gender == null || gender.isEmpty) ? null : gender,
+      isActive: switch (status) {
+        'active' => true,
+        'inactive' => false,
+        _ => null,
+      },
+      pageRequest: pageRequest ?? _pageRequest,
+    );
+  }
+
+  Future<void> _search(String raw, {bool resetPage = false}) async {
     final int generation = ++_searchGeneration;
+    final AppPageRequest pageRequest = resetPage
+        ? _pageRequest.first()
+        : _pageRequest;
     setState(() {
       _isLoading = true;
       _failure = null;
+      if (resetPage) {
+        _pageRequest = pageRequest;
+      }
     });
     final Result<AppPage<Patient>> result = await ref
         .read(patientRegistryControllerProvider.notifier)
-        .loadPatientPage(
-          PatientListQuery(
-            search: raw.trim(),
-            pageRequest: const AppPageRequest(pageSize: 12),
-          ),
-        );
+        .loadPatientPage(_buildQuery(raw, pageRequest: pageRequest));
     if (!mounted || generation != _searchGeneration) {
       return;
     }
@@ -429,6 +455,8 @@ class _ReceptionPatientPickerDialogState
         }
         setState(() {
           _patients = page.items;
+          _totalItemCount = page.totalItemCount;
+          _pageRequest = page.request;
           _selected = nextSelected;
           _isLoading = false;
           _failure = null;
@@ -438,6 +466,7 @@ class _ReceptionPatientPickerDialogState
         setState(() {
           _failure = failure;
           _patients = const <Patient>[];
+          _totalItemCount = 0;
           _selected = null;
           _isLoading = false;
         });
@@ -445,13 +474,10 @@ class _ReceptionPatientPickerDialogState
     );
   }
 
-  void _selectPatient(String? value) {
-    final Patient? patient = _patientByOptionValue(value);
+  void _selectPatient(Patient patient) {
     setState(() {
       _selected = patient;
-      if (_selected != null) {
-        _failure = null;
-      }
+      _failure = null;
     });
     if (widget.embedded) {
       widget.onSelected?.call(patient);
@@ -462,9 +488,6 @@ class _ReceptionPatientPickerDialogState
     if (_isLoading) {
       return;
     }
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
     final Patient? selected = _selected;
     if (selected == null) {
       return;
@@ -472,48 +495,14 @@ class _ReceptionPatientPickerDialogState
     Navigator.of(context).pop(selected);
   }
 
-  List<AppSelectOption<String>> _patientSelectOptions() {
-    final Map<String, Patient> byKey = <String, Patient>{
-      for (final Patient patient in _patients)
-        if (_patientOptionValue(patient) != null)
-          _patientOptionValue(patient)!: patient,
-    };
-    final Patient? selected = _selected;
-    final String? selectedKey = _patientOptionValue(selected);
-    if (selected != null && selectedKey != null) {
-      byKey[selectedKey] = selected;
-    }
-    return <AppSelectOption<String>>[
-      for (final Patient patient in byKey.values)
-        AppSelectOption<String>(
-          value: _patientOptionValue(patient)!,
-          label: _patientOptionLabel(patient),
-          searchText: <String?>[
-            patient.effectiveDisplayName,
-            patient.effectiveIdentifier,
-            patient.primaryPhone,
-            patient.publicId,
-            patient.id,
-          ].whereType<String>().join(' '),
-        ),
-    ];
+  void _onFilterChanged(AppSearchBarFilterValue value) {
+    setState(() => _filterValue = value);
+    unawaited(_search(_searchController.text, resetPage: true));
   }
 
-  Patient? _patientByOptionValue(String? value) {
-    final String? key = value?.trim();
-    if (key == null || key.isEmpty) {
-      return null;
-    }
-    final Patient? selected = _selected;
-    if (_patientOptionValue(selected) == key) {
-      return selected;
-    }
-    for (final Patient patient in _patients) {
-      if (_patientOptionValue(patient) == key) {
-        return patient;
-      }
-    }
-    return null;
+  Future<void> _onPageChanged(AppPageRequest request) async {
+    setState(() => _pageRequest = request);
+    await _search(_searchController.text);
   }
 
   static String? _patientOptionValue(Patient? patient) {
@@ -528,60 +517,227 @@ class _ReceptionPatientPickerDialogState
     return id.isEmpty ? null : id;
   }
 
-  static String _patientOptionLabel(Patient patient) {
-    final String name = patient.effectiveDisplayName.trim();
-    final String? identifier = patient.effectiveIdentifier?.trim();
-    if (identifier == null || identifier.isEmpty) {
-      return name;
-    }
-    if (name.isEmpty) {
-      return identifier;
-    }
-    return '$name • $identifier';
+  String _genderLabel(AppLocalizations l10n, String? gender) {
+    return switch ((gender ?? '').trim().toUpperCase()) {
+      'MALE' || 'M' => l10n.patientsGenderMale,
+      'FEMALE' || 'F' => l10n.patientsGenderFemale,
+      'OTHER' => l10n.patientsGenderOther,
+      'UNKNOWN' => l10n.patientsGenderUnknown,
+      final String value when value.isNotEmpty => value,
+      _ => l10n.profileUnknownValue,
+    };
+  }
+
+  List<AppListTableColumn<Patient>> _columns(AppLocalizations l10n) {
+    return <AppListTableColumn<Patient>>[
+      AppListTableColumn<Patient>(
+        id: 'patient',
+        label: l10n.patientsPatientColumnLabel,
+        alwaysVisible: true,
+        sortComparator: (Patient left, Patient right) =>
+            appListTableCompareText(
+              left.effectiveDisplayName,
+              right.effectiveDisplayName,
+            ),
+        cellBuilder: (_, Patient patient) => AppListItemText(
+          title: patient.effectiveDisplayName,
+          subtitle:
+              patient.effectiveIdentifier ??
+              patient.publicId ??
+              l10n.profileUnknownValue,
+        ),
+      ),
+      AppListTableColumn<Patient>(
+        id: 'contact',
+        label: l10n.patientsPhoneIdentifierColumnLabel,
+        sortComparator: (Patient left, Patient right) =>
+            appListTableCompareText(
+              left.primaryPhone ?? left.primaryEmail,
+              right.primaryPhone ?? right.primaryEmail,
+            ),
+        cellBuilder: (_, Patient patient) => Text(
+          patient.primaryPhone?.trim().isNotEmpty == true
+              ? patient.primaryPhone!
+              : (patient.primaryEmail ?? l10n.profileUnknownValue),
+        ),
+      ),
+      AppListTableColumn<Patient>(
+        id: 'gender',
+        label: l10n.patientsGenderColumnLabel,
+        sortComparator: (Patient left, Patient right) =>
+            appListTableCompareText(left.gender, right.gender),
+        cellBuilder: (_, Patient patient) =>
+            Text(_genderLabel(l10n, patient.gender)),
+      ),
+      AppListTableColumn<Patient>(
+        id: 'status',
+        label: l10n.patientsStatusColumnLabel,
+        sortComparator: (Patient left, Patient right) =>
+            left.isActive == right.isActive
+            ? 0
+            : (left.isActive ? -1 : 1),
+        cellBuilder: (_, Patient patient) => Text(
+          patient.isActive
+              ? l10n.patientsActiveFilter
+              : l10n.patientsInactiveFilter,
+        ),
+      ),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final bool canConfirm = !_isLoading && _selected != null;
-    final String? emptyHelper =
-        !_isLoading && _failure == null && _patients.isEmpty
-        ? l10n.receptionPatientPickerEmpty
-        : null;
+    final String selectedKey = _patientOptionValue(_selected) ?? '';
+    final AppPage<Patient> page = AppPage<Patient>(
+      items: _patients,
+      request: _pageRequest,
+      totalItemCount: _totalItemCount,
+    );
 
-    final Widget form = AppFormShell(
-      formKey: _formKey,
-      density: AppFormSectionDensity.compact,
+    final Widget table = AppListTable<Patient>(
+      page: page,
+      isLoading: _isLoading,
+      shrinkWrap: widget.embedded,
+      physics: widget.embedded
+          ? const NeverScrollableScrollPhysics()
+          : null,
+      tableHorizontalMargin: 0,
+      enableExport: false,
+      forceCompact: true,
+      columnVisibilityController: _columnController,
+      columnVisibilityStorageKey: 'reception_patient_picker',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      onPageChanged: _onPageChanged,
+      onRowSelected: _selectPatient,
+      itemKeyBuilder: (Patient patient) =>
+          ValueKey<String>(_patientOptionValue(patient) ?? patient.id),
+      rowColorBuilder: (BuildContext context, Patient patient) {
+        if (_patientOptionValue(patient) != selectedKey || selectedKey.isEmpty) {
+          return null;
+        }
+        return colorScheme.primaryContainer.withValues(alpha: 0.35);
+      },
+      emptyBuilder: (BuildContext context) => Center(
+        child: Text(
+          l10n.receptionPatientPickerEmpty,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+      search: AppListTableSearch<Patient>(
+        controller: _searchController,
+        semanticLabel: l10n.patientsSearchLabel,
+        hintText: l10n.patientsSearchHint,
+        clearLabel: l10n.patientsClearFiltersAction,
+        matcher: (_, _) => true,
+        isLoading: _isLoading,
+        enableDateFilter: false,
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.patientsAdvancedFiltersAction,
+        hasActiveFilters: _filterValue.isActive,
+        filterValue: _filterValue,
+        onFilterChanged: _onFilterChanged,
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _genderFilterKey,
+            label: l10n.patientsGenderFilterLabel,
+            choices: <AppSearchBarFilterChoice>[
+              AppSearchBarFilterChoice(
+                value: 'MALE',
+                label: l10n.patientsGenderMale,
+              ),
+              AppSearchBarFilterChoice(
+                value: 'FEMALE',
+                label: l10n.patientsGenderFemale,
+              ),
+              AppSearchBarFilterChoice(
+                value: 'OTHER',
+                label: l10n.patientsGenderOther,
+              ),
+            ],
+          ),
+          AppSearchBarFilterGroup(
+            key: _statusFilterKey,
+            label: l10n.patientsStatusColumnLabel,
+            choices: <AppSearchBarFilterChoice>[
+              AppSearchBarFilterChoice(
+                value: 'active',
+                label: l10n.patientsActiveFilter,
+              ),
+              AppSearchBarFilterChoice(
+                value: 'inactive',
+                label: l10n.patientsInactiveFilter,
+              ),
+            ],
+          ),
+        ],
+        onChanged: _scheduleSearch,
+        onSubmitted: (String value) => unawaited(_search(value, resetPage: true)),
+        onClear: () {
+          _searchController.clear();
+          setState(() => _filterValue = AppSearchBarFilterValue.empty);
+          unawaited(_search('', resetPage: true));
+        },
+      ),
+      columns: _columns(l10n),
+      columnChoices: _columns(l10n),
+      mobileItemBuilder: (BuildContext context, Patient patient) {
+        return AppListTableMobileItem(
+          leading: Icon(
+            Icons.person_outline,
+            color: colorScheme.primary,
+          ),
+          title: patient.effectiveDisplayName,
+          caption:
+              patient.effectiveIdentifier ??
+              patient.publicId ??
+              l10n.profileUnknownValue,
+          trailing: _patientOptionValue(patient) == selectedKey
+              ? Icon(Icons.check_circle, color: colorScheme.primary)
+              : null,
+        );
+      },
+    );
+
+    final Widget content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         if (_failure != null)
-          AppFormInformationBanner.failure(
-            context: context,
-            failure: _failure!,
+          Padding(
+            padding: EdgeInsets.only(bottom: theme.spacing.sm),
+            child: AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
+            ),
           ),
-        AppSelectField<String>.searchable(
-          value: _patientOptionValue(_selected),
-          labelText: l10n.receptionPatientPickerSearchHint,
-          helperText: emptyHelper,
-          isRequired: true,
-          isLoading: _isLoading,
-          options: _patientSelectOptions(),
-          validator: AppValidators.requiredValue(l10n.validationRequired),
-          onSearchTextChanged: _scheduleSearch,
-          onChanged: _selectPatient,
-        ),
+        if (widget.embedded)
+          table
+        else
+          Expanded(child: table),
       ],
     );
+
     if (widget.embedded) {
-      return form;
+      return content;
     }
     return AppDialog(
       title: Text(l10n.receptionPatientPickerTitle),
       icon: const Icon(AppActionIcons.person),
-      scrollable: true,
+      scrollable: false,
       pinActionsToBottom: true,
       closeEnabled: !_isLoading,
-      maxWidth: 560,
-      content: form,
+      maxWidth: 920,
+      content: content,
       actions: <Widget>[
         AppButton.secondary(
           label: l10n.commonCancelActionLabel,

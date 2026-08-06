@@ -105,6 +105,10 @@ void main() {
     expect(find.text('Anonymous'), findsOneWidget);
     expect(find.text('Existing patient'), findsOneWidget);
     expect(find.text('New patient'), findsNothing);
+    expect(
+      find.textContaining('without linking a patient record'),
+      findsNothing,
+    );
     expect(find.text('Patient'), findsNothing);
     expect(find.byType(AppCollapsibleSection), findsNothing);
     expect(find.text('No medicines added yet'), findsOneWidget);
@@ -130,7 +134,7 @@ void main() {
     expect(find.text('New patient'), findsOneWidget);
   });
 
-  testWidgets('enables Select only for Existing patient mode', (
+  testWidgets('disables Add medicine for Existing patient until selected', (
     WidgetTester tester,
   ) async {
     await pumpCreateOrder(tester);
@@ -140,6 +144,12 @@ void main() {
     );
     expect(selectButton.enabled, isFalse);
 
+    ClinicalPrescriptionActionDialog dialog = tester
+        .widget<ClinicalPrescriptionActionDialog>(
+          find.byType(ClinicalPrescriptionActionDialog),
+        );
+    expect(dialog.allowAddMedicines, isTrue);
+
     await tester.tap(find.text('Existing patient'));
     await tester.pumpAndSettle();
 
@@ -148,6 +158,11 @@ void main() {
     );
     expect(selectButton.enabled, isTrue);
     expect(selectButton.onPressed, isNotNull);
+
+    dialog = tester.widget<ClinicalPrescriptionActionDialog>(
+      find.byType(ClinicalPrescriptionActionDialog),
+    );
+    expect(dialog.allowAddMedicines, isFalse);
 
     // Review billing stays hidden until a patient is selected.
     expect(find.text('Review billing'), findsNothing);

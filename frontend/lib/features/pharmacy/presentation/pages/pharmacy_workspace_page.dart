@@ -110,6 +110,19 @@ class _PharmacyWorkspaceContentState
     _scheduleRouteQuery(widget.initialQuery);
   }
 
+  static bool _isOpenOrdersPendingSection(String raw) {
+    switch (raw.trim().toLowerCase()) {
+      case 'pending':
+      case 'pending-dispense':
+      case 'pending_dispense':
+      case 'open':
+      case 'open-orders':
+        return true;
+      default:
+        return false;
+    }
+  }
+
   Future<void> _handleSectionDeepLink() async {
     if (_handledSectionDeepLink || !mounted) {
       return;
@@ -129,6 +142,25 @@ class _PharmacyWorkspaceContentState
         _handledSalesDeepLink = true;
         await _openWalkInOrderDialog();
       }
+      return;
+    }
+    // Pending KPI: all open orders (Ordered + Partial), including unpaid.
+    // Do not use New orders (`queue`) — that tab excludes pending payment.
+    if (_isOpenOrdersPendingSection(section)) {
+      _handledSectionDeepLink = true;
+      if (_section != PharmacyDeskSection.allOrders) {
+        setState(() => _section = PharmacyDeskSection.allOrders);
+      }
+      final PharmacyWorkspaceController controller = ref.read(
+        pharmacyWorkspaceControllerProvider.notifier,
+      );
+      await _applySectionData(
+        controller,
+        PharmacyDeskSection.allOrders,
+        dateFrom: deepLink.from,
+        dateTo: deepLink.to,
+        openOrdersOnly: true,
+      );
       return;
     }
     final PharmacyDeskSection? parsed = _sectionFromQuery(section);
@@ -215,6 +247,20 @@ class _PharmacyWorkspaceContentState
       if (_isSalesSection(query.section) && !_handledSalesDeepLink) {
         _handledSalesDeepLink = true;
         await _openWalkInOrderDialog();
+      } else if (_isOpenOrdersPendingSection(query.section)) {
+        if (_section != PharmacyDeskSection.allOrders) {
+          setState(() => _section = PharmacyDeskSection.allOrders);
+        }
+        unawaited(
+          _applySectionData(
+            controller,
+            PharmacyDeskSection.allOrders,
+            dateFrom: query.from,
+            dateTo: query.to,
+            openOrdersOnly: true,
+          ),
+        );
+        _handledSectionDeepLink = true;
       } else {
         final PharmacyDeskSection? parsed = _sectionFromQuery(query.section);
         if (parsed != null) {
@@ -417,11 +463,15 @@ class _PharmacyWorkspaceContentState
   ///
   /// When [dateFrom]/[dateTo] are set (home KPI deep-links), they override the
   /// section chip's `todayOnly` default so the worklist matches the KPI window.
+  ///
+  /// [openOrdersOnly] lists every open order (Ordered + Partial, any payment
+  /// state) — used by the pharmacist Pending KPI (`section=pending`).
   Future<AppFailure?> _applySectionData(
     PharmacyWorkspaceController controller,
     PharmacyDeskSection section, {
     DateTime? dateFrom,
     DateTime? dateTo,
+    bool openOrdersOnly = false,
   }) {
     if (section.isCatalogSection) {
       // Inline catalog section: hydrate the active nested catalog tab's data.
@@ -432,9 +482,9 @@ class _PharmacyWorkspaceContentState
     if (section.isStockSection && stockQuery != null) {
       return controller.applyDeskStockFilter(stockQuery);
     }
-    PharmacyWorkbenchQuery filter = PharmacyWorkbenchQuery.fromChip(
-      _filterForSection(section),
-    );
+    PharmacyWorkbenchQuery filter = openOrdersOnly
+        ? const PharmacyWorkbenchQuery(openOrders: true)
+        : PharmacyWorkbenchQuery.fromChip(_filterForSection(section));
     if (dateFrom != null || dateTo != null) {
       filter = filter.copyWith(
         from: dateFrom,
