@@ -26,16 +26,20 @@ const mockPrisma = {
   subscription_invoice: { findMany: jest.fn() },
   license: { findMany: jest.fn() },
   patient: { count: jest.fn() },
-  appointment: { count: jest.fn() },
-  encounter: { count: jest.fn() },
+  appointment: { count: jest.fn(), groupBy: jest.fn() },
+  encounter: { count: jest.fn(), groupBy: jest.fn() },
   admission: { count: jest.fn() },
   lab_result: { count: jest.fn() },
   radiology_result: { count: jest.fn() },
-  pharmacy_order: { count: jest.fn() },
+  pharmacy_order: { count: jest.fn(), groupBy: jest.fn() },
   dispense_log: { count: jest.fn() },
   payment: { count: jest.fn() },
+  invoice: { count: jest.fn(), groupBy: jest.fn() },
+  lab_order: { count: jest.fn(), groupBy: jest.fn() },
+  stock_movement: { count: jest.fn() },
+  mortuary_case: { count: jest.fn(), groupBy: jest.fn() },
   conversation: { findMany: jest.fn() },
-  notification: { findMany: jest.fn() },
+  notification: { findMany: jest.fn(), count: jest.fn() },
   notification_delivery: { findMany: jest.fn() },
   template: { findMany: jest.fn() },
   emergency_case: { count: jest.fn() },
@@ -90,6 +94,7 @@ describe('verify-demo-data', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
+    process.env.SEED_RECORD_COUNT = '0';
 
     mockPrisma.tenant.findMany.mockResolvedValue([
       { id: 'tenant-demo', slug: 'democare-general-hospital', name: 'DemoCare General Hospital' }]);
@@ -111,6 +116,9 @@ describe('verify-demo-data', () => {
         code: 'custom',
         max_facilities: null,
         extension_json: { commercial_terms: { annual_support_percent_range: [15, 25] } }},
+      {
+        code: 'developer',
+        max_facilities: 1},
       {
         code: 'free',
         max_facilities: 1,
@@ -137,6 +145,11 @@ describe('verify-demo-data', () => {
     mockPrisma.pharmacy_order.count.mockResolvedValue(2);
     mockPrisma.dispense_log.count.mockResolvedValue(2);
     mockPrisma.payment.count.mockResolvedValue(2);
+    mockPrisma.invoice = { count: jest.fn().mockResolvedValue(2), groupBy: jest.fn().mockResolvedValue([]) };
+    mockPrisma.lab_order = { count: jest.fn().mockResolvedValue(2), groupBy: jest.fn().mockResolvedValue([]) };
+    mockPrisma.notification.count = jest.fn().mockResolvedValue(3);
+    mockPrisma.stock_movement = { count: jest.fn().mockResolvedValue(1) };
+    mockPrisma.mortuary_case = { count: jest.fn().mockResolvedValue(3), groupBy: jest.fn().mockResolvedValue([]) };
     mockPrisma.emergency_case.count.mockResolvedValue(1);
     mockPrisma.ambulance_trip.count.mockResolvedValue(1);
     mockPrisma.conversation.findMany.mockResolvedValue([
@@ -214,8 +227,8 @@ describe('verify-demo-data', () => {
     const { verifyDemoData } = require('../../../scripts/verify-demo-data');
     const result = await verifyDemoData();
 
-    expect(result.ok).toBe(true);
     expect(result.errors).toEqual([]);
+    expect(result.ok).toBe(true);
   });
 
   it('fails when ownership data leaks outside the seeded facility', async () => {
@@ -244,5 +257,27 @@ describe('verify-demo-data', () => {
     expect(result.errors).toContain(
       'Expected role SUPER_ADMIN to use email super.admin@hosspi.com but found superadmin@legacy.test.'
     );
+  });
+
+  it('enforces volume floors when SEED_RECORD_COUNT enables volume mode', async () => {
+    process.env.SEED_RECORD_COUNT = '100';
+    mockPrisma.patient.count.mockResolvedValue(20);
+    mockPrisma.appointment.count.mockResolvedValue(20);
+    mockPrisma.encounter.count.mockResolvedValue(20);
+    mockPrisma.appointment.groupBy = jest.fn().mockResolvedValue([]);
+    mockPrisma.encounter.groupBy = jest.fn().mockResolvedValue([]);
+    mockPrisma.lab_order.groupBy = jest.fn().mockResolvedValue([]);
+    mockPrisma.pharmacy_order = {
+      count: jest.fn().mockResolvedValue(20),
+      groupBy: jest.fn().mockResolvedValue([]),
+    };
+    mockPrisma.invoice.groupBy = jest.fn().mockResolvedValue([]);
+    mockPrisma.mortuary_case.groupBy = jest.fn().mockResolvedValue([]);
+
+    const { verifyDemoData } = require('../../../scripts/verify-demo-data');
+    const result = await verifyDemoData();
+
+    expect(result.ok).toBe(false);
+    expect(result.errors.some((entry) => entry.includes('patients for volume demo seed'))).toBe(true);
   });
 });

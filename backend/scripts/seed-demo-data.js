@@ -3,6 +3,8 @@
  *
  * Usage:
  *   node scripts/seed-demo-data.js
+ *   SEED_RECORD_COUNT=0 node scripts/seed-demo-data.js   # curated-only
+ *   SEED_RECORD_COUNT=1000 node scripts/seed-demo-data.js
  */
 
 const {
@@ -23,6 +25,10 @@ const { seedBiomedicalPack } = require('./seeders/seed-biomedical-pack');
 const { seedMortuaryPack } = require('./seeders/seed-mortuary-pack');
 const { seedCompliancePack } = require('./seeders/seed-compliance-pack');
 const { seedGovernancePack } = require('./seeders/seed-governance-pack');
+const {
+  DEFAULT_DEMO_VOLUME_TARGET,
+  seedVolumePack,
+} = require('./seeders/seed-volume-pack');
 const { seedFillerPack } = require('./seeders/seed-filler-pack');
 const { assertDemoTaskAllowed } = require('./demo-safety');
 const { verifyDemoData } = require('./verify-demo-data');
@@ -37,8 +43,28 @@ const resolveNumericEnv = (value, fallback) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+/**
+ * Resolve volume target for demo seed.
+ * - Explicit options.targetCount wins
+ * - SEED_RECORD_COUNT=0 → curated-only (skip volume + filler)
+ * - unset / invalid → DEFAULT_DEMO_VOLUME_TARGET (1000)
+ */
+const resolveDemoTargetCount = (explicitTarget) => {
+  if (explicitTarget !== undefined && explicitTarget !== null) {
+    const parsed = Number.parseInt(String(explicitTarget), 10);
+    return Number.isFinite(parsed) ? parsed : DEFAULT_DEMO_VOLUME_TARGET;
+  }
+  if (process.env.SEED_RECORD_COUNT !== undefined && process.env.SEED_RECORD_COUNT !== '') {
+    return resolveNumericEnv(process.env.SEED_RECORD_COUNT, DEFAULT_DEMO_VOLUME_TARGET);
+  }
+  if (env.SEED_RECORD_COUNT !== undefined && env.SEED_RECORD_COUNT !== null) {
+    return resolveNumericEnv(env.SEED_RECORD_COUNT, DEFAULT_DEMO_VOLUME_TARGET);
+  }
+  return DEFAULT_DEMO_VOLUME_TARGET;
+};
+
 const seedDemoData = async ({
-  targetCount = 0,
+  targetCount,
   randomSeed = DEFAULT_RANDOM_SEED,
 } = {}) => {
   const safety = assertDemoTaskAllowed('demo seed');
@@ -47,12 +73,16 @@ const seedDemoData = async ({
     return { skipped: true, reason: safety.reason };
   }
 
+  const resolvedTargetCount = resolveDemoTargetCount(targetCount);
+
   const ctx = createSeedContext({
     randomSeed,
-    recordCount: targetCount,
+    recordCount: resolvedTargetCount,
   });
 
-  console.log(`Seeding curated HMS demo data with random seed ${ctx.randomSeed}...`);
+  console.log(
+    `Seeding curated HMS demo data with random seed ${ctx.randomSeed} (volume target ${resolvedTargetCount})...`
+  );
 
   const orgPack = await seedOrgPack(ctx);
   const accessPack = await seedAccessPack(ctx, orgPack);
@@ -71,7 +101,16 @@ const seedDemoData = async ({
     clinicalPack,
     operationsPack
   );
-  const fillerSummary = await seedFillerPack(ctx, targetCount);
+  const volumeSummary = await seedVolumePack(ctx, resolvedTargetCount, {
+    orgPack,
+    accessPack,
+    clinicalPack,
+    clinicalCatalogPack,
+    operationsPack,
+    biomedicalPack,
+    mortuaryPack,
+  });
+  const fillerSummary = await seedFillerPack(ctx, resolvedTargetCount);
   const verification = await verifyDemoData();
 
   if (!verification.ok) {
@@ -83,6 +122,7 @@ const seedDemoData = async ({
   return {
     skipped: false,
     summary: {
+      target_count: resolvedTargetCount,
       tenants: Object.keys(orgPack.tenants).length,
       users: Object.keys(accessPack.users).length,
       subscriptions: Object.keys(subscriptionsPack.subscriptions).length,
@@ -96,6 +136,7 @@ const seedDemoData = async ({
       conversations: Object.keys(communicationsPack.conversations).length,
       biomedical_assets: Object.keys(biomedicalPack.registries).length,
       mortuary_cases: Object.keys(mortuaryPack.cases).length,
+      volume: volumeSummary,
       filler: fillerSummary,
       compliance: Boolean(compliancePack.integration),
       governance: {
@@ -116,7 +157,6 @@ const seedDemoData = async ({
 const main = async () => {
   try {
     await seedDemoData({
-      targetCount: 0,
       randomSeed: resolveNumericEnv(env.SEED_RANDOM_SEED, DEFAULT_RANDOM_SEED),
     });
   } catch (error) {
@@ -135,4 +175,6 @@ module.exports = {
   seedDemoData,
   deterministicUuid,
   getDeterministicDate,
+  resolveDemoTargetCount,
+  DEFAULT_DEMO_VOLUME_TARGET,
 };

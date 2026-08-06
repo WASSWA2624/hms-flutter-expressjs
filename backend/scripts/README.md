@@ -233,23 +233,37 @@ npm run db:clear:demo
 
 ### `seed-demo-data.js`
 
-Seeds curated, deterministic demo data packs and optionally runs a light filler pass for non-curated models.
+Seeds curated, deterministic demo data packs, an FK-aware volume expansion pack, and optionally a light filler pass for non-curated models.
 
 #### Purpose
 
-- Seeds the authoritative org, access, subscriptions, communications, clinical, operations, biomedical, and compliance packs
+- Seeds the authoritative org, access, subscriptions, communications, clinical, operations, biomedical, mortuary, compliance, and governance packs
+- Runs `seed-volume-pack` to scale applicable operational tables (≥100, prefer ~1000) with status-diverse demo graphs
 - Keeps `npm run db:seed:demo` non-destructive and idempotent
-- Runs semantic verification after seeding and fails if required scenarios are missing
-- Uses `SEED_RECORD_COUNT=0` to skip the optional filler pass while keeping the curated scenarios
+- Runs semantic verification after seeding and fails if required scenarios (and volume floors when enabled) are missing
+- Uses `SEED_RECORD_COUNT=0` for curated-only mode (skips volume + filler)
+
+#### Volume defaults
+
+| Setting | Behavior |
+| --- | --- |
+| unset / default | `SEED_RECORD_COUNT=1000` — high-traffic tables target 1000; secondary applicable tables ≥100 |
+| `SEED_RECORD_COUNT=100` | Minimum applicable volume |
+| `SEED_RECORD_COUNT=0` | Curated hero scenarios only |
+
+Intentional exceptions (not volume-filled): singleton tenant/facility/subscription/license, plan/add-on/module catalogs, role/permission catalogs.
 
 #### Usage
 
 ```bash
-# Seed curated demo data with optional filler
+# Seed curated + volume demo data (default target 1000)
 node scripts/seed-demo-data.js
 
-# Skip the generic filler pass
+# Curated-only (skip volume + filler)
 SEED_RECORD_COUNT=0 node scripts/seed-demo-data.js
+
+# Custom volume target
+SEED_RECORD_COUNT=100 node scripts/seed-demo-data.js
 ```
 
 #### NPM Shortcuts
@@ -266,7 +280,7 @@ npm run db:reset:demo
 
 ### `verify-demo-data.js`
 
-Validates the curated seed invariants.
+Validates the curated seed invariants and, when `SEED_RECORD_COUNT > 0`, volume floors plus key status coverage.
 
 #### Purpose
 
@@ -274,6 +288,7 @@ Validates the curated seed invariants.
 - Confirms Basic, Pro, Advanced, and Custom pricing metadata still matches the agreed baseline
 - Confirms workspace-critical subscription and communications scenarios exist
 - Confirms biomedical and compliance baseline records exist
+- When volume mode is on: confirms high-traffic tables meet the volume target and status mixes exist for appointments, encounters, lab/pharmacy/billing, and mortuary
 
 #### Usage
 

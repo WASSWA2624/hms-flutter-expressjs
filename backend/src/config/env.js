@@ -239,9 +239,10 @@ const buildEnv = () => {
     process.env.PRISMA_MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL,
     NODE_ENV === 'development'
   );
-  const SEED_RECORD_COUNT = process.env.SEED_RECORD_COUNT
+  const SEED_RECORD_COUNT = process.env.SEED_RECORD_COUNT !== undefined
+    && process.env.SEED_RECORD_COUNT !== ''
     ? parseInt(process.env.SEED_RECORD_COUNT, 10)
-    : 50;
+    : 1000;
   const SEED_RANDOM_SEED = process.env.SEED_RANDOM_SEED
     ? parseInt(process.env.SEED_RANDOM_SEED, 10)
     : 20260217;

@@ -10,10 +10,46 @@ const {
   DEMO_ROLE_CODES,
   DEMO_TENANT,
 } = require('./seeders/seed-catalog');
+const {
+  DEFAULT_DEMO_VOLUME_TARGET,
+  MIN_APPLICABLE_VOLUME,
+  resolveVolumeTargets,
+} = require('./seeders/seed-volume-pack');
+const env = require('@config/env');
 
 const schemaMetadata = parseSchemaMetadata(path.join(__dirname, '..', 'prisma', 'schema.prisma'));
 
 const findPlanByCode = (plans, code) => plans.find((plan) => plan.code === code);
+
+const resolveVerifyVolumeTarget = () => {
+  if (process.env.SEED_RECORD_COUNT !== undefined && process.env.SEED_RECORD_COUNT !== '') {
+    const parsed = Number.parseInt(String(process.env.SEED_RECORD_COUNT), 10);
+    return Number.isFinite(parsed) ? parsed : DEFAULT_DEMO_VOLUME_TARGET;
+  }
+  if (env.SEED_RECORD_COUNT !== undefined && env.SEED_RECORD_COUNT !== null) {
+    const parsed = Number.parseInt(String(env.SEED_RECORD_COUNT), 10);
+    return Number.isFinite(parsed) ? parsed : DEFAULT_DEMO_VOLUME_TARGET;
+  }
+  return DEFAULT_DEMO_VOLUME_TARGET;
+};
+
+const assertStatusCoverage = async (modelName, fieldName, requiredStatuses, errors) => {
+  const delegate = prisma[modelName];
+  if (!delegate || typeof delegate.groupBy !== 'function') return;
+
+  const groups = await delegate.groupBy({
+    by: [fieldName],
+    where: { deleted_at: null },
+    _count: { _all: true },
+  });
+  const present = new Set(groups.map((entry) => entry[fieldName]).filter(Boolean));
+  const missing = requiredStatuses.filter((status) => !present.has(status));
+  if (missing.length > 0) {
+    errors.push(
+      `Expected ${modelName}.${fieldName} coverage for ${missing.join(', ')} but those statuses are missing.`
+    );
+  }
+};
 
 const countOwnershipMismatches = async (fieldName, expectedId) => {
   const mismatches = [];
@@ -67,6 +103,11 @@ const verifyDemoData = async () => {
     pharmacyOrderCount,
     dispenseLogCount,
     paymentCount,
+    invoiceCount,
+    labOrderCount,
+    notificationCount,
+    stockMovementCount,
+    mortuaryCaseCount,
     conversations,
     notifications,
     notificationDeliveries,
@@ -136,6 +177,11 @@ const verifyDemoData = async () => {
     prisma.pharmacy_order.count({ where: { deleted_at: null } }),
     prisma.dispense_log.count({ where: { deleted_at: null } }),
     prisma.payment.count({ where: { deleted_at: null, status: 'COMPLETED' } }),
+    prisma.invoice.count({ where: { deleted_at: null } }),
+    prisma.lab_order.count({ where: { deleted_at: null } }),
+    prisma.notification.count({ where: { deleted_at: null } }),
+    prisma.stock_movement.count({ where: { deleted_at: null } }),
+    prisma.mortuary_case.count({ where: { deleted_at: null } }),
     prisma.conversation.findMany({
       where: { deleted_at: null },
       include: {
@@ -347,6 +393,78 @@ const verifyDemoData = async () => {
     errors.push('Expected emergency and ambulance demo records to be present.');
   }
 
+  // Volume suite (SEED_RECORD_COUNT > 0). Curated-only seeds set SEED_RECORD_COUNT=0.
+  // Singletons/catalogs (tenant, facility, plans, roles, subscription) are intentional exceptions.
+  const volumeTargets = resolveVolumeTargets(resolveVerifyVolumeTarget());
+  const workOrderCount = biomedicalCounts[1] || 0;
+  if (!volumeTargets.skipped) {
+    const highFloor = volumeTargets.highTraffic;
+    const secondaryFloor = volumeTargets.secondary;
+
+    const highTrafficChecks = [
+      ['patients', patientCount, highFloor],
+      ['appointments', appointmentCount, highFloor],
+      ['encounters', encounterCount, highFloor],
+      ['lab_orders', labOrderCount, highFloor],
+      ['lab_results', labResultCount, highFloor],
+      ['pharmacy_orders', pharmacyOrderCount, highFloor],
+      ['dispense_logs', dispenseLogCount, highFloor],
+      ['invoices', invoiceCount, highFloor],
+      ['notifications', notificationCount, highFloor],
+      ['stock_movements', stockMovementCount, highFloor],
+    ];
+    for (const [label, count, floor] of highTrafficChecks) {
+      if (count < floor) {
+        errors.push(`Expected at least ${floor} ${label} for volume demo seed but found ${count}.`);
+      }
+    }
+
+    const secondaryChecks = [
+      ['admissions', admissionCount, secondaryFloor],
+      ['radiology_results', radiologyResultCount, secondaryFloor],
+      ['emergency_cases', emergencyCaseCount, secondaryFloor],
+      ['equipment_work_orders', workOrderCount, secondaryFloor],
+      ['mortuary_cases', mortuaryCaseCount, secondaryFloor],
+    ];
+    for (const [label, count, floor] of secondaryChecks) {
+      if (count < floor) {
+        errors.push(`Expected at least ${floor} ${label} for volume demo seed but found ${count}.`);
+      }
+    }
+
+    await assertStatusCoverage(
+      'appointment',
+      'status',
+      ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW'],
+      errors
+    );
+    await assertStatusCoverage('encounter', 'status', ['OPEN', 'CLOSED', 'CANCELLED'], errors);
+    await assertStatusCoverage(
+      'lab_order',
+      'status',
+      ['ORDERED', 'COLLECTED', 'IN_PROCESS', 'COMPLETED', 'CANCELLED'],
+      errors
+    );
+    await assertStatusCoverage(
+      'pharmacy_order',
+      'status',
+      ['ORDERED', 'DISPENSED', 'PARTIALLY_DISPENSED', 'CANCELLED'],
+      errors
+    );
+    await assertStatusCoverage(
+      'invoice',
+      'status',
+      ['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED'],
+      errors
+    );
+    await assertStatusCoverage(
+      'mortuary_case',
+      'status',
+      ['RECEIVED', 'IDENTIFICATION_PENDING', 'IN_STORAGE', 'READY_FOR_RELEASE', 'RELEASED'],
+      errors
+    );
+  }
+
   const hasDirectConversationWithAttachment = conversations.some(
     (conversation) =>
       conversation.conversation_type === 'DIRECT'
@@ -479,6 +597,10 @@ const verifyDemoData = async () => {
       user_count: usersCount,
       patient_count: patientCount,
       encounter_count: encounterCount,
+      appointment_count: appointmentCount,
+      invoice_count: invoiceCount,
+      notification_count: notificationCount,
+      volume_target: volumeTargets.skipped ? 0 : volumeTargets.highTraffic,
       abac_policy_count: abacPolicyCount,
       break_glass_access_count: breakGlassAccesses.length,
       office_context_count: officeContexts.length,
@@ -511,4 +633,6 @@ if (require.main === module) {
 
 module.exports = {
   verifyDemoData,
+  resolveVerifyVolumeTarget,
+  assertStatusCoverage,
 };
