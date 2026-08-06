@@ -208,6 +208,17 @@ void main() {
       expect(find.text('Delete'), findsWidgets);
     });
 
+    testWidgets('uses mobile cards on narrow viewports', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPrescribeDialog(tester, width: 390);
+      await _addMedicinesFromCatalog(tester, <String>['Amoxicillin']);
+
+      expect(find.byType(AppCollapsibleSection), findsWidgets);
+      expect(find.textContaining('Amoxicillin'), findsWidgets);
+      expect(find.text('Qty'), findsNothing);
+    });
+
     testWidgets('table shows dosing editors without expanding cards', (
       WidgetTester tester,
     ) async {
@@ -444,7 +455,30 @@ Future<void> _addMedicinesFromCatalog(
   WidgetTester tester,
   List<String> medicineNames,
 ) async {
-  await tester.tap(find.text('Add medicine').first);
+  Future<void> openCatalog() async {
+    final Finder byText = find.text('Add medicine');
+    if (byText.evaluate().isNotEmpty) {
+      await tester.tap(byText.first);
+      return;
+    }
+    final Finder byTooltip = find.byTooltip('Add medicine');
+    if (byTooltip.evaluate().isNotEmpty) {
+      await tester.tap(byTooltip.first);
+      return;
+    }
+    final Finder byIcon = find.byIcon(Icons.add_circle_outline);
+    if (byIcon.evaluate().isNotEmpty) {
+      await tester.tap(byIcon.first);
+      return;
+    }
+    final Finder more = find.byIcon(Icons.more_vert);
+    expect(more, findsWidgets);
+    await tester.tap(more.first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add medicine').first);
+  }
+
+  await openCatalog();
   await tester.pumpAndSettle();
 
   expect(find.text('CHOOSE MEDICINES'), findsOneWidget);

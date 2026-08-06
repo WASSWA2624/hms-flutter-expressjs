@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
@@ -77,7 +79,7 @@ class ClinicalPrescriptionActionDialog extends StatefulWidget {
 
 class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   static const String _columnVisibilityStorageKey =
-      'clinical_prescription_medicines_table_v3';
+      'clinical_prescription_medicines_table_v5';
   static const String _selectColumnKey = 'select';
   static const String _medicineColumnKey = 'medicine';
   static const String _quantityColumnKey = 'quantity';
@@ -133,18 +135,20 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final _PrescriptionTableMetrics metrics = _tableMetrics(breakpoint);
     final List<_PrescriptionLineFormState> visibleLines = _lines
         .where(_matchesOptionFilters)
         .toList(growable: false);
     final List<AppListTableColumn<_PrescriptionLineFormState>> defaultColumns =
-        _defaultColumns(context);
+        _defaultColumns(context, metrics: metrics);
     final List<AppListTableColumn<_PrescriptionLineFormState>> columnChoices =
-        _columnChoices(context);
+        _columnChoices(context, metrics: metrics);
 
     return AppDialog(
       title: Text(widget.dialogTitle ?? l10n.clinicalPrescribeAction),
       icon: Icon(widget.dialogIcon ?? Icons.medication_outlined),
-      maxWidth: widget.maxWidth,
+      maxWidth: _resolvedDialogMaxWidth(breakpoint),
       pinActionsToBottom: true,
       closeEnabled: !_isSaving,
       content: Column(
@@ -170,11 +174,11 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
               columnVisibilityTitle: l10n.clinicalPrescriptionColumnsTitle,
               columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
               columnVisibilityResetLabel: l10n.labResetColumnsAction,
-              displayMode: AppListTableDisplayMode.table,
+              displayMode: AppListTableDisplayMode.adaptive,
               forceCompact: true,
               padEmptyRows: false,
               enableColumnResize: false,
-              tableHorizontalMargin: theme.spacing.sm,
+              tableHorizontalMargin: metrics.tableHorizontalMargin,
               showRowNumbers: false,
               itemKeyBuilder: (_PrescriptionLineFormState line) =>
                   ValueKey<String>(_lineKey(line)),
@@ -224,7 +228,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
                   : _PrescriptionOrderTotalFooter(
                       totalLabel: l10n.clinicalRequestBillingTotalLabel,
                       amountLabel: _orderTotalLabel(context),
-                      horizontalMargin: theme.spacing.sm,
+                      horizontalMargin: metrics.tableHorizontalMargin,
                     ),
               mobileItemBuilder:
                   (BuildContext context, _PrescriptionLineFormState line) {
@@ -304,9 +308,44 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
     ];
   }
 
+  double _resolvedDialogMaxWidth(AppBreakpoint breakpoint) {
+    final double requested = widget.maxWidth;
+    return switch (breakpoint) {
+      AppBreakpoint.xs || AppBreakpoint.sm => math.min(requested, 560),
+      AppBreakpoint.md => math.min(requested, 920),
+      AppBreakpoint.lg => math.min(requested, 1100),
+      AppBreakpoint.xl || AppBreakpoint.xxl => requested,
+    };
+  }
+
+  _PrescriptionTableMetrics _tableMetrics(AppBreakpoint breakpoint) {
+    final ThemeData theme = Theme.of(context);
+    final bool narrowTable = breakpoint == AppBreakpoint.md;
+    final bool labeledActions = breakpoint.showsToolbarActionLabels;
+    return _PrescriptionTableMetrics(
+      medicinePreferredWidth: switch (breakpoint) {
+        AppBreakpoint.md => 168,
+        AppBreakpoint.lg => 220,
+        _ => 280,
+      },
+      qtyWidth: narrowTable ? 56 : 64,
+      unitWidth: narrowTable ? 68 : 76,
+      doseWidth: narrowTable ? 72 : 80,
+      doseUnitWidth: narrowTable ? 100 : 112,
+      durationWidth: narrowTable ? 56 : 64,
+      durationUnitWidth: narrowTable ? 96 : 108,
+      priceWidth: narrowTable ? 100 : 112,
+      amountWidth: narrowTable ? 100 : 112,
+      actionsWidth: labeledActions ? 240 : 96,
+      labeledActions: labeledActions,
+      tableHorizontalMargin: narrowTable ? theme.spacing.xs : theme.spacing.sm,
+    );
+  }
+
   List<AppListTableColumn<_PrescriptionLineFormState>> _defaultColumns(
-    BuildContext context,
-  ) {
+    BuildContext context, {
+    required _PrescriptionTableMetrics metrics,
+  }) {
     final AppLocalizations l10n = context.l10n;
     final bool enabled = !_isSaving;
     final String qtyLabel = l10n.billingLineItemQtyColumn;
@@ -318,7 +357,8 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         id: _medicineColumnKey,
         label: l10n.clinicalPrescriptionMedicineLabel,
         alwaysVisible: true,
-        preferredWidth: 260,
+        // Only flexible column: absorbs leftover dialog width for wrapping names.
+        preferredWidth: metrics.medicinePreferredWidth,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(
@@ -341,7 +381,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         label: qtyLabel,
         alwaysVisible: true,
         numeric: true,
-        fixedWidth: 72,
+        fixedWidth: metrics.qtyWidth,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 (_lineQuantity(left) ?? 0).compareTo(_lineQuantity(right) ?? 0),
@@ -369,7 +409,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         id: _quantityUnitColumnKey,
         label: unitLabel,
         alwaysVisible: true,
-        fixedWidth: 80,
+        fixedWidth: metrics.unitWidth,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(left.quantityUnit, right.quantityUnit),
@@ -387,7 +427,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         label: l10n.clinicalDoseAmountLabel,
         alwaysVisible: true,
         numeric: true,
-        fixedWidth: 88,
+        fixedWidth: metrics.doseWidth,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(_doseLabel(left), _doseLabel(right)),
@@ -415,7 +455,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         id: _doseUnitColumnKey,
         label: l10n.clinicalDoseUnitLabel,
         alwaysVisible: true,
-        preferredWidth: 140,
+        fixedWidth: metrics.doseUnitWidth,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(left.doseUnit, right.doseUnit),
@@ -445,7 +485,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         label: l10n.clinicalDurationValueLabel,
         alwaysVisible: true,
         numeric: true,
-        fixedWidth: 72,
+        fixedWidth: metrics.durationWidth,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(
@@ -476,7 +516,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         id: _durationUnitColumnKey,
         label: l10n.clinicalDurationUnitLabel,
         alwaysVisible: true,
-        preferredWidth: 120,
+        fixedWidth: metrics.durationUnitWidth,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(left.durationUnit, right.durationUnit),
@@ -506,7 +546,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         label: l10n.clinicalRequestSelectedPriceColumnLabel,
         alwaysVisible: true,
         numeric: true,
-        preferredWidth: 120,
+        fixedWidth: metrics.priceWidth,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) {
               return (_unitPrice(left) ?? 0).compareTo(_unitPrice(right) ?? 0);
@@ -525,7 +565,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         label: amountLabel,
         alwaysVisible: true,
         numeric: true,
-        preferredWidth: 120,
+        fixedWidth: metrics.amountWidth,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) {
               return (_lineTotal(left) ?? 0).compareTo(_lineTotal(right) ?? 0);
@@ -542,21 +582,22 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
           );
         },
       ),
-      _actionsColumn(context),
+      _actionsColumn(context, metrics: metrics),
     ];
   }
 
   List<AppListTableColumn<_PrescriptionLineFormState>> _columnChoices(
-    BuildContext context,
-  ) {
+    BuildContext context, {
+    required _PrescriptionTableMetrics metrics,
+  }) {
     final AppLocalizations l10n = context.l10n;
     final bool enabled = !_isSaving;
     return <AppListTableColumn<_PrescriptionLineFormState>>[
-      ..._defaultColumns(context),
+      ..._defaultColumns(context, metrics: metrics),
       AppListTableColumn<_PrescriptionLineFormState>(
         id: _routeColumnKey,
         label: l10n.opdMedicationRouteLabel,
-        preferredWidth: 120,
+        fixedWidth: metrics.labeledActions ? 120 : 108,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(left.route, right.route),
@@ -581,7 +622,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       AppListTableColumn<_PrescriptionLineFormState>(
         id: _frequencyColumnKey,
         label: l10n.opdFrequencyLabel,
-        preferredWidth: 140,
+        fixedWidth: metrics.labeledActions ? 128 : 112,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(left.frequency, right.frequency),
@@ -609,7 +650,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       AppListTableColumn<_PrescriptionLineFormState>(
         id: _instructionsColumnKey,
         label: l10n.clinicalInstructionsLabel,
-        preferredWidth: 180,
+        fixedWidth: metrics.labeledActions ? 160 : 140,
         sortComparator:
             (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
                 appListTableCompareText(
@@ -689,21 +730,24 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   }
 
   AppListTableColumn<_PrescriptionLineFormState> _actionsColumn(
-    BuildContext context,
-  ) {
+    BuildContext context, {
+    required _PrescriptionTableMetrics metrics,
+  }) {
     final AppLocalizations l10n = context.l10n;
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final bool labeled = metrics.labeledActions;
     return AppListTableColumn<_PrescriptionLineFormState>(
       id: _actionsColumnKey,
       label: l10n.clinicalRequestSelectedActionsColumnLabel,
       alwaysVisible: true,
-      fixedWidth: 240,
+      fixedWidth: metrics.actionsWidth,
       cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             AppButton.tertiary(
               dense: true,
+              iconOnly: !labeled,
               leadingIcon: Icons.edit_outlined,
               label: l10n.commonEditActionLabel,
               semanticLabel: l10n.commonEditActionLabel,
@@ -717,6 +761,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
             ),
             AppButton.tertiary(
               dense: true,
+              iconOnly: !labeled,
               leadingIcon: Icons.delete_outline,
               label: l10n.commonDeleteActionLabel,
               semanticLabel: l10n.commonDeleteActionLabel,
@@ -1564,6 +1609,36 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       billingEntity: widget.defaultBillingEntity,
     );
   }
+}
+
+final class _PrescriptionTableMetrics {
+  const _PrescriptionTableMetrics({
+    required this.medicinePreferredWidth,
+    required this.qtyWidth,
+    required this.unitWidth,
+    required this.doseWidth,
+    required this.doseUnitWidth,
+    required this.durationWidth,
+    required this.durationUnitWidth,
+    required this.priceWidth,
+    required this.amountWidth,
+    required this.actionsWidth,
+    required this.labeledActions,
+    required this.tableHorizontalMargin,
+  });
+
+  final double medicinePreferredWidth;
+  final double qtyWidth;
+  final double unitWidth;
+  final double doseWidth;
+  final double doseUnitWidth;
+  final double durationWidth;
+  final double durationUnitWidth;
+  final double priceWidth;
+  final double amountWidth;
+  final double actionsWidth;
+  final bool labeledActions;
+  final double tableHorizontalMargin;
 }
 
 class _PrescriptionRxListTile extends StatelessWidget {

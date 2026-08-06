@@ -12,8 +12,10 @@ Tighten the Create Order / Prescribe medicines table: narrower chrome columns, w
 
 **Intended behavior**
 
-- Compact default columns: checkbox-only select, wide wrapping **Medicine** (`Generic (Brand) - strength`), **Qty**, **Unit**, dose amount, dose unit, duration, **Duration unit**, price, **Amount**, actions.
-- Table content wider than the dialog scrolls horizontally with a bottom scrollbar; narrow viewports keep mobile cards.
+- Compact default columns: checkbox-only select, flexible wrapping **Medicine** (`Generic (Brand) - strength`), content-fitted **Qty**, **Unit**, dose amount, dose unit, duration, **Duration unit**, price, **Amount**, actions.
+- Other columns use fixed content widths; Medicine is the only flexible column and absorbs leftover dialog width.
+- Table content wider than the dialog scrolls horizontally with a bottom scrollbar; **xs/sm** use expandable mobile cards; **md+** use the dense table with breakpoint-scaled column widths.
+- Dialog max width scales by breakpoint; tablet tables use icon-only row actions.
 - Quantity stays default **0** and must be positive to submit; Edit/Delete stay labeled.
 - No speech-to-text (mic) on search or inline editors; validation uses the top banner only (no clipped cell error text); banner and field errors clear on typing.
 
