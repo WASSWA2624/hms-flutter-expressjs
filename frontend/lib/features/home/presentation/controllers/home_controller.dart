@@ -56,8 +56,13 @@ final homeControllerProvider =
                     )
                   : current.mergePatch(patch);
             }
-            if (!RealtimeEventGroups.platformAdmin.contains(message.event)) {
-              // Dashboard deltas are enough for instant UI; skip a heavy reload.
+            // Count deltas alone skip a reload, but pharmacy packs also drive
+            // most-sold / status-mix charts that deltas do not cover.
+            final bool pharmacyTouched = RealtimeEventGroups.pharmacy.contains(
+              message.event,
+            );
+            if (!RealtimeEventGroups.platformAdmin.contains(message.event) &&
+                !pharmacyTouched) {
               return;
             }
           } else if (!isSelfMutation) {
@@ -69,6 +74,8 @@ final homeControllerProvider =
                 null;
           }
 
+          // Soft invalidate: AsyncStateScaffold keeps prior KPI/chart values
+          // visible while the new pack loads (no full-page remount).
           ref.invalidateSelf();
         },
       );

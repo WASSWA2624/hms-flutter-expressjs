@@ -1,70 +1,77 @@
-# Reporting and Analytics: Role-Tailored Workspace and Overview Dashboard
+# Pharmacy Reporting and Analytics
 
-Rename `/reports` to **Reporting and Analytics**, make **Overview** a true reports/analytics dashboard (default tab), and give each staff role account tailored tabs and content for creating reports and viewing analytics—without weakening create/run/export/compliance or inventing a parallel stack.
+Extend Reporting and Analytics (`/reports`) so pharmacists get deep pharmacy **Analysis**, **Analytics**, and **Reporting**—without a parallel BI product or a pharmacy-only report runner.
 
 ## Context
 
 **Current behavior**
 
-- Shell label is **Reports**; workspace title is **Reports and audit** (`reportsTitle`). Route stays `/reports`; feature module code is already `reporting-analytics`.
-- Workspace panels are infrastructure-shaped: Overview, Catalog, Runs and delivery, Dashboards, KPI monitor, Analytics activity, plus compliance (Audit / PHI / Processing). Overview is the default panel but renders the **same worklist table** as other catalog panels—not a dashboard.
-- Backend overview returns `summary`, `queue_summaries`, `panel_summaries`, and related workload signals; Flutter parses them into entities but **does not surface** them as Overview dashboard chrome.
-- Panel gating is binary (`reports:read` vs `compliance:read`); every entitled user sees the same non-compliance panel set. Dataset catalog spans patients, appointments, billing, pharmacy, inventory, HR, biomedical, communications, but is **not** role-curated into tailored tabs.
-- Create/run/schedule, print/export (`evidence:export`), deep link `?dataset=`, and Home charts (`reports:read`) already exist. Domain analytics also live elsewhere (e.g. Billing financial panel, pharmacy home charts).
+- `/reports` (`ReportsWorkspacePage`) exposes Overview, Catalog (definitions), and Delivery (runs + schedules). Pharmacists are tailored to those three panels (`ReportsDomainPack.pharmacy`).
+- Overview shows platform infra KPIs (definitions, queued runs, due schedules, pinned widgets), attention queues (e.g. failed runs), activity/queue-mix charts, and pharmacy domain chips.
+- Three pharmacy datasets/default defs already exist: `pharmacy_drug_consumption`, `pharmacy_dispense_throughput`, `inventory_stock_risk` (`lib/reports/datasets.js`; `ensureDefaultPharmacyReportDefinitions`).
+- Pharmacy deep-links to `/reports?dataset=pharmacy_drug_consumption` when entitled (`canOpenPharmacyReportsAnalytics`).
+- Operational pharmacy charts (most-sold, status mix, sales KPIs) live on the **Home** pharmacist dashboard—not Reports Overview.
+- Shared run pipeline supports PDF/CSV/JSON/XLSX; Overview soft-refreshes via `RealtimeEventGroups.reports`. Pharmacist packs are often `reports:read` without `reports:write`.
 
 **Intended behavior**
 
-- Entitled users open a workspace clearly named **Reporting and Analytics** (nav + title), specialized for **creating reports** and **viewing analytics**.
-- **Overview** is the default tab and reads as a **Reports and Analytics dashboard** (KPIs, charts/shortcuts, progressive disclosure)—not a duplicate flat worklist.
-- **For each staff role account**, tabs and tab content are **tailored** to that role’s domain (finance for accountant/billing, pharmacy for pharmacist, reception/ops for receptionist, clinical/ops for clinical roles, etc.), aligned with `default_user_roles.mdc` reporting scope and existing dataset categories / module permissions.
-- Existing create/run/schedule/export/compliance and deep links remain; unauthorized chrome stays absent.
+- Present three groups inside pharmacy Reports:
+  1. **Analysis** — interactive pharmacy tables/charts with filters and periods.
+  2. **Analytics** — insights/projections (consumption leaders, expiry risk, stocking suggestions, revenue/margin when pricing lanes exist).
+  3. **Reporting** — create/run/schedule/export pharmacy defs via the **same** definition/run/schedule flow used elsewhere.
+- Answer desk questions on stock, dispense, OTC vs clinical, expiry, money, and seasonality; reuse Home/pricing math where it exists; do not leave “near-expiry” copy without runner support.
+- Preserve Overview shell, Catalog, Delivery, gates, and formats unless a requirement below changes them.
 
 **Definitions**
 
-- *Reporting and Analytics workspace*: `/reports` (`ReportsWorkspacePage` / reports-workspace APIs)—same route, renamed product surface.
-- *Role account*: a staff role (or equivalent custom role) with `reports:read` (and compliance panels only when `compliance:read` / review). Tailoring follows effective permissions and active modules, not hard-coded single-role UI forks when multi-role.
-- *Overview dashboard*: default Overview tab showing facility-scoped analytics summary (reuse overview summary/queue data and shared `DashboardChartsRow` / widget patterns), plus clear paths to create/run reports relevant to the user—distinct from Catalog/Delivery worklists.
-- *Tailored tabs*: the visible panel set and primary datasets/analytics on those panels, curated for the user’s role domain; infra panels (Catalog, Delivery, Dashboards, Monitor, Activity) may remain when useful, reordered or filtered—not dumped identically for every role.
-- *Create report*: save/run a definition against an allowed dataset via existing Reports APIs/permissions.
+- *Analysis:* filtered interactive graphs/tables over pharmacy datasets for a selected period/scope.
+- *Analytics:* derived insights (rankings, projections, suggestions)—not raw dumps alone.
+- *Reporting:* durable definitions + queued runs + schedules + downloadable artifacts (PDF preferred among existing formats).
+- *Pharmacy domain reports:* catalog entries in pharmacy or pharmacy-owned inventory-risk categories.
 
 ## Requirements
 
-1. Rename user-facing chrome to **Reporting and Analytics** (at least `navigationReportsLabel` / short label and `reportsTitle`; update related loading/empty copy that still says only “Reports and audit” where it would contradict the rename). Keep path `/reports` and deep links stable unless a redirect is required.
-2. Make **Overview** the default tab and implement it as a **dashboard**: surface backend overview summary/queue (and available chart/KPI signals) with progressive disclosure; primary CTA path to create/run reports. Do not leave Overview as a worklist-only clone of Catalog/Delivery.
-3. For each staff role account with Reports access, show **tailored tabs and content** (datasets, analytics emphasis, optional panel presence/order) matching that role’s reporting domain and module permissions. Multi-role users see the union of allowed tailored content; still permission-gated.
-4. Preserve Catalog, Delivery, Dashboards, Monitor, Activity, schedule/timeline, and create/run/schedule/retry/cancel/print/export for entitled users; omit panels the user cannot use (absence, not disabled stubs). Keep compliance panels behind existing compliance grants.
-5. Prefer reuse: `reports_access`, reports-workspace APIs, `REPORT_DATASETS` categories, Home/`DashboardChartsRow` patterns, and existing Billing/Pharmacy analytics deep links—do not build a second reporting product. Overview may deep-link or pre-filter to domain datasets already used by those modules.
-6. Cover loading, empty, error/retry, success, and validation on Overview and tailored panels. Responsive; theme tokens; light/dark. Unauthorized UI absent; backend authoritative.
-7. Update tests for rename strings where asserted, Overview-as-dashboard presence, role-tailored panel/dataset visibility (authorized present / unauthorized absent), and regression of create/run/export/compliance. Reuse design-system and Reports components.
+1. Structure the pharmacist Reports UX into **Analysis**, **Analytics**, and **Reporting** groups (tabs/sections/progressive disclosure) mapped onto existing Overview/Catalog/Delivery—do not invent a second reports module or route family.
+2. Keep and deepen Analysis: consumption, dispense throughput, inventory stock risk; add or complete **near/expired stock**, **OTC/walk-in vs clinical/facility split**, and **period/season filters** (date range + prior-period compare when shared filters allow).
+3. Deliver Analytics for: top consumed drugs; stock-out risk; common expiry; suggested next stocking focus; revenue/margin outlook when buy/transfer/sell lanes exist (align with pharmacy pricing/Home profit math—no second cost model).
+4. Render Analysis/Analytics with graphs and tables via shared dashboard/chart and list-table components; cover loading, empty, error, success; keep prior values visible during soft refresh where the shell already does.
+5. Wire Reporting to the existing definition → run → schedule → download pipeline (PDF/CSV/JSON/XLSX). `reports:write` (or admin) may create/update templates, queue runs, manage schedules; read-only users browse defs and entitled artifacts only.
+6. Keep Pharmacy → Reports entry and Overview domain chips on **live** dataset keys (no stale `pharmacy_dispenses` product paths).
+7. Enforce RBAC/ABAC (`reports:read`/`write`, `evidence:export`, `pharmacy:read`, plus inventory/operations where stock-risk needs them); unauthorized UI must not render. Soft-refresh Overview and pharmacy Analysis data without blanking the workspace.
+8. Responsive (mobile/tablet/desktop), theme tokens, light/dark, and visible feedback for permission, loading, empty, error, success, validation.
+9. Tests: runners for new/fixed pharmacy lenses; unauthorized UI absent; pharmacist grouping visible; Reporting reuses shared APIs; `?dataset=` opens the correct pharmacy def; soft-refresh does not blank-remount the shell.
 
 ## Constraints
 
-- Reuse `frontend/lib/features/reports/`, `backend/src/modules/reports-workspace/`, `backend/src/lib/reports/`—no parallel analytics stack.
-- Do not remove operational create/run/export or compliance for users who already have them unless a panel is intentionally out of role scope.
-- No unrelated Home/Billing/Pharmacy refactors beyond deep-link or shared-chart reuse needed for Overview/tailoring.
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `.cursor/access/default_user_roles.mdc`, `prompts/.cursor/prompt.mdc`.
+- Reuse `reports-workspace`, `report-definition`, `report-run`, `report-schedule`, `lib/reports/*`, FE Reports page/controller/overview mapper, and shared charts/tables—no parallel pharmacy reporting stack or PDF path outside existing exporters.
+- Do not remove Home pharmacist KPIs/charts; Reports complements Home.
+- Do not grant pharmacists platform admin panels (Dashboards/Monitor/Activity) unless policy already does.
+- Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `prompts/.cursor/prompt.mdc`. Prefer extending datasets/runners over unbounded ad-hoc queries.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | Nav and workspace title read Reporting and Analytics; `/reports` still opens the workspace. | R1 |
-| A2 | First open lands on Overview as a dashboard (KPIs/charts/shortcuts), not worklist-only. | R2 |
-| A3 | Distinct role accounts see tailored tabs/content for their domain; unauthorized panels/datasets absent. | R3–R4 |
-| A4 | Entitled users can still create/run/export; compliance panels only with compliance grants. | R4–R5 |
-| A5 | Loading/empty/error/validation handled; responsive light/dark. | R6 |
-| A6 | Tests cover rename, Overview dashboard, role tailoring, and authorized create/run paths. | R7 |
+| A1 | Pharmacist `/reports` shows Analysis, Analytics, and Reporting groups without a separate reports app. | R1 |
+| A2 | Analysis covers consumption, throughput, stock/expiry risk, OTC vs clinical, and period filters with charts/tables. | R2, R4, R8 |
+| A3 | Analytics shows consumption leaders, stock-out/expiry insights, stocking suggestions, and margin/revenue when cost lanes exist. | R3, R4 |
+| A4 | Reporting creates/runs/schedules/downloads pharmacy defs via the shared pipeline; unauthorized write/export chrome absent. | R5, R7 |
+| A5 | Pharmacy entry and Overview chips use live dataset keys; soft-refresh updates values without blank remount. | R6, R7 |
+| A6 | Tests/manual checks cover runners, permissions, grouping, deep-link, viewports, and themes. | R8, R9 |
 
 ## Relevant Files
 
-- `frontend/lib/features/reports/presentation/pages/reports_workspace_page.dart`, `reports_access.dart`, `controllers/reports_workspace_controller.dart`, `domain/entities/reports_entities.dart`
-- `frontend/lib/l10n/app_en.arb` (`reportsTitle`, `navigationReportsLabel`); `frontend/lib/app/router/app_router.dart`
-- `frontend/lib/shared/dashboard/dashboard_charts_row.dart`; Home chart mappers as reuse reference
-- `backend/src/modules/reports-workspace/services/reports-workspace.service.js`; `backend/src/lib/reports/constants.js`, `datasets.js`
-- Tests: `reports_workspace_*`, `reports_access_test.dart`, related permission/UI tests
+- `frontend/lib/features/reports/presentation/pages/reports_workspace_page.dart`
+- `frontend/lib/features/reports/presentation/widgets/reports_overview_dashboard.dart`, `reports_overview_mapper.dart`
+- `frontend/lib/features/reports/presentation/reports_role_tailoring.dart`, `reports_access.dart`
+- `frontend/lib/features/pharmacy/presentation/pharmacy_access.dart`
+- `frontend/lib/features/home/presentation/widgets/pharmacy_most_sold_charts.dart`
+- `backend/src/modules/reports-workspace/`, `report-definition/`, `report-run/`, `report-schedule/`
+- `backend/src/lib/reports/constants.js`, `datasets.js`, `runtime.js`
+- Tests: `backend/src/tests/lib/reports/datasets.pharmacy.test.js`; FE reports overview/access tests
 
 ## Verification
 
-- Flutter: Overview dashboard default; rename visible; role A vs role B tab/dataset differences; create/run still works; unauthorized chrome absent.
-- Backend: overview summary still drives dashboard; dataset access remains permission/scope safe.
-- Manual: accountant vs pharmacist vs receptionist (each with `reports:read`) — tailored tabs; Overview dashboard; create/run one domain report. Light/dark and narrow viewports.
+- BE: pharmacy runners return correct series for consumption, throughput, stock/expiry risk, OTC vs clinical; unauthorized category denied.
+- FE: Analysis/Analytics/Reporting grouping; chips and `?dataset=` open live pharmacy defs; write/export gates; soft-refresh keeps shell; light/dark + narrow usable.
+- Manual: Pharmacy → Reports → Analysis chart/table → Analytics insights → run/schedule pharmacy PDF/CSV → Delivery/Overview update without full-page blank reload.

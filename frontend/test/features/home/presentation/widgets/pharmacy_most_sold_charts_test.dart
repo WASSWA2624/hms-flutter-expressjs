@@ -261,6 +261,119 @@ void main() {
       await tester.tap(find.text('Profit'));
       await tester.pumpAndSettle();
     });
+
+    testWidgets(
+      'updates chart labels in place when parent pack generatedAt changes',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appAccessPolicyProvider.overrideWithValue(
+                _policy(<AppPermission>{
+                  AppPermissions.pharmacyRead,
+                  AppPermissions.billingRead,
+                }),
+              ),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Builder(
+                builder: (BuildContext context) {
+                  return Scaffold(
+                    body: SingleChildScrollView(
+                      child: PharmacyMostSoldCharts(
+                        dashboard: _dashboard(
+                          generatedAt: DateTime.utc(2026, 8, 6, 10),
+                          mostSold: HomeMostSoldSeries(
+                            qty: <HomeTrendPoint>[
+                              HomeTrendPoint(
+                                id: 'old',
+                                date: null,
+                                value: 3,
+                                label: 'Old Drug',
+                                summaryLabel: 'Old',
+                              ),
+                            ],
+                            amount: <HomeTrendPoint>[
+                              HomeTrendPoint(
+                                id: 'old',
+                                date: null,
+                                value: 30,
+                                label: 'Old Drug',
+                                summaryLabel: 'Old',
+                              ),
+                            ],
+                          ),
+                        ),
+                        l10n: AppLocalizations.of(context)!,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(find.textContaining('Old'), findsWidgets);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appAccessPolicyProvider.overrideWithValue(
+                _policy(<AppPermission>{
+                  AppPermissions.pharmacyRead,
+                  AppPermissions.billingRead,
+                }),
+              ),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Builder(
+                builder: (BuildContext context) {
+                  return Scaffold(
+                    body: SingleChildScrollView(
+                      child: PharmacyMostSoldCharts(
+                        dashboard: _dashboard(
+                          generatedAt: DateTime.utc(2026, 8, 6, 11),
+                          mostSold: HomeMostSoldSeries(
+                            qty: <HomeTrendPoint>[
+                              HomeTrendPoint(
+                                id: 'new',
+                                date: null,
+                                value: 9,
+                                label: 'Fresh Drug',
+                                summaryLabel: 'Fresh',
+                              ),
+                            ],
+                            amount: <HomeTrendPoint>[
+                              HomeTrendPoint(
+                                id: 'new',
+                                date: null,
+                                value: 90,
+                                label: 'Fresh Drug',
+                                summaryLabel: 'Fresh',
+                              ),
+                            ],
+                          ),
+                        ),
+                        l10n: AppLocalizations.of(context)!,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.textContaining('Fresh'), findsWidgets);
+        expect(find.textContaining('Old Drug'), findsNothing);
+      },
+    );
   });
 }
 
@@ -288,6 +401,7 @@ AppAccessPolicy _policy(Set<AppPermission> permissions) {
 HomeDashboard _dashboard({
   required HomeMostSoldSeries mostSold,
   List<HomeTrendPoint> trendPoints = const <HomeTrendPoint>[],
+  DateTime? generatedAt,
 }) {
   final HomeDashboardProfile profile = homeProfileForRole(AppRole.pharmacist);
   return HomeDashboard(
@@ -334,5 +448,6 @@ HomeDashboard _dashboard({
     activity: const <HomeActivityItem>[],
     tenantOptions: const <HomeTenantOption>[],
     mostSold: mostSold,
+    generatedAt: generatedAt,
   );
 }

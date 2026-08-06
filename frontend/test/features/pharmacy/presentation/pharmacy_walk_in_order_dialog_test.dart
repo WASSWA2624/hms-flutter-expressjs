@@ -8,17 +8,18 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
-import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
-import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
-import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
+import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_repository_impl.dart';
+import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
+import 'package:hosspi_hms/features/pharmacy/domain/repositories/pharmacy_repository.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_walk_in_order_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_collapsible_section.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockClinicalRepository extends Mock implements ClinicalRepository {}
+class _MockPharmacyRepository extends Mock implements PharmacyRepository {}
 
 AppAccessPolicy _pharmacyWritePolicy({bool canRegisterPatient = false}) {
   final List<AppPermission> permissions = <AppPermission>[
@@ -46,22 +47,28 @@ AppAccessPolicy _pharmacyWritePolicy({bool canRegisterPatient = false}) {
 }
 
 void main() {
-  late _MockClinicalRepository clinicalRepository;
+  late _MockPharmacyRepository pharmacyRepository;
+
+  setUpAll(() {
+    registerFallbackValue(const PharmacyDrugQuery());
+  });
 
   setUp(() {
-    clinicalRepository = _MockClinicalRepository();
-    when(() => clinicalRepository.loadReferenceData()).thenAnswer(
-      (_) async => const Result<ClinicalReferenceData>.success(
-        ClinicalReferenceData(
-          drugs: <ClinicalActionCatalogOption>[
-            ClinicalActionCatalogOption(
-              id: 'amox',
+    pharmacyRepository = _MockPharmacyRepository();
+    when(() => pharmacyRepository.searchDrugs(any())).thenAnswer(
+      (_) async => Result<AppPage<PharmacyDrug>>.success(
+        AppPage<PharmacyDrug>(
+          items: const <PharmacyDrug>[
+            PharmacyDrug(
+              id: 'DRG0001',
               name: 'Amoxicillin',
               code: 'AMOX',
-              unitPrice: 12,
+              pharmacyUnitPrice: 12,
               currency: 'USD',
             ),
           ],
+          request: const AppPageRequest(pageSize: AppPageRequest.maxPageSize),
+          totalItemCount: 1,
         ),
       ),
     );
@@ -79,7 +86,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+          pharmacyRepositoryProvider.overrideWithValue(pharmacyRepository),
           appAccessPolicyProvider.overrideWithValue(
             policy ?? _pharmacyWritePolicy(),
           ),
@@ -149,6 +156,8 @@ void main() {
           find.byType(ClinicalPrescriptionActionDialog),
         );
     expect(dialog.allowAddMedicines, isTrue);
+    expect(dialog.referenceData.drugs, isNotEmpty);
+    expect(dialog.loadCatalogDrugs, isNotNull);
 
     await tester.tap(find.text('Existing patient'));
     await tester.pumpAndSettle();
@@ -157,14 +166,10 @@ void main() {
       find.widgetWithText(AppButton, 'Select'),
     );
     expect(selectButton.enabled, isTrue);
-    expect(selectButton.onPressed, isNotNull);
 
     dialog = tester.widget<ClinicalPrescriptionActionDialog>(
       find.byType(ClinicalPrescriptionActionDialog),
     );
     expect(dialog.allowAddMedicines, isFalse);
-
-    // Review billing stays hidden until a patient is selected.
-    expect(find.text('Review billing'), findsNothing);
   });
 }

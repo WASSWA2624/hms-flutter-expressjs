@@ -66,6 +66,7 @@ void main() {
       await _pumpOpenPicker(tester, repository: repository);
 
       expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.byType(Checkbox), findsWidgets);
       expect(find.byType(AppListTable<Patient>), findsOneWidget);
       expect(find.byType(AppSelectField<String>), findsNothing);
       expect(find.text('SELECT PATIENT'), findsOneWidget);

@@ -30,6 +30,7 @@ class ClinicalPrescriptionActionDialog extends StatefulWidget {
     this.enableBilling = true,
     this.defaultBillingEntity = 'FACILITY',
     this.allowAddMedicines = true,
+    this.loadCatalogDrugs,
     super.key,
   });
 
@@ -59,6 +60,9 @@ class ClinicalPrescriptionActionDialog extends StatefulWidget {
   /// When false, Add medicine stays inactive (e.g. Existing patient with no
   /// patient selected yet on pharmacy Create order).
   final bool allowAddMedicines;
+
+  /// Optional remote medicine catalog loader (search + barcode scan).
+  final ClinicalPrescriptionCatalogLoader? loadCatalogDrugs;
 
   final Future<AppFailure?> Function({
     required List<Map<String, Object?>> items,
@@ -699,6 +703,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
           context: context,
           drugs: widget.referenceData.drugs,
           alreadySelectedDrugIds: alreadySelected,
+          loadDrugs: widget.loadCatalogDrugs,
         );
     if (!mounted || selected == null || selected.isEmpty) {
       return;

@@ -13,6 +13,7 @@ import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_mutation.dart';
 import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_repository_impl.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/repositories/pharmacy_repository.dart';
@@ -88,6 +89,14 @@ final class PharmacyWorkspaceController
         inventory: refreshInventory || refreshCatalog,
       ),
     );
+  }
+
+  /// Soft-refresh pharmacist home KPIs/charts without remounting the home shell.
+  void _notifyHomeDashboard() {
+    if (_disposed) {
+      return;
+    }
+    homeInvalidateDashboard(ref);
   }
 
   Future<AppFailure?> applySearch(String search) async {
@@ -1185,6 +1194,7 @@ final class PharmacyWorkspaceController
         if (latest != null) {
           _emit(latest.copyWith(isSaving: false));
         }
+        _notifyHomeDashboard();
         return failure;
       },
       failure: (AppFailure failure) {
@@ -1219,6 +1229,7 @@ final class PharmacyWorkspaceController
             ),
           );
         }
+        _notifyHomeDashboard();
         return null;
       },
       failure: (AppFailure failure) {
@@ -1267,6 +1278,7 @@ final class PharmacyWorkspaceController
             afterRefresh.copyWith(selectedWorkflow: mutation.workflow),
           );
         }
+        _notifyHomeDashboard();
         return null;
       },
       failure: (AppFailure failure) {
@@ -1776,6 +1788,7 @@ final class PharmacyWorkspaceController
         if (refreshDrugsAfter) {
           unawaited(_refreshDrugs(showLoading: false));
         }
+        _notifyHomeDashboard();
         return null;
       },
       failure: (AppFailure failure) {

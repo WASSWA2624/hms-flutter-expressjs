@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -6,18 +8,24 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/scan/app_live_camera.dart';
+
+typedef ClinicalPrescriptionCatalogLoader =
+    Future<List<ClinicalActionCatalogOption>> Function(String query);
 
 Future<List<ClinicalActionCatalogOption>?>
 showClinicalPrescriptionCatalogDialog({
   required BuildContext context,
   required List<ClinicalActionCatalogOption> drugs,
   Set<String> alreadySelectedDrugIds = const <String>{},
+  ClinicalPrescriptionCatalogLoader? loadDrugs,
 }) {
   return showAppDialog<List<ClinicalActionCatalogOption>>(
     context: context,
     builder: (BuildContext context) => ClinicalPrescriptionCatalogDialog(
       drugs: drugs,
       alreadySelectedDrugIds: alreadySelectedDrugIds,
+      loadDrugs: loadDrugs,
     ),
   );
 }
@@ -26,11 +34,13 @@ class ClinicalPrescriptionCatalogDialog extends StatefulWidget {
   const ClinicalPrescriptionCatalogDialog({
     required this.drugs,
     this.alreadySelectedDrugIds = const <String>{},
+    this.loadDrugs,
     super.key,
   });
 
   final List<ClinicalActionCatalogOption> drugs;
   final Set<String> alreadySelectedDrugIds;
+  final ClinicalPrescriptionCatalogLoader? loadDrugs;
 
   @override
   State<ClinicalPrescriptionCatalogDialog> createState() =>
@@ -45,6 +55,8 @@ class _ClinicalPrescriptionCatalogDialogState
   static const String _priceColumnKey = 'price';
   static const String _columnVisibilityStorageKey =
       'clinical_prescription_catalog_columns';
+  static const Duration _remoteSearchDebounceDuration =
+      Duration(milliseconds: 280);
 
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<ClinicalActionCatalogOption>
@@ -53,16 +65,28 @@ class _ClinicalPrescriptionCatalogDialogState
   final List<ClinicalActionCatalogOption> _stagedOptions =
       <ClinicalActionCatalogOption>[];
 
+  List<ClinicalActionCatalogOption> _catalog = const <ClinicalActionCatalogOption>[];
+  bool _isLoadingCatalog = false;
+  String? _catalogError;
+  Timer? _remoteSearchDebounce;
+  int _remoteSearchGeneration = 0;
+  bool _isScanning = false;
+
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
     _columnVisibilityController =
         AppListTableColumnVisibilityController<ClinicalActionCatalogOption>();
+    _catalog = List<ClinicalActionCatalogOption>.of(widget.drugs);
+    if (widget.loadDrugs != null) {
+      unawaited(_reloadCatalog(_searchController.text));
+    }
   }
 
   @override
   void dispose() {
+    _remoteSearchDebounce?.cancel();
     _searchController.dispose();
     _columnVisibilityController.dispose();
     super.dispose();
@@ -102,6 +126,13 @@ class _ClinicalPrescriptionCatalogDialogState
               ),
             ),
           ),
+          if (_catalogError != null) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            AppFormInformationBanner.message(
+              message: _catalogError!,
+              variant: AppFormInformationVariant.error,
+            ),
+          ],
           SizedBox(height: theme.spacing.sm),
           Expanded(
             child: AppListTable<ClinicalActionCatalogOption>(
@@ -118,6 +149,8 @@ class _ClinicalPrescriptionCatalogDialogState
               displayMode: AppListTableDisplayMode.table,
               tableHorizontalMargin: 0,
               showRowNumbers: false,
+              enableExport: false,
+              isLoading: _isLoadingCatalog,
               onRowSelected: (ClinicalActionCatalogOption item) {
                 _toggleSelection(
                   item,
@@ -137,7 +170,27 @@ class _ClinicalPrescriptionCatalogDialogState
                 controller: _searchController,
                 semanticLabel: l10n.clinicalPrescriptionCatalogSearchLabel,
                 hintText: l10n.clinicalPrescriptionCatalogSearchHint,
-                matcher: _matchesCatalogSearch,
+                matcher: widget.loadDrugs == null
+                    ? _matchesCatalogSearch
+                    : (_, _) => true,
+                isLoading: _isLoadingCatalog || _isScanning,
+                onChanged: widget.loadDrugs == null
+                    ? null
+                    : _scheduleRemoteSearch,
+                onSubmitted: widget.loadDrugs == null
+                    ? null
+                    : (String value) => unawaited(_reloadCatalog(value)),
+                trailingActions: <AppSearchBarAction>[
+                  AppSearchBarAction(
+                    icon: Icons.qr_code_scanner_outlined,
+                    label: l10n.pharmacyDrugScanBarcodeAction,
+                    tooltip: l10n.pharmacyDrugScanBarcodeAction,
+                    enabled: !_isScanning,
+                    onPressed: _isScanning
+                        ? null
+                        : () => unawaited(_scanBarcode()),
+                  ),
+                ],
               ),
               emptyBuilder: (_) =>
                   AppMutedText(l10n.clinicalPrescriptionCatalogNoOptions),
@@ -190,14 +243,124 @@ class _ClinicalPrescriptionCatalogDialogState
     );
   }
 
+  void _scheduleRemoteSearch(String query) {
+    _remoteSearchDebounce?.cancel();
+    _remoteSearchDebounce = Timer(_remoteSearchDebounceDuration, () {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_reloadCatalog(query));
+    });
+  }
+
+  Future<void> _reloadCatalog(String query) async {
+    final ClinicalPrescriptionCatalogLoader? loader = widget.loadDrugs;
+    if (loader == null) {
+      return;
+    }
+    final int generation = ++_remoteSearchGeneration;
+    setState(() {
+      _isLoadingCatalog = true;
+      _catalogError = null;
+    });
+    try {
+      final List<ClinicalActionCatalogOption> next = await loader(query);
+      if (!mounted || generation != _remoteSearchGeneration) {
+        return;
+      }
+      setState(() {
+        _catalog = next;
+        _isLoadingCatalog = false;
+      });
+    } catch (_) {
+      if (!mounted || generation != _remoteSearchGeneration) {
+        return;
+      }
+      setState(() {
+        _isLoadingCatalog = false;
+        _catalogError = context.l10n.clinicalPrescriptionCatalogNoOptions;
+      });
+    }
+  }
+
+  Future<void> _scanBarcode() async {
+    if (_isScanning) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    setState(() => _isScanning = true);
+    try {
+      final String? code = await scanLiveBarcode(
+        context: context,
+        title: l10n.pharmacyDrugScanBarcodeTitle,
+        body: l10n.pharmacyDrugScanBarcodeBody,
+        closeLabel: l10n.commonCloseActionLabel,
+        unavailableBody: l10n.pharmacyDrugScanBarcodeUnavailableBody,
+      );
+      if (!mounted || code == null || code.trim().isEmpty) {
+        return;
+      }
+      final String normalized = code.trim();
+      _searchController.text = normalized;
+      if (widget.loadDrugs != null) {
+        await _reloadCatalog(normalized);
+      }
+      if (!mounted) {
+        return;
+      }
+      _selectMatchesForScan(normalized);
+    } finally {
+      if (mounted) {
+        setState(() => _isScanning = false);
+      }
+    }
+  }
+
+  void _selectMatchesForScan(String code) {
+    final String normalized = code.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return;
+    }
+    final List<ClinicalActionCatalogOption> matches = _availableDrugs()
+        .where((ClinicalActionCatalogOption item) {
+          final String itemCode = (item.code ?? '').trim().toLowerCase();
+          final String apiId = item.apiId.trim().toLowerCase();
+          final String haystack = clinicalActionJoinDisplay(<String?>[
+            item.name,
+            item.code,
+            item.searchText,
+            item.displayTitle,
+          ], separator: ' ').toLowerCase();
+          return itemCode == normalized ||
+              apiId == normalized ||
+              haystack.contains(normalized);
+        })
+        .toList(growable: false);
+    if (matches.isEmpty) {
+      return;
+    }
+    setState(() {
+      for (final ClinicalActionCatalogOption item in matches) {
+        final String apiId = item.apiId;
+        if (_stagedIds.contains(apiId)) {
+          continue;
+        }
+        _stagedIds.add(apiId);
+        _stagedOptions.add(item);
+      }
+    });
+  }
+
   List<ClinicalActionCatalogOption> _availableDrugs() {
     final Set<String> excluded = widget.alreadySelectedDrugIds
         .map((String id) => id.trim().toLowerCase())
         .where((String id) => id.isNotEmpty)
         .toSet();
+    final List<ClinicalActionCatalogOption> source =
+        widget.loadDrugs == null ? widget.drugs : _catalog;
     final List<ClinicalActionCatalogOption> available =
         <ClinicalActionCatalogOption>[];
-    for (final ClinicalActionCatalogOption option in widget.drugs) {
+    for (final ClinicalActionCatalogOption option in source) {
       final String apiId = option.apiId.trim();
       if (apiId.isEmpty) {
         continue;
@@ -299,12 +462,14 @@ class _ClinicalPrescriptionCatalogDialogState
           valueListenable: _searchController,
           builder: (BuildContext context, TextEditingValue value, Widget? _) {
             final List<ClinicalActionCatalogOption> visibleItems =
-                _availableDrugs()
-                    .where(
-                      (ClinicalActionCatalogOption item) =>
-                          _matchesCatalogSearch(item, value.text),
-                    )
-                    .toList(growable: false);
+                widget.loadDrugs == null
+                ? _availableDrugs()
+                      .where(
+                        (ClinicalActionCatalogOption item) =>
+                            _matchesCatalogSearch(item, value.text),
+                      )
+                      .toList(growable: false)
+                : _availableDrugs();
             final bool allSelected =
                 visibleItems.isNotEmpty &&
                 visibleItems.every(

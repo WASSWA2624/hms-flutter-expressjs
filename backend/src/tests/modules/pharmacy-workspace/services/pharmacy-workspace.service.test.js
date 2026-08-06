@@ -199,10 +199,12 @@ describe('pharmacy-workspace.service', () => {
     await flushAsync();
 
     expect(emitToUsers).toHaveBeenCalledWith(
-      ['user-1', 'user-2'],
+      expect.arrayContaining(['user-1', 'actor-1', 'user-2']),
       'pharmacy.workspace_updated',
       expect.objectContaining({
-        action: 'PREPARE_DISPENSE'})
+        action: 'PREPARE_DISPENSE',
+        tenant_id: expect.any(String),
+        actor_user_id: 'actor-1'})
     );
   });
 

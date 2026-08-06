@@ -529,7 +529,29 @@ class _ReceptionPatientPickerDialogState
   }
 
   List<AppListTableColumn<Patient>> _columns(AppLocalizations l10n) {
+    final String selectedKey = _patientOptionValue(_selected) ?? '';
     return <AppListTableColumn<Patient>>[
+      AppListTableColumn<Patient>(
+        id: 'select',
+        label: '',
+        alwaysVisible: true,
+        fixedWidth: 48,
+        cellBuilder: (BuildContext context, Patient patient) {
+          final bool selected =
+              _patientOptionValue(patient) == selectedKey &&
+              selectedKey.isNotEmpty;
+          return Center(
+            child: IgnorePointer(
+              child: Checkbox(
+                value: selected,
+                onChanged: (_) {},
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          );
+        },
+      ),
       AppListTableColumn<Patient>(
         id: 'patient',
         label: l10n.patientsPatientColumnLabel,
@@ -608,6 +630,7 @@ class _ReceptionPatientPickerDialogState
       tableHorizontalMargin: 0,
       enableExport: false,
       forceCompact: true,
+      showRowNumbers: false,
       columnVisibilityController: _columnController,
       columnVisibilityStorageKey: 'reception_patient_picker',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
@@ -690,21 +713,27 @@ class _ReceptionPatientPickerDialogState
         },
       ),
       columns: _columns(l10n),
-      columnChoices: _columns(l10n),
+      columnChoices: _columns(l10n)
+          .where((AppListTableColumn<Patient> column) => column.id != 'select')
+          .toList(growable: false),
       mobileItemBuilder: (BuildContext context, Patient patient) {
+        final bool selected =
+            _patientOptionValue(patient) == selectedKey &&
+            selectedKey.isNotEmpty;
         return AppListTableMobileItem(
-          leading: Icon(
-            Icons.person_outline,
-            color: colorScheme.primary,
+          leading: IgnorePointer(
+            child: Checkbox(
+              value: selected,
+              onChanged: (_) {},
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
           ),
           title: patient.effectiveDisplayName,
           caption:
               patient.effectiveIdentifier ??
               patient.publicId ??
               l10n.profileUnknownValue,
-          trailing: _patientOptionValue(patient) == selectedKey
-              ? Icon(Icons.check_circle, color: colorScheme.primary)
-              : null,
         );
       },
     );

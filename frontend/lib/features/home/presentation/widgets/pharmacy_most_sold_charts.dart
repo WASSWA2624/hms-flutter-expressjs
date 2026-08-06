@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
@@ -71,6 +73,9 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
         (id: 'cancelled', label: 'Cancelled'),
       ];
 
+  HomeMostSoldPeriod get _parentPackPeriod =>
+      widget.request.mostSoldPeriod ?? HomeMostSoldPeriod.today;
+
   @override
   void initState() {
     super.initState();
@@ -87,13 +92,78 @@ class _PharmacyMostSoldChartsState extends ConsumerState<PharmacyMostSoldCharts>
   @override
   void didUpdateWidget(covariant PharmacyMostSoldCharts oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.dashboard.mostSold != widget.dashboard.mostSold &&
-        _mostSoldOverride == null) {
-      // Parent refresh replaced baseline series.
+    if (!_parentDashboardPackChanged(oldWidget.dashboard, widget.dashboard)) {
+      return;
     }
-    if (oldWidget.dashboard.distribution != widget.dashboard.distribution &&
-        _distributionOverride == null) {
-      // Parent refresh replaced baseline distribution.
+    _syncChartOverridesFromParentPack();
+  }
+
+  /// Parent soft-refresh uses a new [HomeDashboard.generatedAt]; access filters
+  /// also rebuild copies with the same stamp — ignore those.
+  bool _parentDashboardPackChanged(HomeDashboard previous, HomeDashboard next) {
+    if (previous.generatedAt != null || next.generatedAt != null) {
+      return previous.generatedAt != next.generatedAt;
+    }
+    return _statusCardFingerprint(previous) != _statusCardFingerprint(next) ||
+        _mostSoldFingerprint(previous.mostSold) !=
+            _mostSoldFingerprint(next.mostSold) ||
+        _distributionFingerprint(previous.distribution) !=
+            _distributionFingerprint(next.distribution);
+  }
+
+  String _statusCardFingerprint(HomeDashboard dashboard) {
+    return dashboard.statusCards
+        .map(
+          (HomeStatusCard card) =>
+              '${card.id}:${card.value}:${card.secondaryValue}',
+        )
+        .join('|');
+  }
+
+  String _mostSoldFingerprint(HomeMostSoldSeries series) {
+    String lane(List<HomeTrendPoint> points) => points
+        .map((HomeTrendPoint point) => '${point.id}:${point.value}')
+        .join(',');
+    return '${lane(series.qty)}#${lane(series.amount)}#${lane(series.profit)}';
+  }
+
+  String _distributionFingerprint(HomeDashboardDistribution distribution) {
+    return '${distribution.total}|${distribution.segments.map((HomeDistributionSegment segment) => '${segment.id}:${segment.value}').join(',')}';
+  }
+
+  /// Drop overrides when viewing the pack's default window so values/charts
+  /// update in place; re-fetch only when a custom period/top-N window is open.
+  void _syncChartOverridesFromParentPack() {
+    final HomeMostSoldPeriod packPeriod = _parentPackPeriod;
+    final int packTopN = _normalizeTopN(widget.request.mostSoldLimit ?? 5);
+    final bool viewingPackMostSoldWindow =
+        _period == packPeriod && _topN == packTopN;
+    final bool viewingPackStatusWindow = _statusPeriod == packPeriod;
+
+    final bool clearMostSold =
+        _mostSoldOverride != null && viewingPackMostSoldWindow;
+    final bool clearDistribution =
+        _distributionOverride != null && viewingPackStatusWindow;
+    final bool reloadMostSold =
+        _mostSoldOverride != null && !viewingPackMostSoldWindow;
+    final bool reloadDistribution =
+        _distributionOverride != null && !viewingPackStatusWindow;
+
+    if (clearMostSold || clearDistribution) {
+      setState(() {
+        if (clearMostSold) {
+          _mostSoldOverride = null;
+        }
+        if (clearDistribution) {
+          _distributionOverride = null;
+        }
+      });
+    }
+    if (reloadMostSold) {
+      unawaited(_reloadMostSold());
+    }
+    if (reloadDistribution) {
+      unawaited(_reloadStatusMix());
     }
   }
 

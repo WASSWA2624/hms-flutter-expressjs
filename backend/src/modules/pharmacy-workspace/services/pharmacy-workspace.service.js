@@ -611,19 +611,29 @@ const publishPharmacyRealtimeUpdates = async ({
 
     const facilityId = orderRecord?.patient?.facility_id || null;
     const recipientUserIds = await resolveRoleRecipients({ tenantId, facilityId });
-    const recipients = recipientUserIds.filter((userId) => userId && userId !== actorUserId);
+    // Include the actor so their home dashboard soft-refreshes KPIs/charts.
+    // Pharmacy workbench already defers while saving, then coalesces the event.
+    const recipients = [...new Set(recipientUserIds.filter(Boolean))];
     if (!recipients.length) return;
 
-    const workflowPayload = buildPharmacyRealtimePayload({
-      workflow,
-      action,
-      resourceType,
-      resourceId,
-      batchRef});
+    const scopeFields = {
+      tenant_id: tenantId,
+      facility_id: facilityId,
+      actor_user_id: actorUserId || null};
+
+    const workflowPayload = {
+      ...buildPharmacyRealtimePayload({
+        workflow,
+        action,
+        resourceType,
+        resourceId,
+        batchRef}),
+      ...scopeFields};
 
     emitToUsers(recipients, PHARMACY_EVENTS.PHARMACY_WORKSPACE_UPDATED, workflowPayload);
 
     emitToUsers(recipients, PHARMACY_EVENTS.PHARMACY_ORDER_UPDATED, {
+      ...scopeFields,
       order_id: workflowPayload.order_id,
       order_public_id: workflowPayload.order_public_id,
       patient_id: workflowPayload.patient_id,
@@ -642,6 +652,7 @@ const publishPharmacyRealtimeUpdates = async ({
     if (!stockPayload.length) return;
 
     emitToUsers(recipients, INVENTORY_EVENTS.INVENTORY_STOCK_UPDATED, {
+      ...scopeFields,
       action: workflowPayload.action,
       order_id: workflowPayload.order_id,
       order_public_id: workflowPayload.order_public_id,
@@ -2727,6 +2738,27 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
       mutation.stock ? [mutation.stock] : [],
       EXPIRING_SOON_DAYS
     );
+
+    try {
+      const recipientUserIds = await resolveRoleRecipients({
+        tenantId: scope.tenant_id,
+        facilityId: facilityIdForSummary});
+      const recipients = [...new Set(recipientUserIds.filter(Boolean))];
+      if (recipients.length) {
+        const stockPayload = enrichedStock
+          ? [mapInventoryStockRecord(enrichedStock)].filter(Boolean)
+          : [];
+        emitToUsers(recipients, INVENTORY_EVENTS.INVENTORY_STOCK_UPDATED, {
+          tenant_id: scope.tenant_id,
+          facility_id: facilityIdForSummary,
+          actor_user_id: userId || null,
+          action: 'ADJUST_STOCK',
+          occurred_at: new Date().toISOString(),
+          stocks: stockPayload});
+      }
+    } catch (_error) {
+      // realtime delivery must not block stock adjustments
+    }
 
     return {
       stock: enrichedStock || null,

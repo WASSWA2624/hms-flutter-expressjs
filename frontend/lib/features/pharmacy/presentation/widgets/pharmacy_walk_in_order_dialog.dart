@@ -5,20 +5,23 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
-import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
-import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/patient_registry_access.dart';
+import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_repository_impl.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
+import 'package:hosspi_hms/features/pharmacy/domain/repositories/pharmacy_repository.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_access.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_drug_catalog_mapper.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_patient_actions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
 enum _WalkInPatientMode { existing, newPatient, anonymous }
@@ -81,17 +84,18 @@ class _PharmacyWalkInOrderDialogState
       _loadingReference = true;
       _loadFailure = null;
     });
-    final Result<ClinicalReferenceData> result = await ref
-        .read(clinicalRepositoryProvider)
-        .loadReferenceData();
+
+    final Result<List<ClinicalActionCatalogOption>> result =
+        await _searchPharmacyDrugs('');
     if (!mounted) {
       return;
     }
     result.when(
-      success: (ClinicalReferenceData data) {
+      success: (List<ClinicalActionCatalogOption> drugs) {
         setState(() {
-          _referenceData = ClinicalActionReferenceData(drugs: data.drugs);
+          _referenceData = ClinicalActionReferenceData(drugs: drugs);
           _loadingReference = false;
+          _loadFailure = null;
         });
       },
       failure: (AppFailure failure) {
@@ -100,6 +104,46 @@ class _PharmacyWalkInOrderDialogState
           _loadingReference = false;
         });
       },
+    );
+  }
+
+  Future<Result<List<ClinicalActionCatalogOption>>> _searchPharmacyDrugs(
+    String query,
+  ) async {
+    final String? facilityId = ref
+        .read(sessionStateProvider)
+        .session
+        ?.user
+        ?.facilityId;
+    final Result<AppPage<PharmacyDrug>> result = await ref
+        .read(pharmacyRepositoryProvider)
+        .searchDrugs(
+          PharmacyDrugQuery(
+            search: query.trim(),
+            facilityId: facilityId,
+            pageRequest: const AppPageRequest(
+              pageSize: AppPageRequest.maxPageSize,
+            ),
+          ),
+        );
+    return result.when(
+      success: (AppPage<PharmacyDrug> page) =>
+          Result<List<ClinicalActionCatalogOption>>.success(
+            pharmacyDrugsToClinicalCatalogOptions(page.items),
+          ),
+      failure: (AppFailure failure) =>
+          Result<List<ClinicalActionCatalogOption>>.failure(failure),
+    );
+  }
+
+  Future<List<ClinicalActionCatalogOption>> _loadCatalogDrugs(
+    String query,
+  ) async {
+    final Result<List<ClinicalActionCatalogOption>> result =
+        await _searchPharmacyDrugs(query);
+    return result.when(
+      success: (List<ClinicalActionCatalogOption> drugs) => drugs,
+      failure: (_) => const <ClinicalActionCatalogOption>[],
     );
   }
 
@@ -394,6 +438,7 @@ class _PharmacyWalkInOrderDialogState
       enableBilling: _billingEnabled,
       allowAddMedicines: _canAddMedicines,
       defaultBillingEntity: 'PHARMACY',
+      loadCatalogDrugs: _loadCatalogDrugs,
       onSubmit: _submitCreateOrder,
     );
   }

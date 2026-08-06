@@ -4,6 +4,15 @@ import 'package:hosspi_hms/features/home/presentation/controllers/home_controlle
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_sync.dart';
 
+/// Soft-invalidates the home pack from a controller [Ref] (KPIs/charts refresh
+/// in place via [keepPreviousDataDuringRefresh]; no blank remount).
+void homeInvalidateDashboard(
+  Ref ref, [
+  HomeDashboardRequest request = HomeDashboardRequest.empty,
+]) {
+  ref.invalidate(homeControllerProvider(request));
+}
+
 void homeOnDashboardMutationSuccess(
   WidgetRef ref,
   HomeDashboardRequest request, {
