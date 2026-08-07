@@ -184,83 +184,87 @@ class _ModuleReportingPrintPreviewDialogState
 
     final ModuleReportingPrintBlock? selected = _selectedBlock;
 
-    final Widget sectionPicker = ListView(
+    final Widget sectionPicker = Padding(
       padding: EdgeInsets.all(theme.spacing.sm),
-      children: <Widget>[
-        AppFormSection(
-          title: l10n.printPreviewSectionsOnlyAction,
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            AppReportSectionPicker(
-              sections: tiles,
-              selectedIds: selectedIds,
-              onSelectionChanged: (Set<Object> next) {
-                setState(() {
-                  _blocks = <ModuleReportingPrintBlock>[
-                    for (final ModuleReportingPrintBlock block in _blocks)
-                      block.copyWith(visible: next.contains(block.id)),
-                  ];
-                });
-              },
-            ),
-          ],
-        ),
-        if (selected != null) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
           AppFormSection(
-            title: selected.title,
+            title: l10n.printPreviewSectionsOnlyAction,
             density: AppFormSectionDensity.compact,
             children: <Widget>[
-              AppTextField(
-                labelText: l10n.reportsNameColumnLabel,
-                initialValue: selected.title,
-                onChanged: (String value) {
-                  _updateBlock(
-                    selected.id,
-                    (ModuleReportingPrintBlock block) =>
-                        block.copyWith(title: value),
-                  );
+              AppReportSectionPicker(
+                sections: tiles,
+                selectedIds: selectedIds,
+                onSelectionChanged: (Set<Object> next) {
+                  setState(() {
+                    _blocks = <ModuleReportingPrintBlock>[
+                      for (final ModuleReportingPrintBlock block in _blocks)
+                        block.copyWith(visible: next.contains(block.id)),
+                    ];
+                  });
                 },
               ),
-              SizedBox(height: theme.spacing.sm),
-              AppTextField(
-                labelText: _labels.exportNotesLabel,
-                initialValue: selected.caption,
-                maxLines: 2,
-                onChanged: (String value) {
-                  _updateBlock(
-                    selected.id,
-                    (ModuleReportingPrintBlock block) =>
-                        block.copyWith(caption: value),
-                  );
-                },
-              ),
-              if (selected.kind == ModuleReportingVisualizationKind.table)
-                ..._tableInspector(selected, theme, l10n),
-              if (selected.kind != ModuleReportingVisualizationKind.table) ...<Widget>[
-                SizedBox(height: theme.spacing.sm),
+            ],
+          ),
+          if (selected != null) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            AppFormSection(
+              title: selected.title,
+              density: AppFormSectionDensity.compact,
+              children: <Widget>[
                 AppTextField(
-                  labelText: 'Max data points',
-                  initialValue: '${selected.maxRows}',
-                  keyboardType: TextInputType.number,
+                  labelText: l10n.reportsNameColumnLabel,
+                  initialValue: selected.title,
                   onChanged: (String value) {
-                    final int? parsed = int.tryParse(value.trim());
-                    if (parsed == null || parsed < 1) {
-                      return;
-                    }
                     _updateBlock(
                       selected.id,
-                      (ModuleReportingPrintBlock block) => block.copyWith(
-                        maxRows: parsed.clamp(1, 500),
-                      ),
+                      (ModuleReportingPrintBlock block) =>
+                          block.copyWith(title: value),
                     );
                   },
                 ),
+                SizedBox(height: theme.spacing.sm),
+                AppTextField(
+                  labelText: _labels.exportNotesLabel,
+                  initialValue: selected.caption,
+                  maxLines: 2,
+                  onChanged: (String value) {
+                    _updateBlock(
+                      selected.id,
+                      (ModuleReportingPrintBlock block) =>
+                          block.copyWith(caption: value),
+                    );
+                  },
+                ),
+                if (selected.kind == ModuleReportingVisualizationKind.table)
+                  ..._tableInspector(selected, theme, l10n),
+                if (selected.kind !=
+                    ModuleReportingVisualizationKind.table) ...<Widget>[
+                  SizedBox(height: theme.spacing.sm),
+                  AppTextField(
+                    labelText: 'Max data points',
+                    initialValue: '${selected.maxRows}',
+                    keyboardType: TextInputType.number,
+                    onChanged: (String value) {
+                      final int? parsed = int.tryParse(value.trim());
+                      if (parsed == null || parsed < 1) {
+                        return;
+                      }
+                      _updateBlock(
+                        selected.id,
+                        (ModuleReportingPrintBlock block) => block.copyWith(
+                          maxRows: parsed.clamp(1, 500),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ],
-            ],
-          ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
 
     final Widget canvas = _PrintCanvas(
@@ -292,6 +296,7 @@ class _ModuleReportingPrintPreviewDialogState
       title: Text(l10n.printPreviewTitle),
       icon: const Icon(Icons.print_outlined),
       pinActionsToBottom: true,
+      scrollable: false,
       contentPadding: EdgeInsets.zero,
       maxWidth: 1180,
       closeEnabled: !_isPrinting,

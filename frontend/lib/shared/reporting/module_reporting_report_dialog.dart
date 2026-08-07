@@ -109,7 +109,6 @@ class _ModuleReportingReportDialogState
   DateTime? _rangeFrom;
   DateTime? _rangeTo;
   String? _rangeError;
-  bool _isPrinting = false;
   bool _isExporting = false;
   int _loadToken = 0;
   ModuleReportingReportSnapshot _snapshot =
@@ -129,7 +128,7 @@ class _ModuleReportingReportDialogState
     });
   }
 
-  bool get _busy => _isPrinting || _isExporting;
+  bool get _busy => _isExporting;
 
   Future<void> _loadSnapshot() async {
     final ModuleReportingDataProvider? provider = widget.dataProvider;
@@ -204,6 +203,10 @@ class _ModuleReportingReportDialogState
               labels: _labels,
               selected: _preset,
               rangeSummary: _rangeSummary(context),
+              detailSummary:
+                  _snapshot.state == ModuleReportingLoadState.ready
+                  ? _snapshot.subtitle
+                  : null,
               onSelected: _onPeriodSelected,
             ),
             if (_rangeError != null) ...<Widget>[
@@ -215,7 +218,7 @@ class _ModuleReportingReportDialogState
                 ),
               ),
             ],
-            SizedBox(height: theme.spacing.sm),
+            SizedBox(height: theme.spacing.xs),
             _buildBody(context, isChart: isChart),
           ],
         ),
@@ -224,7 +227,6 @@ class _ModuleReportingReportDialogState
         AppReportActionButton.print(
           label: _labels.printAction,
           enabled: !_busy,
-          isLoading: _isPrinting,
           onPressed: _busy ? null : () => unawaited(_printReport()),
         ),
         if (widget.canExport)
@@ -244,7 +246,6 @@ class _ModuleReportingReportDialogState
   }
 
   Widget _buildBody(BuildContext context, {required bool isChart}) {
-    final ThemeData theme = Theme.of(context);
     switch (_snapshot.state) {
       case ModuleReportingLoadState.loading:
         return AppWorkspaceStatePanel.loading(
@@ -287,23 +288,10 @@ class _ModuleReportingReportDialogState
           minHeight: 220,
         );
       case ModuleReportingLoadState.ready:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if ((_snapshot.subtitle ?? '').trim().isNotEmpty)
-              Text(
-                _snapshot.subtitle!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            SizedBox(height: theme.spacing.sm),
-            ModuleReportingVisualizationPanel(
-              snapshot: _snapshot,
-              report: widget.report,
-              labels: _labels,
-            ),
-          ],
+        return ModuleReportingVisualizationPanel(
+          snapshot: _snapshot,
+          report: widget.report,
+          labels: _labels,
         );
     }
   }
@@ -370,7 +358,6 @@ class _ModuleReportingReportDialogState
         _snapshot.state != ModuleReportingLoadState.empty) {
       return;
     }
-    setState(() => _isPrinting = true);
     try {
       await openModuleReportingPrintPreviewDialog(
         context: context,
@@ -382,10 +369,17 @@ class _ModuleReportingReportDialogState
         from: _rangeFrom,
         to: _rangeTo,
       );
-    } finally {
-      if (mounted) {
-        setState(() => _isPrinting = false);
+    } catch (error, stackTrace) {
+      assert(() {
+        debugPrint('Module reporting print preview failed: $error\n$stackTrace');
+        return true;
+      }());
+      if (!mounted) {
+        return;
       }
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(_labels.errorBody)),
+      );
     }
   }
 
@@ -758,23 +752,32 @@ class _ModuleReportingPeriodToolbar extends StatelessWidget {
     required this.selected,
     required this.rangeSummary,
     required this.onSelected,
+    this.detailSummary,
   });
 
   final ModuleReportingLabels labels;
   final ModuleReportingPeriodPreset selected;
   final String? rangeSummary;
+  final String? detailSummary;
   final ValueChanged<ModuleReportingPeriodPreset> onSelected;
 
-  static const double _selectWidth = 168;
-  static const double _stackBreakpoint = 480;
+  static const double _selectWidth = 156;
+  static const double _stackBreakpoint = 520;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final TextStyle? summaryStyle = theme.textTheme.bodySmall?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
+      height: 1.25,
+    );
+    final TextStyle? detailStyle = theme.textTheme.labelSmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.9),
       height: 1.2,
     );
+    final String? detail = detailSummary?.trim();
+    final bool hasDetail = detail != null && detail.isNotEmpty;
+
     final Widget select = SizedBox(
       width: _selectWidth,
       child: AppSelectField<ModuleReportingPeriodPreset>(
@@ -800,22 +803,36 @@ class _ModuleReportingPeriodToolbar extends StatelessWidget {
       ),
     );
 
-    final Widget summaryText = rangeSummary == null
-        ? const SizedBox.shrink()
-        : Text(
-            rangeSummary!,
-            style: summaryStyle,
-            maxLines: 2,
+    Widget? rangeLine;
+    if (rangeSummary != null) {
+      final Widget text = Text(
+        rangeSummary!,
+        style: summaryStyle,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+      rangeLine = selected == ModuleReportingPeriodPreset.custom
+          ? InkWell(
+              onTap: () => onSelected(ModuleReportingPeriodPreset.custom),
+              child: text,
+            )
+          : text;
+    }
+
+    final Widget summaries = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        ?rangeLine,
+        if (hasDetail)
+          Text(
+            detail,
+            style: detailStyle,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
-          );
-    final Widget summary = rangeSummary == null
-        ? const SizedBox.shrink()
-        : selected == ModuleReportingPeriodPreset.custom
-        ? InkWell(
-            onTap: () => onSelected(ModuleReportingPeriodPreset.custom),
-            child: summaryText,
-          )
-        : summaryText;
+          ),
+      ],
+    );
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -823,6 +840,7 @@ class _ModuleReportingPeriodToolbar extends StatelessWidget {
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
         final bool stacked = maxWidth < _stackBreakpoint;
+        final bool hasSummaries = rangeLine != null || hasDetail;
 
         if (stacked) {
           return Column(
@@ -832,17 +850,18 @@ class _ModuleReportingPeriodToolbar extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: select,
               ),
-              if (rangeSummary != null) ...<Widget>[
+              if (hasSummaries) ...<Widget>[
                 SizedBox(height: theme.spacing.xs),
-                summary,
+                summaries,
               ],
             ],
           );
         }
 
         return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            Expanded(child: summary),
+            Expanded(child: hasSummaries ? summaries : const SizedBox.shrink()),
             SizedBox(width: theme.spacing.sm),
             select,
           ],

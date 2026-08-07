@@ -66,22 +66,14 @@ class _ModuleReportingVisualizationPanelState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: <Widget>[
-              for (int index = 0; index < applicable.length; index += 1) ...<Widget>[
-                if (index > 0) SizedBox(width: theme.spacing.xs),
-                _VisualizationChip(
-                  kind: applicable[index],
-                  selected: applicable[index] == selected,
-                  onSelected: () => setState(() => _selected = applicable[index]),
-                ),
-              ],
-            ],
-          ),
+        _VisualizationSwitcher(
+          kinds: applicable,
+          selected: selected,
+          onSelected: (ModuleReportingVisualizationKind kind) {
+            setState(() => _selected = kind);
+          },
         ),
-        SizedBox(height: theme.spacing.sm),
+        SizedBox(height: theme.spacing.xs),
         _VisualizationBody(
           kind: selected,
           snapshot: widget.snapshot,
@@ -94,35 +86,133 @@ class _ModuleReportingVisualizationPanelState
   }
 }
 
-class _VisualizationChip extends StatelessWidget {
-  const _VisualizationChip({
-    required this.kind,
+class _VisualizationSwitcher extends StatelessWidget {
+  const _VisualizationSwitcher({
+    required this.kinds,
     required this.selected,
     required this.onSelected,
   });
 
-  final ModuleReportingVisualizationKind kind;
-  final bool selected;
-  final VoidCallback onSelected;
+  final List<ModuleReportingVisualizationKind> kinds;
+  final ModuleReportingVisualizationKind selected;
+  final ValueChanged<ModuleReportingVisualizationKind> onSelected;
+
+  static const double _iconOnlyBreakpoint = 560;
+  static const double _shortLabelBreakpoint = 820;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    return FilterChip(
-      selected: selected,
-      showCheckmark: false,
-      avatar: Icon(moduleReportingVisualizationIcon(kind), size: 16),
-      label: Text(moduleReportingVisualizationLabel(kind)),
-      onSelected: (_) => onSelected(),
-      visualDensity: VisualDensity.compact,
-      selectedColor: colors.primaryContainer,
-      side: BorderSide(
-        color: selected ? colors.primary : theme.borders.faint,
-      ),
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double width = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final bool iconOnly = width < _iconOnlyBreakpoint;
+        final bool shortLabels = width < _shortLabelBreakpoint;
+
+        // Narrow dialogs: a dense select is clearer than 10 overflowing chips.
+        if (width < 420) {
+          return AppSelectField<ModuleReportingVisualizationKind>(
+            value: selected,
+            semanticLabel: 'Presentation',
+            isDense: true,
+            allowClear: false,
+            enableSpeechToText: false,
+            options: <AppSelectOption<ModuleReportingVisualizationKind>>[
+              for (final ModuleReportingVisualizationKind kind in kinds)
+                AppSelectOption<ModuleReportingVisualizationKind>(
+                  value: kind,
+                  label: moduleReportingVisualizationLabel(kind),
+                  leadingIcon: Icon(
+                    moduleReportingVisualizationIcon(kind),
+                    size: 18,
+                  ),
+                ),
+            ],
+            onChanged: (ModuleReportingVisualizationKind? value) {
+              if (value != null) {
+                onSelected(value);
+              }
+            },
+          );
+        }
+
+        return SizedBox(
+          height: iconOnly ? 36 : 34,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: kinds.length,
+            separatorBuilder: (_, _) => SizedBox(width: theme.spacing.xs),
+            itemBuilder: (BuildContext context, int index) {
+              final ModuleReportingVisualizationKind kind = kinds[index];
+              final bool isSelected = kind == selected;
+              final String label = shortLabels || iconOnly
+                  ? moduleReportingVisualizationShortLabel(kind)
+                  : moduleReportingVisualizationLabel(kind);
+              final IconData icon = moduleReportingVisualizationIcon(kind);
+
+              return Tooltip(
+                message: moduleReportingVisualizationLabel(kind),
+                waitDuration: const Duration(milliseconds: 400),
+                child: Material(
+                  color: isSelected
+                      ? colors.primaryContainer.withValues(alpha: 0.55)
+                      : colors.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(theme.radius.sm),
+                    side: BorderSide(
+                      color: isSelected ? colors.primary : theme.borders.faint,
+                    ),
+                  ),
+                  child: InkWell(
+                    onTap: () => onSelected(kind),
+                    borderRadius: BorderRadius.circular(theme.radius.sm),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: theme.spacing.sm,
+                        vertical: theme.spacing.xs,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Icon(
+                            icon,
+                            size: 16,
+                            color: isSelected
+                                ? colors.primary
+                                : colors.onSurfaceVariant,
+                          ),
+                          if (!iconOnly) ...<Widget>[
+                            SizedBox(width: theme.spacing.xs),
+                            Text(
+                              label,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: isSelected
+                                    ? colors.primary
+                                    : colors.onSurface,
+                                fontWeight: isSelected
+                                    ? AppFontWeight.emphasis
+                                    : AppFontWeight.label,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
+
 
 class _VisualizationBody extends StatelessWidget {
   const _VisualizationBody({

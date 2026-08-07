@@ -63,6 +63,24 @@ String moduleReportingVisualizationLabel(ModuleReportingVisualizationKind kind) 
   };
 }
 
+/// Compact labels for dense visualization switchers.
+String moduleReportingVisualizationShortLabel(
+  ModuleReportingVisualizationKind kind,
+) {
+  return switch (kind) {
+    ModuleReportingVisualizationKind.kpiCards => 'KPI',
+    ModuleReportingVisualizationKind.lineChart => 'Line',
+    ModuleReportingVisualizationKind.barChart => 'Bar',
+    ModuleReportingVisualizationKind.areaChart => 'Area',
+    ModuleReportingVisualizationKind.donutChart => 'Donut',
+    ModuleReportingVisualizationKind.rankingChart => 'Rank',
+    ModuleReportingVisualizationKind.gaugeChart => 'Gauge',
+    ModuleReportingVisualizationKind.scatterChart => 'Scatter',
+    ModuleReportingVisualizationKind.heatmap => 'Heat',
+    ModuleReportingVisualizationKind.table => 'Table',
+  };
+}
+
 IconData moduleReportingVisualizationIcon(ModuleReportingVisualizationKind kind) {
   return switch (kind) {
     ModuleReportingVisualizationKind.kpiCards => Icons.dashboard_outlined,
