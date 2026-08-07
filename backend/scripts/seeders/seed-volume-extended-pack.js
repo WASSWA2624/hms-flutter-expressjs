@@ -984,7 +984,53 @@ const seedVolumeExtendedPack = async (
     }
   });
 
-  const catalogDrugs = Object.values(clinicalCatalogPack?.pharmacy?.drugs || {}).filter(Boolean);
+  // Pharmacy-relevant audit volume for staff activity reporting (≥ highTraffic).
+  const pharmacyAuditEntities = Object.freeze([
+    'pharmacy_order',
+    'pharmacy_dispense_attestation',
+    'dispense_log',
+    'stock_adjustment',
+    'purchase_order',
+    'goods_receipt',
+    'refund',
+    'billing_adjustment',
+    'drug',
+  ]);
+  const pharmacyUsers = [
+    accessPack?.users?.[`${scenario.key}:pharmacy`],
+    accessPack?.users?.[`${scenario.key}:pharmacy2`],
+    billing,
+    doctor,
+  ].filter(Boolean);
+  await runInBatches(n, 10, async (index) => {
+    const user = at(pharmacyUsers.length > 0 ? pharmacyUsers : staffUsers, index);
+    const action =
+      index % 11 === 0
+        ? 'LOGIN'
+        : index % 13 === 0
+          ? 'LOGOUT'
+          : index % 17 === 0
+            ? 'DELETE'
+            : pick(['CREATE', 'UPDATE', 'ACCESS', 'EXPORT'], index);
+    const entity = pick(pharmacyAuditEntities, index);
+    await ctx.upsert(
+      'audit_log',
+      `${scenario.key}:volx:pharmacy-audit:${pad(index)}`,
+      {
+        tenant_id: facility.tenant_id,
+        user_id: user?.id || null,
+        action,
+        entity,
+        entity_id: `00000000-0000-4000-b000-${pad(index, 12)}`,
+        diff_json: { pharmacy_volume: true, index, entity },
+        ip_address: `10.1.${index % 200}.${(index * 5) % 200}`,
+        created_at: ctx.date(-((index % 120) + 1), 30 + (index % 20)),
+      },
+      { ...seedOpts, publicIdPrefix: 'PAUD' }
+    );
+    bump('pharmacy_audit_logs');
+  });
+
   if (catalogDrugs.length > 0) {
     // Curated + volume price-change audits for pharmacy purchasing reports.
     const priceChangeCount = Math.min(n, Math.max(12, catalogDrugs.length));
@@ -1014,7 +1060,7 @@ const seedVolumeExtendedPack = async (
                 }
               : {}),
           },
-          ip_address: `10.1.${index % 200}.${(index * 5) % 200}`,
+          ip_address: `10.2.${index % 200}.${(index * 7) % 200}`,
         },
         { ...seedOpts, publicIdPrefix: 'AUD' }
       );

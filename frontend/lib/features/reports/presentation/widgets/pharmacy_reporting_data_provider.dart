@@ -1,15 +1,21 @@
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/domain/repositories/reports_repository.dart';
+import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
 import 'package:hosspi_hms/shared/reporting/reporting.dart';
 
 /// Loads and projects pharmacy catalog reports onto dataset preview rows.
 final class PharmacyReportingDataProvider
     implements ModuleReportingDataProvider {
-  const PharmacyReportingDataProvider(this._repository);
+  const PharmacyReportingDataProvider(
+    this._repository, {
+    this.policy,
+  });
 
   final ReportsRepository _repository;
+  final AppAccessPolicy? policy;
 
   @override
   Future<ModuleReportingReportSnapshot> load({
@@ -36,6 +42,7 @@ final class PharmacyReportingDataProvider
         return projectPharmacyReportingPreview(
           report: report,
           preview: preview,
+          includeAuditDiff: policy != null && canReadReportsCompliance(policy!),
         );
       },
       failure: (AppFailure failure) {
@@ -76,6 +83,7 @@ String? previewSubtitleOrNull(String? value) {
 ModuleReportingReportSnapshot projectPharmacyReportingPreview({
   required ModuleReportingReport report,
   required ReportDatasetPreview preview,
+  bool includeAuditDiff = false,
 }) {
   final String reportId = report.id;
   final List<String> columns = List<String>.from(preview.columns);
@@ -773,6 +781,33 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
           'amount',
         ],
       );
+    case 'sales_by_staff':
+    case 'dispensing_by_staff':
+    case 'purchases_entered_by_staff':
+    case 'stock_adjustments_by_staff':
+    case 'refunds_by_staff':
+    case 'discounts_authorized':
+    case 'voided_transactions':
+    case 'login_activity_history':
+    case 'user_productivity':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle),
+      );
+    case 'audit_trail':
+      return _projectAuditTrail(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        includeAuditDiff: includeAuditDiff,
+      );
     default:
       return ModuleReportingReportSnapshot.ready(
         columns: columns,
@@ -834,6 +869,40 @@ ModuleReportingReportSnapshot _projectColumnSubset({
 
   return ModuleReportingReportSnapshot.ready(
     columns: columnKeys,
+    rows: rows,
+    summary: summary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle),
+  );
+}
+
+ModuleReportingReportSnapshot _projectAuditTrail({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<String> columns,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+  required bool includeAuditDiff,
+}) {
+  final List<String> visibleColumns = includeAuditDiff
+      ? columns
+      : columns.where((String key) => key != 'diff' && key != 'diff_json').toList();
+  final List<Map<String, Object?>> rows = sourceRows
+      .map((Map<String, Object?> row) {
+        if (includeAuditDiff) {
+          return row;
+        }
+        final Map<String, Object?> copy = Map<String, Object?>.from(row);
+        copy.remove('diff');
+        copy.remove('diff_json');
+        return copy;
+      })
+      .toList(growable: false);
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: visibleColumns,
     rows: rows,
     summary: summary,
     breakdown: breakdown,

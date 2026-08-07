@@ -635,6 +635,50 @@ const verifyDemoData = async () => {
       ['pharmacy_discount_adjustments', pharmacyDiscountCount, highFloor]
     );
 
+    const [
+      pharmacyAttestationCount,
+      pharmacyAuditCount,
+      pharmacistUserCount,
+    ] = await Promise.all([
+      prisma.pharmacy_dispense_attestation.count({
+        where: { deleted_at: null },
+      }),
+      prisma.audit_log.count({
+        where: {
+          deleted_at: null,
+          entity: {
+            in: [
+              'pharmacy_order',
+              'pharmacy_dispense_attestation',
+              'dispense_log',
+              'stock_adjustment',
+              'purchase_order',
+              'goods_receipt',
+              'refund',
+              'billing_adjustment',
+              'drug',
+            ],
+          },
+        },
+      }),
+      prisma.user_role.count({
+        where: {
+          deleted_at: null,
+          role: { name: 'PHARMACIST', deleted_at: null },
+        },
+      }),
+    ]);
+
+    highTrafficChecks.push(
+      ['pharmacy_dispense_attestations', pharmacyAttestationCount, highFloor],
+      ['pharmacy_audit_logs', pharmacyAuditCount, highFloor]
+    );
+    if (pharmacistUserCount < 2) {
+      errors.push(
+        `Expected at least 2 PHARMACIST users for staff activity reports but found ${pharmacistUserCount}.`
+      );
+    }
+
     const openPharmacyInvoiceCount = await prisma.invoice.count({
       where: {
         deleted_at: null,

@@ -874,4 +874,69 @@ void main() {
     expect(snapshot.rows.single.containsKey('first_name'), isFalse);
     expect(snapshot.rows.single.containsKey('phone'), isFalse);
   });
+
+  test('revenue chart prefers breakdown daily_totals and keeps ledger subtitle', () {
+    const ModuleReportingReport revenueReport = ModuleReportingReport(
+      id: 'revenue',
+      categoryId: 'financial',
+      label: 'Revenue',
+      contentKind: ModuleReportingContentKind.chart,
+      datasetKey: 'pharmacy_financial_revenue',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_financial_revenue',
+      title: 'Pharmacy revenue',
+      subtitle: 'Ledger: dispense retail amount (consumption)',
+      columns: const <String>['date', 'amount'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{'date': '2026-08-01', 'amount': 10},
+      ],
+      breakdown: const <String, Object?>{
+        'daily_totals': <Map<String, Object?>>[
+          <String, Object?>{'date': '2026-08-01', 'amount': 40, 'profit': 12},
+          <String, Object?>{'date': '2026-08-02', 'amount': 60, 'profit': 18},
+        ],
+      },
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: revenueReport,
+          preview: preview,
+        );
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.rows, hasLength(2));
+    expect(snapshot.subtitle, contains('dispense retail amount'));
+    expect(snapshot.rows.first['amount'], 40);
+  });
+
+  test('cogs pass-through keeps currency column key and ledger subtitle', () {
+    const ModuleReportingReport cogsReport = ModuleReportingReport(
+      id: 'cogs',
+      categoryId: 'financial',
+      label: 'Cost of goods sold',
+      datasetKey: 'pharmacy_financial_cogs',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_financial_cogs',
+      subtitle: 'Ledger: Σ buy_unit_price × qty (unset buy → 0)',
+      columns: const <String>['date', 'cogs'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{'date': '2026-08-01', 'cogs': 1300},
+      ],
+      summary: const <String, Object?>{'cogs': 1300, 'amount': 1300},
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: cogsReport,
+          preview: preview,
+        );
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.columns, contains('cogs'));
+    expect(snapshot.summary?['cogs'], 1300);
+    expect(snapshot.subtitle, contains('buy_unit_price'));
+  });
 }

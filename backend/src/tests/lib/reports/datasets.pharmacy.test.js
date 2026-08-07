@@ -412,8 +412,15 @@ describe('reports datasets pharmacy analytics', () => {
     expect(typeof buildPharmacySalesAvgTransactionAnalytics).toBe('function');
     expect(typeof buildPharmacyMedicinesCatalogRow).toBe('function');
     expect(typeof computeCatalogProfitMargin).toBe('function');
+    expect(typeof computeDispenseCogs).toBe('function');
     expect(typeof classifyStockRisk).toBe('function');
     expect(typeof computeStockValue).toBe('function');
+  });
+
+  test('computeDispenseCogs equals buy_unit_price × qty; unset buy is 0', () => {
+    expect(computeDispenseCogs(650, 2)).toBe(1300);
+    expect(computeDispenseCogs(null, 5)).toBe(0);
+    expect(computeDispenseCogs('', 5)).toBe(0);
   });
 
   test('dispensing avg-items builder is read-only (pharmacy-flow: no encounter creates)', () => {

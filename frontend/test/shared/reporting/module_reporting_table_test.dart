@@ -102,6 +102,25 @@ void main() {
       '15%',
     );
     expect(
+      moduleReportingFormatCellValue(
+        5500,
+        locale: locale,
+        unknownLabel: '—',
+        preferNumeric: true,
+        columnKey: 'cogs',
+        currencyCode: 'UGX',
+      ),
+      contains('UGX'),
+    );
+    expect(
+      moduleReportingMetricUnitForKey('collections'),
+      ModuleReportingMetricUnit.currency,
+    );
+    expect(
+      moduleReportingMetricUnitForKey('net_collections'),
+      ModuleReportingMetricUnit.currency,
+    );
+    expect(
       moduleReportingFormatMetricValue(
         5500,
         locale: locale,

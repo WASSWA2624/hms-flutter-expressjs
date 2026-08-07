@@ -32,6 +32,6 @@ Future<void> openPharmacyReportingReportDialog({
     report: report,
     labels: pharmacyReportingLabels(context.l10n),
     canExport: canExportEvidence(policy),
-    dataProvider: PharmacyReportingDataProvider(repository),
+    dataProvider: PharmacyReportingDataProvider(repository, policy: policy),
   );
 }
