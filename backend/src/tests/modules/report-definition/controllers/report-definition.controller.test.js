@@ -8,7 +8,8 @@ const {
   getReportDefinitionById,
   createReportDefinition,
   updateReportDefinition,
-  deleteReportDefinition
+  deleteReportDefinition,
+  previewReportDataset
 } = require('@controllers/report-definition/report-definition.controller');
 
 describe('Report Definition Controller', () => {
@@ -173,6 +174,39 @@ describe('Report Definition Controller', () => {
           user_agent: 'Test Agent'}
       );
       expect(sendNoContent).toHaveBeenCalledWith(mockRes);
+    });
+  });
+
+  describe('previewReportDataset', () => {
+    it('passes dataset key, body, and user to the service', async () => {
+      const mockResult = {
+        dataset_key: 'pharmacy_drug_consumption',
+        title: 'Pharmacy drug consumption',
+        subtitle: '2026-01-01 to 2026-01-31',
+        columns: ['drug', 'amount'],
+        rows: [{ drug: 'Amoxicillin', amount: 10 }],
+        summary: { total_amount: 10 },
+        breakdown: null,
+        visualization: 'BAR_CHART'};
+      mockReq.params.datasetKey = 'pharmacy_drug_consumption';
+      mockReq.body = {
+        from: '2026-01-01T00:00:00.000Z',
+        to: '2026-01-31T23:59:59.000Z'};
+      reportDefinitionService.previewReportDataset.mockResolvedValue(mockResult);
+
+      await previewReportDataset(mockReq, mockRes);
+
+      expect(reportDefinitionService.previewReportDataset).toHaveBeenCalledWith(
+        'pharmacy_drug_consumption',
+        mockReq.body,
+        mockReq.user
+      );
+      expect(sendSuccess).toHaveBeenCalledWith(
+        mockRes,
+        200,
+        'messages.report_definition.dataset_preview_success',
+        mockResult
+      );
     });
   });
 });

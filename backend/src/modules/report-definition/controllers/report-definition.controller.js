@@ -49,10 +49,20 @@ const runReportDefinitionNow = asyncHandler(async (req, res) => {
   sendSuccess(res, 200, 'messages.report_run.create_success', result);
 });
 
+const previewReportDataset = asyncHandler(async (req, res) => {
+  const result = await reportDefinitionService.previewReportDataset(
+    req.params.datasetKey,
+    req.body,
+    req.user
+  );
+  sendSuccess(res, 200, 'messages.report_definition.dataset_preview_success', result);
+});
+
 module.exports = {
   createReportDefinition,
   deleteReportDefinition,
   getReportDefinitionById,
   listReportDefinitions,
+  previewReportDataset,
   runReportDefinitionNow,
   updateReportDefinition};

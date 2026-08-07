@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/features/reports/data/repositories/reports_repository_impl.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
+import 'package:hosspi_hms/features/reports/domain/repositories/reports_repository.dart';
 import 'package:hosspi_hms/features/reports/presentation/pharmacy_reporting_catalog.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/pharmacy_reporting_filters_dialog.dart';
 import 'package:hosspi_hms/shared/reporting/reporting.dart';
@@ -14,8 +17,11 @@ import 'package:hosspi_hms/features/reports/presentation/widgets/reports_pharmac
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/app_search_bar.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/test_harness.dart';
+
+class _MockReportsRepository extends Mock implements ReportsRepository {}
 
 AppAccessPolicy _pharmacyPolicy({
   bool canWrite = false,
@@ -45,6 +51,29 @@ AppAccessPolicy _pharmacyPolicy({
   );
 }
 
+void _stubPreviewDataset(_MockReportsRepository repository) {
+  when(
+    () => repository.previewDataset(
+      datasetKey: any(named: 'datasetKey'),
+      from: any(named: 'from'),
+      to: any(named: 'to'),
+      datePreset: any(named: 'datePreset'),
+    ),
+  ).thenAnswer(
+    (_) async => const Result<ReportDatasetPreview>.success(
+      ReportDatasetPreview(
+        datasetKey: 'pharmacy_drug_consumption',
+        title: 'Pharmacy drug consumption',
+        subtitle: 'Test period',
+        columns: <String>['drug', 'amount'],
+        rows: <Map<String, Object?>>[
+          <String, Object?>{'drug': 'Amoxicillin', 'amount': 40},
+        ],
+      ),
+    ),
+  );
+}
+
 Future<void> _pumpGroups(
   WidgetTester tester, {
   required List<String> openedDatasets,
@@ -65,9 +94,14 @@ Future<void> _pumpGroups(
   ],
 }) async {
   setTestViewport(tester, const Size(1100, 1400));
+  final _MockReportsRepository repository = _MockReportsRepository();
+  _stubPreviewDataset(repository);
 
   await tester.pumpWidget(
     ProviderScope(
+      overrides: [
+        reportsRepositoryProvider.overrideWithValue(repository),
+      ],
       child: MaterialApp(
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
@@ -96,6 +130,10 @@ Future<void> _pumpGroups(
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(DateTime(2026));
+  });
+
   test('pharmacy reporting catalog covers every documented category', () {
     final List<PharmacyReportingCategory> catalog = pharmacyReportingCatalog();
     expect(catalog, hasLength(17));

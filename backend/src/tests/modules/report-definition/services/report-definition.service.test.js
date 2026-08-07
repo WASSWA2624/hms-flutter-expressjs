@@ -3,11 +3,14 @@ jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn().mockResolvedValue(undefined)}));
 jest.mock('@lib/reports/runtime', () => ({
   enqueueReportRun: jest.fn()}));
+jest.mock('@lib/reports/datasets', () => ({
+  executeReportDataset: jest.fn()}));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier)}));
 
 const reportDefinitionRepository = require('@repositories/report-definition/report-definition.repository');
 const { createAuditLog } = require('@lib/audit');
+const { executeReportDataset } = require('@lib/reports/datasets');
 const { enqueueReportRun } = require('@lib/reports/runtime');
 const { HttpError } = require('@lib/errors');
 const {
@@ -15,6 +18,7 @@ const {
   deleteReportDefinition,
   getReportDefinitionById,
   listReportDefinitions,
+  previewReportDataset,
   runReportDefinitionNow,
   updateReportDefinition} = require('@services/report-definition/report-definition.service');
 
@@ -290,5 +294,55 @@ describe('Report Definition Service', () => {
         mutationContext
       )
     ).rejects.toThrow(HttpError);
+  });
+
+  it('previews a dataset without creating a durable run', async () => {
+    executeReportDataset.mockResolvedValue({
+      dataset: {
+        key: 'pharmacy_drug_consumption',
+        visualization: 'BAR_CHART'},
+      title: 'Pharmacy drug consumption',
+      subtitle: '2026-01-01 to 2026-01-31',
+      columns: ['drug', 'quantity_dispensed', 'amount'],
+      rows: [{ drug: 'Amoxicillin', quantity_dispensed: 10, amount: 25 }],
+      summary: { total_amount: 25 },
+      breakdown: { daily_totals: [{ date: '2026-01-01', amount: 25 }] }});
+
+    const result = await previewReportDataset(
+      'pharmacy_drug_consumption',
+      {
+        from: '2026-01-01T00:00:00.000Z',
+        to: '2026-01-31T23:59:59.000Z',
+        date_preset: 'custom'},
+      scopedUser
+    );
+
+    expect(executeReportDataset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dataset_key: 'pharmacy_drug_consumption',
+        scope: expect.objectContaining({
+          tenant_id: 'tenant-123',
+          facility_id: 'facility-123'}),
+        parameters: {
+          from: '2026-01-01T00:00:00.000Z',
+          to: '2026-01-31T23:59:59.000Z',
+          date_preset: 'custom'}})
+    );
+    expect(result).toEqual({
+      dataset_key: 'pharmacy_drug_consumption',
+      title: 'Pharmacy drug consumption',
+      subtitle: '2026-01-01 to 2026-01-31',
+      columns: ['drug', 'quantity_dispensed', 'amount'],
+      rows: [{ drug: 'Amoxicillin', quantity_dispensed: 10, amount: 25 }],
+      summary: { total_amount: 25 },
+      breakdown: { daily_totals: [{ date: '2026-01-01', amount: 25 }] },
+      visualization: 'BAR_CHART'});
+  });
+
+  it('rejects unknown datasets during preview', async () => {
+    await expect(
+      previewReportDataset('not-real', {}, scopedUser)
+    ).rejects.toThrow(HttpError);
+    expect(executeReportDataset).not.toHaveBeenCalled();
   });
 });

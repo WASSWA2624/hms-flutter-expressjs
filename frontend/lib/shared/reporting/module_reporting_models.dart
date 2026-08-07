@@ -6,6 +6,21 @@ enum ModuleReportingContentKind {
   chart,
 }
 
+/// Period presets shared by the report dialog toolbar and data providers.
+enum ModuleReportingPeriodPreset {
+  today,
+  lastWeek,
+  lastMonth,
+  last3Months,
+  last6Months,
+  last12Months,
+  last24Months,
+  custom,
+}
+
+/// Preferred export format for entitled module report dialogs.
+enum ModuleReportingExportFormat { excel, pdf }
+
 /// One reportable item under a [ModuleReportingCategory].
 @immutable
 final class ModuleReportingReport {
@@ -104,6 +119,13 @@ final class ModuleReportingLabels {
     required this.unavailableTitle,
     required this.unavailableBody,
     required this.unavailableMappedBody,
+    required this.loadingTitle,
+    required this.loadingBody,
+    required this.errorTitle,
+    required this.errorBody,
+    required this.emptyTitle,
+    required this.emptyBody,
+    required this.retryAction,
     required this.printAction,
     required this.printSubtitle,
     required this.printFooter,
@@ -178,6 +200,13 @@ final class ModuleReportingLabels {
   final String unavailableTitle;
   final String unavailableBody;
   final String unavailableMappedBody;
+  final String loadingTitle;
+  final String loadingBody;
+  final String errorTitle;
+  final String errorBody;
+  final String emptyTitle;
+  final String emptyBody;
+  final String retryAction;
   final String printAction;
   final String printSubtitle;
   final String printFooter;

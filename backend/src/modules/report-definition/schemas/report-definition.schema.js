@@ -58,6 +58,14 @@ const runReportDefinitionNowSchema = z.object({
 const reportDefinitionIdParamsSchema = z.object({
   id: uuidOrFriendlyIdentifierSchema});
 
+const reportDatasetKeyParamsSchema = z.object({
+  datasetKey: z.enum(reportDatasetKeys)});
+
+const previewReportDatasetSchema = z.object({
+  from: z.string().datetime().optional().nullable(),
+  to: z.string().datetime().optional().nullable(),
+  date_preset: z.string().trim().min(1).max(40).optional().nullable()});
+
 const listReportDefinitionsQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -72,6 +80,8 @@ const listReportDefinitionsQuerySchema = listQuerySchema.extend({
 module.exports = {
   createReportDefinitionSchema,
   listReportDefinitionsQuerySchema,
+  previewReportDatasetSchema,
+  reportDatasetKeyParamsSchema,
   reportDefinitionDslSchema,
   reportDefinitionIdParamsSchema,
   runReportDefinitionNowSchema,

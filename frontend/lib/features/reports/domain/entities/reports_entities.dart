@@ -508,6 +508,31 @@ final class ReportRunPreview {
 }
 
 @immutable
+final class ReportDatasetPreview {
+  const ReportDatasetPreview({
+    this.datasetKey,
+    this.visualization,
+    this.title = '',
+    this.subtitle = '',
+    this.columns = const <String>[],
+    this.rows = const <Map<String, Object?>>[],
+    this.summary,
+    this.breakdown,
+  });
+
+  final String? datasetKey;
+  final String? visualization;
+  final String title;
+  final String subtitle;
+  final List<String> columns;
+  final List<Map<String, Object?>> rows;
+  final Map<String, Object?>? summary;
+  final Map<String, Object?>? breakdown;
+
+  bool get isEmpty => rows.isEmpty;
+}
+
+@immutable
 final class ReportScheduleDraft {
   const ReportScheduleDraft({
     required this.reportDefinitionId,

@@ -6,6 +6,8 @@ const { validateRequest } = require('@middlewares/validate.middleware');
 const {
   createReportDefinitionSchema,
   listReportDefinitionsQuerySchema,
+  previewReportDatasetSchema,
+  reportDatasetKeyParamsSchema,
   reportDefinitionIdParamsSchema,
   runReportDefinitionNowSchema,
   updateReportDefinitionSchema} = require('@validations/report-definition/report-definition.schema');
@@ -18,6 +20,16 @@ router.get(
   authenticate(),
   authorize(PERMISSIONS.REPORTS_READ, 'permission'),
   reportDefinitionController.listReportDefinitions
+);
+
+router.post(
+  '/datasets/:datasetKey/preview',
+  validateRequest({
+    params: reportDatasetKeyParamsSchema,
+    body: previewReportDatasetSchema}),
+  authenticate(),
+  authorize(PERMISSIONS.REPORTS_READ, 'permission'),
+  reportDefinitionController.previewReportDataset
 );
 
 router.get(

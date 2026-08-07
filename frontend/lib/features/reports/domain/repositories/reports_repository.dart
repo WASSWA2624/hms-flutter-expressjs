@@ -38,4 +38,11 @@ abstract interface class ReportsRepository {
   Future<Result<List<int>>> downloadReportRun(String reportRunId);
 
   Future<Result<ReportRunPreview>> previewReportRun(String reportRunId);
+
+  Future<Result<ReportDatasetPreview>> previewDataset({
+    required String datasetKey,
+    DateTime? from,
+    DateTime? to,
+    String? datePreset,
+  });
 }

@@ -21856,14 +21856,6 @@
   "@reportsPharmacyReportingPeriodCustom": {
     "description": "Pharmacy report period preset: custom date range."
   },
-  "reportsPharmacyReportingLoadingTitle": "Loading report",
-  "@reportsPharmacyReportingLoadingTitle": {
-    "description": "Loading title while pharmacy report dialog refreshes."
-  },
-  "reportsPharmacyReportingLoadingBody": "Updating the selected period.",
-  "@reportsPharmacyReportingLoadingBody": {
-    "description": "Loading body while pharmacy report dialog refreshes."
-  },
   "reportsPharmacyReportingUnavailableTitle": "Report data not available yet",
   "@reportsPharmacyReportingUnavailableTitle": {
     "description": "Empty title when pharmacy report has no backend content."
@@ -21872,9 +21864,33 @@
   "@reportsPharmacyReportingUnavailableBody": {
     "description": "Empty body when pharmacy report has no dataset mapping."
   },
-  "reportsPharmacyReportingUnavailableMappedBody": "This report maps to an existing dataset, but the in-place pharmacy dialog view is not wired yet. Use Analytics shortcuts or Catalog runs for live data.",
+  "reportsPharmacyReportingUnavailableMappedBody": "This report maps to an existing dataset, but no projected rows are available for the selected view yet.",
   "@reportsPharmacyReportingUnavailableMappedBody": {
-    "description": "Empty body when pharmacy report maps to a dataset but dialog content is not implemented."
+    "description": "Empty body when pharmacy report maps to a dataset but the selected projection has no viewable data."
+  },
+  "reportsPharmacyReportingLoadingTitle": "Loading report",
+  "@reportsPharmacyReportingLoadingTitle": {
+    "description": "Loading title while pharmacy report dialog fetches dataset preview rows."
+  },
+  "reportsPharmacyReportingLoadingBody": "Fetching live rows for the selected period...",
+  "@reportsPharmacyReportingLoadingBody": {
+    "description": "Loading body while pharmacy report dialog fetches dataset preview rows."
+  },
+  "reportsPharmacyReportingErrorTitle": "Could not load report",
+  "@reportsPharmacyReportingErrorTitle": {
+    "description": "Error title when pharmacy report dialog preview fails."
+  },
+  "reportsPharmacyReportingErrorBody": "Live report data could not be loaded. Check your connection and try again.",
+  "@reportsPharmacyReportingErrorBody": {
+    "description": "Error body when pharmacy report dialog preview fails."
+  },
+  "reportsPharmacyReportingEmptyTitle": "No rows for this period",
+  "@reportsPharmacyReportingEmptyTitle": {
+    "description": "Empty title when pharmacy report dialog has no projected rows for the selected period."
+  },
+  "reportsPharmacyReportingEmptyBody": "No matching rows were returned for the selected date range.",
+  "@reportsPharmacyReportingEmptyBody": {
+    "description": "Empty body when pharmacy report dialog has no projected rows for the selected period."
   },
   "reportsPharmacyReportingExportExcelAction": "Export Excel",
   "@reportsPharmacyReportingExportExcelAction": {

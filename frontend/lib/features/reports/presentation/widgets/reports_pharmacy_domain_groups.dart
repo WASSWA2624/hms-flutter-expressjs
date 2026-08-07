@@ -1,9 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/features/reports/data/repositories/reports_repository_impl.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
+import 'package:hosspi_hms/features/reports/domain/repositories/reports_repository.dart';
 import 'package:hosspi_hms/features/reports/presentation/pharmacy_reporting_catalog.dart';
 import 'package:hosspi_hms/features/reports/presentation/pharmacy_reporting_labels.dart';
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
@@ -147,10 +150,14 @@ class _ReportsPharmacyDomainGroupsState
           _applySearchNow('');
         },
         onReportPressed: (ModuleReportingReport report) {
+          final ReportsRepository repository = ProviderScope.containerOf(
+            context,
+          ).read(reportsRepositoryProvider);
           openPharmacyReportingReportDialog(
             context: context,
             report: report,
             policy: widget.policy,
+            repository: repository,
           );
         },
       ),

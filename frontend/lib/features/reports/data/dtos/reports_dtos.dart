@@ -24,6 +24,45 @@ final class ReportRunPreviewDto {
   }
 }
 
+final class ReportDatasetPreviewDto {
+  const ReportDatasetPreviewDto(this.json);
+
+  final ReportsJsonMap json;
+
+  factory ReportDatasetPreviewDto.fromResponse(Object? responseData) {
+    return ReportDatasetPreviewDto(_dataMap(responseData));
+  }
+
+  ReportDatasetPreview toEntity() {
+    return ReportDatasetPreview(
+      datasetKey: _string(json['dataset_key']),
+      visualization: _string(json['visualization']),
+      title: _string(json['title']) ?? '',
+      subtitle: _string(json['subtitle']) ?? '',
+      columns: _stringList(json['columns']),
+      rows: _objectList(json['rows']),
+      summary: _nullableObjectMap(json['summary']),
+      breakdown: _nullableObjectMap(json['breakdown']),
+    );
+  }
+}
+
+Map<String, Object?>? _nullableObjectMap(Object? value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is Map<String, Object?>) {
+    return Map<String, Object?>.of(value);
+  }
+  if (value is Map<String, dynamic>) {
+    return <String, Object?>{
+      for (final MapEntry<String, dynamic> entry in value.entries)
+        entry.key: entry.value,
+    };
+  }
+  return null;
+}
+
 List<String> _stringList(Object? value) {
   if (value is! List) {
     return const <String>[];
@@ -38,15 +77,16 @@ List<Map<String, Object?>> _objectList(Object? value) {
   if (value is! List) {
     return const <Map<String, Object?>>[];
   }
-  return value
-      .whereType<Map>()
-      .map(
-        (Map<dynamic, dynamic> entry) => <String, Object?>{
-          for (final MapEntry<dynamic, dynamic> item in entry.entries)
-            item.key.toString(): item.value,
+  return <Map<String, Object?>>[
+    for (final Object? entry in value)
+      if (entry is Map<String, Object?>)
+        Map<String, Object?>.of(entry)
+      else if (entry is Map<String, dynamic>)
+        <String, Object?>{
+          for (final MapEntry<String, dynamic> item in entry.entries)
+            item.key: item.value,
         },
-      )
-      .toList(growable: false);
+  ];
 }
 
 final class ReportsWorkspaceOverviewDto {

@@ -1432,6 +1432,7 @@
   "messages.refund.list.success": "Refunds retrieved successfully",
   "messages.refund.update.success": "Refund updated successfully",
   "messages.report_definition.create_success": "Report definition created successfully",
+  "messages.report_definition.dataset_preview_success": "Report dataset preview retrieved successfully",
   "messages.report_definition.get_success": "Report definition retrieved successfully",
   "messages.report_definition.list_success": "Report definitions retrieved successfully",
   "messages.report_definition.update_success": "Report definition updated successfully",

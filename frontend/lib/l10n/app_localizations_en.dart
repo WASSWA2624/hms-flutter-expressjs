@@ -16988,13 +16988,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsPharmacyReportingPeriodCustom => 'Custom';
 
   @override
-  String get reportsPharmacyReportingLoadingTitle => 'Loading report';
-
-  @override
-  String get reportsPharmacyReportingLoadingBody =>
-      'Updating the selected period.';
-
-  @override
   String get reportsPharmacyReportingUnavailableTitle =>
       'Report data not available yet';
 
@@ -17004,7 +16997,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsPharmacyReportingUnavailableMappedBody =>
-      'This report maps to an existing dataset, but the in-place pharmacy dialog view is not wired yet. Use Analytics shortcuts or Catalog runs for live data.';
+      'This report maps to an existing dataset, but no projected rows are available for the selected view yet.';
+
+  @override
+  String get reportsPharmacyReportingLoadingTitle => 'Loading report';
+
+  @override
+  String get reportsPharmacyReportingLoadingBody =>
+      'Fetching live rows for the selected period...';
+
+  @override
+  String get reportsPharmacyReportingErrorTitle => 'Could not load report';
+
+  @override
+  String get reportsPharmacyReportingErrorBody =>
+      'Live report data could not be loaded. Check your connection and try again.';
+
+  @override
+  String get reportsPharmacyReportingEmptyTitle => 'No rows for this period';
+
+  @override
+  String get reportsPharmacyReportingEmptyBody =>
+      'No matching rows were returned for the selected date range.';
 
   @override
   String get reportsPharmacyReportingExportExcelAction => 'Export Excel';

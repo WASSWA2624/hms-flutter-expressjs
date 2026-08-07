@@ -5,23 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/dashboard/dashboard.dart';
 import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
+import 'package:hosspi_hms/shared/reporting/module_reporting_data.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_models.dart';
-
-enum ModuleReportingPeriodPreset {
-  today,
-  lastWeek,
-  lastMonth,
-  last3Months,
-  last6Months,
-  last12Months,
-  last24Months,
-  custom,
-}
-
-enum ModuleReportingExportFormat { excel, pdf }
 
 ({DateTime from, DateTime to}) moduleReportingRangeForPreset(
   ModuleReportingPeriodPreset preset, {
@@ -79,6 +68,7 @@ Future<void> openModuleReportingReportDialog({
   required ModuleReportingReport report,
   required ModuleReportingLabels labels,
   required bool canExport,
+  ModuleReportingDataProvider? dataProvider,
 }) {
   return showAppDialog<void>(
     context: context,
@@ -86,6 +76,7 @@ Future<void> openModuleReportingReportDialog({
       report: report,
       labels: labels,
       canExport: canExport,
+      dataProvider: dataProvider,
     ),
   );
 }
@@ -95,12 +86,14 @@ class ModuleReportingReportDialog extends ConsumerStatefulWidget {
     required this.report,
     required this.labels,
     required this.canExport,
+    this.dataProvider,
     super.key,
   });
 
   final ModuleReportingReport report;
   final ModuleReportingLabels labels;
   final bool canExport;
+  final ModuleReportingDataProvider? dataProvider;
 
   @override
   ConsumerState<ModuleReportingReportDialog> createState() =>
@@ -116,6 +109,9 @@ class _ModuleReportingReportDialogState
   String? _rangeError;
   bool _isPrinting = false;
   bool _isExporting = false;
+  int _loadToken = 0;
+  ModuleReportingReportSnapshot _snapshot =
+      const ModuleReportingReportSnapshot.loading();
 
   ModuleReportingLabels get _labels => widget.labels;
 
@@ -126,9 +122,61 @@ class _ModuleReportingReportDialogState
         moduleReportingRangeForPreset(_preset);
     _rangeFrom = range.from;
     _rangeTo = range.to;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_loadSnapshot());
+    });
   }
 
   bool get _busy => _isPrinting || _isExporting;
+
+  Future<void> _loadSnapshot() async {
+    final ModuleReportingDataProvider? provider = widget.dataProvider;
+    final DateTime? from = _rangeFrom;
+    final DateTime? to = _rangeTo;
+    final int token = ++_loadToken;
+
+    if (provider == null) {
+      if (!mounted || token != _loadToken) {
+        return;
+      }
+      setState(() {
+        _snapshot = ModuleReportingReportSnapshot.unavailable(
+          title: widget.report.label,
+        );
+      });
+      return;
+    }
+
+    setState(() {
+      _snapshot = ModuleReportingReportSnapshot.loading(
+        title: widget.report.label,
+      );
+    });
+
+    if (from == null || to == null) {
+      if (!mounted || token != _loadToken) {
+        return;
+      }
+      setState(() {
+        _snapshot = ModuleReportingReportSnapshot.error(
+          failureMessage: _labels.invalidDateMessage,
+          title: widget.report.label,
+        );
+      });
+      return;
+    }
+
+    final ModuleReportingReportSnapshot next = await provider.load(
+      report: widget.report,
+      from: from,
+      to: to,
+      preset: _preset,
+    );
+    if (!mounted || token != _loadToken) {
+      return;
+    }
+    setState(() => _snapshot = next);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -166,15 +214,7 @@ class _ModuleReportingReportDialogState
               ),
             ],
             SizedBox(height: theme.spacing.sm),
-            AppWorkspaceStatePanel.empty(
-              title: _labels.unavailableTitle,
-              body: widget.report.hasBackend
-                  ? _labels.unavailableMappedBody
-                  : _labels.unavailableBody,
-              icon: isChart
-                  ? Icons.bar_chart_outlined
-                  : Icons.table_chart_outlined,
-            ),
+            _buildBody(context, isChart: isChart),
           ],
         ),
       ),
@@ -202,6 +242,75 @@ class _ModuleReportingReportDialogState
     );
   }
 
+  Widget _buildBody(BuildContext context, {required bool isChart}) {
+    final ThemeData theme = Theme.of(context);
+    switch (_snapshot.state) {
+      case ModuleReportingLoadState.loading:
+        return AppWorkspaceStatePanel.loading(
+          title: _labels.loadingTitle,
+          body: _labels.loadingBody,
+          minHeight: 220,
+        );
+      case ModuleReportingLoadState.error:
+        return AppWorkspaceStatePanel.error(
+          title: _labels.errorTitle,
+          body: _snapshot.failureMessage?.trim().isNotEmpty == true
+              ? _snapshot.failureMessage!
+              : _labels.errorBody,
+          icon: Icons.error_outline,
+          minHeight: 220,
+          action: AppButton.secondary(
+            label: _labels.retryAction,
+            leadingIcon: Icons.refresh,
+            onPressed: () => unawaited(_loadSnapshot()),
+          ),
+        );
+      case ModuleReportingLoadState.unavailable:
+        return AppWorkspaceStatePanel.empty(
+          title: _labels.unavailableTitle,
+          body: widget.report.hasBackend
+              ? _labels.unavailableMappedBody
+              : _labels.unavailableBody,
+          icon: isChart
+              ? Icons.bar_chart_outlined
+              : Icons.table_chart_outlined,
+          minHeight: 220,
+        );
+      case ModuleReportingLoadState.empty:
+        return AppWorkspaceStatePanel.empty(
+          title: _labels.emptyTitle,
+          body: _labels.emptyBody,
+          icon: isChart
+              ? Icons.bar_chart_outlined
+              : Icons.table_chart_outlined,
+          minHeight: 220,
+        );
+      case ModuleReportingLoadState.ready:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if ((_snapshot.subtitle ?? '').trim().isNotEmpty)
+              Text(
+                _snapshot.subtitle!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            if (isChart) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              _ModuleReportingChartPreview(
+                labels: _labels,
+                snapshot: _snapshot,
+                reportLabel: widget.report.label,
+              ),
+            ],
+            SizedBox(height: theme.spacing.sm),
+            _ModuleReportingRowsPreview(snapshot: _snapshot),
+          ],
+        );
+    }
+  }
+
   Future<void> _onPeriodSelected(ModuleReportingPeriodPreset preset) async {
     _rangeError = null;
     if (preset == ModuleReportingPeriodPreset.custom) {
@@ -221,6 +330,7 @@ class _ModuleReportingReportDialogState
             .add(const Duration(days: 1))
             .subtract(const Duration(milliseconds: 1));
       });
+      unawaited(_loadSnapshot());
       return;
     }
 
@@ -231,6 +341,7 @@ class _ModuleReportingReportDialogState
       _rangeFrom = range.from;
       _rangeTo = range.to;
     });
+    unawaited(_loadSnapshot());
   }
 
   String? _rangeSummary(BuildContext context) {
@@ -276,6 +387,7 @@ class _ModuleReportingReportDialogState
           from: _rangeFrom,
           to: _rangeTo,
           locale: Localizations.localeOf(context),
+          snapshot: _snapshot,
         ),
         footerNote: _labels.printFooter,
       );
@@ -321,6 +433,7 @@ class _ModuleReportingReportDialogState
               from: _rangeFrom,
               to: _rangeTo,
               locale: Localizations.localeOf(context),
+              snapshot: _snapshot,
             ),
             footerNote: _labels.printFooter,
           );
@@ -336,7 +449,45 @@ class _ModuleReportingReportDialogState
 
   Future<void> _exportExcel() async {
     final Locale locale = Localizations.localeOf(context);
-    final List<ModuleReportingExportRow> rows =
+    if (_snapshot.hasRows && _snapshot.columns.isNotEmpty) {
+      final List<String> columns = _snapshot.columns;
+      final List<Map<String, Object?>> rows = _snapshot.exportRows;
+      final List<AppListTableColumn<Map<String, Object?>>> tableColumns =
+          <AppListTableColumn<Map<String, Object?>>>[
+            for (final String column in columns)
+              AppListTableColumn<Map<String, Object?>>(
+                id: column,
+                label: column,
+                cellBuilder: (_, Map<String, Object?> row) =>
+                    Text('${row[column] ?? ''}'),
+                exportValue: (Map<String, Object?> row) =>
+                    '${row[column] ?? ''}',
+              ),
+          ];
+      await showAppListTableExportDialog<Map<String, Object?>>(
+        context: context,
+        columns: tableColumns,
+        visibleColumnKeys: columns.toSet(),
+        rows: rows,
+        config: AppListTableExportConfig<Map<String, Object?>>(
+          fileNameStem: widget.report.id,
+          sheetName: _labels.exportSheetName,
+          enableDateFilter: false,
+        ),
+        title: _labels.exportDialogTitle,
+        exportLabel: _labels.exportAction,
+        cancelLabel: _labels.cancelAction,
+        columnsSectionLabel: _labels.exportColumnsSectionLabel,
+        filtersSectionLabel: _labels.exportFiltersSectionLabel,
+        emptyColumnsMessage: _labels.exportEmptyColumnsMessage,
+        emptyRowsMessage: _labels.exportEmptyRowsMessage,
+        successMessage: _labels.exportSuccessMessage,
+        failureMessage: _labels.exportFailureMessage,
+      );
+      return;
+    }
+
+    final List<ModuleReportingExportRow> summaryRows =
         moduleReportingExportSummaryRows(
           labels: _labels,
           report: widget.report,
@@ -344,6 +495,7 @@ class _ModuleReportingReportDialogState
           from: _rangeFrom,
           to: _rangeTo,
           locale: locale,
+          snapshot: _snapshot,
         );
     final List<AppListTableColumn<ModuleReportingExportRow>> columns =
         <AppListTableColumn<ModuleReportingExportRow>>[
@@ -365,7 +517,7 @@ class _ModuleReportingReportDialogState
       context: context,
       columns: columns,
       visibleColumnKeys: const <String>{'field', 'value'},
-      rows: rows,
+      rows: summaryRows,
       config: AppListTableExportConfig<ModuleReportingExportRow>(
         fileNameStem: widget.report.id,
         sheetName: _labels.exportSheetName,
@@ -400,6 +552,50 @@ String moduleReportingPeriodLabel(
   };
 }
 
+String _snapshotStatusLabel(
+  ModuleReportingLabels labels,
+  ModuleReportingReportSnapshot? snapshot,
+  ModuleReportingReport report,
+) {
+  if (snapshot == null) {
+    return labels.unavailableTitle;
+  }
+  return switch (snapshot.state) {
+    ModuleReportingLoadState.loading => labels.loadingTitle,
+    ModuleReportingLoadState.ready => labels.previewTitle,
+    ModuleReportingLoadState.empty => labels.emptyTitle,
+    ModuleReportingLoadState.error => labels.errorTitle,
+    ModuleReportingLoadState.unavailable => labels.unavailableTitle,
+  };
+}
+
+String _snapshotNotesLabel(
+  ModuleReportingLabels labels,
+  ModuleReportingReportSnapshot? snapshot,
+  ModuleReportingReport report,
+) {
+  if (snapshot == null) {
+    return report.hasBackend
+        ? labels.unavailableMappedBody
+        : labels.unavailableBody;
+  }
+  return switch (snapshot.state) {
+    ModuleReportingLoadState.loading => labels.loadingBody,
+    ModuleReportingLoadState.ready =>
+      snapshot.subtitle?.trim().isNotEmpty == true
+          ? snapshot.subtitle!
+          : labels.previewTitle,
+    ModuleReportingLoadState.empty => labels.emptyBody,
+    ModuleReportingLoadState.error =>
+      snapshot.failureMessage?.trim().isNotEmpty == true
+          ? snapshot.failureMessage!
+          : labels.errorBody,
+    ModuleReportingLoadState.unavailable => report.hasBackend
+        ? labels.unavailableMappedBody
+        : labels.unavailableBody,
+  };
+}
+
 String moduleReportingPrintBodyHtml({
   required ModuleReportingLabels labels,
   required ModuleReportingReport report,
@@ -407,6 +603,7 @@ String moduleReportingPrintBodyHtml({
   required DateTime? from,
   required DateTime? to,
   required Locale locale,
+  ModuleReportingReportSnapshot? snapshot,
 }) {
   final String fromLabel = from == null
       ? labels.unknownValue
@@ -418,11 +615,8 @@ String moduleReportingPrintBodyHtml({
       report.contentKind == ModuleReportingContentKind.chart
       ? labels.contentKindChart
       : labels.contentKindTable;
-  final String availability = report.hasBackend
-      ? labels.unavailableMappedBody
-      : labels.unavailableBody;
 
-  return PrintFormTemplate.section(
+  final String metadata = PrintFormTemplate.section(
     title: labels.previewTitle,
     bodyHtml: PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
       PrintFormMetadataItem(
@@ -448,14 +642,36 @@ String moduleReportingPrintBodyHtml({
       PrintFormMetadataItem(label: labels.dateToLabel, value: toLabel),
       PrintFormMetadataItem(
         label: labels.statusColumnLabel,
-        value: labels.unavailableTitle,
+        value: _snapshotStatusLabel(labels, snapshot, report),
       ),
       PrintFormMetadataItem(
         label: labels.exportNotesLabel,
-        value: availability,
+        value: _snapshotNotesLabel(labels, snapshot, report),
       ),
     ]),
   );
+
+  if (snapshot == null || !snapshot.hasRows || snapshot.columns.isEmpty) {
+    return metadata;
+  }
+
+  final String tableHtml = PrintFormTemplate.section(
+    title: snapshot.title?.trim().isNotEmpty == true
+        ? snapshot.title!
+        : report.label,
+    bodyHtml: PrintFormTemplate.table(
+      headers: snapshot.columns,
+      rows: <List<String>>[
+        for (final Map<String, Object?> row in snapshot.rows)
+          <String>[
+            for (final String column in snapshot.columns)
+              '${row[column] ?? ''}',
+          ],
+      ],
+      emptyText: labels.emptyBody,
+    ),
+  );
+  return '$metadata$tableHtml';
 }
 
 List<ModuleReportingExportRow> moduleReportingExportSummaryRows({
@@ -465,6 +681,7 @@ List<ModuleReportingExportRow> moduleReportingExportSummaryRows({
   required DateTime? from,
   required DateTime? to,
   required Locale locale,
+  ModuleReportingReportSnapshot? snapshot,
 }) {
   final String fromLabel = from == null
       ? labels.unknownValue
@@ -504,13 +721,11 @@ List<ModuleReportingExportRow> moduleReportingExportSummaryRows({
     ),
     ModuleReportingExportRow(
       field: labels.statusColumnLabel,
-      value: labels.unavailableTitle,
+      value: _snapshotStatusLabel(labels, snapshot, report),
     ),
     ModuleReportingExportRow(
       field: labels.exportNotesLabel,
-      value: report.hasBackend
-          ? labels.unavailableMappedBody
-          : labels.unavailableBody,
+      value: _snapshotNotesLabel(labels, snapshot, report),
     ),
   ];
 }
@@ -550,6 +765,193 @@ Future<ModuleReportingExportFormat?> _openExportOptionsDialog({
       contentKind: contentKind,
     ),
   );
+}
+
+class _ModuleReportingRowsPreview extends StatelessWidget {
+  const _ModuleReportingRowsPreview({required this.snapshot});
+
+  final ModuleReportingReportSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!snapshot.hasRows || snapshot.columns.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columns: <DataColumn>[
+          for (final String column in snapshot.columns)
+            DataColumn(label: Text(column)),
+        ],
+        rows: <DataRow>[
+          for (final Map<String, Object?> row in snapshot.rows.take(40))
+            DataRow(
+              cells: <DataCell>[
+                for (final String column in snapshot.columns)
+                  DataCell(Text('${row[column] ?? ''}')),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModuleReportingChartPreview extends StatelessWidget {
+  const _ModuleReportingChartPreview({
+    required this.labels,
+    required this.snapshot,
+    required this.reportLabel,
+  });
+
+  final ModuleReportingLabels labels;
+  final ModuleReportingReportSnapshot snapshot;
+  final String reportLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<DashboardTrendPointData> points =
+        _moduleReportingTrendPoints(snapshot);
+    if (points.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final List<DashboardDistributionSegmentData> segments =
+        _moduleReportingDistributionSegments(snapshot);
+    final num total = segments.fold<num>(
+      0,
+      (num sum, DashboardDistributionSegmentData segment) =>
+          sum + segment.value,
+    );
+
+    return DashboardChartsRow(
+      data: DashboardChartsData(
+        trend: DashboardTrendChartData(
+          title: reportLabel,
+          points: points,
+          emptyMessage: labels.emptyBody,
+          chartStyle: DashboardTrendChartStyle.line,
+        ),
+        distribution: DashboardDistributionChartData(
+          title: labels.previewTitle,
+          total: total,
+          segments: segments,
+          emptyMessage: labels.emptyBody,
+          totalLabel: labels.exportValueColumn,
+        ),
+      ),
+      twoColumns: MediaQuery.sizeOf(context).width >= 720,
+    );
+  }
+}
+
+List<DashboardTrendPointData> _moduleReportingTrendPoints(
+  ModuleReportingReportSnapshot snapshot,
+) {
+  final List<Map<String, Object?>> sourceRows;
+  final Object? daily = snapshot.breakdown?['daily_totals'];
+  if (daily is List && daily.isNotEmpty) {
+    sourceRows = <Map<String, Object?>>[
+      for (final Object? entry in daily)
+        if (entry is Map)
+          <String, Object?>{
+            for (final MapEntry<dynamic, dynamic> item
+                in Map<dynamic, dynamic>.from(entry).entries)
+              item.key.toString(): item.value,
+          },
+    ];
+  } else {
+    sourceRows = snapshot.rows;
+  }
+
+  final List<DashboardTrendPointData> points = <DashboardTrendPointData>[];
+  for (final Map<String, Object?> row in sourceRows.take(40)) {
+    final String label =
+        '${row['date'] ?? row['period'] ?? row['drug'] ?? row['inventory_item'] ?? ''}';
+    final num value = _moduleReportingAsNum(
+      row['amount'] ??
+          row['quantity_dispensed'] ??
+          row['orders_created'] ??
+          row['dispensed'] ??
+          row['quantity'] ??
+          row['value'],
+    );
+    if (label.trim().isEmpty && value == 0) {
+      continue;
+    }
+    points.add(
+      DashboardTrendPointData(
+        value: value,
+        label: label.trim().isEmpty ? '—' : label,
+      ),
+    );
+  }
+  return points;
+}
+
+List<DashboardDistributionSegmentData> _moduleReportingDistributionSegments(
+  ModuleReportingReportSnapshot snapshot,
+) {
+  final Object? mix =
+      snapshot.breakdown?['source_mix'] ?? snapshot.summary?['source_mix'];
+  if (mix is List && mix.isNotEmpty) {
+    final List<DashboardDistributionSegmentData> fromMix =
+        <DashboardDistributionSegmentData>[];
+    for (final Object? entry in mix) {
+      if (entry is! Map) {
+        continue;
+      }
+      final Map<dynamic, dynamic> map = Map<dynamic, dynamic>.from(entry);
+      final String label =
+          '${map['order_source'] ?? map['channel'] ?? map['label'] ?? ''}';
+      final num value = _moduleReportingAsNum(
+        map['quantity_dispensed'] ?? map['amount'] ?? map['value'],
+      );
+      if (label.trim().isEmpty || value <= 0) {
+        continue;
+      }
+      fromMix.add(
+        DashboardDistributionSegmentData(label: label, value: value),
+      );
+      if (fromMix.length >= 8) {
+        break;
+      }
+    }
+    if (fromMix.isNotEmpty) {
+      return fromMix;
+    }
+  }
+
+  final List<DashboardDistributionSegmentData> fromRows =
+      <DashboardDistributionSegmentData>[];
+  for (final Map<String, Object?> row in snapshot.rows) {
+    final String label =
+        '${row['drug'] ?? row['inventory_item'] ?? row['date'] ?? ''}';
+    final num value = _moduleReportingAsNum(
+      row['amount'] ?? row['quantity_dispensed'] ?? row['quantity'],
+    );
+    if (label.trim().isEmpty || value <= 0) {
+      continue;
+    }
+    fromRows.add(
+      DashboardDistributionSegmentData(label: label, value: value),
+    );
+    if (fromRows.length >= 8) {
+      break;
+    }
+  }
+  return fromRows;
+}
+
+num _moduleReportingAsNum(Object? value) {
+  if (value is num) {
+    return value;
+  }
+  if (value is String) {
+    return num.tryParse(value) ?? 0;
+  }
+  return 0;
 }
 
 class _ModuleReportingPeriodToolbar extends StatelessWidget {

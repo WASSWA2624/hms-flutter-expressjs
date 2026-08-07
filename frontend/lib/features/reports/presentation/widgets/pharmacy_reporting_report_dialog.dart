@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/features/reports/domain/repositories/reports_repository.dart';
 import 'package:hosspi_hms/features/reports/presentation/pharmacy_reporting_catalog.dart';
 import 'package:hosspi_hms/features/reports/presentation/pharmacy_reporting_labels.dart';
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
+import 'package:hosspi_hms/features/reports/presentation/widgets/pharmacy_reporting_data_provider.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/reporting/reporting.dart';
 
@@ -23,11 +25,13 @@ Future<void> openPharmacyReportingReportDialog({
   required BuildContext context,
   required PharmacyReportingReport report,
   required AppAccessPolicy policy,
+  required ReportsRepository repository,
 }) {
   return openModuleReportingReportDialog(
     context: context,
     report: report,
     labels: pharmacyReportingLabels(context.l10n),
     canExport: canExportEvidence(policy),
+    dataProvider: PharmacyReportingDataProvider(repository),
   );
 }

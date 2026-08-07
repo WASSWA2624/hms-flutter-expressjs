@@ -31387,18 +31387,6 @@ abstract class AppLocalizations {
   /// **'Custom'**
   String get reportsPharmacyReportingPeriodCustom;
 
-  /// Loading title while pharmacy report dialog refreshes.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading report'**
-  String get reportsPharmacyReportingLoadingTitle;
-
-  /// Loading body while pharmacy report dialog refreshes.
-  ///
-  /// In en, this message translates to:
-  /// **'Updating the selected period.'**
-  String get reportsPharmacyReportingLoadingBody;
-
   /// Empty title when pharmacy report has no backend content.
   ///
   /// In en, this message translates to:
@@ -31411,11 +31399,47 @@ abstract class AppLocalizations {
   /// **'This report is listed in the pharmacy catalog, but live data is not wired for it yet.'**
   String get reportsPharmacyReportingUnavailableBody;
 
-  /// Empty body when pharmacy report maps to a dataset but dialog content is not implemented.
+  /// Empty body when pharmacy report maps to a dataset but the selected projection has no viewable data.
   ///
   /// In en, this message translates to:
-  /// **'This report maps to an existing dataset, but the in-place pharmacy dialog view is not wired yet. Use Analytics shortcuts or Catalog runs for live data.'**
+  /// **'This report maps to an existing dataset, but no projected rows are available for the selected view yet.'**
   String get reportsPharmacyReportingUnavailableMappedBody;
+
+  /// Loading title while pharmacy report dialog fetches dataset preview rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading report'**
+  String get reportsPharmacyReportingLoadingTitle;
+
+  /// Loading body while pharmacy report dialog fetches dataset preview rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching live rows for the selected period...'**
+  String get reportsPharmacyReportingLoadingBody;
+
+  /// Error title when pharmacy report dialog preview fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load report'**
+  String get reportsPharmacyReportingErrorTitle;
+
+  /// Error body when pharmacy report dialog preview fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Live report data could not be loaded. Check your connection and try again.'**
+  String get reportsPharmacyReportingErrorBody;
+
+  /// Empty title when pharmacy report dialog has no projected rows for the selected period.
+  ///
+  /// In en, this message translates to:
+  /// **'No rows for this period'**
+  String get reportsPharmacyReportingEmptyTitle;
+
+  /// Empty body when pharmacy report dialog has no projected rows for the selected period.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching rows were returned for the selected date range.'**
+  String get reportsPharmacyReportingEmptyBody;
 
   /// Export action for tabular pharmacy reports.
   ///
@@ -46261,8 +46285,4 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
-  );
-}
+    'an issue with the localizations gen

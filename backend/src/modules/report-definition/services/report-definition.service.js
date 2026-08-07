@@ -1,6 +1,7 @@
 const reportDefinitionRepository = require('@repositories/report-definition/report-definition.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { executeReportDataset } = require('@lib/reports/datasets');
 const { enqueueReportRun } = require('@lib/reports/runtime');
 const {
   buildPagination,
@@ -292,10 +293,43 @@ const runReportDefinitionNow = async (id, payload = {}, context = {}) => {
   return serializeReportRun(run);
 };
 
+const previewReportDataset = async (datasetKey, payload = {}, user = {}) => {
+  const scoped = await resolveScopedContext(payload, user);
+  const normalizedKey = normalizeString(datasetKey);
+  const dataset = REPORT_DATASET_MAP[normalizedKey];
+  if (!dataset) {
+    throw new HttpError('errors.report_definition.invalid_dataset', 400, [{ field: 'dataset_key' }]);
+  }
+
+  const parameters = {
+    ...(normalizeString(payload.from) ? { from: normalizeString(payload.from) } : {}),
+    ...(normalizeString(payload.to) ? { to: normalizeString(payload.to) } : {}),
+    ...(normalizeString(payload.date_preset)
+      ? { date_preset: normalizeString(payload.date_preset) }
+      : {})};
+
+  const result = await executeReportDataset({
+    dataset_key: normalizedKey,
+    scope: scoped,
+    definition_json: ensureDatasetDefinition(normalizedKey),
+    parameters});
+
+  return {
+    dataset_key: result.dataset?.key || normalizedKey,
+    title: result.title,
+    subtitle: result.subtitle,
+    columns: result.columns,
+    rows: result.rows,
+    summary: result.summary || null,
+    breakdown: result.breakdown || null,
+    visualization: result.dataset?.visualization || dataset.visualization || null};
+};
+
 module.exports = {
   createReportDefinition,
   deleteReportDefinition,
   getReportDefinitionById,
   listReportDefinitions,
+  previewReportDataset,
   runReportDefinitionNow,
   updateReportDefinition};

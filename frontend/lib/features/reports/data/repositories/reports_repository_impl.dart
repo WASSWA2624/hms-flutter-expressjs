@@ -232,6 +232,30 @@ final class ReportsRepositoryImpl implements ReportsRepository {
       },
     );
   }
+
+  @override
+  Future<Result<ReportDatasetPreview>> previewDataset({
+    required String datasetKey,
+    DateTime? from,
+    DateTime? to,
+    String? datePreset,
+  }) {
+    return _apiClient.post<ReportDatasetPreview>(
+      ApiEndpoints.nested(
+        HmsApiResource.reportDefinitions,
+        'datasets',
+        <String>[datasetKey, 'preview'],
+      ),
+      data: _withoutEmpty(<String, Object?>{
+        'from': from?.toUtc().toIso8601String(),
+        'to': to?.toUtc().toIso8601String(),
+        'date_preset': datePreset,
+      }),
+      decoder: (Object? data) {
+        return ReportDatasetPreviewDto.fromResponse(data).toEntity();
+      },
+    );
+  }
 }
 
 Map<String, Object?> _reportRunPayload(ReportRunDraft draft) {
