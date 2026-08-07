@@ -179,7 +179,6 @@ class _ReportsPharmacyDomainGroupsState
                 key: _categoryFilterKey,
                 label: l10n.reportsPharmacyReportingCategoryFilterLabel,
                 allLabel: l10n.reportsPharmacyReportingCategoryAllLabel,
-                allowMultiple: true,
                 choices: _pharmacyReportingCategoryChoices(l10n),
               ),
             ],

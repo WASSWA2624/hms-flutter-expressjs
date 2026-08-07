@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
@@ -8,7 +9,10 @@ import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_pharmacy_domain_groups.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_search_bar.dart';
+
+import '../../../helpers/test_harness.dart';
 
 AppAccessPolicy _pharmacyPolicy({bool canWrite = false}) {
   return AppAccessPolicy.fromSession(
@@ -52,26 +56,29 @@ Future<void> _pumpGroups(
     ),
   ],
 }) async {
-  await tester.binding.setSurfaceSize(const Size(1100, 900));
-  addTearDown(() => tester.binding.setSurfaceSize(null));
+  setTestViewport(tester, const Size(720, 900));
 
   await tester.pumpWidget(
     ProviderScope(
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
         supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
         home: Scaffold(
-          body: Builder(
-            builder: (BuildContext context) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: ReportsPharmacyDomainGroups(
-                  l10n: AppLocalizations.of(context)!,
-                  datasetShortcuts: datasetShortcuts,
-                  onOpenDataset: openedDatasets.add,
-                ),
-              );
-            },
+          body: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Builder(
+              builder: (BuildContext context) {
+                return SingleChildScrollView(
+                  child: ReportsPharmacyDomainGroups(
+                    l10n: AppLocalizations.of(context)!,
+                    datasetShortcuts: datasetShortcuts,
+                    onOpenDataset: openedDatasets.add,
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -133,13 +140,19 @@ void main() {
     await tester.tap(find.text('Reporting'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Filters'));
-    await tester.pumpAndSettle();
+    final Finder filtersButton = find.descendant(
+      of: find.byType(AppSearchBar),
+      matching: find.byTooltip('Filters'),
+    );
+    expect(filtersButton, findsOneWidget);
+    await tester.ensureVisible(filtersButton);
+    await tester.tap(filtersButton);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Advanced filters'), findsOneWidget);
+    expect(find.byKey(AppDialog.shellKey), findsOneWidget);
+    expect(find.text('ADVANCED FILTERS'), findsOneWidget);
     expect(find.text('Report category'), findsOneWidget);
-    expect(find.text('Sales & revenue'), findsOneWidget);
-    expect(find.text('Inventory & stock'), findsOneWidget);
     expect(find.text('Date range'), findsOneWidget);
   });
 
