@@ -20,7 +20,7 @@ describe('effective-access', () => {
   test('intersects grant union with subscription modules', () => {
     const access = resolveEffectiveAccess(
       {
-        roles: [ROLES.DOCTOR],
+        roles: ['CUSTOM_CLINICIAN'],
         role_permissions: ['clinical:read', 'clinical:write', 'billing:write'],
         tenant_id: 'tenant-1'},
       {
@@ -35,6 +35,28 @@ describe('effective-access', () => {
       expect.arrayContaining(['clinical:read', 'clinical:write'])
     );
     expect(access.permissions).not.toContain('billing:write');
+  });
+
+  test('system role packs drop stale DB extras such as lab:read on DOCTOR', () => {
+    const access = resolveEffectiveAccess(
+      {
+        roles: [ROLES.DOCTOR],
+        role_permissions: ['clinical:read', 'lab:read', 'pharmacy:read', 'discharge:read'],
+        tenant_id: 'tenant-1'},
+      {
+        moduleEntitlements: [
+          { module_slug: 'encounters-vitals', is_active: true },
+          { module_slug: 'lab-workflows', is_active: true },
+          { module_slug: 'pharmacy-dispensing', is_active: true }]}
+    );
+
+    expect(access.grant_union).toEqual(
+      expect.arrayContaining(['clinical:read', 'clinical:write', 'reports:read'])
+    );
+    expect(access.grant_union).not.toContain('lab:read');
+    expect(access.grant_union).not.toContain('pharmacy:read');
+    expect(access.grant_union).not.toContain('discharge:read');
+    expect(access.permissions).not.toContain('lab:read');
   });
 
   test('intersects with explicit assigned modules when provided', () => {

@@ -155,9 +155,18 @@ const resolveRolePermissionNames = (user = {}) => {
   if (fromEmbeddedRoles.length > 0) {
     // Union shipped ROLE_PERMISSIONS so pack additions (e.g. reports:read) apply
     // immediately even when tenant role_permission rows are stale.
-    const fromPack = getRoleNames(user).flatMap(
+    const roleNames = getRoleNames(user);
+    const fromPack = roleNames.flatMap(
       (roleName) => ROLE_PERMISSIONS[roleName] || []
     );
+    // Pure system-role users: pack is the source of truth so stale DB extras
+    // (e.g. lab:read left on DOCTOR) cannot over-grant shell destinations.
+    const onlySystemRoles =
+      roleNames.length > 0 &&
+      roleNames.every((roleName) => Boolean(ROLE_PERMISSIONS[roleName]));
+    if (onlySystemRoles) {
+      return uniqueValues(fromPack);
+    }
     return uniqueValues([...fromEmbeddedRoles, ...fromPack]);
   }
 
@@ -167,9 +176,16 @@ const resolveRolePermissionNames = (user = {}) => {
         extractPermissionName
       )
     );
-    const fromPack = getRoleNames(user).flatMap(
+    const roleNames = getRoleNames(user);
+    const fromPack = roleNames.flatMap(
       (roleName) => ROLE_PERMISSIONS[roleName] || []
     );
+    const onlySystemRoles =
+      roleNames.length > 0 &&
+      roleNames.every((roleName) => Boolean(ROLE_PERMISSIONS[roleName]));
+    if (onlySystemRoles) {
+      return uniqueValues(fromPack);
+    }
     return uniqueValues([...fromDb, ...fromPack]);
   }
 

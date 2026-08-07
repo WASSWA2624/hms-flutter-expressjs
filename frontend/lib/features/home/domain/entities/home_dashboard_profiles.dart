@@ -1941,7 +1941,18 @@ HomeDashboardProfile expandHomeProfileForPermissions(
     if (profile.id == base.id || profile.role == AppRole.other) {
       continue;
     }
+    // Doctor home stays clinical — do not absorb Lab / Radiology / Pharmacy /
+    // Discharge / Emergency workspace KPIs or shortcuts from other packs.
+    final bool doctorBlocksDiagnosticPack =
+        base.id == 'doctor' &&
+        (profile.id == 'lab_tech' ||
+            profile.id == 'radiology_tech' ||
+            profile.id == 'pharmacist' ||
+            profile.id == 'ambulance_operator');
     for (final HomeStatusCardTemplate template in profile.statusCards) {
+      if (doctorBlocksDiagnosticPack) {
+        continue;
+      }
       if (baseCardIds.contains(template.id) ||
           crossDomainCards.containsKey(template.id) ||
           sameDomainCards.containsKey(template.id)) {
@@ -1979,6 +1990,16 @@ HomeDashboardProfile expandHomeProfileForPermissions(
       // Receptionist shell: no profile tile; OPD/Emergency stay on Reception.
       if (base.id == 'receptionist' &&
           (id == 'profile' || id == 'opd' || id == 'emergency')) {
+        continue;
+      }
+      if (base.id == 'doctor' &&
+          (id == 'lab' ||
+              id == 'radiology' ||
+              id == 'pharmacy' ||
+              id == 'discharge' ||
+              id == 'emergency' ||
+              id == 'rooms_beds' ||
+              id == 'physiotherapy')) {
         continue;
       }
       shortcutIds.add(id);
