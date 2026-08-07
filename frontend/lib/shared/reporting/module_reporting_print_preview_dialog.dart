@@ -739,8 +739,10 @@ class _BlockPreviewBody extends StatelessWidget {
       title: block.title,
       canExport: false,
       embedded: true,
+      fitForPrint: true,
+      showOptionsBar: true,
       storageKeyPrefix: 'print-${block.id}',
-      dataLimit: block.maxRows,
+      dataLimit: block.maxRows.clamp(1, 24),
     );
 
     // Nested chart chrome (options + legend + painters) can exceed the block

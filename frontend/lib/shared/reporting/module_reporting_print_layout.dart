@@ -10,6 +10,9 @@ import 'package:hosspi_hms/shared/reporting/module_reporting_models.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_table.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_visualization.dart';
 
+/// Preferred raster width for chart captures (fits A4 content column).
+const double moduleReportingPrintCaptureWidth = 640;
+
 /// Logical base page size used by the interactive report print canvas.
 const Size moduleReportingPrintPageSize = Size(720, 960);
 
@@ -112,16 +115,18 @@ List<ModuleReportingPrintBlock> moduleReportingDefaultPrintBlocks({
   final double fullWidth = moduleReportingPrintPageSize.width - 32;
   for (int index = 0; index < applicable.length; index += 1) {
     final ModuleReportingVisualizationKind kind = applicable[index];
-    final bool isTable = kind == ModuleReportingVisualizationKind.table;
-    final double height = isTable
-        ? 320
-        : kind == ModuleReportingVisualizationKind.kpiCards
-        ? 200
-        : kind == ModuleReportingVisualizationKind.heatmap
-        ? 360
-        : kind == ModuleReportingVisualizationKind.gaugeChart
-        ? 280
-        : 340;
+    final double height = switch (kind) {
+      ModuleReportingVisualizationKind.table => 300,
+      ModuleReportingVisualizationKind.kpiCards => 132,
+      ModuleReportingVisualizationKind.donutChart => 220,
+      ModuleReportingVisualizationKind.rankingChart => 200,
+      ModuleReportingVisualizationKind.gaugeChart => 240,
+      ModuleReportingVisualizationKind.heatmap => 300,
+      ModuleReportingVisualizationKind.scatterChart => 280,
+      ModuleReportingVisualizationKind.lineChart ||
+      ModuleReportingVisualizationKind.barChart ||
+      ModuleReportingVisualizationKind.areaChart => 300,
+    };
     blocks.add(
       ModuleReportingPrintBlock(
         id: '${kind.name}_$index',
@@ -217,9 +222,12 @@ String moduleReportingPrintLayoutBodyHtml({
     );
 
   for (final ModuleReportingPrintBlock block in visible) {
+    final bool isChart =
+        block.kind != ModuleReportingVisualizationKind.table;
     body.write(
       PrintFormTemplate.section(
         title: block.title,
+        avoidPageBreak: isChart,
         bodyHtml: _blockHtml(
           block: block,
           snapshot: snapshot,
@@ -249,11 +257,9 @@ String _blockHtml({
       chartImageDataUrl != null &&
       chartImageDataUrl.isNotEmpty) {
     html.writeln(
-      '<figure class="print-report-chart" style="margin:0;">'
+      '<figure class="print-report-chart">'
       '<img src="${_escape(chartImageDataUrl)}" '
-      'alt="${_escape(block.title)}" '
-      'style="display:block;width:100%;max-width:100%;height:auto;'
-      'border:1px solid #d0d7de;border-radius:8px;background:#fff;" />'
+      'alt="${_escape(block.title)}" />'
       '</figure>',
     );
     return html.toString();

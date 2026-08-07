@@ -11,12 +11,16 @@ import 'package:hosspi_hms/shared/reporting/module_reporting_visualization.dart'
 import 'package:hosspi_hms/shared/reporting/module_reporting_visualization_panel.dart';
 
 /// Renders selected non-table print blocks off-screen and returns PNG data URLs.
+///
+/// Captures use a fixed printable width and intrinsic height so charts are not
+/// clipped horizontally or padded with empty vertical space.
 Future<Map<String, String>> captureModuleReportingChartImages({
   required BuildContext context,
   required ModuleReportingReportSnapshot snapshot,
   required ModuleReportingLabels labels,
   required List<ModuleReportingPrintBlock> blocks,
   double pixelRatio = 2,
+  double captureWidth = moduleReportingPrintCaptureWidth,
 }) async {
   final List<ModuleReportingPrintBlock> chartBlocks = blocks
       .where(
@@ -37,6 +41,7 @@ Future<Map<String, String>> captureModuleReportingChartImages({
   late OverlayEntry entry;
   entry = OverlayEntry(
     builder: (BuildContext overlayContext) {
+      final ColorScheme colors = Theme.of(overlayContext).colorScheme;
       return IgnorePointer(
         child: Material(
           type: MaterialType.transparency,
@@ -45,27 +50,32 @@ Future<Map<String, String>> captureModuleReportingChartImages({
             child: Transform.translate(
               offset: const Offset(-20000, -20000),
               child: ColoredBox(
-                color: Theme.of(overlayContext).colorScheme.surface,
+                color: colors.surface,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     for (final ModuleReportingPrintBlock block in chartBlocks)
+                      // Width-constrained, height intrinsic — avoids empty
+                      // capture boxes and right-edge clipping.
                       SizedBox(
-                        width: block.width.clamp(280, 900).toDouble(),
-                        height: block.height.clamp(160, 720).toDouble(),
+                        width: captureWidth,
                         child: RepaintBoundary(
                           key: keys[block.id],
-                          child: ModuleReportingVisualizationView(
-                            kind: block.kind,
-                            snapshot: snapshot,
-                            labels: labels,
-                            title: block.title,
-                            canExport: false,
-                            embedded: true,
-                            showOptionsBar: false,
-                            storageKeyPrefix: 'print-capture-${block.id}',
-                            dataLimit: block.maxRows,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: ModuleReportingVisualizationView(
+                              kind: block.kind,
+                              snapshot: snapshot,
+                              labels: labels,
+                              title: block.title,
+                              canExport: false,
+                              embedded: true,
+                              showOptionsBar: false,
+                              fitForPrint: true,
+                              storageKeyPrefix: 'print-capture-${block.id}',
+                              dataLimit: block.maxRows.clamp(1, 24),
+                            ),
                           ),
                         ),
                       ),
@@ -83,10 +93,9 @@ Future<Map<String, String>> captureModuleReportingChartImages({
   overlay.insert(entry);
 
   try {
-    // Allow layout + paint of off-screen chart hosts.
     await Future<void>.delayed(Duration.zero);
     await WidgetsBinding.instance.endOfFrame;
-    await Future<void>.delayed(const Duration(milliseconds: 32));
+    await Future<void>.delayed(const Duration(milliseconds: 48));
     await WidgetsBinding.instance.endOfFrame;
     if (!overlay.mounted) {
       return const <String, String>{};
@@ -104,6 +113,10 @@ Future<Map<String, String>> captureModuleReportingChartImages({
         if (!overlay.mounted) {
           break;
         }
+      }
+      final Size size = renderObject.size;
+      if (size.isEmpty || size.width <= 0 || size.height <= 0) {
+        continue;
       }
       final ui.Image image = await renderObject.toImage(pixelRatio: pixelRatio);
       final ByteData? bytes = await image.toByteData(

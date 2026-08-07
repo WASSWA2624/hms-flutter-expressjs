@@ -278,6 +278,7 @@ class ModuleReportingVisualizationView extends StatelessWidget {
     this.canExport = true,
     this.embedded = false,
     this.showOptionsBar = true,
+    this.fitForPrint = false,
     this.storageKeyPrefix,
     this.dataLimit,
     super.key,
@@ -295,6 +296,9 @@ class ModuleReportingVisualizationView extends StatelessWidget {
 
   /// Legend / axis / values toggles. Disable for static print captures.
   final bool showOptionsBar;
+
+  /// Tight width-fitted layout for print capture / PDF (no horizontal overflow).
+  final bool fitForPrint;
   final String? storageKeyPrefix;
   final int? dataLimit;
 
@@ -324,6 +328,7 @@ class ModuleReportingVisualizationView extends StatelessWidget {
           style: DashboardTrendChartStyle.line,
           embedded: embedded,
           showOptionsBar: showOptionsBar,
+          fitForPrint: fitForPrint,
         );
       case ModuleReportingVisualizationKind.barChart:
         return _SeriesChartHost(
@@ -333,6 +338,7 @@ class ModuleReportingVisualizationView extends StatelessWidget {
           style: DashboardTrendChartStyle.bar,
           embedded: embedded,
           showOptionsBar: showOptionsBar,
+          fitForPrint: fitForPrint,
         );
       case ModuleReportingVisualizationKind.areaChart:
         return _SeriesChartHost(
@@ -342,6 +348,7 @@ class ModuleReportingVisualizationView extends StatelessWidget {
           style: DashboardTrendChartStyle.area,
           embedded: embedded,
           showOptionsBar: showOptionsBar,
+          fitForPrint: fitForPrint,
         );
       case ModuleReportingVisualizationKind.donutChart:
         return _DonutChartHost(
@@ -354,6 +361,7 @@ class ModuleReportingVisualizationView extends StatelessWidget {
           ),
           embedded: embedded,
           showOptionsBar: showOptionsBar,
+          fitForPrint: fitForPrint,
         );
       case ModuleReportingVisualizationKind.rankingChart:
         return _RankingChart(
@@ -371,24 +379,28 @@ class ModuleReportingVisualizationView extends StatelessWidget {
               .toList(growable: false),
           embedded: embedded,
           showOptionsBar: showOptionsBar,
+          fitForPrint: fitForPrint,
         );
       case ModuleReportingVisualizationKind.gaugeChart:
         return _GaugeChart(
           points: moduleReportingSeriesPoints(snapshot, limit: seriesLimit),
           embedded: embedded,
           showOptionsBar: showOptionsBar,
+          fitForPrint: fitForPrint,
         );
       case ModuleReportingVisualizationKind.scatterChart:
         return _ScatterChart(
           snapshot: snapshot,
           embedded: embedded,
           showOptionsBar: showOptionsBar,
+          fitForPrint: fitForPrint,
         );
       case ModuleReportingVisualizationKind.heatmap:
         return _HeatmapChart(
           cells: moduleReportingHeatmapCells(snapshot),
           embedded: embedded,
           showOptionsBar: showOptionsBar,
+          fitForPrint: fitForPrint,
         );
     }
   }
@@ -502,16 +514,19 @@ class _ChartLegendWrap extends StatelessWidget {
     required this.labels,
     required this.colors,
     this.values = const <String>[],
+    this.compact = false,
   });
 
   final List<String> labels;
   final List<Color> colors;
   final List<String> values;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final double maxLabelWidth = compact ? 118 : 180;
     return Wrap(
       spacing: theme.spacing.xs,
       runSpacing: theme.spacing.xs,
@@ -519,7 +534,7 @@ class _ChartLegendWrap extends StatelessWidget {
         for (int index = 0; index < labels.length; index += 1)
           Container(
             padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.sm,
+              horizontal: compact ? theme.spacing.xs : theme.spacing.sm,
               vertical: theme.spacing.xs,
             ),
             decoration: BoxDecoration(
@@ -540,7 +555,7 @@ class _ChartLegendWrap extends StatelessWidget {
                 ),
                 SizedBox(width: theme.spacing.xs),
                 ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 180),
+                  constraints: BoxConstraints(maxWidth: maxLabelWidth),
                   child: Text(
                     values.isEmpty || index >= values.length
                         ? labels[index]
@@ -550,6 +565,7 @@ class _ChartLegendWrap extends StatelessWidget {
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                       fontWeight: AppFontWeight.emphasis,
+                      fontSize: compact ? 10 : null,
                     ),
                   ),
                 ),
@@ -672,6 +688,7 @@ class _SeriesChartHost extends StatefulWidget {
     required this.style,
     this.embedded = false,
     this.showOptionsBar = true,
+    this.fitForPrint = false,
   });
 
   final String title;
@@ -680,6 +697,7 @@ class _SeriesChartHost extends StatefulWidget {
   final DashboardTrendChartStyle style;
   final bool embedded;
   final bool showOptionsBar;
+  final bool fitForPrint;
 
   @override
   State<_SeriesChartHost> createState() => _SeriesChartHostState();
@@ -687,6 +705,18 @@ class _SeriesChartHost extends StatefulWidget {
 
 class _SeriesChartHostState extends State<_SeriesChartHost> {
   _ChartChromeOptions _options = const _ChartChromeOptions();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.fitForPrint) {
+      _options = const _ChartChromeOptions(
+        showLegend: true,
+        showAxisLabels: true,
+        showValues: true,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -731,11 +761,20 @@ class _SeriesChartHostState extends State<_SeriesChartHost> {
           final double width = constraints.maxWidth.isFinite
               ? constraints.maxWidth
               : MediaQuery.sizeOf(context).width;
-          final double height = _chartHeightForWidth(width);
-          final bool fitAll = trendPoints.length <= 8;
+          final bool fitAll =
+              widget.fitForPrint || trendPoints.length <= 8;
+          final double height = widget.fitForPrint
+              ? 200
+              : _chartHeightForWidth(width);
           final double chartWidth = fitAll
               ? width
               : math.max(width, trendPoints.length * 72.0);
+          final bool showValues = widget.fitForPrint
+              ? trendPoints.length <= 14 && _options.showValues
+              : _options.showValues;
+          final bool showAxisLabels = widget.fitForPrint
+              ? trendPoints.length <= 14 && _options.showAxisLabels
+              : _options.showAxisLabels;
           final Widget paint = SizedBox(
             width: chartWidth,
             height: height,
@@ -751,14 +790,15 @@ class _SeriesChartHostState extends State<_SeriesChartHost> {
                 labelBuilder:
                     (DashboardTrendPointData point, {bool compact = false}) {
                       final String label = point.label ?? '';
-                      if (!compact || label.length <= 12) {
+                      final int maxLen = widget.fitForPrint ? 8 : 12;
+                      if (!compact || label.length <= maxLen) {
                         return label;
                       }
-                      return '${label.substring(0, 11)}…';
+                      return '${label.substring(0, maxLen - 1)}…';
                     },
                 pointColors: pointColors,
-                showValues: _options.showValues,
-                showAxisLabels: _options.showAxisLabels,
+                showValues: showValues,
+                showAxisLabels: showAxisLabels,
                 valueFormatter: (num value) =>
                     AppFormatters.compactNumber(value, locale),
                 minBarHeight: fitAll ? 4 : 0,
@@ -767,6 +807,7 @@ class _SeriesChartHostState extends State<_SeriesChartHost> {
           );
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               SizedBox(
                 height: height,
@@ -781,6 +822,7 @@ class _SeriesChartHostState extends State<_SeriesChartHost> {
               if (_options.showLegend) ...<Widget>[
                 SizedBox(height: theme.spacing.sm),
                 _ChartLegendWrap(
+                  compact: widget.fitForPrint,
                   labels: <String>[
                     for (final DashboardTrendPointData point in trendPoints)
                       point.label ?? '',
@@ -808,6 +850,7 @@ class _DonutChartHost extends StatefulWidget {
     required this.segments,
     this.embedded = false,
     this.showOptionsBar = true,
+    this.fitForPrint = false,
   });
 
   final String title;
@@ -816,6 +859,7 @@ class _DonutChartHost extends StatefulWidget {
   final List<DashboardDistributionSegmentData> segments;
   final bool embedded;
   final bool showOptionsBar;
+  final bool fitForPrint;
 
   @override
   State<_DonutChartHost> createState() => _DonutChartHostState();
@@ -865,10 +909,12 @@ class _DonutChartHostState extends State<_DonutChartHost> {
           : null,
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final bool stacked = constraints.maxWidth < 520;
+          final bool stacked =
+              widget.fitForPrint || constraints.maxWidth < 520;
+          final double donutSize = widget.fitForPrint ? 148 : (stacked ? 180 : 168);
           final Widget donut = SizedBox(
-            width: stacked ? 180 : 168,
-            height: stacked ? 180 : 168,
+            width: donutSize,
+            height: donutSize,
             child: CustomPaint(
               painter: DashboardDonutChartPainter(
                 segments: coloredSegments,
@@ -901,6 +947,7 @@ class _DonutChartHostState extends State<_DonutChartHost> {
           final Widget? legend = !_options.showLegend
               ? null
               : _ChartLegendWrap(
+                  compact: widget.fitForPrint,
                   labels: <String>[
                     for (final DashboardDistributionSegmentData segment
                         in coloredSegments)
@@ -947,11 +994,13 @@ class _RankingChart extends StatefulWidget {
     required this.points,
     this.embedded = false,
     this.showOptionsBar = true,
+    this.fitForPrint = false,
   });
 
   final List<ModuleReportingSeriesPoint> points;
   final bool embedded;
   final bool showOptionsBar;
+  final bool fitForPrint;
 
   @override
   State<_RankingChart> createState() => _RankingChartState();
@@ -996,6 +1045,7 @@ class _RankingChartState extends State<_RankingChart> {
             )
           : null,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           for (int index = 0; index < top.length; index += 1)
             Padding(
@@ -1032,7 +1082,7 @@ class _RankingChartState extends State<_RankingChart> {
                         value: maxValue <= 0
                             ? 0
                             : (top[index].value / maxValue).toDouble(),
-                        minHeight: 14,
+                        minHeight: widget.fitForPrint ? 12 : 14,
                         color: dashboardFallbackSegmentColor(
                           colors.primary,
                           index,
@@ -1072,11 +1122,13 @@ class _GaugeChart extends StatefulWidget {
     required this.points,
     this.embedded = false,
     this.showOptionsBar = true,
+    this.fitForPrint = false,
   });
 
   final List<ModuleReportingSeriesPoint> points;
   final bool embedded;
   final bool showOptionsBar;
+  final bool fitForPrint;
 
   @override
   State<_GaugeChart> createState() => _GaugeChartState();
@@ -1124,9 +1176,10 @@ class _GaugeChartState extends State<_GaugeChart> {
             )
           : null,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           SizedBox(
-            height: 180,
+            height: widget.fitForPrint ? 160 : 180,
             width: double.infinity,
             child: CustomPaint(
               painter: _GaugePainter(
@@ -1147,6 +1200,7 @@ class _GaugeChartState extends State<_GaugeChart> {
           if (_options.showLegend) ...<Widget>[
             SizedBox(height: theme.spacing.sm),
             _ChartLegendWrap(
+              compact: widget.fitForPrint,
               labels: const <String>['Low', 'Mid', 'High'],
               colors: <Color>[low, mid, high],
             ),
@@ -1236,11 +1290,13 @@ class _ScatterChart extends StatefulWidget {
     required this.snapshot,
     this.embedded = false,
     this.showOptionsBar = true,
+    this.fitForPrint = false,
   });
 
   final ModuleReportingReportSnapshot snapshot;
   final bool embedded;
   final bool showOptionsBar;
+  final bool fitForPrint;
 
   @override
   State<_ScatterChart> createState() => _ScatterChartState();
@@ -1290,11 +1346,13 @@ class _ScatterChartState extends State<_ScatterChart> {
           : null,
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final double height = _chartHeightForWidth(
-            constraints.maxWidth.isFinite
-                ? constraints.maxWidth
-                : MediaQuery.sizeOf(context).width,
-          );
+          final double height = widget.fitForPrint
+              ? 200
+              : _chartHeightForWidth(
+                  constraints.maxWidth.isFinite
+                      ? constraints.maxWidth
+                      : MediaQuery.sizeOf(context).width,
+                );
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -1407,11 +1465,13 @@ class _HeatmapChart extends StatefulWidget {
     required this.cells,
     this.embedded = false,
     this.showOptionsBar = true,
+    this.fitForPrint = false,
   });
 
   final List<ModuleReportingHeatmapCell> cells;
   final bool embedded;
   final bool showOptionsBar;
+  final bool fitForPrint;
 
   @override
   State<_HeatmapChart> createState() => _HeatmapChartState();
@@ -1479,6 +1539,7 @@ class _HeatmapChartState extends State<_HeatmapChart> {
         children: <Widget>[
           if (_options.showLegend) ...<Widget>[
             _ChartLegendWrap(
+              compact: widget.fitForPrint,
               labels: const <String>['Low', 'Medium', 'High'],
               colors: scale,
             ),

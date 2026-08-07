@@ -909,6 +909,23 @@ $logoHtml
     break-inside: avoid;
     page-break-inside: avoid;
   }
+  .print-report-chart {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 0;
+    max-width: 100%;
+  }
+  .print-report-chart img {
+    background: #fff;
+    border: var(--print-border-thin) solid var(--print-border-subtle);
+    border-radius: 6px;
+    display: block;
+    height: auto;
+    max-height: 105mm;
+    max-width: 100%;
+    object-fit: contain;
+    width: 100%;
+  }
   .print-template-section h2 {
     border-bottom: var(--print-border-thin) solid var(--print-border-subtle);
     color: #111827;
