@@ -2287,7 +2287,7 @@ ModuleReportingReportSnapshot _projectPurchaseTrends({
   );
 }
 
-/// Unusual stock adjustments: |qty| > mean(|qty|) + 2σ when n≥2; else |qty| ≥ 10.
+/// Unusual stock adjustments: leave-one-out |qty| > mean+2σ when n≥2; else |qty| ≥ 10.
 ModuleReportingReportSnapshot _projectUnusualAdjustments({
   required ModuleReportingReport report,
   required ReportDatasetPreview preview,
@@ -2316,16 +2316,18 @@ ModuleReportingReportSnapshot _projectUnusualAdjustments({
         (num sum, Map<String, Object?> row) => sum + _asNum(row['quantity']),
       ),
       'threshold':
-          '|qty| > mean+${kPharmacyUnusualAdjustmentSigma}σ (n≥2) else |qty|≥$kPharmacyUnusualAdjustmentAbsFloor',
+          'leave-one-out |qty| > mean+${kPharmacyUnusualAdjustmentSigma}σ (n≥2); else |qty|≥$kPharmacyUnusualAdjustmentAbsFloor',
     },
     breakdown: breakdown,
     title: preview.title.isEmpty ? report.label : preview.title,
     subtitle: previewSubtitleOrNull(preview.subtitle) ??
-        'Unusual: |qty| > mean(|qty|)+${kPharmacyUnusualAdjustmentSigma}σ (n≥2); else |qty|≥$kPharmacyUnusualAdjustmentAbsFloor',
+        'Unusual: leave-one-out |qty| > mean+${kPharmacyUnusualAdjustmentSigma}σ (n≥2); else |qty|≥$kPharmacyUnusualAdjustmentAbsFloor',
   );
 }
 
 /// Shared unusual-adjustment predicate for provider + unit tests.
+///
+/// n&lt;2 → abs floor. Else leave-one-out μ/σ so a spike is not absorbed into itself.
 bool isPharmacyUnusualAdjustmentQuantity(
   Object? quantity,
   Iterable<Object?> peerQuantities,
@@ -2337,15 +2339,24 @@ bool isPharmacyUnusualAdjustmentQuantity(
   if (absPeers.length < 2) {
     return absQty >= kPharmacyUnusualAdjustmentAbsFloor;
   }
+
+  final List<num> others = List<num>.from(absPeers);
+  final int selfIndex = others.indexWhere((num value) => value == absQty);
+  if (selfIndex >= 0) {
+    others.removeAt(selfIndex);
+  }
+  if (others.isEmpty) {
+    return absQty >= kPharmacyUnusualAdjustmentAbsFloor;
+  }
+
   final num mean =
-      absPeers.fold<num>(0, (num sum, num value) => sum + value) /
-          absPeers.length;
+      others.fold<num>(0, (num sum, num value) => sum + value) / others.length;
   num varianceSum = 0;
-  for (final num value in absPeers) {
+  for (final num value in others) {
     final num delta = value - mean;
     varianceSum += delta * delta;
   }
-  final num stdDev = _sqrt(varianceSum / absPeers.length);
+  final num stdDev = _sqrt(varianceSum / others.length);
   final num cutoff = mean + (kPharmacyUnusualAdjustmentSigma * stdDev);
   return absQty > cutoff;
 }

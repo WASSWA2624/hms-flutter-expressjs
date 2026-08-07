@@ -203,7 +203,7 @@ const List<PharmacyReportingMgmtComposition> pharmacyReportingMgmtCompositions =
     sourceReportId: 'stock_adjustments',
     datasetKey: 'inventory_stock_adjustments',
     projectionNote:
-        '|qty| > mean+${kPharmacyUnusualAdjustmentSigma}σ (n≥2) else |qty|≥$kPharmacyUnusualAdjustmentAbsFloor',
+        'leave-one-out |qty| > mean+${kPharmacyUnusualAdjustmentSigma}σ (n≥2); else |qty|≥$kPharmacyUnusualAdjustmentAbsFloor',
   ),
   PharmacyReportingMgmtComposition(
     id: 'mgmt_high_value_losses',
