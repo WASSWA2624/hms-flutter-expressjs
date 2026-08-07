@@ -168,16 +168,19 @@ class _ReportsWorkspaceContentState
 
     _ensureAuthorizedPanel(controller, state, allowedPanels);
 
-    final bool showSchedules =
-        canReadCatalog && !state.query.panel.isCompliance;
-    final bool showTimeline =
-        canReadCatalog &&
-        !state.query.panel.isCompliance &&
-        state.overview.timeline.isNotEmpty;
-
     final bool showPharmacyOverview =
         ReportsPharmacyDomainGroups.shouldShow(policy) &&
         state.query.panel == ReportsWorkspacePanel.overview;
+
+    final bool showSchedules =
+        canReadCatalog &&
+        !state.query.panel.isCompliance &&
+        !showPharmacyOverview;
+    final bool showTimeline =
+        canReadCatalog &&
+        !state.query.panel.isCompliance &&
+        !showPharmacyOverview &&
+        state.overview.timeline.isNotEmpty;
 
     return AppWorkspace(
       title: l10n.reportsTitle,

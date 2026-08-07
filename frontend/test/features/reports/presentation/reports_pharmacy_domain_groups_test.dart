@@ -112,7 +112,7 @@ void main() {
     );
   });
 
-  testWidgets('pharmacist overview shows Analytics and Reporting tabs without body copy', (
+  testWidgets('pharmacist overview defaults to Reporting with catalog and no Analytics body copy', (
     tester,
   ) async {
     final List<String> openedDatasets = <String>[];
@@ -129,29 +129,25 @@ void main() {
       find.textContaining('Explore consumption'),
       findsNothing,
     );
+    expect(find.byType(AppSearchBar), findsOneWidget);
+    expect(find.text('Total sales'), findsOneWidget);
+    expect(find.text('Top consumed drugs'), findsNothing);
+
+    await tester.tap(find.text('Analytics'));
+    await tester.pumpAndSettle();
     expect(find.text('Top consumed drugs'), findsOneWidget);
+    expect(find.byType(AppSearchBar), findsNothing);
 
     await tester.ensureVisible(find.text('Top consumed drugs'));
     await tester.tap(find.text('Top consumed drugs'));
     await tester.pump();
     expect(openedDatasets, contains('pharmacy_drug_consumption'));
-
-    await tester.tap(find.text('Reporting'));
-    await tester.pumpAndSettle();
-    expect(find.byType(AppSearchBar), findsOneWidget);
-    expect(find.byTooltip('Filters'), findsOneWidget);
-    expect(find.text('Sales & revenue'), findsWidgets);
-    expect(find.text('Total sales'), findsOneWidget);
-    expect(find.text('Top consumed drugs'), findsNothing);
   });
 
   testWidgets('reporting search filters subcategory buttons', (tester) async {
     final List<String> openedDatasets = <String>[];
 
     await _pumpGroups(tester, openedDatasets: openedDatasets);
-
-    await tester.tap(find.text('Reporting'));
-    await tester.pumpAndSettle();
 
     await tester.enterText(
       find.byType(TextField).first,
@@ -169,9 +165,6 @@ void main() {
     final List<String> openedDatasets = <String>[];
 
     await _pumpGroups(tester, openedDatasets: openedDatasets);
-
-    await tester.tap(find.text('Reporting'));
-    await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.text('Total sales'));
     await tester.tap(find.text('Total sales'));
@@ -195,9 +188,6 @@ void main() {
       policy: _pharmacyPolicy(canExport: true),
     );
 
-    await tester.tap(find.text('Reporting'));
-    await tester.pumpAndSettle();
-
     await tester.ensureVisible(find.text('Total sales'));
     await tester.tap(find.text('Total sales'));
     await tester.pump();
@@ -216,9 +206,6 @@ void main() {
       tester,
       openedDatasets: openedDatasets,
     );
-
-    await tester.tap(find.text('Reporting'));
-    await tester.pumpAndSettle();
 
     final Finder filtersButton = find.descendant(
       of: find.byType(AppSearchBar),

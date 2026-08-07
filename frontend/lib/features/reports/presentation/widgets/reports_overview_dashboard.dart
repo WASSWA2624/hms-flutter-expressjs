@@ -44,7 +44,7 @@ class ReportsOverviewDashboard extends ConsumerStatefulWidget {
 
 class _ReportsOverviewDashboardState
     extends ConsumerState<ReportsOverviewDashboard> {
-  String _pharmacyTabId = ReportsPharmacyDomainGroups.analyticsTabId;
+  String _pharmacyTabId = ReportsPharmacyDomainGroups.reportingTabId;
 
   @override
   Widget build(BuildContext context) {

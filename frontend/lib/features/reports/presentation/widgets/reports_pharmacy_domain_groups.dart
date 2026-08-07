@@ -43,7 +43,7 @@ class _ReportsPharmacyDomainGroupsState
   static const String _subcategoryFilterKey = 'subcategory';
   static const String _contentKindFilterKey = 'content_kind';
 
-  String _selectedTabId = ReportsPharmacyDomainGroups.analyticsTabId;
+  String _selectedTabId = ReportsPharmacyDomainGroups.reportingTabId;
   late final TextEditingController _reportingSearchController;
   AppSearchBarFilterValue _reportingFilters = AppSearchBarFilterValue.empty;
   late final List<PharmacyReportingCategory> _catalog;
