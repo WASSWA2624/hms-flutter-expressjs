@@ -273,6 +273,33 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
   });
 
+  testWidgets(
+    'assigned provider without display name does not show Not assigned',
+    (tester) async {
+      await _pumpClinicalWorkspace(
+        tester,
+        encounters: <ClinicalWorklistEntry>[
+          ClinicalWorklistEntry(
+            id: 'encounter-assigned',
+            sourceQueue: 'ENCOUNTER',
+            encounterId: 'encounter-assigned',
+            encounterPublicId: 'ENC000055',
+            patientDisplayName: 'Chloe Okello',
+            patientPublicId: 'PAT000055',
+            providerUserId: 'user-doctor-1',
+            encounterType: 'OUTPATIENT',
+            status: 'OPEN',
+            stage: 'WAITING_DOCTOR_REVIEW',
+            updatedAt: DateTime.now(),
+          ),
+        ],
+      );
+
+      expect(find.text('Assigned'), findsWidgets);
+      expect(find.text('Not assigned'), findsNothing);
+    },
+  );
+
   testWidgets('row tap opens encounter detail dialog with action bar', (
     tester,
   ) async {

@@ -8429,6 +8429,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalNotAssignedLabel => 'Not assigned';
 
   @override
+  String get clinicalAssignedLabel => 'Assigned';
+
+  @override
   String get clinicalNoWorklistTitle => 'No clinical work';
 
   @override

@@ -15520,6 +15520,12 @@ abstract class AppLocalizations {
   /// **'Not assigned'**
   String get clinicalNotAssignedLabel;
 
+  /// Clinical worklist label when a provider is assigned but their display name is unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get clinicalAssignedLabel;
+
   /// Clinical empty worklist title.
   ///
   /// In en, this message translates to:

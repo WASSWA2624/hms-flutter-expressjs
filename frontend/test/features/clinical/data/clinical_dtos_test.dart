@@ -304,4 +304,51 @@ void main() {
       expect(options.single.currency, 'UGX');
     });
   });
+
+  group('ClinicalEncounterDto.toWorklistEntry', () {
+    test('maps nested provider profile to providerDisplayName', () {
+      final entry = ClinicalEncounterDto(<String, Object?>{
+        'id': 'enc-1',
+        'human_friendly_id': 'ENC000001',
+        'provider_user_id': 'user-doctor-1',
+        'status': 'OPEN',
+        'encounter_type': 'OUTPATIENT',
+        'patient': <String, Object?>{
+          'id': 'pat-1',
+          'human_friendly_id': 'PAT000001',
+          'first_name': 'Chloe',
+          'last_name': 'Okello',
+        },
+        'provider': <String, Object?>{
+          'id': 'user-doctor-1',
+          'human_friendly_id': 'USR000001',
+          'email': 'doctor@example.com',
+          'profile': <String, Object?>{
+            'first_name': 'John',
+            'last_name': 'Doe',
+          },
+        },
+      }).toWorklistEntry();
+
+      expect(entry.providerUserId, 'user-doctor-1');
+      expect(entry.providerDisplayName, 'John | Doe');
+    });
+
+    test('keeps providerUserId when provider relation is omitted', () {
+      final entry = ClinicalEncounterDto(<String, Object?>{
+        'id': 'enc-2',
+        'human_friendly_id': 'ENC000002',
+        'provider_user_id': 'user-doctor-1',
+        'status': 'OPEN',
+        'patient': <String, Object?>{
+          'id': 'pat-2',
+          'first_name': 'Daniel',
+          'last_name': 'Achieng',
+        },
+      }).toWorklistEntry();
+
+      expect(entry.providerUserId, 'user-doctor-1');
+      expect(entry.providerDisplayName, isNull);
+    });
+  });
 }

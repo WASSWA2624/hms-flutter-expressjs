@@ -1568,7 +1568,10 @@ final class ClinicalWorkspaceController
       nextStep: normalizedNextStep,
       currentLocation: item.facilityName,
       providerUserId: item.providerUserId,
-      providerDisplayName: item.providerDisplayName,
+      providerDisplayName:
+          _stringValue(item.providerDisplayName) ??
+          _stringValue(item.assignedStaffDisplayName) ??
+          _usableAssignedStaffLabel(item.assignedStaffLabel),
       startedAt: item.startedAt,
       updatedAt: item.endedAt ?? item.startedAt ?? item.queuedAt,
       opdFlowApiId: item.apiId,
@@ -2074,6 +2077,22 @@ final class ClinicalWorkspaceController
     }
     final String text = value.toString().trim();
     return text.isEmpty ? null : text;
+  }
+
+  String? _usableAssignedStaffLabel(String? value) {
+    final String? label = _stringValue(value);
+    if (label == null) {
+      return null;
+    }
+    switch (label.toLowerCase()) {
+      case 'with doctor':
+      case 'doctor assigned':
+      case 'doctor needed':
+      case 'assigned staff unknown':
+        return null;
+      default:
+        return label;
+    }
   }
 
   bool _setsIntersect(Set<String> left, Set<String> right) {

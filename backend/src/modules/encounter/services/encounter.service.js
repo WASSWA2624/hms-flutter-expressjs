@@ -85,6 +85,20 @@ const publishEncounterRealtimeEvent = async (event, encounter = {}, actorUserId 
 
 const PATIENT_CONTACT_LOOKUP_TYPES = ['PHONE', 'EMAIL'];
 
+const ENCOUNTER_PROVIDER_LOOKUP_SELECT = {
+  id: true,
+  human_friendly_id: true,
+  email: true,
+  phone: true,
+  profile: {
+    select: {
+      first_name: true,
+      middle_name: true,
+      last_name: true
+    }
+  }
+};
+
 const ENCOUNTER_LOOKUP_INCLUDE = {
   patient: {
     select: {
@@ -109,6 +123,9 @@ const ENCOUNTER_LOOKUP_INCLUDE = {
         }
       }
     }
+  },
+  provider: {
+    select: ENCOUNTER_PROVIDER_LOOKUP_SELECT
   }
 };
 

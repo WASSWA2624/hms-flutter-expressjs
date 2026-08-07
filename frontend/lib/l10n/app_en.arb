@@ -10726,6 +10726,10 @@
   "@clinicalNotAssignedLabel": {
     "description": "Clinical worklist label when no provider is assigned."
   },
+  "clinicalAssignedLabel": "Assigned",
+  "@clinicalAssignedLabel": {
+    "description": "Clinical worklist label when a provider is assigned but their display name is unavailable."
+  },
   "clinicalNoWorklistTitle": "No clinical work",
   "@clinicalNoWorklistTitle": {
     "description": "Clinical empty worklist title."

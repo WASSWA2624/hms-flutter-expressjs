@@ -101,6 +101,19 @@ describe('encounter.service', () => {
               })
             })
           })
+        }),
+        provider: expect.objectContaining({
+          select: expect.objectContaining({
+            id: true,
+            human_friendly_id: true,
+            email: true,
+            profile: expect.objectContaining({
+              select: expect.objectContaining({
+                first_name: true,
+                last_name: true
+              })
+            })
+          })
         })
       })
     );

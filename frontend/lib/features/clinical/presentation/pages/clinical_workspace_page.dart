@@ -788,6 +788,10 @@ String _clinicalProviderLabel(
   if (provider != null && provider.isNotEmpty) {
     return provider;
   }
+  final String? providerUserId = item.providerUserId?.trim();
+  if (providerUserId != null && providerUserId.isNotEmpty) {
+    return l10n.clinicalAssignedLabel;
+  }
   return l10n.clinicalNotAssignedLabel;
 }
 
@@ -3458,7 +3462,7 @@ List<AppWorkspacePatientContextField> _clinicalPatientContextFields(
     ),
     AppWorkspacePatientContextField(
       label: l10n.opdProviderColumnLabel,
-      value: entry.providerDisplayName ?? '',
+      value: _clinicalProviderLabel(l10n, entry),
       icon: Icons.badge_outlined,
     ),
     AppWorkspacePatientContextField(
