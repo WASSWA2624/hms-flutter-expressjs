@@ -15,6 +15,9 @@ const REPORT_DATASET_SEEDS = Object.freeze([
   { key: 'insurance_claims_aging', category: 'billing', label: 'Insurance claims aging', visualization: 'TABLE' },
   { key: 'pharmacy_drug_consumption', category: 'pharmacy', label: 'Pharmacy drug consumption', visualization: 'BAR_CHART' },
   { key: 'pharmacy_dispense_throughput', category: 'pharmacy', label: 'Pharmacy dispense throughput', visualization: 'LINE_CHART' },
+  { key: 'pharmacy_sales_by_category', category: 'pharmacy', label: 'Pharmacy sales by category', visualization: 'BAR_CHART' },
+  { key: 'pharmacy_sales_payment_methods', category: 'pharmacy', label: 'Pharmacy sales by payment method', visualization: 'DONUT_CHART' },
+  { key: 'pharmacy_sales_net_revenue', category: 'pharmacy', label: 'Pharmacy net revenue', visualization: 'KPI' },
   { key: 'inventory_stock_risk', category: 'inventory', label: 'Inventory stock risk', visualization: 'KPI' },
   { key: 'lab_turnaround', category: 'diagnostics', label: 'Lab turnaround', visualization: 'LINE_CHART' },
   { key: 'inpatient_occupancy', category: 'clinical', label: 'Inpatient occupancy', visualization: 'KPI' },
@@ -48,7 +51,6 @@ const CLAIM_STATUSES = Object.freeze([
 const AUTH_STATUSES = Object.freeze([
   'PENDING', 'APPROVED', 'PARTIAL', 'DENIED', 'EXPIRED', 'CANCELLED',
 ]);
-const BILLING_ADJ_STATUSES = Object.freeze(['DRAFT', 'ISSUED', 'PAID', 'PARTIAL', 'CANCELLED']);
 const QUEUE_STATUSES = Object.freeze([
   'SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW',
 ]);
@@ -483,9 +485,9 @@ const seedVolumeExtendedPack = async (
         `${scenario.key}:volx:billing-adj:${pad(index)}`,
         {
           invoice_id: invoice.id,
-          amount: index % 2 === 0 ? -(10 + (index % 20)) : 10 + (index % 15),
-          status: pick(BILLING_ADJ_STATUSES, index),
-          reason: `Volume billing adjustment #${index}`,
+          amount: -(10 + (index % 40)),
+          status: pick(['ISSUED', 'PAID', 'PARTIAL'], index),
+          reason: `Volume pharmacy discount #${index}`,
           adjusted_at: ctx.date(-((index % 70) + 1), 55),
         },
         { publicIdPrefix: 'BADJ', seedMeta: false }

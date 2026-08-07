@@ -154,4 +154,66 @@ void main() {
     expect(snapshot.columns, contains('date'));
     expect(snapshot.rows.first['date'], '2026-01-01');
   });
+
+  test('total sales summary amount uses period daily_totals', () {
+    const ModuleReportingReport totalSales = ModuleReportingReport(
+      id: 'total_sales',
+      categoryId: 'sales_revenue',
+      label: 'Total sales',
+      datasetKey: 'pharmacy_drug_consumption',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_drug_consumption',
+      columns: const <String>['drug', 'amount'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{'drug': 'Amox', 'amount': 10},
+      ],
+      summary: const <String, Object?>{'amount': 10},
+      breakdown: const <String, Object?>{
+        'daily_totals': <Map<String, Object?>>[
+          <String, Object?>{'date': '2026-01-01', 'amount': 40},
+          <String, Object?>{'date': '2026-01-02', 'amount': 60},
+        ],
+      },
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: totalSales,
+          preview: preview,
+        );
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.summary?['amount'], 100);
+  });
+
+  test('profit and margin projects null margin when buy/profit missing', () {
+    const ModuleReportingReport marginReport = ModuleReportingReport(
+      id: 'profit_and_margin',
+      categoryId: 'sales_revenue',
+      label: 'Profit and profit margin',
+      datasetKey: 'pharmacy_drug_consumption',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_drug_consumption',
+      columns: const <String>['drug', 'amount', 'profit'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{'drug': 'A', 'amount': 100, 'profit': 25},
+        <String, Object?>{'drug': 'B', 'amount': 50, 'profit': null},
+      ],
+      summary: const <String, Object?>{'amount': 150, 'profit': 25},
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: marginReport,
+          preview: preview,
+        );
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.columns, contains('profit_margin'));
+    expect(snapshot.rows.first['profit_margin'], 0.25);
+    expect(snapshot.rows[1]['profit_margin'], isNull);
+    expect(snapshot.summary?['profit_margin'], closeTo(25 / 150, 0.0001));
+  });
 }

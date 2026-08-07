@@ -39,10 +39,6 @@ const LAB_ORDER_STATUSES = Object.freeze([
   'ORDERED', 'COLLECTED', 'IN_PROCESS', 'COMPLETED', 'CANCELLED',
 ]);
 const LAB_RESULT_STATUSES = Object.freeze(['NORMAL', 'ABNORMAL', 'CRITICAL', 'PENDING']);
-const PHARMACY_ORDER_STATUSES = Object.freeze([
-  'ORDERED', 'DISPENSED', 'PARTIALLY_DISPENSED', 'CANCELLED',
-]);
-const DISPENSE_STATUSES = Object.freeze(['PENDING', 'DISPENSED', 'RETURNED', 'CANCELLED']);
 const INVOICE_STATUSES = Object.freeze(['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED']);
 const BILLING_STATUSES = Object.freeze(['DRAFT', 'ISSUED', 'PAID', 'PARTIAL', 'CANCELLED']);
 const PAYMENT_STATUSES = Object.freeze(['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED']);
@@ -458,7 +454,13 @@ const seedVolumePack = async (
     await runInBatches(targets.highTraffic, 10, async (index) => {
       const patient = patientAt(index);
       if (!patient) return;
-      const orderStatus = pick(PHARMACY_ORDER_STATUSES, index);
+      const orderStatus = index % 12 === 0
+        ? 'CANCELLED'
+        : index % 9 === 0
+          ? 'PARTIALLY_DISPENSED'
+          : index % 7 === 0
+            ? 'ORDERED'
+            : 'DISPENSED';
       const drug = pick(drugs, index);
       // Wall-clock freshness: today + last ~28 days so pharmacy dashboard KPIs
       // and most-sold charts are non-empty against live summary windows.
@@ -490,11 +492,13 @@ const seedVolumePack = async (
         { publicIdPrefix: 'RXI', seedMeta: false }
       );
 
-      const dispenseStatus = orderStatus === 'DISPENSED'
-        ? 'DISPENSED'
-        : orderStatus === 'CANCELLED'
-          ? 'CANCELLED'
-          : pick(DISPENSE_STATUSES, index);
+      const dispenseStatus = orderStatus === 'CANCELLED'
+        ? 'CANCELLED'
+        : index % 30 === 0
+          ? 'RETURNED'
+          : index % 40 === 0
+            ? 'PENDING'
+            : 'DISPENSED';
 
       await ctx.upsert(
         'dispense_log',
@@ -513,6 +517,53 @@ const seedVolumePack = async (
         { publicIdPrefix: 'DSP', seedMeta: false }
       );
 
+      created.pharmacy_orders += 1;
+      created.dispense_logs += 1;
+    });
+
+    // Sales & revenue reporting floor: ≥ highTraffic DISPENSED dispense_logs
+    // (diversified days/amounts) so pharmacy sales dialogs stay dense.
+    await runInBatches(targets.highTraffic, 10, async (index) => {
+      const patient = patientAt(index + 3);
+      if (!patient) return;
+      const drug = pick(drugs, index + 5);
+      if (!drug?.id) return;
+      const dayOffset = index % 5 === 0 ? 0 : -((index % 120) + 1);
+      const order = await ctx.upsert(
+        'pharmacy_order',
+        `${scenario.key}:vol:rx-sales:${pad(index)}`,
+        {
+          encounter_id: index % 3 === 0 ? (encounterAt(index)?.id || null) : null,
+          patient_id: patient.id,
+          status: 'DISPENSED',
+          ordered_at: ctx.nowDate(dayOffset, 40),
+        },
+        { publicIdPrefix: 'RXS', seedMeta: false }
+      );
+      const item = await ctx.upsert(
+        'pharmacy_order_item',
+        `${scenario.key}:vol:rx-sales-item:${pad(index)}`,
+        {
+          pharmacy_order_id: order.id,
+          drug_id: drug.id,
+          quantity: 1 + (index % 4),
+          dosage: `${1 + (index % 2)} tab`,
+          instructions: `Sales volume prescription #${index}`,
+        },
+        { publicIdPrefix: 'RXSI', seedMeta: false }
+      );
+      await ctx.upsert(
+        'dispense_log',
+        `${scenario.key}:vol:dispense-sales:${pad(index)}`,
+        {
+          pharmacy_order_item_id: item.id,
+          dispense_batch_ref: `VOL-SALES-${pad(index, 5)}`,
+          status: 'DISPENSED',
+          dispensed_at: ctx.nowDate(dayOffset, 58),
+          quantity_dispensed: 1 + (index % 5),
+        },
+        { publicIdPrefix: 'DSPS', seedMeta: false }
+      );
       created.pharmacy_orders += 1;
       created.dispense_logs += 1;
     });
@@ -696,6 +747,7 @@ const seedVolumePack = async (
         patient_id: patient.id,
         status: invoiceStatus,
         billing_status: billingStatus,
+        billing_entity: 'PHARMACY',
         total_amount: amount,
         currency: 'UGX',
         issued_at: ctx.date(-((index % 100) + 1), 50),
@@ -708,10 +760,11 @@ const seedVolumePack = async (
       `${scenario.key}:vol:invoice-item:${pad(index)}`,
       {
         invoice_id: invoice.id,
-        description: `Volume charge #${index}`,
+        description: `Volume pharmacy charge #${index}`,
         quantity: 1,
         unit_price: amount,
         total_price: amount,
+        billing_entity: 'PHARMACY',
       },
       { publicIdPrefix: 'IITM', seedMeta: false }
     );
@@ -732,6 +785,7 @@ const seedVolumePack = async (
         invoice_id: invoice.id,
         status: paymentStatus,
         method: pick(PAYMENT_METHODS, index),
+        billing_entity: 'PHARMACY',
         amount: paymentStatus === 'COMPLETED' || paymentStatus === 'REFUNDED' ? amount : amount / 2,
         paid_at: paymentStatus === 'PENDING' ? null : ctx.date(-((index % 100) + 1), 70),
         transaction_ref: `VOL-PAY-${pad(index, 5)}`,

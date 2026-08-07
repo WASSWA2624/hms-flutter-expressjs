@@ -56,6 +56,7 @@ ModuleReportingMetricUnit moduleReportingMetricUnitForKey(String? key) {
       normalized.contains('cost') ||
       normalized.contains('revenue') ||
       normalized.contains('sales') ||
+      normalized.contains('transaction_value') ||
       normalized == 'value' ||
       (normalized.endsWith('_total') && !normalized.contains('count'))) {
     return ModuleReportingMetricUnit.currency;

@@ -1,6 +1,9 @@
 const {
   buildPharmacyDispenseThroughputAnalytics,
   buildPharmacyDrugConsumptionAnalytics,
+  buildPharmacySalesAvgTransactionAnalytics,
+  buildPharmacySalesNetRevenueAnalytics,
+  buildPharmacySalesPaymentMethodAnalytics,
   resolveDateRange,
   shouldUseMonthlyGranularity,
   summarizeConsumptionSeries,
@@ -20,9 +23,22 @@ describe('reports datasets pharmacy analytics', () => {
       category: 'pharmacy',
       visualization: 'LINE_CHART',
     });
+    expect(REPORT_DATASET_MAP.pharmacy_sales_by_category).toMatchObject({
+      key: 'pharmacy_sales_by_category',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_sales_payment_methods).toMatchObject({
+      key: 'pharmacy_sales_payment_methods',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_sales_net_revenue).toMatchObject({
+      key: 'pharmacy_sales_net_revenue',
+      category: 'pharmacy',
+    });
     expect(REPORT_DATASET_MAP.inventory_stock_risk.description).toMatch(/near-expiry/i);
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_drug_consumption')).toBe(true);
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_dispense_throughput')).toBe(true);
+    expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_sales_avg_transaction')).toBe(true);
   });
 
   test('resolveDateRange supports day, month, year for pharmacy presets', () => {
@@ -89,6 +105,9 @@ describe('reports datasets pharmacy analytics', () => {
   test('pharmacy analytics builders are exported for reuse and tests', () => {
     expect(typeof buildPharmacyDrugConsumptionAnalytics).toBe('function');
     expect(typeof buildPharmacyDispenseThroughputAnalytics).toBe('function');
+    expect(typeof buildPharmacySalesPaymentMethodAnalytics).toBe('function');
+    expect(typeof buildPharmacySalesNetRevenueAnalytics).toBe('function');
+    expect(typeof buildPharmacySalesAvgTransactionAnalytics).toBe('function');
   });
 
   test('shared report formats include PDF, Excel XLSX, and CSV', () => {

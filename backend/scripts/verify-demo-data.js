@@ -594,6 +594,37 @@ const verifyDemoData = async () => {
       ['referrals', extendedVolumeCounts[25], highFloor],
       ['follow_ups', extendedVolumeCounts[26], highFloor],
     ];
+
+    const [dispensedStatusCount, pharmacyPaymentCount, pharmacyRefundCount, pharmacyDiscountCount] =
+      await Promise.all([
+        prisma.dispense_log.count({
+          where: { deleted_at: null, status: 'DISPENSED' },
+        }),
+        prisma.payment.count({
+          where: { deleted_at: null, billing_entity: 'PHARMACY' },
+        }),
+        prisma.refund.count({
+          where: {
+            deleted_at: null,
+            payment: { deleted_at: null, billing_entity: 'PHARMACY' },
+          },
+        }),
+        prisma.billing_adjustment.count({
+          where: {
+            deleted_at: null,
+            amount: { lt: 0 },
+            invoice: { deleted_at: null, billing_entity: 'PHARMACY' },
+          },
+        }),
+      ]);
+
+    highTrafficChecks.push(
+      ['dispense_logs_dispensed', dispensedStatusCount, highFloor],
+      ['pharmacy_payments', pharmacyPaymentCount, highFloor],
+      ['pharmacy_refunds', pharmacyRefundCount, highFloor],
+      ['pharmacy_discount_adjustments', pharmacyDiscountCount, highFloor]
+    );
+
     for (const [label, count, floor] of highTrafficChecks) {
       if (count < floor) {
         errors.push(`Expected at least ${floor} ${label} for volume demo seed but found ${count}.`);

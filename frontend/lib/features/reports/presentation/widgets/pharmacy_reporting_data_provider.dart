@@ -107,7 +107,44 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         subtitle: previewSubtitleOrNull(preview.subtitle),
       );
     case 'total_sales':
+    case 'gross_revenue':
+      return _projectGrossSales(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        subtitleOverride: reportId == 'gross_revenue'
+            ? 'Gross dispense revenue for period'
+            : previewSubtitleOrNull(preview.subtitle),
+      );
     case 'sales_by_medicine':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle),
+      );
+    case 'profit_and_margin':
+      return _projectProfitAndMargin(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+      );
+    case 'sales_by_category':
+    case 'sales_by_branch':
+    case 'sales_by_customer':
+    case 'sales_by_payment_method':
+    case 'discounts':
+    case 'refunds_returns':
+    case 'net_revenue':
+    case 'average_transaction_value':
       return ModuleReportingReportSnapshot.ready(
         columns: columns,
         rows: sourceRows,
@@ -257,6 +294,104 @@ ModuleReportingReportSnapshot _projectPeriodSeries({
     title: preview.title.isEmpty ? report.label : preview.title,
     subtitle: previewSubtitleOrNull(preview.subtitle),
   );
+}
+
+ModuleReportingReportSnapshot _projectGrossSales({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<String> columns,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+  String? subtitleOverride,
+}) {
+  final num? periodAmount = _sumBreakdownDailyAmount(breakdown);
+  final Map<String, Object?>? adjustedSummary = periodAmount == null
+      ? summary
+      : <String, Object?>{
+          ...?summary,
+          'amount': periodAmount,
+        };
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: columns,
+    rows: sourceRows,
+    summary: adjustedSummary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: subtitleOverride ?? previewSubtitleOrNull(preview.subtitle),
+  );
+}
+
+ModuleReportingReportSnapshot _projectProfitAndMargin({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<String> columns,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  final List<Map<String, Object?>> rows = <Map<String, Object?>>[
+    for (final Map<String, Object?> row in sourceRows)
+      <String, Object?>{
+        ...row,
+        'profit_margin': _profitMargin(row['profit'], row['amount']),
+      },
+  ];
+  final List<String> nextColumns = columns.contains('profit_margin')
+      ? columns
+      : <String>[...columns, 'profit_margin'];
+
+  final num totalProfit = rows.fold<num>(
+    0,
+    (num sum, Map<String, Object?> row) => sum + _asNum(row['profit']),
+  );
+  final num totalAmount = rows.fold<num>(
+    0,
+    (num sum, Map<String, Object?> row) => sum + _asNum(row['amount']),
+  );
+  final Map<String, Object?>? adjustedSummary = summary == null
+      ? null
+      : <String, Object?>{
+          ...summary,
+          'profit': totalProfit,
+          'amount': totalAmount,
+          'profit_margin': _profitMargin(totalProfit, totalAmount),
+        };
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: nextColumns,
+    rows: rows,
+    summary: adjustedSummary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle),
+  );
+}
+
+num? _sumBreakdownDailyAmount(Map<String, Object?>? breakdown) {
+  final Object? daily = breakdown?['daily_totals'];
+  if (daily is! List || daily.isEmpty) {
+    return null;
+  }
+  num total = 0;
+  for (final Object? entry in daily) {
+    if (entry is Map) {
+      total += _asNum(Map<dynamic, dynamic>.from(entry)['amount']);
+    }
+  }
+  return total;
+}
+
+Object? _profitMargin(Object? profit, Object? amount) {
+  if (profit == null) {
+    return null;
+  }
+  final num amountValue = _asNum(amount);
+  if (amountValue <= 0) {
+    return null;
+  }
+  return _asNum(profit) / amountValue;
 }
 
 ModuleReportingReportSnapshot _filterStockRisk({

@@ -617,13 +617,58 @@ const summarizeConsumptionSeries = (rows = []) => {
   };
 };
 
+const resolveConsumptionGroupBy = (parameters = {}) => {
+  const raw = normalizeString(parameters.group_by || parameters.groupBy || 'drug').toLowerCase();
+  if (raw === 'category' || raw === 'facility' || raw === 'patient' || raw === 'drug') {
+    return raw;
+  }
+  return 'drug';
+};
+
+const resolveInventoryCategory = (drug) => {
+  const maps = Array.isArray(drug?.inventory_maps) ? drug.inventory_maps : [];
+  const preferred = maps.find((entry) => entry?.is_default) || maps[0];
+  return normalizeString(preferred?.inventory_item?.category) || 'OTHER';
+};
+
+const resolvePatientLabel = (patient) => {
+  if (!patient) return 'Unknown';
+  const hfi = normalizeString(patient.human_friendly_id);
+  const name = [normalizeString(patient.first_name), normalizeString(patient.last_name)]
+    .filter(Boolean)
+    .join(' ');
+  if (hfi && name) return `${hfi} · ${name}`;
+  return hfi || name || 'Unknown';
+};
+
+const resolveFacilityLabel = (patient) =>
+  normalizeString(patient?.facility?.name) ||
+  normalizeString(patient?.facility?.human_friendly_id) ||
+  'Unknown';
+
+const consumptionColumnsForGroup = (groupBy) => {
+  if (groupBy === 'category') return ['category', 'quantity_dispensed', 'amount'];
+  if (groupBy === 'facility') return ['facility', 'amount', 'quantity_dispensed'];
+  if (groupBy === 'patient') return ['patient', 'amount', 'quantity_dispensed'];
+  return ['drug', 'quantity_dispensed', 'amount', 'profit', 'order_source'];
+};
+
+const sortConsumptionRows = (rows = []) =>
+  [...rows].sort((left, right) => {
+    const qtyDiff = asNumber(right.quantity_dispensed) - asNumber(left.quantity_dispensed);
+    if (qtyDiff !== 0) return qtyDiff;
+    return asNumber(right.amount) - asNumber(left.amount);
+  });
+
 /**
  * Pharmacy drug consumption analytics for a period.
  * Amount prefers drug.unit_price × quantity_dispensed; falls back to billing_snapshot line unit_price.
+ * Optional group_by: drug (default) | category | facility | patient — same unit/profit math.
  */
 const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => {
   const range = resolveDateRange(parameters);
-  const columns = ['drug', 'quantity_dispensed', 'amount', 'profit', 'order_source'];
+  const groupBy = resolveConsumptionGroupBy(parameters);
+  const columns = consumptionColumnsForGroup(groupBy);
   const topLimit = Math.max(1, Math.min(100, asNumber(parameters.top_n || parameters.limit) || 25));
   const orderSourceFilter = normalizeString(
     parameters.order_source || parameters.orderSource
@@ -666,12 +711,36 @@ const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => 
               name: true,
               unit_price: true,
               buy_unit_price: true,
+              inventory_maps: {
+                where: { deleted_at: null },
+                select: {
+                  is_default: true,
+                  inventory_item: {
+                    select: {
+                      category: true,
+                    },
+                  },
+                },
+              },
             },
           },
           pharmacy_order: {
             select: {
               encounter_id: true,
               billing_snapshot: true,
+              patient: {
+                select: {
+                  human_friendly_id: true,
+                  first_name: true,
+                  last_name: true,
+                  facility: {
+                    select: {
+                      name: true,
+                      human_friendly_id: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -680,6 +749,9 @@ const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => 
   });
 
   const drugIndex = new Map();
+  const categoryIndex = new Map();
+  const facilityIndex = new Map();
+  const patientIndex = new Map();
   const sourceIndex = new Map();
   const dailyRows = [];
 
@@ -699,6 +771,10 @@ const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => 
       normalizeString(log?.pharmacy_order_item?.drug?.name) ||
       normalizeString(log?.pharmacy_order_item?.drug_id) ||
       'Unknown';
+    const category = resolveInventoryCategory(log?.pharmacy_order_item?.drug);
+    const patient = log?.pharmacy_order_item?.pharmacy_order?.patient;
+    const patientLabel = resolvePatientLabel(patient);
+    const facilityLabel = resolveFacilityLabel(patient);
     const orderSource = resolveOrderSource(log?.pharmacy_order_item?.pharmacy_order?.encounter_id);
     if (
       orderSourceFilter &&
@@ -725,6 +801,35 @@ const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => 
     }
     drugEntry.sources.set(orderSource, asNumber(drugEntry.sources.get(orderSource)) + qty);
 
+    if (!categoryIndex.has(category)) {
+      categoryIndex.set(category, { category, quantity_dispensed: 0, amount: 0 });
+    }
+    const categoryEntry = categoryIndex.get(category);
+    categoryEntry.quantity_dispensed += qty;
+    categoryEntry.amount = Math.round((categoryEntry.amount + amount) * 100) / 100;
+
+    if (!facilityIndex.has(facilityLabel)) {
+      facilityIndex.set(facilityLabel, {
+        facility: facilityLabel,
+        quantity_dispensed: 0,
+        amount: 0,
+      });
+    }
+    const facilityEntry = facilityIndex.get(facilityLabel);
+    facilityEntry.quantity_dispensed += qty;
+    facilityEntry.amount = Math.round((facilityEntry.amount + amount) * 100) / 100;
+
+    if (!patientIndex.has(patientLabel)) {
+      patientIndex.set(patientLabel, {
+        patient: patientLabel,
+        quantity_dispensed: 0,
+        amount: 0,
+      });
+    }
+    const patientEntry = patientIndex.get(patientLabel);
+    patientEntry.quantity_dispensed += qty;
+    patientEntry.amount = Math.round((patientEntry.amount + amount) * 100) / 100;
+
     sourceIndex.set(orderSource, {
       order_source: orderSource,
       quantity_dispensed:
@@ -740,27 +845,53 @@ const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => 
     });
   });
 
-  const rows = Array.from(drugIndex.values())
-    .map((entry) => {
-      const sourceEntries = Array.from(entry.sources.entries()).sort(
-        (left, right) => right[1] - left[1]
-      );
-      const orderSource =
-        sourceEntries.length === 1 ? sourceEntries[0][0] : sourceEntries.length > 1 ? 'MIXED' : 'UNKNOWN';
-      return {
-        drug: entry.drug,
+  let rows;
+  if (groupBy === 'category') {
+    rows = sortConsumptionRows(
+      Array.from(categoryIndex.values()).map((entry) => ({
+        category: entry.category,
         quantity_dispensed: entry.quantity_dispensed,
         amount: Math.round(entry.amount * 100) / 100,
-        profit: entry.profit,
-        order_source: orderSource,
-      };
-    })
-    .sort((left, right) => {
-      const qtyDiff = asNumber(right.quantity_dispensed) - asNumber(left.quantity_dispensed);
-      if (qtyDiff !== 0) return qtyDiff;
-      return asNumber(right.amount) - asNumber(left.amount);
-    })
-    .slice(0, topLimit);
+      }))
+    );
+  } else if (groupBy === 'facility') {
+    rows = sortConsumptionRows(
+      Array.from(facilityIndex.values()).map((entry) => ({
+        facility: entry.facility,
+        amount: Math.round(entry.amount * 100) / 100,
+        quantity_dispensed: entry.quantity_dispensed,
+      }))
+    );
+  } else if (groupBy === 'patient') {
+    rows = sortConsumptionRows(
+      Array.from(patientIndex.values()).map((entry) => ({
+        patient: entry.patient,
+        amount: Math.round(entry.amount * 100) / 100,
+        quantity_dispensed: entry.quantity_dispensed,
+      }))
+    ).slice(0, topLimit);
+  } else {
+    rows = sortConsumptionRows(
+      Array.from(drugIndex.values()).map((entry) => {
+        const sourceEntries = Array.from(entry.sources.entries()).sort(
+          (left, right) => right[1] - left[1]
+        );
+        const orderSource =
+          sourceEntries.length === 1
+            ? sourceEntries[0][0]
+            : sourceEntries.length > 1
+              ? 'MIXED'
+              : 'UNKNOWN';
+        return {
+          drug: entry.drug,
+          quantity_dispensed: entry.quantity_dispensed,
+          amount: Math.round(entry.amount * 100) / 100,
+          profit: entry.profit,
+          order_source: orderSource,
+        };
+      })
+    ).slice(0, topLimit);
+  }
 
   const daily_totals = aggregateByPeriod(
     dailyRows,
@@ -784,6 +915,22 @@ const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => 
   const sourceLabel = orderSourceFilter
     ? ` · source ${orderSourceFilter}`
     : '';
+  const groupLabel =
+    groupBy === 'drug' ? `top ${rows.length} by quantity` : `by ${groupBy} (${rows.length})`;
+
+  // Full-period money totals use all dispense events (not the top-N drug slice).
+  const periodTotals = dailyRows.reduce(
+    (acc, row) => {
+      acc.quantity_dispensed += asNumber(row.quantity_dispensed);
+      acc.amount += asNumber(row.amount);
+      return acc;
+    },
+    { quantity_dispensed: 0, amount: 0 }
+  );
+  const profitTotal =
+    groupBy === 'drug'
+      ? rows.reduce((sum, row) => sum + asNumber(row.profit), 0)
+      : null;
 
   return {
     invalid: false,
@@ -792,14 +939,30 @@ const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => 
     from: range.from,
     to: range.to,
     granularity: monthly ? 'month' : 'day',
-    title: 'Pharmacy drug consumption',
-    subtitle: `${fromLabel} to ${toLabel} (top ${rows.length} by quantity)${sourceLabel}`,
+    title:
+      groupBy === 'category'
+        ? 'Pharmacy sales by category'
+        : groupBy === 'facility'
+          ? 'Pharmacy sales by branch'
+          : groupBy === 'patient'
+            ? 'Pharmacy sales by customer'
+            : 'Pharmacy drug consumption',
+    subtitle: `${fromLabel} to ${toLabel} (${groupLabel})${sourceLabel}`,
     columns,
     rows,
     summary: {
       ...summarizeConsumptionSeries(rows),
-      profit: rows.reduce((sum, row) => sum + asNumber(row.profit), 0),
-      source_mix,
+      // Keep drug summary compatible: amount/qty from returned rows (top-N).
+      ...(groupBy === 'drug'
+        ? {
+            profit: profitTotal,
+            source_mix,
+          }
+        : {
+            amount: Math.round(periodTotals.amount * 100) / 100,
+            quantity_dispensed: periodTotals.quantity_dispensed,
+            drug_count: rows.length,
+          }),
     },
     breakdown: {
       daily_totals,
@@ -915,6 +1078,424 @@ const runPharmacyDrugConsumptionDataset = async (scope, parameters = {}) => {
 
 const runPharmacyDispenseThroughputDataset = async (scope, parameters = {}) => {
   const analytics = await buildPharmacyDispenseThroughputAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+  };
+};
+
+const runPharmacySalesByCategoryDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacyDrugConsumptionAnalytics(scope, {
+    ...parameters,
+    group_by: 'category',
+  });
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+    breakdown: analytics.breakdown,
+  };
+};
+
+const runPharmacySalesByBranchDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacyDrugConsumptionAnalytics(scope, {
+    ...parameters,
+    group_by: 'facility',
+  });
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+    breakdown: analytics.breakdown,
+  };
+};
+
+const runPharmacySalesByCustomerDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacyDrugConsumptionAnalytics(scope, {
+    ...parameters,
+    group_by: 'patient',
+  });
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+    breakdown: analytics.breakdown,
+  };
+};
+
+const buildPharmacyBillingScopeWhere = (scope = {}) => ({
+  deleted_at: null,
+  billing_entity: 'PHARMACY',
+  tenant_id: scope.tenant_id,
+  ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+});
+
+const sumPeriodAmount = (dailyTotals = []) =>
+  Math.round(
+    dailyTotals.reduce((sum, row) => sum + asNumber(row.amount), 0) * 100
+  ) / 100;
+
+/**
+ * Pharmacy-scoped payment method totals (payment.method, billing_entity=PHARMACY).
+ */
+const buildPharmacySalesPaymentMethodAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['method', 'amount'];
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Pharmacy sales by payment method',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: { amount: 0 },
+    };
+  }
+
+  const payments = await prisma.payment.findMany({
+    where: {
+      ...buildPharmacyBillingScopeWhere(scope),
+      status: { in: Array.from(COUNTED_PAYMENT_STATUSES) },
+      paid_at: { gte: range.from, lte: range.to },
+    },
+    select: {
+      method: true,
+      amount: true,
+    },
+  });
+
+  const methodIndex = new Map();
+  payments.forEach((payment) => {
+    const method = normalizeString(payment.method) || 'UNKNOWN';
+    methodIndex.set(method, asNumber(methodIndex.get(method)) + asNumber(payment.amount));
+  });
+
+  const rows = Array.from(methodIndex.entries())
+    .map(([method, amount]) => ({
+      method,
+      amount: Math.round(asNumber(amount) * 100) / 100,
+    }))
+    .sort((left, right) => right.amount - left.amount);
+
+  const amount = Math.round(rows.reduce((sum, row) => sum + asNumber(row.amount), 0) * 100) / 100;
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Pharmacy sales by payment method',
+    subtitle: `${fromLabel} to ${toLabel} (pharmacy-scoped payments)`,
+    columns,
+    rows,
+    summary: { amount },
+  };
+};
+
+/**
+ * Pharmacy-scoped discounts: applied negative billing_adjustment on pharmacy invoices.
+ */
+const buildPharmacySalesDiscountsAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['date', 'amount', 'reason'];
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Pharmacy discounts',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: { amount: 0 },
+    };
+  }
+
+  const adjustments = await prisma.billing_adjustment.findMany({
+    where: {
+      deleted_at: null,
+      adjusted_at: { gte: range.from, lte: range.to },
+      status: { in: Array.from(APPLIED_ADJUSTMENT_STATUSES) },
+      amount: { lt: 0 },
+      invoice: buildPharmacyBillingScopeWhere(scope),
+    },
+    select: {
+      adjusted_at: true,
+      amount: true,
+      reason: true,
+    },
+    orderBy: { adjusted_at: 'asc' },
+  });
+
+  const rows = adjustments.map((entry) => ({
+    date: entry.adjusted_at ? new Date(entry.adjusted_at).toISOString().slice(0, 10) : null,
+    amount: Math.round(Math.abs(asNumber(entry.amount)) * 100) / 100,
+    reason: normalizeString(entry.reason) || null,
+  }));
+  const amount = Math.round(rows.reduce((sum, row) => sum + asNumber(row.amount), 0) * 100) / 100;
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Pharmacy discounts',
+    subtitle: `${fromLabel} to ${toLabel} (negative applied adjustments)`,
+    columns,
+    rows,
+    summary: { amount },
+  };
+};
+
+/**
+ * Pharmacy refund money + dispense return counts (not conflated).
+ */
+const buildPharmacySalesRefundsAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['date', 'amount', 'returns'];
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Pharmacy refunds and returns',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: { amount: 0, returns: 0 },
+    };
+  }
+
+  const monthly = shouldUseMonthlyGranularity(range);
+  const [refunds, returns] = await Promise.all([
+    prisma.refund.findMany({
+      where: {
+        deleted_at: null,
+        refunded_at: { gte: range.from, lte: range.to },
+        payment: buildPharmacyBillingScopeWhere(scope),
+      },
+      select: {
+        refunded_at: true,
+        amount: true,
+      },
+    }),
+    prisma.dispense_log.findMany({
+      where: {
+        ...buildDispenseLogScopeWhere(scope),
+        status: 'RETURNED',
+        updated_at: { gte: range.from, lte: range.to },
+      },
+      select: {
+        updated_at: true,
+      },
+    }),
+  ]);
+
+  const refundBuckets = aggregateByPeriod(
+    refunds,
+    'refunded_at',
+    { amount: (row) => asNumber(row.amount) },
+    { monthly }
+  );
+  const returnBuckets = aggregateByPeriod(
+    returns,
+    'updated_at',
+    { returns: () => 1 },
+    { monthly }
+  );
+
+  const index = new Map();
+  [...refundBuckets, ...returnBuckets].forEach((entry) => {
+    if (!entry?.date) return;
+    if (!index.has(entry.date)) {
+      index.set(entry.date, { date: entry.date, amount: 0, returns: 0 });
+    }
+    const target = index.get(entry.date);
+    target.amount = Math.round((asNumber(target.amount) + asNumber(entry.amount)) * 100) / 100;
+    target.returns += asNumber(entry.returns);
+  });
+
+  const rows = Array.from(index.values()).sort((left, right) =>
+    String(left.date).localeCompare(String(right.date))
+  );
+  const summary = rows.reduce(
+    (acc, row) => {
+      acc.amount += asNumber(row.amount);
+      acc.returns += asNumber(row.returns);
+      return acc;
+    },
+    { amount: 0, returns: 0 }
+  );
+  summary.amount = Math.round(summary.amount * 100) / 100;
+
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Pharmacy refunds and returns',
+    subtitle: `${fromLabel} to ${toLabel} (refund $ vs return count)`,
+    columns,
+    rows,
+    summary,
+  };
+};
+
+/**
+ * Net revenue = gross dispense revenue − pharmacy refunds − pharmacy discounts.
+ */
+const buildPharmacySalesNetRevenueAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['metric', 'amount'];
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Pharmacy net revenue',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: { amount: 0, gross_revenue: 0, refunds: 0, discounts: 0, net_revenue: 0 },
+    };
+  }
+
+  const [consumption, refunds, discounts] = await Promise.all([
+    buildPharmacyDrugConsumptionAnalytics(scope, parameters),
+    buildPharmacySalesRefundsAnalytics(scope, parameters),
+    buildPharmacySalesDiscountsAnalytics(scope, parameters),
+  ]);
+
+  const gross_revenue = sumPeriodAmount(consumption?.breakdown?.daily_totals || []);
+  const refundAmount = asNumber(refunds?.summary?.amount);
+  const discountAmount = asNumber(discounts?.summary?.amount);
+  const net_revenue = Math.round((gross_revenue - refundAmount - discountAmount) * 100) / 100;
+
+  const rows = [
+    { metric: 'gross_revenue', amount: gross_revenue },
+    { metric: 'refunds', amount: refundAmount },
+    { metric: 'discounts', amount: discountAmount },
+    { metric: 'net_revenue', amount: net_revenue },
+  ];
+
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Pharmacy net revenue',
+    subtitle: `${fromLabel} to ${toLabel} · Net = gross − refunds − discounts`,
+    columns,
+    rows,
+    summary: {
+      amount: net_revenue,
+      gross_revenue,
+      refunds: refundAmount,
+      discounts: discountAmount,
+      net_revenue,
+    },
+  };
+};
+
+/**
+ * Average transaction value = period gross dispense amount / orders_created.
+ */
+const buildPharmacySalesAvgTransactionAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['average_transaction_value', 'orders_created', 'amount'];
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Pharmacy average transaction value',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: { average_transaction_value: null, orders_created: 0, amount: 0 },
+    };
+  }
+
+  const [consumption, throughput] = await Promise.all([
+    buildPharmacyDrugConsumptionAnalytics(scope, parameters),
+    buildPharmacyDispenseThroughputAnalytics(scope, parameters),
+  ]);
+
+  const amount = sumPeriodAmount(consumption?.breakdown?.daily_totals || []);
+  const orders_created = asNumber(throughput?.summary?.orders_created);
+  const average_transaction_value =
+    orders_created > 0 ? Math.round((amount / orders_created) * 100) / 100 : null;
+
+  const rows = [
+    {
+      average_transaction_value,
+      orders_created,
+      amount,
+    },
+  ];
+
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Pharmacy average transaction value',
+    subtitle: `${fromLabel} to ${toLabel} · amount / orders_created`,
+    columns,
+    rows,
+    summary: {
+      average_transaction_value,
+      orders_created,
+      amount,
+    },
+  };
+};
+
+const runPharmacySalesPaymentMethodDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacySalesPaymentMethodAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+  };
+};
+
+const runPharmacySalesDiscountsDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacySalesDiscountsAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+  };
+};
+
+const runPharmacySalesRefundsDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacySalesRefundsAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+  };
+};
+
+const runPharmacySalesNetRevenueDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacySalesNetRevenueAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+  };
+};
+
+const runPharmacySalesAvgTransactionDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacySalesAvgTransactionAnalytics(scope, parameters);
   return {
     title: analytics.title,
     subtitle: analytics.subtitle,
@@ -1236,6 +1817,14 @@ const DATASET_RUNNERS = Object.freeze({
   insurance_claims_aging: runInsuranceClaimsDataset,
   pharmacy_drug_consumption: runPharmacyDrugConsumptionDataset,
   pharmacy_dispense_throughput: runPharmacyDispenseThroughputDataset,
+  pharmacy_sales_by_category: runPharmacySalesByCategoryDataset,
+  pharmacy_sales_by_branch: runPharmacySalesByBranchDataset,
+  pharmacy_sales_by_customer: runPharmacySalesByCustomerDataset,
+  pharmacy_sales_payment_methods: runPharmacySalesPaymentMethodDataset,
+  pharmacy_sales_discounts: runPharmacySalesDiscountsDataset,
+  pharmacy_sales_refunds: runPharmacySalesRefundsDataset,
+  pharmacy_sales_net_revenue: runPharmacySalesNetRevenueDataset,
+  pharmacy_sales_avg_transaction: runPharmacySalesAvgTransactionDataset,
   inventory_stock_risk: runInventoryDataset,
   hr_staffing_leave_coverage: runHrDataset,
   biomedical_incidents_downtime: runBiomedicalDataset,
@@ -1286,6 +1875,11 @@ module.exports = {
   buildBillingFinancialAnalytics,
   buildPharmacyDispenseThroughputAnalytics,
   buildPharmacyDrugConsumptionAnalytics,
+  buildPharmacySalesAvgTransactionAnalytics,
+  buildPharmacySalesDiscountsAnalytics,
+  buildPharmacySalesNetRevenueAnalytics,
+  buildPharmacySalesPaymentMethodAnalytics,
+  buildPharmacySalesRefundsAnalytics,
   executeReportDataset,
   resolveDateRange,
   shouldUseMonthlyGranularity,
