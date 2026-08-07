@@ -689,12 +689,11 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
   if (packId === ROLE_PACKS.DOCTOR) {
     return [
       { id: 'assigned', label: 'Assigned today', value: metrics.assigned || 0, required_permissions: ['clinical:read'] },
-      { id: 'in_progress', label: 'Consultations in progress', value: metrics.inProgress || 0, required_permissions: ['clinical:read'] },
+      { id: 'in_progress', label: 'In progress', value: metrics.inProgress || 0, required_permissions: ['clinical:read'] },
       {
         id: 'results_pending_review',
-        label: 'Lab results to review',
+        label: 'Results to review',
         value: metrics.resultsPendingReview || 0,
-        // Doctors review results from Clinical — not the Lab workspace.
         required_permissions: ['clinical:read'],
       },
       { id: 'follow_ups_due', label: 'Follow-ups due', value: metrics.followUpsDue || 0, required_permissions: ['clinical:read'] },
@@ -707,7 +706,7 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
       },
       {
         id: 'radiology_pending',
-        label: 'Radiology results',
+        label: 'Imaging results',
         value: metrics.radiologyPending || 0,
         required_permissions: ['clinical:read'],
       },

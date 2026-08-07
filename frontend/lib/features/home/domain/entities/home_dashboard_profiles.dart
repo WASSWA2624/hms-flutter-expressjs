@@ -332,18 +332,18 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
       ),
       HomeStatusCardTemplate(
-        id: 'completed',
-        label: 'Completed',
-        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
-      ),
-      HomeStatusCardTemplate(
         id: 'critical_labs',
         label: 'Critical labs',
         requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
       ),
       HomeStatusCardTemplate(
         id: 'radiology_pending',
-        label: 'Radiology results',
+        label: 'Imaging results',
+        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'completed',
+        label: 'Completed today',
         requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
       ),
       HomeStatusCardTemplate(
@@ -354,13 +354,14 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       HomeStatusCardTemplate(
         id: 'opd_notifications_attention',
         label: 'OPD alerts',
-        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
+        requiredPermissions: <AppPermission>[AppPermissions.opdRead],
       ),
     ],
     quickActionIds: <String>[
       'continue_consultation',
       'order_lab',
       'order_radiology',
+      'order_prescription',
       'write_clinical_note',
     ],
     shortcutIds: <String>[

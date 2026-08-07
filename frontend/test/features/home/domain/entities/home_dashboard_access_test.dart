@@ -361,7 +361,11 @@ void main() {
       );
       expect(
         actions.map((HomeActionDefinition action) => action.id),
-        containsAll(<String>['order_lab', 'order_radiology']),
+        containsAll(<String>[
+          'order_lab',
+          'order_radiology',
+          'order_prescription',
+        ]),
       );
       expect(
         actions.map((HomeActionDefinition action) => action.id),
@@ -373,6 +377,10 @@ void main() {
       );
       expect(
         homeResolveAction('order_radiology')!.route,
+        AppRoutes.clinical,
+      );
+      expect(
+        homeResolveAction('order_prescription')!.route,
         AppRoutes.clinical,
       );
       expect(

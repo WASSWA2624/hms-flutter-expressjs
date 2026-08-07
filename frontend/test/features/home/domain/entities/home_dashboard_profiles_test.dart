@@ -230,13 +230,15 @@ void main() {
     test('doctor profile still exposes quick actions', () {
       final profile = homeProfileForRole(AppRole.doctor);
 
-      expect(profile.quickActionIds, hasLength(4));
+      expect(profile.maxStatusCards, 4);
+      expect(profile.quickActionIds, hasLength(5));
       expect(
         profile.quickActionIds,
         containsAll(<String>[
           'continue_consultation',
           'order_lab',
           'order_radiology',
+          'order_prescription',
           'write_clinical_note',
         ]),
       );
@@ -261,11 +263,35 @@ void main() {
       );
       expect(
         profile.shortcutIds,
-        isNot(containsAll(<String>['emergency', 'lab', 'radiology', 'pharmacy', 'discharge'])),
+        isNot(
+          containsAll(<String>[
+            'emergency',
+            'lab',
+            'radiology',
+            'pharmacy',
+            'discharge',
+          ]),
+        ),
       );
       expect(profile.emptyActionIds, contains('continue_consultation'));
-      expect(profile.statusCards.map((card) => card.id), isNot(contains('shifts_today')));
-      expect(profile.statusCards.map((card) => card.id), isNot(contains('emergency_cases_today')));
+      expect(
+        profile.statusCards.map((card) => card.id),
+        containsAll(<String>[
+          'assigned',
+          'results_pending_review',
+          'critical_labs',
+          'radiology_pending',
+          'prescriptions_pending',
+        ]),
+      );
+      expect(
+        profile.statusCards.map((card) => card.id),
+        isNot(contains('shifts_today')),
+      );
+      expect(
+        profile.statusCards.map((card) => card.id),
+        isNot(contains('emergency_cases_today')),
+      );
     });
 
     test(

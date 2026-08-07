@@ -1245,34 +1245,16 @@ const getDashboardSummaryByPack = async ({
         },
       },
     };
-    const shiftScope = directScope(scope, { includeTenant: true, includeFacility: true });
-    const providerShiftWhereToday = {
-      ...shiftScope,
-      start_time: { gte: todayStart, lt: endOfToday },
-      assignments: {
-        some: {
-          deleted_at: null,
-          staff_profile: {
-            is: {
-              deleted_at: null,
-              user_id: providerUserId,
-              ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
-            },
-          },
-        },
-      },
-    };
 
     const [
       assigned,
       inProgress,
       completed,
       resultsPendingReview,
+      criticalLabs,
       radiologyPending,
       followUpsDue,
       prescriptionsPending,
-      emergencyCasesToday,
-      shiftsToday,
     ] = await Promise.all([
       prisma.appointment.count({ where: providerTodayWhere }),
       prisma.appointment.count({ where: { ...providerWhere, status: 'IN_PROGRESS' } }),
@@ -1283,19 +1265,16 @@ const getDashboardSummaryByPack = async ({
           scheduled_start: { gte: todayStart, lt: endOfToday },
         },
       }),
-      // Lab Results Awaiting Review (Dashboard.md §4 → lab:read)
+      // Lab results awaiting doctor review in Clinical (not Lab workspace).
       prisma.lab_result.count({ where: providerReleasedLabWhere }),
-      // Radiology Results (Dashboard.md §4 → radiology:read)
+      prisma.lab_result.count({
+        where: { ...providerReleasedLabWhere, status: 'CRITICAL' },
+      }),
+      // Radiology results ready for Clinical review.
       prisma.radiology_result.count({ where: providerRadiologyReadyWhere }),
       prisma.follow_up.count({ where: followUpWhere }),
-      // Prescriptions Pending (Dashboard.md §4 → pharmacy:read)
+      // Prescriptions awaiting pharmacy dispense (ordered by this doctor).
       prisma.pharmacy_order.count({ where: providerPharmacyPendingWhere }),
-      // Emergency Calls (Dashboard.md §4 → emergency:read)
-      prisma.emergency_case.count({
-        where: { ...emergencyCaseWhere, created_at: { gte: todayStart } },
-      }),
-      // My Schedule (Dashboard.md §4 → roster:read)
-      prisma.shift.count({ where: providerShiftWhereToday }),
     ]);
 
     return {
@@ -1304,11 +1283,10 @@ const getDashboardSummaryByPack = async ({
         inProgress,
         completed,
         resultsPendingReview,
+        criticalLabs,
         radiologyPending,
         followUpsDue,
         prescriptionsPending,
-        emergencyCasesToday,
-        shiftsToday,
       },
       trendDates: await selectDateSeries(
         prisma.appointment,
