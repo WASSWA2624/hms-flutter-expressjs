@@ -97,12 +97,18 @@ List<ModuleReportingPrintBlock> moduleReportingDefaultPrintBlocks({
     final ModuleReportingVisualizationKind kind = applicable[index];
     final bool isTable = kind == ModuleReportingVisualizationKind.table;
     final double height = isTable
-        ? 280
+        ? 320
         : kind == ModuleReportingVisualizationKind.kpiCards
-        ? 140
-        : 220;
+        ? 180
+        : kind == ModuleReportingVisualizationKind.heatmap
+        ? 360
+        : 340;
     final double width = kind == ModuleReportingVisualizationKind.kpiCards ||
-            kind == ModuleReportingVisualizationKind.table
+            kind == ModuleReportingVisualizationKind.table ||
+            kind == ModuleReportingVisualizationKind.lineChart ||
+            kind == ModuleReportingVisualizationKind.barChart ||
+            kind == ModuleReportingVisualizationKind.areaChart ||
+            kind == ModuleReportingVisualizationKind.heatmap
         ? moduleReportingPrintPageSize.width - 32
         : (moduleReportingPrintPageSize.width - 48) / 2;
     final double left = kind == ModuleReportingVisualizationKind.donutChart ||

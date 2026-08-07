@@ -12,6 +12,7 @@ import 'package:hosspi_hms/shared/reporting/module_reporting_models.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_print_layout.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_table.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_visualization.dart';
+import 'package:hosspi_hms/shared/reporting/module_reporting_visualization_panel.dart';
 
 /// Opens the interactive module-reporting print composer, then the shared
 /// HTML print-preview dialog when the user confirms print.
@@ -656,79 +657,41 @@ class _BlockPreviewBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Locale locale = Localizations.localeOf(context);
-    if (block.kind == ModuleReportingVisualizationKind.table) {
-      final List<String> columns = block.visibleColumns.isEmpty
-          ? snapshot.columns
-          : block.visibleColumns;
-      final List<Map<String, Object?>> rows = moduleReportingPrintTableRows(
-        snapshot: snapshot,
-        block: block,
-      );
-      return ModuleReportingSnapshotTable(
-        snapshot: ModuleReportingReportSnapshot.ready(
-          columns: columns,
-          rows: rows,
-          summary: snapshot.summary,
-          breakdown: snapshot.breakdown,
-          title: block.title,
-          subtitle: block.caption,
-        ),
-        labels: labels,
-        canExport: false,
-        storageKeyPrefix: 'print-${block.id}',
-      );
-    }
-
-    final List<ModuleReportingSeriesPoint> points =
-        moduleReportingSeriesPoints(snapshot, limit: block.maxRows);
-    final segments = moduleReportingDistributionSegments(
-      snapshot,
-      limit: block.maxRows,
-    );
-    final List<MapEntry<String, String>> rows = <MapEntry<String, String>>[
-      if (points.isNotEmpty)
-        for (final ModuleReportingSeriesPoint point in points.take(8))
-          MapEntry<String, String>(
-            point.label,
-            moduleReportingFormatCellValue(
-              point.value,
-              locale: locale,
-              unknownLabel: labels.unknownValue,
-              preferNumeric: true,
+    final ModuleReportingReportSnapshot scopedSnapshot =
+        block.kind == ModuleReportingVisualizationKind.table
+        ? ModuleReportingReportSnapshot.ready(
+            columns: block.visibleColumns.isEmpty
+                ? snapshot.columns
+                : block.visibleColumns,
+            rows: moduleReportingPrintTableRows(
+              snapshot: snapshot,
+              block: block,
             ),
+            summary: snapshot.summary,
+            breakdown: snapshot.breakdown,
+            title: block.title,
+            subtitle: block.caption,
           )
-      else
-        for (final segment in segments.take(8))
-          MapEntry<String, String>(
-            segment.label,
-            moduleReportingFormatCellValue(
-              segment.value,
-              locale: locale,
-              unknownLabel: labels.unknownValue,
-              preferNumeric: true,
-            ),
-          ),
-    ];
-    return ListView(
-      children: <Widget>[
-        for (final MapEntry<String, String> row in rows)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    row.key,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Text(row.value),
-              ],
-            ),
-          ),
-      ],
+        : snapshot;
+
+    final Widget view = ModuleReportingVisualizationView(
+      kind: block.kind,
+      snapshot: scopedSnapshot,
+      labels: labels,
+      title: block.title,
+      canExport: false,
+      embedded: true,
+      storageKeyPrefix: 'print-${block.id}',
+      dataLimit: block.maxRows,
+    );
+
+    // Nested chart chrome (options + legend + painters) can exceed the block
+    // height; keep the same visuals and scroll within the tile.
+    return ClipRect(
+      child: SingleChildScrollView(
+        primary: false,
+        child: view,
+      ),
     );
   }
 }

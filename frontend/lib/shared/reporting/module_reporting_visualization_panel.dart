@@ -74,12 +74,13 @@ class _ModuleReportingVisualizationPanelState
           },
         ),
         SizedBox(height: theme.spacing.xs),
-        _VisualizationBody(
+        ModuleReportingVisualizationView(
           kind: selected,
           snapshot: widget.snapshot,
-          report: widget.report,
           labels: widget.labels,
+          title: widget.report.label,
           canExport: widget.canExport,
+          storageKeyPrefix: widget.report.id,
         ),
       ],
     );
@@ -268,31 +269,42 @@ class _VisualizationSwitcher extends StatelessWidget {
   }
 }
 
-class _VisualizationBody extends StatelessWidget {
-  const _VisualizationBody({
+class ModuleReportingVisualizationView extends StatelessWidget {
+  const ModuleReportingVisualizationView({
     required this.kind,
     required this.snapshot,
-    required this.report,
     required this.labels,
-    required this.canExport,
+    required this.title,
+    this.canExport = true,
+    this.embedded = false,
+    this.storageKeyPrefix,
+    this.dataLimit,
+    super.key,
   });
 
   final ModuleReportingVisualizationKind kind;
   final ModuleReportingReportSnapshot snapshot;
-  final ModuleReportingReport report;
   final ModuleReportingLabels labels;
+  final String title;
   final bool canExport;
+
+  /// When true, omits the outer titled card chrome (print-preview blocks already
+  /// provide a header). Chart options, legends, and painters stay identical.
+  final bool embedded;
+  final String? storageKeyPrefix;
+  final int? dataLimit;
 
   @override
   Widget build(BuildContext context) {
+    final int seriesLimit = dataLimit ?? 40;
     switch (kind) {
       case ModuleReportingVisualizationKind.table:
         return ModuleReportingSnapshotTable(
           snapshot: snapshot,
           labels: labels,
           canExport: canExport,
-          storageKeyPrefix: report.id,
-          exportFileNameStem: report.id,
+          storageKeyPrefix: storageKeyPrefix ?? title,
+          exportFileNameStem: storageKeyPrefix ?? title,
         );
       case ModuleReportingVisualizationKind.kpiCards:
         return DashboardMetricStrip(
@@ -302,35 +314,45 @@ class _VisualizationBody extends StatelessWidget {
         );
       case ModuleReportingVisualizationKind.lineChart:
         return _SeriesChartHost(
-          title: report.label,
+          title: title,
           emptyMessage: labels.emptyBody,
-          points: moduleReportingSeriesPoints(snapshot),
+          points: moduleReportingSeriesPoints(snapshot, limit: seriesLimit),
           style: DashboardTrendChartStyle.line,
+          embedded: embedded,
         );
       case ModuleReportingVisualizationKind.barChart:
         return _SeriesChartHost(
-          title: report.label,
+          title: title,
           emptyMessage: labels.emptyBody,
-          points: moduleReportingSeriesPoints(snapshot),
+          points: moduleReportingSeriesPoints(snapshot, limit: seriesLimit),
           style: DashboardTrendChartStyle.bar,
+          embedded: embedded,
         );
       case ModuleReportingVisualizationKind.areaChart:
         return _SeriesChartHost(
-          title: report.label,
+          title: title,
           emptyMessage: labels.emptyBody,
-          points: moduleReportingSeriesPoints(snapshot),
+          points: moduleReportingSeriesPoints(snapshot, limit: seriesLimit),
           style: DashboardTrendChartStyle.area,
+          embedded: embedded,
         );
       case ModuleReportingVisualizationKind.donutChart:
         return _DonutChartHost(
-          title: report.label,
+          title: title,
           emptyMessage: labels.emptyBody,
           totalLabel: labels.exportValueColumn,
-          segments: moduleReportingDistributionSegments(snapshot),
+          segments: moduleReportingDistributionSegments(
+            snapshot,
+            limit: seriesLimit,
+          ),
+          embedded: embedded,
         );
       case ModuleReportingVisualizationKind.rankingChart:
         return _RankingChart(
-          points: moduleReportingDistributionSegments(snapshot)
+          points: moduleReportingDistributionSegments(
+                snapshot,
+                limit: seriesLimit,
+              )
               .map(
                 (DashboardDistributionSegmentData segment) =>
                     ModuleReportingSeriesPoint(
@@ -339,13 +361,20 @@ class _VisualizationBody extends StatelessWidget {
                     ),
               )
               .toList(growable: false),
+          embedded: embedded,
         );
       case ModuleReportingVisualizationKind.gaugeChart:
-        return _GaugeChart(points: moduleReportingSeriesPoints(snapshot));
+        return _GaugeChart(
+          points: moduleReportingSeriesPoints(snapshot, limit: seriesLimit),
+          embedded: embedded,
+        );
       case ModuleReportingVisualizationKind.scatterChart:
-        return _ScatterChart(snapshot: snapshot);
+        return _ScatterChart(snapshot: snapshot, embedded: embedded);
       case ModuleReportingVisualizationKind.heatmap:
-        return _HeatmapChart(cells: moduleReportingHeatmapCells(snapshot));
+        return _HeatmapChart(
+          cells: moduleReportingHeatmapCells(snapshot),
+          embedded: embedded,
+        );
     }
   }
 }
@@ -524,6 +553,7 @@ class _ChartSurface extends StatelessWidget {
     required this.child,
     this.accent,
     this.toolbar,
+    this.embedded = false,
   });
 
   final String title;
@@ -531,6 +561,7 @@ class _ChartSurface extends StatelessWidget {
   final Widget child;
   final Color? accent;
   final Widget? toolbar;
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
@@ -539,6 +570,53 @@ class _ChartSurface extends StatelessWidget {
     final Color wash = (accent ?? colors.primaryContainer).withValues(
       alpha: 0.22,
     );
+
+    final Widget body = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (!embedded)
+          Row(
+            children: <Widget>[
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: (accent ?? colors.primaryContainer).withValues(
+                    alpha: 0.55,
+                  ),
+                  borderRadius: BorderRadius.circular(theme.radius.sm),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(theme.spacing.xs),
+                  child: Icon(
+                    icon,
+                    size: 18,
+                    color: accent ?? colors.primary,
+                  ),
+                ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: AppFontWeight.emphasis,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        if (!embedded && toolbar != null) SizedBox(height: theme.spacing.sm),
+        ?toolbar,
+        if (toolbar != null) SizedBox(height: theme.spacing.sm),
+        if (!embedded && toolbar == null) SizedBox(height: theme.spacing.sm),
+        child,
+      ],
+    );
+
+    if (embedded) {
+      return body;
+    }
+
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -555,46 +633,7 @@ class _ChartSurface extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: (accent ?? colors.primaryContainer).withValues(
-                      alpha: 0.55,
-                    ),
-                    borderRadius: BorderRadius.circular(theme.radius.sm),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(theme.spacing.xs),
-                    child: Icon(
-                      icon,
-                      size: 18,
-                      color: accent ?? colors.primary,
-                    ),
-                  ),
-                ),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: AppFontWeight.emphasis,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (toolbar != null) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              toolbar!,
-            ],
-            SizedBox(height: theme.spacing.sm),
-            child,
-          ],
-        ),
+        child: body,
       ),
     );
   }
@@ -616,12 +655,14 @@ class _SeriesChartHost extends StatefulWidget {
     required this.emptyMessage,
     required this.points,
     required this.style,
+    this.embedded = false,
   });
 
   final String title;
   final String emptyMessage;
   final List<ModuleReportingSeriesPoint> points;
   final DashboardTrendChartStyle style;
+  final bool embedded;
 
   @override
   State<_SeriesChartHost> createState() => _SeriesChartHostState();
@@ -661,6 +702,7 @@ class _SeriesChartHostState extends State<_SeriesChartHost> {
       title: widget.title,
       icon: icon,
       accent: accent,
+      embedded: widget.embedded,
       toolbar: _ChartOptionsBar(
         options: _options,
         onChanged: (next) => setState(() => _options = next),
@@ -745,12 +787,14 @@ class _DonutChartHost extends StatefulWidget {
     required this.emptyMessage,
     required this.totalLabel,
     required this.segments,
+    this.embedded = false,
   });
 
   final String title;
   final String emptyMessage;
   final String totalLabel;
   final List<DashboardDistributionSegmentData> segments;
+  final bool embedded;
 
   @override
   State<_DonutChartHost> createState() => _DonutChartHostState();
@@ -790,6 +834,7 @@ class _DonutChartHostState extends State<_DonutChartHost> {
       title: widget.title,
       icon: Icons.donut_large_outlined,
       accent: colors.secondary,
+      embedded: widget.embedded,
       toolbar: _ChartOptionsBar(
         options: _options,
         showAxisToggle: false,
@@ -875,9 +920,10 @@ class _DonutChartHostState extends State<_DonutChartHost> {
 }
 
 class _RankingChart extends StatefulWidget {
-  const _RankingChart({required this.points});
+  const _RankingChart({required this.points, this.embedded = false});
 
   final List<ModuleReportingSeriesPoint> points;
+  final bool embedded;
 
   @override
   State<_RankingChart> createState() => _RankingChartState();
@@ -912,6 +958,7 @@ class _RankingChartState extends State<_RankingChart> {
       title: 'Ranking',
       icon: Icons.leaderboard_outlined,
       accent: colors.error,
+      embedded: widget.embedded,
       toolbar: _ChartOptionsBar(
         options: _options,
         showLegendToggle: false,
@@ -991,9 +1038,10 @@ class _RankingChartState extends State<_RankingChart> {
 }
 
 class _GaugeChart extends StatefulWidget {
-  const _GaugeChart({required this.points});
+  const _GaugeChart({required this.points, this.embedded = false});
 
   final List<ModuleReportingSeriesPoint> points;
+  final bool embedded;
 
   @override
   State<_GaugeChart> createState() => _GaugeChartState();
@@ -1032,6 +1080,7 @@ class _GaugeChartState extends State<_GaugeChart> {
       title: widget.points.isEmpty ? 'Gauge' : widget.points.first.label,
       icon: Icons.speed_outlined,
       accent: needle,
+      embedded: widget.embedded,
       toolbar: _ChartOptionsBar(
         options: _options,
         showAxisToggle: false,
@@ -1146,9 +1195,10 @@ class _GaugePainter extends CustomPainter {
 }
 
 class _ScatterChart extends StatefulWidget {
-  const _ScatterChart({required this.snapshot});
+  const _ScatterChart({required this.snapshot, this.embedded = false});
 
   final ModuleReportingReportSnapshot snapshot;
+  final bool embedded;
 
   @override
   State<_ScatterChart> createState() => _ScatterChartState();
@@ -1187,6 +1237,7 @@ class _ScatterChartState extends State<_ScatterChart> {
       title: '$xLabel × $yLabel',
       icon: Icons.scatter_plot_outlined,
       accent: colors.secondary,
+      embedded: widget.embedded,
       toolbar: _ChartOptionsBar(
         options: _options,
         showLegendToggle: false,
@@ -1308,9 +1359,10 @@ class _ScatterPainter extends CustomPainter {
 }
 
 class _HeatmapChart extends StatefulWidget {
-  const _HeatmapChart({required this.cells});
+  const _HeatmapChart({required this.cells, this.embedded = false});
 
   final List<ModuleReportingHeatmapCell> cells;
+  final bool embedded;
 
   @override
   State<_HeatmapChart> createState() => _HeatmapChartState();
@@ -1365,6 +1417,7 @@ class _HeatmapChartState extends State<_HeatmapChart> {
       title: 'Heatmap',
       icon: Icons.grid_on_outlined,
       accent: colors.tertiary,
+      embedded: widget.embedded,
       toolbar: _ChartOptionsBar(
         options: _options,
         showAxisToggle: true,
