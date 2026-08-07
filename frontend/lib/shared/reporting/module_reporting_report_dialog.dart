@@ -11,6 +11,7 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_data.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_models.dart';
+import 'package:hosspi_hms/shared/reporting/module_reporting_table.dart';
 
 ({DateTime from, DateTime to}) moduleReportingRangeForPreset(
   ModuleReportingPeriodPreset preset, {
@@ -190,7 +191,7 @@ class _ModuleReportingReportDialogState
         isChart ? Icons.bar_chart_outlined : Icons.table_chart_outlined,
       ),
       scrollable: true,
-      maxWidth: 760,
+      maxWidth: 960,
       closeEnabled: !_busy,
       content: AbsorbPointer(
         absorbing: _busy,
@@ -305,7 +306,11 @@ class _ModuleReportingReportDialogState
               ),
             ],
             SizedBox(height: theme.spacing.sm),
-            _ModuleReportingRowsPreview(snapshot: _snapshot),
+            ModuleReportingSnapshotTable(
+              snapshot: _snapshot,
+              labels: _labels,
+              storageKeyPrefix: widget.report.id,
+            ),
           ],
         );
     }
@@ -765,37 +770,6 @@ Future<ModuleReportingExportFormat?> _openExportOptionsDialog({
       contentKind: contentKind,
     ),
   );
-}
-
-class _ModuleReportingRowsPreview extends StatelessWidget {
-  const _ModuleReportingRowsPreview({required this.snapshot});
-
-  final ModuleReportingReportSnapshot snapshot;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!snapshot.hasRows || snapshot.columns.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columns: <DataColumn>[
-          for (final String column in snapshot.columns)
-            DataColumn(label: Text(column)),
-        ],
-        rows: <DataRow>[
-          for (final Map<String, Object?> row in snapshot.rows.take(40))
-            DataRow(
-              cells: <DataCell>[
-                for (final String column in snapshot.columns)
-                  DataCell(Text('${row[column] ?? ''}')),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
 }
 
 class _ModuleReportingChartPreview extends StatelessWidget {

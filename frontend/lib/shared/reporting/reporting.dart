@@ -5,4 +5,5 @@ export 'module_reporting_filters_dialog.dart';
 export 'module_reporting_models.dart';
 export 'module_reporting_report_dialog.dart';
 export 'module_reporting_shell.dart';
+export 'module_reporting_table.dart';
 export 'report_section_selection.dart';
