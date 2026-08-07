@@ -25,7 +25,6 @@ void main() {
         AppRole.facilityAdmin,
         AppRole.doctor,
         AppRole.nurse,
-        AppRole.receptionist,
         AppRole.wardManager,
       };
 

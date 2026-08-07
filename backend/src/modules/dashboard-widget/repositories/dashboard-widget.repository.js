@@ -1634,6 +1634,19 @@ const getDashboardSummaryByPack = async ({
           { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } }
         ]
       };
+      const customFrom = parseMostSoldBound(mostSoldFrom);
+      const customTo = parseMostSoldBound(mostSoldTo);
+      const statusFromDate =
+        customFrom || resolveMostSoldWindow(mostSoldPeriod, todayStart);
+      const statusToDate = customFrom ? customTo : null;
+      const statusWindowWhere = {
+        ...appointmentWhere,
+        scheduled_start: {
+          gte: statusFromDate,
+          ...(statusToDate ? { lte: statusToDate } : {})
+        }
+      };
+      const trendWindowStart = statusFromDate < trendStart ? statusFromDate : trendStart;
       const [
         registrationsToday,
         appointmentDeskQueue,
@@ -1661,8 +1674,16 @@ const getDashboardSummaryByPack = async ({
           emergencyCasesToday,
           pendingBalanceAmount
         },
-        trendDates: await selectDateSeries(prisma.patient, { ...patientWhere, created_at: { gte: trendStart } }, 'created_at'),
-        statusCounts: await countByStatuses(prisma.appointment, appointmentWhere, ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'NO_SHOW', 'CANCELLED']),
+        trendDates: await selectDateSeries(
+          prisma.patient,
+          { ...patientWhere, created_at: { gte: trendWindowStart } },
+          'created_at'
+        ),
+        statusCounts: await countByStatuses(
+          prisma.appointment,
+          statusWindowWhere,
+          ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'NO_SHOW', 'CANCELLED']
+        ),
         activity: {
           registrations: await prisma.patient.count({ where: { ...patientWhere, updated_at: { gte: window24h } } }),
           appointments: await prisma.appointment.count({ where: { ...appointmentWhere, updated_at: { gte: window24h } } }),

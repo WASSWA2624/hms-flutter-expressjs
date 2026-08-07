@@ -206,7 +206,7 @@ List<HomeQueueItem> guidedFallbackQueueHints(HomeDashboardProfile profile) {
       ),
       const HomeQueueItem(
         id: 'guided_appointments',
-        label: 'Today\'s meetings & appointments',
+        label: 'Today\'s appointments',
         moduleSlug: 'scheduling',
         status: 'SCHEDULED',
         severity: 'medium',

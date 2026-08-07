@@ -1490,19 +1490,20 @@ const splitDoctorWorkspaceQueues = (items = []) => {
 
 const splitReceptionistWorkspaceQueues = (items = []) => {
   const appointments = items.filter((item) => item.queue === 'appointments');
-  const emergencyCases = items.filter((item) => item.queue === 'emergency_cases');
-  const inProgress = appointments.filter(
-    (item) => String(item.status || '').toUpperCase() === 'IN_PROGRESS'
+  const deskQueue = appointments.filter((item) => {
+    const status = String(item.status || '').toUpperCase();
+    return status === 'SCHEDULED' || status === 'CONFIRMED' || status === 'IN_PROGRESS';
+  });
+  const noShows = appointments.filter(
+    (item) => String(item.status || '').toUpperCase() === 'NO_SHOW'
   );
-  const followUps = [
-    ...inProgress,
-    ...emergencyCases,
-  ];
 
   return {
-    queue_preview: appointments.slice(0, 5),
+    // Desk queue = appointments awaiting front-desk action (not emergencies).
+    queue_preview: deskQueue.slice(0, 5),
     results_preview: [],
-    follow_up_preview: followUps.slice(0, 3),
+    // Follow-ups = no-show callback pressure (not IN_PROGRESS duplicates).
+    follow_up_preview: noShows.slice(0, 3),
   };
 };
 

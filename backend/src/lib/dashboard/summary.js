@@ -797,12 +797,12 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
 
   if (packId === ROLE_PACKS.RECEPTIONIST) {
     return [
-      { id: 'appointments_today', label: 'Meetings today', value: metrics.appointmentsToday || 0, required_permissions: ['patient:read'] },
-      { id: 'desk_queue', label: 'Appointment desk queue', value: metrics.appointmentDeskQueue || 0, required_permissions: ['patient:read'] },
-      { id: 'turnaround_pressure', label: 'In-progress turnaround', value: metrics.turnaroundPressure || 0, required_permissions: ['patient:read'] },
-      { id: 'no_show_pressure', label: 'No-show follow-ups', value: metrics.noShowPressure || 0, required_permissions: ['patient:read'] },
+      { id: 'appointments_today', label: 'Appointments today', value: metrics.appointmentsToday || 0, required_permissions: ['patient:read'] },
+      { id: 'desk_queue', label: 'Desk queue', value: metrics.appointmentDeskQueue || 0, required_permissions: ['patient:read'] },
+      { id: 'turnaround_pressure', label: 'Active visits', value: metrics.turnaroundPressure || 0, required_permissions: ['patient:read'] },
+      { id: 'no_show_pressure', label: 'Follow-ups', value: metrics.noShowPressure || 0, required_permissions: ['patient:read'] },
       { id: 'registrations_today', label: 'Registrations today', value: metrics.registrationsToday || 0, required_permissions: ['patient:write'] },
-      { id: 'emergency_cases_today', label: 'Emergency intake today', value: metrics.emergencyCasesToday || 0, required_permissions: ['emergency:read'] },
+      { id: 'emergency_cases_today', label: 'High priority', value: metrics.emergencyCasesToday || 0, required_permissions: ['emergency:read'] },
       // Dashboard.md §8 Pending Payments — live billing pending balances.
       { id: 'pending_balance_amount', label: 'Pending payments', value: metrics.pendingBalanceAmount || 0, format: 'currency', required_permissions: ['billing:read'] },
     ];

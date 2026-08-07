@@ -668,11 +668,13 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     roleLabel: 'Reception / front desk',
     homeTitle: 'Front desk',
     emptyMessage: 'No desk queue items right now.',
-    maxStatusCards: 4,
+    // Desk strip: appointments → queue → active → follow-ups, then
+    // permissioned registrations / high-priority / payment gate (≤6).
+    maxStatusCards: 6,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'appointments_today',
-        label: 'Meetings',
+        label: 'Appointments today',
         requiredPermissions: <AppPermission>[AppPermissions.patientRead],
       ),
       HomeStatusCardTemplate(
@@ -682,7 +684,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
       HomeStatusCardTemplate(
         id: 'turnaround_pressure',
-        label: 'In progress',
+        label: 'Active visits',
         requiredPermissions: <AppPermission>[AppPermissions.patientRead],
       ),
       HomeStatusCardTemplate(
@@ -692,28 +694,21 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
       HomeStatusCardTemplate(
         id: 'registrations_today',
-        label: 'Registrations',
+        label: 'Registrations today',
         requiredPermissions: <AppPermission>[AppPermissions.patientWrite],
       ),
       HomeStatusCardTemplate(
         id: 'emergency_cases_today',
-        label: 'Emergency intake',
+        label: 'High priority',
         requiredPermissions: <AppPermission>[AppPermissions.emergencyRead],
       ),
-      HomeStatusCardTemplate(
-        id: 'opd_notifications_attention',
-        label: 'OPD alerts',
-        requiredPermissions: <AppPermission>[AppPermissions.patientRead],
-      ),
-      // Dashboard.md §8 Pending Payments — reuse live billing pending balances.
+      // Dashboard.md §8 Pending Payments — live balances; Payment gate deep-link.
       HomeStatusCardTemplate(
         id: 'pending_balance_amount',
         label: 'Pending payments',
         format: 'currency',
         requiredPermissions: <AppPermission>[AppPermissions.billingRead],
       ),
-      // Gap: admissions (patient:write) as a named reception KPI — use
-      // active_admissions via expand when patient:write + clinical pack data exist.
     ],
     quickActionIds: <String>[
       'register_patient',
@@ -733,23 +728,20 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         queryParameters: <String, String>{'section': 'appointments'},
       ),
       'desk_queue': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'queue'},
+        queryParameters: <String, String>{'section': 'desk-queue'},
       ),
       'turnaround_pressure': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'in-progress'},
+        queryParameters: <String, String>{'section': 'active'},
       ),
       'no_show_pressure': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'follow-up'},
+        queryParameters: <String, String>{'section': 'follow-ups'},
       ),
       'registrations_today': HomeMetricRouteTarget(),
       'emergency_cases_today': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'high-priority'},
       ),
-      'opd_notifications_attention': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'desk-queue'},
-      ),
       'pending_balance_amount': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'pendingPayment'},
+        queryParameters: <String, String>{'section': 'payment-gate'},
       ),
     },
   ),

@@ -393,8 +393,14 @@ DashboardChartsData homeDashboardChartsData({
       total: dashboard.distribution.total,
       emptyMessage: profile.id == 'pharmacist'
           ? 'No pharmacy order status data yet.'
+          : profile.id == 'receptionist'
+          ? 'No appointment status data yet.'
           : l10n.homeDistributionEmptyMessage,
-      totalLabel: profile.id == 'pharmacist' ? 'orders' : 'total',
+      totalLabel: profile.id == 'pharmacist'
+          ? 'orders'
+          : profile.id == 'receptionist'
+          ? 'appointments'
+          : 'total',
       segments: dashboard.distribution.segments
           .map(
             (HomeDistributionSegment segment) =>

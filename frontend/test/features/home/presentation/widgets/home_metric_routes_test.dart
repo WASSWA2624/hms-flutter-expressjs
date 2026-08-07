@@ -479,12 +479,39 @@ void main() {
         ),
       );
 
-      final HomeMetricNavigation? meetings = homeMetricNavigation(
+      final HomeMetricNavigation? appointments = homeMetricNavigation(
         profile: profile,
         card: const HomeStatusCard(
           id: 'appointments_today',
-          label: 'Meetings',
+          label: 'Appointments today',
           value: 3,
+        ),
+        policy: policy,
+      );
+      final HomeMetricNavigation? deskQueue = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'desk_queue',
+          label: 'Desk queue',
+          value: 4,
+        ),
+        policy: policy,
+      );
+      final HomeMetricNavigation? followUps = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'no_show_pressure',
+          label: 'Follow-ups',
+          value: 2,
+        ),
+        policy: policy,
+      );
+      final HomeMetricNavigation? activeVisits = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'turnaround_pressure',
+          label: 'Active visits',
+          value: 1,
         ),
         policy: policy,
       );
@@ -492,7 +519,7 @@ void main() {
         profile: profile,
         card: const HomeStatusCard(
           id: 'registrations_today',
-          label: 'Registrations',
+          label: 'Registrations today',
           value: 2,
         ),
         policy: policy,
@@ -501,24 +528,88 @@ void main() {
         profile: profile,
         card: const HomeStatusCard(
           id: 'emergency_cases_today',
-          label: 'Emergency intake',
+          label: 'High priority',
           value: 1,
         ),
         policy: policy,
       );
 
-      expect(meetings?.route, AppRoutes.reception);
-      expect(meetings?.queryParameters, <String, String>{
-        'section': 'appointments',
+      expect(appointments?.route, AppRoutes.reception);
+      expect(appointments?.queryParameters['section'], 'appointments');
+      expect(appointments?.queryParameters.containsKey('from'), isTrue);
+      expect(appointments?.queryParameters.containsKey('to'), isTrue);
+      expect(deskQueue?.route, AppRoutes.reception);
+      expect(deskQueue?.queryParameters, <String, String>{
+        'section': 'desk-queue',
+      });
+      expect(followUps?.route, AppRoutes.reception);
+      expect(followUps?.queryParameters, <String, String>{
+        'section': 'follow-ups',
+      });
+      expect(activeVisits?.route, AppRoutes.reception);
+      expect(activeVisits?.queryParameters, <String, String>{
+        'section': 'active',
       });
       expect(registrations?.route, AppRoutes.patients);
       expect(emergency?.route, AppRoutes.reception);
-      expect(emergency?.queryParameters, <String, String>{
-        'section': 'high-priority',
-      });
+      expect(emergency?.queryParameters['section'], 'high-priority');
     });
 
-    test('receptionist pending payments navigates to billing when granted', () {
+    test(
+      'receptionist pending payments prefer payment-gate when reception open',
+      () {
+        final HomeDashboardProfile profile = homeProfileForRole(
+          AppRole.receptionist,
+        );
+        final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: const AuthUserProfile(
+              tenantId: 'tenant-1',
+              facilityId: 'facility-1',
+              roles: <String>['RECEPTIONIST'],
+            ),
+            permissions: const <AppPermission>[
+              AppPermissions.patientRead,
+              AppPermissions.billingRead,
+            ],
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'patient-registry',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'scheduling-queue',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'billing-payments',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+            isAuthorizationHydrated: true,
+          ),
+        );
+
+        final HomeMetricNavigation? pending = homeMetricNavigation(
+          profile: profile,
+          card: const HomeStatusCard(
+            id: 'pending_balance_amount',
+            label: 'Pending payments',
+            value: 4,
+            requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+          ),
+          policy: policy,
+        );
+
+        expect(pending?.route, AppRoutes.reception);
+        expect(pending?.queryParameters, <String, String>{
+          'section': 'payment-gate',
+        });
+      },
+    );
+
+    test('receptionist pending payments fall back to billing without reception', () {
       final HomeDashboardProfile profile = homeProfileForRole(
         AppRole.receptionist,
       );
@@ -563,6 +654,25 @@ void main() {
       expect(pending?.queryParameters, <String, String>{
         'queue': 'pendingPayment',
       });
+    });
+
+    test('receptionAppointmentStatusSection maps desk sections', () {
+      expect(
+        receptionAppointmentStatusSection(segmentId: 'scheduled'),
+        'desk-queue',
+      );
+      expect(
+        receptionAppointmentStatusSection(segmentId: 'in_progress'),
+        'active',
+      );
+      expect(
+        receptionAppointmentStatusSection(label: 'No-show'),
+        'follow-ups',
+      );
+      expect(
+        receptionAppointmentStatusSection(segmentId: 'completed'),
+        'appointments',
+      );
     });
 
     test('homeHrMetricAccessAllowed gates HR modal actions', () {

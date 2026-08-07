@@ -159,13 +159,14 @@ void main() {
     );
 
     test(
-      'receptionist dashboard emphasizes meetings follow-up and desk queue',
+      'receptionist dashboard emphasizes desk queue active visits and follow-ups',
       () {
         final profile = homeProfileForRole(AppRole.receptionist);
 
         expect(profile.layoutTier, HomeDashboardLayoutTier.departmentQueue);
         expect(profile.isReceptionistFrontDeskDashboard, isTrue);
-        expect(profile.effectiveMaxStatusCards, 4);
+        expect(profile.effectiveMaxStatusCards, 6);
+        expect(profile.showQueuePanel, isFalse);
         expect(profile.maxQuickActions, 4);
         expect(profile.maxQueueItems, 5);
         expect(profile.maxFollowUpItems, 3);
@@ -179,11 +180,28 @@ void main() {
             'no_show_pressure',
           ],
         );
+        expect(
+          profile.statusCards.map((template) => template.id),
+          isNot(contains('opd_notifications_attention')),
+        );
+        expect(profile.statusCards.first.label, 'Appointments today');
         expect(profile.quickActionIds, <String>[
           'register_patient',
           'book_appointment',
           'route_patient',
         ]);
+        expect(
+          profile.metricRouteTargets['desk_queue']?.queryParameters,
+          <String, String>{'section': 'desk-queue'},
+        );
+        expect(
+          profile.metricRouteTargets['no_show_pressure']?.queryParameters,
+          <String, String>{'section': 'follow-ups'},
+        );
+        expect(
+          profile.metricRouteTargets['pending_balance_amount']?.queryParameters,
+          <String, String>{'section': 'payment-gate'},
+        );
         expect(profile.metricRouteTargets.keys, contains('appointments_today'));
         expect(profile.emptyMessage, 'No desk queue items right now.');
       },

@@ -203,6 +203,18 @@ void main() {
       );
       expect(
         receptionDeskSectionFromQuery('follow-up'),
+        ReceptionDeskSection.followUps,
+      );
+      expect(
+        receptionDeskSectionFromQuery('no_show_pressure'),
+        ReceptionDeskSection.followUps,
+      );
+      expect(
+        receptionDeskSectionFromQuery('turnaround_pressure'),
+        ReceptionDeskSection.activeVisits,
+      );
+      expect(
+        receptionDeskSectionFromQuery('pending_balance_amount'),
         ReceptionDeskSection.paymentGate,
       );
       expect(receptionDeskSectionFromQuery('unknown'), isNull);

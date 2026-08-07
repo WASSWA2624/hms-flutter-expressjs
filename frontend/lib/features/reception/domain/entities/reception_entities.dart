@@ -571,11 +571,13 @@ ReceptionDeskSection? receptionDeskSectionFromQuery(String raw) {
     case 'follow-ups':
     case 'follow_ups':
     case 'followups':
+    case 'follow-up':
+    case 'no_show_pressure':
       return ReceptionDeskSection.followUps;
     case 'payment':
     case 'payment-gate':
-    case 'follow-up':
-    case 'no_show_pressure':
+    case 'pending_balance_amount':
+    case 'pending-payments':
       return ReceptionDeskSection.paymentGate;
     default:
       return null;

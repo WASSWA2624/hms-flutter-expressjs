@@ -132,6 +132,78 @@ Map<String, String> homePharmacyMetricQuery(String cardId) {
   };
 }
 
+/// Inclusive local-day start / exclusive next-day end for reception date filters.
+({DateTime from, DateTime to}) homeReceptionPeriodBounds({DateTime? now}) {
+  final DateTime clock = now ?? DateTime.now();
+  final DateTime startOfToday = DateTime(clock.year, clock.month, clock.day);
+  return (
+    from: startOfToday,
+    to: startOfToday.add(const Duration(days: 1)),
+  );
+}
+
+/// Receptionist home KPI → `/reception` (or patients) with canonical sections.
+Map<String, String> homeReceptionMetricQuery(String cardId, {DateTime? now}) {
+  final ({DateTime from, DateTime to}) bounds = homeReceptionPeriodBounds(
+    now: now,
+  );
+  String iso(DateTime value) => value.toUtc().toIso8601String();
+  final Map<String, String> todayBounds = <String, String>{
+    'from': iso(bounds.from),
+    'to': iso(bounds.to),
+  };
+
+  return switch (cardId.trim().toLowerCase()) {
+    'appointments_today' => <String, String>{
+      'section': 'appointments',
+      ...todayBounds,
+    },
+    'desk_queue' => <String, String>{'section': 'desk-queue'},
+    'turnaround_pressure' => <String, String>{'section': 'active'},
+    'no_show_pressure' => <String, String>{'section': 'follow-ups'},
+    'emergency_cases_today' => <String, String>{
+      'section': 'high-priority',
+      ...todayBounds,
+    },
+    'pending_balance_amount' ||
+    'pending_payments' => <String, String>{'section': 'payment-gate'},
+    'registrations_today' => todayBounds,
+    _ => const <String, String>{},
+  };
+}
+
+/// Appointment status-mix segment → `/reception?section=` value.
+String? receptionAppointmentStatusSection({String? segmentId, String? label}) {
+  String? mapToken(String? raw) {
+    if (raw == null) {
+      return null;
+    }
+    final String base = raw.split(' - ').first.trim().toLowerCase();
+    final String normalized = base.replaceAll(RegExp(r'[\s-]+'), '_');
+    return switch (normalized) {
+      'scheduled' || 'confirmed' => 'desk-queue',
+      'in_progress' || 'inprogress' || 'active' => 'active',
+      'no_show' || 'noshow' => 'follow-ups',
+      'completed' || 'cancelled' || 'canceled' => 'appointments',
+      _ => null,
+    };
+  }
+
+  return mapToken(segmentId) ?? mapToken(label);
+}
+
+/// Status-mix legend → `/reception` section + matching period window.
+Map<String, String> homeReceptionStatusMixQuery({
+  required String section,
+  required HomeMostSoldPeriod period,
+  DateTime? now,
+}) {
+  return <String, String>{
+    'section': section,
+    ...homePharmacyMostSoldPeriodQuery(period, now: now),
+  };
+}
+
 /// Canonical Billing / Claims routes for balance and collection KPIs (any persona).
 HomeMetricNavigation? homeBillingMetricNavigation({
   required String cardId,
@@ -154,8 +226,15 @@ HomeMetricNavigation? homeBillingMetricNavigation({
   }
 
   final HomeMetricRouteTarget? target = profile.metricRouteTargets[normalized];
-  final Map<String, String> queryParameters = target?.queryParameters.isNotEmpty == true
-      ? target!.queryParameters
+  final Map<String, String>? profileQuery = target?.queryParameters;
+  // Reception profiles may declare `section=payment-gate` for the same card id;
+  // Billing must not reuse that when falling back to the cashier workspace.
+  final bool profileQueryIsBillingCompatible =
+      profileQuery != null &&
+      profileQuery.isNotEmpty &&
+      (profileQuery.containsKey('queue') || !profileQuery.containsKey('section'));
+  final Map<String, String> queryParameters = profileQueryIsBillingCompatible
+      ? profileQuery
       : atom.routeQuery.isNotEmpty
       ? atom.routeQuery
       : homeDefaultBillingMetricQuery(normalized);
@@ -182,6 +261,16 @@ HomeMetricNavigation? homeMetricNavigation({
   if (profile.metricActionTargets.containsKey(card.id)) {
     return null;
   }
+  // Receptionist pending balances prefer Payment gate over Billing inventory.
+  if (profile.id == 'receptionist' &&
+      card.id.trim().toLowerCase() == 'pending_balance_amount' &&
+      policy.grants(AppPermissions.billingRead) &&
+      _receptionistDeskAccessible(policy)) {
+    return HomeMetricNavigation(
+      route: AppRoutes.reception,
+      queryParameters: homeReceptionMetricQuery(card.id),
+    );
+  }
   final HomeMetricNavigation? billingNavigation = homeBillingMetricNavigation(
     cardId: card.id,
     profile: profile,
@@ -200,12 +289,14 @@ HomeMetricNavigation? homeMetricNavigation({
       final Map<String, String> profileQuery =
           profile.metricRouteTargets[card.id]?.queryParameters ??
           const <String, String>{};
-      final Map<String, String> pharmacyQuery = profile.id == 'pharmacist'
-          ? homePharmacyMetricQuery(card.id)
-          : const <String, String>{};
+      final Map<String, String> deskQuery = switch (profile.id) {
+        'pharmacist' => homePharmacyMetricQuery(card.id),
+        'receptionist' => homeReceptionMetricQuery(card.id),
+        _ => const <String, String>{},
+      };
       return HomeMetricNavigation(
         route: route,
-        queryParameters: pharmacyQuery.isNotEmpty ? pharmacyQuery : profileQuery,
+        queryParameters: deskQuery.isNotEmpty ? deskQuery : profileQuery,
       );
     }
     // Department / clinical packs declare routes explicitly — do not fall
@@ -328,9 +419,12 @@ AppRouteData? _clinicalMetricRoute({
       'desk_queue' ||
       'turnaround_pressure' ||
       'no_show_pressure' ||
-      'opd_notifications_attention' ||
       'emergency_cases_today'
           when policy.grants(AppPermissions.patientRead) =>
+        AppRoutes.reception,
+      'pending_balance_amount'
+          when policy.grants(AppPermissions.billingRead) &&
+              _receptionistDeskAccessible(policy) =>
         AppRoutes.reception,
       'pending_balance_amount' when policy.grants(AppPermissions.billingRead) =>
         AppRoutes.billing,
@@ -356,6 +450,28 @@ AppRouteData? _clinicalMetricRoute({
   }
 
   return null;
+}
+
+/// Front-desk shell access for receptionist Payment gate deep-links.
+///
+/// Uses the same patient-flow + module gate as [AppRoutes.reception] route data
+/// (not the catalog `reception:read` atom alone) so hydrated sessions that keep
+/// `patient:read` + desk modules still open `/reception`.
+bool _receptionistDeskAccessible(AppAccessPolicy policy) {
+  if (!policy.grantsAny(const <AppPermission>[
+    AppPermissions.patientRead,
+    AppPermissions.lastOfficeRead,
+  ])) {
+    return false;
+  }
+  if (!policy.hasAllActiveModules(const <String>[
+    'patient-registry',
+    'scheduling-queue',
+  ])) {
+    return false;
+  }
+  return canAccessShellRoute(AppRoutes.reception, policy) ||
+      policy.isReceptionistFocusedShellUser;
 }
 
 /// Opens the HR modal mapped to a workforce dashboard metric card.
