@@ -264,7 +264,7 @@ class ModuleReportingSnapshotTable extends StatefulWidget {
   const ModuleReportingSnapshotTable({
     required this.snapshot,
     required this.labels,
-    this.canExport = false,
+    this.canExport = true,
     this.storageKeyPrefix,
     this.exportFileNameStem,
     super.key,
@@ -272,6 +272,8 @@ class ModuleReportingSnapshotTable extends StatefulWidget {
 
   final ModuleReportingReportSnapshot snapshot;
   final ModuleReportingLabels labels;
+
+  /// When true (default), shows the Excel export action on the table toolbar.
   final bool canExport;
   final String? storageKeyPrefix;
   final String? exportFileNameStem;

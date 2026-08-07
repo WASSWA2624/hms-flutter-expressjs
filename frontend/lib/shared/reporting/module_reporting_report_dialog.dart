@@ -309,7 +309,7 @@ class _ModuleReportingReportDialogState
             ModuleReportingSnapshotTable(
               snapshot: _snapshot,
               labels: _labels,
-              canExport: widget.canExport,
+              canExport: true,
               storageKeyPrefix: widget.report.id,
               exportFileNameStem: widget.report.id,
             ),
