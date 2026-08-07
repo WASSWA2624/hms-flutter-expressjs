@@ -19,6 +19,7 @@ const {
   extractPriceChangeFields,
   mergeBranchComparisonRows,
   movementSignedDelta,
+  pickAttestationUserId,
   remainingItemQuantity,
   resolveAgeBand,
   resolveBuyUnitCostOnly,
@@ -26,6 +27,7 @@ const {
   resolveInventoryUnitCost,
   shouldUseMonthlyGranularity,
   summarizeConsumptionSeries,
+  summarizeStaffSalesPartition,
   summarizeThroughputSeries,
   OPEN_PHARMACY_INVOICE_STATUSES,
 } = require('@lib/reports/datasets');
@@ -155,6 +157,25 @@ describe('reports datasets pharmacy analytics', () => {
       category: 'pharmacy',
     });
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_purchase_orders')).toBe(true);
+    expect(REPORT_DATASET_MAP.pharmacy_sales_by_staff).toMatchObject({
+      key: 'pharmacy_sales_by_staff',
+      category: 'pharmacy',
+      default_columns: ['staff', 'amount', 'quantity_dispensed'],
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_dispensing_by_staff).toMatchObject({
+      key: 'pharmacy_dispensing_by_staff',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_stock_adjustments_by_staff).toMatchObject({
+      key: 'pharmacy_stock_adjustments_by_staff',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_audit_trail).toMatchObject({
+      key: 'pharmacy_audit_trail',
+      category: 'pharmacy',
+      default_columns: ['timestamp', 'action', 'entity', 'entity_id', 'staff', 'diff'],
+    });
+    expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_user_productivity')).toBe(true);
     expect(REPORT_DATASET_MAP.inventory_stock_risk.description).toMatch(/near-expiry/i);
     expect(REPORT_DATASET_MAP.inventory_stock_value).toMatchObject({
       key: 'inventory_stock_value',
@@ -555,5 +576,41 @@ describe('reports datasets pharmacy analytics', () => {
     const quantity = 12;
     const buy = 650;
     expect(computeStockValue(quantity, buy)).toBe(7800);
+  });
+
+  test('staff sales partition keeps unattributed remainder explicit', () => {
+    const summary = summarizeStaffSalesPartition({
+      staffRows: [
+        { staff: 'USR-1 · Harper Demo', amount: 400, quantity_dispensed: 10 },
+        { staff: 'USR-2 · Morgan Demo', amount: 250, quantity_dispensed: 5 },
+      ],
+      periodAmount: 800,
+      periodQuantity: 20,
+    });
+    expect(summary.attributed_amount).toBe(650);
+    expect(summary.unattributed_amount).toBe(150);
+    expect(summary.period_amount).toBe(800);
+    expect(summary.attributed_quantity).toBe(15);
+    expect(summary.unattributed_quantity).toBe(5);
+    expect(summary.staff_count).toBe(2);
+  });
+
+  test('pickAttestationUserId prefers ATTEST phase over PREPARE', () => {
+    expect(
+      pickAttestationUserId(
+        [
+          { dispense_batch_ref: 'B1', phase: 'PREPARE', attested_by_user_id: 'prep-user' },
+          { dispense_batch_ref: 'B1', phase: 'ATTEST', attested_by_user_id: 'attest-user' },
+        ],
+        'B1'
+      )
+    ).toBe('attest-user');
+    expect(
+      pickAttestationUserId(
+        [{ dispense_batch_ref: 'B2', phase: 'PREPARE', attested_by_user_id: 'prep-user' }],
+        'B2'
+      )
+    ).toBe('prep-user');
+    expect(pickAttestationUserId([], 'B3')).toBeNull();
   });
 });

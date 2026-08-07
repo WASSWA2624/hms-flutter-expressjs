@@ -939,4 +939,83 @@ void main() {
     expect(snapshot.summary?['cogs'], 1300);
     expect(snapshot.subtitle, contains('buy_unit_price'));
   });
+
+  test('sales_by_staff passes through staff amounts and unattributed summary', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'sales_by_staff',
+      categoryId: 'staff_activity',
+      label: 'Sales by staff',
+      datasetKey: 'pharmacy_sales_by_staff',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_sales_by_staff',
+      columns: const <String>['staff', 'amount', 'quantity_dispensed'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'staff': 'USR-1 · Harper Demo',
+          'amount': 400,
+          'quantity_dispensed': 10,
+        },
+      ],
+      summary: const <String, Object?>{
+        'attributed_amount': 400,
+        'unattributed_amount': 50,
+        'period_amount': 450,
+      },
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.rows, hasLength(1));
+    expect(snapshot.summary?['unattributed_amount'], 50);
+  });
+
+  test('audit_trail hides diff without compliance permission', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'audit_trail',
+      categoryId: 'staff_activity',
+      label: 'Audit trail',
+      datasetKey: 'pharmacy_audit_trail',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_audit_trail',
+      columns: const <String>[
+        'timestamp',
+        'action',
+        'entity',
+        'entity_id',
+        'staff',
+        'diff',
+      ],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'timestamp': '2026-08-01T10:00:00.000Z',
+          'action': 'CREATE',
+          'entity': 'stock_adjustment',
+          'entity_id': 'adj-1',
+          'staff': 'USR-1 · Harper Demo',
+          'diff': '{"qty":1}',
+        },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot gated =
+        projectPharmacyReportingPreview(
+          report: report,
+          preview: preview,
+        );
+    expect(gated.columns.contains('diff'), isFalse);
+    expect(gated.rows.single.containsKey('diff'), isFalse);
+
+    final ModuleReportingReportSnapshot entitled =
+        projectPharmacyReportingPreview(
+          report: report,
+          preview: preview,
+          includeAuditDiff: true,
+        );
+    expect(entitled.columns, contains('diff'));
+    expect(entitled.rows.single['diff'], '{"qty":1}');
+  });
 }
