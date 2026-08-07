@@ -1674,7 +1674,19 @@ const getDashboardSummaryByPack = async ({
             started_at: { gte: todayStart, lt: tomorrowStart },
           },
         }),
-        prisma.appointment.count({ where: { ...appointmentWhere, status: 'NO_SHOW' } }),
+        // Align with Reception Follow-ups: open SCHEDULED callback rows
+        // (not NO_SHOW appointment pressure).
+        prisma.follow_up.count({
+          where: {
+            deleted_at: null,
+            status: 'SCHEDULED',
+            encounter: {
+              is: {
+                ...encounterWhere,
+              },
+            },
+          },
+        }),
         prisma.appointment.count({ where: { ...appointmentWhere, scheduled_start: { gte: todayStart } } }),
         prisma.emergency_case.count({ where: { ...emergencyCaseWhere, created_at: { gte: todayStart } } }),
         sumOutstandingBalance(openBalanceWhere)

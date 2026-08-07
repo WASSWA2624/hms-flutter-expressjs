@@ -15,6 +15,7 @@ import 'package:hosspi_hms/features/reports/presentation/controllers/reports_wor
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_overview_dashboard.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_overview_shortcut_dialogs.dart';
+import 'package:hosspi_hms/features/reports/presentation/widgets/reports_domain_reporting_groups.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_pharmacy_domain_groups.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_workspace_table_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -168,24 +169,25 @@ class _ReportsWorkspaceContentState
 
     _ensureAuthorizedPanel(controller, state, allowedPanels);
 
-    final bool showPharmacyOverview =
-        ReportsPharmacyDomainGroups.shouldShow(policy) &&
+    final bool showDomainReportingOverview =
+        (ReportsPharmacyDomainGroups.shouldShow(policy) ||
+            ReportsDomainReportingGroups.shouldShow(policy)) &&
         state.query.panel == ReportsWorkspacePanel.overview;
 
     final bool showSchedules =
         canReadCatalog &&
         !state.query.panel.isCompliance &&
-        !showPharmacyOverview;
+        !showDomainReportingOverview;
     final bool showTimeline =
         canReadCatalog &&
         !state.query.panel.isCompliance &&
-        !showPharmacyOverview &&
+        !showDomainReportingOverview &&
         state.overview.timeline.isNotEmpty;
 
     return AppWorkspace(
       title: l10n.reportsTitle,
       leadingIcon: AppRouteIcons.reports,
-      showHeader: !showPharmacyOverview,
+      showHeader: !showDomainReportingOverview,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -312,14 +314,14 @@ class _ReportsOverviewPanel extends ConsumerWidget {
       reportsWorkspaceControllerProvider.notifier,
     );
     final ThemeData theme = Theme.of(context);
-    final bool showPharmacyGroups = ReportsPharmacyDomainGroups.shouldShow(
-      policy,
-    );
+    final bool showDomainGroups =
+        ReportsPharmacyDomainGroups.shouldShow(policy) ||
+        ReportsDomainReportingGroups.shouldShow(policy);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (!showPharmacyGroups) ...<Widget>[
+        if (!showDomainGroups) ...<Widget>[
           Text(
             l10n.reportsPanelOverview,
             style: theme.textTheme.titleMedium,

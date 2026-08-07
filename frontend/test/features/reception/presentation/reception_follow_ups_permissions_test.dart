@@ -208,9 +208,11 @@ void _stubFollowUps(
   _MockFollowUpRepository repository, {
   List<ReceptionFollowUpEntry>? entries,
   bool failList = false,
+  int? totalCount,
 }) {
   final List<ReceptionFollowUpEntry> list =
       entries ?? <ReceptionFollowUpEntry>[_followUp];
+  final int total = totalCount ?? list.length;
 
   when(
     () => repository.listScheduledFollowUps(
@@ -223,6 +225,21 @@ void _stubFollowUps(
       );
     }
     return Result<List<ReceptionFollowUpEntry>>.success(list);
+  });
+  when(
+    () => repository.listScheduledFollowUpsPage(
+      encounterType: any(named: 'encounterType'),
+    ),
+  ).thenAnswer((_) async {
+    if (failList) {
+      return const Result<({List<ReceptionFollowUpEntry> entries, int total})>.failure(
+        AppFailure.network(),
+      );
+    }
+    return Result<({List<ReceptionFollowUpEntry> entries, int total})>.success((
+      entries: list,
+      total: total,
+    ));
   });
 }
 
@@ -765,6 +782,17 @@ void main() {
           <ReceptionFollowUpEntry>[],
         ),
       );
+      when(
+        () => followUpRepository.listScheduledFollowUpsPage(
+          encounterType: any(named: 'encounterType'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const Result<({List<ReceptionFollowUpEntry> entries, int total})>.success((
+              entries: <ReceptionFollowUpEntry>[],
+              total: 0,
+            )),
+      );
 
       await tester.tap(find.text('Mark completed'));
       await tester.pumpAndSettle();
@@ -874,6 +902,17 @@ void main() {
     testWidgets('authorized loading chrome remains observable', (
       WidgetTester tester,
     ) async {
+      when(
+        () => followUpRepository.listScheduledFollowUpsPage(
+          encounterType: any(named: 'encounterType'),
+        ),
+      ).thenAnswer((_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        return Result<({List<ReceptionFollowUpEntry> entries, int total})>.success((
+          entries: <ReceptionFollowUpEntry>[_followUp],
+          total: 1,
+        ));
+      });
       when(
         () => followUpRepository.listScheduledFollowUps(
           encounterType: any(named: 'encounterType'),

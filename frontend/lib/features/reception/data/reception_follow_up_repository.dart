@@ -37,6 +37,24 @@ class ReceptionFollowUpRepository {
     );
   }
 
+  /// Lists scheduled follow-ups and returns the authoritative pagination total.
+  Future<Result<({List<ReceptionFollowUpEntry> entries, int total})>>
+  listScheduledFollowUpsPage({String? encounterType}) {
+    return _apiClient.get<({List<ReceptionFollowUpEntry> entries, int total})>(
+      ApiEndpoints.collection(HmsApiResource.followUps),
+      queryParameters: <String, Object?>{
+        'status': 'SCHEDULED',
+        'page': 1,
+        'limit': AppPageRequest.maxPageSize,
+        'sort_by': 'scheduled_at',
+        'order': 'asc',
+        if (encounterType != null && encounterType.trim().isNotEmpty)
+          'encounter_type': encounterType.trim().toUpperCase(),
+      },
+      decoder: _decodeFollowUpPage,
+    );
+  }
+
   Future<Result<void>> completeFollowUp(
     String followUpId, {
     String? notes,
@@ -85,11 +103,23 @@ class ReceptionFollowUpRepository {
 }
 
 List<ReceptionFollowUpEntry> _decodeFollowUpList(Object? responseData) {
+  return _decodeFollowUpPage(responseData).entries;
+}
+
+({List<ReceptionFollowUpEntry> entries, int total}) _decodeFollowUpPage(
+  Object? responseData,
+) {
   final Map<String, Object?> response = _expectMap(responseData);
-  return _list(response['data'])
+  final List<ReceptionFollowUpEntry> entries = _list(response['data'])
       .map(ReceptionFollowUpEntry.fromJson)
       .where((ReceptionFollowUpEntry item) => item.id.isNotEmpty)
       .toList(growable: false);
+  final Map<String, Object?> pagination = _expectMap(response['pagination']);
+  final int? reportedTotal = int.tryParse('${pagination['total'] ?? ''}');
+  return (
+    entries: entries,
+    total: reportedTotal ?? entries.length,
+  );
 }
 
 Map<String, Object?> _expectMap(Object? value) {

@@ -18,22 +18,29 @@ final receptionFollowUpControllerProvider =
 final class ReceptionFollowUpState {
   const ReceptionFollowUpState({
     this.entries = const <ReceptionFollowUpEntry>[],
+    this.totalCount = 0,
     this.isRefreshing = false,
     this.lastFailure,
   });
 
   final List<ReceptionFollowUpEntry> entries;
+
+  /// Authoritative SCHEDULED follow-up total from list pagination (may exceed
+  /// the loaded page size).
+  final int totalCount;
   final bool isRefreshing;
   final AppFailure? lastFailure;
 
   ReceptionFollowUpState copyWith({
     List<ReceptionFollowUpEntry>? entries,
+    int? totalCount,
     bool? isRefreshing,
     AppFailure? lastFailure,
     bool clearLastFailure = false,
   }) {
     return ReceptionFollowUpState(
       entries: entries ?? this.entries,
+      totalCount: totalCount ?? this.totalCount,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       lastFailure: clearLastFailure ? null : lastFailure ?? this.lastFailure,
     );
@@ -146,18 +153,21 @@ final class ReceptionFollowUpController
   Future<Result<ReceptionFollowUpState>> _load() async {
     _isSyncing = true;
     try {
-      final Result<List<ReceptionFollowUpEntry>> result = await _repository
-          .listScheduledFollowUps();
+      final Result<({List<ReceptionFollowUpEntry> entries, int total})> result =
+          await _repository.listScheduledFollowUpsPage();
       return result.when(
-        success: (List<ReceptionFollowUpEntry> entries) {
+        success: (({List<ReceptionFollowUpEntry> entries, int total}) page) {
           final List<ReceptionFollowUpEntry> sorted =
-              List<ReceptionFollowUpEntry>.of(entries)
+              List<ReceptionFollowUpEntry>.of(page.entries)
                 ..sort(
                   (ReceptionFollowUpEntry a, ReceptionFollowUpEntry b) =>
                       a.scheduledAt.compareTo(b.scheduledAt),
                 );
           return Result<ReceptionFollowUpState>.success(
-            ReceptionFollowUpState(entries: List.unmodifiable(sorted)),
+            ReceptionFollowUpState(
+              entries: List.unmodifiable(sorted),
+              totalCount: page.total < sorted.length ? sorted.length : page.total,
+            ),
           );
         },
         failure: Result<ReceptionFollowUpState>.failure,

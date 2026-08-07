@@ -36,7 +36,7 @@ class ReportsPharmacyDomainGroups extends StatefulWidget {
   final ValueChanged<String>? onTabChanged;
 
   static bool shouldShow(AppAccessPolicy policy) {
-    return reportsDomainPacks(policy).contains(ReportsDomainPack.pharmacy);
+    return reportsOwnsDomainReporting(policy, ReportsDomainPack.pharmacy);
   }
 
   static const String analyticsTabId =

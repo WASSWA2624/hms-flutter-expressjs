@@ -6,6 +6,7 @@ import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dar
 import 'package:hosspi_hms/features/reports/presentation/controllers/reports_workspace_controller.dart';
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_overview_mapper.dart';
+import 'package:hosspi_hms/features/reports/presentation/widgets/reports_domain_reporting_groups.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_pharmacy_domain_groups.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -31,7 +32,7 @@ class ReportsOverviewDashboard extends ConsumerStatefulWidget {
   final List<ReportsWorkspacePanel> allowedPanels;
   final VoidCallback? onOpenCatalogDefinition;
 
-  /// When set (pharmacist Overview), opens dataset shortcuts in-place.
+  /// When set (domain Overview), opens dataset shortcuts in-place.
   final ValueChanged<String>? onPharmacyOpenDataset;
 
   /// When set (pharmacist Overview), opens catalog/delivery shortcuts in-place.
@@ -44,7 +45,7 @@ class ReportsOverviewDashboard extends ConsumerStatefulWidget {
 
 class _ReportsOverviewDashboardState
     extends ConsumerState<ReportsOverviewDashboard> {
-  String _pharmacyTabId = ReportsPharmacyDomainGroups.reportingTabId;
+  String _domainTabId = ReportsPharmacyDomainGroups.reportingTabId;
 
   @override
   Widget build(BuildContext context) {
@@ -61,9 +62,12 @@ class _ReportsOverviewDashboardState
     final bool showPharmacyGroups = ReportsPharmacyDomainGroups.shouldShow(
       policy,
     );
-    final bool pharmacyReportingOnly =
-        showPharmacyGroups &&
-        _pharmacyTabId == ReportsPharmacyDomainGroups.reportingTabId;
+    final bool showOwnedDomainGroups =
+        !showPharmacyGroups && ReportsDomainReportingGroups.shouldShow(policy);
+    final bool showDomainGroups = showPharmacyGroups || showOwnedDomainGroups;
+    final bool domainReportingOnly =
+        showDomainGroups &&
+        _domainTabId == ReportsPharmacyDomainGroups.reportingTabId;
     final List<ReportsLookupOption> datasetShortcuts =
         reportsOverviewDatasetShortcuts(policy, overview.lookups.datasets);
 
@@ -140,7 +144,7 @@ class _ReportsOverviewDashboardState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (!showPharmacyGroups) ...<Widget>[
+        if (!showDomainGroups) ...<Widget>[
           Text(
             l10n.reportsOverviewSubtitle,
             style: theme.textTheme.bodyMedium?.copyWith(
@@ -157,13 +161,25 @@ class _ReportsOverviewDashboardState
             onOpenDataset:
                 widget.onPharmacyOpenDataset ?? controller.openCatalogDataset,
             onTabChanged: (String tabId) {
-              setState(() => _pharmacyTabId = tabId);
+              setState(() => _domainTabId = tabId);
             },
           ),
-          if (!pharmacyReportingOnly) SizedBox(height: theme.spacing.xl),
+          if (!domainReportingOnly) SizedBox(height: theme.spacing.xl),
+        ] else if (showOwnedDomainGroups) ...<Widget>[
+          ReportsOwnedDomainReportingHost(
+            l10n: l10n,
+            policy: policy,
+            datasetShortcuts: datasetShortcuts,
+            onOpenDataset:
+                widget.onPharmacyOpenDataset ?? controller.openCatalogDataset,
+            onTabChanged: (String tabId) {
+              setState(() => _domainTabId = tabId);
+            },
+          ),
+          if (!domainReportingOnly) SizedBox(height: theme.spacing.xl),
         ],
-        if (!pharmacyReportingOnly) ...<Widget>[
-          if (!showPharmacyGroups) ...<Widget>[
+        if (!domainReportingOnly) ...<Widget>[
+          if (!showDomainGroups) ...<Widget>[
             AppQuickActions(
               title: l10n.reportsOverviewNextStepsTitle,
               leadingIcon: Icons.bolt_outlined,
@@ -196,7 +212,7 @@ class _ReportsOverviewDashboardState
               priorityPanel: DashboardPriorityPanel(data: priority),
               charts: DashboardChartsRow(data: charts, twoColumns: wide),
             ),
-          if (!showPharmacyGroups && datasetShortcuts.isNotEmpty) ...<Widget>[
+          if (!showDomainGroups && datasetShortcuts.isNotEmpty) ...<Widget>[
             SizedBox(height: theme.spacing.xl),
             AppSectionPanel(
               title: l10n.reportsOverviewDatasetsTitle,

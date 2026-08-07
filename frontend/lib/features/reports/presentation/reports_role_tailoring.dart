@@ -2,7 +2,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 
-/// Domain packs derived from effective permissions (union for multi-role).
+/// Domain packs derived from **owned** job scope (not embed-only module reads).
 enum ReportsDomainPack {
   admin,
   finance,
@@ -14,6 +14,7 @@ enum ReportsDomainPack {
   hr,
   biomedical,
   operations,
+  emergency,
   communications,
   general,
 }
@@ -77,6 +78,11 @@ _reportsDomainCatalogPanels =
         ReportsWorkspacePanel.delivery,
         ReportsWorkspacePanel.activity,
       ],
+      ReportsDomainPack.emergency: <ReportsWorkspacePanel>[
+        ReportsWorkspacePanel.overview,
+        ReportsWorkspacePanel.catalog,
+        ReportsWorkspacePanel.delivery,
+      ],
       ReportsDomainPack.communications: <ReportsWorkspacePanel>[
         ReportsWorkspacePanel.overview,
         ReportsWorkspacePanel.catalog,
@@ -106,6 +112,7 @@ const Map<String, List<AppPermission>> reportsDatasetCategoryPermissions =
         AppPermissions.receptionRead,
         AppPermissions.opdRead,
         AppPermissions.operationsRead,
+        AppPermissions.emergencyRead,
       ],
       'billing': <AppPermission>[AppPermissions.billingRead],
       'pharmacy': <AppPermission>[AppPermissions.pharmacyRead],
@@ -154,6 +161,9 @@ const Map<ReportsDomainPack, List<String>> reportsDomainPrimaryDatasets =
         'appointment_throughput_no_shows',
         'inventory_stock_risk',
       ],
+      ReportsDomainPack.emergency: <String>[
+        'appointment_throughput_no_shows',
+      ],
       ReportsDomainPack.communications: <String>[
         'communications_delivery_performance',
       ],
@@ -166,7 +176,6 @@ const Map<ReportsDomainPack, List<String>> reportsDomainPrimaryDatasets =
       ReportsDomainPack.general: <String>[
         'patient_registrations',
         'billing_collections_open_balances',
-        'pharmacy_drug_consumption',
       ],
     };
 
@@ -178,51 +187,121 @@ bool reportsIsAdminOverlay(AppAccessPolicy policy) {
   ]);
 }
 
-/// Domain packs from effective permissions (union). Admins get [admin] only.
+bool _hasAnyRole(AppAccessPolicy policy, Set<AppRole> roles) {
+  return roles.any(policy.hasRole);
+}
+
+/// Owned domain packs for Reporting chrome (job scope, not embed-only reads).
+///
+/// Focused shells and primary roles drive packs. Embed grants such as a
+/// doctor's `pharmacy:read` do **not** mount pharmacy Reporting.
 Set<ReportsDomainPack> reportsDomainPacks(AppAccessPolicy policy) {
   if (reportsIsAdminOverlay(policy)) {
     return <ReportsDomainPack>{ReportsDomainPack.admin};
   }
 
-  final Set<ReportsDomainPack> packs = <ReportsDomainPack>{};
-  if (policy.grants(AppPermissions.billingRead)) {
-    packs.add(ReportsDomainPack.finance);
+  // Patient portal is not a staff reporting actor.
+  if (policy.hasRole(AppRole.patient) &&
+      !policy.hasAnyRole(const <AppRole>[
+        AppRole.doctor,
+        AppRole.nurse,
+        AppRole.labTech,
+        AppRole.radiologyTech,
+        AppRole.pharmacist,
+        AppRole.receptionist,
+        AppRole.billing,
+        AppRole.operations,
+        AppRole.hr,
+        AppRole.biomed,
+        AppRole.houseKeeper,
+        AppRole.ambulanceOperator,
+        AppRole.unitManager,
+        AppRole.wardManager,
+        AppRole.icuManager,
+        AppRole.theatreManager,
+        AppRole.housekeepingManager,
+        AppRole.biomedManager,
+        AppRole.mortuaryStaff,
+        AppRole.mortuaryManager,
+        AppRole.tenantAdmin,
+        AppRole.facilityAdmin,
+        AppRole.superAdmin,
+        AppRole.integrationAdmin,
+      ])) {
+    return <ReportsDomainPack>{};
   }
-  if (policy.grants(AppPermissions.pharmacyRead)) {
+
+  final Set<ReportsDomainPack> packs = <ReportsDomainPack>{};
+
+  if (policy.isPharmacistFocusedShellUser ||
+      policy.hasRole(AppRole.pharmacist)) {
     packs.add(ReportsDomainPack.pharmacy);
   }
-  if (policy.grantsAny(const <AppPermission>[
-    AppPermissions.receptionRead,
-  ])) {
+  if (policy.isBillingFocusedShellUser || policy.hasRole(AppRole.billing)) {
+    packs.add(ReportsDomainPack.finance);
+  }
+  if (policy.isReceptionistFocusedShellUser ||
+      policy.hasRole(AppRole.receptionist)) {
     packs.add(ReportsDomainPack.reception);
   }
-  if (policy.grantsAny(const <AppPermission>[
-    AppPermissions.clinicalRead,
-    AppPermissions.nursingRead,
-    AppPermissions.opdRead,
-    AppPermissions.ipdRead,
-    AppPermissions.icuRead,
-    AppPermissions.theaterRead,
-    AppPermissions.emergencyRead,
-  ])) {
-    packs.add(ReportsDomainPack.clinical);
-  }
-  if (policy.grants(AppPermissions.labRead)) {
+  if (policy.isLabFocusedShellUser || policy.hasRole(AppRole.labTech)) {
     packs.add(ReportsDomainPack.lab);
   }
-  if (policy.grants(AppPermissions.radiologyRead)) {
+  if (policy.hasRole(AppRole.radiologyTech)) {
     packs.add(ReportsDomainPack.radiology);
   }
-  if (policy.grants(AppPermissions.hrRead)) {
+  if (_hasAnyRole(policy, const <AppRole>{
+    AppRole.doctor,
+    AppRole.nurse,
+    AppRole.wardManager,
+    AppRole.icuManager,
+    AppRole.theatreManager,
+  })) {
+    packs.add(ReportsDomainPack.clinical);
+  }
+  if (_hasAnyRole(policy, const <AppRole>{
+    AppRole.hr,
+    AppRole.unitManager,
+  })) {
     packs.add(ReportsDomainPack.hr);
   }
-  if (policy.grants(AppPermissions.biomedRead)) {
+  if (_hasAnyRole(policy, const <AppRole>{
+    AppRole.biomed,
+    AppRole.biomedManager,
+  })) {
     packs.add(ReportsDomainPack.biomedical);
   }
-  if (policy.grants(AppPermissions.operationsRead)) {
+  if (_hasAnyRole(policy, const <AppRole>{
+    AppRole.operations,
+    AppRole.houseKeeper,
+    AppRole.housekeepingManager,
+  })) {
     packs.add(ReportsDomainPack.operations);
   }
-  if (policy.grants(AppPermissions.communicationsRead)) {
+  if (policy.hasRole(AppRole.ambulanceOperator)) {
+    packs.add(ReportsDomainPack.emergency);
+  }
+
+  // True multi-role / custom staff: union additional owned grants without
+  // treating clinical pharmacy embeds as pharmacy ownership.
+  if (!policy.isPharmacistFocusedShellUser &&
+      !policy.hasRole(AppRole.pharmacist) &&
+      policy.grants(AppPermissions.billingRead) &&
+      !packs.contains(ReportsDomainPack.finance)) {
+    // Only add finance from grant when no clinical-primary role holds embeds.
+    if (!_hasAnyRole(policy, const <AppRole>{
+      AppRole.doctor,
+      AppRole.nurse,
+      AppRole.labTech,
+      AppRole.radiologyTech,
+      AppRole.receptionist,
+      AppRole.pharmacist,
+    })) {
+      packs.add(ReportsDomainPack.finance);
+    }
+  }
+  if (policy.grants(AppPermissions.communicationsRead) &&
+      packs.isEmpty) {
     packs.add(ReportsDomainPack.communications);
   }
 
@@ -230,6 +309,22 @@ Set<ReportsDomainPack> reportsDomainPacks(AppAccessPolicy policy) {
     packs.add(ReportsDomainPack.general);
   }
   return packs;
+}
+
+/// Whether Overview should mount domain Reporting chrome for [pack].
+bool reportsOwnsDomainReporting(AppAccessPolicy policy, ReportsDomainPack pack) {
+  return reportsDomainPacks(policy).contains(pack);
+}
+
+/// Non-pharmacy packs that should mount shared domain Reporting chrome.
+List<ReportsDomainPack> reportsNonPharmacyOwnedPacks(AppAccessPolicy policy) {
+  return reportsDomainPacks(policy)
+      .where(
+        (ReportsDomainPack pack) =>
+            pack != ReportsDomainPack.pharmacy &&
+            pack != ReportsDomainPack.general,
+      )
+      .toList(growable: false);
 }
 
 /// Catalog (non-compliance) panels curated for the user's domain packs.
@@ -273,6 +368,8 @@ bool canAccessReportsDatasetCategory(
     // reports:read without domain grants — show full catalog.
     return true;
   }
+  // Pharmacy dataset category still requires pharmacy:read (embed OK for
+  // infra catalog filters) but Overview chrome uses owned packs separately.
   return policy.grantsAny(required);
 }
 

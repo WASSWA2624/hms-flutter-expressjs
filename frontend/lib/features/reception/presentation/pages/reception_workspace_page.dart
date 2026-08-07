@@ -1838,7 +1838,7 @@ class _ReceptionWorkspaceContentState
       case ReceptionDeskSection.paymentGate:
         return paymentGateEntries.length;
       case ReceptionDeskSection.followUps:
-        return followUpEntries.length;
+        return _followUpState?.totalCount ?? followUpEntries.length;
     }
   }
 
