@@ -1,14 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/presentation/pharmacy_reporting_catalog.dart';
+import 'package:hosspi_hms/features/reports/presentation/pharmacy_reporting_labels.dart';
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
-import 'package:hosspi_hms/features/reports/presentation/widgets/pharmacy_reporting_catalog_panel.dart';
+import 'package:hosspi_hms/features/reports/presentation/widgets/pharmacy_reporting_report_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/reporting/reporting.dart';
 
-/// Pharmacist Overview: Analytics and Reporting tabs for pharmacy datasets.
+/// Pharmacist Overview: Reporting and Analytics tabs for pharmacy datasets.
+///
+/// Reporting chrome is shared ([ModuleReportingDomainTabs] +
+/// [ModuleReportingShell]); Analytics insights stay pharmacy-specific.
 class ReportsPharmacyDomainGroups extends StatefulWidget {
   const ReportsPharmacyDomainGroups({
     required this.l10n,
@@ -29,8 +36,10 @@ class ReportsPharmacyDomainGroups extends StatefulWidget {
     return reportsDomainPacks(policy).contains(ReportsDomainPack.pharmacy);
   }
 
-  static const String analyticsTabId = 'analytics';
-  static const String reportingTabId = 'reporting';
+  static const String analyticsTabId =
+      ModuleReportingDomainTabs.analyticsTabId;
+  static const String reportingTabId =
+      ModuleReportingDomainTabs.reportingTabId;
 
   @override
   State<ReportsPharmacyDomainGroups> createState() =>
@@ -39,33 +48,136 @@ class ReportsPharmacyDomainGroups extends StatefulWidget {
 
 class _ReportsPharmacyDomainGroupsState
     extends State<ReportsPharmacyDomainGroups> {
-  static const String _categoryFilterKey = 'category';
-  static const String _subcategoryFilterKey = 'subcategory';
-  static const String _contentKindFilterKey = 'content_kind';
+  static const Duration _searchDebounceDuration = Duration(milliseconds: 200);
 
   String _selectedTabId = ReportsPharmacyDomainGroups.reportingTabId;
   late final TextEditingController _reportingSearchController;
+  late final ValueNotifier<String> _reportingSearchQuery;
+  Timer? _searchDebounce;
   AppSearchBarFilterValue _reportingFilters = AppSearchBarFilterValue.empty;
   late final List<PharmacyReportingCategory> _catalog;
+  late final int _totalReports;
+  late final ModuleReportingCatalogExpansionController _expansionController;
+  late final ModuleReportingLabels _labels;
 
   @override
   void initState() {
     super.initState();
     _reportingSearchController = TextEditingController();
+    _reportingSearchQuery = ValueNotifier<String>('');
     _catalog = pharmacyReportingCatalog();
+    _totalReports = _catalog.fold<int>(
+      0,
+      (int sum, PharmacyReportingCategory category) =>
+          sum + category.reports.length,
+    );
+    _expansionController = ModuleReportingCatalogExpansionController(
+      categoryIds: _catalog.map(
+        (PharmacyReportingCategory category) => category.id,
+      ),
+    );
+    _labels = pharmacyReportingLabels(widget.l10n);
+  }
+
+  @override
+  void didUpdateWidget(covariant ReportsPharmacyDomainGroups oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.l10n != widget.l10n) {
+      _labels = pharmacyReportingLabels(widget.l10n);
+    }
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _expansionController.dispose();
+    _reportingSearchQuery.dispose();
     _reportingSearchController.dispose();
     super.dispose();
   }
 
+  void _scheduleSearch(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(_searchDebounceDuration, () {
+      if (!mounted) {
+        return;
+      }
+      if (_reportingSearchQuery.value == value) {
+        return;
+      }
+      _reportingSearchQuery.value = value;
+    });
+  }
+
+  void _applySearchNow(String value) {
+    _searchDebounce?.cancel();
+    if (_reportingSearchQuery.value == value) {
+      return;
+    }
+    _reportingSearchQuery.value = value;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ModuleReportingDomainTabs(
+      labels: _labels,
+      selectedId: _selectedTabId,
+      onTabTapped: (String tabId) {
+        if (tabId == _selectedTabId) {
+          return;
+        }
+        setState(() => _selectedTabId = tabId);
+        widget.onTabChanged?.call(tabId);
+      },
+      reportingChild: ModuleReportingShell(
+        catalog: _catalog,
+        labels: _labels,
+        searchController: _reportingSearchController,
+        searchQuery: _reportingSearchQuery,
+        filters: _reportingFilters,
+        expansionController: _expansionController,
+        totalReports: _totalReports,
+        onFiltersChanged: (AppSearchBarFilterValue value) {
+          setState(() => _reportingFilters = value);
+        },
+        onSearchChanged: _scheduleSearch,
+        onSearchSubmitted: _applySearchNow,
+        onSearchCleared: () {
+          _reportingSearchController.clear();
+          _applySearchNow('');
+        },
+        onReportPressed: (ModuleReportingReport report) {
+          openPharmacyReportingReportDialog(
+            context: context,
+            report: report,
+            policy: widget.policy,
+          );
+        },
+      ),
+      analyticsChild: _PharmacyAnalyticsTabBody(
+        l10n: widget.l10n,
+        datasetShortcuts: widget.datasetShortcuts,
+        onOpenDataset: widget.onOpenDataset,
+      ),
+    );
+  }
+}
+
+class _PharmacyAnalyticsTabBody extends StatelessWidget {
+  const _PharmacyAnalyticsTabBody({
+    required this.l10n,
+    required this.datasetShortcuts,
+    required this.onOpenDataset,
+  });
+
+  final AppLocalizations l10n;
+  final List<ReportsLookupOption> datasetShortcuts;
+  final ValueChanged<String> onOpenDataset;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final AppLocalizations l10n = widget.l10n;
-    final List<ReportsLookupOption> analyticsDatasets = widget.datasetShortcuts
+    final List<ReportsLookupOption> analyticsDatasets = datasetShortcuts
         .where(
           (ReportsLookupOption option) =>
               option.id == 'pharmacy_drug_consumption' ||
@@ -106,191 +218,40 @@ class _ReportsPharmacyDomainGroupsState
       ),
     ];
 
-    final List<PharmacyReportingCategory> filteredCatalog =
-        filterPharmacyReportingCatalog(
-          catalog: _catalog,
-          searchQuery: _reportingSearchController.text,
-          categoryIds: _reportingFilters.optionsFor(_categoryFilterKey),
-          reportIds: _reportingFilters.optionsFor(_subcategoryFilterKey),
-          contentKinds: _reportingFilters.optionsFor(_contentKindFilterKey),
-        );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppTabStrip(
-          variant: AppTabStripVariant.nested,
-          tabs: <AppTabItem>[
-            AppTabItem(
-              id: ReportsPharmacyDomainGroups.analyticsTabId,
-              label: l10n.reportsPharmacyAnalyticsTitle,
-              icon: Icons.insights_outlined,
-            ),
-            AppTabItem(
-              id: ReportsPharmacyDomainGroups.reportingTabId,
-              label: l10n.reportsPharmacyReportingTitle,
-              icon: Icons.description_outlined,
-            ),
-          ],
-          selectedId: _selectedTabId,
-          onTabTapped: (String tabId) {
-            setState(() => _selectedTabId = tabId);
-            widget.onTabChanged?.call(tabId);
-          },
-        ),
-        SizedBox(height: theme.spacing.md),
-        if (_selectedTabId == ReportsPharmacyDomainGroups.analyticsTabId)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              if (analyticsDatasets.isEmpty)
-                AppMutedText(l10n.reportsPharmacyAnalyticsEmpty)
-              else
-                Wrap(
-                  spacing: theme.spacing.sm,
-                  runSpacing: theme.spacing.sm,
-                  children: <Widget>[
-                    for (final ReportsLookupOption dataset in analyticsDatasets)
-                      ActionChip(
-                        avatar: const Icon(Icons.bar_chart_outlined, size: 18),
-                        label: Text(dataset.label),
-                        onPressed: () => widget.onOpenDataset(dataset.id),
-                      ),
-                  ],
-                ),
-              SizedBox(height: theme.spacing.sm),
-              Wrap(
-                spacing: theme.spacing.sm,
-                runSpacing: theme.spacing.sm,
-                children: <Widget>[
-                  for (final _PharmacyInsightAction insight in insights)
-                    ActionChip(
-                      avatar: Icon(insight.icon, size: 18),
-                      label: Text(insight.label),
-                      onPressed: () => widget.onOpenDataset(insight.datasetId),
-                    ),
-                ],
-              ),
-            ],
-          )
+        if (analyticsDatasets.isEmpty)
+          AppMutedText(l10n.reportsPharmacyAnalyticsEmpty)
         else
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          Wrap(
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.sm,
             children: <Widget>[
-              AppSearchBar(
-                controller: _reportingSearchController,
-                semanticLabel: l10n.reportsPharmacyReportingSearchLabel,
-                hintText: l10n.reportsPharmacyReportingSearchHint,
-                clearLabel: l10n.reportsClearSearchLabel,
-                onChanged: (_) => setState(() {}),
-                onSubmitted: (_) => setState(() {}),
-                onClear: () {
-                  _reportingSearchController.clear();
-                  setState(() {});
-                },
-                showAdvancedFilterButton: true,
-                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-                advancedFilterResetLabel: l10n.opdClearFiltersAction,
-                dateFilterLabel: l10n.reportsDateFilterLabel,
-                dateFromLabel: l10n.reportsDateFromLabel,
-                dateToLabel: l10n.reportsDateToLabel,
-                datePickerButtonLabel: l10n.reportsDatePickerLabel,
-                invalidDateMessage: l10n.reportsInvalidDateMessage,
-                filterGroups: <AppSearchBarFilterGroup>[
-                  AppSearchBarFilterGroup(
-                    key: _categoryFilterKey,
-                    label: l10n.reportsPharmacyReportingCategoryFilterLabel,
-                    allLabel: l10n.reportsPharmacyReportingCategoryAllLabel,
-                    allowMultiple: true,
-                    choices: <AppSearchBarFilterChoice>[
-                      for (final PharmacyReportingCategory category in _catalog)
-                        AppSearchBarFilterChoice(
-                          value: category.id,
-                          label: pharmacyReportingCategoryLabel(
-                            l10n,
-                            category.id,
-                          ),
-                          icon: category.icon,
-                        ),
-                    ],
-                  ),
-                  AppSearchBarFilterGroup(
-                    key: _subcategoryFilterKey,
-                    label: l10n.reportsPharmacyReportingSubcategoryFilterLabel,
-                    allLabel: l10n.reportsPharmacyReportingSubcategoryAllLabel,
-                    allowMultiple: true,
-                    choices: _subcategoryFilterChoices(
-                      l10n: l10n,
-                      catalog: _catalog,
-                      selectedCategoryIds: _reportingFilters.optionsFor(
-                        _categoryFilterKey,
-                      ),
-                    ),
-                  ),
-                  AppSearchBarFilterGroup(
-                    key: _contentKindFilterKey,
-                    label: l10n.reportsPharmacyReportingContentKindFilterLabel,
-                    allLabel: l10n.reportsPharmacyReportingContentKindAllLabel,
-                    allowMultiple: true,
-                    choices: <AppSearchBarFilterChoice>[
-                      AppSearchBarFilterChoice(
-                        value: PharmacyReportingContentKind.table.name,
-                        label: l10n.reportsPharmacyReportingContentKindTable,
-                        icon: Icons.table_chart_outlined,
-                      ),
-                      AppSearchBarFilterChoice(
-                        value: PharmacyReportingContentKind.chart.name,
-                        label: l10n.reportsPharmacyReportingContentKindChart,
-                        icon: Icons.bar_chart_outlined,
-                      ),
-                    ],
-                  ),
-                ],
-                filterValue: _reportingFilters,
-                hasActiveFilters: _reportingFilters.isActive,
-                onFilterChanged: (AppSearchBarFilterValue value) {
-                  setState(() => _reportingFilters = value);
-                },
-              ),
-              SizedBox(height: theme.spacing.md),
-              PharmacyReportingCatalogPanel(
-                l10n: l10n,
-                policy: widget.policy,
-                categories: filteredCatalog,
-              ),
+              for (final ReportsLookupOption dataset in analyticsDatasets)
+                ActionChip(
+                  avatar: const Icon(Icons.bar_chart_outlined, size: 18),
+                  label: Text(dataset.label),
+                  onPressed: () => onOpenDataset(dataset.id),
+                ),
             ],
           ),
+        SizedBox(height: theme.spacing.sm),
+        Wrap(
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.sm,
+          children: <Widget>[
+            for (final _PharmacyInsightAction insight in insights)
+              ActionChip(
+                avatar: Icon(insight.icon, size: 18),
+                label: Text(insight.label),
+                onPressed: () => onOpenDataset(insight.datasetId),
+              ),
+          ],
+        ),
       ],
     );
   }
-}
-
-List<AppSearchBarFilterChoice> _subcategoryFilterChoices({
-  required AppLocalizations l10n,
-  required List<PharmacyReportingCategory> catalog,
-  required Set<String> selectedCategoryIds,
-}) {
-  final List<AppSearchBarFilterChoice> choices = <AppSearchBarFilterChoice>[];
-  for (final PharmacyReportingCategory category in catalog) {
-    if (selectedCategoryIds.isNotEmpty &&
-        !selectedCategoryIds.contains(category.id)) {
-      continue;
-    }
-    for (final PharmacyReportingReport report in category.reports) {
-      choices.add(
-        AppSearchBarFilterChoice(
-          value: report.id,
-          label: report.label,
-          icon: report.contentKind == PharmacyReportingContentKind.chart
-              ? Icons.bar_chart_outlined
-              : Icons.description_outlined,
-        ),
-      );
-    }
-  }
-  return choices;
 }
 
 final class _PharmacyInsightAction {

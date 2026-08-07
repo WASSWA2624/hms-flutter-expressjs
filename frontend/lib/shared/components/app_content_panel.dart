@@ -76,6 +76,8 @@ class AppSectionPanel extends StatelessWidget {
     this.borderColor,
     this.collapsible = true,
     this.initiallyExpanded = true,
+    this.expanded,
+    this.onExpandedChanged,
     super.key,
   });
 
@@ -100,6 +102,10 @@ class AppSectionPanel extends StatelessWidget {
   /// Forwarded to [AppCollapsibleSection] for titled sections.
   final bool collapsible;
   final bool initiallyExpanded;
+
+  /// When non-null, expansion is controlled by the parent.
+  final bool? expanded;
+  final ValueChanged<bool>? onExpandedChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -132,6 +138,8 @@ class AppSectionPanel extends StatelessWidget {
         actions: actions,
         collapsible: collapsible,
         initiallyExpanded: initiallyExpanded,
+        expanded: expanded,
+        onExpandedChanged: onExpandedChanged,
         contentPadding: EdgeInsets.all(_contentPadding(theme)),
         child: body,
       );

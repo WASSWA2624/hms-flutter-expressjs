@@ -31435,6 +31435,124 @@ abstract class AppLocalizations {
   /// **'Nothing to export until report data is available.'**
   String get reportsPharmacyReportingExportUnavailableSnack;
 
+  /// Title for the pharmacy reporting custom period dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom date range'**
+  String get reportsPharmacyReportingCustomRangeTitle;
+
+  /// Body copy for the pharmacy reporting custom period dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the From and To dates for this report.'**
+  String get reportsPharmacyReportingCustomRangeBody;
+
+  /// Primary action to apply a custom pharmacy report date range.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply range'**
+  String get reportsPharmacyReportingCustomRangeApplyAction;
+
+  /// Validation when a custom pharmacy report range is incomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Select both From and To dates.'**
+  String get reportsPharmacyReportingCustomRangeRequired;
+
+  /// Summary of the active pharmacy report period under the period checkboxes.
+  ///
+  /// In en, this message translates to:
+  /// **'{period} · {from} – {to}'**
+  String reportsPharmacyReportingActiveRangeSummary(
+    String period,
+    String from,
+    String to,
+  );
+
+  /// Title for the pharmacy reporting export format dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Export report'**
+  String get reportsPharmacyReportingExportDialogTitle;
+
+  /// Body copy explaining pharmacy report export format choices.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an export format. Excel downloads a workbook; PDF opens the print preview so you can print or save as PDF.'**
+  String get reportsPharmacyReportingExportDialogBody;
+
+  /// Label for pharmacy report export format options.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get reportsPharmacyReportingExportFormatLabel;
+
+  /// Description for Excel pharmacy report export.
+  ///
+  /// In en, this message translates to:
+  /// **'Workbook with report metadata and any available rows. Column selection is available before download.'**
+  String get reportsPharmacyReportingExportExcelOptionBody;
+
+  /// Description for PDF pharmacy report export.
+  ///
+  /// In en, this message translates to:
+  /// **'Printable document via the standard print preview (print or save as PDF).'**
+  String get reportsPharmacyReportingExportPdfOptionBody;
+
+  /// Print-template subtitle when exporting a pharmacy report as PDF.
+  ///
+  /// In en, this message translates to:
+  /// **'Exportable report document'**
+  String get reportsPharmacyReportingExportPdfSubtitle;
+
+  /// Excel column header for pharmacy report summary field names.
+  ///
+  /// In en, this message translates to:
+  /// **'Field'**
+  String get reportsPharmacyReportingExportFieldColumn;
+
+  /// Excel column header for pharmacy report summary values.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get reportsPharmacyReportingExportValueColumn;
+
+  /// Default Excel sheet name for pharmacy report exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get reportsPharmacyReportingExportSheetName;
+
+  /// Label for availability notes in pharmacy report print/export payloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get reportsPharmacyReportingExportNotesLabel;
+
+  /// Search-bar action to expand all pharmacy reporting category sections.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand all'**
+  String get reportsPharmacyReportingExpandAllAction;
+
+  /// Search-bar action to collapse all pharmacy reporting category sections.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse all'**
+  String get reportsPharmacyReportingCollapseAllAction;
+
+  /// Hint under pharmacy reporting advanced-filter date range.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave From and To empty to apply no date filter.'**
+  String get reportsPharmacyReportingDateFilterHint;
+
+  /// Hint when no report categories are selected in advanced filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Select one or more report categories to choose matching reports.'**
+  String get reportsPharmacyReportingSelectCategoryHint;
+
   /// Insight chip that opens pharmacy drug consumption.
   ///
   /// In en, this message translates to:

@@ -1,49 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/reporting/reporting.dart';
 
-/// Primary surface kind for a pharmacy report dialog (drives export affordance).
-enum PharmacyReportingContentKind {
-  table,
-  chart,
-}
-
-/// One reportable subcategory under a [PharmacyReportingCategory].
-@immutable
-final class PharmacyReportingReport {
-  const PharmacyReportingReport({
-    required this.id,
-    required this.categoryId,
-    required this.label,
-    this.contentKind = PharmacyReportingContentKind.table,
-    this.datasetKey,
-  });
-
-  final String id;
-  final String categoryId;
-
-  /// Display label (catalog English; chrome/categories use l10n).
-  final String label;
-  final PharmacyReportingContentKind contentKind;
-
-  /// Optional existing reports dataset when a backend mapping exists.
-  final String? datasetKey;
-
-  bool get hasBackend => datasetKey != null && datasetKey!.isNotEmpty;
-}
-
-/// Top-level pharmacy reporting category.
-@immutable
-final class PharmacyReportingCategory {
-  const PharmacyReportingCategory({
-    required this.id,
-    required this.icon,
-    required this.reports,
-  });
-
-  final String id;
-  final IconData icon;
-  final List<PharmacyReportingReport> reports;
-}
+/// Pharmacy aliases for the shared module reporting catalog models.
+typedef PharmacyReportingContentKind = ModuleReportingContentKind;
+typedef PharmacyReportingReport = ModuleReportingReport;
+typedef PharmacyReportingCategory = ModuleReportingCategory;
 
 /// Stable category ids (also used by Reporting advanced filters).
 abstract final class PharmacyReportingCategoryIds {
@@ -491,44 +453,11 @@ List<PharmacyReportingCategory> filterPharmacyReportingCatalog({
   required Set<String> reportIds,
   required Set<String> contentKinds,
 }) {
-  final String needle = searchQuery.trim().toLowerCase();
-  final List<PharmacyReportingCategory> filtered = <PharmacyReportingCategory>[];
-
-  for (final PharmacyReportingCategory category in catalog) {
-    if (categoryIds.isNotEmpty && !categoryIds.contains(category.id)) {
-      continue;
-    }
-
-    final List<PharmacyReportingReport> reports = category.reports.where((
-      PharmacyReportingReport report,
-    ) {
-      if (reportIds.isNotEmpty && !reportIds.contains(report.id)) {
-        return false;
-      }
-      if (contentKinds.isNotEmpty &&
-          !contentKinds.contains(report.contentKind.name)) {
-        return false;
-      }
-      if (needle.isEmpty) {
-        return true;
-      }
-      return report.label.toLowerCase().contains(needle) ||
-          report.id.toLowerCase().contains(needle) ||
-          category.id.toLowerCase().contains(needle);
-    }).toList(growable: false);
-
-    if (reports.isEmpty) {
-      continue;
-    }
-
-    filtered.add(
-      PharmacyReportingCategory(
-        id: category.id,
-        icon: category.icon,
-        reports: reports,
-      ),
-    );
-  }
-
-  return filtered;
+  return filterModuleReportingCatalog(
+    catalog: catalog,
+    searchQuery: searchQuery,
+    categoryIds: categoryIds,
+    reportIds: reportIds,
+    contentKinds: contentKinds,
+  );
 }

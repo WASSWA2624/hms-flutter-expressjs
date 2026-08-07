@@ -17017,6 +17017,77 @@ class AppLocalizationsEn extends AppLocalizations {
       'Nothing to export until report data is available.';
 
   @override
+  String get reportsPharmacyReportingCustomRangeTitle => 'Custom date range';
+
+  @override
+  String get reportsPharmacyReportingCustomRangeBody =>
+      'Choose the From and To dates for this report.';
+
+  @override
+  String get reportsPharmacyReportingCustomRangeApplyAction => 'Apply range';
+
+  @override
+  String get reportsPharmacyReportingCustomRangeRequired =>
+      'Select both From and To dates.';
+
+  @override
+  String reportsPharmacyReportingActiveRangeSummary(
+    String period,
+    String from,
+    String to,
+  ) {
+    return '$period · $from – $to';
+  }
+
+  @override
+  String get reportsPharmacyReportingExportDialogTitle => 'Export report';
+
+  @override
+  String get reportsPharmacyReportingExportDialogBody =>
+      'Choose an export format. Excel downloads a workbook; PDF opens the print preview so you can print or save as PDF.';
+
+  @override
+  String get reportsPharmacyReportingExportFormatLabel => 'Format';
+
+  @override
+  String get reportsPharmacyReportingExportExcelOptionBody =>
+      'Workbook with report metadata and any available rows. Column selection is available before download.';
+
+  @override
+  String get reportsPharmacyReportingExportPdfOptionBody =>
+      'Printable document via the standard print preview (print or save as PDF).';
+
+  @override
+  String get reportsPharmacyReportingExportPdfSubtitle =>
+      'Exportable report document';
+
+  @override
+  String get reportsPharmacyReportingExportFieldColumn => 'Field';
+
+  @override
+  String get reportsPharmacyReportingExportValueColumn => 'Value';
+
+  @override
+  String get reportsPharmacyReportingExportSheetName => 'Report';
+
+  @override
+  String get reportsPharmacyReportingExportNotesLabel => 'Notes';
+
+  @override
+  String get reportsPharmacyReportingExpandAllAction => 'Expand all';
+
+  @override
+  String get reportsPharmacyReportingCollapseAllAction => 'Collapse all';
+
+  @override
+  String get reportsPharmacyReportingDateFilterHint =>
+      'Leave From and To empty to apply no date filter.';
+
+  @override
+  String get reportsPharmacyReportingSelectCategoryHint =>
+      'Select one or more report categories to choose matching reports.';
+
+  @override
   String get reportsPharmacyAnalyticsTopConsumedLabel => 'Top consumed drugs';
 
   @override

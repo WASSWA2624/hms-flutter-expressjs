@@ -8,6 +8,8 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/presentation/pharmacy_reporting_catalog.dart';
+import 'package:hosspi_hms/features/reports/presentation/widgets/pharmacy_reporting_filters_dialog.dart';
+import 'package:hosspi_hms/shared/reporting/reporting.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_pharmacy_domain_groups.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/app_search_bar.dart';
@@ -126,12 +128,32 @@ void main() {
     expect(find.text('Analytics'), findsOneWidget);
     expect(find.text('Reporting'), findsOneWidget);
     expect(
+      tester.getTopLeft(find.text('Reporting')).dx,
+      lessThan(tester.getTopLeft(find.text('Analytics')).dx),
+    );
+    expect(
       find.textContaining('Explore consumption'),
       findsNothing,
     );
     expect(find.byType(AppSearchBar), findsOneWidget);
-    expect(find.text('Total sales'), findsOneWidget);
+    expect(find.byTooltip('Expand all'), findsOneWidget);
+    expect(find.text('Sales & revenue'), findsOneWidget);
+    expect(find.text('Total sales'), findsNothing);
     expect(find.text('Top consumed drugs'), findsNothing);
+
+    await tester.tap(find.byTooltip('Expand all'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Collapse all'), findsOneWidget);
+    expect(find.text('Total sales'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Collapse all'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Expand all'), findsOneWidget);
+    expect(find.text('Total sales'), findsNothing);
+
+    await tester.tap(find.byTooltip('Expand all'));
+    await tester.pumpAndSettle();
+    expect(find.text('Total sales'), findsOneWidget);
 
     await tester.tap(find.text('Analytics'));
     await tester.pumpAndSettle();
@@ -153,7 +175,8 @@ void main() {
       find.byType(TextField).first,
       'Total sales',
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump();
 
     expect(find.widgetWithText(ActionChip, 'Total sales'), findsOneWidget);
     expect(find.widgetWithText(ActionChip, 'Stock value'), findsNothing);
@@ -166,6 +189,9 @@ void main() {
 
     await _pumpGroups(tester, openedDatasets: openedDatasets);
 
+    await tester.tap(find.byTooltip('Expand all'));
+    await tester.pumpAndSettle();
+
     await tester.ensureVisible(find.text('Total sales'));
     await tester.tap(find.text('Total sales'));
     await tester.pump();
@@ -173,11 +199,22 @@ void main() {
 
     expect(find.text('TOTAL SALES'), findsOneWidget);
     expect(find.text('Last month'), findsOneWidget);
+    expect(find.text('Period'), findsNothing);
+    expect(find.byType(CheckboxListTile), findsWidgets);
+    expect(find.text('Print'), findsNothing);
+    expect(find.text('Export'), findsNothing);
     expect(find.text('Export Excel'), findsNothing);
     expect(find.text('Export PDF'), findsNothing);
+
+    await tester.tap(find.widgetWithText(CheckboxListTile, 'Custom'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('CUSTOM DATE RANGE'), findsOneWidget);
+    expect(find.text('From'), findsOneWidget);
+    expect(find.text('To'), findsOneWidget);
   });
 
-  testWidgets('reporting dialog shows excel export when entitled for table report', (
+  testWidgets('reporting dialog shows print and export when entitled', (
     tester,
   ) async {
     final List<String> openedDatasets = <String>[];
@@ -188,13 +225,24 @@ void main() {
       policy: _pharmacyPolicy(canExport: true),
     );
 
+    await tester.tap(find.byTooltip('Expand all'));
+    await tester.pumpAndSettle();
+
     await tester.ensureVisible(find.text('Total sales'));
     await tester.tap(find.text('Total sales'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
+    expect(find.text('Print'), findsOneWidget);
+    expect(find.text('Export'), findsOneWidget);
+
+    await tester.tap(find.text('Export'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('EXPORT REPORT'), findsOneWidget);
     expect(find.text('Export Excel'), findsOneWidget);
-    expect(find.text('Export PDF'), findsNothing);
+    expect(find.text('Export PDF'), findsOneWidget);
   });
 
   testWidgets('reporting filters button opens advanced filters dialog', (
@@ -218,9 +266,25 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+    expect(find.text('Date range'), findsOneWidget);
+    expect(find.text('Report type'), findsOneWidget);
     expect(find.text('Report category'), findsOneWidget);
     expect(find.text('Report'), findsWidgets);
-    expect(find.text('Report type'), findsOneWidget);
+    expect(find.text('All'), findsWidgets);
+    expect(
+      find.textContaining('Leave From and To empty'),
+      findsOneWidget,
+    );
+
+    final Finder dialog = find.byType(ModuleReportingFiltersDialog);
+    expect(
+      find.descendant(of: dialog, matching: find.text('Sales & revenue')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text('Total sales')),
+      findsOneWidget,
+    );
   });
 
   test('shouldShow is true for pharmacy pack and false without pharmacy read', () {

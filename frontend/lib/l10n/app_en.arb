@@ -21888,6 +21888,93 @@
   "@reportsPharmacyReportingExportUnavailableSnack": {
     "description": "Snack when pharmacy report export is pressed with no data."
   },
+  "reportsPharmacyReportingCustomRangeTitle": "Custom date range",
+  "@reportsPharmacyReportingCustomRangeTitle": {
+    "description": "Title for the pharmacy reporting custom period dialog."
+  },
+  "reportsPharmacyReportingCustomRangeBody": "Choose the From and To dates for this report.",
+  "@reportsPharmacyReportingCustomRangeBody": {
+    "description": "Body copy for the pharmacy reporting custom period dialog."
+  },
+  "reportsPharmacyReportingCustomRangeApplyAction": "Apply range",
+  "@reportsPharmacyReportingCustomRangeApplyAction": {
+    "description": "Primary action to apply a custom pharmacy report date range."
+  },
+  "reportsPharmacyReportingCustomRangeRequired": "Select both From and To dates.",
+  "@reportsPharmacyReportingCustomRangeRequired": {
+    "description": "Validation when a custom pharmacy report range is incomplete."
+  },
+  "reportsPharmacyReportingActiveRangeSummary": "{period} · {from} – {to}",
+  "@reportsPharmacyReportingActiveRangeSummary": {
+    "description": "Summary of the active pharmacy report period under the period checkboxes.",
+    "placeholders": {
+      "period": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsPharmacyReportingExportDialogTitle": "Export report",
+  "@reportsPharmacyReportingExportDialogTitle": {
+    "description": "Title for the pharmacy reporting export format dialog."
+  },
+  "reportsPharmacyReportingExportDialogBody": "Choose an export format. Excel downloads a workbook; PDF opens the print preview so you can print or save as PDF.",
+  "@reportsPharmacyReportingExportDialogBody": {
+    "description": "Body copy explaining pharmacy report export format choices."
+  },
+  "reportsPharmacyReportingExportFormatLabel": "Format",
+  "@reportsPharmacyReportingExportFormatLabel": {
+    "description": "Label for pharmacy report export format options."
+  },
+  "reportsPharmacyReportingExportExcelOptionBody": "Workbook with report metadata and any available rows. Column selection is available before download.",
+  "@reportsPharmacyReportingExportExcelOptionBody": {
+    "description": "Description for Excel pharmacy report export."
+  },
+  "reportsPharmacyReportingExportPdfOptionBody": "Printable document via the standard print preview (print or save as PDF).",
+  "@reportsPharmacyReportingExportPdfOptionBody": {
+    "description": "Description for PDF pharmacy report export."
+  },
+  "reportsPharmacyReportingExportPdfSubtitle": "Exportable report document",
+  "@reportsPharmacyReportingExportPdfSubtitle": {
+    "description": "Print-template subtitle when exporting a pharmacy report as PDF."
+  },
+  "reportsPharmacyReportingExportFieldColumn": "Field",
+  "@reportsPharmacyReportingExportFieldColumn": {
+    "description": "Excel column header for pharmacy report summary field names."
+  },
+  "reportsPharmacyReportingExportValueColumn": "Value",
+  "@reportsPharmacyReportingExportValueColumn": {
+    "description": "Excel column header for pharmacy report summary values."
+  },
+  "reportsPharmacyReportingExportSheetName": "Report",
+  "@reportsPharmacyReportingExportSheetName": {
+    "description": "Default Excel sheet name for pharmacy report exports."
+  },
+  "reportsPharmacyReportingExportNotesLabel": "Notes",
+  "@reportsPharmacyReportingExportNotesLabel": {
+    "description": "Label for availability notes in pharmacy report print/export payloads."
+  },
+  "reportsPharmacyReportingExpandAllAction": "Expand all",
+  "@reportsPharmacyReportingExpandAllAction": {
+    "description": "Search-bar action to expand all pharmacy reporting category sections."
+  },
+  "reportsPharmacyReportingCollapseAllAction": "Collapse all",
+  "@reportsPharmacyReportingCollapseAllAction": {
+    "description": "Search-bar action to collapse all pharmacy reporting category sections."
+  },
+  "reportsPharmacyReportingDateFilterHint": "Leave From and To empty to apply no date filter.",
+  "@reportsPharmacyReportingDateFilterHint": {
+    "description": "Hint under pharmacy reporting advanced-filter date range."
+  },
+  "reportsPharmacyReportingSelectCategoryHint": "Select one or more report categories to choose matching reports.",
+  "@reportsPharmacyReportingSelectCategoryHint": {
+    "description": "Hint when no report categories are selected in advanced filters."
+  },
   "reportsPharmacyAnalyticsTopConsumedLabel": "Top consumed drugs",
   "@reportsPharmacyAnalyticsTopConsumedLabel": {
     "description": "Insight chip that opens pharmacy drug consumption."
