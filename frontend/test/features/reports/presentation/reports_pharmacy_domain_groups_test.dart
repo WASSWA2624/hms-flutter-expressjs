@@ -13,6 +13,7 @@ import 'package:hosspi_hms/shared/reporting/reporting.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_pharmacy_domain_groups.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/app_search_bar.dart';
+import 'package:hosspi_hms/shared/components/app_select_field.dart';
 
 import '../../../helpers/test_harness.dart';
 
@@ -199,14 +200,20 @@ void main() {
 
     expect(find.text('TOTAL SALES'), findsOneWidget);
     expect(find.text('Last month'), findsOneWidget);
-    expect(find.text('Period'), findsNothing);
-    expect(find.byType(CheckboxListTile), findsWidgets);
+    expect(find.text('Period'), findsOneWidget);
+    expect(find.byType(CheckboxListTile), findsNothing);
+    expect(find.byType(AppSelectField<ModuleReportingPeriodPreset>), findsOneWidget);
     expect(find.text('Print'), findsNothing);
     expect(find.text('Export'), findsNothing);
     expect(find.text('Export Excel'), findsNothing);
     expect(find.text('Export PDF'), findsNothing);
 
-    await tester.tap(find.widgetWithText(CheckboxListTile, 'Custom'));
+    await tester.tap(find.byType(AppSelectField<ModuleReportingPeriodPreset>));
+    await tester.pumpAndSettle();
+    final Finder customOption = find.text('Custom').last;
+    await tester.ensureVisible(customOption);
+    await tester.pumpAndSettle();
+    await tester.tap(customOption);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('CUSTOM DATE RANGE'), findsOneWidget);

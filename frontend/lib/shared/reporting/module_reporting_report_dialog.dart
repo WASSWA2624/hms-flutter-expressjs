@@ -150,15 +150,12 @@ class _ModuleReportingReportDialogState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            _ModuleReportingPeriodCheckboxGrid(
+            _ModuleReportingPeriodToolbar(
               labels: _labels,
               selected: _preset,
+              rangeSummary: _rangeSummary(context),
               onSelected: _onPeriodSelected,
             ),
-            if (_rangeSummary(context) != null) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              AppMutedText(_rangeSummary(context)!),
-            ],
             if (_rangeError != null) ...<Widget>[
               SizedBox(height: theme.spacing.sm),
               Text(
@@ -555,70 +552,106 @@ Future<ModuleReportingExportFormat?> _openExportOptionsDialog({
   );
 }
 
-class _ModuleReportingPeriodCheckboxGrid extends StatelessWidget {
-  const _ModuleReportingPeriodCheckboxGrid({
+class _ModuleReportingPeriodToolbar extends StatelessWidget {
+  const _ModuleReportingPeriodToolbar({
     required this.labels,
     required this.selected,
+    required this.rangeSummary,
     required this.onSelected,
   });
 
   final ModuleReportingLabels labels;
   final ModuleReportingPeriodPreset selected;
+  final String? rangeSummary;
   final ValueChanged<ModuleReportingPeriodPreset> onSelected;
+
+  static const double _selectWidth = 220;
+  static const double _stackBreakpoint = 520;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final Widget select = SizedBox(
+      width: _selectWidth,
+      child: AppSelectField<ModuleReportingPeriodPreset>(
+        value: selected,
+        labelText: labels.periodLabel,
+        isDense: true,
+        allowClear: false,
+        options: <AppSelectOption<ModuleReportingPeriodPreset>>[
+          for (final ModuleReportingPeriodPreset preset
+              in ModuleReportingPeriodPreset.values)
+            AppSelectOption<ModuleReportingPeriodPreset>(
+              value: preset,
+              label: moduleReportingPeriodLabel(labels, preset),
+              leadingIcon: Icon(_periodIcon(preset), size: 18),
+            ),
+        ],
+        onChanged: (ModuleReportingPeriodPreset? value) {
+          if (value == null) {
+            return;
+          }
+          onSelected(value);
+        },
+      ),
+    );
+
+    final Widget summary = rangeSummary == null
+        ? const SizedBox.shrink()
+        : selected == ModuleReportingPeriodPreset.custom
+        ? InkWell(
+            onTap: () => onSelected(ModuleReportingPeriodPreset.custom),
+            child: AppMutedText(rangeSummary!),
+          )
+        : AppMutedText(rangeSummary!);
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double maxWidth = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
-        final int columns = maxWidth >= 720
-            ? 3
-            : maxWidth >= 420
-            ? 2
-            : 1;
-        final double gap = theme.spacing.sm;
-        final double itemWidth = columns == 1
-            ? maxWidth
-            : (maxWidth - (gap * (columns - 1))) / columns;
+        final bool stacked = maxWidth < _stackBreakpoint;
 
-        return Wrap(
-          spacing: gap,
-          runSpacing: theme.spacing.xs,
-          children: <Widget>[
-            for (final ModuleReportingPeriodPreset preset
-                in ModuleReportingPeriodPreset.values)
-              SizedBox(
-                width: itemWidth,
-                child: Material(
-                  color: Colors.transparent,
-                  child: CheckboxListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                    value: selected == preset,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    title: Text(moduleReportingPeriodLabel(labels, preset)),
-                    onChanged: (bool? checked) {
-                      if (checked ?? false) {
-                        onSelected(preset);
-                      } else if (selected == preset &&
-                          preset == ModuleReportingPeriodPreset.custom) {
-                        // Re-open the custom range dialog when Custom is
-                        // already selected.
-                        onSelected(preset);
-                      }
-                    },
-                  ),
-                ),
+        if (stacked) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Align(
+                alignment: Alignment.centerRight,
+                child: select,
               ),
+              if (rangeSummary != null) ...<Widget>[
+                SizedBox(height: theme.spacing.sm),
+                summary,
+              ],
+            ],
+          );
+        }
+
+        return Row(
+          children: <Widget>[
+            Expanded(child: summary),
+            SizedBox(width: theme.spacing.md),
+            select,
           ],
         );
       },
     );
+  }
+
+  IconData _periodIcon(ModuleReportingPeriodPreset preset) {
+    return switch (preset) {
+      ModuleReportingPeriodPreset.today => Icons.today_outlined,
+      ModuleReportingPeriodPreset.lastWeek => Icons.date_range_outlined,
+      ModuleReportingPeriodPreset.lastMonth => Icons.calendar_month_outlined,
+      ModuleReportingPeriodPreset.last3Months =>
+        Icons.calendar_view_month_outlined,
+      ModuleReportingPeriodPreset.last6Months =>
+        Icons.calendar_view_week_outlined,
+      ModuleReportingPeriodPreset.last12Months => Icons.event_outlined,
+      ModuleReportingPeriodPreset.last24Months => Icons.event_note_outlined,
+      ModuleReportingPeriodPreset.custom => Icons.edit_calendar_outlined,
+    };
   }
 }
 
