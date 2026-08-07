@@ -2947,7 +2947,7 @@ const buildPharmacyFinancialCashFlowAnalytics = async (scope, parameters = {}) =
     title: 'Pharmacy cash flow',
     subtitle: billing?.invalid
       ? 'Invalid date range'
-      : `${billing.subtitle} · series: net_collections (= collections − refunds − write_offs path)`,
+      : `${billing.subtitle} · series: net_collections (= collections − refunds)`,
     columns: ['date', 'collections', 'refunds', 'net_collections'],
     rows,
     summary: {

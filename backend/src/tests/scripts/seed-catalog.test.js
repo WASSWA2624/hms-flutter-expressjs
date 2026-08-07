@@ -52,6 +52,7 @@ describe('seed-catalog', () => {
       'lab@hosspi.com',
       'radiology@hosspi.com',
       'pharmacy@hosspi.com',
+      'pharmacy2@hosspi.com',
       'reception@hosspi.com',
       'billing@hosspi.com',
       'operations@hosspi.com',
@@ -66,14 +67,17 @@ describe('seed-catalog', () => {
   });
 
   it('keeps every demo user role inside the complete shipped role catalog', () => {
-    const assignedRoles = DEMO_TENANT.users.flatMap((entry) => [
-      entry.role,
-      ...((Array.isArray(entry.extra_roles) ? entry.extra_roles : []).filter(Boolean))]);
-
-    expect(new Set(assignedRoles).size).toBe(assignedRoles.length);
-    expect(
-      assignedRoles.every((role) => DEMO_ROLE_CODES.includes(role)),
-    ).toBe(true);
+    for (const entry of DEMO_TENANT.users) {
+      const assignedRoles = [
+        entry.role,
+        ...((Array.isArray(entry.extra_roles) ? entry.extra_roles : []).filter(Boolean)),
+      ];
+      expect(new Set(assignedRoles).size).toBe(assignedRoles.length);
+      expect(
+        assignedRoles.every((role) => DEMO_ROLE_CODES.includes(role)),
+      ).toBe(true);
+    }
+    expect(DEMO_TENANT.users.filter((entry) => entry.role === 'PHARMACIST')).toHaveLength(2);
     expect(DEMO_ROLE_CODES).toEqual(
       expect.arrayContaining([
         'INTEGRATION_ADMIN',
@@ -84,7 +88,9 @@ describe('seed-catalog', () => {
         'SONOGRAPHER',
         'ACCOUNTANT',
         'SUPPORT_STAFF',
-        'VISITOR_GUEST']),
+        'VISITOR_GUEST',
+        'PHARMACIST',
+      ]),
     );
   });
 });
