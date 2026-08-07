@@ -2327,7 +2327,7 @@ ModuleReportingReportSnapshot _projectUnusualAdjustments({
 
 /// Shared unusual-adjustment predicate for provider + unit tests.
 ///
-/// n&lt;2 → abs floor. Else leave-one-out μ/σ so a spike is not absorbed into itself.
+/// n<2 → abs floor. Else leave-one-out μ/σ so a spike is not absorbed into itself.
 bool isPharmacyUnusualAdjustmentQuantity(
   Object? quantity,
   Iterable<Object?> peerQuantities,

@@ -189,13 +189,13 @@ const List<PharmacyReportingMgmtComposition> pharmacyReportingMgmtCompositions =
     datasetKey: 'inventory_stock_risk',
     projectionNote: 'OUT_OF_STOCK / qty≤0',
   ),
-  // Pack 13 controlled marker not shipped — keep unavailable (no fake stock).
+  // Pack 13 controlled stock composition.
   PharmacyReportingMgmtComposition(
     id: 'mgmt_controlled_medicines',
     label: 'Risk: Controlled medicines',
     sourceReportId: 'controlled_medicine_stock',
-    datasetKey: null,
-    projectionNote: 'gap: awaiting drug.is_controlled (pack 13)',
+    datasetKey: 'pharmacy_controlled_stock',
+    projectionNote: 'pass-through controlled on-hand stock',
   ),
   PharmacyReportingMgmtComposition(
     id: 'mgmt_unusual_adjustments',
