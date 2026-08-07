@@ -119,9 +119,10 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
   @override
   void initState() {
     super.initState();
+    // Queue wins over section when both are present (flat IA deep-links).
     _section =
-        HrDeskSection.fromQuery(widget.initialQuery?.section ?? '') ??
         HrDeskSection.fromQueue(widget.initialQuery?.queue) ??
+        HrDeskSection.fromQuery(widget.initialQuery?.section ?? '') ??
         HrDeskSection.staffDirectory;
     _searchController = TextEditingController(
       text: widget.state.staffQuery.search,
@@ -155,9 +156,10 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
       hrWorkspaceControllerProvider.notifier,
     );
 
+    // Queue owns the primary when both `?section=` and `?queue=` disagree.
     final HrDeskSection? sectionFromRoute =
-        HrDeskSection.fromQuery(query.section) ??
-        HrDeskSection.fromQueue(query.queue);
+        HrDeskSection.fromQueue(query.queue) ??
+        HrDeskSection.fromQuery(query.section);
     if (sectionFromRoute != null && sectionFromRoute != _section) {
       setState(() => _section = sectionFromRoute);
     }
@@ -187,13 +189,14 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
 
     final HrQueue? queue = query.queue;
     if (queue != null) {
-      // Map queue deep-links onto the matching tab and load inline (no dialog).
       final AppFailure? failure = await controller.applyQueue(queue);
       if (!mounted) {
         return;
       }
       if (failure != null) {
         showHrMutationSnackBar(context, failure);
+      } else {
+        _updateUrlForSection(_section, queue: queue);
       }
       return;
     }
@@ -212,24 +215,23 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     final HrWorkspaceController controller = ref.read(
       hrWorkspaceControllerProvider.notifier,
     );
-    final HrQueue? targetQueue = switch (section) {
-      HrDeskSection.leaveRequests => HrQueue.leaveRequests,
-      HrDeskSection.shiftRoster => HrQueue.rosterDrafts,
-      HrDeskSection.payroll => HrQueue.payrollDrafts,
-      HrDeskSection.staffDirectory || HrDeskSection.access => null,
-    };
+    final HrQueue? targetQueue = hrDefaultQueueForSection(section);
     if (targetQueue != null) {
       unawaited(controller.applyQueue(targetQueue));
     }
   }
 
-  void _updateUrlForSection(HrDeskSection section) {
+  void _updateUrlForSection(HrDeskSection section, {HrQueue? queue}) {
     if (!mounted) {
       return;
     }
     final String tab = section.routeQueryValue;
+    final HrQueue? resolvedQueue = queue ?? hrDefaultQueueForSection(section);
     final String location = AppRoutes.hr.location(
-      queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
+      queryParameters: <String, String>{
+        if (tab.isNotEmpty) 'section': tab,
+        if (resolvedQueue != null) 'queue': resolvedQueue.value,
+      },
     );
     GoRouter.of(context).replace<void>(location);
   }
@@ -335,7 +337,10 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
                 for (final HrDeskSection section in visibleSections) {
                   if (section.name == tabId) {
                     setState(() => _section = section);
-                    _updateUrlForSection(section);
+                    _updateUrlForSection(
+                      section,
+                      queue: hrDefaultQueueForSection(section),
+                    );
                     _loadDataForSection(section);
                     break;
                   }
@@ -438,30 +443,34 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         },
       ),
       HrDeskSection.leaveRequests => _HrWorkQueueTable(
+        section: HrDeskSection.leaveRequests,
         searchController: _workQueueSearchController,
         columnVisibilityController: _queueColumnController,
         searchTrailingActions: searchTrailingActions,
         onPageChanged: controller.changeWorkItemsPage,
+        onQueueChanged: (HrQueue queue) {
+          _updateUrlForSection(HrDeskSection.leaveRequests, queue: queue);
+        },
       ),
-      HrDeskSection.shiftRoster => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          const _HrWorkQueueSwitcherRow(),
-          SizedBox(height: Theme.of(context).spacing.md),
-          _HrWorkQueueTable(
-            searchController: _workQueueSearchController,
-            columnVisibilityController: _queueColumnController,
-            searchTrailingActions: searchTrailingActions,
-            onPageChanged: controller.changeWorkItemsPage,
-          ),
-        ],
+      HrDeskSection.shiftRoster => _HrWorkQueueTable(
+        section: HrDeskSection.shiftRoster,
+        searchController: _workQueueSearchController,
+        columnVisibilityController: _queueColumnController,
+        searchTrailingActions: searchTrailingActions,
+        onPageChanged: controller.changeWorkItemsPage,
+        onQueueChanged: (HrQueue queue) {
+          _updateUrlForSection(HrDeskSection.shiftRoster, queue: queue);
+        },
       ),
       HrDeskSection.payroll => _HrWorkQueueTable(
+        section: HrDeskSection.payroll,
         searchController: _workQueueSearchController,
         columnVisibilityController: _queueColumnController,
         searchTrailingActions: searchTrailingActions,
         onPageChanged: controller.changeWorkItemsPage,
+        onQueueChanged: (HrQueue queue) {
+          _updateUrlForSection(HrDeskSection.payroll, queue: queue);
+        },
       ),
       HrDeskSection.access => const HrAccessWorkspacePanel(embedded: true),
     };
@@ -1087,54 +1096,20 @@ class _HrWorkQueuePanel extends ConsumerWidget {
     required this.searchController,
     required this.columnVisibilityController,
     required this.onPageChanged,
-    this.searchTrailingActions = const <AppSearchBarAction>[],
   });
 
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<HrWorkItem>
   columnVisibilityController;
   final ValueChanged<AppPageRequest> onPageChanged;
-  final List<AppSearchBarAction> searchTrailingActions;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        const _HrWorkQueueSwitcherRow(),
-        SizedBox(height: Theme.of(context).spacing.md),
-        _HrWorkQueueTable(
-          searchController: searchController,
-          columnVisibilityController: columnVisibilityController,
-          searchTrailingActions: searchTrailingActions,
-          onPageChanged: onPageChanged,
-        ),
-      ],
-    );
-  }
-}
-
-class _HrWorkQueueSwitcherRow extends ConsumerWidget {
-  const _HrWorkQueueSwitcherRow();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ({HrQueue queue, bool isRefreshing}) queueState = ref.watch(
-      hrWorkspaceControllerProvider.select((
-        AsyncValue<Result<HrWorkspaceState>> async,
-      ) {
-        final HrWorkspaceState? state = _hrStateFromAsync(async);
-        return (
-          queue: state?.workItemsQuery.queue ?? HrQueue.leaveRequests,
-          isRefreshing: state?.isRefreshingWorkItems ?? false,
-        );
-      }),
-    );
-
-    return HrQueueSwitcher(
-      selectedQueue: queueState.queue,
-      enabled: !queueState.isRefreshing,
+    // Dialog browse: all queues via Filters (no nested tab strip).
+    return _HrWorkQueueTable(
+      searchController: searchController,
+      columnVisibilityController: columnVisibilityController,
+      onPageChanged: onPageChanged,
     );
   }
 }
@@ -1144,14 +1119,19 @@ class _HrWorkQueueTable extends ConsumerWidget {
     required this.searchController,
     required this.columnVisibilityController,
     required this.onPageChanged,
+    this.section,
     this.searchTrailingActions = const <AppSearchBarAction>[],
+    this.onQueueChanged,
   });
 
+  /// Owning primary tab; `null` = dialog with all workspace queues.
+  final HrDeskSection? section;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<HrWorkItem>
   columnVisibilityController;
   final List<AppSearchBarAction> searchTrailingActions;
   final ValueChanged<AppPageRequest> onPageChanged;
+  final ValueChanged<HrQueue>? onQueueChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1167,6 +1147,13 @@ class _HrWorkQueueTable extends ConsumerWidget {
       hrWorkspaceControllerProvider.notifier,
     );
     final HrQueue queue = state.workItemsQuery.queue;
+    final HrQueue defaultQueue =
+        hrDefaultQueueForSection(section ?? HrDeskSection.leaveRequests) ??
+        HrQueue.leaveRequests;
+    final List<HrQueue> queueChoices = hrQueuesForSection(section, queue);
+    final bool showQueueFacet =
+        section != HrDeskSection.payroll && queueChoices.length > 1;
+
     void onRowSelected(HrWorkItem item) =>
         _showWorkItemDialog(context, ref, item);
     void onNextAction(HrWorkItem item) =>
@@ -1196,6 +1183,20 @@ class _HrWorkQueueTable extends ConsumerWidget {
         advancedFilterResetLabel: l10n.hrClearFiltersAction,
         allFieldsLabel: l10n.opdAllFieldsFilterLabel,
         filterGroups: <AppSearchBarFilterGroup>[
+          if (showQueueFacet)
+            AppSearchBarFilterGroup(
+              key: _hrWorkItemQueueFilterKey,
+              label: l10n.hrQueueColumnLabel,
+              allLabel: l10n.opdAllFieldsFilterLabel,
+              choices: <AppSearchBarFilterChoice>[
+                for (final HrQueue choice in queueChoices)
+                  AppSearchBarFilterChoice(
+                    value: choice.value,
+                    label: hrQueueLabel(l10n, choice),
+                    icon: hrQueueIcon(choice),
+                  ),
+              ],
+            ),
           AppSearchBarFilterGroup(
             key: _hrWorkItemStatusFilterKey,
             label: l10n.hrStatusColumnLabel,
@@ -1203,15 +1204,33 @@ class _HrWorkQueueTable extends ConsumerWidget {
             choices: _workItemStatusFilterChoices(context),
           ),
         ],
-        filterValue: _workItemFilterValue(state.workItemsQuery),
-        hasActiveFilters: _hasWorkItemFilters(state.workItemsQuery),
+        filterValue: _workItemFilterValue(
+          state.workItemsQuery,
+          includeQueue: showQueueFacet,
+          defaultQueue: defaultQueue,
+        ),
+        hasActiveFilters: _hasWorkItemFilters(
+          state.workItemsQuery,
+          defaultQueue: defaultQueue,
+          includeQueue: showQueueFacet,
+        ),
         onFilterChanged: (AppSearchBarFilterValue value) {
-          controller.applyWorkItemsScope(
-            queue: queue,
-            status: value.option(_hrWorkItemStatusFilterKey),
-            from: state.workItemsQuery.from,
-            to: state.workItemsQuery.to,
+          final HrQueue? parsed = HrQueue.fromValue(
+            value.option(_hrWorkItemQueueFilterKey),
           );
+          final HrQueue nextQueue = parsed != null &&
+                  hrQueueAllowedOnSection(section, parsed)
+              ? parsed
+              : (showQueueFacet ? defaultQueue : queue);
+          unawaited(
+            controller.applyWorkItemsScope(
+              queue: nextQueue,
+              status: value.option(_hrWorkItemStatusFilterKey),
+              from: state.workItemsQuery.from,
+              to: state.workItemsQuery.to,
+            ),
+          );
+          onQueueChanged?.call(nextQueue);
         },
         // Filters → Settings → Export → section action (Request leave /
         // Schedule templates). Payroll and Access have no trailing action.
@@ -1962,6 +1981,7 @@ int _sectionCount(HrWorkspaceState state, HrDeskSection section) {
   return switch (section) {
     HrDeskSection.staffDirectory =>
       state.staff.totalItemCount ?? state.staff.items.length,
+    // Leave badge = leave requests only; swap stays discoverable via Filters.
     HrDeskSection.leaveRequests => summary.leaveRequests,
     HrDeskSection.shiftRoster =>
       summary.draftRosters + summary.unassignedShifts + summary.overdueShifts,
@@ -2176,6 +2196,7 @@ const String _hrPositionFilterKey = 'position';
 const String _hrDepartmentFilterKey = 'department';
 const String _hrPractitionerFilterKey = 'practitioner';
 const String _hrWorkItemStatusFilterKey = 'status';
+const String _hrWorkItemQueueFilterKey = 'queue';
 
 bool _staffSearchMatcher(
   BuildContext context,
@@ -2753,16 +2774,30 @@ List<AppSearchBarFilterChoice> _workItemStatusFilterChoices(
   ];
 }
 
-AppSearchBarFilterValue _workItemFilterValue(HrWorkItemsQuery query) {
+AppSearchBarFilterValue _workItemFilterValue(
+  HrWorkItemsQuery query, {
+  required bool includeQueue,
+  required HrQueue defaultQueue,
+}) {
+  // Only emit non-default queue so Filters chrome stays inactive on the
+  // section default (avoids a permanent "Filters (1)" badge/tooltip).
   return AppSearchBarFilterValue(
     options: <String, String>{
+      if (includeQueue && query.queue != defaultQueue)
+        _hrWorkItemQueueFilterKey: query.queue.value,
       if (query.status != null) _hrWorkItemStatusFilterKey: query.status!,
     },
   );
 }
 
-bool _hasWorkItemFilters(HrWorkItemsQuery query) {
-  return query.status != null;
+bool _hasWorkItemFilters(
+  HrWorkItemsQuery query, {
+  required HrQueue defaultQueue,
+  required bool includeQueue,
+}) {
+  final bool nonDefaultQueue =
+      includeQueue && query.queue != defaultQueue;
+  return nonDefaultQueue || query.status != null;
 }
 
 extension on String {

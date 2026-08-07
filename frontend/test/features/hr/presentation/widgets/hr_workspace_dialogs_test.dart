@@ -5,8 +5,9 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.da
 
 void main() {
   group('hr workspace dialogs support', () {
-    test('HrQueueSwitcher exposes overdue tab when deep-linked', () {
-      final List<HrQueue> queues = HrQueueSwitcher.visibleQueues(
+    test('dialog queue facet exposes overdue when deep-linked', () {
+      final List<HrQueue> queues = hrQueuesForSection(
+        null,
         HrQueue.overdueShifts,
       );
 

@@ -581,7 +581,7 @@ void main() {
             AppPermissions.billingWrite,
           },
         ),
-        initialLocation: '/hr?section=shifts&queue=swap_requests',
+        initialLocation: '/hr?section=leave-requests&queue=SWAP_REQUESTS',
       );
 
       expect(find.text('Approve swap'), findsWidgets);

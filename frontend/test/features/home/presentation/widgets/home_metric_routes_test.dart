@@ -67,13 +67,28 @@ void main() {
         homeHrQueryForTarget(
           const HomeRouteTarget(moduleSlug: 'hr', resource: 'staff-leaves'),
         ),
-        <String, String>{'queue': 'LEAVE_REQUESTS'},
+        <String, String>{
+          'queue': 'LEAVE_REQUESTS',
+          'section': 'leave-requests',
+        },
       );
       expect(
         homeHrQueryForTarget(
           const HomeRouteTarget(moduleSlug: 'hr', resource: 'payroll-runs'),
         ),
-        <String, String>{'queue': 'PAYROLL_DRAFTS'},
+        <String, String>{'queue': 'PAYROLL_DRAFTS', 'section': 'payroll'},
+      );
+      expect(
+        homeHrQueryForTarget(
+          const HomeRouteTarget(
+            moduleSlug: 'hr',
+            resource: 'shift-swap-requests',
+          ),
+        ),
+        <String, String>{
+          'queue': 'SWAP_REQUESTS',
+          'section': 'leave-requests',
+        },
       );
     });
 

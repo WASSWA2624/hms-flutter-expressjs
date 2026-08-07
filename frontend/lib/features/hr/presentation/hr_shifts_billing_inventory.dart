@@ -32,10 +32,11 @@ final class HrShiftsFinancialAtom {
 
 /// Canonical inventory for `/hr?section=shifts` (roster templates / shifts).
 ///
-/// Scope: tab chrome, queue switcher (roster drafts / unassigned / overdue /
-/// swap requests), worklist, next-actions, work-item detail, schedule-template
-/// manage/create/edit/delete/detail dialogs (search trailing), preview/generate/
-/// publish roster, override shift, and approve/reject swap opened from this tab.
+/// Scope: tab chrome, Filters queue facet (roster drafts / unassigned /
+/// overdue when deep-linked), worklist, next-actions, work-item detail,
+/// schedule-template manage/create/edit/delete/detail dialogs (search trailing),
+/// preview/generate/publish roster, and override shift opened from this tab.
+/// Swap approve/reject lives on Leave requests (Filters → Swap requests).
 ///
 /// Roster and shift mutations are **staff scheduling ops**, not patient
 /// revenue. Staff compensation / payroll drafts live on the Payroll drafts
@@ -215,10 +216,11 @@ abstract final class HrShiftsBillingInventory {
 /// Documents Shifts financial scope for tests and audits.
 const String hrShiftsBillingScopeNote =
     'HR Shifts is roster templates and shift scheduling. Publish roster, '
-    'override shift, approve/reject swap, and schedule-template CRUD stay '
-    'NOT_BILLED internal ops (audited). Coverage / gap / assignment counts are '
-    'NOT_BILLED operational telemetry, not a patient ledger balance. Staff '
-    'compensation and payroll drafts are separate (Payroll drafts tab) and '
-    'must not mix into patient Billing. Patient clinical charges and '
-    'collect/adjust/refund affordances are not mounted on this tab; if '
-    'introduced they must post through the Billing module of record.';
+    'override shift, and schedule-template CRUD stay NOT_BILLED internal ops '
+    '(audited). Swap approve/reject is owned by Leave requests (Filters). '
+    'Coverage / gap / assignment counts are NOT_BILLED operational telemetry, '
+    'not a patient ledger balance. Staff compensation and payroll drafts are '
+    'separate (Payroll drafts tab) and must not mix into patient Billing. '
+    'Patient clinical charges and collect/adjust/refund affordances are not '
+    'mounted on this tab; if introduced they must post through the Billing '
+    'module of record.';

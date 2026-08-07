@@ -32,10 +32,11 @@ final class HrLeaveRequestsFinancialAtom {
 
 /// Canonical inventory for `/hr?section=leave-requests` (Leave requests tab).
 ///
-/// Scope: tab chrome, leave worklist, next-actions (approve), detail dialog
-/// (approve / reject), request-leave dialog (search trailing), and nested
-/// confirm/reason dialogs opened from this tab. Leave is **staff attendance /
-/// roster ops** — request/approve/reject update `staff_leave` status with
+/// Scope: tab chrome, Filters queue facet (leave + swap), leave/swap worklist,
+/// next-actions (approve), detail dialog (approve / reject), request-leave
+/// dialog (search trailing), and nested confirm/reason dialogs opened from
+/// this tab. Leave/swap are **staff attendance / roster ops** — request/
+/// approve/reject update `staff_leave` / swap status with
 /// audit + realtime. `UNPAID` leave type is compensation eligibility metadata
 /// for payroll (Payroll drafts tab), not patient revenue. Patient Billing and
 /// payroll processing are not mounted here.

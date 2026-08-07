@@ -660,7 +660,12 @@ Map<String, String> homeHrQueryForTarget(HomeRouteTarget? target) {
   if (queue == null) {
     return const <String, String>{};
   }
-  return <String, String>{'queue': queue};
+  final HrQueue? parsed = HrQueue.fromValue(queue);
+  final HrDeskSection? section = HrDeskSection.fromQueue(parsed);
+  return <String, String>{
+    'queue': queue,
+    if (section != null) 'section': section.routeQueryValue,
+  };
 }
 
 /// Maps lab queue row targets to `/lab` deep-link query parameters.

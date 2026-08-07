@@ -554,16 +554,9 @@ void main() {
         repository: repository,
         accessPolicy: approver,
         workItems: const <HrWorkItem>[_swapRequest],
-        initialLocation: '/hr?section=shifts&queue=swap_requests',
+        // Swap belongs on Leave; queue wins over a conflicting section.
+        initialLocation: '/hr?section=leave-requests&queue=SWAP_REQUESTS',
       );
-
-      // Swap queue maps to Leave tab in fromQueue; force Shifts URL then switch.
-      // If queue switcher shows Swap requests, select it.
-      final Finder swapTab = find.text('Swap requests');
-      if (swapTab.evaluate().isNotEmpty) {
-        await tester.tap(swapTab.first);
-        await tester.pumpAndSettle();
-      }
 
       expect(_searchAction('Schedule templates'), findsNothing);
       expect(find.text('Approve swap'), findsWidgets);
@@ -582,14 +575,8 @@ void main() {
         repository: repository,
         accessPolicy: reader,
         workItems: const <HrWorkItem>[_unassignedShift],
-        initialLocation: '/hr?section=shifts&queue=unassigned_shifts',
+        initialLocation: '/hr?section=shifts&queue=UNASSIGNED_SHIFTS',
       );
-
-      final Finder unassigned = find.text('Unassigned shifts');
-      if (unassigned.evaluate().isNotEmpty) {
-        await tester.tap(unassigned.first);
-        await tester.pumpAndSettle();
-      }
 
       expect(find.text('Override shift'), findsNothing);
 
@@ -603,12 +590,8 @@ void main() {
           },
         ),
         workItems: const <HrWorkItem>[_unassignedShift],
-        initialLocation: '/hr?section=shifts&queue=unassigned_shifts',
+        initialLocation: '/hr?section=shifts&queue=UNASSIGNED_SHIFTS',
       );
-      if (find.text('Unassigned shifts').evaluate().isNotEmpty) {
-        await tester.tap(find.text('Unassigned shifts').first);
-        await tester.pumpAndSettle();
-      }
       expect(find.text('Override shift'), findsWidgets);
     },
   );

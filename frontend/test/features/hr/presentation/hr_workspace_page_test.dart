@@ -305,6 +305,10 @@ void main() {
 
     await _selectTab(tester, 'Shifts');
     expect(_searchAction('Schedule templates'), findsOneWidget);
+    // Flat IA: no nested queue strip (leave/swap/roster/payroll as second tabs).
+    expect(find.text('Swap requests'), findsNothing);
+    expect(find.text('Roster drafts'), findsNothing);
+    expect(find.text('Unassigned shifts'), findsNothing);
 
     await _selectTab(tester, 'Payroll drafts');
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
@@ -314,6 +318,26 @@ void main() {
     expect(_searchAction('Manage users and roles'), findsNothing);
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
     expect(find.text('Create staff'), findsOneWidget);
+  });
+
+  testWidgets('queue deep-link prefers owning primary over conflicting section', (
+    WidgetTester tester,
+  ) async {
+    _stubWorkspace(repository);
+    await _pumpHrWorkspace(
+      tester,
+      repository: repository,
+      initialQuery: const HrWorkspaceQuery(
+        section: 'shifts',
+        queue: HrQueue.swapRequests,
+      ),
+      initialLocation: '/hr?section=shifts&queue=SWAP_REQUESTS',
+    );
+
+    // Swap → Leave primary; Schedule templates (Shifts-only) absent.
+    expect(_searchAction('Schedule templates'), findsNothing);
+    expect(_searchAction('Request leave'), findsOneWidget);
+    expect(find.text('Swap requests'), findsNothing);
   });
 
   testWidgets('hides unauthorized primary and next-action controls', (

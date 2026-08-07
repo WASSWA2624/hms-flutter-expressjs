@@ -1,124 +1,56 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
-import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
-import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/components/app_button.dart';
 
-/// Work-queue tabs for the HR work-queue dialog — labeled on md+, icon-only on compact.
-class HrQueueSwitcher extends ConsumerWidget {
-  const HrQueueSwitcher({
-    required this.selectedQueue,
-    this.enabled = true,
-    super.key,
-  });
+/// Canonical work queues shown in Filters (dialog / cross-section browse).
+const List<HrQueue> hrWorkspaceQueues = <HrQueue>[
+  HrQueue.leaveRequests,
+  HrQueue.swapRequests,
+  HrQueue.rosterDrafts,
+  HrQueue.unassignedShifts,
+  HrQueue.payrollDrafts,
+];
 
-  final HrQueue selectedQueue;
-  final bool enabled;
-
-  static const List<HrQueue> workspaceQueues = <HrQueue>[
-    HrQueue.leaveRequests,
-    HrQueue.swapRequests,
-    HrQueue.rosterDrafts,
-    HrQueue.unassignedShifts,
-    HrQueue.payrollDrafts,
-  ];
-
-  static List<HrQueue> visibleQueues(HrQueue selected) {
-    if (selected == HrQueue.overdueShifts &&
-        !workspaceQueues.contains(HrQueue.overdueShifts)) {
-      return <HrQueue>[...workspaceQueues, HrQueue.overdueShifts];
-    }
-    return workspaceQueues;
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final bool showLabels =
-        AppBreakpoints.of(context).index >= AppBreakpoint.md.index;
-    final HrWorkspaceController controller = ref.read(
-      hrWorkspaceControllerProvider.notifier,
-    );
-
-    return Wrap(
-      spacing: theme.spacing.xs,
-      runSpacing: theme.spacing.xs,
-      children: <Widget>[
-        for (final HrQueue queue in visibleQueues(selectedQueue))
-          _QueueTab(
-            queue: queue,
-            label: hrQueueLabel(l10n, queue),
-            icon: hrQueueIcon(queue),
-            selected: selectedQueue == queue,
-            showLabel: showLabels,
-            enabled: enabled && selectedQueue != queue,
-            onPressed: () => controller.applyQueue(queue),
-          ),
-      ],
-    );
-  }
+/// Default queue loaded when selecting a worklist primary tab.
+HrQueue? hrDefaultQueueForSection(HrDeskSection section) {
+  return switch (section) {
+    HrDeskSection.leaveRequests => HrQueue.leaveRequests,
+    HrDeskSection.shiftRoster => HrQueue.rosterDrafts,
+    HrDeskSection.payroll => HrQueue.payrollDrafts,
+    HrDeskSection.staffDirectory || HrDeskSection.access => null,
+  };
 }
 
-class _QueueTab extends StatelessWidget {
-  const _QueueTab({
-    required this.queue,
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.showLabel,
-    required this.enabled,
-    required this.onPressed,
-  });
-
-  final HrQueue queue;
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final bool showLabel;
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    final Widget button = showLabel
-        ? AppButton.secondary(
-            label: label,
-            leadingIcon: icon,
-            semanticLabel: label,
-            tooltip: label,
-            enabled: enabled,
-            onPressed: enabled ? onPressed : null,
-          )
-        : AppButton(
-            iconOnly: true,
-            leadingIcon: icon,
-            label: label,
-            semanticLabel: label,
-            tooltip: label,
-            enabled: enabled,
-            onPressed: enabled ? onPressed : null,
-          );
-
-    if (!selected) {
-      return button;
-    }
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(theme.spacing.xs),
-      ),
-      child: button,
-    );
+/// Section-scoped queue facet choices (Filters — not a nested tab strip).
+///
+/// Overdue appears only when already selected / deep-linked.
+List<HrQueue> hrQueuesForSection(HrDeskSection? section, HrQueue selected) {
+  final List<HrQueue> base = switch (section) {
+    HrDeskSection.leaveRequests => <HrQueue>[
+      HrQueue.leaveRequests,
+      HrQueue.swapRequests,
+    ],
+    HrDeskSection.shiftRoster => <HrQueue>[
+      HrQueue.rosterDrafts,
+      HrQueue.unassignedShifts,
+    ],
+    HrDeskSection.payroll => <HrQueue>[HrQueue.payrollDrafts],
+    // Dialog / cross-section browse: all workspace queues.
+    null || HrDeskSection.staffDirectory || HrDeskSection.access =>
+      hrWorkspaceQueues,
+  };
+  if (selected == HrQueue.overdueShifts &&
+      section != HrDeskSection.leaveRequests &&
+      section != HrDeskSection.payroll &&
+      !base.contains(HrQueue.overdueShifts)) {
+    return <HrQueue>[...base, HrQueue.overdueShifts];
   }
+  return base;
+}
+
+/// Whether [queue] belongs on [section] (or any section when [section] is null).
+bool hrQueueAllowedOnSection(HrDeskSection? section, HrQueue queue) {
+  return hrQueuesForSection(section, queue).contains(queue);
 }
 
 String hrQueueLabel(AppLocalizations l10n, HrQueue queue) {
