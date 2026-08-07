@@ -1,6 +1,6 @@
-# Role-Scoped Home Dashboards (Pharmacy Pattern Parity)
+# Major Role-Scoped Home Dashboard Refactor (Pharmacy Pattern Parity)
 
-Bring every listed demo account’s Home to pharmacy’s quality bar—role-tailored KPIs, deep-links that tally with desk table filters, focused actions/shortcuts, and specialty charts—while keeping the shared shell and live metrics unless a gap requires change.
+**Major Home dashboard refactor:** bring every listed demo account’s Home to pharmacy’s quality bar—role-tailored KPIs, deep-links that tally with desk table filters, focused actions/shortcuts, and specialty charts—while keeping the shared shell and live metrics unless a gap requires change. Thin/mid profiles are incomplete deliverables, not optional polish.
 
 ## Context
 
@@ -11,12 +11,12 @@ Bring every listed demo account’s Home to pharmacy’s quality bar—role-tail
 - **Pharmacy (benchmark / preserve):** wide KPI strip, `/pharmacy?section=…` deep-links matching desk filters, focused actions, queue off, `PharmacyMostSoldCharts`, cross-domain expansion blocked.
 - **Reception (near parity):** `ReceptionDeskCharts`, desk KPIs, queue off—keep peer pattern.
 - **Filter tally gap:** Some non-pharmacy metric/chart taps open a workspace without the matching section/queue/table filter, so the desk shows more than the KPI. Counts and destination filters must share predicates.
-- **Other roles:** Live KPIs exist; most use generic `DashboardChartsRow` and thinner deep-links. Gaps: lab week/month not emitted; nurse vitals/tasks; doctor clinical-notes; ops security/utilities; patient history/radiology KPIs.
+- **Other roles:** Live KPIs exist; most use generic `DashboardChartsRow` and thinner deep-links. Gaps: lab week/month; nurse vitals/tasks; doctor clinical-notes; ops security/utilities; patient history/radiology KPIs.
 - **Scope:** Home for demo accounts in `demo_credentials.dart`—not Reports (`prompts/reporting-analytics.md`).
 
 **Intended behavior**
 
-- Job-specific Home: KPIs deep-link into the owning workspace with matching table filters; specialty charts where useful; suppress redundant home queue when the module desk owns the worklist. Extend packs/routes/widgets—no new shells.
+- Major refactor across the account matrix: each Home reaches pharmacy-parity for that job (KPIs, filter-tallied deep-links, actions/shortcuts, specialty charts where useful, queue layout). Pharmacy stays frozen; reception stays peer. Extend packs/routes/widgets—no new shells.
 
 **Definitions**
 
@@ -44,7 +44,7 @@ Bring every listed demo account’s Home to pharmacy’s quality bar—role-tail
 | `ambulance@hosspi.com` | `ambulance_operator` | Thin |
 | `patient.portal@hosspi.com` | `patient` | Thin / safe |
 
-Manager/radiology/mortuary packs outside this list: do not break; do not expand scope.
+Manager/radiology/mortuary packs outside this list: do not break or expand.
 
 ## Requirements
 
@@ -59,10 +59,10 @@ Manager/radiology/mortuary packs outside this list: do not break; do not expand 
 
 ## Constraints
 
-- Reuse Home + shared dashboard architecture. No per-role shells or parallel summary APIs when packs exist.
+- Reuse Home + shared dashboard kit. No per-role shells or parallel summary APIs when packs exist.
 - Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `prompts/.cursor/prompt.mdc`, `frontend/.cursor/layouts.mdc`.
-- Out of scope: Reports Overview, new manager-only emails, production seeding.
-- Optional: deeper specialty charts for admin/HR/patient only if shared patterns fit.
+- Out of scope: Reports Overview, manager-only emails, production seeding.
+- Optional: deeper specialty charts for admin/HR/patient only if patterns fit.
 
 ## Acceptance Criteria
 
@@ -87,6 +87,6 @@ Manager/radiology/mortuary packs outside this list: do not break; do not expand 
 
 ## Verification
 
-- Unit: matrix profile resolution; unauthorized atoms filtered; `metricRouteTargets` / chart taps emit section·queue params that match desk filters.
-- Integration: pack predicates align with destination list filters for packs touched.
-- Manual: `pharmacy@`, `reception@`, `lab@`, `doctor@`, `billing@` — each KPI tap shows the filtered table that explains the count; pharmacy remains the quality bar.
+- Unit: matrix profiles; unauthorized atoms filtered; metric/chart taps emit section·queue params matching desk filters.
+- Integration: pack predicates align with destination list filters.
+- Manual: `pharmacy@`, `reception@`, `lab@`, `doctor@`, `billing@` — KPI taps show the filtered table; pharmacy remains the quality bar.
