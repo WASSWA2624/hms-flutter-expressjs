@@ -256,12 +256,16 @@ void main() {
           'theater',
           'patients',
           'reports',
+          'settings',
         ]),
       );
       expect(
         profile.shortcutIds,
         isNot(containsAll(<String>['emergency', 'lab', 'radiology', 'pharmacy', 'discharge'])),
       );
+      expect(profile.emptyActionIds, contains('continue_consultation'));
+      expect(profile.statusCards.map((card) => card.id), isNot(contains('shifts_today')));
+      expect(profile.statusCards.map((card) => card.id), isNot(contains('emergency_cases_today')));
     });
 
     test(

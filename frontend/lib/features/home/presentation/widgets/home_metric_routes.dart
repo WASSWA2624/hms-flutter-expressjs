@@ -362,14 +362,10 @@ AppRouteData? _clinicalMetricRoute({
       'prescriptions_pending'
           when policy.grants(AppPermissions.clinicalRead) =>
         AppRoutes.clinical,
-      'emergency_cases_today'
-          when policy.grants(AppPermissions.emergencyRead) =>
-        AppRoutes.emergency,
       'opd_notifications_attention'
-          when policy.grants(AppPermissions.patientRead) =>
+          when policy.grants(AppPermissions.opdRead) ||
+              policy.grants(AppPermissions.patientRead) =>
         AppRoutes.opd,
-      'shifts_today' when policy.grants(AppPermissions.rosterRead) =>
-        AppRoutes.hr,
       _ => null,
     };
   }

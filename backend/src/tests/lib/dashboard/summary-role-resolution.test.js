@@ -204,7 +204,6 @@ describe('per-card required_permissions (Dashboard.md)', () => {
       radiologyPending: 4,
       prescriptionsPending: 5,
       criticalLabs: 1,
-      shiftsToday: 2,
       followUpsDue: 0,
       completed: 1,
     });
@@ -231,14 +230,10 @@ describe('per-card required_permissions (Dashboard.md)', () => {
           required_permissions: ['clinical:read'],
           value: 1,
         }),
-        expect.objectContaining({
-          id: 'shifts_today',
-          required_permissions: ['roster:read'],
-          value: 2,
-        }),
       ])
     );
     expect(cards.map((card) => card.id)).not.toContain('emergency_cases_today');
+    expect(cards.map((card) => card.id)).not.toContain('shifts_today');
   });
 
   it('gates biomed work orders on biomed:write and ambulance fleet_out on operations:read', () => {

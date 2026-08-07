@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
@@ -259,6 +260,8 @@ void main() {
         expect(without, isNot(contains('shifts_today')));
         expect(without, isNot(contains('pending_dispense')));
 
+        // Doctor profile no longer declares emergency/roster KPIs — extra grants
+        // must not resurrect those shell destinations on the clinical home.
         final Set<String> withAll = _cardIds(
           filterHomeDashboardForAccess(
             _dashboardForProfile(profile),
@@ -271,10 +274,10 @@ void main() {
             'assigned',
             'radiology_pending',
             'prescriptions_pending',
-            'emergency_cases_today',
-            'shifts_today',
           ]),
         );
+        expect(withAll, isNot(contains('emergency_cases_today')));
+        expect(withAll, isNot(contains('shifts_today')));
         expect(withAll, isNot(contains('pending_dispense')));
       },
     );
@@ -339,6 +342,7 @@ void main() {
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
           AppPermissions.labRead,
+          AppPermissions.reportsRead,
         ],
       );
       final HomeDashboardProfile profile = homeProfileForRole(AppRole.doctor);
@@ -357,7 +361,19 @@ void main() {
       );
       expect(
         actions.map((HomeActionDefinition action) => action.id),
+        containsAll(<String>['order_lab', 'order_radiology']),
+      );
+      expect(
+        actions.map((HomeActionDefinition action) => action.id),
         isNot(contains('create_invoice')),
+      );
+      expect(
+        homeResolveAction('order_lab')!.route,
+        AppRoutes.clinical,
+      );
+      expect(
+        homeResolveAction('order_radiology')!.route,
+        AppRoutes.clinical,
       );
       expect(
         shortcuts.map((HomeShortcutDefinition shortcut) => shortcut.id),
@@ -374,6 +390,14 @@ void main() {
       expect(
         shortcuts.map((HomeShortcutDefinition shortcut) => shortcut.id),
         isNot(contains('radiology')),
+      );
+      expect(
+        shortcuts.map((HomeShortcutDefinition shortcut) => shortcut.id),
+        isNot(contains('emergency')),
+      );
+      expect(
+        shortcuts.map((HomeShortcutDefinition shortcut) => shortcut.id),
+        isNot(contains('discharge')),
       );
     });
 

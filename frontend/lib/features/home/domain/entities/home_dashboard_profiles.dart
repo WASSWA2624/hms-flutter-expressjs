@@ -352,16 +352,10 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
       ),
       HomeStatusCardTemplate(
-        id: 'shifts_today',
-        label: 'My schedule',
-        requiredPermissions: <AppPermission>[AppPermissions.rosterRead],
-      ),
-      HomeStatusCardTemplate(
         id: 'opd_notifications_attention',
         label: 'OPD alerts',
         requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
       ),
-      // Gap: recent clinical notes as a named KPI — no dedicated metric yet.
     ],
     quickActionIds: <String>[
       'continue_consultation',
@@ -378,8 +372,9 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'theater',
       'patients',
       'reports',
+      'settings',
     ],
-    emptyActionIds: const <String>[],
+    emptyActionIds: const <String>['continue_consultation'],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'assigned': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'assigned-to-me'},
@@ -405,7 +400,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'prescriptions_pending': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'assigned-to-me'},
       ),
-      'shifts_today': HomeMetricRouteTarget(),
       'opd_notifications_attention': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'queue'},
       ),

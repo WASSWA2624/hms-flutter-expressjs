@@ -160,9 +160,8 @@ void main() {
           ),
           permissions: const <AppPermission>[
             AppPermissions.clinicalRead,
-            AppPermissions.emergencyRead,
-            AppPermissions.rosterRead,
-            AppPermissions.hrRead,
+            AppPermissions.opdRead,
+            AppPermissions.patientRead,
           ],
           moduleEntitlements: const <AppModuleEntitlement>[
             AppModuleEntitlement(
@@ -173,7 +172,6 @@ void main() {
               code: 'scheduling-queue',
               licenseStatus: 'ACTIVE',
             ),
-            AppModuleEntitlement(code: 'hr-rosters', licenseStatus: 'ACTIVE'),
           ],
           isAuthorizationHydrated: true,
         ),
@@ -209,14 +207,14 @@ void main() {
         homeMetricNavigation(
           profile: profile,
           card: const HomeStatusCard(
-            id: 'shifts_today',
-            label: 'My schedule',
+            id: 'opd_notifications_attention',
+            label: 'OPD alerts',
             value: 1,
-            requiredPermissions: <AppPermission>[AppPermissions.rosterRead],
+            requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
           ),
           policy: policy,
         )?.route,
-        AppRoutes.hr,
+        AppRoutes.opd,
       );
       expect(
         homeMetricNavigation(
