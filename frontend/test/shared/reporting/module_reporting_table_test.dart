@@ -14,9 +14,17 @@ void main() {
   test('humanizes snake_case column keys', () {
     expect(
       moduleReportingColumnLabel('quantity_dispensed'),
-      'Quantity Dispensed',
+      'Quantity Dispensed (units)',
     );
     expect(moduleReportingColumnLabel('risk_state'), 'Risk State');
+    expect(
+      moduleReportingColumnLabel('amount', currencyCode: 'UGX'),
+      'Amount (UGX)',
+    );
+    expect(
+      moduleReportingColumnLabel('profit_margin'),
+      'Profit Margin (%)',
+    );
   });
 
   test('detects numeric and date columns', () {
@@ -37,6 +45,57 @@ void main() {
         preferNumeric: true,
       ),
       '1,250.5',
+    );
+    expect(
+      moduleReportingFormatCellValue(
+        1250.5,
+        locale: locale,
+        unknownLabel: '—',
+        preferNumeric: true,
+        columnKey: 'amount',
+        currencyCode: 'UGX',
+      ),
+      contains('UGX'),
+    );
+    expect(
+      moduleReportingFormatCellValue(
+        42,
+        locale: locale,
+        unknownLabel: '—',
+        preferNumeric: true,
+        columnKey: 'quantity_dispensed',
+      ),
+      '42 units',
+    );
+    expect(
+      moduleReportingFormatCellValue(
+        12,
+        locale: locale,
+        unknownLabel: '—',
+        preferNumeric: true,
+        columnKey: 'days_to_expiry',
+      ),
+      '12 days',
+    );
+    expect(
+      moduleReportingFormatCellValue(
+        0.15,
+        locale: locale,
+        unknownLabel: '—',
+        preferNumeric: true,
+        columnKey: 'profit_margin',
+      ),
+      '15%',
+    );
+    expect(
+      moduleReportingFormatMetricValue(
+        5500,
+        locale: locale,
+        columnKey: 'amount',
+        currencyCode: 'UGX',
+        compact: true,
+      ),
+      '5.5K UGX',
     );
     expect(
       moduleReportingFormatCellValue(
@@ -62,6 +121,29 @@ void main() {
         unknownLabel: '—',
       ),
       '—',
+    );
+  });
+
+  test('infers metric units from column keys', () {
+    expect(
+      moduleReportingMetricUnitForKey('amount'),
+      ModuleReportingMetricUnit.currency,
+    );
+    expect(
+      moduleReportingMetricUnitForKey('quantity_dispensed'),
+      ModuleReportingMetricUnit.quantity,
+    );
+    expect(
+      moduleReportingMetricUnitForKey('profit_margin'),
+      ModuleReportingMetricUnit.percent,
+    );
+    expect(
+      moduleReportingMetricUnitForKey('days_to_expiry'),
+      ModuleReportingMetricUnit.days,
+    );
+    expect(
+      moduleReportingMetricUnitForKey('orders_created'),
+      ModuleReportingMetricUnit.count,
     );
   });
 

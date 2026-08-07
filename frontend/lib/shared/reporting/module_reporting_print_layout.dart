@@ -183,6 +183,7 @@ String moduleReportingPrintLayoutBodyHtml({
   required DateTime? to,
   required Locale locale,
   Map<String, String> chartImages = const <String, String>{},
+  String? currencyCode,
 }) {
   final List<ModuleReportingPrintBlock> visible = blocks
       .where((ModuleReportingPrintBlock block) => block.visible)
@@ -234,6 +235,7 @@ String moduleReportingPrintLayoutBodyHtml({
           labels: labels,
           locale: locale,
           chartImageDataUrl: chartImages[block.id],
+          currencyCode: currencyCode,
         ),
       ),
     );
@@ -247,6 +249,7 @@ String _blockHtml({
   required ModuleReportingLabels labels,
   required Locale locale,
   String? chartImageDataUrl,
+  String? currencyCode,
 }) {
   final StringBuffer html = StringBuffer();
   if (block.caption.trim().isNotEmpty) {
@@ -265,6 +268,8 @@ String _blockHtml({
     return html.toString();
   }
 
+  final String? metricKey = moduleReportingSnapshotPrimaryMetricKey(snapshot);
+
   switch (block.kind) {
     case ModuleReportingVisualizationKind.table:
       final List<String> columns = block.visibleColumns.isEmpty
@@ -276,7 +281,14 @@ String _blockHtml({
       );
       html.write(
         PrintFormTemplate.table(
-          headers: columns.map(moduleReportingColumnLabel).toList(),
+          headers: columns
+              .map(
+                (String key) => moduleReportingColumnLabel(
+                  key,
+                  currencyCode: currencyCode,
+                ),
+              )
+              .toList(),
           emptyText: labels.emptyBody,
           rows: <List<String>>[
             for (final Map<String, Object?> row in rows)
@@ -288,6 +300,8 @@ String _blockHtml({
                     unknownLabel: labels.unknownValue,
                     preferNumeric: moduleReportingIsNumericColumn(column),
                     preferDate: moduleReportingIsDateColumn(column),
+                    columnKey: column,
+                    currencyCode: currencyCode,
                   ),
               ],
           ],
@@ -295,8 +309,11 @@ String _blockHtml({
       );
       break;
     case ModuleReportingVisualizationKind.kpiCards:
-      final List<DashboardMetricCardData> cards =
-          moduleReportingKpiCards(snapshot);
+      final List<DashboardMetricCardData> cards = moduleReportingKpiCards(
+        snapshot,
+        locale: locale,
+        currencyCode: currencyCode,
+      );
       html.write(
         PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
           for (final DashboardMetricCardData card in cards)
@@ -326,6 +343,8 @@ String _blockHtml({
               locale: locale,
               unknownLabel: labels.unknownValue,
               preferNumeric: true,
+              columnKey: point.metricKey ?? metricKey,
+              currencyCode: currencyCode,
             ),
           ),
       ];
@@ -339,6 +358,8 @@ String _blockHtml({
                 locale: locale,
                 unknownLabel: labels.unknownValue,
                 preferNumeric: true,
+                columnKey: metricKey,
+                currencyCode: currencyCode,
               ),
             ),
           );

@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_data.dart';
@@ -20,6 +19,7 @@ class ModuleReportingVisualizationPanel extends StatefulWidget {
     required this.report,
     required this.labels,
     this.canExport = true,
+    this.currencyCode,
     super.key,
   });
 
@@ -27,6 +27,7 @@ class ModuleReportingVisualizationPanel extends StatefulWidget {
   final ModuleReportingReport report;
   final ModuleReportingLabels labels;
   final bool canExport;
+  final String? currencyCode;
 
   @override
   State<ModuleReportingVisualizationPanel> createState() =>
@@ -81,6 +82,7 @@ class _ModuleReportingVisualizationPanelState
           title: widget.report.label,
           canExport: widget.canExport,
           storageKeyPrefix: widget.report.id,
+          currencyCode: widget.currencyCode,
         ),
       ],
     );
@@ -281,6 +283,7 @@ class ModuleReportingVisualizationView extends StatelessWidget {
     this.fitForPrint = false,
     this.storageKeyPrefix,
     this.dataLimit,
+    this.currencyCode,
     super.key,
   });
 
@@ -301,10 +304,13 @@ class ModuleReportingVisualizationView extends StatelessWidget {
   final bool fitForPrint;
   final String? storageKeyPrefix;
   final int? dataLimit;
+  final String? currencyCode;
 
   @override
   Widget build(BuildContext context) {
     final int seriesLimit = dataLimit ?? 40;
+    final Locale locale = Localizations.localeOf(context);
+    final String? metricKey = moduleReportingSnapshotPrimaryMetricKey(snapshot);
     switch (kind) {
       case ModuleReportingVisualizationKind.table:
         return ModuleReportingSnapshotTable(
@@ -313,10 +319,15 @@ class ModuleReportingVisualizationView extends StatelessWidget {
           canExport: canExport,
           storageKeyPrefix: storageKeyPrefix ?? title,
           exportFileNameStem: storageKeyPrefix ?? title,
+          currencyCode: currencyCode,
         );
       case ModuleReportingVisualizationKind.kpiCards:
         return DashboardMetricStrip(
-          cards: moduleReportingKpiCards(snapshot),
+          cards: moduleReportingKpiCards(
+            snapshot,
+            locale: locale,
+            currencyCode: currencyCode,
+          ),
           maxCards: 6,
           compact: true,
         );
@@ -329,6 +340,8 @@ class ModuleReportingVisualizationView extends StatelessWidget {
           embedded: embedded,
           showOptionsBar: showOptionsBar,
           fitForPrint: fitForPrint,
+          metricKey: metricKey,
+          currencyCode: currencyCode,
         );
       case ModuleReportingVisualizationKind.barChart:
         return _SeriesChartHost(
@@ -339,6 +352,8 @@ class ModuleReportingVisualizationView extends StatelessWidget {
           embedded: embedded,
           showOptionsBar: showOptionsBar,
           fitForPrint: fitForPrint,
+          metricKey: metricKey,
+          currencyCode: currencyCode,
         );
       case ModuleReportingVisualizationKind.areaChart:
         return _SeriesChartHost(
@@ -349,6 +364,8 @@ class ModuleReportingVisualizationView extends StatelessWidget {
           embedded: embedded,
           showOptionsBar: showOptionsBar,
           fitForPrint: fitForPrint,
+          metricKey: metricKey,
+          currencyCode: currencyCode,
         );
       case ModuleReportingVisualizationKind.donutChart:
         return _DonutChartHost(
@@ -362,6 +379,8 @@ class ModuleReportingVisualizationView extends StatelessWidget {
           embedded: embedded,
           showOptionsBar: showOptionsBar,
           fitForPrint: fitForPrint,
+          metricKey: metricKey,
+          currencyCode: currencyCode,
         );
       case ModuleReportingVisualizationKind.rankingChart:
         return _RankingChart(
@@ -374,12 +393,15 @@ class ModuleReportingVisualizationView extends StatelessWidget {
                     ModuleReportingSeriesPoint(
                       label: segment.label,
                       value: segment.value,
+                      metricKey: metricKey,
                     ),
               )
               .toList(growable: false),
           embedded: embedded,
           showOptionsBar: showOptionsBar,
           fitForPrint: fitForPrint,
+          metricKey: metricKey,
+          currencyCode: currencyCode,
         );
       case ModuleReportingVisualizationKind.gaugeChart:
         return _GaugeChart(
@@ -387,6 +409,8 @@ class ModuleReportingVisualizationView extends StatelessWidget {
           embedded: embedded,
           showOptionsBar: showOptionsBar,
           fitForPrint: fitForPrint,
+          metricKey: metricKey,
+          currencyCode: currencyCode,
         );
       case ModuleReportingVisualizationKind.scatterChart:
         return _ScatterChart(
@@ -394,6 +418,7 @@ class ModuleReportingVisualizationView extends StatelessWidget {
           embedded: embedded,
           showOptionsBar: showOptionsBar,
           fitForPrint: fitForPrint,
+          currencyCode: currencyCode,
         );
       case ModuleReportingVisualizationKind.heatmap:
         return _HeatmapChart(
@@ -401,6 +426,8 @@ class ModuleReportingVisualizationView extends StatelessWidget {
           embedded: embedded,
           showOptionsBar: showOptionsBar,
           fitForPrint: fitForPrint,
+          metricKey: metricKey,
+          currencyCode: currencyCode,
         );
     }
   }
@@ -689,6 +716,8 @@ class _SeriesChartHost extends StatefulWidget {
     this.embedded = false,
     this.showOptionsBar = true,
     this.fitForPrint = false,
+    this.metricKey,
+    this.currencyCode,
   });
 
   final String title;
@@ -698,6 +727,8 @@ class _SeriesChartHost extends StatefulWidget {
   final bool embedded;
   final bool showOptionsBar;
   final bool fitForPrint;
+  final String? metricKey;
+  final String? currencyCode;
 
   @override
   State<_SeriesChartHost> createState() => _SeriesChartHostState();
@@ -800,7 +831,16 @@ class _SeriesChartHostState extends State<_SeriesChartHost> {
                 showValues: showValues,
                 showAxisLabels: showAxisLabels,
                 valueFormatter: (num value) =>
-                    AppFormatters.compactNumber(value, locale),
+                    moduleReportingFormatMetricValue(
+                      value,
+                      locale: locale,
+                      columnKey: widget.metricKey ??
+                          (widget.points.isEmpty
+                              ? null
+                              : widget.points.first.metricKey),
+                      currencyCode: widget.currencyCode,
+                      compact: true,
+                    ),
                 minBarHeight: fitAll ? 4 : 0,
               ),
             ),
@@ -830,7 +870,16 @@ class _SeriesChartHostState extends State<_SeriesChartHost> {
                   colors: pointColors,
                   values: <String>[
                     for (final DashboardTrendPointData point in trendPoints)
-                      AppFormatters.compactNumber(point.value, locale),
+                      moduleReportingFormatMetricValue(
+                        point.value,
+                        locale: locale,
+                        columnKey: widget.metricKey ??
+                            (widget.points.isEmpty
+                                ? null
+                                : widget.points.first.metricKey),
+                        currencyCode: widget.currencyCode,
+                        compact: true,
+                      ),
                   ],
                 ),
               ],
@@ -851,6 +900,8 @@ class _DonutChartHost extends StatefulWidget {
     this.embedded = false,
     this.showOptionsBar = true,
     this.fitForPrint = false,
+    this.metricKey,
+    this.currencyCode,
   });
 
   final String title;
@@ -860,6 +911,8 @@ class _DonutChartHost extends StatefulWidget {
   final bool embedded;
   final bool showOptionsBar;
   final bool fitForPrint;
+  final String? metricKey;
+  final String? currencyCode;
 
   @override
   State<_DonutChartHost> createState() => _DonutChartHostState();
@@ -927,7 +980,13 @@ class _DonutChartHostState extends State<_DonutChartHost> {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     Text(
-                      AppFormatters.compactNumber(total, locale),
+                      moduleReportingFormatMetricValue(
+                        total,
+                        locale: locale,
+                        columnKey: widget.metricKey,
+                        currencyCode: widget.currencyCode,
+                        compact: true,
+                      ),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: AppFontWeight.emphasis,
                       ),
@@ -958,7 +1017,13 @@ class _DonutChartHostState extends State<_DonutChartHost> {
                       ? <String>[
                           for (final DashboardDistributionSegmentData segment
                               in coloredSegments)
-                            AppFormatters.compactNumber(segment.value, locale),
+                            moduleReportingFormatMetricValue(
+                              segment.value,
+                              locale: locale,
+                              columnKey: widget.metricKey,
+                              currencyCode: widget.currencyCode,
+                              compact: true,
+                            ),
                         ]
                       : const <String>[],
                 );
@@ -995,12 +1060,16 @@ class _RankingChart extends StatefulWidget {
     this.embedded = false,
     this.showOptionsBar = true,
     this.fitForPrint = false,
+    this.metricKey,
+    this.currencyCode,
   });
 
   final List<ModuleReportingSeriesPoint> points;
   final bool embedded;
   final bool showOptionsBar;
   final bool fitForPrint;
+  final String? metricKey;
+  final String? currencyCode;
 
   @override
   State<_RankingChart> createState() => _RankingChartState();
@@ -1096,7 +1165,14 @@ class _RankingChartState extends State<_RankingChart> {
                     SizedBox(
                       width: 72,
                       child: Text(
-                        AppFormatters.compactNumber(top[index].value, locale),
+                        moduleReportingFormatMetricValue(
+                          top[index].value,
+                          locale: locale,
+                          columnKey:
+                              top[index].metricKey ?? widget.metricKey,
+                          currencyCode: widget.currencyCode,
+                          compact: true,
+                        ),
                         textAlign: TextAlign.right,
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: dashboardFallbackSegmentColor(
@@ -1123,12 +1199,16 @@ class _GaugeChart extends StatefulWidget {
     this.embedded = false,
     this.showOptionsBar = true,
     this.fitForPrint = false,
+    this.metricKey,
+    this.currencyCode,
   });
 
   final List<ModuleReportingSeriesPoint> points;
   final bool embedded;
   final bool showOptionsBar;
   final bool fitForPrint;
+  final String? metricKey;
+  final String? currencyCode;
 
   @override
   State<_GaugeChart> createState() => _GaugeChartState();
@@ -1191,7 +1271,16 @@ class _GaugeChartState extends State<_GaugeChart> {
                 highColor: high,
                 labelColor: colors.onSurface,
                 valueLabel: _options.showValues
-                    ? AppFormatters.compactNumber(value, locale)
+                    ? moduleReportingFormatMetricValue(
+                        value,
+                        locale: locale,
+                        columnKey: widget.points.isEmpty
+                            ? widget.metricKey
+                            : (widget.points.first.metricKey ??
+                                  widget.metricKey),
+                        currencyCode: widget.currencyCode,
+                        compact: true,
+                      )
                     : '',
                 textStyle: theme.textTheme.titleMedium,
               ),
@@ -1291,12 +1380,14 @@ class _ScatterChart extends StatefulWidget {
     this.embedded = false,
     this.showOptionsBar = true,
     this.fitForPrint = false,
+    this.currencyCode,
   });
 
   final ModuleReportingReportSnapshot snapshot;
   final bool embedded;
   final bool showOptionsBar;
   final bool fitForPrint;
+  final String? currencyCode;
 
   @override
   State<_ScatterChart> createState() => _ScatterChartState();
@@ -1317,8 +1408,14 @@ class _ScatterChartState extends State<_ScatterChart> {
     }
     final String xKey = numeric[0];
     final String yKey = numeric[1];
-    final String xLabel = moduleReportingColumnLabel(xKey);
-    final String yLabel = moduleReportingColumnLabel(yKey);
+    final String xLabel = moduleReportingColumnLabel(
+      xKey,
+      currencyCode: widget.currencyCode,
+    );
+    final String yLabel = moduleReportingColumnLabel(
+      yKey,
+      currencyCode: widget.currencyCode,
+    );
     final List<Offset> points = <Offset>[
       for (final Map<String, Object?> row in widget.snapshot.rows.take(80))
         Offset(
@@ -1466,12 +1563,16 @@ class _HeatmapChart extends StatefulWidget {
     this.embedded = false,
     this.showOptionsBar = true,
     this.fitForPrint = false,
+    this.metricKey,
+    this.currencyCode,
   });
 
   final List<ModuleReportingHeatmapCell> cells;
   final bool embedded;
   final bool showOptionsBar;
   final bool fitForPrint;
+  final String? metricKey;
+  final String? currencyCode;
 
   @override
   State<_HeatmapChart> createState() => _HeatmapChartState();
@@ -1611,9 +1712,12 @@ class _HeatmapChartState extends State<_HeatmapChart> {
                                     ),
                                     child: _options.showValues
                                         ? Text(
-                                            AppFormatters.compactNumber(
+                                            moduleReportingFormatMetricValue(
                                               value,
-                                              locale,
+                                              locale: locale,
+                                              columnKey: widget.metricKey,
+                                              currencyCode: widget.currencyCode,
+                                              compact: true,
                                             ),
                                             style: theme.textTheme.labelSmall
                                                 ?.copyWith(

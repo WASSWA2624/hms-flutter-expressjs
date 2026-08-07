@@ -39,6 +39,7 @@ Build the pharmacy **Reporting** tab as a data-driven catalog of report categori
 - Do not remove or rewrite Analytics chips, Catalog/Delivery panels, or non-pharmacy Overview except where Reporting already hides dashboard chrome.
 - Do not require a new reports route family for subcategory dialogs; stay in-place on Overview Reporting.
 - Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `prompts/.cursor/prompt.mdc`. Source of category/subcategory lists: `.cursor/reporting-analytics.md/pharmacy-reporting.md`.
+- Per-category dialog data mapping, units, and demo seed work: `prompts/pharmacy-reporting/` (`index.md` + `01`–`17`).
 
 ## Acceptance Criteria
 

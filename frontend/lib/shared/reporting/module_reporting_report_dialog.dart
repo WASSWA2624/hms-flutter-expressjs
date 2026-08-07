@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/currency/effective_default_currency_provider.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
@@ -292,6 +293,7 @@ class _ModuleReportingReportDialogState
           snapshot: _snapshot,
           report: widget.report,
           labels: _labels,
+          currencyCode: ref.watch(effectiveDefaultCurrencyProvider),
         );
     }
   }

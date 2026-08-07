@@ -21,6 +21,7 @@ Future<Map<String, String>> captureModuleReportingChartImages({
   required List<ModuleReportingPrintBlock> blocks,
   double pixelRatio = 2,
   double captureWidth = moduleReportingPrintCaptureWidth,
+  String? currencyCode,
 }) async {
   final List<ModuleReportingPrintBlock> chartBlocks = blocks
       .where(
@@ -75,6 +76,7 @@ Future<Map<String, String>> captureModuleReportingChartImages({
                               fitForPrint: true,
                               storageKeyPrefix: 'print-capture-${block.id}',
                               dataLimit: block.maxRows.clamp(1, 24),
+                              currencyCode: currencyCode,
                             ),
                           ),
                         ),

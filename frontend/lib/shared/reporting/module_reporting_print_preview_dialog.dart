@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/currency/effective_default_currency_provider.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -120,12 +121,16 @@ class _ModuleReportingPrintPreviewDialogState
     setState(() => _isPrinting = true);
     try {
       final Locale locale = Localizations.localeOf(context);
+      final String currencyCode = widget.ref.read(
+        effectiveDefaultCurrencyProvider,
+      );
       final Map<String, String> chartImages =
           await captureModuleReportingChartImages(
             context: context,
             snapshot: widget.snapshot,
             labels: _labels,
             blocks: _blocks,
+            currencyCode: currencyCode,
           );
       if (!mounted) {
         return;
@@ -140,6 +145,7 @@ class _ModuleReportingPrintPreviewDialogState
         to: widget.to,
         locale: locale,
         chartImages: chartImages,
+        currencyCode: currencyCode,
       );
       if (!mounted) {
         return;
@@ -288,6 +294,7 @@ class _ModuleReportingPrintPreviewDialogState
       labels: _labels,
       selectedBlockId: _selectedBlockId,
       scale: _scale,
+      currencyCode: widget.ref.watch(effectiveDefaultCurrencyProvider),
       onSelect: (String id) => setState(() => _selectedBlockId = id),
       onMove: (String id, Offset delta) {
         _updateBlock(id, (ModuleReportingPrintBlock block) {
@@ -476,6 +483,7 @@ class _PrintCanvas extends StatefulWidget {
     required this.onSelect,
     required this.onMove,
     required this.onResize,
+    this.currencyCode,
   });
 
   final List<ModuleReportingPrintBlock> blocks;
@@ -486,6 +494,7 @@ class _PrintCanvas extends StatefulWidget {
   final ValueChanged<String> onSelect;
   final void Function(String id, Offset delta) onMove;
   final void Function(String id, Offset delta) onResize;
+  final String? currencyCode;
 
   @override
   State<_PrintCanvas> createState() => _PrintCanvasState();
@@ -565,6 +574,7 @@ class _PrintCanvasState extends State<_PrintCanvas> {
                                   selected: block.id == widget.selectedBlockId,
                                   snapshot: widget.snapshot,
                                   labels: widget.labels,
+                                  currencyCode: widget.currencyCode,
                                   onSelect: () => widget.onSelect(block.id),
                                   onMove: (Offset delta) =>
                                       widget.onMove(block.id, delta),
@@ -595,6 +605,7 @@ class _DraggablePrintBlock extends StatelessWidget {
     required this.onSelect,
     required this.onMove,
     required this.onResize,
+    this.currencyCode,
   });
 
   final ModuleReportingPrintBlock block;
@@ -604,6 +615,7 @@ class _DraggablePrintBlock extends StatelessWidget {
   final VoidCallback onSelect;
   final ValueChanged<Offset> onMove;
   final ValueChanged<Offset> onResize;
+  final String? currencyCode;
 
   @override
   Widget build(BuildContext context) {
@@ -668,6 +680,7 @@ class _DraggablePrintBlock extends StatelessWidget {
                         block: block,
                         snapshot: snapshot,
                         labels: labels,
+                        currencyCode: currencyCode,
                       ),
                     ),
                   ],
@@ -707,11 +720,13 @@ class _BlockPreviewBody extends StatelessWidget {
     required this.block,
     required this.snapshot,
     required this.labels,
+    this.currencyCode,
   });
 
   final ModuleReportingPrintBlock block;
   final ModuleReportingReportSnapshot snapshot;
   final ModuleReportingLabels labels;
+  final String? currencyCode;
 
   @override
   Widget build(BuildContext context) {
@@ -743,6 +758,7 @@ class _BlockPreviewBody extends StatelessWidget {
       showOptionsBar: true,
       storageKeyPrefix: 'print-${block.id}',
       dataLimit: block.maxRows.clamp(1, 24),
+      currencyCode: currencyCode,
     );
 
     // Nested chart chrome (options + legend + painters) can exceed the block

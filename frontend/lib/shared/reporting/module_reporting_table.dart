@@ -4,14 +4,200 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_data.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_models.dart';
 
+/// Display unit inferred from a report column / summary key.
+enum ModuleReportingMetricUnit {
+  currency,
+  quantity,
+  percent,
+  days,
+  count,
+  plain,
+}
+
+/// Preferred numeric keys when projecting a primary series value.
+const List<String> moduleReportingPrimaryNumericKeyOrder = <String>[
+  'amount',
+  'quantity_dispensed',
+  'orders_created',
+  'dispensed',
+  'quantity',
+  'value',
+  'profit',
+  'returns',
+];
+
+/// Resolves the unit for a snake_case metric key.
+ModuleReportingMetricUnit moduleReportingMetricUnitForKey(String? key) {
+  if (key == null) {
+    return ModuleReportingMetricUnit.plain;
+  }
+  final String normalized = key.trim().toLowerCase();
+  if (normalized.isEmpty) {
+    return ModuleReportingMetricUnit.plain;
+  }
+
+  if (normalized.contains('margin') ||
+      normalized.contains('percent') ||
+      normalized.contains('rate') ||
+      normalized.endsWith('_pct') ||
+      normalized.endsWith('_pc')) {
+    return ModuleReportingMetricUnit.percent;
+  }
+
+  if (normalized.startsWith('days_') ||
+      normalized == 'days_to_expiry' ||
+      normalized.endsWith('_days')) {
+    return ModuleReportingMetricUnit.days;
+  }
+
+  if (normalized.contains('amount') ||
+      normalized.contains('profit') ||
+      normalized.contains('price') ||
+      normalized.contains('cost') ||
+      normalized.contains('revenue') ||
+      normalized.contains('sales') ||
+      normalized == 'value' ||
+      (normalized.endsWith('_total') && !normalized.contains('count'))) {
+    return ModuleReportingMetricUnit.currency;
+  }
+
+  if (normalized.contains('quantity') ||
+      normalized.endsWith('_qty') ||
+      normalized == 'dispensed' ||
+      normalized == 'returns' ||
+      normalized.contains('reorder')) {
+    return ModuleReportingMetricUnit.quantity;
+  }
+
+  if (normalized.contains('count') ||
+      normalized == 'orders_created' ||
+      normalized == 'cancelled' ||
+      normalized == 'partially_dispensed') {
+    return ModuleReportingMetricUnit.count;
+  }
+
+  return ModuleReportingMetricUnit.plain;
+}
+
+String? moduleReportingPrimaryNumericKeyFromColumns(List<String> columns) {
+  final Set<String> available = columns
+      .map((String key) => key.trim().toLowerCase())
+      .where((String key) => key.isNotEmpty)
+      .toSet();
+  for (final String preferred in moduleReportingPrimaryNumericKeyOrder) {
+    if (available.contains(preferred)) {
+      return preferred;
+    }
+  }
+  for (final String key in columns) {
+    if (moduleReportingIsNumericColumn(key)) {
+      return key;
+    }
+  }
+  return null;
+}
+
+String? moduleReportingPrimaryNumericKey(Map<String, Object?> row) {
+  for (final String preferred in moduleReportingPrimaryNumericKeyOrder) {
+    if (row.containsKey(preferred) &&
+        moduleReportingAsNum(row[preferred]) != null) {
+      return preferred;
+    }
+  }
+  for (final MapEntry<String, Object?> entry in row.entries) {
+    if (moduleReportingIsNumericColumn(entry.key) &&
+        moduleReportingAsNum(entry.value) != null) {
+      return entry.key;
+    }
+  }
+  return null;
+}
+
+String? moduleReportingSnapshotPrimaryMetricKey(
+  ModuleReportingReportSnapshot snapshot,
+) {
+  final String? fromColumns = moduleReportingPrimaryNumericKeyFromColumns(
+    snapshot.columns,
+  );
+  if (fromColumns != null) {
+    return fromColumns;
+  }
+  if (snapshot.rows.isNotEmpty) {
+    return moduleReportingPrimaryNumericKey(snapshot.rows.first);
+  }
+  final Map<String, Object?>? summary = snapshot.summary;
+  if (summary != null && summary.isNotEmpty) {
+    return moduleReportingPrimaryNumericKey(summary);
+  }
+  return null;
+}
+
+/// Formats a numeric metric with its inferred unit (currency, units, %, days).
+String moduleReportingFormatMetricValue(
+  num value, {
+  required Locale locale,
+  String? columnKey,
+  String? currencyCode,
+  bool compact = false,
+}) {
+  final ModuleReportingMetricUnit unit = moduleReportingMetricUnitForKey(
+    columnKey,
+  );
+  final String code =
+      (currencyCode == null || currencyCode.trim().isEmpty)
+      ? appDefaultCurrencyCode
+      : currencyCode.trim().toUpperCase();
+
+  switch (unit) {
+    case ModuleReportingMetricUnit.currency:
+      if (compact) {
+        return '${AppFormatters.compactNumber(value, locale)} $code';
+      }
+      return AppFormatters.currency(value, locale, currencyCode: code);
+    case ModuleReportingMetricUnit.quantity:
+      final String number = compact
+          ? AppFormatters.compactNumber(value, locale)
+          : value % 1 == 0
+          ? AppFormatters.decimal(value.toInt(), locale)
+          : AppFormatters.decimal(value, locale);
+      return '$number units';
+    case ModuleReportingMetricUnit.percent:
+      if (value.abs() <= 1) {
+        return AppFormatters.percent(value, locale);
+      }
+      final String number = compact
+          ? AppFormatters.compactNumber(value, locale)
+          : value % 1 == 0
+          ? AppFormatters.decimal(value.toInt(), locale)
+          : AppFormatters.decimal(value, locale);
+      return '$number%';
+    case ModuleReportingMetricUnit.days:
+      final String number = compact
+          ? AppFormatters.compactNumber(value, locale)
+          : value % 1 == 0
+          ? AppFormatters.decimal(value.toInt(), locale)
+          : AppFormatters.decimal(value, locale);
+      return '$number days';
+    case ModuleReportingMetricUnit.count:
+    case ModuleReportingMetricUnit.plain:
+      if (compact) {
+        return AppFormatters.compactNumber(value, locale);
+      }
+      if (value % 1 == 0) {
+        return AppFormatters.decimal(value.toInt(), locale);
+      }
+      return AppFormatters.decimal(value, locale);
+  }
+}
+
 /// Title-cases snake/kebab keys for table headers (`quantity_dispensed` →
-/// `Quantity Dispensed`).
-String moduleReportingColumnLabel(String key) {
+/// `Quantity Dispensed`). Optionally appends a unit hint.
+String moduleReportingColumnLabel(String key, {String? currencyCode}) {
   final String trimmed = key.trim();
   if (trimmed.isEmpty) {
     return trimmed;
   }
-  return trimmed
+  final String base = trimmed
       .replaceAll(RegExp(r'[_\-]+'), ' ')
       .split(RegExp(r'\s+'))
       .where((String part) => part.isNotEmpty)
@@ -22,6 +208,22 @@ String moduleReportingColumnLabel(String key) {
         return '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}';
       })
       .join(' ');
+
+  if (!moduleReportingIsNumericColumn(trimmed)) {
+    return base;
+  }
+
+  final String code =
+      (currencyCode == null || currencyCode.trim().isEmpty)
+      ? appDefaultCurrencyCode
+      : currencyCode.trim().toUpperCase();
+  return switch (moduleReportingMetricUnitForKey(trimmed)) {
+    ModuleReportingMetricUnit.currency => '$base ($code)',
+    ModuleReportingMetricUnit.quantity => '$base (units)',
+    ModuleReportingMetricUnit.percent => '$base (%)',
+    ModuleReportingMetricUnit.days => '$base (days)',
+    ModuleReportingMetricUnit.count || ModuleReportingMetricUnit.plain => base,
+  };
 }
 
 bool moduleReportingIsNumericColumn(String key) {
@@ -51,6 +253,8 @@ bool moduleReportingIsNumericColumn(String key) {
       normalized.contains('amount') ||
       normalized.contains('profit') ||
       normalized.contains('price') ||
+      normalized.contains('margin') ||
+      normalized.contains('percent') ||
       normalized.contains('value') ||
       normalized.contains('count') ||
       normalized.startsWith('days_') ||
@@ -108,6 +312,9 @@ String moduleReportingFormatCellValue(
   required String unknownLabel,
   bool preferNumeric = false,
   bool preferDate = false,
+  String? columnKey,
+  String? currencyCode,
+  bool compact = false,
 }) {
   if (value == null) {
     return unknownLabel;
@@ -132,6 +339,18 @@ String moduleReportingFormatCellValue(
   if (preferNumeric || value is num) {
     final num? number = moduleReportingAsNum(value);
     if (number != null) {
+      if (columnKey != null) {
+        return moduleReportingFormatMetricValue(
+          number,
+          locale: locale,
+          columnKey: columnKey,
+          currencyCode: currencyCode,
+          compact: compact,
+        );
+      }
+      if (compact) {
+        return AppFormatters.compactNumber(number, locale);
+      }
       if (number % 1 == 0) {
         return AppFormatters.decimal(number.toInt(), locale);
       }
@@ -155,15 +374,16 @@ List<AppListTableColumn<Map<String, Object?>>> moduleReportingTableColumns({
   required List<String> columnKeys,
   required Locale locale,
   required String unknownLabel,
+  String? currencyCode,
 }) {
   return <AppListTableColumn<Map<String, Object?>>>[
     for (final String key in columnKeys)
       AppListTableColumn<Map<String, Object?>>(
         id: key,
-        label: moduleReportingColumnLabel(key),
+        label: moduleReportingColumnLabel(key, currencyCode: currencyCode),
         numeric: moduleReportingIsNumericColumn(key),
         preferredWidth: moduleReportingIsNumericColumn(key)
-            ? 128
+            ? 148
             : moduleReportingIsDateColumn(key)
             ? 148
             : 200,
@@ -194,6 +414,8 @@ List<AppListTableColumn<Map<String, Object?>>> moduleReportingTableColumns({
             locale: locale,
             unknownLabel: unknownLabel,
             preferDate: moduleReportingIsDateColumn(key),
+            columnKey: key,
+            currencyCode: currencyCode,
           );
         },
         cellBuilder: (BuildContext context, Map<String, Object?> row) {
@@ -205,6 +427,8 @@ List<AppListTableColumn<Map<String, Object?>>> moduleReportingTableColumns({
             unknownLabel: unknownLabel,
             preferNumeric: numeric,
             preferDate: isDate,
+            columnKey: key,
+            currencyCode: currencyCode,
           );
           final ThemeData theme = Theme.of(context);
           final TextStyle? style = theme.textTheme.bodyMedium?.copyWith(
@@ -235,6 +459,7 @@ bool moduleReportingRowMatchesQuery(
   String query, {
   required Locale locale,
   required String unknownLabel,
+  String? currencyCode,
 }) {
   final String normalized = query.trim().toLowerCase();
   if (normalized.isEmpty) {
@@ -247,6 +472,8 @@ bool moduleReportingRowMatchesQuery(
       unknownLabel: unknownLabel,
       preferNumeric: moduleReportingIsNumericColumn(key),
       preferDate: moduleReportingIsDateColumn(key),
+      columnKey: key,
+      currencyCode: currencyCode,
     ).toLowerCase();
     if (haystack.contains(normalized)) {
       return true;
@@ -267,6 +494,7 @@ class ModuleReportingSnapshotTable extends StatefulWidget {
     this.canExport = true,
     this.storageKeyPrefix,
     this.exportFileNameStem,
+    this.currencyCode,
     super.key,
   });
 
@@ -277,6 +505,7 @@ class ModuleReportingSnapshotTable extends StatefulWidget {
   final bool canExport;
   final String? storageKeyPrefix;
   final String? exportFileNameStem;
+  final String? currencyCode;
 
   @override
   State<ModuleReportingSnapshotTable> createState() =>
@@ -311,11 +540,13 @@ class _ModuleReportingSnapshotTableState
     final String unknownLabel = labels.unknownValue;
     final List<String> columnKeys = snapshot.columns;
     final List<Map<String, Object?>> rows = snapshot.rows;
+    final String? currencyCode = widget.currencyCode;
     final List<AppListTableColumn<Map<String, Object?>>> columns =
         moduleReportingTableColumns(
           columnKeys: columnKeys,
           locale: locale,
           unknownLabel: unknownLabel,
+          currencyCode: currencyCode,
         );
     final String? storagePrefix = widget.storageKeyPrefix;
     final String fileStem =
@@ -377,6 +608,7 @@ class _ModuleReportingSnapshotTableState
               query,
               locale: locale,
               unknownLabel: unknownLabel,
+              currencyCode: currencyCode,
             ),
       ),
       emptyBuilder: (_) => AppMutedText(labels.emptyBody),
@@ -388,14 +620,16 @@ class _ModuleReportingSnapshotTableState
           unknownLabel: unknownLabel,
           preferNumeric: moduleReportingIsNumericColumn(titleKey),
           preferDate: moduleReportingIsDateColumn(titleKey),
+          columnKey: titleKey,
+          currencyCode: currencyCode,
         );
         final List<AppListTableMobileMeta> meta = <AppListTableMobileMeta>[];
         for (final String key in columnKeys.skip(1).take(3)) {
           meta.add(
             AppListTableMobileMeta(
               label:
-                  '${moduleReportingColumnLabel(key)}: '
-                  '${moduleReportingFormatCellValue(row[key], locale: locale, unknownLabel: unknownLabel, preferNumeric: moduleReportingIsNumericColumn(key), preferDate: moduleReportingIsDateColumn(key))}',
+                  '${moduleReportingColumnLabel(key, currencyCode: currencyCode)}: '
+                  '${moduleReportingFormatCellValue(row[key], locale: locale, unknownLabel: unknownLabel, preferNumeric: moduleReportingIsNumericColumn(key), preferDate: moduleReportingIsDateColumn(key), columnKey: key, currencyCode: currencyCode)}',
             ),
           );
         }

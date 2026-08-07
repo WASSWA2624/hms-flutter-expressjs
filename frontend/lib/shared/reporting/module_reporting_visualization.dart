@@ -26,12 +26,20 @@ final class ModuleReportingSeriesPoint {
     required this.value,
     this.secondaryValue,
     this.category,
+    this.metricKey,
+    this.secondaryMetricKey,
   });
 
   final String label;
   final num value;
   final num? secondaryValue;
   final String? category;
+
+  /// Column key used for [value] unit formatting (currency, units, …).
+  final String? metricKey;
+
+  /// Column key used for [secondaryValue] unit formatting.
+  final String? secondaryMetricKey;
 }
 
 /// Heatmap cell projected from categorical × categorical report rows.
@@ -151,17 +159,11 @@ List<String> moduleReportingNumericColumns(List<String> columns) {
 }
 
 num moduleReportingPrimaryNumeric(Map<String, Object?> row) {
-  return moduleReportingAsNum(
-        row['amount'] ??
-            row['quantity_dispensed'] ??
-            row['orders_created'] ??
-            row['dispensed'] ??
-            row['quantity'] ??
-            row['value'] ??
-            row['profit'] ??
-            row['returns'],
-      ) ??
-      0;
+  final String? key = moduleReportingPrimaryNumericKey(row);
+  if (key == null) {
+    return 0;
+  }
+  return moduleReportingAsNum(row[key]) ?? 0;
 }
 
 List<ModuleReportingSeriesPoint> moduleReportingSeriesPoints(
@@ -180,6 +182,14 @@ List<ModuleReportingSeriesPoint> moduleReportingSeriesPoints(
         ? snapshot.columns
         : sourceRows.first.keys.toList(growable: false),
   );
+  final String? primaryKey = moduleReportingPrimaryNumericKeyFromColumns(
+        sourceRows.isEmpty
+            ? snapshot.columns
+            : sourceRows.first.keys.toList(growable: false),
+      ) ??
+      (sourceRows.isEmpty
+          ? null
+          : moduleReportingPrimaryNumericKey(sourceRows.first));
   final String? secondaryKey =
       numericKeys.length >= 2 ? numericKeys[1] : null;
 
@@ -187,6 +197,8 @@ List<ModuleReportingSeriesPoint> moduleReportingSeriesPoints(
   for (final Map<String, Object?> row in sourceRows.take(limit)) {
     final String label =
         labelKey == null ? '' : '${row[labelKey] ?? ''}'.trim();
+    final String? rowMetricKey =
+        moduleReportingPrimaryNumericKey(row) ?? primaryKey;
     final num value = moduleReportingPrimaryNumeric(row);
     if (label.isEmpty && value == 0) {
       continue;
@@ -201,6 +213,8 @@ List<ModuleReportingSeriesPoint> moduleReportingSeriesPoints(
         category: row['category']?.toString() ??
             row['risk_state']?.toString() ??
             row['order_source']?.toString(),
+        metricKey: rowMetricKey,
+        secondaryMetricKey: secondaryKey,
       ),
     );
   }
@@ -269,6 +283,8 @@ List<DashboardDistributionSegmentData> moduleReportingDistributionSegments(
 List<DashboardMetricCardData> moduleReportingKpiCards(
   ModuleReportingReportSnapshot snapshot, {
   int limit = 6,
+  Locale locale = const Locale('en'),
+  String? currencyCode,
 }) {
   final List<DashboardMetricCardData> cards = <DashboardMetricCardData>[];
   final Map<String, Object?>? summary = snapshot.summary;
@@ -283,12 +299,17 @@ List<DashboardMetricCardData> moduleReportingKpiCards(
       }
       cards.add(
         DashboardMetricCardData(
-          label: moduleReportingColumnLabel(entry.key),
+          label: moduleReportingColumnLabel(
+            entry.key,
+            currencyCode: currencyCode,
+          ),
           value: moduleReportingFormatCellValue(
             number,
-            locale: const Locale('en'),
+            locale: locale,
             unknownLabel: '—',
             preferNumeric: true,
+            columnKey: entry.key,
+            currencyCode: currencyCode,
           ),
           icon: Icons.analytics_outlined,
           semanticsLabel: entry.key,
@@ -311,6 +332,9 @@ List<DashboardMetricCardData> moduleReportingKpiCards(
   if (points.isEmpty) {
     return cards;
   }
+  final String? metricKey =
+      points.first.metricKey ??
+      moduleReportingSnapshotPrimaryMetricKey(snapshot);
   final num total = points.fold<num>(
     0,
     (num sum, ModuleReportingSeriesPoint point) => sum + point.value,
@@ -324,9 +348,11 @@ List<DashboardMetricCardData> moduleReportingKpiCards(
       label: 'Total',
       value: moduleReportingFormatCellValue(
         total,
-        locale: const Locale('en'),
+        locale: locale,
         unknownLabel: '—',
         preferNumeric: true,
+        columnKey: metricKey,
+        currencyCode: currencyCode,
       ),
       icon: Icons.summarize_outlined,
       semanticsLabel: 'Total',
@@ -353,9 +379,11 @@ List<DashboardMetricCardData> moduleReportingKpiCards(
       label: 'Top value',
       value: moduleReportingFormatCellValue(
         top.value,
-        locale: const Locale('en'),
+        locale: locale,
         unknownLabel: '—',
         preferNumeric: true,
+        columnKey: top.metricKey ?? metricKey,
+        currencyCode: currencyCode,
       ),
       icon: Icons.trending_up_outlined,
       semanticsLabel: 'Top value',
