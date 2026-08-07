@@ -165,6 +165,9 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
     case 'cash_flow':
     case 'daily_cash_position':
     case 'profit_by_product_category':
+    case 'mgmt_expenses':
+    case 'mgmt_gross_profit':
+    case 'mgmt_net_profit':
     case 'stock_by_branch':
     case 'profit_by_branch':
     case 'purchases_by_branch':
