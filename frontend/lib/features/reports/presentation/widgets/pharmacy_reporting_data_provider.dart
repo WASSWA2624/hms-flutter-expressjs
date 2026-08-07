@@ -1023,6 +1023,7 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
                 : null),
       );
     case 'controlled_medicine_stock':
+    case 'mgmt_controlled_medicines':
     case 'quantity_received':
     case 'quantity_dispensed':
     case 'batch_numbers':
@@ -1035,7 +1036,10 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         summary: summary,
         breakdown: breakdown,
         title: preview.title.isEmpty ? report.label : preview.title,
-        subtitle: previewSubtitleOrNull(preview.subtitle),
+        subtitle: previewSubtitleOrNull(preview.subtitle) ??
+            (reportId == 'mgmt_controlled_medicines'
+                ? 'Controlled on-hand stock (same as controlled_medicine_stock)'
+                : null),
       );
     case 'opening_balance':
       return _projectColumnSubset(

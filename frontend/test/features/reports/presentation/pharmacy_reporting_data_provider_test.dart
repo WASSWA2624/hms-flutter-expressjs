@@ -1481,16 +1481,12 @@ void main() {
     expect(snapshot.state, ModuleReportingLoadState.unavailable);
   });
 
-  test('mgmt compositions: only controlled stays unavailable; others have datasets', () {
+  test('mgmt compositions: every mgmt id names a source; all have datasets', () {
     for (final PharmacyReportingMgmtComposition entry
         in pharmacyReportingMgmtCompositions) {
-      if (entry.id == 'mgmt_controlled_medicines') {
-        expect(entry.hasBackend, isFalse, reason: entry.id);
-        expect(entry.datasetKey, isNull, reason: entry.id);
-        continue;
-      }
       expect(entry.hasBackend, isTrue, reason: entry.id);
       expect(entry.sourceReportId, isNotEmpty, reason: entry.id);
+      expect(entry.datasetKey, isNotEmpty, reason: entry.id);
     }
 
     final PharmacyReportingCategory management =
@@ -1504,7 +1500,7 @@ void main() {
           pharmacyReportingMgmtCompositionById[report.id];
       expect(composition, isNotNull, reason: report.id);
       expect(report.datasetKey, composition!.datasetKey, reason: report.id);
-      expect(report.hasBackend, composition.hasBackend, reason: report.id);
+      expect(report.hasBackend, isTrue, reason: report.id);
     }
   });
 

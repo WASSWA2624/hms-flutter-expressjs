@@ -6,9 +6,7 @@ Implement all `mgmt_*` dialogs as **compositions** of sales/inventory/financial/
 
 **Composition table:** `pharmacyReportingMgmtCompositions` in `pharmacy_reporting_mgmt_sources.dart` (id → sourceReportId / datasetKey / projection). Catalog Management block is built from that list.
 
-**Mapped (23)** — reuse named source contracts (shared datasetKey + projector fall-throughs).
-
-**Unavailable (1):** `mgmt_controlled_medicines` — pack 13 controlled marker gap (`drug.is_controlled`); keep null until that ships.
+**All 24 `mgmt_*` mapped** — reuse named source contracts (shared datasetKey + projector fall-throughs). No executive-only math; `mgmt_controlled_medicines` composes pack 13 `controlled_medicine_stock`.
 
 **Already dense via 01–16 seeds** for trends/tops/risk; management adds no new executive route or seed pack.
 
