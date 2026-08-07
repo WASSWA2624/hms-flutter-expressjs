@@ -145,6 +145,26 @@ void main() {
       moduleReportingMetricUnitForKey('orders_created'),
       ModuleReportingMetricUnit.count,
     );
+    expect(
+      moduleReportingMetricUnitForKey('strength'),
+      ModuleReportingMetricUnit.plain,
+    );
+    expect(
+      moduleReportingMetricUnitForKey('form'),
+      ModuleReportingMetricUnit.plain,
+    );
+    expect(
+      moduleReportingMetricUnitForKey('dosage_form'),
+      ModuleReportingMetricUnit.plain,
+    );
+    expect(
+      moduleReportingMetricUnitForKey('selling_price'),
+      ModuleReportingMetricUnit.currency,
+    );
+    expect(
+      moduleReportingMetricUnitForKey('profit_per_unit'),
+      ModuleReportingMetricUnit.currency,
+    );
   });
 
   test('row search matches formatted and raw values', () {

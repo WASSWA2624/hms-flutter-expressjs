@@ -155,9 +155,81 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
       );
     case 'number_of_transactions':
     case 'number_of_prescriptions':
-    case 'items_dispensed':
-    case 'medicines_dispensed_by_period':
     case 'kpi_prescriptions':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle),
+      );
+    case 'items_dispensed':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns.contains('quantity_dispensed')
+            ? columns
+            : <String>['drug', 'quantity_dispensed'],
+        rows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle) ??
+            'Pack quantity dispensed (DISPENSED logs)',
+      );
+    case 'medicines_dispensed_by_period':
+      return _projectDispensedByPeriod(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+      );
+    case 'medicines_dispensed_by_patient':
+      return ModuleReportingReportSnapshot.ready(
+        columns: const <String>['patient', 'quantity_dispensed'],
+        rows: <Map<String, Object?>>[
+          for (final Map<String, Object?> row in sourceRows)
+            <String, Object?>{
+              'patient': row['patient'],
+              'quantity_dispensed': row['quantity_dispensed'],
+            },
+        ],
+        summary: summary == null
+            ? null
+            : <String, Object?>{
+                'quantity_dispensed': summary['quantity_dispensed'],
+              },
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle) ??
+            'Pack quantity by patient',
+      );
+    case 'prescription_status':
+      return _projectThroughputBreakdown(
+        report: report,
+        preview: preview,
+        summary: summary,
+        breakdown: breakdown,
+        breakdownKey: 'status_totals',
+        fallbackColumns: const <String>['status', 'orders_created'],
+        subtitleFallback: 'Orders grouped by pharmacy_order.status',
+      );
+    case 'dispensing_errors_voids':
+      return _projectThroughputBreakdown(
+        report: report,
+        preview: preview,
+        summary: summary,
+        breakdown: breakdown,
+        breakdownKey: 'voids',
+        fallbackColumns: const <String>['void_type', 'void_count'],
+        subtitleFallback:
+            'CANCELLED orders + RETURNED dispense logs (counts, not pack qty)',
+      );
+    case 'medicines_dispensed_by_prescriber':
+    case 'partial_dispensing':
+    case 'prescription_frequency':
+    case 'average_items_per_prescription':
       return ModuleReportingReportSnapshot.ready(
         columns: columns,
         rows: sourceRows,
@@ -327,6 +399,162 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         breakdown: breakdown,
         velocityClass: 'DEAD',
       );
+    case 'medicine_name':
+      return _projectMedicinesCatalog(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        rowKind: 'drug',
+        columnKeys: const <String>['name', 'code', 'human_friendly_id'],
+      );
+    case 'generic_brand_name':
+      return _projectMedicinesCatalog(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        rowKind: 'drug',
+        columnKeys: const <String>['name', 'generic_name', 'brand_name'],
+      );
+    case 'medicine_category':
+      return _projectMedicinesCatalog(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        rowKind: 'drug',
+        columnKeys: const <String>['category', 'name'],
+      );
+    case 'strength':
+      return _projectMedicinesCatalog(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        rowKind: 'drug',
+        columnKeys: const <String>['name', 'strength'],
+      );
+    case 'dosage_form':
+      return _projectMedicinesCatalog(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        rowKind: 'drug',
+        columnKeys: const <String>['name', 'dosage_form', 'form'],
+      );
+    case 'unit_of_measure':
+      return _projectMedicinesCatalog(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        rowKind: 'drug',
+        columnKeys: const <String>['name', 'unit'],
+      );
+    case 'batch_lot':
+      return _projectMedicinesCatalog(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        rowKind: 'batch',
+        columnKeys: const <String>[
+          'batch_number',
+          'quantity',
+          'expiry_date',
+          'name',
+        ],
+      );
+    case 'manufacturing_date':
+      return _projectMedicinesCatalog(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        rowKind: 'batch',
+        columnKeys: const <String>['name', 'batch_number', 'manufactured_at'],
+      );
+    case 'expiry_date':
+      return _projectMedicinesCatalog(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        rowKind: 'batch',
+        columnKeys: const <String>[
+          'name',
+          'batch_number',
+          'expiry_date',
+          'days_to_expiry',
+        ],
+      );
+    case 'selling_price':
+      return _projectMedicinesCatalog(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        rowKind: 'drug',
+        columnKeys: const <String>['name', 'selling_price', 'currency'],
+      );
+    case 'purchase_price':
+      return _projectMedicinesCatalog(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        rowKind: 'drug',
+        columnKeys: const <String>['name', 'purchase_price', 'currency'],
+      );
+    case 'profit_per_unit':
+      return _projectMedicinesCatalog(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        rowKind: 'drug',
+        columnKeys: const <String>['name', 'profit_per_unit', 'currency'],
+      );
+    case 'profit_margin':
+      return _projectMedicinesCatalog(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        rowKind: 'drug',
+        columnKeys: const <String>['name', 'profit_margin'],
+      );
+    case 'storage_requirements':
+      return _projectMedicinesCatalog(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        rowKind: 'batch',
+        columnKeys: const <String>[
+          'name',
+          'batch_number',
+          'storage_requirements',
+          'storage_room',
+          'storage_shelf',
+        ],
+      );
     default:
       return ModuleReportingReportSnapshot.ready(
         columns: columns,
@@ -337,6 +565,37 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         subtitle: previewSubtitleOrNull(preview.subtitle),
       );
   }
+}
+
+ModuleReportingReportSnapshot _projectMedicinesCatalog({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+  required String rowKind,
+  required List<String> columnKeys,
+}) {
+  final List<Map<String, Object?>> filtered = sourceRows
+      .where(
+        (Map<String, Object?> row) =>
+            (row['row_kind']?.toString() ?? '') == rowKind,
+      )
+      .map(
+        (Map<String, Object?> row) => <String, Object?>{
+          for (final String key in columnKeys) key: row[key],
+        },
+      )
+      .toList(growable: false);
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: columnKeys,
+    rows: filtered,
+    summary: summary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle),
+  );
 }
 
 ModuleReportingReportSnapshot _projectPeriodSeries({
@@ -378,6 +637,78 @@ ModuleReportingReportSnapshot _projectPeriodSeries({
     breakdown: breakdown,
     title: preview.title.isEmpty ? report.label : preview.title,
     subtitle: previewSubtitleOrNull(preview.subtitle),
+  );
+}
+
+ModuleReportingReportSnapshot _projectDispensedByPeriod({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<String> columns,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  final ModuleReportingReportSnapshot series = _projectPeriodSeries(
+    report: report,
+    preview: preview,
+    columns: columns,
+    sourceRows: sourceRows,
+    summary: summary,
+    breakdown: breakdown,
+  );
+  final List<Map<String, Object?>> qtyRows = <Map<String, Object?>>[
+    for (final Map<String, Object?> row in series.rows)
+      <String, Object?>{
+        'date': row['date'] ?? row['period'],
+        'quantity_dispensed': row['quantity_dispensed'],
+      },
+  ];
+  return ModuleReportingReportSnapshot.ready(
+    columns: const <String>['date', 'quantity_dispensed'],
+    rows: qtyRows,
+    summary: summary == null
+        ? null
+        : <String, Object?>{
+            'quantity_dispensed': summary['quantity_dispensed'],
+          },
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle) ??
+        'Pack quantity dispensed by period',
+  );
+}
+
+ModuleReportingReportSnapshot _projectThroughputBreakdown({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+  required String breakdownKey,
+  required List<String> fallbackColumns,
+  required String subtitleFallback,
+}) {
+  final Object? raw = breakdown?[breakdownKey];
+  final List<Map<String, Object?>> rows = <Map<String, Object?>>[
+    if (raw is List)
+      for (final Object? entry in raw)
+        if (entry is Map)
+          <String, Object?>{
+            for (final MapEntry<dynamic, dynamic> item
+                in Map<dynamic, dynamic>.from(entry).entries)
+              item.key.toString(): item.value,
+          },
+  ];
+  final List<String> nextColumns = rows.isEmpty
+      ? fallbackColumns
+      : rows.first.keys.toList(growable: false);
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: nextColumns,
+    rows: rows,
+    summary: summary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle) ?? subtitleFallback,
   );
 }
 

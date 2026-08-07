@@ -179,6 +179,15 @@ const seedVolumePack = async (
   const labTests = catalogValues(clinicalCatalogPack?.lab?.tests, 12);
   const radiologyProcedures = catalogValues(clinicalCatalogPack?.radiology?.tests, 8);
   const drugs = catalogValues(clinicalCatalogPack?.pharmacy?.drugs, 12);
+  const allCatalogDrugs = Object.values(
+    clinicalCatalogPack?.pharmacy?.drugs || {}
+  ).filter(Boolean);
+  const storageRooms = Object.values(
+    clinicalCatalogPack?.pharmacy?.storageRooms || {}
+  ).filter(Boolean);
+  const storageShelves = Object.values(
+    clinicalCatalogPack?.pharmacy?.storageShelves || {}
+  ).filter(Boolean);
   const inventoryItems = [
     ...catalogValues(clinicalCatalogPack?.pharmacy?.inventoryItems, 12),
     ...Object.values(operationsPack?.inventoryItems || {}),
@@ -217,6 +226,7 @@ const seedVolumePack = async (
     payments: 0,
     emergency_cases: 0,
     stock_movements: 0,
+    drug_batches: 0,
     equipment_work_orders: 0,
     mortuary_cases: 0,
     notifications: 0,
@@ -844,6 +854,30 @@ const seedVolumePack = async (
         { publicIdPrefix: 'STM', seedMeta: false }
       );
       created.stock_movements += 1;
+    });
+  }
+
+  if (allCatalogDrugs.length > 0) {
+    await runInBatches(targets.highTraffic, 10, async (index) => {
+      const drug = pick(allCatalogDrugs, index);
+      const room = storageRooms.length ? pick(storageRooms, index) : null;
+      const shelf = storageShelves.length ? pick(storageShelves, index) : null;
+      await ctx.upsert(
+        'drug_batch',
+        `${scenario.key}:vol:drug-batch:${pad(index)}`,
+        {
+          drug_id: drug.id,
+          batch_number: `VOL${pad(index, 5)}`,
+          manufactured_at: ctx.date(-((index % 400) + 30), 8),
+          expiry_date: ctx.date(((index % 520) - 60), 16),
+          expiry_alert_lead_days: 30 + (index % 3) * 30,
+          quantity: 1 + (index % 80),
+          storage_room_id: room?.id || null,
+          storage_shelf_id: shelf?.id || null,
+        },
+        { publicIdPrefix: 'DBT', seedMeta: false }
+      );
+      created.drug_batches += 1;
     });
   }
 

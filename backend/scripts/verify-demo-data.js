@@ -628,6 +628,11 @@ const verifyDemoData = async () => {
       ['pharmacy_discount_adjustments', pharmacyDiscountCount, highFloor]
     );
 
+    const drugBatchCount = await prisma.drug_batch.count({
+      where: { deleted_at: null },
+    });
+    highTrafficChecks.push(['drug_batches', drugBatchCount, highFloor]);
+
     for (const [label, count, floor] of highTrafficChecks) {
       if (count < floor) {
         errors.push(`Expected at least ${floor} ${label} for volume demo seed but found ${count}.`);

@@ -1,11 +1,13 @@
 const {
   buildPharmacyDispenseThroughputAnalytics,
   buildPharmacyDrugConsumptionAnalytics,
+  buildPharmacyMedicinesCatalogRow,
   buildPharmacySalesAvgTransactionAnalytics,
   buildPharmacySalesNetRevenueAnalytics,
   buildPharmacySalesPaymentMethodAnalytics,
   classifyStockRisk,
   classifyStockVelocity,
+  computeCatalogProfitMargin,
   computeStockValue,
   movementSignedDelta,
   resolveDateRange,
@@ -14,6 +16,7 @@ const {
   summarizeConsumptionSeries,
   summarizeThroughputSeries,
 } = require('@lib/reports/datasets');
+const { pharmacyRetailMarginUnit } = require('@lib/billing/pharmacy-drug-margins');
 const { REPORT_DATASET_MAP, REPORT_DATASETS, REPORT_FORMATS } = require('@lib/reports/constants');
 
 describe('reports datasets pharmacy analytics', () => {
@@ -40,6 +43,11 @@ describe('reports datasets pharmacy analytics', () => {
       key: 'pharmacy_sales_net_revenue',
       category: 'pharmacy',
     });
+    expect(REPORT_DATASET_MAP.pharmacy_medicines_catalog).toMatchObject({
+      key: 'pharmacy_medicines_catalog',
+      category: 'pharmacy',
+      visualization: 'TABLE',
+    });
     expect(REPORT_DATASET_MAP.inventory_stock_risk.description).toMatch(/near-expiry/i);
     expect(REPORT_DATASET_MAP.inventory_stock_value).toMatchObject({
       key: 'inventory_stock_value',
@@ -57,6 +65,7 @@ describe('reports datasets pharmacy analytics', () => {
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_dispense_throughput')).toBe(true);
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_sales_avg_transaction')).toBe(true);
     expect(REPORT_DATASETS.some((entry) => entry.key === 'inventory_stock_turnover')).toBe(true);
+    expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_medicines_catalog')).toBe(true);
   });
 
   test('resolveDateRange supports day, month, year for pharmacy presets', () => {
@@ -168,8 +177,78 @@ describe('reports datasets pharmacy analytics', () => {
     expect(typeof buildPharmacySalesPaymentMethodAnalytics).toBe('function');
     expect(typeof buildPharmacySalesNetRevenueAnalytics).toBe('function');
     expect(typeof buildPharmacySalesAvgTransactionAnalytics).toBe('function');
+    expect(typeof buildPharmacyMedicinesCatalogRow).toBe('function');
+    expect(typeof computeCatalogProfitMargin).toBe('function');
     expect(typeof classifyStockRisk).toBe('function');
     expect(typeof computeStockValue).toBe('function');
+  });
+
+  test('medicines catalog margin matches pharmacyRetailMarginUnit helper', () => {
+    expect(
+      pharmacyRetailMarginUnit({ unitPrice: 2050, buyUnitPrice: 650 })
+    ).toBe(1400);
+    expect(computeCatalogProfitMargin(2050, 650)).toBe(68.29);
+    expect(computeCatalogProfitMargin(100, null)).toBeNull();
+    expect(pharmacyRetailMarginUnit({ unitPrice: 100, buyUnitPrice: null })).toBeNull();
+  });
+
+  test('Paracetamol seed ladder sell/buy/profit_per_unit and plain form/strength', () => {
+    // DRUG_CATALOG index 0 = Paracetamol 500 mg tablet
+    const buy = 400 + 1 * 250;
+    const sell = 1200 + 1 * 850;
+    expect(buy).toBe(650);
+    expect(sell).toBe(2050);
+
+    const row = buildPharmacyMedicinesCatalogRow({
+      drug: {
+        id: 'drug-pcm',
+        name: 'Paracetamol',
+        code: 'PCM500',
+        human_friendly_id: 'DRG-PCM',
+        generic_name: 'Paracetamol',
+        brand_name: 'Panadol',
+        form: 'Tablet',
+        strength: '500 mg',
+        buy_unit_price: buy,
+        unit_price: sell,
+        currency: 'UGX',
+        inventory_maps: [
+          {
+            is_default: true,
+            inventory_item: { category: 'MEDICATION', unit: 'tablet' },
+          },
+        ],
+      },
+      rowKind: 'drug',
+    });
+
+    expect(row.selling_price).toBe(2050);
+    expect(row.purchase_price).toBe(650);
+    expect(row.profit_per_unit).toBe(1400);
+    expect(row.profit_margin).toBe(68.29);
+    expect(row.currency).toBe('UGX');
+    expect(row.strength).toBe('500 mg');
+    expect(row.form).toBe('Tablet');
+    expect(row.dosage_form).toBe('Tablet');
+    expect(row.unit).toBe('tablet');
+    expect(row.generic_name).toBe('Paracetamol');
+    expect(row.brand_name).toBe('Panadol');
+  });
+
+  test('empty generic/brand strings project as null not "null"', () => {
+    const row = buildPharmacyMedicinesCatalogRow({
+      drug: {
+        name: 'Sample',
+        generic_name: '  ',
+        brand_name: '',
+        unit_price: 10,
+        buy_unit_price: null,
+        inventory_maps: [],
+      },
+    });
+    expect(row.generic_name).toBeNull();
+    expect(row.brand_name).toBeNull();
+    expect(row.profit_per_unit).toBeNull();
   });
 
   test('shared report formats include PDF, Excel XLSX, and CSV', () => {

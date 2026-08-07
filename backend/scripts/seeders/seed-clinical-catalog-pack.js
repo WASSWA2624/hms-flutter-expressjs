@@ -480,7 +480,7 @@ const seedPharmacyCatalogForTenant = async (
         tenant_id: tenantId,
         name: spec.name,
         generic_name: spec.name,
-        brand_name: spec.brand || null,
+        brand_name: spec.brand || `${spec.name} Brand`,
         code: spec.code,
         form: spec.form,
         strength: spec.strength,
@@ -577,6 +577,7 @@ const seedPharmacyCatalogForTenant = async (
       {
         drug_id: drug.id,
         batch_number: `${batchCode}A`,
+        manufactured_at: ctx.date(-365),
         // Healthy far-dated batch (seed-base calendar) for routine stock.
         expiry_date: ctx.date(540),
         quantity: batchQuantity,
@@ -604,6 +605,7 @@ const seedPharmacyCatalogForTenant = async (
           .replace(/[^A-Za-z0-9]/g, '')
           .toUpperCase()
           .slice(0, 8)}`,
+        manufactured_at: ctx.nowDate(riskTemplate.dayOffset - 400),
         expiry_date: ctx.nowDate(riskTemplate.dayOffset),
         expiry_alert_lead_days: riskTemplate.leadDays,
         quantity: riskTemplate.quantity,
@@ -711,6 +713,8 @@ const seedClinicalCatalogForTenant = async (
         drugBatches: {},
         inventoryStocks: {},
         stockMovements: {},
+        storageRooms: {},
+        storageShelves: {},
         suppliers: {},
       },
     };
@@ -773,6 +777,8 @@ const seedClinicalCatalogPack = async (ctx, orgPack) => {
       drugBatches: {},
       inventoryStocks: {},
       stockMovements: {},
+      storageRooms: {},
+      storageShelves: {},
       suppliers: {},
     },
     summary: {
@@ -826,6 +832,8 @@ const seedClinicalCatalogPack = async (ctx, orgPack) => {
     mergeCatalogRecords(result.pharmacy.drugBatches, scenario.key, tenantCatalog.pharmacy.drugBatches);
     mergeCatalogRecords(result.pharmacy.inventoryStocks, scenario.key, tenantCatalog.pharmacy.inventoryStocks);
     mergeCatalogRecords(result.pharmacy.stockMovements, scenario.key, tenantCatalog.pharmacy.stockMovements);
+    mergeCatalogRecords(result.pharmacy.storageRooms, scenario.key, tenantCatalog.pharmacy.storageRooms);
+    mergeCatalogRecords(result.pharmacy.storageShelves, scenario.key, tenantCatalog.pharmacy.storageShelves);
     mergeCatalogRecords(result.pharmacy.suppliers, scenario.key, tenantCatalog.pharmacy.suppliers);
   }
 

@@ -22,6 +22,7 @@ const REPORT_DATASET_SEEDS = Object.freeze([
   { key: 'inventory_stock_value', category: 'inventory', label: 'Inventory stock value', visualization: 'TABLE' },
   { key: 'inventory_stock_movement_history', category: 'inventory', label: 'Stock movement history', visualization: 'TABLE' },
   { key: 'inventory_stock_turnover', category: 'inventory', label: 'Stock turnover', visualization: 'BAR_CHART' },
+  { key: 'pharmacy_medicines_catalog', category: 'pharmacy', label: 'Pharmacy medicines catalog', visualization: 'TABLE' },
   { key: 'lab_turnaround', category: 'diagnostics', label: 'Lab turnaround', visualization: 'LINE_CHART' },
   { key: 'inpatient_occupancy', category: 'clinical', label: 'Inpatient occupancy', visualization: 'KPI' },
   { key: 'emergency_throughput', category: 'emergency', label: 'Emergency throughput', visualization: 'BAR_CHART' },

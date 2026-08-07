@@ -2,6 +2,13 @@ const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 const { REPORT_DATASET_MAP } = require('@lib/reports/constants');
 const { pharmacyRetailMarginUnit } = require('@lib/billing/pharmacy-drug-margins');
+const {
+  computeInvoiceFinancials,
+  toDecimalNumber,
+} = require('@lib/billing/financials');
+
+/** Matches billing open_invoices counter in buildBillingFinancialAnalytics. */
+const OPEN_PHARMACY_INVOICE_STATUSES = Object.freeze(['DRAFT', 'SENT', 'OVERDUE']);
 
 const resolveBatchExpiryAlertStatus = (expiryDate, expiringWithinDays = 30) => {
   if (!expiryDate) return null;
@@ -13,6 +20,39 @@ const resolveBatchExpiryAlertStatus = (expiryDate, expiringWithinDays = 30) => {
   horizon.setDate(horizon.getDate() + Number(expiringWithinDays || 30));
   if (parsed.getTime() <= horizon.getTime()) return 'EXPIRING_SOON';
   return null;
+};
+
+/**
+ * Exclusive day windows for expiring_windows: (0,30], (30,60], (60,90], (90,180].
+ * Expired (≤0) and beyond 180 return null.
+ */
+const classifyExpiryWindow = (daysToExpiry) => {
+  if (daysToExpiry == null || daysToExpiry === '') return null;
+  const days = asNumber(daysToExpiry);
+  if (!(days > 0)) return null;
+  if (days <= 30) return '0-30';
+  if (days <= 60) return '30-60';
+  if (days <= 90) return '60-90';
+  if (days <= 180) return '90-180';
+  return null;
+};
+
+/** Expiry/loss COGS: buy_unit_price only (no sell fallback). */
+const resolveBuyUnitCostOnly = (drug) => {
+  const buy = drug?.buy_unit_price;
+  if (buy != null && buy !== '') {
+    return { unit_cost: asNumber(buy), cost_basis: 'buy_unit_price' };
+  }
+  return { unit_cost: 0, cost_basis: 'unavailable' };
+};
+
+/**
+ * Dispense COGS line: buy_unit_price × quantity_dispensed.
+ * Returns 0 when buy is unset (documented; not inventing cost).
+ */
+const computeDispenseCogs = (buyUnitPrice, quantity) => {
+  if (buyUnitPrice == null || buyUnitPrice === '') return 0;
+  return Math.round(asNumber(buyUnitPrice) * asNumber(quantity) * 100) / 100;
 };
 
 const normalizeString = (value) => String(value || '').trim();
@@ -641,14 +681,52 @@ const resolvePatientLabel = (patient) => {
   return hfi || name || 'Unknown';
 };
 
+const resolvePrescriberLabel = (provider) => {
+  if (!provider) return null;
+  const hfi = normalizeString(provider.human_friendly_id);
+  const name = [
+    normalizeString(provider.profile?.first_name),
+    normalizeString(provider.profile?.last_name),
+  ]
+    .filter(Boolean)
+    .join(' ');
+  if (hfi && name) return `${hfi} · ${name}`;
+  if (hfi || name) return hfi || name;
+  return normalizeString(provider.email) || null;
+};
+
+/** Average line items per order: item_count / orders_created (2 dp). */
+const computeAverageItemsPerPrescription = (itemCount, orderCount) => {
+  const orders = asNumber(orderCount);
+  if (orders <= 0) return null;
+  return Math.round((asNumber(itemCount) / orders) * 100) / 100;
+};
+
+const remainingItemQuantity = (item) => {
+  const ordered = asNumber(item?.quantity);
+  const dispensed = (Array.isArray(item?.dispense_logs) ? item.dispense_logs : []).reduce(
+    (sum, log) => sum + asNumber(log.quantity_dispensed),
+    0
+  );
+  return Math.max(0, ordered - dispensed);
+};
+
 const resolveFacilityLabel = (patient) =>
   normalizeString(patient?.facility?.name) ||
   normalizeString(patient?.facility?.human_friendly_id) ||
   'Unknown';
 
-const consumptionColumnsForGroup = (groupBy) => {
-  if (groupBy === 'category') return ['category', 'quantity_dispensed', 'amount'];
-  if (groupBy === 'facility') return ['facility', 'amount', 'quantity_dispensed'];
+const consumptionColumnsForGroup = (groupBy, { includeProfit = false } = {}) => {
+  if (groupBy === 'category') {
+    return includeProfit
+      ? ['category', 'profit', 'amount']
+      : ['category', 'quantity_dispensed', 'amount'];
+  }
+  if (groupBy === 'facility') {
+    return includeProfit
+      ? ['facility', 'profit', 'amount']
+      : ['facility', 'amount', 'quantity_dispensed'];
+  }
   if (groupBy === 'patient') return ['patient', 'amount', 'quantity_dispensed'];
   return ['drug', 'quantity_dispensed', 'amount', 'profit', 'order_source'];
 };
@@ -813,11 +891,16 @@ const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => 
         facility: facilityLabel,
         quantity_dispensed: 0,
         amount: 0,
+        profit: null,
       });
     }
     const facilityEntry = facilityIndex.get(facilityLabel);
     facilityEntry.quantity_dispensed += qty;
     facilityEntry.amount = Math.round((facilityEntry.amount + amount) * 100) / 100;
+    if (profit != null) {
+      facilityEntry.profit =
+        Math.round((asNumber(facilityEntry.profit) + profit) * 100) / 100;
+    }
 
     if (!patientIndex.has(patientLabel)) {
       patientIndex.set(patientLabel, {
@@ -860,6 +943,7 @@ const buildPharmacyDrugConsumptionAnalytics = async (scope, parameters = {}) => 
         facility: entry.facility,
         amount: Math.round(entry.amount * 100) / 100,
         quantity_dispensed: entry.quantity_dispensed,
+        profit: entry.profit,
       }))
     );
   } else if (groupBy === 'patient') {
@@ -999,6 +1083,7 @@ const buildPharmacyDispenseThroughputAnalytics = async (scope, parameters = {}) 
       columns,
       rows: [],
       summary: summarizeThroughputSeries([]),
+      breakdown: { status_totals: [], voids: [] },
     };
   }
 
@@ -1046,6 +1131,19 @@ const buildPharmacyDispenseThroughputAnalytics = async (scope, parameters = {}) 
   );
 
   const rows = mergeThroughputBuckets([...orderBuckets, ...returnBuckets]);
+  const summary = summarizeThroughputSeries(rows);
+  const statusIndex = new Map();
+  orders.forEach((order) => {
+    const status = String(order.status || '').toUpperCase() || 'UNKNOWN';
+    statusIndex.set(status, asNumber(statusIndex.get(status)) + 1);
+  });
+  const status_totals = Array.from(statusIndex.entries())
+    .map(([status, orders_created]) => ({ status, orders_created }))
+    .sort((left, right) => asNumber(right.orders_created) - asNumber(left.orders_created));
+  const voids = [
+    { void_type: 'CANCELLED_ORDERS', void_count: summary.cancelled },
+    { void_type: 'RETURNED_LOGS', void_count: summary.returns },
+  ];
   const fromLabel = range.from.toISOString().slice(0, 10);
   const toLabel = range.to.toISOString().slice(0, 10);
 
@@ -1060,7 +1158,11 @@ const buildPharmacyDispenseThroughputAnalytics = async (scope, parameters = {}) 
     subtitle: `${fromLabel} to ${toLabel} (${monthly ? 'monthly' : 'daily'})`,
     columns,
     rows,
-    summary: summarizeThroughputSeries(rows),
+    summary,
+    breakdown: {
+      status_totals,
+      voids,
+    },
   };
 };
 
@@ -1084,6 +1186,7 @@ const runPharmacyDispenseThroughputDataset = async (scope, parameters = {}) => {
     columns: analytics.columns,
     rows: analytics.rows,
     summary: analytics.summary,
+    breakdown: analytics.breakdown,
   };
 };
 
@@ -1107,13 +1210,352 @@ const runPharmacySalesByBranchDataset = async (scope, parameters = {}) => {
     ...parameters,
     group_by: 'facility',
   });
+  const rows = (analytics.rows || []).map((entry) => ({
+    facility: entry.facility,
+    amount: entry.amount,
+    quantity_dispensed: entry.quantity_dispensed,
+  }));
   return {
     title: analytics.title,
     subtitle: analytics.subtitle,
-    columns: analytics.columns,
-    rows: analytics.rows,
+    columns: ['facility', 'amount', 'quantity_dispensed'],
+    rows,
     summary: analytics.summary,
     breakdown: analytics.breakdown,
+  };
+};
+
+/**
+ * Aggregate inventory stock rows by facility name.
+ * Pure helper for unit tests: facility totals must sum to tenant totals.
+ */
+const aggregateStockByFacility = (stockRows = []) => {
+  const index = new Map();
+  for (const row of stockRows) {
+    const facility = normalizeString(row.facility) || 'Unassigned';
+    if (!index.has(facility)) {
+      index.set(facility, { facility, quantity: 0, value: 0 });
+    }
+    const entry = index.get(facility);
+    entry.quantity += asNumber(row.quantity);
+    entry.value = Math.round((entry.value + asNumber(row.value)) * 100) / 100;
+  }
+  return Array.from(index.values()).sort(
+    (left, right) => asNumber(right.value) - asNumber(left.value)
+  );
+};
+
+const SHORTAGE_RISK_STATES = Object.freeze(
+  new Set(['LOW', 'CRITICAL', 'OUT_OF_STOCK'])
+);
+
+/**
+ * Count shortage classifiers (LOW/CRITICAL/OUT_OF_STOCK) per facility.
+ */
+const aggregateShortagesByFacility = (stockRows = []) => {
+  const index = new Map();
+  for (const row of stockRows) {
+    const risk = normalizeString(row.risk_state);
+    if (!SHORTAGE_RISK_STATES.has(risk)) continue;
+    const facility = normalizeString(row.facility) || 'Unassigned';
+    if (!index.has(facility)) {
+      index.set(facility, {
+        facility,
+        shortage_count: 0,
+        low_count: 0,
+        critical_count: 0,
+        out_of_stock_count: 0,
+        quantity: 0,
+      });
+    }
+    const entry = index.get(facility);
+    entry.shortage_count += 1;
+    entry.quantity += asNumber(row.quantity);
+    if (risk === 'LOW') entry.low_count += 1;
+    if (risk === 'CRITICAL') entry.critical_count += 1;
+    if (risk === 'OUT_OF_STOCK') entry.out_of_stock_count += 1;
+  }
+  return Array.from(index.values()).sort(
+    (left, right) => asNumber(right.shortage_count) - asNumber(left.shortage_count)
+  );
+};
+
+/**
+ * Merge sales/profit/stock metrics per facility for comparison charts.
+ * Two-facility (or N) rows must sum amount/profit/quantity/value to tenant totals.
+ */
+const mergeBranchComparisonRows = ({
+  salesRows = [],
+  stockRows = [],
+  shortageRows = [],
+  purchaseRows = [],
+} = {}) => {
+  const index = new Map();
+  const ensure = (facility) => {
+    const key = normalizeString(facility) || 'Unassigned';
+    if (!index.has(key)) {
+      index.set(key, {
+        facility: key,
+        amount: 0,
+        profit: null,
+        quantity_dispensed: 0,
+        quantity: 0,
+        value: 0,
+        shortage_count: 0,
+        request_count: 0,
+        order_count: 0,
+      });
+    }
+    return index.get(key);
+  };
+
+  for (const row of salesRows) {
+    const entry = ensure(row.facility);
+    entry.amount = Math.round((entry.amount + asNumber(row.amount)) * 100) / 100;
+    entry.quantity_dispensed += asNumber(row.quantity_dispensed);
+    if (row.profit != null) {
+      entry.profit = Math.round((asNumber(entry.profit) + asNumber(row.profit)) * 100) / 100;
+    }
+  }
+  for (const row of stockRows) {
+    const entry = ensure(row.facility);
+    entry.quantity += asNumber(row.quantity);
+    entry.value = Math.round((entry.value + asNumber(row.value)) * 100) / 100;
+  }
+  for (const row of shortageRows) {
+    const entry = ensure(row.facility);
+    entry.shortage_count += asNumber(row.shortage_count);
+  }
+  for (const row of purchaseRows) {
+    const entry = ensure(row.facility);
+    entry.request_count += asNumber(row.request_count);
+    entry.order_count += asNumber(row.order_count);
+  }
+
+  return Array.from(index.values()).sort(
+    (left, right) => asNumber(right.amount) - asNumber(left.amount)
+  );
+};
+
+const loadPurchaseRequestsByFacility = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const where = {
+    deleted_at: null,
+    tenant_id: scope.tenant_id,
+    ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+  };
+  if (!range.invalid && range.from && range.to) {
+    where.requested_at = { gte: range.from, lte: range.to };
+  }
+
+  const requests = await prisma.purchase_request.findMany({
+    where,
+    select: {
+      id: true,
+      facility: { select: { name: true, human_friendly_id: true } },
+      purchase_orders: {
+        where: { deleted_at: null },
+        select: { id: true },
+      },
+    },
+  });
+
+  const index = new Map();
+  for (const request of requests) {
+    const facility =
+      normalizeString(request?.facility?.name) ||
+      normalizeString(request?.facility?.human_friendly_id) ||
+      scope.facility_label ||
+      'Unassigned';
+    if (!index.has(facility)) {
+      index.set(facility, {
+        facility,
+        request_count: 0,
+        order_count: 0,
+      });
+    }
+    const entry = index.get(facility);
+    entry.request_count += 1;
+    entry.order_count += Array.isArray(request.purchase_orders)
+      ? request.purchase_orders.length
+      : 0;
+  }
+
+  return Array.from(index.values()).sort(
+    (left, right) => asNumber(right.request_count) - asNumber(left.request_count)
+  );
+};
+
+const runPharmacyProfitByBranchDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacyDrugConsumptionAnalytics(scope, {
+    ...parameters,
+    group_by: 'facility',
+  });
+  const rows = (analytics.rows || []).map((entry) => ({
+    facility: entry.facility,
+    profit: entry.profit,
+    amount: entry.amount,
+  }));
+  const profitTotal = Math.round(
+    rows.reduce((sum, row) => sum + asNumber(row.profit), 0) * 100
+  ) / 100;
+  return {
+    title: 'Pharmacy profit by branch',
+    subtitle: analytics.subtitle
+      ? `${analytics.subtitle} · retail margin when buy_unit_price set`
+      : 'Dispense profit by patient facility (branch)',
+    columns: ['facility', 'profit', 'amount'],
+    rows,
+    summary: {
+      profit: profitTotal,
+      amount: analytics.summary?.amount ?? null,
+      facility_count: rows.length,
+    },
+    breakdown: analytics.breakdown,
+  };
+};
+
+const runPharmacyStockByBranchDataset = async (scope) => {
+  const stockRows = await loadInventoryStockRows(scope);
+  const rows = aggregateStockByFacility(stockRows);
+  const quantity = rows.reduce((sum, row) => sum + asNumber(row.quantity), 0);
+  const value =
+    Math.round(rows.reduce((sum, row) => sum + asNumber(row.value), 0) * 100) / 100;
+  return {
+    title: 'Pharmacy stock by branch',
+    subtitle:
+      'On-hand quantity and value (qty × buy_unit_price via drug_inventory_map) by facility',
+    columns: ['facility', 'quantity', 'value'],
+    rows,
+    summary: { quantity, value, facility_count: rows.length },
+  };
+};
+
+const runPharmacyPurchasesByBranchDataset = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  if (range.invalid) {
+    return {
+      title: 'Pharmacy purchases by branch',
+      subtitle: 'Invalid date range',
+      columns: ['facility', 'request_count', 'order_count'],
+      rows: [],
+      summary: { request_count: 0, order_count: 0, facility_count: 0 },
+    };
+  }
+  const rows = await loadPurchaseRequestsByFacility(scope, parameters);
+  const request_count = rows.reduce((sum, row) => sum + asNumber(row.request_count), 0);
+  const order_count = rows.reduce((sum, row) => sum + asNumber(row.order_count), 0);
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+  return {
+    title: 'Pharmacy purchases by branch',
+    subtitle: `${fromLabel} to ${toLabel} · purchase_request counts by facility (PO line value not modeled)`,
+    columns: ['facility', 'request_count', 'order_count'],
+    rows,
+    summary: { request_count, order_count, facility_count: rows.length },
+  };
+};
+
+const runPharmacyStockShortagesByBranchDataset = async (scope) => {
+  const stockRows = await loadInventoryStockRows(scope);
+  const rows = aggregateShortagesByFacility(stockRows);
+  return {
+    title: 'Pharmacy stock shortages by branch',
+    subtitle:
+      'LOW / CRITICAL / OUT_OF_STOCK classifiers (same thresholds as inventory_stock_risk) by facility',
+    columns: [
+      'facility',
+      'shortage_count',
+      'low_count',
+      'critical_count',
+      'out_of_stock_count',
+      'quantity',
+    ],
+    rows,
+    summary: {
+      shortage_count: rows.reduce((sum, row) => sum + asNumber(row.shortage_count), 0),
+      facility_count: rows.length,
+    },
+  };
+};
+
+const runPharmacyBestPerformingBranchDataset = async (scope, parameters = {}) => {
+  const rankByRaw = normalizeString(
+    parameters.rank_by || parameters.rankBy || 'amount'
+  ).toLowerCase();
+  const rankBy = rankByRaw === 'profit' ? 'profit' : 'amount';
+  const analytics = await buildPharmacyDrugConsumptionAnalytics(scope, {
+    ...parameters,
+    group_by: 'facility',
+  });
+  const ranked = [...(analytics.rows || [])]
+    .map((entry, index) => ({
+      rank: index + 1,
+      facility: entry.facility,
+      amount: entry.amount,
+      profit: entry.profit,
+      quantity_dispensed: entry.quantity_dispensed,
+    }))
+    .sort((left, right) => asNumber(right[rankBy]) - asNumber(left[rankBy]))
+    .map((entry, index) => ({ ...entry, rank: index + 1 }));
+
+  return {
+    title: 'Best-performing branch',
+    subtitle: `Ranked by ${rankBy} (facility = branch)`,
+    columns: ['rank', 'facility', 'amount', 'profit', 'quantity_dispensed'],
+    rows: ranked,
+    summary: {
+      rank_by: rankBy,
+      facility_count: ranked.length,
+      top_facility: ranked[0]?.facility || null,
+      top_amount: ranked[0]?.amount ?? null,
+      top_profit: ranked[0]?.profit ?? null,
+    },
+  };
+};
+
+const runPharmacyBranchComparisonDataset = async (scope, parameters = {}) => {
+  const [salesAnalytics, stockRows, purchaseRows] = await Promise.all([
+    buildPharmacyDrugConsumptionAnalytics(scope, {
+      ...parameters,
+      group_by: 'facility',
+    }),
+    loadInventoryStockRows(scope),
+    loadPurchaseRequestsByFacility(scope, parameters),
+  ]);
+  const stockByFacility = aggregateStockByFacility(stockRows);
+  const shortageRows = aggregateShortagesByFacility(stockRows);
+  const rows = mergeBranchComparisonRows({
+    salesRows: salesAnalytics.rows || [],
+    stockRows: stockByFacility,
+    shortageRows,
+    purchaseRows,
+  });
+  const amount =
+    Math.round(rows.reduce((sum, row) => sum + asNumber(row.amount), 0) * 100) / 100;
+  const value =
+    Math.round(rows.reduce((sum, row) => sum + asNumber(row.value), 0) * 100) / 100;
+  return {
+    title: 'Branch comparison',
+    subtitle: 'Side-by-side facility metrics (sales, profit, stock, shortages, purchases)',
+    columns: [
+      'facility',
+      'amount',
+      'profit',
+      'quantity_dispensed',
+      'quantity',
+      'value',
+      'shortage_count',
+      'request_count',
+      'order_count',
+    ],
+    rows,
+    summary: {
+      facility_count: rows.length,
+      amount,
+      value,
+      quantity: rows.reduce((sum, row) => sum + asNumber(row.quantity), 0),
+    },
   };
 };
 
@@ -1129,6 +1571,614 @@ const runPharmacySalesByCustomerDataset = async (scope, parameters = {}) => {
     rows: analytics.rows,
     summary: analytics.summary,
     breakdown: analytics.breakdown,
+  };
+};
+
+const rangeMs = (range) => Math.max(0, range.to.getTime() - range.from.getTime());
+
+const resolveAgeBand = (dateOfBirth, asOf = new Date()) => {
+  if (!dateOfBirth) return 'Unknown';
+  const dob = dateOfBirth instanceof Date ? dateOfBirth : new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return 'Unknown';
+  let age = asOf.getFullYear() - dob.getFullYear();
+  const monthDiff = asOf.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && asOf.getDate() < dob.getDate())) {
+    age -= 1;
+  }
+  if (age < 0) return 'Unknown';
+  if (age < 18) return 'Under 18';
+  if (age < 35) return '18-34';
+  if (age < 50) return '35-49';
+  if (age < 65) return '50-64';
+  return '65+';
+};
+
+const loadPharmacyOrderPatientsInRange = async (scope, from, to) => {
+  const orders = await prisma.pharmacy_order.findMany({
+    where: {
+      ...buildPharmacyOrderScopeWhere(scope),
+      ordered_at: { gte: from, lte: to },
+      patient_id: { not: null },
+    },
+    select: {
+      patient_id: true,
+      ordered_at: true,
+      patient: {
+        select: {
+          id: true,
+          human_friendly_id: true,
+          first_name: true,
+          last_name: true,
+          gender: true,
+          date_of_birth: true,
+        },
+      },
+    },
+  });
+  return orders;
+};
+
+/**
+ * Distinct pharmacy customers (patient_id) with an order in range.
+ */
+const buildPharmacyCustomerCountAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['customer_count'];
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Pharmacy number of customers',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: { customer_count: 0 },
+    };
+  }
+
+  const orders = await loadPharmacyOrderPatientsInRange(scope, range.from, range.to);
+  const customer_count = new Set(orders.map((row) => row.patient_id).filter(Boolean)).size;
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Pharmacy number of customers',
+    subtitle: `${fromLabel} to ${toLabel} · distinct pharmacy_order.patient_id`,
+    columns,
+    rows: [{ customer_count }],
+    summary: { customer_count },
+  };
+};
+
+/**
+ * New vs returning partition over pharmacy orders (disjoint).
+ */
+const buildPharmacyCustomersNewVsReturningAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['segment', 'customer_count'];
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Pharmacy new vs returning customers',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: { customer_count: 0, new_count: 0, returning_count: 0 },
+    };
+  }
+
+  const inRangeOrders = await loadPharmacyOrderPatientsInRange(scope, range.from, range.to);
+  const inRangeIds = [
+    ...new Set(inRangeOrders.map((row) => row.patient_id).filter(Boolean)),
+  ];
+
+  let priorIds = new Set();
+  if (inRangeIds.length > 0) {
+    const priorOrders = await prisma.pharmacy_order.findMany({
+      where: {
+        ...buildPharmacyOrderScopeWhere(scope),
+        patient_id: { in: inRangeIds },
+        ordered_at: { lt: range.from },
+      },
+      select: { patient_id: true },
+      distinct: ['patient_id'],
+    });
+    priorIds = new Set(priorOrders.map((row) => row.patient_id).filter(Boolean));
+  }
+
+  let new_count = 0;
+  let returning_count = 0;
+  inRangeIds.forEach((patientId) => {
+    if (priorIds.has(patientId)) {
+      returning_count += 1;
+    } else {
+      new_count += 1;
+    }
+  });
+
+  const rows = [
+    { segment: 'new', customer_count: new_count },
+    { segment: 'returning', customer_count: returning_count },
+  ];
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Pharmacy new vs returning customers',
+    subtitle: `${fromLabel} to ${toLabel} · new = first pharmacy order in range; returning = prior order before from`,
+    columns,
+    rows,
+    summary: {
+      customer_count: inRangeIds.length,
+      new_count,
+      returning_count,
+    },
+    breakdown: { segments: rows },
+  };
+};
+
+/**
+ * Line-level dispense history for pharmacy customers in period.
+ */
+const buildPharmacyPatientMedicationHistoryAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['patient', 'drug', 'quantity_dispensed', 'dispensed_at', 'amount'];
+  const topLimit = Math.max(1, Math.min(2000, asNumber(parameters.top_n || parameters.limit) || 500));
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Pharmacy patient medication history',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: { amount: 0, quantity_dispensed: 0, line_count: 0 },
+    };
+  }
+
+  const logs = await prisma.dispense_log.findMany({
+    where: {
+      ...buildDispenseLogScopeWhere(scope),
+      status: 'DISPENSED',
+      dispensed_at: { gte: range.from, lte: range.to },
+    },
+    select: {
+      dispensed_at: true,
+      quantity_dispensed: true,
+      pharmacy_order_item: {
+        select: {
+          drug_id: true,
+          drug: {
+            select: {
+              id: true,
+              human_friendly_id: true,
+              name: true,
+              unit_price: true,
+            },
+          },
+          pharmacy_order: {
+            select: {
+              billing_snapshot: true,
+              patient: {
+                select: {
+                  human_friendly_id: true,
+                  first_name: true,
+                  last_name: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: { dispensed_at: 'desc' },
+    take: topLimit,
+  });
+
+  const rows = [];
+  let amountTotal = 0;
+  let qtyTotal = 0;
+  logs.forEach((log) => {
+    const qty = asNumber(log.quantity_dispensed);
+    if (qty <= 0) return;
+    const unitPrice = resolveDispenseUnitPrice(log);
+    const amount = Math.round(unitPrice * qty * 100) / 100;
+    amountTotal += amount;
+    qtyTotal += qty;
+    rows.push({
+      patient: resolvePatientLabel(log?.pharmacy_order_item?.pharmacy_order?.patient),
+      drug:
+        normalizeString(log?.pharmacy_order_item?.drug?.name) ||
+        normalizeString(log?.pharmacy_order_item?.drug_id) ||
+        'Unknown',
+      quantity_dispensed: qty,
+      dispensed_at: log.dispensed_at
+        ? new Date(log.dispensed_at).toISOString()
+        : null,
+      amount,
+    });
+  });
+
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Pharmacy patient medication history',
+    subtitle: `${fromLabel} to ${toLabel} · up to ${rows.length} dispense lines`,
+    columns,
+    rows,
+    summary: {
+      amount: Math.round(amountTotal * 100) / 100,
+      quantity_dispensed: qtyTotal,
+      line_count: rows.length,
+    },
+  };
+};
+
+const loadOpenPharmacyInvoices = async (scope) => {
+  const invoices = await prisma.invoice.findMany({
+    where: {
+      ...buildPharmacyBillingScopeWhere(scope),
+      status: { in: [...OPEN_PHARMACY_INVOICE_STATUSES] },
+      patient_id: { not: null },
+    },
+    select: {
+      id: true,
+      issued_at: true,
+      total_amount: true,
+      currency: true,
+      status: true,
+      patient: {
+        select: {
+          human_friendly_id: true,
+          first_name: true,
+          last_name: true,
+        },
+      },
+      payments: {
+        where: { deleted_at: null },
+        select: {
+          amount: true,
+          status: true,
+          deleted_at: true,
+          refunds: {
+            where: { deleted_at: null },
+            select: { amount: true, deleted_at: true },
+          },
+        },
+      },
+      billing_adjustments: {
+        where: { deleted_at: null },
+        select: { amount: true, status: true, deleted_at: true },
+      },
+    },
+  });
+
+  return invoices
+    .map((invoice) => {
+      const financials = computeInvoiceFinancials(invoice);
+      const balanceDue = Math.max(0, toDecimalNumber(financials.balance_due));
+      return {
+        invoice,
+        balance_due: balanceDue,
+        patient: resolvePatientLabel(invoice.patient),
+        issued_at: invoice.issued_at
+          ? new Date(invoice.issued_at).toISOString()
+          : null,
+        currency: normalizeString(invoice.currency) || 'UGX',
+      };
+    })
+    .filter((entry) => entry.balance_due > 0.009);
+};
+
+/**
+ * Open pharmacy invoice balances aggregated per patient (customer credit).
+ */
+const buildPharmacyCustomerCreditBalanceAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['patient', 'credit_balance'];
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Pharmacy customer credit balance',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: { credit_balance: 0, customer_count: 0 },
+    };
+  }
+
+  const openRows = await loadOpenPharmacyInvoices(scope);
+  // Credit is a point-in-time ledger; optional issued_at filter keeps aging scoped.
+  const filtered = openRows.filter((entry) => {
+    if (!entry.invoice?.issued_at) return true;
+    const issued = new Date(entry.invoice.issued_at);
+    return issued.getTime() >= range.from.getTime() && issued.getTime() <= range.to.getTime();
+  });
+
+  const byPatient = new Map();
+  filtered.forEach((entry) => {
+    const key = entry.patient;
+    byPatient.set(key, Math.round((asNumber(byPatient.get(key)) + entry.balance_due) * 100) / 100);
+  });
+
+  const rows = Array.from(byPatient.entries())
+    .map(([patient, credit_balance]) => ({ patient, credit_balance }))
+    .sort((left, right) => right.credit_balance - left.credit_balance);
+
+  const credit_balance =
+    Math.round(rows.reduce((sum, row) => sum + asNumber(row.credit_balance), 0) * 100) / 100;
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Pharmacy customer credit balance',
+    subtitle: `${fromLabel} to ${toLabel} · open statuses ${OPEN_PHARMACY_INVOICE_STATUSES.join('|')} · pharmacy invoices`,
+    columns,
+    rows,
+    summary: {
+      credit_balance,
+      customer_count: rows.length,
+    },
+  };
+};
+
+/**
+ * Open pharmacy invoices aged (outstanding payments).
+ */
+const buildPharmacyCustomerOutstandingAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['patient', 'amount', 'issued_at'];
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Pharmacy outstanding payments',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: { amount: 0, invoice_count: 0 },
+    };
+  }
+
+  const openRows = await loadOpenPharmacyInvoices(scope);
+  const rows = openRows
+    .filter((entry) => {
+      if (!entry.invoice?.issued_at) return true;
+      const issued = new Date(entry.invoice.issued_at);
+      return issued.getTime() >= range.from.getTime() && issued.getTime() <= range.to.getTime();
+    })
+    .map((entry) => ({
+      patient: entry.patient,
+      amount: Math.round(entry.balance_due * 100) / 100,
+      issued_at: entry.issued_at,
+    }))
+    .sort((left, right) => String(left.issued_at || '').localeCompare(String(right.issued_at || '')));
+
+  const amount =
+    Math.round(rows.reduce((sum, row) => sum + asNumber(row.amount), 0) * 100) / 100;
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Pharmacy outstanding payments',
+    subtitle: `${fromLabel} to ${toLabel} · open pharmacy invoices with balance_due > 0`,
+    columns,
+    rows,
+    summary: {
+      amount,
+      invoice_count: rows.length,
+    },
+  };
+};
+
+/**
+ * Aggregate gender / age-band counts for pharmacy customers in range (no PHI rows).
+ */
+const buildPharmacyCustomerDemographicsAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['dimension', 'bucket', 'customer_count'];
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Pharmacy customer demographics',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: { customer_count: 0 },
+    };
+  }
+
+  const orders = await loadPharmacyOrderPatientsInRange(scope, range.from, range.to);
+  const patientIndex = new Map();
+  orders.forEach((order) => {
+    if (!order.patient_id || !order.patient) return;
+    if (!patientIndex.has(order.patient_id)) {
+      patientIndex.set(order.patient_id, order.patient);
+    }
+  });
+
+  const genderIndex = new Map();
+  const ageIndex = new Map();
+  patientIndex.forEach((patient) => {
+    const gender = normalizeString(patient.gender).toUpperCase() || 'UNKNOWN';
+    genderIndex.set(gender, asNumber(genderIndex.get(gender)) + 1);
+    const ageBand = resolveAgeBand(patient.date_of_birth, range.to);
+    ageIndex.set(ageBand, asNumber(ageIndex.get(ageBand)) + 1);
+  });
+
+  const rows = [
+    ...Array.from(genderIndex.entries()).map(([bucket, customer_count]) => ({
+      dimension: 'gender',
+      bucket,
+      customer_count,
+    })),
+    ...Array.from(ageIndex.entries()).map(([bucket, customer_count]) => ({
+      dimension: 'age_band',
+      bucket,
+      customer_count,
+    })),
+  ].sort((left, right) => {
+    const dim = String(left.dimension).localeCompare(String(right.dimension));
+    if (dim !== 0) return dim;
+    return asNumber(right.customer_count) - asNumber(left.customer_count);
+  });
+
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Pharmacy customer demographics',
+    subtitle: `${fromLabel} to ${toLabel} · gender and age_band aggregates only`,
+    columns,
+    rows,
+    summary: { customer_count: patientIndex.size },
+  };
+};
+
+/**
+ * Retention = prior-window purchasers who also purchase in current window.
+ * Prior window is equal length immediately before `from`.
+ */
+const buildPharmacyCustomerRetentionAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['segment', 'customer_count', 'retention_rate'];
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Pharmacy customer retention',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: { retention_rate: null, customer_count: 0 },
+    };
+  }
+
+  const durationMs = rangeMs(range);
+  const priorTo = new Date(range.from.getTime() - 1);
+  const priorFrom = new Date(range.from.getTime() - durationMs);
+
+  const [priorOrders, currentOrders] = await Promise.all([
+    loadPharmacyOrderPatientsInRange(scope, priorFrom, priorTo),
+    loadPharmacyOrderPatientsInRange(scope, range.from, range.to),
+  ]);
+
+  const priorIds = new Set(priorOrders.map((row) => row.patient_id).filter(Boolean));
+  const currentIds = new Set(currentOrders.map((row) => row.patient_id).filter(Boolean));
+  let retained = 0;
+  priorIds.forEach((id) => {
+    if (currentIds.has(id)) retained += 1;
+  });
+
+  const prior_count = priorIds.size;
+  const current_count = currentIds.size;
+  const retention_rate =
+    prior_count > 0 ? Math.round((retained / prior_count) * 10000) / 10000 : null;
+
+  const rows = [
+    { segment: 'prior_purchasers', customer_count: prior_count, retention_rate: null },
+    { segment: 'retained', customer_count: retained, retention_rate },
+    { segment: 'current_purchasers', customer_count: current_count, retention_rate: null },
+  ];
+
+  const priorFromLabel = priorFrom.toISOString().slice(0, 10);
+  const priorToLabel = priorTo.toISOString().slice(0, 10);
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Pharmacy customer retention',
+    subtitle: `Prior ${priorFromLabel}–${priorToLabel} (equal length) → current ${fromLabel}–${toLabel}`,
+    columns,
+    rows,
+    summary: {
+      retention_rate,
+      customer_count: retained,
+      prior_count,
+      current_count,
+    },
+  };
+};
+
+const runPharmacyCustomerCountDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacyCustomerCountAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+  };
+};
+
+const runPharmacyCustomersNewVsReturningDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacyCustomersNewVsReturningAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+    breakdown: analytics.breakdown,
+  };
+};
+
+const runPharmacyPatientMedicationHistoryDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacyPatientMedicationHistoryAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+  };
+};
+
+const runPharmacyCustomerCreditBalanceDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacyCustomerCreditBalanceAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+  };
+};
+
+const runPharmacyCustomerOutstandingDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacyCustomerOutstandingAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+  };
+};
+
+const runPharmacyCustomerDemographicsDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacyCustomerDemographicsAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+  };
+};
+
+const runPharmacyCustomerRetentionDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacyCustomerRetentionAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
   };
 };
 
@@ -1505,6 +2555,330 @@ const runPharmacySalesAvgTransactionDataset = async (scope, parameters = {}) => 
   };
 };
 
+/**
+ * Pack qty dispensed grouped by encounter.provider (clinical orders only).
+ * Walk-in / unlinked orders are omitted — do not invent a prescriber.
+ */
+const buildPharmacyDispensingByPrescriberAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['prescriber', 'quantity_dispensed'];
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Medicines dispensed by prescriber',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: { quantity_dispensed: 0, prescriber_count: 0 },
+    };
+  }
+
+  const logs = await prisma.dispense_log.findMany({
+    where: {
+      ...buildDispenseLogScopeWhere(scope),
+      status: 'DISPENSED',
+      dispensed_at: { gte: range.from, lte: range.to },
+    },
+    select: {
+      quantity_dispensed: true,
+      pharmacy_order_item: {
+        select: {
+          pharmacy_order: {
+            select: {
+              encounter: {
+                select: {
+                  provider: {
+                    select: {
+                      human_friendly_id: true,
+                      email: true,
+                      profile: {
+                        select: {
+                          first_name: true,
+                          last_name: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const index = new Map();
+  logs.forEach((log) => {
+    const qty = asNumber(log.quantity_dispensed);
+    if (qty <= 0) return;
+    const label = resolvePrescriberLabel(
+      log?.pharmacy_order_item?.pharmacy_order?.encounter?.provider
+    );
+    if (!label) return;
+    if (!index.has(label)) {
+      index.set(label, { prescriber: label, quantity_dispensed: 0 });
+    }
+    index.get(label).quantity_dispensed += qty;
+  });
+
+  const rows = Array.from(index.values()).sort(
+    (left, right) => asNumber(right.quantity_dispensed) - asNumber(left.quantity_dispensed)
+  );
+  const quantity_dispensed = rows.reduce(
+    (sum, row) => sum + asNumber(row.quantity_dispensed),
+    0
+  );
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Medicines dispensed by prescriber',
+    subtitle: `${fromLabel} to ${toLabel} · pack qty via encounter.provider (linked clinical orders only)`,
+    columns,
+    rows,
+    summary: {
+      quantity_dispensed,
+      prescriber_count: rows.length,
+    },
+  };
+};
+
+/**
+ * PARTIALLY_DISPENSED orders with remaining pack qty (ordered − DISPENSED logs).
+ */
+const buildPharmacyDispensingPartialAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['status', 'orders_created', 'remaining_quantity'];
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Partial dispensing',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: { orders_created: 0, remaining_quantity: 0 },
+    };
+  }
+
+  const orders = await prisma.pharmacy_order.findMany({
+    where: {
+      ...buildPharmacyOrderScopeWhere(scope),
+      status: 'PARTIALLY_DISPENSED',
+      ordered_at: { gte: range.from, lte: range.to },
+    },
+    select: {
+      items: {
+        where: { deleted_at: null },
+        select: {
+          quantity: true,
+          dispense_logs: {
+            where: { deleted_at: null, status: 'DISPENSED' },
+            select: { quantity_dispensed: true },
+          },
+        },
+      },
+    },
+  });
+
+  const remaining_quantity = orders.reduce(
+    (sum, order) =>
+      sum +
+      (Array.isArray(order.items) ? order.items : []).reduce(
+        (itemSum, item) => itemSum + remainingItemQuantity(item),
+        0
+      ),
+    0
+  );
+  const orders_created = orders.length;
+  const rows = [
+    {
+      status: 'PARTIALLY_DISPENSED',
+      orders_created,
+      remaining_quantity,
+    },
+  ];
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Partial dispensing',
+    subtitle: `${fromLabel} to ${toLabel} · remaining = ordered qty − DISPENSED pack qty`,
+    columns,
+    rows,
+    summary: { orders_created, remaining_quantity },
+  };
+};
+
+/**
+ * Prescription frequency = pharmacy_order count per patient in range.
+ */
+const buildPharmacyDispensingFrequencyAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['patient', 'orders_created'];
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Prescription frequency',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: { orders_created: 0, patient_count: 0 },
+    };
+  }
+
+  const orders = await prisma.pharmacy_order.findMany({
+    where: {
+      ...buildPharmacyOrderScopeWhere(scope),
+      ordered_at: { gte: range.from, lte: range.to },
+    },
+    select: {
+      patient: {
+        select: {
+          human_friendly_id: true,
+          first_name: true,
+          last_name: true,
+        },
+      },
+    },
+  });
+
+  const index = new Map();
+  orders.forEach((order) => {
+    const label = resolvePatientLabel(order.patient);
+    if (!index.has(label)) {
+      index.set(label, { patient: label, orders_created: 0 });
+    }
+    index.get(label).orders_created += 1;
+  });
+
+  const rows = Array.from(index.values()).sort(
+    (left, right) => asNumber(right.orders_created) - asNumber(left.orders_created)
+  );
+  const orders_created = rows.reduce((sum, row) => sum + asNumber(row.orders_created), 0);
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Prescription frequency',
+    subtitle: `${fromLabel} to ${toLabel} · orders per patient`,
+    columns,
+    rows,
+    summary: {
+      orders_created,
+      patient_count: rows.length,
+    },
+  };
+};
+
+/**
+ * Average items per prescription = pharmacy_order_item count / pharmacy_order count.
+ */
+const buildPharmacyDispensingAvgItemsAnalytics = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const columns = ['average_items_per_prescription', 'item_count', 'orders_created'];
+  if (range.invalid) {
+    return {
+      invalid: true,
+      title: 'Average items per prescription',
+      subtitle: 'Invalid date range',
+      columns,
+      rows: [],
+      summary: {
+        average_items_per_prescription: null,
+        item_count: 0,
+        orders_created: 0,
+      },
+    };
+  }
+
+  const orderWhere = {
+    ...buildPharmacyOrderScopeWhere(scope),
+    ordered_at: { gte: range.from, lte: range.to },
+  };
+  const [orders_created, item_count] = await Promise.all([
+    prisma.pharmacy_order.count({ where: orderWhere }),
+    prisma.pharmacy_order_item.count({
+      where: {
+        deleted_at: null,
+        pharmacy_order: orderWhere,
+      },
+    }),
+  ]);
+  const average_items_per_prescription = computeAverageItemsPerPrescription(
+    item_count,
+    orders_created
+  );
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+
+  return {
+    invalid: false,
+    title: 'Average items per prescription',
+    subtitle: `${fromLabel} to ${toLabel} · item_count / orders_created`,
+    columns,
+    rows: [
+      {
+        average_items_per_prescription,
+        item_count,
+        orders_created,
+      },
+    ],
+    summary: {
+      average_items_per_prescription,
+      item_count,
+      orders_created,
+    },
+  };
+};
+
+const runPharmacyDispensingByPrescriberDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacyDispensingByPrescriberAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+  };
+};
+
+const runPharmacyDispensingPartialDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacyDispensingPartialAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+  };
+};
+
+const runPharmacyDispensingFrequencyDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacyDispensingFrequencyAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+  };
+};
+
+const runPharmacyDispensingAvgItemsDataset = async (scope, parameters = {}) => {
+  const analytics = await buildPharmacyDispensingAvgItemsAnalytics(scope, parameters);
+  return {
+    title: analytics.title,
+    subtitle: analytics.subtitle,
+    columns: analytics.columns,
+    rows: analytics.rows,
+    summary: analytics.summary,
+  };
+};
+
 const claimBucket = (submittedAt) => {
   const diffDays = Math.floor((Date.now() - new Date(submittedAt).getTime()) / (24 * 60 * 60 * 1000));
   if (diffDays <= 7) return '0-7 days';
@@ -1728,7 +3102,15 @@ const loadInventoryExpiryRows = async (scope) => {
         select: {
           name: true,
           buy_unit_price: true,
-          unit_price: true,
+          supplier_id: true,
+          supplier: { select: { name: true } },
+          inventory_maps: {
+            where: { deleted_at: null },
+            select: {
+              is_default: true,
+              inventory_item: { select: { category: true } },
+            },
+          },
         },
       },
       storage_room: { select: { facility: { select: { name: true } } } },
@@ -1750,16 +3132,20 @@ const loadInventoryExpiryRows = async (scope) => {
     const daysToExpiry = Number.isFinite(expiryMs)
       ? Math.ceil((expiryMs - now) / (24 * 60 * 60 * 1000))
       : null;
-    const cost = resolveInventoryUnitCost([
-      { is_default: true, drug: batch.drug },
-    ]);
+    // Expiry/loss value is always at buy cost (COGS), never sell.
+    const cost = resolveBuyUnitCostOnly(batch.drug);
     const quantity = asNumber(batch.quantity);
+    const defaultMap = resolveDefaultInventoryMap(batch?.drug?.inventory_maps);
     expiryRows.push({
       facility:
         batch?.storage_room?.facility?.name ||
         scope.facility_label ||
         'Unassigned',
       inventory_item: normalizeString(batch?.drug?.name) || 'Unknown',
+      drug: normalizeString(batch?.drug?.name) || 'Unknown',
+      category: normalizeString(defaultMap?.inventory_item?.category) || null,
+      supplier_id: normalizeString(batch?.drug?.supplier_id) || null,
+      supplier: normalizeString(batch?.drug?.supplier?.name) || null,
       quantity,
       reorder_level: null,
       reorder_quantity: null,
@@ -1772,6 +3158,7 @@ const loadInventoryExpiryRows = async (scope) => {
         : null,
       expiry_alert_status: status,
       days_to_expiry: daysToExpiry,
+      expiry_window: classifyExpiryWindow(daysToExpiry),
       batch_number: normalizeString(batch.batch_number) || null,
     });
   }
@@ -1800,10 +3187,16 @@ const runInventoryDataset = async (scope) => {
     stockRows.reduce((sum, row) => sum + asNumber(row.value), 0) * 100
   ) / 100;
 
+  const expiredValue = Math.round(
+    expiryRows
+      .filter((row) => row.risk_state === 'EXPIRED')
+      .reduce((sum, row) => sum + asNumber(row.value), 0) * 100
+  ) / 100;
+
   return {
     title: 'Inventory stock risk',
     subtitle:
-      'On-hand stock levels plus low-stock, overstock, near-expiry, and expired batch pressure',
+      'On-hand stock levels plus low-stock, overstock, near-expiry, and expired batch pressure. Expiry batch value at buy cost.',
     columns: [
       'facility',
       'inventory_item',
@@ -1813,8 +3206,13 @@ const runInventoryDataset = async (scope) => {
       'expiry_date',
       'expiry_alert_status',
       'days_to_expiry',
+      'expiry_window',
       'batch_number',
       'value',
+      'category',
+      'supplier',
+      'supplier_id',
+      'drug',
     ],
     rows,
     summary: {
@@ -1828,6 +3226,7 @@ const runInventoryDataset = async (scope) => {
       total_stock_rows: stockRows.length,
       total_risk_rows: rows.length,
       value: valueTotal,
+      expired_value: expiredValue,
     },
   };
 };
@@ -2063,7 +3462,7 @@ const runInventoryDamagedStockDataset = async (scope, parameters = {}) => {
     title: 'Damaged stock',
     subtitle: loaded.invalid
       ? 'Invalid date range'
-      : `${fromLabel} to ${toLabel} (stock_adjustment reason=DAMAGE)`,
+      : `${fromLabel} to ${toLabel} (stock_adjustment reason=DAMAGE at buy cost)`,
     columns: ['adjusted_at', 'inventory_item', 'quantity', 'value', 'facility'],
     rows: loaded.rows.map((row) => ({
       adjusted_at: row.adjusted_at,
@@ -2093,17 +3492,107 @@ const runInventoryLostStockDataset = async (scope, parameters = {}) => {
     title: 'Lost / missing stock',
     subtitle: loaded.invalid
       ? 'Invalid date range'
-      : `${fromLabel} to ${toLabel} (stock_adjustment reason=OTHER as loss proxy; DAMAGE excluded)`,
-    columns: ['adjusted_at', 'inventory_item', 'quantity', 'reason', 'facility'],
+      : `${fromLabel} to ${toLabel} (reason=OTHER as loss proxy — schema has no LOSS; DAMAGE excluded)`,
+    columns: ['adjusted_at', 'inventory_item', 'quantity', 'reason', 'value', 'facility'],
     rows: loaded.rows.map((row) => ({
       adjusted_at: row.adjusted_at,
       inventory_item: row.inventory_item,
       quantity: row.quantity,
       reason: row.reason,
+      value: row.value,
       facility: row.facility,
     })),
     summary: {
       quantity: loaded.rows.reduce((sum, row) => sum + asNumber(row.quantity), 0),
+      value: Math.round(
+        loaded.rows.reduce((sum, row) => sum + asNumber(row.value), 0) * 100
+      ) / 100,
+    },
+  };
+};
+
+/**
+ * Stock write-offs: stock_adjustment reason EXPIRY or DAMAGE; value at buy cost.
+ */
+const runInventoryStockWriteOffsDataset = async (scope, parameters = {}) => {
+  const loaded = await loadStockAdjustments(scope, parameters, {
+    reason: { in: ['DAMAGE', 'EXPIRY'] },
+  });
+  const fromLabel = loaded.range?.from ? loaded.range.from.toISOString().slice(0, 10) : '';
+  const toLabel = loaded.range?.to ? loaded.range.to.toISOString().slice(0, 10) : '';
+  const rows = loaded.rows.map((row) => ({
+    adjusted_at: row.adjusted_at,
+    inventory_item: row.inventory_item,
+    reason: row.reason,
+    quantity: row.quantity,
+    value: row.value,
+    amount: row.value,
+    facility: row.facility,
+  }));
+  const value = Math.round(rows.reduce((sum, row) => sum + asNumber(row.value), 0) * 100) / 100;
+  return {
+    title: 'Stock write-offs',
+    subtitle: loaded.invalid
+      ? 'Invalid date range'
+      : `${fromLabel} to ${toLabel} (EXPIRY|DAMAGE write-offs at buy cost)`,
+    columns: [
+      'adjusted_at',
+      'inventory_item',
+      'reason',
+      'quantity',
+      'value',
+      'amount',
+      'facility',
+    ],
+    rows,
+    summary: {
+      quantity: rows.reduce((sum, row) => sum + asNumber(row.quantity), 0),
+      value,
+      amount: value,
+      write_off_count: rows.length,
+    },
+  };
+};
+
+/**
+ * Reasons for adjustments: group stock_adjustment by reason with counts/qty/value.
+ */
+const runInventoryAdjustmentReasonsDataset = async (scope, parameters = {}) => {
+  const loaded = await loadStockAdjustments(scope, parameters);
+  const fromLabel = loaded.range?.from ? loaded.range.from.toISOString().slice(0, 10) : '';
+  const toLabel = loaded.range?.to ? loaded.range.to.toISOString().slice(0, 10) : '';
+  const byReason = new Map();
+  for (const row of loaded.rows) {
+    const reason = normalizeString(row.reason) || 'UNKNOWN';
+    const current = byReason.get(reason) || {
+      reason,
+      adjustment_count: 0,
+      quantity: 0,
+      value: 0,
+    };
+    current.adjustment_count += 1;
+    current.quantity += asNumber(row.quantity);
+    current.value += asNumber(row.value);
+    byReason.set(reason, current);
+  }
+  const rows = [...byReason.values()]
+    .map((entry) => ({
+      ...entry,
+      value: Math.round(asNumber(entry.value) * 100) / 100,
+    }))
+    .sort((left, right) => right.adjustment_count - left.adjustment_count);
+
+  return {
+    title: 'Adjustment reasons',
+    subtitle: loaded.invalid
+      ? 'Invalid date range'
+      : `${fromLabel} to ${toLabel} (grouped by stock_adjustment.reason)`,
+    columns: ['reason', 'adjustment_count', 'quantity', 'value'],
+    rows,
+    summary: {
+      adjustment_count: loaded.rows.length,
+      reason_count: rows.length,
+      value: Math.round(rows.reduce((sum, row) => sum + asNumber(row.value), 0) * 100) / 100,
     },
   };
 };
@@ -2464,6 +3953,770 @@ const runCommunicationsDataset = async (scope, parameters = {}) => {
   };
 };
 
+const emptyToNull = (value) => {
+  const trimmed = normalizeString(value);
+  return trimmed || null;
+};
+
+const toIsoDate = (value) => {
+  if (!value) return null;
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString().slice(0, 10);
+};
+
+/**
+ * Catalog unit margin percent: profit_per_unit / unit_price when sell > 0.
+ * Null when buy unset (pharmacyRetailMarginUnit null) or unit_price ≤ 0.
+ */
+const computeCatalogProfitMargin = (unitPrice, buyUnitPrice) => {
+  const marginUnit = pharmacyRetailMarginUnit({ unitPrice, buyUnitPrice });
+  if (marginUnit == null) return null;
+  const sell = asNumber(unitPrice);
+  if (!(sell > 0)) return null;
+  return Math.round((marginUnit / sell) * 10000) / 100;
+};
+
+const resolveDefaultInventoryMap = (maps = []) => {
+  if (!Array.isArray(maps) || maps.length === 0) return null;
+  return maps.find((entry) => entry?.is_default) || maps[0] || null;
+};
+
+const buildPharmacyMedicinesCatalogRow = ({
+  drug,
+  batch = null,
+  offering = null,
+  rowKind = 'drug',
+} = {}) => {
+  const defaultMap = resolveDefaultInventoryMap(drug?.inventory_maps);
+  const inventoryItem = defaultMap?.inventory_item || null;
+  const catalogSell =
+    offering?.unit_price != null ? offering.unit_price : drug?.unit_price;
+  const buy = drug?.buy_unit_price;
+  const currency =
+    emptyToNull(offering?.currency) ||
+    emptyToNull(drug?.currency) ||
+    'UGX';
+  const form = emptyToNull(drug?.form);
+  const storageRoom = emptyToNull(batch?.storage_room?.name);
+  const storageShelf =
+    emptyToNull(batch?.storage_shelf?.label) ||
+    emptyToNull(batch?.storage_shelf?.shelf_code);
+  const storageParts = [storageRoom, storageShelf].filter(Boolean);
+  const expiryDate = batch?.expiry_date || null;
+  const now = Date.now();
+  const expiryMs = expiryDate ? new Date(expiryDate).getTime() : NaN;
+  const daysToExpiry = Number.isFinite(expiryMs)
+    ? Math.ceil((expiryMs - now) / (24 * 60 * 60 * 1000))
+    : null;
+  const profitPerUnit = pharmacyRetailMarginUnit({
+    unitPrice: catalogSell,
+    buyUnitPrice: buy,
+  });
+
+  return {
+    row_kind: rowKind,
+    drug_id: emptyToNull(drug?.id),
+    name: emptyToNull(drug?.name) || 'Unknown',
+    code: emptyToNull(drug?.code),
+    human_friendly_id: emptyToNull(drug?.human_friendly_id),
+    generic_name: emptyToNull(drug?.generic_name),
+    brand_name: emptyToNull(drug?.brand_name),
+    category: emptyToNull(inventoryItem?.category),
+    strength: emptyToNull(drug?.strength),
+    form,
+    dosage_form: form,
+    unit: emptyToNull(inventoryItem?.unit),
+    batch_number: emptyToNull(batch?.batch_number),
+    quantity: batch ? asNumber(batch.quantity) : null,
+    manufactured_at: toIsoDate(batch?.manufactured_at),
+    expiry_date: toIsoDate(expiryDate),
+    days_to_expiry: daysToExpiry,
+    selling_price:
+      catalogSell == null || catalogSell === '' ? null : asNumber(catalogSell),
+    unit_price:
+      catalogSell == null || catalogSell === '' ? null : asNumber(catalogSell),
+    purchase_price: buy == null || buy === '' ? null : asNumber(buy),
+    buy_unit_price: buy == null || buy === '' ? null : asNumber(buy),
+    profit_per_unit: profitPerUnit,
+    profit_margin: computeCatalogProfitMargin(catalogSell, buy),
+    currency,
+    storage_room: storageRoom,
+    storage_shelf: storageShelf,
+    storage_requirements: storageParts.length ? storageParts.join(' / ') : null,
+  };
+};
+
+const runPharmacyMedicinesCatalogDataset = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const toLabel = range?.to ? range.to.toISOString().slice(0, 10) : '';
+
+  const offeringWhere = {
+    deleted_at: null,
+    is_active: true,
+    tenant_id: scope.tenant_id,
+    ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+  };
+
+  const batchWhere = {
+    deleted_at: null,
+  };
+  if (scope.facility_id) {
+    batchWhere.OR = [
+      { storage_room: { facility_id: scope.facility_id, deleted_at: null } },
+      { storage_room_id: null },
+    ];
+  }
+
+  const [drugs, offerings] = await Promise.all([
+    prisma.drug.findMany({
+      where: {
+        deleted_at: null,
+        tenant_id: scope.tenant_id,
+      },
+      select: {
+        id: true,
+        human_friendly_id: true,
+        name: true,
+        brand_name: true,
+        generic_name: true,
+        code: true,
+        form: true,
+        strength: true,
+        buy_unit_price: true,
+        unit_price: true,
+        currency: true,
+        inventory_maps: {
+          where: { deleted_at: null },
+          select: {
+            is_default: true,
+            inventory_item: {
+              select: {
+                category: true,
+                unit: true,
+              },
+            },
+          },
+        },
+        batches: {
+          where: batchWhere,
+          select: {
+            batch_number: true,
+            manufactured_at: true,
+            expiry_date: true,
+            quantity: true,
+            storage_room: { select: { name: true } },
+            storage_shelf: { select: { label: true, shelf_code: true } },
+          },
+          orderBy: [{ expiry_date: 'asc' }, { batch_number: 'asc' }],
+        },
+      },
+      orderBy: [{ name: 'asc' }, { code: 'asc' }],
+    }),
+    prisma.facility_pharmacy_offering.findMany({
+      where: offeringWhere,
+      select: {
+        drug_id: true,
+        unit_price: true,
+        currency: true,
+      },
+    }),
+  ]);
+
+  const offeringByDrug = new Map();
+  offerings.forEach((entry) => {
+    if (!offeringByDrug.has(entry.drug_id)) {
+      offeringByDrug.set(entry.drug_id, entry);
+    }
+  });
+
+  const rows = [];
+  drugs.forEach((drug) => {
+    const offering = offeringByDrug.get(drug.id) || null;
+    rows.push(
+      buildPharmacyMedicinesCatalogRow({
+        drug,
+        batch: null,
+        offering,
+        rowKind: 'drug',
+      })
+    );
+    (drug.batches || []).forEach((batch) => {
+      rows.push(
+        buildPharmacyMedicinesCatalogRow({
+          drug,
+          batch,
+          offering,
+          rowKind: 'batch',
+        })
+      );
+    });
+  });
+
+  return {
+    title: 'Pharmacy medicines catalog',
+    subtitle: toLabel
+      ? `Catalog as of ${toLabel}`
+      : 'Drug and batch catalog attributes',
+    columns: [
+      'row_kind',
+      'drug_id',
+      'name',
+      'code',
+      'human_friendly_id',
+      'generic_name',
+      'brand_name',
+      'category',
+      'strength',
+      'form',
+      'dosage_form',
+      'unit',
+      'batch_number',
+      'quantity',
+      'manufactured_at',
+      'expiry_date',
+      'days_to_expiry',
+      'selling_price',
+      'unit_price',
+      'purchase_price',
+      'buy_unit_price',
+      'profit_per_unit',
+      'profit_margin',
+      'currency',
+      'storage_room',
+      'storage_shelf',
+      'storage_requirements',
+    ],
+    rows,
+    summary: {
+      drug_count: drugs.length,
+      batch_count: rows.filter((row) => row.row_kind === 'batch').length,
+    },
+  };
+};
+
+/**
+ * Non-negative whole days between PO ordered_at and goods_receipt.received_at.
+ */
+const computeDeliveryDays = (orderedAt, receivedAt) => {
+  if (!orderedAt || !receivedAt) return null;
+  const ordered = orderedAt instanceof Date ? orderedAt : new Date(orderedAt);
+  const received = receivedAt instanceof Date ? receivedAt : new Date(receivedAt);
+  if (Number.isNaN(ordered.getTime()) || Number.isNaN(received.getTime())) return null;
+  const diffMs = received.getTime() - ordered.getTime();
+  return Math.max(0, Math.round(diffMs / (24 * 60 * 60 * 1000)));
+};
+
+const buildPurchaseOrderScopeWhere = (scope = {}, range = null) => {
+  const where = {
+    deleted_at: null,
+    OR: [
+      { supplier: { deleted_at: null, tenant_id: scope.tenant_id } },
+      {
+        supplier_id: null,
+        purchase_request: { deleted_at: null, tenant_id: scope.tenant_id },
+      },
+    ],
+  };
+  if (scope.facility_id) {
+    where.purchase_request = {
+      deleted_at: null,
+      tenant_id: scope.tenant_id,
+      facility_id: scope.facility_id,
+    };
+    delete where.OR;
+  }
+  if (range && !range.invalid && range.from && range.to) {
+    where.ordered_at = { gte: range.from, lte: range.to };
+  }
+  return where;
+};
+
+const loadPurchaseOrderRows = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  if (range.invalid) {
+    return { invalid: true, range, rows: [] };
+  }
+
+  const orders = await prisma.purchase_order.findMany({
+    where: buildPurchaseOrderScopeWhere(scope, range),
+    select: {
+      id: true,
+      human_friendly_id: true,
+      status: true,
+      ordered_at: true,
+      supplier_id: true,
+      supplier: { select: { id: true, name: true } },
+      goods_receipts: {
+        where: { deleted_at: null },
+        select: { received_at: true, status: true },
+        orderBy: [{ received_at: 'asc' }],
+        take: 1,
+      },
+    },
+    orderBy: [{ ordered_at: 'asc' }, { created_at: 'asc' }],
+  });
+
+  const rows = orders.map((entry) => {
+    const receipt = entry.goods_receipts?.[0] || null;
+    const orderedAt = entry.ordered_at ? new Date(entry.ordered_at).toISOString() : null;
+    const receivedAt = receipt?.received_at
+      ? new Date(receipt.received_at).toISOString()
+      : null;
+    const deliveryDays = computeDeliveryDays(entry.ordered_at, receipt?.received_at);
+    return {
+      id: entry.id,
+      human_friendly_id: entry.human_friendly_id || null,
+      status: normalizeString(entry.status) || null,
+      ordered_at: orderedAt,
+      received_at: receivedAt,
+      delivery_days: deliveryDays,
+      supplier_id: entry.supplier_id || entry.supplier?.id || null,
+      supplier: entry.supplier?.name || 'Unassigned',
+      receipt_status: receipt ? normalizeString(receipt.status) || null : null,
+    };
+  });
+
+  return { invalid: false, range, rows };
+};
+
+const runPharmacyPurchaseOrdersDataset = async (scope, parameters = {}) => {
+  const loaded = await loadPurchaseOrderRows(scope, parameters);
+  const fromLabel = loaded.range?.from ? loaded.range.from.toISOString().slice(0, 10) : '';
+  const toLabel = loaded.range?.to ? loaded.range.to.toISOString().slice(0, 10) : '';
+
+  const bySupplier = new Map();
+  loaded.rows.forEach((row) => {
+    const key = row.supplier_id || row.supplier || 'unassigned';
+    if (!bySupplier.has(key)) {
+      bySupplier.set(key, {
+        supplier: row.supplier,
+        supplier_id: row.supplier_id,
+        po_count: 0,
+        receipt_count: 0,
+        delivery_days_sum: 0,
+        delivery_days_n: 0,
+      });
+    }
+    const bucket = bySupplier.get(key);
+    bucket.po_count += 1;
+    if (row.received_at) bucket.receipt_count += 1;
+    if (row.delivery_days != null) {
+      bucket.delivery_days_sum += asNumber(row.delivery_days);
+      bucket.delivery_days_n += 1;
+    }
+  });
+
+  const supplierPerformance = Array.from(bySupplier.values()).map((bucket) => {
+    const avg =
+      bucket.delivery_days_n > 0
+        ? Math.round((bucket.delivery_days_sum / bucket.delivery_days_n) * 100) / 100
+        : null;
+    return {
+      supplier: bucket.supplier,
+      supplier_id: bucket.supplier_id,
+      po_count: bucket.po_count,
+      receipt_count: bucket.receipt_count,
+      delivery_days: avg,
+      // Qty fulfillment needs PO/goods-receipt line items (schema gap).
+      fulfillment_rate: null,
+    };
+  });
+
+  return {
+    title: 'Pharmacy purchase orders',
+    subtitle: loaded.invalid
+      ? 'Invalid date range'
+      : `${fromLabel} to ${toLabel} (PO headers; delivery_days from goods_receipt)`,
+    columns: [
+      'ordered_at',
+      'status',
+      'supplier',
+      'human_friendly_id',
+      'received_at',
+      'delivery_days',
+      'id',
+      'receipt_status',
+    ],
+    rows: loaded.rows,
+    summary: {
+      po_count: loaded.rows.length,
+      receipt_count: loaded.rows.filter((row) => row.received_at).length,
+    },
+    breakdown: {
+      by_supplier: supplierPerformance,
+    },
+  };
+};
+
+const inventoryItemPurchaseSelect = {
+  name: true,
+  unit: true,
+  drug_maps: {
+    where: { deleted_at: null },
+    select: {
+      is_default: true,
+      drug: {
+        select: {
+          name: true,
+          buy_unit_price: true,
+          unit_price: true,
+          currency: true,
+          supplier_id: true,
+          supplier: { select: { id: true, name: true } },
+        },
+      },
+    },
+  },
+};
+
+const resolvePreferredDrugFromMaps = (drugMaps = []) => {
+  const maps = Array.isArray(drugMaps) ? drugMaps : [];
+  const ordered = [...maps].sort((left, right) => {
+    if (Boolean(right?.is_default) !== Boolean(left?.is_default)) {
+      return right?.is_default ? 1 : -1;
+    }
+    return 0;
+  });
+  return ordered.find((map) => map?.drug)?.drug || null;
+};
+
+const loadPurchaseInboundValueRows = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  if (range.invalid) {
+    return { invalid: true, range, rows: [] };
+  }
+
+  const where = {
+    deleted_at: null,
+    movement_type: 'INBOUND',
+    reason: 'PURCHASE',
+    inventory_item: {
+      deleted_at: null,
+      tenant_id: scope.tenant_id,
+    },
+    ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+  };
+  if (range.from && range.to) {
+    where.occurred_at = { gte: range.from, lte: range.to };
+  }
+
+  const movements = await prisma.stock_movement.findMany({
+    where,
+    select: {
+      inventory_item_id: true,
+      quantity: true,
+      occurred_at: true,
+      facility: { select: { name: true } },
+      inventory_item: { select: inventoryItemPurchaseSelect },
+    },
+    orderBy: [{ occurred_at: 'asc' }, { created_at: 'asc' }],
+  });
+
+  const rows = movements.map((entry) => {
+    const quantity = asNumber(entry.quantity);
+    const drug = resolvePreferredDrugFromMaps(entry?.inventory_item?.drug_maps);
+    const cost = resolveInventoryUnitCost(entry?.inventory_item?.drug_maps);
+    const amount =
+      cost.cost_basis === 'buy_unit_price'
+        ? computeStockValue(quantity, cost.unit_cost)
+        : cost.cost_basis === 'unavailable'
+          ? null
+          : computeStockValue(quantity, cost.unit_cost);
+    return {
+      occurred_at: entry.occurred_at ? new Date(entry.occurred_at).toISOString() : null,
+      inventory_item: entry?.inventory_item?.name || 'Unknown',
+      inventory_item_id: entry.inventory_item_id,
+      drug: drug?.name || null,
+      supplier_id: drug?.supplier_id || drug?.supplier?.id || null,
+      supplier: drug?.supplier?.name || 'Unassigned',
+      facility: entry?.facility?.name || scope.facility_label || 'Unassigned',
+      quantity,
+      amount,
+      unit_cost: cost.unit_cost,
+      cost_basis:
+        cost.cost_basis === 'buy_unit_price'
+          ? 'stock inbound × buy_unit_price'
+          : cost.cost_basis,
+      currency: normalizeString(drug?.currency) || null,
+    };
+  });
+
+  return { invalid: false, range, rows };
+};
+
+const runPharmacyPurchaseInboundValueDataset = async (scope, parameters = {}) => {
+  const loaded = await loadPurchaseInboundValueRows(scope, parameters);
+  const fromLabel = loaded.range?.from ? loaded.range.from.toISOString().slice(0, 10) : '';
+  const toLabel = loaded.range?.to ? loaded.range.to.toISOString().slice(0, 10) : '';
+  const amount = loaded.rows.reduce((sum, row) => sum + asNumber(row.amount), 0);
+  const quantity = loaded.rows.reduce((sum, row) => sum + asNumber(row.quantity), 0);
+
+  return {
+    title: 'Pharmacy purchase value',
+    subtitle: loaded.invalid
+      ? 'Invalid date range'
+      : `${fromLabel} to ${toLabel} (stock inbound × buy_unit_price)`,
+    columns: [
+      'occurred_at',
+      'supplier',
+      'inventory_item',
+      'drug',
+      'quantity',
+      'amount',
+      'currency',
+      'cost_basis',
+      'facility',
+    ],
+    rows: loaded.rows,
+    summary: {
+      amount: Math.round(amount * 100) / 100,
+      quantity,
+      movement_count: loaded.rows.length,
+    },
+  };
+};
+
+const runPharmacyPurchasesBySupplierDataset = async (scope, parameters = {}) => {
+  const [orders, inbound] = await Promise.all([
+    loadPurchaseOrderRows(scope, parameters),
+    loadPurchaseInboundValueRows(scope, parameters),
+  ]);
+  const fromLabel = orders.range?.from ? orders.range.from.toISOString().slice(0, 10) : '';
+  const toLabel = orders.range?.to ? orders.range.to.toISOString().slice(0, 10) : '';
+
+  const index = new Map();
+  const ensure = (supplierId, supplierName) => {
+    const key = supplierId || supplierName || 'unassigned';
+    if (!index.has(key)) {
+      index.set(key, {
+        supplier_id: supplierId || null,
+        supplier: supplierName || 'Unassigned',
+        po_count: 0,
+        quantity: 0,
+        amount: 0,
+        inbound_count: 0,
+        currency: null,
+      });
+    }
+    return index.get(key);
+  };
+
+  orders.rows.forEach((row) => {
+    ensure(row.supplier_id, row.supplier).po_count += 1;
+  });
+  inbound.rows.forEach((row) => {
+    const bucket = ensure(row.supplier_id, row.supplier);
+    bucket.quantity += asNumber(row.quantity);
+    bucket.amount += asNumber(row.amount);
+    bucket.inbound_count += 1;
+    if (!bucket.currency && row.currency) bucket.currency = row.currency;
+  });
+
+  const rows = Array.from(index.values())
+    .map((bucket) => ({
+      ...bucket,
+      amount: Math.round(asNumber(bucket.amount) * 100) / 100,
+    }))
+    .sort((left, right) => {
+      if (asNumber(right.po_count) !== asNumber(left.po_count)) {
+        return asNumber(right.po_count) - asNumber(left.po_count);
+      }
+      return asNumber(right.amount) - asNumber(left.amount);
+    });
+
+  return {
+    title: 'Purchases by supplier',
+    subtitle:
+      orders.invalid || inbound.invalid
+        ? 'Invalid date range'
+        : `${fromLabel} to ${toLabel} (PO count + inbound × buy_unit_price)`,
+    columns: ['supplier', 'po_count', 'quantity', 'amount', 'inbound_count', 'currency'],
+    rows,
+    summary: {
+      supplier_count: rows.length,
+      po_count: rows.reduce((sum, row) => sum + asNumber(row.po_count), 0),
+      amount: Math.round(rows.reduce((sum, row) => sum + asNumber(row.amount), 0) * 100) / 100,
+      quantity: rows.reduce((sum, row) => sum + asNumber(row.quantity), 0),
+    },
+  };
+};
+
+const runPharmacySupplierPricingDataset = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const toLabel = range?.to ? range.to.toISOString().slice(0, 10) : '';
+
+  const drugs = await prisma.drug.findMany({
+    where: {
+      deleted_at: null,
+      tenant_id: scope.tenant_id,
+      supplier_id: { not: null },
+    },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      buy_unit_price: true,
+      currency: true,
+      supplier: { select: { id: true, name: true } },
+    },
+    orderBy: [{ name: 'asc' }, { code: 'asc' }],
+  });
+
+  const rows = drugs.map((drug) => ({
+    supplier_id: drug.supplier?.id || null,
+    supplier: drug.supplier?.name || 'Unassigned',
+    drug: drug.name,
+    drug_id: drug.id,
+    code: drug.code || null,
+    buy_unit_price:
+      drug.buy_unit_price == null || drug.buy_unit_price === ''
+        ? null
+        : asNumber(drug.buy_unit_price),
+    currency: normalizeString(drug.currency) || null,
+  }));
+
+  return {
+    title: 'Supplier pricing',
+    subtitle: toLabel
+      ? `Current buy_unit_price by supplier as of ${toLabel}`
+      : 'Current drug.buy_unit_price by supplier',
+    columns: ['supplier', 'drug', 'buy_unit_price', 'currency', 'code'],
+    rows,
+    summary: {
+      drug_count: rows.length,
+      supplier_count: new Set(rows.map((row) => row.supplier_id).filter(Boolean)).size,
+    },
+  };
+};
+
+const runPharmacyPurchaseReturnsDataset = async (scope, parameters = {}) => {
+  const loaded = await loadStockMovements(scope, parameters, {
+    movement_type: 'OUTBOUND',
+    reason: 'RETURN',
+  });
+  const fromLabel = loaded.range?.from ? loaded.range.from.toISOString().slice(0, 10) : '';
+  const toLabel = loaded.range?.to ? loaded.range.to.toISOString().slice(0, 10) : '';
+  return {
+    title: 'Purchase returns',
+    subtitle: loaded.invalid
+      ? 'Invalid date range'
+      : `${fromLabel} to ${toLabel} (OUTBOUND + RETURN)`,
+    columns: ['occurred_at', 'inventory_item', 'quantity', 'facility', 'reason'],
+    rows: loaded.rows.map((row) => ({
+      occurred_at: row.occurred_at,
+      inventory_item: row.inventory_item,
+      quantity: row.quantity,
+      facility: row.facility,
+      reason: row.reason,
+    })),
+    summary: {
+      quantity: loaded.rows.reduce((sum, row) => sum + asNumber(row.quantity), 0),
+      movement_count: loaded.rows.length,
+    },
+  };
+};
+
+const extractPriceChangeFields = (diffJson) => {
+  if (!diffJson || typeof diffJson !== 'object' || Array.isArray(diffJson)) return [];
+  const fields = [];
+  const candidates = ['buy_unit_price', 'unit_price', 'transfer_unit_price'];
+  for (const field of candidates) {
+    const entry = diffJson[field];
+    if (entry == null) continue;
+    if (typeof entry === 'object' && !Array.isArray(entry)) {
+      const fromValue = entry.from ?? entry.old ?? entry.before ?? null;
+      const toValue = entry.to ?? entry.new ?? entry.after ?? null;
+      if (fromValue != null || toValue != null) {
+        fields.push({ field, from_value: fromValue, to_value: toValue });
+      }
+      continue;
+    }
+    fields.push({ field, from_value: null, to_value: entry });
+  }
+  return fields;
+};
+
+const runPharmacyDrugPriceChangesDataset = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  if (range.invalid) {
+    return {
+      title: 'Drug price changes',
+      subtitle: 'Invalid date range',
+      columns: ['changed_at', 'drug', 'field', 'from_value', 'to_value', 'currency'],
+      rows: [],
+      summary: { change_count: 0 },
+    };
+  }
+
+  const where = {
+    deleted_at: null,
+    tenant_id: scope.tenant_id,
+    entity: 'drug',
+    action: 'UPDATE',
+  };
+  if (range.from && range.to) {
+    where.created_at = { gte: range.from, lte: range.to };
+  }
+
+  const logs = await prisma.audit_log.findMany({
+    where,
+    select: {
+      entity_id: true,
+      diff_json: true,
+      created_at: true,
+    },
+    orderBy: [{ created_at: 'asc' }],
+  });
+
+  const drugIds = [...new Set(logs.map((entry) => entry.entity_id).filter(Boolean))];
+  const drugs = drugIds.length
+    ? await prisma.drug.findMany({
+        where: {
+          deleted_at: null,
+          tenant_id: scope.tenant_id,
+          id: { in: drugIds },
+        },
+        select: { id: true, name: true, currency: true },
+      })
+    : [];
+  const drugById = new Map(drugs.map((drug) => [drug.id, drug]));
+
+  const rows = [];
+  logs.forEach((log) => {
+    const changes = extractPriceChangeFields(log.diff_json);
+    if (changes.length === 0) return;
+    const drug = drugById.get(log.entity_id);
+    changes.forEach((change) => {
+      rows.push({
+        changed_at: log.created_at ? new Date(log.created_at).toISOString() : null,
+        drug: drug?.name || log.entity_id,
+        drug_id: log.entity_id,
+        field: change.field,
+        from_value:
+          change.from_value == null || change.from_value === ''
+            ? null
+            : asNumber(change.from_value),
+        to_value:
+          change.to_value == null || change.to_value === ''
+            ? null
+            : asNumber(change.to_value),
+        currency: normalizeString(drug?.currency) || null,
+      });
+    });
+  });
+
+  const fromLabel = range.from ? range.from.toISOString().slice(0, 10) : '';
+  const toLabel = range.to ? range.to.toISOString().slice(0, 10) : '';
+  return {
+    title: 'Drug price changes',
+    subtitle: `${fromLabel} to ${toLabel} (audit_log buy/unit price diffs)`,
+    columns: ['changed_at', 'drug', 'field', 'from_value', 'to_value', 'currency'],
+    rows,
+    summary: { change_count: rows.length },
+  };
+};
+
 const DATASET_RUNNERS = Object.freeze({
   patient_registrations: runPatientRegistrationsDataset,
   appointment_throughput_no_shows: runAppointmentDataset,
@@ -2473,12 +4726,29 @@ const DATASET_RUNNERS = Object.freeze({
   pharmacy_dispense_throughput: runPharmacyDispenseThroughputDataset,
   pharmacy_sales_by_category: runPharmacySalesByCategoryDataset,
   pharmacy_sales_by_branch: runPharmacySalesByBranchDataset,
+  pharmacy_profit_by_branch: runPharmacyProfitByBranchDataset,
+  pharmacy_stock_by_branch: runPharmacyStockByBranchDataset,
+  pharmacy_purchases_by_branch: runPharmacyPurchasesByBranchDataset,
+  pharmacy_stock_shortages_by_branch: runPharmacyStockShortagesByBranchDataset,
+  pharmacy_best_performing_branch: runPharmacyBestPerformingBranchDataset,
+  pharmacy_branch_comparison: runPharmacyBranchComparisonDataset,
   pharmacy_sales_by_customer: runPharmacySalesByCustomerDataset,
   pharmacy_sales_payment_methods: runPharmacySalesPaymentMethodDataset,
   pharmacy_sales_discounts: runPharmacySalesDiscountsDataset,
   pharmacy_sales_refunds: runPharmacySalesRefundsDataset,
   pharmacy_sales_net_revenue: runPharmacySalesNetRevenueDataset,
   pharmacy_sales_avg_transaction: runPharmacySalesAvgTransactionDataset,
+  pharmacy_dispensing_by_prescriber: runPharmacyDispensingByPrescriberDataset,
+  pharmacy_dispensing_partial: runPharmacyDispensingPartialDataset,
+  pharmacy_dispensing_frequency: runPharmacyDispensingFrequencyDataset,
+  pharmacy_dispensing_avg_items: runPharmacyDispensingAvgItemsDataset,
+  pharmacy_medicines_catalog: runPharmacyMedicinesCatalogDataset,
+  pharmacy_purchase_orders: runPharmacyPurchaseOrdersDataset,
+  pharmacy_purchase_inbound_value: runPharmacyPurchaseInboundValueDataset,
+  pharmacy_purchases_by_supplier: runPharmacyPurchasesBySupplierDataset,
+  pharmacy_supplier_pricing: runPharmacySupplierPricingDataset,
+  pharmacy_purchase_returns: runPharmacyPurchaseReturnsDataset,
+  pharmacy_drug_price_changes: runPharmacyDrugPriceChangesDataset,
   inventory_stock_risk: runInventoryDataset,
   inventory_stock_value: runInventoryStockValueDataset,
   inventory_opening_closing: runInventoryOpeningClosingDataset,
@@ -2487,6 +4757,8 @@ const DATASET_RUNNERS = Object.freeze({
   inventory_stock_adjustments: runInventoryStockAdjustmentsDataset,
   inventory_damaged_stock: runInventoryDamagedStockDataset,
   inventory_lost_stock: runInventoryLostStockDataset,
+  inventory_stock_write_offs: runInventoryStockWriteOffsDataset,
+  inventory_adjustment_reasons: runInventoryAdjustmentReasonsDataset,
   inventory_reorder: runInventoryReorderDataset,
   inventory_stock_turnover: runInventoryStockTurnoverDataset,
   inventory_stock_velocity: runInventoryStockVelocityDataset,
@@ -2539,17 +4811,27 @@ const executeReportDataset = async ({ dataset_key, scope, definition_json = {}, 
 module.exports = {
   buildBillingFinancialAnalytics,
   buildPharmacyDispenseThroughputAnalytics,
+  buildPharmacyDispensingAvgItemsAnalytics,
+  buildPharmacyDispensingByPrescriberAnalytics,
+  buildPharmacyDispensingFrequencyAnalytics,
+  buildPharmacyDispensingPartialAnalytics,
   buildPharmacyDrugConsumptionAnalytics,
+  buildPharmacyMedicinesCatalogRow,
   buildPharmacySalesAvgTransactionAnalytics,
   buildPharmacySalesDiscountsAnalytics,
   buildPharmacySalesNetRevenueAnalytics,
   buildPharmacySalesPaymentMethodAnalytics,
   buildPharmacySalesRefundsAnalytics,
+  classifyExpiryWindow,
   classifyStockRisk,
   classifyStockVelocity,
+  computeAverageItemsPerPrescription,
+  computeCatalogProfitMargin,
   computeStockValue,
   executeReportDataset,
   movementSignedDelta,
+  remainingItemQuantity,
+  resolveBuyUnitCostOnly,
   resolveDateRange,
   resolveInventoryUnitCost,
   shouldUseMonthlyGranularity,

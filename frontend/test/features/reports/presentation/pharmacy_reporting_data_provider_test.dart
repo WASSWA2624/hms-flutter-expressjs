@@ -302,4 +302,77 @@ void main() {
     expect(snapshot.rows, hasLength(1));
     expect(snapshot.rows.single['inventory_item'], 'A');
   });
+
+  test('medicines catalog projects drug and batch column subsets', () {
+    const ModuleReportingReport nameReport = ModuleReportingReport(
+      id: 'medicine_name',
+      categoryId: 'medicines_products',
+      label: 'Medicine name',
+      datasetKey: 'pharmacy_medicines_catalog',
+    );
+    const ModuleReportingReport batchReport = ModuleReportingReport(
+      id: 'batch_lot',
+      categoryId: 'medicines_products',
+      label: 'Batch/lot number',
+      datasetKey: 'pharmacy_medicines_catalog',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_medicines_catalog',
+      subtitle: 'Catalog as of 2026-08-07',
+      columns: const <String>[
+        'row_kind',
+        'name',
+        'code',
+        'human_friendly_id',
+        'batch_number',
+        'quantity',
+        'expiry_date',
+        'strength',
+        'selling_price',
+      ],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'row_kind': 'drug',
+          'name': 'Paracetamol',
+          'code': 'PCM500',
+          'human_friendly_id': 'DRG-1',
+          'batch_number': null,
+          'quantity': null,
+          'expiry_date': null,
+          'strength': '500 mg',
+          'selling_price': 2050,
+        },
+        <String, Object?>{
+          'row_kind': 'batch',
+          'name': 'Paracetamol',
+          'code': 'PCM500',
+          'human_friendly_id': 'DRG-1',
+          'batch_number': 'PCM500A',
+          'quantity': 100,
+          'expiry_date': '2027-01-01',
+          'strength': '500 mg',
+          'selling_price': 2050,
+        },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot nameSnapshot =
+        projectPharmacyReportingPreview(
+          report: nameReport,
+          preview: preview,
+        );
+    expect(nameSnapshot.state, ModuleReportingLoadState.ready);
+    expect(nameSnapshot.columns, <String>['name', 'code', 'human_friendly_id']);
+    expect(nameSnapshot.rows, hasLength(1));
+    expect(nameSnapshot.rows.single['name'], 'Paracetamol');
+
+    final ModuleReportingReportSnapshot batchSnapshot =
+        projectPharmacyReportingPreview(
+          report: batchReport,
+          preview: preview,
+        );
+    expect(batchSnapshot.state, ModuleReportingLoadState.ready);
+    expect(batchSnapshot.rows, hasLength(1));
+    expect(batchSnapshot.rows.single['batch_number'], 'PCM500A');
+  });
 }
