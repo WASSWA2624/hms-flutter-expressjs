@@ -200,7 +200,7 @@ void main() {
 
     expect(find.text('TOTAL SALES'), findsOneWidget);
     expect(find.text('Last month'), findsOneWidget);
-    expect(find.text('Period'), findsOneWidget);
+    expect(find.text('Period'), findsNothing);
     expect(find.byType(CheckboxListTile), findsNothing);
     expect(find.byType(AppSelectField<ModuleReportingPeriodPreset>), findsOneWidget);
     expect(find.text('Print'), findsNothing);

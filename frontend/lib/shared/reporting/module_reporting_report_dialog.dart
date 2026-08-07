@@ -157,7 +157,7 @@ class _ModuleReportingReportDialogState
               onSelected: _onPeriodSelected,
             ),
             if (_rangeError != null) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
+              SizedBox(height: theme.spacing.xs),
               Text(
                 _rangeError!,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -165,7 +165,7 @@ class _ModuleReportingReportDialogState
                 ),
               ),
             ],
-            SizedBox(height: theme.spacing.lg),
+            SizedBox(height: theme.spacing.sm),
             AppWorkspaceStatePanel.empty(
               title: _labels.unavailableTitle,
               body: widget.report.hasBackend
@@ -565,26 +565,30 @@ class _ModuleReportingPeriodToolbar extends StatelessWidget {
   final String? rangeSummary;
   final ValueChanged<ModuleReportingPeriodPreset> onSelected;
 
-  static const double _selectWidth = 220;
-  static const double _stackBreakpoint = 520;
+  static const double _selectWidth = 168;
+  static const double _stackBreakpoint = 480;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final TextStyle? summaryStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      height: 1.2,
+    );
     final Widget select = SizedBox(
       width: _selectWidth,
       child: AppSelectField<ModuleReportingPeriodPreset>(
         value: selected,
-        labelText: labels.periodLabel,
+        semanticLabel: labels.periodLabel,
         isDense: true,
         allowClear: false,
+        enableSpeechToText: false,
         options: <AppSelectOption<ModuleReportingPeriodPreset>>[
           for (final ModuleReportingPeriodPreset preset
               in ModuleReportingPeriodPreset.values)
             AppSelectOption<ModuleReportingPeriodPreset>(
               value: preset,
               label: moduleReportingPeriodLabel(labels, preset),
-              leadingIcon: Icon(_periodIcon(preset), size: 18),
             ),
         ],
         onChanged: (ModuleReportingPeriodPreset? value) {
@@ -596,14 +600,22 @@ class _ModuleReportingPeriodToolbar extends StatelessWidget {
       ),
     );
 
+    final Widget summaryText = rangeSummary == null
+        ? const SizedBox.shrink()
+        : Text(
+            rangeSummary!,
+            style: summaryStyle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          );
     final Widget summary = rangeSummary == null
         ? const SizedBox.shrink()
         : selected == ModuleReportingPeriodPreset.custom
         ? InkWell(
             onTap: () => onSelected(ModuleReportingPeriodPreset.custom),
-            child: AppMutedText(rangeSummary!),
+            child: summaryText,
           )
-        : AppMutedText(rangeSummary!);
+        : summaryText;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -621,7 +633,7 @@ class _ModuleReportingPeriodToolbar extends StatelessWidget {
                 child: select,
               ),
               if (rangeSummary != null) ...<Widget>[
-                SizedBox(height: theme.spacing.sm),
+                SizedBox(height: theme.spacing.xs),
                 summary,
               ],
             ],
@@ -631,27 +643,12 @@ class _ModuleReportingPeriodToolbar extends StatelessWidget {
         return Row(
           children: <Widget>[
             Expanded(child: summary),
-            SizedBox(width: theme.spacing.md),
+            SizedBox(width: theme.spacing.sm),
             select,
           ],
         );
       },
     );
-  }
-
-  IconData _periodIcon(ModuleReportingPeriodPreset preset) {
-    return switch (preset) {
-      ModuleReportingPeriodPreset.today => Icons.today_outlined,
-      ModuleReportingPeriodPreset.lastWeek => Icons.date_range_outlined,
-      ModuleReportingPeriodPreset.lastMonth => Icons.calendar_month_outlined,
-      ModuleReportingPeriodPreset.last3Months =>
-        Icons.calendar_view_month_outlined,
-      ModuleReportingPeriodPreset.last6Months =>
-        Icons.calendar_view_week_outlined,
-      ModuleReportingPeriodPreset.last12Months => Icons.event_outlined,
-      ModuleReportingPeriodPreset.last24Months => Icons.event_note_outlined,
-      ModuleReportingPeriodPreset.custom => Icons.edit_calendar_outlined,
-    };
   }
 }
 
