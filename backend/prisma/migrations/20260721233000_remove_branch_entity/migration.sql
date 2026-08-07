@@ -78,21 +78,43 @@ WHERE p.branch_id IS NOT NULL
   AND p.facility_id IS NULL
   AND b.facility_id IS NOT NULL;
 
-UPDATE analytics_event a
-INNER JOIN branch b ON b.id = a.branch_id
-SET a.facility_id = COALESCE(a.facility_id, b.facility_id)
-WHERE a.branch_id IS NOT NULL
-  AND a.facility_id IS NULL
-  AND b.facility_id IS NOT NULL;
+-- analytics_event / kpi_snapshot may lack branch_id/facility_id on clean installs
+-- (columns only existed on drifted schemas). Guard those backfills.
+SET @ae_has_branch := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'analytics_event' AND COLUMN_NAME = 'branch_id'
+);
+SET @ae_has_facility := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'analytics_event' AND COLUMN_NAME = 'facility_id'
+);
+SET @ae_sql := IF(
+  @ae_has_branch > 0 AND @ae_has_facility > 0,
+  'UPDATE analytics_event a INNER JOIN branch b ON b.id = a.branch_id SET a.facility_id = COALESCE(a.facility_id, b.facility_id) WHERE a.branch_id IS NOT NULL AND a.facility_id IS NULL AND b.facility_id IS NOT NULL',
+  'SELECT 1'
+);
+PREPARE ae_stmt FROM @ae_sql;
+EXECUTE ae_stmt;
+DEALLOCATE PREPARE ae_stmt;
 
-UPDATE kpi_snapshot k
-INNER JOIN branch b ON b.id = k.branch_id
-SET k.facility_id = COALESCE(k.facility_id, b.facility_id)
-WHERE k.branch_id IS NOT NULL
-  AND k.facility_id IS NULL
-  AND b.facility_id IS NOT NULL;
+SET @kpi_has_branch := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'kpi_snapshot' AND COLUMN_NAME = 'branch_id'
+);
+SET @kpi_has_facility := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'kpi_snapshot' AND COLUMN_NAME = 'facility_id'
+);
+SET @kpi_sql := IF(
+  @kpi_has_branch > 0 AND @kpi_has_facility > 0,
+  'UPDATE kpi_snapshot k INNER JOIN branch b ON b.id = k.branch_id SET k.facility_id = COALESCE(k.facility_id, b.facility_id) WHERE k.branch_id IS NOT NULL AND k.facility_id IS NULL AND b.facility_id IS NOT NULL',
+  'SELECT 1'
+);
+PREPARE kpi_stmt FROM @kpi_sql;
+EXECUTE kpi_stmt;
+DEALLOCATE PREPARE kpi_stmt;
 
--- Drop FKs that reference branch.
+-- Drop FKs that reference branch (skip analytics/kpi when branch_id never existed).
 ALTER TABLE `department` DROP FOREIGN KEY `department_branch_id_fkey`;
 ALTER TABLE `address` DROP FOREIGN KEY `address_branch_id_fkey`;
 ALTER TABLE `contact` DROP FOREIGN KEY `contact_branch_id_fkey`;
@@ -104,8 +126,24 @@ ALTER TABLE `day_close` DROP FOREIGN KEY `day_close_branch_id_fkey`;
 ALTER TABLE `handover` DROP FOREIGN KEY `handover_branch_id_fkey`;
 ALTER TABLE `custody_snapshot` DROP FOREIGN KEY `custody_snapshot_branch_id_fkey`;
 ALTER TABLE `closeout_pack` DROP FOREIGN KEY `closeout_pack_branch_id_fkey`;
-ALTER TABLE `analytics_event` DROP FOREIGN KEY `analytics_event_branch_id_fkey`;
-ALTER TABLE `kpi_snapshot` DROP FOREIGN KEY `kpi_snapshot_branch_id_fkey`;
+
+SET @ae_drop_fk := IF(
+  @ae_has_branch > 0,
+  'ALTER TABLE `analytics_event` DROP FOREIGN KEY `analytics_event_branch_id_fkey`',
+  'SELECT 1'
+);
+PREPARE ae_drop_fk_stmt FROM @ae_drop_fk;
+EXECUTE ae_drop_fk_stmt;
+DEALLOCATE PREPARE ae_drop_fk_stmt;
+
+SET @kpi_drop_fk := IF(
+  @kpi_has_branch > 0,
+  'ALTER TABLE `kpi_snapshot` DROP FOREIGN KEY `kpi_snapshot_branch_id_fkey`',
+  'SELECT 1'
+);
+PREPARE kpi_drop_fk_stmt FROM @kpi_drop_fk;
+EXECUTE kpi_drop_fk_stmt;
+DEALLOCATE PREPARE kpi_drop_fk_stmt;
 
 -- Drop indexes on branch_id.
 DROP INDEX `department_branch_id_idx` ON `department`;
@@ -119,8 +157,24 @@ DROP INDEX `day_close_branch_id_idx` ON `day_close`;
 DROP INDEX `handover_branch_id_idx` ON `handover`;
 DROP INDEX `custody_snapshot_branch_id_idx` ON `custody_snapshot`;
 DROP INDEX `closeout_pack_branch_id_idx` ON `closeout_pack`;
-DROP INDEX `analytics_event_branch_id_idx` ON `analytics_event`;
-DROP INDEX `kpi_snapshot_branch_id_idx` ON `kpi_snapshot`;
+
+SET @ae_drop_idx := IF(
+  @ae_has_branch > 0,
+  'DROP INDEX `analytics_event_branch_id_idx` ON `analytics_event`',
+  'SELECT 1'
+);
+PREPARE ae_drop_idx_stmt FROM @ae_drop_idx;
+EXECUTE ae_drop_idx_stmt;
+DEALLOCATE PREPARE ae_drop_idx_stmt;
+
+SET @kpi_drop_idx := IF(
+  @kpi_has_branch > 0,
+  'DROP INDEX `kpi_snapshot_branch_id_idx` ON `kpi_snapshot`',
+  'SELECT 1'
+);
+PREPARE kpi_drop_idx_stmt FROM @kpi_drop_idx;
+EXECUTE kpi_drop_idx_stmt;
+DEALLOCATE PREPARE kpi_drop_idx_stmt;
 
 -- Drop branch_id columns.
 ALTER TABLE `department` DROP COLUMN `branch_id`;
@@ -134,8 +188,24 @@ ALTER TABLE `day_close` DROP COLUMN `branch_id`;
 ALTER TABLE `handover` DROP COLUMN `branch_id`;
 ALTER TABLE `custody_snapshot` DROP COLUMN `branch_id`;
 ALTER TABLE `closeout_pack` DROP COLUMN `branch_id`;
-ALTER TABLE `analytics_event` DROP COLUMN `branch_id`;
-ALTER TABLE `kpi_snapshot` DROP COLUMN `branch_id`;
+
+SET @ae_drop_col := IF(
+  @ae_has_branch > 0,
+  'ALTER TABLE `analytics_event` DROP COLUMN `branch_id`',
+  'SELECT 1'
+);
+PREPARE ae_drop_col_stmt FROM @ae_drop_col;
+EXECUTE ae_drop_col_stmt;
+DEALLOCATE PREPARE ae_drop_col_stmt;
+
+SET @kpi_drop_col := IF(
+  @kpi_has_branch > 0,
+  'ALTER TABLE `kpi_snapshot` DROP COLUMN `branch_id`',
+  'SELECT 1'
+);
+PREPARE kpi_drop_col_stmt FROM @kpi_drop_col;
+EXECUTE kpi_drop_col_stmt;
+DEALLOCATE PREPARE kpi_drop_col_stmt;
 
 -- Drop branch table FKs then table.
 ALTER TABLE `branch` DROP FOREIGN KEY `branch_tenant_id_fkey`;

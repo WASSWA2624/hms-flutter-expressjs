@@ -2,10 +2,10 @@
 -- Uses short constraint names (MySQL identifier limit is 64 chars).
 
 ALTER TABLE `facility_radiology_test_offering`
-  DROP FOREIGN KEY `facility_radiology_test_offering_radiology_test_id_fkey`;
+  DROP FOREIGN KEY `frto_radiology_test_fkey`;
 
 ALTER TABLE `facility_radiology_test_offering`
-  DROP INDEX `facility_radiology_test_offering_radiology_test_id_idx`;
+  DROP INDEX `frto_radiology_test_id_idx`;
 
 ALTER TABLE `facility_radiology_test_offering`
   DROP INDEX `frto_facility_test_key`;
