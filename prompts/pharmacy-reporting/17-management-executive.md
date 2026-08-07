@@ -25,7 +25,7 @@ Implement all `mgmt_*` dialogs as **compositions** of sales/inventory/financial/
 | `mgmt_top_customers` | purchases_by_customer top 10 |
 | `mgmt_sales_by_staff_branch` | sales_by_staff; branch = facility scope |
 | `mgmt_supplier_spend` / `mgmt_purchase_trends` / `mgmt_supplier_performance` | `14`/`04` |
-| `mgmt_controlled_medicines` | `13` stock — unavailable until pack 13 |
+| `mgmt_controlled_medicines` | `13` controlled_medicine_stock |
 | `mgmt_unusual_adjustments` | leave-one-out `|qty| > mean+2σ` (n≥2); else `|qty|≥10` |
 | `mgmt_high_value_losses` | damage/expiry/write-off `value` desc |
 

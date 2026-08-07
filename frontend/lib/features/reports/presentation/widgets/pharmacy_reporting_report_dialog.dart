@@ -27,11 +27,13 @@ Future<void> openPharmacyReportingReportDialog({
   required AppAccessPolicy policy,
   required ReportsRepository repository,
 }) {
+  final bool canExport = canExportEvidence(policy) &&
+      (report.id != 'regulatory_log' || canReadControlledRegulatoryLog(policy));
   return openModuleReportingReportDialog(
     context: context,
     report: report,
     labels: pharmacyReportingLabels(context.l10n),
-    canExport: canExportEvidence(policy),
+    canExport: canExport,
     dataProvider: PharmacyReportingDataProvider(repository, policy: policy),
   );
 }
