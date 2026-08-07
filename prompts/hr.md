@@ -1,71 +1,70 @@
-# Flatten HR Desk Tabs (No Nested Queues)
+# Flatten HR Desk Tabs (Entity-Per-Primary)
 
-Refactor the HR workspace so every worklist lives on a **single primary `AppTabStrip`**—no nested queue switcher—while keeping staff, leave, shifts, payroll, and access behavior, permissions, and deep-links intact unless this prompt requires a change.
+Refactor the HR workspace so every worklist is a **primary `AppTabStrip` tab**—no nested queue switcher—while preserving staff, leave, swap, roster, unassigned, payroll, and access behavior, permissions, and deep-links unless this prompt requires a change.
 
 ## Context
 
-**Current behavior (screenshot + codebase; `/hr?section=shift-roster`)**
+**Current behavior (feedback after first flatten)**
 
-- **Primary strip (`HrDeskSection`):** Human resources (`staff`), Leave requests (`leave-requests`), Shifts (`shift-roster` / `shifts`), Payroll drafts (`payroll`), Manage users and roles (`access`). Gated by `hrAllowedSections` / per-tab atoms in `hr_access.dart`.
-- **Nested strip (problem):** On Shifts only, `_HrWorkQueueSwitcherRow` + `HrQueueSwitcher` renders a second tab row for all five `workspaceQueues`: Leave requests, Swap requests, Roster drafts, Unassigned shifts, Payroll drafts. That duplicates Leave/Payroll primaries and lets users change queue without changing section.
-- **Queue → section map today:** Leave/swap → Leave tab; roster/unassigned/overdue → Shifts; payroll → Payroll. Leave and Payroll bodies already omit the switcher and load a fixed queue; Swap is effectively reachable via the Shifts nested strip (or `?queue=`), not a dedicated primary.
-- **Preserve:** Staff directory, work-item tables/dialogs/next-actions, schedule templates, access embed, billing inventories, RBAC/ABAC, soft-refresh, existing `?section=` / `?queue=` / `?id=` deep-links (remap destinations if IA changes).
+- Nested Shifts queue strip removed.
+- Four visible primaries (Human resources, Leave, Shifts, Payroll) felt **insufficient**—swap / roster / unassigned were buried in Filters.
+- Manage users and roles remains a fifth/seventh primary when entitled.
 
 **Intended behavior**
 
-- One tab level only. No `HrQueueSwitcher` (or equivalent second strip) in the HR workspace body.
-- Prefer **fewest primaries**: keep the five `HrDeskSection`s; do **not** promote every `HrQueue` to its own primary.
-- Consolidate related queues **inside** their owning primary via existing **Filters** (or equivalent non-tab facet)—not nested tabs:
-  - **Leave requests:** leave + swap (default leave).
-  - **Shifts:** roster drafts + unassigned (+ overdue when deep-linked); default roster drafts. Badge stays draft + unassigned + overdue.
-  - **Payroll drafts:** payroll only (remove from any shift-local chrome).
-- Staff and Access unchanged in role and chrome.
+- One tab level only. No nested queue strip.
+- **Entity-per-primary** flat strip (order):
+  1. Human resources (`staff`) — staff directory  
+  2. Leave requests (`leave-requests`)  
+  3. Swap requests (`swap-requests`)  
+  4. Roster drafts (`shift-roster` / `shifts` aliases)  
+  5. Unassigned shifts (`unassigned-shifts`; overdue deep-links here)  
+  6. Payroll drafts (`payroll`)  
+  7. Manage users and roles (`access`)  
+- Each worklist tab loads exactly one queue. Desk Filters stay **status-only** (no queue facet). Dialog “Work queues” may still offer all queues in Filters.
+- Trailing actions: Add staff / Request leave / Schedule templates (Roster drafts only).
 
 **Definitions**
 
 - *Primary tab:* One `AppTabItem` in the HR `AppTabStrip` (`HrDeskSection`).
-- *Nested tabs:* Any second tab/segment row that switches `HrQueue` (e.g. `HrQueueSwitcher`). Forbidden on the desk.
-- *Queue facet:* Filter (or similar progressive control) that selects leave vs swap, or roster vs unassigned vs overdue, without a second tab strip.
+- *Nested tabs:* Any second tab row that switches `HrQueue`. Forbidden.
 
 ## Requirements
 
-1. **Remove nested queue chrome:** Delete workspace use of `HrQueueSwitcher` / `_HrWorkQueueSwitcherRow` under Shifts (and any leftover panel). Do not reintroduce a second tab strip.
-2. **Keep five primaries; assign entities:** Human resources = staff; Leave = leave+swap via facet; Shifts = roster/unassigned/overdue via facet; Payroll = payroll drafts; Access = manage users/roles. Do not add Swap/Unassigned/Roster as new primaries.
-3. **Default loads & facets:** Selecting Leave loads leave; Shifts loads roster drafts; Payroll loads payroll. Facets switch related queues and update list/URL. Overdue may appear only when selected/deep-linked (same as today’s special case), not as a permanent nested tab.
-4. **Deep-links & Home tally:** `?section=` / `?tab=` / `?queue=` open the owning primary with the matching queue applied. Remap any Home/dashboard routes that assumed nested Shifts→leave/payroll. Preserve staff `?id=` behavior.
-5. **Counts & chrome:** Tab badges and search trailing actions stay section-scoped (Leave ≈ leave count; consider whether swap should contribute—document choice in code; Shifts = draft+unassigned+overdue; Payroll = draft runs). Unauthorized tabs/actions absent—no disabled stubs.
-6. **States & sync:** Loading / empty / error / success / validation unchanged; soft-refresh after mutations; theme tokens; light/dark; responsive without overflow or duplicate controls.
-7. **Tests:** Update workspace, queue-switcher, shifts/leave/payroll permission & billing section tests for the flat IA; prove nested switcher absent; authorized tabs/actions remain; deep-link queue→section cases green.
+1. **No nested queue chrome** on the desk or dialog strip.
+2. **Seven primaries** as listed; do not re-merge swap/unassigned into Leave/Shifts via Filters.
+3. **Defaults & deep-links:** Tab select loads that section’s queue; `?queue=` wins over conflicting `?section=`; URL keeps `section` + `queue`. Home metric routes include both.
+4. **Counts:** Leave / swap / roster / unassigned(+overdue) / payroll badges are section-scoped. Unauthorized tabs absent.
+5. **States & sync:** Load/empty/error/success; soft-refresh; theme tokens; responsive (overflow “More” OK on narrow).
+6. **Tests:** Entity map, deep-links, permission/billing suites; nested switcher absent; authorized chrome remains.
 
 ## Constraints
 
-- Reuse `HrWorkspacePage`, controller, work-item table, filters, dialogs, `HrDeskSection` / `HrQueue`, and shared list/search kit. No parallel HR shell.
+- Reuse `HrWorkspacePage`, controller, work-item table, dialogs, shared kit. No parallel HR shell.
 - Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `prompts/.cursor/prompt.mdc`, `frontend/.cursor/layouts.mdc`.
-- Out of scope: new HR entities, payroll math, access RBAC redesign, Reports Overview, production seeding.
-- Optional: retire or narrow `HrQueueSwitcher` to non-workspace surfaces only if still referenced; prefer delete if unused.
+- Out of scope: new entities, payroll math, access RBAC redesign, Reports, production seeding.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | HR desk shows only the primary `AppTabStrip`; no nested leave/swap/roster/unassigned/payroll row under Shifts. | R1 |
-| A2 | Five primaries remain; leave+swap owned by Leave; shift queues by Shifts; payroll by Payroll; staff/access unchanged. | R2 |
-| A3 | Tab select loads the default queue; facets switch related queues without a second tab strip. | R3 |
-| A4 | `?section=` / `?queue=` (and Home links) land on the owning primary with the correct queue; staff deep-links preserved. | R4 |
-| A5 | Badges/actions stay correct and permission-gated; unauthorized chrome absent. | R5 |
-| A6 | Load/empty/error/success work; themes and viewports usable; lists refresh after mutations. | R6 |
-| A7 | Updated HR workspace/section/permission tests pass; nested switcher assertions removed or inverted. | R7 |
+| A1 | Strip shows Leave, Swap, Roster drafts, Unassigned, Payroll (+ staff/access when entitled); no nested queue row. | R1, R2 |
+| A2 | Each worklist tab loads its own queue; Filters do not switch desk queues. | R2, R3 |
+| A3 | `?section=` / `?queue=` and Home links land on the owning primary. | R3 |
+| A4 | Badges/actions permission-gated; unauthorized chrome absent. | R4 |
+| A5 | Themes/viewports usable; lists refresh after mutations. | R5 |
+| A6 | Updated HR tests pass. | R6 |
 
 ## Relevant Files
 
+- `frontend/lib/features/hr/domain/entities/hr_entities.dart`
 - `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart`
 - `frontend/lib/features/hr/presentation/widgets/hr_queue_switcher.dart`
-- `frontend/lib/features/hr/domain/entities/hr_entities.dart` (`HrDeskSection`, `HrQueue`, `HrWorkspaceQuery`)
-- `frontend/lib/features/hr/presentation/hr_access.dart`, `controllers/hr_workspace_controller.dart`
-- Home/metric routes that deep-link `/hr?section=` / `?queue=`
-- Tests: `hr_workspace_page_test.dart`, `hr_queue_switcher_test.dart`, `hr_*_permissions_test.dart`, `hr_*_billing_sections_test.dart`
+- `frontend/lib/features/hr/presentation/hr_access.dart`
+- Home metric routes under `frontend/lib/features/home/`
+- Tests under `frontend/test/features/hr/`
 
 ## Verification
 
-- Unit/widget: flat strip only; Leave/Shifts facets; queue deep-links; permission absence.
-- Manual: `/hr` → Shifts has no second tab row; Leave reaches swap via Filters; Payroll only via Payroll tab; Access/staff unchanged; light/dark + narrow width.
+- Unit/widget: seven-section map; queue→section; no nested strip.
+- Manual: `/hr` shows Swap + Roster drafts + Unassigned as primaries; Payroll unchanged; light/dark + narrow overflow.

@@ -27,7 +27,9 @@ enum HrQueue {
 enum HrDeskSection {
   staffDirectory,
   leaveRequests,
+  swapRequests,
   shiftRoster,
+  unassignedShifts,
   payroll,
   access;
 
@@ -36,7 +38,9 @@ enum HrDeskSection {
     return switch (this) {
       HrDeskSection.staffDirectory => 'staff',
       HrDeskSection.leaveRequests => 'leave-requests',
+      HrDeskSection.swapRequests => 'swap-requests',
       HrDeskSection.shiftRoster => 'shift-roster',
+      HrDeskSection.unassignedShifts => 'unassigned-shifts',
       HrDeskSection.payroll => 'payroll',
       HrDeskSection.access => 'access',
     };
@@ -53,11 +57,21 @@ enum HrDeskSection {
       case 'leave-requests':
       case 'leaves':
         return HrDeskSection.leaveRequests;
+      case 'swap':
+      case 'swap-requests':
+      case 'swaps':
+        return HrDeskSection.swapRequests;
       case 'shift':
       case 'shift-roster':
       case 'roster':
+      case 'roster-drafts':
       case 'shifts':
         return HrDeskSection.shiftRoster;
+      case 'unassigned':
+      case 'unassigned-shifts':
+      case 'overdue':
+      case 'overdue-shifts':
+        return HrDeskSection.unassignedShifts;
       case 'payroll':
       case 'payroll-drafts':
         return HrDeskSection.payroll;
@@ -76,11 +90,11 @@ enum HrDeskSection {
       return null;
     }
     return switch (queue) {
-      HrQueue.leaveRequests ||
-      HrQueue.swapRequests => HrDeskSection.leaveRequests,
-      HrQueue.rosterDrafts ||
+      HrQueue.leaveRequests => HrDeskSection.leaveRequests,
+      HrQueue.swapRequests => HrDeskSection.swapRequests,
+      HrQueue.rosterDrafts => HrDeskSection.shiftRoster,
       HrQueue.unassignedShifts ||
-      HrQueue.overdueShifts => HrDeskSection.shiftRoster,
+      HrQueue.overdueShifts => HrDeskSection.unassignedShifts,
       HrQueue.payrollDrafts => HrDeskSection.payroll,
     };
   }

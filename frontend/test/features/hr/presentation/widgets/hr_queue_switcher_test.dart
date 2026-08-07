@@ -8,32 +8,39 @@ void main() {
   final AppLocalizationsEn l10n = AppLocalizationsEn();
 
   group('hrQueuesForSection', () {
-    test('Leave owns leave + swap only', () {
+    test('each desk primary owns a single queue', () {
       expect(
         hrQueuesForSection(HrDeskSection.leaveRequests, HrQueue.leaveRequests),
-        <HrQueue>[HrQueue.leaveRequests, HrQueue.swapRequests],
+        <HrQueue>[HrQueue.leaveRequests],
       );
-    });
-
-    test('Shifts owns roster + unassigned; overdue only when selected', () {
+      expect(
+        hrQueuesForSection(HrDeskSection.swapRequests, HrQueue.swapRequests),
+        <HrQueue>[HrQueue.swapRequests],
+      );
       expect(
         hrQueuesForSection(HrDeskSection.shiftRoster, HrQueue.rosterDrafts),
-        <HrQueue>[HrQueue.rosterDrafts, HrQueue.unassignedShifts],
+        <HrQueue>[HrQueue.rosterDrafts],
       );
       expect(
-        hrQueuesForSection(HrDeskSection.shiftRoster, HrQueue.overdueShifts),
-        <HrQueue>[
-          HrQueue.rosterDrafts,
+        hrQueuesForSection(
+          HrDeskSection.unassignedShifts,
           HrQueue.unassignedShifts,
-          HrQueue.overdueShifts,
-        ],
+        ),
+        <HrQueue>[HrQueue.unassignedShifts],
       );
-    });
-
-    test('Payroll owns payroll only', () {
       expect(
         hrQueuesForSection(HrDeskSection.payroll, HrQueue.payrollDrafts),
         <HrQueue>[HrQueue.payrollDrafts],
+      );
+    });
+
+    test('Unassigned exposes overdue only when deep-linked', () {
+      expect(
+        hrQueuesForSection(
+          HrDeskSection.unassignedShifts,
+          HrQueue.overdueShifts,
+        ),
+        <HrQueue>[HrQueue.unassignedShifts, HrQueue.overdueShifts],
       );
     });
 
@@ -47,14 +54,22 @@ void main() {
   });
 
   group('hrDefaultQueueForSection', () {
-    test('defaults match flat IA', () {
+    test('defaults match entity-per-tab IA', () {
       expect(
         hrDefaultQueueForSection(HrDeskSection.leaveRequests),
         HrQueue.leaveRequests,
       );
       expect(
+        hrDefaultQueueForSection(HrDeskSection.swapRequests),
+        HrQueue.swapRequests,
+      );
+      expect(
         hrDefaultQueueForSection(HrDeskSection.shiftRoster),
         HrQueue.rosterDrafts,
+      );
+      expect(
+        hrDefaultQueueForSection(HrDeskSection.unassignedShifts),
+        HrQueue.unassignedShifts,
       );
       expect(
         hrDefaultQueueForSection(HrDeskSection.payroll),

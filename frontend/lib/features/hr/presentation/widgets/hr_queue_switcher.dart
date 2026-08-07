@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
-/// Canonical work queues shown in Filters (dialog / cross-section browse).
+/// Canonical work queues for dialog / cross-section Filters browse.
 const List<HrQueue> hrWorkspaceQueues = <HrQueue>[
   HrQueue.leaveRequests,
   HrQueue.swapRequests,
@@ -12,45 +12,54 @@ const List<HrQueue> hrWorkspaceQueues = <HrQueue>[
 ];
 
 /// Default queue loaded when selecting a worklist primary tab.
+///
+/// Each worklist primary owns exactly one queue (flat IA — no nested tabs,
+/// no desk queue facet). Overdue deep-links land on Unassigned.
 HrQueue? hrDefaultQueueForSection(HrDeskSection section) {
   return switch (section) {
     HrDeskSection.leaveRequests => HrQueue.leaveRequests,
+    HrDeskSection.swapRequests => HrQueue.swapRequests,
     HrDeskSection.shiftRoster => HrQueue.rosterDrafts,
+    HrDeskSection.unassignedShifts => HrQueue.unassignedShifts,
     HrDeskSection.payroll => HrQueue.payrollDrafts,
     HrDeskSection.staffDirectory || HrDeskSection.access => null,
   };
 }
 
-/// Section-scoped queue facet choices (Filters — not a nested tab strip).
+/// Queue choices for Filters.
 ///
-/// Overdue appears only when already selected / deep-linked.
+/// Desk primaries are 1:1 with a queue — no queue facet on those tabs.
+/// Dialog (`section == null`) still offers all workspace queues; overdue
+/// appears only when already selected / deep-linked.
 List<HrQueue> hrQueuesForSection(HrDeskSection? section, HrQueue selected) {
-  final List<HrQueue> base = switch (section) {
-    HrDeskSection.leaveRequests => <HrQueue>[
-      HrQueue.leaveRequests,
-      HrQueue.swapRequests,
-    ],
-    HrDeskSection.shiftRoster => <HrQueue>[
-      HrQueue.rosterDrafts,
-      HrQueue.unassignedShifts,
-    ],
-    HrDeskSection.payroll => <HrQueue>[HrQueue.payrollDrafts],
-    // Dialog / cross-section browse: all workspace queues.
-    null || HrDeskSection.staffDirectory || HrDeskSection.access =>
-      hrWorkspaceQueues,
-  };
-  if (selected == HrQueue.overdueShifts &&
-      section != HrDeskSection.leaveRequests &&
-      section != HrDeskSection.payroll &&
-      !base.contains(HrQueue.overdueShifts)) {
-    return <HrQueue>[...base, HrQueue.overdueShifts];
+  if (section != null) {
+    final HrQueue? only = hrDefaultQueueForSection(section);
+    if (only == null) {
+      return const <HrQueue>[];
+    }
+    if (section == HrDeskSection.unassignedShifts &&
+        selected == HrQueue.overdueShifts) {
+      return <HrQueue>[HrQueue.unassignedShifts, HrQueue.overdueShifts];
+    }
+    return <HrQueue>[only];
   }
-  return base;
+  if (selected == HrQueue.overdueShifts &&
+      !hrWorkspaceQueues.contains(HrQueue.overdueShifts)) {
+    return <HrQueue>[...hrWorkspaceQueues, HrQueue.overdueShifts];
+  }
+  return hrWorkspaceQueues;
 }
 
 /// Whether [queue] belongs on [section] (or any section when [section] is null).
 bool hrQueueAllowedOnSection(HrDeskSection? section, HrQueue queue) {
-  return hrQueuesForSection(section, queue).contains(queue);
+  if (section == null) {
+    return hrQueuesForSection(null, queue).contains(queue);
+  }
+  if (section == HrDeskSection.unassignedShifts &&
+      queue == HrQueue.overdueShifts) {
+    return true;
+  }
+  return hrDefaultQueueForSection(section) == queue;
 }
 
 String hrQueueLabel(AppLocalizations l10n, HrQueue queue) {

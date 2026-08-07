@@ -87,7 +87,7 @@ void main() {
         ),
         <String, String>{
           'queue': 'SWAP_REQUESTS',
-          'section': 'leave-requests',
+          'section': 'swap-requests',
         },
       );
     });

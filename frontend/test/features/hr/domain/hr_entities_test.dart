@@ -90,7 +90,9 @@ void main() {
         containsAll(<HrDeskSection>[
           HrDeskSection.staffDirectory,
           HrDeskSection.leaveRequests,
+          HrDeskSection.swapRequests,
           HrDeskSection.shiftRoster,
+          HrDeskSection.unassignedShifts,
           HrDeskSection.payroll,
           HrDeskSection.access,
         ]),
@@ -100,7 +102,12 @@ void main() {
     test('routeQueryValue matches canonical section params', () {
       expect(HrDeskSection.staffDirectory.routeQueryValue, 'staff');
       expect(HrDeskSection.leaveRequests.routeQueryValue, 'leave-requests');
+      expect(HrDeskSection.swapRequests.routeQueryValue, 'swap-requests');
       expect(HrDeskSection.shiftRoster.routeQueryValue, 'shift-roster');
+      expect(
+        HrDeskSection.unassignedShifts.routeQueryValue,
+        'unassigned-shifts',
+      );
       expect(HrDeskSection.payroll.routeQueryValue, 'payroll');
       expect(HrDeskSection.access.routeQueryValue, 'access');
     });
@@ -111,7 +118,12 @@ void main() {
         HrDeskSection.leaveRequests,
       );
       expect(HrDeskSection.fromQuery('leaves'), HrDeskSection.leaveRequests);
+      expect(HrDeskSection.fromQuery('swap-requests'), HrDeskSection.swapRequests);
       expect(HrDeskSection.fromQuery('roster'), HrDeskSection.shiftRoster);
+      expect(
+        HrDeskSection.fromQuery('unassigned-shifts'),
+        HrDeskSection.unassignedShifts,
+      );
       expect(HrDeskSection.fromQuery('roles'), HrDeskSection.access);
       expect(HrDeskSection.fromQuery('unknown'), isNull);
     });
@@ -122,8 +134,20 @@ void main() {
         HrDeskSection.leaveRequests,
       );
       expect(
-        HrDeskSection.fromQueue(HrQueue.overdueShifts),
+        HrDeskSection.fromQueue(HrQueue.swapRequests),
+        HrDeskSection.swapRequests,
+      );
+      expect(
+        HrDeskSection.fromQueue(HrQueue.rosterDrafts),
         HrDeskSection.shiftRoster,
+      );
+      expect(
+        HrDeskSection.fromQueue(HrQueue.unassignedShifts),
+        HrDeskSection.unassignedShifts,
+      );
+      expect(
+        HrDeskSection.fromQueue(HrQueue.overdueShifts),
+        HrDeskSection.unassignedShifts,
       );
       expect(
         HrDeskSection.fromQueue(HrQueue.payrollDrafts),

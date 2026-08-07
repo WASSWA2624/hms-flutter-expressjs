@@ -462,7 +462,7 @@ void main() {
         accessPolicy: reader,
       );
 
-      expect(_tab('Shifts'), findsOneWidget);
+      expect(_tab('Roster drafts'), findsOneWidget);
       expect(_searchAction('Schedule templates'), findsNothing);
       expect(find.text('Publish roster'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
@@ -486,7 +486,7 @@ void main() {
         accessPolicy: hrWriter,
       );
 
-      expect(_tab('Shifts'), findsOneWidget);
+      expect(_tab('Roster drafts'), findsOneWidget);
       expect(_searchAction('Schedule templates'), findsNothing);
       expect(find.text('Publish roster'), findsNothing);
       expect(find.text('Override shift'), findsNothing);
@@ -555,7 +555,7 @@ void main() {
         accessPolicy: approver,
         workItems: const <HrWorkItem>[_swapRequest],
         // Swap belongs on Leave; queue wins over a conflicting section.
-        initialLocation: '/hr?section=leave-requests&queue=SWAP_REQUESTS',
+        initialLocation: '/hr?section=swap-requests&queue=SWAP_REQUESTS',
       );
 
       expect(_searchAction('Schedule templates'), findsNothing);
@@ -752,7 +752,7 @@ void main() {
         accessPolicy: noModule,
       );
 
-      expect(_tab('Shifts'), findsNothing);
+      expect(_tab('Roster drafts'), findsNothing);
       expect(_searchAction('Schedule templates'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -776,7 +776,7 @@ void main() {
       themeMode: ThemeMode.dark,
     );
 
-    expect(_tab('Shifts'), findsOneWidget);
+    expect(_tab('Roster drafts'), findsOneWidget);
     // Compact widths hide toolbar labels; tooltip remains the stable atom.
     expect(find.byTooltip('Schedule templates'), findsOneWidget);
     expect(find.textContaining('no access'), findsNothing);
@@ -807,7 +807,7 @@ void main() {
       themeMode: ThemeMode.light,
     );
 
-    expect(_tab('Shifts'), findsOneWidget);
+    expect(_tab('Roster drafts'), findsOneWidget);
     expect(find.byTooltip('HR activity'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });
@@ -833,7 +833,7 @@ void main() {
         accessPolicy: writeOnly,
       );
 
-      expect(_tab('Shifts'), findsNothing);
+      expect(_tab('Roster drafts'), findsNothing);
       expect(_searchAction('Schedule templates'), findsNothing);
     },
   );

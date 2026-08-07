@@ -416,7 +416,10 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
                 ),
               ]
             : const <AppSearchBarAction>[],
-      HrDeskSection.payroll || HrDeskSection.access =>
+      HrDeskSection.swapRequests ||
+      HrDeskSection.unassignedShifts ||
+      HrDeskSection.payroll ||
+      HrDeskSection.access =>
         const <AppSearchBarAction>[],
     };
   }
@@ -442,34 +445,18 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
           unawaited(_handleStaffNextAction(context, item));
         },
       ),
-      HrDeskSection.leaveRequests => _HrWorkQueueTable(
-        section: HrDeskSection.leaveRequests,
-        searchController: _workQueueSearchController,
-        columnVisibilityController: _queueColumnController,
-        searchTrailingActions: searchTrailingActions,
-        onPageChanged: controller.changeWorkItemsPage,
-        onQueueChanged: (HrQueue queue) {
-          _updateUrlForSection(HrDeskSection.leaveRequests, queue: queue);
-        },
-      ),
-      HrDeskSection.shiftRoster => _HrWorkQueueTable(
-        section: HrDeskSection.shiftRoster,
-        searchController: _workQueueSearchController,
-        columnVisibilityController: _queueColumnController,
-        searchTrailingActions: searchTrailingActions,
-        onPageChanged: controller.changeWorkItemsPage,
-        onQueueChanged: (HrQueue queue) {
-          _updateUrlForSection(HrDeskSection.shiftRoster, queue: queue);
-        },
-      ),
+      HrDeskSection.leaveRequests ||
+      HrDeskSection.swapRequests ||
+      HrDeskSection.shiftRoster ||
+      HrDeskSection.unassignedShifts ||
       HrDeskSection.payroll => _HrWorkQueueTable(
-        section: HrDeskSection.payroll,
+        section: section,
         searchController: _workQueueSearchController,
         columnVisibilityController: _queueColumnController,
         searchTrailingActions: searchTrailingActions,
         onPageChanged: controller.changeWorkItemsPage,
         onQueueChanged: (HrQueue queue) {
-          _updateUrlForSection(HrDeskSection.payroll, queue: queue);
+          _updateUrlForSection(section, queue: queue);
         },
       ),
       HrDeskSection.access => const HrAccessWorkspacePanel(embedded: true),
@@ -1960,7 +1947,9 @@ String _sectionLabel(AppLocalizations l10n, HrDeskSection section) {
   return switch (section) {
     HrDeskSection.staffDirectory => l10n.hrTitle,
     HrDeskSection.leaveRequests => l10n.hrLeaveRequestsSummaryLabel,
-    HrDeskSection.shiftRoster => l10n.hrShiftsSectionTitle,
+    HrDeskSection.swapRequests => l10n.hrQueueSwapRequests,
+    HrDeskSection.shiftRoster => l10n.hrQueueRosterDrafts,
+    HrDeskSection.unassignedShifts => l10n.hrQueueUnassignedShifts,
     HrDeskSection.payroll => l10n.hrPayrollDraftsSummaryLabel,
     HrDeskSection.access => l10n.hrManageAccessAction,
   };
@@ -1970,7 +1959,9 @@ IconData _sectionIcon(HrDeskSection section) {
   return switch (section) {
     HrDeskSection.staffDirectory => Icons.people_outlined,
     HrDeskSection.leaveRequests => Icons.event_busy_outlined,
-    HrDeskSection.shiftRoster => Icons.calendar_view_week_outlined,
+    HrDeskSection.swapRequests => Icons.swap_horiz_outlined,
+    HrDeskSection.shiftRoster => Icons.calendar_month_outlined,
+    HrDeskSection.unassignedShifts => Icons.pending_actions_outlined,
     HrDeskSection.payroll => Icons.payments_outlined,
     HrDeskSection.access => Icons.manage_accounts_outlined,
   };
@@ -1981,10 +1972,11 @@ int _sectionCount(HrWorkspaceState state, HrDeskSection section) {
   return switch (section) {
     HrDeskSection.staffDirectory =>
       state.staff.totalItemCount ?? state.staff.items.length,
-    // Leave badge = leave requests only; swap stays discoverable via Filters.
     HrDeskSection.leaveRequests => summary.leaveRequests,
-    HrDeskSection.shiftRoster =>
-      summary.draftRosters + summary.unassignedShifts + summary.overdueShifts,
+    HrDeskSection.swapRequests => summary.swapRequests,
+    HrDeskSection.shiftRoster => summary.draftRosters,
+    HrDeskSection.unassignedShifts =>
+      summary.unassignedShifts + summary.overdueShifts,
     HrDeskSection.payroll => summary.payrollDraftRuns,
     HrDeskSection.access => 0,
   };
@@ -1992,9 +1984,11 @@ int _sectionCount(HrWorkspaceState state, HrDeskSection section) {
 
 AppTabCountTone _sectionCountTone(HrDeskSection section) {
   return switch (section) {
-    HrDeskSection.shiftRoster => AppTabCountTone.danger,
-    HrDeskSection.leaveRequests => AppTabCountTone.warning,
+    HrDeskSection.unassignedShifts => AppTabCountTone.danger,
+    HrDeskSection.leaveRequests ||
+    HrDeskSection.swapRequests => AppTabCountTone.warning,
     HrDeskSection.staffDirectory ||
+    HrDeskSection.shiftRoster ||
     HrDeskSection.payroll ||
     HrDeskSection.access => AppTabCountTone.info,
   };

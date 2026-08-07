@@ -303,12 +303,15 @@ void main() {
     expect(_searchAction('Request leave'), findsOneWidget);
     expect(_searchAction('Run payroll'), findsNothing);
 
-    await _selectTab(tester, 'Shifts');
+    await _selectTab(tester, 'Swap requests');
+    expect(_searchAction('Request leave'), findsNothing);
+    expect(_searchAction('Schedule templates'), findsNothing);
+
+    await _selectTab(tester, 'Roster drafts');
     expect(_searchAction('Schedule templates'), findsOneWidget);
-    // Flat IA: no nested queue strip (leave/swap/roster/payroll as second tabs).
-    expect(find.text('Swap requests'), findsNothing);
-    expect(find.text('Roster drafts'), findsNothing);
-    expect(find.text('Unassigned shifts'), findsNothing);
+
+    await _selectTab(tester, 'Unassigned shifts');
+    expect(_searchAction('Schedule templates'), findsNothing);
 
     await _selectTab(tester, 'Payroll drafts');
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
@@ -334,10 +337,9 @@ void main() {
       initialLocation: '/hr?section=shifts&queue=SWAP_REQUESTS',
     );
 
-    // Swap → Leave primary; Schedule templates (Shifts-only) absent.
+    // Swap → Swap requests primary; Leave/Shifts trailing actions absent.
     expect(_searchAction('Schedule templates'), findsNothing);
-    expect(_searchAction('Request leave'), findsOneWidget);
-    expect(find.text('Swap requests'), findsNothing);
+    expect(_searchAction('Request leave'), findsNothing);
   });
 
   testWidgets('hides unauthorized primary and next-action controls', (

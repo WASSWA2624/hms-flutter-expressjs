@@ -209,9 +209,11 @@ bool canDeleteHrAccess(AppAccessPolicy policy) {
 AccessRequirement hrSectionRequirement(HrDeskSection section) {
   return switch (section) {
     HrDeskSection.access => HrManageUsersRolesAtomPermissions.tab,
-    HrDeskSection.leaveRequests => HrLeaveRequestsAtomPermissions.tab,
+    HrDeskSection.leaveRequests ||
+    HrDeskSection.swapRequests => HrLeaveRequestsAtomPermissions.tab,
     HrDeskSection.payroll => HrPayrollDraftsAtomPermissions.tab,
-    HrDeskSection.shiftRoster => HrShiftsAtomPermissions.tab,
+    HrDeskSection.shiftRoster ||
+    HrDeskSection.unassignedShifts => HrShiftsAtomPermissions.tab,
     HrDeskSection.staffDirectory => HrHumanResourcesAtomPermissions.tab,
   };
 }
