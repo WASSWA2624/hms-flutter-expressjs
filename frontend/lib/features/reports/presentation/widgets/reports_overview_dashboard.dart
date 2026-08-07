@@ -15,7 +15,7 @@ import 'package:hosspi_hms/shared/dashboard/dashboard.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 /// Overview tab: KPIs, domain shortcuts, queues, and charts — not a worklist.
-class ReportsOverviewDashboard extends ConsumerWidget {
+class ReportsOverviewDashboard extends ConsumerStatefulWidget {
   const ReportsOverviewDashboard({
     required this.state,
     required this.policy,
@@ -38,17 +38,32 @@ class ReportsOverviewDashboard extends ConsumerWidget {
   final ValueChanged<ReportsWorkspacePanel>? onPharmacyOpenPanel;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ReportsOverviewDashboard> createState() =>
+      _ReportsOverviewDashboardState();
+}
+
+class _ReportsOverviewDashboardState
+    extends ConsumerState<ReportsOverviewDashboard> {
+  String _pharmacyTabId = ReportsPharmacyDomainGroups.analyticsTabId;
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ReportsWorkspaceController controller = ref.read(
       reportsWorkspaceControllerProvider.notifier,
     );
+    final ReportsWorkspaceState state = widget.state;
+    final AppAccessPolicy policy = widget.policy;
+    final List<ReportsWorkspacePanel> allowedPanels = widget.allowedPanels;
     final ReportsWorkspaceOverview overview = state.overview;
     final bool canWrite = canWriteReports(policy);
     final bool showPharmacyGroups = ReportsPharmacyDomainGroups.shouldShow(
       policy,
     );
+    final bool pharmacyReportingOnly =
+        showPharmacyGroups &&
+        _pharmacyTabId == ReportsPharmacyDomainGroups.reportingTabId;
     final List<ReportsLookupOption> datasetShortcuts =
         reportsOverviewDatasetShortcuts(policy, overview.lookups.datasets);
 
@@ -56,10 +71,10 @@ class ReportsOverviewDashboard extends ConsumerWidget {
       if (!allowedPanels.contains(panel)) {
         return;
       }
-      if (showPharmacyGroups && onPharmacyOpenPanel != null) {
+      if (showPharmacyGroups && widget.onPharmacyOpenPanel != null) {
         if (panel == ReportsWorkspacePanel.catalog ||
             panel == ReportsWorkspacePanel.delivery) {
-          onPharmacyOpenPanel!(panel);
+          widget.onPharmacyOpenPanel!(panel);
           return;
         }
       }
@@ -117,7 +132,7 @@ class ReportsOverviewDashboard extends ConsumerWidget {
           semanticLabel: l10n.reportsOverviewCreateReportAction,
           onPressed: () {
             openPanel(ReportsWorkspacePanel.catalog);
-            onOpenCatalogDefinition?.call();
+            widget.onOpenCatalogDefinition?.call();
           },
         ),
     ];
@@ -139,83 +154,88 @@ class ReportsOverviewDashboard extends ConsumerWidget {
             l10n: l10n,
             datasetShortcuts: datasetShortcuts,
             onOpenDataset:
-                onPharmacyOpenDataset ?? controller.openCatalogDataset,
+                widget.onPharmacyOpenDataset ?? controller.openCatalogDataset,
+            onTabChanged: (String tabId) {
+              setState(() => _pharmacyTabId = tabId);
+            },
           ),
-          SizedBox(height: theme.spacing.xl),
+          if (!pharmacyReportingOnly) SizedBox(height: theme.spacing.xl),
         ],
-        if (!showPharmacyGroups) ...<Widget>[
-          AppQuickActions(
-            title: l10n.reportsOverviewNextStepsTitle,
-            leadingIcon: Icons.bolt_outlined,
-            presentation: AppQuickActionsPresentation.plain,
-            actions: nextStepActions,
-          ),
-          SizedBox(height: theme.spacing.md),
-        ],
-        if (!reportsOverviewHasSignals(overview) && metrics.isEmpty)
-          AppWorkspaceStatePanel.empty(
-            title: l10n.reportsOverviewEmptyTitle,
-            body: l10n.reportsOverviewEmptyBody,
-            icon: Icons.analytics_outlined,
-          )
-        else
-          RoleDashboardScaffold(
-            layout: const RoleDashboardLayout(
-              showMetrics: true,
-              showQuickActions: false,
-              showPriority: true,
-              showCharts: true,
+        if (!pharmacyReportingOnly) ...<Widget>[
+          if (!showPharmacyGroups) ...<Widget>[
+            AppQuickActions(
+              title: l10n.reportsOverviewNextStepsTitle,
+              leadingIcon: Icons.bolt_outlined,
+              presentation: AppQuickActionsPresentation.plain,
+              actions: nextStepActions,
             ),
-            spacing: theme.spacing,
-            summaryBadges: DashboardMetricStrip(
-              cards: metrics,
-              maxCards: 4,
-              compact: true,
-            ),
-            quickActions: const SizedBox.shrink(),
-            priorityPanel: DashboardPriorityPanel(data: priority),
-            charts: DashboardChartsRow(data: charts, twoColumns: wide),
-          ),
-        if (!showPharmacyGroups && datasetShortcuts.isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.xl),
-          AppSectionPanel(
-            title: l10n.reportsOverviewDatasetsTitle,
-            leadingIcon: Icons.dataset_outlined,
-            density: AppContentPanelDensity.compact,
-            children: <Widget>[
-              Wrap(
-                spacing: theme.spacing.sm,
-                runSpacing: theme.spacing.sm,
-                children: <Widget>[
-                  for (final ReportsLookupOption dataset in datasetShortcuts)
-                    ActionChip(
-                      avatar: const Icon(Icons.insights_outlined, size: 18),
-                      label: Text(dataset.label),
-                      onPressed: () {
-                        controller.openCatalogDataset(dataset.id);
-                      },
-                    ),
-                ],
+            SizedBox(height: theme.spacing.md),
+          ],
+          if (!reportsOverviewHasSignals(overview) && metrics.isEmpty)
+            AppWorkspaceStatePanel.empty(
+              title: l10n.reportsOverviewEmptyTitle,
+              body: l10n.reportsOverviewEmptyBody,
+              icon: Icons.analytics_outlined,
+            )
+          else
+            RoleDashboardScaffold(
+              layout: const RoleDashboardLayout(
+                showMetrics: true,
+                showQuickActions: false,
+                showPriority: true,
+                showCharts: true,
               ),
-            ],
-          ),
-        ],
-        if (overview.timeline.isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
-          ExpansionTile(
-            title: Text(l10n.reportsOverviewRecentTitle),
-            children: <Widget>[
-              for (final ReportsTimelineItem item in overview.timeline.take(5))
-                ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.history_outlined),
-                  title: Text(item.title),
-                  subtitle: item.subtitle == null || item.subtitle!.isEmpty
-                      ? null
-                      : Text(item.subtitle!),
+              spacing: theme.spacing,
+              summaryBadges: DashboardMetricStrip(
+                cards: metrics,
+                maxCards: 4,
+                compact: true,
+              ),
+              quickActions: const SizedBox.shrink(),
+              priorityPanel: DashboardPriorityPanel(data: priority),
+              charts: DashboardChartsRow(data: charts, twoColumns: wide),
+            ),
+          if (!showPharmacyGroups && datasetShortcuts.isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.xl),
+            AppSectionPanel(
+              title: l10n.reportsOverviewDatasetsTitle,
+              leadingIcon: Icons.dataset_outlined,
+              density: AppContentPanelDensity.compact,
+              children: <Widget>[
+                Wrap(
+                  spacing: theme.spacing.sm,
+                  runSpacing: theme.spacing.sm,
+                  children: <Widget>[
+                    for (final ReportsLookupOption dataset in datasetShortcuts)
+                      ActionChip(
+                        avatar: const Icon(Icons.insights_outlined, size: 18),
+                        label: Text(dataset.label),
+                        onPressed: () {
+                          controller.openCatalogDataset(dataset.id);
+                        },
+                      ),
+                  ],
                 ),
-            ],
-          ),
+              ],
+            ),
+          ],
+          if (overview.timeline.isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            ExpansionTile(
+              title: Text(l10n.reportsOverviewRecentTitle),
+              children: <Widget>[
+                for (final ReportsTimelineItem item in overview.timeline.take(5))
+                  ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.history_outlined),
+                    title: Text(item.title),
+                    subtitle: item.subtitle == null || item.subtitle!.isEmpty
+                        ? null
+                        : Text(item.subtitle!),
+                  ),
+              ],
+            ),
+          ],
         ],
       ],
     );

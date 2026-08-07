@@ -12,12 +12,14 @@ class ReportsPharmacyDomainGroups extends StatefulWidget {
     required this.l10n,
     required this.datasetShortcuts,
     required this.onOpenDataset,
+    this.onTabChanged,
     super.key,
   });
 
   final AppLocalizations l10n;
   final List<ReportsLookupOption> datasetShortcuts;
   final ValueChanged<String> onOpenDataset;
+  final ValueChanged<String>? onTabChanged;
 
   static bool shouldShow(AppAccessPolicy policy) {
     return reportsDomainPacks(policy).contains(ReportsDomainPack.pharmacy);
@@ -116,6 +118,7 @@ class _ReportsPharmacyDomainGroupsState
           selectedId: _selectedTabId,
           onTabTapped: (String tabId) {
             setState(() => _selectedTabId = tabId);
+            widget.onTabChanged?.call(tabId);
           },
         ),
         SizedBox(height: theme.spacing.md),

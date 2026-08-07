@@ -127,6 +127,51 @@ void main() {
     expect(find.text('Top consumed drugs'), findsNothing);
   });
 
+  testWidgets('reporting tab notifies parent when selected', (tester) async {
+    final List<String> openedDatasets = <String>[];
+    final List<String> selectedTabs = <String>[];
+
+    setTestViewport(tester, const Size(720, 900));
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Builder(
+                builder: (BuildContext context) {
+                  return ReportsPharmacyDomainGroups(
+                    l10n: AppLocalizations.of(context)!,
+                    datasetShortcuts: const <ReportsLookupOption>[
+                      ReportsLookupOption(
+                        id: 'pharmacy_drug_consumption',
+                        label: 'Pharmacy drug consumption',
+                      ),
+                    ],
+                    onOpenDataset: openedDatasets.add,
+                    onTabChanged: selectedTabs.add,
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Reporting'));
+    await tester.pumpAndSettle();
+
+    expect(
+      selectedTabs,
+      contains(ReportsPharmacyDomainGroups.reportingTabId),
+    );
+  });
+
   testWidgets('reporting filters button opens advanced filters dialog', (
     tester,
   ) async {
