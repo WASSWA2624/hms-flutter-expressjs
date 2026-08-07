@@ -242,6 +242,91 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         outOfStockOnly: true,
         riskStates: const <String>{'OUT_OF_STOCK'},
       );
+    case 'stock_value':
+    case 'current_stock_value':
+    case 'mgmt_stock_value':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle) ??
+            'On-hand quantity × unit cost (prefer buy_unit_price)',
+      );
+    case 'opening_closing_stock':
+    case 'stock_received':
+    case 'stock_issued':
+    case 'stock_adjustments':
+    case 'damaged_stock':
+    case 'lost_stock':
+    case 'stock_movement_history':
+    case 'stock_turnover':
+    case 'mgmt_stock_turnover':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle),
+      );
+    case 'reorder_level':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle),
+      );
+    case 'reorder_quantity':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: sourceRows
+            .where(
+              (Map<String, Object?> row) => _asNum(row['reorder_quantity']) > 0,
+            )
+            .toList(growable: false),
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle),
+      );
+    case 'fast_moving':
+    case 'mgmt_fast_moving':
+      return _filterVelocity(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        velocityClass: 'FAST',
+      );
+    case 'slow_moving':
+    case 'mgmt_slow_moving':
+    case 'kpi_slow_moving':
+      return _filterVelocity(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        velocityClass: 'SLOW',
+      );
+    case 'dead_stock':
+    case 'mgmt_dead_stock':
+      return _filterVelocity(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        velocityClass: 'DEAD',
+      );
     default:
       return ModuleReportingReportSnapshot.ready(
         columns: columns,
@@ -416,6 +501,33 @@ ModuleReportingReportSnapshot _filterStockRisk({
             .toUpperCase();
     return riskStates.contains(risk);
   }).toList(growable: false);
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: columns,
+    rows: filtered,
+    summary: summary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle),
+  );
+}
+
+ModuleReportingReportSnapshot _filterVelocity({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<String> columns,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+  required String velocityClass,
+}) {
+  final String expected = velocityClass.trim().toUpperCase();
+  final List<Map<String, Object?>> filtered = sourceRows
+      .where(
+        (Map<String, Object?> row) =>
+            '${row['velocity_class'] ?? ''}'.trim().toUpperCase() == expected,
+      )
+      .toList(growable: false);
 
   return ModuleReportingReportSnapshot.ready(
     columns: columns,

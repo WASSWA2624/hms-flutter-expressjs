@@ -187,7 +187,7 @@ void main() {
     expect(snapshot.summary?['amount'], 100);
   });
 
-  test('profit and margin projects null margin when buy/profit missing', () {
+  test('profit and margin projects null margin when buy missing', () {
     const ModuleReportingReport marginReport = ModuleReportingReport(
       id: 'profit_and_margin',
       categoryId: 'sales_revenue',
@@ -215,5 +215,91 @@ void main() {
     expect(snapshot.rows.first['profit_margin'], 0.25);
     expect(snapshot.rows[1]['profit_margin'], isNull);
     expect(snapshot.summary?['profit_margin'], closeTo(25 / 150, 0.0001));
+  });
+
+  test('fast moving filters velocity_class FAST', () {
+    const ModuleReportingReport fastReport = ModuleReportingReport(
+      id: 'fast_moving',
+      categoryId: 'inventory_stock',
+      label: 'Fast-moving products',
+      datasetKey: 'inventory_stock_velocity',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'inventory_stock_velocity',
+      columns: const <String>[
+        'inventory_item',
+        'velocity_class',
+        'issued_quantity',
+      ],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'inventory_item': 'A',
+          'velocity_class': 'FAST',
+          'issued_quantity': 40,
+        },
+        <String, Object?>{
+          'inventory_item': 'B',
+          'velocity_class': 'DEAD',
+          'issued_quantity': 0,
+        },
+        <String, Object?>{
+          'inventory_item': 'C',
+          'velocity_class': 'SLOW',
+          'issued_quantity': 2,
+        },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: fastReport,
+          preview: preview,
+        );
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.rows, hasLength(1));
+    expect(snapshot.rows.single['inventory_item'], 'A');
+  });
+
+  test('reorder quantity keeps only positive reorder_quantity rows', () {
+    const ModuleReportingReport reorderReport = ModuleReportingReport(
+      id: 'reorder_quantity',
+      categoryId: 'inventory_stock',
+      label: 'Reorder quantity',
+      datasetKey: 'inventory_reorder',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'inventory_reorder',
+      columns: const <String>[
+        'inventory_item',
+        'quantity',
+        'reorder_level',
+        'reorder_quantity',
+      ],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'inventory_item': 'A',
+          'quantity': 5,
+          'reorder_level': 20,
+          'reorder_quantity': 15,
+        },
+        <String, Object?>{
+          'inventory_item': 'B',
+          'quantity': 50,
+          'reorder_level': 20,
+          'reorder_quantity': 0,
+        },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: reorderReport,
+          preview: preview,
+        );
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.rows, hasLength(1));
+    expect(snapshot.rows.single['inventory_item'], 'A');
   });
 }

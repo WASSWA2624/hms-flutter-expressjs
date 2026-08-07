@@ -38,6 +38,7 @@ const mockPrisma = {
   invoice: { count: jest.fn(), groupBy: jest.fn() },
   lab_order: { count: jest.fn(), groupBy: jest.fn() },
   stock_movement: { count: jest.fn() },
+  stock_adjustment: { count: jest.fn() },
   mortuary_case: { count: jest.fn(), groupBy: jest.fn() },
   conversation: { findMany: jest.fn() },
   notification: { findMany: jest.fn(), count: jest.fn() },
@@ -186,6 +187,7 @@ describe('verify-demo-data', () => {
     mockPrisma.lab_order = { count: jest.fn().mockResolvedValue(2), groupBy: jest.fn().mockResolvedValue([]) };
     mockPrisma.notification.count = jest.fn().mockResolvedValue(3);
     mockPrisma.stock_movement = { count: jest.fn().mockResolvedValue(1) };
+    mockPrisma.stock_adjustment = { count: jest.fn().mockResolvedValue(1) };
     mockPrisma.mortuary_case = { count: jest.fn().mockResolvedValue(3), groupBy: jest.fn().mockResolvedValue([]) };
     mockPrisma.emergency_case.count.mockResolvedValue(1);
     mockPrisma.ambulance_trip.count.mockResolvedValue(1);

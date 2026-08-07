@@ -108,6 +108,7 @@ const verifyDemoData = async () => {
     labOrderCount,
     notificationCount,
     stockMovementCount,
+    stockAdjustmentCount,
     mortuaryCaseCount,
     conversations,
     notifications,
@@ -184,6 +185,7 @@ const verifyDemoData = async () => {
     prisma.lab_order.count({ where: { deleted_at: null } }),
     prisma.notification.count({ where: { deleted_at: null } }),
     prisma.stock_movement.count({ where: { deleted_at: null } }),
+    prisma.stock_adjustment.count({ where: { deleted_at: null } }),
     prisma.mortuary_case.count({ where: { deleted_at: null } }),
     prisma.conversation.findMany({
       where: { deleted_at: null },
@@ -568,6 +570,7 @@ const verifyDemoData = async () => {
       ['payments', paymentTotalCount, highFloor],
       ['notifications', notificationCount, highFloor],
       ['stock_movements', stockMovementCount, highFloor],
+      ['stock_adjustments', stockAdjustmentCount, highFloor],
       ['diagnoses', extendedVolumeCounts[0], highFloor],
       ['vital_signs', extendedVolumeCounts[1], highFloor],
       ['procedures', extendedVolumeCounts[2], highFloor],
@@ -629,6 +632,42 @@ const verifyDemoData = async () => {
       if (count < floor) {
         errors.push(`Expected at least ${floor} ${label} for volume demo seed but found ${count}.`);
       }
+    }
+
+    const [damageAdjustmentCount, inboundPurchaseCount, outboundDispenseCount, transferMovementCount] =
+      await Promise.all([
+        prisma.stock_adjustment.count({
+          where: { deleted_at: null, reason: 'DAMAGE' },
+        }),
+        prisma.stock_movement.count({
+          where: { deleted_at: null, movement_type: 'INBOUND', reason: 'PURCHASE' },
+        }),
+        prisma.stock_movement.count({
+          where: { deleted_at: null, movement_type: 'OUTBOUND', reason: 'DISPENSE' },
+        }),
+        prisma.stock_movement.count({
+          where: { deleted_at: null, movement_type: 'TRANSFER' },
+        }),
+      ]);
+    if (damageAdjustmentCount < 1) {
+      errors.push(
+        `Expected at least 1 DAMAGE stock_adjustment for inventory reporting but found ${damageAdjustmentCount}.`
+      );
+    }
+    if (inboundPurchaseCount < 1) {
+      errors.push(
+        `Expected at least 1 INBOUND+PURCHASE stock_movement for inventory reporting but found ${inboundPurchaseCount}.`
+      );
+    }
+    if (outboundDispenseCount < 1) {
+      errors.push(
+        `Expected at least 1 OUTBOUND+DISPENSE stock_movement for inventory reporting but found ${outboundDispenseCount}.`
+      );
+    }
+    if (transferMovementCount < 1) {
+      errors.push(
+        `Expected at least 1 TRANSFER stock_movement for inventory reporting but found ${transferMovementCount}.`
+      );
     }
 
     const secondaryChecks = [

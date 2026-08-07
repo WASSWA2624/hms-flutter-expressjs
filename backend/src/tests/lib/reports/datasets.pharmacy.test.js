@@ -4,7 +4,12 @@ const {
   buildPharmacySalesAvgTransactionAnalytics,
   buildPharmacySalesNetRevenueAnalytics,
   buildPharmacySalesPaymentMethodAnalytics,
+  classifyStockRisk,
+  classifyStockVelocity,
+  computeStockValue,
+  movementSignedDelta,
   resolveDateRange,
+  resolveInventoryUnitCost,
   shouldUseMonthlyGranularity,
   summarizeConsumptionSeries,
   summarizeThroughputSeries,
@@ -36,9 +41,22 @@ describe('reports datasets pharmacy analytics', () => {
       category: 'pharmacy',
     });
     expect(REPORT_DATASET_MAP.inventory_stock_risk.description).toMatch(/near-expiry/i);
+    expect(REPORT_DATASET_MAP.inventory_stock_value).toMatchObject({
+      key: 'inventory_stock_value',
+      category: 'inventory',
+    });
+    expect(REPORT_DATASET_MAP.inventory_stock_movement_history).toMatchObject({
+      key: 'inventory_stock_movement_history',
+      category: 'inventory',
+    });
+    expect(REPORT_DATASET_MAP.inventory_stock_velocity).toMatchObject({
+      key: 'inventory_stock_velocity',
+      category: 'inventory',
+    });
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_drug_consumption')).toBe(true);
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_dispense_throughput')).toBe(true);
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_sales_avg_transaction')).toBe(true);
+    expect(REPORT_DATASETS.some((entry) => entry.key === 'inventory_stock_turnover')).toBe(true);
   });
 
   test('resolveDateRange supports day, month, year for pharmacy presets', () => {
@@ -49,15 +67,57 @@ describe('reports datasets pharmacy analytics', () => {
     expect(shouldUseMonthlyGranularity(year)).toBe(true);
   });
 
-  test('inventory stock risk columns cover expiry analytics', () => {
+  test('inventory stock risk columns cover expiry analytics and value', () => {
     expect(REPORT_DATASET_MAP.inventory_stock_risk.default_columns).toEqual(
       expect.arrayContaining([
         'risk_state',
         'expiry_date',
         'expiry_alert_status',
         'days_to_expiry',
+        'value',
       ])
     );
+  });
+
+  test('classifyStockRisk golden cases match runInventoryDataset thresholds', () => {
+    expect(classifyStockRisk(0, 10)).toBe('OUT_OF_STOCK');
+    expect(classifyStockRisk(-1, 10)).toBe('OUT_OF_STOCK');
+    expect(classifyStockRisk(1, 10)).toBe('CRITICAL');
+    expect(classifyStockRisk(5, 10)).toBe('CRITICAL');
+    expect(classifyStockRisk(6, 10)).toBe('LOW');
+    expect(classifyStockRisk(10, 10)).toBe('LOW');
+    expect(classifyStockRisk(11, 10)).toBe('OK');
+    expect(classifyStockRisk(30, 10)).toBe('OVERSTOCK');
+    expect(classifyStockRisk(50, 0)).toBe('OK');
+  });
+
+  test('stock_value equals quantity × buy_unit_price for known cost', () => {
+    // Seeded Amoxicillin (index 0): buy_unit_price = 400 + 1*250 = 650
+    expect(computeStockValue(1200, 650)).toBe(780000);
+    expect(
+      resolveInventoryUnitCost([
+        { is_default: true, drug: { buy_unit_price: 650, unit_price: 900 } },
+      ])
+    ).toEqual({ unit_cost: 650, cost_basis: 'buy_unit_price' });
+    expect(
+      resolveInventoryUnitCost([
+        { is_default: true, drug: { buy_unit_price: null, unit_price: 900 } },
+      ])
+    ).toEqual({ unit_cost: 900, cost_basis: 'unit_price' });
+  });
+
+  test('movementSignedDelta and velocity classifiers are documented', () => {
+    expect(movementSignedDelta({ movement_type: 'INBOUND', quantity: 5 })).toBe(5);
+    expect(
+      movementSignedDelta({ movement_type: 'OUTBOUND', reason: 'DISPENSE', quantity: 3 })
+    ).toBe(-3);
+    expect(
+      movementSignedDelta({ movement_type: 'ADJUSTMENT', reason: 'DAMAGE', quantity: 2 })
+    ).toBe(-2);
+    expect(movementSignedDelta({ movement_type: 'TRANSFER', quantity: 4 })).toBe(-4);
+    expect(classifyStockVelocity(0, 10)).toBe('DEAD');
+    expect(classifyStockVelocity(10, 10)).toBe('FAST');
+    expect(classifyStockVelocity(1, 100)).toBe('SLOW');
   });
 
   test('pharmacy consumption columns include profit for margin analytics', () => {
@@ -108,6 +168,8 @@ describe('reports datasets pharmacy analytics', () => {
     expect(typeof buildPharmacySalesPaymentMethodAnalytics).toBe('function');
     expect(typeof buildPharmacySalesNetRevenueAnalytics).toBe('function');
     expect(typeof buildPharmacySalesAvgTransactionAnalytics).toBe('function');
+    expect(typeof classifyStockRisk).toBe('function');
+    expect(typeof computeStockValue).toBe('function');
   });
 
   test('shared report formats include PDF, Excel XLSX, and CSV', () => {

@@ -19,6 +19,9 @@ const REPORT_DATASET_SEEDS = Object.freeze([
   { key: 'pharmacy_sales_payment_methods', category: 'pharmacy', label: 'Pharmacy sales by payment method', visualization: 'DONUT_CHART' },
   { key: 'pharmacy_sales_net_revenue', category: 'pharmacy', label: 'Pharmacy net revenue', visualization: 'KPI' },
   { key: 'inventory_stock_risk', category: 'inventory', label: 'Inventory stock risk', visualization: 'KPI' },
+  { key: 'inventory_stock_value', category: 'inventory', label: 'Inventory stock value', visualization: 'TABLE' },
+  { key: 'inventory_stock_movement_history', category: 'inventory', label: 'Stock movement history', visualization: 'TABLE' },
+  { key: 'inventory_stock_turnover', category: 'inventory', label: 'Stock turnover', visualization: 'BAR_CHART' },
   { key: 'lab_turnaround', category: 'diagnostics', label: 'Lab turnaround', visualization: 'LINE_CHART' },
   { key: 'inpatient_occupancy', category: 'clinical', label: 'Inpatient occupancy', visualization: 'KPI' },
   { key: 'emergency_throughput', category: 'emergency', label: 'Emergency throughput', visualization: 'BAR_CHART' },
@@ -101,7 +104,14 @@ const BED_STATUSES = Object.freeze([
 ]);
 const APPROVAL_TYPES = Object.freeze(['REFUND', 'VOID', 'ADJUSTMENT']);
 const APPROVAL_STATUSES = Object.freeze(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']);
-const STOCK_REASONS = Object.freeze(['PURCHASE', 'DISPENSE', 'RETURN', 'DAMAGE', 'EXPIRY', 'OTHER']);
+const STOCK_ADJUSTMENT_SPECS = Object.freeze([
+  { reason: 'DAMAGE', sign: -1 },
+  { reason: 'OTHER', sign: -1 },
+  { reason: 'EXPIRY', sign: -1 },
+  { reason: 'RETURN', sign: 1 },
+  { reason: 'PURCHASE', sign: 1 },
+  { reason: 'DISPENSE', sign: -1 },
+]);
 const RECORD_STATUSES = Object.freeze(['DRAFT', 'FINAL']);
 
 const pick = (values, index) => values[index % values.length];
@@ -1448,14 +1458,15 @@ const seedVolumeExtendedPack = async (
     await runInBatches(n, 10, async (index) => {
       const item = at(inventoryItems, index);
       if (!item) return;
+      const spec = pick(STOCK_ADJUSTMENT_SPECS, index);
       await ctx.upsert(
         'stock_adjustment',
         `${scenario.key}:volx:stock-adj:${pad(index)}`,
         {
           inventory_item_id: item.id,
           facility_id: facility.id,
-          quantity: (index % 2 === 0 ? 1 : -1) * (1 + (index % 8)),
-          reason: pick(STOCK_REASONS, index),
+          quantity: spec.sign * (1 + (index % 8)),
+          reason: spec.reason,
           adjusted_at: ctx.date(-((index % 100) + 1), 25),
         },
         { publicIdPrefix: 'SADJ', seedMeta: false }

@@ -76,9 +76,16 @@ const DELIVERY_STATUSES = Object.freeze([
   'QUEUED', 'SENDING', 'SENT', 'DELIVERED', 'FAILED', 'READ',
 ]);
 const DELIVERY_CHANNELS = Object.freeze(['IN_APP', 'SMS', 'EMAIL', 'PUSH']);
-const STOCK_MOVEMENT_TYPES = Object.freeze(['INBOUND', 'OUTBOUND', 'ADJUSTMENT', 'TRANSFER']);
-const STOCK_REASONS = Object.freeze([
-  'PURCHASE', 'DISPENSE', 'RETURN', 'DAMAGE', 'EXPIRY', 'OTHER',
+/** Paired type+reason so inventory reports (received/issued/DAMAGE/TRANSFER) stay populated. */
+const STOCK_MOVEMENT_SPECS = Object.freeze([
+  { movement_type: 'INBOUND', reason: 'PURCHASE' },
+  { movement_type: 'OUTBOUND', reason: 'DISPENSE' },
+  { movement_type: 'ADJUSTMENT', reason: 'DAMAGE' },
+  { movement_type: 'TRANSFER', reason: 'OTHER' },
+  { movement_type: 'INBOUND', reason: 'RETURN' },
+  { movement_type: 'OUTBOUND', reason: 'RETURN' },
+  { movement_type: 'ADJUSTMENT', reason: 'EXPIRY' },
+  { movement_type: 'ADJUSTMENT', reason: 'OTHER' },
 ]);
 const GENDERS = Object.freeze(['MALE', 'FEMALE', 'OTHER', 'UNKNOWN']);
 
@@ -822,14 +829,15 @@ const seedVolumePack = async (
   if (inventoryItems.length > 0) {
     await runInBatches(targets.highTraffic, 10, async (index) => {
       const item = pick(inventoryItems, index);
+      const spec = pick(STOCK_MOVEMENT_SPECS, index);
       await ctx.upsert(
         'stock_movement',
         `${scenario.key}:vol:stock-move:${pad(index)}`,
         {
           inventory_item_id: item.id,
           facility_id: facility.id,
-          movement_type: pick(STOCK_MOVEMENT_TYPES, index),
-          reason: pick(STOCK_REASONS, index),
+          movement_type: spec.movement_type,
+          reason: spec.reason,
           quantity: 1 + (index % 20),
           occurred_at: ctx.date(-((index % 110) + 1), 12),
         },

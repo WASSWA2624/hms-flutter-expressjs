@@ -1549,50 +1549,158 @@ const runInsuranceClaimsDataset = async (scope, parameters = {}) => {
   };
 };
 
-const runInventoryDataset = async (scope) => {
-  const stocks = await prisma.inventory_stock.findMany({
-    where: {
-      deleted_at: null,
-      inventory_item: {
-        deleted_at: null,
-        tenant_id: scope.tenant_id,
-      },
-      ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
-    },
+/**
+ * Stock risk classifier (do not diverge from pharmacy reporting index rule 3).
+ * qty≤0 OUT_OF_STOCK; qty≤floor(reorder/2) CRITICAL; qty≤reorder LOW;
+ * qty≥reorder×3 OVERSTOCK; else OK.
+ */
+const classifyStockRisk = (quantity, reorderLevel) => {
+  const qty = asNumber(quantity);
+  const reorder = asNumber(reorderLevel);
+  if (qty <= 0) return 'OUT_OF_STOCK';
+  if (reorder > 0 && qty <= Math.max(1, Math.floor(reorder / 2))) return 'CRITICAL';
+  if (reorder > 0 && qty <= reorder) return 'LOW';
+  if (reorder > 0 && qty >= reorder * 3) return 'OVERSTOCK';
+  return 'OK';
+};
+
+/**
+ * Unit cost for stock value: prefer drug.buy_unit_price via drug_inventory_map,
+ * fallback drug.unit_price. Returns { unit_cost, cost_basis }.
+ */
+const resolveInventoryUnitCost = (drugMaps = []) => {
+  const maps = Array.isArray(drugMaps) ? drugMaps : [];
+  const ordered = [...maps].sort((left, right) => {
+    if (Boolean(right?.is_default) !== Boolean(left?.is_default)) {
+      return right?.is_default ? 1 : -1;
+    }
+    return 0;
+  });
+  for (const map of ordered) {
+    const buy = map?.drug?.buy_unit_price;
+    if (buy != null && buy !== '') {
+      return { unit_cost: asNumber(buy), cost_basis: 'buy_unit_price' };
+    }
+  }
+  for (const map of ordered) {
+    const sell = map?.drug?.unit_price;
+    if (sell != null && sell !== '') {
+      return { unit_cost: asNumber(sell), cost_basis: 'unit_price' };
+    }
+  }
+  return { unit_cost: 0, cost_basis: 'unavailable' };
+};
+
+const computeStockValue = (quantity, unitCost) =>
+  Math.round(asNumber(quantity) * asNumber(unitCost) * 100) / 100;
+
+/**
+ * Signed on-hand delta for a stock_movement row.
+ * INBOUND +, OUTBOUND -, TRANSFER - (leaving facility), ADJUSTMENT uses signed qty
+ * or reason when quantity is always positive.
+ */
+const movementSignedDelta = (movement = {}) => {
+  const qty = asNumber(movement.quantity);
+  const type = normalizeString(movement.movement_type).toUpperCase();
+  const reason = normalizeString(movement.reason).toUpperCase();
+  if (type === 'INBOUND') return qty;
+  if (type === 'OUTBOUND' || type === 'TRANSFER') return -Math.abs(qty);
+  if (type === 'ADJUSTMENT') {
+    if (qty < 0) return qty;
+    if (reason === 'DAMAGE' || reason === 'EXPIRY' || reason === 'DISPENSE') {
+      return -Math.abs(qty);
+    }
+    if (reason === 'PURCHASE' || reason === 'RETURN') return Math.abs(qty);
+    return qty;
+  }
+  return 0;
+};
+
+/**
+ * Velocity classes for fast/slow/dead stock reports (period OUTBOUND+DISPENSE vs on-hand).
+ * FAST: issued >= on_hand when on_hand > 0 (turnover ≥ 1), or issued ≥ 10 when on_hand is 0
+ * SLOW: 0 < issued < on_hand × 0.25 (turnover < 0.25)
+ * DEAD: issued === 0 && on_hand > 0
+ * else MEDIUM (not shown in fast/slow/dead dialogs)
+ */
+const classifyStockVelocity = (issuedQty, onHandQty) => {
+  const issued = asNumber(issuedQty);
+  const onHand = asNumber(onHandQty);
+  if (issued <= 0 && onHand > 0) return 'DEAD';
+  if (onHand > 0 && issued >= onHand) return 'FAST';
+  if (onHand <= 0 && issued >= 10) return 'FAST';
+  if (issued > 0 && onHand > 0 && issued < onHand * 0.25) return 'SLOW';
+  if (issued > 0) return 'MEDIUM';
+  return 'DEAD';
+};
+
+const buildInventoryStockScopeWhere = (scope = {}) => ({
+  deleted_at: null,
+  inventory_item: {
+    deleted_at: null,
+    tenant_id: scope.tenant_id,
+  },
+  ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+});
+
+const inventoryItemCostSelect = {
+  name: true,
+  unit: true,
+  drug_maps: {
+    where: { deleted_at: null },
     select: {
+      is_default: true,
+      drug: {
+        select: {
+          name: true,
+          buy_unit_price: true,
+          unit_price: true,
+          currency: true,
+        },
+      },
+    },
+  },
+};
+
+const loadInventoryStockRows = async (scope) => {
+  const stocks = await prisma.inventory_stock.findMany({
+    where: buildInventoryStockScopeWhere(scope),
+    select: {
+      id: true,
+      inventory_item_id: true,
       quantity: true,
       reorder_level: true,
       facility: { select: { name: true } },
-      inventory_item: { select: { name: true } },
+      inventory_item: { select: inventoryItemCostSelect },
     },
   });
 
-  const classifyStockRisk = (quantity, reorderLevel) => {
-    const qty = asNumber(quantity);
-    const reorder = asNumber(reorderLevel);
-    if (qty <= 0) return 'OUT_OF_STOCK';
-    if (reorder > 0 && qty <= Math.max(1, Math.floor(reorder / 2))) return 'CRITICAL';
-    if (reorder > 0 && qty <= reorder) return 'LOW';
-    if (reorder > 0 && qty >= reorder * 3) return 'OVERSTOCK';
-    return 'OK';
-  };
-
-  const stockRows = stocks.map((entry) => {
+  return stocks.map((entry) => {
     const quantity = asNumber(entry.quantity);
     const reorderLevel = asNumber(entry.reorder_level);
+    const cost = resolveInventoryUnitCost(entry?.inventory_item?.drug_maps);
+    const value = computeStockValue(quantity, cost.unit_cost);
     return {
+      inventory_item_id: entry.inventory_item_id,
       facility: entry?.facility?.name || scope.facility_label || 'Unassigned',
       inventory_item: entry?.inventory_item?.name || 'Unknown',
+      unit: normalizeString(entry?.inventory_item?.unit) || null,
       quantity,
       reorder_level: reorderLevel,
+      reorder_quantity: Math.max(0, reorderLevel - quantity),
       risk_state: classifyStockRisk(quantity, reorderLevel),
+      unit_cost: cost.unit_cost,
+      cost_basis: cost.cost_basis,
+      value,
       expiry_date: null,
       expiry_alert_status: null,
       days_to_expiry: null,
       batch_number: null,
     };
   });
+};
 
+const loadInventoryExpiryRows = async (scope) => {
   const batchWhere = {
     deleted_at: null,
     quantity: { gt: 0 },
@@ -1616,7 +1724,13 @@ const runInventoryDataset = async (scope) => {
       quantity: true,
       expiry_date: true,
       expiry_alert_lead_days: true,
-      drug: { select: { name: true } },
+      drug: {
+        select: {
+          name: true,
+          buy_unit_price: true,
+          unit_price: true,
+        },
+      },
       storage_room: { select: { facility: { select: { name: true } } } },
     },
   });
@@ -1636,15 +1750,23 @@ const runInventoryDataset = async (scope) => {
     const daysToExpiry = Number.isFinite(expiryMs)
       ? Math.ceil((expiryMs - now) / (24 * 60 * 60 * 1000))
       : null;
+    const cost = resolveInventoryUnitCost([
+      { is_default: true, drug: batch.drug },
+    ]);
+    const quantity = asNumber(batch.quantity);
     expiryRows.push({
       facility:
         batch?.storage_room?.facility?.name ||
         scope.facility_label ||
         'Unassigned',
       inventory_item: normalizeString(batch?.drug?.name) || 'Unknown',
-      quantity: asNumber(batch.quantity),
+      quantity,
       reorder_level: null,
+      reorder_quantity: null,
       risk_state: status,
+      unit_cost: cost.unit_cost,
+      cost_basis: cost.cost_basis,
+      value: computeStockValue(quantity, cost.unit_cost),
       expiry_date: batch.expiry_date
         ? new Date(batch.expiry_date).toISOString().slice(0, 10)
         : null,
@@ -1653,6 +1775,14 @@ const runInventoryDataset = async (scope) => {
       batch_number: normalizeString(batch.batch_number) || null,
     });
   }
+  return expiryRows;
+};
+
+const runInventoryDataset = async (scope) => {
+  const [stockRows, expiryRows] = await Promise.all([
+    loadInventoryStockRows(scope),
+    loadInventoryExpiryRows(scope),
+  ]);
 
   const rows = [...stockRows, ...expiryRows].sort((left, right) => {
     const rank = (state) => {
@@ -1665,6 +1795,10 @@ const runInventoryDataset = async (scope) => {
     if (byRisk !== 0) return byRisk;
     return asNumber(left.days_to_expiry ?? 9999) - asNumber(right.days_to_expiry ?? 9999);
   });
+
+  const valueTotal = Math.round(
+    stockRows.reduce((sum, row) => sum + asNumber(row.value), 0) * 100
+  ) / 100;
 
   return {
     title: 'Inventory stock risk',
@@ -1680,6 +1814,7 @@ const runInventoryDataset = async (scope) => {
       'expiry_alert_status',
       'days_to_expiry',
       'batch_number',
+      'value',
     ],
     rows,
     summary: {
@@ -1692,6 +1827,525 @@ const runInventoryDataset = async (scope) => {
       expired: expiryRows.filter((row) => row.risk_state === 'EXPIRED').length,
       total_stock_rows: stockRows.length,
       total_risk_rows: rows.length,
+      value: valueTotal,
+    },
+  };
+};
+
+const runInventoryStockValueDataset = async (scope) => {
+  const stockRows = await loadInventoryStockRows(scope);
+  const rows = stockRows
+    .map((row) => ({
+      facility: row.facility,
+      inventory_item: row.inventory_item,
+      quantity: row.quantity,
+      unit_cost: row.unit_cost,
+      value: row.value,
+      cost_basis: row.cost_basis,
+      risk_state: row.risk_state,
+    }))
+    .sort((left, right) => asNumber(right.value) - asNumber(left.value));
+  const value = Math.round(rows.reduce((sum, row) => sum + asNumber(row.value), 0) * 100) / 100;
+  const basisCounts = rows.reduce((acc, row) => {
+    const key = row.cost_basis || 'unavailable';
+    acc[key] = asNumber(acc[key]) + 1;
+    return acc;
+  }, {});
+  const primaryBasis =
+    Object.entries(basisCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'buy_unit_price';
+
+  return {
+    title: 'Inventory stock value',
+    subtitle: `On-hand quantity × unit cost (prefer buy_unit_price via drug_inventory_map; fallback unit_price). Dominant basis: ${primaryBasis}`,
+    columns: ['facility', 'inventory_item', 'quantity', 'unit_cost', 'value', 'cost_basis', 'risk_state'],
+    rows,
+    summary: { value, quantity: rows.reduce((sum, row) => sum + asNumber(row.quantity), 0) },
+  };
+};
+
+const buildInventoryMovementWhere = (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  const where = {
+    deleted_at: null,
+    inventory_item: {
+      deleted_at: null,
+      tenant_id: scope.tenant_id,
+    },
+    ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+  };
+  if (!range.invalid && range.from && range.to) {
+    where.occurred_at = { gte: range.from, lte: range.to };
+  }
+  return { where, range };
+};
+
+const mapStockMovementRow = (entry, scope) => ({
+  occurred_at: entry.occurred_at
+    ? new Date(entry.occurred_at).toISOString()
+    : null,
+  movement_type: normalizeString(entry.movement_type) || null,
+  reason: normalizeString(entry.reason) || null,
+  quantity: asNumber(entry.quantity),
+  facility: entry?.facility?.name || scope.facility_label || 'Unassigned',
+  inventory_item: entry?.inventory_item?.name || 'Unknown',
+  inventory_item_id: entry.inventory_item_id,
+});
+
+const loadStockMovements = async (scope, parameters = {}, extraWhere = {}) => {
+  const { where, range } = buildInventoryMovementWhere(scope, parameters);
+  if (range.invalid) {
+    return { invalid: true, range, rows: [] };
+  }
+  const movements = await prisma.stock_movement.findMany({
+    where: { ...where, ...extraWhere },
+    select: {
+      inventory_item_id: true,
+      movement_type: true,
+      reason: true,
+      quantity: true,
+      occurred_at: true,
+      facility: { select: { name: true } },
+      inventory_item: { select: { name: true } },
+    },
+    orderBy: [{ occurred_at: 'asc' }, { created_at: 'asc' }],
+  });
+  return {
+    invalid: false,
+    range,
+    rows: movements.map((entry) => mapStockMovementRow(entry, scope)),
+  };
+};
+
+const runInventoryStockMovementHistoryDataset = async (scope, parameters = {}) => {
+  const loaded = await loadStockMovements(scope, parameters);
+  const fromLabel = loaded.range?.from ? loaded.range.from.toISOString().slice(0, 10) : '';
+  const toLabel = loaded.range?.to ? loaded.range.to.toISOString().slice(0, 10) : '';
+  return {
+    title: 'Stock movement history',
+    subtitle: loaded.invalid
+      ? 'Invalid date range'
+      : `${fromLabel} to ${toLabel} (chronological stock_movement)`,
+    columns: ['occurred_at', 'movement_type', 'reason', 'quantity', 'facility', 'inventory_item'],
+    rows: loaded.rows,
+    summary: {
+      quantity: loaded.rows.reduce((sum, row) => sum + asNumber(row.quantity), 0),
+      movement_count: loaded.rows.length,
+    },
+  };
+};
+
+const runInventoryStockReceivedDataset = async (scope, parameters = {}) => {
+  const loaded = await loadStockMovements(scope, parameters, {
+    movement_type: 'INBOUND',
+    reason: 'PURCHASE',
+  });
+  const fromLabel = loaded.range?.from ? loaded.range.from.toISOString().slice(0, 10) : '';
+  const toLabel = loaded.range?.to ? loaded.range.to.toISOString().slice(0, 10) : '';
+  return {
+    title: 'Stock received',
+    subtitle: loaded.invalid
+      ? 'Invalid date range'
+      : `${fromLabel} to ${toLabel} (INBOUND + PURCHASE)`,
+    columns: ['occurred_at', 'inventory_item', 'quantity', 'facility'],
+    rows: loaded.rows.map((row) => ({
+      occurred_at: row.occurred_at,
+      inventory_item: row.inventory_item,
+      quantity: row.quantity,
+      facility: row.facility,
+    })),
+    summary: {
+      quantity: loaded.rows.reduce((sum, row) => sum + asNumber(row.quantity), 0),
+    },
+  };
+};
+
+const runInventoryStockIssuedDataset = async (scope, parameters = {}) => {
+  const loaded = await loadStockMovements(scope, parameters, {
+    movement_type: 'OUTBOUND',
+    reason: 'DISPENSE',
+  });
+  const fromLabel = loaded.range?.from ? loaded.range.from.toISOString().slice(0, 10) : '';
+  const toLabel = loaded.range?.to ? loaded.range.to.toISOString().slice(0, 10) : '';
+  return {
+    title: 'Stock issued / dispensed',
+    subtitle: loaded.invalid
+      ? 'Invalid date range'
+      : `${fromLabel} to ${toLabel} (OUTBOUND + DISPENSE)`,
+    columns: ['occurred_at', 'inventory_item', 'quantity', 'facility'],
+    rows: loaded.rows.map((row) => ({
+      occurred_at: row.occurred_at,
+      inventory_item: row.inventory_item,
+      quantity: row.quantity,
+      facility: row.facility,
+    })),
+    summary: {
+      quantity: loaded.rows.reduce((sum, row) => sum + asNumber(row.quantity), 0),
+    },
+  };
+};
+
+const loadStockAdjustments = async (scope, parameters = {}, extraWhere = {}) => {
+  const range = resolveDateRange(parameters);
+  if (range.invalid) {
+    return { invalid: true, range, rows: [] };
+  }
+  const adjustments = await prisma.stock_adjustment.findMany({
+    where: {
+      deleted_at: null,
+      adjusted_at: { gte: range.from, lte: range.to },
+      inventory_item: {
+        deleted_at: null,
+        tenant_id: scope.tenant_id,
+      },
+      ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+      ...extraWhere,
+    },
+    select: {
+      inventory_item_id: true,
+      quantity: true,
+      reason: true,
+      adjusted_at: true,
+      facility: { select: { name: true } },
+      inventory_item: {
+        select: inventoryItemCostSelect,
+      },
+    },
+    orderBy: [{ adjusted_at: 'asc' }, { created_at: 'asc' }],
+  });
+
+  const rows = adjustments.map((entry) => {
+    const quantity = asNumber(entry.quantity);
+    const cost = resolveInventoryUnitCost(entry?.inventory_item?.drug_maps);
+    return {
+      adjusted_at: entry.adjusted_at
+        ? new Date(entry.adjusted_at).toISOString()
+        : null,
+      inventory_item: entry?.inventory_item?.name || 'Unknown',
+      facility: entry?.facility?.name || scope.facility_label || 'Unassigned',
+      quantity,
+      reason: normalizeString(entry.reason) || null,
+      value: computeStockValue(Math.abs(quantity), cost.unit_cost),
+      cost_basis: cost.cost_basis,
+    };
+  });
+  return { invalid: false, range, rows };
+};
+
+const runInventoryStockAdjustmentsDataset = async (scope, parameters = {}) => {
+  const loaded = await loadStockAdjustments(scope, parameters);
+  const fromLabel = loaded.range?.from ? loaded.range.from.toISOString().slice(0, 10) : '';
+  const toLabel = loaded.range?.to ? loaded.range.to.toISOString().slice(0, 10) : '';
+  return {
+    title: 'Stock adjustments',
+    subtitle: loaded.invalid
+      ? 'Invalid date range'
+      : `${fromLabel} to ${toLabel} (stock_adjustment; no actor user_id on schema)`,
+    columns: ['adjusted_at', 'inventory_item', 'quantity', 'reason', 'facility'],
+    rows: loaded.rows.map((row) => ({
+      adjusted_at: row.adjusted_at,
+      inventory_item: row.inventory_item,
+      quantity: row.quantity,
+      reason: row.reason,
+      facility: row.facility,
+    })),
+    summary: {
+      quantity: loaded.rows.reduce((sum, row) => sum + asNumber(row.quantity), 0),
+      adjustment_count: loaded.rows.length,
+    },
+  };
+};
+
+const runInventoryDamagedStockDataset = async (scope, parameters = {}) => {
+  const loaded = await loadStockAdjustments(scope, parameters, { reason: 'DAMAGE' });
+  const fromLabel = loaded.range?.from ? loaded.range.from.toISOString().slice(0, 10) : '';
+  const toLabel = loaded.range?.to ? loaded.range.to.toISOString().slice(0, 10) : '';
+  return {
+    title: 'Damaged stock',
+    subtitle: loaded.invalid
+      ? 'Invalid date range'
+      : `${fromLabel} to ${toLabel} (stock_adjustment reason=DAMAGE)`,
+    columns: ['adjusted_at', 'inventory_item', 'quantity', 'value', 'facility'],
+    rows: loaded.rows.map((row) => ({
+      adjusted_at: row.adjusted_at,
+      inventory_item: row.inventory_item,
+      quantity: row.quantity,
+      value: row.value,
+      facility: row.facility,
+    })),
+    summary: {
+      quantity: loaded.rows.reduce((sum, row) => sum + asNumber(row.quantity), 0),
+      value: Math.round(
+        loaded.rows.reduce((sum, row) => sum + asNumber(row.value), 0) * 100
+      ) / 100,
+    },
+  };
+};
+
+/**
+ * Lost/missing stock: StockReason has no LOSS enum — map reason=OTHER only.
+ * Do not relabel DAMAGE (see damaged_stock).
+ */
+const runInventoryLostStockDataset = async (scope, parameters = {}) => {
+  const loaded = await loadStockAdjustments(scope, parameters, { reason: 'OTHER' });
+  const fromLabel = loaded.range?.from ? loaded.range.from.toISOString().slice(0, 10) : '';
+  const toLabel = loaded.range?.to ? loaded.range.to.toISOString().slice(0, 10) : '';
+  return {
+    title: 'Lost / missing stock',
+    subtitle: loaded.invalid
+      ? 'Invalid date range'
+      : `${fromLabel} to ${toLabel} (stock_adjustment reason=OTHER as loss proxy; DAMAGE excluded)`,
+    columns: ['adjusted_at', 'inventory_item', 'quantity', 'reason', 'facility'],
+    rows: loaded.rows.map((row) => ({
+      adjusted_at: row.adjusted_at,
+      inventory_item: row.inventory_item,
+      quantity: row.quantity,
+      reason: row.reason,
+      facility: row.facility,
+    })),
+    summary: {
+      quantity: loaded.rows.reduce((sum, row) => sum + asNumber(row.quantity), 0),
+    },
+  };
+};
+
+const runInventoryReorderDataset = async (scope) => {
+  const stockRows = await loadInventoryStockRows(scope);
+  const rows = stockRows
+    .map((row) => ({
+      facility: row.facility,
+      inventory_item: row.inventory_item,
+      quantity: row.quantity,
+      reorder_level: row.reorder_level,
+      reorder_quantity: row.reorder_quantity,
+      risk_state: row.risk_state,
+    }))
+    .sort((left, right) => asNumber(right.reorder_quantity) - asNumber(left.reorder_quantity));
+
+  return {
+    title: 'Inventory reorder levels',
+    subtitle: 'reorder_quantity = max(0, reorder_level − quantity); no separate reorder field on schema',
+    columns: [
+      'facility',
+      'inventory_item',
+      'quantity',
+      'reorder_level',
+      'reorder_quantity',
+      'risk_state',
+    ],
+    rows,
+    summary: {
+      reorder_quantity: rows.reduce((sum, row) => sum + asNumber(row.reorder_quantity), 0),
+      items_below_reorder: rows.filter((row) => asNumber(row.reorder_quantity) > 0).length,
+    },
+  };
+};
+
+const runInventoryOpeningClosingDataset = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  if (range.invalid) {
+    return {
+      title: 'Opening and closing stock',
+      subtitle: 'Invalid date range',
+      columns: ['inventory_item', 'facility', 'opening_quantity', 'closing_quantity'],
+      rows: [],
+      summary: {},
+    };
+  }
+
+  const [stockRows, movements, adjustments] = await Promise.all([
+    loadInventoryStockRows(scope),
+    prisma.stock_movement.findMany({
+      where: {
+        deleted_at: null,
+        occurred_at: { gte: range.from, lte: range.to },
+        inventory_item: { deleted_at: null, tenant_id: scope.tenant_id },
+        ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+      },
+      select: {
+        inventory_item_id: true,
+        movement_type: true,
+        reason: true,
+        quantity: true,
+      },
+    }),
+    prisma.stock_adjustment.findMany({
+      where: {
+        deleted_at: null,
+        adjusted_at: { gte: range.from, lte: range.to },
+        inventory_item: { deleted_at: null, tenant_id: scope.tenant_id },
+        ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+      },
+      select: {
+        inventory_item_id: true,
+        quantity: true,
+      },
+    }),
+  ]);
+
+  const netByItem = new Map();
+  movements.forEach((movement) => {
+    const key = movement.inventory_item_id;
+    netByItem.set(key, asNumber(netByItem.get(key)) + movementSignedDelta(movement));
+  });
+  adjustments.forEach((adjustment) => {
+    const key = adjustment.inventory_item_id;
+    netByItem.set(key, asNumber(netByItem.get(key)) + asNumber(adjustment.quantity));
+  });
+
+  const rows = stockRows.map((row) => {
+    const net = asNumber(netByItem.get(row.inventory_item_id));
+    const closing_quantity = row.quantity;
+    const opening_quantity = closing_quantity - net;
+    return {
+      inventory_item: row.inventory_item,
+      facility: row.facility,
+      unit: row.unit,
+      opening_quantity,
+      closing_quantity,
+    };
+  });
+
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+  return {
+    title: 'Opening and closing stock',
+    subtitle: `${fromLabel} to ${toLabel} (closing = current on-hand; opening = closing − period net movements/adjustments)`,
+    columns: ['inventory_item', 'facility', 'opening_quantity', 'closing_quantity', 'unit'],
+    rows,
+    summary: {
+      opening_quantity: rows.reduce((sum, row) => sum + asNumber(row.opening_quantity), 0),
+      closing_quantity: rows.reduce((sum, row) => sum + asNumber(row.closing_quantity), 0),
+    },
+  };
+};
+
+const runInventoryStockTurnoverDataset = async (scope, parameters = {}) => {
+  const range = resolveDateRange(parameters);
+  if (range.invalid) {
+    return {
+      title: 'Stock turnover',
+      subtitle: 'Invalid date range',
+      columns: ['inventory_item', 'stock_turnover', 'days_of_stock', 'issued_quantity'],
+      rows: [],
+      summary: {},
+    };
+  }
+
+  const [openingClosing, issued] = await Promise.all([
+    runInventoryOpeningClosingDataset(scope, parameters),
+    loadStockMovements(scope, parameters, {
+      movement_type: 'OUTBOUND',
+      reason: 'DISPENSE',
+    }),
+  ]);
+
+  const issuedByItem = new Map();
+  issued.rows.forEach((row) => {
+    const key = row.inventory_item;
+    issuedByItem.set(key, asNumber(issuedByItem.get(key)) + asNumber(row.quantity));
+  });
+
+  const periodDays = Math.max(
+    1,
+    Math.ceil((range.to.getTime() - range.from.getTime()) / (24 * 60 * 60 * 1000)) + 1
+  );
+
+  const rows = openingClosing.rows.map((row) => {
+    const issuedQty = asNumber(issuedByItem.get(row.inventory_item));
+    const avgOnHand =
+      (asNumber(row.opening_quantity) + asNumber(row.closing_quantity)) / 2;
+    const stock_turnover =
+      avgOnHand > 0 ? Math.round((issuedQty / avgOnHand) * 1000) / 1000 : null;
+    const days_of_stock =
+      stock_turnover && stock_turnover > 0
+        ? Math.round((periodDays / stock_turnover) * 10) / 10
+        : null;
+    return {
+      inventory_item: row.inventory_item,
+      facility: row.facility,
+      issued_quantity: issuedQty,
+      opening_quantity: row.opening_quantity,
+      closing_quantity: row.closing_quantity,
+      stock_turnover,
+      days_of_stock,
+    };
+  });
+
+  const fromLabel = range.from.toISOString().slice(0, 10);
+  const toLabel = range.to.toISOString().slice(0, 10);
+  return {
+    title: 'Stock turnover',
+    subtitle: `${fromLabel} to ${toLabel} — stock_turnover = issued(OUTBOUND+DISPENSE) / avg((opening+closing)/2); days_of_stock = period_days / turnover`,
+    columns: [
+      'inventory_item',
+      'facility',
+      'issued_quantity',
+      'stock_turnover',
+      'days_of_stock',
+    ],
+    rows,
+    summary: {
+      period_days: periodDays,
+      issued_quantity: rows.reduce((sum, row) => sum + asNumber(row.issued_quantity), 0),
+    },
+    breakdown: {
+      series: rows
+        .filter((row) => row.stock_turnover != null)
+        .map((row) => ({
+          label: row.inventory_item,
+          stock_turnover: row.stock_turnover,
+          days_of_stock: row.days_of_stock,
+        })),
+    },
+  };
+};
+
+const runInventoryStockVelocityDataset = async (scope, parameters = {}) => {
+  const [stockRows, issued] = await Promise.all([
+    loadInventoryStockRows(scope),
+    loadStockMovements(scope, parameters, {
+      movement_type: 'OUTBOUND',
+      reason: 'DISPENSE',
+    }),
+  ]);
+
+  const issuedByItem = new Map();
+  issued.rows.forEach((row) => {
+    const key = row.inventory_item_id || row.inventory_item;
+    issuedByItem.set(key, asNumber(issuedByItem.get(key)) + asNumber(row.quantity));
+  });
+
+  const rows = stockRows
+    .map((row) => {
+      const issued_quantity = asNumber(
+        issuedByItem.get(row.inventory_item_id) ?? issuedByItem.get(row.inventory_item)
+      );
+      const velocity_class = classifyStockVelocity(issued_quantity, row.quantity);
+      return {
+        facility: row.facility,
+        inventory_item: row.inventory_item,
+        quantity: row.quantity,
+        issued_quantity,
+        velocity_class,
+      };
+    })
+    .sort((left, right) => asNumber(right.issued_quantity) - asNumber(left.issued_quantity));
+
+  const fromLabel = issued.range?.from ? issued.range.from.toISOString().slice(0, 10) : '';
+  const toLabel = issued.range?.to ? issued.range.to.toISOString().slice(0, 10) : '';
+
+  return {
+    title: 'Stock velocity (fast / slow / dead)',
+    subtitle: issued.invalid
+      ? 'Invalid date range'
+      : `${fromLabel} to ${toLabel} — FAST: issued≥on-hand; SLOW: 0<issued<on-hand×0.25; DEAD: issued=0 & on-hand>0 (OUTBOUND+DISPENSE)`,
+    columns: ['facility', 'inventory_item', 'quantity', 'issued_quantity', 'velocity_class'],
+    rows,
+    summary: {
+      fast: rows.filter((row) => row.velocity_class === 'FAST').length,
+      slow: rows.filter((row) => row.velocity_class === 'SLOW').length,
+      dead: rows.filter((row) => row.velocity_class === 'DEAD').length,
+      medium: rows.filter((row) => row.velocity_class === 'MEDIUM').length,
     },
   };
 };
@@ -1826,6 +2480,17 @@ const DATASET_RUNNERS = Object.freeze({
   pharmacy_sales_net_revenue: runPharmacySalesNetRevenueDataset,
   pharmacy_sales_avg_transaction: runPharmacySalesAvgTransactionDataset,
   inventory_stock_risk: runInventoryDataset,
+  inventory_stock_value: runInventoryStockValueDataset,
+  inventory_opening_closing: runInventoryOpeningClosingDataset,
+  inventory_stock_received: runInventoryStockReceivedDataset,
+  inventory_stock_issued: runInventoryStockIssuedDataset,
+  inventory_stock_adjustments: runInventoryStockAdjustmentsDataset,
+  inventory_damaged_stock: runInventoryDamagedStockDataset,
+  inventory_lost_stock: runInventoryLostStockDataset,
+  inventory_reorder: runInventoryReorderDataset,
+  inventory_stock_turnover: runInventoryStockTurnoverDataset,
+  inventory_stock_velocity: runInventoryStockVelocityDataset,
+  inventory_stock_movement_history: runInventoryStockMovementHistoryDataset,
   hr_staffing_leave_coverage: runHrDataset,
   biomedical_incidents_downtime: runBiomedicalDataset,
   communications_delivery_performance: runCommunicationsDataset,
@@ -1880,8 +2545,13 @@ module.exports = {
   buildPharmacySalesNetRevenueAnalytics,
   buildPharmacySalesPaymentMethodAnalytics,
   buildPharmacySalesRefundsAnalytics,
+  classifyStockRisk,
+  classifyStockVelocity,
+  computeStockValue,
   executeReportDataset,
+  movementSignedDelta,
   resolveDateRange,
+  resolveInventoryUnitCost,
   shouldUseMonthlyGranularity,
   summarizeBillingSeries,
   summarizeConsumptionSeries,
