@@ -182,6 +182,9 @@ const BASE_ROLE_PERMISSIONS = {
   [ROLES.FACILITY_ADMIN]: ADMIN_ACCESS.filter(
     (permission) => permission !== PERMISSIONS.TENANT_ADMIN
   ),
+  // Doctors use Clinical/OPD/IPD for care delivery. Lab, radiology, pharmacy,
+  // and discharge planning are not top-level shell destinations — order and
+  // review those workflows from Clinical (and related care modules).
   [ROLES.DOCTOR]: [
     PERMISSIONS.CLINICAL_READ,
     PERMISSIONS.CLINICAL_WRITE,
@@ -200,12 +203,8 @@ const BASE_ROLE_PERMISSIONS = {
     PERMISSIONS.NURSING_READ,
     PERMISSIONS.PHYSIOTHERAPY_READ,
     PERMISSIONS.THEATER_READ,
-    PERMISSIONS.DISCHARGE_READ,
     PERMISSIONS.BREAK_GLASS_REQUEST,
     PERMISSIONS.LAST_OFFICE_READ,
-    PERMISSIONS.LAB_READ,
-    PERMISSIONS.RADIOLOGY_READ,
-    PERMISSIONS.PHARMACY_READ,
     PERMISSIONS.REPORTS_READ,
   ],
   [ROLES.NURSE]: [

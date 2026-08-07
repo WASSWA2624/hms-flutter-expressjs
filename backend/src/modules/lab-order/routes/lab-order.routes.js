@@ -19,11 +19,12 @@ const {
 
 const router = express.Router();
 
-const LAB_READ_SCOPES = [PERMISSIONS.LAB_READ];
+const LAB_READ_SCOPES = [PERMISSIONS.LAB_READ, PERMISSIONS.CLINICAL_READ];
 
 const LAB_WRITE_SCOPES = [PERMISSIONS.LAB_WRITE];
 
-const LAB_REQUEST_SCOPES = LAB_READ_SCOPES;
+// Doctors order labs from Clinical without a top-level Laboratory workspace.
+const LAB_REQUEST_SCOPES = [PERMISSIONS.LAB_READ, PERMISSIONS.CLINICAL_WRITE];
 
 router.get(
   '/',

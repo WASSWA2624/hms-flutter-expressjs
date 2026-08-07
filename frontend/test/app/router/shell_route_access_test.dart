@@ -66,11 +66,18 @@ void main() {
       expect(canAccess(AppRoutes.patients, policy), isTrue);
       expect(canAccess(AppRoutes.opd, policy), isTrue);
       expect(canAccess(AppRoutes.clinical, policy), isTrue);
-      expect(canAccess(AppRoutes.lab, policy), isTrue);
-      expect(canAccess(AppRoutes.pharmacy, policy), isTrue);
-      expect(canAccess(AppRoutes.reports, policy), isTrue);
-      // Nursing/physiotherapy share clinical/patient permission codes.
+      expect(canAccess(AppRoutes.ipd, policy), isTrue);
+      expect(canAccess(AppRoutes.icu, policy), isTrue);
       expect(canAccess(AppRoutes.nursing, policy), isTrue);
+      expect(canAccess(AppRoutes.theater, policy), isTrue);
+      expect(canAccess(AppRoutes.reports, policy), isTrue);
+      expect(canAccess(AppRoutes.settings, policy), isTrue);
+      // Lab / radiology / pharmacy / discharge are nested via care modules.
+      expect(canAccess(AppRoutes.lab, policy), isFalse);
+      expect(canAccess(AppRoutes.radiology, policy), isFalse);
+      expect(canAccess(AppRoutes.pharmacy, policy), isFalse);
+      expect(canAccess(AppRoutes.discharge, policy), isFalse);
+      // Nursing/physiotherapy share clinical/patient permission codes.
       expect(canAccess(AppRoutes.physiotherapy, policy), isTrue);
       expect(canAccess(AppRoutes.billing, policy), isFalse);
       expect(canAccess(AppRoutes.hr, policy), isFalse);
@@ -319,12 +326,8 @@ void main() {
               AppPermissions.nursingRead,
               AppPermissions.physiotherapyRead,
               AppPermissions.theaterRead,
-              AppPermissions.dischargeRead,
               AppPermissions.breakGlassRequest,
               AppPermissions.lastOfficeRead,
-              AppPermissions.labRead,
-              AppPermissions.radiologyRead,
-              AppPermissions.pharmacyRead,
               AppPermissions.reportsRead,
             ],
             isAuthorizationHydrated: true,
@@ -339,6 +342,7 @@ void main() {
           AppRoutes.clinical,
           AppRoutes.lab,
           AppRoutes.pharmacy,
+          AppRoutes.radiology,
           AppRoutes.reports,
           AppRoutes.nursing,
           AppRoutes.physiotherapy,

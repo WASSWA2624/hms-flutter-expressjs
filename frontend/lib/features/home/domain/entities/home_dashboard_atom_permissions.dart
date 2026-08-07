@@ -47,16 +47,16 @@ abstract final class HomeDashboardAtomPermissions {
         // emergency_cases_today / collections_today / low_stock / critical_labs /
         // pending_leaves / open_incidents declared on facility templates + packs.
 
-        // Doctor (Dashboard.md §4)
+        // Doctor (Dashboard.md §4) — lab/radiology/pharmacy KPIs route via Clinical.
         'assigned': <AppPermission>[AppPermissions.clinicalRead],
         'in_progress': <AppPermission>[AppPermissions.clinicalRead],
-        'results_pending_review': <AppPermission>[AppPermissions.labRead],
+        'results_pending_review': <AppPermission>[AppPermissions.clinicalRead],
         'follow_ups_due': <AppPermission>[AppPermissions.clinicalRead],
         'completed': <AppPermission>[AppPermissions.clinicalRead],
-        'critical_labs': <AppPermission>[AppPermissions.labRead],
+        'critical_labs': <AppPermission>[AppPermissions.clinicalRead],
         // radiology_pending / emergency_cases_today / shifts_today shared ids —
         // declared on doctor templates + nurse/HR packs with matching keys.
-        'prescriptions_pending': <AppPermission>[AppPermissions.pharmacyRead],
+        'prescriptions_pending': <AppPermission>[AppPermissions.clinicalRead],
         // Gap: recent clinical notes as a named KPI — no dedicated metric yet.
 
         // Nurse (Dashboard.md §5)
@@ -66,7 +66,7 @@ abstract final class HomeDashboardAtomPermissions {
         'discharge_pressure': <AppPermission>[AppPermissions.clinicalRead],
         'emergency_cases_today': <AppPermission>[AppPermissions.emergencyRead],
         'theatre_cases_today': <AppPermission>[AppPermissions.clinicalRead],
-        'radiology_pending': <AppPermission>[AppPermissions.radiologyRead],
+        'radiology_pending': <AppPermission>[AppPermissions.clinicalRead],
         // Gap: vitals_due / nursing_tasks / shift_schedule as named KPIs.
 
         // Lab (Dashboard.md §6) — aligned with Lab desk tabs.

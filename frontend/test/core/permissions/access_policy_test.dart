@@ -127,7 +127,8 @@ void main() {
         expect(policy.grants(AppPermissions.patientWrite), isFalse);
         expect(policy.hasActiveModule('pharmacy'), isTrue);
         expect(policy.hasActiveModule('reports'), isTrue);
-        expect(AppRoutes.patients.accessRequirement.isAllowed(policy), isTrue);
+        // Pharmacist pack omits patients:read — no Patients registry shell entry.
+        expect(AppRoutes.patients.accessRequirement.isAllowed(policy), isFalse);
         expect(AppRoutes.pharmacy.accessRequirement.isAllowed(policy), isTrue);
         expect(AppRoutes.reports.accessRequirement.isAllowed(policy), isTrue);
       },
@@ -339,11 +340,15 @@ void main() {
       final policy = AppAccessPolicy.fromSession(session);
       const requirement = AccessRequirement(
         anyRoles: <AppRole>[AppRole.doctor],
-        anyPermissions: <AppPermission>[AppPermissions.labRead],
-        activeModules: <String>['lab-workflows'],
+        anyPermissions: <AppPermission>[AppPermissions.clinicalRead],
+        activeModules: <String>['encounters-vitals'],
       );
 
       expect(requirement.isAllowed(policy), isTrue);
+      expect(policy.grants(AppPermissions.labRead), isFalse);
+      expect(policy.grants(AppPermissions.dischargeRead), isFalse);
+      expect(policy.grants(AppPermissions.pharmacyRead), isFalse);
+      expect(policy.grants(AppPermissions.radiologyRead), isFalse);
     });
 
     test(

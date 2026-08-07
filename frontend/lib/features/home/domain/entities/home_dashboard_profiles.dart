@@ -324,7 +324,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       HomeStatusCardTemplate(
         id: 'results_pending_review',
         label: 'Results to review',
-        requiredPermissions: <AppPermission>[AppPermissions.labRead],
+        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
       ),
       HomeStatusCardTemplate(
         id: 'follow_ups_due',
@@ -339,17 +339,17 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       HomeStatusCardTemplate(
         id: 'critical_labs',
         label: 'Critical labs',
-        requiredPermissions: <AppPermission>[AppPermissions.labRead],
+        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
       ),
       HomeStatusCardTemplate(
         id: 'radiology_pending',
         label: 'Radiology results',
-        requiredPermissions: <AppPermission>[AppPermissions.radiologyRead],
+        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
       ),
       HomeStatusCardTemplate(
         id: 'prescriptions_pending',
         label: 'Prescriptions pending',
-        requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
       ),
       HomeStatusCardTemplate(
         id: 'emergency_cases_today',
@@ -377,11 +377,12 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     shortcutIds: <String>[
       'clinical',
       'opd',
-      'emergency',
-      'lab',
-      'radiology',
-      'pharmacy',
       'ipd',
+      'icu',
+      'nursing',
+      'theater',
+      'patients',
+      'reports',
     ],
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
@@ -392,7 +393,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         queryParameters: <String, String>{'section': 'all'},
       ),
       'results_pending_review': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'completed-today'},
+        queryParameters: <String, String>{'section': 'results-ready'},
       ),
       'follow_ups_due': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'follow-ups'},
@@ -401,13 +402,13 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         queryParameters: <String, String>{'section': 'completed'},
       ),
       'critical_labs': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'critical'},
+        queryParameters: <String, String>{'section': 'results-ready'},
       ),
       'radiology_pending': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'reporting'},
+        queryParameters: <String, String>{'section': 'results-ready'},
       ),
       'prescriptions_pending': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'pending'},
+        queryParameters: <String, String>{'section': 'assigned-to-me'},
       ),
       'emergency_cases_today': HomeMetricRouteTarget(
         queryParameters: <String, String>{'scope': 'active'},

@@ -20,11 +20,18 @@ const {
   listRadiologyOrdersQuerySchema
 } = require('@validations/radiology-order/radiology-order.schema');
 
-const RADIOLOGY_READ_SCOPES = [PERMISSIONS.RADIOLOGY_READ];
+const RADIOLOGY_READ_SCOPES = [
+  PERMISSIONS.RADIOLOGY_READ,
+  PERMISSIONS.CLINICAL_READ
+];
 
 const RADIOLOGY_WRITE_SCOPES = [PERMISSIONS.RADIOLOGY_WRITE];
 
-const RADIOLOGY_REQUEST_SCOPES = RADIOLOGY_READ_SCOPES;
+// Doctors order imaging from Clinical without a top-level Radiology workspace.
+const RADIOLOGY_REQUEST_SCOPES = [
+  PERMISSIONS.RADIOLOGY_READ,
+  PERMISSIONS.CLINICAL_WRITE
+];
 
 /**
  * @description List radiology orders with pagination and filters

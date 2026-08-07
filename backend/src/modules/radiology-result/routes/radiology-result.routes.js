@@ -21,7 +21,10 @@ const {
   listRadiologyResultsQuerySchema
 } = require('@validations/radiology-result/radiology-result.schema');
 
-const RADIOLOGY_READ_SCOPES = [PERMISSIONS.RADIOLOGY_READ];
+const RADIOLOGY_READ_SCOPES = [
+  PERMISSIONS.RADIOLOGY_READ,
+  PERMISSIONS.CLINICAL_READ
+];
 
 const RADIOLOGY_WRITE_SCOPES = [PERMISSIONS.RADIOLOGY_WRITE];
 

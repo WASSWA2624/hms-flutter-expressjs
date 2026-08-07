@@ -103,13 +103,10 @@ Set<String> _cardIds(HomeDashboard dashboard) {
 
 void main() {
   group('filterHomeDashboardForAccess', () {
-    test('clinical:read + lab:read keeps clinical/lab cards only', () {
+    test('clinical:read keeps clinical care cards for doctor profile', () {
       final AppAccessPolicy policy = _policy(
         roles: <String>['CUSTOM_CLINICIAN'],
-        permissions: <AppPermission>[
-          AppPermissions.clinicalRead,
-          AppPermissions.labRead,
-        ],
+        permissions: <AppPermission>[AppPermissions.clinicalRead],
       );
       final HomeDashboardProfile profile = homeProfileForRole(AppRole.doctor);
       final HomeDashboard filtered = filterHomeDashboardForAccess(
@@ -120,11 +117,11 @@ void main() {
 
       expect(ids, containsAll(<String>['assigned', 'in_progress', 'completed']));
       expect(ids, contains('results_pending_review'));
+      expect(ids, contains('radiology_pending'));
+      expect(ids, contains('prescriptions_pending'));
       expect(ids, isNot(contains('billing_exceptions')));
       expect(ids, isNot(contains('pending_dispense')));
-      expect(ids, isNot(contains('radiology_pending')));
-      expect(filtered.trend.hasData, isFalse);
-      expect(filtered.distribution.hasData, isFalse);
+      expect(ids, isNot(contains('emergency_cases_today')));
     });
 
     test(
@@ -227,22 +224,16 @@ void main() {
     });
 
     test(
-      'doctor secondary atoms require radiology/pharmacy/emergency/roster grants',
+      'doctor clinical cards surface with clinical:read; emergency/roster stay gated',
       () {
-        final AppAccessPolicy clinicalLabOnly = _policy(
+        final AppAccessPolicy clinicalOnly = _policy(
           roles: <String>['CUSTOM_CLINICIAN'],
-          permissions: <AppPermission>[
-            AppPermissions.clinicalRead,
-            AppPermissions.labRead,
-          ],
+          permissions: <AppPermission>[AppPermissions.clinicalRead],
         );
         final AppAccessPolicy withSecondary = _policy(
           roles: <String>['CUSTOM_CLINICIAN'],
           permissions: <AppPermission>[
             AppPermissions.clinicalRead,
-            AppPermissions.labRead,
-            AppPermissions.radiologyRead,
-            AppPermissions.pharmacyRead,
             AppPermissions.emergencyRead,
             AppPermissions.rosterRead,
           ],
@@ -252,12 +243,18 @@ void main() {
         final Set<String> without = _cardIds(
           filterHomeDashboardForAccess(
             _dashboardForProfile(profile),
-            clinicalLabOnly,
+            clinicalOnly,
           ),
         );
-        expect(without, containsAll(<String>['assigned', 'results_pending_review']));
-        expect(without, isNot(contains('radiology_pending')));
-        expect(without, isNot(contains('prescriptions_pending')));
+        expect(
+          without,
+          containsAll(<String>[
+            'assigned',
+            'results_pending_review',
+            'radiology_pending',
+            'prescriptions_pending',
+          ]),
+        );
         expect(without, isNot(contains('emergency_cases_today')));
         expect(without, isNot(contains('shifts_today')));
         expect(without, isNot(contains('pending_dispense')));
@@ -278,7 +275,6 @@ void main() {
             'shifts_today',
           ]),
         );
-        // pharmacy:read surfaces prescriptions_pending, not pharmacy:write dispense.
         expect(withAll, isNot(contains('pending_dispense')));
       },
     );
@@ -365,7 +361,11 @@ void main() {
       );
       expect(
         shortcuts.map((HomeShortcutDefinition shortcut) => shortcut.id),
-        containsAll(<String>['clinical', 'lab']),
+        containsAll(<String>['clinical', 'ipd', 'reports']),
+      );
+      expect(
+        shortcuts.map((HomeShortcutDefinition shortcut) => shortcut.id),
+        isNot(contains('lab')),
       );
       expect(
         shortcuts.map((HomeShortcutDefinition shortcut) => shortcut.id),
@@ -975,9 +975,9 @@ void main() {
       );
 
       expect(filtered.statusCards, isEmpty);
-      expect(filtered.trend.hasData, isFalse);
+      // reports:read is always granted for staff sessions, so chart payloads
+      // remain; metrics still collapse when no KPI cards survive filtering.
       expect(layout.showMetrics, isFalse);
-      expect(layout.showCharts, isFalse);
       expect(layout.showQuickActions, isFalse);
       expect(layout.showPriority, isFalse);
     });

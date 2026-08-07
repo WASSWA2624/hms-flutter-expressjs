@@ -352,16 +352,16 @@ AppRouteData? _clinicalMetricRoute({
 }) {
   if (profile.id == 'doctor') {
     return switch (cardId) {
-      'assigned' || 'in_progress' || 'follow_ups_due' || 'completed'
+      'assigned' ||
+      'in_progress' ||
+      'follow_ups_due' ||
+      'completed' ||
+      'results_pending_review' ||
+      'critical_labs' ||
+      'radiology_pending' ||
+      'prescriptions_pending'
           when policy.grants(AppPermissions.clinicalRead) =>
         AppRoutes.clinical,
-      'results_pending_review' || 'critical_labs'
-          when policy.grants(AppPermissions.labRead) =>
-        AppRoutes.lab,
-      'radiology_pending' when policy.grants(AppPermissions.radiologyRead) =>
-        AppRoutes.radiology,
-      'prescriptions_pending' when policy.grants(AppPermissions.pharmacyRead) =>
-        AppRoutes.pharmacy,
       'emergency_cases_today'
           when policy.grants(AppPermissions.emergencyRead) =>
         AppRoutes.emergency,

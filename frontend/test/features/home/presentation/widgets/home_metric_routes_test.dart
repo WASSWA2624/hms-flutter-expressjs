@@ -97,7 +97,7 @@ void main() {
       );
     });
 
-    test('doctor profile cards navigate to clinical and lab workspaces', () {
+    test('doctor profile cards navigate to clinical workspace', () {
       final HomeDashboardProfile profile = homeProfileForRole(AppRole.doctor);
       final AppAccessPolicy policy = AppAccessPolicy.fromSession(
         AuthSession(
@@ -132,7 +132,7 @@ void main() {
           ),
           policy: policy,
         )?.route,
-        AppRoutes.lab,
+        AppRoutes.clinical,
       );
       expect(
         homeMetricAction(
@@ -148,7 +148,7 @@ void main() {
       );
     });
 
-    test('doctor secondary cards navigate when grants and modules allow', () {
+    test('doctor secondary cards navigate into clinical care workspace', () {
       final HomeDashboardProfile profile = homeProfileForRole(AppRole.doctor);
       final AppAccessPolicy policy = AppAccessPolicy.fromSession(
         AuthSession(
@@ -160,8 +160,6 @@ void main() {
           ),
           permissions: const <AppPermission>[
             AppPermissions.clinicalRead,
-            AppPermissions.radiologyRead,
-            AppPermissions.pharmacyRead,
             AppPermissions.emergencyRead,
             AppPermissions.rosterRead,
             AppPermissions.hrRead,
@@ -169,14 +167,6 @@ void main() {
           moduleEntitlements: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: 'encounters-vitals',
-              licenseStatus: 'ACTIVE',
-            ),
-            AppModuleEntitlement(
-              code: 'radiology-workflows',
-              licenseStatus: 'ACTIVE',
-            ),
-            AppModuleEntitlement(
-              code: 'pharmacy-dispensing',
               licenseStatus: 'ACTIVE',
             ),
             AppModuleEntitlement(
@@ -196,11 +186,11 @@ void main() {
             id: 'radiology_pending',
             label: 'Radiology results',
             value: 1,
-            requiredPermissions: <AppPermission>[AppPermissions.radiologyRead],
+            requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
           ),
           policy: policy,
         )?.route,
-        AppRoutes.radiology,
+        AppRoutes.clinical,
       );
       expect(
         homeMetricNavigation(
@@ -209,11 +199,11 @@ void main() {
             id: 'prescriptions_pending',
             label: 'Prescriptions pending',
             value: 2,
-            requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+            requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
           ),
           policy: policy,
         )?.route,
-        AppRoutes.pharmacy,
+        AppRoutes.clinical,
       );
       expect(
         homeMetricNavigation(
@@ -848,11 +838,11 @@ void main() {
           ),
           policy: policy,
         )?.queryParameters,
-        <String, String>{'section': 'critical'},
+        <String, String>{'section': 'results-ready'},
       );
       expect(
         profile.metricRouteTargets['prescriptions_pending']?.queryParameters,
-        <String, String>{'section': 'pending'},
+        <String, String>{'section': 'assigned-to-me'},
       );
     });
 
