@@ -1,3 +1,4 @@
+export 'module_reporting_chart_capture.dart';
 export 'module_reporting_catalog_panel.dart';
 export 'module_reporting_data.dart';
 export 'module_reporting_domain_tabs.dart';

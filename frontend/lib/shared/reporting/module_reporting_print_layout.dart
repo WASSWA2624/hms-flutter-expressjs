@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/shared/components/app_list_table.dart';
@@ -8,8 +10,22 @@ import 'package:hosspi_hms/shared/reporting/module_reporting_models.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_table.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_visualization.dart';
 
-/// Logical page size used by the interactive report print canvas.
+/// Logical base page size used by the interactive report print canvas.
 const Size moduleReportingPrintPageSize = Size(720, 960);
+
+/// Grows the canvas so every visible block is reachable by scrolling.
+Size moduleReportingPrintCanvasSize(Iterable<ModuleReportingPrintBlock> blocks) {
+  double width = moduleReportingPrintPageSize.width;
+  double height = moduleReportingPrintPageSize.height;
+  for (final ModuleReportingPrintBlock block in blocks) {
+    if (!block.visible) {
+      continue;
+    }
+    width = math.max(width, block.left + block.width + 24);
+    height = math.max(height, block.top + block.height + 32);
+  }
+  return Size(width, height);
+}
 
 /// One movable presentation block on the print canvas.
 @immutable
@@ -93,29 +109,19 @@ List<ModuleReportingPrintBlock> moduleReportingDefaultPrintBlocks({
   final List<String> columns = snapshot.columns;
   final List<ModuleReportingPrintBlock> blocks = <ModuleReportingPrintBlock>[];
   double cursorY = 16;
+  final double fullWidth = moduleReportingPrintPageSize.width - 32;
   for (int index = 0; index < applicable.length; index += 1) {
     final ModuleReportingVisualizationKind kind = applicable[index];
     final bool isTable = kind == ModuleReportingVisualizationKind.table;
     final double height = isTable
         ? 320
         : kind == ModuleReportingVisualizationKind.kpiCards
-        ? 180
+        ? 200
         : kind == ModuleReportingVisualizationKind.heatmap
         ? 360
+        : kind == ModuleReportingVisualizationKind.gaugeChart
+        ? 280
         : 340;
-    final double width = kind == ModuleReportingVisualizationKind.kpiCards ||
-            kind == ModuleReportingVisualizationKind.table ||
-            kind == ModuleReportingVisualizationKind.lineChart ||
-            kind == ModuleReportingVisualizationKind.barChart ||
-            kind == ModuleReportingVisualizationKind.areaChart ||
-            kind == ModuleReportingVisualizationKind.heatmap
-        ? moduleReportingPrintPageSize.width - 32
-        : (moduleReportingPrintPageSize.width - 48) / 2;
-    final double left = kind == ModuleReportingVisualizationKind.donutChart ||
-            kind == ModuleReportingVisualizationKind.rankingChart ||
-            kind == ModuleReportingVisualizationKind.gaugeChart
-        ? (index.isOdd ? width + 32 : 16)
-        : 16;
     blocks.add(
       ModuleReportingPrintBlock(
         id: '${kind.name}_$index',
@@ -123,21 +129,15 @@ List<ModuleReportingPrintBlock> moduleReportingDefaultPrintBlocks({
         title: kind == ModuleReportingVisualizationKind.table
             ? report.label
             : moduleReportingVisualizationLabel(kind),
-        left: left.clamp(16, moduleReportingPrintPageSize.width - width - 16),
+        left: 16,
         top: cursorY,
-        width: width,
+        width: fullWidth,
         height: height,
         visibleColumns: columns,
         maxRows: 25,
       ),
     );
-    if (left <= 16 ||
-        kind == ModuleReportingVisualizationKind.table ||
-        kind == ModuleReportingVisualizationKind.kpiCards ||
-        index.isOdd ||
-        index == applicable.length - 1) {
-      cursorY += height + 16;
-    }
+    cursorY += height + 16;
   }
   return blocks;
 }
@@ -177,6 +177,7 @@ String moduleReportingPrintLayoutBodyHtml({
   required DateTime? from,
   required DateTime? to,
   required Locale locale,
+  Map<String, String> chartImages = const <String, String>{},
 }) {
   final List<ModuleReportingPrintBlock> visible = blocks
       .where((ModuleReportingPrintBlock block) => block.visible)
@@ -224,6 +225,7 @@ String moduleReportingPrintLayoutBodyHtml({
           snapshot: snapshot,
           labels: labels,
           locale: locale,
+          chartImageDataUrl: chartImages[block.id],
         ),
       ),
     );
@@ -236,10 +238,25 @@ String _blockHtml({
   required ModuleReportingReportSnapshot snapshot,
   required ModuleReportingLabels labels,
   required Locale locale,
+  String? chartImageDataUrl,
 }) {
   final StringBuffer html = StringBuffer();
   if (block.caption.trim().isNotEmpty) {
     html.writeln('<p><em>${_escape(block.caption.trim())}</em></p>');
+  }
+
+  if (block.kind != ModuleReportingVisualizationKind.table &&
+      chartImageDataUrl != null &&
+      chartImageDataUrl.isNotEmpty) {
+    html.writeln(
+      '<figure class="print-report-chart" style="margin:0;">'
+      '<img src="${_escape(chartImageDataUrl)}" '
+      'alt="${_escape(block.title)}" '
+      'style="display:block;width:100%;max-width:100%;height:auto;'
+      'border:1px solid #d0d7de;border-radius:8px;background:#fff;" />'
+      '</figure>',
+    );
+    return html.toString();
   }
 
   switch (block.kind) {

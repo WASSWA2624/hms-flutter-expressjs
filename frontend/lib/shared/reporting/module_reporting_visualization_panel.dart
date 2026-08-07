@@ -277,6 +277,7 @@ class ModuleReportingVisualizationView extends StatelessWidget {
     required this.title,
     this.canExport = true,
     this.embedded = false,
+    this.showOptionsBar = true,
     this.storageKeyPrefix,
     this.dataLimit,
     super.key,
@@ -291,6 +292,9 @@ class ModuleReportingVisualizationView extends StatelessWidget {
   /// When true, omits the outer titled card chrome (print-preview blocks already
   /// provide a header). Chart options, legends, and painters stay identical.
   final bool embedded;
+
+  /// Legend / axis / values toggles. Disable for static print captures.
+  final bool showOptionsBar;
   final String? storageKeyPrefix;
   final int? dataLimit;
 
@@ -319,6 +323,7 @@ class ModuleReportingVisualizationView extends StatelessWidget {
           points: moduleReportingSeriesPoints(snapshot, limit: seriesLimit),
           style: DashboardTrendChartStyle.line,
           embedded: embedded,
+          showOptionsBar: showOptionsBar,
         );
       case ModuleReportingVisualizationKind.barChart:
         return _SeriesChartHost(
@@ -327,6 +332,7 @@ class ModuleReportingVisualizationView extends StatelessWidget {
           points: moduleReportingSeriesPoints(snapshot, limit: seriesLimit),
           style: DashboardTrendChartStyle.bar,
           embedded: embedded,
+          showOptionsBar: showOptionsBar,
         );
       case ModuleReportingVisualizationKind.areaChart:
         return _SeriesChartHost(
@@ -335,6 +341,7 @@ class ModuleReportingVisualizationView extends StatelessWidget {
           points: moduleReportingSeriesPoints(snapshot, limit: seriesLimit),
           style: DashboardTrendChartStyle.area,
           embedded: embedded,
+          showOptionsBar: showOptionsBar,
         );
       case ModuleReportingVisualizationKind.donutChart:
         return _DonutChartHost(
@@ -346,6 +353,7 @@ class ModuleReportingVisualizationView extends StatelessWidget {
             limit: seriesLimit,
           ),
           embedded: embedded,
+          showOptionsBar: showOptionsBar,
         );
       case ModuleReportingVisualizationKind.rankingChart:
         return _RankingChart(
@@ -362,18 +370,25 @@ class ModuleReportingVisualizationView extends StatelessWidget {
               )
               .toList(growable: false),
           embedded: embedded,
+          showOptionsBar: showOptionsBar,
         );
       case ModuleReportingVisualizationKind.gaugeChart:
         return _GaugeChart(
           points: moduleReportingSeriesPoints(snapshot, limit: seriesLimit),
           embedded: embedded,
+          showOptionsBar: showOptionsBar,
         );
       case ModuleReportingVisualizationKind.scatterChart:
-        return _ScatterChart(snapshot: snapshot, embedded: embedded);
+        return _ScatterChart(
+          snapshot: snapshot,
+          embedded: embedded,
+          showOptionsBar: showOptionsBar,
+        );
       case ModuleReportingVisualizationKind.heatmap:
         return _HeatmapChart(
           cells: moduleReportingHeatmapCells(snapshot),
           embedded: embedded,
+          showOptionsBar: showOptionsBar,
         );
     }
   }
@@ -656,6 +671,7 @@ class _SeriesChartHost extends StatefulWidget {
     required this.points,
     required this.style,
     this.embedded = false,
+    this.showOptionsBar = true,
   });
 
   final String title;
@@ -663,6 +679,7 @@ class _SeriesChartHost extends StatefulWidget {
   final List<ModuleReportingSeriesPoint> points;
   final DashboardTrendChartStyle style;
   final bool embedded;
+  final bool showOptionsBar;
 
   @override
   State<_SeriesChartHost> createState() => _SeriesChartHostState();
@@ -703,10 +720,12 @@ class _SeriesChartHostState extends State<_SeriesChartHost> {
       icon: icon,
       accent: accent,
       embedded: widget.embedded,
-      toolbar: _ChartOptionsBar(
-        options: _options,
-        onChanged: (next) => setState(() => _options = next),
-      ),
+      toolbar: widget.showOptionsBar
+          ? _ChartOptionsBar(
+              options: _options,
+              onChanged: (next) => setState(() => _options = next),
+            )
+          : null,
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final double width = constraints.maxWidth.isFinite
@@ -788,6 +807,7 @@ class _DonutChartHost extends StatefulWidget {
     required this.totalLabel,
     required this.segments,
     this.embedded = false,
+    this.showOptionsBar = true,
   });
 
   final String title;
@@ -795,6 +815,7 @@ class _DonutChartHost extends StatefulWidget {
   final String totalLabel;
   final List<DashboardDistributionSegmentData> segments;
   final bool embedded;
+  final bool showOptionsBar;
 
   @override
   State<_DonutChartHost> createState() => _DonutChartHostState();
@@ -835,11 +856,13 @@ class _DonutChartHostState extends State<_DonutChartHost> {
       icon: Icons.donut_large_outlined,
       accent: colors.secondary,
       embedded: widget.embedded,
-      toolbar: _ChartOptionsBar(
-        options: _options,
-        showAxisToggle: false,
-        onChanged: (next) => setState(() => _options = next),
-      ),
+      toolbar: widget.showOptionsBar
+          ? _ChartOptionsBar(
+              options: _options,
+              showAxisToggle: false,
+              onChanged: (next) => setState(() => _options = next),
+            )
+          : null,
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool stacked = constraints.maxWidth < 520;
@@ -920,10 +943,15 @@ class _DonutChartHostState extends State<_DonutChartHost> {
 }
 
 class _RankingChart extends StatefulWidget {
-  const _RankingChart({required this.points, this.embedded = false});
+  const _RankingChart({
+    required this.points,
+    this.embedded = false,
+    this.showOptionsBar = true,
+  });
 
   final List<ModuleReportingSeriesPoint> points;
   final bool embedded;
+  final bool showOptionsBar;
 
   @override
   State<_RankingChart> createState() => _RankingChartState();
@@ -959,12 +987,14 @@ class _RankingChartState extends State<_RankingChart> {
       icon: Icons.leaderboard_outlined,
       accent: colors.error,
       embedded: widget.embedded,
-      toolbar: _ChartOptionsBar(
-        options: _options,
-        showLegendToggle: false,
-        showAxisToggle: true,
-        onChanged: (next) => setState(() => _options = next),
-      ),
+      toolbar: widget.showOptionsBar
+          ? _ChartOptionsBar(
+              options: _options,
+              showLegendToggle: false,
+              showAxisToggle: true,
+              onChanged: (next) => setState(() => _options = next),
+            )
+          : null,
       child: Column(
         children: <Widget>[
           for (int index = 0; index < top.length; index += 1)
@@ -1038,10 +1068,15 @@ class _RankingChartState extends State<_RankingChart> {
 }
 
 class _GaugeChart extends StatefulWidget {
-  const _GaugeChart({required this.points, this.embedded = false});
+  const _GaugeChart({
+    required this.points,
+    this.embedded = false,
+    this.showOptionsBar = true,
+  });
 
   final List<ModuleReportingSeriesPoint> points;
   final bool embedded;
+  final bool showOptionsBar;
 
   @override
   State<_GaugeChart> createState() => _GaugeChartState();
@@ -1081,11 +1116,13 @@ class _GaugeChartState extends State<_GaugeChart> {
       icon: Icons.speed_outlined,
       accent: needle,
       embedded: widget.embedded,
-      toolbar: _ChartOptionsBar(
-        options: _options,
-        showAxisToggle: false,
-        onChanged: (next) => setState(() => _options = next),
-      ),
+      toolbar: widget.showOptionsBar
+          ? _ChartOptionsBar(
+              options: _options,
+              showAxisToggle: false,
+              onChanged: (next) => setState(() => _options = next),
+            )
+          : null,
       child: Column(
         children: <Widget>[
           SizedBox(
@@ -1195,10 +1232,15 @@ class _GaugePainter extends CustomPainter {
 }
 
 class _ScatterChart extends StatefulWidget {
-  const _ScatterChart({required this.snapshot, this.embedded = false});
+  const _ScatterChart({
+    required this.snapshot,
+    this.embedded = false,
+    this.showOptionsBar = true,
+  });
 
   final ModuleReportingReportSnapshot snapshot;
   final bool embedded;
+  final bool showOptionsBar;
 
   @override
   State<_ScatterChart> createState() => _ScatterChartState();
@@ -1238,12 +1280,14 @@ class _ScatterChartState extends State<_ScatterChart> {
       icon: Icons.scatter_plot_outlined,
       accent: colors.secondary,
       embedded: widget.embedded,
-      toolbar: _ChartOptionsBar(
-        options: _options,
-        showLegendToggle: false,
-        showValuesToggle: false,
-        onChanged: (next) => setState(() => _options = next),
-      ),
+      toolbar: widget.showOptionsBar
+          ? _ChartOptionsBar(
+              options: _options,
+              showLegendToggle: false,
+              showValuesToggle: false,
+              onChanged: (next) => setState(() => _options = next),
+            )
+          : null,
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final double height = _chartHeightForWidth(
@@ -1359,10 +1403,15 @@ class _ScatterPainter extends CustomPainter {
 }
 
 class _HeatmapChart extends StatefulWidget {
-  const _HeatmapChart({required this.cells, this.embedded = false});
+  const _HeatmapChart({
+    required this.cells,
+    this.embedded = false,
+    this.showOptionsBar = true,
+  });
 
   final List<ModuleReportingHeatmapCell> cells;
   final bool embedded;
+  final bool showOptionsBar;
 
   @override
   State<_HeatmapChart> createState() => _HeatmapChartState();
@@ -1418,11 +1467,13 @@ class _HeatmapChartState extends State<_HeatmapChart> {
       icon: Icons.grid_on_outlined,
       accent: colors.tertiary,
       embedded: widget.embedded,
-      toolbar: _ChartOptionsBar(
-        options: _options,
-        showAxisToggle: true,
-        onChanged: (next) => setState(() => _options = next),
-      ),
+      toolbar: widget.showOptionsBar
+          ? _ChartOptionsBar(
+              options: _options,
+              showAxisToggle: true,
+              onChanged: (next) => setState(() => _options = next),
+            )
+          : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[

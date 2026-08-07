@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -7,6 +9,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
+import 'package:hosspi_hms/shared/reporting/module_reporting_chart_capture.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_data.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_models.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_print_layout.dart';
@@ -117,6 +120,16 @@ class _ModuleReportingPrintPreviewDialogState
     setState(() => _isPrinting = true);
     try {
       final Locale locale = Localizations.localeOf(context);
+      final Map<String, String> chartImages =
+          await captureModuleReportingChartImages(
+            context: context,
+            snapshot: widget.snapshot,
+            labels: _labels,
+            blocks: _blocks,
+          );
+      if (!mounted) {
+        return;
+      }
       final String bodyHtml = moduleReportingPrintLayoutBodyHtml(
         labels: _labels,
         report: widget.report,
@@ -126,6 +139,7 @@ class _ModuleReportingPrintPreviewDialogState
         from: widget.from,
         to: widget.to,
         locale: locale,
+        chartImages: chartImages,
       );
       if (!mounted) {
         return;
@@ -277,17 +291,19 @@ class _ModuleReportingPrintPreviewDialogState
       onSelect: (String id) => setState(() => _selectedBlockId = id),
       onMove: (String id, Offset delta) {
         _updateBlock(id, (ModuleReportingPrintBlock block) {
+          final Size canvas = moduleReportingPrintCanvasSize(_blocks);
           final double nextLeft = (block.left + delta.dx)
-              .clamp(0, moduleReportingPrintPageSize.width - block.width);
+              .clamp(0, math.max(0, canvas.width - block.width));
           final double nextTop = (block.top + delta.dy)
-              .clamp(0, moduleReportingPrintPageSize.height - block.height);
+              .clamp(0, math.max(0, canvas.height - block.height));
           return block.copyWith(left: nextLeft, top: nextTop);
         });
       },
       onResize: (String id, Offset delta) {
         _updateBlock(id, (ModuleReportingPrintBlock block) {
-          final double nextWidth = (block.width + delta.dx).clamp(160, 680);
-          final double nextHeight = (block.height + delta.dy).clamp(120, 640);
+          // Crop / grow the presentation tile.
+          final double nextWidth = (block.width + delta.dx).clamp(160, 900);
+          final double nextHeight = (block.height + delta.dy).clamp(120, 900);
           return block.copyWith(width: nextWidth, height: nextHeight);
         });
       },
@@ -450,7 +466,7 @@ class _ModuleReportingPrintPreviewDialogState
   }
 }
 
-class _PrintCanvas extends StatelessWidget {
+class _PrintCanvas extends StatefulWidget {
   const _PrintCanvas({
     required this.blocks,
     required this.snapshot,
@@ -472,53 +488,95 @@ class _PrintCanvas extends StatelessWidget {
   final void Function(String id, Offset delta) onResize;
 
   @override
+  State<_PrintCanvas> createState() => _PrintCanvasState();
+}
+
+class _PrintCanvasState extends State<_PrintCanvas> {
+  final ScrollController _verticalController = ScrollController();
+  final ScrollController _horizontalController = ScrollController();
+
+  @override
+  void dispose() {
+    _verticalController.dispose();
+    _horizontalController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final Size canvasSize = moduleReportingPrintCanvasSize(widget.blocks);
+    final double scaledWidth = canvasSize.width * widget.scale;
+    final double scaledHeight = canvasSize.height * widget.scale;
+
     return ColoredBox(
       color: colors.surfaceContainerHighest.withValues(alpha: 0.35),
-      child: InteractiveViewer(
-        minScale: 0.5,
-        maxScale: 2.5,
-        child: Center(
-          child: Transform.scale(
-            scale: scale,
-            alignment: Alignment.topCenter,
-            child: Container(
-              width: moduleReportingPrintPageSize.width,
-              height: moduleReportingPrintPageSize.height,
-              margin: EdgeInsets.all(theme.spacing.md),
-              decoration: BoxDecoration(
-                color: colors.surface,
-                border: theme.borders.all(),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: colors.shadow.withValues(alpha: 0.12),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: <Widget>[
-                  for (final ModuleReportingPrintBlock block in blocks)
-                    if (block.visible)
-                      Positioned(
-                        left: block.left,
-                        top: block.top,
-                        width: block.width,
-                        height: block.height,
-                        child: _DraggablePrintBlock(
-                          block: block,
-                          selected: block.id == selectedBlockId,
-                          snapshot: snapshot,
-                          labels: labels,
-                          onSelect: () => onSelect(block.id),
-                          onMove: (Offset delta) => onMove(block.id, delta),
-                          onResize: (Offset delta) => onResize(block.id, delta),
-                        ),
+      child: Scrollbar(
+        controller: _verticalController,
+        thumbVisibility: true,
+        child: SingleChildScrollView(
+          controller: _verticalController,
+          primary: false,
+          padding: EdgeInsets.all(theme.spacing.md),
+          child: Scrollbar(
+            controller: _horizontalController,
+            thumbVisibility: true,
+            notificationPredicate: (ScrollNotification notification) =>
+                notification.depth == 0,
+            child: SingleChildScrollView(
+              controller: _horizontalController,
+              primary: false,
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: scaledWidth,
+                height: scaledHeight,
+                child: Transform.scale(
+                  scale: widget.scale,
+                  alignment: Alignment.topLeft,
+                  child: SizedBox(
+                    width: canvasSize.width,
+                    height: canvasSize.height,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: colors.surface,
+                        border: theme.borders.all(),
+                        boxShadow: <BoxShadow>[
+                          BoxShadow(
+                            color: colors.shadow.withValues(alpha: 0.12),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                ],
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: <Widget>[
+                          for (final ModuleReportingPrintBlock block
+                              in widget.blocks)
+                            if (block.visible)
+                              Positioned(
+                                left: block.left,
+                                top: block.top,
+                                width: block.width,
+                                height: block.height,
+                                child: _DraggablePrintBlock(
+                                  block: block,
+                                  selected: block.id == widget.selectedBlockId,
+                                  snapshot: widget.snapshot,
+                                  labels: widget.labels,
+                                  onSelect: () => widget.onSelect(block.id),
+                                  onMove: (Offset delta) =>
+                                      widget.onMove(block.id, delta),
+                                  onResize: (Offset delta) =>
+                                      widget.onResize(block.id, delta),
+                                ),
+                              ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
