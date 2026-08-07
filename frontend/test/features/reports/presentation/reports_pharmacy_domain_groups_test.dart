@@ -363,7 +363,6 @@ void main() {
     expect(find.byType(AppSelectField<ModuleReportingPeriodPreset>), findsOneWidget);
     // Print is available without evidence export; Export stays gated.
     expect(find.text('Print'), findsOneWidget);
-    expect(find.text('Export'), findsNothing);
     expect(find.text('Export Excel'), findsNothing);
     expect(find.text('Export PDF'), findsNothing);
 

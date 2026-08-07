@@ -19,7 +19,7 @@ const mockPrisma = {
   facility: { findMany: jest.fn() },
   user: { count: jest.fn() },
   role: { findMany: jest.fn() },
-  user_role: { findMany: jest.fn() },
+  user_role: { findMany: jest.fn(), count: jest.fn() },
   subscription_plan: { findMany: jest.fn() },
   subscription: { findMany: jest.fn() },
   module_subscription: { findMany: jest.fn() },
@@ -32,6 +32,7 @@ const mockPrisma = {
   lab_result: { count: jest.fn() },
   radiology_result: { count: jest.fn() },
   pharmacy_order: { count: jest.fn(), groupBy: jest.fn() },
+  pharmacy_dispense_attestation: { count: jest.fn() },
   dispense_log: { count: jest.fn(), findMany: jest.fn() },
   inventory_stock: { findMany: jest.fn() },
   payment: { count: jest.fn() },
@@ -40,6 +41,10 @@ const mockPrisma = {
   stock_movement: { count: jest.fn() },
   stock_adjustment: { count: jest.fn() },
   purchase_request: { count: jest.fn() },
+  purchase_order: { count: jest.fn() },
+  goods_receipt: { count: jest.fn() },
+  supplier: { count: jest.fn() },
+  drug: { count: jest.fn() },
   mortuary_case: { count: jest.fn(), groupBy: jest.fn() },
   conversation: { findMany: jest.fn() },
   notification: { findMany: jest.fn(), count: jest.fn() },
@@ -344,6 +349,12 @@ describe('verify-demo-data', () => {
     };
     mockPrisma.invoice.groupBy = jest.fn().mockResolvedValue([]);
     mockPrisma.mortuary_case.groupBy = jest.fn().mockResolvedValue([]);
+    mockPrisma.pharmacy_dispense_attestation = { count: jest.fn().mockResolvedValue(20) };
+    mockPrisma.user_role.count = jest.fn().mockResolvedValue(2);
+    mockPrisma.drug = { count: jest.fn().mockResolvedValue(20) };
+    mockPrisma.purchase_order = { count: jest.fn().mockResolvedValue(20) };
+    mockPrisma.goods_receipt = { count: jest.fn().mockResolvedValue(20) };
+    mockPrisma.supplier = { count: jest.fn().mockResolvedValue(2) };
 
     const { verifyDemoData } = require('../../../scripts/verify-demo-data');
     const result = await verifyDemoData();
