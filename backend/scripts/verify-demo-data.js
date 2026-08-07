@@ -400,26 +400,38 @@ const verifyDemoData = async () => {
     acc[roleName] = (acc[roleName] || 0) + 1;
     return acc;
   }, {});
-  const expectedEmailByRole = Object.fromEntries(
-    (DEMO_TENANT.users || []).map((entry) => [entry.role, entry.email])
-  );
+  const expectedCountByRole = {};
+  const expectedEmailsByRole = {};
   for (const userDefinition of DEMO_TENANT.users || []) {
-    for (const extraRole of userDefinition.extra_roles || []) {
-      expectedEmailByRole[extraRole] = userDefinition.email;
+    const rolesForUser = [userDefinition.role, ...(userDefinition.extra_roles || [])];
+    for (const roleName of rolesForUser) {
+      expectedCountByRole[roleName] = (expectedCountByRole[roleName] || 0) + 1;
+      if (!expectedEmailsByRole[roleName]) {
+        expectedEmailsByRole[roleName] = [];
+      }
+      expectedEmailsByRole[roleName].push(userDefinition.email);
     }
   }
 
   for (const roleName of DEMO_ROLE_CODES) {
-    if (userRolesByName[roleName] !== 1) {
-      errors.push(`Expected exactly 1 user assigned to role ${roleName} but found ${userRolesByName[roleName] || 0}.`);
+    const expectedCount = expectedCountByRole[roleName] || 1;
+    const actualCount = userRolesByName[roleName] || 0;
+    if (actualCount !== expectedCount) {
+      errors.push(
+        `Expected exactly ${expectedCount} user(s) assigned to role ${roleName} but found ${actualCount}.`
+      );
       continue;
     }
 
-    const roleAssignment = userRoles.find((entry) => entry.role?.name === roleName);
-    const expectedEmail = expectedEmailByRole[roleName];
-    const actualEmail = roleAssignment?.user?.email || null;
-    if (expectedEmail && actualEmail !== expectedEmail) {
-      errors.push(`Expected role ${roleName} to use email ${expectedEmail} but found ${actualEmail || 'none'}.`);
+    if (expectedCount === 1) {
+      const roleAssignment = userRoles.find((entry) => entry.role?.name === roleName);
+      const expectedEmail = expectedEmailsByRole[roleName]?.[0];
+      const actualEmail = roleAssignment?.user?.email || null;
+      if (expectedEmail && actualEmail !== expectedEmail) {
+        errors.push(
+          `Expected role ${roleName} to use email ${expectedEmail} but found ${actualEmail || 'none'}.`
+        );
+      }
     }
   }
 
@@ -728,6 +740,64 @@ const verifyDemoData = async () => {
     if (pharmacistUserCount < 2) {
       errors.push(
         `Expected at least 2 PHARMACIST users for staff activity reports but found ${pharmacistUserCount}.`
+      );
+    }
+
+    const [controlledDrugCount, controlledDispenseCount, controlledMovementCount, controlledAttestCount] =
+      await Promise.all([
+        prisma.drug.count({
+          where: { deleted_at: null, is_controlled: true },
+        }),
+        prisma.dispense_log.count({
+          where: {
+            deleted_at: null,
+            status: 'DISPENSED',
+            pharmacy_order_item: {
+              deleted_at: null,
+              drug: { deleted_at: null, is_controlled: true },
+            },
+          },
+        }),
+        prisma.stock_movement.count({
+          where: {
+            deleted_at: null,
+            inventory_item: {
+              deleted_at: null,
+              drug_maps: {
+                some: {
+                  deleted_at: null,
+                  is_default: true,
+                  drug: { deleted_at: null, is_controlled: true },
+                },
+              },
+            },
+          },
+        }),
+        prisma.pharmacy_dispense_attestation.count({
+          where: {
+            deleted_at: null,
+            pharmacy_order: {
+              deleted_at: null,
+              items: {
+                some: {
+                  deleted_at: null,
+                  drug: { deleted_at: null, is_controlled: true },
+                },
+              },
+            },
+          },
+        }),
+      ]);
+    if (controlledDrugCount < 1) {
+      errors.push(
+        `Expected at least 1 drug.is_controlled=true for controlled medicines reports but found ${controlledDrugCount}.`
+      );
+    }
+    const controlledEventTotal =
+      controlledDispenseCount + controlledMovementCount + controlledAttestCount;
+    if (controlledEventTotal < highFloor) {
+      errors.push(
+        `Expected ≥${highFloor} controlled-related dispense/movement/attestation events but found ${controlledEventTotal} (dispenses=${controlledDispenseCount}, movements=${controlledMovementCount}, attestations=${controlledAttestCount}).`
       );
     }
 

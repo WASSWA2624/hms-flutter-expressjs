@@ -1252,25 +1252,7 @@ const seedVolumePack = async (
       const dayOffset = index % 5 === 0 ? 0 : -((index % 90) + 1);
       const batchRef = `CTRL-BATCH-${pad(index, 5)}`;
       const qty = 1 + (index % 3);
-
-      const encounter =
-        index % 2 === 0
-          ? await ctx.upsert(
-              'encounter',
-              `${scenario.key}:vol:ctrl-enc:${pad(index)}`,
-              {
-                tenant_id: facility.tenant_id,
-                facility_id: facility.id,
-                patient_id: patient.id,
-                provider_user_id: doctor?.id || null,
-                encounter_type: 'OPD',
-                status: 'CLOSED',
-                started_at: ctx.nowDate(dayOffset, 30),
-                ended_at: ctx.nowDate(dayOffset, 50),
-              },
-              { ...seedOpts, publicIdPrefix: 'ENC' }
-            )
-          : null;
+      const encounter = index % 2 === 0 ? encounterAt(index) : null;
 
       const order = await ctx.upsert(
         'pharmacy_order',

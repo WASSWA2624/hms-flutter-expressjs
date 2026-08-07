@@ -207,7 +207,8 @@ List<PharmacyReportingCategory> pharmacyReportingCatalog() {
         ('purchase_price', 'Purchase price', null, 'pharmacy_medicines_catalog'),
         ('profit_per_unit', 'Profit per unit', null, 'pharmacy_medicines_catalog'),
         ('profit_margin', 'Profit margin', null, 'pharmacy_medicines_catalog'),
-        // Schema gaps on drug: barcode / is_controlled — keep unavailable (do not use asset.barcode).
+        // Schema gap: barcode — keep unavailable (do not use asset.barcode).
+        // is_controlled migrated — see controlled medicines category + pharmacy_controlled_*.
         ('barcode', 'Barcode', null, null),
         ('prescription_controlled_status', 'Prescription/controlled status', null, null),
         ('storage_requirements', 'Storage requirements', null, 'pharmacy_medicines_catalog'),

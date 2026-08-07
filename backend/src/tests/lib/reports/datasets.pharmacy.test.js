@@ -43,6 +43,8 @@ const {
   isControlledDrug,
   ANTI_INFECTIVE_DRUG_CODES,
   CONTROLLED_DRUG_CODES,
+  computeControlledBalance,
+  assertControlledBalanceInvariant,
 } = require('@lib/reports/datasets');
 const { pharmacyRetailMarginUnit } = require('@lib/billing/pharmacy-drug-margins');
 const { REPORT_DATASET_MAP, REPORT_DATASETS, REPORT_FORMATS } = require('@lib/reports/constants');
@@ -250,6 +252,24 @@ describe('reports datasets pharmacy analytics', () => {
       category: 'pharmacy',
       default_columns: ['timestamp', 'action', 'entity', 'entity_id', 'staff', 'diff'],
     });
+    expect(REPORT_DATASET_MAP.pharmacy_controlled_stock).toMatchObject({
+      key: 'pharmacy_controlled_stock',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_controlled_balance).toMatchObject({
+      key: 'pharmacy_controlled_balance',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_controlled_regulatory_log).toMatchObject({
+      key: 'pharmacy_controlled_regulatory_log',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_controlled_received).toBeTruthy();
+    expect(REPORT_DATASET_MAP.pharmacy_controlled_dispensed).toBeTruthy();
+    expect(REPORT_DATASET_MAP.pharmacy_controlled_batches).toBeTruthy();
+    expect(REPORT_DATASET_MAP.pharmacy_controlled_actors).toBeTruthy();
+    expect(REPORT_DATASET_MAP.pharmacy_controlled_adjustments).toBeTruthy();
+    expect(REPORT_DATASET_MAP.pharmacy_controlled_wastage).toBeTruthy();
     expect(REPORT_DATASET_MAP.pharmacy_audit_who_created).toMatchObject({
       key: 'pharmacy_audit_who_created',
       category: 'pharmacy',
@@ -859,5 +879,37 @@ describe('reports datasets pharmacy analytics', () => {
     expect(isControlledDrug({ code: 'MRF10I' })).toBe(true);
     expect(isControlledDrug({ code: 'TRM50' })).toBe(true);
     expect(isControlledDrug({ code: 'PCM500' })).toBe(false);
+    expect(isControlledDrug({ is_controlled: true, code: 'PCM500' })).toBe(true);
+  });
+
+  test('controlled balance invariant holds for golden fixture (grain=drug)', () => {
+    // closing = opening + received − dispensed − wastage + adjustments_net
+    const fixture = computeControlledBalance({
+      closing_quantity: 80,
+      quantity_received: 40,
+      quantity_dispensed: 25,
+      wastage: 5,
+      adjustments_net: -2,
+    });
+    expect(fixture.opening_quantity).toBe(80 - 40 + 25 + 5 - -2);
+    expect(fixture.opening_quantity).toBe(72);
+    expect(fixture.invariant_closing).toBe(
+      fixture.opening_quantity +
+        fixture.quantity_received -
+        fixture.quantity_dispensed -
+        fixture.wastage +
+        fixture.adjustments_net
+    );
+    expect(fixture.invariant_closing).toBe(80);
+    expect(
+      assertControlledBalanceInvariant({
+        closing_quantity: fixture.closing_quantity,
+        opening_quantity: fixture.opening_quantity,
+        quantity_received: fixture.quantity_received,
+        quantity_dispensed: fixture.quantity_dispensed,
+        wastage: fixture.wastage,
+        adjustments_net: fixture.adjustments_net,
+      })
+    ).toBe(true);
   });
 });
