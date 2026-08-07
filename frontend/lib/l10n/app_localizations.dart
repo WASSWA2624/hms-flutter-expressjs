@@ -31021,6 +31021,132 @@ abstract class AppLocalizations {
   /// **'Reporting'**
   String get reportsPharmacyReportingTitle;
 
+  /// Accessible label for pharmacy Reporting tab search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search pharmacy reports'**
+  String get reportsPharmacyReportingSearchLabel;
+
+  /// Search hint for pharmacy Reporting tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Search report name, category, or metric'**
+  String get reportsPharmacyReportingSearchHint;
+
+  /// Advanced filter group for pharmacy report categories.
+  ///
+  /// In en, this message translates to:
+  /// **'Report category'**
+  String get reportsPharmacyReportingCategoryFilterLabel;
+
+  /// Clear/all option for pharmacy report category filter.
+  ///
+  /// In en, this message translates to:
+  /// **'All categories'**
+  String get reportsPharmacyReportingCategoryAllLabel;
+
+  /// Pharmacy report category: sales and revenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales & revenue'**
+  String get reportsPharmacyReportingCategorySales;
+
+  /// Pharmacy report category: inventory and stock.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory & stock'**
+  String get reportsPharmacyReportingCategoryInventory;
+
+  /// Pharmacy report category: medicines and products.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicines & products'**
+  String get reportsPharmacyReportingCategoryMedicines;
+
+  /// Pharmacy report category: purchasing and suppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchasing & suppliers'**
+  String get reportsPharmacyReportingCategoryPurchasing;
+
+  /// Pharmacy report category: dispensing.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispensing'**
+  String get reportsPharmacyReportingCategoryDispensing;
+
+  /// Pharmacy report category: patients and customers.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients & customers'**
+  String get reportsPharmacyReportingCategoryCustomers;
+
+  /// Pharmacy report category: expiry and loss control.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiry & loss control'**
+  String get reportsPharmacyReportingCategoryExpiry;
+
+  /// Pharmacy report category: financial reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Financial'**
+  String get reportsPharmacyReportingCategoryFinancial;
+
+  /// Pharmacy report category: staff and user activity.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff & user activity'**
+  String get reportsPharmacyReportingCategoryStaff;
+
+  /// Pharmacy report category: branch and multi-store.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch & multi-store'**
+  String get reportsPharmacyReportingCategoryBranch;
+
+  /// Pharmacy report category: stock transfers.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock transfers'**
+  String get reportsPharmacyReportingCategoryTransfers;
+
+  /// Pharmacy report category: prescription and clinical.
+  ///
+  /// In en, this message translates to:
+  /// **'Prescription & clinical'**
+  String get reportsPharmacyReportingCategoryPrescription;
+
+  /// Pharmacy report category: controlled and regulated medicines.
+  ///
+  /// In en, this message translates to:
+  /// **'Controlled medicines'**
+  String get reportsPharmacyReportingCategoryControlled;
+
+  /// Pharmacy report category: supplier and procurement.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier & procurement'**
+  String get reportsPharmacyReportingCategoryProcurement;
+
+  /// Pharmacy report category: operational KPIs.
+  ///
+  /// In en, this message translates to:
+  /// **'Operational KPIs'**
+  String get reportsPharmacyReportingCategoryKpis;
+
+  /// Pharmacy report category: audit and compliance.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit & compliance'**
+  String get reportsPharmacyReportingCategoryAudit;
+
+  /// Pharmacy report category: management and executive reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Management & executive'**
+  String get reportsPharmacyReportingCategoryManagement;
+
   /// Insight chip that opens pharmacy drug consumption.
   ///
   /// In en, this message translates to:

@@ -21602,6 +21602,90 @@
   "@reportsPharmacyReportingTitle": {
     "description": "Pharmacist Overview tab for report definitions, runs, and schedules."
   },
+  "reportsPharmacyReportingSearchLabel": "Search pharmacy reports",
+  "@reportsPharmacyReportingSearchLabel": {
+    "description": "Accessible label for pharmacy Reporting tab search."
+  },
+  "reportsPharmacyReportingSearchHint": "Search report name, category, or metric",
+  "@reportsPharmacyReportingSearchHint": {
+    "description": "Search hint for pharmacy Reporting tab."
+  },
+  "reportsPharmacyReportingCategoryFilterLabel": "Report category",
+  "@reportsPharmacyReportingCategoryFilterLabel": {
+    "description": "Advanced filter group for pharmacy report categories."
+  },
+  "reportsPharmacyReportingCategoryAllLabel": "All categories",
+  "@reportsPharmacyReportingCategoryAllLabel": {
+    "description": "Clear/all option for pharmacy report category filter."
+  },
+  "reportsPharmacyReportingCategorySales": "Sales & revenue",
+  "@reportsPharmacyReportingCategorySales": {
+    "description": "Pharmacy report category: sales and revenue."
+  },
+  "reportsPharmacyReportingCategoryInventory": "Inventory & stock",
+  "@reportsPharmacyReportingCategoryInventory": {
+    "description": "Pharmacy report category: inventory and stock."
+  },
+  "reportsPharmacyReportingCategoryMedicines": "Medicines & products",
+  "@reportsPharmacyReportingCategoryMedicines": {
+    "description": "Pharmacy report category: medicines and products."
+  },
+  "reportsPharmacyReportingCategoryPurchasing": "Purchasing & suppliers",
+  "@reportsPharmacyReportingCategoryPurchasing": {
+    "description": "Pharmacy report category: purchasing and suppliers."
+  },
+  "reportsPharmacyReportingCategoryDispensing": "Dispensing",
+  "@reportsPharmacyReportingCategoryDispensing": {
+    "description": "Pharmacy report category: dispensing."
+  },
+  "reportsPharmacyReportingCategoryCustomers": "Patients & customers",
+  "@reportsPharmacyReportingCategoryCustomers": {
+    "description": "Pharmacy report category: patients and customers."
+  },
+  "reportsPharmacyReportingCategoryExpiry": "Expiry & loss control",
+  "@reportsPharmacyReportingCategoryExpiry": {
+    "description": "Pharmacy report category: expiry and loss control."
+  },
+  "reportsPharmacyReportingCategoryFinancial": "Financial",
+  "@reportsPharmacyReportingCategoryFinancial": {
+    "description": "Pharmacy report category: financial reports."
+  },
+  "reportsPharmacyReportingCategoryStaff": "Staff & user activity",
+  "@reportsPharmacyReportingCategoryStaff": {
+    "description": "Pharmacy report category: staff and user activity."
+  },
+  "reportsPharmacyReportingCategoryBranch": "Branch & multi-store",
+  "@reportsPharmacyReportingCategoryBranch": {
+    "description": "Pharmacy report category: branch and multi-store."
+  },
+  "reportsPharmacyReportingCategoryTransfers": "Stock transfers",
+  "@reportsPharmacyReportingCategoryTransfers": {
+    "description": "Pharmacy report category: stock transfers."
+  },
+  "reportsPharmacyReportingCategoryPrescription": "Prescription & clinical",
+  "@reportsPharmacyReportingCategoryPrescription": {
+    "description": "Pharmacy report category: prescription and clinical."
+  },
+  "reportsPharmacyReportingCategoryControlled": "Controlled medicines",
+  "@reportsPharmacyReportingCategoryControlled": {
+    "description": "Pharmacy report category: controlled and regulated medicines."
+  },
+  "reportsPharmacyReportingCategoryProcurement": "Supplier & procurement",
+  "@reportsPharmacyReportingCategoryProcurement": {
+    "description": "Pharmacy report category: supplier and procurement."
+  },
+  "reportsPharmacyReportingCategoryKpis": "Operational KPIs",
+  "@reportsPharmacyReportingCategoryKpis": {
+    "description": "Pharmacy report category: operational KPIs."
+  },
+  "reportsPharmacyReportingCategoryAudit": "Audit & compliance",
+  "@reportsPharmacyReportingCategoryAudit": {
+    "description": "Pharmacy report category: audit and compliance."
+  },
+  "reportsPharmacyReportingCategoryManagement": "Management & executive",
+  "@reportsPharmacyReportingCategoryManagement": {
+    "description": "Pharmacy report category: management and executive reports."
+  },
   "reportsPharmacyAnalyticsTopConsumedLabel": "Top consumed drugs",
   "@reportsPharmacyAnalyticsTopConsumedLabel": {
     "description": "Insight chip that opens pharmacy drug consumption."

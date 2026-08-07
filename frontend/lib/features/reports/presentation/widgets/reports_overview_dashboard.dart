@@ -137,16 +137,12 @@ class ReportsOverviewDashboard extends ConsumerWidget {
         if (showPharmacyGroups) ...<Widget>[
           ReportsPharmacyDomainGroups(
             l10n: l10n,
-            policy: policy,
-            allowedPanels: allowedPanels,
             datasetShortcuts: datasetShortcuts,
-            onOpenDataset: onPharmacyOpenDataset ?? controller.openCatalogDataset,
-            onOpenPanel: onPharmacyOpenPanel ?? controller.applyPanel,
-            onOpenCatalogDefinition: onOpenCatalogDefinition,
+            onOpenDataset:
+                onPharmacyOpenDataset ?? controller.openCatalogDataset,
           ),
           SizedBox(height: theme.spacing.xl),
         ],
-        // Reporting tab already covers browse/delivery/create for pharmacy.
         if (!showPharmacyGroups) ...<Widget>[
           AppQuickActions(
             title: l10n.reportsOverviewNextStepsTitle,

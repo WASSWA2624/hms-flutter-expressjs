@@ -16789,6 +16789,77 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsPharmacyReportingTitle => 'Reporting';
 
   @override
+  String get reportsPharmacyReportingSearchLabel => 'Search pharmacy reports';
+
+  @override
+  String get reportsPharmacyReportingSearchHint =>
+      'Search report name, category, or metric';
+
+  @override
+  String get reportsPharmacyReportingCategoryFilterLabel => 'Report category';
+
+  @override
+  String get reportsPharmacyReportingCategoryAllLabel => 'All categories';
+
+  @override
+  String get reportsPharmacyReportingCategorySales => 'Sales & revenue';
+
+  @override
+  String get reportsPharmacyReportingCategoryInventory => 'Inventory & stock';
+
+  @override
+  String get reportsPharmacyReportingCategoryMedicines =>
+      'Medicines & products';
+
+  @override
+  String get reportsPharmacyReportingCategoryPurchasing =>
+      'Purchasing & suppliers';
+
+  @override
+  String get reportsPharmacyReportingCategoryDispensing => 'Dispensing';
+
+  @override
+  String get reportsPharmacyReportingCategoryCustomers =>
+      'Patients & customers';
+
+  @override
+  String get reportsPharmacyReportingCategoryExpiry => 'Expiry & loss control';
+
+  @override
+  String get reportsPharmacyReportingCategoryFinancial => 'Financial';
+
+  @override
+  String get reportsPharmacyReportingCategoryStaff => 'Staff & user activity';
+
+  @override
+  String get reportsPharmacyReportingCategoryBranch => 'Branch & multi-store';
+
+  @override
+  String get reportsPharmacyReportingCategoryTransfers => 'Stock transfers';
+
+  @override
+  String get reportsPharmacyReportingCategoryPrescription =>
+      'Prescription & clinical';
+
+  @override
+  String get reportsPharmacyReportingCategoryControlled =>
+      'Controlled medicines';
+
+  @override
+  String get reportsPharmacyReportingCategoryProcurement =>
+      'Supplier & procurement';
+
+  @override
+  String get reportsPharmacyReportingCategoryKpis => 'Operational KPIs';
+
+  @override
+  String get reportsPharmacyReportingCategoryAudit => 'Audit & compliance';
+
+  @override
+  String get reportsPharmacyReportingCategoryManagement =>
+      'Management & executive';
+
+  @override
   String get reportsPharmacyAnalyticsTopConsumedLabel => 'Top consumed drugs';
 
   @override
