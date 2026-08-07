@@ -3,6 +3,11 @@ const { HttpError } = require('@lib/errors');
 const { REPORT_DATASET_MAP } = require('@lib/reports/constants');
 const { pharmacyRetailMarginUnit } = require('@lib/billing/pharmacy-drug-margins');
 const {
+  createPharmacyStaffDatasetRunners,
+  summarizeStaffSalesPartition,
+  pickAttestationUserId,
+} = require('@lib/reports/pharmacy-staff-analytics');
+const {
   computeInvoiceFinancials,
   toDecimalNumber,
 } = require('@lib/billing/financials');
@@ -5294,6 +5299,7 @@ const DATASET_RUNNERS = Object.freeze({
   pharmacy_sales_refunds: runPharmacySalesRefundsDataset,
   pharmacy_sales_net_revenue: runPharmacySalesNetRevenueDataset,
   pharmacy_sales_avg_transaction: runPharmacySalesAvgTransactionDataset,
+  ...createPharmacyStaffDatasetRunners(resolveDateRange),
   pharmacy_financial_revenue: runPharmacyFinancialRevenueDataset,
   pharmacy_financial_cogs: runPharmacyFinancialCogsDataset,
   pharmacy_financial_gross_profit: runPharmacyFinancialGrossProfitDataset,
@@ -5434,5 +5440,7 @@ module.exports = {
   shouldUseMonthlyGranularity,
   summarizeBillingSeries,
   summarizeConsumptionSeries,
+  summarizeStaffSalesPartition,
   summarizeThroughputSeries,
+  pickAttestationUserId,
 };

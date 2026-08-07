@@ -1,4 +1,6 @@
 const {
+  aggregateShortagesByFacility,
+  aggregateStockByFacility,
   buildPharmacyDispenseThroughputAnalytics,
   buildPharmacyDispensingAvgItemsAnalytics,
   buildPharmacyDrugConsumptionAnalytics,
@@ -12,8 +14,10 @@ const {
   computeAverageItemsPerPrescription,
   computeCatalogProfitMargin,
   computeDeliveryDays,
+  computeDispenseCogs,
   computeStockValue,
   extractPriceChangeFields,
+  mergeBranchComparisonRows,
   movementSignedDelta,
   remainingItemQuantity,
   resolveAgeBand,
@@ -177,6 +181,13 @@ describe('reports datasets pharmacy analytics', () => {
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_dispensing_avg_items')).toBe(true);
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_branch_comparison')).toBe(true);
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_sales_avg_transaction')).toBe(true);
+    expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_financial_revenue')).toBe(true);
+    expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_financial_cogs')).toBe(true);
+    expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_financial_cash_flow')).toBe(true);
+    expect(REPORT_DATASET_MAP.pharmacy_financial_gross_profit).toMatchObject({
+      key: 'pharmacy_financial_gross_profit',
+      category: 'pharmacy',
+    });
     expect(REPORT_DATASETS.some((entry) => entry.key === 'inventory_stock_turnover')).toBe(true);
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_medicines_catalog')).toBe(true);
   });

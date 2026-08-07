@@ -168,6 +168,9 @@ const seedVolumePack = async (
   const billingUser = accessPack?.users?.[`${scenario.key}:billing`] || doctor;
   const biomedUser = accessPack?.users?.[`${scenario.key}:biomed`] || nurse;
   const receptionUser = accessPack?.users?.[`${scenario.key}:reception`] || nurse;
+  const pharmacistA = accessPack?.users?.[`${scenario.key}:pharmacy`] || doctor;
+  const pharmacistB = accessPack?.users?.[`${scenario.key}:pharmacy2`] || pharmacistA;
+  const pharmacists = [pharmacistA, pharmacistB].filter(Boolean);
 
   const staffUsers = [
     doctor,
@@ -177,6 +180,8 @@ const seedVolumePack = async (
     billingUser,
     biomedUser,
     receptionUser,
+    pharmacistA,
+    pharmacistB,
   ].filter(Boolean);
 
   const labTests = catalogValues(clinicalCatalogPack?.lab?.tests, 12);
@@ -225,6 +230,7 @@ const seedVolumePack = async (
     radiology_results: 0,
     pharmacy_orders: 0,
     dispense_logs: 0,
+    pharmacy_dispense_attestations: 0,
     invoices: 0,
     payments: 0,
     emergency_cases: 0,
@@ -546,6 +552,27 @@ const seedVolumePack = async (
         { publicIdPrefix: 'DSP', seedMeta: false }
       );
 
+      const attestedStatus =
+        orderStatus === 'PARTIALLY_DISPENSED' ? 'DISPENSED' : dispenseStatus;
+      if (attestedStatus === 'DISPENSED' && pharmacists.length > 0) {
+        const attestor = pharmacists[index % 5 === 0 ? Math.min(1, pharmacists.length - 1) : 0];
+        await ctx.upsert(
+          'pharmacy_dispense_attestation',
+          `${scenario.key}:vol:rx-attest:${pad(index)}`,
+          {
+            pharmacy_order_id: order.id,
+            dispense_batch_ref: `VOL-BATCH-${pad(index, 5)}`,
+            phase: 'ATTEST',
+            attested_by_user_id: attestor.id,
+            attested_role: 'PHARMACIST',
+            statement: `Volume dispense attestation #${index}`,
+            attested_at: ctx.nowDate(recentDayOffset, 56),
+          },
+          { publicIdPrefix: 'RXA', seedMeta: false }
+        );
+        created.pharmacy_dispense_attestations += 1;
+      }
+
       created.pharmacy_orders += 1;
       created.dispense_logs += 1;
     });
@@ -581,18 +608,39 @@ const seedVolumePack = async (
         },
         { publicIdPrefix: 'RXSI', seedMeta: false }
       );
+      const salesBatch = `VOL-SALES-${pad(index, 5)}`;
       await ctx.upsert(
         'dispense_log',
         `${scenario.key}:vol:dispense-sales:${pad(index)}`,
         {
           pharmacy_order_item_id: item.id,
-          dispense_batch_ref: `VOL-SALES-${pad(index, 5)}`,
+          dispense_batch_ref: salesBatch,
           status: 'DISPENSED',
           dispensed_at: ctx.nowDate(dayOffset, 58),
           quantity_dispensed: 1 + (index % 5),
         },
         { publicIdPrefix: 'DSPS', seedMeta: false }
       );
+      if (pharmacists.length > 0) {
+        // Bias ~70% to pharmacist A so staff reports show distinct volume.
+        const attestor =
+          pharmacists[index % 10 < 7 ? 0 : Math.min(1, pharmacists.length - 1)];
+        await ctx.upsert(
+          'pharmacy_dispense_attestation',
+          `${scenario.key}:vol:rx-sales-attest:${pad(index)}`,
+          {
+            pharmacy_order_id: order.id,
+            dispense_batch_ref: salesBatch,
+            phase: 'ATTEST',
+            attested_by_user_id: attestor.id,
+            attested_role: 'PHARMACIST',
+            statement: `Sales dispense attestation #${index}`,
+            attested_at: ctx.nowDate(dayOffset, 59),
+          },
+          { publicIdPrefix: 'RXSA', seedMeta: false }
+        );
+        created.pharmacy_dispense_attestations += 1;
+      }
       created.pharmacy_orders += 1;
       created.dispense_logs += 1;
     });
@@ -779,7 +827,7 @@ const seedVolumePack = async (
         billing_entity: 'PHARMACY',
         total_amount: amount,
         currency: 'UGX',
-        issued_at: ctx.date(-((index % 100) + 1), 50),
+        issued_at: ctx.nowDate(index % 5 === 0 ? 0 : -((index % 100) + 1), 50),
       },
       { ...seedOpts, publicIdPrefix: 'INV' }
     );
@@ -816,7 +864,9 @@ const seedVolumePack = async (
         method: pick(PAYMENT_METHODS, index),
         billing_entity: 'PHARMACY',
         amount: paymentStatus === 'COMPLETED' || paymentStatus === 'REFUNDED' ? amount : amount / 2,
-        paid_at: paymentStatus === 'PENDING' ? null : ctx.date(-((index % 100) + 1), 70),
+        paid_at: paymentStatus === 'PENDING'
+          ? null
+          : ctx.nowDate(index % 5 === 0 ? 0 : -((index % 100) + 1), 70),
         transaction_ref: `VOL-PAY-${pad(index, 5)}`,
       },
       { ...seedOpts, publicIdPrefix: 'PAY' }

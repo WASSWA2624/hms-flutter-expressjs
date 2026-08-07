@@ -17,6 +17,10 @@ enum ModuleReportingMetricUnit {
 /// Preferred numeric keys when projecting a primary series value.
 const List<String> moduleReportingPrimaryNumericKeyOrder = <String>[
   'amount',
+  'collections',
+  'net_collections',
+  'cogs',
+  'expenditures',
   'quantity_dispensed',
   'orders_created',
   'dispensed',
@@ -58,8 +62,13 @@ ModuleReportingMetricUnit moduleReportingMetricUnitForKey(String? key) {
       normalized.contains('profit') ||
       normalized.contains('price') ||
       normalized.contains('cost') ||
+      normalized.contains('cogs') ||
       normalized.contains('revenue') ||
       normalized.contains('sales') ||
+      normalized.contains('collections') ||
+      normalized.contains('expenditures') ||
+      normalized.contains('refunds') ||
+      normalized.contains('write_offs') ||
       normalized.contains('transaction_value') ||
       normalized.contains('balance') ||
       normalized == 'value' ||

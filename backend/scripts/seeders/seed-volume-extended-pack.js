@@ -29,6 +29,12 @@ const REPORT_DATASET_SEEDS = Object.freeze([
   { key: 'pharmacy_branch_comparison', category: 'pharmacy', label: 'Branch comparison', visualization: 'BAR_CHART' },
   { key: 'pharmacy_sales_payment_methods', category: 'pharmacy', label: 'Pharmacy sales by payment method', visualization: 'DONUT_CHART' },
   { key: 'pharmacy_sales_net_revenue', category: 'pharmacy', label: 'Pharmacy net revenue', visualization: 'KPI' },
+  { key: 'pharmacy_financial_revenue', category: 'pharmacy', label: 'Pharmacy revenue', visualization: 'LINE_CHART' },
+  { key: 'pharmacy_financial_cogs', category: 'pharmacy', label: 'Pharmacy COGS', visualization: 'TABLE' },
+  { key: 'pharmacy_financial_gross_profit', category: 'pharmacy', label: 'Pharmacy gross profit', visualization: 'TABLE' },
+  { key: 'pharmacy_financial_net_profit', category: 'pharmacy', label: 'Pharmacy net profit', visualization: 'KPI' },
+  { key: 'pharmacy_financial_cash_flow', category: 'pharmacy', label: 'Pharmacy cash flow', visualization: 'AREA_CHART' },
+  { key: 'pharmacy_financial_profit_by_period', category: 'pharmacy', label: 'Pharmacy profit by period', visualization: 'LINE_CHART' },
   { key: 'inventory_stock_risk', category: 'inventory', label: 'Inventory stock risk', visualization: 'KPI' },
   { key: 'inventory_stock_value', category: 'inventory', label: 'Inventory stock value', visualization: 'TABLE' },
   { key: 'inventory_stock_movement_history', category: 'inventory', label: 'Stock movement history', visualization: 'TABLE' },
@@ -499,7 +505,7 @@ const seedVolumeExtendedPack = async (
         {
           payment_id: payment.id,
           amount: Math.max(5, Number(payment.amount || 50) / 4),
-          refunded_at: ctx.date(-((index % 80) + 1), 85),
+          refunded_at: ctx.nowDate(index % 5 === 0 ? 0 : -((index % 80) + 1), 85),
           reason: `Volume refund #${index}`,
         },
         { publicIdPrefix: 'RFD', seedMeta: false }
@@ -520,7 +526,7 @@ const seedVolumeExtendedPack = async (
           amount: -(10 + (index % 40)),
           status: pick(['ISSUED', 'PAID', 'PARTIAL'], index),
           reason: `Volume pharmacy discount #${index}`,
-          adjusted_at: ctx.date(-((index % 70) + 1), 55),
+          adjusted_at: ctx.nowDate(index % 5 === 0 ? 0 : -((index % 70) + 1), 55),
         },
         { publicIdPrefix: 'BADJ', seedMeta: false }
       );

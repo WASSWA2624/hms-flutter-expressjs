@@ -264,6 +264,7 @@ const DEMO_TENANTS = Object.freeze([
       { key: 'lab', role: 'LAB_TECH', email: 'lab@hosspi.com', first_name: 'Riley', last_name: 'Demo', title: 'Laboratory Technologist' },
       { key: 'radiology', role: 'RADIOLOGY_TECH', email: 'radiology@hosspi.com', first_name: 'Emery', last_name: 'Demo', title: 'Radiology Technologist' },
       { key: 'pharmacy', role: 'PHARMACIST', email: 'pharmacy@hosspi.com', first_name: 'Harper', last_name: 'Demo', title: 'Pharmacist' },
+      { key: 'pharmacy2', role: 'PHARMACIST', email: 'pharmacy2@hosspi.com', first_name: 'Morgan', last_name: 'Demo', title: 'Pharmacist' },
       { key: 'reception', role: 'RECEPTIONIST', email: 'reception@hosspi.com', first_name: 'Skyler', last_name: 'Demo', title: 'Front Desk Officer' },
       { key: 'billing', role: 'BILLING', email: 'billing@hosspi.com', first_name: 'Rowan', last_name: 'Demo', title: 'Billing Officer' },
       { key: 'operations', role: 'OPERATIONS', email: 'operations@hosspi.com', first_name: 'Parker', last_name: 'Demo', title: 'Operations Lead' },

@@ -601,12 +601,15 @@ const verifyDemoData = async () => {
       ['follow_ups', extendedVolumeCounts[26], highFloor],
     ];
 
-    const [dispensedStatusCount, pharmacyPaymentCount, pharmacyRefundCount, pharmacyDiscountCount] =
+    const [dispensedStatusCount, pharmacyPaymentCount, pharmacyInvoiceCount, pharmacyRefundCount, pharmacyDiscountCount] =
       await Promise.all([
         prisma.dispense_log.count({
           where: { deleted_at: null, status: 'DISPENSED' },
         }),
         prisma.payment.count({
+          where: { deleted_at: null, billing_entity: 'PHARMACY' },
+        }),
+        prisma.invoice.count({
           where: { deleted_at: null, billing_entity: 'PHARMACY' },
         }),
         prisma.refund.count({
@@ -627,6 +630,7 @@ const verifyDemoData = async () => {
     highTrafficChecks.push(
       ['dispense_logs_dispensed', dispensedStatusCount, highFloor],
       ['pharmacy_payments', pharmacyPaymentCount, highFloor],
+      ['pharmacy_invoices', pharmacyInvoiceCount, highFloor],
       ['pharmacy_refunds', pharmacyRefundCount, highFloor],
       ['pharmacy_discount_adjustments', pharmacyDiscountCount, highFloor]
     );
