@@ -163,10 +163,10 @@ List<AppListTableColumn<Map<String, Object?>>> moduleReportingTableColumns({
         label: moduleReportingColumnLabel(key),
         numeric: moduleReportingIsNumericColumn(key),
         preferredWidth: moduleReportingIsNumericColumn(key)
-            ? 120
+            ? 128
             : moduleReportingIsDateColumn(key)
-            ? 140
-            : 180,
+            ? 148
+            : 200,
         sortComparator: moduleReportingIsNumericColumn(key)
             ? (Map<String, Object?> left, Map<String, Object?> right) =>
                   appListTableCompareNumber(
@@ -184,31 +184,46 @@ List<AppListTableColumn<Map<String, Object?>>> moduleReportingTableColumns({
                     left[key]?.toString(),
                     right[key]?.toString(),
                   ),
-        exportValue: (Map<String, Object?> row) => row[key],
+        exportValue: (Map<String, Object?> row) {
+          final Object? raw = row[key];
+          if (moduleReportingIsNumericColumn(key)) {
+            return moduleReportingAsNum(raw) ?? '';
+          }
+          return moduleReportingFormatCellValue(
+            raw,
+            locale: locale,
+            unknownLabel: unknownLabel,
+            preferDate: moduleReportingIsDateColumn(key),
+          );
+        },
         cellBuilder: (BuildContext context, Map<String, Object?> row) {
+          final bool numeric = moduleReportingIsNumericColumn(key);
+          final bool isDate = moduleReportingIsDateColumn(key);
           final String formatted = moduleReportingFormatCellValue(
             row[key],
             locale: locale,
             unknownLabel: unknownLabel,
-            preferNumeric: moduleReportingIsNumericColumn(key),
-            preferDate: moduleReportingIsDateColumn(key),
+            preferNumeric: numeric,
+            preferDate: isDate,
           );
-          final TextStyle? style = Theme.of(context).textTheme.bodyMedium;
-          if (moduleReportingIsNumericColumn(key)) {
-            return Text(
-              formatted,
-              style: style,
-              textAlign: TextAlign.right,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            );
-          }
-          return Text(
+          final ThemeData theme = Theme.of(context);
+          final TextStyle? style = theme.textTheme.bodyMedium?.copyWith(
+            fontFeatures: numeric
+                ? const <FontFeature>[FontFeature.tabularFigures()]
+                : null,
+            color: row[key] == null
+                ? theme.colorScheme.onSurfaceVariant
+                : null,
+          );
+          final Widget text = Text(
             formatted,
             style: style,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+            textAlign: numeric ? TextAlign.right : TextAlign.start,
           );
+          if (numeric) {
+            return Align(alignment: Alignment.centerRight, child: text);
+          }
+          return Align(alignment: Alignment.centerLeft, child: text);
         },
       ),
   ];
@@ -249,13 +264,17 @@ class ModuleReportingSnapshotTable extends StatefulWidget {
   const ModuleReportingSnapshotTable({
     required this.snapshot,
     required this.labels,
+    this.canExport = false,
     this.storageKeyPrefix,
+    this.exportFileNameStem,
     super.key,
   });
 
   final ModuleReportingReportSnapshot snapshot;
   final ModuleReportingLabels labels;
+  final bool canExport;
   final String? storageKeyPrefix;
+  final String? exportFileNameStem;
 
   @override
   State<ModuleReportingSnapshotTable> createState() =>
@@ -285,8 +304,9 @@ class _ModuleReportingSnapshotTableState
       return const SizedBox.shrink();
     }
 
+    final ModuleReportingLabels labels = widget.labels;
     final Locale locale = Localizations.localeOf(context);
-    final String unknownLabel = widget.labels.unknownValue;
+    final String unknownLabel = labels.unknownValue;
     final List<String> columnKeys = snapshot.columns;
     final List<Map<String, Object?>> rows = snapshot.rows;
     final List<AppListTableColumn<Map<String, Object?>>> columns =
@@ -296,6 +316,11 @@ class _ModuleReportingSnapshotTableState
           unknownLabel: unknownLabel,
         );
     final String? storagePrefix = widget.storageKeyPrefix;
+    final String fileStem =
+        (widget.exportFileNameStem ?? storagePrefix ?? 'report')
+            .trim()
+            .replaceAll(RegExp(r'[^A-Za-z0-9_-]+'), '_')
+            .toLowerCase();
 
     return AppListTable<Map<String, Object?>>(
       items: rows,
@@ -304,12 +329,27 @@ class _ModuleReportingSnapshotTableState
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       forceCompact: true,
-      enableExport: false,
+      enableExport: true,
+      canExport: widget.canExport,
+      exportConfig: AppListTableExportConfig<Map<String, Object?>>(
+        fileNameStem: fileStem.isEmpty ? 'report' : fileStem,
+        sheetName: labels.exportSheetName,
+        enableDateFilter: false,
+      ),
+      exportLabel: labels.exportAction,
+      exportDialogTitle: labels.exportDialogTitle,
+      exportCancelLabel: labels.cancelAction,
+      exportColumnsSectionLabel: labels.exportColumnsSectionLabel,
+      exportFiltersSectionLabel: labels.exportFiltersSectionLabel,
+      exportEmptyColumnsMessage: labels.exportEmptyColumnsMessage,
+      exportEmptyRowsMessage: labels.exportEmptyRowsMessage,
+      exportSuccessMessage: labels.exportSuccessMessage,
+      exportFailureMessage: labels.exportFailureMessage,
       showRowNumbers: true,
       padEmptyRows: false,
       displayMode: AppListTableDisplayMode.table,
       tableHorizontalMargin: 0,
-      columnVisibilityLabel: widget.labels.exportColumnsSectionLabel,
+      columnVisibilityLabel: labels.exportColumnsSectionLabel,
       columnVisibilityStorageKey: storagePrefix == null
           ? null
           : 'module-reporting-table:$storagePrefix:columns',
@@ -325,9 +365,9 @@ class _ModuleReportingSnapshotTableState
       ),
       search: AppListTableSearch<Map<String, Object?>>(
         controller: _searchController,
-        semanticLabel: widget.labels.searchSemanticLabel,
-        hintText: widget.labels.searchHint,
-        clearLabel: widget.labels.clearSearchLabel,
+        semanticLabel: labels.searchSemanticLabel,
+        hintText: labels.searchHint,
+        clearLabel: labels.clearSearchLabel,
         matcher: (Map<String, Object?> row, String query) =>
             moduleReportingRowMatchesQuery(
               row,
@@ -337,7 +377,7 @@ class _ModuleReportingSnapshotTableState
               unknownLabel: unknownLabel,
             ),
       ),
-      emptyBuilder: (_) => AppMutedText(widget.labels.emptyBody),
+      emptyBuilder: (_) => AppMutedText(labels.emptyBody),
       mobileItemBuilder: (BuildContext context, Map<String, Object?> row) {
         final String titleKey = columnKeys.first;
         final String title = moduleReportingFormatCellValue(

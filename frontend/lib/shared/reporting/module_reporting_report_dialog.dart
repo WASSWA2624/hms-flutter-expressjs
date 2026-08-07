@@ -309,7 +309,9 @@ class _ModuleReportingReportDialogState
             ModuleReportingSnapshotTable(
               snapshot: _snapshot,
               labels: _labels,
+              canExport: widget.canExport,
               storageKeyPrefix: widget.report.id,
+              exportFileNameStem: widget.report.id,
             ),
           ],
         );
@@ -458,17 +460,11 @@ class _ModuleReportingReportDialogState
       final List<String> columns = _snapshot.columns;
       final List<Map<String, Object?>> rows = _snapshot.exportRows;
       final List<AppListTableColumn<Map<String, Object?>>> tableColumns =
-          <AppListTableColumn<Map<String, Object?>>>[
-            for (final String column in columns)
-              AppListTableColumn<Map<String, Object?>>(
-                id: column,
-                label: column,
-                cellBuilder: (_, Map<String, Object?> row) =>
-                    Text('${row[column] ?? ''}'),
-                exportValue: (Map<String, Object?> row) =>
-                    '${row[column] ?? ''}',
-              ),
-          ];
+          moduleReportingTableColumns(
+            columnKeys: columns,
+            locale: locale,
+            unknownLabel: _labels.unknownValue,
+          );
       await showAppListTableExportDialog<Map<String, Object?>>(
         context: context,
         columns: tableColumns,
