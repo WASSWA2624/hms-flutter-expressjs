@@ -49,9 +49,10 @@ abstract final class HrManageUsersRolesBillingInventory {
         ),
         HrManageUsersRolesFinancialAtom(
           id: 'hr_activity',
-          label: 'HR activity (workspace secondary)',
+          label: 'HR activity (workspace secondary, removed)',
           financialClass: HrManageUsersRolesFinancialClass.notRequired,
           auditCode: 'NOT_REQUIRED',
+          mounted: false,
         ),
         HrManageUsersRolesFinancialAtom(
           id: 'panel_toggle',

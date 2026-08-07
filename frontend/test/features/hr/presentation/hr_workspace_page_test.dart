@@ -56,15 +56,7 @@ const HrWorkItem _leaveItem = HrWorkItem(
   leaveType: 'ANNUAL',
 );
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
-
-Finder _toolbarAction(String label) => find.descendant(
-  of: find.byType(AppTabToolbarAction),
-  matching: find.text(label),
-);
+Finder _searchAction(String label) => find.byTooltip(label);
 
 Finder _tabToolbarRefresh() => find.descendant(
   of: find.byType(AppTabStrip),
@@ -295,31 +287,31 @@ void main() {
     repository = _MockHrRepository();
   });
 
-  testWidgets('removes duplicate strip actions and keeps one primary per tab', (
+  testWidgets('moves section actions to search bar and drops HR activity', (
     WidgetTester tester,
   ) async {
     _stubWorkspace(repository);
     await _pumpHrWorkspace(tester, repository: repository);
 
-    expect(_toolbarPrimary('Add staff'), findsOneWidget);
+    expect(_searchAction('Add staff'), findsOneWidget);
     expect(_tabToolbarRefresh(), findsNothing);
-    expect(_toolbarAction('HR activity'), findsOneWidget);
+    expect(find.byTooltip('HR activity'), findsNothing);
     expect(find.text('Request maintenance'), findsNothing);
     expect(find.text('Report equipment fault'), findsNothing);
 
     await _selectTab(tester, 'Leave requests');
-    expect(_toolbarPrimary('Request leave'), findsOneWidget);
-    expect(_toolbarPrimary('Run payroll'), findsNothing);
+    expect(_searchAction('Request leave'), findsOneWidget);
+    expect(_searchAction('Run payroll'), findsNothing);
 
     await _selectTab(tester, 'Shifts');
-    expect(_toolbarPrimary('Schedule templates'), findsOneWidget);
+    expect(_searchAction('Schedule templates'), findsOneWidget);
 
     await _selectTab(tester, 'Payroll drafts');
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
-    expect(_toolbarPrimary('Run payroll'), findsNothing);
+    expect(_searchAction('Run payroll'), findsNothing);
 
     await _selectTab(tester, 'Manage users and roles');
-    expect(_toolbarPrimary('Manage users and roles'), findsNothing);
+    expect(_searchAction('Manage users and roles'), findsNothing);
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
     expect(find.text('Create staff'), findsOneWidget);
   });
@@ -334,11 +326,11 @@ void main() {
       accessPolicy: _hrReadOnlyPolicy(),
     );
 
-    expect(_toolbarPrimary('Add staff'), findsNothing);
+    expect(_searchAction('Add staff'), findsNothing);
     expect(find.text('Assign department'), findsNothing);
 
     await _selectTab(tester, 'Leave requests');
-    expect(_toolbarPrimary('Request leave'), findsNothing);
+    expect(_searchAction('Request leave'), findsNothing);
     expect(find.text('Approve leave'), findsNothing);
   });
 

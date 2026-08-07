@@ -34,9 +34,8 @@ final class HrShiftsFinancialAtom {
 ///
 /// Scope: tab chrome, queue switcher (roster drafts / unassigned / overdue /
 /// swap requests), worklist, next-actions, work-item detail, schedule-template
-/// manage/create/edit/delete/detail dialogs, preview/generate/publish roster,
-/// override shift, approve/reject swap, and HR activity disclosure opened from
-/// this tab.
+/// manage/create/edit/delete/detail dialogs (search trailing), preview/generate/
+/// publish roster, override shift, and approve/reject swap opened from this tab.
 ///
 /// Roster and shift mutations are **staff scheduling ops**, not patient
 /// revenue. Staff compensation / payroll drafts live on the Payroll drafts
@@ -54,15 +53,16 @@ abstract final class HrShiftsBillingInventory {
     ),
     HrShiftsFinancialAtom(
       id: 'schedule_templates_chrome',
-      label: 'Schedule templates (strip primary → manage dialog)',
+      label: 'Schedule templates (search trailing → manage dialog)',
       financialClass: HrShiftsFinancialClass.notBilled,
       auditCode: 'NOT_BILLED',
     ),
     HrShiftsFinancialAtom(
       id: 'hr_activity_disclosure',
-      label: 'HR activity progressive disclosure',
+      label: 'HR activity progressive disclosure (removed)',
       financialClass: HrShiftsFinancialClass.notRequired,
       auditCode: 'NOT_REQUIRED',
+      mounted: false,
     ),
     HrShiftsFinancialAtom(
       id: 'queue_switcher_search_filters_columns',

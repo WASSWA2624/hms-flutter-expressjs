@@ -268,8 +268,7 @@ HrDeskSection? hrFallbackDeskSection(AppAccessPolicy policy) {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Human resources tab | navigate | read ∩ `hr:read` |
-/// | Add staff (strip primary) | create | write ∩ `hr:write` |
-/// | HR activity | progressive disclosure | read ∩ |
+/// | Add staff (search trailing) | create | write ∩ `hr:write` |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Success snackbar / form validation | feedback | write ∩ |
@@ -335,8 +334,7 @@ abstract final class HrHumanResourcesAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Leave requests tab | navigate | read ∩ `hr:read` |
-/// | Request leave (strip primary) | create | write ∩ `hr:write` |
-/// | HR activity | progressive disclosure | read ∩ |
+/// | Request leave (search trailing) | create | write ∩ `hr:write` |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Success snackbar / form validation | feedback | write ∩ |
@@ -380,8 +378,7 @@ abstract final class HrLeaveRequestsAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Shifts tab | navigate | read ∩ `hr:read` |
-/// | Schedule templates (strip primary) | create entry | write ∩ `roster:write` |
-/// | HR activity | progressive disclosure | read ∩ |
+/// | Schedule templates (search trailing) | create entry | write ∩ `roster:write` |
 /// | Queue switcher / search / filters / columns | read chrome | read ∩ |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Success snackbar / form validation | feedback | write ∩ / publish ∩ / approve ∩ |
@@ -441,8 +438,7 @@ abstract final class HrShiftsAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Payroll drafts tab | navigate | read ∩ `hr:read` |
-/// | Tab-strip primary | — | _(none — Run payroll lives on staff detail)_ |
-/// | HR activity (secondary) | progressive disclosure | read ∩ |
+/// | Search trailing / tab-strip primary | — | _(none — Run payroll lives on staff detail)_ |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Success snackbar / form validation | feedback | process ∩ / read ∩ |
@@ -492,8 +488,7 @@ abstract final class HrPayrollDraftsAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Manage users and roles tab | navigate | read ∩ `hr:read` + ∪ admin |
-/// | Tab-strip primary | — | _(none — creates live on panel)_ |
-/// | HR activity (workspace secondary) | progressive-disclosure | workspace read ∩ |
+/// | Tab-strip / search trailing primary | — | _(none — creates live on panel)_ |
 /// | Panel toggle (Staff / Roles / Permissions) | progressive-disclosure | read |
 /// | Search / filters / columns / pagination / Refresh | read chrome | read |
 /// | Empty / error / retry / tenant-required | read chrome | read |

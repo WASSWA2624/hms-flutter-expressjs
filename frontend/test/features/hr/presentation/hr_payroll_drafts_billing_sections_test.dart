@@ -602,19 +602,5 @@ void main() {
       await tester.pumpAndSettle();
       expectFlatSections(tester);
     });
-
-    testWidgets('activity secondary: flat sections', (WidgetTester tester) async {
-      await _pumpPayrollTab(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.hrRead},
-        ),
-      );
-
-      await tester.tap(find.text('HR activity'));
-      await tester.pumpAndSettle();
-      expectFlatSections(tester);
-    });
   });
 }

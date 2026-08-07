@@ -108,9 +108,10 @@ abstract final class HrPayrollDraftsBillingInventory {
         ),
         HrPayrollDraftsFinancialAtom(
           id: 'activity_secondary',
-          label: 'HR activity secondary (timeline disclosure)',
+          label: 'HR activity secondary (timeline disclosure, removed)',
           financialClass: HrPayrollDraftsFinancialClass.notRequired,
           auditCode: 'NOT_REQUIRED',
+          mounted: false,
         ),
         HrPayrollDraftsFinancialAtom(
           id: 'realtime_payroll_sync',

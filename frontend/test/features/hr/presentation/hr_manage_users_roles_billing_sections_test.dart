@@ -310,6 +310,7 @@ void main() {
       expect(
         unmounted,
         containsAll(<String>[
+          'hr_activity',
           'collect_payment',
           'issue_invoice_adjust_refund',
           'patient_charge_from_access',

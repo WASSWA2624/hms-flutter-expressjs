@@ -82,10 +82,7 @@ const HrWorkItem _swapRequest = HrWorkItem(
   staffName: 'Ada Swap',
 );
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _searchAction(String label) => find.byTooltip(label);
 
 Finder _tableRowInkWell() => find.byWidgetPredicate(
   (Widget widget) => widget.runtimeType.toString() == 'AppListTableRowInkWell',
@@ -430,7 +427,7 @@ void main() {
       );
 
       expect(find.text('Week 12'), findsWidgets);
-      expect(_toolbarPrimary('Schedule templates'), findsOneWidget);
+      expect(_searchAction('Schedule templates'), findsOneWidget);
       _expectNoPatientBillingAffordances();
       expectFlatSections(tester);
     });
@@ -483,7 +480,7 @@ void main() {
           ),
         );
 
-        await tester.tap(_toolbarPrimary('Schedule templates'));
+        await tester.tap(_searchAction('Schedule templates'));
         await tester.pumpAndSettle();
 
         expect(find.text('Schedule templates'), findsWidgets);
@@ -515,7 +512,7 @@ void main() {
           ),
         );
 
-        expect(_toolbarPrimary('Schedule templates'), findsNothing);
+        expect(_searchAction('Schedule templates'), findsNothing);
         expect(find.text('Publish roster'), findsNothing);
         _expectNoPatientBillingAffordances();
         expectFlatSections(tester);

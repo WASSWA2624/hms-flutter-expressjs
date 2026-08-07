@@ -42,10 +42,7 @@ const HrWorkItem _leaveItem = HrWorkItem(
   leaveType: 'ANNUAL',
 );
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _searchAction(String label) => find.byTooltip(label);
 
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
@@ -394,7 +391,7 @@ void main() {
       expect(_tab('Leave requests'), findsOneWidget);
       expect(find.text('Ada Leave'), findsOneWidget);
       expect(find.byTooltip('Filters'), findsOneWidget);
-      expect(_toolbarPrimary('Request leave'), findsNothing);
+      expect(_searchAction('Request leave'), findsNothing);
       expect(find.text('Approve leave'), findsNothing);
       expect(find.text('Reject leave'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
@@ -432,7 +429,7 @@ void main() {
         accessPolicy: writer,
       );
 
-      expect(_toolbarPrimary('Request leave'), findsOneWidget);
+      expect(_searchAction('Request leave'), findsOneWidget);
       expect(find.text('Approve leave'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
 
@@ -476,7 +473,7 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsNothing);
-      expect(_toolbarPrimary('Request leave'), findsNothing);
+      expect(_searchAction('Request leave'), findsNothing);
       expect(find.text('Ada Leave'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -503,7 +500,7 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsNothing);
-      expect(_toolbarPrimary('Request leave'), findsNothing);
+      expect(_searchAction('Request leave'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -566,7 +563,7 @@ void main() {
         ),
       );
 
-      await tester.tap(_toolbarPrimary('Request leave'));
+      await tester.tap(_searchAction('Request leave'));
       await tester.pumpAndSettle();
 
       expect(find.text('Request leave'), findsWidgets);
@@ -631,7 +628,7 @@ void main() {
       );
 
       expect(find.textContaining('No'), findsWidgets);
-      expect(_toolbarPrimary('Request leave'), findsNothing);
+      expect(_searchAction('Request leave'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -749,7 +746,7 @@ void main() {
       );
 
       expect(_tab('Leave requests'), findsOneWidget);
-      expect(_toolbarPrimary('Request leave'), findsOneWidget);
+      expect(_searchAction('Request leave'), findsOneWidget);
       expect(find.text('Ada Leave'), findsOneWidget);
       expect(find.text('Approve leave'), findsOneWidget);
       expect(tester.takeException(), isNull);

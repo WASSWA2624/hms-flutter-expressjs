@@ -51,10 +51,7 @@ const HrWorkItem _unpaidLeaveItem = HrWorkItem(
   leaveType: 'UNPAID',
 );
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _searchAction(String label) => find.byTooltip(label);
 
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
@@ -490,7 +487,7 @@ void main() {
         ),
       );
 
-      expect(_toolbarPrimary('Request leave'), findsNothing);
+      expect(_searchAction('Request leave'), findsNothing);
       expect(find.text('Approve leave'), findsNothing);
       expect(find.text('Reject leave'), findsNothing);
       expect(find.textContaining('Receive payment'), findsNothing);
@@ -511,7 +508,7 @@ void main() {
         ),
       );
 
-      await tester.tap(_toolbarPrimary('Request leave'));
+      await tester.tap(_searchAction('Request leave'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Leave type'), findsWidgets);
@@ -597,26 +594,7 @@ void main() {
 
       expectFlatSections(tester);
 
-      await tester.tap(_toolbarPrimary('Request leave'));
-      await tester.pumpAndSettle();
-      expectFlatSections(tester);
-    });
-
-    testWidgets('activity dialog: single titled section, no nesting', (
-      WidgetTester tester,
-    ) async {
-      await _pumpLeaveTab(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{
-            AppPermissions.hrRead,
-            AppPermissions.hrWrite,
-          },
-        ),
-      );
-
-      await tester.tap(find.text('HR activity'));
+      await tester.tap(_searchAction('Request leave'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
     });

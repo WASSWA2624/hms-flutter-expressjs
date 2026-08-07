@@ -341,12 +341,6 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
                   }
                 }
               },
-              primaryAction: _buildPrimaryActionButton(
-                l10n,
-                state,
-                activeSection,
-              ),
-              secondaryActions: _buildSecondaryActionWidgets(l10n, state),
             ),
             SizedBox(height: theme.spacing.sm),
             if (lastFailure != null) ...<Widget>[
@@ -363,73 +357,63 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     );
   }
 
-  Widget? _buildPrimaryActionButton(
+  /// Search-bar trailing actions after Export (Settings → Export → actions).
+  ///
+  /// Access creates live on the embedded Access panel; payroll runs from staff
+  /// detail so the desk never guesses a staff member.
+  List<AppSearchBarAction> _searchTrailingActions(
     AppLocalizations l10n,
     HrWorkspaceState state,
     HrDeskSection section,
   ) {
-    // Access creates live on the embedded Access panel; payroll runs from staff
-    // detail so the strip never guesses a staff member.
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
     return switch (section) {
-      HrDeskSection.staffDirectory => AppAccessActionGate(
-        requirement: HrHumanResourcesAtomPermissions.addStaff,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppTabToolbarPrimary(
-            label: l10n.hrAddStaffAction,
-            icon: Icons.person_add_outlined,
-            enabled: isAllowed && !state.isRefreshing,
-            onPressed: !isAllowed || state.isRefreshing
-                ? null
-                : () => showHrStaffOnboardingDialog(context, ref),
-          );
-        },
-      ),
-      HrDeskSection.leaveRequests => AppAccessActionGate(
-        requirement: HrLeaveRequestsAtomPermissions.requestLeave,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppTabToolbarPrimary(
-            label: l10n.hrRequestLeaveAction,
-            icon: Icons.event_busy_outlined,
-            enabled: isAllowed && !state.isRefreshing,
-            onPressed: !isAllowed || state.isRefreshing
-                ? null
-                : () => showHrRequestLeaveDialog(context, ref),
-          );
-        },
-      ),
-      HrDeskSection.shiftRoster => AppAccessActionGate(
-        requirement: HrShiftsAtomPermissions.scheduleTemplates,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppTabToolbarPrimary(
-            label: l10n.hrShiftTemplateAction,
-            icon: Icons.view_week_outlined,
-            enabled: isAllowed && !state.isRefreshing,
-            onPressed: !isAllowed || state.isRefreshing
-                ? null
-                : () => showHrManageScheduleTemplatesDialog(context, ref),
-          );
-        },
-      ),
-      HrDeskSection.payroll || HrDeskSection.access => null,
+      HrDeskSection.staffDirectory =>
+        HrHumanResourcesAtomPermissions.addStaff.isAllowed(policy)
+            ? <AppSearchBarAction>[
+                AppSearchBarAction(
+                  icon: Icons.person_add_outlined,
+                  label: l10n.hrAddStaffAction,
+                  tooltip: l10n.hrAddStaffAction,
+                  enabled: !state.isRefreshing,
+                  onPressed: state.isRefreshing
+                      ? null
+                      : () => showHrStaffOnboardingDialog(context, ref),
+                ),
+              ]
+            : const <AppSearchBarAction>[],
+      HrDeskSection.leaveRequests =>
+        HrLeaveRequestsAtomPermissions.requestLeave.isAllowed(policy)
+            ? <AppSearchBarAction>[
+                AppSearchBarAction(
+                  icon: Icons.event_busy_outlined,
+                  label: l10n.hrRequestLeaveAction,
+                  tooltip: l10n.hrRequestLeaveAction,
+                  enabled: !state.isRefreshing,
+                  onPressed: state.isRefreshing
+                      ? null
+                      : () => showHrRequestLeaveDialog(context, ref),
+                ),
+              ]
+            : const <AppSearchBarAction>[],
+      HrDeskSection.shiftRoster =>
+        HrShiftsAtomPermissions.scheduleTemplates.isAllowed(policy)
+            ? <AppSearchBarAction>[
+                AppSearchBarAction(
+                  icon: Icons.view_week_outlined,
+                  label: l10n.hrShiftTemplateAction,
+                  tooltip: l10n.hrShiftTemplateAction,
+                  enabled: !state.isRefreshing,
+                  onPressed: state.isRefreshing
+                      ? null
+                      : () =>
+                            showHrManageScheduleTemplatesDialog(context, ref),
+                ),
+              ]
+            : const <AppSearchBarAction>[],
+      HrDeskSection.payroll || HrDeskSection.access =>
+        const <AppSearchBarAction>[],
     };
-  }
-
-  List<Widget> _buildSecondaryActionWidgets(
-    AppLocalizations l10n,
-    HrWorkspaceState state,
-  ) {
-    // Refresh / cross-module housekeeping & fault shortcuts were removed —
-    // workspace data refreshes after mutations and scaffold retry; those tools
-    // remain in app navigation.
-    return <Widget>[
-      AppTabToolbarAction(
-        label: l10n.hrActivityTitle,
-        icon: Icons.timeline_outlined,
-        onPressed: state.isRefreshing
-            ? null
-            : () => _showActivityDialog(context),
-      ),
-    ];
   }
 
   Widget _buildTabBody(
@@ -437,11 +421,14 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     HrWorkspaceController controller,
     HrDeskSection section,
   ) {
+    final List<AppSearchBarAction> searchTrailingActions =
+        _searchTrailingActions(context.l10n, state, section);
     return switch (section) {
       HrDeskSection.staffDirectory => _HrStaffDirectory(
         state: state,
         searchController: _searchController,
         columnVisibilityController: _staffColumnController,
+        searchTrailingActions: searchTrailingActions,
         onPageChanged: controller.changeStaffPage,
         onStaffSelected: (HrStaffProfile item) {
           unawaited(_openStaffDetailDialog(context, item));
@@ -453,6 +440,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
       HrDeskSection.leaveRequests => _HrWorkQueueTable(
         searchController: _workQueueSearchController,
         columnVisibilityController: _queueColumnController,
+        searchTrailingActions: searchTrailingActions,
         onPageChanged: controller.changeWorkItemsPage,
       ),
       HrDeskSection.shiftRoster => Column(
@@ -464,6 +452,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
           _HrWorkQueueTable(
             searchController: _workQueueSearchController,
             columnVisibilityController: _queueColumnController,
+            searchTrailingActions: searchTrailingActions,
             onPageChanged: controller.changeWorkItemsPage,
           ),
         ],
@@ -471,6 +460,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
       HrDeskSection.payroll => _HrWorkQueueTable(
         searchController: _workQueueSearchController,
         columnVisibilityController: _queueColumnController,
+        searchTrailingActions: searchTrailingActions,
         onPageChanged: controller.changeWorkItemsPage,
       ),
       HrDeskSection.access => const HrAccessWorkspacePanel(embedded: true),
@@ -522,29 +512,6 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     }
     await showHrStaffDetailDialog(context, ref);
   }
-
-  Future<void> _showActivityDialog(BuildContext context) async {
-    final AppLocalizations l10n = context.l10n;
-    await showAppDialog<void>(
-      context: context,
-      builder: (BuildContext dialogContext) => AppDialog(
-        title: Text(l10n.hrActivityTitle),
-        icon: const Icon(Icons.timeline_outlined),
-        scrollable: true,
-        maxWidth: 720,
-        content: Consumer(
-          builder: (BuildContext context, WidgetRef dialogRef, _) {
-            final HrWorkspaceState dialogState =
-                _hrStateFromAsync(
-                  dialogRef.watch(hrWorkspaceControllerProvider),
-                ) ??
-                widget.state;
-            return _HrActivityPanel(state: dialogState);
-          },
-        ),
-      ),
-    );
-  }
 }
 
 class _HrStaffDirectory extends ConsumerWidget {
@@ -555,6 +522,7 @@ class _HrStaffDirectory extends ConsumerWidget {
     required this.onPageChanged,
     required this.onStaffSelected,
     required this.onStaffNextAction,
+    this.searchTrailingActions = const <AppSearchBarAction>[],
     this.statusFilter,
   });
 
@@ -562,6 +530,7 @@ class _HrStaffDirectory extends ConsumerWidget {
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<HrStaffProfile>
   columnVisibilityController;
+  final List<AppSearchBarAction> searchTrailingActions;
   final ValueChanged<AppPageRequest> onPageChanged;
   final ValueChanged<HrStaffProfile> onStaffSelected;
   final ValueChanged<HrStaffProfile> onStaffNextAction;
@@ -648,6 +617,8 @@ class _HrStaffDirectory extends ConsumerWidget {
             position: value.text(_hrPositionFilterKey),
           );
         },
+        // Filters → Settings → Export → Add staff.
+        trailingActions: searchTrailingActions,
       ),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -1116,12 +1087,14 @@ class _HrWorkQueuePanel extends ConsumerWidget {
     required this.searchController,
     required this.columnVisibilityController,
     required this.onPageChanged,
+    this.searchTrailingActions = const <AppSearchBarAction>[],
   });
 
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<HrWorkItem>
   columnVisibilityController;
   final ValueChanged<AppPageRequest> onPageChanged;
+  final List<AppSearchBarAction> searchTrailingActions;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1134,6 +1107,7 @@ class _HrWorkQueuePanel extends ConsumerWidget {
         _HrWorkQueueTable(
           searchController: searchController,
           columnVisibilityController: columnVisibilityController,
+          searchTrailingActions: searchTrailingActions,
           onPageChanged: onPageChanged,
         ),
       ],
@@ -1170,11 +1144,13 @@ class _HrWorkQueueTable extends ConsumerWidget {
     required this.searchController,
     required this.columnVisibilityController,
     required this.onPageChanged,
+    this.searchTrailingActions = const <AppSearchBarAction>[],
   });
 
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<HrWorkItem>
   columnVisibilityController;
+  final List<AppSearchBarAction> searchTrailingActions;
   final ValueChanged<AppPageRequest> onPageChanged;
 
   @override
@@ -1237,6 +1213,9 @@ class _HrWorkQueueTable extends ConsumerWidget {
             to: state.workItemsQuery.to,
           );
         },
+        // Filters → Settings → Export → section action (Request leave /
+        // Schedule templates). Payroll and Access have no trailing action.
+        trailingActions: searchTrailingActions,
       ),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -1273,41 +1252,6 @@ class _HrWorkQueueTable extends ConsumerWidget {
           showAvatar: false,
         );
       },
-    );
-  }
-}
-
-class _HrActivityPanel extends StatelessWidget {
-  const _HrActivityPanel({required this.state});
-
-  final HrWorkspaceState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final List<HrTimelineItem> items = state.overview.timeline.take(6).toList();
-
-    return AppWorkspaceActivityList(
-      title: l10n.hrActivityTitle,
-      description: l10n.hrActivityDescription,
-      emptyTitle: l10n.hrNoActivityTitle,
-      emptyBody: l10n.hrNoActivityBody,
-      items: <AppWorkspaceActivityItem>[
-        for (final HrTimelineItem item in items)
-          AppWorkspaceActivityItem(
-            title: hrJoinDisplay(<String?>[
-              _apiLabel(context, item.type),
-              item.id,
-            ]).ifEmpty(item.id),
-            subtitle: hrJoinDisplay(<String?>[
-              _apiLabel(context, item.action),
-              _apiLabel(context, item.status),
-              _formatDateTime(context, item.at),
-            ]),
-            icon: _activityIcon(item.type),
-            tone: _statusTone(item.status),
-          ),
-      ],
     );
   }
 }
@@ -2134,17 +2078,6 @@ String _workItemPeriod(BuildContext context, HrWorkItem item) {
   ).ifEmpty(context.l10n.profileUnknownValue);
 }
 
-IconData _activityIcon(String? type) {
-  return switch ((type ?? '').trim().toUpperCase()) {
-    'LEAVE' => Icons.event_busy_outlined,
-    'SWAP' => Icons.swap_horiz_outlined,
-    'ROSTER' => Icons.calendar_month_outlined,
-    'PAYROLL' => Icons.payments_outlined,
-    'SHIFT' => Icons.calendar_view_week_outlined,
-    _ => Icons.history_outlined,
-  };
-}
-
 String _apiLabel(BuildContext context, String? value) {
   final String normalized = value?.trim() ?? '';
   if (normalized.isEmpty) {
@@ -2237,12 +2170,6 @@ String _leaveSummarySubtitle(BuildContext context, HrStaffLeave leave) {
       l10n.hrCoveringStaffSummary(leave.coveringStaffName!),
   ].where((String part) => part.trim().isNotEmpty).toList(growable: false);
   return parts.join(' · ');
-}
-
-String _formatDateTime(BuildContext context, DateTime? value) {
-  return value == null
-      ? ''
-      : AppFormatters.dateTime(value, Localizations.localeOf(context));
 }
 
 const String _hrPositionFilterKey = 'position';

@@ -54,7 +54,7 @@ abstract final class HrHumanResourcesBillingInventory {
         ),
         HrHumanResourcesFinancialAtom(
           id: 'add_staff',
-          label: 'Add staff (strip primary + onboarding dialog)',
+          label: 'Add staff (search trailing + onboarding dialog)',
           financialClass: HrHumanResourcesFinancialClass.notBilled,
           auditCode: 'NOT_BILLED',
         ),
@@ -72,9 +72,10 @@ abstract final class HrHumanResourcesBillingInventory {
         ),
         HrHumanResourcesFinancialAtom(
           id: 'activity_disclosure',
-          label: 'HR activity progressive disclosure',
+          label: 'HR activity progressive disclosure (removed)',
           financialClass: HrHumanResourcesFinancialClass.notRequired,
           auditCode: 'NOT_REQUIRED',
+          mounted: false,
         ),
         HrHumanResourcesFinancialAtom(
           id: 'row_select_detail',

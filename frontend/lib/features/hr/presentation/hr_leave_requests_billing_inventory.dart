@@ -33,7 +33,7 @@ final class HrLeaveRequestsFinancialAtom {
 /// Canonical inventory for `/hr?section=leave-requests` (Leave requests tab).
 ///
 /// Scope: tab chrome, leave worklist, next-actions (approve), detail dialog
-/// (approve / reject), request-leave dialog, activity disclosure, and nested
+/// (approve / reject), request-leave dialog (search trailing), and nested
 /// confirm/reason dialogs opened from this tab. Leave is **staff attendance /
 /// roster ops** — request/approve/reject update `staff_leave` status with
 /// audit + realtime. `UNPAID` leave type is compensation eligibility metadata
@@ -75,9 +75,10 @@ abstract final class HrLeaveRequestsBillingInventory {
         ),
         HrLeaveRequestsFinancialAtom(
           id: 'activity_disclosure',
-          label: 'HR activity progressive disclosure',
+          label: 'HR activity progressive disclosure (removed)',
           financialClass: HrLeaveRequestsFinancialClass.notRequired,
           auditCode: 'NOT_REQUIRED',
+          mounted: false,
         ),
         HrLeaveRequestsFinancialAtom(
           id: 'row_select_detail',
@@ -87,7 +88,7 @@ abstract final class HrLeaveRequestsBillingInventory {
         ),
         HrLeaveRequestsFinancialAtom(
           id: 'request_leave',
-          label: 'Request leave (strip primary + dialog)',
+          label: 'Request leave (search trailing + dialog)',
           financialClass: HrLeaveRequestsFinancialClass.notBilled,
           auditCode: 'NOT_BILLED',
         ),

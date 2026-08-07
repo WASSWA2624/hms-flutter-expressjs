@@ -93,10 +93,7 @@ const HrStaffDetail _staffCompleteDetail = HrStaffDetail(
   ],
 );
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _searchAction(String label) => find.byTooltip(label);
 
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
@@ -464,7 +461,7 @@ void main() {
       expect(_tab('Human resources'), findsOneWidget);
       expect(find.text('Ada Needs Dept'), findsOneWidget);
       expect(find.byTooltip('Filters'), findsOneWidget);
-      expect(_toolbarPrimary('Add staff'), findsNothing);
+      expect(_searchAction('Add staff'), findsNothing);
       expect(find.text('Assign department'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
@@ -499,7 +496,7 @@ void main() {
         detail: _staffCompleteDetail,
       );
 
-      expect(_toolbarPrimary('Add staff'), findsOneWidget);
+      expect(_searchAction('Add staff'), findsOneWidget);
       expect(find.text('Review profile'), findsOneWidget);
 
       await tester.tap(find.text('Review profile'));
@@ -543,7 +540,7 @@ void main() {
         detail: _staffCompleteDetail,
       );
 
-      expect(_toolbarPrimary('Add staff'), findsOneWidget);
+      expect(_searchAction('Add staff'), findsOneWidget);
 
       await tester.tap(find.text('Review profile'));
       await tester.pumpAndSettle();
@@ -578,7 +575,7 @@ void main() {
         detail: _staffCompleteDetail,
       );
 
-      expect(_toolbarPrimary('Add staff'), findsNothing);
+      expect(_searchAction('Add staff'), findsNothing);
 
       await tester.tap(find.text('Review profile'));
       await tester.pumpAndSettle();
@@ -616,7 +613,7 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsNothing);
-      expect(_toolbarPrimary('Add staff'), findsNothing);
+      expect(_searchAction('Add staff'), findsNothing);
       expect(find.text('Ada Needs Dept'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -640,7 +637,7 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsNothing);
-      expect(_toolbarPrimary('Add staff'), findsNothing);
+      expect(_searchAction('Add staff'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -683,7 +680,7 @@ void main() {
     );
 
     expect(_tab('Human resources'), findsOneWidget);
-    expect(_toolbarPrimary('Add staff'), findsOneWidget);
+    expect(_searchAction('Add staff'), findsOneWidget);
     expect(find.textContaining('Ada'), findsWidgets);
     expect(find.textContaining('no access'), findsNothing);
   });
@@ -712,25 +709,24 @@ void main() {
     expect(find.textContaining('no access'), findsNothing);
   });
 
-  testWidgets('authorized HR activity progressive disclosure remains available', (
+  testWidgets('authorized search trailing Add staff remains available', (
     WidgetTester tester,
   ) async {
-    final AppAccessPolicy reader = _policy(
-      permissions: <AppPermission>{AppPermissions.hrRead},
+    final AppAccessPolicy writer = _policy(
+      permissions: <AppPermission>{
+        AppPermissions.hrRead,
+        AppPermissions.hrWrite,
+      },
     );
 
     await _pumpStaffTab(
       tester,
       repository: repository,
-      accessPolicy: reader,
+      accessPolicy: writer,
     );
 
-    expect(find.byTooltip('HR activity'), findsOneWidget);
-    await tester.tap(find.byTooltip('HR activity'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-    expect(find.textContaining('no access'), findsNothing);
+    expect(find.byTooltip('Add staff'), findsOneWidget);
+    expect(find.byTooltip('HR activity'), findsNothing);
   });
 
   testWidgets('post-mutation sync path: assign next-action loads detail', (

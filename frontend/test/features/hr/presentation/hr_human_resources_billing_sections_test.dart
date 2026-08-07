@@ -74,10 +74,7 @@ const HrStaffDetail _staffDetail = HrStaffDetail(
   ],
 );
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _searchAction(String label) => find.byTooltip(label);
 
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
@@ -390,7 +387,7 @@ void main() {
         ),
       );
 
-      expect(_toolbarPrimary('Add staff'), findsNothing);
+      expect(_searchAction('Add staff'), findsNothing);
       expect(find.textContaining('Receive payment'), findsNothing);
 
       await _openStaffDetail(tester);
@@ -429,7 +426,7 @@ void main() {
         ),
       );
 
-      expect(_toolbarPrimary('Add staff'), findsOneWidget);
+      expect(_searchAction('Add staff'), findsOneWidget);
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);
       expectFlatSections(tester);

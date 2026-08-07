@@ -71,10 +71,7 @@ const HrWorkItem _swapRequest = HrWorkItem(
   staffName: 'Ada Swap',
 );
 
-Finder _toolbarPrimary(String label) => find.descendant(
-  of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
+Finder _searchAction(String label) => find.byTooltip(label);
 
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
@@ -271,7 +268,7 @@ Future<void> _openScheduleTemplates(
     repository: repository,
     accessPolicy: accessPolicy,
   );
-  await tester.tap(_toolbarPrimary('Schedule templates'));
+  await tester.tap(_searchAction('Schedule templates'));
   await tester.pumpAndSettle();
 }
 
@@ -466,7 +463,7 @@ void main() {
       );
 
       expect(_tab('Shifts'), findsOneWidget);
-      expect(_toolbarPrimary('Schedule templates'), findsNothing);
+      expect(_searchAction('Schedule templates'), findsNothing);
       expect(find.text('Publish roster'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
       expect(find.byTooltip('Filters'), findsOneWidget);
@@ -490,7 +487,7 @@ void main() {
       );
 
       expect(_tab('Shifts'), findsOneWidget);
-      expect(_toolbarPrimary('Schedule templates'), findsNothing);
+      expect(_searchAction('Schedule templates'), findsNothing);
       expect(find.text('Publish roster'), findsNothing);
       expect(find.text('Override shift'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
@@ -513,7 +510,7 @@ void main() {
         accessPolicy: rosterWriter,
       );
 
-      expect(_toolbarPrimary('Schedule templates'), findsOneWidget);
+      expect(_searchAction('Schedule templates'), findsOneWidget);
       expect(find.text('Publish roster'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -536,7 +533,7 @@ void main() {
         workItems: const <HrWorkItem>[_rosterDraft],
       );
 
-      expect(_toolbarPrimary('Schedule templates'), findsNothing);
+      expect(_searchAction('Schedule templates'), findsNothing);
       expect(find.text('Publish roster'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -568,7 +565,7 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      expect(_toolbarPrimary('Schedule templates'), findsNothing);
+      expect(_searchAction('Schedule templates'), findsNothing);
       expect(find.text('Approve swap'), findsWidgets);
       expect(find.text('Publish roster'), findsNothing);
     },
@@ -773,7 +770,7 @@ void main() {
       );
 
       expect(_tab('Shifts'), findsNothing);
-      expect(_toolbarPrimary('Schedule templates'), findsNothing);
+      expect(_searchAction('Schedule templates'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -813,7 +810,7 @@ void main() {
     expect(find.byTooltip('Schedule templates'), findsNothing);
   });
 
-  testWidgets('desktop light: empty queue + activity secondary remain', (
+  testWidgets('desktop light: empty queue without HR activity secondary', (
     WidgetTester tester,
   ) async {
     await _pumpShiftsTab(
@@ -828,7 +825,7 @@ void main() {
     );
 
     expect(_tab('Shifts'), findsOneWidget);
-    expect(find.text('HR activity'), findsOneWidget);
+    expect(find.byTooltip('HR activity'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });
 
@@ -854,7 +851,7 @@ void main() {
       );
 
       expect(_tab('Shifts'), findsNothing);
-      expect(_toolbarPrimary('Schedule templates'), findsNothing);
+      expect(_searchAction('Schedule templates'), findsNothing);
     },
   );
 }
