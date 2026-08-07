@@ -1,55 +1,55 @@
-# Pharmacy Reporting: Branch / Multi-Store Dialogs and Demo Seed
+# Pharmacy Reporting: Branch / Multi-Store — Facility-Accurate Mapping
 
-Implement Branch / Multi-Store report dialogs with facility/branch slices, comparison chart, and demo multi-branch seed—reusing facility-scoped pharmacy data.
+Treat **branch = `facility`**. Demo has one facility—reports must stay accurate for 1-N facilities.
 
 ## Context
 
-**Current behavior**
+**Exists:** `facility` (`name`, `tenant_id`, …); `inventory_stock.facility_id`; patient/invoice/`payment.facility_id`; storage_room.facility_id for batches.
 
-- Category `branch` has 8 reports; all unavailable. App is tenant/facility-scoped; multi-branch may be multiple facilities or pharmacy locations depending on schema.
-- Transfers and stock already carry location/facility foreign keys in inventory modules.
+**No `branch` model.** Seed: single `DemoCare General Hospital`.
 
-**Intended behavior**
+**All 8 branch report ids unavailable.**
 
-- When multi-location data exists, dialogs compare sales, stock, profit, transfers, purchases, shortages, and best performer by branch; comparison chart enabled. Single-branch demos still show one-row ready (not unavailable).
+## Data contract
 
-**Definitions**
+| Report id | Source |
+| --- | --- |
+| `sales_by_branch` | consumption/payments grouped by facility (patient.facility_id or payment.facility_id)—document join | `facility`, `amount`, `quantity_dispensed` |
+| `stock_by_branch` | `inventory_stock` by facility | `facility`, `quantity`, `value` (qty×buy) |
+| `profit_by_branch` | consumption profit by facility scope | `facility`, `profit` |
+| `transfers_between_branches` | `stock_movement` `TRANSFER` with from/to facilities if modeled; else unavailable until transfer endpoints stored |
+| `purchases_by_branch` | PO/`purchase_request.facility_id` counts/value basis | `facility`, metrics |
+| `stock_shortages_by_branch` | stock risk LOW/CRITICAL/OOS by facility | reuse classifiers |
+| `best_performing_branch` | rank by `amount` or `profit`—subtitle states rank key | |
+| `branch_comparison` (chart) | side-by-side series per facility | |
 
-- *Branch:* Facility or pharmacy location key used in stock/sales scope.
-- *Report ids:* `sales_by_branch`, `stock_by_branch`, `profit_by_branch`, `transfers_between_branches`, `purchases_by_branch`, `stock_shortages_by_branch`, `best_performing_branch`, `branch_comparison`.
+**Single-facility:** return one ready row (not unavailable). Multi-facility requires seeding ≥2 facilities with stock+dispenses.
 
 ## Requirements
 
-1. Map all branch report ids to datasets keyed by facility/location; `branch_comparison` chart.
-2. Units: sales/profit → currency; stock/shortage qty → quantity; transfer counts → count.
-3. Soft-refresh; empty only when zero rows; subtitle clarifies single- vs multi-branch.
-4. Seed ≥2 demo branches/facilities with differing sales, stock, shortages, and at least one transfer between them when schema supports it; otherwise seed one branch honestly and still map columns.
-5. Reuse facility scope + shared reporting; do not invent a second tenancy model.
-6. Access, responsive, themes; tests for comparison projection and seed branch count policy.
+1. Implement grouping by `facility.name`/`id`; never invent branch codes.
+2. Optional seed enhancement: second facility with divergent stock/sales for demos—deterministic keys.
+3. Transfer report only when transfer movement records both ends.
+4. Reuse inventory/consumption datasets with facility scope parameter already used by runners.
+5. Tests: one-facility ready; two-facility comparison sums to tenant total.
 
 ## Constraints
 
-- Do not break single-facility tenants; follow demo-safety and existing facility seed patterns.
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/demo-data.mdc`, `prompts/.cursor/prompt.mdc`.
+- `index.md` rule 5; demo-safety; no second tenancy model.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | All 8 branch reports leave unavailable (ready/empty/error). | R1 |
-| A2 | Currency/qty units correct; comparison chart works. | R2 |
-| A3 | Demo policy documents multi-branch when supported; single-branch still ready. | R4 |
-| A4 | Shared kit + access + responsive OK. | R5–R6 |
+| A1 | Branch metrics = facility metrics. | contract |
+| A2 | Single-facility demo shows ready rows; optional 2nd facility documented. | R2 |
+| A3 | Shortage classifiers match inventory dataset. | R3 |
 
 ## Relevant Files
 
-- `.cursor/reporting-analytics.md/pharmacy-reporting.md` §10
-- Facility/inventory transfer models
-- `pharmacy_reporting_catalog.dart`, data provider
-- Seed runtime facility helpers
-- `frontend/lib/shared/reporting/**`
+- Prisma facility, inventory_stock, stock_movement; seed-catalog.js; datasets scope facility_id; catalog/provider
 
 ## Verification
 
-- Tests for branch_comparison series.
-- Manual: Branch section → comparison chart, shortages; tablet width.
+- Facility-scoped preview matches unscoped single-facility tenant.
+- Manual: Branch → sales/stock/comparison.

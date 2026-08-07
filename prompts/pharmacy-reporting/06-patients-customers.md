@@ -1,57 +1,56 @@
-# Pharmacy Reporting: Patients / Customers Dialogs and Demo Seed
+# Pharmacy Reporting: Patients / Customers — Accurate Mapping
 
-Implement Patients / Customers report dialogs from patient/customer purchase and credit data with correct count/money units and demo retention coverage.
+Map customer reports to `patient` + pharmacy orders/dispenses + billing balances—PHI-minimized and formula-clear.
 
 ## Context
 
-**Current behavior**
+**Mapped:** `frequently_purchased_medicines` → `pharmacy_drug_consumption` (top 20 by `amount` then `quantity_dispensed`).
 
-- Category `patients_customers` has 9 reports; only `frequently_purchased_medicines` maps to `pharmacy_drug_consumption`. Others unavailable.
-- Patients, encounters, pharmacy orders, and billing/credit artifacts exist in demo volume but are not projected for new-vs-returning, credit balance, or retention reports.
+**Exists:** `pharmacy_order.patient_id`, dispense amounts via consumption join, `invoice`/`payment` with `patient_id`, open invoice statuses.
 
-**Intended behavior**
+**Gaps:** No first-class “customer credit balance” field—derive from open invoices/payments or unavailable. Demographics only from existing patient fields allowed for reports.
 
-- Each customer subcategory dialog shows period-scoped customer metrics: counts, purchase amounts, medication history, credit/receivables, demographics (when appropriate), retention charts.
+**Seed:** volume patients with pharmacy orders; billing UGX; returning purchasers appear when same patient has multiple orders across days.
 
-**Definitions**
+## Data contract
 
-- *Customer purchase amount:* Currency totals per patient/customer.
-- *Report ids:* `number_of_customers`, `new_vs_returning`, `purchases_by_customer`, `patient_medication_history`, `customer_credit_balance`, `outstanding_payments`, `frequently_purchased_medicines`, `customer_demographics`, `customer_retention`.
+| Report id | Source / formula |
+| --- | --- |
+| `number_of_customers` | count distinct `patient_id` on pharmacy orders (or dispenses) in range |
+| `new_vs_returning` (chart) | **new** = first-ever pharmacy order in range and no prior order before `from`; **returning** = had order before `from` and again in range. Columns: `segment`, `customer_count` |
+| `purchases_by_customer` | group consumption/dispenses by patient: `patient`, `amount`, `quantity_dispensed` |
+| `patient_medication_history` | dispense lines: `patient`, `drug`, `quantity_dispensed`, `dispensed_at`, `amount` |
+| `customer_credit_balance` | sum open pharmacy-scoped invoice balances per patient—**define open status set to match billing module**; column `credit_balance` currency |
+| `outstanding_payments` | same open invoices aged: `patient`, `amount`, `issued_at` |
+| `frequently_purchased_medicines` | keep existing top projection |
+| `customer_demographics` | only permitted patient attributes already used in reports; aggregate counts—no new PHI columns without permission review |
+| `customer_retention` (chart) | retained = purchasing in prior window and current window; `retention_rate` percent |
 
 ## Requirements
 
-1. Map every customers report id to dataset + provider projection; charts for `new_vs_returning` and `customer_retention`; keep top medicines projection.
-2. Units: customer/visit counts → count; purchases/credit/outstanding → currency; medicine qty in history → quantity; demographics categorical plain; retention rates → percent.
-3. Respect PHI minimization: demographics only fields already allowed in reports; no new sensitive columns without permission rules.
-4. Seed demo: mix of new and returning patients with pharmacy purchases in range, medication history lines, non-zero credit and outstanding balances where billing supports it, demographic variety appropriate to seed policy.
-5. Reuse patient/billing read models + shared reporting kit; do not build a CRM module.
-6. Gate with reports read ∩ pharmacy; hide unauthorized fields/actions; responsive; light/dark.
-7. Tests: projections; credit columns currency-formatted; seed new-vs-returning non-empty; export gated.
+1. Implement formulas above; document window for retention (e.g. previous period of equal length) in subtitle.
+2. Money from consumption/invoice currencies (UGX seed); counts as count units.
+3. Seed ≥3 patients with multi-visit pharmacy purchases; ≥1 open pharmacy invoice for credit demo.
+4. Reuse billing open-balance concepts from `billing_collections_open_balances` where possible.
+5. Tests: new vs returning partition is disjoint; frequent medicines sort stable; unauthorized PHI absent.
 
 ## Constraints
 
-- Do not expose unauthorized PHI; follow `.cursor/access/permissions.mdc`.
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/demo-data.mdc`, `prompts/.cursor/prompt.mdc`.
+- `.cursor/access/permissions.mdc`; `index.md` accuracy rules; no CRM module.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | All 9 customer reports map to ready/empty/error with seed. | R1 |
-| A2 | Count/money/percent/qty units correct; charts export PDF. | R2 |
-| A3 | Demo shows new vs returning, history, and credit/outstanding samples. | R4 |
-| A4 | PHI-safe columns; shared kit + responsive access OK. | R3, R5–R7 |
+| A1 | Customer metrics match distinct-patient and billing open-balance definitions. | contract |
+| A2 | Credit/outstanding currency; retention percent; medicine qty units. | R2 |
+| A3 | Demo non-empty new/returning and frequent medicines. | R3 |
 
 ## Relevant Files
 
-- `.cursor/reporting-analytics.md/pharmacy-reporting.md` §6
-- `pharmacy_reporting_catalog.dart`, `pharmacy_reporting_data_provider.dart`
-- Billing/patient modules used by pharmacy sales
-- `backend/src/lib/reports/datasets.js`, volume patient/billing seeders
-- `frontend/lib/shared/reporting/**`
+- Prisma patient, pharmacy_order, dispense_log, invoice, payment; datasets billing + consumption; volume seed; provider
 
 ## Verification
 
-- Provider tests for retention/new-vs-returning projections.
-- Seed/verify returning purchasers + credit rows.
-- Manual: Customers → retention chart, credit balance, frequent medicines; dark + narrow.
+- Pick one patient HFI: history lines sum to purchases_by_customer amount.
+- Manual: Customers → new vs returning, credit balance.

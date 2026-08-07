@@ -1,61 +1,67 @@
-# Pharmacy Reporting: Inventory / Stock Dialogs and Demo Seed
+# Pharmacy Reporting: Inventory / Stock — Accurate Dialog Mapping
 
-Implement all Inventory / Stock report dialogs with quantity, value, risk, and movement mappings plus demo stock diversity—reusing shared reporting and existing `inventory_stock_risk`.
+Map all `inventory_stock` reports to `inventory_stock`, `drug_batch`, and `stock_movement`/`stock_adjustment` with the **same** risk classifiers as `runInventoryDataset`.
 
 ## Context
 
-**Current behavior**
+**Already mapped** (dataset `inventory_stock_risk`): `current_stock_quantity` (OK/LOW/CRITICAL/OVERSTOCK/OUT_OF_STOCK), `overstock`, `expired_stock`, `near_expiry_stock`, `understock` (LOW+CRITICAL), `out_of_stock` (qty≤0).
 
-- Category `inventory_stock` has 20 reports. Several already filter `inventory_stock_risk` (`current_stock_quantity`, expired/near-expiry, over/under/out-of-stock). Stock value, movements, turnover, reorder, fast/slow/dead stock remain unavailable.
-- Clinical catalog seed already builds wall-clock expiry batches and mixed quantities (`PHARMACY_REPORT_RISK_BATCH_TEMPLATES`, `resolveDemoStockQuantity`).
+**Runner columns:** `facility`, `inventory_item`, `quantity`, `reorder_level`, `risk_state`, `expiry_date`, `expiry_alert_status`, `days_to_expiry`, `batch_number`.
 
-**Intended behavior**
+**Classifiers (must not diverge)**
 
-- Every inventory subcategory dialog shows period-aware stock snapshots or movement history with correct units (stock qty in pack units, value in currency, turnover/days as days or ratios, risk states as plain labels).
-- Demo seed keeps out-of-stock, low, overstock, expired, near-expiry, and healthy rows visible for demos.
+- Stock: qty≤0 → `OUT_OF_STOCK`; qty≤floor(reorder/2) → `CRITICAL`; qty≤reorder → `LOW`; qty≥reorder×3 → `OVERSTOCK`; else `OK`.
+- Expiry rows: only alert batches → `EXPIRED` | `EXPIRING_SOON`; `days_to_expiry` from wall clock vs `drug_batch.expiry_date`; lead = `expiry_alert_lead_days` ?? 30.
 
-**Definitions**
+**Seed today:** `PHARMACY_REPORT_RISK_BATCH_TEMPLATES` (−75…+145d), `resolveDemoStockQuantity` profiles 0–3 for OOS/critical/low/overstock; movements in catalog/volume packs.
 
-- *Stock quantity:* On-hand pack/UOM counts (`quantity`, reorder fields)—format as quantity units.
-- *Stock value:* `quantity × cost/price` monetary columns.
-- *Report ids:* `current_stock_quantity`, `stock_value`, `opening_closing_stock`, `stock_received`, `stock_issued`, `stock_adjustments`, `damaged_stock`, `lost_stock`, `expired_stock`, `near_expiry_stock`, `overstock`, `understock`, `out_of_stock`, `reorder_level`, `reorder_quantity`, `stock_turnover`, `fast_moving`, `slow_moving`, `dead_stock`, `stock_movement_history`.
+**Gaps:** Dataset has **no stock value column**; movements/adjustments not in `inventory_stock_risk`. `stock_adjustment` has **no actor user_id**.
+
+## Data contract
+
+| Report id | Source | Columns / formula |
+| --- | --- | --- |
+| `current_stock_quantity` | stock rows (non-expiry) | existing filter; `quantity` units, `reorder_level` units |
+| `stock_value` | `inventory_stock.quantity ×` cost | Prefer `drug.buy_unit_price` via `drug_inventory_map`; fallback `unit_price`; column `value` (currency). Document chosen cost basis in subtitle |
+| `opening_closing_stock` | movements reconstruct or snapshot | `opening_quantity`, `closing_quantity`, `inventory_item` — same UOM as `inventory_item.unit` |
+| `stock_received` | `stock_movement` `INBOUND` + reason `PURCHASE` (and receipts if linked) | `quantity`, `occurred_at`, `inventory_item` |
+| `stock_issued` | `OUTBOUND` + `DISPENSE` | `quantity` |
+| `stock_adjustments` | `stock_adjustment` **or** movement `ADJUSTMENT` | `quantity`, `reason` (`DAMAGE\|EXPIRY\|OTHER`…) |
+| `damaged_stock` | reason `DAMAGE` | `quantity` (+ `value` if cost joined) |
+| `lost_stock` | reason `OTHER`/explicit loss only if distinguishable—**do not relabel DAMAGE** | document mapping |
+| `expired_stock` / `near_expiry_stock` | existing expiry filters | keep `days_to_expiry` days unit |
+| `overstock` / `understock` / `out_of_stock` | existing | unchanged classifiers |
+| `reorder_level` / `reorder_quantity` | `inventory_stock.reorder_level`; reorder qty = max(0, reorder−qty) if no separate field | keys `reorder_level`, `reorder_quantity` |
+| `stock_turnover` (chart) | issued qty / avg on-hand for period | `stock_turnover` ratio or `days_of_stock`; subtitle states formula |
+| `fast_moving` / `slow_moving` / `dead_stock` | dispense qty or OUTBOUND over period vs on-hand | thresholds documented in code comments + tests |
+| `stock_movement_history` | `stock_movement` chronologically | `occurred_at`, `movement_type`, `reason`, `quantity`, `facility`, `inventory_item` |
 
 ## Requirements
 
-1. Map every inventory report id to a dataset + provider projection (extend `inventory_stock_risk` and/or stock-movement runners). Opening/closing and movement history must use real `inventory_stock` / stock movement entities.
-2. Column keys must trigger correct formatters: `quantity`/`reorder_*` → units; `value`/`amount` → currency; `days_to_expiry`/`stock_turnover` days or ratio per key convention; `risk_state` plain.
-3. Keep `stock_turnover` as chart; others table unless catalog says otherwise. Soft-refresh on period; empty when filter yields zero rows.
-4. Extend demo seed so each risk bucket and at least one movement/adjustment/damage/loss path exists; reorder level/qty populated on demo drugs. Deterministic; demo-gated.
-5. Reuse shared dialog/table/chart/export and existing stock-risk filters in the provider—do not fork inventory UI.
-6. Permissions, responsiveness (dense table → narrow list/cards if kit already does), light/dark, localized copy.
-7. Tests: projections for risk filters + new movement/value reports; seed helper coverage; unauthorized export absent.
+1. Implement contract; extend dataset(s) rather than changing risk thresholds.
+2. `expiring_windows` (expiry category) depends on `days_to_expiry` buckets 30/60/90/180—keep batch leadDays seed aligned (`window-60/90/180` templates).
+3. Seed: keep risk templates; ensure ≥1 DAMAGE adjustment and INBOUND/OUTBOUND/TRANSFER movements in range.
+4. Reuse shared kit; currency for `value` via effective default (UGX seed).
+5. Tests: classifier golden cases; stock_value = qty×buy for a known seeded drug; movement history ordered.
 
 ## Constraints
 
-- Do not rebuild catalog chrome; do not seed production.
-- Prefer existing inventory modules over new stock services.
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/demo-data.mdc`, `prompts/.cursor/prompt.mdc`, `frontend/.cursor/layouts.mdc`.
+- Do not invent parallel risk enums. Follow `index.md` accuracy rules + `.cursor/access/demo-data.mdc`.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | All 20 inventory report dialogs map to ready/empty/error—not unavailable—with seed present. | R1 |
-| A2 | Qty/value/days/risk columns show correct units/labels. | R2 |
-| A3 | Demo shows OOS, low, overstock, expiry windows, and ≥1 movement path. | R4 |
-| A4 | Shared kit + access + responsive themes reused. | R5–R7 |
+| A1 | All inventory ids ready/empty/error with contract sources. | R1 |
+| A2 | Risk labels match `runInventoryDataset`; value/qty/days units correct. | contract |
+| A3 | Demo shows OOS, LOW/CRITICAL, OVERSTOCK, EXPIRED, EXPIRING_SOON, DAMAGE movement. | R3 |
 
 ## Relevant Files
 
-- `.cursor/reporting-analytics.md/pharmacy-reporting.md` §2
-- `pharmacy_reporting_catalog.dart`, `pharmacy_reporting_data_provider.dart`
-- `backend/src/lib/reports/datasets.js` (`runInventoryDataset`)
-- `backend/scripts/seeders/seed-clinical-catalog-pack.js`
-- `backend/src/tests/scripts/seed-clinical-catalog-pharmacy-reporting.test.js`
-- `frontend/lib/shared/reporting/**`
+- `datasets.js` `runInventoryDataset`; `seed-clinical-catalog-pack.js`; Prisma `inventory_stock`, `drug_batch`, `stock_movement`, `stock_adjustment`, `drug_inventory_map`
+- `pharmacy_reporting_data_provider.dart` filters; `seed-clinical-catalog-pharmacy-reporting.test.js`
 
 ## Verification
 
-- Dataset/provider tests for each inventory report id and unit keys.
-- `db:verify:demo` (or targeted seed tests) asserts risk + movement diversity.
-- Manual: Inventory section → stock value, movements, turnover, risk filters; xs + dark.
+- Compare dialog risk counts to dataset summary keys (`low_stock`, `expired`, …).
+- Manual: Inventory → current stock, stock value, movement history.

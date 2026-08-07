@@ -1,56 +1,59 @@
-# Pharmacy Reporting: Staff & User Activity Dialogs and Demo Seed
+# Pharmacy Reporting: Staff & User Activity — Accurate Actor Mapping
 
-Implement Staff & User Activity report dialogs from actor-attributed pharmacy actions with count/money units and demo multi-user coverage.
+Attribute staff reports only to **real user FKs**—attestation, audit_log, payment/order creators—never invent cashier on `pharmacy_order`.
 
 ## Context
 
-**Current behavior**
+**Exists**
 
-- Category `staff_activity` has 10 reports; all unavailable.
-- Dispense/sales/adjustment/audit rows already store acting user ids in operational tables and audit logs; Reporting does not yet aggregate by staff.
+- `pharmacy_dispense_attestation.attested_by_user_id`
+- `audit_log.user_id` + `action` + `entity` + `diff_json`
+- Payments/invoices may store creator via audit or module-specific fields (verify before use)
 
-**Intended behavior**
+**Does not exist:** `dispense_log` dispenser user; `pharmacy_order` cashier; `stock_adjustment.user_id`.
 
-- Dialogs break down sales, dispensing, purchases entered, adjustments, refunds, discounts authorized, voids, login/activity, productivity, and audit trail by staff for the selected period.
+**All 10 staff report ids unavailable.** Seed users via access pack; audit volume in extended pack.
 
-**Definitions**
+## Data contract
 
-- *Staff slice:* Aggregation keyed by user/staff display name + id.
-- *Report ids:* `sales_by_staff`, `dispensing_by_staff`, `purchases_entered_by_staff`, `stock_adjustments_by_staff`, `refunds_by_staff`, `discounts_authorized`, `voided_transactions`, `login_activity_history`, `user_productivity`, `audit_trail`.
+| Report id | Actor source | Metrics |
+| --- | --- | --- |
+| `sales_by_staff` | attestation user joined to dispenses in range **or** audit CREATE on pharmacy sale entities | `staff`, `amount`, `quantity_dispensed` |
+| `dispensing_by_staff` | attestation | `staff`, order/pack counts |
+| `purchases_entered_by_staff` | audit on PO/goods_receipt CREATE | counts |
+| `stock_adjustments_by_staff` | **gap** unless audit entity=`stock_adjustment` | use audit or migrate `adjusted_by_user_id` |
+| `refunds_by_staff` | audit/refund creator if present | `amount` |
+| `discounts_authorized` | audit on billing_adjustment | `amount`, `staff` |
+| `voided_transactions` | CANCELLED orders + audit DELETE/void | counts |
+| `login_activity_history` | `audit_log` action `LOGIN`/`LOGOUT` | timestamp, user |
+| `user_productivity` (chart) | dispenses or sales per staff per day | count/rate |
+| `audit_trail` | pharmacy-relevant `audit_log` rows | action, entity, entity_id, user, diff |
 
 ## Requirements
 
-1. Dataset + projections for every staff report id; `user_productivity` chart; others table.
-2. Units: sales/refund/discount amounts → currency; dispense/adjustment qty → quantity; event/login counts → count; productivity rates → percent where applicable.
-3. Period scopes activity; empty when no attributed events; never invent staff rows without FK users.
-4. Seed multiple demo pharmacist/cashier users performing distinct sales, dispenses, adjustments, refunds, voids, and discount authorizations inside the demo window.
-5. Reuse audit/user activity sources and shared reporting kit; do not build a separate HR console.
-6. Gate with reports read; omit privileged audit fields without entitlement; responsive; light/dark.
-7. Tests: multi-staff seed; unit formatting; unauthorized audit fields absent.
+1. If actor FK missing, migrate + seed **or** unavailable—do not attribute to “Unknown” as real staff performance.
+2. Money from consumption/payments; counts from events.
+3. Seed ≥2 pharmacists with attestations and audit events in range.
+4. Permission-gate audit_trail columns; absent when unauthorized.
+5. Tests: staff totals partition (sum staff amounts ≤/＝ period sales when attribution complete); unattributed remainder shown explicitly if any.
 
 ## Constraints
 
-- Follow `.cursor/access/permissions.mdc` for audit visibility.
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/demo-data.mdc`, `prompts/.cursor/prompt.mdc`.
+- `.cursor/access/permissions.mdc`; `index.md`; no HR console.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | All 10 staff reports map to ready/empty/error with seed. | R1 |
-| A2 | Money/qty/count units correct on staff slices. | R2 |
-| A3 | Demo has ≥2 staff with differentiated activity. | R4 |
-| A4 | Audit fields permission-safe; shared kit + responsive OK. | R5–R7 |
+| A1 | Every staff metric cites a real user FK or stays unavailable. | contract |
+| A2 | Units correct; audit gated. | R2 |
+| A3 | Demo ≥2 staff with distinct attestation activity. | R3 |
 
 ## Relevant Files
 
-- `.cursor/reporting-analytics.md/pharmacy-reporting.md` §9
-- `pharmacy_reporting_catalog.dart`, data provider
-- Audit/user activity modules + seed access pack users
-- `backend/src/lib/reports/datasets.js`
-- `frontend/lib/shared/reporting/**`
+- Prisma attestation, audit_log; seed-access + volume-extended; datasets; provider; reports_access
 
 ## Verification
 
-- Provider tests for sales_by_staff and audit_trail projections.
-- Manual: Staff section → sales by staff, voids, productivity chart; narrow width.
+- Trace attestation user → dispensing_by_staff row.
+- Manual: Staff → sales by staff, audit trail (entitled user).

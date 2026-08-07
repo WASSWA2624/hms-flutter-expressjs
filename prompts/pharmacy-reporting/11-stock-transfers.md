@@ -1,56 +1,51 @@
-# Pharmacy Reporting: Stock Transfers Dialogs and Demo Seed
+# Pharmacy Reporting: Stock Transfers — Accurate Movement Mapping
 
-Implement Stock Transfers report dialogs from transfer documents with quantity/status mappings and demo pending/discrepancy coverage.
+Map transfer reports to `stock_movement` with `movement_type=TRANSFER` (and related fields)—extend schema only if both endpoints are not stored today.
 
 ## Context
 
-**Current behavior**
+**Exists:** `stock_movement`: `inventory_item_id`, `facility_id?`, `movement_type` (`INBOUND|OUTBOUND|ADJUSTMENT|TRANSFER`), `reason`, `quantity`, `occurred_at`.
 
-- Category `stock_transfers` has 8 reports; all unavailable.
-- Inventory transfer entities (send/receive location, qty, status, product lines) exist or are adjacent in inventory modules used by multi-store flows.
+**Likely gap:** single `facility_id` may not capture sending **and** receiving branch—verify schema; if only one facility FK, migrate `from_facility_id`/`to_facility_id` (or paired movements) before claiming sending/receiving reports.
 
-**Intended behavior**
+**All 8 transfer ids unavailable.** Seed movements exist; dedicated transfer pairs may not.
 
-- Each transfer subcategory dialog lists transfer quantity, sending/receiving branch, dates, status, products, pending queue, and discrepancies for the selected period.
+## Data contract
 
-**Definitions**
-
-- *Transfer quantity:* Moved pack counts—quantity unit.
-- *Report ids:* `transfer_quantity`, `sending_branch`, `receiving_branch`, `transfer_date`, `transfer_status`, `products_transferred`, `pending_transfers`, `transfer_discrepancies`.
+| Report id | Requirement |
+| --- | --- |
+| `transfer_quantity` | rows where type=TRANSFER; `quantity` units |
+| `sending_branch` / `receiving_branch` | from/to facility names—**blocked until both ends exist** |
+| `transfer_date` | `occurred_at` |
+| `transfer_status` | only if status field exists on transfer doc; else derive pending vs completed from paired receipts—no fake statuses |
+| `products_transferred` | `inventory_item`, `quantity`, facilities, date |
+| `pending_transfers` | incomplete transfers per real status model |
+| `transfer_discrepancies` | shipped qty ≠ received qty when both recorded |
 
 ## Requirements
 
-1. Dataset + projections for every transfer report id from real transfer tables; no client-fabricated transfers.
-2. Units: quantities → units; dates plain/ISO display via formatters; status plain; discrepancy qty → quantity; value if present → currency.
-3. Period filters by transfer date; pending ignores closed outside range only if still open (document in subtitle).
-4. Seed transfers: completed, pending, and ≥1 discrepancy (ordered/shipped ≠ received) across demo locations.
-5. Reuse inventory transfer read APIs + shared reporting kit.
-6. Access, responsive (status chips readable on xs), light/dark.
-7. Tests: pending + discrepancy projections; seed coverage; export gated.
+1. Inspect Prisma; if endpoints missing, migration + seed before UI ready.
+2. Seed ≥1 completed transfer and ≥1 pending/discrepancy when model supports it; else keep those ids unavailable with gap comment in catalog.
+3. Dataset + provider; period on `occurred_at`.
+4. Tests: TRANSFER filter excludes DISPENSE outbound; discrepancy math absolute difference.
 
 ## Constraints
 
-- If transfer schema is minimal, extend schema only with migrations per `.cursor/mandatories.mdc`—no orphan FKs.
-- Follow `.cursor/access/demo-data.mdc`, `prompts/.cursor/prompt.mdc`.
+- Mandatories migrations; `index.md`; demo-safety.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | All 8 transfer reports map to ready/empty/error with seed. | R1 |
-| A2 | Qty/status/date fields correctly typed and labeled. | R2 |
-| A3 | Demo includes pending and discrepancy transfers. | R4 |
-| A4 | Shared kit + migrations (if any) + responsive access OK. | R5–R7 |
+| A1 | Transfer dialogs only show when endpoint/status data is real. | contract |
+| A2 | Quantities use units; facilities named from `facility`. | R2 |
+| A3 | Seed path matches implemented model. | R3 |
 
 ## Relevant Files
 
-- `.cursor/reporting-analytics.md/pharmacy-reporting.md` §11
-- Inventory transfer modules + Prisma models
-- `pharmacy_reporting_catalog.dart`, data provider
-- Seed packs for stock movements/transfers
-- `frontend/lib/shared/reporting/**`
+- Prisma stock_movement (+ migration if needed); inventory seeders; datasets; provider
 
 ## Verification
 
-- Dataset tests for pending_transfers and transfer_discrepancies.
-- Manual: Transfers → pending, discrepancies, products transferred; dark mode.
+- SQL count TRANSFER movements = dialog row count for range.
+- Manual: Transfers → products, pending (if seeded).

@@ -1,57 +1,59 @@
-# Pharmacy Reporting: Purchasing & Suppliers Dialogs and Demo Seed
+# Pharmacy Reporting: Purchasing & Suppliers — Accurate Mapping
 
-Implement Purchasing & Suppliers report dialogs from purchase orders, receipts, and supplier records with money/qty/time units and demo procurement coverage—reusing suppliers/PO APIs.
+Map purchasing reports to `supplier`, `purchase_order`, `goods_receipt`, `stock_movement`, and payments—**honest about header-only PO schema**.
 
 ## Context
 
-**Current behavior**
+**Exists:** `supplier` (`name`, `contact_email`, `phone` + `address`); `purchase_order` (`supplier_id`, `status`, `ordered_at`, optional `purchase_request_id`); `goods_receipt` (`purchase_order_id`, `status`, `received_at`); drugs may have `supplier_id`; INBOUND `stock_movement` reason `PURCHASE`.
 
-- Category `purchasing_suppliers` has 12 reports; all unavailable. Backend already has suppliers, purchase orders, and related inventory receipts; frontend suppliers work is covered by `prompts/pharmacy-suppliers.md`.
-- No pharmacy Reporting projector yet for PO value, outstanding invoices, delivery time, or ordered-vs-received.
+**Does not exist:** PO/goods-receipt **line items**, PO amounts, delivery SLA fields, supplier scorecards.
 
-**Intended behavior**
+**Seed:** 3 suppliers in clinical catalog; 1 PO + goods receipt in `seed-operations-pack.js`; drug `supplier_id` round-robin.
 
-- Each purchasing subcategory dialog loads supplier/PO-derived rows for the selected period with currency for values, quantity for ordered/received, days for delivery time, and rates/percent for performance where applicable.
+**All 12 purchasing report ids unavailable today.**
 
-**Definitions**
+## Data contract
 
-- *Purchase value:* Monetary PO/receipt totals in tenant currency.
-- *Report ids:* `purchase_orders`, `purchases_by_supplier`, `purchase_value`, `outstanding_supplier_invoices`, `payment_history`, `supplier_pricing`, `supplier_performance`, `delivery_time`, `quantity_ordered_vs_received`, `purchase_returns`, `price_changes`, `most_used_suppliers`.
+| Report id | Accurate approach |
+| --- | --- |
+| `purchase_orders` | List PO headers: `ordered_at`, `status`, `supplier` name, HFI/id |
+| `purchases_by_supplier` | Count/group POs by `supplier_id`; **value** only if derived from linked INBOUND movements × `drug.buy_unit_price` or after adding PO lines |
+| `purchase_value` | Same value basis as above; column `amount` currency; subtitle states basis (“stock inbound × buy_unit_price” or “PO lines”) |
+| `outstanding_supplier_invoices` | Only if AP/invoice-to-supplier exists; else migrate link or unavailable—**do not invent balances** |
+| `payment_history` | `payment` rows tied to supplier invoices **if** relation exists; else unavailable |
+| `supplier_pricing` | Current `drug.buy_unit_price` grouped by `drug.supplier_id` | `supplier`, `drug`, `buy_unit_price`, `currency` |
+| `supplier_performance` (chart) | Proxy: on-time = `goods_receipt.received_at` vs `purchase_order.ordered_at` delta days; fulfillment only after line qtys exist |
+| `delivery_time` | `received_at − ordered_at` → `delivery_days` |
+| `quantity_ordered_vs_received` | **Requires line qtys**—add `purchase_order_item`/`goods_receipt_item` migration+seed, or unavailable |
+| `purchase_returns` | `stock_movement` OUTBOUND/ADJUSTMENT with return semantics if modeled; else unavailable |
+| `price_changes` | Audit `diff_json` on drug buy/unit price **or** history table; seed ≥1 audited change |
+| `most_used_suppliers` | Count POs or count drugs with `supplier_id` + inbound qty |
 
 ## Requirements
 
-1. Register dataset runner(s) over existing supplier/PO/payment entities; wire every purchasing report id’s `datasetKey` + provider projection (performance remains chart).
-2. Units: spend/invoice/payment/price → currency; ordered/received/returns qty → quantity; `delivery_time` → days; fulfillment/performance rates → percent; counts → count.
-3. Soft-refresh on period; empty when no POs in range; error on API failure; reuse shared export rules.
-4. Seed demo: multiple suppliers, POs in varied statuses, partial receipts (ordered ≠ received), outstanding payables, payment history, a return, price change events, delivery lead-time variance. Demo-gated deterministic upserts.
-5. Reuse supplier module + reporting kit; do not build a second procurement workspace inside Reporting.
-6. Permissions: reports read ∩ pharmacy (and existing procurement entitlements if dataset requires them)—unauthorized UI absent.
-7. Tests: projections + unit keys; seed coverage for outstanding + partial receipt; responsive dialog; Analytics untouched.
+1. Prefer deriving demo-visible value from INBOUND×`buy_unit_price` until PO lines exist; when adding lines, migrate + seed and switch contract.
+2. Register dataset; wire all ids; performance chart uses `delivery_days` / fulfillment_rate keys for units.
+3. Seed: ≥2 suppliers with POs, ≥1 receipt, inbound movements for those drugs, optional PO line migration if implementing ordered-vs-received.
+4. Reuse supplier module; Reporting read-only.
+5. Tests: delivery_days non-negative; purchase_value matches sum of basis rows; no phantom invoice balances.
 
 ## Constraints
 
-- Do not replace PO goods-receipt flows; Reporting is read/report only.
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/demo-data.mdc`, `prompts/.cursor/prompt.mdc`, `prompts/pharmacy-suppliers.md` boundaries.
+- Header-only PO must not show fake line totals. Follow `index.md`, `prompts/pharmacy-suppliers.md` boundaries, demo-safety.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | All 12 purchasing reports map to ready/empty/error with seed. | R1 |
-| A2 | Currency/qty/days/percent columns format correctly. | R2 |
-| A3 | Demo shows multi-supplier POs, partial receipt, outstanding invoice, payment history. | R4 |
-| A4 | Shared kit + access + responsive OK; no parallel procurement UI. | R5–R7 |
+| A1 | Each report uses contract basis or explicit unavailable/migration. | R1 |
+| A2 | Money/days/qty units correct; no fabricated AP. | contract |
+| A3 | Demo: multiple suppliers, PO, receipt, inbound value path. | R3 |
 
 ## Relevant Files
 
-- `.cursor/reporting-analytics.md/pharmacy-reporting.md` §4
-- `backend/src/modules/supplier/**`, purchase-order modules
-- `pharmacy_reporting_catalog.dart`, `pharmacy_reporting_data_provider.dart`
-- `backend/src/lib/reports/datasets.js`, seed packs touching suppliers/POs
-- `frontend/lib/shared/reporting/**`
+- Prisma supplier/PO/goods_receipt/stock_movement/drug; `seed-operations-pack.js`; `seed-clinical-catalog-pack.js`; datasets.js; catalog/provider
 
 ## Verification
 
-- Dataset tests for ordered-vs-received and outstanding payables.
-- Seed/verify suppliers + PO diversity.
-- Manual: Purchasing section → purchases by supplier, delivery time, performance chart; lg + dark.
+- Trace one PO → receipt → inbound qty × buy price → dialog purchase_value.
+- Manual: Purchasing → by supplier, delivery time, supplier pricing.

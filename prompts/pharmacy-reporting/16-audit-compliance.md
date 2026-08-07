@@ -1,56 +1,55 @@
-# Pharmacy Reporting: Audit & Compliance Dialogs and Demo Seed
+# Pharmacy Reporting: Audit & Compliance — Accurate Audit Log Mapping
 
-Implement Audit & Compliance report dialogs from audit trails with before/after values, actor attribution, and permission-safe demo audit rows.
+Project audit reports from `audit_log` (and related PHI logs) with real `diff_json`—permission-trimmed, never synthesized.
 
 ## Context
 
-**Current behavior**
+**`audit_log` fields:** `tenant_id`, `user_id?`, `action` (`CREATE|UPDATE|DELETE|ACCESS|EXPORT|LOGIN|LOGOUT`), `entity`, `entity_id`, `diff_json?`, `ip_address?`, timestamps. **No facility_id.**
 
-- Category `audit_compliance` has 10 reports; all unavailable.
-- Backend audit/PHI logs and report-related audit events are seeded in volume/governance packs but not projected into pharmacy Reporting dialogs.
+**Seed:** volume-extended audit rows. **All 10 audit report ids unavailable.**
 
-**Intended behavior**
+**Pharmacy-relevant entities:** filter `entity` allow-list (pharmacy_order, dispense_log, drug, inventory_stock, stock_adjustment, payment, …)—keep list in one constant.
 
-- Dialogs answer who created/edited/voided, previous vs new values, timestamps, stock/price change audits, permission snapshots, unauthorized attempts, and prescription/controlled audit trails for the period.
+## Data contract
 
-**Definitions**
-
-- *Audit row:* Immutable event with actor, entity, action, timestamp, optional old/new payloads.
-- *Report ids:* `who_created`, `who_edited`, `who_deleted_voided`, `previous_vs_new_values`, `change_date_time`, `audit_stock_adjustments`, `audit_price_changes`, `user_permissions`, `unauthorized_attempts`, `prescription_controlled_audit`.
+| Report id | Filter / columns |
+| --- | --- |
+| `who_created` | action=CREATE; `user`, `entity`, `entity_id`, `created_at` |
+| `who_edited` | UPDATE |
+| `who_deleted_voided` | DELETE (+ CANCELLED domain events if logged) |
+| `previous_vs_new_values` | parse `diff_json` into `field`, `previous_value`, `new_value`—typed: prices currency, qty units |
+| `change_date_time` | timestamp focus / same rows sorted |
+| `audit_stock_adjustments` | entity in stock_adjustment/stock_movement |
+| `audit_price_changes` | entity=drug with price keys in diff |
+| `user_permissions` | only if permission-assignment audits exist; else unavailable |
+| `unauthorized_attempts` | denied ACCESS/EXPORT attempts if logged; else empty ready |
+| `prescription_controlled_audit` | entities for Rx/controlled dispense/attestation |
 
 ## Requirements
 
-1. Map all audit report ids to audit-log datasets; filter by pharmacy-relevant entity types; never fabricate actors.
-2. Units: timestamps formatted; counts of attempts → count; price old/new → currency; stock old/new qty → quantity; permission names plain.
-3. Soft-refresh; empty when no events; error on denial; subtitle notes permission trimming when fields redacted.
-4. Seed audit events for create/edit/void, stock adjustment, price change, unauthorized attempt, and controlled-dispense audit samples in demo window.
-5. Reuse audit modules + shared reporting; hide reports/columns without audit entitlement—absent, not disabled.
-6. Responsive (payload progressive disclosure on narrow); light/dark.
-7. Tests: unauthorized UI absent; seeded event types; export gated.
+1. Do not invent diff fields—show raw keys from `diff_json`.
+2. Gate entire category/actions via reports + audit entitlements; unauthorized UI absent.
+3. Seed CREATE/UPDATE/DELETE on drug price + stock adjustment + failed ACCESS if supported.
+4. Reuse shared table; progressive disclosure for large diffs on xs.
+5. Tests: entitled sees rows; unentitled no audit buttons/export; price diff formats currency.
 
 ## Constraints
 
-- Backend RBAC/ABAC authoritative; follow `.cursor/access/permissions.mdc`.
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/demo-data.mdc`, `prompts/.cursor/prompt.mdc`.
+- `.cursor/access/permissions.mdc`; `index.md`; demo-safety.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | All 10 audit reports map to ready/empty/error when entitled + seeded. | R1 |
-| A2 | Price/qty/time fields correctly typed; redaction safe. | R2 |
-| A3 | Demo includes create/edit/void, price, stock, unauthorized, controlled audit. | R4 |
-| A4 | Unauthorized audit UI absent; shared kit + responsive OK. | R5–R7 |
+| A1 | Rows are real audit_log projections with entity allow-list. | contract |
+| A2 | Diff typing units correct; permissions enforced. | R2 |
+| A3 | Demo shows create/edit/price/stock audit samples. | R3 |
 
 ## Relevant Files
 
-- `.cursor/reporting-analytics.md/pharmacy-reporting.md` §16
-- Audit/PHI log modules + seed governance/volume packs
-- `pharmacy_reporting_catalog.dart`, data provider
-- `frontend/lib/features/reports/presentation/reports_access.dart`
-- `frontend/lib/shared/reporting/**`
+- Prisma audit_log; volume-extended seeder; reports_access; catalog audit block; provider
 
 ## Verification
 
-- Widget/provider tests proving audit absent without permission and present with it.
-- Manual: Audit → previous vs new, unauthorized attempts; entitled vs unentitled user.
+- Match dialog row to audit_log id in DB.
+- Manual: entitled vs unentitled Audit section.

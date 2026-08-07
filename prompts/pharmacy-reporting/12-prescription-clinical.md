@@ -1,56 +1,59 @@
-# Pharmacy Reporting: Prescription & Clinical Dialogs and Demo Seed
+# Pharmacy Reporting: Prescription & Clinical — Accurate Clinical Mapping
 
-Implement Prescription & Clinical Parameter dialogs from prescription/order clinical fields with dosage/duration units and demo clinical coverage—without owning prescribing UX.
+Map clinical reports to `pharmacy_order_item` prescription fields and linked encounter data—Reporting must not create prescriptions.
 
 ## Context
 
-**Current behavior**
+**Order item fields exist:** `dosage`, `dose_amount`, `dose_unit`, `frequency`, `route`, `duration_value`, `duration_unit`, `instructions`, `quantity`, `quantity_unit`, `drug_id`, `status`.
 
-- Category `prescription_clinical` has 12 reports; all unavailable.
-- Clinical prescriptions, diagnoses, allergies, and pharmacy orders exist across OPD/pharmacy modules; Reporting does not project them yet.
+**Order:** optional `encounter_id` (CLINICAL vs walk-in PHARMACY).
 
-**Intended behavior**
+**Gaps:** dedicated drug-interaction / duplicate-therapy / allergy-alert tables may exist under clinical modules—**only surface rows from real alert entities**. No `drug.is_controlled`—controlled reporting needs migration or custody JSON productization.
 
-- Dialogs report prescription counts, prescriber, indication, medicines, dosage, frequency, duration, interaction/allergy/duplicate alerts, antibiotic usage, and controlled-drug dispensing for the period.
+**All 12 prescription_clinical ids unavailable.**
 
-**Definitions**
+## Data contract
 
-- *Clinical report:* Read-only aggregation of prescribed/dispensed clinical attributes.
-- *Report ids:* `prescription_count`, `prescriber`, `diagnosis_indication`, `medicine_prescribed`, `dosage`, `frequency`, `duration`, `drug_interactions`, `allergy_alerts`, `duplicate_therapy`, `antibiotic_usage`, `controlled_drug_dispensing`.
+| Report id | Source |
+| --- | --- |
+| `prescription_count` | count `pharmacy_order` in range (align with throughput `orders_created`) |
+| `prescriber` | encounter clinician / order author FK if present; else unavailable |
+| `diagnosis_indication` | encounter diagnosis link when `encounter_id` set |
+| `medicine_prescribed` | item `drug.name`, counts/qty |
+| `dosage` | `dosage` / `dose_amount`+`dose_unit` plain |
+| `frequency` | `frequency` plain |
+| `duration` | `duration_value` + `duration_unit`; if unit=day expose `duration_days` for day formatting |
+| `drug_interactions` | clinical alert store only |
+| `allergy_alerts` | allergy alert store only |
+| `duplicate_therapy` | alert store only |
+| `antibiotic_usage` | filter drugs by catalog heuristic (e.g. anti-infective seed set / ATC if present)—**document filter list**; qty dispensed |
+| `controlled_drug_dispensing` | requires controlled flag migration or explicit drug allow-list (Morphine/Tramadol seed keys) documented in tests |
 
 ## Requirements
 
-1. Map all prescription report ids to datasets from prescription/order/alert sources; respect pharmacy-flow handoff (Reporting does not create prescriptions).
-2. Units: counts → count; duration → days when numeric; dosage/frequency plain strings; antibiotic/controlled quantities → quantity.
-3. Soft-refresh; empty when no Rx in range; never fabricate interaction/allergy rows—seed real alert entities if shown.
-4. Seed prescriptions with diagnoses, varied dosage/frequency/duration, antibiotic and controlled examples, and at least one allergy alert / duplicate-therapy flag if those tables exist.
-5. Reuse clinical + pharmacy read models and shared reporting UI.
-6. PHI/permission-safe columns; responsive; light/dark.
-7. Tests: controlled + antibiotic projections; alert rows permission-filtered; export gated.
+1. Prefer order_item fields for dosage/frequency/duration; do not parse free text into fake structured fields.
+2. Alert reports: empty ready when no alerts—not fabricated.
+3. Seed clinical orders with dosage/frequency/duration; antibiotic drugs from ANTI_INFECTIVE catalog; optional allergy alert fixture.
+4. Reuse pharmacy/clinical reads; follow pharmacy-flow handoffs.
+5. Tests: duration_days formatting; antibiotic filter includes Amoxicillin seed; controlled allow-list stable.
 
 ## Constraints
 
-- Must not create encounters or alter OPD prescribing; follow `.cursor/flows/pharmacy-flow.mdc`, `.cursor/flows/opd-flow.mdc`.
-- Follow `.cursor/access/permissions.mdc`, `.cursor/access/demo-data.mdc`, `prompts/.cursor/prompt.mdc`.
+- `.cursor/flows/pharmacy-flow.mdc`, `.cursor/flows/opd-flow.mdc`; permissions for PHI; `index.md`.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | All 12 clinical reports leave unavailable with seed/API. | R1 |
-| A2 | Count/days/qty/plain clinical fields use correct units. | R2 |
-| A3 | Demo includes antibiotic, controlled, and ≥1 alert sample when schema allows. | R4 |
-| A4 | No prescribing side effects; shared kit + access OK. | R5–R7 |
+| A1 | Dosage/frequency/duration match order_item columns. | contract |
+| A2 | Alert/controlled reports never invent rows. | R2 |
+| A3 | Demo clinical orders show non-empty medicine/dosage reports. | R3 |
 
 ## Relevant Files
 
-- `.cursor/reporting-analytics.md/pharmacy-reporting.md` §12
-- Prescription/allergy/alert modules
-- `pharmacy_reporting_catalog.dart`, data provider
-- Clinical seed packs
-- `frontend/lib/shared/reporting/**`
+- Prisma pharmacy_order_item, encounter/diagnosis/allergy modules; clinical seed; catalog/provider
 
 ## Verification
 
-- Provider tests for antibiotic_usage and controlled_drug_dispensing.
-- Manual: Prescription section → duration, alerts, antibiotic usage; xs + light.
+- Compare one order_item row to dialog medicine_prescribed/dosage.
+- Manual: Prescription → duration, antibiotic usage.

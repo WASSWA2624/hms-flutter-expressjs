@@ -1,57 +1,69 @@
-# Pharmacy Reporting: Medicines & Products Dialogs and Demo Seed
+# Pharmacy Reporting: Medicines & Products — Accurate Catalog Mapping
 
-Deliver Medicines & Products report dialogs from catalog drug/batch attributes with strength, UOM, price, and status fields correctly typed—reusing pharmacy catalog entities and shared reporting UI.
+Project medicines reports from real `drug` / `drug_batch` / `inventory_item` fields—map gaps explicitly (no barcode/controlled/category on `drug`).
 
 ## Context
 
-**Current behavior**
+**`drug` fields that exist:** `name`, `brand_name`, `generic_name`, `code`, `form`, `strength`, `buy_unit_price`, `unit_price`, `transfer_unit_price`, `currency`, `supplier_id`.
 
-- Category `medicines_products` lists 16 attribute-oriented reports; all `datasetKey`s are null → unavailable.
-- Pharmacy catalog already stores name, generic/brand, category, strength, form, UOM, batch, dates, sell/buy price, barcode, controlled/Rx flags, storage via drug/inventory models and catalog UI.
+**Do not exist on `drug`:** `category`, `barcode`, `controlled`, dedicated UOM (use `inventory_item.unit` via `drug_inventory_map`), `dosage_form` name (use `form`).
 
-**Intended behavior**
+**Related:** `drug_batch` (`batch_number`, `manufactured_at`, `expiry_date`, `quantity`); `facility_pharmacy_offering` facility sell price; storage via `storage_room`/`storage_shelf` on batch.
 
-- Each subcategory opens a dialog listing medicines (or batch rows) for the selected attribute slice, filterable by period where dates apply (manufacturing/expiry). Prices use currency; strength/UOM stay as labeled plain/quantity fields; margins as percent.
+**All 16 medicines report ids currently `datasetKey: null`.**
 
-**Definitions**
+**Seed:** Uganda-style catalog in `seed-clinical-catalog-pack.js` sets form/strength/brand, UGX prices (`buy_unit_price`/`unit_price`), `supplier_id`, batches with mfg/expiry.
 
-- *Catalog report:* Row-per-drug or row-per-batch projection of pharmacy catalog fields—not a POS ledger.
-- *Report ids:* `medicine_name`, `generic_brand_name`, `medicine_category`, `strength`, `dosage_form`, `unit_of_measure`, `batch_lot`, `manufacturing_date`, `expiry_date`, `selling_price`, `purchase_price`, `profit_per_unit`, `profit_margin`, `barcode`, `prescription_controlled_status`, `storage_requirements`.
+## Data contract
+
+| Report id | Source fields | Output columns |
+| --- | --- | --- |
+| `medicine_name` | `drug.name` (+ `code`, HFI) | `name`, `code`, `human_friendly_id` |
+| `generic_brand_name` | `generic_name`, `brand_name` | those keys; empty string → null/— not `"null"` |
+| `medicine_category` | `inventory_item.category` via default map | `category`, `name` |
+| `strength` | `drug.strength` | plain text (e.g. `500 mg`)—not numeric currency |
+| `dosage_form` | `drug.form` | key `form` or label `dosage_form` consistently |
+| `unit_of_measure` | `inventory_item.unit` | `unit` plain |
+| `batch_lot` | `drug_batch` | `batch_number`, `quantity`, `expiry_date`, `name` |
+| `manufacturing_date` | `drug_batch.manufactured_at` | date column |
+| `expiry_date` | `drug_batch.expiry_date` | date + optional `days_to_expiry` |
+| `selling_price` | `drug.unit_price` (facility overlay: `facility_pharmacy_offering.unit_price` when scoped) | `selling_price` or `unit_price` **currency** + `currency` code column |
+| `purchase_price` | `drug.buy_unit_price` | currency |
+| `profit_per_unit` | `pharmacyRetailMarginUnit(unit_price, buy_unit_price)` | currency; **null if buy unset** |
+| `profit_margin` | margin/unit_price when unit_price&gt;0 | percent key `profit_margin` |
+| `barcode` | **gap** | migrate onto drug/inventory **or** unavailable—do not use `asset.barcode` |
+| `prescription_controlled_status` | **gap** on drug | use attestation/custody JSON only if productizing controlled; else migrate boolean `is_controlled` + seed Morphine/Tramadol flags |
+| `storage_requirements` | batch `storage_room`/`storage_shelf` names | plain location labels |
+
+Period: date filters apply to batch mfg/expiry; price/name lists are catalog snapshots (subtitle: “as of {to}”).
 
 ## Requirements
 
-1. Introduce or extend a pharmacy catalog/products dataset; set `datasetKey` on all medicines report ids; project columns relevant to each button (e.g. selling_price emphasizes sell columns; batch_lot emphasizes lot/expiry).
-2. Units: `selling_price`/`purchase_price`/`profit_per_unit` → currency; `profit_margin` → percent; strength/UOM/form/name/barcode/status/storage → plain with clear headers; batch qty if present → quantity units.
-3. Period filter applies to manufacturing/expiry windows where meaningful; otherwise show current catalog snapshot and document in subtitle. Loading/empty/error/ready via shared dialog.
-4. Seed demo drugs covering brand+generic, multiple categories/forms/UOMs, batches with mfg/expiry, sell≠buy prices (non-zero margin), barcodes, Rx and controlled flags, storage notes.
-5. Reuse drug/inventory read paths and shared reporting components; do not rebuild Catalog CRUD inside Reporting.
-6. Gate browse with pharmacy + reports read; responsive table; theme tokens; light/dark.
-7. Tests: each report id returns mapped columns; margin/price units; seed has controlled + Rx examples; export gated.
+1. Add pharmacy catalog dataset runner; set all medicines `datasetKey`s; project per-id column subsets from one row model.
+2. Money columns must use `drug.currency` when set else effective default (seed UGX).
+3. Seed: fill `generic_name`/`brand_name` where missing; ensure map+unit on inventory items; decide barcode/controlled via migration+seed or leave unavailable (document in catalog comment).
+4. Reuse shared table/dialog; no Catalog CRUD rewrite.
+5. Tests: margin matches helper; selling vs buy for Paracetamol seed row; form/strength not formatted as currency.
 
 ## Constraints
 
-- Do not require Analytics; do not duplicate Suppliers CRUD (`prompts/pharmacy-suppliers.md`).
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/demo-data.mdc`, `prompts/.cursor/prompt.mdc`, `.cursor/flows/pharmacy-flow.mdc`.
+- Follow `index.md` gap rule. `.cursor/flows/pharmacy-flow.mdc` unchanged for dispense.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | All 16 medicines report dialogs show catalog-mapped rows (or empty), not unavailable. | R1 |
-| A2 | Price/margin/UOM fields use correct units and labels. | R2 |
-| A3 | Demo catalog includes priced batches, controlled/Rx, varied forms/UOMs. | R4 |
-| A4 | Shared kit reused; Catalog CRUD unchanged; responsive + access OK. | R5–R7 |
+| A1 | Mapped attributes match Prisma field names above. | contract |
+| A2 | Price/margin units correct; strength/form plain. | R2 |
+| A3 | Gaps (barcode/controlled) migrated or explicitly unavailable. | R3 |
+| A4 | Demo catalog prices UGX with non-null buy for margin demos. | R3 |
 
 ## Relevant Files
 
-- `.cursor/reporting-analytics.md/pharmacy-reporting.md` §3
-- `pharmacy_reporting_catalog.dart`, `pharmacy_reporting_data_provider.dart`
-- Pharmacy drug/inventory entities & repositories
-- `backend/src/lib/reports/datasets.js`, clinical catalog seeder
-- `frontend/lib/shared/reporting/module_reporting_table.dart`
+- Prisma `drug`, `drug_batch`, `inventory_item`, `drug_inventory_map`, `facility_pharmacy_offering`
+- `pharmacy-drug-margins.js`; clinical catalog seeder; reporting catalog/provider
 
 ## Verification
 
-- Provider tests per report id column projection.
-- Seed tests: demo drugs expose sell/buy/margin and controlled flag.
-- Manual: Medicines section → selling price, batch/lot, controlled status; narrow width.
+- Spot-check one seeded drug: dialog sell/buy/profit_per_unit vs DB.
+- Manual: Medicines → selling price, batch/lot, unit of measure.

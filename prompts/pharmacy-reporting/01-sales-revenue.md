@@ -1,64 +1,86 @@
-# Pharmacy Reporting: Sales & Revenue Dialogs and Demo Seed
+# Pharmacy Reporting: Sales & Revenue — Accurate Dialog Mapping
 
-Wire every Sales & Revenue subcategory dialog to period-filtered sales data with correct money/quantity/count units and demo seed coverage—reusing the shared reporting kit.
+Wire all `sales_revenue` dialogs so money/qty/counts match dispense and billing sources already in schema—no invented POS fields.
 
 ## Context
 
-**Current behavior**
+**Current mapping (`pharmacy_reporting_catalog.dart` + provider)**
 
-- Category `sales_revenue` lists 16 reports in `pharmacyReportingCatalog()`. Only `total_sales`, `sales_by_period`, `sales_by_medicine`, and `number_of_transactions` map to `pharmacy_drug_consumption` or `pharmacy_dispense_throughput`. Others open as unavailable.
-- `PharmacyReportingDataProvider` projects consumption/throughput previews; currency/quantity formatting already lives in `module_reporting_table.dart`.
-- Demo dispense/billing volume exists in clinical/volume seed packs but lacks payment-method, cashier, branch, discount, refund, tax, and margin slices for reporting.
+| Report id | datasetKey today | Projection |
+| --- | --- | --- |
+| `total_sales`, `sales_by_medicine` | `pharmacy_drug_consumption` | pass-through rows |
+| `sales_by_period` (chart) | `pharmacy_drug_consumption` | `breakdown.daily_totals` |
+| `number_of_transactions` | `pharmacy_dispense_throughput` | pass-through (`orders_created` series) |
+| All others | `null` | unavailable |
 
-**Intended behavior**
+**Consumption truth (`buildPharmacyDrugConsumptionAnalytics`)**
 
-- Every Sales & Revenue button opens an in-place dialog with presets/custom range, loading/empty/error/ready, and Excel (table) or PDF (chart) export when entitled.
-- Rows map from real pharmacy dispense/billing entities (or honest empty when filtered empty)—not fake client-only numbers. Demo seed makes primary slices non-empty for default presets.
+- Source: `dispense_log` where `status=DISPENSED`, `dispensed_at` in range, tenant/facility via patient scope.
+- Columns: `drug`, `quantity_dispensed`, `amount`, `profit`, `order_source` (`PHARMACY` if `encounter_id` null else `CLINICAL`; multi → `MIXED`).
+- `amount = round(resolveDispenseUnitPrice × qty, 2)`; profit via `pharmacyRetailMarginUnit` (null if no `buy_unit_price`).
+- Summary: `quantity_dispensed`, `amount`, `drug_count`, `profit`; breakdown `daily_totals`, `source_mix`.
 
-**Definitions**
+**Schema gaps (do not pretend they exist on pharmacy_order)**
 
-- *Sales amount:* Monetary totals in tenant/facility currency (`amount`, `revenue`, `gross_*`, `net_*`, tax, discount, refund columns).
-- *Sales quantity:* Pack/dispense counts (`quantity_dispensed`, transaction counts)—not currency.
-- *Report ids:* `total_sales`, `sales_by_period`, `sales_by_medicine`, `sales_by_category`, `sales_by_cashier`, `sales_by_branch`, `sales_by_customer`, `sales_by_payment_method`, `discounts`, `refunds_returns`, `gross_revenue`, `net_revenue`, `profit_and_margin`, `tax_vat`, `average_transaction_value`, `number_of_transactions`.
+- No `payment_method`, cashier/`user_id`, tax/VAT, discount, facility_id on `pharmacy_order` / `dispense_log`.
+- Payment method = `payment.method` (`PaymentMethodType`). Refunds = `refund`. Discounts ≈ negative applied `billing_adjustment` or invoice deltas—not pharmacy_order fields.
+- Category for “sales by category” = `inventory_item.category` via `drug_inventory_map`, **not** `drug.category` (missing).
+
+## Data contract
+
+| Report id | Authoritative source | Required columns (keys) | Notes |
+| --- | --- | --- | --- |
+| `total_sales` | consumption rows + summary | `drug`, `quantity_dispensed`, `amount`, `profit` | Summary `amount` is gross dispense revenue for period |
+| `sales_by_period` | `breakdown.daily_totals` | period key + `amount`, `quantity_dispensed` | Chart; monthly granularity when range uses year-style presets |
+| `sales_by_medicine` | consumption rows | same as default columns | Sort by qty then amount (runner already does) |
+| `sales_by_category` | consumption joined through `drug_inventory_map` → `inventory_item.category` | `category`, `quantity_dispensed`, `amount` | Enum: `MEDICATION\|SUPPLY\|EQUIPMENT\|OTHER` |
+| `sales_by_cashier` | **gap** | — | Needs actor on dispense/attestation (`pharmacy_dispense_attestation.attested_by_user_id`) or migration; do not invent |
+| `sales_by_branch` | consume + `facility` via patient/`inventory_stock.facility_id` scope | `facility`, `amount`, `quantity_dispensed` | Demo = 1 facility unless seed adds more |
+| `sales_by_customer` | dispense → `pharmacy_order.patient_id` | `patient` (HFI/name), `amount`, `quantity_dispensed` | |
+| `sales_by_payment_method` | `payment` where pharmacy-scoped (`billing_entity=PHARMACY` and/or drug invoice lines) | `method`, `amount` | Use enum values; seed already has CASH/MOBILE_MONEY/… |
+| `discounts` | `billing_adjustment` amount&lt;0 applied in range, pharmacy-scoped invoices | `date`, `amount`, `reason` | `amount` currency |
+| `refunds_returns` | `refund` amounts + throughput `returns` count as separate metric | `amount` (refund $) and/or `returns` (count) | Do not conflate pack returns with money refunds |
+| `gross_revenue` | consumption summary `amount` | summary + rows | Alias of dispense gross; label clearly |
+| `net_revenue` | gross − refunds (− discounts if included) | document formula in subtitle | Must match billing math if using payments |
+| `profit_and_margin` | consumption `profit` + `amount` | `profit`, `amount`, `profit_margin` | `profit_margin = profit/amount` when amount&gt;0; skip null-profit drugs or show null |
+| `tax_vat` | **gap** | — | No tax field on invoice_item/drug; migrate or unavailable |
+| `average_transaction_value` | `sum(amount)/orders_created` same range | `average_transaction_value`, `orders_created`, `amount` | Align order count with throughput definition |
+| `number_of_transactions` | throughput `orders_created` | existing throughput columns | Count of orders, not payments |
+
+Currency: `effectiveDefaultCurrencyProvider`; seeded drugs/invoices use **UGX**.
 
 ## Requirements
 
-1. Assign `datasetKey` (extend existing pharmacy datasets or add focused runners registered in `REPORT_DATASET_MAP`) for every Sales report id; project in `PharmacyReportingDataProvider` so dialogs leave unavailable when data can exist.
-2. Map columns with unit-safe keys: money → `amount`/`revenue`/`profit`/`discount`/`tax`/`refund`; counts → `*_count` / `orders_created`; qty → `quantity_dispensed`. Pass tenant currency into table/chart formatters.
-3. `sales_by_period` remains chart; others default table unless catalog already marks chart. Soft-refresh on period change; inverted custom range validation stays in the shared dialog.
-4. Seed demo graphs covering: multi-day sales, category/cashier/branch/customer slices, cash/card/mobile/credit, discounts, refunds/returns, gross/net, profit margin, VAT/tax, ATV, transaction counts. Prefer extending `seed-clinical-catalog-pack` / volume pharmacy packs; keep deterministic and demo-gated.
-5. Reuse `ModuleReportingReportDialog`, visualization/table/print/export, `ReportsRepository.previewDataset`, and existing l10n patterns—no parallel dialog stack.
-6. Gate with existing pharmacy ∩ `reports:read`; hide export without entitlement. Responsive xs–xxl; theme tokens; light/dark; no clipped actions.
-7. Tests: each sales report id loads ready or empty (not unavailable) with seeded data; unit labels on money/qty columns; unauthorized export absent; Analytics unchanged.
+1. Implement every row in the Data contract: extend runners/projections or record an explicit schema+migration plan for gaps (`sales_by_cashier`, `tax_vat`) before claiming ready.
+2. Keep consumption/throughput formulas byte-compatible with existing analytics builders; add parameters/group-bys rather than forked pricing.
+3. Wire `datasetKey`s; provider must not return unavailable when contract source has rows.
+4. Seed: ensure period presets see multi-day `dispense_log` DISPENSED, `buy_unit_price` set (catalog already), pharmacy-scoped payments with ≥3 methods, ≥1 refund, ≥1 negative adjustment; extend volume seed if missing.
+5. Reuse shared dialog/table/chart/export; gate `reports:read` ∩ pharmacy.
+6. Tests: dialog summary `amount` equals dataset summary for same from/to; margin null when buy missing; payment-method totals equal sum of filtered payments; unauthorized export absent.
 
 ## Constraints
 
-- Do not redesign Reporting catalog chrome (`prompts/pharmacy-reporting.md`).
-- Do not invent POS microservices; derive from pharmacy orders, dispense logs, billing/payments already in schema.
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/demo-data.mdc`, `.cursor/access/permissions.mdc`, `prompts/.cursor/prompt.mdc`, `frontend/.cursor/layouts.mdc`.
+- No fake cashier/tax columns. Follow data accuracy rules in `index.md`. Chrome: `prompts/pharmacy-reporting.md`.
+- Rules: `.cursor/mandatories.mdc`, `.cursor/access/demo-data.mdc`, `prompts/.cursor/prompt.mdc`.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | All 16 sales report dialogs leave unavailable when seed/API can supply rows. | R1 |
-| A2 | Money/qty/count columns format with correct units and currency code. | R2 |
-| A3 | Period presets + custom range refresh content; chart vs table export matches content kind. | R3, R5 |
-| A4 | Demo seed yields non-empty primary sales slices for default presets. | R4 |
-| A5 | Shared kit reused; access + responsive + themes satisfied; Analytics untouched. | R5–R7 |
+| A1 | Mapped reports use contract sources/formulas; gaps are migrated or stay unavailable with note. | R1–R2 |
+| A2 | Units: `amount`/`profit` currency; `quantity_dispensed` units; `orders_created` count. | contract |
+| A3 | Seeded demo: non-empty total_sales, sales_by_period, payment_method, refunds for default range. | R4 |
+| A4 | Provider tests lock formula parity with `buildPharmacyDrugConsumptionAnalytics`. | R6 |
 
 ## Relevant Files
 
-- `.cursor/reporting-analytics.md/pharmacy-reporting.md` §1
-- `frontend/lib/features/reports/presentation/pharmacy_reporting_catalog.dart`
-- `frontend/lib/features/reports/presentation/widgets/pharmacy_reporting_data_provider.dart`
-- `frontend/lib/shared/reporting/module_reporting_*.dart`
-- `backend/src/lib/reports/datasets.js`, `constants` report dataset registry
-- `backend/scripts/seeders/seed-clinical-catalog-pack.js`, volume pharmacy/billing seeders
-- `frontend/test/features/reports/presentation/pharmacy_reporting_data_provider_test.dart`
+- `backend/src/lib/reports/datasets.js` (`buildPharmacyDrugConsumptionAnalytics`, throughput, billing)
+- `backend/src/lib/billing/pharmacy-drug-margins.js`
+- `pharmacy_reporting_catalog.dart`, `pharmacy_reporting_data_provider.dart`
+- `seed-clinical-catalog-pack.js`, `seed-volume-pack.js`, `seed-volume-extended-pack.js`
+- Prisma: `dispense_log`, `drug`, `payment`, `refund`, `billing_adjustment`, `inventory_item`
 
 ## Verification
 
-- Provider/dataset tests for each sales report id projection and units.
-- Seed/verify: demo tenant has multi-method sales, discounts, refunds in range.
-- Manual: Reporting → Sales & Revenue → each button → ready table/chart with UGX/USD (tenant) and unit headers → export; narrow + dark.
+- Unit: amount/profit samples match manual `unit_price×qty` / margin helper.
+- Manual: Sales → Total sales summary vs Sales by medicine sum; Payment method vs billing; narrow + dark.

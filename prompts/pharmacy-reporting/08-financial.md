@@ -1,56 +1,63 @@
-# Pharmacy Reporting: Financial Reports Dialogs and Demo Seed
+# Pharmacy Reporting: Financial Reports — Accurate Billing + Dispense Mapping
 
-Wire Financial Reports dialogs to revenue, COGS, profit, tax, payables/receivables, and cash metrics with currency/% units and demo financial coverage—reusing billing/report datasets where present.
+Wire `financial` reports to `billing_collections_open_balances` and pharmacy consumption profit—**declare which ledger each metric uses**.
 
 ## Context
 
-**Current behavior**
+**Billing runner** (`buildBillingFinancialAnalytics` → dataset `billing_collections_open_balances`):
 
-- Category `financial` has 14 reports; all unavailable in the pharmacy catalog mapping.
-- Backend already has billing financial analytics helpers (`buildBillingFinancialAnalytics`) and invoice/payment/refund seed volume.
+- Columns: `date`, `collections`, `expenditures`, `profit_proxy`, `refunds`, `write_offs`, `net_collections`, `issued_invoices`, `open_invoices`.
+- Sources: `payment` (counted statuses), `refund`, negative applied `billing_adjustment`, `invoice`.
+- Breakdown includes `collections_by_method`.
 
-**Intended behavior**
+**Pharmacy profit (dispense):** consumption `profit` / `amount` (retail − buy)—**not** the same as billing `profit_proxy`.
 
-- Each financial subcategory dialog shows period financials for pharmacy-relevant revenue and costs: money columns in tenant currency, margins as percent, cash-flow as chart series.
+**All 14 financial catalog ids currently unmapped.** Seed: volume payments/refunds/adjustments; extended pack pharmacy `billing_entity`.
 
-**Definitions**
+## Data contract
 
-- *Financial amount:* Revenue, COGS, profit, expense, discount, tax, payable, receivable, cash columns—currency unit.
-- *Report ids:* `revenue`, `cogs`, `gross_profit`, `net_profit`, `operating_expenses`, `financial_discounts`, `taxes`, `supplier_payables`, `customer_receivables`, `cash_flow`, `daily_cash_position`, `profit_by_product_category`, `profit_by_branch`, `profit_by_period`.
+| Report id | Ledger | Formula / columns |
+| --- | --- | --- |
+| `revenue` (chart) | Prefer pharmacy-scoped collections **or** consumption `amount`—pick one; subtitle names it | series `amount`/`collections` |
+| `cogs` | sum `buy_unit_price × quantity_dispensed` for DISPENSED in range | `cogs` currency |
+| `gross_profit` | consumption sum `profit` (nulls as 0 only if documented) | `profit` |
+| `net_profit` | gross_profit − refunds − write_offs (− expenses if included) | document each term |
+| `operating_expenses` | only if expenditure source exists in billing runner; else unavailable | `expenditures` |
+| `financial_discounts` | negative adjustments | `amount` |
+| `taxes` | **schema gap**—migrate or unavailable |
+| `supplier_payables` | AP if modeled; else unavailable (no fake) |
+| `customer_receivables` | open invoice totals pharmacy-scoped | `amount` |
+| `cash_flow` (chart) | billing `net_collections` / collections−refunds series | existing billing columns |
+| `daily_cash_position` | end-of-day collections−refunds | `date`, `net_collections` |
+| `profit_by_product_category` | consumption profit join inventory category | `category`, `profit`, `amount` |
+| `profit_by_branch` | by `facility` | single facility demo OK |
+| `profit_by_period` (chart) | daily/monthly profit from consumption | `profit`, `amount` |
 
 ## Requirements
 
-1. Map all financial report ids to dataset runners (reuse billing financial analytics + pharmacy consumption profit where appropriate) and provider projections; charts for `revenue`, `cash_flow`, `profit_by_period`.
-2. Units: all money keys currency; margin keys percent; daily position counts of txns as count if present.
-3. Soft-refresh on period; empty/error states; Excel/PDF by content kind.
-4. Seed demo invoices/payments/expenses/payables/receivables spanning the default presets so revenue, COGS, gross/net, tax, discounts, and cash flow are non-empty.
-5. Reuse shared reporting + billing datasets; do not create a separate finance app shell.
-6. Permissions reports read ∩ pharmacy (and billing read if required by API)—unauthorized absent.
-7. Tests: projections + currency formatting; seed non-empty revenue/COGS; responsive dialog.
+1. Never mix billing `profit_proxy` and retail margin without labeling.
+2. Pharmacy scope payments/invoices with `billing_entity=PHARMACY` when claiming pharmacy financials.
+3. Wire datasetKeys; seed today-range activity for charts.
+4. Reuse billing + consumption builders.
+5. Tests: COGS = Σ buy×qty for fixture logs; revenue subtitle matches ledger; tax gap handled.
 
 ## Constraints
 
-- Pharmacy Reporting stays read-only; no GL posting UI.
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/demo-data.mdc`, `.cursor/access/permissions.mdc`, `prompts/.cursor/prompt.mdc`.
+- Read-only Reporting; `index.md` rules; permissions for billing datasets.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | All 14 financial reports map to ready/empty/error with seed. | R1 |
-| A2 | Currency and percent units correct; chart exports PDF. | R2 |
-| A3 | Demo yields revenue, COGS, profit, tax, cash-flow samples. | R4 |
-| A4 | Reuses billing/pharmacy datasets + shared kit; access OK. | R5–R7 |
+| A1 | Each metric’s ledger/formula documented in UI subtitle + code. | contract |
+| A2 | Currency columns format via effective default/UGX. | R2 |
+| A3 | Demo revenue/COGS/gross_profit/cash_flow non-empty. | R3 |
 
 ## Relevant Files
 
-- `.cursor/reporting-analytics.md/pharmacy-reporting.md` §8
-- `backend/src/lib/reports/datasets.js` (billing financial)
-- `pharmacy_reporting_catalog.dart`, `pharmacy_reporting_data_provider.dart`
-- Billing/payment seeders in volume packs
-- `frontend/lib/shared/reporting/**`
+- `datasets.js` billing + consumption; Prisma payment/refund/invoice/adjustment/dispense_log; volume seed; catalog/provider
 
 ## Verification
 
-- Dataset tests for profit-by-period and cash-flow series.
-- Manual: Financial → revenue chart, COGS, payables/receivables; xxl + dark.
+- Reconcile one day: collections vs payments SQL; COGS vs dispense×buy.
+- Manual: Financial → revenue, COGS, cash flow.

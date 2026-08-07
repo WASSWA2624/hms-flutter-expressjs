@@ -1,56 +1,52 @@
-# Pharmacy Reporting: Supplier & Procurement Analytics Dialogs and Demo Seed
+# Pharmacy Reporting: Supplier & Procurement Analytics — Accurate KPIs
 
-Implement Supplier & Procurement Analytics report dialogs (Reporting catalog §14) with spend/price/reliability metrics and demo supplier performance data—distinct from Analytics tab chips.
+Implement Reporting §14 analytics from supplier/PO/receipt/inbound/price facts—distinct from Analytics chips; share basis with `04-purchasing-suppliers.md`.
 
 ## Context
 
-**Current behavior**
+**Same schema limits as purchasing:** PO headers without lines; value often via INBOUND×`buy_unit_price`; `drug.supplier_id`; 3 seeded suppliers.
 
-- Category `supplier_procurement` has 9 reports; all unavailable. Overlaps conceptually with Purchasing (§4) but focuses on spend analytics, price trends, reliability, fulfillment, lateness, frequency, volume, payment status.
-- Suppliers/POs exist; Analytics tab is separate and must remain unchanged.
+**All 9 `supplier_procurement` ids unavailable.** Analytics tab must stay unchanged.
 
-**Intended behavior**
+## Data contract
 
-- Each procurement-analytics subcategory dialog shows supplier KPIs for the period with currency for spend/prices, percent for rates, days for lateness, and counts/qty for frequency/volume.
-
-**Definitions**
-
-- *Procurement analytics report:* Aggregate supplier performance metrics under Reporting (not Analytics chips).
-- *Report ids:* `supplier_spend`, `price_comparison`, `price_trends`, `supplier_reliability`, `order_fulfillment_rate`, `late_deliveries`, `purchase_frequency`, `purchase_volume`, `supplier_payment_status`.
+| Report id | Definition |
+| --- | --- |
+| `supplier_spend` | sum purchase_value basis by supplier in range | `supplier`, `amount` |
+| `price_comparison` | current `buy_unit_price` for same drug across suppliers if multiple; else compare drugs per supplier | `drug`, `supplier`, `buy_unit_price` |
+| `price_trends` (chart) | historical buy price from audit diffs or price-history table—**seed ≥2 points**; else unavailable |
+| `supplier_reliability` | % POs with receipt within N days (define N=7 in code+subtitle) | `reliability_rate` percent |
+| `order_fulfillment_rate` | received_qty/ordered_qty after line items exist; else proxy receipt-exists/PO-count | document proxy |
+| `late_deliveries` | receipt delay &gt; N days | `delivery_days`, count |
+| `purchase_frequency` | PO count by supplier | count |
+| `purchase_volume` | inbound qty by supplier | `quantity` |
+| `supplier_payment_status` | only with real AP/payment links; else unavailable |
 
 ## Requirements
 
-1. Map all nine report ids to datasets (may share runners with purchasing prompts but distinct projections); `price_trends` chart.
-2. Units: spend/price → currency; fulfillment/reliability → percent; late delivery → days or count per column key; frequency → count; volume → quantity.
-3. Soft-refresh; empty when no supplier activity; reuse shared export rules.
-4. Seed multi-supplier spend variance, price changes over time, late vs on-time deliveries, fulfillment <100% for at least one supplier, payment status mix.
-5. Reuse purchasing datasets/seed where possible; do not modify Analytics chips or invent a second suppliers UI.
-6. Access, responsive, light/dark.
-7. Tests: price_trends series; fulfillment percent formatting; Analytics unchanged.
+1. Reuse purchasing dataset runners with analytics projections; do not fork conflicting spend formulas.
+2. N-day threshold constant shared by reliability/late reports.
+3. Seed multi-supplier spend variance + at least one late receipt.
+4. Keep Analytics chips untouched.
+5. Tests: spend matches purchasing purchase_value total; reliability_rate in 0–100%.
 
 ## Constraints
 
-- Keep Reporting vs Analytics separation; follow `prompts/pharmacy-reporting.md` shell rules.
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/demo-data.mdc`, `prompts/.cursor/prompt.mdc`, coordinate with `04-purchasing-suppliers.md`.
+- `04-purchasing-suppliers.md` basis; `index.md`; shell chrome unchanged.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | All 9 procurement-analytics reports leave unavailable with seed. | R1 |
-| A2 | Currency/percent/days/qty units correct; trends chart OK. | R2 |
-| A3 | Demo shows spend variance, late delivery, partial fulfillment. | R4 |
-| A4 | Analytics untouched; shared kit + access OK. | R5–R7 |
+| A1 | KPI definitions match contract; proxies labeled. | contract |
+| A2 | Currency/percent/days/qty units correct. | R2 |
+| A3 | Demo spend + late delivery visible; Analytics unchanged. | R3 |
 
 ## Relevant Files
 
-- `.cursor/reporting-analytics.md/pharmacy-reporting.md` §14
-- `04-purchasing-suppliers.md` (shared seed/datasets)
-- `pharmacy_reporting_catalog.dart`, data provider
-- Supplier/PO modules + seeders
-- `frontend/lib/shared/reporting/**`
+- Purchasing datasets/seed; `pharmacy_reporting_catalog.dart` procurement block; provider
 
 ## Verification
 
-- Tests distinguishing purchasing list vs analytics projections.
-- Manual: Procurement analytics → price trends, late deliveries; tablet + dark.
+- Supplier spend sum = purchasing purchase_value for same range.
+- Manual: Procurement analytics → spend, price trends, late deliveries.

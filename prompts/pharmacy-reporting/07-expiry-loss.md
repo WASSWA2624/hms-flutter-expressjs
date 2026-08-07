@@ -1,55 +1,55 @@
-# Pharmacy Reporting: Expiry & Loss Control Dialogs and Demo Seed
+# Pharmacy Reporting: Expiry & Loss Control — Accurate Mapping
 
-Implement Expiry & Loss Control dialogs with day-window, value, and reason mappings—extending inventory risk seed and shared formatters.
+Extend expiry/loss dialogs from `drug_batch` risk rows and `stock_adjustment`/`stock_movement` reasons—aligned with inventory classifiers and seed templates.
 
 ## Context
 
-**Current behavior**
+**Mapped:** `expiring_windows`, `already_expired` → `inventory_stock_risk` filter `EXPIRING_SOON` / `EXPIRED`.
 
-- Category `expiry_loss` has 8 reports. `expiring_windows` and `already_expired` filter `inventory_stock_risk`; value, damage, loss, write-offs, reasons, and breakdown remain unavailable.
-- Clinical catalog already seeds wall-clock expiry offsets (expired through 180-day windows).
+**Accuracy note:** `expiring_windows` currently dumps all `EXPIRING_SOON`—it does **not** yet bucket 30/60/90/180. Seed templates: dayOffsets −75,−14,8,21,52,78,145 with leadDays 30–180.
 
-**Intended behavior**
+**Value gap:** expiry rows have `quantity` but not currency value—compute `value = quantity × buy_unit_price` via drug name/id join.
 
-- Dialogs show expiry buckets (30/60/90/180), expired stock, loss values, write-offs, adjustment reasons, and product/category/supplier loss breakdowns with currency for values and days for expiry distance.
+**Reasons enum on movement/adjustment:** `PURCHASE|DISPENSE|RETURN|DAMAGE|EXPIRY|OTHER`.
 
-**Definitions**
+## Data contract
 
-- *Expiry window:* Rows with `days_to_expiry` within 30/60/90/180 (and labeled buckets).
-- *Report ids:* `expiring_windows`, `already_expired`, `expired_stock_value`, `damaged_stock_loss`, `lost_stock_loss`, `stock_write_offs`, `adjustment_reasons`, `expiry_losses_breakdown`.
+| Report id | Logic |
+| --- | --- |
+| `expiring_windows` | Filter batches with `days_to_expiry` in (0,30], (30,60], (60,90], (90,180]; column `expiry_window` + existing expiry columns. Exclude already expired |
+| `already_expired` | `risk_state=EXPIRED` or `days_to_expiry < 0` |
+| `expired_stock_value` | sum `quantity × buy_unit_price` for expired batches; columns include `value` |
+| `damaged_stock_loss` | adjustments/movements reason `DAMAGE` in range; qty + `value` |
+| `lost_stock_loss` | only if reason distinguishes loss; else map `OTHER` **explicitly** in subtitle or unavailable |
+| `stock_write_offs` | adjustments with EXPIRY/DAMAGE (document set); `amount`/`value` currency |
+| `adjustment_reasons` | group by `reason` counts/qty |
+| `expiry_losses_breakdown` | expired value by `drug` / inventory category / `drug.supplier_id` |
 
 ## Requirements
 
-1. Complete datasetKeys + projections for all expiry/loss ids; extend stock-risk and adjustment/write-off sources.
-2. Units: `days_to_expiry` → days; expired/damage/loss/write-off values → currency; quantities → units; reason/category labels plain.
-3. Period filter scopes write-offs/adjustments; expiry snapshot may be as-of “to” date—state that in subtitle.
-4. Seed: batches in each window, expired value > 0, damaged/lost/write-off adjustments with reasons, supplier/category on loss rows where FK exists.
-5. Reuse provider stock-risk filters and shared dialog/export; no parallel loss UI.
-6. Access, responsive, themes; tests for windows + value units + seed templates.
+1. Implement window bucketing in provider or dataset—tests for each bucket using seed offsets.
+2. Value always uses `buy_unit_price` (COGS), not sell—subtitle “at buy cost”.
+3. Seed keeps templates; add DAMAGE/EXPIRY adjustments with qty&gt;0.
+4. Reuse inventory dataset; don’t change EXPIRING_SOON definition silently.
+5. Tests: dayOffset 8 → ≤30 bucket; −14 → expired value&gt;0.
 
 ## Constraints
 
-- Do not invent orphan adjustment FKs; follow `.cursor/access/demo-data.mdc`.
-- Follow `.cursor/mandatories.mdc`, `prompts/.cursor/prompt.mdc`, `frontend/.cursor/layouts.mdc`.
+- `index.md` rules; demo-safety; no orphan FKs.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | All 8 expiry/loss reports leave unavailable with seed. | R1 |
-| A2 | Days/currency/qty units correct across dialogs. | R2 |
-| A3 | Demo covers 30/60/90/180, expired value, and ≥1 write-off reason. | R4 |
-| A4 | Shared kit + access + responsive OK. | R5–R6 |
+| A1 | Windows are four exclusive buckets; expired separate. | contract |
+| A2 | Values at buy cost; days unit on `days_to_expiry`. | R2 |
+| A3 | Demo populates each window + damage write-off. | R3 |
 
 ## Relevant Files
 
-- `.cursor/reporting-analytics.md/pharmacy-reporting.md` §7
-- `pharmacy_reporting_data_provider.dart`, catalog ids
-- `seed-clinical-catalog-pack.js`, pharmacy reporting seed tests
-- `backend/src/lib/reports/datasets.js`
-- `frontend/lib/shared/reporting/module_reporting_table.dart`
+- `runInventoryDataset`; `PHARMACY_REPORT_RISK_BATCH_TEMPLATES`; stock_adjustment/movement; provider filters
 
 ## Verification
 
-- Tests for window filtering and expired value currency formatting.
-- Manual: Expiry section → windows, write-offs, breakdown; light/dark.
+- Bucket counts vs raw batch expiry dates for demo tenant.
+- Manual: Expiry → windows, expired value, adjustment reasons.

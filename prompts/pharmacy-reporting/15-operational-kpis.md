@@ -1,56 +1,64 @@
-# Pharmacy Reporting: Operational KPIs Dialogs and Demo Seed
+# Pharmacy Reporting: Operational KPIs — Accurate Headline Metrics
 
-Implement Operational KPIs report dialogs as demo-ready KPI cards/tables with today and period metrics, correct units, and seeded headline numbers.
+Map each KPI button to a single authoritative metric from consumption, throughput, stock risk, or billing—**today means calendar today in facility TZ/UTC consistently**.
 
 ## Context
 
-**Current behavior**
+**Already mapped**
 
-- Category `operational_kpis` has 14 reports. Some map to throughput/stock-risk/consumption (`kpi_prescriptions`, low/OOS/near-expiry/expired value, top selling); many still unavailable (today sales/profit, transactions, stock value, credit/payables, top profitable, slow-moving).
-- KPI dialogs should summarize “what happened” for the operational layer called out in the reporting doc.
+- `kpi_prescriptions` → throughput
+- `low_stock_items` / `kpi_out_of_stock` / `near_expiry_value` / `expired_stock_value_kpi` → stock risk filters (note: value KPIs currently filter rows but **may still lack `value` column**—add buy-cost value)
+- `top_selling_medicines` → consumption top 20 (UI says top 10—**cap at 10** for this id)
 
-**Intended behavior**
+**Unmapped:** today sales/profit, transactions, stock value, credit/payables, top profitable, slow-moving.
 
-- Each KPI button opens a dialog focused on that metric (summary + supporting rows) with today-aware presets where labeled “today”, otherwise selected period; units correct for money/qty/count.
+**Seed:** risk qty profiles + batches; dispenses in clinical/volume; “today” needs dispenses with `dispensed_at` on seed day (wall clock).
 
-**Definitions**
+## Data contract
 
-- *KPI report:* Single-metric-forward projection with optional top-N breakdown.
-- *Report ids:* `total_sales_today`, `todays_profit`, `kpi_prescriptions`, `kpi_transactions`, `current_stock_value`, `low_stock_items`, `kpi_out_of_stock`, `near_expiry_value`, `expired_stock_value_kpi`, `outstanding_customer_credit`, `outstanding_supplier_payments`, `top_selling_medicines`, `top_profitable_medicines`, `kpi_slow_moving`.
+| Report id | Metric |
+| --- | --- |
+| `total_sales_today` | consumption `summary.amount` for **today** range only |
+| `todays_profit` | consumption `summary.profit` today (nulls handled) |
+| `kpi_prescriptions` | throughput `orders_created` today or selected period—match dialog preset |
+| `kpi_transactions` | same as orders_created **or** payment count—subtitle picks one; prefer orders for pharmacy ops |
+| `current_stock_value` | Σ qty×buy across stock (not only risk rows) |
+| `low_stock_items` | risk LOW+CRITICAL list |
+| `kpi_out_of_stock` | qty≤0 |
+| `near_expiry_value` / `expired_stock_value_kpi` | Σ qty×buy on EXPIRING_SOON / EXPIRED rows |
+| `outstanding_customer_credit` | open pharmacy invoice sum |
+| `outstanding_supplier_payments` | AP if real; else unavailable |
+| `top_selling_medicines` | top **10** by amount |
+| `top_profitable_medicines` | top 10 by `profit` (exclude null profit) |
+| `kpi_slow_moving` | same definition as inventory slow_moving |
+
+**Today UX:** opening these ids forces `ModuleReportingPeriodPreset.today` (or equivalent range) so labels match data.
 
 ## Requirements
 
-1. Complete datasetKeys + projections for all KPI ids; reuse consumption/stock-risk/throughput; add today sales/profit and receivables/payables mappings.
-2. Units: sales/profit/stock/expiry/credit/payable values → currency; low/OOS/slow lists qty → quantity; prescriptions/transactions → count; top-N sort by amount/profit.
-3. “Today” reports force today range even if another preset was last used—or reset preset to today when opened (document chosen UX and keep consistent).
-4. Seed so today’s sales/profit and each risk/credit KPI are non-zero in demo after seed.
-5. Reuse shared dialog/summary/breakdown rendering; no separate KPI dashboard framework inside Reporting.
-6. Access, responsive (summary + table stack on xs), light/dark.
-7. Tests: today coercion; top-10 limit; unit formatting; Analytics unchanged.
+1. Fix top-10 vs top-20 mismatch for `top_selling_medicines`.
+2. Add value columns for expiry KPIs at buy cost.
+3. Seed dispenses/`paid_at` on current day for today KPIs after `db:seed:demo`.
+4. Reuse existing filters/builders.
+5. Tests: today range; top 10 length; near_expiry_value = sum qty×buy fixture.
 
 ## Constraints
 
-- Do not replace Analytics insight chips; KPIs live under Reporting catalog buttons.
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/demo-data.mdc`, `prompts/.cursor/prompt.mdc`.
+- Not Analytics chips; `index.md` formulas for consumption/stock.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | All 14 KPI reports map to ready/empty/error with seed. | R1 |
-| A2 | Currency/qty/count units correct; top lists capped. | R2 |
-| A3 | Demo “today” sales/profit and risk KPIs non-empty. | R4 |
-| A4 | Shared kit + responsive access; Analytics untouched. | R5–R7 |
+| A1 | Each KPI matches contract metric and period. | contract |
+| A2 | Today KPIs use today range; values at buy cost where stated. | R2 |
+| A3 | Demo today sales/profit and risk KPIs non-empty after seed. | R3 |
 
 ## Relevant Files
 
-- `.cursor/reporting-analytics.md/pharmacy-reporting.md` §15
-- `pharmacy_reporting_catalog.dart`, data provider (existing top/risk filters)
-- Seed clinical/volume packs
-- `frontend/lib/shared/reporting/module_reporting_data.dart`
-- Provider tests
+- provider top/risk filters; consumption/throughput/inventory/billing datasets; clinical/volume seed; catalog kpi block
 
 ## Verification
 
-- Tests for today range and top_profitable_medicines.
-- Manual: KPIs → today sales, low stock, top selling; xs + dark.
+- Seed day: Total sales today = sum of today’s dispense amounts.
+- Manual: KPIs → today sales, low stock, top selling (10 rows).

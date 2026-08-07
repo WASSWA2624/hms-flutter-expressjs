@@ -1,56 +1,58 @@
-# Pharmacy Reporting: Controlled / Regulated Medicines Dialogs and Demo Seed
+# Pharmacy Reporting: Controlled Medicines — Accurate Balance Log
 
-Implement Controlled / Regulated Medicines report dialogs as a balance-and-log view with quantity units, batch lineage, and demo regulatory coverage.
+Implement controlled-drug balance reports only after a **durable controlled marker** exists; balances must reconcile from movements + dispenses.
 
 ## Context
 
-**Current behavior**
+**Gap:** No `drug.is_controlled` (or equivalent). Only weak signals: seed Morphine/Tramadol keys; `custody_snapshot.controlled_items_json`; `pharmacy_dispense_attestation`.
 
-- Category `controlled_medicines` has 12 reports; all unavailable.
-- Drugs can be flagged controlled; dispense logs and stock movements exist, but Reporting lacks opening/closing balance and regulatory log projections.
+**Stock/dispense truth:** `inventory_stock`/`drug_batch.quantity`, `stock_movement`, `dispense_log.quantity_dispensed`, batch refs on dispense.
 
-**Intended behavior**
+**All 12 controlled ids unavailable.**
 
-- Dialogs present controlled stock, opening/received/dispensed/closing balances, batches, prescriber, patient, dispensing staff, adjustments, wastage, and a regulatory log for the selected period.
+## Data contract
 
-**Definitions**
+| Report id | Formula |
+| --- | --- |
+| Identify controlled set | **Required:** boolean on `drug` (preferred) or versioned allow-list constant shared by seed+dataset—document choice |
+| `controlled_medicine_stock` | on-hand qty for controlled drugs | `drug`, `quantity`, `batch_number` |
+| `opening_balance` | on-hand at `from` − 1 tick: stock − movements after from + dispenses after from (state formula in code comments) |
+| `quantity_received` | INBOUND/PURCHASE qty in range for controlled |
+| `quantity_dispensed` | DISPENSED log qty in range |
+| `closing_balance` | opening + received − dispensed − wastage ± adjustments |
+| `batch_numbers` | batches for controlled drugs |
+| `controlled_prescriber` / `controlled_patient` / `dispensing_staff` | from order encounter/patient + attestation user |
+| `controlled_adjustments` | ADJUSTMENT movements |
+| `wastage` | EXPIRY/DAMAGE qty |
+| `regulatory_log` | chronological union of receive/dispense/adjust/waste with actor+batch |
 
-- *Balance quantity:* Controlled pack counts—quantity unit throughout.
-- *Report ids:* `controlled_medicine_stock`, `opening_balance`, `quantity_received`, `quantity_dispensed`, `closing_balance`, `batch_numbers`, `controlled_prescriber`, `controlled_patient`, `dispensing_staff`, `controlled_adjustments`, `wastage`, `regulatory_log`.
+**Invariant (test):** `closing = opening + received − dispensed − wastage + adjustments_net` for each drug/batch grain you choose (document grain: drug vs batch).
 
 ## Requirements
 
-1. Dataset + projections for every controlled report id from controlled-flagged drugs + movements/dispenses; balances must reconcile received/dispensed/adjustments/wastage within rounding rules you document in tests.
-2. Units: all stock/movement fields → quantity; actor/patient/prescriber names plain; wastage qty → quantity; timestamps formatted; no currency unless value columns exist.
-3. Period defines opening (as-of from) and closing (as-of to); soft-refresh; empty when no controlled stock.
-4. Seed ≥1 controlled medicine with opening stock, receipt, dispense to named patient/prescriber/staff, adjustment, and wastage so balances are demonstrable.
-5. Reuse shared reporting + pharmacy inventory; tighter permission checks for regulatory log if required.
-6. Responsive; light/dark; unauthorized log fields absent.
-7. Tests: balance identity; seed controlled graph; export gated.
+1. Migrate `is_controlled` (or equivalent) + mark Morphine/Tramadol (and peers) in seed **before** claiming ready.
+2. Implement balance grain consistently; refuse silent drift.
+3. Permission-tighten regulatory_log.
+4. Reuse shared dialog; quantity units throughout.
+5. Tests: golden balance fixture; unauthorized log absent.
 
 ## Constraints
 
-- Do not weaken controlled-drug audit requirements; follow `.cursor/access/permissions.mdc`, `.cursor/flows/pharmacy-flow.mdc`.
-- Follow `.cursor/access/demo-data.mdc`, `prompts/.cursor/prompt.mdc`, `.cursor/mandatories.mdc`.
+- Permissions + pharmacy-flow; `index.md` gap rule; migrations mandatory.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | All 12 controlled reports map to ready/empty/error with seed. | R1 |
-| A2 | Balance/movement fields use quantity units; actors plain. | R2 |
-| A3 | Demo controlled graph shows open→receive→dispense→close path. | R4 |
-| A4 | Regulatory fields permission-safe; shared kit + responsive OK. | R5–R7 |
+| A1 | Controlled set is explicit in DB or shared allow-list. | contract |
+| A2 | Balance invariant holds in tests. | contract |
+| A3 | Demo controlled path open→receive→dispense→close. | R3 |
 
 ## Relevant Files
 
-- `.cursor/reporting-analytics.md/pharmacy-reporting.md` §13
-- Controlled drug flags on catalog; dispense/movement tables
-- `pharmacy_reporting_catalog.dart`, data provider
-- Clinical catalog seeder (controlled examples)
-- `frontend/lib/shared/reporting/**`
+- Prisma drug (+ migration), dispense_log, stock_movement, attestation; clinical catalog seeder; datasets; provider
 
 ## Verification
 
-- Balance reconciliation unit test.
-- Manual: Controlled → opening/closing, regulatory log; dark + narrow.
+- Manual ledger vs dialog balances for Morphine seed.
+- Manual: Controlled → opening/closing, regulatory log.

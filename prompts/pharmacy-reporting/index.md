@@ -1,73 +1,60 @@
 # Pharmacy Reporting: Per-Category Implementation Index
 
-Implement every pharmacy Reporting catalog category so each subcategory dialog loads mapped, unit-correct demo data—without reinventing the shared reporting shell.
+Implement every pharmacy Reporting category with **schema-accurate** mappings, formulas, and demo seed—reuse the shared kit; never invent columns or money math that contradict existing runners.
 
 ## Context
 
 **Current behavior**
 
-- Catalog UI, filters, and `ModuleReportingReportDialog` shell exist (`pharmacyReportingCatalog`, `PharmacyReportingDataProvider`). Most subcategory `datasetKey`s are null → honest **unavailable**. Only a subset projects `pharmacy_drug_consumption`, `pharmacy_dispense_throughput`, or `inventory_stock_risk`.
-- Shared kit already formats currency / quantity / percent / days / counts (`moduleReportingMetricUnitForKey`), exports Excel/PDF, and adapts tables/charts responsively.
-- Demo seed packs (`seed-clinical-catalog-pack`, volume packs) already diversify stock risk and pharmacy activity; coverage is incomplete for many catalog reports.
+- Shell/catalog exist (`pharmacyReportingCatalog`, `ModuleReportingReportDialog`). Only three backend datasets back pharmacy Reporting today: `pharmacy_drug_consumption`, `pharmacy_dispense_throughput`, `inventory_stock_risk` (`REPORT_DATASET_MAP` in `backend/src/lib/reports/constants.js`). Billing has `billing_collections_open_balances` but **no** pharmacy catalog report wires to it yet.
+- Most subcategory `datasetKey`s are null → unavailable. Dialogs already format via `moduleReportingMetricUnitForKey` and `effectiveDefaultCurrencyProvider` (fallback `UGX`).
 
 **Intended behavior**
 
-- Execute one prompt file per category below. Each leaves that category’s report buttons opening dialogs with period-filtered, unit-labeled data suitable for demos—reusing shared UI, datasets, seeders, and permissions.
+- Execute `01`–`17` below. Each dialog’s numbers must match the Data contract in that file (source rows, filters, formulas). Prefer extending existing builders over parallel math.
 
-**Definitions**
+## Data accuracy rules (all category prompts)
 
-- *Category prompt:* One markdown file under `prompts/pharmacy-reporting/` covering all subcategory report ids for that category.
-- *Mapped report:* Catalog entry with `datasetKey` + provider projection that returns ready/empty/error (not unavailable) when seed/API data exists.
+1. **Single source of truth:** Dispense revenue/profit = `buildPharmacyDrugConsumptionAnalytics` rules: `amount = round(unit_price × quantity_dispensed, 2)` where `unit_price` prefers `drug.unit_price` else matching `pharmacy_order.billing_snapshot.line_items[].unit_price`; `profit = round((unit_price − buy_unit_price) × qty, 2)` via `pharmacyRetailMarginUnit`—**null profit when `buy_unit_price` unset**. Do not recompute with different rounding.
+2. **Throughput counts** come only from `pharmacy_order.status` buckets (`DISPENSED|PARTIALLY_DISPENSED|CANCELLED`) + `dispense_log.status=RETURNED` (`buildPharmacyDispenseThroughputAnalytics`). `returns` is a **count of return logs**, not pack qty.
+3. **Stock risk** uses `runInventoryDataset` classifiers exactly: qty≤0 `OUT_OF_STOCK`; qty≤floor(reorder/2) `CRITICAL`; qty≤reorder `LOW`; qty≥reorder×3 `OVERSTOCK`; else `OK`. Expiry rows only `EXPIRED|EXPIRING_SOON` from `drug_batch` + `resolveBatchExpiryAlertStatus`.
+4. **Do not invent schema.** If a report needs a field that does not exist (examples: `drug.category`, `drug.barcode`, `drug.controlled`, `pharmacy_order.payment_method`, `pharmacy_order.cashier_user_id`, tax/VAT columns, PO line amounts), either (a) add a Prisma field + migration + seed, (b) join an **existing** related table that holds the truth, or (c) keep unavailable with an explicit gap note—never fake client-side values.
+5. **Branch = `facility`.** Demo seed has **one** facility (`DemoCare General Hospital`). Multi-branch reports must be honest single-row ready or extend seed with ≥2 facilities—do not invent a `branch` table.
+6. **Payment method** lives on `payment.method` (`PaymentMethodType`), not on pharmacy orders. Pharmacy payment slices must filter `billing_entity=PHARMACY` (and/or drug catalog invoice items) when scoping pharmacy cash.
+7. **Currency:** Display with `effectiveDefaultCurrencyProvider`. Prefer row/`drug.currency` or `invoice.currency`/`payment` currency when projecting money; seeded pharmacy catalog uses **UGX**.
+8. **Column keys must match unit inference:** money → `amount`/`profit`/`collections`/`refunds`/…; qty → `quantity`/`quantity_dispensed`/`reorder_*`; days → `days_to_expiry`/`*_days`; rates → `*_rate`/`margin`/`percent`; counts → `*_count`/`orders_created`/`dispensed` (throughput dispense is **order count**, not packs).
 
 ## Requirements
 
-1. Treat `prompts/pharmacy-reporting.md` as the shell/catalog contract; do not re-build sections/filters/dialog chrome in category prompts.
-2. Implement categories via the files in this folder (one category per file); keep ids aligned with `PharmacyReportingCategoryIds` and catalog report ids.
-3. Prefer extending existing datasets, projectors, and seed helpers over new microservices or parallel dialog frameworks.
-4. After each category, demo seed + period presets must yield non-empty rows for at least the primary reports in that category (see per-file acceptance).
+1. Treat `prompts/pharmacy-reporting.md` as chrome-only; category files own data mapping + seed.
+2. Keep catalog report ids stable (`PharmacyReportingCategoryIds` + report id strings).
+3. Extend `PharmacyReportingDataProvider` projections and `REPORT_DATASET_MAP` runners; register new keys in `report-definition` enum/schema when adding datasets.
+4. Extend demo seed packs (`seed-clinical-catalog-pack.js`, `seed-clinical-pack.js`, `seed-volume-pack.js`, `seed-volume-extended-pack.js`, `seed-operations-pack.js`) under `demo-safety.js`.
 5. Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `.cursor/access/demo-data.mdc`, `prompts/.cursor/prompt.mdc`, `frontend/.cursor/layouts.mdc`.
 
 ## Constraints
 
-- Do not change Analytics chips or non-pharmacy Overview except shared kit fixes that pharmacy Reporting already depends on.
-- Do not invent production-only seed paths; gate with `demo-safety.js`.
-- Unauthorized export/write UI must remain absent.
+- Analytics chips unchanged. Unauthorized export absent. No production seeding.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | Shell/catalog prompt remains the single chrome contract. | R1 |
-| A2 | Each category file below is implemented with stable catalog ids. | R2 |
-| A3 | Implementations reuse shared reporting + seed infrastructure. | R3 |
-| A4 | Demo presets show data for primary reports per category file. | R4 |
-| A5 | Rules for access, demo safety, responsiveness, and prompt standards are followed. | R5 |
+| A1 | Every category file’s Data contract is implemented without conflicting formulas. | R1–R3 |
+| A2 | Schema gaps use migration, real join, or honest unavailable—never fabricated numbers. | Data rules 4 |
+| A3 | Demo seed makes each file’s primary reports non-empty for default presets where contract requires it. | R4 |
+| A4 | Units/currency match shared formatters + seeded UGX/org default. | Data rules 7–8 |
 
 ## Relevant Files
 
-| # | Category | Prompt |
-| --- | --- | --- |
-| 1 | Sales & Revenue | `01-sales-revenue.md` |
-| 2 | Inventory / Stock | `02-inventory-stock.md` |
-| 3 | Medicines & Products | `03-medicines-products.md` |
-| 4 | Purchasing & Suppliers | `04-purchasing-suppliers.md` |
-| 5 | Dispensing | `05-dispensing.md` |
-| 6 | Patients / Customers | `06-patients-customers.md` |
-| 7 | Expiry & Loss Control | `07-expiry-loss.md` |
-| 8 | Financial Reports | `08-financial.md` |
-| 9 | Staff & User Activity | `09-staff-activity.md` |
-| 10 | Branch / Multi-Store | `10-branch.md` |
-| 11 | Stock Transfers | `11-stock-transfers.md` |
-| 12 | Prescription & Clinical | `12-prescription-clinical.md` |
-| 13 | Controlled / Regulated | `13-controlled-medicines.md` |
-| 14 | Supplier & Procurement Analytics | `14-supplier-procurement.md` |
-| 15 | Operational KPIs | `15-operational-kpis.md` |
-| 16 | Audit & Compliance | `16-audit-compliance.md` |
-| 17 | Management / Executive | `17-management-executive.md` |
-
-Also: `.cursor/reporting-analytics.md/pharmacy-reporting.md`, `frontend/lib/features/reports/presentation/pharmacy_reporting_catalog.dart`, `frontend/lib/shared/reporting/**`, `backend/src/lib/reports/datasets.js`, `backend/scripts/seeders/**`.
+| # | Prompt |
+| --- | --- |
+| 1–17 | `01-sales-revenue.md` … `17-management-executive.md` |
+| Spec | `.cursor/reporting-analytics.md/pharmacy-reporting.md` |
+| Catalog/provider | `frontend/lib/features/reports/presentation/pharmacy_reporting_catalog.dart`, `widgets/pharmacy_reporting_data_provider.dart` |
+| Datasets | `backend/src/lib/reports/datasets.js`, `constants.js`, `@lib/billing/pharmacy-drug-margins` |
+| Seed | `backend/scripts/seeders/seed-clinical-catalog-pack.js` (+ clinical/volume/operations packs) |
 
 ## Verification
 
-- Run category prompts in order 01→17 (or by dependency: inventory/medicines before expiry/KPIs/management).
-- Per-file verification plus manual: Reporting → category → each button → non-unavailable body with correct units → export when entitled → xs/lg/xxl + light/dark.
+- Implement 01→17 (management last). Per-file verification + spot-check: dialog totals equal dataset summary for same from/to/scope.
