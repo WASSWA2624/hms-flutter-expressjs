@@ -21792,6 +21792,102 @@
   "@reportsPharmacyReportingCategoryManagement": {
     "description": "Pharmacy report category: management and executive reports."
   },
+  "reportsPharmacyReportingSubcategoryFilterLabel": "Report",
+  "@reportsPharmacyReportingSubcategoryFilterLabel": {
+    "description": "Advanced filter group for pharmacy report subcategories."
+  },
+  "reportsPharmacyReportingSubcategoryAllLabel": "All reports",
+  "@reportsPharmacyReportingSubcategoryAllLabel": {
+    "description": "Clear/all option for pharmacy report subcategory filter."
+  },
+  "reportsPharmacyReportingContentKindFilterLabel": "Report type",
+  "@reportsPharmacyReportingContentKindFilterLabel": {
+    "description": "Advanced filter group for table vs chart pharmacy reports."
+  },
+  "reportsPharmacyReportingContentKindAllLabel": "All types",
+  "@reportsPharmacyReportingContentKindAllLabel": {
+    "description": "Clear/all option for pharmacy report content kind filter."
+  },
+  "reportsPharmacyReportingContentKindTable": "Table",
+  "@reportsPharmacyReportingContentKindTable": {
+    "description": "Pharmacy report content kind: tabular."
+  },
+  "reportsPharmacyReportingContentKindChart": "Chart",
+  "@reportsPharmacyReportingContentKindChart": {
+    "description": "Pharmacy report content kind: chart/graph."
+  },
+  "reportsPharmacyReportingCatalogEmpty": "No pharmacy reports match your search or filters.",
+  "@reportsPharmacyReportingCatalogEmpty": {
+    "description": "Empty state when Reporting catalog filters hide every report."
+  },
+  "reportsPharmacyReportingPeriodLabel": "Period",
+  "@reportsPharmacyReportingPeriodLabel": {
+    "description": "Period preset section label in pharmacy report dialog."
+  },
+  "reportsPharmacyReportingPeriodToday": "Today",
+  "@reportsPharmacyReportingPeriodToday": {
+    "description": "Pharmacy report period preset: today."
+  },
+  "reportsPharmacyReportingPeriodLastWeek": "Last week",
+  "@reportsPharmacyReportingPeriodLastWeek": {
+    "description": "Pharmacy report period preset: last week."
+  },
+  "reportsPharmacyReportingPeriodLastMonth": "Last month",
+  "@reportsPharmacyReportingPeriodLastMonth": {
+    "description": "Pharmacy report period preset: last month."
+  },
+  "reportsPharmacyReportingPeriodLast3Months": "Last 3 months",
+  "@reportsPharmacyReportingPeriodLast3Months": {
+    "description": "Pharmacy report period preset: last 3 months."
+  },
+  "reportsPharmacyReportingPeriodLast6Months": "Last 6 months",
+  "@reportsPharmacyReportingPeriodLast6Months": {
+    "description": "Pharmacy report period preset: last 6 months."
+  },
+  "reportsPharmacyReportingPeriodLast12Months": "Last 12 months",
+  "@reportsPharmacyReportingPeriodLast12Months": {
+    "description": "Pharmacy report period preset: last 12 months."
+  },
+  "reportsPharmacyReportingPeriodLast24Months": "Last 2 years",
+  "@reportsPharmacyReportingPeriodLast24Months": {
+    "description": "Pharmacy report period preset: last 24 months."
+  },
+  "reportsPharmacyReportingPeriodCustom": "Custom",
+  "@reportsPharmacyReportingPeriodCustom": {
+    "description": "Pharmacy report period preset: custom date range."
+  },
+  "reportsPharmacyReportingLoadingTitle": "Loading report",
+  "@reportsPharmacyReportingLoadingTitle": {
+    "description": "Loading title while pharmacy report dialog refreshes."
+  },
+  "reportsPharmacyReportingLoadingBody": "Updating the selected period.",
+  "@reportsPharmacyReportingLoadingBody": {
+    "description": "Loading body while pharmacy report dialog refreshes."
+  },
+  "reportsPharmacyReportingUnavailableTitle": "Report data not available yet",
+  "@reportsPharmacyReportingUnavailableTitle": {
+    "description": "Empty title when pharmacy report has no backend content."
+  },
+  "reportsPharmacyReportingUnavailableBody": "This report is listed in the pharmacy catalog, but live data is not wired for it yet.",
+  "@reportsPharmacyReportingUnavailableBody": {
+    "description": "Empty body when pharmacy report has no dataset mapping."
+  },
+  "reportsPharmacyReportingUnavailableMappedBody": "This report maps to an existing dataset, but the in-place pharmacy dialog view is not wired yet. Use Analytics shortcuts or Catalog runs for live data.",
+  "@reportsPharmacyReportingUnavailableMappedBody": {
+    "description": "Empty body when pharmacy report maps to a dataset but dialog content is not implemented."
+  },
+  "reportsPharmacyReportingExportExcelAction": "Export Excel",
+  "@reportsPharmacyReportingExportExcelAction": {
+    "description": "Export action for tabular pharmacy reports."
+  },
+  "reportsPharmacyReportingExportPdfAction": "Export PDF",
+  "@reportsPharmacyReportingExportPdfAction": {
+    "description": "Export action for chart pharmacy reports."
+  },
+  "reportsPharmacyReportingExportUnavailableSnack": "Nothing to export until report data is available.",
+  "@reportsPharmacyReportingExportUnavailableSnack": {
+    "description": "Snack when pharmacy report export is pressed with no data."
+  },
   "reportsPharmacyAnalyticsTopConsumedLabel": "Top consumed drugs",
   "@reportsPharmacyAnalyticsTopConsumedLabel": {
     "description": "Insight chip that opens pharmacy drug consumption."

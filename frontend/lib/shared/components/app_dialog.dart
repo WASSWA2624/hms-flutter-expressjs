@@ -32,8 +32,19 @@ class AppDialog extends StatefulWidget {
   });
 
   static const double _defaultMaxWidth = 600;
+
+  /// Prefix for per-instance shell keys on the dialog [SizedBox].
+  ///
+  /// Keys must be unique across nested [AppDialog]s (Overlay siblings). A shared
+  /// [ValueKey] causes element-tree assertions such as `_elements.contains`.
   @visibleForTesting
-  static const Key shellKey = ValueKey<String>('appDialogShell');
+  static const String shellKeyPrefix = 'appDialogShell';
+
+  /// Whether [key] identifies an [AppDialog] shell box (any nested instance).
+  @visibleForTesting
+  static bool isShellKey(Key? key) {
+    return key is ValueKey<String> && key.value.startsWith(shellKeyPrefix);
+  }
 
   final Widget? title;
   final Widget? content;
@@ -185,7 +196,12 @@ class _AppDialogState extends State<AppDialog> {
 
     if (desktopInteractive || pinFooter || _isMaximized) {
       dialogBody = SizedBox(
-        key: desktopInteractive || _isMaximized ? AppDialog.shellKey : null,
+        // Unique per State so nested AppDialogs do not share an Overlay key.
+        key: desktopInteractive || _isMaximized
+            ? ValueKey<String>(
+                '${AppDialog.shellKeyPrefix}-${identityHashCode(this)}',
+              )
+            : null,
         width: _isMaximized || desktopInteractive
             ? dialogConstraints.maxWidth
             : null,

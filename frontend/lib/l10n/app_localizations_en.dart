@@ -16939,6 +16939,84 @@ class AppLocalizationsEn extends AppLocalizations {
       'Management & executive';
 
   @override
+  String get reportsPharmacyReportingSubcategoryFilterLabel => 'Report';
+
+  @override
+  String get reportsPharmacyReportingSubcategoryAllLabel => 'All reports';
+
+  @override
+  String get reportsPharmacyReportingContentKindFilterLabel => 'Report type';
+
+  @override
+  String get reportsPharmacyReportingContentKindAllLabel => 'All types';
+
+  @override
+  String get reportsPharmacyReportingContentKindTable => 'Table';
+
+  @override
+  String get reportsPharmacyReportingContentKindChart => 'Chart';
+
+  @override
+  String get reportsPharmacyReportingCatalogEmpty =>
+      'No pharmacy reports match your search or filters.';
+
+  @override
+  String get reportsPharmacyReportingPeriodLabel => 'Period';
+
+  @override
+  String get reportsPharmacyReportingPeriodToday => 'Today';
+
+  @override
+  String get reportsPharmacyReportingPeriodLastWeek => 'Last week';
+
+  @override
+  String get reportsPharmacyReportingPeriodLastMonth => 'Last month';
+
+  @override
+  String get reportsPharmacyReportingPeriodLast3Months => 'Last 3 months';
+
+  @override
+  String get reportsPharmacyReportingPeriodLast6Months => 'Last 6 months';
+
+  @override
+  String get reportsPharmacyReportingPeriodLast12Months => 'Last 12 months';
+
+  @override
+  String get reportsPharmacyReportingPeriodLast24Months => 'Last 2 years';
+
+  @override
+  String get reportsPharmacyReportingPeriodCustom => 'Custom';
+
+  @override
+  String get reportsPharmacyReportingLoadingTitle => 'Loading report';
+
+  @override
+  String get reportsPharmacyReportingLoadingBody =>
+      'Updating the selected period.';
+
+  @override
+  String get reportsPharmacyReportingUnavailableTitle =>
+      'Report data not available yet';
+
+  @override
+  String get reportsPharmacyReportingUnavailableBody =>
+      'This report is listed in the pharmacy catalog, but live data is not wired for it yet.';
+
+  @override
+  String get reportsPharmacyReportingUnavailableMappedBody =>
+      'This report maps to an existing dataset, but the in-place pharmacy dialog view is not wired yet. Use Analytics shortcuts or Catalog runs for live data.';
+
+  @override
+  String get reportsPharmacyReportingExportExcelAction => 'Export Excel';
+
+  @override
+  String get reportsPharmacyReportingExportPdfAction => 'Export PDF';
+
+  @override
+  String get reportsPharmacyReportingExportUnavailableSnack =>
+      'Nothing to export until report data is available.';
+
+  @override
   String get reportsPharmacyAnalyticsTopConsumedLabel => 'Top consumed drugs';
 
   @override

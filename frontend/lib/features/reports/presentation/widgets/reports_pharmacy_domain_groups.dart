@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
+import 'package:hosspi_hms/features/reports/presentation/pharmacy_reporting_catalog.dart';
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
+import 'package:hosspi_hms/features/reports/presentation/widgets/pharmacy_reporting_catalog_panel.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
@@ -10,6 +12,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 class ReportsPharmacyDomainGroups extends StatefulWidget {
   const ReportsPharmacyDomainGroups({
     required this.l10n,
+    required this.policy,
     required this.datasetShortcuts,
     required this.onOpenDataset,
     this.onTabChanged,
@@ -17,6 +20,7 @@ class ReportsPharmacyDomainGroups extends StatefulWidget {
   });
 
   final AppLocalizations l10n;
+  final AppAccessPolicy policy;
   final List<ReportsLookupOption> datasetShortcuts;
   final ValueChanged<String> onOpenDataset;
   final ValueChanged<String>? onTabChanged;
@@ -36,15 +40,19 @@ class ReportsPharmacyDomainGroups extends StatefulWidget {
 class _ReportsPharmacyDomainGroupsState
     extends State<ReportsPharmacyDomainGroups> {
   static const String _categoryFilterKey = 'category';
+  static const String _subcategoryFilterKey = 'subcategory';
+  static const String _contentKindFilterKey = 'content_kind';
 
   String _selectedTabId = ReportsPharmacyDomainGroups.analyticsTabId;
   late final TextEditingController _reportingSearchController;
   AppSearchBarFilterValue _reportingFilters = AppSearchBarFilterValue.empty;
+  late final List<PharmacyReportingCategory> _catalog;
 
   @override
   void initState() {
     super.initState();
     _reportingSearchController = TextEditingController();
+    _catalog = pharmacyReportingCatalog();
   }
 
   @override
@@ -97,6 +105,15 @@ class _ReportsPharmacyDomainGroupsState
         icon: Icons.payments_outlined,
       ),
     ];
+
+    final List<PharmacyReportingCategory> filteredCatalog =
+        filterPharmacyReportingCatalog(
+          catalog: _catalog,
+          searchQuery: _reportingSearchController.text,
+          categoryIds: _reportingFilters.optionsFor(_categoryFilterKey),
+          reportIds: _reportingFilters.optionsFor(_subcategoryFilterKey),
+          contentKinds: _reportingFilters.optionsFor(_contentKindFilterKey),
+        );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -157,135 +174,123 @@ class _ReportsPharmacyDomainGroupsState
             ],
           )
         else
-          AppSearchBar(
-            controller: _reportingSearchController,
-            semanticLabel: l10n.reportsPharmacyReportingSearchLabel,
-            hintText: l10n.reportsPharmacyReportingSearchHint,
-            clearLabel: l10n.reportsClearSearchLabel,
-            onSubmitted: (_) => setState(() {}),
-            onClear: () {
-              _reportingSearchController.clear();
-              setState(() {});
-            },
-            showAdvancedFilterButton: true,
-            advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-            advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-            advancedFilterResetLabel: l10n.opdClearFiltersAction,
-            dateFilterLabel: l10n.reportsDateFilterLabel,
-            dateFromLabel: l10n.reportsDateFromLabel,
-            dateToLabel: l10n.reportsDateToLabel,
-            datePickerButtonLabel: l10n.reportsDatePickerLabel,
-            invalidDateMessage: l10n.reportsInvalidDateMessage,
-            filterGroups: <AppSearchBarFilterGroup>[
-              AppSearchBarFilterGroup(
-                key: _categoryFilterKey,
-                label: l10n.reportsPharmacyReportingCategoryFilterLabel,
-                allLabel: l10n.reportsPharmacyReportingCategoryAllLabel,
-                choices: _pharmacyReportingCategoryChoices(l10n),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              AppSearchBar(
+                controller: _reportingSearchController,
+                semanticLabel: l10n.reportsPharmacyReportingSearchLabel,
+                hintText: l10n.reportsPharmacyReportingSearchHint,
+                clearLabel: l10n.reportsClearSearchLabel,
+                onChanged: (_) => setState(() {}),
+                onSubmitted: (_) => setState(() {}),
+                onClear: () {
+                  _reportingSearchController.clear();
+                  setState(() {});
+                },
+                showAdvancedFilterButton: true,
+                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                dateFilterLabel: l10n.reportsDateFilterLabel,
+                dateFromLabel: l10n.reportsDateFromLabel,
+                dateToLabel: l10n.reportsDateToLabel,
+                datePickerButtonLabel: l10n.reportsDatePickerLabel,
+                invalidDateMessage: l10n.reportsInvalidDateMessage,
+                filterGroups: <AppSearchBarFilterGroup>[
+                  AppSearchBarFilterGroup(
+                    key: _categoryFilterKey,
+                    label: l10n.reportsPharmacyReportingCategoryFilterLabel,
+                    allLabel: l10n.reportsPharmacyReportingCategoryAllLabel,
+                    allowMultiple: true,
+                    choices: <AppSearchBarFilterChoice>[
+                      for (final PharmacyReportingCategory category in _catalog)
+                        AppSearchBarFilterChoice(
+                          value: category.id,
+                          label: pharmacyReportingCategoryLabel(
+                            l10n,
+                            category.id,
+                          ),
+                          icon: category.icon,
+                        ),
+                    ],
+                  ),
+                  AppSearchBarFilterGroup(
+                    key: _subcategoryFilterKey,
+                    label: l10n.reportsPharmacyReportingSubcategoryFilterLabel,
+                    allLabel: l10n.reportsPharmacyReportingSubcategoryAllLabel,
+                    allowMultiple: true,
+                    choices: _subcategoryFilterChoices(
+                      l10n: l10n,
+                      catalog: _catalog,
+                      selectedCategoryIds: _reportingFilters.optionsFor(
+                        _categoryFilterKey,
+                      ),
+                    ),
+                  ),
+                  AppSearchBarFilterGroup(
+                    key: _contentKindFilterKey,
+                    label: l10n.reportsPharmacyReportingContentKindFilterLabel,
+                    allLabel: l10n.reportsPharmacyReportingContentKindAllLabel,
+                    allowMultiple: true,
+                    choices: <AppSearchBarFilterChoice>[
+                      AppSearchBarFilterChoice(
+                        value: PharmacyReportingContentKind.table.name,
+                        label: l10n.reportsPharmacyReportingContentKindTable,
+                        icon: Icons.table_chart_outlined,
+                      ),
+                      AppSearchBarFilterChoice(
+                        value: PharmacyReportingContentKind.chart.name,
+                        label: l10n.reportsPharmacyReportingContentKindChart,
+                        icon: Icons.bar_chart_outlined,
+                      ),
+                    ],
+                  ),
+                ],
+                filterValue: _reportingFilters,
+                hasActiveFilters: _reportingFilters.isActive,
+                onFilterChanged: (AppSearchBarFilterValue value) {
+                  setState(() => _reportingFilters = value);
+                },
+              ),
+              SizedBox(height: theme.spacing.md),
+              PharmacyReportingCatalogPanel(
+                l10n: l10n,
+                policy: widget.policy,
+                categories: filteredCatalog,
               ),
             ],
-            filterValue: _reportingFilters,
-            hasActiveFilters: _reportingFilters.isActive,
-            onFilterChanged: (AppSearchBarFilterValue value) {
-              setState(() => _reportingFilters = value);
-            },
           ),
       ],
     );
   }
 }
 
-List<AppSearchBarFilterChoice> _pharmacyReportingCategoryChoices(
-  AppLocalizations l10n,
-) {
-  return <AppSearchBarFilterChoice>[
-    AppSearchBarFilterChoice(
-      value: 'sales_revenue',
-      label: l10n.reportsPharmacyReportingCategorySales,
-      icon: Icons.point_of_sale_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'inventory_stock',
-      label: l10n.reportsPharmacyReportingCategoryInventory,
-      icon: Icons.inventory_2_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'medicines_products',
-      label: l10n.reportsPharmacyReportingCategoryMedicines,
-      icon: Icons.medication_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'purchasing_suppliers',
-      label: l10n.reportsPharmacyReportingCategoryPurchasing,
-      icon: Icons.local_shipping_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'dispensing',
-      label: l10n.reportsPharmacyReportingCategoryDispensing,
-      icon: Icons.medical_services_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'patients_customers',
-      label: l10n.reportsPharmacyReportingCategoryCustomers,
-      icon: Icons.people_outline,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'expiry_loss',
-      label: l10n.reportsPharmacyReportingCategoryExpiry,
-      icon: Icons.event_busy_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'financial',
-      label: l10n.reportsPharmacyReportingCategoryFinancial,
-      icon: Icons.payments_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'staff_activity',
-      label: l10n.reportsPharmacyReportingCategoryStaff,
-      icon: Icons.badge_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'branch',
-      label: l10n.reportsPharmacyReportingCategoryBranch,
-      icon: Icons.storefront_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'stock_transfers',
-      label: l10n.reportsPharmacyReportingCategoryTransfers,
-      icon: Icons.swap_horiz_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'prescription_clinical',
-      label: l10n.reportsPharmacyReportingCategoryPrescription,
-      icon: Icons.description_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'controlled_medicines',
-      label: l10n.reportsPharmacyReportingCategoryControlled,
-      icon: Icons.lock_outline,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'supplier_procurement',
-      label: l10n.reportsPharmacyReportingCategoryProcurement,
-      icon: Icons.handshake_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'operational_kpis',
-      label: l10n.reportsPharmacyReportingCategoryKpis,
-      icon: Icons.speed_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'audit_compliance',
-      label: l10n.reportsPharmacyReportingCategoryAudit,
-      icon: Icons.fact_check_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'management_executive',
-      label: l10n.reportsPharmacyReportingCategoryManagement,
-      icon: Icons.analytics_outlined,
-    ),
-  ];
+List<AppSearchBarFilterChoice> _subcategoryFilterChoices({
+  required AppLocalizations l10n,
+  required List<PharmacyReportingCategory> catalog,
+  required Set<String> selectedCategoryIds,
+}) {
+  final List<AppSearchBarFilterChoice> choices = <AppSearchBarFilterChoice>[];
+  for (final PharmacyReportingCategory category in catalog) {
+    if (selectedCategoryIds.isNotEmpty &&
+        !selectedCategoryIds.contains(category.id)) {
+      continue;
+    }
+    for (final PharmacyReportingReport report in category.reports) {
+      choices.add(
+        AppSearchBarFilterChoice(
+          value: report.id,
+          label: report.label,
+          icon: report.contentKind == PharmacyReportingContentKind.chart
+              ? Icons.bar_chart_outlined
+              : Icons.description_outlined,
+        ),
+      );
+    }
+  }
+  return choices;
 }
 
 final class _PharmacyInsightAction {

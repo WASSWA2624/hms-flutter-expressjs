@@ -31291,6 +31291,150 @@ abstract class AppLocalizations {
   /// **'Management & executive'**
   String get reportsPharmacyReportingCategoryManagement;
 
+  /// Advanced filter group for pharmacy report subcategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get reportsPharmacyReportingSubcategoryFilterLabel;
+
+  /// Clear/all option for pharmacy report subcategory filter.
+  ///
+  /// In en, this message translates to:
+  /// **'All reports'**
+  String get reportsPharmacyReportingSubcategoryAllLabel;
+
+  /// Advanced filter group for table vs chart pharmacy reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Report type'**
+  String get reportsPharmacyReportingContentKindFilterLabel;
+
+  /// Clear/all option for pharmacy report content kind filter.
+  ///
+  /// In en, this message translates to:
+  /// **'All types'**
+  String get reportsPharmacyReportingContentKindAllLabel;
+
+  /// Pharmacy report content kind: tabular.
+  ///
+  /// In en, this message translates to:
+  /// **'Table'**
+  String get reportsPharmacyReportingContentKindTable;
+
+  /// Pharmacy report content kind: chart/graph.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart'**
+  String get reportsPharmacyReportingContentKindChart;
+
+  /// Empty state when Reporting catalog filters hide every report.
+  ///
+  /// In en, this message translates to:
+  /// **'No pharmacy reports match your search or filters.'**
+  String get reportsPharmacyReportingCatalogEmpty;
+
+  /// Period preset section label in pharmacy report dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get reportsPharmacyReportingPeriodLabel;
+
+  /// Pharmacy report period preset: today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get reportsPharmacyReportingPeriodToday;
+
+  /// Pharmacy report period preset: last week.
+  ///
+  /// In en, this message translates to:
+  /// **'Last week'**
+  String get reportsPharmacyReportingPeriodLastWeek;
+
+  /// Pharmacy report period preset: last month.
+  ///
+  /// In en, this message translates to:
+  /// **'Last month'**
+  String get reportsPharmacyReportingPeriodLastMonth;
+
+  /// Pharmacy report period preset: last 3 months.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 3 months'**
+  String get reportsPharmacyReportingPeriodLast3Months;
+
+  /// Pharmacy report period preset: last 6 months.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 6 months'**
+  String get reportsPharmacyReportingPeriodLast6Months;
+
+  /// Pharmacy report period preset: last 12 months.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 12 months'**
+  String get reportsPharmacyReportingPeriodLast12Months;
+
+  /// Pharmacy report period preset: last 24 months.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 2 years'**
+  String get reportsPharmacyReportingPeriodLast24Months;
+
+  /// Pharmacy report period preset: custom date range.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get reportsPharmacyReportingPeriodCustom;
+
+  /// Loading title while pharmacy report dialog refreshes.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading report'**
+  String get reportsPharmacyReportingLoadingTitle;
+
+  /// Loading body while pharmacy report dialog refreshes.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating the selected period.'**
+  String get reportsPharmacyReportingLoadingBody;
+
+  /// Empty title when pharmacy report has no backend content.
+  ///
+  /// In en, this message translates to:
+  /// **'Report data not available yet'**
+  String get reportsPharmacyReportingUnavailableTitle;
+
+  /// Empty body when pharmacy report has no dataset mapping.
+  ///
+  /// In en, this message translates to:
+  /// **'This report is listed in the pharmacy catalog, but live data is not wired for it yet.'**
+  String get reportsPharmacyReportingUnavailableBody;
+
+  /// Empty body when pharmacy report maps to a dataset but dialog content is not implemented.
+  ///
+  /// In en, this message translates to:
+  /// **'This report maps to an existing dataset, but the in-place pharmacy dialog view is not wired yet. Use Analytics shortcuts or Catalog runs for live data.'**
+  String get reportsPharmacyReportingUnavailableMappedBody;
+
+  /// Export action for tabular pharmacy reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Excel'**
+  String get reportsPharmacyReportingExportExcelAction;
+
+  /// Export action for chart pharmacy reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Export PDF'**
+  String get reportsPharmacyReportingExportPdfAction;
+
+  /// Snack when pharmacy report export is pressed with no data.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to export until report data is available.'**
+  String get reportsPharmacyReportingExportUnavailableSnack;
+
   /// Insight chip that opens pharmacy drug consumption.
   ///
   /// In en, this message translates to:

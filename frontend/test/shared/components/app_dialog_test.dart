@@ -665,8 +665,81 @@ void main() {
       isEmpty,
     );
   });
+
+  testWidgets('nested AppDialogs use distinct shell keys', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      Builder(
+        builder: (BuildContext context) {
+          return TextButton(
+            onPressed: () {
+              unawaited(
+                showAppDialog<void>(
+                  context: context,
+                  builder: (BuildContext outerContext) {
+                    return AppDialog(
+                      title: const Text('Outer'),
+                      content: const SizedBox(
+                        height: 40,
+                        child: Text('Outer body'),
+                      ),
+                      actions: <Widget>[
+                        AppButton.primary(
+                          label: 'Open nested',
+                          onPressed: () {
+                            unawaited(
+                              showAppDialog<void>(
+                                context: outerContext,
+                                builder: (_) => const AppDialog(
+                                  title: Text('Inner'),
+                                  content: SizedBox(
+                                    height: 40,
+                                    child: Text('Inner body'),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              );
+            },
+            child: const Text('Open'),
+          );
+        },
+      ),
+      size: const Size(1200, 900),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AppDialog), findsOneWidget);
+    expect(find.text('OUTER'), findsOneWidget);
+
+    await tester.tap(find.text('Open nested'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AppDialog), findsNWidgets(2));
+    expect(find.text('INNER'), findsOneWidget);
+
+    final Finder shells = find.byWidgetPredicate(
+      (Widget w) => AppDialog.isShellKey(w.key),
+    );
+    expect(shells, findsNWidgets(2));
+    final List<Key?> keys = shells
+        .evaluate()
+        .map((Element e) => e.widget.key)
+        .toList(growable: false);
+    expect(keys[0], isNot(equals(keys[1])));
+  });
 }
 
 RenderBox _dialogShellRenderBox(WidgetTester tester) {
-  return tester.renderObject<RenderBox>(find.byKey(AppDialog.shellKey));
+  return tester.renderObject<RenderBox>(
+    find.byWidgetPredicate((Widget w) => AppDialog.isShellKey(w.key)),
+  );
 }

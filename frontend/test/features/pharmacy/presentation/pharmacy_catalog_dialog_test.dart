@@ -151,7 +151,7 @@ void main() {
     expect(dialog.initialMaximized, isTrue);
 
     final RenderBox shell = tester.renderObject<RenderBox>(
-      find.byKey(AppDialog.shellKey),
+      find.byWidgetPredicate((Widget w) => AppDialog.isShellKey(w.key)),
     );
     expect(shell.size.height, greaterThan(200));
     expect(shell.size.width, greaterThan(200));

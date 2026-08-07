@@ -457,7 +457,7 @@ void main() {
         await tester.tap(find.text(l10n.radiologyNextActionConfirmBilling).first);
         await tester.pumpAndSettle();
 
-        expect(find.byKey(AppDialog.shellKey), findsOneWidget);
+        expect(find.byWidgetPredicate((Widget w) => AppDialog.isShellKey(w.key)), findsOneWidget);
         expect(find.text(l10n.radiologyCancelOrderAction), findsNothing);
         expect(find.text(l10n.radiologyAssignAction), findsNothing);
         expect(find.textContaining('no access'), findsNothing);

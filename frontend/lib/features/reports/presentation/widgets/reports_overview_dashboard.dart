@@ -152,6 +152,7 @@ class _ReportsOverviewDashboardState
         if (showPharmacyGroups) ...<Widget>[
           ReportsPharmacyDomainGroups(
             l10n: l10n,
+            policy: policy,
             datasetShortcuts: datasetShortcuts,
             onOpenDataset:
                 widget.onPharmacyOpenDataset ?? controller.openCatalogDataset,

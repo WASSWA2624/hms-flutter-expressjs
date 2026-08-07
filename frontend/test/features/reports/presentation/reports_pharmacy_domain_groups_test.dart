@@ -7,14 +7,17 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
+import 'package:hosspi_hms/features/reports/presentation/pharmacy_reporting_catalog.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_pharmacy_domain_groups.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
-import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_search_bar.dart';
 
 import '../../../helpers/test_harness.dart';
 
-AppAccessPolicy _pharmacyPolicy({bool canWrite = false}) {
+AppAccessPolicy _pharmacyPolicy({
+  bool canWrite = false,
+  bool canExport = false,
+}) {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'token'),
@@ -27,6 +30,7 @@ AppAccessPolicy _pharmacyPolicy({bool canWrite = false}) {
         AppPermissions.pharmacyRead,
         AppPermissions.reportsRead,
         if (canWrite) AppPermissions.reportsWrite,
+        if (canExport) AppPermissions.evidenceExport,
       },
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'pharmacy'),
@@ -41,6 +45,7 @@ AppAccessPolicy _pharmacyPolicy({bool canWrite = false}) {
 Future<void> _pumpGroups(
   WidgetTester tester, {
   required List<String> openedDatasets,
+  AppAccessPolicy? policy,
   List<ReportsLookupOption> datasetShortcuts = const <ReportsLookupOption>[
     ReportsLookupOption(
       id: 'pharmacy_drug_consumption',
@@ -56,7 +61,7 @@ Future<void> _pumpGroups(
     ),
   ],
 }) async {
-  setTestViewport(tester, const Size(720, 900));
+  setTestViewport(tester, const Size(1100, 1400));
 
   await tester.pumpWidget(
     ProviderScope(
@@ -73,6 +78,7 @@ Future<void> _pumpGroups(
                 return SingleChildScrollView(
                   child: ReportsPharmacyDomainGroups(
                     l10n: AppLocalizations.of(context)!,
+                    policy: policy ?? _pharmacyPolicy(),
                     datasetShortcuts: datasetShortcuts,
                     onOpenDataset: openedDatasets.add,
                   ),
@@ -87,6 +93,25 @@ Future<void> _pumpGroups(
 }
 
 void main() {
+  test('pharmacy reporting catalog covers every documented category', () {
+    final List<PharmacyReportingCategory> catalog = pharmacyReportingCatalog();
+    expect(catalog, hasLength(17));
+    expect(
+      catalog.map((PharmacyReportingCategory c) => c.id).toSet(),
+      containsAll(<String>[
+        PharmacyReportingCategoryIds.salesRevenue,
+        PharmacyReportingCategoryIds.inventoryStock,
+        PharmacyReportingCategoryIds.managementExecutive,
+      ]),
+    );
+    expect(
+      catalog.every(
+        (PharmacyReportingCategory category) => category.reports.isNotEmpty,
+      ),
+      isTrue,
+    );
+  });
+
   testWidgets('pharmacist overview shows Analytics and Reporting tabs without body copy', (
     tester,
   ) async {
@@ -104,13 +129,7 @@ void main() {
       find.textContaining('Explore consumption'),
       findsNothing,
     );
-    expect(
-      find.textContaining('Create, run, schedule'),
-      findsNothing,
-    );
     expect(find.text('Top consumed drugs'), findsOneWidget);
-    expect(find.text('Suggested stocking focus'), findsOneWidget);
-    expect(find.text('Create or run report'), findsNothing);
 
     await tester.ensureVisible(find.text('Top consumed drugs'));
     await tester.tap(find.text('Top consumed drugs'));
@@ -121,55 +140,71 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AppSearchBar), findsOneWidget);
     expect(find.byTooltip('Filters'), findsOneWidget);
-    expect(find.text('Browse catalog'), findsNothing);
-    expect(find.text('Create or run report'), findsNothing);
-    expect(find.textContaining('Create, run, schedule'), findsNothing);
+    expect(find.text('Sales & revenue'), findsWidgets);
+    expect(find.text('Total sales'), findsOneWidget);
     expect(find.text('Top consumed drugs'), findsNothing);
   });
 
-  testWidgets('reporting tab notifies parent when selected', (tester) async {
+  testWidgets('reporting search filters subcategory buttons', (tester) async {
     final List<String> openedDatasets = <String>[];
-    final List<String> selectedTabs = <String>[];
 
-    setTestViewport(tester, const Size(720, 900));
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          theme: AppTheme.light,
-          darkTheme: AppTheme.dark,
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: Scaffold(
-            body: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Builder(
-                builder: (BuildContext context) {
-                  return ReportsPharmacyDomainGroups(
-                    l10n: AppLocalizations.of(context)!,
-                    datasetShortcuts: const <ReportsLookupOption>[
-                      ReportsLookupOption(
-                        id: 'pharmacy_drug_consumption',
-                        label: 'Pharmacy drug consumption',
-                      ),
-                    ],
-                    onOpenDataset: openedDatasets.add,
-                    onTabChanged: selectedTabs.add,
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
-      ),
+    await _pumpGroups(tester, openedDatasets: openedDatasets);
+
+    await tester.tap(find.text('Reporting'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byType(TextField).first,
+      'Total sales',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(ActionChip, 'Total sales'), findsOneWidget);
+    expect(find.widgetWithText(ActionChip, 'Stock value'), findsNothing);
+  });
+
+  testWidgets('reporting subcategory opens in-place dialog without export when unauthorized', (
+    tester,
+  ) async {
+    final List<String> openedDatasets = <String>[];
+
+    await _pumpGroups(tester, openedDatasets: openedDatasets);
+
+    await tester.tap(find.text('Reporting'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Total sales'));
+    await tester.tap(find.text('Total sales'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('TOTAL SALES'), findsOneWidget);
+    expect(find.text('Last month'), findsOneWidget);
+    expect(find.text('Export Excel'), findsNothing);
+    expect(find.text('Export PDF'), findsNothing);
+  });
+
+  testWidgets('reporting dialog shows excel export when entitled for table report', (
+    tester,
+  ) async {
+    final List<String> openedDatasets = <String>[];
+
+    await _pumpGroups(
+      tester,
+      openedDatasets: openedDatasets,
+      policy: _pharmacyPolicy(canExport: true),
     );
 
     await tester.tap(find.text('Reporting'));
     await tester.pumpAndSettle();
 
-    expect(
-      selectedTabs,
-      contains(ReportsPharmacyDomainGroups.reportingTabId),
-    );
+    await tester.ensureVisible(find.text('Total sales'));
+    await tester.tap(find.text('Total sales'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Export Excel'), findsOneWidget);
+    expect(find.text('Export PDF'), findsNothing);
   });
 
   testWidgets('reporting filters button opens advanced filters dialog', (
@@ -195,10 +230,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.byKey(AppDialog.shellKey), findsOneWidget);
     expect(find.text('ADVANCED FILTERS'), findsOneWidget);
     expect(find.text('Report category'), findsOneWidget);
-    expect(find.text('Date range'), findsOneWidget);
+    expect(find.text('Report'), findsWidgets);
+    expect(find.text('Report type'), findsOneWidget);
   });
 
   test('shouldShow is true for pharmacy pack and false without pharmacy read', () {

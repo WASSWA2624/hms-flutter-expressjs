@@ -579,7 +579,7 @@ void main() {
     await tester.tap(find.text(l10n.radiologyMarkProcedureDoneAction).first);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(AppDialog.shellKey), findsOneWidget);
+    expect(find.byWidgetPredicate((Widget w) => AppDialog.isShellKey(w.key)), findsOneWidget);
     expect(find.text(l10n.radiologyCancelOrderAction), findsOneWidget);
     expect(find.text(l10n.radiologyAssignAction), findsNothing);
     verify(() => repository.getWorkflow(any())).called(greaterThan(0));
@@ -597,7 +597,7 @@ void main() {
       ),
     );
 
-    expect(find.byKey(AppDialog.shellKey), findsOneWidget);
+    expect(find.byWidgetPredicate((Widget w) => AppDialog.isShellKey(w.key)), findsOneWidget);
     expect(find.text('Olivia Ordered'), findsWidgets);
     verify(() => repository.getWorkflow(any())).called(greaterThan(0));
   });

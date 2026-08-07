@@ -485,7 +485,7 @@ void main() {
         await tester.tap(find.text(l10n.radiologyNextActionConfirmBilling).first);
         await tester.pumpAndSettle();
 
-        expect(find.byKey(AppDialog.shellKey), findsOneWidget);
+        expect(find.byWidgetPredicate((Widget w) => AppDialog.isShellKey(w.key)), findsOneWidget);
         expect(find.text(l10n.radiologyCancelOrderAction), findsNothing);
         expect(find.text(l10n.radiologyAssignAction), findsNothing);
         expect(find.text(l10n.radiologyStartImagingAction), findsNothing);
@@ -820,7 +820,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final AppLocalizations l10n = AppLocalizations.of(
-          tester.element(find.byKey(AppDialog.shellKey)),
+          tester.element(find.byWidgetPredicate((Widget w) => AppDialog.isShellKey(w.key))),
         );
         final Finder submit = find.descendant(
           of: find.byType(AppDialog).last,
@@ -835,7 +835,7 @@ void main() {
         submitButton.onPressed!();
         await tester.pumpAndSettle();
 
-        expect(find.byKey(AppDialog.shellKey), findsOneWidget);
+        expect(find.byWidgetPredicate((Widget w) => AppDialog.isShellKey(w.key)), findsOneWidget);
         expect(find.text(l10n.radiologySelectAtLeastOneTestMessage), findsOneWidget);
         expect(find.textContaining('no access'), findsNothing);
         verifyNever(() => repository.createOrder(any()));
