@@ -4,15 +4,13 @@ Implement all `mgmt_*` dialogs as **compositions** of sales/inventory/financial/
 
 ## Context
 
-**Already mapped**
+**Composition table:** `pharmacyReportingMgmtCompositions` in `pharmacy_reporting_mgmt_sources.dart` (id → sourceReportId / datasetKey / projection). Catalog Management block is built from that list.
 
-| id | dataset | projection |
-| --- | --- | --- |
-| `mgmt_sales_trend` | consumption | `daily_totals` |
-| `mgmt_top_products` | consumption | top 20 (align to top 10 if label says top) |
-| `mgmt_expiring` / `mgmt_expired_medicines` / `mgmt_stock_outs` | stock risk | EXPIRING_SOON / EXPIRED / OOS |
+**Mapped (23)** — reuse named source contracts (shared datasetKey + projector fall-throughs).
 
-**Remaining 19 ids unavailable.** Management labels prefix Financial/Inventory/Sales/Procurement/Risk in catalog strings.
+**Unavailable (1):** `mgmt_controlled_medicines` — pack 13 controlled marker gap (`drug.is_controlled`); keep null until that ships.
+
+**Already dense via 01–16 seeds** for trends/tops/risk; management adds no new executive route or seed pack.
 
 ## Data contract (compose—do not fork)
 
@@ -21,16 +19,16 @@ Implement all `mgmt_*` dialogs as **compositions** of sales/inventory/financial/
 | `mgmt_revenue` | `08` revenue ledger |
 | `mgmt_expenses` | billing `expenditures` if real |
 | `mgmt_gross_profit` / `mgmt_net_profit` | `08` gross/net |
-| `mgmt_profit_margin` | profit/amount percent |
+| `mgmt_profit_margin` | profit/amount percent on gross-profit ledger |
 | `mgmt_stock_value` | `15`/`02` stock_value |
 | `mgmt_fast_moving` / `mgmt_slow_moving` / `mgmt_dead_stock` | `02` definitions |
 | `mgmt_stock_turnover` (chart) | `02` turnover formula |
-| `mgmt_top_categories` | sales_by_category |
-| `mgmt_top_customers` | purchases_by_customer top N |
-| `mgmt_sales_by_staff_branch` | staff + facility slices |
+| `mgmt_top_categories` | sales_by_category top 10 |
+| `mgmt_top_customers` | purchases_by_customer top 10 |
+| `mgmt_sales_by_staff_branch` | sales_by_staff; branch = facility scope |
 | `mgmt_supplier_spend` / `mgmt_purchase_trends` / `mgmt_supplier_performance` | `14`/`04` |
-| `mgmt_controlled_medicines` | `13` stock |
-| `mgmt_unusual_adjustments` | adjustments beyond σ or abs qty threshold—**document threshold** |
+| `mgmt_controlled_medicines` | `13` stock — unavailable until pack 13 |
+| `mgmt_unusual_adjustments` | `|qty| > mean(|qty|)+2σ` (n≥2); else `|qty|≥10` |
 | `mgmt_high_value_losses` | damage/expiry/write-off `value` desc |
 
 Charts: `mgmt_revenue`, `mgmt_stock_turnover`, `mgmt_sales_trend`, `mgmt_purchase_trends`.
@@ -57,7 +55,7 @@ Charts: `mgmt_revenue`, `mgmt_stock_turnover`, `mgmt_sales_trend`, `mgmt_purchas
 
 ## Relevant Files
 
-- Full catalog management block; provider; datasets from 01–16; seed packs
+- `pharmacy_reporting_mgmt_sources.dart`; catalog; provider; datasets from 01–16; seed packs
 
 ## Verification
 

@@ -223,12 +223,13 @@ const DEMO_TENANTS = Object.freeze([
     slug: 'democare-general-hospital',
     primary_plan_code: 'pro',
     seed_inpatient_resources: true,
-    facilities: [{ key: 'main', name: 'DemoCare General Hospital', type: 'HOSPITAL' }],
-    // Optional multi-branch: Pro plan allows ≤3 facilities. To exercise branch comparison
-    // with ≥2 facilities, add e.g. { key: 'annex', name: 'DemoCare Annex Pharmacy', type: 'CLINIC' }
-    // and seed stock + dispenses for that facility_id. Also relax verify-demo-data facility
-    // ownership checks to accept all demo-tenant facility ids (not only the primary).
-    // Default remains single-facility ready rows (branch = facility).
+    facilities: [
+      { key: 'main', name: 'DemoCare General Hospital', type: 'HOSPITAL' },
+      // Second facility for stock transfer sending/receiving + branch comparison.
+      { key: 'annex', name: 'DemoCare Annex Pharmacy', type: 'CLINIC' },
+    ],
+    // Pro plan allows ≤3 facilities. Annex carries transfer receive legs and light stock.
+    // verify-demo-data accepts all demo-tenant facility ids for ownership checks.
     departments: [
       'Outpatient',
       'Inpatient',

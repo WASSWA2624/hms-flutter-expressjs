@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/features/reports/presentation/pharmacy_reporting_mgmt_sources.dart';
+import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/reporting/reporting.dart';
 
@@ -71,12 +74,18 @@ String pharmacyReportingCategoryLabel(
   };
 }
 
+/// Operational KPI ids whose labels imply calendar today — dialog opens on today.
+bool pharmacyReportingForcesTodayPeriod(String reportId) {
+  return reportId == 'total_sales_today' || reportId == 'todays_profit';
+}
+
 PharmacyReportingReport _report(
   String categoryId,
   String id,
   String label, {
   PharmacyReportingContentKind kind = PharmacyReportingContentKind.table,
   String? datasetKey,
+  ModuleReportingPeriodPreset? initialPeriodPreset,
 }) {
   return PharmacyReportingReport(
     id: id,
@@ -84,6 +93,7 @@ PharmacyReportingReport _report(
     label: label,
     contentKind: kind,
     datasetKey: datasetKey,
+    initialPeriodPreset: initialPeriodPreset,
   );
 }
 
@@ -102,6 +112,9 @@ List<PharmacyReportingReport> _reports(
             row.$2,
             kind: row.$3 ?? PharmacyReportingContentKind.table,
             datasetKey: row.$4,
+            initialPeriodPreset: pharmacyReportingForcesTodayPeriod(row.$1)
+                ? ModuleReportingPeriodPreset.today
+                : null,
           );
         },
       )
@@ -306,7 +319,7 @@ List<PharmacyReportingCategory> pharmacyReportingCatalog() {
         ('sales_by_branch', 'Sales by branch', null, 'pharmacy_sales_by_branch'),
         ('stock_by_branch', 'Stock by branch', null, 'pharmacy_stock_by_branch'),
         ('profit_by_branch', 'Profit by branch', null, 'pharmacy_profit_by_branch'),
-        ('transfers_between_branches', 'Transfers between branches', null, null),
+        ('transfers_between_branches', 'Transfers between branches', null, 'pharmacy_transfers_between_branches'),
         ('purchases_by_branch', 'Purchases by branch', null, 'pharmacy_purchases_by_branch'),
         ('stock_shortages_by_branch', 'Stock shortages by branch', null, 'pharmacy_stock_shortages_by_branch'),
         ('best_performing_branch', 'Best-performing branch', null, 'pharmacy_best_performing_branch'),
@@ -317,64 +330,95 @@ List<PharmacyReportingCategory> pharmacyReportingCatalog() {
       id: transfers,
       icon: Icons.swap_horiz_outlined,
       reports: _reports(transfers, <(String, String, PharmacyReportingContentKind?, String?)>[
-        ('transfer_quantity', 'Transfer quantity', null, null),
-        ('sending_branch', 'Sending branch', null, null),
-        ('receiving_branch', 'Receiving branch', null, null),
-        ('transfer_date', 'Transfer date', null, null),
-        ('transfer_status', 'Transfer status', null, null),
-        ('products_transferred', 'Products transferred', null, null),
-        ('pending_transfers', 'Pending transfers', null, null),
-        ('transfer_discrepancies', 'Transfer discrepancies', null, null),
+        ('transfer_quantity', 'Transfer quantity', null, 'pharmacy_transfer_quantity'),
+        ('sending_branch', 'Sending branch', null, 'pharmacy_sending_branch'),
+        ('receiving_branch', 'Receiving branch', null, 'pharmacy_receiving_branch'),
+        ('transfer_date', 'Transfer date', null, 'pharmacy_transfer_date'),
+        ('transfer_status', 'Transfer status', null, 'pharmacy_transfer_status'),
+        ('products_transferred', 'Products transferred', null, 'pharmacy_products_transferred'),
+        ('pending_transfers', 'Pending transfers', null, 'pharmacy_pending_transfers'),
+        ('transfer_discrepancies', 'Transfer discrepancies', null, 'pharmacy_transfer_discrepancies'),
       ]),
     ),
     PharmacyReportingCategory(
       id: prescription,
       icon: Icons.description_outlined,
       reports: _reports(prescription, <(String, String, PharmacyReportingContentKind?, String?)>[
-        ('prescription_count', 'Prescription count', null, null),
-        ('prescriber', 'Prescriber', null, null),
-        ('diagnosis_indication', 'Diagnosis/indication', null, null),
-        ('medicine_prescribed', 'Medicine prescribed', null, null),
-        ('dosage', 'Dosage', null, null),
-        ('frequency', 'Frequency', null, null),
-        ('duration', 'Duration', null, null),
+        (
+          'prescription_count',
+          'Prescription count',
+          null,
+          'pharmacy_prescription_count',
+        ),
+        ('prescriber', 'Prescriber', null, 'pharmacy_prescription_prescriber'),
+        (
+          'diagnosis_indication',
+          'Diagnosis/indication',
+          null,
+          'pharmacy_prescription_diagnosis',
+        ),
+        (
+          'medicine_prescribed',
+          'Medicine prescribed',
+          null,
+          'pharmacy_prescription_medicine',
+        ),
+        ('dosage', 'Dosage', null, 'pharmacy_prescription_dosage'),
+        ('frequency', 'Frequency', null, 'pharmacy_prescription_frequency'),
+        ('duration', 'Duration', null, 'pharmacy_prescription_duration'),
+        // No drug-interaction / allergy-alert / duplicate-therapy entities — keep unavailable.
         ('drug_interactions', 'Drug interactions', null, null),
         ('allergy_alerts', 'Allergy alerts', null, null),
         ('duplicate_therapy', 'Duplicate therapy', null, null),
-        ('antibiotic_usage', 'Antibiotic usage', null, null),
-        ('controlled_drug_dispensing', 'Controlled-drug dispensing', null, null),
+        (
+          'antibiotic_usage',
+          'Antibiotic usage',
+          null,
+          'pharmacy_prescription_antibiotic_usage',
+        ),
+        (
+          'controlled_drug_dispensing',
+          'Controlled-drug dispensing',
+          null,
+          'pharmacy_prescription_controlled_dispensing',
+        ),
       ]),
     ),
     PharmacyReportingCategory(
       id: controlled,
       icon: Icons.lock_outline,
       reports: _reports(controlled, <(String, String, PharmacyReportingContentKind?, String?)>[
-        ('controlled_medicine_stock', 'Controlled medicine stock', null, null),
-        ('opening_balance', 'Opening balance', null, null),
-        ('quantity_received', 'Quantity received', null, null),
-        ('quantity_dispensed', 'Quantity dispensed', null, null),
-        ('closing_balance', 'Closing balance', null, null),
-        ('batch_numbers', 'Batch numbers', null, null),
-        ('controlled_prescriber', 'Prescriber', null, null),
-        ('controlled_patient', 'Patient', null, null),
-        ('dispensing_staff', 'Dispensing staff', null, null),
-        ('controlled_adjustments', 'Adjustments', null, null),
-        ('wastage', 'Wastage', null, null),
-        ('regulatory_log', 'Regulatory log', null, null),
+        ('controlled_medicine_stock', 'Controlled medicine stock', null, 'pharmacy_controlled_stock'),
+        ('opening_balance', 'Opening balance', null, 'pharmacy_controlled_balance'),
+        ('quantity_received', 'Quantity received', null, 'pharmacy_controlled_received'),
+        ('quantity_dispensed', 'Quantity dispensed', null, 'pharmacy_controlled_dispensed'),
+        ('closing_balance', 'Closing balance', null, 'pharmacy_controlled_balance'),
+        ('batch_numbers', 'Batch numbers', null, 'pharmacy_controlled_batches'),
+        ('controlled_prescriber', 'Prescriber', null, 'pharmacy_controlled_actors'),
+        ('controlled_patient', 'Patient', null, 'pharmacy_controlled_actors'),
+        ('dispensing_staff', 'Dispensing staff', null, 'pharmacy_controlled_actors'),
+        ('controlled_adjustments', 'Adjustments', null, 'pharmacy_controlled_adjustments'),
+        ('wastage', 'Wastage', null, 'pharmacy_controlled_wastage'),
+        ('regulatory_log', 'Regulatory log', null, 'pharmacy_controlled_regulatory_log'),
       ]),
     ),
     PharmacyReportingCategory(
       id: procurement,
       icon: Icons.handshake_outlined,
       reports: _reports(procurement, <(String, String, PharmacyReportingContentKind?, String?)>[
-        ('supplier_spend', 'Supplier spend', null, null),
-        ('price_comparison', 'Price comparison', null, null),
-        ('price_trends', 'Price trends', PharmacyReportingContentKind.chart, null),
-        ('supplier_reliability', 'Supplier reliability', null, null),
-        ('order_fulfillment_rate', 'Order fulfillment rate', null, null),
-        ('late_deliveries', 'Late deliveries', null, null),
-        ('purchase_frequency', 'Purchase frequency', null, null),
-        ('purchase_volume', 'Purchase volume', null, null),
+        ('supplier_spend', 'Supplier spend', null, 'pharmacy_purchases_by_supplier'),
+        ('price_comparison', 'Price comparison', null, 'pharmacy_supplier_pricing'),
+        (
+          'price_trends',
+          'Price trends',
+          PharmacyReportingContentKind.chart,
+          'pharmacy_drug_price_changes',
+        ),
+        ('supplier_reliability', 'Supplier reliability', null, 'pharmacy_purchase_orders'),
+        ('order_fulfillment_rate', 'Order fulfillment rate', null, 'pharmacy_purchase_orders'),
+        ('late_deliveries', 'Late deliveries', null, 'pharmacy_purchase_orders'),
+        ('purchase_frequency', 'Purchase frequency', null, 'pharmacy_purchases_by_supplier'),
+        ('purchase_volume', 'Purchase volume', null, 'pharmacy_purchases_by_supplier'),
         ('supplier_payment_status', 'Supplier payment status', null, null),
       ]),
     ),
@@ -382,19 +426,30 @@ List<PharmacyReportingCategory> pharmacyReportingCatalog() {
       id: kpis,
       icon: Icons.speed_outlined,
       reports: _reports(kpis, <(String, String, PharmacyReportingContentKind?, String?)>[
-        ('total_sales_today', 'Total sales today', null, null),
-        ('todays_profit', "Today's profit", null, null),
+        ('total_sales_today', 'Total sales today', null, 'pharmacy_drug_consumption'),
+        ('todays_profit', "Today's profit", null, 'pharmacy_drug_consumption'),
         ('kpi_prescriptions', 'Number of prescriptions', null, 'pharmacy_dispense_throughput'),
-        ('kpi_transactions', 'Number of transactions', null, null),
+        ('kpi_transactions', 'Number of transactions', null, 'pharmacy_dispense_throughput'),
         ('current_stock_value', 'Current stock value', null, 'inventory_stock_value'),
         ('low_stock_items', 'Low-stock items', null, 'inventory_stock_risk'),
         ('kpi_out_of_stock', 'Out-of-stock items', null, 'inventory_stock_risk'),
         ('near_expiry_value', 'Near-expiry value', null, 'inventory_stock_risk'),
         ('expired_stock_value_kpi', 'Expired-stock value', null, 'inventory_stock_risk'),
-        ('outstanding_customer_credit', 'Outstanding customer credit', null, null),
+        (
+          'outstanding_customer_credit',
+          'Outstanding customer credit',
+          null,
+          'pharmacy_customer_credit_balance',
+        ),
+        // AP not modeled on PO/supplier schema — keep unavailable (no fake).
         ('outstanding_supplier_payments', 'Outstanding supplier payments', null, null),
         ('top_selling_medicines', 'Top 10 selling medicines', null, 'pharmacy_drug_consumption'),
-        ('top_profitable_medicines', 'Top 10 profitable medicines', null, null),
+        (
+          'top_profitable_medicines',
+          'Top 10 profitable medicines',
+          null,
+          'pharmacy_drug_consumption',
+        ),
         ('kpi_slow_moving', 'Slow-moving products', null, 'inventory_stock_velocity'),
       ]),
     ),
@@ -402,49 +457,55 @@ List<PharmacyReportingCategory> pharmacyReportingCatalog() {
       id: audit,
       icon: Icons.fact_check_outlined,
       reports: _reports(audit, <(String, String, PharmacyReportingContentKind?, String?)>[
-        ('who_created', 'Who created a transaction', null, null),
-        ('who_edited', 'Who edited it', null, null),
-        ('who_deleted_voided', 'Who deleted/voided it', null, null),
-        ('previous_vs_new_values', 'Previous vs new values', null, null),
-        ('change_date_time', 'Date/time of changes', null, null),
-        ('audit_stock_adjustments', 'Stock adjustments', null, null),
-        ('audit_price_changes', 'Price changes', null, null),
-        ('user_permissions', 'User permissions', null, null),
-        ('unauthorized_attempts', 'Unauthorized attempts', null, null),
-        ('prescription_controlled_audit', 'Prescription/controlled-drug audit trail', null, null),
+        ('who_created', 'Who created a transaction', null, 'pharmacy_audit_who_created'),
+        ('who_edited', 'Who edited it', null, 'pharmacy_audit_who_edited'),
+        ('who_deleted_voided', 'Who deleted/voided it', null, 'pharmacy_audit_who_deleted'),
+        ('previous_vs_new_values', 'Previous vs new values', null, 'pharmacy_audit_previous_vs_new'),
+        ('change_date_time', 'Date/time of changes', null, 'pharmacy_audit_change_datetime'),
+        ('audit_stock_adjustments', 'Stock adjustments', null, 'pharmacy_audit_stock_adjustments'),
+        ('audit_price_changes', 'Price changes', null, 'pharmacy_audit_price_changes'),
+        ('user_permissions', 'User permissions', null, 'pharmacy_audit_user_permissions'),
+        ('unauthorized_attempts', 'Unauthorized attempts', null, 'pharmacy_audit_unauthorized'),
+        (
+          'prescription_controlled_audit',
+          'Prescription/controlled-drug audit trail',
+          null,
+          'pharmacy_audit_rx_controlled',
+        ),
       ]),
     ),
     PharmacyReportingCategory(
       id: management,
       icon: Icons.analytics_outlined,
-      reports: _reports(management, <(String, String, PharmacyReportingContentKind?, String?)>[
-        ('mgmt_revenue', 'Financial: Revenue', PharmacyReportingContentKind.chart, 'pharmacy_financial_revenue'),
-        ('mgmt_expenses', 'Financial: Expenses', null, 'pharmacy_financial_operating_expenses'),
-        ('mgmt_gross_profit', 'Financial: Gross profit', null, 'pharmacy_financial_gross_profit'),
-        ('mgmt_net_profit', 'Financial: Net profit', null, 'pharmacy_financial_net_profit'),
-        ('mgmt_profit_margin', 'Financial: Profit margin', null, null),
-        ('mgmt_stock_value', 'Inventory: Stock value', null, 'inventory_stock_value'),
-        ('mgmt_fast_moving', 'Inventory: Fast-moving stock', null, 'inventory_stock_velocity'),
-        ('mgmt_slow_moving', 'Inventory: Slow-moving stock', null, 'inventory_stock_velocity'),
-        ('mgmt_expiring', 'Inventory: Expiring stock', null, 'inventory_stock_risk'),
-        ('mgmt_dead_stock', 'Inventory: Dead stock', null, 'inventory_stock_velocity'),
-        ('mgmt_stock_turnover', 'Inventory: Stock turnover', PharmacyReportingContentKind.chart, 'inventory_stock_turnover'),
-        ('mgmt_sales_trend', 'Sales: Sales trend', PharmacyReportingContentKind.chart, 'pharmacy_drug_consumption'),
-        ('mgmt_top_products', 'Sales: Top products', null, 'pharmacy_drug_consumption'),
-        ('mgmt_top_categories', 'Sales: Top categories', null, null),
-        ('mgmt_top_customers', 'Sales: Top customers', null, null),
-        ('mgmt_sales_by_staff_branch', 'Sales: Sales by staff/branch', null, null),
-        ('mgmt_supplier_spend', 'Procurement: Supplier spend', null, null),
-        ('mgmt_purchase_trends', 'Procurement: Purchase trends', PharmacyReportingContentKind.chart, null),
-        ('mgmt_supplier_performance', 'Procurement: Supplier performance', null, null),
-        ('mgmt_expired_medicines', 'Risk: Expired medicines', null, 'inventory_stock_risk'),
-        ('mgmt_stock_outs', 'Risk: Stock-outs', null, 'inventory_stock_risk'),
-        ('mgmt_controlled_medicines', 'Risk: Controlled medicines', null, null),
-        ('mgmt_unusual_adjustments', 'Risk: Unusual adjustments', null, null),
-        ('mgmt_high_value_losses', 'Risk: High-value losses', null, null),
-      ]),
+      reports: <PharmacyReportingReport>[
+        for (final PharmacyReportingMgmtComposition entry
+            in pharmacyReportingMgmtCompositions)
+          _report(
+            management,
+            entry.id,
+            entry.label,
+            kind: entry.contentKind,
+            datasetKey: entry.datasetKey,
+          ),
+      ],
     ),
   ];
+}
+
+/// Hides Audit & Compliance when the actor lacks compliance entitlements.
+List<PharmacyReportingCategory> pharmacyReportingCatalogForPolicy(
+  AppAccessPolicy policy,
+) {
+  final List<PharmacyReportingCategory> catalog = pharmacyReportingCatalog();
+  if (canReadReportsCompliance(policy)) {
+    return catalog;
+  }
+  return catalog
+      .where(
+        (PharmacyReportingCategory category) =>
+            category.id != PharmacyReportingCategoryIds.auditCompliance,
+      )
+      .toList(growable: false);
 }
 
 List<PharmacyReportingCategory> filterPharmacyReportingCatalog({

@@ -36,6 +36,9 @@ const stockReasonEnum = z.enum(['PURCHASE', 'DISPENSE', 'RETURN', 'DAMAGE', 'EXP
 const createStockMovementSchema = z.object({
   inventory_item_id: uuidSchema,
   facility_id: uuidSchema.optional().nullable(),
+  from_facility_id: uuidSchema.optional().nullable(),
+  to_facility_id: uuidSchema.optional().nullable(),
+  transfer_group_id: uuidSchema.optional().nullable(),
   movement_type: stockMovementTypeEnum,
   reason: stockReasonEnum,
   quantity: z.number().int(),
@@ -49,6 +52,9 @@ const createStockMovementSchema = z.object({
  */
 const updateStockMovementSchema = z.object({
   facility_id: uuidSchema.optional().nullable(),
+  from_facility_id: uuidSchema.optional().nullable(),
+  to_facility_id: uuidSchema.optional().nullable(),
+  transfer_group_id: uuidSchema.optional().nullable(),
   movement_type: stockMovementTypeEnum.optional(),
   reason: stockReasonEnum.optional(),
   quantity: z.number().int().optional(),

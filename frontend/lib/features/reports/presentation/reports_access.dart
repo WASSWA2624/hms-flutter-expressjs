@@ -57,6 +57,14 @@ const AccessRequirement reportsExportRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[AppPermissions.evidenceExport],
 );
 
+/// Controlled regulatory log: compliance read (or admin). Matches backend gate.
+const AccessRequirement controlledRegulatoryLogRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[
+    AppPermissions.complianceRead,
+    AppPermissions.complianceReview,
+  ],
+);
+
 bool _isReportsAdmin(AppAccessPolicy policy) {
   return policy.grantsAny(_reportsAdminPermissions);
 }
@@ -73,6 +81,12 @@ bool canReadReportsCatalog(AppAccessPolicy policy) {
 
 bool canReadReportsCompliance(AppAccessPolicy policy) {
   return reportsComplianceReadRequirement.isAllowed(policy) ||
+      _isReportsAdmin(policy);
+}
+
+/// Controlled regulatory log — tighter than plain reports:read.
+bool canReadControlledRegulatoryLog(AppAccessPolicy policy) {
+  return controlledRegulatoryLogRequirement.isAllowed(policy) ||
       _isReportsAdmin(policy);
 }
 

@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
+import 'package:hosspi_hms/features/reports/presentation/pharmacy_reporting_catalog.dart';
+import 'package:hosspi_hms/features/reports/presentation/pharmacy_reporting_mgmt_sources.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/pharmacy_reporting_data_provider.dart';
 import 'package:hosspi_hms/shared/reporting/reporting.dart';
 
@@ -33,7 +35,7 @@ void main() {
     datasetKey: 'pharmacy_drug_consumption',
   );
 
-  test('projects top selling medicines to top 20 by amount', () {
+  test('projects top selling medicines to top 10 by amount', () {
     final ReportDatasetPreview preview = ReportDatasetPreview(
       datasetKey: 'pharmacy_drug_consumption',
       title: 'Consumption',
@@ -51,8 +53,142 @@ void main() {
         );
 
     expect(snapshot.state, ModuleReportingLoadState.ready);
-    expect(snapshot.rows, hasLength(20));
+    expect(snapshot.rows, hasLength(10));
     expect(snapshot.rows.first['drug'], 'Drug 24');
+    expect(snapshot.rows.last['drug'], 'Drug 15');
+  });
+
+  test('total sales today uses consumption amount for today range', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'total_sales_today',
+      categoryId: 'operational_kpis',
+      label: 'Total sales today',
+      datasetKey: 'pharmacy_drug_consumption',
+      initialPeriodPreset: ModuleReportingPeriodPreset.today,
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_drug_consumption',
+      columns: const <String>['drug', 'amount'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{'drug': 'Amox', 'amount': 40},
+        <String, Object?>{'drug': 'Para', 'amount': 60},
+      ],
+      summary: const <String, Object?>{'amount': 100},
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(report.initialPeriodPreset, ModuleReportingPeriodPreset.today);
+    expect(snapshot.summary?['amount'], 100);
+    expect(snapshot.subtitle, contains('today'));
+  });
+
+  test('todays profit projects summary profit with nulls handled', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'todays_profit',
+      categoryId: 'operational_kpis',
+      label: "Today's profit",
+      datasetKey: 'pharmacy_drug_consumption',
+      initialPeriodPreset: ModuleReportingPeriodPreset.today,
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_drug_consumption',
+      columns: const <String>['drug', 'amount', 'profit'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{'drug': 'A', 'amount': 100, 'profit': 25},
+        <String, Object?>{'drug': 'B', 'amount': 50, 'profit': null},
+      ],
+      summary: const <String, Object?>{'amount': 150, 'profit': 25},
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.summary?['profit'], 25);
+    expect(snapshot.subtitle, contains('today'));
+  });
+
+  test('top profitable medicines caps at 10 and excludes null profit', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'top_profitable_medicines',
+      categoryId: 'operational_kpis',
+      label: 'Top 10 profitable medicines',
+      datasetKey: 'pharmacy_drug_consumption',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_drug_consumption',
+      columns: const <String>['drug', 'amount', 'profit'],
+      rows: <Map<String, Object?>>[
+        for (int i = 0; i < 15; i++)
+          <String, Object?>{
+            'drug': 'Drug $i',
+            'amount': 100,
+            'profit': i == 3 ? null : i.toDouble(),
+          },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+
+    expect(snapshot.rows, hasLength(10));
+    expect(snapshot.rows.first['drug'], 'Drug 14');
+    expect(
+      snapshot.rows.every((Map<String, Object?> row) => row['profit'] != null),
+      isTrue,
+    );
+  });
+
+  test('near_expiry_value equals sum of qty × buy cost fixture', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'near_expiry_value',
+      categoryId: 'operational_kpis',
+      label: 'Near-expiry value',
+      datasetKey: 'inventory_stock_risk',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'inventory_stock_risk',
+      columns: const <String>[
+        'inventory_item',
+        'risk_state',
+        'quantity',
+        'unit_cost',
+      ],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'inventory_item': 'NearA',
+          'risk_state': 'EXPIRING_SOON',
+          'quantity': 10,
+          'unit_cost': 650,
+        },
+        <String, Object?>{
+          'inventory_item': 'NearB',
+          'risk_state': 'EXPIRING_SOON',
+          'quantity': 4,
+          'unit_cost': 200,
+        },
+        <String, Object?>{
+          'inventory_item': 'Expired',
+          'risk_state': 'EXPIRED',
+          'quantity': 8,
+          'unit_cost': 100,
+        },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.rows, hasLength(2));
+    expect(snapshot.rows.first['value'], 6500);
+    expect(snapshot.rows.last['value'], 800);
+    expect(snapshot.summary?['value'], 7300);
+    expect(snapshot.columns, contains('value'));
+    expect(snapshot.subtitle, contains('buy cost'));
   });
 
   test('filters expired stock by risk_state', () {
@@ -776,13 +912,49 @@ void main() {
     expect(comparisonSnapshot.rows.single['amount'], 1200);
   });
 
-  test('transfers between branches stays unavailable without dataset', () {
+  test('transfers between branches and stock transfer reports wire datasets', () {
     const ModuleReportingReport transfers = ModuleReportingReport(
       id: 'transfers_between_branches',
       categoryId: 'branch',
       label: 'Transfers between branches',
+      datasetKey: 'pharmacy_transfers_between_branches',
     );
-    expect(transfers.hasBackend, isFalse);
+    expect(transfers.hasBackend, isTrue);
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: const ModuleReportingReport(
+            id: 'pending_transfers',
+            categoryId: 'stock_transfers',
+            label: 'Pending transfers',
+            datasetKey: 'pharmacy_pending_transfers',
+          ),
+          preview: ReportDatasetPreview(
+            datasetKey: 'pharmacy_pending_transfers',
+            columns: const <String>[
+              'transfer_date',
+              'inventory_item',
+              'quantity',
+              'sending_branch',
+              'receiving_branch',
+              'transfer_status',
+            ],
+            rows: const <Map<String, Object?>>[
+              <String, Object?>{
+                'transfer_date': '2026-08-01T10:00:00.000Z',
+                'inventory_item': 'Amoxicillin',
+                'quantity': 12,
+                'sending_branch': 'DemoCare General Hospital',
+                'receiving_branch': 'DemoCare Annex Pharmacy',
+                'transfer_status': 'PENDING',
+              },
+            ],
+            summary: const <String, Object?>{'transfer_count': 1, 'quantity': 12},
+          ),
+        );
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.rows.single['transfer_status'], 'PENDING');
+    expect(snapshot.rows.single['quantity'], 12);
   });
 
   test('new vs returning partition is disjoint and sums customer_count', () {
@@ -1018,4 +1190,644 @@ void main() {
     expect(entitled.columns, contains('diff'));
     expect(entitled.rows.single['diff'], '{"qty":1}');
   });
+
+  test('supplier spend projects amount by supplier from purchases_by_supplier', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'supplier_spend',
+      categoryId: 'supplier_procurement',
+      label: 'Supplier spend',
+      datasetKey: 'pharmacy_purchases_by_supplier',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_purchases_by_supplier',
+      title: 'Purchases by supplier',
+      columns: const <String>['supplier', 'po_count', 'quantity', 'amount'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'supplier': 'Acme Meds',
+          'po_count': 12,
+          'quantity': 40,
+          'amount': 26000,
+        },
+      ],
+      summary: const <String, Object?>{'amount': 26000},
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+    expect(snapshot.columns, <String>['supplier', 'amount']);
+    expect(snapshot.rows.single['amount'], 26000);
+    expect(snapshot.subtitle, contains('buy_unit_price'));
+  });
+
+  test('supplier reliability projects percent rates within 0–100', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'supplier_reliability',
+      categoryId: 'supplier_procurement',
+      label: 'Supplier reliability',
+      datasetKey: 'pharmacy_purchase_orders',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_purchase_orders',
+      title: 'POs',
+      columns: const <String>['ordered_at', 'delivery_days'],
+      rows: const <Map<String, Object?>>[],
+      summary: const <String, Object?>{
+        'reliability_rate': 62.5,
+        'sla_days': 7,
+      },
+      breakdown: const <String, Object?>{
+        'by_supplier': <Map<String, Object?>>[
+          <String, Object?>{
+            'supplier': 'Acme Meds',
+            'reliability_rate': 80,
+            'po_count': 10,
+            'on_time_count': 8,
+            'late_count': 1,
+          },
+        ],
+      },
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+    expect(snapshot.columns, contains('reliability_rate'));
+    final Object? rate = snapshot.rows.single['reliability_rate'];
+    expect(rate, 80);
+    expect((rate as num) >= 0 && rate <= 100, isTrue);
+    expect(snapshot.subtitle, contains('7'));
+  });
+
+  test('late deliveries keeps only rows beyond SLA', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'late_deliveries',
+      categoryId: 'supplier_procurement',
+      label: 'Late deliveries',
+      datasetKey: 'pharmacy_purchase_orders',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_purchase_orders',
+      title: 'POs',
+      columns: const <String>[
+        'supplier',
+        'ordered_at',
+        'received_at',
+        'delivery_days',
+        'is_late',
+      ],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'supplier': 'On Time',
+          'ordered_at': '2026-01-01',
+          'received_at': '2026-01-03',
+          'delivery_days': 2,
+          'is_late': false,
+        },
+        <String, Object?>{
+          'supplier': 'Late Co',
+          'ordered_at': '2026-01-01',
+          'received_at': '2026-01-12',
+          'delivery_days': 11,
+          'is_late': true,
+        },
+      ],
+      summary: const <String, Object?>{'sla_days': 7, 'late_count': 1},
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+    expect(snapshot.rows, hasLength(1));
+    expect(snapshot.rows.single['supplier'], 'Late Co');
+    expect(snapshot.rows.single['delivery_days'], 11);
+  });
+
+  test('price trends keeps buy_unit_price audit points', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'price_trends',
+      categoryId: 'supplier_procurement',
+      label: 'Price trends',
+      contentKind: ModuleReportingContentKind.chart,
+      datasetKey: 'pharmacy_drug_price_changes',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_drug_price_changes',
+      title: 'Price changes',
+      columns: const <String>[
+        'changed_at',
+        'drug',
+        'field',
+        'from_value',
+        'to_value',
+      ],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'changed_at': '2026-01-01',
+          'drug': 'Para',
+          'field': 'buy_unit_price',
+          'from_value': 400,
+          'to_value': 450,
+        },
+        <String, Object?>{
+          'changed_at': '2026-01-02',
+          'drug': 'Para',
+          'field': 'unit_price',
+          'from_value': 1000,
+          'to_value': 1100,
+        },
+        <String, Object?>{
+          'changed_at': '2026-02-01',
+          'drug': 'Para',
+          'field': 'buy_unit_price',
+          'from_value': 450,
+          'to_value': 475,
+        },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+    expect(snapshot.rows, hasLength(2));
+    expect(snapshot.rows.first['buy_unit_price'], 450);
+    expect(snapshot.rows.last['buy_unit_price'], 475);
+  });
+
+  test('prescription clinical reports pass through dosage and duration_days', () {
+    final ModuleReportingReport durationReport = ModuleReportingReport(
+      id: 'duration',
+      categoryId: 'prescription_clinical',
+      label: 'Duration',
+      datasetKey: 'pharmacy_prescription_duration',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_prescription_duration',
+      title: 'Duration',
+      columns: const <String>['duration', 'duration_days', 'item_count'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'duration': '7 days',
+          'duration_days': 7,
+          'item_count': 12,
+        },
+        <String, Object?>{
+          'duration': '2 weeks',
+          'duration_days': 14,
+          'item_count': 4,
+        },
+      ],
+      summary: const <String, Object?>{'item_count': 16},
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: durationReport, preview: preview);
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.columns, contains('duration_days'));
+    expect(snapshot.rows.first['duration_days'], 7);
+    expect(snapshot.summary?['item_count'], 16);
+  });
+
+  test('alert clinical reports stay unavailable without datasetKey', () {
+    final ModuleReportingReport interactions = ModuleReportingReport(
+      id: 'drug_interactions',
+      categoryId: 'prescription_clinical',
+      label: 'Drug interactions',
+    );
+    expect(interactions.hasBackend, isFalse);
+  });
+
+  test('antibiotic usage report wires pharmacy_prescription_antibiotic_usage', () {
+    final ModuleReportingReport report = ModuleReportingReport(
+      id: 'antibiotic_usage',
+      categoryId: 'prescription_clinical',
+      label: 'Antibiotic usage',
+      datasetKey: 'pharmacy_prescription_antibiotic_usage',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_prescription_antibiotic_usage',
+      columns: const <String>['drug', 'quantity_dispensed'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{'drug': 'Amoxicillin', 'quantity_dispensed': 40},
+      ],
+    );
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.rows.single['drug'], 'Amoxicillin');
+  });
+
+  test('previous_vs_new_values keeps typed amount columns for currency formatting', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'previous_vs_new_values',
+      categoryId: 'audit_compliance',
+      label: 'Previous vs new values',
+      datasetKey: 'pharmacy_audit_previous_vs_new',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_audit_previous_vs_new',
+      columns: const <String>[
+        'field',
+        'previous_amount',
+        'new_amount',
+        'currency',
+      ],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'field': 'unit_price',
+          'previous_amount': 1200,
+          'new_amount': 1350,
+          'currency': 'UGX',
+        },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: report,
+          preview: preview,
+          includeAuditDiff: true,
+        );
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.columns, contains('previous_amount'));
+    expect(snapshot.columns, contains('new_amount'));
+    expect(
+      moduleReportingMetricUnitForKey('previous_amount'),
+      ModuleReportingMetricUnit.currency,
+    );
+    expect(
+      moduleReportingMetricUnitForKey('new_amount'),
+      ModuleReportingMetricUnit.currency,
+    );
+    expect(snapshot.rows.single['previous_amount'], 1200);
+    expect(snapshot.rows.single['new_amount'], 1350);
+  });
+
+  test('user_permissions is unavailable when assignment audits are absent', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'user_permissions',
+      categoryId: 'audit_compliance',
+      label: 'User permissions',
+      datasetKey: 'pharmacy_audit_user_permissions',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_audit_user_permissions',
+      columns: const <String>['created_at', 'user', 'action'],
+      rows: const <Map<String, Object?>>[],
+      summary: const <String, Object?>{'event_count': 0, 'available': false},
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+
+    expect(snapshot.state, ModuleReportingLoadState.unavailable);
+  });
+
+  test('mgmt compositions: only controlled stays unavailable; others have datasets', () {
+    for (final PharmacyReportingMgmtComposition entry
+        in pharmacyReportingMgmtCompositions) {
+      if (entry.id == 'mgmt_controlled_medicines') {
+        expect(entry.hasBackend, isFalse, reason: entry.id);
+        expect(entry.datasetKey, isNull, reason: entry.id);
+        continue;
+      }
+      expect(entry.hasBackend, isTrue, reason: entry.id);
+      expect(entry.sourceReportId, isNotEmpty, reason: entry.id);
+    }
+
+    final PharmacyReportingCategory management =
+        pharmacyReportingCatalog().firstWhere(
+      (PharmacyReportingCategory category) =>
+          category.id == PharmacyReportingCategoryIds.managementExecutive,
+    );
+    expect(management.reports, hasLength(pharmacyReportingMgmtCompositions.length));
+    for (final ModuleReportingReport report in management.reports) {
+      final PharmacyReportingMgmtComposition? composition =
+          pharmacyReportingMgmtCompositionById[report.id];
+      expect(composition, isNotNull, reason: report.id);
+      expect(report.datasetKey, composition!.datasetKey, reason: report.id);
+      expect(report.hasBackend, composition.hasBackend, reason: report.id);
+    }
+  });
+
+  test('mgmt_revenue period series matches revenue projection', () {
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_financial_revenue',
+      title: 'Pharmacy revenue',
+      columns: const <String>['drug', 'amount'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{'drug': 'Amox', 'amount': 10},
+      ],
+      summary: const <String, Object?>{'amount': 100},
+      breakdown: const <String, Object?>{
+        'daily_totals': <Map<String, Object?>>[
+          <String, Object?>{'date': '2026-01-01', 'amount': 40},
+          <String, Object?>{'date': '2026-01-02', 'amount': 60},
+        ],
+      },
+    );
+
+    const ModuleReportingReport revenue = ModuleReportingReport(
+      id: 'revenue',
+      categoryId: 'financial',
+      label: 'Revenue',
+      contentKind: ModuleReportingContentKind.chart,
+      datasetKey: 'pharmacy_financial_revenue',
+    );
+    const ModuleReportingReport mgmt = ModuleReportingReport(
+      id: 'mgmt_revenue',
+      categoryId: 'management_executive',
+      label: 'Financial: Revenue',
+      contentKind: ModuleReportingContentKind.chart,
+      datasetKey: 'pharmacy_financial_revenue',
+    );
+
+    final ModuleReportingReportSnapshot source =
+        projectPharmacyReportingPreview(report: revenue, preview: preview);
+    final ModuleReportingReportSnapshot composed =
+        projectPharmacyReportingPreview(report: mgmt, preview: preview);
+
+    expect(composed.rows, source.rows);
+    expect(composed.summary?['amount'], source.summary?['amount']);
+    expect(
+      (_asTestNum(composed.summary?['amount']) -
+              _asTestNum(source.summary?['amount']))
+          .abs(),
+      lessThanOrEqualTo(0.01),
+    );
+  });
+
+  test('mgmt_profit_margin uses gross profit ledger percent', () {
+    const ModuleReportingReport mgmt = ModuleReportingReport(
+      id: 'mgmt_profit_margin',
+      categoryId: 'management_executive',
+      label: 'Financial: Profit margin',
+      datasetKey: 'pharmacy_financial_gross_profit',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_financial_gross_profit',
+      columns: const <String>['date', 'profit', 'amount'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{'date': '2026-01-01', 'profit': 20, 'amount': 100},
+        <String, Object?>{'date': '2026-01-02', 'profit': 30, 'amount': 150},
+      ],
+      summary: const <String, Object?>{'profit': 50, 'amount': 250},
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: mgmt, preview: preview);
+
+    expect(snapshot.columns, contains('profit_margin'));
+    expect(snapshot.summary?['profit'], 50);
+    expect(snapshot.summary?['amount'], 250);
+    expect(snapshot.summary?['profit_margin'], closeTo(0.2, 0.0001));
+    expect(snapshot.subtitle, contains('profit / amount'));
+  });
+
+  test('mgmt_top_categories / customers take top 10', () {
+    final ReportDatasetPreview categories = ReportDatasetPreview(
+      datasetKey: 'pharmacy_sales_by_category',
+      columns: const <String>['category', 'amount'],
+      rows: <Map<String, Object?>>[
+        for (int i = 0; i < 15; i++)
+          <String, Object?>{'category': 'Cat $i', 'amount': i.toDouble()},
+      ],
+    );
+    final ModuleReportingReportSnapshot catSnap =
+        projectPharmacyReportingPreview(
+          report: const ModuleReportingReport(
+            id: 'mgmt_top_categories',
+            categoryId: 'management_executive',
+            label: 'Sales: Top categories',
+            datasetKey: 'pharmacy_sales_by_category',
+          ),
+          preview: categories,
+        );
+    expect(catSnap.rows, hasLength(10));
+    expect(catSnap.rows.first['category'], 'Cat 14');
+
+    final ReportDatasetPreview customers = ReportDatasetPreview(
+      datasetKey: 'pharmacy_sales_by_customer',
+      columns: const <String>['patient', 'amount'],
+      rows: <Map<String, Object?>>[
+        for (int i = 0; i < 12; i++)
+          <String, Object?>{'patient': 'P$i', 'amount': i.toDouble()},
+      ],
+    );
+    final ModuleReportingReportSnapshot custSnap =
+        projectPharmacyReportingPreview(
+          report: const ModuleReportingReport(
+            id: 'mgmt_top_customers',
+            categoryId: 'management_executive',
+            label: 'Sales: Top customers',
+            datasetKey: 'pharmacy_sales_by_customer',
+          ),
+          preview: customers,
+        );
+    expect(custSnap.rows, hasLength(10));
+    expect(custSnap.rows.first['patient'], 'P11');
+  });
+
+  test('mgmt_purchase_trends aggregates inbound by day with amount parity', () {
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_purchase_inbound_value',
+      columns: const <String>['occurred_at', 'amount', 'quantity'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'occurred_at': '2026-02-01T10:00:00.000Z',
+          'amount': 40.5,
+          'quantity': 2,
+        },
+        <String, Object?>{
+          'occurred_at': '2026-02-01T18:00:00.000Z',
+          'amount': 9.5,
+          'quantity': 1,
+        },
+        <String, Object?>{
+          'occurred_at': '2026-02-02T08:00:00.000Z',
+          'amount': 20,
+          'quantity': 4,
+        },
+      ],
+      summary: const <String, Object?>{'amount': 70, 'quantity': 7},
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: const ModuleReportingReport(
+            id: 'mgmt_purchase_trends',
+            categoryId: 'management_executive',
+            label: 'Procurement: Purchase trends',
+            contentKind: ModuleReportingContentKind.chart,
+            datasetKey: 'pharmacy_purchase_inbound_value',
+          ),
+          preview: preview,
+        );
+
+    expect(snapshot.rows, hasLength(2));
+    expect(snapshot.rows.first['date'], '2026-02-01');
+    expect(snapshot.rows.first['amount'], 50);
+    expect(snapshot.summary?['amount'], 70);
+  });
+
+  test('mgmt_unusual_adjustments documents σ / abs floor threshold', () {
+    expect(
+      isPharmacyUnusualAdjustmentQuantity(12, const <Object?>[12]),
+      isTrue,
+    );
+    expect(
+      isPharmacyUnusualAdjustmentQuantity(5, const <Object?>[5]),
+      isFalse,
+    );
+
+    final List<Object?> peers = <Object?>[1, 2, 1, 2, 1, 100];
+    expect(isPharmacyUnusualAdjustmentQuantity(100, peers), isTrue);
+    expect(isPharmacyUnusualAdjustmentQuantity(1, peers), isFalse);
+
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'inventory_stock_adjustments',
+      columns: const <String>['inventory_item', 'quantity', 'reason'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'inventory_item': 'A',
+          'quantity': 1,
+          'reason': 'COUNT',
+        },
+        <String, Object?>{
+          'inventory_item': 'B',
+          'quantity': -1,
+          'reason': 'COUNT',
+        },
+        <String, Object?>{
+          'inventory_item': 'C',
+          'quantity': 2,
+          'reason': 'COUNT',
+        },
+        <String, Object?>{
+          'inventory_item': 'Spike',
+          'quantity': -80,
+          'reason': 'OTHER',
+        },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: const ModuleReportingReport(
+            id: 'mgmt_unusual_adjustments',
+            categoryId: 'management_executive',
+            label: 'Risk: Unusual adjustments',
+            datasetKey: 'inventory_stock_adjustments',
+          ),
+          preview: preview,
+        );
+
+    expect(snapshot.rows, hasLength(1));
+    expect(snapshot.rows.single['inventory_item'], 'Spike');
+    expect(snapshot.subtitle, contains('σ'));
+    expect(snapshot.summary?['threshold'], contains('σ'));
+  });
+
+  test('mgmt_high_value_losses sorts write-offs by value desc', () {
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'inventory_stock_write_offs',
+      columns: const <String>['inventory_item', 'reason', 'value'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'inventory_item': 'Low',
+          'reason': 'DAMAGE',
+          'value': 100,
+        },
+        <String, Object?>{
+          'inventory_item': 'High',
+          'reason': 'EXPIRY',
+          'value': 900,
+        },
+        <String, Object?>{
+          'inventory_item': 'Mid',
+          'reason': 'DAMAGE',
+          'value': 400,
+        },
+      ],
+      summary: const <String, Object?>{'value': 1400, 'amount': 1400},
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: const ModuleReportingReport(
+            id: 'mgmt_high_value_losses',
+            categoryId: 'management_executive',
+            label: 'Risk: High-value losses',
+            datasetKey: 'inventory_stock_write_offs',
+          ),
+          preview: preview,
+        );
+
+    expect(
+      snapshot.rows.map((Map<String, Object?> row) => row['inventory_item']),
+      <String>['High', 'Mid', 'Low'],
+    );
+    expect(snapshot.summary?['value'], 1400);
+  });
+
+  test('mgmt_supplier_spend matches supplier_spend projection', () {
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_purchases_by_supplier',
+      columns: const <String>[
+        'supplier',
+        'po_count',
+        'quantity',
+        'amount',
+        'currency',
+      ],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'supplier': 'Acme',
+          'po_count': 3,
+          'quantity': 10,
+          'amount': 500,
+          'currency': 'UGX',
+        },
+      ],
+      summary: const <String, Object?>{'amount': 500},
+    );
+
+    final ModuleReportingReportSnapshot source =
+        projectPharmacyReportingPreview(
+          report: const ModuleReportingReport(
+            id: 'supplier_spend',
+            categoryId: 'supplier_procurement',
+            label: 'Supplier spend',
+            datasetKey: 'pharmacy_purchases_by_supplier',
+          ),
+          preview: preview,
+        );
+    final ModuleReportingReportSnapshot mgmt =
+        projectPharmacyReportingPreview(
+          report: const ModuleReportingReport(
+            id: 'mgmt_supplier_spend',
+            categoryId: 'management_executive',
+            label: 'Procurement: Supplier spend',
+            datasetKey: 'pharmacy_purchases_by_supplier',
+          ),
+          preview: preview,
+        );
+
+    expect(mgmt.columns, source.columns);
+    expect(mgmt.rows, source.rows);
+    expect(
+      (_asTestNum(mgmt.summary?['amount']) -
+              _asTestNum(source.summary?['amount']))
+          .abs(),
+      lessThanOrEqualTo(0.01),
+    );
+  });
+}
+
+num _asTestNum(Object? value) {
+  if (value is num) {
+    return value;
+  }
+  if (value is String) {
+    return num.tryParse(value) ?? 0;
+  }
+  return 0;
 }

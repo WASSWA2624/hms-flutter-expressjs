@@ -4,18 +4,7 @@
  */
 
 const prisma = require('@prisma/client');
-
-const PHARMACY_AUDIT_ENTITIES = Object.freeze([
-  'pharmacy_order',
-  'pharmacy_dispense_attestation',
-  'dispense_log',
-  'stock_adjustment',
-  'purchase_order',
-  'goods_receipt',
-  'refund',
-  'billing_adjustment',
-  'drug',
-]);
+const { PHARMACY_AUDIT_ENTITIES } = require('@lib/reports/pharmacy-audit-analytics');
 
 const asNumber = (value) => {
   const parsed = Number(value);

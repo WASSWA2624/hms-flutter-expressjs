@@ -1,8 +1,11 @@
+import 'dart:math' as math;
+
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/domain/repositories/reports_repository.dart';
+import 'package:hosspi_hms/features/reports/presentation/pharmacy_reporting_mgmt_sources.dart';
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
 import 'package:hosspi_hms/shared/reporting/reporting.dart';
 
@@ -27,6 +30,14 @@ final class PharmacyReportingDataProvider
     if (!report.hasBackend) {
       return ModuleReportingReportSnapshot.unavailable(
         title: report.label,
+      );
+    }
+
+    if (report.id == 'regulatory_log' &&
+        (policy == null || !canReadControlledRegulatoryLog(policy!))) {
+      return ModuleReportingReportSnapshot.unavailable(
+        title: report.label,
+        subtitle: 'Requires compliance:read',
       );
     }
 
@@ -107,6 +118,30 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         breakdown: breakdown,
       );
     case 'top_selling_medicines':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: _topRows(sourceRows, limit: 10),
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle) ??
+            'Top 10 by dispense amount',
+      );
+    case 'top_profitable_medicines':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: _topRows(
+          sourceRows,
+          limit: 10,
+          sortKey: 'profit',
+          excludeNullSortKey: true,
+        ),
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle) ??
+            'Top 10 by profit (null profit excluded)',
+      );
     case 'frequently_purchased_medicines':
     case 'mgmt_top_products':
       return ModuleReportingReportSnapshot.ready(
@@ -116,6 +151,27 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         breakdown: breakdown,
         title: preview.title.isEmpty ? report.label : preview.title,
         subtitle: previewSubtitleOrNull(preview.subtitle),
+      );
+    case 'total_sales_today':
+      return _projectGrossSales(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        subtitleOverride:
+            previewSubtitleOrNull(preview.subtitle) ??
+            'Dispense amount for calendar today',
+      );
+    case 'todays_profit':
+      return _projectTodaysProfit(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
       );
     case 'total_sales':
     case 'gross_revenue':
@@ -140,6 +196,7 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         subtitle: previewSubtitleOrNull(preview.subtitle),
       );
     case 'profit_and_margin':
+    case 'mgmt_profit_margin':
       return _projectProfitAndMargin(
         report: report,
         preview: preview,
@@ -147,6 +204,29 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         sourceRows: sourceRows,
         summary: summary,
         breakdown: breakdown,
+        subtitleOverride: reportId == 'mgmt_profit_margin'
+            ? 'profit_margin = profit / amount (same Financial gross profit ledger)'
+            : null,
+      );
+    case 'mgmt_top_categories':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: _topRows(sourceRows, limit: 10),
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle) ??
+            'Top 10 categories by dispense amount (same as sales_by_category)',
+      );
+    case 'mgmt_top_customers':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: _topRows(sourceRows, limit: 10),
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle) ??
+            'Top 10 customers by amount (same as purchases_by_customer)',
       );
     case 'sales_by_category':
     case 'sales_by_branch':
@@ -174,10 +254,20 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
     case 'stock_shortages_by_branch':
     case 'best_performing_branch':
     case 'branch_comparison':
+    case 'transfers_between_branches':
+    case 'transfer_quantity':
+    case 'sending_branch':
+    case 'receiving_branch':
+    case 'transfer_date':
+    case 'transfer_status':
+    case 'products_transferred':
+    case 'pending_transfers':
+    case 'transfer_discrepancies':
     case 'number_of_customers':
     case 'purchases_by_customer':
     case 'patient_medication_history':
     case 'customer_credit_balance':
+    case 'outstanding_customer_credit':
     case 'outstanding_payments':
     case 'customer_demographics':
       return ModuleReportingReportSnapshot.ready(
@@ -186,7 +276,10 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         summary: summary,
         breakdown: breakdown,
         title: preview.title.isEmpty ? report.label : preview.title,
-        subtitle: previewSubtitleOrNull(preview.subtitle),
+        subtitle: previewSubtitleOrNull(preview.subtitle) ??
+            (reportId == 'outstanding_customer_credit'
+                ? 'Open pharmacy invoice balance sum'
+                : null),
       );
     case 'new_vs_returning':
       return _projectNewVsReturning(
@@ -210,13 +303,17 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
     case 'number_of_transactions':
     case 'number_of_prescriptions':
     case 'kpi_prescriptions':
+    case 'kpi_transactions':
       return ModuleReportingReportSnapshot.ready(
         columns: columns,
         rows: sourceRows,
         summary: summary,
         breakdown: breakdown,
         title: preview.title.isEmpty ? report.label : preview.title,
-        subtitle: previewSubtitleOrNull(preview.subtitle),
+        subtitle: previewSubtitleOrNull(preview.subtitle) ??
+            (reportId == 'kpi_transactions'
+                ? 'Pharmacy orders created (orders_created)'
+                : null),
       );
     case 'items_dispensed':
       return ModuleReportingReportSnapshot.ready(
@@ -342,7 +439,6 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         breakdown: breakdown,
       );
     case 'near_expiry_stock':
-    case 'near_expiry_value':
     case 'mgmt_expiring':
       return _filterStockRisk(
         report: report,
@@ -352,6 +448,15 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         summary: summary,
         breakdown: breakdown,
         riskStates: const <String>{'EXPIRING_SOON'},
+      );
+    case 'near_expiry_value':
+      return _projectNearExpiryValue(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
       );
     case 'expiring_windows':
       return _projectExpiringWindows(
@@ -380,6 +485,25 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         title: preview.title.isEmpty ? report.label : preview.title,
         subtitle: previewSubtitleOrNull(preview.subtitle) ??
             'at buy cost',
+      );
+    case 'mgmt_high_value_losses':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: _topRows(sourceRows, limit: sourceRows.length, sortKey: 'value'),
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle) ??
+            'DAMAGE|EXPIRY write-offs by value desc (same as stock_write_offs)',
+      );
+    case 'mgmt_unusual_adjustments':
+      return _projectUnusualAdjustments(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
       );
     case 'lost_stock_loss':
       return ModuleReportingReportSnapshot.ready(
@@ -725,9 +849,18 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         ],
       );
     case 'supplier_performance':
+    case 'mgmt_supplier_performance':
       return _projectSupplierPerformance(
         report: report,
         preview: preview,
+        summary: summary,
+        breakdown: breakdown,
+      );
+    case 'mgmt_purchase_trends':
+      return _projectPurchaseTrends(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
         summary: summary,
         breakdown: breakdown,
       );
@@ -784,7 +917,83 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
           'amount',
         ],
       );
+    case 'supplier_spend':
+    case 'mgmt_supplier_spend':
+      return _projectColumnSubset(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        columnKeys: const <String>['supplier', 'amount'],
+        subtitleOverride:
+            'Purchase value basis: stock inbound × buy_unit_price (same as Purchasing)',
+      );
+    case 'price_comparison':
+      return _projectColumnSubset(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        columnKeys: const <String>[
+          'drug',
+          'supplier',
+          'buy_unit_price',
+        ],
+        subtitleOverride:
+            'Current buy_unit_price by drug.supplier_id (one supplier per drug)',
+      );
+    case 'price_trends':
+      return _projectPriceTrends(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+      );
+    case 'supplier_reliability':
+      return _projectSupplierReliability(
+        report: report,
+        preview: preview,
+        summary: summary,
+        breakdown: breakdown,
+      );
+    case 'order_fulfillment_rate':
+      return _projectOrderFulfillmentRate(
+        report: report,
+        preview: preview,
+        summary: summary,
+        breakdown: breakdown,
+      );
+    case 'late_deliveries':
+      return _projectLateDeliveries(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+      );
+    case 'purchase_frequency':
+      return _projectColumnSubset(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        columnKeys: const <String>['supplier', 'po_count'],
+      );
+    case 'purchase_volume':
+      return _projectColumnSubset(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        columnKeys: const <String>['supplier', 'quantity'],
+      );
     case 'sales_by_staff':
+    case 'mgmt_sales_by_staff_branch':
     case 'dispensing_by_staff':
     case 'purchases_entered_by_staff':
     case 'stock_adjustments_by_staff':
@@ -793,6 +1002,33 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
     case 'voided_transactions':
     case 'login_activity_history':
     case 'user_productivity':
+    case 'prescription_count':
+    case 'prescriber':
+    case 'diagnosis_indication':
+    case 'medicine_prescribed':
+    case 'dosage':
+    case 'frequency':
+    case 'duration':
+    case 'antibiotic_usage':
+    case 'controlled_drug_dispensing':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle) ??
+            (reportId == 'mgmt_sales_by_staff_branch'
+                ? 'Staff sales; branch = facility scope (same as sales_by_staff)'
+                : null),
+      );
+    case 'controlled_medicine_stock':
+    case 'quantity_received':
+    case 'quantity_dispensed':
+    case 'batch_numbers':
+    case 'controlled_adjustments':
+    case 'wastage':
+    case 'regulatory_log':
       return ModuleReportingReportSnapshot.ready(
         columns: columns,
         rows: sourceRows,
@@ -800,6 +1036,66 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         breakdown: breakdown,
         title: preview.title.isEmpty ? report.label : preview.title,
         subtitle: previewSubtitleOrNull(preview.subtitle),
+      );
+    case 'opening_balance':
+      return _projectColumnSubset(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        columnKeys: const <String>[
+          'drug',
+          'facility',
+          'opening_quantity',
+          'unit',
+        ],
+      );
+    case 'closing_balance':
+      return _projectColumnSubset(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        columnKeys: const <String>[
+          'drug',
+          'facility',
+          'closing_quantity',
+          'opening_quantity',
+          'quantity_received',
+          'quantity_dispensed',
+          'wastage',
+          'adjustments_net',
+          'unit',
+        ],
+      );
+    case 'controlled_prescriber':
+      return _projectControlledActors(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        actorRole: 'prescriber',
+      );
+    case 'controlled_patient':
+      return _projectControlledActors(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        actorRole: 'patient',
+      );
+    case 'dispensing_staff':
+      return _projectControlledActors(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        actorRole: 'staff',
       );
     case 'audit_trail':
       return _projectAuditTrail(
@@ -810,6 +1106,56 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         summary: summary,
         breakdown: breakdown,
         includeAuditDiff: includeAuditDiff,
+      );
+    case 'who_created':
+    case 'who_edited':
+    case 'who_deleted_voided':
+    case 'change_date_time':
+    case 'unauthorized_attempts':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle),
+      );
+    case 'previous_vs_new_values':
+    case 'audit_price_changes':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle),
+      );
+    case 'audit_stock_adjustments':
+    case 'prescription_controlled_audit':
+      return _projectAuditTrail(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        includeAuditDiff: includeAuditDiff,
+      );
+    case 'user_permissions':
+      if (summary?['available'] == false) {
+        return ModuleReportingReportSnapshot.unavailable(
+          title: report.label,
+          subtitle: previewSubtitleOrNull(preview.subtitle) ??
+              'No permission-assignment audits in range',
+        );
+      }
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle),
       );
     default:
       return ModuleReportingReportSnapshot.ready(
@@ -861,8 +1207,46 @@ ModuleReportingReportSnapshot _projectColumnSubset({
   required Map<String, Object?>? summary,
   required Map<String, Object?>? breakdown,
   required List<String> columnKeys,
+  String? subtitleOverride,
 }) {
   final List<Map<String, Object?>> rows = sourceRows
+      .map(
+        (Map<String, Object?> row) => <String, Object?>{
+          for (final String key in columnKeys) key: row[key],
+        },
+      )
+      .toList(growable: false);
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: columnKeys,
+    rows: rows,
+    summary: summary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(subtitleOverride) ??
+        previewSubtitleOrNull(preview.subtitle),
+  );
+}
+
+ModuleReportingReportSnapshot _projectControlledActors({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+  required String actorRole,
+}) {
+  const List<String> columnKeys = <String>[
+    'actor',
+    'drug',
+    'quantity_dispensed',
+    'dispensed_at',
+  ];
+  final List<Map<String, Object?>> rows = sourceRows
+      .where(
+        (Map<String, Object?> row) =>
+            (row['actor_role']?.toString() ?? '') == actorRole,
+      )
       .map(
         (Map<String, Object?> row) => <String, Object?>{
           for (final String key in columnKeys) key: row[key],
@@ -894,12 +1278,17 @@ ModuleReportingReportSnapshot _projectAuditTrail({
       : columns.where((String key) => key != 'diff' && key != 'diff_json').toList();
   final List<Map<String, Object?>> rows = sourceRows
       .map((Map<String, Object?> row) {
-        if (includeAuditDiff) {
-          return row;
-        }
         final Map<String, Object?> copy = Map<String, Object?>.from(row);
-        copy.remove('diff');
-        copy.remove('diff_json');
+        if (!includeAuditDiff) {
+          copy.remove('diff');
+          copy.remove('diff_json');
+        } else {
+          final Object? diff = copy['diff'];
+          if (diff is String && diff.length > 160) {
+            // Progressive disclosure on narrow viewports / dense tables.
+            copy['diff'] = '${diff.substring(0, 157)}…';
+          }
+        }
         return copy;
       })
       .toList(growable: false);
@@ -983,6 +1372,195 @@ ModuleReportingReportSnapshot _projectDeliveryTime({
     breakdown: breakdown,
     title: preview.title.isEmpty ? report.label : preview.title,
     subtitle: previewSubtitleOrNull(preview.subtitle),
+  );
+}
+
+List<Map<String, Object?>> _supplierBreakdownRows(
+  Map<String, Object?>? breakdown,
+  List<String> columnKeys,
+) {
+  final Object? bySupplier = breakdown?['by_supplier'];
+  final List<Map<String, Object?>> rows = <Map<String, Object?>>[];
+  if (bySupplier is! List) {
+    return rows;
+  }
+  for (final Object? entry in bySupplier) {
+    if (entry is! Map) continue;
+    final Map<String, Object?> row = <String, Object?>{
+      for (final MapEntry<dynamic, dynamic> item
+          in Map<dynamic, dynamic>.from(entry).entries)
+        item.key.toString(): item.value,
+    };
+    rows.add(<String, Object?>{
+      for (final String key in columnKeys) key: row[key],
+    });
+  }
+  return rows;
+}
+
+int? _asInt(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.round();
+  if (value is String) return int.tryParse(value.trim());
+  return null;
+}
+
+ModuleReportingReportSnapshot _projectPriceTrends({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  const List<String> columnKeys = <String>[
+    'changed_at',
+    'drug',
+    'buy_unit_price',
+  ];
+  final List<Map<String, Object?>> rows = sourceRows
+      .where((Map<String, Object?> row) {
+        final Object? field = row['field'];
+        return field == null ||
+            field.toString().trim().toLowerCase() == 'buy_unit_price';
+      })
+      .map(
+        (Map<String, Object?> row) => <String, Object?>{
+          'changed_at': row['changed_at'],
+          'drug': row['drug'],
+          'buy_unit_price': row['to_value'] ?? row['buy_unit_price'],
+        },
+      )
+      .toList(growable: false);
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: columnKeys,
+    rows: rows,
+    summary: <String, Object?>{
+      ...?summary,
+      'change_count': rows.length,
+    },
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle) ??
+        'Historical buy_unit_price from audit_log diffs',
+  );
+}
+
+ModuleReportingReportSnapshot _projectSupplierReliability({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  const List<String> columnKeys = <String>[
+    'supplier',
+    'reliability_rate',
+    'po_count',
+    'on_time_count',
+    'late_count',
+  ];
+  final List<Map<String, Object?>> rows =
+      _supplierBreakdownRows(breakdown, columnKeys);
+  final int slaDays = _asInt(summary?['sla_days']) ?? 7;
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: columnKeys,
+    rows: rows,
+    summary: summary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle) ??
+        '% of POs with goods_receipt within ${slaDays} days (SLA)',
+  );
+}
+
+ModuleReportingReportSnapshot _projectOrderFulfillmentRate({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  const List<String> columnKeys = <String>[
+    'supplier',
+    'fulfillment_rate',
+    'po_count',
+    'receipt_count',
+  ];
+  final Object? bySupplier = breakdown?['by_supplier'];
+  final List<Map<String, Object?>> rows = <Map<String, Object?>>[];
+  if (bySupplier is List) {
+    for (final Object? entry in bySupplier) {
+      if (entry is! Map) continue;
+      final Map<String, Object?> row = <String, Object?>{
+        for (final MapEntry<dynamic, dynamic> item
+            in Map<dynamic, dynamic>.from(entry).entries)
+          item.key.toString(): item.value,
+      };
+      rows.add(<String, Object?>{
+        'supplier': row['supplier'],
+        'fulfillment_rate':
+            row['fulfillment_rate_proxy'] ?? row['fulfillment_rate'],
+        'po_count': row['po_count'],
+        'receipt_count': row['receipt_count'],
+      });
+    }
+  }
+
+  final Map<String, Object?> projectedSummary = <String, Object?>{
+    ...?summary,
+    'fulfillment_rate':
+        summary?['fulfillment_rate_proxy'] ?? summary?['fulfillment_rate'],
+  };
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: columnKeys,
+    rows: rows,
+    summary: projectedSummary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle) ??
+        'Proxy: receipt-exists / PO-count (ordered vs received qty needs PO lines)',
+  );
+}
+
+ModuleReportingReportSnapshot _projectLateDeliveries({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  const List<String> columnKeys = <String>[
+    'supplier',
+    'ordered_at',
+    'received_at',
+    'delivery_days',
+  ];
+  final int slaDays = _asInt(summary?['sla_days']) ?? 7;
+  final List<Map<String, Object?>> rows = sourceRows
+      .where((Map<String, Object?> row) {
+        if (row['is_late'] == true) return true;
+        final int? days = _asInt(row['delivery_days']);
+        return days != null && days > slaDays;
+      })
+      .map(
+        (Map<String, Object?> row) => <String, Object?>{
+          for (final String key in columnKeys) key: row[key],
+        },
+      )
+      .toList(growable: false);
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: columnKeys,
+    rows: rows,
+    summary: <String, Object?>{
+      ...?summary,
+      'late_count': summary?['late_count'] ?? rows.length,
+    },
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle) ??
+        'Receipts with delivery_days > ${slaDays} (SLA)',
   );
 }
 
@@ -1134,6 +1712,7 @@ ModuleReportingReportSnapshot _projectProfitAndMargin({
   required List<Map<String, Object?>> sourceRows,
   required Map<String, Object?>? summary,
   required Map<String, Object?>? breakdown,
+  String? subtitleOverride,
 }) {
   final List<Map<String, Object?>> rows = <Map<String, Object?>>[
     for (final Map<String, Object?> row in sourceRows)
@@ -1154,14 +1733,12 @@ ModuleReportingReportSnapshot _projectProfitAndMargin({
     0,
     (num sum, Map<String, Object?> row) => sum + _asNum(row['amount']),
   );
-  final Map<String, Object?>? adjustedSummary = summary == null
-      ? null
-      : <String, Object?>{
-          ...summary,
-          'profit': totalProfit,
-          'amount': totalAmount,
-          'profit_margin': _profitMargin(totalProfit, totalAmount),
-        };
+  final Map<String, Object?> adjustedSummary = <String, Object?>{
+    ...?summary,
+    'profit': totalProfit,
+    'amount': totalAmount,
+    'profit_margin': _profitMargin(totalProfit, totalAmount),
+  };
 
   return ModuleReportingReportSnapshot.ready(
     columns: nextColumns,
@@ -1169,7 +1746,8 @@ ModuleReportingReportSnapshot _projectProfitAndMargin({
     summary: adjustedSummary,
     breakdown: breakdown,
     title: preview.title.isEmpty ? report.label : preview.title,
-    subtitle: previewSubtitleOrNull(preview.subtitle),
+    subtitle: previewSubtitleOrNull(subtitleOverride) ??
+        previewSubtitleOrNull(preview.subtitle),
   );
 }
 
@@ -1392,13 +1970,78 @@ ModuleReportingReportSnapshot _projectExpiredStockValue({
     return row['days_to_expiry'] != null && _asNum(row['days_to_expiry']) < 0;
   }).toList(growable: false);
 
-  final num valueTotal = filtered.fold<num>(
+  return _projectBuyCostValueRows(
+    report: report,
+    preview: preview,
+    columns: columns,
+    filtered: filtered,
+    summary: summary,
+    breakdown: breakdown,
+    subtitleFallback: 'Expired batch quantity × buy_unit_price (at buy cost)',
+  );
+}
+
+ModuleReportingReportSnapshot _projectNearExpiryValue({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<String> columns,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  final List<Map<String, Object?>> filtered = sourceRows.where((
+    Map<String, Object?> row,
+  ) {
+    final String risk =
+        '${row['risk_state'] ?? row['expiry_alert_status'] ?? ''}'
+            .trim()
+            .toUpperCase();
+    return risk == 'EXPIRING_SOON';
+  }).toList(growable: false);
+
+  return _projectBuyCostValueRows(
+    report: report,
+    preview: preview,
+    columns: columns,
+    filtered: filtered,
+    summary: summary,
+    breakdown: breakdown,
+    subtitleFallback:
+        'EXPIRING_SOON batch quantity × buy_unit_price (at buy cost)',
+  );
+}
+
+ModuleReportingReportSnapshot _projectBuyCostValueRows({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<String> columns,
+  required List<Map<String, Object?>> filtered,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+  required String subtitleFallback,
+}) {
+  final List<Map<String, Object?>> rows = filtered
+      .map((Map<String, Object?> row) {
+        final Object? existing = row['value'];
+        if (existing != null) {
+          return row;
+        }
+        final num qty = _asNum(row['quantity']);
+        final num unit = _asNum(row['unit_cost'] ?? row['buy_unit_price']);
+        return <String, Object?>{
+          ...row,
+          'value': _roundMoney(qty * unit),
+        };
+      })
+      .toList(growable: false);
+
+  final num valueTotal = rows.fold<num>(
     0,
     (num sum, Map<String, Object?> row) => sum + _asNum(row['value']),
   );
   final Map<String, Object?>? adjustedSummary = <String, Object?>{
     ...?summary,
-    'value': valueTotal,
+    'value': _roundMoney(valueTotal),
   };
 
   final List<String> nextColumns = columns.contains('value')
@@ -1407,12 +2050,47 @@ ModuleReportingReportSnapshot _projectExpiredStockValue({
 
   return ModuleReportingReportSnapshot.ready(
     columns: nextColumns,
-    rows: filtered,
+    rows: rows,
+    summary: adjustedSummary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle) ?? subtitleFallback,
+  );
+}
+
+ModuleReportingReportSnapshot _projectTodaysProfit({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<String> columns,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  num profitTotal = 0;
+  bool anyProfit = false;
+  for (final Map<String, Object?> row in sourceRows) {
+    if (row['profit'] == null) {
+      continue;
+    }
+    anyProfit = true;
+    profitTotal += _asNum(row['profit']);
+  }
+  final Object? summaryProfit = summary?['profit'];
+  final Object? resolvedProfit = summaryProfit ?? (anyProfit ? profitTotal : null);
+
+  final Map<String, Object?>? adjustedSummary = <String, Object?>{
+    ...?summary,
+    'profit': resolvedProfit == null ? null : _roundMoney(_asNum(resolvedProfit)),
+  };
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: columns,
+    rows: sourceRows,
     summary: adjustedSummary,
     breakdown: breakdown,
     title: preview.title.isEmpty ? report.label : preview.title,
     subtitle: previewSubtitleOrNull(preview.subtitle) ??
-        'Expired batch quantity × buy_unit_price (at buy cost)',
+        'Dispense profit for calendar today (null when buy cost unset)',
   );
 }
 
@@ -1519,14 +2197,21 @@ ModuleReportingReportSnapshot _filterVelocity({
 List<Map<String, Object?>> _topRows(
   List<Map<String, Object?>> rows, {
   required int limit,
+  String sortKey = 'amount',
+  bool excludeNullSortKey = false,
 }) {
+  final List<Map<String, Object?>> eligible = excludeNullSortKey
+      ? rows
+          .where((Map<String, Object?> row) => row[sortKey] != null)
+          .toList(growable: false)
+      : rows;
   final List<Map<String, Object?>> sorted =
-      List<Map<String, Object?>>.from(rows)
+      List<Map<String, Object?>>.from(eligible)
         ..sort((Map<String, Object?> left, Map<String, Object?> right) {
-          final int byAmount =
-              _asNum(right['amount']).compareTo(_asNum(left['amount']));
-          if (byAmount != 0) {
-            return byAmount;
+          final int byPrimary =
+              _asNum(right[sortKey]).compareTo(_asNum(left[sortKey]));
+          if (byPrimary != 0) {
+            return byPrimary;
           }
           return _asNum(right['quantity_dispensed']).compareTo(
             _asNum(left['quantity_dispensed']),
@@ -1537,6 +2222,158 @@ List<Map<String, Object?>> _topRows(
   }
   return sorted.take(limit).toList(growable: false);
 }
+
+/// Daily purchase inbound totals from `occurred_at` (same amount basis as purchase_value).
+ModuleReportingReportSnapshot _projectPurchaseTrends({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  final Map<String, Map<String, Object?>> byDate = <String, Map<String, Object?>>{};
+  for (final Map<String, Object?> row in sourceRows) {
+    final String date = _dateKey(row['occurred_at'] ?? row['date']);
+    if (date.isEmpty) {
+      continue;
+    }
+    final Map<String, Object?> bucket = byDate.putIfAbsent(
+      date,
+      () => <String, Object?>{
+        'date': date,
+        'amount': 0,
+        'quantity': 0,
+      },
+    );
+    bucket['amount'] = _asNum(bucket['amount']) + _asNum(row['amount']);
+    bucket['quantity'] = _asNum(bucket['quantity']) + _asNum(row['quantity']);
+  }
+
+  final List<Map<String, Object?>> rows = byDate.values
+      .map(
+        (Map<String, Object?> row) => <String, Object?>{
+          'date': row['date'],
+          'amount': _roundMoney(_asNum(row['amount'])),
+          'quantity': _asNum(row['quantity']),
+        },
+      )
+      .toList(growable: false)
+    ..sort(
+      (Map<String, Object?> left, Map<String, Object?> right) =>
+          '${left['date']}'.compareTo('${right['date']}'),
+    );
+
+  final num amountTotal = rows.fold<num>(
+    0,
+    (num sum, Map<String, Object?> row) => sum + _asNum(row['amount']),
+  );
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: const <String>['date', 'amount', 'quantity'],
+    rows: rows,
+    summary: <String, Object?>{
+      ...?summary,
+      'amount': summary?['amount'] ?? _roundMoney(amountTotal),
+      'quantity': summary?['quantity'] ??
+          rows.fold<num>(
+            0,
+            (num sum, Map<String, Object?> row) => sum + _asNum(row['quantity']),
+          ),
+    },
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle) ??
+        'Daily inbound purchase value (same as purchase_value)',
+  );
+}
+
+/// Unusual stock adjustments: |qty| > mean(|qty|) + 2σ when n≥2; else |qty| ≥ 10.
+ModuleReportingReportSnapshot _projectUnusualAdjustments({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<String> columns,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  final List<Map<String, Object?>> unusual = sourceRows
+      .where(
+        (Map<String, Object?> row) => isPharmacyUnusualAdjustmentQuantity(
+          row['quantity'],
+          sourceRows.map((Map<String, Object?> r) => r['quantity']),
+        ),
+      )
+      .toList(growable: false);
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: columns,
+    rows: unusual,
+    summary: <String, Object?>{
+      ...?summary,
+      'adjustment_count': unusual.length,
+      'quantity': unusual.fold<num>(
+        0,
+        (num sum, Map<String, Object?> row) => sum + _asNum(row['quantity']),
+      ),
+      'threshold':
+          '|qty| > mean+${kPharmacyUnusualAdjustmentSigma}σ (n≥2) else |qty|≥$kPharmacyUnusualAdjustmentAbsFloor',
+    },
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle) ??
+        'Unusual: |qty| > mean(|qty|)+${kPharmacyUnusualAdjustmentSigma}σ (n≥2); else |qty|≥$kPharmacyUnusualAdjustmentAbsFloor',
+  );
+}
+
+/// Shared unusual-adjustment predicate for provider + unit tests.
+bool isPharmacyUnusualAdjustmentQuantity(
+  Object? quantity,
+  Iterable<Object?> peerQuantities,
+) {
+  final num absQty = _asNum(quantity).abs();
+  final List<num> absPeers = peerQuantities
+      .map((Object? value) => _asNum(value).abs())
+      .toList(growable: false);
+  if (absPeers.length < 2) {
+    return absQty >= kPharmacyUnusualAdjustmentAbsFloor;
+  }
+  final num mean =
+      absPeers.fold<num>(0, (num sum, num value) => sum + value) /
+          absPeers.length;
+  num varianceSum = 0;
+  for (final num value in absPeers) {
+    final num delta = value - mean;
+    varianceSum += delta * delta;
+  }
+  final num stdDev = _sqrt(varianceSum / absPeers.length);
+  final num cutoff = mean + (kPharmacyUnusualAdjustmentSigma * stdDev);
+  return absQty > cutoff;
+}
+
+String _dateKey(Object? value) {
+  if (value == null) {
+    return '';
+  }
+  if (value is DateTime) {
+    final String month = value.month.toString().padLeft(2, '0');
+    final String day = value.day.toString().padLeft(2, '0');
+    return '${value.year}-$month-$day';
+  }
+  final String raw = value.toString().trim();
+  if (raw.length >= 10) {
+    return raw.substring(0, 10);
+  }
+  return raw;
+}
+
+num _sqrt(num value) {
+  if (value <= 0) {
+    return 0;
+  }
+  return math.sqrt(value.toDouble());
+}
+
+num _roundMoney(num value) => (value * 100).round() / 100;
 
 num _asNum(Object? value) {
   if (value is num) {

@@ -130,7 +130,8 @@ describe('verify-demo-data', () => {
     mockPrisma.tenant.findMany.mockResolvedValue([
       { id: 'tenant-demo', slug: 'democare-general-hospital', name: 'DemoCare General Hospital' }]);
     mockPrisma.facility.findMany.mockResolvedValue([
-      { id: 'facility-demo', tenant_id: 'tenant-demo', name: 'DemoCare General Hospital' }]);
+      { id: 'facility-demo', tenant_id: 'tenant-demo', name: 'DemoCare General Hospital' },
+      { id: 'facility-annex', tenant_id: 'tenant-demo', name: 'DemoCare Annex Pharmacy' }]);
     mockPrisma.user.count.mockResolvedValue(DEMO_TENANT.users.length);
     mockPrisma.role.findMany.mockResolvedValue(DEMO_ROLE_CODES.map((name) => ({ name })));
     mockPrisma.user_role.findMany.mockResolvedValue(buildUserRoleRows());

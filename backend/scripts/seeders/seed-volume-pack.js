@@ -10,6 +10,7 @@
  * subscription/license, plan/add-on/module catalogs, role/permission catalogs.
  */
 
+const crypto = require('crypto');
 const { DEMO_TENANT } = require('./seed-catalog');
 const {
   PHARMACY_REPORT_RISK_BATCH_TEMPLATES,
@@ -19,6 +20,18 @@ const {
 const DEFAULT_DEMO_VOLUME_TARGET = 1000;
 /** Minimum rows for applicable operational tables when volume mode is on. */
 const MIN_APPLICABLE_VOLUME = 100;
+
+/** Deterministic UUID (v5-style) from a seed key for transfer_group_id. */
+const deterministicUuid = (seedKey) => {
+  const hash = crypto.createHash('sha256').update(String(seedKey)).digest('hex');
+  return [
+    hash.slice(0, 8),
+    hash.slice(8, 12),
+    `5${hash.slice(13, 16)}`,
+    `${(parseInt(hash.slice(16, 18), 16) & 0x3f | 0x80).toString(16)}${hash.slice(18, 20)}`,
+    hash.slice(20, 32),
+  ].join('-');
+};
 
 const FIRST_NAMES = Object.freeze([
   'Amina', 'Samuel', 'Nia', 'Grace', 'Noah', 'Diana', 'Ethan', 'Faith', 'Isaac', 'Joy',
@@ -92,9 +105,52 @@ const STOCK_MOVEMENT_SPECS = Object.freeze([
 ]);
 const GENDERS = Object.freeze(['MALE', 'FEMALE', 'OTHER', 'UNKNOWN']);
 
+/** MedicationFrequency values for clinical prescription reporting density. */
+const RX_FREQUENCIES = Object.freeze(['OD', 'BID', 'TID', 'QID', 'PRN']);
+const RX_DURATION_UNITS = Object.freeze(['days', 'weeks', 'hours']);
+const RX_ROUTES = Object.freeze(['ORAL', 'IV', 'IM']);
+
+/** Anti-infective + controlled seed keys (codes AMX500 / MRF10I / TRM50). */
+const ANTI_INFECTIVE_SEED_KEYS = Object.freeze([
+  'amoxicillin_500_capsule',
+  'amoxiclav_625_tablet',
+  'azithromycin_500_tablet',
+  'ceftriaxone_1g_injection',
+  'ciprofloxacin_500_tablet',
+  'metronidazole_400_tablet',
+]);
+const CONTROLLED_SEED_KEYS = Object.freeze([
+  'morphine_injection',
+  'tramadol_50_capsule',
+]);
+
 const pick = (values, index) => values[index % values.length];
 
 const pad = (value, width = 4) => String(value).padStart(width, '0');
+
+const catalogRecordByKeySuffix = (bucket = {}, suffix) => {
+  const entries = Object.entries(bucket || {});
+  const match = entries.find(
+    ([key]) => key === suffix || key.endsWith(`:${suffix}`)
+  );
+  return match ? match[1] : null;
+};
+
+/** Structured dosing fields for prescription_clinical reports (plain columns only). */
+const buildVolumePrescriptionDosing = (index) => {
+  const doseAmount = 1 + (index % 2);
+  const durationValue = 3 + (index % 7);
+  const durationUnit = pick(RX_DURATION_UNITS, index);
+  return {
+    dosage: `${doseAmount} tab`,
+    dose_amount: doseAmount,
+    dose_unit: 'tab',
+    frequency: pick(RX_FREQUENCIES, index),
+    route: pick(RX_ROUTES, index),
+    duration_value: durationValue,
+    duration_unit: durationUnit,
+  };
+};
 
 const resolveSecondaryTarget = (targetCount) => {
   if (!Number.isFinite(targetCount) || targetCount <= 0) return 0;
@@ -160,6 +216,12 @@ const seedVolumePack = async (
   if (!facility) {
     throw new Error('seedVolumePack requires orgPack.facilities for the demo tenant');
   }
+  const annexFacility =
+    orgPack?.facilities?.[`${scenario.key}:annex`] ||
+    (scenario.facilities[1]
+      ? orgPack?.facilities?.[`${scenario.key}:${scenario.facilities[1].key}`]
+      : null);
+  const transferDestination = annexFacility || facility;
 
   const doctor = accessPack?.users?.[`${scenario.key}:doctor`];
   const nurse = accessPack?.users?.[`${scenario.key}:nurse`] || doctor;
@@ -187,6 +249,27 @@ const seedVolumePack = async (
   const labTests = catalogValues(clinicalCatalogPack?.lab?.tests, 12);
   const radiologyProcedures = catalogValues(clinicalCatalogPack?.radiology?.tests, 8);
   const drugs = catalogValues(clinicalCatalogPack?.pharmacy?.drugs, 12);
+  const drugBucket = clinicalCatalogPack?.pharmacy?.drugs || {};
+  const antibioticDrugs = ANTI_INFECTIVE_SEED_KEYS.map((key) =>
+    catalogRecordByKeySuffix(drugBucket, key)
+  ).filter(Boolean);
+  const controlledDrugs = CONTROLLED_SEED_KEYS.map((key) =>
+    catalogRecordByKeySuffix(drugBucket, key)
+  ).filter(Boolean);
+  const inventoryItemBucket = clinicalCatalogPack?.pharmacy?.inventoryItems || {};
+  const controlledInventoryItems = CONTROLLED_SEED_KEYS.map((key) =>
+    catalogRecordByKeySuffix(inventoryItemBucket, key)
+  ).filter(Boolean);
+  const pickClinicalDrug = (index) => {
+    // Bias anti-infectives (~every 4th) and controlled (~every 11th) for clinical reports.
+    if (antibioticDrugs.length > 0 && index % 4 === 0) {
+      return pick(antibioticDrugs, index);
+    }
+    if (controlledDrugs.length > 0 && index % 11 === 0) {
+      return pick(controlledDrugs, index);
+    }
+    return pick(drugs, index);
+  };
   const allCatalogDrugs = Object.values(
     clinicalCatalogPack?.pharmacy?.drugs || {}
   ).filter(Boolean);
@@ -231,10 +314,13 @@ const seedVolumePack = async (
     pharmacy_orders: 0,
     dispense_logs: 0,
     pharmacy_dispense_attestations: 0,
+    controlled_events: 0,
     invoices: 0,
     payments: 0,
     emergency_cases: 0,
     stock_movements: 0,
+    transfer_movements: 0,
+    inbound_purchase_movements: 0,
     drug_batches: 0,
     equipment_work_orders: 0,
     mortuary_cases: 0,
@@ -487,7 +573,7 @@ const seedVolumePack = async (
           : index % 7 === 0
             ? 'ORDERED'
             : 'DISPENSED';
-      const drug = pick(drugs, index);
+      const drug = pickClinicalDrug(index);
       // Wall-clock freshness: today + last ~28 days so pharmacy dashboard KPIs
       // and most-sold charts are non-empty against live summary windows.
       // Bias more volume onto today so New Orders / dashboard windows look live.
@@ -521,6 +607,7 @@ const seedVolumePack = async (
           ? 0
           : 1 + (index % 3);
 
+      const dosing = buildVolumePrescriptionDosing(index);
       const item = await ctx.upsert(
         'pharmacy_order_item',
         `${scenario.key}:vol:rx-item:${pad(index)}`,
@@ -528,7 +615,7 @@ const seedVolumePack = async (
           pharmacy_order_id: order.id,
           drug_id: drug.id,
           quantity: itemQuantity,
-          dosage: `${1 + (index % 2)} tab`,
+          ...dosing,
           instructions: `Volume prescription #${index}`,
         },
         { publicIdPrefix: 'RXI', seedMeta: false }
@@ -582,7 +669,7 @@ const seedVolumePack = async (
     await runInBatches(targets.highTraffic, 10, async (index) => {
       const patient = patientAt(index + 3);
       if (!patient) return;
-      const drug = pick(drugs, index + 5);
+      const drug = pickClinicalDrug(index + 5);
       if (!drug?.id) return;
       const dayOffset = index % 5 === 0 ? 0 : -((index % 120) + 1);
       const order = await ctx.upsert(
@@ -596,6 +683,7 @@ const seedVolumePack = async (
         },
         { publicIdPrefix: 'RXS', seedMeta: false }
       );
+      const dosing = buildVolumePrescriptionDosing(index + 5);
       const item = await ctx.upsert(
         'pharmacy_order_item',
         `${scenario.key}:vol:rx-sales-item:${pad(index)}`,
@@ -603,7 +691,7 @@ const seedVolumePack = async (
           pharmacy_order_id: order.id,
           drug_id: drug.id,
           quantity: 1 + (index % 4),
-          dosage: `${1 + (index % 2)} tab`,
+          ...dosing,
           instructions: `Sales volume prescription #${index}`,
         },
         { publicIdPrefix: 'RXSI', seedMeta: false }
@@ -1072,12 +1160,19 @@ const seedVolumePack = async (
     await runInBatches(targets.highTraffic, 10, async (index) => {
       const item = pick(inventoryItems, index);
       const spec = pick(STOCK_MOVEMENT_SPECS, index);
+      const isTransfer = spec.movement_type === 'TRANSFER';
+      const transferGroupId = isTransfer
+        ? deterministicUuid(`${scenario.key}:vol:stock-move-group:${pad(index)}`)
+        : null;
       await ctx.upsert(
         'stock_movement',
         `${scenario.key}:vol:stock-move:${pad(index)}`,
         {
           inventory_item_id: item.id,
           facility_id: facility.id,
+          from_facility_id: isTransfer ? facility.id : null,
+          to_facility_id: isTransfer ? transferDestination.id : null,
+          transfer_group_id: transferGroupId,
           movement_type: spec.movement_type,
           reason: spec.reason,
           quantity: 1 + (index % 20),
@@ -1086,6 +1181,205 @@ const seedVolumePack = async (
         { publicIdPrefix: 'STM', seedMeta: false }
       );
       created.stock_movements += 1;
+    });
+
+    // Dedicated TRANSFER pairs (≥1000 movements): completed, pending, discrepancy mix.
+    await runInBatches(targets.highTraffic, 10, async (index) => {
+      const item = pick(inventoryItems, index);
+      const groupKey = `${scenario.key}:vol:stock-xfer:${pad(index)}`;
+      const transferGroupId = deterministicUuid(groupKey);
+      const shippedQty = 5 + (index % 40);
+      const shipAt = ctx.date(-((index % 100) + 1), 14);
+      // ~20% pending (ship only); rest get a receive leg.
+      const isPending = index % 5 === 0;
+      // Among received: ~12.5% discrepancy (every 8th of remaining ≈ index % 8 === 1).
+      const receivedQty =
+        !isPending && index % 8 === 1 ? Math.max(1, shippedQty - 1 - (index % 3)) : shippedQty;
+
+      await ctx.upsert(
+        'stock_movement',
+        `${groupKey}:ship`,
+        {
+          inventory_item_id: item.id,
+          facility_id: facility.id,
+          from_facility_id: facility.id,
+          to_facility_id: transferDestination.id,
+          transfer_group_id: transferGroupId,
+          movement_type: 'TRANSFER',
+          reason: 'OTHER',
+          quantity: shippedQty,
+          occurred_at: shipAt,
+        },
+        { publicIdPrefix: 'STM', seedMeta: false }
+      );
+      created.stock_movements += 1;
+      created.transfer_movements = (created.transfer_movements || 0) + 1;
+
+      if (!isPending) {
+        await ctx.upsert(
+          'stock_movement',
+          `${groupKey}:receive`,
+          {
+            inventory_item_id: item.id,
+            facility_id: transferDestination.id,
+            from_facility_id: facility.id,
+            to_facility_id: transferDestination.id,
+            transfer_group_id: transferGroupId,
+            movement_type: 'TRANSFER',
+            reason: 'OTHER',
+            quantity: receivedQty,
+            occurred_at: ctx.date(-((index % 100) + 1), 20),
+          },
+          { publicIdPrefix: 'STM', seedMeta: false }
+        );
+        created.stock_movements += 1;
+        created.transfer_movements = (created.transfer_movements || 0) + 1;
+      }
+    });
+  }
+
+  // Controlled medicines ledger volume: Morphine/Tramadol receive→dispense→attest→waste.
+  // Each index contributes multiple controlled-related events so totals meet ≥ highTraffic.
+  if (controlledDrugs.length > 0) {
+    await runInBatches(targets.highTraffic, 10, async (index) => {
+      const patient = patientAt(index + 17);
+      if (!patient) return;
+      const drug = pick(controlledDrugs, index);
+      const inventoryItem =
+        controlledInventoryItems.length > 0
+          ? pick(controlledInventoryItems, index)
+          : null;
+      const dayOffset = index % 5 === 0 ? 0 : -((index % 90) + 1);
+      const batchRef = `CTRL-BATCH-${pad(index, 5)}`;
+      const qty = 1 + (index % 3);
+
+      const encounter =
+        index % 2 === 0
+          ? await ctx.upsert(
+              'encounter',
+              `${scenario.key}:vol:ctrl-enc:${pad(index)}`,
+              {
+                tenant_id: facility.tenant_id,
+                facility_id: facility.id,
+                patient_id: patient.id,
+                provider_user_id: doctor?.id || null,
+                encounter_type: 'OPD',
+                status: 'CLOSED',
+                started_at: ctx.nowDate(dayOffset, 30),
+                ended_at: ctx.nowDate(dayOffset, 50),
+              },
+              { ...seedOpts, publicIdPrefix: 'ENC' }
+            )
+          : null;
+
+      const order = await ctx.upsert(
+        'pharmacy_order',
+        `${scenario.key}:vol:ctrl-rx:${pad(index)}`,
+        {
+          encounter_id: encounter?.id || null,
+          patient_id: patient.id,
+          status: 'DISPENSED',
+          ordered_at: ctx.nowDate(dayOffset, 40),
+        },
+        { publicIdPrefix: 'RXC', seedMeta: false }
+      );
+      const item = await ctx.upsert(
+        'pharmacy_order_item',
+        `${scenario.key}:vol:ctrl-rx-item:${pad(index)}`,
+        {
+          pharmacy_order_id: order.id,
+          drug_id: drug.id,
+          quantity: qty + 1,
+          dosage: `${qty} unit`,
+          instructions: `Controlled volume prescription #${index}`,
+        },
+        { publicIdPrefix: 'RXCI', seedMeta: false }
+      );
+      await ctx.upsert(
+        'dispense_log',
+        `${scenario.key}:vol:ctrl-dispense:${pad(index)}`,
+        {
+          pharmacy_order_item_id: item.id,
+          dispense_batch_ref: batchRef,
+          status: 'DISPENSED',
+          dispensed_at: ctx.nowDate(dayOffset, 58),
+          quantity_dispensed: qty,
+        },
+        { publicIdPrefix: 'DSPC', seedMeta: false }
+      );
+      created.dispense_logs += 1;
+      created.pharmacy_orders += 1;
+      created.controlled_events += 1;
+
+      if (pharmacists.length > 0) {
+        const attestor = pharmacists[index % 2];
+        await ctx.upsert(
+          'pharmacy_dispense_attestation',
+          `${scenario.key}:vol:ctrl-attest:${pad(index)}`,
+          {
+            pharmacy_order_id: order.id,
+            dispense_batch_ref: batchRef,
+            phase: 'ATTEST',
+            attested_by_user_id: attestor.id,
+            attested_role: 'PHARMACIST',
+            statement: `Controlled dispense attestation #${index}`,
+            attested_at: ctx.nowDate(dayOffset, 59),
+          },
+          { publicIdPrefix: 'RXAC', seedMeta: false }
+        );
+        created.pharmacy_dispense_attestations += 1;
+        created.controlled_events += 1;
+      }
+
+      if (inventoryItem?.id) {
+        await ctx.upsert(
+          'stock_movement',
+          `${scenario.key}:vol:ctrl-receive:${pad(index)}`,
+          {
+            inventory_item_id: inventoryItem.id,
+            facility_id: facility.id,
+            movement_type: 'INBOUND',
+            reason: 'PURCHASE',
+            quantity: 2 + (index % 5),
+            occurred_at: ctx.nowDate(dayOffset - 1, 12),
+          },
+          { publicIdPrefix: 'STMC', seedMeta: false }
+        );
+        created.stock_movements += 1;
+        created.controlled_events += 1;
+
+        if (index % 7 === 0) {
+          await ctx.upsert(
+            'stock_adjustment',
+            `${scenario.key}:vol:ctrl-waste:${pad(index)}`,
+            {
+              inventory_item_id: inventoryItem.id,
+              facility_id: facility.id,
+              quantity: -(1 + (index % 2)),
+              reason: index % 14 === 0 ? 'EXPIRY' : 'DAMAGE',
+              adjusted_at: ctx.nowDate(dayOffset, 20),
+            },
+            { publicIdPrefix: 'STAC', seedMeta: false }
+          );
+          created.controlled_events += 1;
+        }
+
+        if (index % 11 === 0) {
+          await ctx.upsert(
+            'stock_adjustment',
+            `${scenario.key}:vol:ctrl-adjust:${pad(index)}`,
+            {
+              inventory_item_id: inventoryItem.id,
+              facility_id: facility.id,
+              quantity: index % 22 === 0 ? 1 : -1,
+              reason: 'OTHER',
+              adjusted_at: ctx.nowDate(dayOffset, 22),
+            },
+            { publicIdPrefix: 'STAC', seedMeta: false }
+          );
+          created.controlled_events += 1;
+        }
+      }
     });
   }
 
@@ -1278,7 +1572,8 @@ const seedVolumePack = async (
     created.purchase_orders += 1;
 
     if (status !== 'DRAFT' && status !== 'CANCELLED') {
-      const delayDays = 1 + (index % 10);
+      // Mix on-time (≤7d SLA) and late (>7d) receipts for procurement analytics.
+      const delayDays = index % 4 === 0 ? 8 + (index % 6) : 1 + (index % 6);
       await ctx.upsert(
         'goods_receipt',
         `${scenario.key}:vol:goods-receipt:${pad(index)}`,
@@ -1340,5 +1635,6 @@ module.exports = {
   MIN_APPLICABLE_VOLUME,
   resolveSecondaryTarget,
   resolveVolumeTargets,
+  deterministicUuid,
   seedVolumePack,
 };

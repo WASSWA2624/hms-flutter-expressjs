@@ -153,6 +153,126 @@ void main() {
     );
   });
 
+  test('audit compliance catalog maps all ten audit dataset keys', () {
+    final PharmacyReportingCategory audit = pharmacyReportingCatalog().firstWhere(
+      (PharmacyReportingCategory c) =>
+          c.id == PharmacyReportingCategoryIds.auditCompliance,
+    );
+    expect(audit.reports, hasLength(10));
+    expect(
+      audit.reports.every((ModuleReportingReport r) => r.hasBackend),
+      isTrue,
+    );
+    expect(
+      audit.reports.map((ModuleReportingReport r) => r.id).toSet(),
+      containsAll(<String>[
+        'who_created',
+        'who_edited',
+        'who_deleted_voided',
+        'previous_vs_new_values',
+        'change_date_time',
+        'audit_stock_adjustments',
+        'audit_price_changes',
+        'user_permissions',
+        'unauthorized_attempts',
+        'prescription_controlled_audit',
+      ]),
+    );
+  });
+
+  test('audit compliance category is hidden without compliance entitlement', () {
+    final AppAccessPolicy pharmacyOnly = _pharmacyPolicy();
+    final List<PharmacyReportingCategory> gated =
+        pharmacyReportingCatalogForPolicy(pharmacyOnly);
+    expect(
+      gated.any(
+        (PharmacyReportingCategory c) =>
+            c.id == PharmacyReportingCategoryIds.auditCompliance,
+      ),
+      isFalse,
+    );
+
+    final AppAccessPolicy entitled = AppAccessPolicy.fromSession(
+      AuthSession(
+        tokens: SessionTokens(accessToken: 'token'),
+        user: const AuthUserProfile(
+          roles: <String>['PHARMACIST'],
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+        ),
+        permissions: <AppPermission>{
+          AppPermissions.pharmacyRead,
+          AppPermissions.reportsRead,
+          AppPermissions.complianceRead,
+        },
+        moduleEntitlements: const <AppModuleEntitlement>[
+          AppModuleEntitlement(code: 'pharmacy'),
+          AppModuleEntitlement(code: 'reporting-analytics'),
+        ],
+        isAuthorizationHydrated: true,
+      ),
+    );
+    final List<PharmacyReportingCategory> visible =
+        pharmacyReportingCatalogForPolicy(entitled);
+    expect(
+      visible.any(
+        (PharmacyReportingCategory c) =>
+            c.id == PharmacyReportingCategoryIds.auditCompliance,
+      ),
+      isTrue,
+    );
+  });
+
+  test('operational KPI catalog maps datasets and forces today for today ids', () {
+    final PharmacyReportingCategory kpis = pharmacyReportingCatalog().firstWhere(
+      (PharmacyReportingCategory c) =>
+          c.id == PharmacyReportingCategoryIds.operationalKpis,
+    );
+    ModuleReportingReport report(String id) =>
+        kpis.reports.firstWhere((ModuleReportingReport r) => r.id == id);
+
+    expect(report('total_sales_today').datasetKey, 'pharmacy_drug_consumption');
+    expect(
+      report('total_sales_today').initialPeriodPreset,
+      ModuleReportingPeriodPreset.today,
+    );
+    expect(report('todays_profit').datasetKey, 'pharmacy_drug_consumption');
+    expect(
+      report('todays_profit').initialPeriodPreset,
+      ModuleReportingPeriodPreset.today,
+    );
+    expect(report('kpi_transactions').datasetKey, 'pharmacy_dispense_throughput');
+    expect(
+      report('outstanding_customer_credit').datasetKey,
+      'pharmacy_customer_credit_balance',
+    );
+    expect(report('top_profitable_medicines').datasetKey, 'pharmacy_drug_consumption');
+    expect(report('outstanding_supplier_payments').hasBackend, isFalse);
+    expect(pharmacyReportingForcesTodayPeriod('total_sales_today'), isTrue);
+    expect(pharmacyReportingForcesTodayPeriod('kpi_prescriptions'), isFalse);
+  });
+
+  test('supplier procurement catalog reuses purchasing datasets with payment gap', () {
+    final PharmacyReportingCategory procurement =
+        pharmacyReportingCatalog().firstWhere(
+      (PharmacyReportingCategory c) =>
+          c.id == PharmacyReportingCategoryIds.supplierProcurement,
+    );
+    ModuleReportingReport report(String id) =>
+        procurement.reports.firstWhere((ModuleReportingReport r) => r.id == id);
+
+    expect(report('supplier_spend').datasetKey, 'pharmacy_purchases_by_supplier');
+    expect(report('price_comparison').datasetKey, 'pharmacy_supplier_pricing');
+    expect(report('price_trends').datasetKey, 'pharmacy_drug_price_changes');
+    expect(report('price_trends').contentKind, ModuleReportingContentKind.chart);
+    expect(report('supplier_reliability').datasetKey, 'pharmacy_purchase_orders');
+    expect(report('order_fulfillment_rate').datasetKey, 'pharmacy_purchase_orders');
+    expect(report('late_deliveries').datasetKey, 'pharmacy_purchase_orders');
+    expect(report('purchase_frequency').datasetKey, 'pharmacy_purchases_by_supplier');
+    expect(report('purchase_volume').datasetKey, 'pharmacy_purchases_by_supplier');
+    expect(report('supplier_payment_status').hasBackend, isFalse);
+  });
+
   testWidgets('pharmacist overview defaults to Reporting with catalog and no Analytics body copy', (
     tester,
   ) async {
@@ -241,7 +361,8 @@ void main() {
     expect(find.text('Period'), findsNothing);
     expect(find.byType(CheckboxListTile), findsNothing);
     expect(find.byType(AppSelectField<ModuleReportingPeriodPreset>), findsOneWidget);
-    expect(find.text('Print'), findsNothing);
+    // Print is available without evidence export; Export stays gated.
+    expect(find.text('Print'), findsOneWidget);
     expect(find.text('Export'), findsNothing);
     expect(find.text('Export Excel'), findsNothing);
     expect(find.text('Export PDF'), findsNothing);
@@ -278,10 +399,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('Print'), findsOneWidget);
-    expect(find.text('Export'), findsOneWidget);
+    expect(find.text('Print'), findsAtLeastNWidgets(1));
+    expect(find.text('Export'), findsAtLeastNWidgets(1));
 
-    await tester.tap(find.text('Export'));
+    await tester.tap(find.text('Export').last);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 

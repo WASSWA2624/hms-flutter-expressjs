@@ -61,14 +61,14 @@ class _ReportsPharmacyDomainGroupsState
   late final List<PharmacyReportingCategory> _catalog;
   late final int _totalReports;
   late final ModuleReportingCatalogExpansionController _expansionController;
-  late final ModuleReportingLabels _labels;
+  late ModuleReportingLabels _labels;
 
   @override
   void initState() {
     super.initState();
     _reportingSearchController = TextEditingController();
     _reportingSearchQuery = ValueNotifier<String>('');
-    _catalog = pharmacyReportingCatalog();
+    _catalog = pharmacyReportingCatalogForPolicy(widget.policy);
     _totalReports = _catalog.fold<int>(
       0,
       (int sum, PharmacyReportingCategory category) =>

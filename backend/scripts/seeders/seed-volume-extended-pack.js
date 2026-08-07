@@ -27,6 +27,15 @@ const REPORT_DATASET_SEEDS = Object.freeze([
   { key: 'pharmacy_stock_shortages_by_branch', category: 'pharmacy', label: 'Pharmacy stock shortages by branch', visualization: 'TABLE' },
   { key: 'pharmacy_best_performing_branch', category: 'pharmacy', label: 'Best-performing branch', visualization: 'TABLE' },
   { key: 'pharmacy_branch_comparison', category: 'pharmacy', label: 'Branch comparison', visualization: 'BAR_CHART' },
+  { key: 'pharmacy_transfers_between_branches', category: 'pharmacy', label: 'Transfers between branches', visualization: 'TABLE' },
+  { key: 'pharmacy_transfer_quantity', category: 'pharmacy', label: 'Transfer quantity', visualization: 'TABLE' },
+  { key: 'pharmacy_sending_branch', category: 'pharmacy', label: 'Sending branch', visualization: 'BAR_CHART' },
+  { key: 'pharmacy_receiving_branch', category: 'pharmacy', label: 'Receiving branch', visualization: 'BAR_CHART' },
+  { key: 'pharmacy_transfer_date', category: 'pharmacy', label: 'Transfer date', visualization: 'LINE_CHART' },
+  { key: 'pharmacy_transfer_status', category: 'pharmacy', label: 'Transfer status', visualization: 'TABLE' },
+  { key: 'pharmacy_products_transferred', category: 'pharmacy', label: 'Products transferred', visualization: 'TABLE' },
+  { key: 'pharmacy_pending_transfers', category: 'pharmacy', label: 'Pending transfers', visualization: 'TABLE' },
+  { key: 'pharmacy_transfer_discrepancies', category: 'pharmacy', label: 'Transfer discrepancies', visualization: 'TABLE' },
   { key: 'pharmacy_sales_payment_methods', category: 'pharmacy', label: 'Pharmacy sales by payment method', visualization: 'DONUT_CHART' },
   { key: 'pharmacy_sales_net_revenue', category: 'pharmacy', label: 'Pharmacy net revenue', visualization: 'KPI' },
   { key: 'pharmacy_financial_revenue', category: 'pharmacy', label: 'Pharmacy revenue', visualization: 'LINE_CHART' },
@@ -984,17 +993,20 @@ const seedVolumeExtendedPack = async (
     }
   });
 
-  // Pharmacy-relevant audit volume for staff activity reporting (≥ highTraffic).
+  // Pharmacy-relevant audit volume for staff + audit/compliance reporting (≥ highTraffic).
   const pharmacyAuditEntities = Object.freeze([
     'pharmacy_order',
     'pharmacy_dispense_attestation',
     'dispense_log',
+    'drug',
+    'inventory_stock',
     'stock_adjustment',
+    'stock_movement',
+    'payment',
     'purchase_order',
     'goods_receipt',
     'refund',
     'billing_adjustment',
-    'drug',
   ]);
   const pharmacyUsers = [
     accessPack?.users?.[`${scenario.key}:pharmacy`],
@@ -1005,24 +1017,69 @@ const seedVolumeExtendedPack = async (
   await runInBatches(n, 10, async (index) => {
     const user = at(pharmacyUsers.length > 0 ? pharmacyUsers : staffUsers, index);
     const action =
-      index % 11 === 0
-        ? 'LOGIN'
-        : index % 13 === 0
-          ? 'LOGOUT'
-          : index % 17 === 0
-            ? 'DELETE'
-            : pick(['CREATE', 'UPDATE', 'ACCESS', 'EXPORT'], index);
+      index % 19 === 0
+        ? 'ACCESS'
+        : index % 11 === 0
+          ? 'LOGIN'
+          : index % 13 === 0
+            ? 'LOGOUT'
+            : index % 17 === 0
+              ? 'DELETE'
+              : pick(['CREATE', 'UPDATE', 'EXPORT'], index);
     const entity = pick(pharmacyAuditEntities, index);
+    let diff_json = { pharmacy_volume: true, index, entity };
+    if (action === 'UPDATE' && entity === 'stock_adjustment') {
+      diff_json = {
+        quantity_change: { from: -((index % 5) + 1), to: (index % 7) + 1 },
+        reason: pick(['DAMAGE', 'COUNT', 'EXPIRY', 'CORRECTION'], index),
+      };
+    } else if (action === 'UPDATE' && entity === 'stock_movement') {
+      diff_json = {
+        quantity: { from: (index % 20) + 1, to: (index % 20) + 3 },
+        movement_type: pick(['INBOUND', 'OUTBOUND', 'TRANSFER'], index),
+      };
+    } else if (action === 'UPDATE' && entity === 'drug') {
+      const fromBuy = 400 + ((index % 40) + 1) * 100;
+      diff_json = {
+        buy_unit_price: { from: fromBuy, to: fromBuy + 50 + (index % 5) * 25 },
+        ...(index % 2 === 0
+          ? {
+              unit_price: {
+                from: fromBuy + 800,
+                to: fromBuy + 900,
+              },
+            }
+          : {}),
+      };
+    } else if (action === 'DELETE' || (action === 'UPDATE' && index % 23 === 0)) {
+      diff_json = {
+        before: { status: 'DISPENSED' },
+        after: { status: 'CANCELLED' },
+        original_action: index % 2 === 0 ? 'CANCEL' : 'VOID',
+      };
+    } else if (action === 'ACCESS' && index % 2 === 0) {
+      diff_json = {
+        after: {
+          decision: 'DENY',
+          reason: 'policy_denied',
+          break_glass: false,
+        },
+      };
+    } else if (action === 'CREATE') {
+      diff_json = {
+        after: { created: true, entity, index },
+      };
+    }
     await ctx.upsert(
       'audit_log',
       `${scenario.key}:volx:pharmacy-audit:${pad(index)}`,
       {
         tenant_id: facility.tenant_id,
         user_id: user?.id || null,
-        action,
+        action: action === 'UPDATE' && index % 23 === 0 ? 'UPDATE' : action,
         entity,
         entity_id: `00000000-0000-4000-b000-${pad(index, 12)}`,
-        diff_json: { pharmacy_volume: true, index, entity },
+        diff_json,
         ip_address: `10.1.${index % 200}.${(index * 5) % 200}`,
         created_at: ctx.date(-((index % 120) + 1), 30 + (index % 20)),
       },
@@ -1031,10 +1088,36 @@ const seedVolumeExtendedPack = async (
     bump('pharmacy_audit_logs');
   });
 
+  // Permission-assignment audits for pharmacy audit user_permissions report.
+  const permissionAuditCount = Math.min(n, Math.max(24, Math.floor(n / 10)));
+  await runInBatches(permissionAuditCount, 10, async (index) => {
+    const user = at(pharmacyUsers.length > 0 ? pharmacyUsers : staffUsers, index);
+    await ctx.upsert(
+      'audit_log',
+      `${scenario.key}:volx:pharmacy-perm-audit:${pad(index)}`,
+      {
+        tenant_id: facility.tenant_id,
+        user_id: user?.id || null,
+        action: pick(['CREATE', 'UPDATE', 'DELETE'], index),
+        entity: pick(['role_permission', 'user_role', 'user_permission'], index),
+        entity_id: `00000000-0000-4000-c000-${pad(index, 12)}`,
+        diff_json: {
+          permission_key: {
+            from: index % 2 === 0 ? 'pharmacy:read' : null,
+            to: index % 3 === 0 ? null : 'pharmacy:write',
+          },
+        },
+        ip_address: `10.3.${index % 200}.${(index * 9) % 200}`,
+        created_at: ctx.date(-((index % 90) + 1), 12 + (index % 10)),
+      },
+      { ...seedOpts, publicIdPrefix: 'PPAD' }
+    );
+    bump('audit_logs');
+  });
+
   if (catalogDrugs.length > 0) {
-    // Curated + volume price-change audits for pharmacy purchasing reports.
-    const priceChangeCount = Math.min(n, Math.max(12, catalogDrugs.length));
-    await runInBatches(priceChangeCount, 10, async (index) => {
+    // ≥ highTraffic buy-price audit points for procurement price_trends.
+    await runInBatches(n, 10, async (index) => {
       const drug = at(catalogDrugs, index);
       const user = at(staffUsers, index);
       if (!drug?.id) return;
@@ -1061,10 +1144,12 @@ const seedVolumeExtendedPack = async (
               : {}),
           },
           ip_address: `10.2.${index % 200}.${(index * 7) % 200}`,
+          created_at: ctx.date(-((index % 120) + 1), 25 + (index % 30)),
         },
         { ...seedOpts, publicIdPrefix: 'AUD' }
       );
       bump('audit_logs');
+      bump('drug_price_audits');
     });
   }
 

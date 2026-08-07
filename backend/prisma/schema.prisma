@@ -1135,6 +1135,8 @@ model facility {
   insurer_integrations            insurer_integration[]
   inventory_stocks                inventory_stock[]
   stock_movements                 stock_movement[]
+  stock_movements_from            stock_movement[]                 @relation("stock_movement_from_facility")
+  stock_movements_to              stock_movement[]                 @relation("stock_movement_to_facility")
   stock_adjustments               stock_adjustment[]
   purchase_requests               purchase_request[]
   visit_queue_entries             visit_queue[]
@@ -3787,6 +3789,8 @@ model drug {
   currency          String?   @db.VarChar(10)
   /// Preferred supplier the product was bought from (optional).
   supplier_id       String?   @db.VarChar(36)
+  /// Regulatory controlled / narcotic marker for balance + custody reports.
+  is_controlled     Boolean   @default(false)
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   deleted_at        DateTime?
@@ -3804,6 +3808,7 @@ model drug {
   @@index([tenant_id])
   @@index([code])
   @@index([supplier_id])
+  @@index([is_controlled])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }
@@ -4182,6 +4187,10 @@ model stock_movement {
   human_friendly_id String?           @db.VarChar(32)
   inventory_item_id String            @db.VarChar(36)
   facility_id       String?           @db.VarChar(36)
+  from_facility_id  String?           @db.VarChar(36)
+  to_facility_id    String?           @db.VarChar(36)
+  /// Links ship + receive TRANSFER legs; pending = ship without receive.
+  transfer_group_id String?           @db.VarChar(36)
   movement_type     StockMovementType
   reason            StockReason
   quantity          Int
@@ -4193,9 +4202,14 @@ model stock_movement {
 
   inventory_item inventory_item @relation(fields: [inventory_item_id], references: [id])
   facility       facility?      @relation(fields: [facility_id], references: [id])
+  from_facility  facility?      @relation("stock_movement_from_facility", fields: [from_facility_id], references: [id])
+  to_facility    facility?      @relation("stock_movement_to_facility", fields: [to_facility_id], references: [id])
 
   @@index([inventory_item_id])
   @@index([facility_id])
+  @@index([from_facility_id])
+  @@index([to_facility_id])
+  @@index([transfer_group_id])
   @@index([movement_type])
   @@index([reason])
   @@index([occurred_at])

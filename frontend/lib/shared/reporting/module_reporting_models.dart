@@ -30,6 +30,7 @@ final class ModuleReportingReport {
     required this.label,
     this.contentKind = ModuleReportingContentKind.table,
     this.datasetKey,
+    this.initialPeriodPreset,
   });
 
   final String id;
@@ -41,6 +42,9 @@ final class ModuleReportingReport {
 
   /// Optional existing reports dataset when a backend mapping exists.
   final String? datasetKey;
+
+  /// When set, the report dialog opens on this period instead of last month.
+  final ModuleReportingPeriodPreset? initialPeriodPreset;
 
   bool get hasBackend => datasetKey != null && datasetKey!.isNotEmpty;
 }

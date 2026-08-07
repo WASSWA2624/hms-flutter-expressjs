@@ -301,6 +301,21 @@ const previewReportDataset = async (datasetKey, payload = {}, user = {}) => {
     throw new HttpError('errors.report_definition.invalid_dataset', 400, [{ field: 'dataset_key' }]);
   }
 
+  if (normalizedKey === 'pharmacy_controlled_regulatory_log') {
+    const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+    const allowed =
+      permissions.includes('compliance:read') ||
+      permissions.includes('compliance:review') ||
+      permissions.includes('system:admin') ||
+      permissions.includes('tenant:admin') ||
+      permissions.includes('facility:admin');
+    if (!allowed) {
+      throw new HttpError('errors.auth.insufficient_permissions', 403, [
+        { field: 'dataset_key' },
+      ]);
+    }
+  }
+
   const parameters = {
     ...(normalizeString(payload.from) ? { from: normalizeString(payload.from) } : {}),
     ...(normalizeString(payload.to) ? { to: normalizeString(payload.to) } : {}),

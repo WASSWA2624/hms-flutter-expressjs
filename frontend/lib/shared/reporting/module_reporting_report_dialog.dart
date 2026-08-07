@@ -72,6 +72,7 @@ Future<void> openModuleReportingReportDialog({
   required ModuleReportingLabels labels,
   required bool canExport,
   ModuleReportingDataProvider? dataProvider,
+  ModuleReportingPeriodPreset? initialPeriodPreset,
 }) {
   return showAppDialog<void>(
     context: context,
@@ -80,6 +81,7 @@ Future<void> openModuleReportingReportDialog({
       labels: labels,
       canExport: canExport,
       dataProvider: dataProvider,
+      initialPeriodPreset: initialPeriodPreset,
     ),
   );
 }
@@ -90,6 +92,7 @@ class ModuleReportingReportDialog extends ConsumerStatefulWidget {
     required this.labels,
     required this.canExport,
     this.dataProvider,
+    this.initialPeriodPreset,
     super.key,
   });
 
@@ -97,6 +100,7 @@ class ModuleReportingReportDialog extends ConsumerStatefulWidget {
   final ModuleReportingLabels labels;
   final bool canExport;
   final ModuleReportingDataProvider? dataProvider;
+  final ModuleReportingPeriodPreset? initialPeriodPreset;
 
   @override
   ConsumerState<ModuleReportingReportDialog> createState() =>
@@ -105,8 +109,7 @@ class ModuleReportingReportDialog extends ConsumerStatefulWidget {
 
 class _ModuleReportingReportDialogState
     extends ConsumerState<ModuleReportingReportDialog> {
-  ModuleReportingPeriodPreset _preset =
-      ModuleReportingPeriodPreset.lastMonth;
+  late ModuleReportingPeriodPreset _preset;
   DateTime? _rangeFrom;
   DateTime? _rangeTo;
   String? _rangeError;
@@ -120,6 +123,9 @@ class _ModuleReportingReportDialogState
   @override
   void initState() {
     super.initState();
+    _preset = widget.initialPeriodPreset ??
+        widget.report.initialPeriodPreset ??
+        ModuleReportingPeriodPreset.lastMonth;
     final ({DateTime from, DateTime to}) range =
         moduleReportingRangeForPreset(_preset);
     _rangeFrom = range.from;

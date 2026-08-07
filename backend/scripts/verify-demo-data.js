@@ -81,6 +81,42 @@ const countOwnershipMismatches = async (fieldName, expectedId) => {
   return mismatches;
 };
 
+/** Facility FKs may point at any demo-tenant facility (multi-branch / transfers). */
+const countFacilityOwnershipMismatches = async (allowedFacilityIds = []) => {
+  const allowed = Array.from(
+    new Set(
+      (allowedFacilityIds || []).map((id) => String(id || '').trim()).filter(Boolean)
+    )
+  );
+  if (allowed.length === 0) return [];
+
+  const mismatches = [];
+  for (const [modelName, meta] of schemaMetadata.modelsByName.entries()) {
+    if (modelName === 'tenant' || modelName === 'facility') continue;
+    if (!meta.fieldByName.has('facility_id')) continue;
+
+    const delegate = prisma[modelName];
+    if (!delegate || typeof delegate.count !== 'function') continue;
+
+    const where = {
+      facility_id: { notIn: allowed },
+    };
+    if (meta.fieldByName.has('deleted_at')) {
+      where.deleted_at = null;
+    }
+    if (meta.fieldByName.get('facility_id')?.isOptional) {
+      where.NOT = { facility_id: null };
+    }
+
+    const mismatchCount = await delegate.count({ where });
+    if (mismatchCount > 0) {
+      mismatches.push({ model: modelName, count: mismatchCount });
+    }
+  }
+
+  return mismatches;
+};
+
 const verifyDemoData = async () => {
   const errors = [];
 
@@ -286,19 +322,32 @@ const verifyDemoData = async () => {
     errors.push(`Expected exactly 1 tenant but found ${tenants.length}.`);
   }
 
-  if (facilities.length !== 1) {
-    errors.push(`Expected exactly 1 facility but found ${facilities.length}.`);
+  if (facilities.length < 1 || facilities.length > 3) {
+    errors.push(
+      `Expected 1–3 demo facilities (Pro max) but found ${facilities.length}.`
+    );
+  }
+  if (facilities.length < 2) {
+    errors.push(
+      'Expected at least 2 facilities for pharmacy stock transfer sending/receiving reports.'
+    );
   }
 
   const demoTenant = tenants[0] || null;
-  const demoFacility = facilities[0] || null;
+  const demoFacilities = facilities.filter(
+    (entry) => !demoTenant || entry.tenant_id === demoTenant.id
+  );
+  const demoFacility = demoFacilities[0] || null;
+  const demoFacilityIds = new Set(demoFacilities.map((entry) => entry.id));
 
   if (demoTenant && demoTenant.slug !== DEMO_TENANT.slug) {
     errors.push(`Expected tenant slug ${DEMO_TENANT.slug} but found ${demoTenant.slug}.`);
   }
 
-  if (demoFacility && demoFacility.tenant_id !== demoTenant?.id) {
-    errors.push('The seeded facility must belong to the single seeded tenant.');
+  for (const entry of demoFacilities) {
+    if (entry.tenant_id !== demoTenant?.id) {
+      errors.push(`Facility ${entry.name || entry.id} must belong to the single seeded tenant.`);
+    }
   }
 
   const expectedPlanCodes = DEMO_PLAN_CATALOG.map((entry) => entry.code).sort();
@@ -651,12 +700,15 @@ const verifyDemoData = async () => {
               'pharmacy_order',
               'pharmacy_dispense_attestation',
               'dispense_log',
+              'drug',
+              'inventory_stock',
               'stock_adjustment',
+              'stock_movement',
+              'payment',
               'purchase_order',
               'goods_receipt',
               'refund',
               'billing_adjustment',
-              'drug',
             ],
           },
         },
@@ -788,9 +840,36 @@ const verifyDemoData = async () => {
         `Expected at least 2 suppliers for pharmacy purchasing reports but found ${supplierCount}.`
       );
     }
-    if (drugPriceAuditCount < 1) {
+    if (drugPriceAuditCount < highFloor) {
       errors.push(
-        `Expected at least 1 drug price audit_log UPDATE for purchasing price_changes but found ${drugPriceAuditCount}.`
+        `Expected at least ${highFloor} drug price audit_log UPDATE rows for procurement price_trends but found ${drugPriceAuditCount}.`
+      );
+    }
+
+    const lateReceiptCandidates = await prisma.goods_receipt.findMany({
+      where: { deleted_at: null, received_at: { not: null } },
+      select: {
+        received_at: true,
+        purchase_order: {
+          select: { ordered_at: true, deleted_at: true },
+        },
+      },
+      take: Math.min(Math.max(highFloor * 2, 2000), 8000),
+    });
+    const lateReceiptCount = lateReceiptCandidates.filter((entry) => {
+      if (entry.purchase_order?.deleted_at) return false;
+      const ordered = entry.purchase_order?.ordered_at;
+      const received = entry.received_at;
+      if (!ordered || !received) return false;
+      const days = Math.round(
+        (new Date(received).getTime() - new Date(ordered).getTime()) /
+          (24 * 60 * 60 * 1000)
+      );
+      return days > 7;
+    }).length;
+    if (lateReceiptCount < 1) {
+      errors.push(
+        `Expected at least 1 late goods_receipt (>7 days after ordered_at) for procurement late_deliveries but found ${lateReceiptCount}.`
       );
     }
 
@@ -799,9 +878,9 @@ const verifyDemoData = async () => {
         `Expected at least 1 OUTBOUND+DISPENSE stock_movement for inventory reporting but found ${outboundDispenseCount}.`
       );
     }
-    if (transferMovementCount < 1) {
+    if (transferMovementCount < highFloor) {
       errors.push(
-        `Expected at least 1 TRANSFER stock_movement for inventory reporting but found ${transferMovementCount}.`
+        `Expected at least ${highFloor} TRANSFER stock_movement for pharmacy transfer reports but found ${transferMovementCount}.`
       );
     }
 
@@ -984,8 +1063,10 @@ const verifyDemoData = async () => {
     }
   }
 
-  if (demoFacility?.id) {
-    const facilityMismatches = await countOwnershipMismatches('facility_id', demoFacility.id);
+  if (demoFacilityIds.size > 0) {
+    const facilityMismatches = await countFacilityOwnershipMismatches(
+      Array.from(demoFacilityIds)
+    );
     if (facilityMismatches.length > 0) {
       errors.push(
         `Found facility ownership mismatches: ${facilityMismatches

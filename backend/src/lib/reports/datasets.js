@@ -8,6 +8,31 @@ const {
   pickAttestationUserId,
 } = require('@lib/reports/pharmacy-staff-analytics');
 const {
+  createPharmacyAuditDatasetRunners,
+  expandDiffFields,
+  projectDiffValueRow,
+  classifyDiffField,
+  isDeniedAccessDiff,
+  PHARMACY_AUDIT_ENTITIES,
+} = require('@lib/reports/pharmacy-audit-analytics');
+const {
+  createPharmacyPrescriptionClinicalDatasetRunners,
+  durationInDays,
+  formatDosagePlain,
+  isAntiInfectiveDrug,
+  isControlledDrug,
+  ANTI_INFECTIVE_DRUG_CODES,
+  CONTROLLED_DRUG_CODES,
+} = require('@lib/reports/pharmacy-prescription-clinical-analytics');
+const {
+  createPharmacyTransferDatasetRunners,
+} = require('@lib/reports/pharmacy-transfer-analytics');
+const {
+  createPharmacyControlledDatasetRunners,
+  computeControlledBalance,
+  assertControlledBalanceInvariant,
+} = require('@lib/reports/pharmacy-controlled-analytics');
+const {
   computeInvoiceFinancials,
   toDecimalNumber,
 } = require('@lib/billing/financials');
@@ -3514,15 +3539,21 @@ const computeStockValue = (quantity, unitCost) =>
 
 /**
  * Signed on-hand delta for a stock_movement row.
- * INBOUND +, OUTBOUND -, TRANSFER - (leaving facility), ADJUSTMENT uses signed qty
- * or reason when quantity is always positive.
+ * INBOUND +, OUTBOUND -, TRANSFER ship - / receive + (facility_id === to_facility_id),
+ * ADJUSTMENT uses signed qty or reason when quantity is always positive.
  */
 const movementSignedDelta = (movement = {}) => {
   const qty = asNumber(movement.quantity);
   const type = normalizeString(movement.movement_type).toUpperCase();
   const reason = normalizeString(movement.reason).toUpperCase();
   if (type === 'INBOUND') return qty;
-  if (type === 'OUTBOUND' || type === 'TRANSFER') return -Math.abs(qty);
+  if (type === 'OUTBOUND') return -Math.abs(qty);
+  if (type === 'TRANSFER') {
+    const facilityId = normalizeString(movement.facility_id);
+    const toId = normalizeString(movement.to_facility_id);
+    if (facilityId && toId && facilityId === toId) return Math.abs(qty);
+    return -Math.abs(qty);
+  }
   if (type === 'ADJUSTMENT') {
     if (qty < 0) return qty;
     if (reason === 'DAMAGE' || reason === 'EXPIRY' || reason === 'DISPENSE') {
@@ -4213,6 +4244,8 @@ const runInventoryOpeningClosingDataset = async (scope, parameters = {}) => {
       },
       select: {
         inventory_item_id: true,
+        facility_id: true,
+        to_facility_id: true,
         movement_type: true,
         reason: true,
         quantity: true,
@@ -4756,6 +4789,9 @@ const runPharmacyMedicinesCatalogDataset = async (scope, parameters = {}) => {
   };
 };
 
+/** Shared N-day receipt SLA for supplier reliability / late delivery reports. */
+const PHARMACY_SUPPLIER_DELIVERY_SLA_DAYS = 7;
+
 /**
  * Non-negative whole days between PO ordered_at and goods_receipt.received_at.
  */
@@ -4766,6 +4802,37 @@ const computeDeliveryDays = (orderedAt, receivedAt) => {
   if (Number.isNaN(ordered.getTime()) || Number.isNaN(received.getTime())) return null;
   const diffMs = received.getTime() - ordered.getTime();
   return Math.max(0, Math.round(diffMs / (24 * 60 * 60 * 1000)));
+};
+
+/**
+ * Reliability = % of POs with receipt within slaDays.
+ * Fulfillment proxy = receipt-exists / PO-count (until PO line qtys exist).
+ */
+const summarizePurchaseOrderSla = (
+  rows = [],
+  slaDays = PHARMACY_SUPPLIER_DELIVERY_SLA_DAYS
+) => {
+  const list = Array.isArray(rows) ? rows : [];
+  const poCount = list.length;
+  const receiptCount = list.filter((row) => row?.received_at).length;
+  const onTimeCount = list.filter(
+    (row) => row?.delivery_days != null && asNumber(row.delivery_days) <= slaDays
+  ).length;
+  const lateCount = list.filter(
+    (row) => row?.delivery_days != null && asNumber(row.delivery_days) > slaDays
+  ).length;
+  const roundRate = (numerator) =>
+    poCount > 0 ? Math.round((numerator / poCount) * 10000) / 100 : null;
+  return {
+    sla_days: slaDays,
+    po_count: poCount,
+    receipt_count: receiptCount,
+    on_time_count: onTimeCount,
+    late_count: lateCount,
+    reliability_rate: roundRate(onTimeCount),
+    // Qty fulfillment needs PO/goods-receipt line items; proxy until then.
+    fulfillment_rate_proxy: roundRate(receiptCount),
+  };
 };
 
 const buildPurchaseOrderScopeWhere = (scope = {}, range = null) => {
@@ -4825,6 +4892,8 @@ const loadPurchaseOrderRows = async (scope, parameters = {}) => {
       ? new Date(receipt.received_at).toISOString()
       : null;
     const deliveryDays = computeDeliveryDays(entry.ordered_at, receipt?.received_at);
+    const isLate =
+      deliveryDays != null && deliveryDays > PHARMACY_SUPPLIER_DELIVERY_SLA_DAYS;
     return {
       id: entry.id,
       human_friendly_id: entry.human_friendly_id || null,
@@ -4832,6 +4901,8 @@ const loadPurchaseOrderRows = async (scope, parameters = {}) => {
       ordered_at: orderedAt,
       received_at: receivedAt,
       delivery_days: deliveryDays,
+      is_late: isLate,
+      sla_days: PHARMACY_SUPPLIER_DELIVERY_SLA_DAYS,
       supplier_id: entry.supplier_id || entry.supplier?.id || null,
       supplier: entry.supplier?.name || 'Unassigned',
       receipt_status: receipt ? normalizeString(receipt.status) || null : null,
@@ -4845,6 +4916,7 @@ const runPharmacyPurchaseOrdersDataset = async (scope, parameters = {}) => {
   const loaded = await loadPurchaseOrderRows(scope, parameters);
   const fromLabel = loaded.range?.from ? loaded.range.from.toISOString().slice(0, 10) : '';
   const toLabel = loaded.range?.to ? loaded.range.to.toISOString().slice(0, 10) : '';
+  const sla = summarizePurchaseOrderSla(loaded.rows);
 
   const bySupplier = new Map();
   loaded.rows.forEach((row) => {
@@ -4855,6 +4927,8 @@ const runPharmacyPurchaseOrdersDataset = async (scope, parameters = {}) => {
         supplier_id: row.supplier_id,
         po_count: 0,
         receipt_count: 0,
+        on_time_count: 0,
+        late_count: 0,
         delivery_days_sum: 0,
         delivery_days_n: 0,
       });
@@ -4865,6 +4939,11 @@ const runPharmacyPurchaseOrdersDataset = async (scope, parameters = {}) => {
     if (row.delivery_days != null) {
       bucket.delivery_days_sum += asNumber(row.delivery_days);
       bucket.delivery_days_n += 1;
+      if (asNumber(row.delivery_days) <= PHARMACY_SUPPLIER_DELIVERY_SLA_DAYS) {
+        bucket.on_time_count += 1;
+      } else {
+        bucket.late_count += 1;
+      }
     }
   });
 
@@ -4873,14 +4952,26 @@ const runPharmacyPurchaseOrdersDataset = async (scope, parameters = {}) => {
       bucket.delivery_days_n > 0
         ? Math.round((bucket.delivery_days_sum / bucket.delivery_days_n) * 100) / 100
         : null;
+    const reliabilityRate =
+      bucket.po_count > 0
+        ? Math.round((bucket.on_time_count / bucket.po_count) * 10000) / 100
+        : null;
+    const fulfillmentProxy =
+      bucket.po_count > 0
+        ? Math.round((bucket.receipt_count / bucket.po_count) * 10000) / 100
+        : null;
     return {
       supplier: bucket.supplier,
       supplier_id: bucket.supplier_id,
       po_count: bucket.po_count,
       receipt_count: bucket.receipt_count,
       delivery_days: avg,
+      late_count: bucket.late_count,
+      reliability_rate: reliabilityRate,
       // Qty fulfillment needs PO/goods-receipt line items (schema gap).
       fulfillment_rate: null,
+      fulfillment_rate_proxy: fulfillmentProxy,
+      sla_days: PHARMACY_SUPPLIER_DELIVERY_SLA_DAYS,
     };
   });
 
@@ -4888,7 +4979,7 @@ const runPharmacyPurchaseOrdersDataset = async (scope, parameters = {}) => {
     title: 'Pharmacy purchase orders',
     subtitle: loaded.invalid
       ? 'Invalid date range'
-      : `${fromLabel} to ${toLabel} (PO headers; delivery_days from goods_receipt)`,
+      : `${fromLabel} to ${toLabel} (PO headers; delivery_days from goods_receipt; SLA ${PHARMACY_SUPPLIER_DELIVERY_SLA_DAYS}d)`,
     columns: [
       'ordered_at',
       'status',
@@ -4896,13 +4987,19 @@ const runPharmacyPurchaseOrdersDataset = async (scope, parameters = {}) => {
       'human_friendly_id',
       'received_at',
       'delivery_days',
+      'is_late',
       'id',
       'receipt_status',
     ],
     rows: loaded.rows,
     summary: {
-      po_count: loaded.rows.length,
-      receipt_count: loaded.rows.filter((row) => row.received_at).length,
+      po_count: sla.po_count,
+      receipt_count: sla.receipt_count,
+      on_time_count: sla.on_time_count,
+      late_count: sla.late_count,
+      reliability_rate: sla.reliability_rate,
+      fulfillment_rate_proxy: sla.fulfillment_rate_proxy,
+      sla_days: sla.sla_days,
     },
     breakdown: {
       by_supplier: supplierPerformance,
@@ -5300,6 +5397,10 @@ const DATASET_RUNNERS = Object.freeze({
   pharmacy_sales_net_revenue: runPharmacySalesNetRevenueDataset,
   pharmacy_sales_avg_transaction: runPharmacySalesAvgTransactionDataset,
   ...createPharmacyStaffDatasetRunners(resolveDateRange),
+  ...createPharmacyPrescriptionClinicalDatasetRunners(resolveDateRange),
+  ...createPharmacyAuditDatasetRunners(resolveDateRange),
+  ...createPharmacyTransferDatasetRunners(resolveDateRange),
+  ...createPharmacyControlledDatasetRunners(resolveDateRange),
   pharmacy_financial_revenue: runPharmacyFinancialRevenueDataset,
   pharmacy_financial_cogs: runPharmacyFinancialCogsDataset,
   pharmacy_financial_gross_profit: runPharmacyFinancialGrossProfitDataset,
@@ -5429,6 +5530,13 @@ module.exports = {
   computeStockValue,
   executeReportDataset,
   extractPriceChangeFields,
+  expandDiffFields,
+  projectDiffValueRow,
+  classifyDiffField,
+  isDeniedAccessDiff,
+  PHARMACY_AUDIT_ENTITIES,
+  PHARMACY_SUPPLIER_DELIVERY_SLA_DAYS,
+  summarizePurchaseOrderSla,
   mergeBranchComparisonRows,
   movementSignedDelta,
   OPEN_PHARMACY_INVOICE_STATUSES,
@@ -5443,4 +5551,12 @@ module.exports = {
   summarizeStaffSalesPartition,
   summarizeThroughputSeries,
   pickAttestationUserId,
+  durationInDays,
+  formatDosagePlain,
+  isAntiInfectiveDrug,
+  isControlledDrug,
+  ANTI_INFECTIVE_DRUG_CODES,
+  CONTROLLED_DRUG_CODES,
+  computeControlledBalance,
+  assertControlledBalanceInvariant,
 };

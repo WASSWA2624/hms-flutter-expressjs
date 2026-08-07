@@ -68,6 +68,7 @@ const drugSpec = ({
   initialStock = DEFAULT_DRUG_INITIAL_STOCK,
   reorderLevel = DEFAULT_DRUG_REORDER_LEVEL,
   deductionFactor = 1,
+  isControlled = false,
 }) => ({
   key,
   name,
@@ -79,6 +80,7 @@ const drugSpec = ({
   initial_stock: initialStock,
   reorder_level: reorderLevel,
   deduction_factor: deductionFactor,
+  is_controlled: Boolean(isControlled),
 });
 
 const ANALGESIC_DRUGS = [
@@ -88,8 +90,8 @@ const ANALGESIC_DRUGS = [
   drugSpec({ key: 'ibuprofen_suspension', name: 'Ibuprofen', brand: 'Brufen Suspension', code: 'IBU100S', form: 'Suspension', strength: '100 mg/5 mL', inventoryUnit: 'bottle', initialStock: 60, reorderLevel: 15 }),
   drugSpec({ key: 'diclofenac_50_tablet', name: 'Diclofenac', brand: 'Voltaren', code: 'DCF50', form: 'Tablet', strength: '50 mg', inventoryUnit: 'tablet', initialStock: 700, reorderLevel: 140 }),
   drugSpec({ key: 'diclofenac_injection', name: 'Diclofenac', brand: 'Voltaren Injection', code: 'DCF75I', form: 'Injection', strength: '75 mg/3 mL', inventoryUnit: 'ampoule', initialStock: 120, reorderLevel: 30 }),
-  drugSpec({ key: 'tramadol_50_capsule', name: 'Tramadol', brand: 'Tramal', code: 'TRM50', form: 'Capsule', strength: '50 mg', inventoryUnit: 'capsule', initialStock: 500, reorderLevel: 100 }),
-  drugSpec({ key: 'morphine_injection', name: 'Morphine', brand: 'Morphine Sulfate', code: 'MRF10I', form: 'Injection', strength: '10 mg/mL', inventoryUnit: 'ampoule', initialStock: 90, reorderLevel: 20 }),
+  drugSpec({ key: 'tramadol_50_capsule', name: 'Tramadol', brand: 'Tramal', code: 'TRM50', form: 'Capsule', strength: '50 mg', inventoryUnit: 'capsule', initialStock: 500, reorderLevel: 100, isControlled: true }),
+  drugSpec({ key: 'morphine_injection', name: 'Morphine', brand: 'Morphine Sulfate', code: 'MRF10I', form: 'Injection', strength: '10 mg/mL', inventoryUnit: 'ampoule', initialStock: 90, reorderLevel: 20, isControlled: true }),
   drugSpec({ key: 'aspirin_81_tablet', name: 'Aspirin', brand: 'Aspirin Cardio', code: 'ASP81', form: 'Tablet', strength: '81 mg', inventoryUnit: 'tablet', initialStock: 700, reorderLevel: 120 }),
   drugSpec({ key: 'aspirin_300_tablet', name: 'Aspirin', brand: 'Aspirin', code: 'ASP300', form: 'Tablet', strength: '300 mg', inventoryUnit: 'tablet', initialStock: 420, reorderLevel: 90 }),
 ];
@@ -491,6 +493,7 @@ const seedPharmacyCatalogForTenant = async (
         transfer_unit_price: 800 + (drugCatalogIndex + 1) * 450,
         currency: 'UGX',
         supplier_id: preferredSupplier?.id || null,
+        is_controlled: Boolean(spec.is_controlled),
       },
       {
         tenantCode,
