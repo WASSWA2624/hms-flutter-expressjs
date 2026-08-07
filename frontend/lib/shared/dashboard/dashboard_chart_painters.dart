@@ -19,6 +19,7 @@ class DashboardTrendChartPainter extends CustomPainter {
     this.style = DashboardTrendChartStyle.combined,
     this.pointColors = const <Color>[],
     this.showValues = false,
+    this.showAxisLabels = true,
     this.valueFormatter,
     this.minBarHeight = 0,
   });
@@ -33,6 +34,7 @@ class DashboardTrendChartPainter extends CustomPainter {
   final DashboardTrendChartStyle style;
   final List<Color> pointColors;
   final bool showValues;
+  final bool showAxisLabels;
   final String Function(num value)? valueFormatter;
 
   /// Minimum painted bar height in logical pixels (keeps 0% categories visible).
@@ -53,7 +55,9 @@ class DashboardTrendChartPainter extends CustomPainter {
       return;
     }
 
-    final double labelBand = points.length <= 12 ? 44 : 22;
+    final double labelBand = !showAxisLabels
+        ? 8
+        : (points.length <= 12 ? 44 : 22);
     final double valueBand = showValues ? 18 : 0;
     final double chartHeight = math.max(0, size.height - labelBand - valueBand);
     final double chartTop = valueBand;
@@ -157,7 +161,7 @@ class DashboardTrendChartPainter extends CustomPainter {
         );
       }
 
-      if (points.length <= 12) {
+      if (showAxisLabels && points.length <= 12) {
         final TextPainter painter = TextPainter(
           text: TextSpan(
             text: labelBuilder(point, compact: true),
@@ -191,11 +195,22 @@ class DashboardTrendChartPainter extends CustomPainter {
       fillPath.lineTo(lastX, baseline);
       fillPath.lineTo(firstX, baseline);
       fillPath.close();
+      final Color start =
+          pointColors.isNotEmpty ? pointColors.first : lineColor;
+      final Color end =
+          pointColors.length > 1 ? pointColors.last : lineColor;
       canvas.drawPath(
         fillPath,
         Paint()
           ..style = PaintingStyle.fill
-          ..color = lineColor.withValues(alpha: 0.22),
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: <Color>[
+              start.withValues(alpha: 0.38),
+              end.withValues(alpha: 0.08),
+            ],
+          ).createShader(Rect.fromLTWH(0, chartTop, size.width, chartHeight)),
       );
     }
 
@@ -226,6 +241,7 @@ class DashboardTrendChartPainter extends CustomPainter {
         oldDelegate.style != style ||
         oldDelegate.pointColors != pointColors ||
         oldDelegate.showValues != showValues ||
+        oldDelegate.showAxisLabels != showAxisLabels ||
         oldDelegate.valueFormatter != valueFormatter ||
         oldDelegate.minBarHeight != minBarHeight;
   }
@@ -295,10 +311,26 @@ Color? _segmentColorFromHex(String? value) {
 }
 
 Color _fallbackSegmentColor(Color seed, int index) {
+  return dashboardFallbackSegmentColor(seed, index);
+}
+
+/// Rotating HSL palette used by dashboard / reporting charts for rich series.
+Color dashboardFallbackSegmentColor(Color seed, int index) {
   final HSLColor hsl = HSLColor.fromColor(seed);
   final double hue = (hsl.hue + (index * 42)) % 360;
   return hsl
       .withHue(hue)
-      .withSaturation(math.min(0.86, hsl.saturation + 0.18))
+      .withSaturation(math.min(0.9, math.max(0.42, hsl.saturation + 0.22)))
+      .withLightness(
+        math.min(0.62, math.max(0.34, hsl.lightness + ((index % 3) - 1) * 0.04)),
+      )
       .toColor();
+}
+
+/// `#RRGGBB` for [DashboardDistributionSegmentData.colorHex].
+String dashboardColorToHex(Color color) {
+  final int rgb = ((color.r * 255).round() << 16) |
+      ((color.g * 255).round() << 8) |
+      (color.b * 255).round();
+  return '#${rgb.toRadixString(16).padLeft(6, '0')}';
 }

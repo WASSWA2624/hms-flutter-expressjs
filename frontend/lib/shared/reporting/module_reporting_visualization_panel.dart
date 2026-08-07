@@ -86,6 +86,58 @@ class _ModuleReportingVisualizationPanelState
   }
 }
 
+Color _visualizationAccent(
+  ColorScheme colors,
+  ModuleReportingVisualizationKind kind,
+) {
+  return switch (kind) {
+    ModuleReportingVisualizationKind.kpiCards => colors.secondaryContainer,
+    ModuleReportingVisualizationKind.lineChart => colors.primaryContainer,
+    ModuleReportingVisualizationKind.barChart => colors.tertiaryContainer,
+    ModuleReportingVisualizationKind.areaChart => Color.lerp(
+      colors.primaryContainer,
+      colors.tertiaryContainer,
+      0.45,
+    )!,
+    ModuleReportingVisualizationKind.donutChart => Color.lerp(
+      colors.secondaryContainer,
+      colors.primaryContainer,
+      0.35,
+    )!,
+    ModuleReportingVisualizationKind.rankingChart => colors.errorContainer,
+    ModuleReportingVisualizationKind.gaugeChart => Color.lerp(
+      colors.tertiaryContainer,
+      colors.secondaryContainer,
+      0.4,
+    )!,
+    ModuleReportingVisualizationKind.scatterChart => Color.lerp(
+      colors.primaryContainer,
+      colors.secondaryContainer,
+      0.55,
+    )!,
+    ModuleReportingVisualizationKind.heatmap => Color.lerp(
+      colors.errorContainer,
+      colors.tertiaryContainer,
+      0.35,
+    )!,
+    ModuleReportingVisualizationKind.table => colors.surfaceContainerHighest,
+  };
+}
+
+Color _visualizationOnAccent(
+  ColorScheme colors,
+  ModuleReportingVisualizationKind kind,
+) {
+  return switch (kind) {
+    ModuleReportingVisualizationKind.kpiCards => colors.onSecondaryContainer,
+    ModuleReportingVisualizationKind.lineChart => colors.onPrimaryContainer,
+    ModuleReportingVisualizationKind.barChart => colors.onTertiaryContainer,
+    ModuleReportingVisualizationKind.rankingChart => colors.onErrorContainer,
+    ModuleReportingVisualizationKind.table => colors.onSurfaceVariant,
+    _ => colors.onPrimaryContainer,
+  };
+}
+
 class _VisualizationSwitcher extends StatelessWidget {
   const _VisualizationSwitcher({
     required this.kinds,
@@ -113,7 +165,6 @@ class _VisualizationSwitcher extends StatelessWidget {
         final bool iconOnly = width < _iconOnlyBreakpoint;
         final bool shortLabels = width < _shortLabelBreakpoint;
 
-        // Narrow dialogs: a dense select is clearer than 10 overflowing chips.
         if (width < 420) {
           return AppSelectField<ModuleReportingVisualizationKind>(
             value: selected,
@@ -129,6 +180,7 @@ class _VisualizationSwitcher extends StatelessWidget {
                   leadingIcon: Icon(
                     moduleReportingVisualizationIcon(kind),
                     size: 18,
+                    color: _visualizationOnAccent(colors, kind),
                   ),
                 ),
             ],
@@ -141,7 +193,7 @@ class _VisualizationSwitcher extends StatelessWidget {
         }
 
         return SizedBox(
-          height: iconOnly ? 36 : 34,
+          height: iconOnly ? 40 : 38,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: kinds.length,
@@ -153,23 +205,34 @@ class _VisualizationSwitcher extends StatelessWidget {
                   ? moduleReportingVisualizationShortLabel(kind)
                   : moduleReportingVisualizationLabel(kind);
               final IconData icon = moduleReportingVisualizationIcon(kind);
+              final Color accent = _visualizationAccent(colors, kind);
+              final Color onAccent = _visualizationOnAccent(colors, kind);
+              final Color fill = isSelected
+                  ? accent
+                  : accent.withValues(alpha: 0.42);
+              final Color foreground = isSelected
+                  ? onAccent
+                  : Color.lerp(onAccent, colors.onSurface, 0.35)!;
 
               return Tooltip(
                 message: moduleReportingVisualizationLabel(kind),
                 waitDuration: const Duration(milliseconds: 400),
                 child: Material(
-                  color: isSelected
-                      ? colors.primaryContainer.withValues(alpha: 0.55)
-                      : colors.surface,
+                  color: fill,
+                  elevation: isSelected ? 1 : 0,
+                  shadowColor: colors.shadow.withValues(alpha: 0.18),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(theme.radius.sm),
+                    borderRadius: BorderRadius.circular(theme.radius.md),
                     side: BorderSide(
-                      color: isSelected ? colors.primary : theme.borders.faint,
+                      color: isSelected
+                          ? Color.lerp(accent, onAccent, 0.35)!
+                          : accent.withValues(alpha: 0.7),
+                      width: isSelected ? 1.5 : 1,
                     ),
                   ),
                   child: InkWell(
                     onTap: () => onSelected(kind),
-                    borderRadius: BorderRadius.circular(theme.radius.sm),
+                    borderRadius: BorderRadius.circular(theme.radius.md),
                     child: Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: theme.spacing.sm,
@@ -178,21 +241,13 @@ class _VisualizationSwitcher extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: <Widget>[
-                          Icon(
-                            icon,
-                            size: 16,
-                            color: isSelected
-                                ? colors.primary
-                                : colors.onSurfaceVariant,
-                          ),
+                          Icon(icon, size: 16, color: foreground),
                           if (!iconOnly) ...<Widget>[
                             SizedBox(width: theme.spacing.xs),
                             Text(
                               label,
                               style: theme.textTheme.labelMedium?.copyWith(
-                                color: isSelected
-                                    ? colors.primary
-                                    : colors.onSurface,
+                                color: foreground,
                                 fontWeight: isSelected
                                     ? AppFontWeight.emphasis
                                     : AppFontWeight.label,
@@ -212,7 +267,6 @@ class _VisualizationSwitcher extends StatelessWidget {
     );
   }
 }
-
 
 class _VisualizationBody extends StatelessWidget {
   const _VisualizationBody({
@@ -296,26 +350,208 @@ class _VisualizationBody extends StatelessWidget {
   }
 }
 
-class _ChartSurface extends StatelessWidget {
-  const _ChartSurface({
-    required this.title,
-    required this.icon,
-    required this.child,
+class _ChartChromeOptions {
+  const _ChartChromeOptions({
+    this.showLegend = true,
+    this.showAxisLabels = true,
+    this.showValues = true,
   });
 
-  final String title;
-  final IconData icon;
-  final Widget child;
+  final bool showLegend;
+  final bool showAxisLabels;
+  final bool showValues;
+
+  _ChartChromeOptions copyWith({
+    bool? showLegend,
+    bool? showAxisLabels,
+    bool? showValues,
+  }) {
+    return _ChartChromeOptions(
+      showLegend: showLegend ?? this.showLegend,
+      showAxisLabels: showAxisLabels ?? this.showAxisLabels,
+      showValues: showValues ?? this.showValues,
+    );
+  }
+}
+
+class _ChartOptionsBar extends StatelessWidget {
+  const _ChartOptionsBar({
+    required this.options,
+    required this.onChanged,
+    this.showLegendToggle = true,
+    this.showAxisToggle = true,
+    this.showValuesToggle = true,
+  });
+
+  final _ChartChromeOptions options;
+  final ValueChanged<_ChartChromeOptions> onChanged;
+  final bool showLegendToggle;
+  final bool showAxisToggle;
+  final bool showValuesToggle;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+
+    Widget chip({
+      required String label,
+      required bool selected,
+      required ValueChanged<bool> onSelected,
+      required IconData icon,
+    }) {
+      return FilterChip(
+        selected: selected,
+        showCheckmark: false,
+        avatar: Icon(icon, size: 16),
+        label: Text(label),
+        onSelected: onSelected,
+        visualDensity: VisualDensity.compact,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        selectedColor: colors.primaryContainer,
+        backgroundColor: colors.surfaceContainerHighest.withValues(alpha: 0.55),
+        side: BorderSide(
+          color: selected ? colors.primary : theme.borders.faint,
+        ),
+        labelStyle: theme.textTheme.labelMedium?.copyWith(
+          color: selected ? colors.onPrimaryContainer : colors.onSurfaceVariant,
+          fontWeight: selected ? AppFontWeight.emphasis : AppFontWeight.label,
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: theme.spacing.xs,
+      runSpacing: theme.spacing.xs,
+      children: <Widget>[
+        if (showLegendToggle)
+          chip(
+            label: 'Legend',
+            selected: options.showLegend,
+            icon: Icons.legend_toggle_outlined,
+            onSelected: (bool value) =>
+                onChanged(options.copyWith(showLegend: value)),
+          ),
+        if (showAxisToggle)
+          chip(
+            label: 'Axis labels',
+            selected: options.showAxisLabels,
+            icon: Icons.straighten_outlined,
+            onSelected: (bool value) =>
+                onChanged(options.copyWith(showAxisLabels: value)),
+          ),
+        if (showValuesToggle)
+          chip(
+            label: 'Values',
+            selected: options.showValues,
+            icon: Icons.pin_outlined,
+            onSelected: (bool value) =>
+                onChanged(options.copyWith(showValues: value)),
+          ),
+      ],
+    );
+  }
+}
+
+class _ChartLegendWrap extends StatelessWidget {
+  const _ChartLegendWrap({
+    required this.labels,
+    required this.colors,
+    this.values = const <String>[],
+  });
+
+  final List<String> labels;
+  final List<Color> colors;
+  final List<String> values;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    return Wrap(
+      spacing: theme.spacing.xs,
+      runSpacing: theme.spacing.xs,
+      children: <Widget>[
+        for (int index = 0; index < labels.length; index += 1)
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: theme.spacing.sm,
+              vertical: theme.spacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: colors[index].withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(theme.radius.md),
+              border: Border.all(color: colors[index].withValues(alpha: 0.35)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    color: colors[index],
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                SizedBox(width: theme.spacing.xs),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 180),
+                  child: Text(
+                    values.isEmpty || index >= values.length
+                        ? labels[index]
+                        : '${labels[index]} · ${values[index]}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      fontWeight: AppFontWeight.emphasis,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ChartSurface extends StatelessWidget {
+  const _ChartSurface({
+    required this.title,
+    required this.icon,
+    required this.child,
+    this.accent,
+    this.toolbar,
+  });
+
+  final String title;
+  final IconData icon;
+  final Widget child;
+  final Color? accent;
+  final Widget? toolbar;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final Color wash = (accent ?? colors.primaryContainer).withValues(
+      alpha: 0.22,
+    );
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colors.surface,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            Color.lerp(colors.surface, wash, 0.55)!,
+            colors.surface,
+          ],
+        ),
         borderRadius: BorderRadius.circular(theme.radius.md),
         border: Border.all(color: theme.borders.faint),
+        boxShadow: dashboardSoftShadow(colors),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.md),
@@ -324,8 +560,23 @@ class _ChartSurface extends StatelessWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(icon, size: 18, color: colors.primary),
-                SizedBox(width: theme.spacing.xs),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: (accent ?? colors.primaryContainer).withValues(
+                      alpha: 0.55,
+                    ),
+                    borderRadius: BorderRadius.circular(theme.radius.sm),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(theme.spacing.xs),
+                    child: Icon(
+                      icon,
+                      size: 18,
+                      color: accent ?? colors.primary,
+                    ),
+                  ),
+                ),
+                SizedBox(width: theme.spacing.sm),
                 Expanded(
                   child: Text(
                     title,
@@ -336,6 +587,10 @@ class _ChartSurface extends StatelessWidget {
                 ),
               ],
             ),
+            if (toolbar != null) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              toolbar!,
+            ],
             SizedBox(height: theme.spacing.sm),
             child,
           ],
@@ -345,7 +600,17 @@ class _ChartSurface extends StatelessWidget {
   }
 }
 
-class _SeriesChartHost extends StatelessWidget {
+double _chartHeightForWidth(double width) {
+  if (width < 420) {
+    return 200;
+  }
+  if (width < 720) {
+    return 240;
+  }
+  return 280;
+}
+
+class _SeriesChartHost extends StatefulWidget {
   const _SeriesChartHost({
     required this.title,
     required this.emptyMessage,
@@ -359,51 +624,122 @@ class _SeriesChartHost extends StatelessWidget {
   final DashboardTrendChartStyle style;
 
   @override
+  State<_SeriesChartHost> createState() => _SeriesChartHostState();
+}
+
+class _SeriesChartHostState extends State<_SeriesChartHost> {
+  _ChartChromeOptions _options = const _ChartChromeOptions();
+
+  @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    if (points.isEmpty) {
-      return AppMutedText(emptyMessage);
+    if (widget.points.isEmpty) {
+      return AppMutedText(widget.emptyMessage);
     }
     final List<DashboardTrendPointData> trendPoints = <DashboardTrendPointData>[
-      for (final ModuleReportingSeriesPoint point in points)
+      for (final ModuleReportingSeriesPoint point in widget.points)
         DashboardTrendPointData(value: point.value, label: point.label),
     ];
+    final List<Color> pointColors = <Color>[
+      for (int index = 0; index < trendPoints.length; index += 1)
+        dashboardFallbackSegmentColor(colors.primary, index),
+    ];
+    final Locale locale = Localizations.localeOf(context);
+    final IconData icon = widget.style == DashboardTrendChartStyle.bar
+        ? Icons.bar_chart_outlined
+        : widget.style == DashboardTrendChartStyle.area
+        ? Icons.area_chart_outlined
+        : Icons.show_chart_outlined;
+    final Color accent = widget.style == DashboardTrendChartStyle.bar
+        ? colors.tertiary
+        : widget.style == DashboardTrendChartStyle.area
+        ? colors.secondary
+        : colors.primary;
+
     return _ChartSurface(
-      title: title,
-      icon: style == DashboardTrendChartStyle.bar
-          ? Icons.bar_chart_outlined
-          : style == DashboardTrendChartStyle.area
-          ? Icons.area_chart_outlined
-          : Icons.show_chart_outlined,
-      child: SizedBox(
-        height: 240,
-        width: double.infinity,
-        child: CustomPaint(
-          painter: DashboardTrendChartPainter(
-            points: trendPoints,
-            style: style,
-            barColor: colors.primary.withValues(alpha: 0.18),
-            lineColor: colors.primary,
-            gridColor: theme.borders.faint,
-            labelColor: colors.onSurfaceVariant,
-            textStyle: theme.textTheme.labelSmall,
-            labelBuilder: (DashboardTrendPointData point, {bool compact = false}) {
-              final String label = point.label ?? '';
-              if (!compact || label.length <= 12) {
-                return label;
-              }
-              return '${label.substring(0, 11)}…';
-            },
-            showValues: points.length <= 16,
-          ),
-        ),
+      title: widget.title,
+      icon: icon,
+      accent: accent,
+      toolbar: _ChartOptionsBar(
+        options: _options,
+        onChanged: (next) => setState(() => _options = next),
+      ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double width = constraints.maxWidth.isFinite
+              ? constraints.maxWidth
+              : MediaQuery.sizeOf(context).width;
+          final double height = _chartHeightForWidth(width);
+          final bool fitAll = trendPoints.length <= 8;
+          final double chartWidth = fitAll
+              ? width
+              : math.max(width, trendPoints.length * 72.0);
+          final Widget paint = SizedBox(
+            width: chartWidth,
+            height: height,
+            child: CustomPaint(
+              painter: DashboardTrendChartPainter(
+                points: trendPoints,
+                style: widget.style,
+                barColor: colors.primary.withValues(alpha: 0.18),
+                lineColor: pointColors.first,
+                gridColor: theme.borders.faint,
+                labelColor: colors.onSurfaceVariant,
+                textStyle: theme.textTheme.labelSmall,
+                labelBuilder:
+                    (DashboardTrendPointData point, {bool compact = false}) {
+                      final String label = point.label ?? '';
+                      if (!compact || label.length <= 12) {
+                        return label;
+                      }
+                      return '${label.substring(0, 11)}…';
+                    },
+                pointColors: pointColors,
+                showValues: _options.showValues,
+                showAxisLabels: _options.showAxisLabels,
+                valueFormatter: (num value) =>
+                    AppFormatters.compactNumber(value, locale),
+                minBarHeight: fitAll ? 4 : 0,
+              ),
+            ),
+          );
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              SizedBox(
+                height: height,
+                width: double.infinity,
+                child: fitAll || chartWidth <= width + 0.5
+                    ? paint
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: paint,
+                      ),
+              ),
+              if (_options.showLegend) ...<Widget>[
+                SizedBox(height: theme.spacing.sm),
+                _ChartLegendWrap(
+                  labels: <String>[
+                    for (final DashboardTrendPointData point in trendPoints)
+                      point.label ?? '',
+                  ],
+                  colors: pointColors,
+                  values: <String>[
+                    for (final DashboardTrendPointData point in trendPoints)
+                      AppFormatters.compactNumber(point.value, locale),
+                  ],
+                ),
+              ],
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _DonutChartHost extends StatelessWidget {
+class _DonutChartHost extends StatefulWidget {
   const _DonutChartHost({
     required this.title,
     required this.emptyMessage,
@@ -417,29 +753,57 @@ class _DonutChartHost extends StatelessWidget {
   final List<DashboardDistributionSegmentData> segments;
 
   @override
+  State<_DonutChartHost> createState() => _DonutChartHostState();
+}
+
+class _DonutChartHostState extends State<_DonutChartHost> {
+  _ChartChromeOptions _options = const _ChartChromeOptions(showAxisLabels: false);
+
+  @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    if (segments.isEmpty) {
-      return AppMutedText(emptyMessage);
+    if (widget.segments.isEmpty) {
+      return AppMutedText(widget.emptyMessage);
     }
-    final num total = segments.fold<num>(
+    final List<Color> segmentColors = <Color>[
+      for (int index = 0; index < widget.segments.length; index += 1)
+        dashboardFallbackSegmentColor(colors.primary, index),
+    ];
+    final List<DashboardDistributionSegmentData> coloredSegments =
+        <DashboardDistributionSegmentData>[
+          for (int index = 0; index < widget.segments.length; index += 1)
+            DashboardDistributionSegmentData(
+              label: widget.segments[index].label,
+              value: widget.segments[index].value,
+              colorHex: dashboardColorToHex(segmentColors[index]),
+            ),
+        ];
+    final num total = coloredSegments.fold<num>(
       0,
       (num sum, DashboardDistributionSegmentData segment) =>
           sum + segment.value,
     );
+    final Locale locale = Localizations.localeOf(context);
+
     return _ChartSurface(
-      title: title,
+      title: widget.title,
       icon: Icons.donut_large_outlined,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          SizedBox(
-            width: 160,
-            height: 160,
+      accent: colors.secondary,
+      toolbar: _ChartOptionsBar(
+        options: _options,
+        showAxisToggle: false,
+        onChanged: (next) => setState(() => _options = next),
+      ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool stacked = constraints.maxWidth < 520;
+          final Widget donut = SizedBox(
+            width: stacked ? 180 : 168,
+            height: stacked ? 180 : 168,
             child: CustomPaint(
               painter: DashboardDonutChartPainter(
-                segments: segments,
+                segments: coloredSegments,
                 total: total,
                 fallbackColor: colors.primary,
                 trackColor: colors.surfaceContainerHighest,
@@ -449,16 +813,13 @@ class _DonutChartHost extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     Text(
-                      AppFormatters.compactNumber(
-                        total,
-                        Localizations.localeOf(context),
-                      ),
+                      AppFormatters.compactNumber(total, locale),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                     Text(
-                      totalLabel,
+                      widget.totalLabel,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
@@ -467,66 +828,73 @@ class _DonutChartHost extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-          SizedBox(width: theme.spacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          );
+
+          final Widget? legend = !_options.showLegend
+              ? null
+              : _ChartLegendWrap(
+                  labels: <String>[
+                    for (final DashboardDistributionSegmentData segment
+                        in coloredSegments)
+                      segment.label,
+                  ],
+                  colors: segmentColors,
+                  values: _options.showValues
+                      ? <String>[
+                          for (final DashboardDistributionSegmentData segment
+                              in coloredSegments)
+                            AppFormatters.compactNumber(segment.value, locale),
+                        ]
+                      : const <String>[],
+                );
+
+          if (stacked) {
+            return Column(
               children: <Widget>[
-                for (int index = 0; index < segments.length; index += 1)
-                  Padding(
-                    padding: EdgeInsets.only(bottom: theme.spacing.xs),
-                    child: Row(
-                      children: <Widget>[
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: Color.lerp(
-                              colors.primary,
-                              colors.tertiary,
-                              index / math.max(1, segments.length - 1),
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        SizedBox(width: theme.spacing.xs),
-                        Expanded(
-                          child: Text(
-                            segments[index].label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Text(
-                          AppFormatters.decimal(
-                            segments[index].value,
-                            Localizations.localeOf(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                donut,
+                if (legend != null) ...<Widget>[
+                  SizedBox(height: theme.spacing.md),
+                  legend,
+                ],
               ],
-            ),
-          ),
-        ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              donut,
+              SizedBox(width: theme.spacing.md),
+              if (legend != null) Expanded(child: legend),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _RankingChart extends StatelessWidget {
+class _RankingChart extends StatefulWidget {
   const _RankingChart({required this.points});
 
   final List<ModuleReportingSeriesPoint> points;
+
+  @override
+  State<_RankingChart> createState() => _RankingChartState();
+}
+
+class _RankingChartState extends State<_RankingChart> {
+  _ChartChromeOptions _options = const _ChartChromeOptions(
+    showAxisLabels: true,
+    showLegend: false,
+  );
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
     final List<ModuleReportingSeriesPoint> ranked =
-        List<ModuleReportingSeriesPoint>.from(points)
+        List<ModuleReportingSeriesPoint>.from(widget.points)
           ..sort(
             (ModuleReportingSeriesPoint left, ModuleReportingSeriesPoint right) =>
                 right.value.compareTo(left.value),
@@ -538,9 +906,18 @@ class _RankingChart extends StatelessWidget {
     );
     final List<ModuleReportingSeriesPoint> top =
         ranked.take(12).toList(growable: false);
+    final Locale locale = Localizations.localeOf(context);
+
     return _ChartSurface(
       title: 'Ranking',
       icon: Icons.leaderboard_outlined,
+      accent: colors.error,
+      toolbar: _ChartOptionsBar(
+        options: _options,
+        showLegendToggle: false,
+        showAxisToggle: true,
+        onChanged: (next) => setState(() => _options = next),
+      ),
       child: Column(
         children: <Widget>[
           for (int index = 0; index < top.length; index += 1)
@@ -554,17 +931,21 @@ class _RankingChart extends StatelessWidget {
                       '${index + 1}',
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: colors.onSurfaceVariant,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                   ),
-                  Expanded(
-                    flex: 3,
-                    child: Text(
-                      top[index].label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
+                  if (_options.showAxisLabels)
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        top[index].label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    )
+                  else
+                    const Spacer(flex: 3),
                   SizedBox(width: theme.spacing.sm),
                   Expanded(
                     flex: 5,
@@ -574,22 +955,32 @@ class _RankingChart extends StatelessWidget {
                         value: maxValue <= 0
                             ? 0
                             : (top[index].value / maxValue).toDouble(),
-                        minHeight: 12,
+                        minHeight: 14,
+                        color: dashboardFallbackSegmentColor(
+                          colors.primary,
+                          index,
+                        ),
                         backgroundColor: colors.surfaceContainerHighest,
                       ),
                     ),
                   ),
-                  SizedBox(width: theme.spacing.sm),
-                  SizedBox(
-                    width: 72,
-                    child: Text(
-                      AppFormatters.compactNumber(
-                        top[index].value,
-                        Localizations.localeOf(context),
+                  if (_options.showValues) ...<Widget>[
+                    SizedBox(width: theme.spacing.sm),
+                    SizedBox(
+                      width: 72,
+                      child: Text(
+                        AppFormatters.compactNumber(top[index].value, locale),
+                        textAlign: TextAlign.right,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: dashboardFallbackSegmentColor(
+                            colors.primary,
+                            index,
+                          ),
+                          fontWeight: AppFontWeight.emphasis,
+                        ),
                       ),
-                      textAlign: TextAlign.right,
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -599,17 +990,27 @@ class _RankingChart extends StatelessWidget {
   }
 }
 
-class _GaugeChart extends StatelessWidget {
+class _GaugeChart extends StatefulWidget {
   const _GaugeChart({required this.points});
 
   final List<ModuleReportingSeriesPoint> points;
 
   @override
+  State<_GaugeChart> createState() => _GaugeChartState();
+}
+
+class _GaugeChartState extends State<_GaugeChart> {
+  _ChartChromeOptions _options = const _ChartChromeOptions(
+    showLegend: true,
+    showAxisLabels: false,
+  );
+
+  @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    final num value = points.isEmpty ? 0 : points.first.value;
-    final num maxValue = points.fold<num>(
+    final num value = widget.points.isEmpty ? 0 : widget.points.first.value;
+    final num maxValue = widget.points.fold<num>(
       value,
       (num max, ModuleReportingSeriesPoint point) =>
           point.value > max ? point.value : max,
@@ -617,24 +1018,54 @@ class _GaugeChart extends StatelessWidget {
     final double ratio = maxValue <= 0
         ? 0
         : (value / maxValue).clamp(0, 1).toDouble();
+    final Color low = colors.tertiary;
+    final Color mid = colors.primary;
+    final Color high = colors.error;
+    final Color needle = ratio < 0.33
+        ? low
+        : ratio < 0.66
+        ? mid
+        : high;
+    final Locale locale = Localizations.localeOf(context);
+
     return _ChartSurface(
-      title: points.isEmpty ? 'Gauge' : points.first.label,
+      title: widget.points.isEmpty ? 'Gauge' : widget.points.first.label,
       icon: Icons.speed_outlined,
-      child: SizedBox(
-        height: 180,
-        child: CustomPaint(
-          painter: _GaugePainter(
-            ratio: ratio,
-            color: colors.primary,
-            trackColor: colors.surfaceContainerHighest,
-            labelColor: colors.onSurface,
-            valueLabel: AppFormatters.compactNumber(
-              value,
-              Localizations.localeOf(context),
+      accent: needle,
+      toolbar: _ChartOptionsBar(
+        options: _options,
+        showAxisToggle: false,
+        onChanged: (next) => setState(() => _options = next),
+      ),
+      child: Column(
+        children: <Widget>[
+          SizedBox(
+            height: 180,
+            width: double.infinity,
+            child: CustomPaint(
+              painter: _GaugePainter(
+                ratio: ratio,
+                color: needle,
+                trackColor: colors.surfaceContainerHighest,
+                lowColor: low,
+                midColor: mid,
+                highColor: high,
+                labelColor: colors.onSurface,
+                valueLabel: _options.showValues
+                    ? AppFormatters.compactNumber(value, locale)
+                    : '',
+                textStyle: theme.textTheme.titleMedium,
+              ),
             ),
-            textStyle: theme.textTheme.titleMedium,
           ),
-        ),
+          if (_options.showLegend) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            _ChartLegendWrap(
+              labels: const <String>['Low', 'Mid', 'High'],
+              colors: <Color>[low, mid, high],
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -645,6 +1076,9 @@ class _GaugePainter extends CustomPainter {
     required this.ratio,
     required this.color,
     required this.trackColor,
+    required this.lowColor,
+    required this.midColor,
+    required this.highColor,
     required this.labelColor,
     required this.valueLabel,
     required this.textStyle,
@@ -653,6 +1087,9 @@ class _GaugePainter extends CustomPainter {
   final double ratio;
   final Color color;
   final Color trackColor;
+  final Color lowColor;
+  final Color midColor;
+  final Color highColor;
   final Color labelColor;
   final String valueLabel;
   final TextStyle? textStyle;
@@ -662,21 +1099,31 @@ class _GaugePainter extends CustomPainter {
     final Offset center = Offset(size.width / 2, size.height * 0.72);
     final double radius = math.min(size.width, size.height) * 0.42;
     final Rect arc = Rect.fromCircle(center: center, radius: radius);
-    final Paint track = Paint()
+    final Paint stroke = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 16
-      ..strokeCap = StrokeCap.round
-      ..color = trackColor;
-    final Paint fill = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 16
-      ..strokeCap = StrokeCap.round
-      ..color = color;
+      ..strokeCap = StrokeCap.round;
+
     const double start = math.pi;
     const double sweep = math.pi;
-    canvas.drawArc(arc, start, sweep, false, track);
-    canvas.drawArc(arc, start, sweep * ratio, false, fill);
+    stroke.color = trackColor;
+    canvas.drawArc(arc, start, sweep, false, stroke);
 
+    stroke.color = lowColor;
+    canvas.drawArc(arc, start, sweep * 0.33, false, stroke);
+    stroke.color = midColor;
+    canvas.drawArc(arc, start + sweep * 0.33, sweep * 0.33, false, stroke);
+    stroke.color = highColor;
+    canvas.drawArc(arc, start + sweep * 0.66, sweep * 0.34, false, stroke);
+
+    stroke
+      ..color = color
+      ..strokeWidth = 6;
+    canvas.drawArc(arc, start, sweep * ratio, false, stroke);
+
+    if (valueLabel.isEmpty) {
+      return;
+    }
     final TextPainter painter = TextPainter(
       text: TextSpan(
         text: valueLabel,
@@ -698,40 +1145,98 @@ class _GaugePainter extends CustomPainter {
   }
 }
 
-class _ScatterChart extends StatelessWidget {
+class _ScatterChart extends StatefulWidget {
   const _ScatterChart({required this.snapshot});
 
   final ModuleReportingReportSnapshot snapshot;
 
   @override
+  State<_ScatterChart> createState() => _ScatterChartState();
+}
+
+class _ScatterChartState extends State<_ScatterChart> {
+  _ChartChromeOptions _options = const _ChartChromeOptions(showLegend: false);
+
+  @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    final List<String> numeric = moduleReportingNumericColumns(snapshot.columns);
+    final List<String> numeric = moduleReportingNumericColumns(
+      widget.snapshot.columns,
+    );
     if (numeric.length < 2) {
       return const SizedBox.shrink();
     }
     final String xKey = numeric[0];
     final String yKey = numeric[1];
+    final String xLabel = moduleReportingColumnLabel(xKey);
+    final String yLabel = moduleReportingColumnLabel(yKey);
     final List<Offset> points = <Offset>[
-      for (final Map<String, Object?> row in snapshot.rows.take(80))
+      for (final Map<String, Object?> row in widget.snapshot.rows.take(80))
         Offset(
           (moduleReportingAsNum(row[xKey]) ?? 0).toDouble(),
           (moduleReportingAsNum(row[yKey]) ?? 0).toDouble(),
         ),
     ];
+    final List<Color> pointColors = <Color>[
+      for (int index = 0; index < points.length; index += 1)
+        dashboardFallbackSegmentColor(colors.primary, index % 12),
+    ];
+
     return _ChartSurface(
-      title: '${moduleReportingColumnLabel(xKey)} × ${moduleReportingColumnLabel(yKey)}',
+      title: '$xLabel × $yLabel',
       icon: Icons.scatter_plot_outlined,
-      child: SizedBox(
-        height: 240,
-        child: CustomPaint(
-          painter: _ScatterPainter(
-            points: points,
-            color: colors.primary,
-            gridColor: theme.borders.faint,
-          ),
-        ),
+      accent: colors.secondary,
+      toolbar: _ChartOptionsBar(
+        options: _options,
+        showLegendToggle: false,
+        showValuesToggle: false,
+        onChanged: (next) => setState(() => _options = next),
+      ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double height = _chartHeightForWidth(
+            constraints.maxWidth.isFinite
+                ? constraints.maxWidth
+                : MediaQuery.sizeOf(context).width,
+          );
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              if (_options.showAxisLabels)
+                Padding(
+                  padding: EdgeInsets.only(bottom: theme.spacing.xs),
+                  child: Text(
+                    'Y: $yLabel',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              SizedBox(
+                height: height,
+                child: CustomPaint(
+                  painter: _ScatterPainter(
+                    points: points,
+                    colors: pointColors,
+                    gridColor: theme.borders.faint,
+                  ),
+                ),
+              ),
+              if (_options.showAxisLabels)
+                Padding(
+                  padding: EdgeInsets.only(top: theme.spacing.xs),
+                  child: Text(
+                    'X: $xLabel',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -740,12 +1245,12 @@ class _ScatterChart extends StatelessWidget {
 class _ScatterPainter extends CustomPainter {
   const _ScatterPainter({
     required this.points,
-    required this.color,
+    required this.colors,
     required this.gridColor,
   });
 
   final List<Offset> points;
-  final Color color;
+  final List<Color> colors;
   final Color gridColor;
 
   @override
@@ -756,6 +1261,8 @@ class _ScatterPainter extends CustomPainter {
     for (int i = 0; i <= 3; i += 1) {
       final double y = size.height * (i / 3);
       canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
+      final double x = size.width * (i / 3);
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
     }
     if (points.isEmpty) {
       return;
@@ -772,121 +1279,197 @@ class _ScatterPainter extends CustomPainter {
     }
     final double spanX = math.max(1, maxX - minX);
     final double spanY = math.max(1, maxY - minY);
-    final Paint dot = Paint()..color = color;
-    for (final Offset point in points) {
+    for (int index = 0; index < points.length; index += 1) {
+      final Offset point = points[index];
       final double x = ((point.dx - minX) / spanX) * (size.width - 16) + 8;
       final double y =
           size.height - (((point.dy - minY) / spanY) * (size.height - 16) + 8);
-      canvas.drawCircle(Offset(x, y), 4, dot);
+      final Color color = colors[index % colors.length];
+      canvas.drawCircle(
+        Offset(x, y),
+        5,
+        Paint()..color = color.withValues(alpha: 0.85),
+      );
+      canvas.drawCircle(
+        Offset(x, y),
+        5,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2
+          ..color = color,
+      );
     }
   }
 
   @override
   bool shouldRepaint(covariant _ScatterPainter oldDelegate) {
-    return oldDelegate.points != points || oldDelegate.color != color;
+    return oldDelegate.points != points || oldDelegate.colors != colors;
   }
 }
 
-class _HeatmapChart extends StatelessWidget {
+class _HeatmapChart extends StatefulWidget {
   const _HeatmapChart({required this.cells});
 
   final List<ModuleReportingHeatmapCell> cells;
 
   @override
+  State<_HeatmapChart> createState() => _HeatmapChartState();
+}
+
+class _HeatmapChartState extends State<_HeatmapChart> {
+  _ChartChromeOptions _options = const _ChartChromeOptions(showLegend: true);
+
+  @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    if (cells.isEmpty) {
+    if (widget.cells.isEmpty) {
       return const SizedBox.shrink();
     }
-    final List<String> rows = cells
+    final List<String> rows = widget.cells
         .map((ModuleReportingHeatmapCell cell) => cell.rowKey)
         .toSet()
         .toList(growable: false);
-    final List<String> columns = cells
+    final List<String> columns = widget.cells
         .map((ModuleReportingHeatmapCell cell) => cell.columnKey)
         .toSet()
         .toList(growable: false);
     final Map<String, num> lookup = <String, num>{
-      for (final ModuleReportingHeatmapCell cell in cells)
+      for (final ModuleReportingHeatmapCell cell in widget.cells)
         '${cell.rowKey}::${cell.columnKey}': cell.value,
     };
-    final num maxValue = cells.fold<num>(
+    final num maxValue = widget.cells.fold<num>(
       0,
       (num max, ModuleReportingHeatmapCell cell) =>
           cell.value > max ? cell.value : max,
     );
+    final Locale locale = Localizations.localeOf(context);
+    final List<Color> scale = <Color>[
+      dashboardFallbackSegmentColor(colors.tertiary, 0).withValues(alpha: 0.25),
+      dashboardFallbackSegmentColor(colors.primary, 2).withValues(alpha: 0.55),
+      dashboardFallbackSegmentColor(colors.error, 4).withValues(alpha: 0.85),
+    ];
+
+    Color cellColor(num value) {
+      if (maxValue <= 0) {
+        return scale.first;
+      }
+      final double t = (value / maxValue).clamp(0, 1).toDouble();
+      if (t < 0.5) {
+        return Color.lerp(scale[0], scale[1], t * 2)!;
+      }
+      return Color.lerp(scale[1], scale[2], (t - 0.5) * 2)!;
+    }
 
     return _ChartSurface(
       title: 'Heatmap',
       icon: Icons.grid_on_outlined,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                const SizedBox(width: 96),
-                for (final String column in columns)
-                  SizedBox(
-                    width: 72,
-                    child: Text(
-                      column,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.labelSmall,
-                    ),
-                  ),
-              ],
+      accent: colors.tertiary,
+      toolbar: _ChartOptionsBar(
+        options: _options,
+        showAxisToggle: true,
+        onChanged: (next) => setState(() => _options = next),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (_options.showLegend) ...<Widget>[
+            _ChartLegendWrap(
+              labels: const <String>['Low', 'Medium', 'High'],
+              colors: scale,
             ),
-            SizedBox(height: theme.spacing.xs),
-            for (final String row in rows)
-              Padding(
-                padding: EdgeInsets.only(bottom: theme.spacing.xs),
-                child: Row(
+            SizedBox(height: theme.spacing.sm),
+          ],
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final double cellWidth = constraints.maxWidth < 480 ? 56 : 72;
+              final double labelWidth = constraints.maxWidth < 480 ? 72 : 96;
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    SizedBox(
-                      width: 96,
-                      child: Text(
-                        row,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelSmall,
+                    if (_options.showAxisLabels)
+                      Row(
+                        children: <Widget>[
+                          SizedBox(width: labelWidth),
+                          for (final String column in columns)
+                            SizedBox(
+                              width: cellWidth,
+                              child: Text(
+                                column,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.labelSmall,
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                    for (final String column in columns)
-                      Container(
-                        width: 72,
-                        height: 36,
-                        margin: const EdgeInsets.only(right: 2),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: colors.primary.withValues(
-                            alpha: maxValue <= 0
-                                ? 0.05
-                                : (0.08 +
-                                      0.72 *
-                                          ((lookup['$row::$column'] ?? 0) /
-                                                  maxValue)
-                                              .toDouble()),
-                          ),
-                          borderRadius: BorderRadius.circular(theme.radius.sm),
-                        ),
-                        child: Text(
-                          AppFormatters.compactNumber(
-                            lookup['$row::$column'] ?? 0,
-                            Localizations.localeOf(context),
-                          ),
-                          style: theme.textTheme.labelSmall,
+                    if (_options.showAxisLabels)
+                      SizedBox(height: theme.spacing.xs),
+                    for (final String row in rows)
+                      Padding(
+                        padding: EdgeInsets.only(bottom: theme.spacing.xs),
+                        child: Row(
+                          children: <Widget>[
+                            SizedBox(
+                              width: labelWidth,
+                              child: _options.showAxisLabels
+                                  ? Text(
+                                      row,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.labelSmall,
+                                    )
+                                  : null,
+                            ),
+                            for (final String column in columns)
+                              Builder(
+                                builder: (BuildContext context) {
+                                  final num value =
+                                      lookup['$row::$column'] ?? 0;
+                                  final Color fill = cellColor(value);
+                                  return Container(
+                                    width: cellWidth,
+                                    height: 36,
+                                    margin: const EdgeInsets.only(right: 2),
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: fill,
+                                      borderRadius: BorderRadius.circular(
+                                        theme.radius.sm,
+                                      ),
+                                      border: Border.all(
+                                        color: fill.withValues(alpha: 0.9),
+                                      ),
+                                    ),
+                                    child: _options.showValues
+                                        ? Text(
+                                            AppFormatters.compactNumber(
+                                              value,
+                                              locale,
+                                            ),
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                                  color: colors.onSurface,
+                                                  fontWeight:
+                                                      AppFontWeight.emphasis,
+                                                ),
+                                          )
+                                        : null,
+                                  );
+                                },
+                              ),
+                          ],
                         ),
                       ),
                   ],
                 ),
-              ),
-          ],
-        ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
