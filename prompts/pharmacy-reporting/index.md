@@ -23,18 +23,20 @@ Implement every pharmacy Reporting category with **schema-accurate** mappings, f
 6. **Payment method** lives on `payment.method` (`PaymentMethodType`), not on pharmacy orders. Pharmacy payment slices must filter `billing_entity=PHARMACY` (and/or drug catalog invoice items) when scoping pharmacy cash.
 7. **Currency:** Display with `effectiveDefaultCurrencyProvider`. Prefer row/`drug.currency` or `invoice.currency`/`payment` currency when projecting money; seeded pharmacy catalog uses **UGX**.
 8. **Column keys must match unit inference:** money → `amount`/`profit`/`collections`/`refunds`/…; qty → `quantity`/`quantity_dispensed`/`reorder_*`; days → `days_to_expiry`/`*_days`; rates → `*_rate`/`margin`/`percent`; counts → `*_count`/`orders_created`/`dispensed` (throughput dispense is **order count**, not packs).
+9. **Seed volume (minimum 1,000 rows where applicable):** Every category implementation must extend volume seed so each **primary transactional/fact table** that report reads has **≥ 1,000** demo rows after `db:seed:demo` with default `SEED_RECORD_COUNT` (**1000**, see `.cursor/access/demo-data.mdc`). “Where applicable” means volume/fact graphs (e.g. `dispense_log`, `pharmacy_order`, `payment`, `refund`, `invoice`, `stock_movement`, `stock_adjustment`, `drug_batch`, `audit_log`, PO/receipt lines once they exist)—**not** intentional singletons/catalogs (one tenant/facility/subscription; role/permission catalogs). Diversify statuses/dates/methods across the 1,000+ rows so default period presets are dense. Assert floors in `verify-demo-data` (or category seed tests). Prefer extending `seed-volume-pack` / `seed-volume-extended-pack` with deterministic keys; curated packs stay for hero scenarios only.
 
 ## Requirements
 
 1. Treat `prompts/pharmacy-reporting.md` as chrome-only; category files own data mapping + seed.
 2. Keep catalog report ids stable (`PharmacyReportingCategoryIds` + report id strings).
 3. Extend `PharmacyReportingDataProvider` projections and `REPORT_DATASET_MAP` runners; register new keys in `report-definition` enum/schema when adding datasets.
-4. Extend demo seed packs (`seed-clinical-catalog-pack.js`, `seed-clinical-pack.js`, `seed-volume-pack.js`, `seed-volume-extended-pack.js`, `seed-operations-pack.js`) under `demo-safety.js`.
+4. Extend demo seed packs under `demo-safety.js` so each category’s applicable fact tables meet the **≥1,000-row** floor (rule 9); do not ship category work that only adds a handful of curated rows for reportable facts.
 5. Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `.cursor/access/demo-data.mdc`, `prompts/.cursor/prompt.mdc`, `frontend/.cursor/layouts.mdc`.
 
 ## Constraints
 
 - Analytics chips unchanged. Unauthorized export absent. No production seeding.
+- Do not lower `SEED_RECORD_COUNT` to satisfy tests; raise seed output or verify floors instead.
 
 ## Acceptance Criteria
 
@@ -42,7 +44,7 @@ Implement every pharmacy Reporting category with **schema-accurate** mappings, f
 | --- | --- | --- |
 | A1 | Every category file’s Data contract is implemented without conflicting formulas. | R1–R3 |
 | A2 | Schema gaps use migration, real join, or honest unavailable—never fabricated numbers. | Data rules 4 |
-| A3 | Demo seed makes each file’s primary reports non-empty for default presets where contract requires it. | R4 |
+| A3 | Demo seed meets ≥1,000 rows on each applicable fact table and keeps primary reports dense for default presets. | R4, rule 9 |
 | A4 | Units/currency match shared formatters + seeded UGX/org default. | Data rules 7–8 |
 
 ## Relevant Files
@@ -58,3 +60,4 @@ Implement every pharmacy Reporting category with **schema-accurate** mappings, f
 ## Verification
 
 - Implement 01→17 (management last). Per-file verification + spot-check: dialog totals equal dataset summary for same from/to/scope.
+- After seed: `db:verify:demo` (or category tests) asserts ≥1,000 rows on each applicable fact table listed in category prompts.

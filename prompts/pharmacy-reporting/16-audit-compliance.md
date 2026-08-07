@@ -29,7 +29,7 @@ Project audit reports from `audit_log` (and related PHI logs) with real `diff_js
 
 1. Do not invent diff fields—show raw keys from `diff_json`.
 2. Gate entire category/actions via reports + audit entitlements; unauthorized UI absent.
-3. Seed CREATE/UPDATE/DELETE on drug price + stock adjustment + failed ACCESS if supported.
+3. Seed volume: ≥1,000 pharmacy-relevant `audit_log` rows covering CREATE/UPDATE/DELETE, drug price diffs, stock adjustments, and failed ACCESS when supported (`index.md` rule 9).
 4. Reuse shared table; progressive disclosure for large diffs on xs.
 5. Tests: entitled sees rows; unentitled no audit buttons/export; price diff formats currency.
 
@@ -43,7 +43,7 @@ Project audit reports from `audit_log` (and related PHI logs) with real `diff_js
 | --- | --- | --- |
 | A1 | Rows are real audit_log projections with entity allow-list. | contract |
 | A2 | Diff typing units correct; permissions enforced. | R2 |
-| A3 | Demo shows create/edit/price/stock audit samples. | R3 |
+| A3 | ≥1,000 audit rows; create/edit/price/stock samples in the mix. | R3 |
 
 ## Relevant Files
 

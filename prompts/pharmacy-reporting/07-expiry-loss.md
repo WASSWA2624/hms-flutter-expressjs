@@ -29,7 +29,7 @@ Extend expiry/loss dialogs from `drug_batch` risk rows and `stock_adjustment`/`s
 
 1. Implement window bucketing in provider or dataset—tests for each bucket using seed offsets.
 2. Value always uses `buy_unit_price` (COGS), not sell—subtitle “at buy cost”.
-3. Seed keeps templates; add DAMAGE/EXPIRY adjustments with qty&gt;0.
+3. Seed volume: keep risk templates; scale to ≥1,000 `drug_batch` rows spanning 30/60/90/180/expired windows and ≥1,000 DAMAGE/EXPIRY `stock_adjustment` (or movements) for loss reports (`index.md` rule 9).
 4. Reuse inventory dataset; don’t change EXPIRING_SOON definition silently.
 5. Tests: dayOffset 8 → ≤30 bucket; −14 → expired value&gt;0.
 
@@ -43,7 +43,7 @@ Extend expiry/loss dialogs from `drug_batch` risk rows and `stock_adjustment`/`s
 | --- | --- | --- |
 | A1 | Windows are four exclusive buckets; expired separate. | contract |
 | A2 | Values at buy cost; days unit on `days_to_expiry`. | R2 |
-| A3 | Demo populates each window + damage write-off. | R3 |
+| A3 | ≥1,000 batches + loss adjustments; each expiry window + damage write-off present in volume. | R3 |
 
 ## Relevant Files
 

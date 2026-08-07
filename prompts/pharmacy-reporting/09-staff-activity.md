@@ -33,7 +33,7 @@ Attribute staff reports only to **real user FKs**—attestation, audit_log, paym
 
 1. If actor FK missing, migrate + seed **or** unavailable—do not attribute to “Unknown” as real staff performance.
 2. Money from consumption/payments; counts from events.
-3. Seed ≥2 pharmacists with attestations and audit events in range.
+3. Seed volume: ≥2 pharmacists, and ≥1,000 attestation-linked dispenses plus ≥1,000 pharmacy-relevant `audit_log` rows in range (`index.md` rule 9).
 4. Permission-gate audit_trail columns; absent when unauthorized.
 5. Tests: staff totals partition (sum staff amounts ≤/＝ period sales when attribution complete); unattributed remainder shown explicitly if any.
 
@@ -47,7 +47,7 @@ Attribute staff reports only to **real user FKs**—attestation, audit_log, paym
 | --- | --- | --- |
 | A1 | Every staff metric cites a real user FK or stays unavailable. | contract |
 | A2 | Units correct; audit gated. | R2 |
-| A3 | Demo ≥2 staff with distinct attestation activity. | R3 |
+| A3 | ≥1,000 attributed activity + audit events; ≥2 staff with distinct volume. | R3 |
 
 ## Relevant Files
 

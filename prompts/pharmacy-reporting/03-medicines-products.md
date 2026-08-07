@@ -41,7 +41,7 @@ Period: date filters apply to batch mfg/expiry; price/name lists are catalog sna
 
 1. Add pharmacy catalog dataset runner; set all medicines `datasetKey`s; project per-id column subsets from one row model.
 2. Money columns must use `drug.currency` when set else effective default (seed UGX).
-3. Seed: fill `generic_name`/`brand_name` where missing; ensure map+unit on inventory items; decide barcode/controlled via migration+seed or leave unavailable (document in catalog comment).
+3. Seed: fill `generic_name`/`brand_name` where missing; ensure map+unit on inventory items; decide barcode/controlled via migration+seed or leave unavailable. Where volume applies, seed ≥1,000 `drug_batch` rows (and inventory maps/stocks as needed) so batch/expiry/price dialogs are dense—catalog drug masters may stay curated (`index.md` rule 9).
 4. Reuse shared table/dialog; no Catalog CRUD rewrite.
 5. Tests: margin matches helper; selling vs buy for Paracetamol seed row; form/strength not formatted as currency.
 
@@ -56,7 +56,7 @@ Period: date filters apply to batch mfg/expiry; price/name lists are catalog sna
 | A1 | Mapped attributes match Prisma field names above. | contract |
 | A2 | Price/margin units correct; strength/form plain. | R2 |
 | A3 | Gaps (barcode/controlled) migrated or explicitly unavailable. | R3 |
-| A4 | Demo catalog prices UGX with non-null buy for margin demos. | R3 |
+| A4 | UGX prices with buy for margins; ≥1,000 batches where batch reports apply. | R3 |
 
 ## Relevant Files
 

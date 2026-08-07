@@ -39,7 +39,7 @@ Complete `dispensing` dialogs using `pharmacy_order` / `dispense_log` semantics 
 
 1. Fix `items_dispensed` label/data mismatch (packs vs order counts).
 2. Wire remaining ids with joins above; chart keeps contentKind chart.
-3. Seed status diversity: DISPENSED, PARTIALLY_DISPENSED, CANCELLED, RETURNED in range.
+3. Seed volume: ≥1,000 `pharmacy_order` and ≥1,000 `dispense_log` with status mix DISPENSED, PARTIALLY_DISPENSED, CANCELLED, RETURNED across the period (`index.md` rule 9).
 4. Reuse throughput builders; extend rather than duplicate status enums.
 5. Tests: cancelled≠returned; average items formula locked; pharmacy-flow: no new encounters from Reporting.
 
@@ -53,7 +53,7 @@ Complete `dispensing` dialogs using `pharmacy_order` / `dispense_log` semantics 
 | --- | --- | --- |
 | A1 | Every dispensing id uses contract semantics; items_dispensed means packs. | R1 |
 | A2 | Count vs quantity columns not mixed up in UI units. | contract |
-| A3 | Demo shows partial + cancelled + returned. | R3 |
+| A3 | ≥1,000 orders + dispense logs; partial, cancelled, and returned present in volume. | R3 |
 
 ## Relevant Files
 

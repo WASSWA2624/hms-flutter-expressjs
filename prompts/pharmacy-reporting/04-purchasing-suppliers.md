@@ -33,7 +33,7 @@ Map purchasing reports to `supplier`, `purchase_order`, `goods_receipt`, `stock_
 
 1. Prefer deriving demo-visible value from INBOUND×`buy_unit_price` until PO lines exist; when adding lines, migrate + seed and switch contract.
 2. Register dataset; wire all ids; performance chart uses `delivery_days` / fulfillment_rate keys for units.
-3. Seed: ≥2 suppliers with POs, ≥1 receipt, inbound movements for those drugs, optional PO line migration if implementing ordered-vs-received.
+3. Seed volume: ≥1,000 `purchase_order` (and ≥1,000 goods receipts / PO lines once modeled); ≥1,000 INBOUND `stock_movement` for value basis. Keep ≥2 suppliers in the mix. Optional PO line migration if implementing ordered-vs-received (`index.md` rule 9). Supplier master catalog may stay small.
 4. Reuse supplier module; Reporting read-only.
 5. Tests: delivery_days non-negative; purchase_value matches sum of basis rows; no phantom invoice balances.
 
@@ -47,7 +47,7 @@ Map purchasing reports to `supplier`, `purchase_order`, `goods_receipt`, `stock_
 | --- | --- | --- |
 | A1 | Each report uses contract basis or explicit unavailable/migration. | R1 |
 | A2 | Money/days/qty units correct; no fabricated AP. | contract |
-| A3 | Demo: multiple suppliers, PO, receipt, inbound value path. | R3 |
+| A3 | ≥1,000 POs/inbounds; multiple suppliers; receipt + inbound value path demonstrable. | R3 |
 
 ## Relevant Files
 

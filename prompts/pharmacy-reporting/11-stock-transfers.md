@@ -25,7 +25,7 @@ Map transfer reports to `stock_movement` with `movement_type=TRANSFER` (and rela
 ## Requirements
 
 1. Inspect Prisma; if endpoints missing, migration + seed before UI ready.
-2. Seed ≥1 completed transfer and ≥1 pending/discrepancy when model supports it; else keep those ids unavailable with gap comment in catalog.
+2. Seed volume: ≥1,000 `stock_movement` with `TRANSFER` (or paired transfer docs) when model supports it, including completed, pending, and discrepancy cases in the mix—not just one sample (`index.md` rule 9). If endpoints missing, migrate first; else keep ids unavailable with gap comment.
 3. Dataset + provider; period on `occurred_at`.
 4. Tests: TRANSFER filter excludes DISPENSE outbound; discrepancy math absolute difference.
 
@@ -39,7 +39,7 @@ Map transfer reports to `stock_movement` with `movement_type=TRANSFER` (and rela
 | --- | --- | --- |
 | A1 | Transfer dialogs only show when endpoint/status data is real. | contract |
 | A2 | Quantities use units; facilities named from `facility`. | R2 |
-| A3 | Seed path matches implemented model. | R3 |
+| A3 | ≥1,000 transfer movements/docs when implemented; seed matches model. | R3 |
 
 ## Relevant Files
 

@@ -40,7 +40,7 @@ Map all `inventory_stock` reports to `inventory_stock`, `drug_batch`, and `stock
 
 1. Implement contract; extend dataset(s) rather than changing risk thresholds.
 2. `expiring_windows` (expiry category) depends on `days_to_expiry` buckets 30/60/90/180—keep batch leadDays seed aligned (`window-60/90/180` templates).
-3. Seed: keep risk templates; ensure ≥1 DAMAGE adjustment and INBOUND/OUTBOUND/TRANSFER movements in range.
+3. Seed volume: ≥1,000 `stock_movement` and ≥1,000 `stock_adjustment` rows; keep risk templates and ensure DAMAGE + INBOUND/OUTBOUND/TRANSFER appear inside the volume mix. Scale `drug_batch` / stock rows so risk filters stay populated at volume (`index.md` rule 9).
 4. Reuse shared kit; currency for `value` via effective default (UGX seed).
 5. Tests: classifier golden cases; stock_value = qty×buy for a known seeded drug; movement history ordered.
 
@@ -54,7 +54,7 @@ Map all `inventory_stock` reports to `inventory_stock`, `drug_batch`, and `stock
 | --- | --- | --- |
 | A1 | All inventory ids ready/empty/error with contract sources. | R1 |
 | A2 | Risk labels match `runInventoryDataset`; value/qty/days units correct. | contract |
-| A3 | Demo shows OOS, LOW/CRITICAL, OVERSTOCK, EXPIRED, EXPIRING_SOON, DAMAGE movement. | R3 |
+| A3 | ≥1,000 movements/adjustments; OOS, LOW/CRITICAL, OVERSTOCK, EXPIRED, EXPIRING_SOON, DAMAGE still present in the mix. | R3 |
 
 ## Relevant Files
 

@@ -32,9 +32,9 @@ Implement controlled-drug balance reports only after a **durable controlled mark
 
 1. Migrate `is_controlled` (or equivalent) + mark Morphine/Tramadol (and peers) in seed **before** claiming ready.
 2. Implement balance grain consistently; refuse silent drift.
-3. Permission-tighten regulatory_log.
+3. Permission-tighten regulatory_log. Seed volume: ≥1,000 controlled-related dispense/movement/attestation events so balances and regulatory log are dense—not a single Morphine sample (`index.md` rule 9).
 4. Reuse shared dialog; quantity units throughout.
-5. Tests: golden balance fixture; unauthorized log absent.
+5. Tests: golden balance fixture; unauthorized log absent; volume floor asserted.
 
 ## Constraints
 
@@ -46,7 +46,7 @@ Implement controlled-drug balance reports only after a **durable controlled mark
 | --- | --- | --- |
 | A1 | Controlled set is explicit in DB or shared allow-list. | contract |
 | A2 | Balance invariant holds in tests. | contract |
-| A3 | Demo controlled path open→receive→dispense→close. | R3 |
+| A3 | ≥1,000 controlled events; open→receive→dispense→close demonstrable. | R3 |
 
 ## Relevant Files
 

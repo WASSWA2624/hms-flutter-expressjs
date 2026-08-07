@@ -39,7 +39,7 @@ Charts: `mgmt_revenue`, `mgmt_stock_turnover`, `mgmt_sales_trend`, `mgmt_purchas
 
 1. Provider maps each `mgmt_*` to the same datasetKey/projection as its source report id where possible (shared helper table id→source).
 2. Totals for a period must equal source report summaries (tolerance 0.01 for money).
-3. Implement after (or with) underlying category seeds 01–16.
+3. Implement after (or with) underlying category seeds 01–16—those packs must already meet ≥1,000-row floors so management rollups are dense (`index.md` rule 9).
 4. Reuse shared kit only—no new executive route.
 5. Tests: matrix all `mgmt_*` leave unavailable; parity assertions vs source summaries; Analytics unchanged.
 
@@ -53,7 +53,7 @@ Charts: `mgmt_revenue`, `mgmt_stock_turnover`, `mgmt_sales_trend`, `mgmt_purchas
 | --- | --- | --- |
 | A1 | Every mgmt id composes a named source contract. | contract |
 | A2 | Money parity within 0.01 vs source dialog/dataset. | R2 |
-| A3 | Demo trends + tops + risk lists non-empty. | R3 |
+| A3 | Underlying ≥1,000-row seeds make trends, tops, and risk lists dense. | R3 |
 
 ## Relevant Files
 

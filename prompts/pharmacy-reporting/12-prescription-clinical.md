@@ -33,7 +33,7 @@ Map clinical reports to `pharmacy_order_item` prescription fields and linked enc
 
 1. Prefer order_item fields for dosage/frequency/duration; do not parse free text into fake structured fields.
 2. Alert reports: empty ready when no alerts—not fabricated.
-3. Seed clinical orders with dosage/frequency/duration; antibiotic drugs from ANTI_INFECTIVE catalog; optional allergy alert fixture.
+3. Seed volume: ≥1,000 `pharmacy_order`/`pharmacy_order_item` with dosage/frequency/duration populated; antibiotic drugs from ANTI_INFECTIVE catalog well represented; optional ≥1,000 allergy/alert rows if those reports are mapped (`index.md` rule 9).
 4. Reuse pharmacy/clinical reads; follow pharmacy-flow handoffs.
 5. Tests: duration_days formatting; antibiotic filter includes Amoxicillin seed; controlled allow-list stable.
 
@@ -47,7 +47,7 @@ Map clinical reports to `pharmacy_order_item` prescription fields and linked enc
 | --- | --- | --- |
 | A1 | Dosage/frequency/duration match order_item columns. | contract |
 | A2 | Alert/controlled reports never invent rows. | R2 |
-| A3 | Demo clinical orders show non-empty medicine/dosage reports. | R3 |
+| A3 | ≥1,000 clinical order items; medicine/dosage reports dense. | R3 |
 
 ## Relevant Files
 

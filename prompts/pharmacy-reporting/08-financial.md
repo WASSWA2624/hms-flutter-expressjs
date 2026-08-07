@@ -37,7 +37,7 @@ Wire `financial` reports to `billing_collections_open_balances` and pharmacy con
 
 1. Never mix billing `profit_proxy` and retail margin without labeling.
 2. Pharmacy scope payments/invoices with `billing_entity=PHARMACY` when claiming pharmacy financials.
-3. Wire datasetKeys; seed today-range activity for charts.
+3. Wire datasetKeys; seed volume ≥1,000 pharmacy-scoped `payment`, ≥1,000 `invoice`, and ≥1,000 `refund`/`billing_adjustment` as mapped—enough on “today” and trailing periods for dense charts (`index.md` rule 9).
 4. Reuse billing + consumption builders.
 5. Tests: COGS = Σ buy×qty for fixture logs; revenue subtitle matches ledger; tax gap handled.
 
@@ -51,7 +51,7 @@ Wire `financial` reports to `billing_collections_open_balances` and pharmacy con
 | --- | --- | --- |
 | A1 | Each metric’s ledger/formula documented in UI subtitle + code. | contract |
 | A2 | Currency columns format via effective default/UGX. | R2 |
-| A3 | Demo revenue/COGS/gross_profit/cash_flow non-empty. | R3 |
+| A3 | ≥1,000 payments/invoices (and refunds when mapped); revenue/COGS/gross_profit/cash_flow dense. | R3 |
 
 ## Relevant Files
 

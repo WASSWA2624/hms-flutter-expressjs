@@ -54,7 +54,7 @@ Currency: `effectiveDefaultCurrencyProvider`; seeded drugs/invoices use **UGX**.
 1. Implement every row in the Data contract: extend runners/projections or record an explicit schema+migration plan for gaps (`sales_by_cashier`, `tax_vat`) before claiming ready.
 2. Keep consumption/throughput formulas byte-compatible with existing analytics builders; add parameters/group-bys rather than forked pricing.
 3. Wire `datasetKey`s; provider must not return unavailable when contract source has rows.
-4. Seed: ensure period presets see multi-day `dispense_log` DISPENSED, `buy_unit_price` set (catalog already), pharmacy-scoped payments with ≥3 methods, ≥1 refund, ≥1 negative adjustment; extend volume seed if missing.
+4. Seed volume: ≥1,000 `dispense_log` (DISPENSED) and ≥1,000 pharmacy-scoped `payment` rows (default `SEED_RECORD_COUNT`); also ≥1,000 `pharmacy_order` where throughput needs it; ≥1,000 `refund`/`billing_adjustment` when those reports are mapped. Diversify days, methods (≥3), cashiers/patients, and amounts across the volume. Keep curated `buy_unit_price` coverage. Assert floors in verify/seed tests (`index.md` rule 9).
 5. Reuse shared dialog/table/chart/export; gate `reports:read` ∩ pharmacy.
 6. Tests: dialog summary `amount` equals dataset summary for same from/to; margin null when buy missing; payment-method totals equal sum of filtered payments; unauthorized export absent.
 
@@ -69,7 +69,7 @@ Currency: `effectiveDefaultCurrencyProvider`; seeded drugs/invoices use **UGX**.
 | --- | --- | --- |
 | A1 | Mapped reports use contract sources/formulas; gaps are migrated or stay unavailable with note. | R1–R2 |
 | A2 | Units: `amount`/`profit` currency; `quantity_dispensed` units; `orders_created` count. | contract |
-| A3 | Seeded demo: non-empty total_sales, sales_by_period, payment_method, refunds for default range. | R4 |
+| A3 | ≥1,000 dispense_log + pharmacy payments; dense total_sales, sales_by_period, payment_method, refunds for default range. | R4 |
 | A4 | Provider tests lock formula parity with `buildPharmacyDrugConsumptionAnalytics`. | R6 |
 
 ## Relevant Files

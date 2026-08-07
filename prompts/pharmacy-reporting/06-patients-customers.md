@@ -30,7 +30,7 @@ Map customer reports to `patient` + pharmacy orders/dispenses + billing balances
 
 1. Implement formulas above; document window for retention (e.g. previous period of equal length) in subtitle.
 2. Money from consumption/invoice currencies (UGX seed); counts as count units.
-3. Seed ≥3 patients with multi-visit pharmacy purchases; ≥1 open pharmacy invoice for credit demo.
+3. Seed volume: ≥1,000 distinct patients with pharmacy activity is ideal; at minimum ≥1,000 `pharmacy_order` tied to a large patient pool with multi-visit returning buyers, plus ≥1,000 invoices/payments including open pharmacy invoices for credit (`index.md` rule 9).
 4. Reuse billing open-balance concepts from `billing_collections_open_balances` where possible.
 5. Tests: new vs returning partition is disjoint; frequent medicines sort stable; unauthorized PHI absent.
 
@@ -44,7 +44,7 @@ Map customer reports to `patient` + pharmacy orders/dispenses + billing balances
 | --- | --- | --- |
 | A1 | Customer metrics match distinct-patient and billing open-balance definitions. | contract |
 | A2 | Credit/outstanding currency; retention percent; medicine qty units. | R2 |
-| A3 | Demo non-empty new/returning and frequent medicines. | R3 |
+| A3 | ≥1,000 pharmacy orders/invoices in mix; non-empty new/returning and frequent medicines. | R3 |
 
 ## Relevant Files
 

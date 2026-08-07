@@ -28,7 +28,7 @@ Treat **branch = `facility`**. Demo has one facility—reports must stay accurat
 ## Requirements
 
 1. Implement grouping by `facility.name`/`id`; never invent branch codes.
-2. Optional seed enhancement: second facility with divergent stock/sales for demos—deterministic keys.
+2. Optional multi-facility seed: ≥2 facilities each with volume stock+dispenses. Fact tables still meet ≥1,000 tenant-wide rows (`index.md` rule 9); facility masters remain few.
 3. Transfer report only when transfer movement records both ends.
 4. Reuse inventory/consumption datasets with facility scope parameter already used by runners.
 5. Tests: one-facility ready; two-facility comparison sums to tenant total.
@@ -43,7 +43,7 @@ Treat **branch = `facility`**. Demo has one facility—reports must stay accurat
 | --- | --- | --- |
 | A1 | Branch metrics = facility metrics. | contract |
 | A2 | Single-facility demo shows ready rows; optional 2nd facility documented. | R2 |
-| A3 | Shortage classifiers match inventory dataset. | R3 |
+| A3 | Shortage classifiers match inventory; applicable fact tables ≥1,000 rows tenant-wide. | R3 |
 
 ## Relevant Files
 

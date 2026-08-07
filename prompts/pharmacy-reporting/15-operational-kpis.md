@@ -38,7 +38,7 @@ Map each KPI button to a single authoritative metric from consumption, throughpu
 
 1. Fix top-10 vs top-20 mismatch for `top_selling_medicines`.
 2. Add value columns for expiry KPIs at buy cost.
-3. Seed dispenses/`paid_at` on current day for today KPIs after `db:seed:demo`.
+3. Seed volume under default `SEED_RECORD_COUNT`: ≥1,000 dispenses/`paid_at` including **today**, plus stock/invoice volume so every KPI dialog is dense after `db:seed:demo` (`index.md` rule 9).
 4. Reuse existing filters/builders.
 5. Tests: today range; top 10 length; near_expiry_value = sum qty×buy fixture.
 
@@ -52,7 +52,7 @@ Map each KPI button to a single authoritative metric from consumption, throughpu
 | --- | --- | --- |
 | A1 | Each KPI matches contract metric and period. | contract |
 | A2 | Today KPIs use today range; values at buy cost where stated. | R2 |
-| A3 | Demo today sales/profit and risk KPIs non-empty after seed. | R3 |
+| A3 | ≥1,000 fact rows feeding KPIs; today sales/profit and risk KPIs dense after seed. | R3 |
 
 ## Relevant Files
 

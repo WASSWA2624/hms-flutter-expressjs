@@ -26,7 +26,7 @@ Implement Reporting §14 analytics from supplier/PO/receipt/inbound/price facts�
 
 1. Reuse purchasing dataset runners with analytics projections; do not fork conflicting spend formulas.
 2. N-day threshold constant shared by reliability/late reports.
-3. Seed multi-supplier spend variance + at least one late receipt.
+3. Seed volume: multi-supplier spend across ≥1,000 POs/inbounds; ≥1,000 price-history or audit price points when trends are mapped; include late receipts inside the volume (`index.md` rule 9). Supplier masters may stay small.
 4. Keep Analytics chips untouched.
 5. Tests: spend matches purchasing purchase_value total; reliability_rate in 0–100%.
 
@@ -40,7 +40,7 @@ Implement Reporting §14 analytics from supplier/PO/receipt/inbound/price facts�
 | --- | --- | --- |
 | A1 | KPI definitions match contract; proxies labeled. | contract |
 | A2 | Currency/percent/days/qty units correct. | R2 |
-| A3 | Demo spend + late delivery visible; Analytics unchanged. | R3 |
+| A3 | ≥1,000 PO/inbound facts; spend + late delivery visible; Analytics unchanged. | R3 |
 
 ## Relevant Files
 
