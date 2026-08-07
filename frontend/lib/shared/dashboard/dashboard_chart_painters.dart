@@ -80,7 +80,9 @@ class DashboardTrendChartPainter extends CustomPainter {
         style == DashboardTrendChartStyle.bar;
     final bool drawLine =
         style == DashboardTrendChartStyle.combined ||
-        style == DashboardTrendChartStyle.line;
+        style == DashboardTrendChartStyle.line ||
+        style == DashboardTrendChartStyle.area;
+    final bool drawArea = style == DashboardTrendChartStyle.area;
 
     for (int i = 0; i <= 3; i += 1) {
       final double y = chartTop + chartHeight * (i / 3);
@@ -116,11 +118,13 @@ class DashboardTrendChartPainter extends CustomPainter {
         } else {
           path.lineTo(centerX, lineY);
         }
-        canvas.drawCircle(
-          Offset(centerX, lineY),
-          4,
-          Paint()..color = pointColor,
-        );
+        if (!drawArea) {
+          canvas.drawCircle(
+            Offset(centerX, lineY),
+            4,
+            Paint()..color = pointColor,
+          );
+        }
       }
 
       if (showValues) {
@@ -176,6 +180,23 @@ class DashboardTrendChartPainter extends CustomPainter {
           ),
         );
       }
+    }
+
+    if (drawArea && points.isNotEmpty) {
+      final Path fillPath = Path()..addPath(path, Offset.zero);
+      final double lastX =
+          slotWidth * (points.length - 1) + (slotWidth / 2);
+      final double firstX = slotWidth / 2;
+      final double baseline = chartTop + chartHeight;
+      fillPath.lineTo(lastX, baseline);
+      fillPath.lineTo(firstX, baseline);
+      fillPath.close();
+      canvas.drawPath(
+        fillPath,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = lineColor.withValues(alpha: 0.22),
+      );
     }
 
     if (drawLine) {

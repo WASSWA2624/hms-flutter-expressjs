@@ -115,6 +115,8 @@ enum DashboardTrendChartStyle {
   combined,
   bar,
   line,
+  /// Filled area under a line series.
+  area,
   pie,
 }
 

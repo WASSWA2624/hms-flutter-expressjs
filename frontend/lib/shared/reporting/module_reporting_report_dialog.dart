@@ -5,13 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/dashboard/dashboard.dart';
 import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_data.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_models.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_table.dart';
+import 'package:hosspi_hms/shared/reporting/module_reporting_visualization_panel.dart';
 
 ({DateTime from, DateTime to}) moduleReportingRangeForPreset(
   ModuleReportingPeriodPreset preset, {
@@ -297,21 +297,11 @@ class _ModuleReportingReportDialogState
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-            if (isChart) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              _ModuleReportingChartPreview(
-                labels: _labels,
-                snapshot: _snapshot,
-                reportLabel: widget.report.label,
-              ),
-            ],
             SizedBox(height: theme.spacing.sm),
-            ModuleReportingSnapshotTable(
+            ModuleReportingVisualizationPanel(
               snapshot: _snapshot,
+              report: widget.report,
               labels: _labels,
-              canExport: true,
-              storageKeyPrefix: widget.report.id,
-              exportFileNameStem: widget.report.id,
             ),
           ],
         );
@@ -766,162 +756,6 @@ Future<ModuleReportingExportFormat?> _openExportOptionsDialog({
       contentKind: contentKind,
     ),
   );
-}
-
-class _ModuleReportingChartPreview extends StatelessWidget {
-  const _ModuleReportingChartPreview({
-    required this.labels,
-    required this.snapshot,
-    required this.reportLabel,
-  });
-
-  final ModuleReportingLabels labels;
-  final ModuleReportingReportSnapshot snapshot;
-  final String reportLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final List<DashboardTrendPointData> points =
-        _moduleReportingTrendPoints(snapshot);
-    if (points.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final List<DashboardDistributionSegmentData> segments =
-        _moduleReportingDistributionSegments(snapshot);
-    final num total = segments.fold<num>(
-      0,
-      (num sum, DashboardDistributionSegmentData segment) =>
-          sum + segment.value,
-    );
-
-    return DashboardChartsRow(
-      data: DashboardChartsData(
-        trend: DashboardTrendChartData(
-          title: reportLabel,
-          points: points,
-          emptyMessage: labels.emptyBody,
-          chartStyle: DashboardTrendChartStyle.line,
-        ),
-        distribution: DashboardDistributionChartData(
-          title: labels.previewTitle,
-          total: total,
-          segments: segments,
-          emptyMessage: labels.emptyBody,
-          totalLabel: labels.exportValueColumn,
-        ),
-      ),
-      twoColumns: MediaQuery.sizeOf(context).width >= 720,
-    );
-  }
-}
-
-List<DashboardTrendPointData> _moduleReportingTrendPoints(
-  ModuleReportingReportSnapshot snapshot,
-) {
-  final List<Map<String, Object?>> sourceRows;
-  final Object? daily = snapshot.breakdown?['daily_totals'];
-  if (daily is List && daily.isNotEmpty) {
-    sourceRows = <Map<String, Object?>>[
-      for (final Object? entry in daily)
-        if (entry is Map)
-          <String, Object?>{
-            for (final MapEntry<dynamic, dynamic> item
-                in Map<dynamic, dynamic>.from(entry).entries)
-              item.key.toString(): item.value,
-          },
-    ];
-  } else {
-    sourceRows = snapshot.rows;
-  }
-
-  final List<DashboardTrendPointData> points = <DashboardTrendPointData>[];
-  for (final Map<String, Object?> row in sourceRows.take(40)) {
-    final String label =
-        '${row['date'] ?? row['period'] ?? row['drug'] ?? row['inventory_item'] ?? ''}';
-    final num value = _moduleReportingAsNum(
-      row['amount'] ??
-          row['quantity_dispensed'] ??
-          row['orders_created'] ??
-          row['dispensed'] ??
-          row['quantity'] ??
-          row['value'],
-    );
-    if (label.trim().isEmpty && value == 0) {
-      continue;
-    }
-    points.add(
-      DashboardTrendPointData(
-        value: value,
-        label: label.trim().isEmpty ? '—' : label,
-      ),
-    );
-  }
-  return points;
-}
-
-List<DashboardDistributionSegmentData> _moduleReportingDistributionSegments(
-  ModuleReportingReportSnapshot snapshot,
-) {
-  final Object? mix =
-      snapshot.breakdown?['source_mix'] ?? snapshot.summary?['source_mix'];
-  if (mix is List && mix.isNotEmpty) {
-    final List<DashboardDistributionSegmentData> fromMix =
-        <DashboardDistributionSegmentData>[];
-    for (final Object? entry in mix) {
-      if (entry is! Map) {
-        continue;
-      }
-      final Map<dynamic, dynamic> map = Map<dynamic, dynamic>.from(entry);
-      final String label =
-          '${map['order_source'] ?? map['channel'] ?? map['label'] ?? ''}';
-      final num value = _moduleReportingAsNum(
-        map['quantity_dispensed'] ?? map['amount'] ?? map['value'],
-      );
-      if (label.trim().isEmpty || value <= 0) {
-        continue;
-      }
-      fromMix.add(
-        DashboardDistributionSegmentData(label: label, value: value),
-      );
-      if (fromMix.length >= 8) {
-        break;
-      }
-    }
-    if (fromMix.isNotEmpty) {
-      return fromMix;
-    }
-  }
-
-  final List<DashboardDistributionSegmentData> fromRows =
-      <DashboardDistributionSegmentData>[];
-  for (final Map<String, Object?> row in snapshot.rows) {
-    final String label =
-        '${row['drug'] ?? row['inventory_item'] ?? row['date'] ?? ''}';
-    final num value = _moduleReportingAsNum(
-      row['amount'] ?? row['quantity_dispensed'] ?? row['quantity'],
-    );
-    if (label.trim().isEmpty || value <= 0) {
-      continue;
-    }
-    fromRows.add(
-      DashboardDistributionSegmentData(label: label, value: value),
-    );
-    if (fromRows.length >= 8) {
-      break;
-    }
-  }
-  return fromRows;
-}
-
-num _moduleReportingAsNum(Object? value) {
-  if (value is num) {
-    return value;
-  }
-  if (value is String) {
-    return num.tryParse(value) ?? 0;
-  }
-  return 0;
 }
 
 class _ModuleReportingPeriodToolbar extends StatelessWidget {
