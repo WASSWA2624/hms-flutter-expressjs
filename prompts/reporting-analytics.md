@@ -12,11 +12,12 @@ Give every **staff** demo account a Reports Overview with pharmacy’s flow—Re
 - **Non-pharmacy chrome (done):** `ReportsDomainReportingGroups` / `ReportsOwnedDomainReportingHost` mount Reporting + Analytics on Overview for finance, reception, clinical, lab, radiology, hr, biomedical, operations, emergency, communications, and admin. Catalogs live in `domain_reporting_catalogs.dart`; dialogs use `DomainReportingDataProvider` (pass-through dataset preview).
 - **Wired datasets today:** Existing `REPORT_DATASETS` only—e.g. billing collections/claims, registrations, appointment throughput, HR leave, biomed incidents, pharmacy snapshots (admin), stock risk (ops). Many subcategory buttons are honest **unavailable**.
 - **Program stubs (done):** `prompts/{billing,reception,clinical,lab,radiology,hr,biomedical,operations,emergency}-reporting/index.md`.
+- **Finance + reception category Data contracts (done):** `prompts/billing-reporting/01`–`03`, `prompts/reception-reporting/01`–`03` (wiring/seed still remaining).
 - **Tests:** `reports_owned_domain_packs_test.dart` covers pack matrix (pharmacist / doctor / billing / reception / patient / admin / ambulance).
 
 **Intended behavior (remaining)**
 
-- Deepen each domain catalog so job-critical reports are runnable with schema-accurate runners and dense demo seed—same bar as `prompts/pharmacy-reporting/` category files.
+- Implement finance then reception category prompts (runners, projections, seed floors, dialog tests); then deepen other domain packs the same way.
 - Keep chrome/ids stable; prefer extending `REPORT_DATASET_MAP` builders over parallel math. Never invent columns.
 - Multi-pack users keep the domain switcher; pharmacy and admin infra panels stay unchanged.
 
@@ -43,8 +44,8 @@ Give every **staff** demo account a Reports Overview with pharmacy’s flow—Re
 ## Requirements
 
 1. **Do not regress chrome:** Keep owned-pack selection, Overview mounting, pharmacy freeze, and domain switcher. Unauthorized packs/export remain absent.
-2. **Child domain prompts own depth:** For each pack folder under `prompts/*-reporting/`, add category files (pharmacy `01`–`17` pattern) with Data contracts, `datasetKey` wiring, seed floors, and tests—starting with finance and reception (highest demo traffic).
-3. **Wire or gap honestly:** Map report ids to existing runners when possible; otherwise migrate + join real tables or leave unavailable—never fabricate client values. Prefer extending `datasets.js` / constants registration.
+2. **Child domain prompts own depth:** For each pack folder under `prompts/*-reporting/`, add category files (pharmacy `01`–`17` pattern) with Data contracts, `datasetKey` wiring, seed floors, and tests. Finance + reception category prompts exist; other packs still need category files before deep completeness.
+3. **Wire or gap honestly:** Implement finance `01`–`03` then reception `01`–`03` next. Map report ids to existing runners when possible; otherwise migrate + join real tables or leave unavailable—never fabricate client values. Prefer extending `datasets.js` / constants registration.
 4. **Seed density:** When a report becomes runnable, applicable fact tables must meet ≥1,000 demo rows after `db:seed:demo` (pharmacy index rule 9 / `.cursor/access/demo-data.mdc`). No production seeding.
 5. **States & UX:** Loading, empty, error, success, validation on catalog/dialogs; soft-refresh after runs that change Overview signals. Theme tokens; light/dark; responsive.
 6. **Tests:** Keep pack matrix green; add ≥1 dialog/widget path per pack with a live dataset; unauthorized atoms absent; pharmacy regression.
