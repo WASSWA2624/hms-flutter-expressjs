@@ -250,11 +250,17 @@ void main() {
         containsAll(<String>[
           'clinical',
           'opd',
-          'emergency',
-          'lab',
-          'radiology',
           'ipd',
+          'icu',
+          'nursing',
+          'theater',
+          'patients',
+          'reports',
         ]),
+      );
+      expect(
+        profile.shortcutIds,
+        isNot(containsAll(<String>['emergency', 'lab', 'radiology', 'pharmacy', 'discharge'])),
       );
     });
 

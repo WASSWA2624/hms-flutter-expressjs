@@ -203,7 +203,7 @@ describe('per-card required_permissions (Dashboard.md)', () => {
       resultsPendingReview: 2,
       radiologyPending: 4,
       prescriptionsPending: 5,
-      emergencyCasesToday: 1,
+      criticalLabs: 1,
       shiftsToday: 2,
       followUpsDue: 0,
       completed: 1,
@@ -213,22 +213,22 @@ describe('per-card required_permissions (Dashboard.md)', () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: 'results_pending_review',
-          required_permissions: ['lab:read'],
+          required_permissions: ['clinical:read'],
           value: 2,
         }),
         expect.objectContaining({
           id: 'radiology_pending',
-          required_permissions: ['radiology:read'],
+          required_permissions: ['clinical:read'],
           value: 4,
         }),
         expect.objectContaining({
           id: 'prescriptions_pending',
-          required_permissions: ['pharmacy:read'],
+          required_permissions: ['clinical:read'],
           value: 5,
         }),
         expect.objectContaining({
-          id: 'emergency_cases_today',
-          required_permissions: ['emergency:read'],
+          id: 'critical_labs',
+          required_permissions: ['clinical:read'],
           value: 1,
         }),
         expect.objectContaining({
@@ -238,6 +238,7 @@ describe('per-card required_permissions (Dashboard.md)', () => {
         }),
       ])
     );
+    expect(cards.map((card) => card.id)).not.toContain('emergency_cases_today');
   });
 
   it('gates biomed work orders on biomed:write and ambulance fleet_out on operations:read', () => {

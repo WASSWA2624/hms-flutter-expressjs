@@ -352,11 +352,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
       ),
       HomeStatusCardTemplate(
-        id: 'emergency_cases_today',
-        label: 'Emergency calls',
-        requiredPermissions: <AppPermission>[AppPermissions.emergencyRead],
-      ),
-      HomeStatusCardTemplate(
         id: 'shifts_today',
         label: 'My schedule',
         requiredPermissions: <AppPermission>[AppPermissions.rosterRead],
@@ -409,9 +404,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
       'prescriptions_pending': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'assigned-to-me'},
-      ),
-      'emergency_cases_today': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'scope': 'active'},
       ),
       'shifts_today': HomeMetricRouteTarget(),
       'opd_notifications_attention': HomeMetricRouteTarget(

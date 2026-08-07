@@ -988,13 +988,12 @@ final class AppAccessPolicy {
         AppPermissions.reportsRead,
         AppPermissions.evidenceExport,
       ],
-      // Keep in sync with backend ROLE_PERMISSIONS[DOCTOR]. Lab / radiology /
-      // pharmacy / discharge planning are nested via Clinical, not shell nav.
+      // Keep in sync with backend ROLE_PERMISSIONS[DOCTOR]. Shell: Dashboard,
+      // Patients, OPD, IPD, ICU, Nursing, Clinical, Theater, Reports, Settings.
+      // Lab / radiology / pharmacy / discharge are nested via Clinical, not nav.
       AppRole.doctor => const <AppPermission>[
         AppPermissions.clinicalRead,
         AppPermissions.clinicalWrite,
-        AppPermissions.emergencyRead,
-        AppPermissions.emergencyWrite,
         AppPermissions.communicationsRead,
         AppPermissions.communicationsWrite,
         AppPermissions.profileRead,
@@ -1003,13 +1002,10 @@ final class AppAccessPolicy {
         AppPermissions.patientsRead,
         AppPermissions.opdRead,
         AppPermissions.ipdRead,
-        AppPermissions.roomsBedsRead,
         AppPermissions.icuRead,
         AppPermissions.nursingRead,
-        AppPermissions.physiotherapyRead,
         AppPermissions.theaterRead,
         AppPermissions.breakGlassRequest,
-        AppPermissions.lastOfficeRead,
         AppPermissions.reportsRead,
       ],
       AppRole.nurse => const <AppPermission>[

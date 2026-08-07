@@ -209,19 +209,6 @@ void main() {
         homeMetricNavigation(
           profile: profile,
           card: const HomeStatusCard(
-            id: 'emergency_cases_today',
-            label: 'Emergency calls',
-            value: 1,
-            requiredPermissions: <AppPermission>[AppPermissions.emergencyRead],
-          ),
-          policy: policy,
-        )?.route,
-        AppRoutes.emergency,
-      );
-      expect(
-        homeMetricNavigation(
-          profile: profile,
-          card: const HomeStatusCard(
             id: 'shifts_today',
             label: 'My schedule',
             value: 1,

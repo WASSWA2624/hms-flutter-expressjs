@@ -260,7 +260,7 @@ const DEMO_TENANTS = Object.freeze([
       { key: 'accountant', role: 'ACCOUNTANT', email: 'accountant@hosspi.com', first_name: 'Alex', last_name: 'Demo', title: 'Accountant' },
       { key: 'support_staff', role: 'SUPPORT_STAFF', email: 'support@hosspi.com', first_name: 'Sam', last_name: 'Demo', title: 'Support Staff' },
       { key: 'visitor_guest', role: 'VISITOR_GUEST', email: 'visitor@hosspi.com', first_name: 'Vic', last_name: 'Demo', title: 'Visitor Guest' },
-      { key: 'doctor', role: 'DOCTOR', email: 'doctor@hosspi.com', first_name: 'Jordan', last_name: 'Demo', title: 'Consultant Physician', extra_roles: ['THEATRE_MANAGER'] },
+      { key: 'doctor', role: 'DOCTOR', email: 'doctor@hosspi.com', first_name: 'Jordan', last_name: 'Demo', title: 'Consultant Physician' },
       { key: 'nurse', role: 'NURSE', email: 'nurse@hosspi.com', first_name: 'Casey', last_name: 'Demo', title: 'Registered Nurse', extra_roles: ['WARD_MANAGER', 'ICU_MANAGER'] },
       { key: 'lab', role: 'LAB_TECH', email: 'lab@hosspi.com', first_name: 'Riley', last_name: 'Demo', title: 'Laboratory Technologist' },
       { key: 'radiology', role: 'RADIOLOGY_TECH', email: 'radiology@hosspi.com', first_name: 'Emery', last_name: 'Demo', title: 'Radiology Technologist' },

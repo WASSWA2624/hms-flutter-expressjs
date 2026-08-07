@@ -16,7 +16,7 @@ Seed on install; see `permissions.mdc` for semantics.
 - `tenant_admin`: tenant manage; all entitled modules; entitled-scope reporting.
 - `facility_admin`: facility manage; facility modules; facility reporting.
 - `integration_admin`: `integrations` and `reports_audit` manage; those modules' reporting.
-- `doctor`: clinical care (OPD/IPD/ICU/theater/emergency as assigned); diagnostics; billing view; clinical reporting.
+- `doctor`: Dashboard, Patient Registry, OPD, IPD, ICU, Nursing, Clinical, Theater, Reports, Settings. No top-level Lab / Radiology / Pharmacy / Discharge — order and review those from Clinical (and related care modules).
 - `nurse`: nursing, triage, ward care (IPD/ICU as assigned); diagnostics assist; registry; nursing reporting.
 - `receptionist`: `patient_registry`, queues/OPD desk; billing view; reception reporting.
 - `accountant`: `billing`, `claims`; finance reporting.

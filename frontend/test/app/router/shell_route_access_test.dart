@@ -77,8 +77,9 @@ void main() {
       expect(canAccess(AppRoutes.radiology, policy), isFalse);
       expect(canAccess(AppRoutes.pharmacy, policy), isFalse);
       expect(canAccess(AppRoutes.discharge, policy), isFalse);
-      // Nursing/physiotherapy share clinical/patient permission codes.
-      expect(canAccess(AppRoutes.physiotherapy, policy), isTrue);
+      expect(canAccess(AppRoutes.emergency, policy), isFalse);
+      expect(canAccess(AppRoutes.physiotherapy, policy), isFalse);
+      expect(canAccess(AppRoutes.roomsBeds, policy), isFalse);
       expect(canAccess(AppRoutes.billing, policy), isFalse);
       expect(canAccess(AppRoutes.hr, policy), isFalse);
     });
@@ -311,8 +312,6 @@ void main() {
             permissions: <AppPermission>[
               AppPermissions.clinicalRead,
               AppPermissions.clinicalWrite,
-              AppPermissions.emergencyRead,
-              AppPermissions.emergencyWrite,
               AppPermissions.communicationsRead,
               AppPermissions.communicationsWrite,
               AppPermissions.profileRead,
@@ -321,13 +320,10 @@ void main() {
               AppPermissions.patientsRead,
               AppPermissions.opdRead,
               AppPermissions.ipdRead,
-              AppPermissions.roomsBedsRead,
               AppPermissions.icuRead,
               AppPermissions.nursingRead,
-              AppPermissions.physiotherapyRead,
               AppPermissions.theaterRead,
               AppPermissions.breakGlassRequest,
-              AppPermissions.lastOfficeRead,
               AppPermissions.reportsRead,
             ],
             isAuthorizationHydrated: true,
@@ -351,6 +347,7 @@ void main() {
           AppRoutes.theater,
           AppRoutes.discharge,
           AppRoutes.emergency,
+          AppRoutes.roomsBeds,
           AppRoutes.billing,
           AppRoutes.hr,
         ]) {
