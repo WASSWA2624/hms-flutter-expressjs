@@ -23236,6 +23236,138 @@ abstract class AppLocalizations {
   /// **'Enter a valid email address.'**
   String get pharmacySupplierInvalidEmail;
 
+  /// Title when supplier name/email/phone already exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate supplier'**
+  String get pharmacySupplierDuplicateDialogTitle;
+
+  /// Body when supplier is an exact duplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'An exact match already exists. Change the name, email, or phone before saving.'**
+  String get pharmacySupplierDuplicateDialogBody;
+
+  /// Title when similar suppliers are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar suppliers found'**
+  String get pharmacySupplierSimilarDialogTitle;
+
+  /// Body when similar suppliers are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest match similarity: {score}%. Review matches before continuing.'**
+  String pharmacySupplierSimilarDialogBody(int score);
+
+  /// Title when supplier similarity finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar suppliers'**
+  String get pharmacySupplierNoSimilarDialogTitle;
+
+  /// Body when supplier similarity finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No close matches found. Continue to save this supplier.'**
+  String get pharmacySupplierNoSimilarDialogBody;
+
+  /// Banner title for exact supplier conflicts.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact supplier match'**
+  String get pharmacySupplierExactBannerTitle;
+
+  /// Banner title for near supplier matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Review similar suppliers'**
+  String get pharmacySupplierSimilarBannerTitle;
+
+  /// Banner title when no supplier matches are found.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar supplier found'**
+  String get pharmacySupplierNoSimilarBannerTitle;
+
+  /// Continue creating a supplier after similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get pharmacySupplierCreateAnywayAction;
+
+  /// Continue updating a supplier after similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get pharmacySupplierSaveAnywayAction;
+
+  /// Use an existing supplier from similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this supplier'**
+  String get pharmacySupplierUseExistingAction;
+
+  /// Heading for proposed supplier values in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed supplier'**
+  String get pharmacySupplierProposedHeading;
+
+  /// Heading above supplier similarity matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar suppliers'**
+  String get pharmacySupplierMatchesHeading;
+
+  /// Badge for exact supplier matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact'**
+  String get pharmacySupplierExactMatchLabel;
+
+  /// Badge for near supplier matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Near'**
+  String get pharmacySupplierNearMatchLabel;
+
+  /// Heading for an existing supplier match card.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing supplier'**
+  String get pharmacySupplierExistingHeading;
+
+  /// Column header for field name in supplier similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Field'**
+  String get pharmacySupplierFieldColumnLabel;
+
+  /// Column header for proposed values in supplier similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed'**
+  String get pharmacySupplierFieldProposedLabel;
+
+  /// Column header for existing values in supplier similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing'**
+  String get pharmacySupplierFieldExistingLabel;
+
+  /// Label for closest supplier similarity score.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest match'**
+  String get pharmacySupplierOverallSimilarityLabel;
+
+  /// Shown when supplier similarity review finds no near matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No close match ({score}%)'**
+  String pharmacySupplierNoMatchScoreLabel(int score);
+
   /// Pharmacy drug form label for preferred supplier.
   ///
   /// In en, this message translates to:

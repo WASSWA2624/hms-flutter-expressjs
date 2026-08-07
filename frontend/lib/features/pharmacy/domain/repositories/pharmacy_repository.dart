@@ -158,6 +158,15 @@ abstract interface class PharmacyRepository {
     PharmacySupplierQuery query,
   );
 
+  Future<Result<PharmacySupplierSimilarityResult>> checkSupplierSimilarity({
+    required String name,
+    String? contactEmail,
+    String? phone,
+    String? location,
+    String? tenantId,
+    String? excludeSupplierId,
+  });
+
   Future<Result<PharmacySupplier>> createSupplier(PharmacySupplierInput input);
 
   Future<Result<PharmacySupplier>> updateSupplier(

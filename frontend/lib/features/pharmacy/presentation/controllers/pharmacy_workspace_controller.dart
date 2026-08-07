@@ -818,6 +818,23 @@ final class PharmacyWorkspaceController
     return result;
   }
 
+  Future<Result<PharmacySupplierSimilarityResult>> checkSupplierSimilarity({
+    required String name,
+    String? contactEmail,
+    String? phone,
+    String? location,
+    String? excludeSupplierId,
+  }) {
+    return _repository.checkSupplierSimilarity(
+      name: name,
+      contactEmail: contactEmail,
+      phone: phone,
+      location: location,
+      tenantId: resolveTenantId(),
+      excludeSupplierId: excludeSupplierId,
+    );
+  }
+
   Future<Result<PharmacySupplier>> updateSupplier(
     String supplierId,
     PharmacySupplierUpdateInput input,

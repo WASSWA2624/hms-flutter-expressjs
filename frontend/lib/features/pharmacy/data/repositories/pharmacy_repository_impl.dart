@@ -817,6 +817,71 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
   }
 
   @override
+  Future<Result<PharmacySupplierSimilarityResult>> checkSupplierSimilarity({
+    required String name,
+    String? contactEmail,
+    String? phone,
+    String? location,
+    String? tenantId,
+    String? excludeSupplierId,
+  }) {
+    return _apiClient.post<PharmacySupplierSimilarityResult>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.suppliers.path,
+        'similarity-check',
+      ]),
+      data: _withoutEmpty(<String, Object?>{
+        'name': name,
+        'contact_email': contactEmail,
+        'phone': phone,
+        'location': location,
+        'tenant_id': tenantId,
+        'exclude_supplier_id': excludeSupplierId,
+      }),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        final PharmacyJsonMap payload = _map(response['data']);
+        final List<PharmacySupplierSimilarityMatch> matches =
+            _list(payload['matches']).map((Object? raw) {
+              final PharmacyJsonMap match = _map(raw);
+              final PharmacyJsonMap supplierJson = _map(match['supplier']);
+              final List<PharmacySupplierFieldComparison> comparisons =
+                  _list(match['field_comparisons']).map((Object? entry) {
+                    final PharmacyJsonMap comparison = _map(entry);
+                    return PharmacySupplierFieldComparison(
+                      field: _string(comparison['field']) ?? '',
+                      inputValue: _string(comparison['input_value']),
+                      candidateValue: _string(comparison['candidate_value']),
+                      score: _int(comparison['score']),
+                      status: _string(comparison['status']),
+                    );
+                  }).toList(growable: false);
+              return PharmacySupplierSimilarityMatch(
+                supplier: PharmacySupplierDto(supplierJson).toEntity(),
+                score: _int(match['score']) ?? 0,
+                isExact: _bool(match['is_exact']),
+                exactNameConflict: _bool(match['exact_name_conflict']),
+                exactEmailConflict: _bool(match['exact_email_conflict']),
+                exactPhoneConflict: _bool(match['exact_phone_conflict']),
+                nameScore: _int(match['name_score']),
+                emailScore: _int(match['email_score']),
+                phoneScore: _int(match['phone_score']),
+                locationScore: _int(match['location_score']),
+                fieldComparisons: comparisons,
+              );
+            }).toList(growable: false);
+        return PharmacySupplierSimilarityResult(
+          exactNameConflict: _bool(payload['exact_name_conflict']),
+          exactEmailConflict: _bool(payload['exact_email_conflict']),
+          exactPhoneConflict: _bool(payload['exact_phone_conflict']),
+          closestScore: _int(payload['closest_score']) ?? 0,
+          matches: matches,
+        );
+      },
+    );
+  }
+
+  @override
   Future<Result<PharmacySupplier>> createSupplier(PharmacySupplierInput input) {
     return _apiClient
         .post<PharmacySupplier>(

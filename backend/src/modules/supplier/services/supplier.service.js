@@ -13,6 +13,9 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveScopedUserContext,
   buildTenantScopeWhere} = require('@services/pharmacy-workspace/pharmacy.shared');
+const { checkSupplierDuplicates } = require('@lib/supplier/supplier-similarity');
+
+const SUPPLIER_SIMILARITY_LOOKUP_LIMIT = 200;
 
 const supplierAddressInclude = Object.freeze({
   addresses: {
@@ -20,6 +23,21 @@ const supplierAddressInclude = Object.freeze({
     orderBy: { created_at: 'asc' },
   },
 });
+
+const toText = (value) => {
+  const trimmed = String(value ?? '').trim();
+  return trimmed || null;
+};
+
+const stripSimilarityPayloadFields = (data = {}) => {
+  const {
+    confirm_similar: _confirmSimilar,
+    location: _location,
+    exclude_supplier_id: _excludeSupplierId,
+    ...payload
+  } = data;
+  return payload;
+};
 
 const findScopedSupplierOrThrow = async (id, user = {}) => {
   const scope = resolveScopedUserContext(user);
@@ -34,6 +52,86 @@ const findScopedSupplierOrThrow = async (id, user = {}) => {
   }
 
   return { scope, supplier };
+};
+
+const assertSupplierUniqueness = async ({
+  tenantId,
+  name,
+  contactEmail,
+  phone,
+  location,
+  confirmSimilar = false,
+  excludeSupplierId = null,
+}) => {
+  if (!tenantId) {
+    return null;
+  }
+
+  const existing = await supplierRepository.findMany(
+    { tenant_id: tenantId },
+    0,
+    SUPPLIER_SIMILARITY_LOOKUP_LIMIT,
+    { name: 'asc' },
+    supplierAddressInclude
+  );
+
+  const duplicateCheck = checkSupplierDuplicates({
+    name,
+    contactEmail,
+    phone,
+    location,
+    existing,
+    excludeSupplierId,
+  });
+
+  if (!confirmSimilar && duplicateCheck.exactNameConflict) {
+    throw new HttpError('errors.supplier.duplicate_name', 409, [
+      {
+        field: 'name',
+        matches: duplicateCheck.similarMatches
+          .filter((match) => match.exact_name_conflict)
+          .slice(0, 5),
+      },
+    ]);
+  }
+
+  if (!confirmSimilar && duplicateCheck.exactEmailConflict) {
+    throw new HttpError('errors.supplier.duplicate_email', 409, [
+      {
+        field: 'contact_email',
+        matches: duplicateCheck.similarMatches
+          .filter((match) => match.exact_email_conflict)
+          .slice(0, 5),
+      },
+    ]);
+  }
+
+  if (!confirmSimilar && duplicateCheck.exactPhoneConflict) {
+    throw new HttpError('errors.supplier.duplicate_phone', 409, [
+      {
+        field: 'phone',
+        matches: duplicateCheck.similarMatches
+          .filter((match) => match.exact_phone_conflict)
+          .slice(0, 5),
+      },
+    ]);
+  }
+
+  const reviewMatches = duplicateCheck.similarMatches
+    .filter((match) => !match.is_exact)
+    .slice(0, 8);
+
+  if (!confirmSimilar && reviewMatches.length > 0) {
+    throw new HttpError('errors.supplier.similar_exists', 409, [
+      {
+        field: 'name',
+        matches: reviewMatches,
+        closest_score: duplicateCheck.closestScore,
+      },
+    ]);
+  }
+
+  return duplicateCheck;
 };
 
 /**
@@ -105,6 +203,67 @@ const listSuppliers = async (filters, pagination, sort, user = {}) => {
 };
 
 /**
+ * Preview supplier similarity for create/edit review dialogs.
+ */
+const checkSupplierSimilarity = async (payload = {}, user = {}) => {
+  const scope = resolveScopedUserContext(user);
+  let tenantId = scope.tenant_id;
+  if (scope.can_manage_all_tenants && payload.tenant_id) {
+    tenantId = String(payload.tenant_id).trim();
+  }
+  if (!tenantId) {
+    throw new HttpError('errors.validation.required', 400, [{ field: 'tenant_id' }]);
+  }
+
+  const name = String(payload.name || '').trim();
+  if (!name) {
+    throw new HttpError('errors.validation.required', 400, [{ field: 'name' }]);
+  }
+
+  const contactEmail = toText(payload.contact_email);
+  const phone = toText(payload.phone);
+  const location = toText(payload.location);
+  const excludeSupplierId = toText(payload.exclude_supplier_id);
+
+  const existing = await supplierRepository.findMany(
+    {
+      ...buildTenantScopeWhere(scope),
+      ...(scope.can_manage_all_tenants ? { tenant_id: tenantId } : {}),
+    },
+    0,
+    SUPPLIER_SIMILARITY_LOOKUP_LIMIT,
+    { name: 'asc' },
+    supplierAddressInclude
+  );
+
+  let excludeInternalId = null;
+  if (excludeSupplierId) {
+    const existingSupplier = await supplierRepository.findById(
+      excludeSupplierId,
+      supplierAddressInclude
+    );
+    excludeInternalId = existingSupplier?.id || excludeSupplierId;
+  }
+
+  const duplicateCheck = checkSupplierDuplicates({
+    name,
+    contactEmail,
+    phone,
+    location,
+    existing,
+    excludeSupplierId: excludeInternalId,
+  });
+
+  return {
+    exact_name_conflict: duplicateCheck.exactNameConflict,
+    exact_email_conflict: duplicateCheck.exactEmailConflict,
+    exact_phone_conflict: duplicateCheck.exactPhoneConflict,
+    closest_score: duplicateCheck.closestScore,
+    matches: duplicateCheck.similarMatches.slice(0, 8),
+  };
+};
+
+/**
  * Create new supplier
  *
  * @param {Object} supplierData - Supplier data
@@ -113,10 +272,31 @@ const listSuppliers = async (filters, pagination, sort, user = {}) => {
  */
 const createSupplier = async (supplierData, auditContext) => {
   const scope = resolveScopedUserContext(auditContext?.user || {});
+  const confirmSimilar = supplierData?.confirm_similar === true;
+  const location = toText(supplierData?.location);
+  const data = stripSimilarityPayloadFields(supplierData);
   const payload = {
-    ...supplierData,
+    ...data,
     ...(!scope.can_manage_all_tenants ? { tenant_id: scope.tenant_id } : {})};
-  const supplier = await supplierRepository.create(payload);
+
+  if (!payload.tenant_id) {
+    throw new HttpError('errors.validation.required', 400, [{ field: 'tenant_id' }]);
+  }
+
+  const name = String(payload.name || '').trim();
+  await assertSupplierUniqueness({
+    tenantId: payload.tenant_id,
+    name,
+    contactEmail: toText(payload.contact_email),
+    phone: toText(payload.phone),
+    location,
+    confirmSimilar,
+  });
+
+  const supplier = await supplierRepository.create({
+    ...payload,
+    name,
+  });
   const created = await supplierRepository.findById(
     supplier.id,
     supplierAddressInclude
@@ -150,10 +330,43 @@ const updateSupplier = async (id, updateData, auditContext) => {
     id,
     auditContext?.user || {}
   );
+  const confirmSimilar = updateData?.confirm_similar === true;
+  const location =
+    updateData?.location !== undefined
+      ? toText(updateData.location)
+      : pickExistingLocation(existingSupplier);
+  const data = stripSimilarityPayloadFields(updateData);
   const payload = {
-    ...updateData,
+    ...data,
     ...(!scope.can_manage_all_tenants ? { tenant_id: scope.tenant_id } : {})};
-  const updatedSupplier = await supplierRepository.update(id, payload);
+
+  const nextName =
+    payload.name !== undefined
+      ? String(payload.name || '').trim()
+      : String(existingSupplier.name || '').trim();
+  const nextEmail =
+    payload.contact_email !== undefined
+      ? toText(payload.contact_email)
+      : toText(existingSupplier.contact_email);
+  const nextPhone =
+    payload.phone !== undefined
+      ? toText(payload.phone)
+      : toText(existingSupplier.phone);
+
+  await assertSupplierUniqueness({
+    tenantId: existingSupplier.tenant_id,
+    name: nextName,
+    contactEmail: nextEmail,
+    phone: nextPhone,
+    location,
+    confirmSimilar,
+    excludeSupplierId: existingSupplier.id,
+  });
+
+  const updatedSupplier = await supplierRepository.update(id, {
+    ...payload,
+    ...(payload.name !== undefined ? { name: nextName } : {}),
+  });
   const withAddresses = await supplierRepository.findById(
     id,
     supplierAddressInclude
@@ -171,6 +384,13 @@ const updateSupplier = async (id, updateData, auditContext) => {
   });
   
   return withAddresses || updatedSupplier;
+};
+
+const pickExistingLocation = (supplier) => {
+  const addresses = Array.isArray(supplier?.addresses) ? supplier.addresses : [];
+  const active = addresses.filter((entry) => entry?.deleted_at == null);
+  if (!active.length) return null;
+  return toText(active[0]?.line1);
 };
 
 /**
@@ -203,6 +423,7 @@ const deleteSupplier = async (id, auditContext) => {
 module.exports = {
   getSupplierById,
   listSuppliers,
+  checkSupplierSimilarity,
   createSupplier,
   updateSupplier,
   deleteSupplier

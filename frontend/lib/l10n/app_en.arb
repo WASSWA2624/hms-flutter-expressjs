@@ -16102,6 +16102,104 @@
   "@pharmacySupplierInvalidEmail": {
     "description": "Validation message when supplier email is invalid."
   },
+  "pharmacySupplierDuplicateDialogTitle": "Duplicate supplier",
+  "@pharmacySupplierDuplicateDialogTitle": {
+    "description": "Title when supplier name/email/phone already exists."
+  },
+  "pharmacySupplierDuplicateDialogBody": "An exact match already exists. Change the name, email, or phone before saving.",
+  "@pharmacySupplierDuplicateDialogBody": {
+    "description": "Body when supplier is an exact duplicate."
+  },
+  "pharmacySupplierSimilarDialogTitle": "Similar suppliers found",
+  "@pharmacySupplierSimilarDialogTitle": {
+    "description": "Title when similar suppliers are found."
+  },
+  "pharmacySupplierSimilarDialogBody": "Closest match similarity: {score}%. Review matches before continuing.",
+  "@pharmacySupplierSimilarDialogBody": {
+    "description": "Body when similar suppliers are found.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "pharmacySupplierNoSimilarDialogTitle": "No similar suppliers",
+  "@pharmacySupplierNoSimilarDialogTitle": {
+    "description": "Title when supplier similarity finds no matches."
+  },
+  "pharmacySupplierNoSimilarDialogBody": "No close matches found. Continue to save this supplier.",
+  "@pharmacySupplierNoSimilarDialogBody": {
+    "description": "Body when supplier similarity finds no matches."
+  },
+  "pharmacySupplierExactBannerTitle": "Exact supplier match",
+  "@pharmacySupplierExactBannerTitle": {
+    "description": "Banner title for exact supplier conflicts."
+  },
+  "pharmacySupplierSimilarBannerTitle": "Review similar suppliers",
+  "@pharmacySupplierSimilarBannerTitle": {
+    "description": "Banner title for near supplier matches."
+  },
+  "pharmacySupplierNoSimilarBannerTitle": "No similar supplier found",
+  "@pharmacySupplierNoSimilarBannerTitle": {
+    "description": "Banner title when no supplier matches are found."
+  },
+  "pharmacySupplierCreateAnywayAction": "Create anyway",
+  "@pharmacySupplierCreateAnywayAction": {
+    "description": "Continue creating a supplier after similarity review."
+  },
+  "pharmacySupplierSaveAnywayAction": "Save anyway",
+  "@pharmacySupplierSaveAnywayAction": {
+    "description": "Continue updating a supplier after similarity review."
+  },
+  "pharmacySupplierUseExistingAction": "Use this supplier",
+  "@pharmacySupplierUseExistingAction": {
+    "description": "Use an existing supplier from similarity review."
+  },
+  "pharmacySupplierProposedHeading": "Proposed supplier",
+  "@pharmacySupplierProposedHeading": {
+    "description": "Heading for proposed supplier values in similarity review."
+  },
+  "pharmacySupplierMatchesHeading": "Similar suppliers",
+  "@pharmacySupplierMatchesHeading": {
+    "description": "Heading above supplier similarity matches."
+  },
+  "pharmacySupplierExactMatchLabel": "Exact",
+  "@pharmacySupplierExactMatchLabel": {
+    "description": "Badge for exact supplier matches."
+  },
+  "pharmacySupplierNearMatchLabel": "Near",
+  "@pharmacySupplierNearMatchLabel": {
+    "description": "Badge for near supplier matches."
+  },
+  "pharmacySupplierExistingHeading": "Existing supplier",
+  "@pharmacySupplierExistingHeading": {
+    "description": "Heading for an existing supplier match card."
+  },
+  "pharmacySupplierFieldColumnLabel": "Field",
+  "@pharmacySupplierFieldColumnLabel": {
+    "description": "Column header for field name in supplier similarity comparison."
+  },
+  "pharmacySupplierFieldProposedLabel": "Proposed",
+  "@pharmacySupplierFieldProposedLabel": {
+    "description": "Column header for proposed values in supplier similarity comparison."
+  },
+  "pharmacySupplierFieldExistingLabel": "Existing",
+  "@pharmacySupplierFieldExistingLabel": {
+    "description": "Column header for existing values in supplier similarity comparison."
+  },
+  "pharmacySupplierOverallSimilarityLabel": "Closest match",
+  "@pharmacySupplierOverallSimilarityLabel": {
+    "description": "Label for closest supplier similarity score."
+  },
+  "pharmacySupplierNoMatchScoreLabel": "No close match ({score}%)",
+  "@pharmacySupplierNoMatchScoreLabel": {
+    "description": "Shown when supplier similarity review finds no near matches.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
   "pharmacyDrugSupplierLabel": "Supplier",
   "@pharmacyDrugSupplierLabel": {
     "description": "Pharmacy drug form label for preferred supplier."

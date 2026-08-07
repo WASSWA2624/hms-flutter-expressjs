@@ -921,6 +921,77 @@ final class PharmacySupplier {
 }
 
 @immutable
+final class PharmacySupplierFieldComparison {
+  const PharmacySupplierFieldComparison({
+    required this.field,
+    this.inputValue,
+    this.candidateValue,
+    this.score,
+    this.status,
+  });
+
+  final String field;
+  final String? inputValue;
+  final String? candidateValue;
+  final int? score;
+  final String? status;
+
+  bool get isExact => status == 'MATCH' || score == 100;
+}
+
+@immutable
+final class PharmacySupplierSimilarityMatch {
+  const PharmacySupplierSimilarityMatch({
+    required this.supplier,
+    required this.score,
+    this.isExact = false,
+    this.exactNameConflict = false,
+    this.exactEmailConflict = false,
+    this.exactPhoneConflict = false,
+    this.nameScore,
+    this.emailScore,
+    this.phoneScore,
+    this.locationScore,
+    this.fieldComparisons = const <PharmacySupplierFieldComparison>[],
+  });
+
+  final PharmacySupplier supplier;
+  final int score;
+  final bool isExact;
+  final bool exactNameConflict;
+  final bool exactEmailConflict;
+  final bool exactPhoneConflict;
+  final int? nameScore;
+  final int? emailScore;
+  final int? phoneScore;
+  final int? locationScore;
+  final List<PharmacySupplierFieldComparison> fieldComparisons;
+
+  bool get hasExactConflict =>
+      exactNameConflict || exactEmailConflict || exactPhoneConflict;
+}
+
+@immutable
+final class PharmacySupplierSimilarityResult {
+  const PharmacySupplierSimilarityResult({
+    this.exactNameConflict = false,
+    this.exactEmailConflict = false,
+    this.exactPhoneConflict = false,
+    this.closestScore = 0,
+    this.matches = const <PharmacySupplierSimilarityMatch>[],
+  });
+
+  final bool exactNameConflict;
+  final bool exactEmailConflict;
+  final bool exactPhoneConflict;
+  final int closestScore;
+  final List<PharmacySupplierSimilarityMatch> matches;
+
+  bool get hasExactConflict =>
+      exactNameConflict || exactEmailConflict || exactPhoneConflict;
+}
+
+@immutable
 final class PharmacySupplierInput {
   const PharmacySupplierInput({
     required this.tenantId,
@@ -928,6 +999,7 @@ final class PharmacySupplierInput {
     this.contactEmail,
     this.phone,
     this.location,
+    this.confirmSimilar = false,
   });
 
   final String tenantId;
@@ -935,6 +1007,7 @@ final class PharmacySupplierInput {
   final String? contactEmail;
   final String? phone;
   final String? location;
+  final bool confirmSimilar;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
@@ -943,6 +1016,7 @@ final class PharmacySupplierInput {
       if (contactEmail != null && contactEmail!.trim().isNotEmpty)
         'contact_email': contactEmail!.trim(),
       if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
+      if (confirmSimilar) 'confirm_similar': true,
     };
   }
 }
@@ -956,6 +1030,7 @@ final class PharmacySupplierUpdateInput {
     this.location,
     this.clearContactEmail = false,
     this.clearPhone = false,
+    this.confirmSimilar = false,
   });
 
   final String? name;
@@ -964,6 +1039,7 @@ final class PharmacySupplierUpdateInput {
   final String? location;
   final bool clearContactEmail;
   final bool clearPhone;
+  final bool confirmSimilar;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
@@ -978,6 +1054,7 @@ final class PharmacySupplierUpdateInput {
         'phone': null
       else if (phone != null)
         'phone': phone!.trim().isEmpty ? null : phone!.trim(),
+      if (confirmSimilar) 'confirm_similar': true,
     };
   }
 }

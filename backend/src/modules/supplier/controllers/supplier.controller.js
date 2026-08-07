@@ -62,6 +62,27 @@ const listSuppliers = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Preview supplier similarity
+ * POST /api/v1/suppliers/similarity-check
+ *
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ */
+const checkSupplierSimilarity = asyncHandler(async (req, res) => {
+  const data = await supplierService.checkSupplierSimilarity(
+    req.body,
+    req.user || {}
+  );
+
+  sendSuccess(
+    res,
+    200,
+    'messages.supplier.similarity.success',
+    data
+  );
+});
+
+/**
  * Create new supplier
  * POST /api/v1/suppliers
  *
@@ -132,6 +153,7 @@ const deleteSupplier = asyncHandler(async (req, res) => {
 module.exports = {
   getSupplier,
   listSuppliers,
+  checkSupplierSimilarity,
   createSupplier,
   updateSupplier,
   deleteSupplier,

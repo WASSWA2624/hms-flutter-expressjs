@@ -15,6 +15,7 @@ const validate = require('@middlewares/validate.middleware');
 const {
   createSupplierSchema,
   updateSupplierSchema,
+  checkSupplierSimilaritySchema,
   supplierIdParamsSchema,
   listSuppliersQuerySchema
 } = require('@validations/supplier/supplier.schema');
@@ -28,6 +29,17 @@ router.get(
   '/',
   validate({ query: listSuppliersQuerySchema }),
   supplierController.listSuppliers
+);
+
+/**
+ * @route POST /api/v1/suppliers/similarity-check
+ * @desc Preview supplier name/contact similarity before create/update
+ * @access Private
+ */
+router.post(
+  '/similarity-check',
+  validate({ body: checkSupplierSimilaritySchema }),
+  supplierController.checkSupplierSimilarity
 );
 
 /**

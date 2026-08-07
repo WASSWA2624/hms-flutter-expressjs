@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_supplier_similarity_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -406,62 +407,164 @@ class _PharmacySupplierDialogState
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
-    final String name = _nameController.text.trim();
-    final String? location = _emptyToNull(_locationController.text);
-    final String? email = _emptyToNull(_emailController.text);
-    final String? phone = _emptyToNull(_phoneController.text);
+    String name = _nameController.text.trim();
+    String? location = _emptyToNull(_locationController.text);
+    String? email = _emptyToNull(_emailController.text);
+    String? phone = _emptyToNull(_phoneController.text);
 
-    if (_isEdit) {
-      final Result<PharmacySupplier> result = await controller.updateSupplier(
-        widget.supplier!.id,
-        PharmacySupplierUpdateInput(
+    while (mounted) {
+      final Result<PharmacySupplierSimilarityResult> similarityResult =
+          await controller.checkSupplierSimilarity(
+            name: name,
+            contactEmail: email,
+            phone: phone,
+            location: location,
+            excludeSupplierId: widget.supplier?.id,
+          );
+      if (!mounted) {
+        return;
+      }
+
+      PharmacySupplierSimilarityResult? review;
+      final AppFailure? similarityFailure = similarityResult.when(
+        success: (PharmacySupplierSimilarityResult value) {
+          review = value;
+          return null;
+        },
+        failure: (AppFailure failure) => failure,
+      );
+      if (similarityFailure != null) {
+        setState(() => _isSaving = false);
+        showAppFailureSnackBar(context, similarityFailure);
+        return;
+      }
+
+      final PharmacySupplierSimilarityResult check =
+          review ?? const PharmacySupplierSimilarityResult();
+      final PharmacySupplierSimilarityDialogResult similarityDecision =
+          await showPharmacySupplierSimilarityDialog(
+            context,
+            proposed: PharmacySupplierSimilarityProposedValues(
+              name: name,
+              location: location,
+              contactEmail: email,
+              phone: phone,
+            ),
+            check: check,
+            isEdit: _isEdit,
+          );
+      if (!mounted) {
+        return;
+      }
+
+      if (similarityDecision.action ==
+          PharmacySupplierSimilarityAction.cancel) {
+        setState(() => _isSaving = false);
+        return;
+      }
+
+      if (similarityDecision.action ==
+          PharmacySupplierSimilarityAction.retry) {
+        final PharmacySupplierSimilarityProposedValues? next =
+            similarityDecision.proposed;
+        if (next == null || next.name.trim().isEmpty) {
+          setState(() => _isSaving = false);
+          return;
+        }
+        name = next.name.trim();
+        location = next.location;
+        email = next.contactEmail;
+        phone = next.phone;
+        _nameController.text = name;
+        _locationController.text = location ?? '';
+        _emailController.text = email ?? '';
+        _phoneController.text = phone ?? '';
+        continue;
+      }
+
+      if (similarityDecision.action ==
+          PharmacySupplierSimilarityAction.useExisting) {
+        setState(() => _isSaving = false);
+        Navigator.of(context).pop(true);
+        return;
+      }
+
+      final PharmacySupplierSimilarityProposedValues? confirmed =
+          similarityDecision.proposed;
+      if (confirmed != null) {
+        name = confirmed.name.trim().isEmpty ? name : confirmed.name.trim();
+        location = confirmed.location;
+        email = confirmed.contactEmail;
+        phone = confirmed.phone;
+        _nameController.text = name;
+        _locationController.text = location ?? '';
+        _emailController.text = email ?? '';
+        _phoneController.text = phone ?? '';
+      }
+
+      if (_isEdit) {
+        final Result<PharmacySupplier> result = await controller.updateSupplier(
+          widget.supplier!.id,
+          PharmacySupplierUpdateInput(
+            name: name,
+            location: location ?? '',
+            contactEmail: email ?? '',
+            phone: phone ?? '',
+            clearContactEmail: email == null,
+            clearPhone: phone == null,
+            confirmSimilar: true,
+          ),
+        );
+        if (!mounted) {
+          return;
+        }
+        final bool saved = result.when(
+          success: (_) => true,
+          failure: (AppFailure failure) {
+            setState(() => _isSaving = false);
+            showAppFailureSnackBar(context, failure);
+            return false;
+          },
+        );
+        if (saved) {
+          Navigator.of(context).pop(true);
+        }
+        return;
+      }
+
+      final String? tenantId = controller.resolveTenantId();
+      if (tenantId == null) {
+        setState(() => _isSaving = false);
+        showAppFailureSnackBar(context, AppFailure.validation());
+        return;
+      }
+
+      final Result<PharmacySupplier> result = await controller.createSupplier(
+        PharmacySupplierInput(
+          tenantId: tenantId,
           name: name,
-          location: location ?? '',
-          contactEmail: email ?? '',
-          phone: phone ?? '',
-          clearContactEmail: email == null,
-          clearPhone: phone == null,
+          location: location,
+          contactEmail: email,
+          phone: phone,
+          confirmSimilar: true,
         ),
       );
       if (!mounted) {
         return;
       }
-      result.when(
-        success: (_) => Navigator.of(context).pop(true),
+      final bool saved = result.when(
+        success: (_) => true,
         failure: (AppFailure failure) {
           setState(() => _isSaving = false);
           showAppFailureSnackBar(context, failure);
+          return false;
         },
       );
+      if (saved) {
+        Navigator.of(context).pop(true);
+      }
       return;
     }
-
-    final String? tenantId = controller.resolveTenantId();
-    if (tenantId == null) {
-      setState(() => _isSaving = false);
-      showAppFailureSnackBar(context, AppFailure.validation());
-      return;
-    }
-
-    final Result<PharmacySupplier> result = await controller.createSupplier(
-      PharmacySupplierInput(
-        tenantId: tenantId,
-        name: name,
-        location: location,
-        contactEmail: email,
-        phone: phone,
-      ),
-    );
-    if (!mounted) {
-      return;
-    }
-    result.when(
-      success: (_) => Navigator.of(context).pop(true),
-      failure: (AppFailure failure) {
-        setState(() => _isSaving = false);
-        showAppFailureSnackBar(context, failure);
-      },
-    );
   }
 }
 

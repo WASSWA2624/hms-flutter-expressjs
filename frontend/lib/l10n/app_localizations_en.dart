@@ -12605,6 +12605,79 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacySupplierInvalidEmail => 'Enter a valid email address.';
 
   @override
+  String get pharmacySupplierDuplicateDialogTitle => 'Duplicate supplier';
+
+  @override
+  String get pharmacySupplierDuplicateDialogBody =>
+      'An exact match already exists. Change the name, email, or phone before saving.';
+
+  @override
+  String get pharmacySupplierSimilarDialogTitle => 'Similar suppliers found';
+
+  @override
+  String pharmacySupplierSimilarDialogBody(int score) {
+    return 'Closest match similarity: $score%. Review matches before continuing.';
+  }
+
+  @override
+  String get pharmacySupplierNoSimilarDialogTitle => 'No similar suppliers';
+
+  @override
+  String get pharmacySupplierNoSimilarDialogBody =>
+      'No close matches found. Continue to save this supplier.';
+
+  @override
+  String get pharmacySupplierExactBannerTitle => 'Exact supplier match';
+
+  @override
+  String get pharmacySupplierSimilarBannerTitle => 'Review similar suppliers';
+
+  @override
+  String get pharmacySupplierNoSimilarBannerTitle =>
+      'No similar supplier found';
+
+  @override
+  String get pharmacySupplierCreateAnywayAction => 'Create anyway';
+
+  @override
+  String get pharmacySupplierSaveAnywayAction => 'Save anyway';
+
+  @override
+  String get pharmacySupplierUseExistingAction => 'Use this supplier';
+
+  @override
+  String get pharmacySupplierProposedHeading => 'Proposed supplier';
+
+  @override
+  String get pharmacySupplierMatchesHeading => 'Similar suppliers';
+
+  @override
+  String get pharmacySupplierExactMatchLabel => 'Exact';
+
+  @override
+  String get pharmacySupplierNearMatchLabel => 'Near';
+
+  @override
+  String get pharmacySupplierExistingHeading => 'Existing supplier';
+
+  @override
+  String get pharmacySupplierFieldColumnLabel => 'Field';
+
+  @override
+  String get pharmacySupplierFieldProposedLabel => 'Proposed';
+
+  @override
+  String get pharmacySupplierFieldExistingLabel => 'Existing';
+
+  @override
+  String get pharmacySupplierOverallSimilarityLabel => 'Closest match';
+
+  @override
+  String pharmacySupplierNoMatchScoreLabel(int score) {
+    return 'No close match ($score%)';
+  }
+
+  @override
   String get pharmacyDrugSupplierLabel => 'Supplier';
 
   @override
