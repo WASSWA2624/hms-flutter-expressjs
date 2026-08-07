@@ -1647,6 +1647,11 @@ const getDashboardSummaryByPack = async ({
         }
       };
       const trendWindowStart = statusFromDate < trendStart ? statusFromDate : trendStart;
+      const encounterWhere = {
+        ...directScope(scope, { includeTenant: true, includeFacility: true }),
+        deleted_at: null,
+      };
+      const tomorrowStart = shiftDays(todayStart, 1);
       const [
         registrationsToday,
         appointmentDeskQueue,
@@ -1658,7 +1663,17 @@ const getDashboardSummaryByPack = async ({
       ] = await Promise.all([
         prisma.patient.count({ where: { ...patientWhere, created_at: { gte: todayStart } } }),
         prisma.appointment.count({ where: { ...appointmentWhere, status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] } } }),
-        prisma.appointment.count({ where: { ...appointmentWhere, status: 'IN_PROGRESS' } }),
+        // Align with Reception Active visits: today's open OPD encounters
+        // (not all-time IN_PROGRESS appointments).
+        prisma.encounter.count({
+          where: {
+            ...encounterWhere,
+            status: 'OPEN',
+            encounter_type: 'OPD',
+            ended_at: null,
+            started_at: { gte: todayStart, lt: tomorrowStart },
+          },
+        }),
         prisma.appointment.count({ where: { ...appointmentWhere, status: 'NO_SHOW' } }),
         prisma.appointment.count({ where: { ...appointmentWhere, scheduled_start: { gte: todayStart } } }),
         prisma.emergency_case.count({ where: { ...emergencyCaseWhere, created_at: { gte: todayStart } } }),

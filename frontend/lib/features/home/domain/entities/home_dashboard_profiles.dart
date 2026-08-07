@@ -1760,10 +1760,12 @@ HomeDashboardProfile expandHomeProfileForPermissions(
           sameDomainCards.containsKey(template.id)) {
         continue;
       }
-      // Receptionist front desk: omit profile KPI cards from portal/other packs.
+      // Receptionist front desk: omit portal/profile KPIs and org Adoption
+      // (tenant-admin module_adoption) — not front-desk work.
       if (base.id == 'receptionist' &&
           (template.id == 'profile_status' ||
-              template.id == 'my_profile_status')) {
+              template.id == 'my_profile_status' ||
+              template.id == 'module_adoption')) {
         continue;
       }
       final List<AppPermission> required =

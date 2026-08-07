@@ -206,5 +206,45 @@ void main() {
         expect(profile.emptyMessage, 'No desk queue items right now.');
       },
     );
+
+    test(
+      'receptionist expand with reports:read omits module adoption',
+      () {
+        final HomeDashboardProfile expanded = expandHomeProfileForPermissions(
+          homeProfileForRole(AppRole.receptionist),
+          AppAccessPolicy.fromSession(
+            AuthSession(
+              tokens: SessionTokens(accessToken: 'token'),
+              user: const AuthUserProfile(
+                tenantId: 'tenant-1',
+                facilityId: 'facility-1',
+                roles: <String>['RECEPTIONIST'],
+              ),
+              permissions: const <AppPermission>[
+                AppPermissions.patientRead,
+                AppPermissions.patientWrite,
+                AppPermissions.reportsRead,
+              ],
+              moduleEntitlements: const <AppModuleEntitlement>[
+                AppModuleEntitlement(
+                  code: 'patient-registry',
+                  licenseStatus: 'ACTIVE',
+                ),
+                AppModuleEntitlement(
+                  code: 'scheduling-queue',
+                  licenseStatus: 'ACTIVE',
+                ),
+              ],
+              isAuthorizationHydrated: true,
+            ),
+          ),
+        );
+
+        expect(
+          expanded.statusCards.map((HomeStatusCardTemplate t) => t.id),
+          isNot(contains('module_adoption')),
+        );
+      },
+    );
   });
 }
