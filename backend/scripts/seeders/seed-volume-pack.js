@@ -11,6 +11,9 @@
  */
 
 const { DEMO_TENANT } = require('./seed-catalog');
+const {
+  PHARMACY_REPORT_RISK_BATCH_TEMPLATES,
+} = require('./seed-clinical-catalog-pack');
 
 /** Preferred high-traffic volume when SEED_RECORD_COUNT is unset. */
 const DEFAULT_DEMO_VOLUME_TARGET = 1000;
@@ -496,19 +499,6 @@ const seedVolumePack = async (
         { publicIdPrefix: 'RXO', seedMeta: false }
       );
 
-      const item = await ctx.upsert(
-        'pharmacy_order_item',
-        `${scenario.key}:vol:rx-item:${pad(index)}`,
-        {
-          pharmacy_order_id: order.id,
-          drug_id: drug.id,
-          quantity: 1 + (index % 5),
-          dosage: `${1 + (index % 2)} tab`,
-          instructions: `Volume prescription #${index}`,
-        },
-        { publicIdPrefix: 'RXI', seedMeta: false }
-      );
-
       const dispenseStatus = orderStatus === 'CANCELLED'
         ? 'CANCELLED'
         : index % 30 === 0
@@ -517,19 +507,41 @@ const seedVolumePack = async (
             ? 'PENDING'
             : 'DISPENSED';
 
+      const itemQuantity = 1 + (index % 5);
+      // Partial orders keep remaining pack qty so partial-dispensing reports stay non-zero.
+      const dispensedQty = orderStatus === 'PARTIALLY_DISPENSED'
+        ? Math.max(1, Math.floor(itemQuantity / 2))
+        : dispenseStatus === 'PENDING' || dispenseStatus === 'CANCELLED'
+          ? 0
+          : 1 + (index % 3);
+
+      const item = await ctx.upsert(
+        'pharmacy_order_item',
+        `${scenario.key}:vol:rx-item:${pad(index)}`,
+        {
+          pharmacy_order_id: order.id,
+          drug_id: drug.id,
+          quantity: itemQuantity,
+          dosage: `${1 + (index % 2)} tab`,
+          instructions: `Volume prescription #${index}`,
+        },
+        { publicIdPrefix: 'RXI', seedMeta: false }
+      );
+
       await ctx.upsert(
         'dispense_log',
         `${scenario.key}:vol:dispense:${pad(index)}`,
         {
           pharmacy_order_item_id: item.id,
           dispense_batch_ref: `VOL-BATCH-${pad(index, 5)}`,
-          status: dispenseStatus,
-          dispensed_at: dispenseStatus === 'DISPENSED' || dispenseStatus === 'RETURNED'
-            ? ctx.nowDate(recentDayOffset, 55)
-            : null,
-          quantity_dispensed: dispenseStatus === 'PENDING' || dispenseStatus === 'CANCELLED'
-            ? 0
-            : 1 + (index % 3),
+          status: orderStatus === 'PARTIALLY_DISPENSED' ? 'DISPENSED' : dispenseStatus,
+          dispensed_at:
+            orderStatus === 'PARTIALLY_DISPENSED' ||
+            dispenseStatus === 'DISPENSED' ||
+            dispenseStatus === 'RETURNED'
+              ? ctx.nowDate(recentDayOffset, 55)
+              : null,
+          quantity_dispensed: dispensedQty,
         },
         { publicIdPrefix: 'DSP', seedMeta: false }
       );
@@ -816,6 +828,176 @@ const seedVolumePack = async (
     created.payments += 1;
   });
 
+  // Pharmacy customers reporting: open credit invoices + new/returning purchasers.
+  const customerCohort = Math.min(200, targets.highTraffic);
+  const customerPatients = [];
+  await runInBatches(customerCohort, 10, async (index) => {
+    const key = `cust-${pad(index)}`;
+    const patient = await ctx.upsert(
+      'patient',
+      `${scenario.key}:vol:rx-customer:${key}`,
+      {
+        tenant_id: facility.tenant_id,
+        facility_id: facility.id,
+        first_name: pick(FIRST_NAMES, index + 7),
+        last_name: pick(LAST_NAMES, index + 11),
+        date_of_birth: ctx.date(-(365 * (20 + (index % 45)) + (index % 20))),
+        gender: pick(GENDERS, index + 2),
+        is_active: true,
+        extension_json: {
+          demo_profile: true,
+          fictional_identity: true,
+          pharmacy_customer_cohort: true,
+          volume_index: index,
+        },
+      },
+      { ...seedOpts, publicIdPrefix: 'PAT' }
+    );
+    customerPatients.push(patient);
+
+    const openAmount = 45000 + (index % 25) * 1500;
+    const openStatus = index % 2 === 0 ? 'SENT' : 'OVERDUE';
+    const openInvoice = await ctx.upsert(
+      'invoice',
+      `${scenario.key}:vol:rx-open-inv:${pad(index)}`,
+      {
+        tenant_id: facility.tenant_id,
+        facility_id: facility.id,
+        patient_id: patient.id,
+        status: openStatus,
+        billing_status: index % 3 === 0 ? 'PARTIAL' : 'ISSUED',
+        billing_entity: 'PHARMACY',
+        total_amount: openAmount,
+        currency: 'UGX',
+        issued_at: ctx.date(-((index % 80) + 1), 40),
+      },
+      { ...seedOpts, publicIdPrefix: 'INV' }
+    );
+    await ctx.upsert(
+      'invoice_item',
+      `${scenario.key}:vol:rx-open-inv-item:${pad(index)}`,
+      {
+        invoice_id: openInvoice.id,
+        description: `Open pharmacy credit #${index}`,
+        quantity: 1,
+        unit_price: openAmount,
+        total_price: openAmount,
+        billing_entity: 'PHARMACY',
+      },
+      { publicIdPrefix: 'IITM', seedMeta: false }
+    );
+    if (index % 3 === 0) {
+      await ctx.upsert(
+        'payment',
+        `${scenario.key}:vol:rx-open-pay:${pad(index)}`,
+        {
+          tenant_id: facility.tenant_id,
+          facility_id: facility.id,
+          patient_id: patient.id,
+          invoice_id: openInvoice.id,
+          status: 'COMPLETED',
+          method: pick(PAYMENT_METHODS, index),
+          billing_entity: 'PHARMACY',
+          amount: Math.round(openAmount / 4),
+          paid_at: ctx.date(-((index % 70) + 1), 55),
+          transaction_ref: `VOL-OPEN-PAY-${pad(index, 5)}`,
+        },
+        { ...seedOpts, publicIdPrefix: 'PAY' }
+      );
+      created.payments += 1;
+    }
+    invoices.push(openInvoice);
+    created.invoices += 1;
+  });
+
+  if (drugs.length > 0 && customerPatients.length > 0) {
+    await runInBatches(customerCohort, 10, async (index) => {
+      const patient = customerPatients[index - 1];
+      const drug = pick(drugs, index + 9);
+      if (!patient || !drug?.id) return;
+      const isReturning = index <= Math.floor(customerCohort / 2);
+
+      if (isReturning) {
+        const priorOrder = await ctx.upsert(
+          'pharmacy_order',
+          `${scenario.key}:vol:rx-cust-prior:${pad(index)}`,
+          {
+            encounter_id: null,
+            patient_id: patient.id,
+            status: 'DISPENSED',
+            ordered_at: ctx.nowDate(-((45 + (index % 40))), 30),
+          },
+          { publicIdPrefix: 'RXO', seedMeta: false }
+        );
+        const priorItem = await ctx.upsert(
+          'pharmacy_order_item',
+          `${scenario.key}:vol:rx-cust-prior-item:${pad(index)}`,
+          {
+            pharmacy_order_id: priorOrder.id,
+            drug_id: drug.id,
+            quantity: 1 + (index % 3),
+            dosage: '1 tab',
+            instructions: `Returning prior purchase #${index}`,
+          },
+          { publicIdPrefix: 'RXI', seedMeta: false }
+        );
+        await ctx.upsert(
+          'dispense_log',
+          `${scenario.key}:vol:rx-cust-prior-dsp:${pad(index)}`,
+          {
+            pharmacy_order_item_id: priorItem.id,
+            dispense_batch_ref: `CUST-PRIOR-${pad(index, 5)}`,
+            status: 'DISPENSED',
+            dispensed_at: ctx.nowDate(-((45 + (index % 40))), 45),
+            quantity_dispensed: 1 + (index % 3),
+          },
+          { publicIdPrefix: 'DSP', seedMeta: false }
+        );
+        created.pharmacy_orders += 1;
+        created.dispense_logs += 1;
+      }
+
+      const recentDay = isReturning ? -((index % 12) + 1) : -((index % 10) + 1);
+      const recentOrder = await ctx.upsert(
+        'pharmacy_order',
+        `${scenario.key}:vol:rx-cust-recent:${pad(index)}`,
+        {
+          encounter_id: null,
+          patient_id: patient.id,
+          status: 'DISPENSED',
+          ordered_at: ctx.nowDate(recentDay, 25),
+        },
+        { publicIdPrefix: 'RXO', seedMeta: false }
+      );
+      const recentItem = await ctx.upsert(
+        'pharmacy_order_item',
+        `${scenario.key}:vol:rx-cust-recent-item:${pad(index)}`,
+        {
+          pharmacy_order_id: recentOrder.id,
+          drug_id: drug.id,
+          quantity: 1 + (index % 4),
+          dosage: '1 tab',
+          instructions: `${isReturning ? 'Returning' : 'New'} recent purchase #${index}`,
+        },
+        { publicIdPrefix: 'RXI', seedMeta: false }
+      );
+      await ctx.upsert(
+        'dispense_log',
+        `${scenario.key}:vol:rx-cust-recent-dsp:${pad(index)}`,
+        {
+          pharmacy_order_item_id: recentItem.id,
+          dispense_batch_ref: `CUST-RECENT-${pad(index, 5)}`,
+          status: 'DISPENSED',
+          dispensed_at: ctx.nowDate(recentDay, 40),
+          quantity_dispensed: 1 + (index % 4),
+        },
+        { publicIdPrefix: 'DSP', seedMeta: false }
+      );
+      created.pharmacy_orders += 1;
+      created.dispense_logs += 1;
+    });
+  }
+
   await runInBatches(targets.secondary, 10, async (index) => {
     const patient = patientAt(index);
     if (!patient) return;
@@ -862,16 +1044,18 @@ const seedVolumePack = async (
       const drug = pick(allCatalogDrugs, index);
       const room = storageRooms.length ? pick(storageRooms, index) : null;
       const shelf = storageShelves.length ? pick(storageShelves, index) : null;
+      // Cycle risk templates so volume batches span expired + 30/60/90/180 windows.
+      const riskTemplate = pick(PHARMACY_REPORT_RISK_BATCH_TEMPLATES, index);
       await ctx.upsert(
         'drug_batch',
         `${scenario.key}:vol:drug-batch:${pad(index)}`,
         {
           drug_id: drug.id,
           batch_number: `VOL${pad(index, 5)}`,
-          manufactured_at: ctx.date(-((index % 400) + 30), 8),
-          expiry_date: ctx.date(((index % 520) - 60), 16),
-          expiry_alert_lead_days: 30 + (index % 3) * 30,
-          quantity: 1 + (index % 80),
+          manufactured_at: ctx.nowDate(riskTemplate.dayOffset - 400, 8),
+          expiry_date: ctx.nowDate(riskTemplate.dayOffset, 16),
+          expiry_alert_lead_days: riskTemplate.leadDays,
+          quantity: Math.max(1, riskTemplate.quantity + (index % 20)),
           storage_room_id: room?.id || null,
           storage_shelf_id: shelf?.id || null,
         },
@@ -976,6 +1160,109 @@ const seedVolumePack = async (
     created.notifications += 1;
     created.notification_deliveries += 1;
   });
+
+  const suppliers = [
+    ...catalogValues(clinicalCatalogPack?.pharmacy?.suppliers, 8),
+    operationsPack?.suppliers?.[scenario.key],
+    ...Object.values(operationsPack?.suppliers || {}),
+  ].filter(Boolean);
+  const uniqueSuppliers = [];
+  const seenSupplierIds = new Set();
+  for (const entry of suppliers) {
+    if (!entry?.id || seenSupplierIds.has(entry.id)) continue;
+    seenSupplierIds.add(entry.id);
+    uniqueSuppliers.push(entry);
+  }
+  const purchaseStatuses = Object.freeze([
+    'DRAFT',
+    'SUBMITTED',
+    'APPROVED',
+    'ORDERED',
+    'RECEIVED',
+    'CANCELLED',
+  ]);
+  const poStatuses = Object.freeze([
+    'DRAFT',
+    'SUBMITTED',
+    'APPROVED',
+    'ORDERED',
+    'PARTIAL',
+    'RECEIVED',
+    'CANCELLED',
+  ]);
+  created.purchase_requests = 0;
+  created.purchase_orders = 0;
+  created.goods_receipts = 0;
+  created.inbound_purchase_movements = 0;
+
+  await runInBatches(targets.highTraffic, 10, async (index) => {
+    const request = await ctx.upsert(
+      'purchase_request',
+      `${scenario.key}:vol:purchase-request:${pad(index)}`,
+      {
+        tenant_id: facility.tenant_id,
+        facility_id: facility.id,
+        requested_by_user_id: doctor?.id || billingUser?.id || null,
+        status: pick(purchaseStatuses, index),
+        requested_at: ctx.date(-((index % 120) + 1), 40),
+      },
+      { ...seedOpts, publicIdPrefix: 'PRQ' }
+    );
+    created.purchase_requests += 1;
+
+    const supplier =
+      uniqueSuppliers.length > 0 ? pick(uniqueSuppliers, index) : null;
+    const status = pick(poStatuses, index + 1);
+    const orderedAt = ctx.date(-((index % 110) + 2), 14);
+    const purchaseOrder = await ctx.upsert(
+      'purchase_order',
+      `${scenario.key}:vol:purchase-order:${pad(index)}`,
+      {
+        purchase_request_id: request.id,
+        supplier_id: supplier?.id || null,
+        status,
+        ordered_at: orderedAt,
+      },
+      { publicIdPrefix: 'POD', seedMeta: false }
+    );
+    created.purchase_orders += 1;
+
+    if (status !== 'DRAFT' && status !== 'CANCELLED') {
+      const delayDays = 1 + (index % 10);
+      await ctx.upsert(
+        'goods_receipt',
+        `${scenario.key}:vol:goods-receipt:${pad(index)}`,
+        {
+          purchase_order_id: purchaseOrder.id,
+          received_at: ctx.date(-((index % 110) + 2) + delayDays, 40),
+          status: index % 5 === 0 ? 'PENDING' : 'VERIFIED',
+        },
+        { publicIdPrefix: 'GRN', seedMeta: false }
+      );
+      created.goods_receipts += 1;
+    }
+  });
+
+  if (inventoryItems.length > 0) {
+    await runInBatches(targets.highTraffic, 10, async (index) => {
+      const item = pick(inventoryItems, index);
+      await ctx.upsert(
+        'stock_movement',
+        `${scenario.key}:vol:stock-move-purchase:${pad(index)}`,
+        {
+          inventory_item_id: item.id,
+          facility_id: facility.id,
+          movement_type: 'INBOUND',
+          reason: 'PURCHASE',
+          quantity: 1 + (index % 40),
+          occurred_at: ctx.date(-((index % 110) + 1), 18),
+        },
+        { publicIdPrefix: 'STM', seedMeta: false }
+      );
+      created.stock_movements += 1;
+      created.inbound_purchase_movements += 1;
+    });
+  }
 
   console.log('Demo volume pack complete:', created);
 

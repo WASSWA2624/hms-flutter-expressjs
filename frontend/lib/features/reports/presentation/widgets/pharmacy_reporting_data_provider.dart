@@ -87,6 +87,9 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
   switch (reportId) {
     case 'sales_by_period':
     case 'mgmt_sales_trend':
+    case 'revenue':
+    case 'mgmt_revenue':
+    case 'profit_by_period':
       return _projectPeriodSeries(
         report: report,
         preview: preview,
@@ -142,9 +145,30 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
     case 'sales_by_customer':
     case 'sales_by_payment_method':
     case 'discounts':
+    case 'financial_discounts':
     case 'refunds_returns':
     case 'net_revenue':
     case 'average_transaction_value':
+    case 'cogs':
+    case 'gross_profit':
+    case 'net_profit':
+    case 'operating_expenses':
+    case 'customer_receivables':
+    case 'cash_flow':
+    case 'daily_cash_position':
+    case 'profit_by_product_category':
+    case 'stock_by_branch':
+    case 'profit_by_branch':
+    case 'purchases_by_branch':
+    case 'stock_shortages_by_branch':
+    case 'best_performing_branch':
+    case 'branch_comparison':
+    case 'number_of_customers':
+    case 'purchases_by_customer':
+    case 'patient_medication_history':
+    case 'customer_credit_balance':
+    case 'outstanding_payments':
+    case 'customer_demographics':
       return ModuleReportingReportSnapshot.ready(
         columns: columns,
         rows: sourceRows,
@@ -152,6 +176,25 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         breakdown: breakdown,
         title: preview.title.isEmpty ? report.label : preview.title,
         subtitle: previewSubtitleOrNull(preview.subtitle),
+      );
+    case 'new_vs_returning':
+      return _projectNewVsReturning(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+      );
+    case 'customer_retention':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle) ??
+            'Prior window of equal length; retention_rate = retained / prior purchasers',
       );
     case 'number_of_transactions':
     case 'number_of_prescriptions':
@@ -266,7 +309,6 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
       );
     case 'expired_stock':
     case 'already_expired':
-    case 'expired_stock_value_kpi':
     case 'mgmt_expired_medicines':
       return _filterStockRisk(
         report: report,
@@ -276,9 +318,19 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         summary: summary,
         breakdown: breakdown,
         riskStates: const <String>{'EXPIRED'},
+        includeDaysToExpiryNegative: true,
+      );
+    case 'expired_stock_value':
+    case 'expired_stock_value_kpi':
+      return _projectExpiredStockValue(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
       );
     case 'near_expiry_stock':
-    case 'expiring_windows':
     case 'near_expiry_value':
     case 'mgmt_expiring':
       return _filterStockRisk(
@@ -289,6 +341,53 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         summary: summary,
         breakdown: breakdown,
         riskStates: const <String>{'EXPIRING_SOON'},
+      );
+    case 'expiring_windows':
+      return _projectExpiringWindows(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+      );
+    case 'expiry_losses_breakdown':
+      return _projectExpiryLossesBreakdown(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+      );
+    case 'damaged_stock_loss':
+    case 'stock_write_offs':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle) ??
+            'at buy cost',
+      );
+    case 'lost_stock_loss':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle) ??
+            'reason=OTHER as loss proxy (schema has no LOSS; DAMAGE excluded)',
+      );
+    case 'adjustment_reasons':
+      return ModuleReportingReportSnapshot.ready(
+        columns: columns,
+        rows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        title: preview.title.isEmpty ? report.label : preview.title,
+        subtitle: previewSubtitleOrNull(preview.subtitle),
       );
     case 'understock':
     case 'low_stock_items':
@@ -555,6 +654,125 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
           'storage_shelf',
         ],
       );
+    case 'purchase_orders':
+      return _projectColumnSubset(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        columnKeys: const <String>[
+          'ordered_at',
+          'status',
+          'supplier',
+          'human_friendly_id',
+        ],
+      );
+    case 'purchases_by_supplier':
+      return _projectColumnSubset(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        columnKeys: const <String>[
+          'supplier',
+          'po_count',
+          'quantity',
+          'amount',
+          'currency',
+        ],
+      );
+    case 'purchase_value':
+      return _projectColumnSubset(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        columnKeys: const <String>[
+          'occurred_at',
+          'supplier',
+          'inventory_item',
+          'quantity',
+          'amount',
+          'currency',
+        ],
+      );
+    case 'supplier_pricing':
+      return _projectColumnSubset(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        columnKeys: const <String>[
+          'supplier',
+          'drug',
+          'buy_unit_price',
+          'currency',
+        ],
+      );
+    case 'supplier_performance':
+      return _projectSupplierPerformance(
+        report: report,
+        preview: preview,
+        summary: summary,
+        breakdown: breakdown,
+      );
+    case 'delivery_time':
+      return _projectDeliveryTime(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+      );
+    case 'purchase_returns':
+      return _projectColumnSubset(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        columnKeys: const <String>[
+          'occurred_at',
+          'inventory_item',
+          'quantity',
+          'facility',
+          'reason',
+        ],
+      );
+    case 'price_changes':
+      return _projectColumnSubset(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        columnKeys: const <String>[
+          'changed_at',
+          'drug',
+          'field',
+          'from_value',
+          'to_value',
+          'currency',
+        ],
+      );
+    case 'most_used_suppliers':
+      return _projectColumnSubset(
+        report: report,
+        preview: preview,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        columnKeys: const <String>[
+          'supplier',
+          'po_count',
+          'quantity',
+          'amount',
+        ],
+      );
     default:
       return ModuleReportingReportSnapshot.ready(
         columns: columns,
@@ -591,6 +809,104 @@ ModuleReportingReportSnapshot _projectMedicinesCatalog({
   return ModuleReportingReportSnapshot.ready(
     columns: columnKeys,
     rows: filtered,
+    summary: summary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle),
+  );
+}
+
+ModuleReportingReportSnapshot _projectColumnSubset({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+  required List<String> columnKeys,
+}) {
+  final List<Map<String, Object?>> rows = sourceRows
+      .map(
+        (Map<String, Object?> row) => <String, Object?>{
+          for (final String key in columnKeys) key: row[key],
+        },
+      )
+      .toList(growable: false);
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: columnKeys,
+    rows: rows,
+    summary: summary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle),
+  );
+}
+
+ModuleReportingReportSnapshot _projectSupplierPerformance({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  const List<String> columnKeys = <String>[
+    'supplier',
+    'delivery_days',
+    'po_count',
+    'receipt_count',
+    'fulfillment_rate',
+  ];
+  final Object? bySupplier = breakdown?['by_supplier'];
+  final List<Map<String, Object?>> rows = <Map<String, Object?>>[];
+  if (bySupplier is List) {
+    for (final Object? entry in bySupplier) {
+      if (entry is! Map) continue;
+      final Map<String, Object?> row = <String, Object?>{
+        for (final MapEntry<dynamic, dynamic> item
+            in Map<dynamic, dynamic>.from(entry).entries)
+          item.key.toString(): item.value,
+      };
+      rows.add(<String, Object?>{
+        for (final String key in columnKeys) key: row[key],
+      });
+    }
+  }
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: columnKeys,
+    rows: rows,
+    summary: summary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle) ??
+        'Avg delivery_days from goods_receipt vs ordered_at; fulfillment_rate needs PO lines',
+  );
+}
+
+ModuleReportingReportSnapshot _projectDeliveryTime({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  const List<String> columnKeys = <String>[
+    'supplier',
+    'ordered_at',
+    'received_at',
+    'delivery_days',
+  ];
+  final List<Map<String, Object?>> rows = sourceRows
+      .where((Map<String, Object?> row) => row['delivery_days'] != null)
+      .map(
+        (Map<String, Object?> row) => <String, Object?>{
+          for (final String key in columnKeys) key: row[key],
+        },
+      )
+      .toList(growable: false);
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: columnKeys,
+    rows: rows,
     summary: summary,
     breakdown: breakdown,
     title: preview.title.isEmpty ? report.label : preview.title,
@@ -785,6 +1101,64 @@ ModuleReportingReportSnapshot _projectProfitAndMargin({
   );
 }
 
+ModuleReportingReportSnapshot _projectNewVsReturning({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<String> columns,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  final List<Map<String, Object?>> rows = sourceRows
+      .where((Map<String, Object?> row) {
+        final String segment = '${row['segment'] ?? ''}'.trim().toLowerCase();
+        return segment == 'new' || segment == 'returning';
+      })
+      .toList(growable: false);
+
+  final Set<String> segments = rows
+      .map((Map<String, Object?> row) => '${row['segment']}'.trim().toLowerCase())
+      .toSet();
+  final num newCount = rows
+      .where(
+        (Map<String, Object?> row) =>
+            '${row['segment']}'.trim().toLowerCase() == 'new',
+      )
+      .fold<num>(0, (num sum, Map<String, Object?> row) => sum + _asNum(row['customer_count']));
+  final num returningCount = rows
+      .where(
+        (Map<String, Object?> row) =>
+            '${row['segment']}'.trim().toLowerCase() == 'returning',
+      )
+      .fold<num>(
+        0,
+        (num sum, Map<String, Object?> row) => sum + _asNum(row['customer_count']),
+      );
+
+  final Map<String, Object?>? adjustedSummary = <String, Object?>{
+    ...?summary,
+    'new_count': newCount,
+    'returning_count': returningCount,
+    'customer_count': newCount + returningCount,
+    'disjoint':
+        segments.length == rows.length ||
+        (segments.contains('new') &&
+            segments.contains('returning') &&
+            segments.length <= 2),
+  };
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: columns.contains('segment') && columns.contains('customer_count')
+        ? columns
+        : const <String>['segment', 'customer_count'],
+    rows: rows,
+    summary: adjustedSummary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle),
+  );
+}
+
 num? _sumBreakdownDailyAmount(Map<String, Object?>? breakdown) {
   final Object? daily = breakdown?['daily_totals'];
   if (daily is! List || daily.isEmpty) {
@@ -819,6 +1193,7 @@ ModuleReportingReportSnapshot _filterStockRisk({
   required Map<String, Object?>? breakdown,
   Set<String> riskStates = const <String>{},
   bool outOfStockOnly = false,
+  bool includeDaysToExpiryNegative = false,
 }) {
   final List<Map<String, Object?>> filtered = sourceRows.where((
     Map<String, Object?> row,
@@ -830,7 +1205,15 @@ ModuleReportingReportSnapshot _filterStockRisk({
         '${row['risk_state'] ?? row['expiry_alert_status'] ?? ''}'
             .trim()
             .toUpperCase();
-    return riskStates.contains(risk);
+    if (riskStates.contains(risk)) {
+      return true;
+    }
+    if (includeDaysToExpiryNegative &&
+        row['days_to_expiry'] != null &&
+        _asNum(row['days_to_expiry']) < 0) {
+      return true;
+    }
+    return false;
   }).toList(growable: false);
 
   return ModuleReportingReportSnapshot.ready(
@@ -840,6 +1223,197 @@ ModuleReportingReportSnapshot _filterStockRisk({
     breakdown: breakdown,
     title: preview.title.isEmpty ? report.label : preview.title,
     subtitle: previewSubtitleOrNull(preview.subtitle),
+  );
+}
+
+/// Exclusive buckets: (0,30], (30,60], (60,90], (90,180]. Excludes expired.
+String? classifyPharmacyExpiryWindow(Object? daysToExpiry) {
+  if (daysToExpiry == null) {
+    return null;
+  }
+  final num days = _asNum(daysToExpiry);
+  if (!(days > 0)) {
+    return null;
+  }
+  if (days <= 30) {
+    return '0-30';
+  }
+  if (days <= 60) {
+    return '30-60';
+  }
+  if (days <= 90) {
+    return '60-90';
+  }
+  if (days <= 180) {
+    return '90-180';
+  }
+  return null;
+}
+
+ModuleReportingReportSnapshot _projectExpiringWindows({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<String> columns,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  final List<Map<String, Object?>> rows = <Map<String, Object?>>[];
+  for (final Map<String, Object?> row in sourceRows) {
+    final String risk =
+        '${row['risk_state'] ?? row['expiry_alert_status'] ?? ''}'
+            .trim()
+            .toUpperCase();
+    if (risk == 'EXPIRED') {
+      continue;
+    }
+    final String? window = classifyPharmacyExpiryWindow(row['days_to_expiry']) ??
+        (row['expiry_window']?.toString().trim().isNotEmpty == true
+            ? row['expiry_window']!.toString().trim()
+            : null);
+    if (window == null) {
+      continue;
+    }
+    // Prefer EXPIRING_SOON rows; also accept positive window rows with days.
+    if (risk.isNotEmpty && risk != 'EXPIRING_SOON') {
+      continue;
+    }
+    rows.add(<String, Object?>{
+      ...row,
+      'expiry_window': window,
+    });
+  }
+
+  final List<String> nextColumns = columns.contains('expiry_window')
+      ? columns
+      : <String>['expiry_window', ...columns];
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: nextColumns,
+    rows: rows,
+    summary: summary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle) ??
+        'Exclusive windows (0,30], (30,60], (60,90], (90,180]; expired excluded; at buy cost',
+  );
+}
+
+ModuleReportingReportSnapshot _projectExpiredStockValue({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<String> columns,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  final List<Map<String, Object?>> filtered = sourceRows.where((
+    Map<String, Object?> row,
+  ) {
+    final String risk =
+        '${row['risk_state'] ?? row['expiry_alert_status'] ?? ''}'
+            .trim()
+            .toUpperCase();
+    if (risk == 'EXPIRED') {
+      return true;
+    }
+    return row['days_to_expiry'] != null && _asNum(row['days_to_expiry']) < 0;
+  }).toList(growable: false);
+
+  final num valueTotal = filtered.fold<num>(
+    0,
+    (num sum, Map<String, Object?> row) => sum + _asNum(row['value']),
+  );
+  final Map<String, Object?>? adjustedSummary = <String, Object?>{
+    ...?summary,
+    'value': valueTotal,
+  };
+
+  final List<String> nextColumns = columns.contains('value')
+      ? columns
+      : <String>[...columns, 'value'];
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: nextColumns,
+    rows: filtered,
+    summary: adjustedSummary,
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle) ??
+        'Expired batch quantity × buy_unit_price (at buy cost)',
+  );
+}
+
+ModuleReportingReportSnapshot _projectExpiryLossesBreakdown({
+  required ModuleReportingReport report,
+  required ReportDatasetPreview preview,
+  required List<Map<String, Object?>> sourceRows,
+  required Map<String, Object?>? summary,
+  required Map<String, Object?>? breakdown,
+}) {
+  final Map<String, Map<String, Object?>> grouped =
+      <String, Map<String, Object?>>{};
+  for (final Map<String, Object?> row in sourceRows) {
+    final String risk =
+        '${row['risk_state'] ?? row['expiry_alert_status'] ?? ''}'
+            .trim()
+            .toUpperCase();
+    final bool expired = risk == 'EXPIRED' ||
+        (row['days_to_expiry'] != null && _asNum(row['days_to_expiry']) < 0);
+    if (!expired) {
+      continue;
+    }
+    final String drug =
+        '${row['drug'] ?? row['inventory_item'] ?? 'Unknown'}'.trim();
+    final String category = '${row['category'] ?? ''}'.trim();
+    final String supplierId = '${row['supplier_id'] ?? ''}'.trim();
+    final String supplier = '${row['supplier'] ?? ''}'.trim();
+    final String key = '$drug|$category|$supplierId';
+    final Map<String, Object?> current = grouped.putIfAbsent(
+      key,
+      () => <String, Object?>{
+        'drug': drug,
+        'category': category.isEmpty ? null : category,
+        'supplier_id': supplierId.isEmpty ? null : supplierId,
+        'supplier': supplier.isEmpty ? null : supplier,
+        'quantity': 0,
+        'value': 0,
+      },
+    );
+    current['quantity'] = _asNum(current['quantity']) + _asNum(row['quantity']);
+    current['value'] = _asNum(current['value']) + _asNum(row['value']);
+  }
+
+  final List<Map<String, Object?>> rows = grouped.values.toList(growable: false)
+    ..sort(
+      (Map<String, Object?> left, Map<String, Object?> right) =>
+          _asNum(right['value']).compareTo(_asNum(left['value'])),
+    );
+
+  final num valueTotal = rows.fold<num>(
+    0,
+    (num sum, Map<String, Object?> row) => sum + _asNum(row['value']),
+  );
+
+  return ModuleReportingReportSnapshot.ready(
+    columns: const <String>[
+      'drug',
+      'category',
+      'supplier',
+      'supplier_id',
+      'quantity',
+      'value',
+    ],
+    rows: rows,
+    summary: <String, Object?>{
+      ...?summary,
+      'value': valueTotal,
+      'drug_count': rows.length,
+    },
+    breakdown: breakdown,
+    title: preview.title.isEmpty ? report.label : preview.title,
+    subtitle: previewSubtitleOrNull(preview.subtitle) ??
+        'Expired value by drug / inventory category / supplier (at buy cost)',
   );
 }
 

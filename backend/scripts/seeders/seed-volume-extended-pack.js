@@ -15,14 +15,35 @@ const REPORT_DATASET_SEEDS = Object.freeze([
   { key: 'insurance_claims_aging', category: 'billing', label: 'Insurance claims aging', visualization: 'TABLE' },
   { key: 'pharmacy_drug_consumption', category: 'pharmacy', label: 'Pharmacy drug consumption', visualization: 'BAR_CHART' },
   { key: 'pharmacy_dispense_throughput', category: 'pharmacy', label: 'Pharmacy dispense throughput', visualization: 'LINE_CHART' },
+  { key: 'pharmacy_dispensing_by_prescriber', category: 'pharmacy', label: 'Medicines dispensed by prescriber', visualization: 'BAR_CHART' },
+  { key: 'pharmacy_dispensing_partial', category: 'pharmacy', label: 'Partial dispensing', visualization: 'TABLE' },
+  { key: 'pharmacy_dispensing_frequency', category: 'pharmacy', label: 'Prescription frequency', visualization: 'BAR_CHART' },
+  { key: 'pharmacy_dispensing_avg_items', category: 'pharmacy', label: 'Average items per prescription', visualization: 'KPI' },
   { key: 'pharmacy_sales_by_category', category: 'pharmacy', label: 'Pharmacy sales by category', visualization: 'BAR_CHART' },
+  { key: 'pharmacy_sales_by_branch', category: 'pharmacy', label: 'Pharmacy sales by branch', visualization: 'BAR_CHART' },
+  { key: 'pharmacy_profit_by_branch', category: 'pharmacy', label: 'Pharmacy profit by branch', visualization: 'BAR_CHART' },
+  { key: 'pharmacy_stock_by_branch', category: 'pharmacy', label: 'Pharmacy stock by branch', visualization: 'BAR_CHART' },
+  { key: 'pharmacy_purchases_by_branch', category: 'pharmacy', label: 'Pharmacy purchases by branch', visualization: 'TABLE' },
+  { key: 'pharmacy_stock_shortages_by_branch', category: 'pharmacy', label: 'Pharmacy stock shortages by branch', visualization: 'TABLE' },
+  { key: 'pharmacy_best_performing_branch', category: 'pharmacy', label: 'Best-performing branch', visualization: 'TABLE' },
+  { key: 'pharmacy_branch_comparison', category: 'pharmacy', label: 'Branch comparison', visualization: 'BAR_CHART' },
   { key: 'pharmacy_sales_payment_methods', category: 'pharmacy', label: 'Pharmacy sales by payment method', visualization: 'DONUT_CHART' },
   { key: 'pharmacy_sales_net_revenue', category: 'pharmacy', label: 'Pharmacy net revenue', visualization: 'KPI' },
   { key: 'inventory_stock_risk', category: 'inventory', label: 'Inventory stock risk', visualization: 'KPI' },
   { key: 'inventory_stock_value', category: 'inventory', label: 'Inventory stock value', visualization: 'TABLE' },
   { key: 'inventory_stock_movement_history', category: 'inventory', label: 'Stock movement history', visualization: 'TABLE' },
   { key: 'inventory_stock_turnover', category: 'inventory', label: 'Stock turnover', visualization: 'BAR_CHART' },
+  { key: 'inventory_stock_write_offs', category: 'inventory', label: 'Stock write-offs', visualization: 'TABLE' },
+  { key: 'inventory_adjustment_reasons', category: 'inventory', label: 'Adjustment reasons', visualization: 'TABLE' },
+  { key: 'inventory_damaged_stock', category: 'inventory', label: 'Damaged stock', visualization: 'TABLE' },
+  { key: 'inventory_lost_stock', category: 'inventory', label: 'Lost stock', visualization: 'TABLE' },
   { key: 'pharmacy_medicines_catalog', category: 'pharmacy', label: 'Pharmacy medicines catalog', visualization: 'TABLE' },
+  { key: 'pharmacy_purchase_orders', category: 'pharmacy', label: 'Pharmacy purchase orders', visualization: 'TABLE' },
+  { key: 'pharmacy_purchase_inbound_value', category: 'pharmacy', label: 'Pharmacy purchase inbound value', visualization: 'TABLE' },
+  { key: 'pharmacy_purchases_by_supplier', category: 'pharmacy', label: 'Pharmacy purchases by supplier', visualization: 'BAR_CHART' },
+  { key: 'pharmacy_supplier_pricing', category: 'pharmacy', label: 'Pharmacy supplier pricing', visualization: 'TABLE' },
+  { key: 'pharmacy_purchase_returns', category: 'pharmacy', label: 'Pharmacy purchase returns', visualization: 'TABLE' },
+  { key: 'pharmacy_drug_price_changes', category: 'pharmacy', label: 'Pharmacy drug price changes', visualization: 'TABLE' },
   { key: 'lab_turnaround', category: 'diagnostics', label: 'Lab turnaround', visualization: 'LINE_CHART' },
   { key: 'inpatient_occupancy', category: 'clinical', label: 'Inpatient occupancy', visualization: 'KPI' },
   { key: 'emergency_throughput', category: 'emergency', label: 'Emergency throughput', visualization: 'BAR_CHART' },
@@ -957,6 +978,44 @@ const seedVolumeExtendedPack = async (
     }
   });
 
+  const catalogDrugs = Object.values(clinicalCatalogPack?.pharmacy?.drugs || {}).filter(Boolean);
+  if (catalogDrugs.length > 0) {
+    // Curated + volume price-change audits for pharmacy purchasing reports.
+    const priceChangeCount = Math.min(n, Math.max(12, catalogDrugs.length));
+    await runInBatches(priceChangeCount, 10, async (index) => {
+      const drug = at(catalogDrugs, index);
+      const user = at(staffUsers, index);
+      if (!drug?.id) return;
+      const fromBuy = 400 + ((index % catalogDrugs.length) + 1) * 250;
+      const toBuy = fromBuy + 50 + (index % 5) * 25;
+      await ctx.upsert(
+        'audit_log',
+        `${scenario.key}:volx:audit-drug-price:${pad(index)}`,
+        {
+          tenant_id: facility.tenant_id,
+          user_id: user?.id || null,
+          action: 'UPDATE',
+          entity: 'drug',
+          entity_id: drug.id,
+          diff_json: {
+            buy_unit_price: { from: fromBuy, to: toBuy },
+            ...(index % 3 === 0
+              ? {
+                  unit_price: {
+                    from: 1200 + ((index % catalogDrugs.length) + 1) * 850,
+                    to: 1200 + ((index % catalogDrugs.length) + 1) * 850 + 100,
+                  },
+                }
+              : {}),
+          },
+          ip_address: `10.1.${index % 200}.${(index * 5) % 200}`,
+        },
+        { ...seedOpts, publicIdPrefix: 'AUD' }
+      );
+      bump('audit_logs');
+    });
+  }
+
   // --- Reporting & analytics ---
   const definitions = [];
   const datasetList = REPORT_DATASET_SEEDS;
@@ -1454,7 +1513,7 @@ const seedVolumeExtendedPack = async (
     });
   }
 
-  // --- Stock adjustments ---
+  // --- Stock adjustments (mixed reasons) ---
   if (inventoryItems.length > 0) {
     await runInBatches(n, 10, async (index) => {
       const item = at(inventoryItems, index);
@@ -1469,6 +1528,30 @@ const seedVolumeExtendedPack = async (
           quantity: spec.sign * (1 + (index % 8)),
           reason: spec.reason,
           adjusted_at: ctx.date(-((index % 100) + 1), 25),
+        },
+        { publicIdPrefix: 'SADJ', seedMeta: false }
+      );
+      bump('stock_adjustments');
+    });
+
+    // Dedicated DAMAGE|EXPIRY write-offs so expiry/loss reports meet ≥1000 floor.
+    const LOSS_WRITEOFF_SPECS = Object.freeze([
+      { reason: 'DAMAGE', sign: -1 },
+      { reason: 'EXPIRY', sign: -1 },
+    ]);
+    await runInBatches(n, 10, async (index) => {
+      const item = at(inventoryItems, index);
+      if (!item) return;
+      const spec = pick(LOSS_WRITEOFF_SPECS, index);
+      await ctx.upsert(
+        'stock_adjustment',
+        `${scenario.key}:volx:stock-writeoff:${pad(index)}`,
+        {
+          inventory_item_id: item.id,
+          facility_id: facility.id,
+          quantity: spec.sign * (1 + (index % 12)),
+          reason: spec.reason,
+          adjusted_at: ctx.date(-((index % 120) + 1), 30),
         },
         { publicIdPrefix: 'SADJ', seedMeta: false }
       );

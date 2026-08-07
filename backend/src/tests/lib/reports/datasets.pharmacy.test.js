@@ -1,5 +1,6 @@
 const {
   buildPharmacyDispenseThroughputAnalytics,
+  buildPharmacyDispensingAvgItemsAnalytics,
   buildPharmacyDrugConsumptionAnalytics,
   buildPharmacyMedicinesCatalogRow,
   buildPharmacySalesAvgTransactionAnalytics,
@@ -7,14 +8,22 @@ const {
   buildPharmacySalesPaymentMethodAnalytics,
   classifyStockRisk,
   classifyStockVelocity,
+  classifyExpiryWindow,
+  computeAverageItemsPerPrescription,
   computeCatalogProfitMargin,
+  computeDeliveryDays,
   computeStockValue,
+  extractPriceChangeFields,
   movementSignedDelta,
+  remainingItemQuantity,
+  resolveAgeBand,
+  resolveBuyUnitCostOnly,
   resolveDateRange,
   resolveInventoryUnitCost,
   shouldUseMonthlyGranularity,
   summarizeConsumptionSeries,
   summarizeThroughputSeries,
+  OPEN_PHARMACY_INVOICE_STATUSES,
 } = require('@lib/reports/datasets');
 const { pharmacyRetailMarginUnit } = require('@lib/billing/pharmacy-drug-margins');
 const { REPORT_DATASET_MAP, REPORT_DATASETS, REPORT_FORMATS } = require('@lib/reports/constants');
@@ -31,9 +40,75 @@ describe('reports datasets pharmacy analytics', () => {
       category: 'pharmacy',
       visualization: 'LINE_CHART',
     });
+    expect(REPORT_DATASET_MAP.pharmacy_dispensing_by_prescriber).toMatchObject({
+      key: 'pharmacy_dispensing_by_prescriber',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_dispensing_partial).toMatchObject({
+      key: 'pharmacy_dispensing_partial',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_dispensing_frequency).toMatchObject({
+      key: 'pharmacy_dispensing_frequency',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_dispensing_avg_items).toMatchObject({
+      key: 'pharmacy_dispensing_avg_items',
+      category: 'pharmacy',
+      visualization: 'KPI',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_customer_count).toMatchObject({
+      key: 'pharmacy_customer_count',
+      category: 'pharmacy',
+      visualization: 'KPI',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_customers_new_vs_returning).toMatchObject({
+      key: 'pharmacy_customers_new_vs_returning',
+      category: 'pharmacy',
+      default_columns: ['segment', 'customer_count'],
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_customer_credit_balance).toMatchObject({
+      key: 'pharmacy_customer_credit_balance',
+      category: 'pharmacy',
+      default_columns: ['patient', 'credit_balance'],
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_customer_retention).toMatchObject({
+      key: 'pharmacy_customer_retention',
+      category: 'pharmacy',
+    });
     expect(REPORT_DATASET_MAP.pharmacy_sales_by_category).toMatchObject({
       key: 'pharmacy_sales_by_category',
       category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_sales_by_branch).toMatchObject({
+      key: 'pharmacy_sales_by_branch',
+      category: 'pharmacy',
+      default_columns: ['facility', 'amount', 'quantity_dispensed'],
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_profit_by_branch).toMatchObject({
+      key: 'pharmacy_profit_by_branch',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_stock_by_branch).toMatchObject({
+      key: 'pharmacy_stock_by_branch',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_purchases_by_branch).toMatchObject({
+      key: 'pharmacy_purchases_by_branch',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_stock_shortages_by_branch).toMatchObject({
+      key: 'pharmacy_stock_shortages_by_branch',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_best_performing_branch).toMatchObject({
+      key: 'pharmacy_best_performing_branch',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_branch_comparison).toMatchObject({
+      key: 'pharmacy_branch_comparison',
+      category: 'pharmacy',
+      visualization: 'BAR_CHART',
     });
     expect(REPORT_DATASET_MAP.pharmacy_sales_payment_methods).toMatchObject({
       key: 'pharmacy_sales_payment_methods',
@@ -48,6 +123,34 @@ describe('reports datasets pharmacy analytics', () => {
       category: 'pharmacy',
       visualization: 'TABLE',
     });
+    expect(REPORT_DATASET_MAP.pharmacy_purchase_orders).toMatchObject({
+      key: 'pharmacy_purchase_orders',
+      category: 'pharmacy',
+      default_columns: expect.arrayContaining(['ordered_at', 'status', 'supplier', 'delivery_days']),
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_purchase_inbound_value).toMatchObject({
+      key: 'pharmacy_purchase_inbound_value',
+      category: 'pharmacy',
+      default_columns: expect.arrayContaining(['amount', 'quantity', 'cost_basis']),
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_purchases_by_supplier).toMatchObject({
+      key: 'pharmacy_purchases_by_supplier',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_supplier_pricing).toMatchObject({
+      key: 'pharmacy_supplier_pricing',
+      category: 'pharmacy',
+      default_columns: ['supplier', 'drug', 'buy_unit_price', 'currency'],
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_purchase_returns).toMatchObject({
+      key: 'pharmacy_purchase_returns',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASET_MAP.pharmacy_drug_price_changes).toMatchObject({
+      key: 'pharmacy_drug_price_changes',
+      category: 'pharmacy',
+    });
+    expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_purchase_orders')).toBe(true);
     expect(REPORT_DATASET_MAP.inventory_stock_risk.description).toMatch(/near-expiry/i);
     expect(REPORT_DATASET_MAP.inventory_stock_value).toMatchObject({
       key: 'inventory_stock_value',
@@ -61,11 +164,74 @@ describe('reports datasets pharmacy analytics', () => {
       key: 'inventory_stock_velocity',
       category: 'inventory',
     });
+    expect(REPORT_DATASET_MAP.inventory_stock_write_offs).toMatchObject({
+      key: 'inventory_stock_write_offs',
+      category: 'inventory',
+    });
+    expect(REPORT_DATASET_MAP.inventory_adjustment_reasons).toMatchObject({
+      key: 'inventory_adjustment_reasons',
+      category: 'inventory',
+    });
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_drug_consumption')).toBe(true);
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_dispense_throughput')).toBe(true);
+    expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_dispensing_avg_items')).toBe(true);
+    expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_branch_comparison')).toBe(true);
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_sales_avg_transaction')).toBe(true);
     expect(REPORT_DATASETS.some((entry) => entry.key === 'inventory_stock_turnover')).toBe(true);
     expect(REPORT_DATASETS.some((entry) => entry.key === 'pharmacy_medicines_catalog')).toBe(true);
+  });
+
+
+  test('single-facility stock aggregation returns one ready row', () => {
+    const rows = aggregateStockByFacility([
+      { facility: 'DemoCare General Hospital', quantity: 10, value: 100 },
+      { facility: 'DemoCare General Hospital', quantity: 5, value: 50.5 },
+    ]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      facility: 'DemoCare General Hospital',
+      quantity: 15,
+      value: 150.5,
+    });
+  });
+
+  test('two-facility comparison sums to tenant totals', () => {
+    const stock = aggregateStockByFacility([
+      { facility: 'Main', quantity: 10, value: 100 },
+      { facility: 'Annex', quantity: 20, value: 250 },
+      { facility: 'Main', quantity: 5, value: 40 },
+    ]);
+    expect(stock).toHaveLength(2);
+    expect(stock.reduce((sum, row) => sum + row.quantity, 0)).toBe(35);
+    expect(stock.reduce((sum, row) => sum + row.value, 0)).toBe(390);
+
+    const shortages = aggregateShortagesByFacility([
+      { facility: 'Main', risk_state: 'LOW', quantity: 2 },
+      { facility: 'Main', risk_state: 'OK', quantity: 9 },
+      { facility: 'Annex', risk_state: 'CRITICAL', quantity: 1 },
+      { facility: 'Annex', risk_state: 'OUT_OF_STOCK', quantity: 0 },
+    ]);
+    expect(shortages.find((row) => row.facility === 'Main')?.shortage_count).toBe(1);
+    expect(shortages.find((row) => row.facility === 'Annex')?.shortage_count).toBe(2);
+
+    const comparison = mergeBranchComparisonRows({
+      salesRows: [
+        { facility: 'Main', amount: 400, profit: 80, quantity_dispensed: 12 },
+        { facility: 'Annex', amount: 100, profit: 20, quantity_dispensed: 3 },
+      ],
+      stockRows: stock,
+      shortageRows: shortages,
+      purchaseRows: [
+        { facility: 'Main', request_count: 7, order_count: 5 },
+        { facility: 'Annex', request_count: 3, order_count: 2 },
+      ],
+    });
+    expect(comparison).toHaveLength(2);
+    expect(comparison.reduce((sum, row) => sum + row.amount, 0)).toBe(500);
+    expect(comparison.reduce((sum, row) => sum + row.profit, 0)).toBe(100);
+    expect(comparison.reduce((sum, row) => sum + row.quantity, 0)).toBe(35);
+    expect(comparison.reduce((sum, row) => sum + row.value, 0)).toBe(390);
+    expect(comparison.reduce((sum, row) => sum + row.request_count, 0)).toBe(10);
   });
 
   test('resolveDateRange supports day, month, year for pharmacy presets', () => {
@@ -83,9 +249,40 @@ describe('reports datasets pharmacy analytics', () => {
         'expiry_date',
         'expiry_alert_status',
         'days_to_expiry',
+        'expiry_window',
         'value',
+        'category',
+        'supplier',
+        'supplier_id',
       ])
     );
+  });
+
+  test('classifyExpiryWindow matches seed dayOffsets (8→0-30, −14→null expired)', () => {
+    // dayOffset 8 → ≤30 bucket; −14 expired (null window); 52/78/145 → mid/far windows.
+    expect(classifyExpiryWindow(8)).toBe('0-30');
+    expect(classifyExpiryWindow(21)).toBe('0-30');
+    expect(classifyExpiryWindow(30)).toBe('0-30');
+    expect(classifyExpiryWindow(52)).toBe('30-60');
+    expect(classifyExpiryWindow(60)).toBe('30-60');
+    expect(classifyExpiryWindow(78)).toBe('60-90');
+    expect(classifyExpiryWindow(90)).toBe('60-90');
+    expect(classifyExpiryWindow(145)).toBe('90-180');
+    expect(classifyExpiryWindow(180)).toBe('90-180');
+    expect(classifyExpiryWindow(-14)).toBeNull();
+    expect(classifyExpiryWindow(-75)).toBeNull();
+    expect(classifyExpiryWindow(0)).toBeNull();
+    expect(classifyExpiryWindow(181)).toBeNull();
+    // Expired value at buy cost: qty × buy > 0 for known seed prices.
+    expect(computeStockValue(22, 650)).toBeGreaterThan(0);
+    expect(resolveBuyUnitCostOnly({ buy_unit_price: 650, unit_price: 900 })).toEqual({
+      unit_cost: 650,
+      cost_basis: 'buy_unit_price',
+    });
+    expect(resolveBuyUnitCostOnly({ buy_unit_price: null, unit_price: 900 })).toEqual({
+      unit_cost: 0,
+      cost_basis: 'unavailable',
+    });
   });
 
   test('classifyStockRisk golden cases match runInventoryDataset thresholds', () => {
@@ -169,11 +366,36 @@ describe('reports datasets pharmacy analytics', () => {
     expect(summary.partially_dispensed).toBe(1);
     expect(summary.cancelled).toBe(1);
     expect(summary.returns).toBe(2);
+    // cancelled (order status) ≠ returns (RETURNED dispense_log count)
+    expect(summary.cancelled).not.toBe(summary.returns);
+  });
+
+  test('average items per prescription formula is item_count / orders_created', () => {
+    expect(computeAverageItemsPerPrescription(10, 4)).toBe(2.5);
+    expect(computeAverageItemsPerPrescription(3, 2)).toBe(1.5);
+    expect(computeAverageItemsPerPrescription(0, 5)).toBe(0);
+    expect(computeAverageItemsPerPrescription(5, 0)).toBeNull();
+  });
+
+  test('remainingItemQuantity never invents negative packs', () => {
+    expect(
+      remainingItemQuantity({
+        quantity: 10,
+        dispense_logs: [{ quantity_dispensed: 4 }, { quantity_dispensed: 3 }],
+      })
+    ).toBe(3);
+    expect(
+      remainingItemQuantity({
+        quantity: 2,
+        dispense_logs: [{ quantity_dispensed: 5 }],
+      })
+    ).toBe(0);
   });
 
   test('pharmacy analytics builders are exported for reuse and tests', () => {
     expect(typeof buildPharmacyDrugConsumptionAnalytics).toBe('function');
     expect(typeof buildPharmacyDispenseThroughputAnalytics).toBe('function');
+    expect(typeof buildPharmacyDispensingAvgItemsAnalytics).toBe('function');
     expect(typeof buildPharmacySalesPaymentMethodAnalytics).toBe('function');
     expect(typeof buildPharmacySalesNetRevenueAnalytics).toBe('function');
     expect(typeof buildPharmacySalesAvgTransactionAnalytics).toBe('function');
@@ -181,6 +403,12 @@ describe('reports datasets pharmacy analytics', () => {
     expect(typeof computeCatalogProfitMargin).toBe('function');
     expect(typeof classifyStockRisk).toBe('function');
     expect(typeof computeStockValue).toBe('function');
+  });
+
+  test('dispensing avg-items builder is read-only (pharmacy-flow: no encounter creates)', () => {
+    const source = buildPharmacyDispensingAvgItemsAnalytics.toString();
+    expect(source).not.toMatch(/\.create\s*\(/);
+    expect(source).not.toMatch(/encounter\.create/);
   });
 
   test('medicines catalog margin matches pharmacyRetailMarginUnit helper', () => {
@@ -253,5 +481,61 @@ describe('reports datasets pharmacy analytics', () => {
 
   test('shared report formats include PDF, Excel XLSX, and CSV', () => {
     expect(REPORT_FORMATS).toEqual(expect.arrayContaining(['PDF', 'CSV', 'XLSX']));
+  });
+
+  test('open pharmacy invoice statuses match billing open_invoices set', () => {
+    expect(OPEN_PHARMACY_INVOICE_STATUSES).toEqual(['DRAFT', 'SENT', 'OVERDUE']);
+  });
+
+  test('resolveAgeBand uses permitted date_of_birth bands only', () => {
+    const asOf = new Date('2026-08-07T12:00:00.000Z');
+    expect(resolveAgeBand(null, asOf)).toBe('Unknown');
+    expect(resolveAgeBand(new Date('2020-01-01'), asOf)).toBe('Under 18');
+    expect(resolveAgeBand(new Date('1995-01-01'), asOf)).toBe('18-34');
+    expect(resolveAgeBand(new Date('1980-01-01'), asOf)).toBe('35-49');
+    expect(resolveAgeBand(new Date('1965-01-01'), asOf)).toBe('50-64');
+    expect(resolveAgeBand(new Date('1950-01-01'), asOf)).toBe('65+');
+  });
+
+  test('customer demographics columns exclude unauthorized PHI keys', () => {
+    expect(REPORT_DATASET_MAP.pharmacy_customer_demographics.default_columns).toEqual([
+      'dimension',
+      'bucket',
+      'customer_count',
+    ]);
+    expect(REPORT_DATASET_MAP.pharmacy_customer_demographics.default_columns).not.toEqual(
+      expect.arrayContaining(['first_name', 'last_name', 'phone', 'email', 'address'])
+    );
+  });
+
+  test('frequently purchased medicines sort is amount then quantity (stable top projection)', () => {
+    expect(REPORT_DATASET_MAP.pharmacy_drug_consumption.default_columns).toEqual(
+      expect.arrayContaining(['drug', 'quantity_dispensed', 'amount'])
+    );
+  });
+
+  test('computeDeliveryDays is non-negative and null when either date missing', () => {
+    const ordered = new Date('2026-01-01T00:00:00.000Z');
+    const received = new Date('2026-01-04T00:00:00.000Z');
+    expect(computeDeliveryDays(ordered, received)).toBe(3);
+    expect(computeDeliveryDays(received, ordered)).toBe(0);
+    expect(computeDeliveryDays(ordered, null)).toBeNull();
+    expect(computeDeliveryDays(null, received)).toBeNull();
+  });
+
+  test('extractPriceChangeFields reads buy/unit price diffs only', () => {
+    expect(
+      extractPriceChangeFields({
+        buy_unit_price: { from: 650, to: 700 },
+        name: { from: 'A', to: 'B' },
+      })
+    ).toEqual([{ field: 'buy_unit_price', from_value: 650, to_value: 700 }]);
+    expect(extractPriceChangeFields({ volume: true })).toEqual([]);
+  });
+
+  test('purchase_value amount equals quantity × buy_unit_price basis', () => {
+    const quantity = 12;
+    const buy = 650;
+    expect(computeStockValue(quantity, buy)).toBe(7800);
   });
 });

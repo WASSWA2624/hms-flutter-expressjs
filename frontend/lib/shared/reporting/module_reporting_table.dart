@@ -24,6 +24,10 @@ const List<String> moduleReportingPrimaryNumericKeyOrder = <String>[
   'value',
   'profit',
   'returns',
+  'void_count',
+  'remaining_quantity',
+  'average_items_per_prescription',
+  'item_count',
 ];
 
 /// Resolves the unit for a snake_case metric key.
@@ -57,6 +61,7 @@ ModuleReportingMetricUnit moduleReportingMetricUnitForKey(String? key) {
       normalized.contains('revenue') ||
       normalized.contains('sales') ||
       normalized.contains('transaction_value') ||
+      normalized.contains('balance') ||
       normalized == 'value' ||
       (normalized.endsWith('_total') && !normalized.contains('count'))) {
     return ModuleReportingMetricUnit.currency;
@@ -73,8 +78,14 @@ ModuleReportingMetricUnit moduleReportingMetricUnitForKey(String? key) {
   if (normalized.contains('count') ||
       normalized == 'orders_created' ||
       normalized == 'cancelled' ||
-      normalized == 'partially_dispensed') {
+      normalized == 'partially_dispensed' ||
+      normalized == 'void_count' ||
+      normalized == 'item_count') {
     return ModuleReportingMetricUnit.count;
+  }
+
+  if (normalized == 'average_items_per_prescription') {
+    return ModuleReportingMetricUnit.plain;
   }
 
   return ModuleReportingMetricUnit.plain;
@@ -246,6 +257,10 @@ bool moduleReportingIsNumericColumn(String key) {
     'orders_created',
     'partially_dispensed',
     'quantity_dispensed',
+    'void_count',
+    'remaining_quantity',
+    'average_items_per_prescription',
+    'item_count',
   };
   if (exact.contains(normalized)) {
     return true;
@@ -256,6 +271,8 @@ bool moduleReportingIsNumericColumn(String key) {
       normalized.contains('price') ||
       normalized.contains('margin') ||
       normalized.contains('percent') ||
+      normalized.contains('rate') ||
+      normalized.contains('balance') ||
       normalized.contains('value') ||
       normalized.contains('count') ||
       normalized.startsWith('days_') ||

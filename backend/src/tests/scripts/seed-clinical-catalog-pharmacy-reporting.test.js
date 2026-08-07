@@ -9,7 +9,11 @@ describe('clinical catalog pharmacy reporting seed helpers', () => {
     const offsets = PHARMACY_REPORT_RISK_BATCH_TEMPLATES.map((row) => row.dayOffset);
     expect(offsets.some((day) => day < 0)).toBe(true);
     expect(offsets.some((day) => day > 0 && day <= 30)).toBe(true);
-    expect(offsets.some((day) => day > 30)).toBe(true);
+    expect(offsets.some((day) => day > 30 && day <= 60)).toBe(true);
+    expect(offsets.some((day) => day > 60 && day <= 90)).toBe(true);
+    expect(offsets.some((day) => day > 90 && day <= 180)).toBe(true);
+    // Seed golden offsets used by expiry/loss acceptance tests.
+    expect(offsets).toEqual(expect.arrayContaining([-14, 8, 52, 78, 145]));
     expect(
       PHARMACY_REPORT_RISK_BATCH_TEMPLATES.every(
         (row) => Number(row.leadDays) >= 30 && Number(row.quantity) > 0

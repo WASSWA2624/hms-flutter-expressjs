@@ -109,6 +109,7 @@ const verifyDemoData = async () => {
     notificationCount,
     stockMovementCount,
     stockAdjustmentCount,
+    purchaseRequestCount,
     mortuaryCaseCount,
     conversations,
     notifications,
@@ -186,6 +187,7 @@ const verifyDemoData = async () => {
     prisma.notification.count({ where: { deleted_at: null } }),
     prisma.stock_movement.count({ where: { deleted_at: null } }),
     prisma.stock_adjustment.count({ where: { deleted_at: null } }),
+    prisma.purchase_request.count({ where: { deleted_at: null } }),
     prisma.mortuary_case.count({ where: { deleted_at: null } }),
     prisma.conversation.findMany({
       where: { deleted_at: null },
@@ -571,6 +573,7 @@ const verifyDemoData = async () => {
       ['notifications', notificationCount, highFloor],
       ['stock_movements', stockMovementCount, highFloor],
       ['stock_adjustments', stockAdjustmentCount, highFloor],
+      ['purchase_requests', purchaseRequestCount, highFloor],
       ['diagnoses', extendedVolumeCounts[0], highFloor],
       ['vital_signs', extendedVolumeCounts[1], highFloor],
       ['procedures', extendedVolumeCounts[2], highFloor],
@@ -628,10 +631,58 @@ const verifyDemoData = async () => {
       ['pharmacy_discount_adjustments', pharmacyDiscountCount, highFloor]
     );
 
+    const openPharmacyInvoiceCount = await prisma.invoice.count({
+      where: {
+        deleted_at: null,
+        billing_entity: 'PHARMACY',
+        status: { in: ['DRAFT', 'SENT', 'OVERDUE'] },
+      },
+    });
+    highTrafficChecks.push([
+      'pharmacy_open_invoices',
+      openPharmacyInvoiceCount,
+      Math.min(200, highFloor),
+    ]);
+
+    const [partialOrderCount, cancelledOrderCount, returnedLogCount] = await Promise.all([
+      prisma.pharmacy_order.count({
+        where: { deleted_at: null, status: 'PARTIALLY_DISPENSED' },
+      }),
+      prisma.pharmacy_order.count({
+        where: { deleted_at: null, status: 'CANCELLED' },
+      }),
+      prisma.dispense_log.count({
+        where: { deleted_at: null, status: 'RETURNED' },
+      }),
+    ]);
+    if (partialOrderCount < 1) {
+      errors.push(
+        `Expected at least 1 PARTIALLY_DISPENSED pharmacy order for dispensing reports but found ${partialOrderCount}.`
+      );
+    }
+    if (cancelledOrderCount < 1) {
+      errors.push(
+        `Expected at least 1 CANCELLED pharmacy order for dispensing voids but found ${cancelledOrderCount}.`
+      );
+    }
+    if (returnedLogCount < 1) {
+      errors.push(
+        `Expected at least 1 RETURNED dispense log for dispensing voids but found ${returnedLogCount}.`
+      );
+    }
+
     const drugBatchCount = await prisma.drug_batch.count({
       where: { deleted_at: null },
     });
     highTrafficChecks.push(['drug_batches', drugBatchCount, highFloor]);
+
+    const [purchaseOrderCount, goodsReceiptCount] = await Promise.all([
+      prisma.purchase_order.count({ where: { deleted_at: null } }),
+      prisma.goods_receipt.count({ where: { deleted_at: null } }),
+    ]);
+    highTrafficChecks.push(['purchase_orders', purchaseOrderCount, highFloor]);
+    // DRAFT/CANCELLED POs skip receipts; expect at least half of volume.
+    highTrafficChecks.push(['goods_receipts', goodsReceiptCount, Math.floor(highFloor * 0.5)]);
 
     for (const [label, count, floor] of highTrafficChecks) {
       if (count < floor) {
@@ -639,10 +690,13 @@ const verifyDemoData = async () => {
       }
     }
 
-    const [damageAdjustmentCount, inboundPurchaseCount, outboundDispenseCount, transferMovementCount] =
+    const [damageAdjustmentCount, expiryAdjustmentCount, inboundPurchaseCount, outboundDispenseCount, transferMovementCount] =
       await Promise.all([
         prisma.stock_adjustment.count({
           where: { deleted_at: null, reason: 'DAMAGE' },
+        }),
+        prisma.stock_adjustment.count({
+          where: { deleted_at: null, reason: 'EXPIRY' },
         }),
         prisma.stock_movement.count({
           where: { deleted_at: null, movement_type: 'INBOUND', reason: 'PURCHASE' },
@@ -654,16 +708,44 @@ const verifyDemoData = async () => {
           where: { deleted_at: null, movement_type: 'TRANSFER' },
         }),
       ]);
+    const lossWriteOffCount = damageAdjustmentCount + expiryAdjustmentCount;
+    if (lossWriteOffCount < highFloor) {
+      errors.push(
+        `Expected at least ${highFloor} DAMAGE|EXPIRY stock_adjustments for expiry/loss reporting but found ${lossWriteOffCount} (DAMAGE=${damageAdjustmentCount}, EXPIRY=${expiryAdjustmentCount}).`
+      );
+    }
     if (damageAdjustmentCount < 1) {
       errors.push(
         `Expected at least 1 DAMAGE stock_adjustment for inventory reporting but found ${damageAdjustmentCount}.`
       );
     }
-    if (inboundPurchaseCount < 1) {
+    if (inboundPurchaseCount < highFloor) {
       errors.push(
-        `Expected at least 1 INBOUND+PURCHASE stock_movement for inventory reporting but found ${inboundPurchaseCount}.`
+        `Expected at least ${highFloor} INBOUND+PURCHASE stock_movement for pharmacy purchasing reports but found ${inboundPurchaseCount}.`
       );
     }
+
+    const [supplierCount, drugPriceAuditCount] = await Promise.all([
+      prisma.supplier.count({ where: { deleted_at: null } }),
+      prisma.audit_log.count({
+        where: {
+          deleted_at: null,
+          entity: 'drug',
+          action: 'UPDATE',
+        },
+      }),
+    ]);
+    if (supplierCount < 2) {
+      errors.push(
+        `Expected at least 2 suppliers for pharmacy purchasing reports but found ${supplierCount}.`
+      );
+    }
+    if (drugPriceAuditCount < 1) {
+      errors.push(
+        `Expected at least 1 drug price audit_log UPDATE for purchasing price_changes but found ${drugPriceAuditCount}.`
+      );
+    }
+
     if (outboundDispenseCount < 1) {
       errors.push(
         `Expected at least 1 OUTBOUND+DISPENSE stock_movement for inventory reporting but found ${outboundDispenseCount}.`

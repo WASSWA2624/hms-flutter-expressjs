@@ -375,4 +375,503 @@ void main() {
     expect(batchSnapshot.rows, hasLength(1));
     expect(batchSnapshot.rows.single['batch_number'], 'PCM500A');
   });
+
+  test('items_dispensed keeps pack quantity from consumption', () {
+    const ModuleReportingReport itemsReport = ModuleReportingReport(
+      id: 'items_dispensed',
+      categoryId: 'dispensing',
+      label: 'Number of items dispensed',
+      datasetKey: 'pharmacy_drug_consumption',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_drug_consumption',
+      columns: const <String>['drug', 'quantity_dispensed', 'amount'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{'drug': 'Amox', 'quantity_dispensed': 12, 'amount': 100},
+      ],
+      summary: const <String, Object?>{'quantity_dispensed': 12},
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: itemsReport,
+          preview: preview,
+        );
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.rows.single['quantity_dispensed'], 12);
+    expect(snapshot.subtitle, contains('Pack quantity'));
+  });
+
+  test('medicines_dispensed_by_period projects pack qty series', () {
+    const ModuleReportingReport periodReport = ModuleReportingReport(
+      id: 'medicines_dispensed_by_period',
+      categoryId: 'dispensing',
+      label: 'Medicines dispensed by period',
+      contentKind: ModuleReportingContentKind.chart,
+      datasetKey: 'pharmacy_drug_consumption',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_drug_consumption',
+      columns: const <String>['drug', 'quantity_dispensed'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{'drug': 'Amox', 'quantity_dispensed': 5},
+      ],
+      summary: const <String, Object?>{'quantity_dispensed': 9},
+      breakdown: const <String, Object?>{
+        'daily_totals': <Map<String, Object?>>[
+          <String, Object?>{'date': '2026-01-01', 'quantity_dispensed': 4, 'amount': 10},
+          <String, Object?>{'date': '2026-01-02', 'quantity_dispensed': 5, 'amount': 20},
+        ],
+      },
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: periodReport,
+          preview: preview,
+        );
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.columns, <String>['date', 'quantity_dispensed']);
+    expect(snapshot.rows, hasLength(2));
+    expect(snapshot.subtitle, contains('Pack quantity'));
+  });
+
+  test('prescription_status and voids project distinct throughput breakdowns', () {
+    const ModuleReportingReport statusReport = ModuleReportingReport(
+      id: 'prescription_status',
+      categoryId: 'dispensing',
+      label: 'Prescription status',
+      datasetKey: 'pharmacy_dispense_throughput',
+    );
+    const ModuleReportingReport voidsReport = ModuleReportingReport(
+      id: 'dispensing_errors_voids',
+      categoryId: 'dispensing',
+      label: 'Dispensing errors/voids',
+      datasetKey: 'pharmacy_dispense_throughput',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_dispense_throughput',
+      columns: const <String>['date', 'orders_created', 'cancelled', 'returns'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'date': '2026-01-01',
+          'orders_created': 5,
+          'cancelled': 1,
+          'returns': 2,
+        },
+      ],
+      summary: const <String, Object?>{
+        'orders_created': 5,
+        'cancelled': 1,
+        'returns': 2,
+      },
+      breakdown: const <String, Object?>{
+        'status_totals': <Map<String, Object?>>[
+          <String, Object?>{'status': 'DISPENSED', 'orders_created': 3},
+          <String, Object?>{'status': 'CANCELLED', 'orders_created': 1},
+        ],
+        'voids': <Map<String, Object?>>[
+          <String, Object?>{'void_type': 'CANCELLED_ORDERS', 'void_count': 1},
+          <String, Object?>{'void_type': 'RETURNED_LOGS', 'void_count': 2},
+        ],
+      },
+    );
+
+    final ModuleReportingReportSnapshot statusSnapshot =
+        projectPharmacyReportingPreview(
+          report: statusReport,
+          preview: preview,
+        );
+    expect(statusSnapshot.rows, hasLength(2));
+    expect(statusSnapshot.rows.first['status'], 'DISPENSED');
+
+    final ModuleReportingReportSnapshot voidsSnapshot =
+        projectPharmacyReportingPreview(
+          report: voidsReport,
+          preview: preview,
+        );
+    expect(voidsSnapshot.rows, hasLength(2));
+    expect(voidsSnapshot.rows.first['void_type'], 'CANCELLED_ORDERS');
+    expect(voidsSnapshot.rows[1]['void_type'], 'RETURNED_LOGS');
+    expect(voidsSnapshot.rows.first['void_count'], isNot(voidsSnapshot.rows[1]['void_count']));
+  });
+
+  test('medicines_dispensed_by_patient drops amount column', () {
+    const ModuleReportingReport patientReport = ModuleReportingReport(
+      id: 'medicines_dispensed_by_patient',
+      categoryId: 'dispensing',
+      label: 'Medicines dispensed by patient',
+      datasetKey: 'pharmacy_sales_by_customer',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_sales_by_customer',
+      columns: const <String>['patient', 'amount', 'quantity_dispensed'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'patient': 'PAT-1 · Amina',
+          'amount': 500,
+          'quantity_dispensed': 8,
+        },
+      ],
+      summary: const <String, Object?>{'amount': 500, 'quantity_dispensed': 8},
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: patientReport,
+          preview: preview,
+        );
+
+    expect(snapshot.columns, <String>['patient', 'quantity_dispensed']);
+    expect(snapshot.rows.single.containsKey('amount'), isFalse);
+  });
+
+  test('expiring windows buckets dayOffset 8 into 0-30 and excludes expired', () {
+    const ModuleReportingReport windowsReport = ModuleReportingReport(
+      id: 'expiring_windows',
+      categoryId: 'expiry_loss',
+      label: 'Medicines expiring within 30/60/90/180 days',
+      datasetKey: 'inventory_stock_risk',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'inventory_stock_risk',
+      columns: const <String>[
+        'inventory_item',
+        'risk_state',
+        'days_to_expiry',
+        'quantity',
+        'value',
+      ],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'inventory_item': 'Near8',
+          'risk_state': 'EXPIRING_SOON',
+          'days_to_expiry': 8,
+          'quantity': 36,
+          'value': 23400,
+        },
+        <String, Object?>{
+          'inventory_item': 'Win52',
+          'risk_state': 'EXPIRING_SOON',
+          'days_to_expiry': 52,
+          'quantity': 40,
+          'value': 26000,
+        },
+        <String, Object?>{
+          'inventory_item': 'Win78',
+          'risk_state': 'EXPIRING_SOON',
+          'days_to_expiry': 78,
+          'quantity': 30,
+          'value': 19500,
+        },
+        <String, Object?>{
+          'inventory_item': 'Win145',
+          'risk_state': 'EXPIRING_SOON',
+          'days_to_expiry': 145,
+          'quantity': 45,
+          'value': 29250,
+        },
+        <String, Object?>{
+          'inventory_item': 'Expired14',
+          'risk_state': 'EXPIRED',
+          'days_to_expiry': -14,
+          'quantity': 22,
+          'value': 14300,
+        },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: windowsReport,
+          preview: preview,
+        );
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.rows, hasLength(4));
+    expect(snapshot.columns, contains('expiry_window'));
+    expect(
+      snapshot.rows.map((Map<String, Object?> row) => row['expiry_window']),
+      containsAll(<String>['0-30', '30-60', '60-90', '90-180']),
+    );
+    expect(
+      snapshot.rows.any(
+        (Map<String, Object?> row) => row['inventory_item'] == 'Expired14',
+      ),
+      isFalse,
+    );
+    expect(classifyPharmacyExpiryWindow(8), '0-30');
+    expect(classifyPharmacyExpiryWindow(-14), isNull);
+  });
+
+  test('expired stock value uses buy-cost value and dayOffset −14 value > 0', () {
+    const ModuleReportingReport valueReport = ModuleReportingReport(
+      id: 'expired_stock_value',
+      categoryId: 'expiry_loss',
+      label: 'Value of expired stock',
+      datasetKey: 'inventory_stock_risk',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'inventory_stock_risk',
+      columns: const <String>[
+        'inventory_item',
+        'risk_state',
+        'days_to_expiry',
+        'quantity',
+        'value',
+      ],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'inventory_item': 'Expired14',
+          'risk_state': 'EXPIRED',
+          'days_to_expiry': -14,
+          'quantity': 22,
+          'value': 14300,
+        },
+        <String, Object?>{
+          'inventory_item': 'Near8',
+          'risk_state': 'EXPIRING_SOON',
+          'days_to_expiry': 8,
+          'quantity': 36,
+          'value': 23400,
+        },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: valueReport,
+          preview: preview,
+        );
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.rows, hasLength(1));
+    expect(snapshot.rows.single['inventory_item'], 'Expired14');
+    expect(snapshot.rows.single['value'], greaterThan(0));
+    expect(snapshot.summary?['value'], 14300);
+    expect(snapshot.subtitle, contains('buy cost'));
+  });
+
+  test('expiry losses breakdown aggregates expired by drug/category/supplier', () {
+    const ModuleReportingReport breakdownReport = ModuleReportingReport(
+      id: 'expiry_losses_breakdown',
+      categoryId: 'expiry_loss',
+      label: 'Expiry losses by product/category/supplier',
+      datasetKey: 'inventory_stock_risk',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'inventory_stock_risk',
+      columns: const <String>[
+        'drug',
+        'category',
+        'supplier_id',
+        'supplier',
+        'risk_state',
+        'quantity',
+        'value',
+      ],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'drug': 'Amox',
+          'category': 'MEDICATION',
+          'supplier_id': 'sup-1',
+          'supplier': 'Acme',
+          'risk_state': 'EXPIRED',
+          'quantity': 10,
+          'value': 6500,
+        },
+        <String, Object?>{
+          'drug': 'Amox',
+          'category': 'MEDICATION',
+          'supplier_id': 'sup-1',
+          'supplier': 'Acme',
+          'risk_state': 'EXPIRED',
+          'quantity': 5,
+          'value': 3250,
+        },
+        <String, Object?>{
+          'drug': 'Near',
+          'category': 'MEDICATION',
+          'supplier_id': 'sup-1',
+          'supplier': 'Acme',
+          'risk_state': 'EXPIRING_SOON',
+          'quantity': 8,
+          'value': 5200,
+        },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(
+          report: breakdownReport,
+          preview: preview,
+        );
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.rows, hasLength(1));
+    expect(snapshot.rows.single['drug'], 'Amox');
+    expect(snapshot.rows.single['quantity'], 15);
+    expect(snapshot.rows.single['value'], 9750);
+  });
+  test('branch reports project ready facility rows', () {
+    const ModuleReportingReport salesByBranch = ModuleReportingReport(
+      id: 'sales_by_branch',
+      categoryId: 'branch',
+      label: 'Sales by branch',
+      datasetKey: 'pharmacy_sales_by_branch',
+    );
+    const ModuleReportingReport comparison = ModuleReportingReport(
+      id: 'branch_comparison',
+      categoryId: 'branch',
+      label: 'Branch comparison',
+      contentKind: ModuleReportingContentKind.chart,
+      datasetKey: 'pharmacy_branch_comparison',
+    );
+
+    final ReportDatasetPreview salesPreview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_sales_by_branch',
+      title: 'Pharmacy sales by branch',
+      columns: const <String>['facility', 'amount', 'quantity_dispensed'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'facility': 'DemoCare General Hospital',
+          'amount': 1200,
+          'quantity_dispensed': 40,
+        },
+      ],
+      summary: const <String, Object?>{'amount': 1200, 'facility_count': 1},
+    );
+
+    final ModuleReportingReportSnapshot salesSnapshot =
+        projectPharmacyReportingPreview(
+          report: salesByBranch,
+          preview: salesPreview,
+        );
+    expect(salesSnapshot.state, ModuleReportingLoadState.ready);
+    expect(salesSnapshot.rows, hasLength(1));
+    expect(salesSnapshot.rows.single['facility'], 'DemoCare General Hospital');
+
+    final ReportDatasetPreview comparisonPreview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_branch_comparison',
+      title: 'Branch comparison',
+      subtitle: 'Side-by-side facility metrics',
+      columns: const <String>['facility', 'amount', 'value'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'facility': 'DemoCare General Hospital',
+          'amount': 1200,
+          'value': 5000,
+        },
+      ],
+    );
+    final ModuleReportingReportSnapshot comparisonSnapshot =
+        projectPharmacyReportingPreview(
+          report: comparison,
+          preview: comparisonPreview,
+        );
+    expect(comparisonSnapshot.state, ModuleReportingLoadState.ready);
+    expect(comparisonSnapshot.subtitle, 'Side-by-side facility metrics');
+    expect(comparisonSnapshot.rows.single['amount'], 1200);
+  });
+
+  test('transfers between branches stays unavailable without dataset', () {
+    const ModuleReportingReport transfers = ModuleReportingReport(
+      id: 'transfers_between_branches',
+      categoryId: 'branch',
+      label: 'Transfers between branches',
+    );
+    expect(transfers.hasBackend, isFalse);
+  });
+
+  test('new vs returning partition is disjoint and sums customer_count', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'new_vs_returning',
+      categoryId: 'patients_customers',
+      label: 'New vs returning customers',
+      contentKind: ModuleReportingContentKind.chart,
+      datasetKey: 'pharmacy_customers_new_vs_returning',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_customers_new_vs_returning',
+      columns: const <String>['segment', 'customer_count'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{'segment': 'new', 'customer_count': 40},
+        <String, Object?>{'segment': 'returning', 'customer_count': 60},
+        <String, Object?>{'segment': 'other', 'customer_count': 99},
+      ],
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.rows, hasLength(2));
+    expect(
+      snapshot.rows.every(
+        (Map<String, Object?> row) =>
+            row['segment'] == 'new' || row['segment'] == 'returning',
+      ),
+      isTrue,
+    );
+    expect(snapshot.summary?['new_count'], 40);
+    expect(snapshot.summary?['returning_count'], 60);
+    expect(snapshot.summary?['customer_count'], 100);
+    expect(snapshot.summary?['disjoint'], isTrue);
+  });
+
+  test('frequently purchased medicines keeps top 20 by amount then quantity', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'frequently_purchased_medicines',
+      categoryId: 'patients_customers',
+      label: 'Frequently purchased medicines',
+      datasetKey: 'pharmacy_drug_consumption',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_drug_consumption',
+      columns: const <String>['drug', 'amount', 'quantity_dispensed'],
+      rows: <Map<String, Object?>>[
+        for (int i = 0; i < 25; i++)
+          <String, Object?>{
+            'drug': 'Drug $i',
+            'amount': i.toDouble(),
+            'quantity_dispensed': i,
+          },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+
+    expect(snapshot.rows, hasLength(20));
+    expect(snapshot.rows.first['drug'], 'Drug 24');
+  });
+
+  test('customer demographics pass-through excludes inventing PHI columns', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'customer_demographics',
+      categoryId: 'patients_customers',
+      label: 'Customer demographics',
+      datasetKey: 'pharmacy_customer_demographics',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_customer_demographics',
+      columns: const <String>['dimension', 'bucket', 'customer_count'],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'dimension': 'gender',
+          'bucket': 'FEMALE',
+          'customer_count': 12,
+        },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+
+    expect(snapshot.columns, <String>['dimension', 'bucket', 'customer_count']);
+    expect(snapshot.rows.single.containsKey('first_name'), isFalse);
+    expect(snapshot.rows.single.containsKey('phone'), isFalse);
+  });
 }

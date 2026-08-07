@@ -25,10 +25,24 @@ void main() {
       moduleReportingColumnLabel('profit_margin'),
       'Profit Margin (%)',
     );
+    expect(
+      moduleReportingColumnLabel('credit_balance', currencyCode: 'UGX'),
+      'Credit Balance (UGX)',
+    );
+    expect(
+      moduleReportingColumnLabel('retention_rate'),
+      'Retention Rate (%)',
+    );
+    expect(
+      moduleReportingColumnLabel('customer_count'),
+      'Customer Count',
+    );
   });
 
   test('detects numeric and date columns', () {
     expect(moduleReportingIsNumericColumn('amount'), isTrue);
+    expect(moduleReportingIsNumericColumn('credit_balance'), isTrue);
+    expect(moduleReportingIsNumericColumn('retention_rate'), isTrue);
     expect(moduleReportingIsNumericColumn('days_to_expiry'), isTrue);
     expect(moduleReportingIsNumericColumn('drug'), isFalse);
     expect(moduleReportingIsDateColumn('expiry_date'), isTrue);
@@ -164,6 +178,18 @@ void main() {
     expect(
       moduleReportingMetricUnitForKey('profit_per_unit'),
       ModuleReportingMetricUnit.currency,
+    );
+    expect(
+      moduleReportingMetricUnitForKey('void_count'),
+      ModuleReportingMetricUnit.count,
+    );
+    expect(
+      moduleReportingMetricUnitForKey('remaining_quantity'),
+      ModuleReportingMetricUnit.quantity,
+    );
+    expect(
+      moduleReportingMetricUnitForKey('average_items_per_prescription'),
+      ModuleReportingMetricUnit.plain,
     );
   });
 
