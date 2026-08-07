@@ -27,6 +27,7 @@ import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_cance
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_print_history_options_section.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_print_options_section.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_suppliers_panel.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_walk_in_order_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -176,6 +177,9 @@ class _PharmacyWorkspaceContentState
           (section == 'inventory' || section == 'stock')) {
         controller.prepareCatalogTab(PharmacyCatalogTab.inventory);
       }
+      if (parsed.isSuppliersSection) {
+        controller.prepareSuppliers();
+      }
       await _applySectionData(
         controller,
         parsed,
@@ -279,6 +283,9 @@ class _PharmacyWorkspaceContentState
           if (parsed.isCatalogSection &&
               (sectionKey == 'inventory' || sectionKey == 'stock')) {
             controller.prepareCatalogTab(PharmacyCatalogTab.inventory);
+          }
+          if (parsed.isSuppliersSection) {
+            controller.prepareSuppliers();
           }
           // Always apply: `_scheduleRouteQuery` already dedupes by signature.
           // Skipping after the first deep link left later legend / KPI
@@ -393,6 +400,7 @@ class _PharmacyWorkspaceContentState
       PharmacyDeskSection.cancelled => 'cancelled',
       PharmacyDeskSection.allOrders => 'all',
       PharmacyDeskSection.catalog => 'catalog',
+      PharmacyDeskSection.suppliers => 'suppliers',
       PharmacyDeskSection.nearExpiry => 'near-expiry',
       PharmacyDeskSection.expired => 'expired',
       PharmacyDeskSection.lowStock => 'low-stock',
@@ -430,6 +438,9 @@ class _PharmacyWorkspaceContentState
       case 'inventory':
       case 'stock':
         return PharmacyDeskSection.catalog;
+      case 'suppliers':
+      case 'supplier':
+        return PharmacyDeskSection.suppliers;
       case 'near-expiry':
       case 'expiring':
       case 'expiring-soon':
@@ -458,6 +469,7 @@ class _PharmacyWorkspaceContentState
       // Catalog and stock sections do not use an order filter (see
       // [_applySectionData]).
       PharmacyDeskSection.catalog ||
+      PharmacyDeskSection.suppliers ||
       PharmacyDeskSection.nearExpiry ||
       PharmacyDeskSection.expired ||
       PharmacyDeskSection.lowStock ||
@@ -480,6 +492,10 @@ class _PharmacyWorkspaceContentState
     DateTime? dateTo,
     bool openOrdersOnly = false,
   }) {
+    if (section.isSuppliersSection) {
+      controller.prepareSuppliers();
+      return Future<AppFailure?>.value();
+    }
     if (section.isCatalogSection) {
       // Inline catalog section: hydrate the active nested catalog tab's data.
       controller.prepareCatalogTab(controller.currentCatalogTab);
@@ -527,6 +543,7 @@ class _PharmacyWorkspaceContentState
       PharmacyDeskSection.allOrders => summary.totalOrders,
       // Catalog is a management hub, not a counted worklist.
       PharmacyDeskSection.catalog => 0,
+      PharmacyDeskSection.suppliers => state.suppliers.totalItemCount ?? 0,
       PharmacyDeskSection.nearExpiry => stock.expiringSoonRows,
       PharmacyDeskSection.expired => stock.expiredRows,
       PharmacyDeskSection.lowStock => stock.lowStockRows,
@@ -546,6 +563,7 @@ class _PharmacyWorkspaceContentState
       PharmacyDeskSection.outOfStock => AppTabCountTone.danger,
       PharmacyDeskSection.completed ||
       PharmacyDeskSection.catalog ||
+      PharmacyDeskSection.suppliers ||
       PharmacyDeskSection.allOrders => AppTabCountTone.info,
     };
   }
@@ -559,6 +577,7 @@ class _PharmacyWorkspaceContentState
       PharmacyDeskSection.cancelled => Icons.cancel_outlined,
       PharmacyDeskSection.allOrders => Icons.receipt_long_outlined,
       PharmacyDeskSection.catalog => Icons.inventory_2_outlined,
+      PharmacyDeskSection.suppliers => Icons.local_shipping_outlined,
       PharmacyDeskSection.nearExpiry => Icons.hourglass_bottom_outlined,
       PharmacyDeskSection.expired => Icons.event_busy_outlined,
       PharmacyDeskSection.lowStock => Icons.trending_down_outlined,
@@ -578,6 +597,7 @@ class _PharmacyWorkspaceContentState
       PharmacyDeskSection.cancelled => l10n.pharmacyDeskCancelledOrdersLabel,
       PharmacyDeskSection.allOrders => l10n.pharmacyFilterAll,
       PharmacyDeskSection.catalog => l10n.pharmacyDeskCatalogLabel,
+      PharmacyDeskSection.suppliers => l10n.pharmacyDeskSuppliersLabel,
       PharmacyDeskSection.nearExpiry => l10n.pharmacyDeskNearExpiryLabel,
       PharmacyDeskSection.expired => l10n.pharmacyDeskExpiredLabel,
       PharmacyDeskSection.lowStock => l10n.pharmacyDeskLowStockLabel,
@@ -664,8 +684,13 @@ class _PharmacyWorkspaceContentState
               )
             else
               Expanded(
-                child: effectiveSection.isCatalogSection ||
-                        effectiveSection.isStockSection
+                child: effectiveSection.isSuppliersSection
+                    ? PharmacySuppliersCatalogTab(
+                        state: state,
+                        writeRequirement: pharmacyCatalogWriteRequirement,
+                        fillHeight: true,
+                      )
+                    : effectiveSection.opensCatalogPanel
                     ? PharmacyCatalogPanel(state: state, fillHeight: true)
                     : _PharmacyQueuePanel(
                         state: state,
@@ -3726,6 +3751,7 @@ List<AppListTableColumn<PharmacyOrder>> _columnsForSection(
     // Catalog and stock-alert sections render [PharmacyCatalogPanel] (Inventory
     // for stock filters). Neither uses order columns.
     PharmacyDeskSection.catalog ||
+    PharmacyDeskSection.suppliers ||
     PharmacyDeskSection.nearExpiry ||
     PharmacyDeskSection.expired ||
     PharmacyDeskSection.lowStock ||

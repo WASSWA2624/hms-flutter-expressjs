@@ -154,7 +154,8 @@ AccessRequirement pharmacySectionTabRequirement(PharmacyDeskSection section) {
     PharmacyDeskSection.cancelled => PharmacyAllOrdersAtomPermissions.tab,
     // Catalog and stock management tab surfaces catalog CRUD chrome; gate on
     // catalog/inventory browse (write actions gate on catalog write inside).
-    PharmacyDeskSection.catalog => pharmacyCatalogBrowseRequirement,
+    PharmacyDeskSection.catalog ||
+    PharmacyDeskSection.suppliers => pharmacyCatalogBrowseRequirement,
     // Stock-alert tabs surface inventory; gate on catalog/inventory browse.
     PharmacyDeskSection.nearExpiry ||
     PharmacyDeskSection.expired ||
@@ -230,6 +231,7 @@ AccessRequirement pharmacySectionWriteRequirement(PharmacyDeskSection section) {
     PharmacyDeskSection.completed => PharmacyCompletedAtomPermissions.write,
     PharmacyDeskSection.cancelled => PharmacyAllOrdersAtomPermissions.write,
     PharmacyDeskSection.catalog ||
+    PharmacyDeskSection.suppliers ||
     PharmacyDeskSection.nearExpiry ||
     PharmacyDeskSection.expired ||
     PharmacyDeskSection.lowStock ||
@@ -264,7 +266,9 @@ List<PharmacyDeskSection> pharmacyAllowedSections(AppAccessPolicy policy) {
   return PharmacyDeskSection.values
       .where(
         (PharmacyDeskSection section) =>
-            !section.isCatalogSection && !section.isStockSection,
+            !section.isCatalogSection &&
+            !section.isStockSection &&
+            !section.isSuppliersSection,
       )
       .toList(growable: false);
 }

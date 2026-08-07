@@ -90,13 +90,20 @@ const ensureRadiologyTest = async (ctx, scenario, facility, catalogPack, recordK
     }
   );
 
-const ensureDrug = async (ctx, scenario, facility, catalogPack, recordKey, fallback) =>
-  getCatalogRecord(catalogPack?.pharmacy?.drugs, scenario.key, recordKey)
-  || ctx.upsert(
+const ensureDrug = async (ctx, scenario, facility, catalogPack, recordKey, fallback) => {
+  const existing = getCatalogRecord(catalogPack?.pharmacy?.drugs, scenario.key, recordKey);
+  if (existing) return existing;
+
+  const suppliers = catalogPack?.pharmacy?.suppliers || {};
+  const preferredSupplier =
+    Object.values(suppliers).find((entry) => entry?.id) || null;
+
+  return ctx.upsert(
     'drug',
     `${scenario.key}:drug:${recordKey}`,
     {
       tenant_id: facility.tenant_id,
+      supplier_id: preferredSupplier?.id || null,
       ...fallback,
     },
     {
@@ -105,6 +112,7 @@ const ensureDrug = async (ctx, scenario, facility, catalogPack, recordKey, fallb
       publicIdPrefix: 'DRG',
     }
   );
+};
 
 const createPatientRecord = async (ctx, scenario, facility, patientSpec) => {
   const patient = await ctx.upsert(
@@ -671,7 +679,7 @@ const seedClinicalPack = async (ctx, orgPack, accessPack, catalogPack = null) =>
       encounter_id: inpatientEncounter.id,
       patient_id: inpatientPatient.id,
       status: 'DISPENSED',
-      ordered_at: ctx.date(-1, 75),
+      ordered_at: ctx.nowDate(0, 75),
     },
     {
       publicIdPrefix: 'PHO',
@@ -704,7 +712,7 @@ const seedClinicalPack = async (ctx, orgPack, accessPack, catalogPack = null) =>
       pharmacy_order_item_id: pneumoniaPharmacyItem.id,
       dispense_batch_ref: 'BATCH-CRO1G-2026',
       status: 'DISPENSED',
-      dispensed_at: ctx.date(-1, 95),
+      dispensed_at: ctx.nowDate(0, 95),
       quantity_dispensed: 3,
     },
     {
@@ -952,8 +960,8 @@ const seedClinicalPack = async (ctx, orgPack, accessPack, catalogPack = null) =>
     {
       encounter_id: malariaEncounter.id,
       patient_id: malariaPatient.id,
-      status: 'DISPENSED',
-      ordered_at: ctx.date(-3, 58),
+      status: 'ORDERED',
+      ordered_at: ctx.nowDate(0, 58),
     },
     {
       publicIdPrefix: 'PHO',
@@ -961,7 +969,7 @@ const seedClinicalPack = async (ctx, orgPack, accessPack, catalogPack = null) =>
     }
   );
 
-  const malariaPharmacyItem = await ctx.upsert(
+  await ctx.upsert(
     'pharmacy_order_item',
     `${scenario.key}:pharmacy-order-item:malaria`,
     {
@@ -971,26 +979,10 @@ const seedClinicalPack = async (ctx, orgPack, accessPack, catalogPack = null) =>
       dosage: '4 tablets',
       frequency: 'BID',
       route: 'ORAL',
-      status: 'COMPLETED',
+      status: 'ACTIVE',
     },
     {
       publicIdPrefix: 'PHI',
-      seedMeta: false,
-    }
-  );
-
-  await ctx.upsert(
-    'dispense_log',
-    `${scenario.key}:dispense-log:malaria`,
-    {
-      pharmacy_order_item_id: malariaPharmacyItem.id,
-      dispense_batch_ref: 'BATCH-AL-2026',
-      status: 'DISPENSED',
-      dispensed_at: ctx.date(-3, 65),
-      quantity_dispensed: 24,
-    },
-    {
-      publicIdPrefix: 'DSP',
       seedMeta: false,
     }
   );

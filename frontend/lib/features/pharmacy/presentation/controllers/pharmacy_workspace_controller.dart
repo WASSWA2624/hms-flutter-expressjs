@@ -887,11 +887,18 @@ final class PharmacyWorkspaceController
             showLoading: current.storageLayout.rooms.isEmpty,
           ),
         );
-      case PharmacyCatalogTab.suppliers:
-        unawaited(
-          _refreshSuppliers(showLoading: current.suppliers.items.isEmpty),
-        );
     }
+  }
+
+  /// Hydrates the desk Suppliers section (not a nested Catalog tab).
+  void prepareSuppliers() {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return;
+    }
+    unawaited(
+      _refreshSuppliers(showLoading: current.suppliers.items.isEmpty),
+    );
   }
 
   Future<AppFailure?> _refreshSuppliers({bool showLoading = false}) async {

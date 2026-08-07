@@ -162,10 +162,5 @@ List<PharmacyCatalogTabDescriptor> pharmacyCatalogTabDescriptors(
       icon: Icons.view_week_outlined,
       label: l10n.pharmacyCatalogTabShelves,
     ),
-    PharmacyCatalogTabDescriptor(
-      tab: PharmacyCatalogTab.suppliers,
-      icon: Icons.local_shipping_outlined,
-      label: l10n.pharmacyCatalogTabSuppliers,
-    ),
   ];
 }

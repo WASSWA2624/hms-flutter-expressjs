@@ -462,7 +462,8 @@ const seedVolumePack = async (
       const drug = pick(drugs, index);
       // Wall-clock freshness: today + last ~28 days so pharmacy dashboard KPIs
       // and most-sold charts are non-empty against live summary windows.
-      const recentDayOffset = index % 12 === 0 ? 0 : -((index % 28) + 1);
+      // Bias more volume onto today so New Orders / dashboard windows look live.
+      const recentDayOffset = index % 4 === 0 ? 0 : -((index % 28) + 1);
       const orderedAt = ctx.nowDate(recentDayOffset, 35);
       const order = await ctx.upsert(
         'pharmacy_order',

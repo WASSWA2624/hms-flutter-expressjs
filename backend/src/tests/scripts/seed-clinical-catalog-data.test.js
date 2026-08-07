@@ -57,7 +57,8 @@ describe('seed-clinical-catalog-data script', () => {
         inventoryMaps: {},
         drugBatches: {},
         inventoryStocks: {},
-        stockMovements: {}},
+        stockMovements: {},
+        suppliers: {}},
       summary: {
         tenants: 1,
         facilities_seeded: 2,
@@ -70,6 +71,7 @@ describe('seed-clinical-catalog-data script', () => {
         inventory_items_per_tenant: 83,
         inventory_maps_per_tenant: 83,
         drug_batches_per_tenant: 83,
+        suppliers_per_tenant: 3,
         stock_records_seeded: 166,
         stock_movements_seeded: 166}}));
     const seedClinicalCatalogForTenant = jest.fn(async () => ({
@@ -83,7 +85,8 @@ describe('seed-clinical-catalog-data script', () => {
         inventoryMaps: { amoxicillin: { id: 'map-1' } },
         drugBatches: { amoxicillin: { id: 'batch-1' } },
         inventoryStocks: { 'amoxicillin:facility-live': { id: 'stock-1' } },
-        stockMovements: { 'amoxicillin:facility-live': { id: 'move-1' } }}}));
+        stockMovements: { 'amoxicillin:facility-live': { id: 'move-1' } },
+        suppliers: { medsupply: { id: 'sup-1' } }}}));
 
     jest.resetModules();
     jest.doMock('../../../scripts/seeders/seed-runtime', () => ({

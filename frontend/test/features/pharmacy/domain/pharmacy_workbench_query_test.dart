@@ -93,8 +93,8 @@ void main() {
   });
 
   group('PharmacyDeskSection', () {
-    test('exposes order, catalog, and stock desk worklist sections', () {
-      expect(PharmacyDeskSection.values, hasLength(11));
+    test('exposes order, catalog, suppliers, and stock desk worklist sections', () {
+      expect(PharmacyDeskSection.values, hasLength(12));
       expect(
         PharmacyDeskSection.values,
         containsAll(<PharmacyDeskSection>[
@@ -105,6 +105,7 @@ void main() {
           PharmacyDeskSection.cancelled,
           PharmacyDeskSection.allOrders,
           PharmacyDeskSection.catalog,
+          PharmacyDeskSection.suppliers,
           PharmacyDeskSection.nearExpiry,
           PharmacyDeskSection.expired,
           PharmacyDeskSection.lowStock,
@@ -132,6 +133,18 @@ void main() {
       expect(PharmacyDeskSection.catalog.isStockSection, isFalse);
       expect(PharmacyDeskSection.catalog.stockQuery, isNull);
       expect(PharmacyDeskSection.queue.isCatalogSection, isFalse);
+    });
+
+    test('suppliers desk section is the only direct suppliers CRUD entry', () {
+      expect(PharmacyDeskSection.suppliers.isSuppliersSection, isTrue);
+      expect(PharmacyDeskSection.suppliers.opensCatalogPanel, isFalse);
+      expect(PharmacyDeskSection.suppliers.isOrderSection, isFalse);
+      expect(PharmacyDeskSection.suppliers.isStockSection, isFalse);
+      expect(PharmacyDeskSection.suppliers.isCatalogSection, isFalse);
+      expect(
+        PharmacyCatalogTab.values.map((PharmacyCatalogTab tab) => tab.name),
+        isNot(contains('suppliers')),
+      );
     });
   });
 }

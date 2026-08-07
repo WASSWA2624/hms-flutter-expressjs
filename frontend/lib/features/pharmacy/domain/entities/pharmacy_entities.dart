@@ -27,6 +27,7 @@ enum PharmacyDeskSection {
   cancelled,
   allOrders,
   catalog,
+  suppliers,
   nearExpiry,
   expired,
   lowStock,
@@ -48,15 +49,23 @@ extension PharmacyDeskSectionX on PharmacyDeskSection {
       PharmacyDeskSection.completed ||
       PharmacyDeskSection.cancelled ||
       PharmacyDeskSection.catalog ||
+      PharmacyDeskSection.suppliers ||
       PharmacyDeskSection.allOrders => false,
     };
   }
 
   /// True for the inline catalog-and-stock management section that hosts the
-  /// nested Drugs / Formulary / Inventory / Storage layout / Shelves tabs.
+  /// nested Drugs / Formulary / Inventory / Storage / Shelves / Suppliers tabs.
   bool get isCatalogSection => this == PharmacyDeskSection.catalog;
 
-  /// True for order-queue desk tabs (not catalog or stock alerts).
+  /// True for the desk tab that opens Catalog focused on the Suppliers nested
+  /// tab (supplier CRUD).
+  bool get isSuppliersSection => this == PharmacyDeskSection.suppliers;
+
+  /// True when the desk section should render [PharmacyCatalogPanel].
+  bool get opensCatalogPanel => isCatalogSection || isStockSection;
+
+  /// True for order-queue desk tabs (not catalog, suppliers, or stock alerts).
   bool get isOrderSection {
     return switch (this) {
       PharmacyDeskSection.queue ||
@@ -66,6 +75,7 @@ extension PharmacyDeskSectionX on PharmacyDeskSection {
       PharmacyDeskSection.cancelled ||
       PharmacyDeskSection.allOrders => true,
       PharmacyDeskSection.catalog ||
+      PharmacyDeskSection.suppliers ||
       PharmacyDeskSection.nearExpiry ||
       PharmacyDeskSection.expired ||
       PharmacyDeskSection.lowStock ||
@@ -156,14 +166,7 @@ extension PharmacyOrderFilterX on PharmacyOrderFilter {
   }
 }
 
-enum PharmacyCatalogTab {
-  drugs,
-  formulary,
-  inventory,
-  storageLayout,
-  shelves,
-  suppliers,
-}
+enum PharmacyCatalogTab { drugs, formulary, inventory, storageLayout, shelves }
 
 enum PharmacyInventoryFilter {
   lowStock,

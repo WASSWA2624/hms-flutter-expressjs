@@ -12617,6 +12617,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyDeskCatalogLabel => 'Catalog and stock';
 
   @override
+  String get pharmacyDeskSuppliersLabel => 'Suppliers';
+
+  @override
   String get pharmacyStorageShelvesCountColumnLabel => 'Shelves';
 
   @override

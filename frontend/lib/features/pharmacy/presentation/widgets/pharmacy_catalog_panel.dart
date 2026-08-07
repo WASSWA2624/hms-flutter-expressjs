@@ -17,7 +17,6 @@ import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catal
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_details_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_edit_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_storage_panel.dart';
-import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_suppliers_panel.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -97,11 +96,6 @@ class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
         fillHeight: widget.fillHeight,
       ),
       _ShelvesCatalogTab(
-        state: state,
-        writeRequirement: pharmacyCatalogWriteRequirement,
-        fillHeight: widget.fillHeight,
-      ),
-      PharmacySuppliersCatalogTab(
         state: state,
         writeRequirement: pharmacyCatalogWriteRequirement,
         fillHeight: widget.fillHeight,

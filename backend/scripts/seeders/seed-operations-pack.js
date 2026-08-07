@@ -150,6 +150,7 @@ const seedOperationsPack = async (ctx, orgPack, accessPack) => {
     }
   );
 
+  // Same seed key as clinical catalog medsupply — upsert refreshes the preferred supplier row.
   const supplier = await ctx.upsert(
     'supplier',
     `${scenario.key}:supplier:medsupply`,

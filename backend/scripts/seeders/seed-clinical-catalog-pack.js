@@ -162,6 +162,31 @@ const DRUG_CATALOG = Object.freeze([
   ...NEURO_SUPPORT_DRUGS,
 ]);
 
+/** Pharmacy product suppliers — first key matches operations-pack purchase-order seed. */
+const PHARMACY_SUPPLIER_CATALOG = Object.freeze([
+  {
+    key: 'medsupply',
+    name: 'DemoCare Medical Supplies Ltd',
+    contact_email: 'supplies@hms-demo.test',
+    phone: '+15550110000',
+    location: '12 Industrial Close, Kampala',
+  },
+  {
+    key: 'pharmalink',
+    name: 'PharmaLink Distributors',
+    contact_email: 'orders@pharmalink-demo.test',
+    phone: '+15550110011',
+    location: '44 Warehouse Road, Entebbe',
+  },
+  {
+    key: 'mediglobe',
+    name: 'MediGlobe Wholesale',
+    contact_email: 'desk@mediglobe-demo.test',
+    phone: '+15550110022',
+    location: '8 Logistics Park, Jinja',
+  },
+]);
+
 const buildInventoryItemName = (spec) =>
   [spec.name, spec.strength, spec.form].filter(Boolean).join(' ');
 
@@ -289,6 +314,7 @@ const seedPharmacyCatalogForTenant = async (
       drugBatches: {},
       inventoryStocks: {},
       stockMovements: {},
+      suppliers: {},
     };
   }
 
@@ -306,7 +332,48 @@ const seedPharmacyCatalogForTenant = async (
     stockMovements: {},
     storageRooms: {},
     storageShelves: {},
+    suppliers: {},
   };
+
+  const supplierList = [];
+  for (const supplierSpec of PHARMACY_SUPPLIER_CATALOG) {
+    const supplier = await ctx.upsert(
+      'supplier',
+      `${seedKey}:supplier:${supplierSpec.key}`,
+      {
+        tenant_id: tenantId,
+        name: supplierSpec.name,
+        contact_email: supplierSpec.contact_email,
+        phone: supplierSpec.phone,
+      },
+      {
+        tenantCode,
+        scenarioKey,
+        publicIdPrefix: 'SUP',
+      }
+    );
+    result.suppliers[supplierSpec.key] = supplier;
+    supplierList.push(supplier);
+
+    if (supplierSpec.location) {
+      await ctx.upsert(
+        'address',
+        `${seedKey}:supplier-address:${supplierSpec.key}`,
+        {
+          tenant_id: tenantId,
+          address_type: 'OTHER',
+          line1: supplierSpec.location,
+          supplier_id: supplier.id,
+        },
+        {
+          tenantCode,
+          scenarioKey,
+          publicIdPrefix: 'ADR',
+          seedMeta: false,
+        }
+      );
+    }
+  }
 
   const storageByFacility = {};
   for (const facilityId of normalizedFacilityIds) {
@@ -356,6 +423,10 @@ const seedPharmacyCatalogForTenant = async (
 
   for (let drugCatalogIndex = 0; drugCatalogIndex < DRUG_CATALOG.length; drugCatalogIndex += 1) {
     const spec = DRUG_CATALOG[drugCatalogIndex];
+    const preferredSupplier =
+      supplierList.length > 0
+        ? supplierList[drugCatalogIndex % supplierList.length]
+        : null;
     const drug = await ctx.upsert(
       'drug',
       `${seedKey}:drug:${spec.key}`,
@@ -373,6 +444,7 @@ const seedPharmacyCatalogForTenant = async (
         unit_price: 1200 + (drugCatalogIndex + 1) * 850,
         transfer_unit_price: 800 + (drugCatalogIndex + 1) * 450,
         currency: 'UGX',
+        supplier_id: preferredSupplier?.id || null,
       },
       {
         tenantCode,
@@ -562,6 +634,7 @@ const seedClinicalCatalogForTenant = async (
         drugBatches: {},
         inventoryStocks: {},
         stockMovements: {},
+        suppliers: {},
       },
     };
   }
@@ -623,6 +696,7 @@ const seedClinicalCatalogPack = async (ctx, orgPack) => {
       drugBatches: {},
       inventoryStocks: {},
       stockMovements: {},
+      suppliers: {},
     },
     summary: {
       tenants: 0,
@@ -636,6 +710,7 @@ const seedClinicalCatalogPack = async (ctx, orgPack) => {
       inventory_items_per_tenant: DRUG_CATALOG.length,
       inventory_maps_per_tenant: DRUG_CATALOG.length,
       drug_batches_per_tenant: DRUG_CATALOG.length,
+      suppliers_per_tenant: PHARMACY_SUPPLIER_CATALOG.length,
       stock_records_seeded: 0,
       stock_movements_seeded: 0,
     },
@@ -674,6 +749,7 @@ const seedClinicalCatalogPack = async (ctx, orgPack) => {
     mergeCatalogRecords(result.pharmacy.drugBatches, scenario.key, tenantCatalog.pharmacy.drugBatches);
     mergeCatalogRecords(result.pharmacy.inventoryStocks, scenario.key, tenantCatalog.pharmacy.inventoryStocks);
     mergeCatalogRecords(result.pharmacy.stockMovements, scenario.key, tenantCatalog.pharmacy.stockMovements);
+    mergeCatalogRecords(result.pharmacy.suppliers, scenario.key, tenantCatalog.pharmacy.suppliers);
   }
 
   return result;
@@ -681,6 +757,7 @@ const seedClinicalCatalogPack = async (ctx, orgPack) => {
 
 module.exports = {
   DRUG_CATALOG,
+  PHARMACY_SUPPLIER_CATALOG,
   RADIOLOGY_TEST_CATALOG,
   UGANDA_DIAGNOSIS_CATALOG,
   seedClinicalCatalogForTenant,

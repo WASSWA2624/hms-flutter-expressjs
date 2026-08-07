@@ -16118,6 +16118,10 @@
   "@pharmacyDeskCatalogLabel": {
     "description": "Pharmacy desk strip label for the inline catalog and stock section."
   },
+  "pharmacyDeskSuppliersLabel": "Suppliers",
+  "@pharmacyDeskSuppliersLabel": {
+    "description": "Pharmacy desk strip label for supplier management."
+  },
   "pharmacyStorageShelvesCountColumnLabel": "Shelves",
   "@pharmacyStorageShelvesCountColumnLabel": {
     "description": "Pharmacy storage layout table column header for the number of shelves in a room."

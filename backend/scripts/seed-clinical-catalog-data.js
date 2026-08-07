@@ -136,6 +136,12 @@ const seedClinicalCatalogData = async ({
       `tenant:${tenant.id}`,
       tenantResult.pharmacy.stockMovements
     );
+    clinicalCatalogPack.pharmacy.suppliers ||= {};
+    mergeTenantCatalogRecords(
+      clinicalCatalogPack.pharmacy.suppliers,
+      `tenant:${tenant.id}`,
+      tenantResult.pharmacy.suppliers
+    );
   }
 
   console.log('Clinical catalog seeded successfully.');

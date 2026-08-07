@@ -23260,6 +23260,12 @@ abstract class AppLocalizations {
   /// **'Catalog and stock'**
   String get pharmacyDeskCatalogLabel;
 
+  /// Pharmacy desk strip label for supplier management.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get pharmacyDeskSuppliersLabel;
+
   /// Pharmacy storage layout table column header for the number of shelves in a room.
   ///
   /// In en, this message translates to:
