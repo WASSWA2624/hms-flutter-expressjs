@@ -41,6 +41,7 @@ describe('seed-volume-pack', () => {
         return { id: `${model}-${key}`, ...data, unit: data.unit || 'u' };
       }),
       date: jest.fn((day = 0, minute = 0) => new Date(Date.UTC(2026, 1, 15 + day, 9, minute))),
+      nowDate: jest.fn((day = 0, minute = 0) => new Date(Date.UTC(2026, 7, 7 + day, 9, minute))),
       hash: jest.fn(() => 'abcdef1234567890'),
     };
 

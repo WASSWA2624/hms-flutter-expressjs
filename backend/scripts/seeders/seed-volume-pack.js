@@ -585,6 +585,94 @@ const seedVolumePack = async (
         created.dispense_logs += 1;
       }
     }
+
+    // Multi-month history so reporting period presets (3/6/12/24 months) stay populated.
+    const historyDrugs = catalogValues(clinicalCatalogPack?.pharmacy?.drugs, 24);
+    if (historyDrugs.length > 0) {
+      for (let month = 0; month < 24; month += 1) {
+        for (let slot = 0; slot < 2; slot += 1) {
+          const index = month * 2 + slot;
+          const drug = historyDrugs[index % historyDrugs.length];
+          const patient = patientAt(index + 3) || patientAt(1);
+          if (!drug?.id || !patient) continue;
+
+          const dayOffset = -(month * 30 + (slot === 0 ? 4 : 18));
+          const cycle = index % 6;
+          const orderStatus =
+            cycle === 0
+              ? 'PARTIALLY_DISPENSED'
+              : cycle === 1
+                ? 'CANCELLED'
+                : 'DISPENSED';
+          // Mix walk-in pharmacy vs clinical encounter sources for order_source reports.
+          const encounterId =
+            index % 3 === 0 ? null : encounterAt(index + 1)?.id || null;
+          const qty = 2 + (index % 6);
+
+          const order = await ctx.upsert(
+            'pharmacy_order',
+            `${scenario.key}:vol:rx-history:${pad(month)}:${pad(slot)}`,
+            {
+              encounter_id: encounterId,
+              patient_id: patient.id,
+              status: orderStatus,
+              ordered_at: ctx.nowDate(dayOffset, 25 + slot * 5),
+            },
+            { publicIdPrefix: 'RXO', seedMeta: false }
+          );
+
+          const item = await ctx.upsert(
+            'pharmacy_order_item',
+            `${scenario.key}:vol:rx-history-item:${pad(month)}:${pad(slot)}`,
+            {
+              pharmacy_order_id: order.id,
+              drug_id: drug.id,
+              quantity: qty,
+              dosage: '1 tab',
+              instructions: `Reporting history seed m${month + 1}.${slot + 1}`,
+            },
+            { publicIdPrefix: 'RXI', seedMeta: false }
+          );
+
+          if (orderStatus !== 'CANCELLED') {
+            await ctx.upsert(
+              'dispense_log',
+              `${scenario.key}:vol:rx-history-dispense:${pad(month)}:${pad(slot)}`,
+              {
+                pharmacy_order_item_id: item.id,
+                dispense_batch_ref: `HIST-BATCH-${pad(month, 3)}-${pad(slot)}`,
+                status: 'DISPENSED',
+                dispensed_at: ctx.nowDate(dayOffset, 40 + slot * 4),
+                quantity_dispensed:
+                  orderStatus === 'PARTIALLY_DISPENSED'
+                    ? Math.max(1, Math.floor(qty / 2))
+                    : qty,
+              },
+              { publicIdPrefix: 'DSP', seedMeta: false }
+            );
+            created.dispense_logs += 1;
+          }
+
+          if (cycle === 2) {
+            await ctx.upsert(
+              'dispense_log',
+              `${scenario.key}:vol:rx-history-return:${pad(month)}:${pad(slot)}`,
+              {
+                pharmacy_order_item_id: item.id,
+                dispense_batch_ref: `HIST-RET-${pad(month, 3)}-${pad(slot)}`,
+                status: 'RETURNED',
+                dispensed_at: ctx.nowDate(dayOffset + 2, 50),
+                quantity_dispensed: 1,
+              },
+              { publicIdPrefix: 'DSP', seedMeta: false }
+            );
+            created.dispense_logs += 1;
+          }
+
+          created.pharmacy_orders += 1;
+        }
+      }
+    }
   }
 
   await runInBatches(targets.highTraffic, 10, async (index) => {

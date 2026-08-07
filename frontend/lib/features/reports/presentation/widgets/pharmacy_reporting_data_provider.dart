@@ -130,14 +130,30 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         subtitle: previewSubtitleOrNull(preview.subtitle),
       );
     case 'current_stock_quantity':
-    case 'overstock':
-      return ModuleReportingReportSnapshot.ready(
+      return _filterStockRisk(
+        report: report,
+        preview: preview,
         columns: columns,
-        rows: const <Map<String, Object?>>[],
+        sourceRows: sourceRows,
         summary: summary,
         breakdown: breakdown,
-        title: preview.title.isEmpty ? report.label : preview.title,
-        subtitle: previewSubtitleOrNull(preview.subtitle),
+        riskStates: const <String>{
+          'OK',
+          'LOW',
+          'CRITICAL',
+          'OVERSTOCK',
+          'OUT_OF_STOCK',
+        },
+      );
+    case 'overstock':
+      return _filterStockRisk(
+        report: report,
+        preview: preview,
+        columns: columns,
+        sourceRows: sourceRows,
+        summary: summary,
+        breakdown: breakdown,
+        riskStates: const <String>{'OVERSTOCK'},
       );
     case 'expired_stock':
     case 'already_expired':
@@ -187,6 +203,7 @@ ModuleReportingReportSnapshot projectPharmacyReportingPreview({
         summary: summary,
         breakdown: breakdown,
         outOfStockOnly: true,
+        riskStates: const <String>{'OUT_OF_STOCK'},
       );
     default:
       return ModuleReportingReportSnapshot.ready(

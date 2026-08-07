@@ -986,22 +986,31 @@ const runInventoryDataset = async (scope) => {
     },
   });
 
-  const stockRows = stocks
-    .filter((entry) => asNumber(entry.reorder_level) > 0 && asNumber(entry.quantity) <= asNumber(entry.reorder_level))
-    .map((entry) => ({
+  const classifyStockRisk = (quantity, reorderLevel) => {
+    const qty = asNumber(quantity);
+    const reorder = asNumber(reorderLevel);
+    if (qty <= 0) return 'OUT_OF_STOCK';
+    if (reorder > 0 && qty <= Math.max(1, Math.floor(reorder / 2))) return 'CRITICAL';
+    if (reorder > 0 && qty <= reorder) return 'LOW';
+    if (reorder > 0 && qty >= reorder * 3) return 'OVERSTOCK';
+    return 'OK';
+  };
+
+  const stockRows = stocks.map((entry) => {
+    const quantity = asNumber(entry.quantity);
+    const reorderLevel = asNumber(entry.reorder_level);
+    return {
       facility: entry?.facility?.name || scope.facility_label || 'Unassigned',
       inventory_item: entry?.inventory_item?.name || 'Unknown',
-      quantity: asNumber(entry.quantity),
-      reorder_level: asNumber(entry.reorder_level),
-      risk_state:
-        asNumber(entry.quantity) <= Math.max(1, Math.floor(asNumber(entry.reorder_level) / 2))
-          ? 'CRITICAL'
-          : 'LOW',
+      quantity,
+      reorder_level: reorderLevel,
+      risk_state: classifyStockRisk(quantity, reorderLevel),
       expiry_date: null,
       expiry_alert_status: null,
       days_to_expiry: null,
       batch_number: null,
-    }));
+    };
+  });
 
   const batchWhere = {
     deleted_at: null,
@@ -1066,9 +1075,10 @@ const runInventoryDataset = async (scope) => {
 
   const rows = [...stockRows, ...expiryRows].sort((left, right) => {
     const rank = (state) => {
-      if (state === 'EXPIRED' || state === 'CRITICAL') return 0;
+      if (state === 'EXPIRED' || state === 'CRITICAL' || state === 'OUT_OF_STOCK') return 0;
       if (state === 'EXPIRING_SOON' || state === 'LOW') return 1;
-      return 2;
+      if (state === 'OVERSTOCK') return 2;
+      return 3;
     };
     const byRisk = rank(left.risk_state) - rank(right.risk_state);
     if (byRisk !== 0) return byRisk;
@@ -1077,7 +1087,8 @@ const runInventoryDataset = async (scope) => {
 
   return {
     title: 'Inventory stock risk',
-    subtitle: 'Low-stock, critical-stock, near-expiry, and expired batch pressure',
+    subtitle:
+      'On-hand stock levels plus low-stock, overstock, near-expiry, and expired batch pressure',
     columns: [
       'facility',
       'inventory_item',
@@ -1093,8 +1104,12 @@ const runInventoryDataset = async (scope) => {
     summary: {
       low_stock: stockRows.filter((row) => row.risk_state === 'LOW').length,
       critical_stock: stockRows.filter((row) => row.risk_state === 'CRITICAL').length,
+      out_of_stock: stockRows.filter((row) => row.risk_state === 'OUT_OF_STOCK').length,
+      overstock: stockRows.filter((row) => row.risk_state === 'OVERSTOCK').length,
+      ok_stock: stockRows.filter((row) => row.risk_state === 'OK').length,
       expiring_soon: expiryRows.filter((row) => row.risk_state === 'EXPIRING_SOON').length,
       expired: expiryRows.filter((row) => row.risk_state === 'EXPIRED').length,
+      total_stock_rows: stockRows.length,
       total_risk_rows: rows.length,
     },
   };

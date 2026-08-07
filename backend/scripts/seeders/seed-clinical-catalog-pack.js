@@ -8,6 +8,52 @@ const {
 const DEFAULT_DRUG_INITIAL_STOCK = 180;
 const DEFAULT_DRUG_REORDER_LEVEL = 40;
 
+/**
+ * Extra drug batches keyed to wall-clock dates so inventory_stock_risk
+ * pharmacy reports (expired / near-expiry / 30–180 day windows) stay populated.
+ */
+const PHARMACY_REPORT_RISK_BATCH_TEMPLATES = Object.freeze([
+  { key: 'expired-a', dayOffset: -75, quantity: 48, leadDays: 30 },
+  { key: 'expired-b', dayOffset: -14, quantity: 22, leadDays: 30 },
+  { key: 'near-a', dayOffset: 8, quantity: 36, leadDays: 30 },
+  { key: 'near-b', dayOffset: 21, quantity: 28, leadDays: 30 },
+  { key: 'window-60', dayOffset: 52, quantity: 40, leadDays: 90 },
+  { key: 'window-90', dayOffset: 78, quantity: 30, leadDays: 120 },
+  { key: 'window-180', dayOffset: 145, quantity: 45, leadDays: 180 },
+]);
+
+const hashKeySum = (value) =>
+  [...String(value || '')].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+
+/**
+ * Deterministic on-hand qty mix for pharmacy reporting + dashboard KPIs:
+ * out-of-stock, critical, low-at-reorder, overstock, and healthy.
+ */
+const resolveDemoStockQuantity = ({
+  spec,
+  drugCatalogIndex = 0,
+  reorderLevel = DEFAULT_DRUG_REORDER_LEVEL,
+} = {}) => {
+  if (typeof spec?.force_stock_quantity === 'number') {
+    return Math.max(0, Math.floor(spec.force_stock_quantity));
+  }
+
+  const profile = Number(drugCatalogIndex) % 8;
+  if (profile === 0) return 0;
+  if (profile === 1) return Math.max(0, Math.floor(reorderLevel * 0.4));
+  if (profile === 2) return Math.max(1, reorderLevel);
+  if (profile === 3) return reorderLevel * 5 + 200;
+
+  const forceLowStock =
+    typeof spec?.force_low_stock === 'boolean'
+      ? spec.force_low_stock
+      : hashKeySum(spec?.key) % 5 === 0;
+  if (forceLowStock) {
+    return Math.max(0, Math.floor(reorderLevel * 0.4));
+  }
+  return spec?.initial_stock || DEFAULT_DRUG_INITIAL_STOCK;
+};
+
 const { RADIOLOGY_TEST_CATALOG } = require('./data/uganda-radiology-catalog');
 const { UGANDA_DIAGNOSIS_CATALOG } = require('./data/uganda-diagnosis-catalog');
 
@@ -514,20 +560,27 @@ const seedPharmacyCatalogForTenant = async (
       Math.max(1, normalizedFacilityIds.length) *
       Math.max(spec.initial_stock || DEFAULT_DRUG_INITIAL_STOCK, spec.reorder_level || 1);
 
+    const batchCode = String(spec.code || spec.key)
+      .replace(/[^A-Za-z0-9]/g, '')
+      .slice(0, 12)
+      .toUpperCase();
+    const storageFields = defaultStorage
+      ? {
+          storage_room_id: defaultStorage.room.id,
+          storage_shelf_id: defaultStorage.shelf.id,
+        }
+      : {};
+
     const batch = await ctx.upsert(
       'drug_batch',
       `${seedKey}:drug-batch:${spec.key}`,
       {
         drug_id: drug.id,
-        batch_number: `${String(spec.code || spec.key).replace(/[^A-Za-z0-9]/g, '').slice(0, 12).toUpperCase()}A`,
+        batch_number: `${batchCode}A`,
+        // Healthy far-dated batch (seed-base calendar) for routine stock.
         expiry_date: ctx.date(540),
         quantity: batchQuantity,
-        ...(defaultStorage
-          ? {
-              storage_room_id: defaultStorage.room.id,
-              storage_shelf_id: defaultStorage.shelf.id,
-            }
-          : {}),
+        ...storageFields,
       },
       {
         tenantCode,
@@ -537,17 +590,41 @@ const seedPharmacyCatalogForTenant = async (
     );
     result.drugBatches[spec.key] = batch;
 
+    // One wall-clock risk batch per drug so expiry / near-expiry report rows stay live.
+    const riskTemplate =
+      PHARMACY_REPORT_RISK_BATCH_TEMPLATES[
+        drugCatalogIndex % PHARMACY_REPORT_RISK_BATCH_TEMPLATES.length
+      ];
+    const riskBatch = await ctx.upsert(
+      'drug_batch',
+      `${seedKey}:drug-batch:${spec.key}:${riskTemplate.key}`,
+      {
+        drug_id: drug.id,
+        batch_number: `${batchCode}-${String(riskTemplate.key)
+          .replace(/[^A-Za-z0-9]/g, '')
+          .toUpperCase()
+          .slice(0, 8)}`,
+        expiry_date: ctx.nowDate(riskTemplate.dayOffset),
+        expiry_alert_lead_days: riskTemplate.leadDays,
+        quantity: riskTemplate.quantity,
+        ...storageFields,
+      },
+      {
+        tenantCode,
+        scenarioKey,
+        publicIdPrefix: 'DBT',
+      }
+    );
+    result.drugBatches[`${spec.key}:${riskTemplate.key}`] = riskBatch;
+
     for (const facilityId of normalizedFacilityIds) {
       const stockKey = `${spec.key}:${facilityId}`;
       const reorderLevel = spec.reorder_level || DEFAULT_DRUG_REORDER_LEVEL;
-      // Seed a predictable low-stock slice so pharmacy dashboard Low stock KPI is non-zero.
-      const forceLowStock =
-        typeof spec.force_low_stock === 'boolean'
-          ? spec.force_low_stock
-          : [...String(spec.key || '')].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % 5 === 0;
-      const stockQuantity = forceLowStock
-        ? Math.max(0, Math.floor(reorderLevel * 0.4))
-        : spec.initial_stock || DEFAULT_DRUG_INITIAL_STOCK;
+      const stockQuantity = resolveDemoStockQuantity({
+        spec,
+        drugCatalogIndex,
+        reorderLevel,
+      });
 
       const stockRecord = await ctx.upsert(
         'inventory_stock',
@@ -758,8 +835,10 @@ const seedClinicalCatalogPack = async (ctx, orgPack) => {
 module.exports = {
   DRUG_CATALOG,
   PHARMACY_SUPPLIER_CATALOG,
+  PHARMACY_REPORT_RISK_BATCH_TEMPLATES,
   RADIOLOGY_TEST_CATALOG,
   UGANDA_DIAGNOSIS_CATALOG,
+  resolveDemoStockQuantity,
   seedClinicalCatalogForTenant,
   seedClinicalTermCatalogForTenant,
   seedClinicalCatalogPack,

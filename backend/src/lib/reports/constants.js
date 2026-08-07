@@ -111,7 +111,7 @@ const REPORT_DATASETS = Object.freeze([
     label: 'Inventory stock risk',
     category: 'inventory',
     description:
-      'Low-stock and critical-stock pressure across facilities, plus near-expiry and expired drug batches when batch expiry data exists.',
+      'On-hand stock plus low-stock, overstock, critical, near-expiry, and expired drug batch pressure.',
     visualization: 'KPI',
     default_columns: [
       'facility',

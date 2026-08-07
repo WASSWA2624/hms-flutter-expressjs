@@ -94,12 +94,26 @@ void main() {
     );
   });
 
-  test('overstock stays honest-empty ready state', () {
+  test('overstock projects OVERSTOCK risk rows', () {
     final ReportDatasetPreview preview = ReportDatasetPreview(
       datasetKey: 'inventory_stock_risk',
-      columns: const <String>['inventory_item', 'risk_state'],
+      columns: const <String>['inventory_item', 'risk_state', 'quantity'],
       rows: const <Map<String, Object?>>[
-        <String, Object?>{'inventory_item': 'A', 'risk_state': 'LOW'},
+        <String, Object?>{
+          'inventory_item': 'A',
+          'risk_state': 'LOW',
+          'quantity': 4,
+        },
+        <String, Object?>{
+          'inventory_item': 'B',
+          'risk_state': 'OVERSTOCK',
+          'quantity': 900,
+        },
+        <String, Object?>{
+          'inventory_item': 'C',
+          'risk_state': 'OK',
+          'quantity': 120,
+        },
       ],
     );
 
@@ -109,8 +123,9 @@ void main() {
           preview: preview,
         );
 
-    expect(snapshot.state, ModuleReportingLoadState.empty);
-    expect(snapshot.rows, isEmpty);
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.rows, hasLength(1));
+    expect(snapshot.rows.single['inventory_item'], 'B');
   });
 
   test('sales by period prefers breakdown daily_totals', () {

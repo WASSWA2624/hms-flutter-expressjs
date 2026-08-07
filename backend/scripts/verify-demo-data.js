@@ -494,6 +494,59 @@ const verifyDemoData = async () => {
         `Expected at least 1 low-stock inventory row for pharmacy dashboard but found ${lowStockCount}.`
       );
     }
+
+    const [expiredBatchCount, nearExpiryBatchCount, outOfStockCount, historyDispenseCount] =
+      await Promise.all([
+        prisma.drug_batch.count({
+          where: {
+            deleted_at: null,
+            quantity: { gt: 0 },
+            expiry_date: { lt: new Date() },
+          },
+        }),
+        prisma.drug_batch.count({
+          where: {
+            deleted_at: null,
+            quantity: { gt: 0 },
+            expiry_date: {
+              gte: new Date(),
+              lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            },
+          },
+        }),
+        prisma.inventory_stock.count({
+          where: { deleted_at: null, quantity: { lte: 0 } },
+        }),
+        prisma.dispense_log.count({
+          where: {
+            deleted_at: null,
+            status: 'DISPENSED',
+            dispensed_at: {
+              lte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+            },
+          },
+        }),
+      ]);
+    if (expiredBatchCount < 1) {
+      errors.push(
+        `Expected at least 1 expired drug batch for pharmacy reporting but found ${expiredBatchCount}.`
+      );
+    }
+    if (nearExpiryBatchCount < 1) {
+      errors.push(
+        `Expected at least 1 near-expiry drug batch for pharmacy reporting but found ${nearExpiryBatchCount}.`
+      );
+    }
+    if (outOfStockCount < 1) {
+      errors.push(
+        `Expected at least 1 out-of-stock inventory row for pharmacy reporting but found ${outOfStockCount}.`
+      );
+    }
+    if (historyDispenseCount < 1) {
+      errors.push(
+        `Expected at least 1 dispense older than 90 days for pharmacy period reports but found ${historyDispenseCount}.`
+      );
+    }
   }
 
   // Volume suite (SEED_RECORD_COUNT > 0). Curated-only seeds set SEED_RECORD_COUNT=0.
