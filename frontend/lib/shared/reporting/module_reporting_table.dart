@@ -80,6 +80,8 @@ ModuleReportingMetricUnit moduleReportingMetricUnitForKey(String? key) {
       normalized.endsWith('_qty') ||
       normalized == 'dispensed' ||
       normalized == 'returns' ||
+      normalized == 'wastage' ||
+      normalized == 'adjustments_net' ||
       normalized.contains('reorder')) {
     return ModuleReportingMetricUnit.quantity;
   }
