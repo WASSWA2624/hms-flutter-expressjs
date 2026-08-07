@@ -10,6 +10,7 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_data.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_models.dart';
+import 'package:hosspi_hms/shared/reporting/module_reporting_print_preview_dialog.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_table.dart';
 import 'package:hosspi_hms/shared/reporting/module_reporting_visualization_panel.dart';
 
@@ -220,20 +221,19 @@ class _ModuleReportingReportDialogState
         ),
       ),
       actions: <Widget>[
-        if (widget.canExport) ...<Widget>[
-          AppReportActionButton.print(
-            label: _labels.printAction,
-            enabled: !_busy,
-            isLoading: _isPrinting,
-            onPressed: _busy ? null : () => unawaited(_printReport()),
-          ),
+        AppReportActionButton.print(
+          label: _labels.printAction,
+          enabled: !_busy,
+          isLoading: _isPrinting,
+          onPressed: _busy ? null : () => unawaited(_printReport()),
+        ),
+        if (widget.canExport)
           AppReportActionButton.export(
             label: _labels.exportAction,
             enabled: !_busy,
             isLoading: _isExporting,
             onPressed: _busy ? null : () => unawaited(_exportReport()),
           ),
-        ],
         AppButton.close(
           label: _labels.closeAction,
           enabled: !_busy,
@@ -366,27 +366,21 @@ class _ModuleReportingReportDialogState
     if (!_validateRange()) {
       return;
     }
+    if (_snapshot.state != ModuleReportingLoadState.ready &&
+        _snapshot.state != ModuleReportingLoadState.empty) {
+      return;
+    }
     setState(() => _isPrinting = true);
     try {
-      await PrintDocumentTemplates.registry(
-        ref: ref,
+      await openModuleReportingPrintPreviewDialog(
         context: context,
-        title: widget.report.label,
-        subtitle: _labels.printSubtitle,
-        recordReference: PrintFormContextReference(
-          label: _labels.referenceLabel,
-          value: widget.report.id,
-        ),
-        bodyHtml: moduleReportingPrintBodyHtml(
-          labels: _labels,
-          report: widget.report,
-          periodLabel: moduleReportingPeriodLabel(_labels, _preset),
-          from: _rangeFrom,
-          to: _rangeTo,
-          locale: Localizations.localeOf(context),
-          snapshot: _snapshot,
-        ),
-        footerNote: _labels.printFooter,
+        ref: ref,
+        report: widget.report,
+        snapshot: _snapshot,
+        labels: _labels,
+        periodLabel: moduleReportingPeriodLabel(_labels, _preset),
+        from: _rangeFrom,
+        to: _rangeTo,
       );
     } finally {
       if (mounted) {

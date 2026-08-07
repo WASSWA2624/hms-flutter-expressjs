@@ -444,6 +444,7 @@ class _DashboardDistributionChart extends StatelessWidget {
 
     if (chart.chartStyle == DashboardTrendChartStyle.bar ||
         chart.chartStyle == DashboardTrendChartStyle.line ||
+        chart.chartStyle == DashboardTrendChartStyle.area ||
         chart.chartStyle == DashboardTrendChartStyle.combined) {
       final List<DashboardTrendPointData> points = <DashboardTrendPointData>[
         for (int index = 0; index < segments.length; index += 1)

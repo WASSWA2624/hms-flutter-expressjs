@@ -620,6 +620,7 @@ String _chartStyleLabel(DashboardTrendChartStyle style) {
   return switch (style) {
     DashboardTrendChartStyle.line => 'Line',
     DashboardTrendChartStyle.bar => 'Bar',
+    DashboardTrendChartStyle.area => 'Area',
     DashboardTrendChartStyle.pie => 'Pie',
     DashboardTrendChartStyle.combined => 'Combined',
   };
