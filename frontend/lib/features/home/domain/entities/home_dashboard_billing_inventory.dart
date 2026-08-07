@@ -269,7 +269,7 @@ abstract final class HomeDashboardBillingInventory {
           label: 'Pending approvals',
           actionClass: HomeBillingActionClass.adjust,
           requiredPermissions: financialApprove,
-          routeQuery: <String, String>{'queue': 'needsApproval'},
+          routeQuery: <String, String>{'queue': 'approvalRequired'},
         ),
         'pending_insurance_claims': HomeDashboardBillingAtom(
           id: 'pending_insurance_claims',

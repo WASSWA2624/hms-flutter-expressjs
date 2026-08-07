@@ -148,9 +148,15 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
   bool get showMetricsSection => true;
 
   bool get showQueuePanel {
-    // Pharmacy / Reception desks own their worklists; home omits the queue
-    // collapsible (pharmacy-parity). Follow-up preview can still surface.
-    if (isPharmacistDepartmentDashboard || isReceptionistFrontDeskDashboard) {
+    // Department desks own their worklists; home omits the queue collapsible
+    // (pharmacy-parity). Clinical / facility-command keep priority worklists.
+    if (isPharmacistDepartmentDashboard ||
+        isReceptionistFrontDeskDashboard ||
+        isLabDepartmentDashboard ||
+        isBillingDepartmentDashboard ||
+        id == 'biomed' ||
+        id == 'house_keeper' ||
+        id == 'ambulance_operator') {
       return false;
     }
     return layoutTier != HomeDashboardLayoutTier.workforce;

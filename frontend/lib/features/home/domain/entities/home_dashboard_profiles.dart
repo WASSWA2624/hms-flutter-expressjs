@@ -109,6 +109,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'facilities_active': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'facility'},
       ),
+      'subscriptions_health': HomeMetricRouteTarget(),
+      'module_entitlement_issues': HomeMetricRouteTarget(),
     },
   ),
   AppRole.tenantAdmin: HomeDashboardProfile(
@@ -158,6 +160,17 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'manage_users',
       'add_staff_profile',
     ],
+    metricRouteTargets: <String, HomeMetricRouteTarget>{
+      'facilities_active': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'facility'},
+      ),
+      'active_users': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'users'},
+      ),
+      'subscription_health': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'subscription'},
+      ),
+    },
   ),
   AppRole.facilityAdmin: HomeDashboardProfile(
     id: 'facility_admin',
@@ -249,9 +262,44 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     ],
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
+      'patient_flow_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'desk-queue'},
+      ),
+      'appointments_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'appointments'},
+      ),
+      'active_admissions': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'active'},
+      ),
+      'bed_occupancy': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'occupied'},
+      ),
+      'emergency_cases_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'scope': 'active'},
+      ),
       'collections_today': HomeMetricRouteTarget(),
       'billing_exceptions': HomeMetricRouteTarget(
         queryParameters: <String, String>{'queue': 'overdue'},
+      ),
+      'low_stock': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'low-stock'},
+      ),
+      'critical_labs': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'critical'},
+      ),
+      'pending_leaves': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'LEAVE_REQUESTS'},
+      ),
+      'open_incidents': HomeMetricRouteTarget(
+        queryParameters: <String, String>{
+          'panel': 'support',
+        },
+      ),
+      'operational_blockers': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'open'},
+      ),
+      'opd_notifications_attention': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'queue'},
       ),
     },
   ),
@@ -337,14 +385,37 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     ],
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
-      'assigned': HomeMetricRouteTarget(),
-      'in_progress': HomeMetricRouteTarget(),
-      'results_pending_review': HomeMetricRouteTarget(),
-      'follow_ups_due': HomeMetricRouteTarget(),
-      'radiology_pending': HomeMetricRouteTarget(),
-      'prescriptions_pending': HomeMetricRouteTarget(),
-      'emergency_cases_today': HomeMetricRouteTarget(),
+      'assigned': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'assigned-to-me'},
+      ),
+      'in_progress': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'all'},
+      ),
+      'results_pending_review': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'completed-today'},
+      ),
+      'follow_ups_due': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'follow-ups'},
+      ),
+      'completed': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'completed'},
+      ),
+      'critical_labs': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'critical'},
+      ),
+      'radiology_pending': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'reporting'},
+      ),
+      'prescriptions_pending': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'pending'},
+      ),
+      'emergency_cases_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'scope': 'active'},
+      ),
       'shifts_today': HomeMetricRouteTarget(),
+      'opd_notifications_attention': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'queue'},
+      ),
     },
   ),
   AppRole.nurse: HomeDashboardProfile(
@@ -429,16 +500,36 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     ],
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
-      'inpatient_flow': HomeMetricRouteTarget(),
-      'med_admin_today': HomeMetricRouteTarget(),
-      'transfer_queue': HomeMetricRouteTarget(),
-      'critical_labs': HomeMetricRouteTarget(),
-      'discharge_pressure': HomeMetricRouteTarget(),
-      'opd_notifications_attention': HomeMetricRouteTarget(),
-      'appointments_today': HomeMetricRouteTarget(),
-      'emergency_cases_today': HomeMetricRouteTarget(),
-      'theatre_cases_today': HomeMetricRouteTarget(),
-      'radiology_pending': HomeMetricRouteTarget(),
+      'inpatient_flow': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'active'},
+      ),
+      'med_admin_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'scope': 'medication-due'},
+      ),
+      'transfer_queue': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'transfers'},
+      ),
+      'critical_labs': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'critical'},
+      ),
+      'discharge_pressure': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'discharge'},
+      ),
+      'opd_notifications_attention': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'queue'},
+      ),
+      'appointments_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'queue'},
+      ),
+      'emergency_cases_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'scope': 'active'},
+      ),
+      'theatre_cases_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'all'},
+      ),
+      'radiology_pending': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'worklist'},
+      ),
     },
   ),
   AppRole.labTech: HomeDashboardProfile(
@@ -839,7 +930,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
       'refunds_today': HomeMetricRouteTarget(),
       'pending_approvals': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'needsApproval'},
+        queryParameters: <String, String>{'queue': 'approvalRequired'},
       ),
       'pending_insurance_claims': HomeMetricRouteTarget(
         queryParameters: <String, String>{'queue': 'claimsPending'},
@@ -901,6 +992,29 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'settings',
     ],
     emptyActionIds: const <String>[],
+    metricRouteTargets: <String, HomeMetricRouteTarget>{
+      'occupied_beds': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'occupied'},
+      ),
+      'total_beds': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'all'},
+      ),
+      'maintenance_open': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'open'},
+      ),
+      'low_stock_pressure': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'low-stock'},
+      ),
+      'housekeeping_backlog': HomeMetricRouteTarget(
+        queryParameters: <String, String>{
+          'section': 'tasks',
+          'queue': 'OVERDUE_TASKS',
+        },
+      ),
+      'facility_readiness': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'all'},
+      ),
+    },
   ),
   AppRole.hr: HomeDashboardProfile(
     id: 'hr',
@@ -1064,6 +1178,38 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'communications',
     ],
     emptyActionIds: <String>['report_equipment_issue'],
+    metricRouteTargets: <String, HomeMetricRouteTarget>{
+      'open_work_orders': HomeMetricRouteTarget(
+        queryParameters: <String, String>{
+          'panel': 'work-orders',
+          'queue': 'OPEN_WORK_ORDERS',
+        },
+      ),
+      'open_incidents': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'panel': 'support'},
+      ),
+      'active_downtime': HomeMetricRouteTarget(
+        queryParameters: <String, String>{
+          'panel': 'work-orders',
+          'queue': 'CRITICAL_DOWNTIME',
+        },
+      ),
+      'critical_service_risk': HomeMetricRouteTarget(
+        queryParameters: <String, String>{
+          'panel': 'work-orders',
+          'queue': 'OPEN_WORK_ORDERS',
+        },
+      ),
+      'high_priority': HomeMetricRouteTarget(
+        queryParameters: <String, String>{
+          'panel': 'work-orders',
+          'queue': 'OPEN_WORK_ORDERS',
+        },
+      ),
+      'assets_operational': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'panel': 'registry'},
+      ),
+    },
   ),
   AppRole.houseKeeper: HomeDashboardProfile(
     id: 'house_keeper',
@@ -1108,6 +1254,35 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'operations',
     ],
     emptyActionIds: const <String>[],
+    metricRouteTargets: <String, HomeMetricRouteTarget>{
+      'pending_tasks': HomeMetricRouteTarget(
+        queryParameters: <String, String>{
+          'section': 'tasks',
+          'status': 'PENDING',
+        },
+      ),
+      'in_progress_tasks': HomeMetricRouteTarget(
+        queryParameters: <String, String>{
+          'section': 'tasks',
+          'status': 'IN_PROGRESS',
+        },
+      ),
+      'overdue_tasks': HomeMetricRouteTarget(
+        queryParameters: <String, String>{
+          'section': 'tasks',
+          'queue': 'OVERDUE_TASKS',
+        },
+      ),
+      'completed_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{
+          'section': 'tasks',
+          'status': 'COMPLETED',
+        },
+      ),
+      'throughput': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'tasks'},
+      ),
+    },
   ),
   AppRole.ambulanceOperator: HomeDashboardProfile(
     id: 'ambulance_operator',
@@ -1153,6 +1328,23 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'profile',
     ],
     emptyActionIds: const <String>[],
+    metricRouteTargets: <String, HomeMetricRouteTarget>{
+      'dispatches_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'scope': 'ambulance'},
+      ),
+      'active_trips': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'scope': 'ambulance'},
+      ),
+      'critical_cases': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'scope': 'critical'},
+      ),
+      'fleet_available': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'scope': 'ambulance'},
+      ),
+      'fleet_out': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'scope': 'ambulance'},
+      ),
+    },
   ),
   AppRole.unitManager: HomeDashboardProfile(
     id: 'unit_manager',
@@ -1541,6 +1733,14 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'my_upcoming_appointments': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'appointments'},
       ),
+      'my_prescriptions': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'all'},
+      ),
+      'my_released_results': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'completed-today'},
+      ),
+      'my_messages': HomeMetricRouteTarget(),
+      'my_profile_status': HomeMetricRouteTarget(),
     },
   ),
   AppRole.integrationAdmin: HomeDashboardProfile(

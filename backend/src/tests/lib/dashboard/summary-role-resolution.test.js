@@ -275,4 +275,23 @@ describe('per-card required_permissions (Dashboard.md)', () => {
       ])
     );
   });
+
+  it('emits lab week and month volume KPIs from computed pack metrics', () => {
+    const cards = metricsToRoleSummary(ROLE_PACKS.LAB_TECH, {
+      pending: 4,
+      critical: 1,
+      completed: 6,
+      allPatients: 12,
+      ordersThisWeek: 20,
+      ordersThisMonth: 55,
+    });
+
+    expect(cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'lab_pending', value: 4 }),
+        expect.objectContaining({ id: 'lab_orders_week', value: 20 }),
+        expect.objectContaining({ id: 'lab_orders_month', value: 55 }),
+      ])
+    );
+  });
 });

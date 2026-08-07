@@ -42,19 +42,34 @@ void main() {
       expect(profile.showQueuePanelFor(const []), isTrue);
     });
 
-    test('department roles keep queue and metric routing', () {
+    test('department roles suppress home queue and keep metric routing', () {
       final profile = homeProfileForRole(AppRole.labTech);
 
       expect(profile.layoutTier, HomeDashboardLayoutTier.departmentQueue);
       expect(profile.effectiveMaxStatusCards, 6);
       expect(profile.maxQuickActions, 0);
       expect(profile.showActivityPanel(hasQueueItems: true), isFalse);
-      expect(profile.showQueuePanelFor(const []), isTrue);
+      expect(profile.showQueuePanel, isFalse);
       expect(profile.metricRouteTargets.keys, contains('lab_pending'));
       expect(
         profile.metricRouteTargets['lab_pending']!.queryParameters,
         <String, String>{'section': 'pending'},
       );
+    });
+
+    test('billing biomed housekeeping ambulance suppress home queue', () {
+      for (final AppRole role in <AppRole>[
+        AppRole.billing,
+        AppRole.biomed,
+        AppRole.houseKeeper,
+        AppRole.ambulanceOperator,
+      ]) {
+        expect(
+          homeProfileForRole(role).showQueuePanel,
+          isFalse,
+          reason: '$role should suppress home queue (desk owns worklist)',
+        );
+      }
     });
 
     test('pharmacist dashboard shows pharmacy order and stock metrics', () {

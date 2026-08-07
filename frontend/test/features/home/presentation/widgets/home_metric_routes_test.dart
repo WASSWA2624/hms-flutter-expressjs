@@ -811,5 +811,98 @@ void main() {
       expect(bills?.route, AppRoutes.billing);
       expect(bills?.queryParameters['queue'], 'pendingPayment');
     });
+
+    test('doctor KPI taps include filter-tallied section params', () {
+      final HomeDashboardProfile profile = homeProfileForRole(AppRole.doctor);
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: AuthUserProfile(roles: <String>['DOCTOR']),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(code: 'clinical'),
+            AppModuleEntitlement(code: 'lab'),
+            AppModuleEntitlement(code: 'pharmacy-dispensing'),
+          ],
+        ),
+      );
+
+      expect(
+        homeMetricNavigation(
+          profile: profile,
+          card: const HomeStatusCard(
+            id: 'assigned',
+            label: 'Assigned today',
+            value: 3,
+          ),
+          policy: policy,
+        )?.queryParameters,
+        <String, String>{'section': 'assigned-to-me'},
+      );
+      expect(
+        homeMetricNavigation(
+          profile: profile,
+          card: const HomeStatusCard(
+            id: 'critical_labs',
+            label: 'Critical labs',
+            value: 1,
+          ),
+          policy: policy,
+        )?.queryParameters,
+        <String, String>{'section': 'critical'},
+      );
+      expect(
+        profile.metricRouteTargets['prescriptions_pending']?.queryParameters,
+        <String, String>{'section': 'pending'},
+      );
+    });
+
+    test('billing pending approvals uses approvalRequired queue', () {
+      expect(
+        homeDefaultBillingMetricQuery('pending_approvals'),
+        <String, String>{'queue': 'approvalRequired'},
+      );
+      expect(
+        homeProfileForRole(AppRole.billing)
+            .metricRouteTargets['pending_approvals']
+            ?.queryParameters,
+        <String, String>{'queue': 'approvalRequired'},
+      );
+    });
+
+    test('operations and biomed profiles declare filter-tallied metric routes', () {
+      final HomeDashboardProfile ops = homeProfileForRole(AppRole.operations);
+      expect(
+        ops.metricRouteTargets['maintenance_open']?.queryParameters,
+        <String, String>{'section': 'open'},
+      );
+      expect(
+        ops.metricRouteTargets['occupied_beds']?.queryParameters,
+        <String, String>{'section': 'occupied'},
+      );
+
+      final HomeDashboardProfile biomed = homeProfileForRole(AppRole.biomed);
+      expect(
+        biomed.metricRouteTargets['open_work_orders']?.queryParameters,
+        <String, String>{
+          'panel': 'work-orders',
+          'queue': 'OPEN_WORK_ORDERS',
+        },
+      );
+      expect(
+        homeProfileForRole(AppRole.houseKeeper)
+            .metricRouteTargets['overdue_tasks']
+            ?.queryParameters,
+        <String, String>{
+          'section': 'tasks',
+          'queue': 'OVERDUE_TASKS',
+        },
+      );
+      expect(
+        homeProfileForRole(AppRole.ambulanceOperator)
+            .metricRouteTargets['critical_cases']
+            ?.queryParameters,
+        <String, String>{'scope': 'critical'},
+      );
+    });
   });
 }

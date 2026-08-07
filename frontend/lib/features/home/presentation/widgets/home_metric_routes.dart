@@ -35,7 +35,7 @@ Map<String, String> homeDefaultBillingMetricQuery(String cardId) {
     'my_open_bills' ||
     'open_invoices' => <String, String>{'queue': 'pendingPayment'},
     'invoices_today' => <String, String>{'queue': 'needsIssue'},
-    'pending_approvals' => <String, String>{'queue': 'needsApproval'},
+    'pending_approvals' => <String, String>{'queue': 'approvalRequired'},
     'pending_insurance_claims' => <String, String>{'queue': 'claimsPending'},
     _ => const <String, String>{},
   };
@@ -352,10 +352,11 @@ AppRouteData? _clinicalMetricRoute({
 }) {
   if (profile.id == 'doctor') {
     return switch (cardId) {
-      'assigned' || 'in_progress' || 'follow_ups_due'
+      'assigned' || 'in_progress' || 'follow_ups_due' || 'completed'
           when policy.grants(AppPermissions.clinicalRead) =>
         AppRoutes.clinical,
-      'results_pending_review' when policy.grants(AppPermissions.labRead) =>
+      'results_pending_review' || 'critical_labs'
+          when policy.grants(AppPermissions.labRead) =>
         AppRoutes.lab,
       'radiology_pending' when policy.grants(AppPermissions.radiologyRead) =>
         AppRoutes.radiology,
@@ -364,6 +365,9 @@ AppRouteData? _clinicalMetricRoute({
       'emergency_cases_today'
           when policy.grants(AppPermissions.emergencyRead) =>
         AppRoutes.emergency,
+      'opd_notifications_attention'
+          when policy.grants(AppPermissions.patientRead) =>
+        AppRoutes.opd,
       'shifts_today' when policy.grants(AppPermissions.rosterRead) =>
         AppRoutes.hr,
       _ => null,
@@ -439,12 +443,110 @@ AppRouteData? _clinicalMetricRoute({
       'facilities_active'
           when policy.grants(AppPermissions.systemAdmin) =>
         AppRoutes.tenantFacilitySetup,
-      'subscriptions_health'
+      'subscriptions_health' || 'module_entitlement_issues'
+          when policy.grantsAny(const <AppPermission>[
+            AppPermissions.subscriptionsRead,
+            AppPermissions.systemAdmin,
+          ]) =>
+        AppRoutes.subscriptions,
+      _ => null,
+    };
+  }
+
+  if (profile.id == 'tenant_admin') {
+    return switch (cardId) {
+      'facilities_active' || 'active_users'
+          when policy.grants(AppPermissions.tenantAdmin) =>
+        AppRoutes.tenantFacilitySetup,
+      'subscription_health'
           when policy.grants(AppPermissions.subscriptionsRead) =>
         AppRoutes.subscriptions,
-      'module_entitlement_issues'
-          when policy.grants(AppPermissions.systemAdmin) =>
-        AppRoutes.subscriptions,
+      _ => null,
+    };
+  }
+
+  if (profile.id == 'facility_admin') {
+    return switch (cardId) {
+      'patient_flow_today' || 'appointments_today'
+          when policy.grants(AppPermissions.patientRead) =>
+        AppRoutes.reception,
+      'active_admissions' when policy.grants(AppPermissions.patientRead) =>
+        AppRoutes.ipd,
+      'bed_occupancy' when policy.grants(AppPermissions.patientRead) =>
+        AppRoutes.roomsBeds,
+      'emergency_cases_today'
+          when policy.grants(AppPermissions.emergencyRead) =>
+        AppRoutes.emergency,
+      'low_stock' when policy.grants(AppPermissions.pharmacyRead) =>
+        AppRoutes.pharmacy,
+      'critical_labs' when policy.grants(AppPermissions.labRead) =>
+        AppRoutes.lab,
+      'pending_leaves' when policy.grants(AppPermissions.hrRead) => AppRoutes.hr,
+      'open_incidents' when policy.grants(AppPermissions.biomedRead) =>
+        AppRoutes.biomedical,
+      'operational_blockers'
+          when policy.grants(AppPermissions.operationsRead) =>
+        AppRoutes.operations,
+      'opd_notifications_attention'
+          when policy.grants(AppPermissions.patientRead) =>
+        AppRoutes.opd,
+      _ => null,
+    };
+  }
+
+  if (profile.id == 'operations') {
+    return switch (cardId) {
+      'occupied_beds' || 'total_beds' || 'facility_readiness'
+          when policy.grants(AppPermissions.operationsRead) =>
+        AppRoutes.roomsBeds,
+      'maintenance_open' when policy.grants(AppPermissions.operationsRead) =>
+        AppRoutes.operations,
+      'low_stock_pressure'
+          when policy.grantsAny(const <AppPermission>[
+            AppPermissions.pharmacyRead,
+            AppPermissions.operationsRead,
+          ]) =>
+        AppRoutes.pharmacy,
+      'housekeeping_backlog'
+          when policy.grants(AppPermissions.operationsRead) =>
+        AppRoutes.housekeeping,
+      _ => null,
+    };
+  }
+
+  if (profile.id == 'biomed' &&
+      policy.grantsAny(const <AppPermission>[
+        AppPermissions.biomedRead,
+        AppPermissions.biomedWrite,
+      ])) {
+    return AppRoutes.biomedical;
+  }
+
+  if (profile.id == 'house_keeper' &&
+      policy.grants(AppPermissions.operationsRead)) {
+    return AppRoutes.housekeeping;
+  }
+
+  if (profile.id == 'ambulance_operator' &&
+      policy.grants(AppPermissions.emergencyRead)) {
+    return AppRoutes.emergency;
+  }
+
+  if (profile.id == 'patient') {
+    return switch (cardId) {
+      'my_upcoming_appointments'
+          when policy.grants(AppPermissions.patientRead) =>
+        AppRoutes.reception,
+      'my_open_bills' when policy.grants(AppPermissions.billingRead) =>
+        AppRoutes.billing,
+      'my_prescriptions' when policy.grants(AppPermissions.pharmacyRead) =>
+        AppRoutes.pharmacy,
+      'my_released_results' when policy.grants(AppPermissions.labRead) =>
+        AppRoutes.lab,
+      'my_messages' when policy.grants(AppPermissions.communicationsRead) =>
+        AppRoutes.communications,
+      'my_profile_status' when policy.grants(AppPermissions.profileRead) =>
+        AppRoutes.profile,
       _ => null,
     };
   }
