@@ -299,6 +299,8 @@ class _PharmacySupplierDialog extends ConsumerStatefulWidget {
 class _PharmacySupplierDialogState
     extends ConsumerState<_PharmacySupplierDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey<State<AppPhoneField>> _phoneFieldKey =
+      GlobalKey<State<AppPhoneField>>();
   late final TextEditingController _nameController;
   late final TextEditingController _locationController;
   late final TextEditingController _emailController;
@@ -346,46 +348,57 @@ class _PharmacySupplierDialogState
             controller: _nameController,
             labelText: l10n.pharmacySupplierNameLabel,
             isRequired: true,
-            validator: (String? value) => (value ?? '').trim().isEmpty
-                ? l10n.pharmacySupplierRequiredName
-                : null,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            validator: AppValidators.requiredText(
+              l10n.pharmacySupplierRequiredName,
+            ),
           ),
           AppTextField(
             controller: _locationController,
             labelText: l10n.pharmacySupplierLocationLabel,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
           ),
           AppEmailField(
             controller: _emailController,
             labelText: l10n.pharmacySupplierEmailLabel,
             invalidEmailMessage: l10n.pharmacySupplierInvalidEmail,
+            textInputAction: TextInputAction.next,
             enabled: !_isSaving,
           ),
-          AppTextField(
+          AppPhoneField(
+            key: _phoneFieldKey,
             controller: _phoneController,
             labelText: l10n.pharmacySupplierPhoneLabel,
-            keyboardType: TextInputType.phone,
+            countryLabelText: l10n.appPhoneCountryLabel,
+            countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+            countryNoResultsText: l10n.appPhoneCountryNoResults,
+            numberLabelText: l10n.appPhoneNumberLabel,
+            numberHintText: l10n.appPhoneNumberHint,
+            invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+            textInputAction: TextInputAction.done,
+            enabled: !_isSaving,
+            onFieldSubmitted: (_) => unawaited(_submit()),
           ),
         ],
       ),
-      actions: <Widget>[
-        AppButton.close(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: _isEdit
-              ? l10n.commonSaveActionLabel
-              : l10n.pharmacyAddSupplierAction,
-          leadingIcon: _isEdit ? Icons.save_outlined : Icons.add,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: _isEdit
+            ? l10n.commonSaveActionLabel
+            : l10n.pharmacyAddSupplierAction,
+        submitIcon: _isEdit ? Icons.save_outlined : Icons.add,
+        isSubmitting: _isSaving,
+        onCancel: () => Navigator.of(context).pop(false),
+        onSubmit: _submit,
+      ),
     );
   }
 
   Future<void> _submit() async {
+    AppPhoneField.commitPhone(_phoneFieldKey);
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
