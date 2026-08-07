@@ -353,8 +353,12 @@ describe('verify-demo-data', () => {
     mockPrisma.user_role.count = jest.fn().mockResolvedValue(2);
     mockPrisma.drug = { count: jest.fn().mockResolvedValue(20) };
     mockPrisma.purchase_order = { count: jest.fn().mockResolvedValue(20) };
-    mockPrisma.goods_receipt = { count: jest.fn().mockResolvedValue(20) };
+    mockPrisma.goods_receipt = {
+      count: jest.fn().mockResolvedValue(20),
+      findMany: jest.fn().mockResolvedValue([]),
+    };
     mockPrisma.supplier = { count: jest.fn().mockResolvedValue(2) };
+    mockPrisma.audit_log.count = jest.fn().mockResolvedValue(20);
 
     const { verifyDemoData } = require('../../../scripts/verify-demo-data');
     const result = await verifyDemoData();

@@ -1820,6 +1820,90 @@ void main() {
       lessThanOrEqualTo(0.01),
     );
   });
+
+  test('opening_balance projects quantity columns from controlled balance', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'opening_balance',
+      categoryId: 'controlled_medicines',
+      label: 'Opening balance',
+      datasetKey: 'pharmacy_controlled_balance',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_controlled_balance',
+      columns: const <String>[
+        'drug',
+        'facility',
+        'opening_quantity',
+        'quantity_received',
+        'quantity_dispensed',
+        'wastage',
+        'adjustments_net',
+        'closing_quantity',
+        'unit',
+      ],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'drug': 'Morphine',
+          'facility': 'DemoCare',
+          'opening_quantity': 72,
+          'quantity_received': 40,
+          'quantity_dispensed': 25,
+          'wastage': 5,
+          'adjustments_net': -2,
+          'closing_quantity': 80,
+          'unit': 'ampoule',
+        },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+    expect(snapshot.state, ModuleReportingLoadState.ready);
+    expect(snapshot.columns, <String>['drug', 'facility', 'opening_quantity', 'unit']);
+    expect(snapshot.rows.single['opening_quantity'], 72);
+    expect(snapshot.rows.single.containsKey('closing_quantity'), isFalse);
+  });
+
+  test('dispensing_staff filters controlled actors by role', () {
+    const ModuleReportingReport report = ModuleReportingReport(
+      id: 'dispensing_staff',
+      categoryId: 'controlled_medicines',
+      label: 'Dispensing staff',
+      datasetKey: 'pharmacy_controlled_actors',
+    );
+    final ReportDatasetPreview preview = ReportDatasetPreview(
+      datasetKey: 'pharmacy_controlled_actors',
+      columns: const <String>[
+        'actor_role',
+        'actor',
+        'drug',
+        'quantity_dispensed',
+        'dispensed_at',
+      ],
+      rows: const <Map<String, Object?>>[
+        <String, Object?>{
+          'actor_role': 'prescriber',
+          'actor': 'Dr A',
+          'drug': 'Morphine',
+          'quantity_dispensed': 2,
+          'dispensed_at': '2026-08-01',
+        },
+        <String, Object?>{
+          'actor_role': 'staff',
+          'actor': 'Pharm B',
+          'drug': 'Morphine',
+          'quantity_dispensed': 2,
+          'dispensed_at': '2026-08-01',
+        },
+      ],
+    );
+
+    final ModuleReportingReportSnapshot snapshot =
+        projectPharmacyReportingPreview(report: report, preview: preview);
+    expect(snapshot.rows, hasLength(1));
+    expect(snapshot.rows.single['actor'], 'Pharm B');
+    expect(snapshot.columns.contains('actor_role'), isFalse);
+  });
 }
 
 num _asTestNum(Object? value) {

@@ -300,6 +300,7 @@ class _ModuleReportingReportDialogState
           report: widget.report,
           labels: _labels,
           currencyCode: ref.watch(effectiveDefaultCurrencyProvider),
+          canExport: widget.canExport,
         );
     }
   }
