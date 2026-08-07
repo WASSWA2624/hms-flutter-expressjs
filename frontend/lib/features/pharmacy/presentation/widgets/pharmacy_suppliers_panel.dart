@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_supplier_details_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_supplier_similarity_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -230,7 +231,16 @@ class _PharmacySuppliersCatalogTabState
       ],
       onRowSelected: (PharmacySupplier item) {
         unawaited(
-          openPharmacySupplierDialog(context, ref, supplier: item),
+          openPharmacySupplierDetailsDialog(
+            context,
+            ref,
+            supplier: item,
+            writeRequirement: widget.writeRequirement,
+            onEdit: (PharmacySupplier supplier) =>
+                openPharmacySupplierDialog(context, ref, supplier: supplier),
+            onDelete: (PharmacySupplier supplier) =>
+                _confirmDeleteSupplier(context, supplier),
+          ),
         );
       },
       mobileItemBuilder: (BuildContext context, PharmacySupplier item) {
@@ -259,7 +269,7 @@ class _PharmacySuppliersCatalogTabState
     );
   }
 
-  Future<void> _confirmDeleteSupplier(
+  Future<bool> _confirmDeleteSupplier(
     BuildContext context,
     PharmacySupplier supplier,
   ) async {
@@ -282,8 +292,9 @@ class _PharmacySuppliersCatalogTabState
       ),
     );
     if (confirmed != true || !context.mounted) {
-      return;
+      return false;
     }
+    return true;
   }
 }
 

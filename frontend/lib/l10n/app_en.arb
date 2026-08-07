@@ -16094,6 +16094,14 @@
   "@pharmacySuppliersEmptyBody": {
     "description": "Empty-state body when no pharmacy suppliers exist."
   },
+  "pharmacySupplierDetailsTitle": "Supplier Details",
+  "@pharmacySupplierDetailsTitle": {
+    "description": "Title for the pharmacy supplier details dialog."
+  },
+  "pharmacySupplierDetailsSectionTitle": "Supplier",
+  "@pharmacySupplierDetailsSectionTitle": {
+    "description": "Section heading inside the pharmacy supplier details dialog."
+  },
   "pharmacySupplierRequiredName": "Supplier name is required.",
   "@pharmacySupplierRequiredName": {
     "description": "Validation message when supplier name is missing."

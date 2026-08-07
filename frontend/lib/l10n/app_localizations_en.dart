@@ -12599,6 +12599,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add suppliers so catalog products can record who they were bought from.';
 
   @override
+  String get pharmacySupplierDetailsTitle => 'Supplier Details';
+
+  @override
+  String get pharmacySupplierDetailsSectionTitle => 'Supplier';
+
+  @override
   String get pharmacySupplierRequiredName => 'Supplier name is required.';
 
   @override

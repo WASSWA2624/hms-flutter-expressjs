@@ -23224,6 +23224,18 @@ abstract class AppLocalizations {
   /// **'Add suppliers so catalog products can record who they were bought from.'**
   String get pharmacySuppliersEmptyBody;
 
+  /// Title for the pharmacy supplier details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier Details'**
+  String get pharmacySupplierDetailsTitle;
+
+  /// Section heading inside the pharmacy supplier details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get pharmacySupplierDetailsSectionTitle;
+
   /// Validation message when supplier name is missing.
   ///
   /// In en, this message translates to:
