@@ -16034,6 +16034,82 @@
   "@pharmacyCatalogTabShelves": {
     "description": "Pharmacy catalog shelves nested tab label."
   },
+  "pharmacyCatalogTabSuppliers": "Suppliers",
+  "@pharmacyCatalogTabSuppliers": {
+    "description": "Pharmacy catalog suppliers nested tab label."
+  },
+  "pharmacyAddSupplierAction": "Add supplier",
+  "@pharmacyAddSupplierAction": {
+    "description": "Pharmacy create supplier action label."
+  },
+  "pharmacyEditSupplierAction": "Edit supplier",
+  "@pharmacyEditSupplierAction": {
+    "description": "Pharmacy edit supplier action label."
+  },
+  "pharmacyDeleteSupplierAction": "Delete supplier",
+  "@pharmacyDeleteSupplierAction": {
+    "description": "Pharmacy delete supplier action label."
+  },
+  "pharmacyDeleteSupplierDialogTitle": "Delete supplier",
+  "@pharmacyDeleteSupplierDialogTitle": {
+    "description": "Confirm dialog title when deleting a pharmacy supplier."
+  },
+  "pharmacyDeleteSupplierDialogBody": "Remove this supplier from the catalog? Existing products keep their history; the supplier will no longer be available for new selections.",
+  "@pharmacyDeleteSupplierDialogBody": {
+    "description": "Confirm dialog body when deleting a pharmacy supplier."
+  },
+  "pharmacySupplierNameLabel": "Name",
+  "@pharmacySupplierNameLabel": {
+    "description": "Pharmacy supplier name field label."
+  },
+  "pharmacySupplierLocationLabel": "Location",
+  "@pharmacySupplierLocationLabel": {
+    "description": "Pharmacy supplier location field label."
+  },
+  "pharmacySupplierEmailLabel": "Email",
+  "@pharmacySupplierEmailLabel": {
+    "description": "Pharmacy supplier email field label."
+  },
+  "pharmacySupplierPhoneLabel": "Phone",
+  "@pharmacySupplierPhoneLabel": {
+    "description": "Pharmacy supplier phone field label."
+  },
+  "pharmacySupplierSearchHint": "Search suppliers",
+  "@pharmacySupplierSearchHint": {
+    "description": "Pharmacy suppliers list search hint."
+  },
+  "pharmacySuppliersLoadingTitle": "Loading suppliers",
+  "@pharmacySuppliersLoadingTitle": {
+    "description": "Loading title while pharmacy suppliers load."
+  },
+  "pharmacySuppliersLoadingBody": "Fetching supplier records for this facility.",
+  "@pharmacySuppliersLoadingBody": {
+    "description": "Loading body while pharmacy suppliers load."
+  },
+  "pharmacySuppliersEmptyTitle": "No suppliers yet",
+  "@pharmacySuppliersEmptyTitle": {
+    "description": "Empty-state title when no pharmacy suppliers exist."
+  },
+  "pharmacySuppliersEmptyBody": "Add suppliers so catalog products can record who they were bought from.",
+  "@pharmacySuppliersEmptyBody": {
+    "description": "Empty-state body when no pharmacy suppliers exist."
+  },
+  "pharmacySupplierRequiredName": "Supplier name is required.",
+  "@pharmacySupplierRequiredName": {
+    "description": "Validation message when supplier name is missing."
+  },
+  "pharmacySupplierInvalidEmail": "Enter a valid email address.",
+  "@pharmacySupplierInvalidEmail": {
+    "description": "Validation message when supplier email is invalid."
+  },
+  "pharmacyDrugSupplierLabel": "Supplier",
+  "@pharmacyDrugSupplierLabel": {
+    "description": "Pharmacy drug form label for preferred supplier."
+  },
+  "pharmacyDrugSupplierNoneLabel": "No supplier",
+  "@pharmacyDrugSupplierNoneLabel": {
+    "description": "Pharmacy drug supplier picker empty/none option."
+  },
   "pharmacyCatalogPanelTitle": "Catalog and stock",
   "@pharmacyCatalogPanelTitle": {
     "description": "Pharmacy catalog panel dialog title."

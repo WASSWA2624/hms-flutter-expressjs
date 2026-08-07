@@ -112,6 +112,29 @@ describe('Drug Schemas', () => {
       }
     });
 
+    it('should accept optional supplier_id', () => {
+      const data = {
+        ...validData,
+        supplier_id: '550e8400-e29b-41d4-a716-446655440099',
+      };
+      const result = createDrugSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.supplier_id).toBe(
+          '550e8400-e29b-41d4-a716-446655440099'
+        );
+      }
+    });
+
+    it('should accept null supplier_id to clear attachment', () => {
+      const data = { ...validData, supplier_id: null };
+      const result = createDrugSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.supplier_id).toBeNull();
+      }
+    });
+
     it('should reject empty name', () => {
       const data = { ...validData, name: '' };
       const result = createDrugSchema.safeParse(data);

@@ -252,10 +252,13 @@ const LEGACY_MODULE_SLUG_ALIASES = Object.freeze({
  * Path segments that clinical workflows must reach even when the commercial
  * pharmacy module is not subscribed (doctor prescribe → pharmacy-orders).
  * Dispense / inventory paths stay pharmacy-dispensing only.
+ * Suppliers stay inventory-procurement-lite primarily, but pharmacy catalog
+ * tenants with pharmacy-dispensing may manage preferred product suppliers.
  */
 const PATH_MODULE_ACCESS_ALTERNATES = Object.freeze({
   'pharmacy-orders': Object.freeze(['encounters-vitals']),
   'pharmacy-order-items': Object.freeze(['encounters-vitals']),
+  suppliers: Object.freeze(['pharmacy-dispensing']),
 });
 
 const trimExpiredEntries = (cache) => {

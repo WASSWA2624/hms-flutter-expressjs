@@ -153,4 +153,17 @@ abstract interface class PharmacyRepository {
   Future<Result<void>> permanentDeleteStorageRoom(String roomId);
 
   Future<Result<void>> deleteStorageShelf(String shelfId);
+
+  Future<Result<AppPage<PharmacySupplier>>> listSuppliers(
+    PharmacySupplierQuery query,
+  );
+
+  Future<Result<PharmacySupplier>> createSupplier(PharmacySupplierInput input);
+
+  Future<Result<PharmacySupplier>> updateSupplier(
+    String supplierId,
+    PharmacySupplierUpdateInput input,
+  );
+
+  Future<Result<void>> deleteSupplier(String supplierId);
 }

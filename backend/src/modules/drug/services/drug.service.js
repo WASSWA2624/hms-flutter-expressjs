@@ -38,7 +38,9 @@ const buildPagination = (page, limit, total) => ({
 
 const findScopedDrugOrThrow = async (id, user = {}) => {
   const scope = resolveScopedUserContext(user);
-  const drug = await drugRepository.findById(id);
+  const drug = await drugRepository.findById(id, {
+    supplier: { select: { id: true, name: true } },
+  });
 
   if (
     !drug ||
@@ -51,6 +53,9 @@ const findScopedDrugOrThrow = async (id, user = {}) => {
 };
 
 const buildDrugStockInclude = (scope = {}) => ({
+  supplier: {
+    select: { id: true, name: true },
+  },
   inventory_maps: {
     where: { deleted_at: null },
     include: {
@@ -83,10 +88,34 @@ const attachAvailableStock = (drug = {}) => {
 
   return {
     ...drug,
+    supplier_name: drug.supplier?.name || null,
     quantity_on_hand: stockLevel,
     available_quantity: stockLevel,
     stock_level: stockLevel,
   };
+};
+
+const resolveOptionalSupplierId = async ({
+  value,
+  tenantId,
+}) => {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (value === null || value === '') {
+    return null;
+  }
+
+  return resolveIdentifierForPayload({
+    value,
+    field: 'supplier_id',
+    model: 'supplier',
+    where: {
+      deleted_at: null,
+      ...(tenantId ? { tenant_id: tenantId } : {}),
+    },
+    nullable: true,
+  });
 };
 
 /**
@@ -175,7 +204,7 @@ const listDrugs = async (filters, page, limit, sortBy, order, userId, ipAddress,
 const getDrugById = async (id, userId, ipAddress, user = {}) => {
   try {
     const { drug } = await findScopedDrugOrThrow(id, user);
-    return drug;
+    return attachAvailableStock(drug);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -207,6 +236,13 @@ const createDrug = async (data, userId, ipAddress, user = {}) => {
         field: 'tenant_id',
         model: 'tenant',
         where: { deleted_at: null },
+      });
+    }
+
+    if (hasOwn(payload, 'supplier_id')) {
+      payload.supplier_id = await resolveOptionalSupplierId({
+        value: payload.supplier_id,
+        tenantId: payload.tenant_id,
       });
     }
 
@@ -295,6 +331,13 @@ const updateDrug = async (id, data, userId, ipAddress, user = {}) => {
         field: 'tenant_id',
         model: 'tenant',
         where: { deleted_at: null },
+      });
+    }
+
+    if (hasOwn(payload, 'supplier_id')) {
+      payload.supplier_id = await resolveOptionalSupplierId({
+        value: payload.supplier_id,
+        tenantId: before.tenant_id || scope.tenant_id || payload.tenant_id,
       });
     }
 

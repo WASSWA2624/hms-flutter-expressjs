@@ -764,6 +764,85 @@ final class PharmacyWorkspaceController
     );
   }
 
+  /// Loads suppliers for drug-edit pickers without mutating Catalog Suppliers filters.
+  Future<Result<AppPage<PharmacySupplier>>> loadSupplierPickerPage({
+    String search = '',
+  }) {
+    return _repository.listSuppliers(PharmacySupplierQuery(search: search));
+  }
+
+  Future<AppFailure?> applySupplierSearch(String search) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        supplierQuery: current.supplierQuery.copyWith(
+          search: search.trim(),
+          pageRequest: current.supplierQuery.pageRequest.first(),
+        ),
+        isRefreshingSuppliers: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshSuppliers(showLoading: true);
+  }
+
+  Future<AppFailure?> setSupplierPage(AppPageRequest request) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        supplierQuery: current.supplierQuery.copyWith(pageRequest: request),
+        isRefreshingSuppliers: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshSuppliers(showLoading: true);
+  }
+
+  Future<Result<PharmacySupplier>> createSupplier(
+    PharmacySupplierInput input,
+  ) async {
+    final Result<PharmacySupplier> result = await _repository.createSupplier(
+      input,
+    );
+    if (result.isSuccess) {
+      await _refreshSuppliers();
+    }
+    return result;
+  }
+
+  Future<Result<PharmacySupplier>> updateSupplier(
+    String supplierId,
+    PharmacySupplierUpdateInput input,
+  ) async {
+    final Result<PharmacySupplier> result = await _repository.updateSupplier(
+      supplierId,
+      input,
+    );
+    if (result.isSuccess) {
+      await _refreshSuppliers();
+    }
+    return result;
+  }
+
+  Future<AppFailure?> deleteSupplier(String supplierId) async {
+    final Result<void> result = await _repository.deleteSupplier(supplierId);
+    return result.when(
+      success: (_) async {
+        await _refreshSuppliers();
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
   void setCatalogTab(PharmacyCatalogTab tab) {
     final PharmacyWorkspaceState? current = _currentState;
     if (current == null || current.catalogTab == tab) {
@@ -808,7 +887,50 @@ final class PharmacyWorkspaceController
             showLoading: current.storageLayout.rooms.isEmpty,
           ),
         );
+      case PharmacyCatalogTab.suppliers:
+        unawaited(
+          _refreshSuppliers(showLoading: current.suppliers.items.isEmpty),
+        );
     }
+  }
+
+  Future<AppFailure?> _refreshSuppliers({bool showLoading = false}) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return null;
+    }
+    if (showLoading) {
+      _emit(current.copyWith(isRefreshingSuppliers: true));
+    }
+    final Result<AppPage<PharmacySupplier>> result = await _repository
+        .listSuppliers(current.supplierQuery);
+    return result.when(
+      success: (AppPage<PharmacySupplier> suppliers) {
+        final PharmacyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              suppliers: suppliers,
+              isRefreshingSuppliers: false,
+              clearLastFailure: true,
+            ),
+          );
+        }
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final PharmacyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              isRefreshingSuppliers: false,
+              lastFailure: failure,
+            ),
+          );
+        }
+        return failure;
+      },
+    );
   }
 
   Future<void> _refreshStorageLayout({

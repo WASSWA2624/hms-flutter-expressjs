@@ -156,7 +156,14 @@ extension PharmacyOrderFilterX on PharmacyOrderFilter {
   }
 }
 
-enum PharmacyCatalogTab { drugs, formulary, inventory, storageLayout, shelves }
+enum PharmacyCatalogTab {
+  drugs,
+  formulary,
+  inventory,
+  storageLayout,
+  shelves,
+  suppliers,
+}
 
 enum PharmacyInventoryFilter {
   lowStock,
@@ -405,6 +412,7 @@ final class PharmacyDrugInput {
     this.unitPrice,
     this.transferUnitPrice,
     this.currency,
+    this.supplierId,
     this.inventoryUnit,
     this.initialStock,
     this.reorderLevel,
@@ -430,6 +438,7 @@ final class PharmacyDrugInput {
   final num? unitPrice;
   final num? transferUnitPrice;
   final String? currency;
+  final String? supplierId;
   final String? inventoryUnit;
   final int? initialStock;
   final int? reorderLevel;
@@ -465,6 +474,8 @@ final class PharmacyDrugInput {
       if (unitPrice != null) 'unit_price': unitPrice,
       if (transferUnitPrice != null) 'transfer_unit_price': transferUnitPrice,
       if (currency != null) 'currency': currency,
+      if (supplierId != null && supplierId!.trim().isNotEmpty)
+        'supplier_id': supplierId!.trim(),
       if (confirmSimilar) 'confirm_similar': true,
     };
   }
@@ -505,6 +516,8 @@ final class PharmacyDrugUpdateInput {
     this.unitPrice,
     this.transferUnitPrice,
     this.currency,
+    this.supplierId,
+    this.clearSupplierId = false,
     this.confirmSimilar = false,
   });
 
@@ -518,6 +531,8 @@ final class PharmacyDrugUpdateInput {
   final num? unitPrice;
   final num? transferUnitPrice;
   final String? currency;
+  final String? supplierId;
+  final bool clearSupplierId;
   final bool confirmSimilar;
 
   Map<String, Object?> toJson() {
@@ -532,6 +547,10 @@ final class PharmacyDrugUpdateInput {
       if (unitPrice != null) 'unit_price': unitPrice,
       if (transferUnitPrice != null) 'transfer_unit_price': transferUnitPrice,
       if (currency != null) 'currency': currency,
+      if (clearSupplierId)
+        'supplier_id': null
+      else if (supplierId != null)
+        'supplier_id': supplierId,
       if (confirmSimilar) 'confirm_similar': true,
     };
   }
@@ -843,6 +862,120 @@ final class PharmacyDrugQuery {
       facilityId: clearFacilityId ? null : facilityId ?? this.facilityId,
       pageRequest: pageRequest ?? this.pageRequest,
     );
+  }
+}
+
+@immutable
+final class PharmacySupplierQuery {
+  const PharmacySupplierQuery({
+    this.search = '',
+    this.pageRequest = const AppPageRequest(
+      pageSize: AppPageRequest.maxPageSize,
+    ),
+  });
+
+  final String search;
+  final AppPageRequest pageRequest;
+
+  PharmacySupplierQuery copyWith({
+    String? search,
+    AppPageRequest? pageRequest,
+  }) {
+    return PharmacySupplierQuery(
+      search: search ?? this.search,
+      pageRequest: pageRequest ?? this.pageRequest,
+    );
+  }
+}
+
+@immutable
+final class PharmacySupplier {
+  const PharmacySupplier({
+    required this.id,
+    this.displayId,
+    this.name,
+    this.contactEmail,
+    this.phone,
+    this.location,
+    this.addressId,
+    this.tenantId,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  final String id;
+  final String? displayId;
+  final String? name;
+  final String? contactEmail;
+  final String? phone;
+  final String? location;
+  final String? addressId;
+  final String? tenantId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  String get primaryName => (name ?? '').trim();
+}
+
+@immutable
+final class PharmacySupplierInput {
+  const PharmacySupplierInput({
+    required this.tenantId,
+    required this.name,
+    this.contactEmail,
+    this.phone,
+    this.location,
+  });
+
+  final String tenantId;
+  final String name;
+  final String? contactEmail;
+  final String? phone;
+  final String? location;
+
+  Map<String, Object?> toJson() {
+    return <String, Object?>{
+      'tenant_id': tenantId,
+      'name': name.trim(),
+      if (contactEmail != null && contactEmail!.trim().isNotEmpty)
+        'contact_email': contactEmail!.trim(),
+      if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
+    };
+  }
+}
+
+@immutable
+final class PharmacySupplierUpdateInput {
+  const PharmacySupplierUpdateInput({
+    this.name,
+    this.contactEmail,
+    this.phone,
+    this.location,
+    this.clearContactEmail = false,
+    this.clearPhone = false,
+  });
+
+  final String? name;
+  final String? contactEmail;
+  final String? phone;
+  final String? location;
+  final bool clearContactEmail;
+  final bool clearPhone;
+
+  Map<String, Object?> toJson() {
+    return <String, Object?>{
+      if (name != null) 'name': name!.trim(),
+      if (clearContactEmail)
+        'contact_email': null
+      else if (contactEmail != null)
+        'contact_email': contactEmail!.trim().isEmpty
+            ? null
+            : contactEmail!.trim(),
+      if (clearPhone)
+        'phone': null
+      else if (phone != null)
+        'phone': phone!.trim().isEmpty ? null : phone!.trim(),
+    };
   }
 }
 
@@ -1435,6 +1568,8 @@ final class PharmacyDrug {
     this.currency,
     this.pharmacyCurrency,
     this.facilityCurrency,
+    this.supplierId,
+    this.supplierName,
     this.isOfferedAtFacility = false,
     this.quantityOnHand = 0,
     this.availableQuantity = 0,
@@ -1475,6 +1610,8 @@ final class PharmacyDrug {
   final String? currency;
   final String? pharmacyCurrency;
   final String? facilityCurrency;
+  final String? supplierId;
+  final String? supplierName;
   final bool isOfferedAtFacility;
   final num quantityOnHand;
   final num availableQuantity;
@@ -2092,6 +2229,13 @@ final class PharmacyWorkspaceState {
     this.storageLayout = const PharmacyStorageLayout(),
     this.isRefreshingStorage = false,
     this.stockAlertSummary = const PharmacyInventoryStockSummary(),
+    this.supplierQuery = const PharmacySupplierQuery(),
+    this.suppliers = const AppPage<PharmacySupplier>(
+      items: <PharmacySupplier>[],
+      request: AppPageRequest(pageSize: AppPageRequest.maxPageSize),
+      totalItemCount: 0,
+    ),
+    this.isRefreshingSuppliers = false,
   });
 
   final PharmacyWorkbenchQuery query;
@@ -2117,6 +2261,9 @@ final class PharmacyWorkspaceState {
   final PharmacyCatalogTab catalogTab;
   final PharmacyStorageLayout storageLayout;
   final bool isRefreshingStorage;
+  final PharmacySupplierQuery supplierQuery;
+  final AppPage<PharmacySupplier> suppliers;
+  final bool isRefreshingSuppliers;
 
   int get workloadCount {
     return workbench.summary.orderedQueue +
@@ -2145,6 +2292,9 @@ final class PharmacyWorkspaceState {
     PharmacyStorageLayout? storageLayout,
     bool? isRefreshingStorage,
     PharmacyInventoryStockSummary? stockAlertSummary,
+    PharmacySupplierQuery? supplierQuery,
+    AppPage<PharmacySupplier>? suppliers,
+    bool? isRefreshingSuppliers,
     bool clearSelectedWorkflow = false,
     bool clearLastFailure = false,
   }) {
@@ -2173,6 +2323,10 @@ final class PharmacyWorkspaceState {
       storageLayout: storageLayout ?? this.storageLayout,
       isRefreshingStorage: isRefreshingStorage ?? this.isRefreshingStorage,
       stockAlertSummary: stockAlertSummary ?? this.stockAlertSummary,
+      supplierQuery: supplierQuery ?? this.supplierQuery,
+      suppliers: suppliers ?? this.suppliers,
+      isRefreshingSuppliers:
+          isRefreshingSuppliers ?? this.isRefreshingSuppliers,
     );
   }
 }

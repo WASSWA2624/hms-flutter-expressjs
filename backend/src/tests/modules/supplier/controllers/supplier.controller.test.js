@@ -7,9 +7,13 @@
 
 const supplierController = require('@modules/supplier/controllers/supplier.controller');
 const supplierService = require('@modules/supplier/services/supplier.service');
-const { sendSuccess, sendCreated, sendNoContent } = require('@lib/response');
+const {
+  sendSuccess,
+  sendPaginated,
+  sendCreated,
+  sendNoContent,
+} = require('@lib/response');
 
-// Mock dependencies
 jest.mock('@modules/supplier/services/supplier.service');
 jest.mock('@lib/response');
 
@@ -19,19 +23,19 @@ describe('Supplier Controller', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     mockReq = {
       params: {},
       query: {},
       body: {},
       user: { id: 'user-123' },
       ip: '127.0.0.1',
-      locale: 'en'
+      locale: 'en',
     };
-    
+
     mockRes = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis()
+      json: jest.fn().mockReturnThis(),
     };
   });
 
@@ -39,7 +43,7 @@ describe('Supplier Controller', () => {
     it('should get supplier by ID', async () => {
       const mockSupplier = {
         id: '550e8400-e29b-41d4-a716-446655440000',
-        name: 'Medical Supplies Inc'
+        name: 'Medical Supplies Inc',
       };
 
       mockReq.params = { id: '550e8400-e29b-41d4-a716-446655440000' };
@@ -51,7 +55,12 @@ describe('Supplier Controller', () => {
         '550e8400-e29b-41d4-a716-446655440000',
         mockReq.user
       );
-      expect(sendSuccess).toHaveBeenCalledWith(mockRes, mockSupplier, 'messages.supplier.retrieved', 'en');
+      expect(sendSuccess).toHaveBeenCalledWith(
+        mockRes,
+        200,
+        'messages.supplier.retrieved',
+        mockSupplier
+      );
     });
   });
 
@@ -60,18 +69,18 @@ describe('Supplier Controller', () => {
       const mockResult = {
         data: [
           { id: '1', name: 'Supplier 1' },
-          { id: '2', name: 'Supplier 2' }
+          { id: '2', name: 'Supplier 2' },
         ],
         total: 10,
         page: 1,
-        limit: 20
+        limit: 20,
       };
 
       mockReq.query = {
         page: '1',
         limit: '20',
         sort_by: 'name',
-        order: 'asc'
+        order: 'asc',
       };
 
       supplierService.listSuppliers.mockResolvedValue(mockResult);
@@ -85,18 +94,17 @@ describe('Supplier Controller', () => {
         mockReq.user
       );
 
-      expect(sendSuccess).toHaveBeenCalledWith(
+      expect(sendPaginated).toHaveBeenCalledWith(
         mockRes,
-        mockResult.data,
         'messages.supplier.list_retrieved',
-        'en',
+        mockResult.data,
         {
-          pagination: {
-            page: 1,
-            limit: 20,
-            total: 10,
-            total_pages: 1
-          }
+          page: 1,
+          limit: 20,
+          total: 10,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
         }
       );
     });
@@ -106,14 +114,14 @@ describe('Supplier Controller', () => {
         tenant_id: '660e8400-e29b-41d4-a716-446655440000',
         name: 'Medical',
         page: '1',
-        limit: '20'
+        limit: '20',
       };
 
       supplierService.listSuppliers.mockResolvedValue({
         data: [],
         total: 0,
         page: 1,
-        limit: 20
+        limit: 20,
       });
 
       await supplierController.listSuppliers(mockReq, mockRes);
@@ -121,7 +129,7 @@ describe('Supplier Controller', () => {
       expect(supplierService.listSuppliers).toHaveBeenCalledWith(
         {
           tenant_id: '660e8400-e29b-41d4-a716-446655440000',
-          name: 'Medical'
+          name: 'Medical',
         },
         { page: 1, limit: 20 },
         { sort_by: undefined, order: undefined },
@@ -134,12 +142,12 @@ describe('Supplier Controller', () => {
     it('should create new supplier', async () => {
       const supplierData = {
         tenant_id: '660e8400-e29b-41d4-a716-446655440000',
-        name: 'Medical Supplies Inc'
+        name: 'Medical Supplies Inc',
       };
 
       const mockCreatedSupplier = {
         id: '550e8400-e29b-41d4-a716-446655440000',
-        ...supplierData
+        ...supplierData,
       };
 
       mockReq.body = supplierData;
@@ -147,16 +155,17 @@ describe('Supplier Controller', () => {
 
       await supplierController.createSupplier(mockReq, mockRes);
 
-      expect(supplierService.createSupplier).toHaveBeenCalledWith(
-        supplierData,
-        {
-          user_id: 'user-123',
-          ip_address: '127.0.0.1',
-          user: mockReq.user
-        }
-      );
+      expect(supplierService.createSupplier).toHaveBeenCalledWith(supplierData, {
+        user_id: 'user-123',
+        ip_address: '127.0.0.1',
+        user: mockReq.user,
+      });
 
-      expect(sendCreated).toHaveBeenCalledWith(mockRes, mockCreatedSupplier, 'messages.supplier.created', 'en');
+      expect(sendCreated).toHaveBeenCalledWith(
+        mockRes,
+        mockCreatedSupplier,
+        'messages.supplier.created'
+      );
     });
   });
 
@@ -165,7 +174,7 @@ describe('Supplier Controller', () => {
       const updateData = { name: 'Updated Name' };
       const mockUpdatedSupplier = {
         id: '550e8400-e29b-41d4-a716-446655440000',
-        ...updateData
+        ...updateData,
       };
 
       mockReq.params = { id: '550e8400-e29b-41d4-a716-446655440000' };
@@ -180,11 +189,16 @@ describe('Supplier Controller', () => {
         {
           user_id: 'user-123',
           ip_address: '127.0.0.1',
-          user: mockReq.user
+          user: mockReq.user,
         }
       );
 
-      expect(sendSuccess).toHaveBeenCalledWith(mockRes, mockUpdatedSupplier, 'messages.supplier.updated', 'en');
+      expect(sendSuccess).toHaveBeenCalledWith(
+        mockRes,
+        200,
+        'messages.supplier.updated',
+        mockUpdatedSupplier
+      );
     });
   });
 
@@ -200,7 +214,7 @@ describe('Supplier Controller', () => {
         {
           user_id: 'user-123',
           ip_address: '127.0.0.1',
-          user: mockReq.user
+          user: mockReq.user,
         }
       );
 

@@ -12551,6 +12551,66 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyCatalogTabShelves => 'Shelves';
 
   @override
+  String get pharmacyCatalogTabSuppliers => 'Suppliers';
+
+  @override
+  String get pharmacyAddSupplierAction => 'Add supplier';
+
+  @override
+  String get pharmacyEditSupplierAction => 'Edit supplier';
+
+  @override
+  String get pharmacyDeleteSupplierAction => 'Delete supplier';
+
+  @override
+  String get pharmacyDeleteSupplierDialogTitle => 'Delete supplier';
+
+  @override
+  String get pharmacyDeleteSupplierDialogBody =>
+      'Remove this supplier from the catalog? Existing products keep their history; the supplier will no longer be available for new selections.';
+
+  @override
+  String get pharmacySupplierNameLabel => 'Name';
+
+  @override
+  String get pharmacySupplierLocationLabel => 'Location';
+
+  @override
+  String get pharmacySupplierEmailLabel => 'Email';
+
+  @override
+  String get pharmacySupplierPhoneLabel => 'Phone';
+
+  @override
+  String get pharmacySupplierSearchHint => 'Search suppliers';
+
+  @override
+  String get pharmacySuppliersLoadingTitle => 'Loading suppliers';
+
+  @override
+  String get pharmacySuppliersLoadingBody =>
+      'Fetching supplier records for this facility.';
+
+  @override
+  String get pharmacySuppliersEmptyTitle => 'No suppliers yet';
+
+  @override
+  String get pharmacySuppliersEmptyBody =>
+      'Add suppliers so catalog products can record who they were bought from.';
+
+  @override
+  String get pharmacySupplierRequiredName => 'Supplier name is required.';
+
+  @override
+  String get pharmacySupplierInvalidEmail => 'Enter a valid email address.';
+
+  @override
+  String get pharmacyDrugSupplierLabel => 'Supplier';
+
+  @override
+  String get pharmacyDrugSupplierNoneLabel => 'No supplier';
+
+  @override
   String get pharmacyCatalogPanelTitle => 'Catalog and stock';
 
   @override

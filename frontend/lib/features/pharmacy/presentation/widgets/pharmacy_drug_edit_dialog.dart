@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +18,7 @@ import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_feedback.dart';
 import 'package:hosspi_hms/shared/scan/scan.dart';
@@ -73,6 +76,10 @@ class _PharmacyDrugEditDialogState
   String? _inventoryUnit;
   String? _storageRoomId;
   String? _storageShelfId;
+  String? _supplierId;
+  String? _supplierName;
+  List<PharmacySupplier> _suppliers = const <PharmacySupplier>[];
+  bool _isLoadingSuppliers = false;
   int? _expiryAlertLeadDays;
   DateTime? _manufacturedAt;
   DateTime? _expiryDate;
@@ -142,6 +149,48 @@ class _PharmacyDrugEditDialogState
     _expiryAlertLeadDays = drug?.expiryAlertLeadDays;
     _batchNumberController = TextEditingController(
       text: _emptyToNull(drug?.batchNumber ?? '') ?? '',
+    );
+    _supplierId = _emptyToNull(drug?.supplierId ?? '');
+    _supplierName = _emptyToNull(drug?.supplierName ?? '');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_loadSuppliers());
+    });
+  }
+
+  Future<void> _loadSuppliers() async {
+    setState(() => _isLoadingSuppliers = true);
+    final Result<AppPage<PharmacySupplier>> result = await ref
+        .read(pharmacyWorkspaceControllerProvider.notifier)
+        .loadSupplierPickerPage();
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (AppPage<PharmacySupplier> page) {
+        setState(() {
+          _suppliers = page.items;
+          _isLoadingSuppliers = false;
+          if (_supplierId != null &&
+              !_suppliers.any(
+                (PharmacySupplier supplier) => supplier.id == _supplierId,
+              ) &&
+              (_supplierName ?? '').trim().isNotEmpty) {
+            _suppliers = <PharmacySupplier>[
+              PharmacySupplier(
+                id: _supplierId!,
+                name: _supplierName,
+              ),
+              ..._suppliers,
+            ];
+          }
+        });
+      },
+      failure: (_) {
+        setState(() => _isLoadingSuppliers = false);
+      },
     );
   }
 
@@ -744,6 +793,45 @@ class _PharmacyDrugEditDialogState
             ],
           ),
           SizedBox(height: theme.spacing.md),
+          AppFormSection(
+            title: l10n.pharmacyDrugSupplierLabel,
+            children: <Widget>[
+              AppSelectField<String>.searchable(
+                value: _supplierId,
+                labelText: l10n.pharmacyDrugSupplierLabel,
+                hintText: l10n.pharmacyDrugSupplierNoneLabel,
+                enabled: !_isSaving,
+                isLoading: _isLoadingSuppliers,
+                options: _suppliers
+                    .map(
+                      (PharmacySupplier supplier) => AppSelectOption<String>(
+                        value: supplier.id,
+                        label: supplier.primaryName.isEmpty
+                            ? supplier.id
+                            : supplier.primaryName,
+                      ),
+                    )
+                    .toList(growable: false),
+                onChanged: (String? value) {
+                  setState(() {
+                    _supplierId = value;
+                    if (value == null) {
+                      _supplierName = null;
+                      return;
+                    }
+                    for (final PharmacySupplier supplier in _suppliers) {
+                      if (supplier.id == value) {
+                        _supplierName = supplier.primaryName;
+                        return;
+                      }
+                    }
+                    _supplierName = null;
+                  });
+                },
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
           Builder(
             builder: (BuildContext context) {
               final AppAccessPolicy accessPolicy = ref.watch(
@@ -1228,6 +1316,8 @@ class _PharmacyDrugEditDialogState
                     unitPrice: pharmacyPrice,
                     transferUnitPrice: transferPrice,
                     currency: pharmacyCurrency,
+                    supplierId: _supplierId,
+                    clearSupplierId: _supplierId == null,
                   ),
                   facilityOffering: facilityOffering,
                 );
@@ -1292,6 +1382,7 @@ class _PharmacyDrugEditDialogState
             unitPrice: pharmacyPrice,
             transferUnitPrice: transferPrice,
             currency: pharmacyCurrency,
+            supplierId: _supplierId,
             inventoryUnit: _inventoryUnit,
             initialStock: int.tryParse(_initialStockController.text.trim()),
             reorderLevel: int.tryParse(_reorderLevelController.text.trim()),
@@ -1456,6 +1547,8 @@ class _PharmacyDrugEditDialogState
                     unitPrice: pharmacyPrice,
                     transferUnitPrice: transferPrice,
                     currency: pharmacyCurrency,
+                    supplierId: _supplierId,
+                    clearSupplierId: _supplierId == null,
                     confirmSimilar: true,
                   ),
                   facilityOffering: facilityOffering,
@@ -1522,6 +1615,8 @@ class _PharmacyDrugEditDialogState
             unitPrice: pharmacyPrice,
             transferUnitPrice: transferPrice,
             currency: pharmacyCurrency,
+            supplierId: _supplierId,
+            clearSupplierId: _supplierId == null,
             confirmSimilar: true,
           ),
           facilityOffering: facilityOffering,

@@ -366,6 +366,35 @@ describe('module entitlement middleware', () => {
     );
   });
 
+  test('allows suppliers when tenant has pharmacy-dispensing but not inventory-procurement-lite', async () => {
+    const { enforceModuleEntitlement } = loadMiddleware();
+    const req = {
+      path: '/suppliers',
+      user: { tenant_id: 'tenant-pharmacy-only', roles: ['PHARMACIST'] }};
+
+    moduleRepository.count.mockResolvedValue(1);
+    moduleSubscriptionRepository.count.mockImplementation(async (filters = {}) => {
+      const slugs = filters?.module?.slug?.in || [];
+      return slugs.includes('pharmacy-dispensing') ? 1 : 0;
+    });
+
+    const error = await invokeMiddleware(enforceModuleEntitlement(), req);
+
+    expect(error).toBeUndefined();
+    expect(moduleSubscriptionRepository.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        module: expect.objectContaining({
+          slug: expect.objectContaining({
+            in: expect.arrayContaining(['inventory-procurement-lite'])})})})
+    );
+    expect(moduleSubscriptionRepository.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        module: expect.objectContaining({
+          slug: expect.objectContaining({
+            in: expect.arrayContaining(['pharmacy-dispensing'])})})})
+    );
+  });
+
   test('still blocks pharmacy dispense paths without pharmacy-dispensing entitlement', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {

@@ -9,7 +9,12 @@
 
 const supplierService = require('@services/supplier/supplier.service');
 const { asyncHandler } = require('@lib/async');
-const { sendSuccess, sendCreated, sendNoContent } = require('@lib/response');
+const {
+  sendSuccess,
+  sendPaginated,
+  sendCreated,
+  sendNoContent,
+} = require('@lib/response');
 
 /**
  * Get supplier by ID
@@ -20,10 +25,10 @@ const { sendSuccess, sendCreated, sendNoContent } = require('@lib/response');
  */
 const getSupplier = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
+
   const supplier = await supplierService.getSupplierById(id, req.user || {});
-  
-  sendSuccess(res, supplier, 'messages.supplier.retrieved', req.locale);
+
+  sendSuccess(res, 200, 'messages.supplier.retrieved', supplier);
 });
 
 /**
@@ -35,21 +40,24 @@ const getSupplier = asyncHandler(async (req, res) => {
  */
 const listSuppliers = asyncHandler(async (req, res) => {
   const { page, limit, sort_by, order, ...filters } = req.query;
-  
+  const pageNumber = parseInt(page, 10) || 1;
+  const pageLimit = parseInt(limit, 10) || 20;
+
   const result = await supplierService.listSuppliers(
     filters,
-    { page: parseInt(page) || 1, limit: parseInt(limit) || 20 },
+    { page: pageNumber, limit: pageLimit },
     { sort_by, order },
     req.user || {}
   );
-  
-  sendSuccess(res, result.data, 'messages.supplier.list_retrieved', req.locale, {
-    pagination: {
-      page: result.page,
-      limit: result.limit,
-      total: result.total,
-      total_pages: Math.ceil(result.total / result.limit)
-    }
+
+  const totalPages = Math.ceil(result.total / result.limit) || 0;
+  sendPaginated(res, 'messages.supplier.list_retrieved', result.data, {
+    page: result.page,
+    limit: result.limit,
+    total: result.total,
+    totalPages,
+    hasNextPage: result.page < totalPages,
+    hasPreviousPage: result.page > 1,
   });
 });
 
@@ -65,12 +73,15 @@ const createSupplier = asyncHandler(async (req, res) => {
   const auditContext = {
     user_id: req.user?.id,
     ip_address: req.ip,
-    user: req.user || {}
+    user: req.user || {},
   };
-  
-  const supplier = await supplierService.createSupplier(supplierData, auditContext);
-  
-  sendCreated(res, supplier, 'messages.supplier.created', req.locale);
+
+  const supplier = await supplierService.createSupplier(
+    supplierData,
+    auditContext
+  );
+
+  sendCreated(res, supplier, 'messages.supplier.created');
 });
 
 /**
@@ -86,12 +97,16 @@ const updateSupplier = asyncHandler(async (req, res) => {
   const auditContext = {
     user_id: req.user?.id,
     ip_address: req.ip,
-    user: req.user || {}
+    user: req.user || {},
   };
-  
-  const supplier = await supplierService.updateSupplier(id, updateData, auditContext);
-  
-  sendSuccess(res, supplier, 'messages.supplier.updated', req.locale);
+
+  const supplier = await supplierService.updateSupplier(
+    id,
+    updateData,
+    auditContext
+  );
+
+  sendSuccess(res, 200, 'messages.supplier.updated', supplier);
 });
 
 /**
@@ -106,11 +121,11 @@ const deleteSupplier = asyncHandler(async (req, res) => {
   const auditContext = {
     user_id: req.user?.id,
     ip_address: req.ip,
-    user: req.user || {}
+    user: req.user || {},
   };
-  
+
   await supplierService.deleteSupplier(id, auditContext);
-  
+
   sendNoContent(res);
 });
 
@@ -119,5 +134,5 @@ module.exports = {
   listSuppliers,
   createSupplier,
   updateSupplier,
-  deleteSupplier
+  deleteSupplier,
 };

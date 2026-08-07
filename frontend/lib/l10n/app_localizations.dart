@@ -23134,6 +23134,120 @@ abstract class AppLocalizations {
   /// **'Shelves'**
   String get pharmacyCatalogTabShelves;
 
+  /// Pharmacy catalog suppliers nested tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get pharmacyCatalogTabSuppliers;
+
+  /// Pharmacy create supplier action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add supplier'**
+  String get pharmacyAddSupplierAction;
+
+  /// Pharmacy edit supplier action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit supplier'**
+  String get pharmacyEditSupplierAction;
+
+  /// Pharmacy delete supplier action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete supplier'**
+  String get pharmacyDeleteSupplierAction;
+
+  /// Confirm dialog title when deleting a pharmacy supplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete supplier'**
+  String get pharmacyDeleteSupplierDialogTitle;
+
+  /// Confirm dialog body when deleting a pharmacy supplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this supplier from the catalog? Existing products keep their history; the supplier will no longer be available for new selections.'**
+  String get pharmacyDeleteSupplierDialogBody;
+
+  /// Pharmacy supplier name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get pharmacySupplierNameLabel;
+
+  /// Pharmacy supplier location field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get pharmacySupplierLocationLabel;
+
+  /// Pharmacy supplier email field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get pharmacySupplierEmailLabel;
+
+  /// Pharmacy supplier phone field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get pharmacySupplierPhoneLabel;
+
+  /// Pharmacy suppliers list search hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search suppliers'**
+  String get pharmacySupplierSearchHint;
+
+  /// Loading title while pharmacy suppliers load.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading suppliers'**
+  String get pharmacySuppliersLoadingTitle;
+
+  /// Loading body while pharmacy suppliers load.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching supplier records for this facility.'**
+  String get pharmacySuppliersLoadingBody;
+
+  /// Empty-state title when no pharmacy suppliers exist.
+  ///
+  /// In en, this message translates to:
+  /// **'No suppliers yet'**
+  String get pharmacySuppliersEmptyTitle;
+
+  /// Empty-state body when no pharmacy suppliers exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Add suppliers so catalog products can record who they were bought from.'**
+  String get pharmacySuppliersEmptyBody;
+
+  /// Validation message when supplier name is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier name is required.'**
+  String get pharmacySupplierRequiredName;
+
+  /// Validation message when supplier email is invalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address.'**
+  String get pharmacySupplierInvalidEmail;
+
+  /// Pharmacy drug form label for preferred supplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get pharmacyDrugSupplierLabel;
+
+  /// Pharmacy drug supplier picker empty/none option.
+  ///
+  /// In en, this message translates to:
+  /// **'No supplier'**
+  String get pharmacyDrugSupplierNoneLabel;
+
   /// Pharmacy catalog panel dialog title.
   ///
   /// In en, this message translates to:

@@ -3785,12 +3785,15 @@ model drug {
   /// Pharmacy→facility transfer price (= facility buy); distinct from patient tariff.
   transfer_unit_price Decimal? @db.Decimal(12, 2)
   currency          String?   @db.VarChar(10)
+  /// Preferred supplier the product was bought from (optional).
+  supplier_id       String?   @db.VarChar(36)
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   deleted_at        DateTime?
   version           Int       @default(1)
 
   tenant               tenant                @relation(fields: [tenant_id], references: [id])
+  supplier             supplier?             @relation(fields: [supplier_id], references: [id])
   batches              drug_batch[]
   formulary_items      formulary_item[]
   pharmacy_order_items pharmacy_order_item[]
@@ -3800,6 +3803,7 @@ model drug {
 
   @@index([tenant_id])
   @@index([code])
+  @@index([supplier_id])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }
@@ -4215,6 +4219,7 @@ model supplier {
   purchase_orders purchase_order[]
   addresses       address[]        @relation("supplier_address")
   contacts        contact[]        @relation("supplier_contact")
+  drugs           drug[]
 
   @@index([tenant_id])
   @@index([name])

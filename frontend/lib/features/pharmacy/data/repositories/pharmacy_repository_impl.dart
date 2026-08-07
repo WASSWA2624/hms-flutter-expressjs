@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
@@ -206,9 +207,13 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
     String drugId,
     PharmacyDrugUpdateInput input,
   ) {
+    final Map<String, Object?> payload = _withoutEmpty(input.toJson());
+    if (input.clearSupplierId || input.supplierId != null) {
+      payload['supplier_id'] = input.clearSupplierId ? null : input.supplierId;
+    }
     return _apiClient.put<PharmacyDrug>(
       ApiEndpoints.byId(HmsApiResource.drugs, drugId),
-      data: _withoutEmpty(input.toJson()),
+      data: payload,
       decoder: (Object? data) {
         final PharmacyJsonMap response = _expectMap(data);
         return PharmacyDrugDto(_map(response['data'])).toEntity();
@@ -789,6 +794,220 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
         shelfId,
       ]),
       decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<AppPage<PharmacySupplier>>> listSuppliers(
+    PharmacySupplierQuery query,
+  ) {
+    final AppPageRequest request = query.pageRequest;
+    return _apiClient.get<AppPage<PharmacySupplier>>(
+      ApiEndpoints.collection(HmsApiResource.suppliers),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': request.pageIndex + 1,
+        'limit': request.pageSize,
+        'search': query.search.trim().isEmpty ? null : query.search.trim(),
+        'sort_by': 'name',
+        'order': 'asc',
+      }),
+      decoder: (Object? data) =>
+          PharmacySupplierPageDto.fromResponse(data, request).page,
+    );
+  }
+
+  @override
+  Future<Result<PharmacySupplier>> createSupplier(PharmacySupplierInput input) {
+    return _apiClient
+        .post<PharmacySupplier>(
+          ApiEndpoints.collection(HmsApiResource.suppliers),
+          data: _withoutEmpty(input.toJson()),
+          decoder: (Object? data) {
+            final PharmacyJsonMap response = _expectMap(data);
+            return PharmacySupplierDto(_map(response['data'])).toEntity();
+          },
+        )
+        .then((Result<PharmacySupplier> created) async {
+          return created.when(
+            success: (PharmacySupplier supplier) async {
+              final String? location = input.location?.trim();
+              if (location == null || location.isEmpty) {
+                return Result<PharmacySupplier>.success(supplier);
+              }
+              final Result<PharmacySupplier> withLocation =
+                  await _syncSupplierLocation(
+                    supplier: supplier,
+                    location: location,
+                    tenantId: input.tenantId,
+                  );
+              return withLocation;
+            },
+            failure: (AppFailure failure) async =>
+                Result<PharmacySupplier>.failure(failure),
+          );
+        });
+  }
+
+  @override
+  Future<Result<PharmacySupplier>> updateSupplier(
+    String supplierId,
+    PharmacySupplierUpdateInput input,
+  ) {
+    final Map<String, Object?> payload = <String, Object?>{
+      if (input.name != null) 'name': input.name!.trim(),
+      if (input.clearContactEmail)
+        'contact_email': null
+      else if (input.contactEmail != null)
+        'contact_email': input.contactEmail!.trim().isEmpty
+            ? null
+            : input.contactEmail!.trim(),
+      if (input.clearPhone)
+        'phone': null
+      else if (input.phone != null)
+        'phone': input.phone!.trim().isEmpty ? null : input.phone!.trim(),
+    };
+    return _apiClient
+        .put<PharmacySupplier>(
+          ApiEndpoints.byId(HmsApiResource.suppliers, supplierId),
+          data: payload,
+          decoder: (Object? data) {
+            final PharmacyJsonMap response = _expectMap(data);
+            return PharmacySupplierDto(_map(response['data'])).toEntity();
+          },
+        )
+        .then((Result<PharmacySupplier> updated) async {
+          return updated.when(
+            success: (PharmacySupplier supplier) async {
+              if (input.location == null) {
+                return Result<PharmacySupplier>.success(supplier);
+              }
+              final String location = input.location!.trim();
+              final Result<PharmacySupplier> withLocation =
+                  await _syncSupplierLocation(
+                    supplier: supplier,
+                    location: location,
+                    tenantId: supplier.tenantId,
+                    clearLocation: location.isEmpty,
+                  );
+              return withLocation;
+            },
+            failure: (AppFailure failure) async =>
+                Result<PharmacySupplier>.failure(failure),
+          );
+        });
+  }
+
+  @override
+  Future<Result<void>> deleteSupplier(String supplierId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.suppliers, supplierId),
+      decoder: (_) {},
+    );
+  }
+
+  Future<Result<PharmacySupplier>> _syncSupplierLocation({
+    required PharmacySupplier supplier,
+    required String location,
+    String? tenantId,
+    bool clearLocation = false,
+  }) async {
+    final String? resolvedTenantId = tenantId ?? supplier.tenantId;
+    if (resolvedTenantId == null || resolvedTenantId.isEmpty) {
+      return Result<PharmacySupplier>.success(supplier);
+    }
+
+    if (clearLocation) {
+      final String? addressId = supplier.addressId;
+      if (addressId == null || addressId.isEmpty) {
+        return Result<PharmacySupplier>.success(
+          PharmacySupplier(
+            id: supplier.id,
+            displayId: supplier.displayId,
+            name: supplier.name,
+            contactEmail: supplier.contactEmail,
+            phone: supplier.phone,
+            location: null,
+            addressId: null,
+            tenantId: supplier.tenantId,
+            createdAt: supplier.createdAt,
+            updatedAt: supplier.updatedAt,
+          ),
+        );
+      }
+      final Result<void> deleted = await _apiClient.delete<void>(
+        ApiEndpoints.byId(HmsApiResource.addresses, addressId),
+        decoder: (_) {},
+      );
+      return deleted.when(
+        success: (_) => Result<PharmacySupplier>.success(
+          PharmacySupplier(
+            id: supplier.id,
+            displayId: supplier.displayId,
+            name: supplier.name,
+            contactEmail: supplier.contactEmail,
+            phone: supplier.phone,
+            location: null,
+            addressId: null,
+            tenantId: supplier.tenantId,
+            createdAt: supplier.createdAt,
+            updatedAt: supplier.updatedAt,
+          ),
+        ),
+        failure: Result<PharmacySupplier>.failure,
+      );
+    }
+
+    if (supplier.addressId != null && supplier.addressId!.isNotEmpty) {
+      final Result<PharmacyJsonMap> updated = await _apiClient.put<PharmacyJsonMap>(
+        ApiEndpoints.byId(HmsApiResource.addresses, supplier.addressId!),
+        data: <String, Object?>{'line1': location},
+        decoder: (Object? data) => _map(_expectMap(data)['data']),
+      );
+      return updated.when(
+        success: (PharmacyJsonMap address) => Result<PharmacySupplier>.success(
+          PharmacySupplier(
+            id: supplier.id,
+            displayId: supplier.displayId,
+            name: supplier.name,
+            contactEmail: supplier.contactEmail,
+            phone: supplier.phone,
+            location: location,
+            addressId: _string(address['id']) ?? supplier.addressId,
+            tenantId: supplier.tenantId,
+            createdAt: supplier.createdAt,
+            updatedAt: supplier.updatedAt,
+          ),
+        ),
+        failure: Result<PharmacySupplier>.failure,
+      );
+    }
+
+    final Result<PharmacyJsonMap> created = await _apiClient.post<PharmacyJsonMap>(
+      ApiEndpoints.collection(HmsApiResource.addresses),
+      data: <String, Object?>{
+        'tenant_id': resolvedTenantId,
+        'address_type': 'OTHER',
+        'line1': location,
+        'supplier_id': supplier.id,
+      },
+      decoder: (Object? data) => _map(_expectMap(data)['data']),
+    );
+    return created.when(
+      success: (PharmacyJsonMap address) => Result<PharmacySupplier>.success(
+        PharmacySupplier(
+          id: supplier.id,
+          displayId: supplier.displayId,
+          name: supplier.name,
+          contactEmail: supplier.contactEmail,
+          phone: supplier.phone,
+          location: location,
+          addressId: _string(address['id']),
+          tenantId: supplier.tenantId,
+          createdAt: supplier.createdAt,
+          updatedAt: supplier.updatedAt,
+        ),
+      ),
+      failure: Result<PharmacySupplier>.failure,
     );
   }
 }

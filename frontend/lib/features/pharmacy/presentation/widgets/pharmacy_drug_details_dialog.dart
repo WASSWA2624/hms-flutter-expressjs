@@ -144,6 +144,12 @@ class _PharmacyDrugDetailsDialogState
         label: l10n.pharmacyBuyPriceLabel,
         value: _drugDetailsPriceText(current.buyUnitPrice),
       ),
+      if ((current.supplierName ?? '').trim().isNotEmpty)
+        _DrugDetailMetaItem(
+          icon: Icons.local_shipping_outlined,
+          label: l10n.pharmacyDrugSupplierLabel,
+          value: current.supplierName!.trim(),
+        ),
       _DrugDetailMetaItem(
         icon: Icons.payments_outlined,
         label: l10n.pharmacyPharmacyPriceLabel,

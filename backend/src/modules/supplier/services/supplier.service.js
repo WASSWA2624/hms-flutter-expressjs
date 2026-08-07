@@ -14,9 +14,16 @@ const {
   resolveScopedUserContext,
   buildTenantScopeWhere} = require('@services/pharmacy-workspace/pharmacy.shared');
 
+const supplierAddressInclude = Object.freeze({
+  addresses: {
+    where: { deleted_at: null },
+    orderBy: { created_at: 'asc' },
+  },
+});
+
 const findScopedSupplierOrThrow = async (id, user = {}) => {
   const scope = resolveScopedUserContext(user);
-  const supplier = await supplierRepository.findById(id);
+  const supplier = await supplierRepository.findById(id, supplierAddressInclude);
 
   if (
     !supplier ||
@@ -84,7 +91,13 @@ const listSuppliers = async (filters, pagination, sort, user = {}) => {
   }
   
   const [data, total] = await Promise.all([
-    supplierRepository.findMany(whereFilters, skip, limit, orderBy),
+    supplierRepository.findMany(
+      whereFilters,
+      skip,
+      limit,
+      orderBy,
+      supplierAddressInclude
+    ),
     supplierRepository.count(whereFilters)
   ]);
   
@@ -104,6 +117,10 @@ const createSupplier = async (supplierData, auditContext) => {
     ...supplierData,
     ...(!scope.can_manage_all_tenants ? { tenant_id: scope.tenant_id } : {})};
   const supplier = await supplierRepository.create(payload);
+  const created = await supplierRepository.findById(
+    supplier.id,
+    supplierAddressInclude
+  );
   
   // Create audit log
   await createAuditLog({
@@ -112,11 +129,11 @@ const createSupplier = async (supplierData, auditContext) => {
     action: 'CREATE',
     entity: 'supplier',
     entity_id: supplier.id,
-    diff: { after: supplier },
+    diff: { after: created || supplier },
     ip_address: auditContext.ip_address
   });
   
-  return supplier;
+  return created || supplier;
 };
 
 /**
@@ -137,6 +154,10 @@ const updateSupplier = async (id, updateData, auditContext) => {
     ...updateData,
     ...(!scope.can_manage_all_tenants ? { tenant_id: scope.tenant_id } : {})};
   const updatedSupplier = await supplierRepository.update(id, payload);
+  const withAddresses = await supplierRepository.findById(
+    id,
+    supplierAddressInclude
+  );
   
   // Create audit log
   await createAuditLog({
@@ -145,11 +166,11 @@ const updateSupplier = async (id, updateData, auditContext) => {
     action: 'UPDATE',
     entity: 'supplier',
     entity_id: id,
-    diff: { before: existingSupplier, after: updatedSupplier },
+    diff: { before: existingSupplier, after: withAddresses || updatedSupplier },
     ip_address: auditContext.ip_address
   });
   
-  return updatedSupplier;
+  return withAddresses || updatedSupplier;
 };
 
 /**

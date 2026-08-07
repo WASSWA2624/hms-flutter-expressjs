@@ -421,6 +421,10 @@ final class PharmacyDrugDto {
       pharmacyCurrency:
           _string(json['pharmacy_currency']) ?? _string(json['currency']),
       facilityCurrency: _string(json['facility_currency']),
+      supplierId: _string(json['supplier_id']),
+      supplierName:
+          _string(json['supplier_name']) ??
+          _string(_map(json['supplier'])['name']),
       isOfferedAtFacility: _bool(json['is_offered_at_facility']),
       quantityOnHand: _number(json['quantity_on_hand']) ?? 0,
       availableQuantity: _number(json['available_quantity']) ?? 0,
@@ -701,6 +705,102 @@ final class PharmacyStorageLayoutDto {
       shelfCount: _int(summary['shelf_count']) ?? 0,
     );
   }
+}
+
+final class PharmacySupplierPageDto {
+  const PharmacySupplierPageDto({required this.page});
+
+  final AppPage<PharmacySupplier> page;
+
+  factory PharmacySupplierPageDto.fromResponse(
+    Object? responseData,
+    AppPageRequest request,
+  ) {
+    final PharmacyJsonMap response = _expectMap(responseData);
+    final Object? data = response['data'];
+    final List<PharmacyJsonMap> items = data is List
+        ? data.whereType<PharmacyJsonMap>().toList(growable: false)
+        : _list(_map(data)['suppliers']).isNotEmpty
+        ? _list(_map(data)['suppliers'])
+        : _list(data);
+    final int? total =
+        _int(_map(response['meta'])['total']) ??
+        _int(_map(response['pagination'])['total']) ??
+        _int(_map(data)['total']);
+
+    final List<PharmacySupplier> suppliers = items
+        .map(PharmacySupplierDto.new)
+        .map((PharmacySupplierDto dto) => dto.toEntity())
+        .where((PharmacySupplier item) => item.id.isNotEmpty)
+        .toList(growable: false);
+
+    return PharmacySupplierPageDto(
+      page: AppPage<PharmacySupplier>(
+        items: suppliers,
+        request: request,
+        totalItemCount: total ?? suppliers.length,
+      ),
+    );
+  }
+}
+
+final class PharmacySupplierDto {
+  const PharmacySupplierDto(this.json);
+
+  final PharmacyJsonMap json;
+
+  PharmacySupplier toEntity() {
+    final List<PharmacyJsonMap> addresses = _list(json['addresses']);
+    final PharmacyJsonMap primaryAddress = addresses.isEmpty
+        ? <String, Object?>{}
+        : addresses.first;
+    final String? location = _firstNonEmptySupplierField(<String?>[
+      _string(json['location']),
+      _joinSupplierAddress(primaryAddress),
+      _string(primaryAddress['line1']),
+    ]);
+
+    return PharmacySupplier(
+      id: _string(json['id']) ?? _string(json['display_id']) ?? '',
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      name: _string(json['name']),
+      contactEmail: _string(json['contact_email']),
+      phone: _string(json['phone']),
+      location: location,
+      addressId: _string(primaryAddress['id']),
+      tenantId: _string(json['tenant_id']),
+      createdAt: _date(json['created_at']),
+      updatedAt: _date(json['updated_at']),
+    );
+  }
+}
+
+String? _joinSupplierAddress(PharmacyJsonMap address) {
+  final List<String> parts = <String>[
+    if ((_string(address['line1']) ?? '').isNotEmpty) _string(address['line1'])!,
+    if ((_string(address['line2']) ?? '').isNotEmpty) _string(address['line2'])!,
+    if ((_string(address['city']) ?? '').isNotEmpty) _string(address['city'])!,
+    if ((_string(address['state']) ?? '').isNotEmpty) _string(address['state'])!,
+    if ((_string(address['postal_code']) ?? '').isNotEmpty)
+      _string(address['postal_code'])!,
+    if ((_string(address['country']) ?? '').isNotEmpty)
+      _string(address['country'])!,
+  ];
+  if (parts.isEmpty) {
+    return null;
+  }
+  return parts.join(', ');
+}
+
+String? _firstNonEmptySupplierField(Iterable<String?> values) {
+  for (final String? value in values) {
+    final String normalized = value?.trim() ?? '';
+    if (normalized.isNotEmpty) {
+      return normalized;
+    }
+  }
+  return null;
 }
 
 PharmacyJsonMap _expectMap(Object? value) {

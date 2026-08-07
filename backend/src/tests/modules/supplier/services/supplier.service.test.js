@@ -47,7 +47,12 @@ describe('Supplier Service', () => {
       );
 
       expect(result).toEqual(mockSupplier);
-      expect(supplierRepository.findById).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000');
+      expect(supplierRepository.findById).toHaveBeenCalledWith(
+        '550e8400-e29b-41d4-a716-446655440000',
+        expect.objectContaining({
+          addresses: expect.any(Object),
+        })
+      );
     });
 
     it('should throw HttpError when supplier not found', async () => {
@@ -110,7 +115,10 @@ describe('Supplier Service', () => {
         { tenant_id: '660e8400-e29b-41d4-a716-446655440000' },
         0,
         20,
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        expect.objectContaining({
+          addresses: expect.any(Object),
+        })
       );
     });
 
@@ -131,7 +139,10 @@ describe('Supplier Service', () => {
           name: { contains: 'Medical' }},
         0,
         20,
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        expect.objectContaining({
+          addresses: expect.any(Object),
+        })
       );
     });
 
@@ -157,7 +168,10 @@ describe('Supplier Service', () => {
         },
         0,
         20,
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        expect.objectContaining({
+          addresses: expect.any(Object),
+        })
       );
     });
   });
@@ -171,10 +185,12 @@ describe('Supplier Service', () => {
 
       const mockCreatedSupplier = {
         id: '550e8400-e29b-41d4-a716-446655440000',
-        ...supplierData
+        ...supplierData,
+        addresses: [],
       };
 
       supplierRepository.create.mockResolvedValue(mockCreatedSupplier);
+      supplierRepository.findById.mockResolvedValue(mockCreatedSupplier);
 
       const result = await supplierService.createSupplier(supplierData, mockAuditContext);
 
@@ -199,7 +215,8 @@ describe('Supplier Service', () => {
       const existingSupplier = {
         id: '550e8400-e29b-41d4-a716-446655440000',
         tenant_id: '660e8400-e29b-41d4-a716-446655440000',
-        name: 'Old Name'
+        name: 'Old Name',
+        addresses: [],
       };
 
       const updateData = { name: 'New Name' };
@@ -209,7 +226,9 @@ describe('Supplier Service', () => {
         ...updateData
       };
 
-      supplierRepository.findById.mockResolvedValue(existingSupplier);
+      supplierRepository.findById
+        .mockResolvedValueOnce(existingSupplier)
+        .mockResolvedValueOnce(updatedSupplier);
       supplierRepository.update.mockResolvedValue(updatedSupplier);
 
       const result = await supplierService.updateSupplier(
