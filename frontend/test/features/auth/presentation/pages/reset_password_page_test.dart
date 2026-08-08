@@ -54,8 +54,14 @@ void main() {
       final l10n = tester.element(find.byType(ResetPasswordPage)).l10n;
 
       expect(find.text(l10n.authResetPasswordTitle), findsOneWidget);
-      expect(find.text(l10n.authResetPasswordActionLabel), findsOneWidget);
-      expect(find.text(l10n.authForgotPasswordActionLabel), findsOneWidget);
+      expect(
+        find.widgetWithText(FilledButton, l10n.authResetPasswordActionLabel),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(TextButton, l10n.authForgotPasswordActionLabel),
+        findsOneWidget,
+      );
       expect(find.text(l10n.authBackToLoginActionLabel), findsOneWidget);
       expect(find.text(l10n.authResetPasswordCompletedTitle), findsNothing);
       expect(find.text(l10n.authLoginActionLabel), findsNothing);
@@ -78,9 +84,15 @@ void main() {
       final l10n = tester.element(find.byType(ResetPasswordPage)).l10n;
 
       expect(find.text(l10n.authResetPasswordTitle), findsOneWidget);
-      expect(find.text(l10n.authResetPasswordActionLabel), findsOneWidget);
+      expect(
+        find.widgetWithText(FilledButton, l10n.authResetPasswordActionLabel),
+        findsOneWidget,
+      );
       expect(find.text(l10n.authResetPasswordCodeLabel), findsNothing);
-      expect(find.text(l10n.authForgotPasswordActionLabel), findsNothing);
+      expect(
+        find.widgetWithText(TextButton, l10n.authForgotPasswordActionLabel),
+        findsNothing,
+      );
       expect(find.text(l10n.authBackToLoginActionLabel), findsOneWidget);
       expect(find.text(l10n.authResetPasswordCompletedTitle), findsNothing);
     },
@@ -102,7 +114,9 @@ void main() {
       await tester.enterText(find.byType(EditableText).at(1), 'NewPass12');
       tester.view.viewInsets = FakeViewPadding.zero;
       await tester.pump();
-      await tester.tap(find.text(l10n.authResetPasswordActionLabel));
+      await tester.tap(
+        find.widgetWithText(FilledButton, l10n.authResetPasswordActionLabel),
+      );
       await tester.pump();
       await tester.pumpAndSettle();
 
@@ -123,6 +137,61 @@ void main() {
       expect(repository.lastEmail, 'nurse@example.com');
       expect(repository.lastCode, '123456');
       expect(repository.lastToken, isNull);
+      expect(
+        tester
+            .widget<EditableText>(find.byType(EditableText).at(0))
+            .controller
+            ?.text,
+        'nurse@example.com',
+      );
+      expect(
+        tester
+            .widget<EditableText>(find.byType(EditableText).at(1))
+            .controller
+            ?.text,
+        'NewPass12',
+      );
+    },
+  );
+
+  testWidgets(
+    'successful link-token reset with email prefills login credentials',
+    (WidgetTester tester) async {
+      final repository = _ResetPasswordRepository();
+
+      await _pumpResetPassword(
+        tester,
+        repository,
+        location:
+            '/reset-password?token=link-token-abc&email=nurse%40example.com',
+      );
+      final l10n = tester.element(find.byType(ResetPasswordPage)).l10n;
+
+      await tester.enterText(find.byType(EditableText).at(0), 'NewPass12');
+      tester.view.viewInsets = FakeViewPadding.zero;
+      await tester.tap(
+        find.widgetWithText(FilledButton, l10n.authResetPasswordActionLabel),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LoginPage), findsOneWidget);
+      expect(
+        tester
+            .widget<EditableText>(find.byType(EditableText).at(0))
+            .controller
+            ?.text,
+        'nurse@example.com',
+      );
+      expect(
+        tester
+            .widget<EditableText>(find.byType(EditableText).at(1))
+            .controller
+            ?.text,
+        'NewPass12',
+      );
+      expect(repository.lastToken, 'link-token-abc');
+      expect(repository.lastEmail, isNull);
     },
   );
 
@@ -140,7 +209,9 @@ void main() {
 
       await tester.enterText(find.byType(EditableText).at(0), 'NewPass12');
       tester.view.viewInsets = FakeViewPadding.zero;
-      await tester.tap(find.text(l10n.authResetPasswordActionLabel));
+      await tester.tap(
+        find.widgetWithText(FilledButton, l10n.authResetPasswordActionLabel),
+      );
       await tester.pump();
       await tester.pumpAndSettle();
 
@@ -154,6 +225,13 @@ void main() {
       expect(repository.lastToken, 'link-token-abc');
       expect(repository.lastEmail, isNull);
       expect(repository.lastCode, isNull);
+      expect(
+        tester
+            .widget<EditableText>(find.byType(EditableText).at(1))
+            .controller
+            ?.text,
+        'NewPass12',
+      );
     },
   );
 
@@ -163,7 +241,9 @@ void main() {
     await _pumpResetPassword(tester, _ResetPasswordRepository());
     final l10n = tester.element(find.byType(ResetPasswordPage)).l10n;
 
-    await tester.tap(find.text(l10n.authResetPasswordActionLabel));
+    await tester.tap(
+      find.widgetWithText(FilledButton, l10n.authResetPasswordActionLabel),
+    );
     await tester.pumpAndSettle();
 
     expect(find.byType(ResetPasswordPage), findsOneWidget);
@@ -186,7 +266,9 @@ void main() {
 
     await tester.enterText(find.byType(EditableText).at(0), 'NewPass12');
     tester.view.viewInsets = FakeViewPadding.zero;
-    await tester.tap(find.text(l10n.authResetPasswordActionLabel));
+    await tester.tap(
+      find.widgetWithText(FilledButton, l10n.authResetPasswordActionLabel),
+    );
     await tester.pump();
     await tester.pumpAndSettle();
 
@@ -205,7 +287,10 @@ void main() {
     await _pumpResetPassword(tester, _ResetPasswordRepository());
     final l10n = tester.element(find.byType(ResetPasswordPage)).l10n;
 
-    final Finder forgotLink = find.text(l10n.authForgotPasswordActionLabel);
+    final Finder forgotLink = find.widgetWithText(
+      TextButton,
+      l10n.authForgotPasswordActionLabel,
+    );
     await tester.ensureVisible(forgotLink);
     await tester.tap(forgotLink);
     await tester.pumpAndSettle();
@@ -235,7 +320,10 @@ void main() {
     final l10n = tester.element(find.byType(ResetPasswordPage)).l10n;
 
     expect(find.text(l10n.authResetPasswordTitle), findsOneWidget);
-    expect(find.text(l10n.authResetPasswordActionLabel), findsOneWidget);
+    expect(
+      find.widgetWithText(FilledButton, l10n.authResetPasswordActionLabel),
+      findsOneWidget,
+    );
     expect(find.text(l10n.authResetPasswordCompletedTitle), findsNothing);
     expect(tester.takeException(), isNull);
   });

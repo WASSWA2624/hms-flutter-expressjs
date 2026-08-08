@@ -25,6 +25,8 @@ final class AuthControllerState {
     this.identifyTenants = const <AuthTenantOption>[],
     this.passwordResetMaskedEmail,
     this.passwordResetMaskedPhone,
+    this.loginPrefillIdentifier,
+    this.loginPrefillPassword,
   });
 
   final bool isSubmitting;
@@ -39,6 +41,10 @@ final class AuthControllerState {
   final List<AuthTenantOption> identifyTenants;
   final String? passwordResetMaskedEmail;
   final String? passwordResetMaskedPhone;
+
+  /// One-shot credentials after password reset (never persisted / never in URL).
+  final String? loginPrefillIdentifier;
+  final String? loginPrefillPassword;
 
   AuthControllerState copyWith({
     bool? isSubmitting,
@@ -57,6 +63,9 @@ final class AuthControllerState {
     String? passwordResetMaskedEmail,
     String? passwordResetMaskedPhone,
     bool clearPasswordResetContacts = false,
+    String? loginPrefillIdentifier,
+    String? loginPrefillPassword,
+    bool clearLoginPrefill = false,
   }) {
     return AuthControllerState(
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -84,6 +93,12 @@ final class AuthControllerState {
       passwordResetMaskedPhone: clearPasswordResetContacts
           ? null
           : passwordResetMaskedPhone ?? this.passwordResetMaskedPhone,
+      loginPrefillIdentifier: clearLoginPrefill
+          ? null
+          : loginPrefillIdentifier ?? this.loginPrefillIdentifier,
+      loginPrefillPassword: clearLoginPrefill
+          ? null
+          : loginPrefillPassword ?? this.loginPrefillPassword,
     );
   }
 }
@@ -132,11 +147,25 @@ final class AuthController extends Notifier<AuthControllerState> {
   }
 
   void clearPasswordResetCompleted() {
-    if (!state.passwordResetCompleted) {
+    if (!state.passwordResetCompleted &&
+        state.loginPrefillIdentifier == null &&
+        state.loginPrefillPassword == null) {
       return;
     }
 
-    state = state.copyWith(passwordResetCompleted: false);
+    state = state.copyWith(
+      passwordResetCompleted: false,
+      clearLoginPrefill: true,
+    );
+  }
+
+  void clearLoginPrefill() {
+    if (state.loginPrefillIdentifier == null &&
+        state.loginPrefillPassword == null) {
+      return;
+    }
+
+    state = state.copyWith(clearLoginPrefill: true);
   }
 
   void clearEmailVerificationCompleted() {
@@ -353,6 +382,7 @@ final class AuthController extends Notifier<AuthControllerState> {
     String? code,
     required String newPassword,
     required String confirmPassword,
+    String? loginPrefillIdentifier,
   }) async {
     if (state.isSubmitting) {
       return false;
@@ -362,6 +392,7 @@ final class AuthController extends Notifier<AuthControllerState> {
       isSubmitting: true,
       clearFailure: true,
       passwordResetCompleted: false,
+      clearLoginPrefill: true,
     );
 
     final result = await ref
@@ -376,10 +407,15 @@ final class AuthController extends Notifier<AuthControllerState> {
 
     return result.when(
       success: (_) {
+        final String? prefillId =
+            (loginPrefillIdentifier ?? email)?.trim().toLowerCase();
         state = state.copyWith(
           isSubmitting: false,
           clearFailure: true,
           passwordResetCompleted: true,
+          loginPrefillIdentifier:
+              prefillId != null && prefillId.isNotEmpty ? prefillId : null,
+          loginPrefillPassword: newPassword,
         );
         return true;
       },

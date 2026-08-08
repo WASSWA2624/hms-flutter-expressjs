@@ -2370,7 +2370,9 @@ const forgotPassword = async (data) => {
 
   const { linkToken, code, expiresAt } = await createPasswordResetTokens(user.id);
 
-  const deliveryResult = await sendPasswordResetEmail({
+  // Do not block the HTTP response on SMTP — delivery is best-effort and
+  // the client already continues to the reset form with the masked contacts.
+  sendPasswordResetEmail({
     email: user.email,
     resetToken: linkToken,
     resetCode: code,
@@ -2378,17 +2380,23 @@ const forgotPassword = async (data) => {
     locale: request_context?.locale,
     timeZone: request_context?.timezone,
     request_context,
-  });
-
-  // Keep response generic to avoid account enumeration side effects,
-  // but still emit a warning for operational visibility.
-  if (!deliveryResult?.sent) {
-    logger.warn('Password reset email was not delivered', {
-      provider: deliveryResult?.provider || 'unknown',
-      tenant_id: user.tenant_id,
-      user_id: user.id,
+  })
+    .then((deliveryResult) => {
+      if (!deliveryResult?.sent) {
+        logger.warn('Password reset email was not delivered', {
+          provider: deliveryResult?.provider || 'unknown',
+          tenant_id: user.tenant_id,
+          user_id: user.id,
+        });
+      }
+    })
+    .catch((error) => {
+      logger.warn('Password reset email failed', {
+        tenant_id: user.tenant_id,
+        user_id: user.id,
+        error: error?.message || String(error),
+      });
     });
-  }
 
   // Create audit log
   await createAuditLog({

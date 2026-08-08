@@ -25,12 +25,7 @@ class AuthPrimaryButton extends StatelessWidget {
     final bool canPress = !isLoading && onPressed != null;
 
     final Widget button = FilledButton(
-      // Keep the primary fill while loading so the CTA does not look disabled.
-      onPressed: isLoading
-          ? () {}
-          : canPress
-          ? onPressed
-          : null,
+      onPressed: canPress ? onPressed : null,
       style: FilledButton.styleFrom(
         minimumSize: Size(fullWidth ? double.infinity : 0, 48),
         padding: EdgeInsets.symmetric(
@@ -74,12 +69,15 @@ class _AuthPrimaryButtonContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppSpacingTokens spacing = theme.spacing;
-    final Color onPrimary = theme.colorScheme.onPrimary;
+    // Inherit FilledButton enabled/disabled foreground (loading uses disabled).
+    final Color contentColor =
+        DefaultTextStyle.of(context).style.color ??
+        theme.colorScheme.onPrimary;
 
     final TextStyle labelStyle = theme.textTheme.labelLarge!.copyWith(
       fontWeight: AppFontWeight.emphasis,
       fontSize: 15,
-      color: onPrimary,
+      color: contentColor,
     );
 
     if (isLoading) {
@@ -90,7 +88,7 @@ class _AuthPrimaryButtonContent extends StatelessWidget {
             dimension: 18,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(onPrimary),
+              valueColor: AlwaysStoppedAnimation<Color>(contentColor),
             ),
           ),
           SizedBox(width: spacing.sm),
@@ -118,7 +116,7 @@ class _AuthPrimaryButtonContent extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        Icon(leadingIcon, size: 18, color: onPrimary),
+        Icon(leadingIcon, size: 18, color: contentColor),
         SizedBox(width: spacing.sm),
         Flexible(
           child: Text(

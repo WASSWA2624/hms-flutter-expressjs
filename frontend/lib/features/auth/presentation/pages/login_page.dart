@@ -53,9 +53,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       final bool awaitingPlatformApproval = authState.awaitingPlatformApproval;
       final List<AuthPlatformAdminContact> verifiedContacts =
           List<AuthPlatformAdminContact>.from(authState.platformAdminContacts);
+      final String? loginPrefillIdentifier = authState.loginPrefillIdentifier;
+      final String? loginPrefillPassword = authState.loginPrefillPassword;
       auth.clearFailure();
       auth.clearIdentifyTenants();
       auth.clearPasswordResetSubmitted();
+      if (loginPrefillIdentifier != null && loginPrefillIdentifier.isNotEmpty) {
+        _identifierController.text = loginPrefillIdentifier;
+      }
+      if (loginPrefillPassword != null && loginPrefillPassword.isNotEmpty) {
+        _passwordController.text = loginPrefillPassword;
+      }
       if (showResetCompleted) {
         auth.clearPasswordResetCompleted();
         final l10n = context.l10n;
@@ -67,6 +75,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             ),
           ),
         );
+      } else if (loginPrefillIdentifier != null || loginPrefillPassword != null) {
+        auth.clearLoginPrefill();
       } else if (showEmailVerified) {
         auth.clearEmailVerificationCompleted();
         if (awaitingPlatformApproval) {

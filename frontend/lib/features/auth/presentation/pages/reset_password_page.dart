@@ -252,6 +252,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
     }
 
     final String password = _passwordController.text;
+    final String knownEmail = _resolvedEmail;
     final bool completed = await ref
         .read(authControllerProvider.notifier)
         .resetPassword(
@@ -260,6 +261,8 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
           code: code,
           newPassword: password,
           confirmPassword: password,
+          loginPrefillIdentifier:
+              knownEmail.isNotEmpty ? knownEmail : null,
         );
     if (!mounted || !completed) {
       return;

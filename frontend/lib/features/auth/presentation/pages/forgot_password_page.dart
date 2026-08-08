@@ -121,7 +121,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 label: l10n.authForgotPasswordSubmitLabel,
                 leadingIcon: Icons.mail_outline_rounded,
                 isLoading: state.isSubmitting,
-                onPressed: _submit,
+                onPressed: state.isSubmitting ? null : _submit,
               ),
             ],
             SizedBox(height: theme.spacing.sm),

@@ -1354,6 +1354,9 @@ describe('Auth Service', () => {
       createAuditLog.mockResolvedValue({});
 
       const result = await authService.forgotPassword(forgotData);
+      // Email delivery is fire-and-forget; flush the microtask before asserts.
+      await Promise.resolve();
+      await Promise.resolve();
 
       expect(result).toHaveProperty('message');
       expect(sendEmail).toHaveBeenCalled();
