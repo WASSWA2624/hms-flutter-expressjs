@@ -41,6 +41,7 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminDefaultColumns(
   BuildContext context, {
   required AccessAdminResource resource,
   required bool canWrite,
+  bool canMutateSystemCatalog = false,
   required Future<void> Function(AccessAdminItem item) onUserStatusToggle,
   required void Function(AccessAdminItem item) onRoleEdit,
   required Future<void> Function(AccessAdminItem item) onRegistrationApprove,
@@ -50,6 +51,7 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminDefaultColumns(
         context,
         resource: resource,
         canWrite: canWrite,
+        canMutateSystemCatalog: canMutateSystemCatalog,
         onUserStatusToggle: onUserStatusToggle,
         onRoleEdit: onRoleEdit,
         onRegistrationApprove: onRegistrationApprove,
@@ -105,6 +107,7 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminColumnChoices(
   BuildContext context, {
   required AccessAdminResource resource,
   required bool canWrite,
+  bool canMutateSystemCatalog = false,
   required Future<void> Function(AccessAdminItem item) onUserStatusToggle,
   required void Function(AccessAdminItem item) onRoleEdit,
   required Future<void> Function(AccessAdminItem item) onRegistrationApprove,
@@ -113,6 +116,7 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminColumnChoices(
     context,
     resource: resource,
     canWrite: canWrite,
+    canMutateSystemCatalog: canMutateSystemCatalog,
     onUserStatusToggle: onUserStatusToggle,
     onRoleEdit: onRoleEdit,
     onRegistrationApprove: onRegistrationApprove,
@@ -123,6 +127,7 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminAllColumnsForResource(
   BuildContext context, {
   required AccessAdminResource resource,
   required bool canWrite,
+  bool canMutateSystemCatalog = false,
   required Future<void> Function(AccessAdminItem item) onUserStatusToggle,
   required void Function(AccessAdminItem item) onRoleEdit,
   required Future<void> Function(AccessAdminItem item) onRegistrationApprove,
@@ -136,6 +141,7 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminAllColumnsForResource(
     AccessAdminResource.roles => _roleColumns(
       context,
       canWrite: canWrite,
+      canMutateSystemCatalog: canMutateSystemCatalog,
       onRoleEdit: onRoleEdit,
     ),
     AccessAdminResource.permissions => accessAdminPermissionColumns(context),
@@ -179,6 +185,11 @@ List<AppSearchBarFilterGroup> accessAdminFilterGroups(
         label: l10n.accessAdminColumnScope,
         allLabel: l10n.accessAdminRoleScopeFilterAll,
         choices: <AppSearchBarFilterChoice>[
+          AppSearchBarFilterChoice(
+            value: 'platform',
+            label: l10n.accessAdminRoleScopeFilterPlatform,
+            icon: Icons.public_outlined,
+          ),
           AppSearchBarFilterChoice(
             value: 'tenant',
             label: l10n.accessAdminRoleScopeFilterTenant,
@@ -299,6 +310,7 @@ Widget? accessAdminMobileNextAction(
   required AccessAdminResource resource,
   required AccessAdminItem item,
   required bool canWrite,
+  bool canMutateSystemCatalog = false,
   required Future<void> Function(AccessAdminItem item)? onUserStatusToggle,
   required void Function(AccessAdminItem item)? onRoleEdit,
   required Future<void> Function(AccessAdminItem item)? onRegistrationApprove,
@@ -317,11 +329,13 @@ Widget? accessAdminMobileNextAction(
           ? null
           : () => onUserStatusToggle(item),
     ),
-    AccessAdminResource.roles when !item.isSystemCritical => AppButton.tertiary(
-      label: context.l10n.accessAdminEditRoleAction,
-      leadingIcon: Icons.edit_outlined,
-      onPressed: onRoleEdit == null ? null : () => onRoleEdit(item),
-    ),
+    AccessAdminResource.roles
+        when !item.isSystemCritical || canMutateSystemCatalog =>
+      AppButton.tertiary(
+        label: context.l10n.accessAdminEditRoleAction,
+        leadingIcon: Icons.edit_outlined,
+        onPressed: onRoleEdit == null ? null : () => onRoleEdit(item),
+      ),
     AccessAdminResource.registrationFollowUps => AppButton.tertiary(
       label: context.l10n.accessAdminApproveRegistrationAction,
       onPressed: onRegistrationApprove == null
@@ -435,6 +449,7 @@ List<AppListTableColumn<AccessAdminItem>> _userColumns(
 List<AppListTableColumn<AccessAdminItem>> _roleColumns(
   BuildContext context, {
   required bool canWrite,
+  bool canMutateSystemCatalog = false,
   required void Function(AccessAdminItem item) onRoleEdit,
 }) {
   final AppLocalizations l10n = context.l10n;
@@ -488,7 +503,11 @@ List<AppListTableColumn<AccessAdminItem>> _roleColumns(
     ),
     // Omit the column entirely when unauthorized (no empty/disabled cell).
     if (canWrite)
-      _roleNextActionColumn(context, onRoleEdit: onRoleEdit),
+      _roleNextActionColumn(
+        context,
+        canMutateSystemCatalog: canMutateSystemCatalog,
+        onRoleEdit: onRoleEdit,
+      ),
     AppListTableColumn<AccessAdminItem>(
       id: 'role_details',
       label: l10n.accessAdminColumnDetails,
@@ -749,6 +768,7 @@ AppListTableColumn<AccessAdminItem> _userNextActionColumn(
 
 AppListTableColumn<AccessAdminItem> _roleNextActionColumn(
   BuildContext context, {
+  bool canMutateSystemCatalog = false,
   required void Function(AccessAdminItem item) onRoleEdit,
 }) {
   final AppLocalizations l10n = context.l10n;
@@ -757,7 +777,7 @@ AppListTableColumn<AccessAdminItem> _roleNextActionColumn(
     label: l10n.accessAdminEditRoleAction,
     alwaysVisible: true,
     cellBuilder: (BuildContext context, AccessAdminItem item) {
-      if (item.isSystemCritical) {
+      if (item.isSystemCritical && !canMutateSystemCatalog) {
         return const SizedBox.shrink();
       }
       return AppButton.tertiary(

@@ -31302,6 +31302,10 @@
   "@accessAdminRoleScopeFilterAll": {
     "description": "Filter chip to show all role scopes."
   },
+  "accessAdminRoleScopeFilterPlatform": "Platform",
+  "@accessAdminRoleScopeFilterPlatform": {
+    "description": "Filter chip to show platform-scoped default roles only."
+  },
   "accessAdminRoleScopeFilterTenant": "Organization",
   "@accessAdminRoleScopeFilterTenant": {
     "description": "Filter chip to show tenant-wide roles only."

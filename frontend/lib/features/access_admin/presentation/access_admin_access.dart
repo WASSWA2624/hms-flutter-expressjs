@@ -213,6 +213,18 @@ bool canMutateAccessAdminPermissions(
   return canWriteAccessAdmin(policy, workspaceCanWrite: workspaceCanWrite);
 }
 
+/// Platform default roles/permissions (`is_system_critical`): visible to all
+/// access-admin readers, mutable only by platform admins / owners.
+bool canMutateAccessAdminSystemCatalog(
+  AppAccessPolicy policy, {
+  required bool isSystemCritical,
+}) {
+  if (!isSystemCritical) {
+    return true;
+  }
+  return policy.isElevated;
+}
+
 /// Registrations tab read — matrix ∩ `platform:admin` (see
 /// [accessAdminRegistrationsReadRequirement]).
 ///

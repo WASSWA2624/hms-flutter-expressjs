@@ -131,8 +131,16 @@ const appendConstraint = (where, constraint) => {
   };
 };
 
+const PLATFORM_SHARED_MODELS = new Set(['role', 'permission']);
+
 const buildGuardedWhere = (where, metadata, tenantId, options = {}) => {
-  let guardedWhere = appendConstraint(where, { tenant_id: tenantId });
+  const tenantConstraint = options.includePlatformCatalog
+    ? {
+        OR: [{ tenant_id: tenantId }, { tenant_id: null }],
+      }
+    : { tenant_id: tenantId };
+
+  let guardedWhere = appendConstraint(where, tenantConstraint);
 
   if (
     options.enforceActiveRecord &&
@@ -221,90 +229,125 @@ const createTenantGuardQueryExtension = ({ baseClient, modelMetadata }) => {
         query,
         delegate,
         metadata,
-        tenantId
+        tenantId,
+        model,
+        includePlatformCatalog: PLATFORM_SHARED_MODELS.has(model),
       });
     };
 
   return {
     $allModels: {
-      findUnique: guardByQuery(async ({ args, delegate, metadata, tenantId }) =>
+      findUnique: guardByQuery(async ({ args, delegate, metadata, tenantId, includePlatformCatalog }) =>
         delegate.findFirst({
           ...args,
           where: buildGuardedWhere(args.where, metadata, tenantId, {
-            enforceActiveRecord: true
+            enforceActiveRecord: true,
+            includePlatformCatalog,
           })
         })
       ),
-      findUniqueOrThrow: guardByQuery(async ({ args, delegate, metadata, tenantId }) =>
+      findUniqueOrThrow: guardByQuery(async ({ args, delegate, metadata, tenantId, includePlatformCatalog }) =>
         findFirstOrThrow(delegate, {
           ...args,
           where: buildGuardedWhere(args.where, metadata, tenantId, {
-            enforceActiveRecord: true
+            enforceActiveRecord: true,
+            includePlatformCatalog,
           })
         })
       ),
-      findFirst: guardByQuery(async ({ args, query, metadata, tenantId }) =>
+      findFirst: guardByQuery(async ({ args, query, metadata, tenantId, includePlatformCatalog }) =>
         query({
           ...args,
           where: buildGuardedWhere(args.where, metadata, tenantId, {
-            enforceActiveRecord: true
+            enforceActiveRecord: true,
+            includePlatformCatalog,
           })
         })
       ),
-      findFirstOrThrow: guardByQuery(async ({ args, query, metadata, tenantId }) =>
+      findFirstOrThrow: guardByQuery(async ({ args, query, metadata, tenantId, includePlatformCatalog }) =>
         query({
           ...args,
           where: buildGuardedWhere(args.where, metadata, tenantId, {
-            enforceActiveRecord: true
+            enforceActiveRecord: true,
+            includePlatformCatalog,
           })
         })
       ),
-      findMany: guardByQuery(async ({ args, query, metadata, tenantId }) =>
+      findMany: guardByQuery(async ({ args, query, metadata, tenantId, includePlatformCatalog }) =>
         query({
           ...args,
-          where: buildGuardedWhere(args.where, metadata, tenantId)
+          where: buildGuardedWhere(args.where, metadata, tenantId, {
+            includePlatformCatalog,
+          })
         })
       ),
-      count: guardByQuery(async ({ args, query, metadata, tenantId }) =>
+      count: guardByQuery(async ({ args, query, metadata, tenantId, includePlatformCatalog }) =>
         query({
           ...args,
-          where: buildGuardedWhere(args.where, metadata, tenantId)
+          where: buildGuardedWhere(args.where, metadata, tenantId, {
+            includePlatformCatalog,
+          })
         })
       ),
-      aggregate: guardByQuery(async ({ args, query, metadata, tenantId }) =>
+      aggregate: guardByQuery(async ({ args, query, metadata, tenantId, includePlatformCatalog }) =>
         query({
           ...args,
-          where: buildGuardedWhere(args.where, metadata, tenantId)
+          where: buildGuardedWhere(args.where, metadata, tenantId, {
+            includePlatformCatalog,
+          })
         })
       ),
-      create: guardByQuery(async ({ args, query, tenantId }) => {
-        injectTenantId(args.data, tenantId);
+      create: guardByQuery(async ({ args, query, tenantId, model }) => {
+        const data = args.data;
+        const preservePlatformNull =
+          PLATFORM_SHARED_MODELS.has(model) &&
+          data &&
+          !Array.isArray(data) &&
+          Object.prototype.hasOwnProperty.call(data, 'tenant_id') &&
+          data.tenant_id == null;
+        if (!preservePlatformNull) {
+          injectTenantId(args.data, tenantId);
+        }
         return query(args);
       }),
-      createMany: guardByQuery(async ({ args, query, tenantId }) => {
-        injectTenantId(args.data, tenantId);
+      createMany: guardByQuery(async ({ args, query, tenantId, model }) => {
+        const rows = Array.isArray(args.data) ? args.data : [args.data];
+        const preservePlatformNull =
+          PLATFORM_SHARED_MODELS.has(model) &&
+          rows.every(
+            (row) =>
+              row &&
+              Object.prototype.hasOwnProperty.call(row, 'tenant_id') &&
+              row.tenant_id == null
+          );
+        if (!preservePlatformNull) {
+          injectTenantId(args.data, tenantId);
+        }
         return query(args);
       }),
-      updateMany: guardByQuery(async ({ args, query, metadata, tenantId }) =>
+      updateMany: guardByQuery(async ({ args, query, metadata, tenantId, includePlatformCatalog }) =>
         query({
           ...args,
           where: buildGuardedWhere(args.where, metadata, tenantId, {
-            enforceActiveRecord: true
+            enforceActiveRecord: true,
+            includePlatformCatalog,
           })
         })
       ),
-      deleteMany: guardByQuery(async ({ args, query, metadata, tenantId }) =>
+      deleteMany: guardByQuery(async ({ args, query, metadata, tenantId, includePlatformCatalog }) =>
         query({
           ...args,
           where: buildGuardedWhere(args.where, metadata, tenantId, {
-            enforceActiveRecord: true
+            enforceActiveRecord: true,
+            includePlatformCatalog,
           })
         })
       ),
-      update: guardByQuery(async ({ args, query, delegate, metadata, tenantId }) => {
+      update: guardByQuery(async ({ args, query, delegate, metadata, tenantId, includePlatformCatalog }) => {
         const existing = await delegate.findFirst({
           where: buildGuardedWhere(args.where, metadata, tenantId, {
-            enforceActiveRecord: true
+            enforceActiveRecord: true,
+            includePlatformCatalog,
           }),
           select: { id: true }
         });
@@ -315,10 +358,11 @@ const createTenantGuardQueryExtension = ({ baseClient, modelMetadata }) => {
 
         return query(args);
       }),
-      delete: guardByQuery(async ({ args, query, delegate, metadata, tenantId }) => {
+      delete: guardByQuery(async ({ args, query, delegate, metadata, tenantId, includePlatformCatalog }) => {
         const existing = await delegate.findFirst({
           where: buildGuardedWhere(args.where, metadata, tenantId, {
-            enforceActiveRecord: true
+            enforceActiveRecord: true,
+            includePlatformCatalog,
           }),
           select: { id: true }
         });

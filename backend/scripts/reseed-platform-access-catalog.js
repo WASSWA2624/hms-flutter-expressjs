@@ -1,10 +1,8 @@
 /**
- * Sync / reseed the platform-scoped permission + default role catalog.
+ * Reseed platform-scoped default roles + permissions and consolidate duplicates.
  *
  * Usage:
- *   node scripts/sync-permission-catalog.js
- *
- * Seeds once at platform scope and consolidates any leftover tenant clones.
+ *   node scripts/reseed-platform-access-catalog.js
  */
 
 const { prisma } = require('./seeders/seed-runtime');
@@ -30,7 +28,7 @@ const main = async () => {
 
 main()
   .catch((error) => {
-    console.error('Permission catalog sync failed:', error);
+    console.error('Platform access catalog reseed failed:', error);
     process.exitCode = 1;
   })
   .finally(async () => {

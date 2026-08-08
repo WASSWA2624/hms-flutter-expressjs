@@ -44864,6 +44864,12 @@ abstract class AppLocalizations {
   /// **'All scopes'**
   String get accessAdminRoleScopeFilterAll;
 
+  /// Filter chip to show platform-scoped default roles only.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform'**
+  String get accessAdminRoleScopeFilterPlatform;
+
   /// Filter chip to show tenant-wide roles only.
   ///
   /// In en, this message translates to:

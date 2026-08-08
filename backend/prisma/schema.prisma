@@ -1651,7 +1651,8 @@ model role {
 model permission {
   id                String    @id @default(uuid()) @db.VarChar(36)
   human_friendly_id String?   @db.VarChar(32)
-  tenant_id         String    @db.VarChar(36)
+  /// Null tenant_id = platform-scoped catalog permission (shared across tenants).
+  tenant_id         String?   @db.VarChar(36)
   name              String    @db.VarChar(120)
   display_name      String?   @db.VarChar(160)
   description       String?   @db.VarChar(255)
@@ -1660,7 +1661,7 @@ model permission {
   deleted_at        DateTime?
   version           Int       @default(1)
 
-  tenant   tenant               @relation(fields: [tenant_id], references: [id])
+  tenant   tenant?              @relation(fields: [tenant_id], references: [id])
   roles    role_permission[]
   users    user_permission[]
   api_keys api_key_permission[]

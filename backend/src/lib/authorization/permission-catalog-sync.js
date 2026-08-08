@@ -1,25 +1,25 @@
 /**
- * Sync canonical permission catalog and system roles from config into tenant DB rows.
+ * Sync canonical permission catalog and system roles into the platform catalog.
  *
- * Hot paths (reference-data / workspace) use a short in-memory TTL cache and only
- * create missing rows — they do not rewrite metadata on every request.
+ * Hot paths (reference-data / workspace) use a short in-memory TTL cache.
+ * Default roles/permissions are platform-scoped (tenant_id null) — never cloned
+ * per tenant.
  *
  * @module lib/authorization/permission-catalog-sync
  */
 
-const crypto = require('crypto');
-const prisma = require('@prisma/client');
-const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
 const {
-  getPermissionMetadata,
-  getRoleMetadata,
-} = require('@config/permission-catalog-metadata');
+  ensurePlatformAccessCatalog,
+  listPlatformPermissions,
+  consolidateTenantCatalogDuplicates,
+  loadPlatformPermissionMap,
+  loadPlatformRoleMap,
+  CANONICAL_PERMISSION_KEYS: PLATFORM_PERMISSION_KEYS,
+  SYSTEM_ROLE_CODES: PLATFORM_ROLE_CODES,
+} = require('@lib/authorization/platform-access-catalog');
 
-const CANONICAL_PERMISSION_KEYS = Object.freeze(
-  Array.from(new Set(Object.values(PERMISSIONS))).sort()
-);
-
-const SYSTEM_ROLE_CODES = Object.freeze(Object.keys(ROLE_PERMISSIONS).sort());
+const CANONICAL_PERMISSION_KEYS = PLATFORM_PERMISSION_KEYS;
+const SYSTEM_ROLE_CODES = PLATFORM_ROLE_CODES;
 
 const CATALOG_TTL_MS = Number(process.env.ACCESS_CATALOG_CACHE_TTL_MS || 5 * 60 * 1000);
 
@@ -29,152 +29,34 @@ const permissionCatalogCache = new Map();
 /** @type {Map<string, { at: number, permissions: number, roles: number }>} */
 const accessCatalogCache = new Map();
 
-const friendlyId = (prefix, key) =>
-  `${prefix}-${crypto.createHash('sha256').update(String(key || '')).digest('hex').slice(0, 10).toUpperCase()}`;
-
-const findPermissionByName = async (tenantId, name) =>
-  prisma.permission.findFirst({
-    where: {
-      tenant_id: tenantId,
-      name,
-      deleted_at: null,
-    },
-  });
-
-const upsertPermission = async (tenantId, name) => {
-  const { displayName, description } = getPermissionMetadata(name);
-  const existing = await findPermissionByName(tenantId, name);
-
-  if (existing) {
-    return prisma.permission.update({
-      where: { id: existing.id },
-      data: {
-        display_name: displayName,
-        description,
-      },
-    });
-  }
-
-  return prisma.permission.create({
-    data: {
-      tenant_id: tenantId,
-      name,
-      display_name: displayName,
-      description,
-      human_friendly_id: friendlyId('PERM', `${tenantId}:${name}`),
-    },
-  });
-};
-
-const loadPermissionMap = async (tenantId) => {
-  const records = await prisma.permission.findMany({
-    where: {
-      tenant_id: tenantId,
-      deleted_at: null,
-      name: { in: [...CANONICAL_PERMISSION_KEYS] },
-    },
-  });
-
-  return new Map(records.map((entry) => [entry.name, entry]));
-};
-
+/**
+ * @deprecated Prefer ensurePlatformAccessCatalog. Kept for callers that still
+ * request a "tenant" sync; always seeds the shared platform catalog.
+ */
 const syncPermissionsForTenant = async (tenantId, names = CANONICAL_PERMISSION_KEYS) => {
-  const permissionMap = new Map();
-
-  for (const name of names) {
-    const permission = await upsertPermission(tenantId, name);
-    permissionMap.set(name, permission);
-  }
-
-  return permissionMap;
+  void tenantId;
+  void names;
+  await ensurePlatformAccessCatalog();
+  return loadPlatformPermissionMap();
 };
 
-const findRoleByName = async (tenantId, roleName) =>
-  prisma.role.findFirst({
-    where: {
-      tenant_id: tenantId,
-      name: roleName,
-      deleted_at: null,
-    },
-  });
-
-const upsertRolePermissionLink = async (roleId, permissionId) => {
-  const existing = await prisma.role_permission.findFirst({
-    where: {
-      role_id: roleId,
-      permission_id: permissionId,
-      deleted_at: null,
-    },
-  });
-
-  if (existing) {
-    return existing;
-  }
-
-  return prisma.role_permission.create({
-    data: {
-      role_id: roleId,
-      permission_id: permissionId,
-      human_friendly_id: friendlyId('RPERM', `${roleId}:${permissionId}`),
-    },
-  });
-};
-
-const syncSystemRole = async (tenantId, roleName, permissionMap, { refreshMetadata = true } = {}) => {
-  const { displayName, description } = getRoleMetadata(roleName);
-  let role = await findRoleByName(tenantId, roleName);
-
-  if (!role) {
-    role = await prisma.role.create({
-      data: {
-        tenant_id: tenantId,
-        name: roleName,
-        display_name: displayName,
-        description,
-        human_friendly_id: friendlyId('ROLE', `${tenantId}:${roleName}`),
-      },
-    });
-  } else if (refreshMetadata) {
-    role = await prisma.role.update({
-      where: { id: role.id },
-      data: {
-        display_name: displayName,
-        description,
-      },
-    });
-  }
-
-  const permissionKeys = ROLE_PERMISSIONS[roleName] || [];
-  for (const permissionName of permissionKeys) {
-    const permission =
-      permissionMap.get(permissionName) ||
-      (await upsertPermission(tenantId, permissionName));
-    permissionMap.set(permissionName, permission);
-    await upsertRolePermissionLink(role.id, permission.id);
-  }
-
-  return role;
-};
-
+/**
+ * @deprecated Prefer ensurePlatformAccessCatalog. Kept for callers that still
+ * request a "tenant" sync; always seeds the shared platform catalog.
+ */
 const syncSystemRolesForTenant = async (
   tenantId,
   permissionMap,
   roleNames = SYSTEM_ROLE_CODES,
   options = {}
 ) => {
-  for (const roleName of roleNames) {
-    await syncSystemRole(tenantId, roleName, permissionMap, options);
-  }
+  void tenantId;
+  void permissionMap;
+  void roleNames;
+  void options;
+  await ensurePlatformAccessCatalog({ force: true });
+  return loadPlatformRoleMap();
 };
-
-const countSystemRoles = async (tenantId) =>
-  prisma.role.count({
-    where: {
-      tenant_id: tenantId,
-      deleted_at: null,
-      name: { in: [...SYSTEM_ROLE_CODES] },
-    },
-  });
 
 const readCachedPermissionCatalog = (tenantId) => {
   const cached = permissionCatalogCache.get(tenantId);
@@ -193,134 +75,62 @@ const writeCachedPermissionCatalog = (tenantId, records) => {
 };
 
 const ensureTenantPermissionCatalog = async (tenantId, { force = false } = {}) => {
-  if (!tenantId) {
-    return [];
-  }
-
+  // Catalog is platform-scoped; tenantId is retained for cache keying only.
+  const cacheKey = tenantId || '__platform__';
   if (!force) {
-    const cached = readCachedPermissionCatalog(tenantId);
+    const cached = readCachedPermissionCatalog(cacheKey);
     if (cached) {
       return cached;
     }
   }
 
-  const existing = await prisma.permission.findMany({
-    where: {
-      tenant_id: tenantId,
-      deleted_at: null,
-      name: { in: [...CANONICAL_PERMISSION_KEYS] },
-    },
-    orderBy: { name: 'asc' },
-  });
-
-  const existingNames = new Set(existing.map((entry) => entry.name));
-  const missing = CANONICAL_PERMISSION_KEYS.filter((name) => !existingNames.has(name));
-
-  let records = existing;
-  if (missing.length > 0) {
-    await prisma.permission.createMany({
-      data: missing.map((name) => {
-        const { displayName, description } = getPermissionMetadata(name);
-        return {
-          tenant_id: tenantId,
-          name,
-          display_name: displayName,
-          description,
-          human_friendly_id: friendlyId('PERM', `${tenantId}:${name}`),
-        };
-      }),
-    });
-
-    records = await prisma.permission.findMany({
-      where: {
-        tenant_id: tenantId,
-        deleted_at: null,
-        name: { in: [...CANONICAL_PERMISSION_KEYS] },
-      },
-      orderBy: { name: 'asc' },
-    });
-  }
-
-  writeCachedPermissionCatalog(tenantId, records);
+  await ensurePlatformAccessCatalog({ force });
+  const records = await listPlatformPermissions();
+  writeCachedPermissionCatalog(cacheKey, records);
   return records;
 };
 
 /**
- * Fast path for workspace/reference-data: ensure missing catalog rows exist.
- * Skips per-row metadata rewrites once the catalog is complete.
+ * Fast path for workspace/reference-data: ensure the platform catalog exists.
+ * No longer clones system roles/permissions per tenant.
  */
 const ensureTenantAccessCatalog = async (tenantId, { force = false } = {}) => {
-  if (!tenantId) {
-    return null;
-  }
+  const cacheKey = tenantId || '__platform__';
 
   if (!force) {
-    const cached = accessCatalogCache.get(tenantId);
+    const cached = accessCatalogCache.get(cacheKey);
     if (cached && Date.now() - cached.at <= CATALOG_TTL_MS) {
       return { permissions: cached.permissions, roles: cached.roles };
     }
   }
 
-  const permissionRecords = await ensureTenantPermissionCatalog(tenantId, { force });
-  const permissionMap = new Map(permissionRecords.map((entry) => [entry.name, entry]));
-
-  const existingRoles = await prisma.role.findMany({
-    where: {
-      tenant_id: tenantId,
-      deleted_at: null,
-      name: { in: [...SYSTEM_ROLE_CODES] },
-    },
-    select: { id: true, name: true },
-  });
-  const existingRoleNames = new Set(existingRoles.map((entry) => entry.name));
-  const missingRoleNames = SYSTEM_ROLE_CODES.filter((name) => !existingRoleNames.has(name));
-
-  if (missingRoleNames.length > 0) {
-    await syncSystemRolesForTenant(tenantId, permissionMap, missingRoleNames, {
-      refreshMetadata: false,
-    });
-  }
-
-  const roles = existingRoles.length + missingRoleNames.length;
-  const result = {
-    permissions: permissionRecords.length,
-    roles,
+  const result = await ensurePlatformAccessCatalog({ force });
+  const summary = {
+    permissions: result.permissions,
+    roles: result.roles,
   };
-  accessCatalogCache.set(tenantId, { at: Date.now(), ...result });
-  return result;
+  accessCatalogCache.set(cacheKey, {
+    at: Date.now(),
+    ...summary,
+  });
+  return summary;
 };
 
 /**
- * Full metadata refresh (slower). Prefer ensureTenantAccessCatalog for request paths.
+ * Full metadata refresh of the platform catalog.
  */
 const refreshTenantAccessCatalog = async (tenantId) => {
-  if (!tenantId) {
-    return null;
-  }
-  permissionCatalogCache.delete(tenantId);
-  accessCatalogCache.delete(tenantId);
-
-  const permissionMap = await syncPermissionsForTenant(tenantId);
-  await syncSystemRolesForTenant(tenantId, permissionMap, SYSTEM_ROLE_CODES, {
-    refreshMetadata: true,
+  clearAccessCatalogCache(tenantId || null);
+  const result = await ensurePlatformAccessCatalog({ force: true });
+  const cacheKey = tenantId || '__platform__';
+  accessCatalogCache.set(cacheKey, {
+    at: Date.now(),
+    permissions: result.permissions,
+    roles: result.roles,
   });
-
-  const [permissions, roles] = await Promise.all([
-    prisma.permission.count({
-      where: {
-        tenant_id: tenantId,
-        deleted_at: null,
-        name: { in: [...CANONICAL_PERMISSION_KEYS] },
-      },
-    }),
-    countSystemRoles(tenantId),
-  ]);
-
-  const permissionRecords = await ensureTenantPermissionCatalog(tenantId, { force: true });
-  accessCatalogCache.set(tenantId, { at: Date.now(), permissions, roles });
-  writeCachedPermissionCatalog(tenantId, permissionRecords);
-
-  return { permissions, roles };
+  const permissionRecords = await listPlatformPermissions();
+  writeCachedPermissionCatalog(cacheKey, permissionRecords);
+  return result;
 };
 
 const clearAccessCatalogCache = (tenantId = null) => {
@@ -334,189 +144,35 @@ const clearAccessCatalogCache = (tenantId = null) => {
 };
 
 /**
- * Atomically restore shipped role→permission defaults for a tenant.
- * Removes excess system-role grants and recreates missing catalog links.
+ * Restore shipped role→permission defaults (platform-scoped).
+ * tenantId is accepted for API compatibility.
  *
  * @param {string} tenantId
  * @param {Object} [options]
  * @param {string[]} [options.roleNames]
- * @returns {Promise<{
- *   permissions: number,
- *   roles: number,
- *   role_permissions_added: number,
- *   role_permissions_removed: number,
- *   before: Object,
- *   after: Object,
- * }>}
  */
 const restoreTenantRolePermissionDefaults = async (tenantId, options = {}) => {
-  if (!tenantId) {
-    throw new Error('tenantId is required');
-  }
-
-  const roleNames = Array.isArray(options.roleNames) && options.roleNames.length > 0
-    ? options.roleNames.map((name) => String(name || '').trim().toUpperCase()).filter(Boolean)
-    : [...SYSTEM_ROLE_CODES];
-
-  return prisma.$transaction(async (tx) => {
-    const permissionMap = new Map();
-    for (const name of CANONICAL_PERMISSION_KEYS) {
-      const { displayName, description } = getPermissionMetadata(name);
-      let permission = await tx.permission.findFirst({
-        where: { tenant_id: tenantId, name, deleted_at: null },
-      });
-
-      if (!permission) {
-        permission = await tx.permission.create({
-          data: {
-            tenant_id: tenantId,
-            name,
-            display_name: displayName,
-            description,
-            human_friendly_id: friendlyId('PERM', `${tenantId}:${name}`),
-          },
-        });
-      } else {
-        permission = await tx.permission.update({
-          where: { id: permission.id },
-          data: {
-            display_name: displayName,
-            description,
-            version: Number(permission.version || 1) + 1,
-          },
-        });
-      }
-
-      permissionMap.set(name, permission);
-    }
-
-    let rolePermissionsAdded = 0;
-    let rolePermissionsRemoved = 0;
-    const before = {};
-    const after = {};
-
-    for (const roleName of roleNames) {
-      if (!ROLE_PERMISSIONS[roleName]) {
-        continue;
-      }
-
-      const { displayName, description } = getRoleMetadata(roleName);
-      let role = await tx.role.findFirst({
-        where: { tenant_id: tenantId, name: roleName, deleted_at: null },
-      });
-
-      if (!role) {
-        role = await tx.role.create({
-          data: {
-            tenant_id: tenantId,
-            name: roleName,
-            display_name: displayName,
-            description,
-            human_friendly_id: friendlyId('ROLE', `${tenantId}:${roleName}`),
-          },
-        });
-      } else {
-        role = await tx.role.update({
-          where: { id: role.id },
-          data: {
-            display_name: displayName,
-            description,
-            version: Number(role.version || 1) + 1,
-          },
-        });
-      }
-
-      const existingLinks = await tx.role_permission.findMany({
-        where: { role_id: role.id, deleted_at: null },
-        include: { permission: true },
-      });
-
-      const existingByPermissionId = new Map(
-        existingLinks.map((link) => [link.permission_id, link])
-      );
-      const desiredNames = new Set(ROLE_PERMISSIONS[roleName] || []);
-      before[roleName] = existingLinks
-        .map((link) => link.permission?.name)
-        .filter(Boolean)
-        .sort();
-
-      for (const link of existingLinks) {
-        const permissionName = link.permission?.name;
-        if (!permissionName || !desiredNames.has(permissionName)) {
-          await tx.role_permission.update({
-            where: { id: link.id },
-            data: {
-              deleted_at: new Date(),
-              version: Number(link.version || 1) + 1,
-            },
-          });
-          rolePermissionsRemoved += 1;
-          existingByPermissionId.delete(link.permission_id);
-        }
-      }
-
-      for (const permissionName of desiredNames) {
-        const permission = permissionMap.get(permissionName);
-        if (!permission) {
-          continue;
-        }
-        if (existingByPermissionId.has(permission.id)) {
-          continue;
-        }
-
-        const softDeleted = await tx.role_permission.findFirst({
-          where: {
-            role_id: role.id,
-            permission_id: permission.id,
-            deleted_at: { not: null },
-          },
-        });
-
-        if (softDeleted) {
-          await tx.role_permission.update({
-            where: { id: softDeleted.id },
-            data: {
-              deleted_at: null,
-              version: Number(softDeleted.version || 1) + 1,
-            },
-          });
-        } else {
-          await tx.role_permission.create({
-            data: {
-              role_id: role.id,
-              permission_id: permission.id,
-              human_friendly_id: friendlyId('RPERM', `${role.id}:${permission.id}`),
-            },
-          });
-        }
-        rolePermissionsAdded += 1;
-      }
-
-      after[roleName] = [...desiredNames].sort();
-    }
-
-    permissionCatalogCache.delete(tenantId);
-    accessCatalogCache.delete(tenantId);
-
-    return {
-      permissions: permissionMap.size,
-      roles: roleNames.length,
-      role_permissions_added: rolePermissionsAdded,
-      role_permissions_removed: rolePermissionsRemoved,
-      before,
-      after,
-    };
-  }, {
-    // Full catalog restores iterate every system role × permission link.
-    timeout: 60_000,
-    maxWait: 15_000,
-  });
+  void tenantId;
+  void options;
+  const seeded = await ensurePlatformAccessCatalog({ force: true });
+  clearAccessCatalogCache();
+  return {
+    permissions: seeded.permissions,
+    roles: seeded.roles,
+    role_permissions_added: 0,
+    role_permissions_removed: 0,
+    before: {},
+    after: {},
+    scope: 'platform',
+  };
 };
 
 module.exports = {
   CANONICAL_PERMISSION_KEYS,
   SYSTEM_ROLE_CODES,
   clearAccessCatalogCache,
+  consolidateTenantCatalogDuplicates,
+  ensurePlatformAccessCatalog,
   ensureTenantAccessCatalog,
   ensureTenantPermissionCatalog,
   refreshTenantAccessCatalog,

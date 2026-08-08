@@ -24389,6 +24389,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminRoleScopeFilterAll => 'All scopes';
 
   @override
+  String get accessAdminRoleScopeFilterPlatform => 'Platform';
+
+  @override
   String get accessAdminRoleScopeFilterTenant => 'Organization';
 
   @override

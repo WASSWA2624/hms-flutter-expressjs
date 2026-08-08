@@ -24,7 +24,9 @@ const {
   assertActorCanManageRoleRecord,
   assertRoleNotSystemProtected,
   assertRoleScopeAllowed,
-  assertPermissionIdsAssignable} = require('@lib/authorization/assignable-access');
+  assertPermissionIdsAssignable,
+  isCatalogProtectedRoleName,
+} = require('@lib/authorization/assignable-access');
 const { checkRoleDuplicates } = require('@lib/role/role-similarity');
 
 const ROLE_REALTIME_RECIPIENT_ROLES = Object.freeze([ROLES.TENANT_ADMIN]);
@@ -327,6 +329,12 @@ const createRole = async (data, userId, ipAddress, actor = null) => {
     const roleFields = stripSimilarityPayloadFields(roleFieldsWithConfirm);
     const payload = await normalizeCreateRolePayload(roleFields);
     const scopedPayload = await assertRoleScopeAllowed(payload, actor || { id: userId });
+    if (isCatalogProtectedRoleName(scopedPayload.name)) {
+      // Default/system roles live once in the platform catalog — never duplicate.
+      throw new HttpError('errors.role.catalog_duplicate', 409, [
+        { field: 'name', reason: 'platform_catalog_exists' },
+      ]);
+    }
     await assertRoleUniqueness({
       data: scopedPayload,
       tenantId: scopedPayload.tenant_id,
@@ -385,7 +393,7 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
 
     const actorUser = actor || { id: userId };
     assertActorCanManageRoleRecord(before, actorUser);
-    assertRoleNotSystemProtected(before, 'update');
+    assertRoleNotSystemProtected(before, 'update', actorUser);
 
     const confirmSimilar = data?.confirm_similar === true;
     const { permission_ids: permissionIdsInput, ...roleFieldsWithConfirm } =
@@ -539,7 +547,7 @@ const deleteRole = async (id, userId, ipAddress, actor = null) => {
 
     const actorUser = actor || { id: userId };
     assertActorCanManageRoleRecord(before, actorUser);
-    assertRoleNotSystemProtected(before, 'delete');
+    assertRoleNotSystemProtected(before, 'delete', actorUser);
 
     const { role, detached_user_assignments: detachedUserAssignments } =
       await roleRepository.softDelete(resolvedRoleId);
@@ -584,7 +592,7 @@ const restoreRole = async (id, userId, ipAddress, actor = null) => {
 
     const actorUser = actor || { id: userId };
     assertActorCanManageRoleRecord(before, actorUser);
-    assertRoleNotSystemProtected(before, 'restore');
+    assertRoleNotSystemProtected(before, 'restore', actorUser);
 
     const {
       role,
@@ -638,7 +646,7 @@ const permanentDeleteRole = async (id, userId, ipAddress, actor = null) => {
 
     const actorUser = actor || { id: userId };
     assertActorCanManageRoleRecord(before, actorUser);
-    assertRoleNotSystemProtected(before, 'delete');
+    assertRoleNotSystemProtected(before, 'delete', actorUser);
 
     const {
       removed_user_ids: removedUserIds,

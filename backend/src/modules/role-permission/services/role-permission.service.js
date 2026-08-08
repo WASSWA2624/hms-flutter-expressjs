@@ -17,6 +17,7 @@ const {
   assertPermissionIdAssignable,
   assertPermissionIdHasRequiredRead,
   assertRoleIdAssignable,
+  assertRoleNotSystemProtected,
 } = require('@lib/authorization/assignable-access');
 const {
   assertPermissionNamesIncludeRequiredReads,
@@ -185,7 +186,8 @@ const createRolePermission = async (data, userId, ipAddress, actor = null) => {
     const payload = await normalizeCreateRolePermissionPayload(data);
     const existingPermissionNames = await loadRolePermissionNames(payload.role_id);
     if (actor) {
-      await assertRoleIdAssignable(payload.role_id, actor);
+      const role = await assertRoleIdAssignable(payload.role_id, actor);
+      assertRoleNotSystemProtected(role, 'update', actor);
       await assertPermissionIdAssignable(payload.permission_id, actor, {
         existingPermissionNames,
       });
@@ -260,9 +262,11 @@ const updateRolePermission = async (id, data, userId, ipAddress, actor = null) =
     );
 
     if (actor) {
-      await assertRoleIdAssignable(before.role_id, actor);
+      const beforeRole = await assertRoleIdAssignable(before.role_id, actor);
+      assertRoleNotSystemProtected(beforeRole, 'update', actor);
       if (data.role_id !== undefined) {
-        await assertRoleIdAssignable(targetRoleId, actor);
+        const targetRole = await assertRoleIdAssignable(targetRoleId, actor);
+        assertRoleNotSystemProtected(targetRole, 'update', actor);
       }
       await assertPermissionIdAssignable(targetPermissionId, actor, {
         existingPermissionNames: existingForTarget,
@@ -313,7 +317,8 @@ const deleteRolePermission = async (id, userId, ipAddress, actor = null) => {
     }
 
     if (actor) {
-      await assertRoleIdAssignable(before.role_id, actor);
+      const role = await assertRoleIdAssignable(before.role_id, actor);
+      assertRoleNotSystemProtected(role, 'update', actor);
     }
 
     const beforeRows = await rolePermissionRepository.findMany(

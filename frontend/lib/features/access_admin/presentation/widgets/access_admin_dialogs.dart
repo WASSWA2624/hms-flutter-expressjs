@@ -1316,7 +1316,13 @@ Future<AccessAdminItem?> openAccessAdminEditRoleDialog(
     return null;
   }
   if (role.isSystemCritical) {
-    return null;
+    final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+    if (!canMutateAccessAdminSystemCatalog(
+      accessPolicy,
+      isSystemCritical: true,
+    )) {
+      return null;
+    }
   }
 
   final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);

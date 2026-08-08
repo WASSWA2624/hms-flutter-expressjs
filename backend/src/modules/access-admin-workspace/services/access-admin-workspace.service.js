@@ -259,6 +259,7 @@ const serializeRole = (record) => {
     is_clinical_flow_role: CLINICAL_FLOW_ROLES.has(roleName),
     is_system_critical:
       SYSTEM_CRITICAL_ROLES.has(roleName) || isCatalogProtectedRoleName(roleName),
+    is_platform_catalog: record.tenant_id == null,
     deleted_at: record.deleted_at || null,
     updated_at: record.updated_at,
   };
@@ -279,6 +280,7 @@ const serializePermission = (record) => {
     role_count: record._count?.roles || 0,
     user_count: record._count?.users || 0,
     is_system_critical: isCatalogProtectedPermissionName(record.name),
+    is_platform_catalog: record.tenant_id == null,
     updated_at: record.updated_at,
   };
 };
@@ -625,11 +627,8 @@ const findItemsForResource = async (
 };
 
 const maybeSyncTenantAccessCatalog = async (scope = {}) => {
-  const tenantId = scope?.tenant_id;
-  if (!tenantId) {
-    return;
-  }
-  await ensureTenantAccessCatalog(tenantId);
+  // Platform catalog is global; keep it warm for any access-admin session.
+  await ensureTenantAccessCatalog(scope?.tenant_id || null);
 };
 
 const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {

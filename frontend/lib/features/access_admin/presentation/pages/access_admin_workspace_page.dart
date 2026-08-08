@@ -275,6 +275,10 @@ class _AccessAdminWorkspaceContentState
                 searchController: _searchController,
                 columnVisibilityController: _tableColumnController,
                 canWrite: canWrite,
+                canMutateSystemCatalog: canMutateAccessAdminSystemCatalog(
+                  policy,
+                  isSystemCritical: true,
+                ),
                 onItemSelected: (AccessAdminItem item) {
                   unawaited(
                     _openDetailDialog(
@@ -442,7 +446,10 @@ class _AccessAdminWorkspaceContentState
             actions: <Widget>[
               if (canWrite &&
                   selected.resource == AccessAdminResource.roles &&
-                  !selected.isSystemCritical)
+                  canMutateAccessAdminSystemCatalog(
+                    ref.read(appAccessPolicyProvider),
+                    isSystemCritical: selected.isSystemCritical,
+                  ))
                 AppButton.secondary(
                   label: context.l10n.accessAdminDeleteRoleAction,
                   leadingIcon: Icons.delete_outline,
@@ -467,10 +474,13 @@ class _AccessAdminWorkspaceContentState
     BuildContext context,
     AccessAdminItem role,
   ) async {
-    if (role.isSystemCritical) {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    if (!canMutateAccessAdminSystemCatalog(
+      policy,
+      isSystemCritical: role.isSystemCritical,
+    )) {
       return;
     }
-    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
     // Roles delete ∩: tenant:admin (+ elevated) and workspace canWrite.
     if (!canMutateAccessAdminRoles(
       policy,
@@ -621,6 +631,7 @@ class _WorklistPanel extends StatelessWidget {
     required this.searchController,
     required this.columnVisibilityController,
     required this.canWrite,
+    required this.canMutateSystemCatalog,
     required this.onItemSelected,
     required this.onRoleEdit,
     required this.onShowFailure,
@@ -632,6 +643,7 @@ class _WorklistPanel extends StatelessWidget {
   final AppListTableColumnVisibilityController<AccessAdminItem>
   columnVisibilityController;
   final bool canWrite;
+  final bool canMutateSystemCatalog;
   final ValueChanged<AccessAdminItem> onItemSelected;
   final ValueChanged<AccessAdminItem> onRoleEdit;
   final ValueChanged<AppFailure> onShowFailure;
@@ -670,6 +682,7 @@ class _WorklistPanel extends StatelessWidget {
           context,
           resource: resource,
           canWrite: canWrite,
+          canMutateSystemCatalog: canMutateSystemCatalog,
           onUserStatusToggle: _toggleUserStatus,
           onRoleEdit: onRoleEdit,
           onRegistrationApprove: controller.approveRegistration,
@@ -679,6 +692,7 @@ class _WorklistPanel extends StatelessWidget {
           context,
           resource: resource,
           canWrite: canWrite,
+          canMutateSystemCatalog: canMutateSystemCatalog,
           onUserStatusToggle: _toggleUserStatus,
           onRoleEdit: onRoleEdit,
           onRegistrationApprove: controller.approveRegistration,
@@ -766,6 +780,7 @@ class _WorklistPanel extends StatelessWidget {
             resource: resource,
             item: item,
             canWrite: canWrite,
+            canMutateSystemCatalog: canMutateSystemCatalog,
             onUserStatusToggle: _toggleUserStatus,
             onRoleEdit: onRoleEdit,
             onRegistrationApprove: controller.approveRegistration,

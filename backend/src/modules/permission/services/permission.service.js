@@ -12,6 +12,8 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   assertPermissionNotSystemProtected,
+  isCatalogProtectedPermissionName,
+  canActorCreatePlatformRole,
 } = require('@lib/authorization/assignable-access');
 
 /**
@@ -99,8 +101,22 @@ const getPermissionById = async (id, userId, ipAddress) => {
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<Object>} Created permission
  */
-const createPermission = async (data, userId, ipAddress) => {
+const createPermission = async (data, userId, ipAddress, actor = null) => {
   try {
+    const actorUser = actor || { id: userId };
+    const permissionName = String(data?.name || '').trim();
+    if (isCatalogProtectedPermissionName(permissionName)) {
+      if (!canActorCreatePlatformRole(actorUser)) {
+        throw new HttpError('errors.auth.insufficient_permissions', 403, [
+          { field: 'name', reason: 'system_permission_protected' },
+        ]);
+      }
+      // Platform catalog permissions are seeded once — never create duplicates.
+      throw new HttpError('errors.permission.duplicate', 409, [
+        { field: 'name', reason: 'platform_catalog_exists' },
+      ]);
+    }
+
     const permission = await permissionRepository.create(data);
 
     // Create audit log (non-blocking)
@@ -130,7 +146,7 @@ const createPermission = async (data, userId, ipAddress) => {
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<Object>} Updated permission
  */
-const updatePermission = async (id, data, userId, ipAddress) => {
+const updatePermission = async (id, data, userId, ipAddress, actor = null) => {
   try {
     // Get current state for audit
     const before = await permissionRepository.findById(id);
@@ -138,6 +154,12 @@ const updatePermission = async (id, data, userId, ipAddress) => {
     if (!before) {
       throw new HttpError('errors.permission.not_found', 404);
     }
+
+    assertPermissionNotSystemProtected(
+      before,
+      'update',
+      actor || { id: userId }
+    );
 
     const permission = await permissionRepository.update(id, data);
 
@@ -167,7 +189,7 @@ const updatePermission = async (id, data, userId, ipAddress) => {
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<void>}
  */
-const deletePermission = async (id, userId, ipAddress) => {
+const deletePermission = async (id, userId, ipAddress, actor = null) => {
   try {
     // Get current state for audit
     const before = await permissionRepository.findById(id);
@@ -176,7 +198,7 @@ const deletePermission = async (id, userId, ipAddress) => {
       throw new HttpError('errors.permission.not_found', 404);
     }
 
-    assertPermissionNotSystemProtected(before, 'delete');
+    assertPermissionNotSystemProtected(before, 'delete', actor || { id: userId });
 
     await permissionRepository.softDelete(id);
 

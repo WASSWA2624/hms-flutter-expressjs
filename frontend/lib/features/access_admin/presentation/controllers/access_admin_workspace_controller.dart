@@ -19,7 +19,9 @@ import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/access_admin_access.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_realtime_delta_applier.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
@@ -538,7 +540,11 @@ final class AccessAdminWorkspaceController
   }
 
   Future<AppFailure?> deleteRole(AccessAdminItem item) {
-    if (item.isSystemCritical) {
+    final policy = ref.read(appAccessPolicyProvider);
+    if (!canMutateAccessAdminSystemCatalog(
+      policy,
+      isSystemCritical: item.isSystemCritical,
+    )) {
       return Future<AppFailure?>.value(AppFailure.validation());
     }
     return _submitAction(

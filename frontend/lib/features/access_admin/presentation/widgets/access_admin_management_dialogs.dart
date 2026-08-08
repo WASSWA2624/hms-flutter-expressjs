@@ -15,6 +15,7 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/access_admin_access.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_table.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -1549,6 +1550,10 @@ class _ManageRolesPermissionsPanelState
         role: role,
         permissions: permissions,
         canWrite: canWrite,
+        canMutateSystemCatalog: canMutateAccessAdminSystemCatalog(
+          ref.read(appAccessPolicyProvider),
+          isSystemCritical: role.isSystemCritical,
+        ),
         repository: repository,
         catalogTenantId:
             role.tenantId ??
@@ -1602,7 +1607,13 @@ class _ManageRolesPermissionsPanelState
   }
 
   Future<void> _confirmDeleteRole(AccessAdminItem role) async {
-    if (role.isSystemCritical || role.isDeleted || _isRoleActionBusy(role)) {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    if (!canMutateAccessAdminSystemCatalog(
+          policy,
+          isSystemCritical: role.isSystemCritical,
+        ) ||
+        role.isDeleted ||
+        _isRoleActionBusy(role)) {
       return;
     }
     final AppLocalizations l10n = context.l10n;
@@ -1674,7 +1685,13 @@ class _ManageRolesPermissionsPanelState
   }
 
   Future<void> _confirmPermanentDeleteRole(AccessAdminItem role) async {
-    if (!role.isDeleted || role.isSystemCritical || _isRoleActionBusy(role)) {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    if (!role.isDeleted ||
+        !canMutateAccessAdminSystemCatalog(
+          policy,
+          isSystemCritical: role.isSystemCritical,
+        ) ||
+        _isRoleActionBusy(role)) {
       return;
     }
     final AppLocalizations l10n = context.l10n;
@@ -1807,6 +1824,11 @@ class _ManageRolesPermissionsPanelState
               label: l10n.accessAdminColumnScope,
               allLabel: l10n.accessAdminRoleScopeFilterAll,
               choices: <AppSearchBarFilterChoice>[
+                AppSearchBarFilterChoice(
+                  value: 'platform',
+                  label: l10n.accessAdminRoleScopeFilterPlatform,
+                  icon: Icons.public_outlined,
+                ),
                 AppSearchBarFilterChoice(
                   value: 'tenant',
                   label: l10n.accessAdminRoleScopeFilterTenant,
@@ -2014,7 +2036,10 @@ class _ManageRolesPermissionsPanelState
                                           )
                                       : null,
                                 ),
-                                if (!role.isSystemCritical)
+                                if (canMutateAccessAdminSystemCatalog(
+                                  accessPolicy,
+                                  isSystemCritical: role.isSystemCritical,
+                                ))
                                   AppButton.tertiary(
                                     leadingIcon: Icons.delete_forever_outlined,
                                     label:
@@ -2045,18 +2070,25 @@ class _ManageRolesPermissionsPanelState
                             runSpacing: theme.spacing.xs,
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: <Widget>[
-                              AppButton.tertiary(
-                                leadingIcon: Icons.edit_outlined,
-                                label: l10n.tenantFacilityEditAction,
-                                semanticLabel: l10n.tenantFacilityEditAction,
-                                tooltip: l10n.tenantFacilityEditAction,
-                                enabled: actionsEnabled,
-                                onPressed: actionsEnabled
-                                    ? () =>
-                                          unawaited(_openEditRoleDialog(role))
-                                    : null,
-                              ),
-                              if (!role.isSystemCritical)
+                              if (canMutateAccessAdminSystemCatalog(
+                                accessPolicy,
+                                isSystemCritical: role.isSystemCritical,
+                              ))
+                                AppButton.tertiary(
+                                  leadingIcon: Icons.edit_outlined,
+                                  label: l10n.tenantFacilityEditAction,
+                                  semanticLabel: l10n.tenantFacilityEditAction,
+                                  tooltip: l10n.tenantFacilityEditAction,
+                                  enabled: actionsEnabled,
+                                  onPressed: actionsEnabled
+                                      ? () =>
+                                            unawaited(_openEditRoleDialog(role))
+                                      : null,
+                                ),
+                              if (canMutateAccessAdminSystemCatalog(
+                                accessPolicy,
+                                isSystemCritical: role.isSystemCritical,
+                              ))
                                 AppButton.tertiary(
                                   leadingIcon: Icons.delete_outline,
                                   label: l10n.tenantFacilityDeleteAction,
@@ -2316,6 +2348,7 @@ class _AccessAdminRoleDetailDialog extends StatefulWidget {
     required this.role,
     required this.permissions,
     required this.canWrite,
+    required this.canMutateSystemCatalog,
     required this.repository,
     required this.onEdit,
     required this.onDelete,
@@ -2326,6 +2359,7 @@ class _AccessAdminRoleDetailDialog extends StatefulWidget {
   final AccessAdminItem role;
   final List<AccessAdminRolePermissionAssignment> permissions;
   final bool canWrite;
+  final bool canMutateSystemCatalog;
   final AccessAdminRepository repository;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -2532,7 +2566,9 @@ class _AccessAdminRoleDetailDialogState
     final List<AppPermissionAssignmentOption> permissionOptions =
         _permissionOptions(l10n);
     final bool canManagePermissions =
-        widget.canWrite && !widget.role.isDeleted;
+        widget.canWrite &&
+        widget.canMutateSystemCatalog &&
+        !widget.role.isDeleted;
     final bool hasPermissions = permissionOptions.isNotEmpty;
 
     return AppDialog(
@@ -2589,13 +2625,14 @@ class _AccessAdminRoleDetailDialogState
       ),
       actions: <Widget>[
         if (widget.canWrite && !widget.role.isDeleted) ...<Widget>[
-          AppButton.secondary(
-            label: l10n.accessAdminEditRoleAction,
-            leadingIcon: Icons.edit_outlined,
-            enabled: !_saving,
-            onPressed: widget.onEdit,
-          ),
-          if (!widget.role.isSystemCritical)
+          if (widget.canMutateSystemCatalog)
+            AppButton.secondary(
+              label: l10n.accessAdminEditRoleAction,
+              leadingIcon: Icons.edit_outlined,
+              enabled: !_saving,
+              onPressed: widget.onEdit,
+            ),
+          if (widget.canMutateSystemCatalog)
             AppButton.secondary(
               label: l10n.accessAdminDeleteRoleAction,
               leadingIcon: Icons.delete_outline,

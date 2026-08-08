@@ -1,34 +1,47 @@
-jest.mock('@prisma/client', () => ({
-  permission: {
-    findFirst: jest.fn(),
-    findMany: jest.fn(),
-    count: jest.fn(),
-    create: jest.fn(),
-    createMany: jest.fn(),
-    update: jest.fn()},
-  role: {
-    findFirst: jest.fn(),
-    findMany: jest.fn(),
-    count: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn()},
-  role_permission: {
-    findFirst: jest.fn(),
-    create: jest.fn()}}));
+jest.mock('@lib/authorization/platform-access-catalog', () => {
+  const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
+  const CANONICAL_PERMISSION_KEYS = Object.freeze(
+    Array.from(new Set(Object.values(PERMISSIONS))).sort()
+  );
+  const SYSTEM_ROLE_CODES = Object.freeze(Object.keys(ROLE_PERMISSIONS).sort());
 
-const prisma = require('@prisma/client');
+  return {
+    CANONICAL_PERMISSION_KEYS,
+    SYSTEM_ROLE_CODES,
+    ensurePlatformAccessCatalog: jest.fn(),
+    listPlatformPermissions: jest.fn(),
+    consolidateTenantCatalogDuplicates: jest.fn(),
+    loadPlatformPermissionMap: jest.fn(),
+    loadPlatformRoleMap: jest.fn(),
+  };
+});
+
+const platformCatalog = require('@lib/authorization/platform-access-catalog');
 const {
   CANONICAL_PERMISSION_KEYS,
   SYSTEM_ROLE_CODES,
   clearAccessCatalogCache,
   ensureTenantAccessCatalog,
   ensureTenantPermissionCatalog,
-  refreshTenantAccessCatalog} = require('@lib/authorization/permission-catalog-sync');
+  refreshTenantAccessCatalog,
+} = require('@lib/authorization/permission-catalog-sync');
 
 describe('permission-catalog-sync', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     clearAccessCatalogCache();
+    platformCatalog.ensurePlatformAccessCatalog.mockResolvedValue({
+      permissions: CANONICAL_PERMISSION_KEYS.length,
+      roles: SYSTEM_ROLE_CODES.length,
+      force: false,
+    });
+    platformCatalog.listPlatformPermissions.mockResolvedValue(
+      CANONICAL_PERMISSION_KEYS.map((name) => ({
+        id: `perm-${name}`,
+        name,
+        tenant_id: null,
+      }))
+    );
   });
 
   it('exposes the full canonical permission catalog from config', () => {
@@ -39,121 +52,46 @@ describe('permission-catalog-sync', () => {
     expect(SYSTEM_ROLE_CODES).toContain('NURSE');
   });
 
-  it('ensures missing permissions and system roles without rewriting complete catalogs', async () => {
-    prisma.permission.findMany.mockResolvedValue(
-      CANONICAL_PERMISSION_KEYS.map((name) => ({
-        id: `perm-${name}`,
-        name}))
-    );
-    prisma.role.findMany.mockResolvedValue(
-      SYSTEM_ROLE_CODES.map((name) => ({
-        id: `role-${name}`,
-        name}))
-    );
-
+  it('ensures the platform catalog on the access-catalog fast path', async () => {
     const result = await ensureTenantAccessCatalog('tenant-uuid');
 
     expect(result).toEqual({
       permissions: CANONICAL_PERMISSION_KEYS.length,
-      roles: SYSTEM_ROLE_CODES.length});
-    expect(prisma.permission.createMany).not.toHaveBeenCalled();
-    expect(prisma.role.create).not.toHaveBeenCalled();
-  });
-
-  it('creates only missing system roles on the fast path', async () => {
-    prisma.permission.findMany.mockResolvedValue(
-      CANONICAL_PERMISSION_KEYS.map((name) => ({
-        id: `perm-${name}`,
-        name}))
-    );
-    prisma.role.findMany.mockResolvedValue(
-      SYSTEM_ROLE_CODES.filter((name) => name !== 'DOCTOR').map((name) => ({
-        id: `role-${name}`,
-        name}))
-    );
-    prisma.role.findFirst.mockResolvedValue(null);
-    prisma.role.create.mockImplementation(async ({ data }) => ({
-      id: `role-${data.name}`,
-      ...data}));
-    prisma.role_permission.findFirst.mockResolvedValue(null);
-    prisma.role_permission.create.mockResolvedValue({});
-
-    const result = await ensureTenantAccessCatalog('tenant-uuid');
-
-    expect(result.roles).toBe(SYSTEM_ROLE_CODES.length);
-    expect(prisma.role.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          name: 'DOCTOR',
-          display_name: 'Doctor'})})
-    );
+      roles: SYSTEM_ROLE_CODES.length,
+    });
+    expect(platformCatalog.ensurePlatformAccessCatalog).toHaveBeenCalledWith({
+      force: false,
+    });
   });
 
   it('caches access catalog results across calls', async () => {
-    prisma.permission.findMany.mockResolvedValue(
-      CANONICAL_PERMISSION_KEYS.map((name) => ({
-        id: `perm-${name}`,
-        name}))
-    );
-    prisma.role.findMany.mockResolvedValue(
-      SYSTEM_ROLE_CODES.map((name) => ({
-        id: `role-${name}`,
-        name}))
-    );
-
     await ensureTenantAccessCatalog('tenant-uuid');
     await ensureTenantAccessCatalog('tenant-uuid');
 
-    expect(prisma.permission.findMany).toHaveBeenCalledTimes(1);
-    expect(prisma.role.findMany).toHaveBeenCalledTimes(1);
+    expect(platformCatalog.ensurePlatformAccessCatalog).toHaveBeenCalledTimes(1);
   });
 
-  it('refreshes metadata when explicitly requested', async () => {
-    prisma.permission.findFirst.mockResolvedValue({
-      id: 'perm-existing',
-      name: 'patient:read'});
-    prisma.permission.update.mockImplementation(async ({ data }) => ({
-      id: 'perm-existing',
-      name: 'patient:read',
-      ...data}));
-    prisma.permission.findMany.mockResolvedValue(
-      CANONICAL_PERMISSION_KEYS.map((name) => ({
-        id: `perm-${name}`,
-        name}))
-    );
-    prisma.permission.count.mockResolvedValue(CANONICAL_PERMISSION_KEYS.length);
-    prisma.role.count.mockResolvedValue(SYSTEM_ROLE_CODES.length);
-    prisma.role.findFirst.mockResolvedValue({
-      id: 'role-existing',
-      name: 'DOCTOR'});
-    prisma.role.update.mockImplementation(async ({ data }) => ({
-      id: 'role-existing',
-      name: 'DOCTOR',
-      ...data}));
-    prisma.role_permission.findFirst.mockResolvedValue({ id: 'link-existing' });
+  it('refreshes the platform catalog when explicitly requested', async () => {
+    platformCatalog.ensurePlatformAccessCatalog.mockResolvedValue({
+      permissions: CANONICAL_PERMISSION_KEYS.length,
+      roles: SYSTEM_ROLE_CODES.length,
+      force: true,
+    });
 
     await refreshTenantAccessCatalog('tenant-uuid');
 
-    expect(prisma.permission.update).toHaveBeenCalled();
-    expect(prisma.role.update).toHaveBeenCalled();
-    expect(prisma.permission.create).not.toHaveBeenCalled();
-    expect(prisma.role.create).not.toHaveBeenCalled();
+    expect(platformCatalog.ensurePlatformAccessCatalog).toHaveBeenCalledWith({
+      force: true,
+    });
+    expect(platformCatalog.listPlatformPermissions).toHaveBeenCalled();
   });
 
-  it('creates only missing permissions for a tenant', async () => {
-    prisma.permission.findMany
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        {
-          id: 'perm-new',
-          name: 'patient:read',
-          display_name: 'Patient — Read'}]);
-    prisma.permission.createMany.mockResolvedValue({ count: 1 });
-
+  it('lists platform permissions for the permission-catalog path', async () => {
     const result = await ensureTenantPermissionCatalog('tenant-uuid');
 
-    expect(prisma.permission.createMany).toHaveBeenCalled();
-    expect(result).toHaveLength(1);
-    expect(result[0].name).toBe('patient:read');
+    expect(platformCatalog.ensurePlatformAccessCatalog).toHaveBeenCalled();
+    expect(platformCatalog.listPlatformPermissions).toHaveBeenCalled();
+    expect(result).toHaveLength(CANONICAL_PERMISSION_KEYS.length);
+    expect(result[0].tenant_id).toBeNull();
   });
 });

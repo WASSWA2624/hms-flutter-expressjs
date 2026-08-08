@@ -80,7 +80,12 @@ const createPermission = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const permission = await permissionService.createPermission(req.body, userId, ipAddress);
+  const permission = await permissionService.createPermission(
+    req.body,
+    userId,
+    ipAddress,
+    req.user
+  );
 
   sendSuccess(res, 201, 'messages.permission.create.success', permission);
 });
@@ -97,7 +102,13 @@ const updatePermission = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const permission = await permissionService.updatePermission(id, req.body, userId, ipAddress);
+  const permission = await permissionService.updatePermission(
+    id,
+    req.body,
+    userId,
+    ipAddress,
+    req.user
+  );
 
   sendSuccess(res, 200, 'messages.permission.update.success', permission);
 });
@@ -114,7 +125,7 @@ const deletePermission = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  await permissionService.deletePermission(id, userId, ipAddress);
+  await permissionService.deletePermission(id, userId, ipAddress, req.user);
 
   sendNoContent(res);
 });

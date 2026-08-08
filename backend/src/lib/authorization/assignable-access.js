@@ -638,54 +638,63 @@ const assertActorCanManageRoleRecord = (role = {}, user = {}) => {
 
 /**
  * Block mutation of seeded/system roles that catalog sync owns.
+ * Platform admins may update or delete; all other actors are blocked.
  * @param {Object} role
  * @param {'update'|'delete'} [operation='delete']
+ * @param {Object} [actor]
  */
-const assertRoleNotSystemProtected = (role = {}, operation = 'delete') => {
+const assertRoleNotSystemProtected = (
+  role = {},
+  operation = 'delete',
+  actor = null
+) => {
   const roleName = normalizeRoleName(role.name);
-  if (!isCatalogProtectedRoleName(roleName)) {
+  const isPlatformScoped = role.tenant_id == null || role.tenant_id === undefined;
+  if (!isCatalogProtectedRoleName(roleName) && !isPlatformScoped) {
     return;
   }
-  if (
-    operation === 'delete' ||
-    roleName === ROLES.PLATFORM_ADMIN ||
-    roleName === ROLES.PLATFORM_OWNER
-  ) {
-    throw new HttpError('errors.auth.insufficient_permissions', 403, [
-      {
-        field: 'role_id',
-        reason: 'system_role_protected',
-        role: roleName,
-        operation,
-      },
-    ]);
+  if (actor && canActorCreatePlatformRole(actor)) {
+    return;
   }
+  throw new HttpError('errors.auth.insufficient_permissions', 403, [
+    {
+      field: 'role_id',
+      reason: 'system_role_protected',
+      role: roleName,
+      operation,
+    },
+  ]);
 };
 
 /**
- * Block delete (and identity mutation) of canonical catalog permissions.
- * Tenant/facility actors may still create custom permission rows.
+ * Block mutation of canonical / platform catalog permissions.
+ * Platform admins may update or delete; all other actors are blocked.
  * @param {Object} permission
  * @param {'update'|'delete'} [operation='delete']
+ * @param {Object} [actor]
  */
 const assertPermissionNotSystemProtected = (
   permission = {},
-  operation = 'delete'
+  operation = 'delete',
+  actor = null
 ) => {
   const permissionName = text(permission.name);
-  if (!isCatalogProtectedPermissionName(permissionName)) {
+  const isPlatformScoped =
+    permission.tenant_id == null || permission.tenant_id === undefined;
+  if (!isCatalogProtectedPermissionName(permissionName) && !isPlatformScoped) {
     return;
   }
-  if (operation === 'delete') {
-    throw new HttpError('errors.auth.insufficient_permissions', 403, [
-      {
-        field: 'permission_id',
-        reason: 'system_permission_protected',
-        permission: permissionName,
-        operation,
-      },
-    ]);
+  if (actor && canActorCreatePlatformRole(actor)) {
+    return;
   }
+  throw new HttpError('errors.auth.insufficient_permissions', 403, [
+    {
+      field: 'permission_id',
+      reason: 'system_permission_protected',
+      permission: permissionName,
+      operation,
+    },
+  ]);
 };
 
 /**
@@ -707,45 +716,93 @@ const buildRoleScopeWhere = (
     includeDeleted = false,
     includeTenantWide = true,
     roleScope = null,
+    includePlatformCatalog = true,
   } = {}
 ) => {
   const where = {};
   if (!includeDeleted) {
     where.deleted_at = null;
   }
-  if (scope.tenant_id) {
-    where.tenant_id = scope.tenant_id;
-  }
 
   const normalizedScope = String(roleScope || '')
     .trim()
     .toLowerCase();
 
-  if (normalizedScope === 'tenant') {
+  const platformClause =
+    includePlatformCatalog && normalizedScope !== 'facility'
+      ? { tenant_id: null, facility_id: null }
+      : null;
+
+  if (normalizedScope === 'platform') {
+    where.tenant_id = null;
     where.facility_id = null;
+    return where;
+  }
+
+  if (normalizedScope === 'tenant') {
+    if (scope.tenant_id) {
+      const tenantClause = { tenant_id: scope.tenant_id, facility_id: null };
+      if (platformClause) {
+        where.OR = [platformClause, tenantClause];
+      } else {
+        Object.assign(where, tenantClause);
+      }
+    } else if (platformClause) {
+      Object.assign(where, platformClause);
+    }
     return where;
   }
 
   if (normalizedScope === 'facility') {
     if (scope.facility_id) {
       where.facility_id = scope.facility_id;
+      if (scope.tenant_id) {
+        where.tenant_id = scope.tenant_id;
+      }
     } else {
       where.NOT = { facility_id: null };
+      if (scope.tenant_id) {
+        where.tenant_id = scope.tenant_id;
+      }
     }
     return where;
   }
 
   if (scope.facility_id) {
-    if (includeTenantWide) {
-      where.OR = [
-        { facility_id: scope.facility_id },
-        { facility_id: null },
-      ];
+    const facilityClause = includeTenantWide
+      ? {
+          OR: [
+            { facility_id: scope.facility_id },
+            ...(scope.tenant_id
+              ? [{ tenant_id: scope.tenant_id, facility_id: null }]
+              : []),
+          ],
+        }
+      : { facility_id: scope.facility_id };
+    if (platformClause) {
+      where.OR = [platformClause, facilityClause];
     } else {
-      where.facility_id = scope.facility_id;
+      Object.assign(where, facilityClause);
+      if (scope.tenant_id && !includeTenantWide) {
+        where.tenant_id = scope.tenant_id;
+      }
     }
+    return where;
   }
 
+  if (scope.tenant_id) {
+    const tenantClause = { tenant_id: scope.tenant_id };
+    if (platformClause) {
+      where.OR = [platformClause, tenantClause];
+    } else {
+      where.tenant_id = scope.tenant_id;
+    }
+    return where;
+  }
+
+  if (platformClause) {
+    Object.assign(where, platformClause);
+  }
   return where;
 };
 

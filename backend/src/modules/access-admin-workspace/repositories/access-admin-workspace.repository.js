@@ -53,13 +53,21 @@ const mapError = (error) => {
 };
 
 const scopedWhere = (scope = {}, options = {}) => {
-  const { includeFacility = false, includeDeleted = false } = options;
+  const {
+    includeFacility = false,
+    includeDeleted = false,
+    includePlatformCatalog = false,
+  } = options;
   const where = {};
   if (!includeDeleted) {
     where.deleted_at = null;
   }
 
-  if (scope.tenant_id) {
+  if (includePlatformCatalog && scope.tenant_id) {
+    where.OR = [{ tenant_id: null }, { tenant_id: scope.tenant_id }];
+  } else if (includePlatformCatalog && !scope.tenant_id) {
+    where.tenant_id = null;
+  } else if (scope.tenant_id) {
     where.tenant_id = scope.tenant_id;
   }
 
@@ -454,12 +462,18 @@ const findRoles = async ({
 
 const findPermissions = async ({ scope = {}, filters = {}, skip = 0, take = 20, orderBy = { name: 'asc' } }) => {
   try {
-    const where = scopedWhere(scope);
+    const where = scopedWhere(scope, { includePlatformCatalog: true });
     const searchFilter = buildSearchFilter(filters.search);
     if (searchFilter) {
-      where.OR = searchFilter.OR.filter(
+      const searchOr = searchFilter.OR.filter(
         (entry) => !entry.email && !entry.position_title
       );
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchOr }];
+        delete where.OR;
+      } else {
+        where.OR = searchOr;
+      }
     }
 
     const [items, total] = await Promise.all([
