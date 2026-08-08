@@ -4,6 +4,8 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
+enum OrganizationDeactivatedScope { tenant, facility }
+
 /// Presents API validation failures using localized field labels and messages.
 abstract final class ValidationMessagePresenter {
   static String displayMessage(AppFailure failure, AppLocalizations l10n) {
@@ -114,6 +116,18 @@ abstract final class ValidationMessagePresenter {
         email: _platformAdminContactField(failure.detailMessage, 'email'),
         phone: _platformAdminContactField(failure.detailMessage, 'phone'),
       ),
+      'auth.tenant_deactivated' => organizationDeactivatedMessage(
+        l10n,
+        scope: OrganizationDeactivatedScope.tenant,
+        email: _platformAdminContactField(failure.detailMessage, 'email'),
+        phone: _platformAdminContactField(failure.detailMessage, 'phone'),
+      ),
+      'auth.facility_deactivated' => organizationDeactivatedMessage(
+        l10n,
+        scope: OrganizationDeactivatedScope.facility,
+        email: _platformAdminContactField(failure.detailMessage, 'email'),
+        phone: _platformAdminContactField(failure.detailMessage, 'phone'),
+      ),
       'auth.account_not_found' => l10n.authAccountNotFoundMessage,
       'auth.wrong_password' => l10n.authWrongPasswordMessage,
       'network.rate_limited' => _rateLimitedMessage(l10n, failure),
@@ -143,6 +157,37 @@ abstract final class ValidationMessagePresenter {
     final List<String> lines = <String>[
       l10n.authAccountPendingApprovalMessage,
       l10n.authAccountPendingApprovalContactHint,
+      if (hasEmail) l10n.authAccountPendingApprovalEmailLine(trimmedEmail),
+      if (hasPhone) l10n.authAccountPendingApprovalPhoneLine(trimmedPhone),
+    ];
+    return lines.join('\n');
+  }
+
+  /// Login copy when the tenant or facility was soft-deleted.
+  static String organizationDeactivatedMessage(
+    AppLocalizations l10n, {
+    required OrganizationDeactivatedScope scope,
+    String? email,
+    String? phone,
+  }) {
+    final String baseMessage = switch (scope) {
+      OrganizationDeactivatedScope.tenant =>
+        l10n.authTenantDeactivatedMessage,
+      OrganizationDeactivatedScope.facility =>
+        l10n.authFacilityDeactivatedMessage,
+    };
+    final String? trimmedEmail = email?.trim();
+    final String? trimmedPhone = phone?.trim();
+    final bool hasEmail = trimmedEmail != null && trimmedEmail.isNotEmpty;
+    final bool hasPhone = trimmedPhone != null && trimmedPhone.isNotEmpty;
+
+    if (!hasEmail && !hasPhone) {
+      return baseMessage;
+    }
+
+    final List<String> lines = <String>[
+      baseMessage,
+      l10n.authOrganizationDeactivatedContactHint,
       if (hasEmail) l10n.authAccountPendingApprovalEmailLine(trimmedEmail),
       if (hasPhone) l10n.authAccountPendingApprovalPhoneLine(trimmedPhone),
     ];

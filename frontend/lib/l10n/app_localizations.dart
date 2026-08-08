@@ -14788,6 +14788,24 @@ abstract class AppLocalizations {
   /// **'Phone: {phone}'**
   String authAccountPendingApprovalPhoneLine(String phone);
 
+  /// Login error when the tenant was soft-deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'This organization account has been deactivated. Please contact the platform administrator for assistance.'**
+  String get authTenantDeactivatedMessage;
+
+  /// Login error when the facility was soft-deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'This facility account has been deactivated. Please contact the platform administrator for assistance.'**
+  String get authFacilityDeactivatedMessage;
+
+  /// Hint shown with platform admin contact after org deactivation.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform admin contact:'**
+  String get authOrganizationDeactivatedContactHint;
+
   /// Tenant display name collected during self-registration.
   ///
   /// In en, this message translates to:

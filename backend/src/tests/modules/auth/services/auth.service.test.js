@@ -212,6 +212,91 @@ describe('Auth Service', () => {
       );
     });
 
+    it('should reject login for soft-deleted tenant with platform admin contact', async () => {
+      const loginData = {
+        email: 'test@example.com',
+        password: 'Password123!',
+        tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+      };
+
+      authRepository.findUserByEmailAndTenant.mockResolvedValue({
+        id: 'user-123',
+        email: 'test@example.com',
+        tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+        status: 'ACTIVE',
+        password_hash: 'hashedpassword',
+        tenant: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          deleted_at: new Date('2026-08-01T00:00:00.000Z'),
+        },
+        roles: [{ role: { name: 'DOCTOR' } }],
+      });
+
+      await expect(authService.login(loginData)).rejects.toMatchObject({
+        statusCode: 403,
+        messageKey: 'errors.auth.tenant_deactivated',
+      });
+      await expect(authService.login(loginData)).rejects.toMatchObject({
+        errors: [
+          expect.objectContaining({
+            reason: 'tenant_soft_deleted',
+            platform_admin_contact: expect.objectContaining({
+              email: 'platform.admin@hosspi.com',
+            }),
+          }),
+        ],
+      });
+      expect(comparePassword).not.toHaveBeenCalled();
+    });
+
+    it('should reject login for soft-deleted home facility', async () => {
+      const loginData = {
+        email: 'test@example.com',
+        password: 'Password123!',
+        tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+      };
+
+      authRepository.findUserByEmailAndTenant.mockResolvedValue({
+        id: 'user-123',
+        email: 'test@example.com',
+        tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+        facility_id: 'facility-1',
+        status: 'ACTIVE',
+        password_hash: 'hashedpassword',
+        tenant: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          deleted_at: null,
+        },
+        facility: {
+          id: 'facility-1',
+          deleted_at: new Date('2026-08-01T00:00:00.000Z'),
+        },
+        roles: [{ role: { name: 'DOCTOR' } }],
+      });
+      comparePassword.mockResolvedValue(true);
+      authRepository.getUserFacilities.mockResolvedValue([]);
+
+      await expect(authService.login(loginData)).rejects.toMatchObject({
+        statusCode: 403,
+        messageKey: 'errors.auth.facility_deactivated',
+      });
+    });
+
+    it('should treat permanently deleted org accounts as not found', async () => {
+      const loginData = {
+        email: 'gone@example.com',
+        password: 'Password123!',
+        tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+      };
+
+      authRepository.findUserByEmailAndTenant.mockResolvedValue(null);
+
+      await expect(authService.login(loginData)).rejects.toMatchObject({
+        statusCode: 401,
+        messageKey: 'errors.auth.user_not_found',
+      });
+    });
+
     it('should reject login with invalid credentials', async () => {
       const loginData = {
         email: 'test@example.com',

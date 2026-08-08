@@ -10192,6 +10192,18 @@
       }
     }
   },
+  "authTenantDeactivatedMessage": "This organization account has been deactivated. Please contact the platform administrator for assistance.",
+  "@authTenantDeactivatedMessage": {
+    "description": "Login error when the tenant was soft-deleted."
+  },
+  "authFacilityDeactivatedMessage": "This facility account has been deactivated. Please contact the platform administrator for assistance.",
+  "@authFacilityDeactivatedMessage": {
+    "description": "Login error when the facility was soft-deleted."
+  },
+  "authOrganizationDeactivatedContactHint": "Platform admin contact:",
+  "@authOrganizationDeactivatedContactHint": {
+    "description": "Hint shown with platform admin contact after org deactivation."
+  },
   "authTenantNameLabel": "Organization name",
   "@authTenantNameLabel": {
     "description": "Tenant display name collected during self-registration."

@@ -99,6 +99,20 @@ final class NetworkFailureMapper {
           detailMessage: _platformAdminContactDetail(response?.data),
         );
       }
+      if (code == 'TENANT_DEACTIVATED') {
+        return AppFailure.forbidden(
+          code: 'auth.tenant_deactivated',
+          statusCode: statusCode,
+          detailMessage: _platformAdminContactDetail(response?.data),
+        );
+      }
+      if (code == 'FACILITY_DEACTIVATED') {
+        return AppFailure.forbidden(
+          code: 'auth.facility_deactivated',
+          statusCode: statusCode,
+          detailMessage: _platformAdminContactDetail(response?.data),
+        );
+      }
       if (_isCsrfFailure(response?.data)) {
         // Stale/missing CSRF after session reset looks like forbidden, but the
         // user usually just needs to retry or sign in again.

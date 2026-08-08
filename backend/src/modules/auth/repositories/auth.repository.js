@@ -59,6 +59,7 @@ const facilitySelect = {
   name: true,
   facility_type: true,
   is_active: true,
+  deleted_at: true,
 };
 
 const tenantScopedUserInclude = {
@@ -1053,7 +1054,8 @@ const findUsersByIdentifier = async (identifier) => {
           select: {
             id: true,
             name: true,
-            slug: true
+            slug: true,
+            deleted_at: true,
           }
         }
       },
@@ -1073,6 +1075,7 @@ const findUsersByIdentifier = async (identifier) => {
               select: {
                 id: true,
                 name: true,
+                deleted_at: true,
               }
             }
           }

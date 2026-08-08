@@ -87,6 +87,75 @@ const assertUserCanAuthenticate = (user = {}) => {
   throw new HttpError(resolveAccountStatusErrorKey(user.status), 403);
 };
 
+const isSoftDeletedRecord = (record) => Boolean(record?.deleted_at);
+
+const buildOrganizationDeactivatedError = (scope = 'tenant') => {
+  const isFacility = scope === 'facility';
+  return {
+    messageKey: isFacility
+      ? 'errors.auth.facility_deactivated'
+      : 'errors.auth.tenant_deactivated',
+    details: [
+      {
+        reason: isFacility ? 'facility_soft_deleted' : 'tenant_soft_deleted',
+        platform_admin_contact: resolvePlatformAdminContact(),
+      },
+    ],
+  };
+};
+
+/**
+ * Soft-deleted tenants remain in DB but must not authenticate.
+ * Permanently deleted tenants/users are absent and resolve as not found.
+ */
+const assertTenantAllowsLogin = (user = {}) => {
+  const tenant = user.tenant;
+  if (tenant === null && user.tenant_id) {
+    throw new HttpError('errors.auth.user_not_found', 401);
+  }
+  if (isSoftDeletedRecord(tenant)) {
+    const deactivated = buildOrganizationDeactivatedError('tenant');
+    throw new HttpError(deactivated.messageKey, 403, deactivated.details);
+  }
+};
+
+const assertFacilityAllowsLogin = (
+  user = {},
+  {
+    selectedFacilityId = null,
+    accessibleFacilities = [],
+  } = {}
+) => {
+  const accessibleIds = new Set(
+    (Array.isArray(accessibleFacilities) ? accessibleFacilities : [])
+      .map((facility) => facility?.id)
+      .filter(Boolean)
+  );
+
+  if (selectedFacilityId && accessibleIds.has(selectedFacilityId)) {
+    return;
+  }
+
+  if (
+    selectedFacilityId &&
+    user.facility?.id === selectedFacilityId &&
+    isSoftDeletedRecord(user.facility)
+  ) {
+    const deactivated = buildOrganizationDeactivatedError('facility');
+    throw new HttpError(deactivated.messageKey, 403, deactivated.details);
+  }
+
+  if (
+    !selectedFacilityId &&
+    accessibleIds.size === 0 &&
+    user.facility_id &&
+    isSoftDeletedRecord(user.facility)
+  ) {
+    const deactivated = buildOrganizationDeactivatedError('facility');
+    throw new HttpError(deactivated.messageKey, 403, deactivated.details);
+  }
+};
+
 const APP_DISPLAY_NAME =
   String(env.APP_DISPLAY_NAME || 'Hospital Management System').trim() ||
   'Hospital Management System';
@@ -1004,8 +1073,10 @@ const identify = async (data) => {
 
   // Find all users with matching identifier
   const users = await authRepository.findUsersByIdentifier(identifier);
+  // Soft-deleted orgs are not selectable; permanently deleted rows are already absent.
+  const liveUsers = users.filter((user) => !isSoftDeletedRecord(user.tenant));
 
-  if (users.length === 0) {
+  if (liveUsers.length === 0) {
     // Don't reveal if user exists (security best practice)
     return {
       users: [],
@@ -1028,7 +1099,7 @@ const identify = async (data) => {
   };
 
   const tenantMap = new Map();
-  for (const user of users) {
+  for (const user of liveUsers) {
     const tenantId = user.tenant_id;
     if (!tenantId) continue;
 
@@ -1046,10 +1117,10 @@ const identify = async (data) => {
   }
 
   const uniqueTenants = Array.from(tenantMap.values());
-  const active_count = users.filter((user) => user.status === 'ACTIVE').length;
-  const pending_count = users.filter((user) => user.status === 'PENDING').length;
-  const suspended_count = users.filter((user) => user.status === 'SUSPENDED').length;
-  const inactive_count = users.filter((user) => user.status === 'INACTIVE').length;
+  const active_count = liveUsers.filter((user) => user.status === 'ACTIVE').length;
+  const pending_count = liveUsers.filter((user) => user.status === 'PENDING').length;
+  const suspended_count = liveUsers.filter((user) => user.status === 'SUSPENDED').length;
+  const inactive_count = liveUsers.filter((user) => user.status === 'INACTIVE').length;
 
   return {
     users: uniqueTenants,
@@ -1122,9 +1193,19 @@ const login = async (data) => {
       throw new HttpError('errors.auth.user_not_found', 401);
     }
 
-    const activeUsers = users.filter((candidate) => candidate.status === 'ACTIVE');
-    const pendingUsers = users.filter((candidate) => candidate.status === 'PENDING');
-    const suspendedUsers = users.filter((candidate) => candidate.status === 'SUSPENDED');
+    const liveUsers = users.filter((candidate) => !isSoftDeletedRecord(candidate.tenant));
+    const deactivatedUsers = users.filter((candidate) =>
+      isSoftDeletedRecord(candidate.tenant)
+    );
+
+    if (liveUsers.length === 0 && deactivatedUsers.length > 0) {
+      const deactivated = buildOrganizationDeactivatedError('tenant');
+      throw new HttpError(deactivated.messageKey, 403, deactivated.details);
+    }
+
+    const activeUsers = liveUsers.filter((candidate) => candidate.status === 'ACTIVE');
+    const pendingUsers = liveUsers.filter((candidate) => candidate.status === 'PENDING');
+    const suspendedUsers = liveUsers.filter((candidate) => candidate.status === 'SUSPENDED');
 
     if (activeUsers.length > 1) {
       // Multiple active users found - tenant selection required
@@ -1149,6 +1230,7 @@ const login = async (data) => {
 
   // Check if user is active
   assertUserCanAuthenticate(user);
+  assertTenantAllowsLogin(user);
 
   // Verify password
   const isPasswordValid = await comparePassword(password, user.password_hash);
@@ -1174,30 +1256,49 @@ const login = async (data) => {
 
   // Require explicit selection for multi-facility users unless facility_id is provided.
   let selectedFacilityId = facility_id || null;
-  if (selectedFacilityId && facilities.length > 0) {
-    const hasAccess = facilities.some(f => f.id === selectedFacilityId);
-    if (!hasAccess) {
-      // Log unauthorized facility access attempt
-      await createAuditLog({
-        action: 'LOGIN_FAILED_FACILITY_ACCESS',
-        entity: 'user',
-        entity_id: user.id,
-        user_id: user.id,
-        tenant_id: user.tenant_id,
-        facility_id: null,
-        ip_address,
-        user_agent,
-        details: { reason: 'unauthorized_facility', requested_facility_id: selectedFacilityId }
-      });
-      throw new HttpError('errors.auth.unauthorized_facility', 403);
-    }
-  } else if (!selectedFacilityId && facilities.length === 1) {
-    // Auto-select if only one facility
+  if (!selectedFacilityId && facilities.length === 1) {
     selectedFacilityId = facilities[0].id;
   } else if (!selectedFacilityId && facilities.length === 0 && user.facility_id) {
+    assertFacilityAllowsLogin(user, {
+      selectedFacilityId: null,
+      accessibleFacilities: facilities,
+    });
     // Fallback for legacy records where role-derived facilities are unavailable.
     selectedFacilityId = user.facility_id;
   }
+
+  if (selectedFacilityId) {
+    const hasAccess = facilities.some((entry) => entry.id === selectedFacilityId);
+    if (!hasAccess) {
+      assertFacilityAllowsLogin(user, {
+        selectedFacilityId,
+        accessibleFacilities: facilities,
+      });
+      const legacyFallbackAllowed =
+        facilities.length === 0 &&
+        user.facility_id === selectedFacilityId &&
+        !isSoftDeletedRecord(user.facility);
+      if (!legacyFallbackAllowed) {
+        await createAuditLog({
+          action: 'LOGIN_FAILED_FACILITY_ACCESS',
+          entity: 'user',
+          entity_id: user.id,
+          user_id: user.id,
+          tenant_id: user.tenant_id,
+          facility_id: null,
+          ip_address,
+          user_agent,
+          details: { reason: 'unauthorized_facility', requested_facility_id: selectedFacilityId }
+        });
+        throw new HttpError('errors.auth.unauthorized_facility', 403);
+      }
+    }
+  }
+
+  assertFacilityAllowsLogin(user, {
+    selectedFacilityId,
+    accessibleFacilities: facilities,
+  });
 
   // If multiple facilities and none selected, return facility selection requirement
   if (hasMultipleFacilities && !selectedFacilityId) {
@@ -1480,6 +1581,13 @@ const refresh = async (data) => {
 
   // Check if user is active
   assertUserCanAuthenticate(session.user);
+  assertTenantAllowsLogin(session.user);
+  assertFacilityAllowsLogin(session.user, {
+    selectedFacilityId: session.user.facility_id || null,
+    accessibleFacilities: session.user.facility && !isSoftDeletedRecord(session.user.facility)
+      ? [session.user.facility]
+      : [],
+  });
 
   // Revoke old session
   await authRepository.revokeSession(session.id);

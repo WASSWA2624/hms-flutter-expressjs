@@ -26,6 +26,8 @@
   "errors.auth.email_verification_required": "Verify your email address before signing in.",
   "errors.auth.registration_not_pending": "Registration is not awaiting approval.",
   "errors.auth.account_suspended": "Account has been suspended",
+  "errors.auth.tenant_deactivated": "This organization account has been deactivated. Please contact the platform administrator for assistance.",
+  "errors.auth.facility_deactivated": "This facility account has been deactivated. Please contact the platform administrator for assistance.",
   "errors.auth.already_verified": "Account is already verified",
   "errors.auth.api_key_invalid": "Invalid API key",
   "errors.auth.api_key_not_allowed": "API key authentication is not allowed for this route",

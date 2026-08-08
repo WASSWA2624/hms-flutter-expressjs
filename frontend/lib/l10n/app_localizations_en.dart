@@ -8024,6 +8024,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get authTenantDeactivatedMessage =>
+      'This organization account has been deactivated. Please contact the platform administrator for assistance.';
+
+  @override
+  String get authFacilityDeactivatedMessage =>
+      'This facility account has been deactivated. Please contact the platform administrator for assistance.';
+
+  @override
+  String get authOrganizationDeactivatedContactHint =>
+      'Platform admin contact:';
+
+  @override
   String get authTenantNameLabel => 'Organization name';
 
   @override
