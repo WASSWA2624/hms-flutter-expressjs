@@ -171,6 +171,8 @@ const getBaseAppUrl = (requestContext = {}) => {
 const buildResetPasswordLink = (token, email) =>
   `${getBaseAppUrl()}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
 
+const buildLoginLink = () => `${getBaseAppUrl()}/login`;
+
 const createEmailVerificationTokens = async (userId) => {
   await authRepository.deleteExpiredTokens(userId, EMAIL_VERIFICATION_TOKEN_TYPE);
 
@@ -486,6 +488,198 @@ const sendPasswordResetEmail = async ({
     text,
     html,
     attachments,
+  });
+};
+
+/**
+ * Build the post-verification “awaiting approval” email.
+ *
+ * Sent after a new tenant verifies their email and before platform approval
+ * unlocks login.
+ *
+ * @param {Object} params
+ * @param {string} [params.locale]
+ * @param {{ email?: string|null, phone?: string|null }} [params.platformAdminContact]
+ * @returns {{ subject: string, text: string, html: string, attachments: Array }}
+ */
+const buildAwaitingApprovalEmailMessage = ({
+  locale,
+  platformAdminContact = {},
+} = {}) => {
+  const resolvedLocale = resolveLocale(locale);
+  const loginLink = buildLoginLink();
+  const adminEmail = toNormalizedString(platformAdminContact?.email) || null;
+  const adminPhone = toNormalizedString(platformAdminContact?.phone) || null;
+  const subject = translate(
+    'messages.auth.awaiting_approval.subject',
+    resolvedLocale,
+    { app_name: APP_DISPLAY_NAME }
+  );
+  const preheader = translate(
+    'messages.auth.awaiting_approval.preheader',
+    resolvedLocale
+  );
+  const title = translate(
+    'messages.auth.awaiting_approval.title',
+    resolvedLocale
+  );
+  const intro = translate(
+    'messages.auth.awaiting_approval.intro',
+    resolvedLocale,
+    { app_name: APP_DISPLAY_NAME }
+  );
+  const nextStepsTitle = translate(
+    'messages.auth.awaiting_approval.next_steps_title',
+    resolvedLocale
+  );
+  const stepLogin = translate(
+    'messages.auth.awaiting_approval.step_login',
+    resolvedLocale
+  );
+  const stepWait = translate(
+    'messages.auth.awaiting_approval.step_wait',
+    resolvedLocale
+  );
+  const stepDemo = translate(
+    'messages.auth.awaiting_approval.step_demo',
+    resolvedLocale
+  );
+  const loginAction = translate(
+    'messages.auth.awaiting_approval.login_action',
+    resolvedLocale
+  );
+  const contactIntro = translate(
+    'messages.auth.awaiting_approval.contact_intro',
+    resolvedLocale
+  );
+  const signature = translate(
+    'messages.auth.awaiting_approval.signature',
+    resolvedLocale,
+    { app_name: APP_DISPLAY_NAME }
+  );
+  const logoAlt = translate(
+    'messages.auth.awaiting_approval.logo_alt',
+    resolvedLocale,
+    { app_name: APP_DISPLAY_NAME }
+  );
+  const { logoSrc, attachments } = resolveEmailLogoAsset();
+
+  const contactLines = [];
+  if (adminEmail) {
+    contactLines.push(
+      translate('messages.auth.awaiting_approval.contact_email', resolvedLocale, {
+        email: adminEmail,
+      })
+    );
+  }
+  if (adminPhone) {
+    contactLines.push(
+      translate('messages.auth.awaiting_approval.contact_phone', resolvedLocale, {
+        phone: adminPhone,
+      })
+    );
+  }
+
+  const textParts = [
+    subject,
+    '',
+    intro,
+    '',
+    nextStepsTitle,
+    `1. ${stepLogin}`,
+    loginLink,
+    `2. ${stepWait}`,
+    `3. ${stepDemo}`,
+  ];
+  if (contactLines.length > 0) {
+    textParts.push('', contactIntro, ...contactLines);
+  }
+  textParts.push('', signature);
+
+  const contactHtml = contactLines.length
+    ? `<p style="margin:0 0 8px;color:#334155;font-size:14px;line-height:1.5;">${escapeHtml(contactIntro)}</p>
+       <ul style="margin:0 0 16px;padding-left:18px;color:#334155;font-size:14px;line-height:1.5;">
+         ${contactLines
+           .map((line) => `<li>${escapeHtml(line)}</li>`)
+           .join('')}
+       </ul>`
+    : '';
+
+  const html = `<!doctype html>
+<html lang="${escapeHtml(resolvedLocale)}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>${escapeHtml(subject)}</title>
+</head>
+<body style="font-family:Segoe UI,Tahoma,Arial,sans-serif;background:#f4f7fb;padding:20px;">
+  <div style="display:none!important;opacity:0;color:transparent;height:0;width:0;overflow:hidden;visibility:hidden;mso-hide:all;">
+    ${escapeHtml(preheader)}
+  </div>
+  <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #dbe4f3;border-radius:12px;padding:24px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+      ${logoSrc
+        ? `<img src="${escapeHtml(logoSrc)}" alt="${escapeHtml(logoAlt)}" width="44" height="44" style="display:block;width:44px;height:44px;border:0;border-radius:10px;background:#ffffff;padding:4px;" />`
+        : ''}
+      <div>
+        <p style="margin:0 0 4px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;">${escapeHtml(APP_DISPLAY_NAME)}</p>
+        <h1 style="margin:0;font-size:22px;color:#0f172a;">${escapeHtml(title)}</h1>
+      </div>
+    </div>
+    <p style="margin:0 0 14px;color:#1e293b;line-height:1.5;">${escapeHtml(intro)}</p>
+    <p style="margin:0 0 8px;color:#0f172a;font-weight:700;">${escapeHtml(nextStepsTitle)}</p>
+    <ol style="margin:0 0 16px;padding-left:18px;color:#334155;font-size:14px;line-height:1.5;">
+      <li style="margin-bottom:8px;">
+        ${escapeHtml(stepLogin)}
+        <div style="margin-top:8px;">
+          <a href="${escapeHtml(loginLink)}" style="display:inline-block;background:#0b88e6;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700;">${escapeHtml(loginAction)}</a>
+        </div>
+        <div style="margin-top:8px;word-break:break-word;">
+          <a href="${escapeHtml(loginLink)}" style="color:#0b66c3;word-break:break-word;">${escapeHtml(loginLink)}</a>
+        </div>
+      </li>
+      <li style="margin-bottom:8px;">${escapeHtml(stepWait)}</li>
+      <li>${escapeHtml(stepDemo)}</li>
+    </ol>
+    ${contactHtml}
+    <p style="margin:0;color:#0f172a;white-space:pre-line;">${escapeHtml(signature)}</p>
+  </div>
+</body>
+</html>`;
+
+  return {
+    subject,
+    text: textParts.join('\n'),
+    html,
+    attachments,
+  };
+};
+
+/**
+ * Send the post-verification awaiting-approval email (best effort).
+ *
+ * @param {Object} params
+ * @param {string} params.email
+ * @param {string} [params.locale]
+ * @param {{ email?: string|null, phone?: string|null }} [params.platformAdminContact]
+ * @returns {Promise<{ sent?: boolean, provider?: string }|null>}
+ */
+const sendAwaitingApprovalEmail = async ({
+  email,
+  locale,
+  platformAdminContact,
+}) => {
+  const payload = buildAwaitingApprovalEmailMessage({
+    locale,
+    platformAdminContact,
+  });
+
+  return sendEmail({
+    to: email,
+    subject: payload.subject,
+    text: payload.text,
+    html: payload.html,
+    attachments: payload.attachments,
   });
 };
 
@@ -1468,10 +1662,11 @@ const getMe = async (userId) => {
  * @param {Object} data - Verification data
  * @param {string} data.token - Verification token
  * @param {string} [data.email] - User email (optional)
+ * @param {Object} [data.request_context] - Request metadata (locale/origin)
  * @returns {Promise<Object>} Success message
  */
 const verifyEmail = async (data) => {
-  const { token, email } = data;
+  const { token, email, request_context } = data;
   const normalizedEmail = email ? String(email).trim().toLowerCase() : null;
 
   // Hash token
@@ -1494,6 +1689,7 @@ const verifyEmail = async (data) => {
 
   const alreadyActive = verificationToken.user.status === 'ACTIVE';
   const emailAlreadyVerified = isEmailVerified(verificationToken.user);
+  const shouldSendAwaitingApprovalEmail = !alreadyActive && !emailAlreadyVerified;
 
   // Mark token as used
   await authRepository.markTokenAsUsed(verificationToken.id);
@@ -1503,7 +1699,7 @@ const verifyEmail = async (data) => {
     EMAIL_VERIFICATION_TOKEN_TYPE
   );
 
-  if (!alreadyActive && !emailAlreadyVerified) {
+  if (shouldSendAwaitingApprovalEmail) {
     await authRepository.markEmailVerified(verificationToken.user_id);
   }
 
@@ -1526,6 +1722,30 @@ const verifyEmail = async (data) => {
     facility_id: verificationToken.user.facility_id,
     details: { email: verificationToken.user.email }
   });
+
+  if (shouldSendAwaitingApprovalEmail && verificationToken.user.email) {
+    try {
+      const deliveryResult = await sendAwaitingApprovalEmail({
+        email: verificationToken.user.email,
+        locale: request_context?.locale,
+        platformAdminContact: resolvePlatformAdminContact(),
+      });
+      if (!deliveryResult?.sent) {
+        logger.warn('Awaiting-approval email was not delivered.', {
+          context: 'verify_email_awaiting_approval',
+          email: verificationToken.user.email,
+          provider: deliveryResult?.provider || null,
+        });
+      }
+    } catch (error) {
+      // Verification already succeeded; do not fail the request on email issues.
+      logger.warn('Awaiting-approval email send failed.', {
+        context: 'verify_email_awaiting_approval',
+        email: verificationToken.user.email,
+        error: error?.message || String(error),
+      });
+    }
+  }
 
   return {
     message: alreadyActive

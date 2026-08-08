@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_token_provider.dart';
-import 'package:hosspi_hms/features/home/presentation/controllers/home_session_isolation.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 
 /// Refreshes expired access tokens on startup so users stay signed in.
 ///

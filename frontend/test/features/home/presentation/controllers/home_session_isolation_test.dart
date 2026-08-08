@@ -9,9 +9,8 @@ import 'package:hosspi_hms/features/home/data/repositories/home_repository_impl.
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
-import 'package:hosspi_hms/features/home/domain/repositories/home_repository.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
-import 'package:hosspi_hms/features/home/presentation/controllers/home_session_isolation.dart';
+import 'package:hosspi_hms/features/home/domain/repositories/home_repository.dart';
 
 void main() {
   group('homeSessionIsolationBinderProvider', () {

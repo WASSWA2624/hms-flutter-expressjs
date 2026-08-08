@@ -106,7 +106,11 @@ const register = asyncHandler(async (req, res) => {
 const verifyEmail = asyncHandler(async (req, res) => {
   const { token, email } = req.body;
 
-  const result = await authService.verifyEmail({ token, email });
+  const result = await authService.verifyEmail({
+    token,
+    email,
+    request_context: getRegistrationRequestContext(req),
+  });
 
   return sendSuccess(res, 200, 'messages.auth.email_verified.success', result);
 });

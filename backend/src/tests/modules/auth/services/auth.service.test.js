@@ -885,6 +885,14 @@ describe('Auth Service', () => {
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'EMAIL_VERIFIED'
       }));
+      expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+        to: 'test@example.com',
+        subject: 'Next steps for your Hospital Management System account',
+        text: expect.stringContaining('platform admin approval'),
+        html: expect.stringContaining('/login'),
+      }));
+      expect(sendEmail.mock.calls[0][0].text).toContain('demonstration');
+      expect(sendEmail.mock.calls[0][0].text).toContain('platform.admin@hosspi.com');
     });
 
     it('should reject with invalid token', async () => {
@@ -927,6 +935,7 @@ describe('Auth Service', () => {
       expect(authRepository.deleteExpiredTokens).toHaveBeenCalledWith('user-active-123', 'EMAIL_VERIFICATION');
       expect(authRepository.updateUserStatus).not.toHaveBeenCalled();
       expect(authRepository.updateRegistrationFollowUpStatus).toHaveBeenCalledWith('user-active-123', 'ACTIVE');
+      expect(sendEmail).not.toHaveBeenCalled();
     });
   });
 
