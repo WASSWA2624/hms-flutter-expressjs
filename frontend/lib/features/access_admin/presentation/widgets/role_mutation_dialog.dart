@@ -560,7 +560,6 @@ Future<bool?> showRoleMutationDialog({
                           )
                         else
                           _RoleTargetMultiSelect(
-                            label: l10n.accessAdminRoleSelectTenantsLabel,
                             options: tenantOptions,
                             selectedIds: selectedTenantIds,
                             enabled: !isSubmitting,
@@ -623,7 +622,6 @@ Future<bool?> showRoleMutationDialog({
                           )
                         else
                           _RoleTargetMultiSelect(
-                            label: l10n.accessAdminRoleSelectFacilitiesLabel,
                             options: facilityOptions,
                             selectedIds: selectedFacilityIds,
                             enabled: !isSubmitting,
@@ -940,7 +938,6 @@ Future<bool?> showRoleMutationDialog({
 
 class _RoleTargetMultiSelect extends StatelessWidget {
   const _RoleTargetMultiSelect({
-    required this.label,
     required this.options,
     required this.selectedIds,
     required this.onChanged,
@@ -948,7 +945,6 @@ class _RoleTargetMultiSelect extends StatelessWidget {
     this.emptySelectionError,
   });
 
-  final String label;
   final List<AccessAdminLookupOption> options;
   final Set<String> selectedIds;
   final ValueChanged<Set<String>> onChanged;
@@ -959,60 +955,90 @@ class _RoleTargetMultiSelect extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    // Plain label + list — must not wrap in [AppFormSection] (nested section
-    // inside the scope [AppFormSection] on the Roles create/edit dialog).
+    // Flat wrap under the Scope section — no nested card/heading.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Text(
-          label,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: AppFontWeight.emphasis,
-          ),
-        ),
-        SizedBox(height: theme.spacing.xs),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 220),
-          child: Material(
-            color: theme.colorScheme.surfaceContainerLowest,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(theme.radius.md),
-              side: theme.borders.side(),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: options.length,
-              itemBuilder: (BuildContext context, int index) {
-                final AccessAdminLookupOption option = options[index];
-                final bool selected = selectedIds.contains(option.id);
-                return CheckboxListTile(
-                  value: selected,
-                  enabled: enabled,
-                  dense: true,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: Text(option.label),
-                  onChanged: enabled
-                      ? (bool? checked) {
-                          final Set<String> next = Set<String>.from(
-                            selectedIds,
-                          );
-                          if (checked ?? false) {
-                            next.add(option.id);
-                          } else {
-                            next.remove(option.id);
-                          }
-                          onChanged(next);
+        Wrap(
+          spacing: theme.spacing.md,
+          runSpacing: theme.spacing.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            for (final AccessAdminLookupOption option in options)
+              _RoleTargetCheckbox(
+                label: option.label,
+                selected: selectedIds.contains(option.id),
+                enabled: enabled,
+                onChanged: enabled
+                    ? (bool checked) {
+                        final Set<String> next = Set<String>.from(selectedIds);
+                        if (checked) {
+                          next.add(option.id);
+                        } else {
+                          next.remove(option.id);
                         }
-                      : null,
-                );
-              },
-            ),
-          ),
+                        onChanged(next);
+                      }
+                    : null,
+              ),
+          ],
         ),
         if (emptySelectionError != null)
           AppFieldErrorText(errorText: emptySelectionError),
       ],
+    );
+  }
+}
+
+class _RoleTargetCheckbox extends StatelessWidget {
+  const _RoleTargetCheckbox({
+    required this.label,
+    required this.selected,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return InkWell(
+      onTap: onChanged == null ? null : () => onChanged!(!selected),
+      borderRadius: BorderRadius.circular(theme.radius.sm),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: Checkbox(
+                value: selected,
+                onChanged: onChanged == null
+                    ? null
+                    : (bool? value) => onChanged!(value ?? false),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+            SizedBox(width: theme.spacing.xs),
+            Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: enabled
+                    ? theme.colorScheme.onSurface
+                    : theme.disabledColor,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
