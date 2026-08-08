@@ -2650,19 +2650,19 @@ abstract class AppLocalizations {
   /// **'When a facility owner verifies their email, they appear here for platform approval.'**
   String get tenantFacilitySubscriptionApprovalsEmpty;
 
-  /// Confirm dialog title when activating a pending registration.
+  /// Confirm dialog title when approving a pending registration.
   ///
   /// In en, this message translates to:
   /// **'Approve account?'**
   String get tenantFacilitySubscriptionApprovalsApproveTitle;
 
-  /// Confirm dialog body when activating a pending registration.
+  /// Confirm dialog body when approving a pending registration.
   ///
   /// In en, this message translates to:
   /// **'Approve {name} and assign a Pro package for 3 months. After that the account moves to Free.'**
   String tenantFacilitySubscriptionApprovalsApproveBody(String name);
 
-  /// SnackBar after successful registration activation.
+  /// SnackBar after successful registration approval.
   ///
   /// In en, this message translates to:
   /// **'Account approved with a 3-month Pro trial.'**
@@ -2734,7 +2734,7 @@ abstract class AppLocalizations {
   /// **'Approval assigns the Pro package for 3 months. When that window ends, the tenant is automatically moved to the Free package.'**
   String get tenantFacilitySubscriptionApprovalsPlanBody;
 
-  /// Section title for activate/reject buttons in the detail dialog.
+  /// Section title for approve/reject buttons in the detail dialog.
   ///
   /// In en, this message translates to:
   /// **'Actions'**
