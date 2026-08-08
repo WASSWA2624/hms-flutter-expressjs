@@ -19,6 +19,10 @@ const {
 } = require('@lib/setup/hr-facility-setup');
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { serializeSubscription } = require('@lib/subscriptions/serializers');
+const {
+  resolveTenantContact,
+  hasResolvedContact,
+} = require('@lib/tenant/resolve-tenant-contact');
 
 const safePublicId = (...values) => resolvePublicIdentifier(...values) || null;
 
@@ -125,10 +129,7 @@ const serializeTenant = (record) => {
     typeof extensionJson.currency === 'string' && extensionJson.currency.trim()
       ? extensionJson.currency.trim().toUpperCase()
       : null;
-  const contactRaw =
-    extensionJson.contact && typeof extensionJson.contact === 'object'
-      ? extensionJson.contact
-      : null;
+  const resolvedContact = resolveTenantContact(record);
   const billingRaw =
     extensionJson.billing && typeof extensionJson.billing === 'object'
       ? extensionJson.billing
@@ -139,11 +140,6 @@ const serializeTenant = (record) => {
     const asString = String(raw).trim();
     return asString ? asString : null;
   })();
-  const normalizeContactField = (value) => {
-    if (typeof value !== 'string') return null;
-    const trimmed = value.trim();
-    return trimmed ? trimmed : null;
-  };
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
@@ -154,12 +150,12 @@ const serializeTenant = (record) => {
     is_active: Boolean(record.is_active),
     extension_json: {
       currency,
-      ...(contactRaw
+      ...(hasResolvedContact(resolvedContact)
         ? {
             contact: {
-              name: normalizeContactField(contactRaw.name),
-              email: normalizeContactField(contactRaw.email),
-              phone: normalizeContactField(contactRaw.phone),
+              name: resolvedContact.name,
+              email: resolvedContact.email,
+              phone: resolvedContact.phone,
             },
           }
         : {}),

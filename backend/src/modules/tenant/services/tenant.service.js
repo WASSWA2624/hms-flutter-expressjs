@@ -24,6 +24,10 @@ const { resolveModelIdByIdentifier, resolveModelRecordByIdentifier } = require('
 const {
   checkTenantDuplicates
 } = require('@lib/tenant/tenant-similarity');
+const {
+  resolveTenantContact,
+  hasResolvedContact,
+} = require('@lib/tenant/resolve-tenant-contact');
 
 const TENANT_SIMILARITY_LOOKUP_LIMIT = 7500;
 
@@ -216,9 +220,26 @@ const normalizeTenantRecord = (tenant) => {
   }
 
   const { user_roles, ...tenantRecord } = normalized;
+  const primaryTenantAdmin = buildPrimaryTenantAdmin(user_roles[0] || null);
+  const resolvedContact = resolveTenantContact({
+    ...tenantRecord,
+    primary_tenant_admin: primaryTenantAdmin,
+    user_roles,
+  });
+  const existingExtension =
+    tenantRecord.extension_json && typeof tenantRecord.extension_json === 'object'
+      ? tenantRecord.extension_json
+      : {};
+
   return {
     ...tenantRecord,
-    primary_tenant_admin: buildPrimaryTenantAdmin(user_roles[0] || null)};
+    extension_json: hasResolvedContact(resolvedContact)
+      ? {
+          ...existingExtension,
+          contact: resolvedContact,
+        }
+      : tenantRecord.extension_json ?? null,
+    primary_tenant_admin: primaryTenantAdmin};
 };
 
 /**

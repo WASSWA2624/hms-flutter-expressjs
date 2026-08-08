@@ -7,6 +7,10 @@
 const SIMILARITY_THRESHOLD = 80;
 const TOKEN_MATCH_THRESHOLD = 85;
 
+const {
+  resolveTenantContact,
+} = require('@lib/tenant/resolve-tenant-contact');
+
 const NAME_WEIGHT = 30;
 const SLUG_WEIGHT = 25;
 const EMAIL_WEIGHT = 15;
@@ -202,23 +206,7 @@ const comparisonStatus = (score, { exact = false } = {}) => {
   return 'DIFFERENT';
 };
 
-const readExtensionContact = (tenant) => {
-  const extension = tenant?.extension_json;
-  if (!extension || typeof extension !== 'object') {
-    return { name: null, email: null, phone: null };
-  }
-  const contact = extension.contact && typeof extension.contact === 'object'
-    ? extension.contact
-    : {};
-  const primary = tenant?.primary_tenant_admin && typeof tenant.primary_tenant_admin === 'object'
-    ? tenant.primary_tenant_admin
-    : {};
-  return {
-    name: contact.name || primary.full_name || null,
-    email: contact.email || primary.email || null,
-    phone: contact.phone || primary.phone || null
-  };
-};
+const readExtensionContact = (tenant) => resolveTenantContact(tenant);
 
 const readExtensionCurrency = (tenant) => {
   const extension = tenant?.extension_json;

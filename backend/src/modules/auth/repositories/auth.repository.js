@@ -8,6 +8,9 @@
 
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
+const {
+  buildRegistrationContactExtension,
+} = require('@lib/tenant/resolve-tenant-contact');
 const crypto = require('crypto');
 
 const userInclude = {
@@ -384,6 +387,11 @@ const registerFacilityOwner = async (data) => {
           name: resolvedTenantName,
           slug: buildTenantSlug(resolvedTenantName),
           is_active: true,
+          extension_json: buildRegistrationContactExtension({
+            admin_name,
+            email,
+            phone,
+          }),
         },
       });
 

@@ -232,6 +232,13 @@ describe('Tenant Service', () => {
           id: 'tenant-1',
           resource_uuid: 'tenant-1',
           name: 'Hospital A',
+          extension_json: {
+            contact: {
+              name: 'Taylor Demo',
+              email: 'tenant.admin@hms-demo.test',
+              phone: '+256700000001',
+            },
+          },
           primary_tenant_admin: {
             id: 'user-1',
             human_friendly_id: 'USR0000001',
@@ -320,6 +327,13 @@ describe('Tenant Service', () => {
         name: 'Test Hospital',
         slug: 'test-hospital',
         is_active: true,
+        extension_json: {
+          contact: {
+            name: 'Taylor Demo',
+            email: 'tenant.admin@hms-demo.test',
+            phone: '+256700000001',
+          },
+        },
         primary_tenant_admin: {
           id: 'user-1',
           human_friendly_id: 'USR0000001',

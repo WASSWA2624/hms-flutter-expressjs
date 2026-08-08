@@ -12,44 +12,11 @@ const { HttpError } = require('@lib/errors');
 const {
   softDeleteTenantStructureInTx,
 } = require('@lib/facility-structure/cascade-soft-delete');
+const {
+  PRIMARY_TENANT_ADMIN_INCLUDE,
+} = require('@lib/tenant/resolve-tenant-contact');
 
-const TENANT_ADMIN_RELATION_INCLUDE = Object.freeze({
-  user_roles: {
-    where: {
-      deleted_at: null,
-      role: {
-        deleted_at: null,
-        name: 'TENANT_ADMIN'},
-      user: {
-        deleted_at: null}},
-    orderBy: [
-      { created_at: 'asc' },
-      { id: 'asc' }],
-    take: 1,
-    include: {
-      role: {
-        select: {
-          id: true,
-          human_friendly_id: true,
-          name: true}},
-      user: {
-        select: {
-          id: true,
-          human_friendly_id: true,
-          email: true,
-          phone: true,
-          status: true,
-          facility_id: true,
-          profile: {
-            select: {
-              first_name: true,
-              middle_name: true,
-              last_name: true}},
-          facility: {
-            select: {
-              id: true,
-              human_friendly_id: true,
-              name: true}}}}}}});
+const TENANT_ADMIN_RELATION_INCLUDE = PRIMARY_TENANT_ADMIN_INCLUDE;
 
 const TENANT_SLUG_MAX_LENGTH = 191;
 const RELEASED_SLUG_SUFFIX = '__deleted__';

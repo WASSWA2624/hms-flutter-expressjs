@@ -3,6 +3,9 @@ const { HttpError } = require('@lib/errors');
 const { resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const { ROLES } = require('@config/roles');
 const { PERMISSIONS } = require('@config/permissions');
+const {
+  PRIMARY_TENANT_ADMIN_INCLUDE,
+} = require('@lib/tenant/resolve-tenant-contact');
 
 const SETUP_LIST_LIMIT = 100;
 
@@ -189,6 +192,7 @@ const findTenants = async (scope = null, includeAllTenants = false) => {
     if (!includeAllTenants && scope?.tenant_id) {
       const tenant = await prisma.tenant.findFirst({
         where: { id: scope.tenant_id, deleted_at: null },
+        include: PRIMARY_TENANT_ADMIN_INCLUDE,
       });
       return tenant ? [tenant] : [];
     }
@@ -198,6 +202,7 @@ const findTenants = async (scope = null, includeAllTenants = false) => {
         where: { deleted_at: null },
         orderBy: { name: 'asc' },
         take: SETUP_LIST_LIMIT,
+        include: PRIMARY_TENANT_ADMIN_INCLUDE,
       });
     }
 

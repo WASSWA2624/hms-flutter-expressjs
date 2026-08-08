@@ -18,6 +18,19 @@ describe('tenant-facility-workspace service', () => {
         name: 'Acme Hospital',
         slug: 'acme',
         is_active: true,
+        extension_json: null,
+        user_roles: [
+          {
+            user: {
+              email: 'owner@acme.test',
+              phone: '256700000111',
+              profile: {
+                first_name: 'Ada',
+                last_name: 'Admin',
+              },
+            },
+          },
+        ],
       },
     ]);
     repository.findFacilities.mockResolvedValue([
@@ -148,7 +161,17 @@ describe('tenant-facility-workspace service', () => {
 
     expect(result.state).toBe('ready');
     expect(result.tenant).toEqual(
-      expect.objectContaining({ id: 'TEN0001', name: 'Acme Hospital' })
+      expect.objectContaining({
+        id: 'TEN0001',
+        name: 'Acme Hospital',
+        extension_json: expect.objectContaining({
+          contact: {
+            name: 'Ada Admin',
+            email: 'owner@acme.test',
+            phone: '256700000111',
+          },
+        }),
+      })
     );
     expect(result.facility).toEqual(
       expect.objectContaining({

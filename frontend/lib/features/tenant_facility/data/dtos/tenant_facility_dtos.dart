@@ -20,9 +20,18 @@ final class TenantProfileDto {
   factory TenantProfileDto.fromJson(JsonMap json) {
     final JsonMap extensionJson = _map(json['extension_json']);
     final JsonMap billing = _map(extensionJson['billing']);
-    final bool hasContactOverride = extensionJson.containsKey('contact');
     final JsonMap contactJson = _map(extensionJson['contact']);
     final JsonMap primaryAdmin = _map(json['primary_tenant_admin']);
+
+    String? preferContact(String? preferred, String? fallback) {
+      if (preferred != null && preferred.trim().isNotEmpty) {
+        return preferred.trim();
+      }
+      if (fallback != null && fallback.trim().isNotEmpty) {
+        return fallback.trim();
+      }
+      return null;
+    }
 
     return TenantProfileDto(
       id: _requiredString(json, 'id'),
@@ -34,15 +43,18 @@ final class TenantProfileDto {
         billing,
         'standard_consultation_fee',
       ),
-      contactName: hasContactOverride
-          ? _optionalString(contactJson, 'name')
-          : _optionalString(primaryAdmin, 'full_name'),
-      contactEmail: hasContactOverride
-          ? _optionalString(contactJson, 'email')
-          : _optionalString(primaryAdmin, 'email'),
-      contactPhone: hasContactOverride
-          ? _optionalString(contactJson, 'phone')
-          : _optionalString(primaryAdmin, 'phone'),
+      contactName: preferContact(
+        _optionalString(contactJson, 'name'),
+        _optionalString(primaryAdmin, 'full_name'),
+      ),
+      contactEmail: preferContact(
+        _optionalString(contactJson, 'email'),
+        _optionalString(primaryAdmin, 'email'),
+      ),
+      contactPhone: preferContact(
+        _optionalString(contactJson, 'phone'),
+        _optionalString(primaryAdmin, 'phone'),
+      ),
       resourceUuid:
           _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
       displayId: _optionalString(json, 'display_id'),
