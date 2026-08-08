@@ -4078,17 +4078,101 @@ abstract class AppLocalizations {
   /// **'Got it'**
   String get subscriptionExpiredPromptContactAdminAction;
 
-  /// Title for the dialog that shows org admins to contact about subscription activation, renewal, or upgrade.
+  /// Title for the dialog that guides staff to contact admins about subscription upgrade, renewal, or activation.
   ///
   /// In en, this message translates to:
-  /// **'Ask an admin to manage subscription'**
+  /// **'Ask an admin to upgrade'**
   String get subscriptionReportAdminsDialogTitle;
 
-  /// Body for the report-to-admins dialog guiding non-admin staff to contact org admins.
+  /// Default body for the report-to-admins dialog when the subscription is healthy and an upgrade is available.
   ///
   /// In en, this message translates to:
-  /// **'Contact a tenant or facility admin below and ask them to activate, renew, or upgrade the subscription so you can continue using full services.'**
+  /// **'Contact a tenant or facility admin below and ask them to upgrade to a superior package so you can unlock more benefits.'**
   String get subscriptionReportAdminsDialogBody;
+
+  /// Body for the report-to-admins dialog naming the next upgrade plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact a tenant or facility admin below and ask them to upgrade you to {nextPlan} so your team can enjoy more benefits.'**
+  String subscriptionReportAdminsDialogBodyWithNextPlan(String nextPlan);
+
+  /// Label above the user's current subscription plan name.
+  ///
+  /// In en, this message translates to:
+  /// **'Current package'**
+  String get subscriptionReportCurrentPackageLabel;
+
+  /// Status chip when the subscription is active.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get subscriptionReportStatusActiveLabel;
+
+  /// Status chip when the subscription is near expiry.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiring soon'**
+  String get subscriptionReportStatusExpiringSoonLabel;
+
+  /// Status chip when the subscription has expired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get subscriptionReportStatusExpiredLabel;
+
+  /// Subscription end-date caption in the report-admins dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires on {date}'**
+  String subscriptionReportExpiresOnLabel(String date);
+
+  /// Past end-date caption when the subscription has already expired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired on {date}'**
+  String subscriptionReportExpiredOnLabel(String date);
+
+  /// Title for the near-expiry notice in the report-admins dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription ends soon'**
+  String get subscriptionReportExpirySoonTitle;
+
+  /// Body for the near-expiry notice with remaining days.
+  ///
+  /// In en, this message translates to:
+  /// **'Your package expires in {days} days. Ask an admin to renew or upgrade before access becomes limited.'**
+  String subscriptionReportExpirySoonBody(int days);
+
+  /// Body for the near-expiry notice when remaining days are unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Your package is nearing expiry. Ask an admin to renew or upgrade before access becomes limited.'**
+  String get subscriptionReportExpirySoonBodyGeneric;
+
+  /// Title for the expired-subscription notice in the report-admins dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription expired'**
+  String get subscriptionReportExpiredTitle;
+
+  /// Body for the expired-subscription notice guiding staff to contact admins.
+  ///
+  /// In en, this message translates to:
+  /// **'Some features are limited. Ask an admin below to renew or upgrade to a superior package to restore full access and unlock more benefits.'**
+  String get subscriptionReportExpiredBody;
+
+  /// Label for the next superior package shown in the report-admins dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended upgrade'**
+  String get subscriptionReportNextPlanLabel;
+
+  /// Section intro above facility/tenant/platform admin contact lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Reach out to an administrator in your hierarchy'**
+  String get subscriptionReportContactsIntro;
 
   /// Section title for facility admin contacts.
   ///

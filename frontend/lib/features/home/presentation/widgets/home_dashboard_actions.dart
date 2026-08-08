@@ -1436,7 +1436,7 @@ Future<void> homeOpenTenantSubscriptionSurface(
 
   await showSubscriptionReportAdminsDialog(
     context,
-    headerState: summary.headerState,
+    summary: summary,
     tenantAdmins: session?.tenantAdminContacts ?? const <OrgAdminContact>[],
     facilityAdmins: session?.facilityAdminContacts ?? const <OrgAdminContact>[],
     platformAdmins: session?.platformAdminContacts ?? const <OrgAdminContact>[],

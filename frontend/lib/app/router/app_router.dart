@@ -1087,7 +1087,7 @@ Widget? _subscriptionHeaderAction({
       unawaited(
         showSubscriptionReportAdminsDialog(
           context,
-          headerState: summary.headerState,
+          summary: summary,
           tenantAdmins: session.tenantAdminContacts,
           facilityAdmins: session.facilityAdminContacts,
           platformAdmins: session.platformAdminContacts,

@@ -96,7 +96,7 @@ class _SubscriptionExpiredPromptHostState
     if (!widget.canManageBilling) {
       await showSubscriptionReportAdminsDialog(
         context,
-        headerState: summary.headerState,
+        summary: summary,
         tenantAdmins: widget.tenantAdminContacts,
         facilityAdmins: widget.facilityAdminContacts,
         platformAdmins: widget.platformAdminContacts,

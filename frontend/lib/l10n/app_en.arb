@@ -2755,13 +2755,93 @@
   "@subscriptionExpiredPromptContactAdminAction": {
     "description": "Dismiss action for non-billing users on the expired prompt."
   },
-  "subscriptionReportAdminsDialogTitle": "Ask an admin to manage subscription",
+  "subscriptionReportAdminsDialogTitle": "Ask an admin to upgrade",
   "@subscriptionReportAdminsDialogTitle": {
-    "description": "Title for the dialog that shows org admins to contact about subscription activation, renewal, or upgrade."
+    "description": "Title for the dialog that guides staff to contact admins about subscription upgrade, renewal, or activation."
   },
-  "subscriptionReportAdminsDialogBody": "Contact a tenant or facility admin below and ask them to activate, renew, or upgrade the subscription so you can continue using full services.",
+  "subscriptionReportAdminsDialogBody": "Contact a tenant or facility admin below and ask them to upgrade to a superior package so you can unlock more benefits.",
   "@subscriptionReportAdminsDialogBody": {
-    "description": "Body for the report-to-admins dialog guiding non-admin staff to contact org admins."
+    "description": "Default body for the report-to-admins dialog when the subscription is healthy and an upgrade is available."
+  },
+  "subscriptionReportAdminsDialogBodyWithNextPlan": "Contact a tenant or facility admin below and ask them to upgrade you to {nextPlan} so your team can enjoy more benefits.",
+  "@subscriptionReportAdminsDialogBodyWithNextPlan": {
+    "description": "Body for the report-to-admins dialog naming the next upgrade plan.",
+    "placeholders": {
+      "nextPlan": {
+        "type": "String",
+        "example": "Custom"
+      }
+    }
+  },
+  "subscriptionReportCurrentPackageLabel": "Current package",
+  "@subscriptionReportCurrentPackageLabel": {
+    "description": "Label above the user's current subscription plan name."
+  },
+  "subscriptionReportStatusActiveLabel": "Active",
+  "@subscriptionReportStatusActiveLabel": {
+    "description": "Status chip when the subscription is active."
+  },
+  "subscriptionReportStatusExpiringSoonLabel": "Expiring soon",
+  "@subscriptionReportStatusExpiringSoonLabel": {
+    "description": "Status chip when the subscription is near expiry."
+  },
+  "subscriptionReportStatusExpiredLabel": "Expired",
+  "@subscriptionReportStatusExpiredLabel": {
+    "description": "Status chip when the subscription has expired."
+  },
+  "subscriptionReportExpiresOnLabel": "Expires on {date}",
+  "@subscriptionReportExpiresOnLabel": {
+    "description": "Subscription end-date caption in the report-admins dialog.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Aug 20, 2026"
+      }
+    }
+  },
+  "subscriptionReportExpiredOnLabel": "Expired on {date}",
+  "@subscriptionReportExpiredOnLabel": {
+    "description": "Past end-date caption when the subscription has already expired.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Aug 1, 2026"
+      }
+    }
+  },
+  "subscriptionReportExpirySoonTitle": "Subscription ends soon",
+  "@subscriptionReportExpirySoonTitle": {
+    "description": "Title for the near-expiry notice in the report-admins dialog."
+  },
+  "subscriptionReportExpirySoonBody": "Your package expires in {days} days. Ask an admin to renew or upgrade before access becomes limited.",
+  "@subscriptionReportExpirySoonBody": {
+    "description": "Body for the near-expiry notice with remaining days.",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "subscriptionReportExpirySoonBodyGeneric": "Your package is nearing expiry. Ask an admin to renew or upgrade before access becomes limited.",
+  "@subscriptionReportExpirySoonBodyGeneric": {
+    "description": "Body for the near-expiry notice when remaining days are unknown."
+  },
+  "subscriptionReportExpiredTitle": "Subscription expired",
+  "@subscriptionReportExpiredTitle": {
+    "description": "Title for the expired-subscription notice in the report-admins dialog."
+  },
+  "subscriptionReportExpiredBody": "Some features are limited. Ask an admin below to renew or upgrade to a superior package to restore full access and unlock more benefits.",
+  "@subscriptionReportExpiredBody": {
+    "description": "Body for the expired-subscription notice guiding staff to contact admins."
+  },
+  "subscriptionReportNextPlanLabel": "Recommended upgrade",
+  "@subscriptionReportNextPlanLabel": {
+    "description": "Label for the next superior package shown in the report-admins dialog."
+  },
+  "subscriptionReportContactsIntro": "Reach out to an administrator in your hierarchy",
+  "@subscriptionReportContactsIntro": {
+    "description": "Section intro above facility/tenant/platform admin contact lists."
   },
   "subscriptionReportFacilityAdminsLabel": "Facility administrators",
   "@subscriptionReportFacilityAdminsLabel": {

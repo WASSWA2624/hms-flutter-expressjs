@@ -2114,12 +2114,64 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionExpiredPromptContactAdminAction => 'Got it';
 
   @override
-  String get subscriptionReportAdminsDialogTitle =>
-      'Ask an admin to manage subscription';
+  String get subscriptionReportAdminsDialogTitle => 'Ask an admin to upgrade';
 
   @override
   String get subscriptionReportAdminsDialogBody =>
-      'Contact a tenant or facility admin below and ask them to activate, renew, or upgrade the subscription so you can continue using full services.';
+      'Contact a tenant or facility admin below and ask them to upgrade to a superior package so you can unlock more benefits.';
+
+  @override
+  String subscriptionReportAdminsDialogBodyWithNextPlan(String nextPlan) {
+    return 'Contact a tenant or facility admin below and ask them to upgrade you to $nextPlan so your team can enjoy more benefits.';
+  }
+
+  @override
+  String get subscriptionReportCurrentPackageLabel => 'Current package';
+
+  @override
+  String get subscriptionReportStatusActiveLabel => 'Active';
+
+  @override
+  String get subscriptionReportStatusExpiringSoonLabel => 'Expiring soon';
+
+  @override
+  String get subscriptionReportStatusExpiredLabel => 'Expired';
+
+  @override
+  String subscriptionReportExpiresOnLabel(String date) {
+    return 'Expires on $date';
+  }
+
+  @override
+  String subscriptionReportExpiredOnLabel(String date) {
+    return 'Expired on $date';
+  }
+
+  @override
+  String get subscriptionReportExpirySoonTitle => 'Subscription ends soon';
+
+  @override
+  String subscriptionReportExpirySoonBody(int days) {
+    return 'Your package expires in $days days. Ask an admin to renew or upgrade before access becomes limited.';
+  }
+
+  @override
+  String get subscriptionReportExpirySoonBodyGeneric =>
+      'Your package is nearing expiry. Ask an admin to renew or upgrade before access becomes limited.';
+
+  @override
+  String get subscriptionReportExpiredTitle => 'Subscription expired';
+
+  @override
+  String get subscriptionReportExpiredBody =>
+      'Some features are limited. Ask an admin below to renew or upgrade to a superior package to restore full access and unlock more benefits.';
+
+  @override
+  String get subscriptionReportNextPlanLabel => 'Recommended upgrade';
+
+  @override
+  String get subscriptionReportContactsIntro =>
+      'Reach out to an administrator in your hierarchy';
 
   @override
   String get subscriptionReportFacilityAdminsLabel => 'Facility administrators';
