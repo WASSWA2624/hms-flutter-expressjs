@@ -68,7 +68,7 @@ void main() {
       expect(find.byType(VerifyEmailPage), findsNothing);
       expect(find.byType(LoginPage), findsOneWidget);
       expect(find.byType(SnackBar), findsNothing);
-      expect(find.text(l10n.authEmailVerifiedTitle), findsOneWidget);
+      expect(find.text(l10n.authEmailVerifiedTitle.toUpperCase()), findsOneWidget);
       expect(
         find.textContaining(l10n.authEmailVerifiedAwaitingApprovalBody),
         findsOneWidget,

@@ -1353,7 +1353,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilitySubscriptionApprovalsEmpty =>
-      'When a facility owner verifies their email, they appear here for platform activation.';
+      'When a facility owner verifies their email, they appear here for platform approval.';
 
   @override
   String get tenantFacilitySubscriptionApprovalsActivateTitle =>
@@ -8054,7 +8054,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authRegistrationGuideStepCreateBody =>
-      'Open Create account and enter the facility administrator details: email, password, admin name, facility name, and facility type. Phone and location are optional.';
+      'Open Create account and enter the facility administrator details: email, password, admin name, facility name, facility type, and phone. Location is optional.';
 
   @override
   String get authRegistrationGuideStepVerifyTitle => 'Verify your email';

@@ -49,6 +49,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       final authState = ref.read(authControllerProvider);
       final bool showResetCompleted = authState.passwordResetCompleted;
       final bool showEmailVerified = authState.emailVerificationCompleted;
+      final bool awaitingPlatformApproval = authState.awaitingPlatformApproval;
       final List<AuthPlatformAdminContact> verifiedContacts =
           List<AuthPlatformAdminContact>.from(authState.platformAdminContacts);
       auth.clearFailure();
@@ -67,11 +68,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         );
       } else if (showEmailVerified) {
         auth.clearEmailVerificationCompleted();
-        final AppConfig config = ref.read(appConfigProvider);
-        _openPendingApprovalDialog(
-          contacts: _resolvedContacts(verifiedContacts, config),
-          emailJustVerified: true,
-        );
+        if (awaitingPlatformApproval) {
+          final AppConfig config = ref.read(appConfigProvider);
+          _openPendingApprovalDialog(
+            contacts: _resolvedContacts(verifiedContacts, config),
+            emailJustVerified: true,
+          );
+        } else {
+          final l10n = context.l10n;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${l10n.authEmailVerifiedTitle}. ${l10n.authEmailVerifiedBody}',
+              ),
+            ),
+          );
+        }
       }
     });
   }
@@ -92,7 +104,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final theme = Theme.of(context);
     final bool showInlineFailure =
         state.failure != null &&
-        state.failure!.code != 'auth.account_pending_approval';
+        state.failure!.code != 'auth.account_pending_approval' &&
+        state.failure!.code != 'auth.account_pending';
 
     return AuthPageFrame(
       title: l10n.authLoginTitle,
@@ -239,6 +252,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       final AppFailure? failure = ref.read(authControllerProvider).failure;
       if (failure?.code == 'auth.account_pending') {
         final identifier = _identifierController.text.trim();
+        ref.read(authControllerProvider.notifier).clearFailure();
         context.go(
           AppRoutes.verifyEmail.location(
             queryParameters: <String, String>{

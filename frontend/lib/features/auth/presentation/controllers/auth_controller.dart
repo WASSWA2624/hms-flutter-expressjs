@@ -19,6 +19,7 @@ final class AuthControllerState {
     this.passwordResetSubmitted = false,
     this.passwordResetCompleted = false,
     this.emailVerificationCompleted = false,
+    this.awaitingPlatformApproval = false,
     this.platformAdminContacts = const <AuthPlatformAdminContact>[],
     this.identifyTenants = const <AuthTenantOption>[],
   });
@@ -30,6 +31,7 @@ final class AuthControllerState {
   final bool passwordResetSubmitted;
   final bool passwordResetCompleted;
   final bool emailVerificationCompleted;
+  final bool awaitingPlatformApproval;
   final List<AuthPlatformAdminContact> platformAdminContacts;
   final List<AuthTenantOption> identifyTenants;
 
@@ -42,6 +44,7 @@ final class AuthControllerState {
     bool? passwordResetSubmitted,
     bool? passwordResetCompleted,
     bool? emailVerificationCompleted,
+    bool? awaitingPlatformApproval,
     List<AuthPlatformAdminContact>? platformAdminContacts,
     bool clearPlatformAdminContacts = false,
     List<AuthTenantOption>? identifyTenants,
@@ -59,6 +62,8 @@ final class AuthControllerState {
           passwordResetCompleted ?? this.passwordResetCompleted,
       emailVerificationCompleted:
           emailVerificationCompleted ?? this.emailVerificationCompleted,
+      awaitingPlatformApproval:
+          awaitingPlatformApproval ?? this.awaitingPlatformApproval,
       platformAdminContacts: clearPlatformAdminContacts
           ? const <AuthPlatformAdminContact>[]
           : platformAdminContacts ?? this.platformAdminContacts,
@@ -117,12 +122,14 @@ final class AuthController extends Notifier<AuthControllerState> {
 
   void clearEmailVerificationCompleted() {
     if (!state.emailVerificationCompleted &&
+        !state.awaitingPlatformApproval &&
         state.platformAdminContacts.isEmpty) {
       return;
     }
 
     state = state.copyWith(
       emailVerificationCompleted: false,
+      awaitingPlatformApproval: false,
       clearPlatformAdminContacts: true,
     );
   }
@@ -370,6 +377,7 @@ final class AuthController extends Notifier<AuthControllerState> {
       isSubmitting: true,
       clearFailure: true,
       emailVerificationCompleted: false,
+      awaitingPlatformApproval: false,
       clearPlatformAdminContacts: true,
     );
 
@@ -383,6 +391,7 @@ final class AuthController extends Notifier<AuthControllerState> {
           isSubmitting: false,
           clearFailure: true,
           emailVerificationCompleted: true,
+          awaitingPlatformApproval: verification.awaitingPlatformApproval,
           platformAdminContacts: verification.platformAdminContacts,
         );
         return true;

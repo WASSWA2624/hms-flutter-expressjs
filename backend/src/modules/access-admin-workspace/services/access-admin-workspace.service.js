@@ -316,6 +316,15 @@ const serializeRegistrationFollowUp = (record = {}) => {
   const user = record.user || {};
   const tenant = record.tenant || user.tenant || null;
   const facility = record.facility || user.facility || null;
+  const rawStatus =
+    record.account_status || record.status || user.status || 'PENDING';
+  const normalizedStatus = String(rawStatus).trim().toUpperCase();
+  const status =
+    normalizedStatus === 'ACTIVE'
+      ? 'ACTIVE'
+      : normalizedStatus === 'INACTIVE'
+        ? 'INACTIVE'
+        : 'PENDING_APPROVAL';
 
   return {
     id: safePublicId(user.human_friendly_id, user.id),
@@ -327,7 +336,7 @@ const serializeRegistrationFollowUp = (record = {}) => {
     facility_name: record.facility_name || facility?.name || null,
     tenant_name: tenant?.name || record.facility_name || null,
     facility_type: record.facility_type || facility?.facility_type || null,
-    status: 'PENDING_APPROVAL',
+    status,
     registered_at: record.first_registered_at || record.created_at || null,
     email_verified_at: user.email_verified_at || null,
     location: record.location || null,

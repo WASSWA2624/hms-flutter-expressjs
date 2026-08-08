@@ -141,7 +141,7 @@ abstract final class ValidationMessagePresenter {
     };
   }
 
-  /// Login / verify-email copy when the account still needs platform activation.
+  /// Login / verify-email copy when the account still needs platform approval.
   static String pendingApprovalMessage(
     AppLocalizations l10n, {
     String? email,

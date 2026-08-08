@@ -1764,7 +1764,7 @@
   "@tenantFacilitySubscriptionApprovalsEmptyTitle": {
     "description": "Empty-state title for subscription approvals."
   },
-  "tenantFacilitySubscriptionApprovalsEmpty": "When a facility owner verifies their email, they appear here for platform activation.",
+  "tenantFacilitySubscriptionApprovalsEmpty": "When a facility owner verifies their email, they appear here for platform approval.",
   "@tenantFacilitySubscriptionApprovalsEmpty": {
     "description": "Empty-state body for subscription approvals."
   },
@@ -10232,7 +10232,7 @@
   "@authRegistrationGuideStepCreateTitle": {
     "description": "Step 1 title in the registration guide."
   },
-  "authRegistrationGuideStepCreateBody": "Open Create account and enter the facility administrator details: email, password, admin name, facility name, and facility type. Phone and location are optional.",
+  "authRegistrationGuideStepCreateBody": "Open Create account and enter the facility administrator details: email, password, admin name, facility name, facility type, and phone. Location is optional.",
   "@authRegistrationGuideStepCreateBody": {
     "description": "Step 1 body in the registration guide."
   },

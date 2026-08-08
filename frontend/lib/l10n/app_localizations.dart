@@ -2647,7 +2647,7 @@ abstract class AppLocalizations {
   /// Empty-state body for subscription approvals.
   ///
   /// In en, this message translates to:
-  /// **'When a facility owner verifies their email, they appear here for platform activation.'**
+  /// **'When a facility owner verifies their email, they appear here for platform approval.'**
   String get tenantFacilitySubscriptionApprovalsEmpty;
 
   /// Confirm dialog title when activating a pending registration.
@@ -14851,7 +14851,7 @@ abstract class AppLocalizations {
   /// Step 1 body in the registration guide.
   ///
   /// In en, this message translates to:
-  /// **'Open Create account and enter the facility administrator details: email, password, admin name, facility name, and facility type. Phone and location are optional.'**
+  /// **'Open Create account and enter the facility administrator details: email, password, admin name, facility name, facility type, and phone. Location is optional.'**
   String get authRegistrationGuideStepCreateBody;
 
   /// Step 2 title in the registration guide.

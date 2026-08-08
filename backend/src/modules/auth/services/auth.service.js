@@ -2075,26 +2075,38 @@ const verifyEmail = async (data) => {
   const emailAlreadyVerified = isEmailVerified(verificationToken.user);
   const shouldSendAwaitingApprovalEmail = !alreadyActive && !emailAlreadyVerified;
 
-  // Mark token as used
+  // Commit verification before consuming the token so a later failure can still
+  // be recovered with the same code if markEmailVerified did not persist.
+  if (shouldSendAwaitingApprovalEmail) {
+    await authRepository.markEmailVerified(verificationToken.user_id);
+  }
+
+  // Ensure the approval queue row exists even when register-time tracking failed.
+  await persistRegistrationFollowUp({
+    user: {
+      ...verificationToken.user,
+      status: alreadyActive ? 'ACTIVE' : 'PENDING',
+      email_verified_at:
+        verificationToken.user.email_verified_at ||
+        (shouldSendAwaitingApprovalEmail ? new Date() : null),
+    },
+    normalizedEmail: verificationToken.user.email,
+    phone: verificationToken.user.phone,
+    admin_name: resolveAdminDisplayName(verificationToken.user),
+    facility_name:
+      verificationToken.user.facility?.name ||
+      verificationToken.user.tenant?.name ||
+      null,
+    facility_type: verificationToken.user.facility?.facility_type || null,
+    registration_attempt_increment: 0,
+  });
+
   await authRepository.markTokenAsUsed(verificationToken.id);
   // Invalidate any other active email verification token for this user.
   await authRepository.deleteExpiredTokens(
     verificationToken.user_id,
     EMAIL_VERIFICATION_TOKEN_TYPE
   );
-
-  if (shouldSendAwaitingApprovalEmail) {
-    await authRepository.markEmailVerified(verificationToken.user_id);
-  }
-
-  try {
-    await authRepository.updateRegistrationFollowUpStatus(
-      verificationToken.user_id,
-      alreadyActive ? 'ACTIVE' : 'PENDING'
-    );
-  } catch {
-    // Tracking is best-effort and must not block email verification.
-  }
 
   // Create audit log
   await createAuditLog({
@@ -2107,12 +2119,14 @@ const verifyEmail = async (data) => {
     details: { email: verificationToken.user.email }
   });
 
+  const contactsPayload = await resolvePlatformAdminContactsForAuth();
+
   // Verification is already committed; never block the HTTP response on SMTP.
   if (shouldSendAwaitingApprovalEmail && verificationToken.user.email) {
     void sendAwaitingApprovalEmail({
       email: verificationToken.user.email,
       locale: request_context?.locale,
-      platformAdminContact: resolvePlatformAdminContact(),
+      platformAdminContact: contactsPayload.platform_admin_contact,
     })
       .then((deliveryResult) => {
         if (!deliveryResult?.sent) {
@@ -2141,7 +2155,6 @@ const verifyEmail = async (data) => {
     };
   }
 
-  const contactsPayload = await resolvePlatformAdminContactsForAuth();
   return {
     message: 'messages.auth.email_verified.awaiting_approval',
     already_active: false,

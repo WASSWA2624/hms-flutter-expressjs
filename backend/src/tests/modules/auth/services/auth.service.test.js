@@ -1016,7 +1016,13 @@ describe('Auth Service', () => {
       expect(authRepository.deleteExpiredTokens).toHaveBeenCalledWith('user-123', 'EMAIL_VERIFICATION');
       expect(authRepository.markEmailVerified).toHaveBeenCalledWith('user-123');
       expect(authRepository.updateUserStatus).not.toHaveBeenCalled();
-      expect(authRepository.updateRegistrationFollowUpStatus).toHaveBeenCalledWith('user-123', 'PENDING');
+      expect(authRepository.upsertRegistrationFollowUp).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: 'user-123',
+          email: 'test@example.com',
+          account_status: 'PENDING',
+        })
+      );
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'EMAIL_VERIFIED'
       }));
@@ -1079,7 +1085,13 @@ describe('Auth Service', () => {
       expect(authRepository.markTokenAsUsed).toHaveBeenCalledWith('token-active-123');
       expect(authRepository.deleteExpiredTokens).toHaveBeenCalledWith('user-active-123', 'EMAIL_VERIFICATION');
       expect(authRepository.updateUserStatus).not.toHaveBeenCalled();
-      expect(authRepository.updateRegistrationFollowUpStatus).toHaveBeenCalledWith('user-active-123', 'ACTIVE');
+      expect(authRepository.upsertRegistrationFollowUp).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: 'user-active-123',
+          email: 'verified@example.com',
+          account_status: 'ACTIVE',
+        })
+      );
       expect(sendEmail).not.toHaveBeenCalled();
     });
   });

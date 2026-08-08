@@ -77,10 +77,10 @@ void main() {
 
       expect(
         ValidationMessagePresenter.displayMessage(failure, l10n),
-        'Your account is awaiting platform admin activation before you can sign in.\n'
-        'If activation is taking longer than expected, contact a platform admin:\n'
-        'Email: admin@hosspi.com\n'
-        'Phone: +256700000000',
+        '${l10n.authAccountPendingApprovalMessage}\n'
+        '${l10n.authAccountPendingApprovalContactHint}\n'
+        '${l10n.authAccountPendingApprovalEmailLine('admin@hosspi.com')}\n'
+        '${l10n.authAccountPendingApprovalPhoneLine('+256700000000')}',
       );
     });
 
@@ -91,7 +91,7 @@ void main() {
 
       expect(
         ValidationMessagePresenter.displayMessage(failure, l10n),
-        'Your account is awaiting platform admin activation before you can sign in.',
+        l10n.authAccountPendingApprovalMessage,
       );
     });
 

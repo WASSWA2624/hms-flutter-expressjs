@@ -231,7 +231,7 @@ void main() {
       expect(failure.code, 'auth.account_pending_approval');
       expect(
         failure.detailMessage,
-        '{"email":"admin@hosspi.com","phone":"+256700000000"}',
+        '{"email":"admin@hosspi.com","phone":"+256700000000","contacts":[{"email":"admin@hosspi.com","phone":"+256700000000"}]}',
       );
     });
 
