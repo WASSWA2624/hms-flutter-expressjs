@@ -89,7 +89,7 @@ void main() {
   );
 
   testWidgets(
-    'facility-only actor shows facility targets without Facility(ies) label',
+    'facility-only actor shows single facility without select-all',
     (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -104,6 +104,7 @@ void main() {
                       context: context,
                       mode: RoleMutationMode.create,
                       tenantId: 'tenant-1',
+                      facilityId: 'facility-1',
                       allowPlatformScope: false,
                       allowTenantScope: false,
                       allowFacilityScope: true,
@@ -116,8 +117,12 @@ void main() {
                               label: 'Main Campus',
                             ),
                           ],
-                      onSubmit: (List<AccessAdminRoleDraft> drafts) async =>
-                          null,
+                      onSubmit: (List<AccessAdminRoleDraft> drafts) async {
+                        expect(drafts, hasLength(1));
+                        expect(drafts.single.facilityId, 'facility-1');
+                        expect(drafts.single.scope, 'facility');
+                        return null;
+                      },
                     ),
                   );
                 },
@@ -132,11 +137,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Facility(ies)'), findsNothing);
+      expect(find.text('Select all'), findsNothing);
       expect(find.text('Platform'), findsNothing);
       expect(find.text('Tenant(s)'), findsNothing);
       expect(find.text('Main Campus'), findsOneWidget);
-      expect(find.text('Entire organization'), findsNothing);
-      expect(find.text('One facility'), findsNothing);
     },
   );
 

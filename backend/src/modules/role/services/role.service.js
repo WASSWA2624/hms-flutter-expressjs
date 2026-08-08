@@ -42,7 +42,8 @@ const assertRoleUniqueness = async ({
   tenantId,
   facilityId = null,
   confirmSimilar = false,
-  excludeRoleId = null
+  excludeRoleId = null,
+  includeDeletedPeers = true
 }) => {
   const scopeTenantId =
     tenantId == null || String(tenantId).trim() === ''
@@ -56,6 +57,8 @@ const assertRoleUniqueness = async ({
   // Broad peer set for similarity: platform proposals scan all roles; tenant
   // proposals include every facility/org role in that tenant (not only the
   // exact facility_id). Same-scope hard conflicts stay in checkRoleDuplicates.
+  // Soft-deleted peers are included on create so a soft-deleted same-scope
+  // identity cannot be recreated as a second active role.
   const peerFilters =
     scopeTenantId == null
       ? {}
@@ -70,7 +73,8 @@ const assertRoleUniqueness = async ({
     peerFilters,
     0,
     ROLE_SIMILARITY_LOOKUP_LIMIT,
-    { name: 'asc' }
+    { name: 'asc' },
+    { includeDeleted: includeDeletedPeers }
   );
 
   // Search-biased peers catch identity matches that sit past the alphabetical
@@ -95,7 +99,8 @@ const assertRoleUniqueness = async ({
       searchFilters,
       0,
       ROLE_SIMILARITY_LOOKUP_LIMIT,
-      { name: 'asc' }
+      { name: 'asc' },
+      { includeDeleted: includeDeletedPeers }
     );
     searched.push(...page);
   }
@@ -593,6 +598,16 @@ const restoreRole = async (id, userId, ipAddress, actor = null) => {
     const actorUser = actor || { id: userId };
     assertActorCanManageRoleRecord(before, actorUser);
     assertRoleNotSystemProtected(before, 'restore', actorUser);
+
+    // Block restore when an active same-scope role already owns this identity.
+    await assertRoleUniqueness({
+      data: before,
+      tenantId: before.tenant_id,
+      facilityId: before.facility_id,
+      confirmSimilar: true,
+      excludeRoleId: before.id,
+      includeDeletedPeers: false
+    });
 
     const {
       role,

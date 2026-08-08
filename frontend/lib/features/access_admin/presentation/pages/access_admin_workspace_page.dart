@@ -523,7 +523,29 @@ class _AccessAdminWorkspaceContentState
     BuildContext context,
     AccessAdminWorkspaceState state,
   ) async {
-    await openAccessAdminCreateRoleDialog(context, ref, state);
+    final AccessAdminItem? createdOrExisting =
+        await openAccessAdminCreateRoleDialog(context, ref, state);
+    if (createdOrExisting == null || !context.mounted) {
+      return;
+    }
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final bool workspaceCanWrite = state.data.permissions.canWrite;
+    final bool canWrite = canMutateAccessAdminRoles(
+      policy,
+      workspaceCanWrite: workspaceCanWrite,
+    );
+    final bool canResetDemoPassword = canResetDemoPasswordAccessAdmin(
+      policy,
+      workspaceCanWrite: workspaceCanWrite,
+      workspaceCanResetDemoPasswords:
+          state.data.permissions.canResetDemoPasswords,
+    );
+    await _openDetailDialog(
+      context,
+      createdOrExisting,
+      canWrite,
+      canResetDemoPassword: canResetDemoPassword,
+    );
   }
 
   void _showSnack(BuildContext context, String message) {

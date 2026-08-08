@@ -625,14 +625,15 @@ Future<bool?> showRoleMutationDialog({
                             options: facilityOptions,
                             selectedIds: selectedFacilityIds,
                             enabled: !isSubmitting,
-                            enableSelectAll: isCreate,
+                            enableSelectAll: isCreate && !lockedFacilityScope,
                             emptySelectionError: selectedFacilityIds.isEmpty
                                 ? l10n.accessAdminRoleTargetsRequired
                                 : null,
                             onChanged: (Set<String> next) {
                               setState(() {
                                 final Set<String> resolved =
-                                    !isCreate && next.length > 1
+                                    (lockedFacilityScope || !isCreate) &&
+                                        next.length > 1
                                     ? <String>{next.last}
                                     : next;
                                 selectedFacilityIds
@@ -894,7 +895,8 @@ Future<bool?> showRoleMutationDialog({
             if (selectedFacilityIds.isEmpty) {
               return const <AccessAdminRoleDraft>[];
             }
-            final Iterable<String> targets = mode == RoleMutationMode.edit
+            final Iterable<String> targets =
+                mode == RoleMutationMode.edit || lockedFacilityScope
                 ? <String>[selectedFacilityIds.first]
                 : selectedFacilityIds;
             return <AccessAdminRoleDraft>[

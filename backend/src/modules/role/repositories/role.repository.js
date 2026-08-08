@@ -40,11 +40,17 @@ const findById = async (id, { includeDeleted = false } = {}) => {
  * @param {Object} orderBy - Sort order
  * @returns {Promise<Array>} Array of roles
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }) => {
+const findMany = async (
+  filters = {},
+  skip = 0,
+  take = 20,
+  orderBy = { created_at: 'desc' },
+  { includeDeleted = false } = {}
+) => {
   try {
     // Build where clause
     const where = {
-      deleted_at: null,
+      ...(includeDeleted ? {} : { deleted_at: null }),
       ...filters
     };
 

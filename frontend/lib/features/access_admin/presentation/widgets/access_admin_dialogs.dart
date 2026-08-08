@@ -836,6 +836,39 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
     return null;
   }
 
+  List<AccessAdminLookupOption> initialFacilityOptions =
+      List<AccessAdminLookupOption>.from(
+        prefetched?.facilities ?? state.data.lookups.facilities,
+      );
+  // HR / facility admins create exactly one facility-scoped role at their
+  // session facility — never fan out across every campus in the tenant.
+  if (needsFacilityScope && (sessionFacilityId ?? '').trim().isNotEmpty) {
+    final String pinnedFacilityId = sessionFacilityId!.trim();
+    initialFacilityOptions = initialFacilityOptions
+        .where(
+          (AccessAdminLookupOption option) => option.id == pinnedFacilityId,
+        )
+        .map(
+          (AccessAdminLookupOption option) => AccessAdminLookupOption(
+            id: option.id,
+            label: option.label,
+            displayName: option.displayName,
+            permissionCount: option.permissionCount,
+            meta: option.meta ?? initialTenantId,
+          ),
+        )
+        .toList(growable: false);
+    if (initialFacilityOptions.isEmpty) {
+      initialFacilityOptions = <AccessAdminLookupOption>[
+        AccessAdminLookupOption(
+          id: pinnedFacilityId,
+          label: pinnedFacilityId,
+          meta: initialTenantId,
+        ),
+      ];
+    }
+  }
+
   AccessAdminItem? createdRole;
   AccessAdminItem? existingRoleToOpen;
   final bool? saved = await showRoleMutationDialog(
@@ -844,8 +877,7 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
     includePermissions: false,
     permissionLookups:
         prefetched?.permissions ?? state.data.lookups.permissions,
-    initialFacilityOptions:
-        prefetched?.facilities ?? state.data.lookups.facilities,
+    initialFacilityOptions: initialFacilityOptions,
     loadTenantOptions: provideTenantLoader
         ? () => loadAccessAdminTenantOptions(
             ref,
@@ -853,8 +885,28 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
             preferTenantFacilityApi: isCrossTenantAdmin,
           )
         : null,
-    loadFacilityOptions: (String tenantId) =>
-        loadAccessAdminFacilityOptions(ref, tenantId),
+    loadFacilityOptions: (String tenantId) async {
+      final List<AccessAdminLookupOption> loaded =
+          await loadAccessAdminFacilityOptions(ref, tenantId);
+      if (!needsFacilityScope || (sessionFacilityId ?? '').trim().isEmpty) {
+        return loaded;
+      }
+      final String pinnedFacilityId = sessionFacilityId!.trim();
+      return loaded
+          .where(
+            (AccessAdminLookupOption option) => option.id == pinnedFacilityId,
+          )
+          .map(
+            (AccessAdminLookupOption option) => AccessAdminLookupOption(
+              id: option.id,
+              label: option.label,
+              displayName: option.displayName,
+              permissionCount: option.permissionCount,
+              meta: option.meta ?? tenantId,
+            ),
+          )
+          .toList(growable: false);
+    },
     loadAllFacilityOptions: provideAllFacilitiesLoader
         ? () => loadAccessAdminAllFacilityOptions(ref, state)
         : null,
@@ -865,7 +917,11 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
     allowPlatformScope: isCrossTenantAdmin,
     allowTenantScope: allowTenantWideScope,
     onSubmit: (List<AccessAdminRoleDraft> drafts) async {
-      for (final AccessAdminRoleDraft draft in drafts) {
+      // Facility-scoped create must never create more than one role.
+      final List<AccessAdminRoleDraft> draftsToCreate = needsFacilityScope
+          ? drafts.take(1).toList(growable: false)
+          : drafts;
+      for (final AccessAdminRoleDraft draft in draftsToCreate) {
         // Acceptance belongs to this exact scoped draft. Do not carry it to a
         // second tenant/facility target or a later Save after form edits.
         var similarityAccepted = draft.confirmSimilar;
@@ -1176,6 +1232,7 @@ Future<_RoleSimilarityPeers> _loadRoleSimilarityPeers(
               tenantId: requestAllTenants ? null : scopedTenantId,
               allTenants: requestAllTenants,
               allFacilities: true,
+              includeDeleted: true,
               lean: true,
               skipLookups: true,
               search: search,
