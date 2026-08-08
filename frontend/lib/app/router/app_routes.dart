@@ -354,12 +354,7 @@ abstract final class AppRoutes {
     name: 'nursing',
     path: '/nursing',
     access: AppRouteAccess.authenticated,
-    requiredAnyPermissions: <AppPermission>[
-      AppPermissions.clinicalRead,
-      AppPermissions.patientRead,
-      AppPermissions.lastOfficeRead,
-      AppPermissions.operationsRead,
-    ],
+    requiredPermissions: <AppPermission>[AppPermissions.nursingRead],
     requiredAnyRoles: nursingWorkspaceRoles,
     requiredActiveModules: <String>['inpatient-bed-management'],
   );

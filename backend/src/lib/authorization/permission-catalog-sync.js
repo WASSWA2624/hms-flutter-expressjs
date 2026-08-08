@@ -506,6 +506,10 @@ const restoreTenantRolePermissionDefaults = async (tenantId, options = {}) => {
       before,
       after,
     };
+  }, {
+    // Full catalog restores iterate every system role × permission link.
+    timeout: 60_000,
+    maxWait: 15_000,
   });
 };
 

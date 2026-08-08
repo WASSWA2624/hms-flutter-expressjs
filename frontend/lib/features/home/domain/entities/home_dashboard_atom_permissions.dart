@@ -340,7 +340,7 @@ abstract final class HomeDashboardAtomPermissions {
         'opd': <AppPermission>[AppPermissions.patientRead],
         'reception': <AppPermission>[AppPermissions.patientRead],
         'clinical': <AppPermission>[AppPermissions.clinicalRead],
-        'nursing': <AppPermission>[AppPermissions.clinicalRead],
+        'nursing': <AppPermission>[AppPermissions.nursingRead],
         'ipd': <AppPermission>[AppPermissions.clinicalRead],
         'icu': <AppPermission>[AppPermissions.clinicalRead],
         'theater': <AppPermission>[AppPermissions.clinicalRead],

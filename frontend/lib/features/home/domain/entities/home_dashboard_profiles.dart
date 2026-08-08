@@ -369,7 +369,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'opd',
       'ipd',
       'icu',
-      'nursing',
       'theater',
       'patients',
       'reports',

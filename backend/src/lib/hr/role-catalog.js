@@ -29,6 +29,8 @@ const HR_ROLE_CATALOG = Object.freeze(
     ['IT_SUPPORT', 'IT Support Specialist', 'administration'],
   // Clinical — physicians
     ['DOCTOR', 'Doctor / Clinician', 'clinical_physician'],
+    ['OPD_DOCTOR', 'OPD Doctor', 'clinical_physician'],
+    ['ICU_DOCTOR', 'ICU Doctor', 'clinical_physician'],
     ['ATTENDING_PHYSICIAN', 'Attending Physician', 'clinical_physician'],
     ['RESIDENT_PHYSICIAN', 'Resident Physician', 'clinical_physician'],
     ['SURGEON', 'Surgeon', 'clinical_physician'],
@@ -62,6 +64,8 @@ const HR_ROLE_CATALOG = Object.freeze(
     ['ADMISSIONS_COORDINATOR', 'Admissions Coordinator', 'front_office'],
     ['MEDICAL_RECORDS_CLERK', 'Medical Records Clerk', 'front_office'],
     ['BILLING', 'Billing / Cashier', 'front_office'],
+    ['FACILITY_BILLING', 'Facility Billing Officer', 'front_office'],
+    ['PHARMACY_BILLING', 'Pharmacy Billing Officer', 'front_office'],
     ['MEDICAL_CODER', 'Medical Coder / Coding Specialist', 'front_office'],
   // Emergency & transport
     ['AMBULANCE_OPERATOR', 'Ambulance Operator', 'emergency'],

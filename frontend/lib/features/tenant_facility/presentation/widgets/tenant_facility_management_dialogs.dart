@@ -1070,6 +1070,8 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
           id: 'name',
           label: l10n.tenantFacilityTenantNameLabel,
           preferredWidth: 220,
+          sortComparator: (TenantProfile left, TenantProfile right) =>
+              appListTableCompareText(left.name, right.name),
           cellBuilder: (_, TenantProfile tenant) {
             final String? slug = tenant.slug?.trim();
             final String? displayId = tenantFacilityHumanFriendlyDisplayId(
@@ -1089,6 +1091,11 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
         AppListTableColumn<TenantProfile>(
           id: 'status',
           label: l10n.tenantFacilityTenantStatusLabel,
+          sortComparator: (TenantProfile left, TenantProfile right) =>
+              appListTableCompareText(
+                _tenantStatusLabel(l10n, left),
+                _tenantStatusLabel(l10n, right),
+              ),
           cellBuilder: (_, TenantProfile tenant) =>
               Text(_tenantStatusLabel(l10n, tenant)),
         ),
@@ -1119,6 +1126,8 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
         AppListTableColumn<TenantProfile>(
           id: 'slug',
           label: l10n.tenantFacilityTenantSlugLabel,
+          sortComparator: (TenantProfile left, TenantProfile right) =>
+              appListTableCompareText(left.slug, right.slug),
           cellBuilder: (_, TenantProfile tenant) =>
               Text(tenant.slug?.trim().isNotEmpty == true ? tenant.slug! : '—'),
         ),
@@ -5190,6 +5199,8 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
           id: 'name',
           label: l10n.authFacilityNameLabel,
           preferredWidth: 220,
+          sortComparator: (FacilityProfile left, FacilityProfile right) =>
+              appListTableCompareText(left.name, right.name),
           cellBuilder: (_, FacilityProfile facility) {
             final List<String> details = <String>[];
             final String code = _facilityCodeLabel(facility);
@@ -5217,18 +5228,33 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
           AppListTableColumn<FacilityProfile>(
             id: 'tenant',
             label: l10n.profileTenantLabel,
+            sortComparator: (FacilityProfile left, FacilityProfile right) =>
+                appListTableCompareText(
+                  _tenantLabel(left.tenantId, l10n),
+                  _tenantLabel(right.tenantId, l10n),
+                ),
             cellBuilder: (_, FacilityProfile facility) =>
                 Text(_tenantLabel(facility.tenantId, l10n)),
           ),
         AppListTableColumn<FacilityProfile>(
           id: 'type',
           label: l10n.profileFacilityTypeLabel,
+          sortComparator: (FacilityProfile left, FacilityProfile right) =>
+              appListTableCompareText(
+                tenantFacilityFacilityTypeLabel(l10n, left.type),
+                tenantFacilityFacilityTypeLabel(l10n, right.type),
+              ),
           cellBuilder: (_, FacilityProfile facility) =>
               Text(tenantFacilityFacilityTypeLabel(l10n, facility.type)),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'status',
           label: l10n.tenantFacilityTenantStatusLabel,
+          sortComparator: (FacilityProfile left, FacilityProfile right) =>
+              appListTableCompareText(
+                _facilityStatusLabel(l10n, left),
+                _facilityStatusLabel(l10n, right),
+              ),
           cellBuilder: (_, FacilityProfile facility) => Text(
             _facilityStatusLabel(l10n, facility),
             style: facility.isDeleted
@@ -5271,6 +5297,11 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
           AppListTableColumn<FacilityProfile>(
             id: 'code',
             label: l10n.tenantFacilityFacilityIdLabel,
+            sortComparator: (FacilityProfile left, FacilityProfile right) =>
+                appListTableCompareText(
+                  _facilityCodeLabel(left),
+                  _facilityCodeLabel(right),
+                ),
             cellBuilder: (_, FacilityProfile facility) =>
                 Text(_facilityCodeLabel(facility)),
           ),
@@ -5278,12 +5309,16 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
           AppListTableColumn<FacilityProfile>(
             id: 'phone',
             label: l10n.profilePhoneLabel,
+            sortComparator: (FacilityProfile left, FacilityProfile right) =>
+                appListTableCompareText(left.phone, right.phone),
             cellBuilder: (_, FacilityProfile facility) =>
                 Text(_optionalText(facility.phone)),
           ),
           AppListTableColumn<FacilityProfile>(
             id: 'email',
             label: l10n.profileEmailLabel,
+            sortComparator: (FacilityProfile left, FacilityProfile right) =>
+                appListTableCompareText(left.email, right.email),
             cellBuilder: (_, FacilityProfile facility) =>
                 Text(_optionalText(facility.email)),
           ),
@@ -5291,36 +5326,54 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         AppListTableColumn<FacilityProfile>(
           id: 'address',
           label: l10n.tenantFacilityAddressLineLabel,
+          sortComparator: (FacilityProfile left, FacilityProfile right) =>
+              appListTableCompareText(left.addressLine1, right.addressLine1),
           cellBuilder: (_, FacilityProfile facility) =>
               Text(_optionalText(facility.addressLine1)),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'city',
           label: l10n.tenantFacilityCityLabel,
+          sortComparator: (FacilityProfile left, FacilityProfile right) =>
+              appListTableCompareText(left.city, right.city),
           cellBuilder: (_, FacilityProfile facility) =>
               Text(_optionalText(facility.city)),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'country',
           label: l10n.tenantFacilityCountryLabel,
+          sortComparator: (FacilityProfile left, FacilityProfile right) =>
+              appListTableCompareText(left.country, right.country),
           cellBuilder: (_, FacilityProfile facility) =>
               Text(_optionalText(facility.country)),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'currency',
           label: l10n.tenantFacilityDefaultCurrencyLabel,
+          sortComparator: (FacilityProfile left, FacilityProfile right) =>
+              appListTableCompareText(left.currency, right.currency),
           cellBuilder: (_, FacilityProfile facility) =>
               Text(_optionalText(facility.currency)),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'consultation_fee',
           label: l10n.settingsConfigurationConsultationFeeLabel,
+          sortComparator: (FacilityProfile left, FacilityProfile right) =>
+              appListTableCompareText(
+                left.standardConsultationFee,
+                right.standardConsultationFee,
+              ),
           cellBuilder: (_, FacilityProfile facility) =>
               Text(_optionalText(facility.standardConsultationFee)),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'logo',
           label: l10n.tenantFacilityLogoLabel,
+          sortComparator: (FacilityProfile left, FacilityProfile right) {
+            final bool leftHas = left.logoUrl?.trim().isNotEmpty == true;
+            final bool rightHas = right.logoUrl?.trim().isNotEmpty == true;
+            return (leftHas ? 1 : 0).compareTo(rightHas ? 1 : 0);
+          },
           cellBuilder: (_, FacilityProfile facility) => Text(
             facility.logoUrl?.trim().isNotEmpty == true
                 ? l10n.commonYesLabel

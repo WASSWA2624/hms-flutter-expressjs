@@ -3122,6 +3122,12 @@ class _DepartmentSetupSectionState
               id: 'facility',
               label: l10n.profileFacilityLabel,
               preferredWidth: 160,
+              sortComparator:
+                  (DepartmentProfile left, DepartmentProfile right) =>
+                      appListTableCompareText(
+                        _facilityLabel(left),
+                        _facilityLabel(right),
+                      ),
               cellBuilder: (_, DepartmentProfile department) =>
                   Text(_facilityLabel(department)),
             ),
@@ -3130,6 +3136,12 @@ class _DepartmentSetupSectionState
               id: 'tenant',
               label: l10n.profileTenantLabel,
               preferredWidth: 160,
+              sortComparator:
+                  (DepartmentProfile left, DepartmentProfile right) =>
+                      appListTableCompareText(
+                        _tenantLabel(left),
+                        _tenantLabel(right),
+                      ),
               cellBuilder: (_, DepartmentProfile department) =>
                   Text(_tenantLabel(department)),
             ),
@@ -3138,6 +3150,12 @@ class _DepartmentSetupSectionState
               id: 'type',
               label: l10n.tenantFacilityDepartmentTypeLabel,
               preferredWidth: 140,
+              sortComparator:
+                  (DepartmentProfile left, DepartmentProfile right) =>
+                      appListTableCompareText(
+                        _departmentTypeLabel(l10n, left.type),
+                        _departmentTypeLabel(l10n, right.type),
+                      ),
               cellBuilder: (_, DepartmentProfile department) => Text(
                 _departmentTypeLabel(l10n, department.type),
               ),
@@ -3975,6 +3993,11 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
             id: 'department',
             label: l10n.tenantFacilityUnitDepartmentLabel,
             preferredWidth: 160,
+            sortComparator: (UnitProfile left, UnitProfile right) =>
+                appListTableCompareText(
+                  _departmentLabel(left),
+                  _departmentLabel(right),
+                ),
             cellBuilder: (_, UnitProfile unit) => Text(_departmentLabel(unit)),
           ),
         ];
@@ -3985,6 +4008,11 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
               id: 'facility',
               label: l10n.profileFacilityLabel,
               preferredWidth: 160,
+              sortComparator: (UnitProfile left, UnitProfile right) =>
+                  appListTableCompareText(
+                    _facilityLabel(left),
+                    _facilityLabel(right),
+                  ),
               cellBuilder: (_, UnitProfile unit) => Text(_facilityLabel(unit)),
             ),
           if (showTenantColumn)
@@ -3992,6 +4020,11 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
               id: 'tenant',
               label: l10n.profileTenantLabel,
               preferredWidth: 160,
+              sortComparator: (UnitProfile left, UnitProfile right) =>
+                  appListTableCompareText(
+                    _tenantLabel(left),
+                    _tenantLabel(right),
+                  ),
               cellBuilder: (_, UnitProfile unit) => Text(_tenantLabel(unit)),
             ),
         ];
@@ -4849,6 +4882,11 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
             id: 'type',
             label: l10n.tenantFacilityWardTypeLabel,
             preferredWidth: 120,
+            sortComparator: (WardProfile left, WardProfile right) =>
+                appListTableCompareText(
+                  _wardTypeLabel(l10n, left.type),
+                  _wardTypeLabel(l10n, right.type),
+                ),
             cellBuilder: (_, WardProfile ward) =>
                 Text(_wardTypeLabel(l10n, ward.type)),
           ),
@@ -5681,6 +5719,8 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
             id: 'ward',
             label: l10n.tenantFacilityRoomWardLabel,
             preferredWidth: 160,
+            sortComparator: (RoomProfile left, RoomProfile right) =>
+                appListTableCompareText(_wardLabel(left), _wardLabel(right)),
             cellBuilder: (_, RoomProfile room) => Text(_wardLabel(room)),
           ),
         ];
@@ -5690,6 +5730,8 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
             id: 'floor',
             label: l10n.tenantFacilityRoomFloorLabel,
             preferredWidth: 100,
+            sortComparator: (RoomProfile left, RoomProfile right) =>
+                appListTableCompareText(left.floor, right.floor),
             cellBuilder: (_, RoomProfile room) {
               final String? floor = room.floor?.trim();
               return Text(
@@ -5702,6 +5744,11 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
               id: 'facility',
               label: l10n.profileFacilityLabel,
               preferredWidth: 160,
+              sortComparator: (RoomProfile left, RoomProfile right) =>
+                  appListTableCompareText(
+                    _facilityLabel(left),
+                    _facilityLabel(right),
+                  ),
               cellBuilder: (_, RoomProfile room) => Text(_facilityLabel(room)),
             ),
           if (showTenantColumn)
@@ -5709,6 +5756,11 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
               id: 'tenant',
               label: l10n.profileTenantLabel,
               preferredWidth: 160,
+              sortComparator: (RoomProfile left, RoomProfile right) =>
+                  appListTableCompareText(
+                    _tenantLabel(left),
+                    _tenantLabel(right),
+                  ),
               cellBuilder: (_, RoomProfile room) => Text(_tenantLabel(room)),
             ),
         ];
@@ -6633,6 +6685,8 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
             id: 'ward',
             label: l10n.tenantFacilityBedWardLabel,
             preferredWidth: 160,
+            sortComparator: (BedProfile left, BedProfile right) =>
+                appListTableCompareText(_wardLabel(left), _wardLabel(right)),
             cellBuilder: (_, BedProfile bed) => Text(_wardLabel(bed)),
           ),
         ];
@@ -7093,6 +7147,10 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
       id: 'name',
       label: widget.nameColumnLabel ?? widget.title,
       preferredWidth: 220,
+      sortComparator: (T left, T right) => appListTableCompareText(
+        widget.titleBuilder(left),
+        widget.titleBuilder(right),
+      ),
       cellBuilder: (BuildContext context, T item) {
         final bool deleted = widget.isDeletedBuilder(item);
         final List<String> details =
@@ -7110,6 +7168,8 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
       id: 'status',
       label: l10n.tenantFacilityTenantStatusLabel,
       preferredWidth: 120,
+      sortComparator: (T left, T right) =>
+          appListTableCompareText(statusLabel(left), statusLabel(right)),
       cellBuilder: (_, T item) => Text(statusLabel(item)),
     );
     final List<AppListTableColumn<T>> leadingColumns =
@@ -7246,6 +7306,10 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
         AppListTableColumn<T>(
           id: 'details',
           label: l10n.accessAdminColumnDetails,
+          sortComparator: (T left, T right) => appListTableCompareText(
+            widget.subtitleBuilder(left),
+            widget.subtitleBuilder(right),
+          ),
           cellBuilder: (_, T item) => Text(widget.subtitleBuilder(item)),
         ),
       ],

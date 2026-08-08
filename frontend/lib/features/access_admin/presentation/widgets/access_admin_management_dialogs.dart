@@ -1907,12 +1907,21 @@ class _ManageRolesPermissionsPanelState
                   AppListTableColumn<AccessAdminItem>(
                     id: 'id',
                     label: l10n.accessAdminColumnId,
+                    sortComparator:
+                        (AccessAdminItem left, AccessAdminItem right) =>
+                            appListTableCompareText(
+                              left.effectiveDisplayId,
+                              right.effectiveDisplayId,
+                            ),
                     cellBuilder: (_, AccessAdminItem item) =>
                         Text(item.effectiveDisplayId),
                   ),
                   AppListTableColumn<AccessAdminItem>(
                     id: 'name',
                     label: l10n.accessAdminColumnName,
+                    sortComparator:
+                        (AccessAdminItem left, AccessAdminItem right) =>
+                            appListTableCompareText(left.title, right.title),
                     cellBuilder: (_, AccessAdminItem item) {
                       if (!item.isDeleted) {
                         return Text(item.title);
@@ -1925,8 +1934,15 @@ class _ManageRolesPermissionsPanelState
                   AppListTableColumn<AccessAdminItem>(
                     id: 'scope',
                     label: l10n.accessAdminColumnScope,
-                    cellBuilder: (BuildContext context, AccessAdminItem item) =>
-                        _RoleScopeBadge(item: item),
+                    sortComparator:
+                        (AccessAdminItem left, AccessAdminItem right) =>
+                            appListTableCompareText(
+                              accessAdminRoleScopeLabel(context, left),
+                              accessAdminRoleScopeLabel(context, right),
+                            ),
+                    cellBuilder:
+                        (BuildContext context, AccessAdminItem item) =>
+                            _RoleScopeBadge(item: item),
                   ),
                   if (canWrite)
                     AppListTableColumn<AccessAdminItem>(
@@ -2034,6 +2050,12 @@ class _ManageRolesPermissionsPanelState
                   AppListTableColumn<AccessAdminItem>(
                     id: 'details',
                     label: l10n.accessAdminColumnDetails,
+                    sortComparator:
+                        (AccessAdminItem left, AccessAdminItem right) =>
+                            appListTableCompareText(
+                              left.subtitle,
+                              right.subtitle,
+                            ),
                     cellBuilder: (_, AccessAdminItem item) =>
                         Text(item.subtitle ?? '—'),
                   ),

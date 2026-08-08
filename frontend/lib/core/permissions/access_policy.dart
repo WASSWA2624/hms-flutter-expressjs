@@ -926,6 +926,9 @@ final class AppAccessPolicy {
         'PATHOLOGIST': AppRole.labTech,
         'SONOGRAPHER': AppRole.radiologyTech,
         'PHARMACY_TECHNICIAN': AppRole.pharmacist,
+        // OPD_DOCTOR / ICU_DOCTOR / PHARMACY_BILLING use tailored backend packs;
+        // do not alias them to a broader parent (would over-grant on JWT restore).
+        'FACILITY_BILLING': AppRole.billing,
         'PARAMEDIC': AppRole.ambulanceOperator,
         'EMT': AppRole.ambulanceOperator,
         'MEDICAL_RECORDS_CLERK': AppRole.receptionist,
@@ -1014,7 +1017,8 @@ final class AppAccessPolicy {
         AppPermissions.evidenceExport,
       ],
       // Keep in sync with backend ROLE_PERMISSIONS[DOCTOR]. Shell: Dashboard,
-      // Patients, OPD, IPD, ICU, Nursing, Clinical, Theater, Reports, Settings.
+      // Patients, OPD, IPD, ICU, Clinical, Theater, Reports, Settings.
+      // Nursing is nurse/ward-only — not a doctor top-level destination.
       // Lab / radiology / pharmacy / discharge are nested via Clinical, not nav.
       AppRole.doctor => const <AppPermission>[
         AppPermissions.clinicalRead,
@@ -1028,7 +1032,6 @@ final class AppAccessPolicy {
         AppPermissions.opdRead,
         AppPermissions.ipdRead,
         AppPermissions.icuRead,
-        AppPermissions.nursingRead,
         AppPermissions.theaterRead,
         AppPermissions.breakGlassRequest,
         AppPermissions.reportsRead,

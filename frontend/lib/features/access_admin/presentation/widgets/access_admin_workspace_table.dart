@@ -460,6 +460,11 @@ List<AppListTableColumn<AccessAdminItem>> _roleColumns(
     AppListTableColumn<AccessAdminItem>(
       id: 'role_scope',
       label: l10n.accessAdminColumnScope,
+      sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
+          appListTableCompareText(
+            accessAdminRoleScopeLabel(context, left),
+            accessAdminRoleScopeLabel(context, right),
+          ),
       cellBuilder: (BuildContext context, AccessAdminItem item) =>
           AccessAdminRoleScopeBadge(item: item),
     ),

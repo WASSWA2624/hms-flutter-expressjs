@@ -254,13 +254,13 @@ void main() {
           'opd',
           'ipd',
           'icu',
-          'nursing',
           'theater',
           'patients',
           'reports',
           'settings',
         ]),
       );
+      expect(profile.shortcutIds, isNot(contains('nursing')));
       expect(
         profile.shortcutIds,
         isNot(

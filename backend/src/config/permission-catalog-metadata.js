@@ -202,6 +202,26 @@ const ROLE_OVERRIDES = Object.freeze({
     displayName: 'Doctor',
     description: 'Licensed physician with clinical documentation and order privileges.',
   },
+  OPD_DOCTOR: {
+    displayName: 'OPD Doctor',
+    description: 'Outpatient physician focused on OPD encounters and clinical charting.',
+  },
+  ICU_DOCTOR: {
+    displayName: 'ICU Doctor',
+    description: 'Critical-care physician focused on ICU and inpatient clinical workflows.',
+  },
+  SURGEON: {
+    displayName: 'Surgeon',
+    description: 'Surgical physician with clinical and theatre visibility.',
+  },
+  PHARMACY_BILLING: {
+    displayName: 'Pharmacy Billing Officer',
+    description: 'Billing staff managing pharmacy invoices and pharmacy price lists.',
+  },
+  FACILITY_BILLING: {
+    displayName: 'Facility Billing Officer',
+    description: 'Billing staff managing facility invoices, claims, and facility price lists.',
+  },
   NURSE: {
     displayName: 'Nurse',
     description: 'Registered nurse with bedside care and clinical charting access.',

@@ -27,39 +27,67 @@ Default password for **every** seeded account: `Hosspi@2624.`
 
 Source of truth: `scripts/seeders/seed-catalog.js` (`DEMO_TENANT.users`). Re-seed with `npm run db:seed:demo` or `node scripts/setup-default-accounts.js`.
 
-| # | Email                           | Primary role       | Extra roles               |
-|---|---------------------------------|--------------------|---------------------------|
-| 1 | `platform.owner@hosspi.com`     | PLATFORM_OWNER     |                           |
-| 2 | `platform.admin@hosspi.com`     | PLATFORM_ADMIN     |                           |
-| 3 | `tenant.admin@hosspi.com`       | TENANT_ADMIN       | UNIT_MANAGER              |
-| 4 | `facility.admin@hosspi.com`     | FACILITY_ADMIN     |                           |
-| 5 | `integration.admin@hosspi.com`  | INTEGRATION_ADMIN  |                           |
-| 6 | `hr.staff@hosspi.com`           | HR_STAFF           |                           |
-| 7 | `operations.staff@hosspi.com`   | OPERATIONS_STAFF   |                           |
-| 8 | `discharge@hosspi.com`          | DISCHARGE_PLANNER  |                           |
-| 9 | `dentist@hosspi.com`            | DENTIST            |                           |
-|10 | `radiologist@hosspi.com`        | RADIOLOGIST        |                           |
-|11 | `sonographer@hosspi.com`        | SONOGRAPHER        |                           |
-|12 | `accountant@hosspi.com`         | ACCOUNTANT         |                           |
-|13 | `support@hosspi.com`            | SUPPORT_STAFF      |                           |
-|14 | `visitor@hosspi.com`            | VISITOR_GUEST      |                           |
-|15 | `doctor@hosspi.com`             | DOCTOR             |                           |
-|16 | `nurse@hosspi.com`              | NURSE              | WARD_MANAGER, ICU_MANAGER |
-|17 | `lab@hosspi.com`                | LAB_TECH           |                           |
-|18 | `radiology@hosspi.com`          | RADIOLOGY_TECH     |                           |
-|19 | `pharmacy@hosspi.com`           | PHARMACIST         |                           |
-|20 | `pharmacy2@hosspi.com`          | PHARMACIST         |                           |
-|21 | `reception@hosspi.com`          | RECEPTIONIST       |                           |
-|22 | `billing@hosspi.com`            | BILLING            |                           |
-|23 | `operations@hosspi.com`         | OPERATIONS         |                           |
-|24 | `hr@hosspi.com`                 | HR                 |                           |
-|25 | `biomed@hosspi.com`             | BIOMED             | BIOMED_MANAGER            |
-|26 | `housekeeping@hosspi.com`       | HOUSE_KEEPER       | HOUSEKEEPING_MANAGER      |
-|27 | `ambulance@hosspi.com`          | AMBULANCE_OPERATOR |                           |
-|28 | `physio@hosspi.com`             | PHYSIOTHERAPIST    |                           |
-|29 | `mortuary.staff@hosspi.com`     | MORTUARY_STAFF     |                           |
-|30 | `mortuary.manager@hosspi.com`   | MORTUARY_MANAGER   |                           |
-|31 | `patient.portal@hosspi.com`     | PATIENT            |                           |
+| # | Email                           | Primary role                 | Extra roles               |
+|---|---------------------------------|------------------------------|---------------------------|
+| 1 | `platform.owner@hosspi.com`     | PLATFORM_OWNER               |                           |
+| 2 | `platform.admin@hosspi.com`     | PLATFORM_ADMIN               |                           |
+| 3 | `tenant.admin@hosspi.com`       | TENANT_ADMIN                 | UNIT_MANAGER              |
+| 4 | `facility.admin@hosspi.com`     | FACILITY_ADMIN               |                           |
+| 5 | `integration.admin@hosspi.com`  | INTEGRATION_ADMIN            |                           |
+| 6 | `hr.staff@hosspi.com`           | HR_STAFF                     |                           |
+| 7 | `operations.staff@hosspi.com`   | OPERATIONS_STAFF             |                           |
+| 8 | `discharge@hosspi.com`          | DISCHARGE_PLANNER            |                           |
+| 9 | `dentist@hosspi.com`            | DENTIST                      |                           |
+|10 | `radiologist@hosspi.com`        | RADIOLOGIST                  |                           |
+|11 | `sonographer@hosspi.com`        | SONOGRAPHER                  |                           |
+|12 | `accountant@hosspi.com`         | ACCOUNTANT                   |                           |
+|13 | `support@hosspi.com`            | SUPPORT_STAFF                |                           |
+|14 | `visitor@hosspi.com`            | VISITOR_GUEST                |                           |
+|15 | `doctor@hosspi.com`             | DOCTOR                       |                           |
+|16 | `opd.doctor@hosspi.com`         | OPD_DOCTOR                   |                           |
+|17 | `icu.doctor@hosspi.com`         | ICU_DOCTOR                   |                           |
+|18 | `attending@hosspi.com`          | ATTENDING_PHYSICIAN          |                           |
+|19 | `resident@hosspi.com`           | RESIDENT_PHYSICIAN           |                           |
+|20 | `surgeon@hosspi.com`            | SURGEON                      |                           |
+|21 | `anesthesia@hosspi.com`         | ANESTHESIOLOGIST             |                           |
+|22 | `pa@hosspi.com`                 | PHYSICIAN_ASSISTANT          |                           |
+|23 | `er.doctor@hosspi.com`          | EMERGENCY_PHYSICIAN          |                           |
+|24 | `nurse@hosspi.com`              | NURSE                        | WARD_MANAGER, ICU_MANAGER |
+|25 | `lpn@hosspi.com`                | LICENSED_PRACTICAL_NURSE     |                           |
+|26 | `np@hosspi.com`                 | NURSE_PRACTITIONER           |                           |
+|27 | `triage@hosspi.com`             | TRIAGE_NURSE                 |                           |
+|28 | `midwife@hosspi.com`            | MIDWIFE                      |                           |
+|29 | `charge.nurse@hosspi.com`       | CHARGE_NURSE                 |                           |
+|30 | `lab@hosspi.com`                | LAB_TECH                     |                           |
+|31 | `mls@hosspi.com`                | MEDICAL_LABORATORY_SCIENTIST |                           |
+|32 | `pathologist@hosspi.com`        | PATHOLOGIST                  |                           |
+|33 | `radiology@hosspi.com`          | RADIOLOGY_TECH               |                           |
+|34 | `pharmacy@hosspi.com`           | PHARMACIST                   |                           |
+|35 | `pharmacy2@hosspi.com`          | PHARMACIST                   |                           |
+|36 | `pharmacy.tech@hosspi.com`      | PHARMACY_TECHNICIAN          |                           |
+|37 | `pharmacy.billing@hosspi.com`   | PHARMACY_BILLING             |                           |
+|38 | `reception@hosspi.com`          | RECEPTIONIST                 |                           |
+|39 | `admissions@hosspi.com`         | ADMISSIONS_COORDINATOR       |                           |
+|40 | `records@hosspi.com`            | MEDICAL_RECORDS_CLERK        |                           |
+|41 | `billing@hosspi.com`            | BILLING                      |                           |
+|42 | `facility.billing@hosspi.com`   | FACILITY_BILLING             |                           |
+|43 | `coder@hosspi.com`              | MEDICAL_CODER                |                           |
+|44 | `operations@hosspi.com`         | OPERATIONS                   |                           |
+|45 | `hr@hosspi.com`                 | HR                           |                           |
+|46 | `biomed@hosspi.com`             | BIOMED                       | BIOMED_MANAGER            |
+|47 | `housekeeping@hosspi.com`       | HOUSE_KEEPER                 | HOUSEKEEPING_MANAGER      |
+|48 | `ambulance@hosspi.com`          | AMBULANCE_OPERATOR           |                           |
+|49 | `paramedic@hosspi.com`          | PARAMEDIC                    |                           |
+|50 | `emt@hosspi.com`                | EMT                          |                           |
+|51 | `physio@hosspi.com`             | PHYSIOTHERAPIST              |                           |
+|52 | `ot@hosspi.com`                 | OCCUPATIONAL_THERAPIST       |                           |
+|53 | `rt@hosspi.com`                 | RESPIRATORY_THERAPIST        |                           |
+|54 | `dietitian@hosspi.com`          | DIETITIAN                    |                           |
+|55 | `social@hosspi.com`             | SOCIAL_WORKER                |                           |
+|56 | `psychologist@hosspi.com`       | CLINICAL_PSYCHOLOGIST        |                           |
+|57 | `mortuary.staff@hosspi.com`     | MORTUARY_STAFF               |                           |
+|58 | `mortuary.manager@hosspi.com`   | MORTUARY_MANAGER             |                           |
+|59 | `patient.portal@hosspi.com`     | PATIENT                      |                           |
 
 #### Seeded Scenarios
 

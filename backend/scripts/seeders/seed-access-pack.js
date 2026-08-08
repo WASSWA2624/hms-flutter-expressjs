@@ -42,19 +42,49 @@ const departmentForRole = (scenarioKey, role) => {
     ACCOUNTANT: 'Billing',
     SUPPORT_STAFF: 'Support Services',
     VISITOR_GUEST: 'Front Office',
+    DOCTOR: 'Outpatient',
+    OPD_DOCTOR: 'Outpatient',
+    ICU_DOCTOR: 'Inpatient',
+    ATTENDING_PHYSICIAN: 'Inpatient',
+    RESIDENT_PHYSICIAN: 'Inpatient',
+    SURGEON: 'Outpatient',
+    ANESTHESIOLOGIST: 'Outpatient',
+    PHYSICIAN_ASSISTANT: 'Outpatient',
+    EMERGENCY_PHYSICIAN: 'Emergency',
+    NURSE: 'Inpatient',
+    LICENSED_PRACTICAL_NURSE: 'Inpatient',
+    NURSE_PRACTITIONER: 'Outpatient',
+    TRIAGE_NURSE: 'Emergency',
+    MIDWIFE: 'Inpatient',
+    CHARGE_NURSE: 'Inpatient',
     LAB_TECH: 'Laboratory',
+    MEDICAL_LABORATORY_SCIENTIST: 'Laboratory',
+    PATHOLOGIST: 'Laboratory',
     RADIOLOGY_TECH: 'Radiology',
     PHARMACIST: 'Pharmacy',
+    PHARMACY_TECHNICIAN: 'Pharmacy',
+    PHARMACY_BILLING: 'Pharmacy',
     BILLING: 'Billing',
+    FACILITY_BILLING: 'Billing',
+    MEDICAL_CODER: 'Billing',
+    ADMISSIONS_COORDINATOR: 'Front Office',
+    MEDICAL_RECORDS_CLERK: 'Front Office',
     BIOMED: 'Biomedical',
     HR: 'Human Resources',
     OPERATIONS: 'Operations',
     AMBULANCE_OPERATOR: 'Emergency',
+    PARAMEDIC: 'Emergency',
+    EMT: 'Emergency',
     RECEPTIONIST: 'Front Office',
     HOUSE_KEEPER: 'Support Services',
     HOUSEKEEPING_MANAGER: 'Support Services',
     BIOMED_MANAGER: 'Biomedical',
     PHYSIOTHERAPIST: 'Outpatient',
+    OCCUPATIONAL_THERAPIST: 'Outpatient',
+    RESPIRATORY_THERAPIST: 'Inpatient',
+    DIETITIAN: 'Inpatient',
+    SOCIAL_WORKER: 'Front Office',
+    CLINICAL_PSYCHOLOGIST: 'Outpatient',
     MORTUARY_STAFF: 'Mortuary',
     MORTUARY_MANAGER: 'Mortuary',
   };
@@ -64,8 +94,6 @@ const departmentForRole = (scenarioKey, role) => {
   if (role === 'WARD_MANAGER') return 'Inpatient';
   if (role === 'ICU_MANAGER') return 'Inpatient';
   if (role === 'THEATRE_MANAGER') return 'Outpatient';
-  if (role === 'DOCTOR') return 'Outpatient';
-  if (role === 'NURSE') return 'Inpatient';
   return null;
 };
 
