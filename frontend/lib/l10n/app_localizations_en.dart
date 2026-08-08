@@ -2313,7 +2313,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'After you pay, notify platform admins by WhatsApp, email, or phone and share your proof of payment. They will activate your subscription once confirmed.';
 
   @override
-  String get subscriptionUpgradePaymentChannelLabel => 'How did you pay?';
+  String get subscriptionUpgradePaymentChannelLabel => 'How will you pay?';
+
+  @override
+  String get subscriptionUpgradePayDestinationLabel => 'Send payment here';
+
+  @override
+  String get subscriptionUpgradePayNotifyLabel => 'Notify platform admins';
+
+  @override
+  String get subscriptionUpgradePayExtrasLabel => 'Notes and proof (optional)';
+
+  @override
+  String get subscriptionUpgradePayOtherDestinationBody =>
+      'Use either bank transfer or mobile money, then notify admins with your proof.';
+
+  @override
+  String get subscriptionUpgradeCopyValueAction => 'Copy';
+
+  @override
+  String get subscriptionUpgradeValueCopiedMessage => 'Copied to clipboard.';
 
   @override
   String get subscriptionUpgradeProofOptionalBody =>

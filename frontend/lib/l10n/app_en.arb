@@ -3014,9 +3014,33 @@
   "@subscriptionUpgradePayContactGuidance": {
     "description": "Guidance for contacting platform admins after offline payment."
   },
-  "subscriptionUpgradePaymentChannelLabel": "How did you pay?",
+  "subscriptionUpgradePaymentChannelLabel": "How will you pay?",
   "@subscriptionUpgradePaymentChannelLabel": {
-    "description": "Label above payment channel chips on the pay step."
+    "description": "Step label for choosing the offline payment channel."
+  },
+  "subscriptionUpgradePayDestinationLabel": "Send payment here",
+  "@subscriptionUpgradePayDestinationLabel": {
+    "description": "Step label above bank or mobile money pay-to details."
+  },
+  "subscriptionUpgradePayNotifyLabel": "Notify platform admins",
+  "@subscriptionUpgradePayNotifyLabel": {
+    "description": "Step label above platform contact chips after payment."
+  },
+  "subscriptionUpgradePayExtrasLabel": "Notes and proof (optional)",
+  "@subscriptionUpgradePayExtrasLabel": {
+    "description": "Step label above notes and proof of payment fields."
+  },
+  "subscriptionUpgradePayOtherDestinationBody": "Use either bank transfer or mobile money, then notify admins with your proof.",
+  "@subscriptionUpgradePayOtherDestinationBody": {
+    "description": "Guidance when payment channel is Other and both destinations are shown."
+  },
+  "subscriptionUpgradeCopyValueAction": "Copy",
+  "@subscriptionUpgradeCopyValueAction": {
+    "description": "Tooltip / semantics for copying a payment or contact value."
+  },
+  "subscriptionUpgradeValueCopiedMessage": "Copied to clipboard.",
+  "@subscriptionUpgradeValueCopiedMessage": {
+    "description": "SnackBar after copying a payment detail or contact."
   },
   "subscriptionUpgradeProofOptionalBody": "Optional. Attach a receipt or screenshot, or send it to admins via WhatsApp or email.",
   "@subscriptionUpgradeProofOptionalBody": {

@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/errors/validation_message_presenter.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/subscriptions/subscription_plan_theme.dart';
 import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/subscriptions/data/repositories/subscriptions_repository_impl.dart';
@@ -840,6 +841,10 @@ class _SubscriptionUpgradeDialogState
     final PlatformBankTransferDetails? bank = contextData?.bankTransferDetails;
     final PlatformMobileMoneyDetails? mobile = contextData?.mobileMoneyDetails;
     final String planLabel = _selectedPlanDisplayLabel(l10n);
+    final SubscriptionPlanTheme planTheme = SubscriptionPlanTheme.resolve(
+      theme,
+      _selectedPlan?.tierCode ?? planLabel,
+    );
     final List<(String, String)> bankRows = <(String, String)>[
       if (bank?.accountName != null)
         (l10n.subscriptionBankAccountNameLabel, bank!.accountName!),
@@ -861,6 +866,12 @@ class _SubscriptionUpgradeDialogState
       if (mobile?.airtel != null)
         (l10n.subscriptionMobileMoneyAirtelLabel, mobile!.airtel!),
     ];
+    final bool showBank =
+        _paymentMethod == SubscriptionPaymentMethodId.bankTransfer ||
+        _paymentMethod == SubscriptionPaymentMethodId.other;
+    final bool showMobile =
+        _paymentMethod == SubscriptionPaymentMethodId.mobileMoney ||
+        _paymentMethod == SubscriptionPaymentMethodId.other;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -871,6 +882,7 @@ class _SubscriptionUpgradeDialogState
           amountDueLabel: l10n.subscriptionUpgradeAmountDueLabel,
           amountValue: _isFxLoading ? null : _formattedAmountDue(context),
           isLoading: _isFxLoading,
+          planTheme: planTheme,
         ),
         if (_fxWarning != null) ...<Widget>[
           SizedBox(height: theme.spacing.sm),
@@ -882,50 +894,140 @@ class _SubscriptionUpgradeDialogState
           ),
         ],
         SizedBox(height: theme.spacing.md),
+        _PayStepHeader(
+          step: '1',
+          title: l10n.subscriptionUpgradePaymentChannelLabel,
+          accent: colorScheme.tertiary,
+        ),
+        SizedBox(height: theme.spacing.sm),
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            final bool sideBySide =
-                constraints.maxWidth >= 640 &&
-                bankRows.isNotEmpty &&
-                mobileRows.isNotEmpty;
-            final Widget? bankCard = bankRows.isEmpty
-                ? null
-                : _PayDestinationCard(
+            final bool wrap = constraints.maxWidth < 520;
+            final List<Widget> methodCards = <Widget>[
+              for (final SubscriptionPaymentMethodId channel in _payChannels)
+                _PayMethodTile(
+                  selected: _paymentMethod == channel,
+                  label: subscriptionPaymentMethodLabel(l10n, channel),
+                  icon: switch (channel) {
+                    SubscriptionPaymentMethodId.mobileMoney =>
+                      Icons.phone_android_outlined,
+                    SubscriptionPaymentMethodId.bankTransfer =>
+                      Icons.account_balance_outlined,
+                    _ => Icons.more_horiz,
+                  },
+                  accent: switch (channel) {
+                    SubscriptionPaymentMethodId.mobileMoney =>
+                      const Color(0xFFF59E0B),
+                    SubscriptionPaymentMethodId.bankTransfer =>
+                      const Color(0xFF2563EB),
+                    _ => colorScheme.secondary,
+                  },
+                  onTap: () => setState(() => _paymentMethod = channel),
+                ),
+            ];
+            if (wrap) {
+              return Column(
+                children: <Widget>[
+                  for (int i = 0; i < methodCards.length; i++) ...<Widget>[
+                    if (i > 0) SizedBox(height: theme.spacing.xs),
+                    methodCards[i],
+                  ],
+                ],
+              );
+            }
+            return Row(
+              children: <Widget>[
+                for (int i = 0; i < methodCards.length; i++) ...<Widget>[
+                  if (i > 0) SizedBox(width: theme.spacing.xs),
+                  Expanded(child: methodCards[i]),
+                ],
+              ],
+            );
+          },
+        ),
+        SizedBox(height: theme.spacing.md),
+        _PayStepHeader(
+          step: '2',
+          title: l10n.subscriptionUpgradePayDestinationLabel,
+          accent: const Color(0xFF16A34A),
+        ),
+        if (_paymentMethod == SubscriptionPaymentMethodId.other) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            l10n.subscriptionUpgradePayOtherDestinationBody,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        SizedBox(height: theme.spacing.sm),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final Widget? bankCard = showBank && bankRows.isNotEmpty
+                ? _PayDestinationCard(
                     icon: Icons.account_balance_outlined,
                     title: l10n.subscriptionBankTransferDetailsTitle,
+                    accent: const Color(0xFF2563EB),
                     rows: bankRows,
-                  );
-            final Widget? mobileCard = mobileRows.isEmpty
-                ? null
-                : _PayDestinationCard(
+                    copyTooltip: l10n.subscriptionUpgradeCopyValueAction,
+                    onCopied: () => _showCopiedSnack(l10n),
+                  )
+                : null;
+            final Widget? mobileCard = showMobile && mobileRows.isNotEmpty
+                ? _PayDestinationCard(
                     icon: Icons.phone_android_outlined,
                     title: l10n.subscriptionMobileMoneyDetailsTitle,
+                    accent: const Color(0xFFF59E0B),
                     rows: mobileRows,
-                  );
+                    copyTooltip: l10n.subscriptionUpgradeCopyValueAction,
+                    onCopied: () => _showCopiedSnack(l10n),
+                  )
+                : null;
+
+            if (bankCard == null && mobileCard == null) {
+              return AppMessagePanel(
+                message: l10n.subscriptionUpgradePayOtherDestinationBody,
+                icon: Icons.info_outline,
+                density: AppContentPanelDensity.compact,
+              );
+            }
+
+            final bool sideBySide =
+                constraints.maxWidth >= 640 &&
+                bankCard != null &&
+                mobileCard != null;
 
             if (sideBySide) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(child: bankCard!),
-                  SizedBox(width: theme.spacing.sm),
-                  Expanded(child: mobileCard!),
-                ],
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Expanded(child: SizedBox.expand(child: bankCard)),
+                    SizedBox(width: theme.spacing.sm),
+                    Expanded(child: SizedBox.expand(child: mobileCard)),
+                  ],
+                ),
               );
             }
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                if (bankCard != null) bankCard,
+                ?bankCard,
                 if (bankCard != null && mobileCard != null)
                   SizedBox(height: theme.spacing.sm),
-                if (mobileCard != null) mobileCard,
+                ?mobileCard,
               ],
             );
           },
         ),
         SizedBox(height: theme.spacing.md),
+        _PayStepHeader(
+          step: '3',
+          title: l10n.subscriptionUpgradePayNotifyLabel,
+          accent: const Color(0xFF7C3AED),
+        ),
+        SizedBox(height: theme.spacing.sm),
         _PayNotifyCard(
           title: l10n.subscriptionUpgradeAdminContactTitle,
           guidance: l10n.subscriptionUpgradePayContactGuidance,
@@ -933,55 +1035,79 @@ class _SubscriptionUpgradeDialogState
           emailLabel: l10n.subscriptionUpgradeAdminContactEmailLabel,
           phoneLabel: l10n.subscriptionUpgradeAdminContactPhoneLabel,
           whatsappLabel: l10n.subscriptionUpgradeAdminContactWhatsappLabel,
+          copyTooltip: l10n.subscriptionUpgradeCopyValueAction,
+          onCopied: () => _showCopiedSnack(l10n),
         ),
         SizedBox(height: theme.spacing.md),
-        Text(
-          l10n.subscriptionUpgradePaymentChannelLabel,
-          style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: AppFontWeight.emphasis,
-          ),
-        ),
-        SizedBox(height: theme.spacing.xs),
-        Wrap(
-          spacing: theme.spacing.xs,
-          runSpacing: theme.spacing.xs,
-          children: <Widget>[
-            for (final SubscriptionPaymentMethodId channel in _payChannels)
-              ChoiceChip(
-                selected: _paymentMethod == channel,
-                label: Text(subscriptionPaymentMethodLabel(l10n, channel)),
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                onSelected: (_) {
-                  setState(() => _paymentMethod = channel);
-                },
-              ),
-          ],
+        _PayStepHeader(
+          step: '4',
+          title: l10n.subscriptionUpgradePayExtrasLabel,
+          accent: colorScheme.primary,
         ),
         SizedBox(height: theme.spacing.sm),
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            final Widget notes = AppTextField(
-              controller: _notesController,
-              labelText: l10n.subscriptionUpgradeNotesLabel,
-              maxLines: 2,
+            final Widget notes = _PayExtrasCard(
+              accent: colorScheme.primary,
+              icon: Icons.notes_outlined,
+              title: l10n.subscriptionUpgradeNotesLabel,
+              child: AppTextField(
+                controller: _notesController,
+                labelText: l10n.subscriptionUpgradeNotesLabel,
+                maxLines: 3,
+              ),
             );
-            final Widget proof = AppFileUploadPanel(
+            final Widget proof = _PayExtrasCard(
+              accent: const Color(0xFF0891B2),
+              icon: Icons.attach_file_outlined,
               title: l10n.subscriptionUpgradeProofLabel,
-              emptyDescription: l10n.subscriptionUpgradeProofOptionalBody,
-              chooseLabel: l10n.subscriptionUpgradeAttachProofAction,
-              clearLabel: l10n.subscriptionUpgradeRemoveProofAction,
-              fileNames: _proofFileName == null
-                  ? const <String>[]
-                  : <String>[_proofFileName!],
-              onChoose: _pickProof,
-              onClear: () => setState(() {
-                _proofFileName = null;
-                _proofBytes = null;
-                _proofMimeType = null;
-              }),
-              enabled: !_isSubmitting,
-              tone: AppWorkspaceStatusTone.info,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text(
+                    l10n.subscriptionUpgradeProofOptionalBody,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  SizedBox(height: theme.spacing.sm),
+                  Wrap(
+                    spacing: theme.spacing.xs,
+                    runSpacing: theme.spacing.xs,
+                    children: <Widget>[
+                      AppButton.secondary(
+                        label: l10n.subscriptionUpgradeAttachProofAction,
+                        leadingIcon: Icons.attach_file_outlined,
+                        enabled: !_isSubmitting,
+                        onPressed: _isSubmitting ? null : _pickProof,
+                      ),
+                      if (_proofFileName != null)
+                        AppButton.tertiary(
+                          label: l10n.subscriptionUpgradeRemoveProofAction,
+                          leadingIcon: Icons.close,
+                          enabled: !_isSubmitting,
+                          onPressed: _isSubmitting
+                              ? null
+                              : () => setState(() {
+                                  _proofFileName = null;
+                                  _proofBytes = null;
+                                  _proofMimeType = null;
+                                }),
+                        ),
+                    ],
+                  ),
+                  if (_proofFileName != null)
+                    Padding(
+                      padding: EdgeInsets.only(top: theme.spacing.xs),
+                      child: Text(
+                        _proofFileName!,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: AppFontWeight.emphasis,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             );
             if (constraints.maxWidth < 560) {
               return Column(
@@ -993,13 +1119,15 @@ class _SubscriptionUpgradeDialogState
                 ],
               );
             }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(flex: 5, child: notes),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(flex: 4, child: proof),
-              ],
+            return IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Expanded(child: SizedBox.expand(child: notes)),
+                  SizedBox(width: theme.spacing.sm),
+                  Expanded(child: SizedBox.expand(child: proof)),
+                ],
+              ),
             );
           },
         ),
@@ -1015,9 +1143,121 @@ class _SubscriptionUpgradeDialogState
     );
   }
 
+  void _showCopiedSnack(AppLocalizations l10n) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.subscriptionUpgradeValueCopiedMessage)),
+    );
+  }
+
   static String? _emptyToNull(String value) {
     final String normalized = value.trim();
     return normalized.isEmpty ? null : normalized;
+  }
+}
+
+class _PayStepHeader extends StatelessWidget {
+  const _PayStepHeader({
+    required this.step,
+    required this.title,
+    required this.accent,
+  });
+
+  final String step;
+  final String title;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Row(
+      children: <Widget>[
+        Container(
+          width: 26,
+          height: 26,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: accent,
+            borderRadius: BorderRadius.circular(theme.radius.sm),
+          ),
+          child: Text(
+            step,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: Colors.white,
+              fontWeight: AppFontWeight.emphasis,
+            ),
+          ),
+        ),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(
+          child: Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: AppFontWeight.emphasis,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PayMethodTile extends StatelessWidget {
+  const _PayMethodTile({
+    required this.selected,
+    required this.label,
+    required this.icon,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final String label;
+  final IconData icon;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Material(
+      color: selected
+          ? accent.withValues(alpha: 0.14)
+          : theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        side: BorderSide(
+          color: selected ? accent : theme.colorScheme.outlineVariant,
+          width: selected ? 1.6 : 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.sm,
+            vertical: theme.spacing.sm,
+          ),
+          child: Row(
+            children: <Widget>[
+              Icon(icon, color: accent, size: 20),
+              SizedBox(width: theme.spacing.xs),
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: AppFontWeight.emphasis,
+                    color: selected ? accent : null,
+                  ),
+                ),
+              ),
+              if (selected)
+                Icon(Icons.check_circle, color: accent, size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -1028,6 +1268,7 @@ class _PaySummaryStrip extends StatelessWidget {
     required this.amountDueLabel,
     required this.amountValue,
     required this.isLoading,
+    required this.planTheme,
   });
 
   final String planLabel;
@@ -1035,31 +1276,41 @@ class _PaySummaryStrip extends StatelessWidget {
   final String amountDueLabel;
   final String? amountValue;
   final bool isLoading;
+  final SubscriptionPlanTheme planTheme;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(
-          color: colorScheme.primary.withValues(alpha: 0.22),
+        gradient: LinearGradient(
+          colors: <Color>[
+            planTheme.background,
+            planTheme.rowTint,
+          ],
         ),
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        border: Border.all(color: planTheme.border),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: theme.spacing.md,
-          vertical: theme.spacing.sm,
+          vertical: theme.spacing.sm + 2,
         ),
         child: Row(
           children: <Widget>[
-            Icon(
-              Icons.workspace_premium_outlined,
-              size: 22,
-              color: colorScheme.primary,
+            Container(
+              padding: EdgeInsets.all(theme.spacing.xs),
+              decoration: BoxDecoration(
+                color: planTheme.foreground.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(theme.radius.sm),
+              ),
+              child: Icon(
+                Icons.workspace_premium_outlined,
+                size: 22,
+                color: planTheme.foreground,
+              ),
             ),
             SizedBox(width: theme.spacing.sm),
             Expanded(
@@ -1070,12 +1321,13 @@ class _PaySummaryStrip extends StatelessWidget {
                     planLabel,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: AppFontWeight.emphasis,
+                      color: planTheme.foreground,
                     ),
                   ),
                   Text(
                     billingCycleLabel,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                      color: planTheme.foreground.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -1087,7 +1339,7 @@ class _PaySummaryStrip extends StatelessWidget {
                 Text(
                   amountDueLabel,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                    color: planTheme.foreground.withValues(alpha: 0.75),
                   ),
                 ),
                 if (isLoading)
@@ -1096,7 +1348,7 @@ class _PaySummaryStrip extends StatelessWidget {
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: colorScheme.primary,
+                      color: planTheme.foreground,
                     ),
                   )
                 else
@@ -1104,7 +1356,7 @@ class _PaySummaryStrip extends StatelessWidget {
                     amountValue ?? '—',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: AppFontWeight.emphasis,
-                      color: colorScheme.primary,
+                      color: planTheme.foreground,
                     ),
                   ),
               ],
@@ -1120,23 +1372,28 @@ class _PayDestinationCard extends StatelessWidget {
   const _PayDestinationCard({
     required this.icon,
     required this.title,
+    required this.accent,
     required this.rows,
+    required this.copyTooltip,
+    required this.onCopied,
   });
 
   final IconData icon;
   final String title;
+  final Color accent;
   final List<(String, String)> rows;
+  final String copyTooltip;
+  final VoidCallback onCopied;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: accent.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: theme.borders.all(color: colorScheme.outlineVariant),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.sm),
@@ -1145,27 +1402,36 @@ class _PayDestinationCard extends StatelessWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(icon, size: 18, color: colorScheme.primary),
+                Container(
+                  padding: EdgeInsets.all(theme.spacing.xs),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(theme.radius.sm),
+                  ),
+                  child: Icon(icon, size: 18, color: accent),
+                ),
                 SizedBox(width: theme.spacing.xs),
                 Expanded(
                   child: Text(
                     title,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: AppFontWeight.emphasis,
+                      color: accent,
                     ),
                   ),
                 ),
               ],
             ),
             SizedBox(height: theme.spacing.sm),
-            ...<Widget>[
-              for (int index = 0; index < rows.length; index++) ...<Widget>[
-                if (index > 0) SizedBox(height: theme.spacing.xs),
-                _CompactDetailRow(
-                  label: rows[index].$1,
-                  value: rows[index].$2,
-                ),
-              ],
+            for (int index = 0; index < rows.length; index++) ...<Widget>[
+              if (index > 0) SizedBox(height: theme.spacing.xs),
+              _CopyableDetailRow(
+                label: rows[index].$1,
+                value: rows[index].$2,
+                accent: accent,
+                copyTooltip: copyTooltip,
+                onCopied: onCopied,
+              ),
             ],
           ],
         ),
@@ -1174,36 +1440,67 @@ class _PayDestinationCard extends StatelessWidget {
   }
 }
 
-class _CompactDetailRow extends StatelessWidget {
-  const _CompactDetailRow({required this.label, required this.value});
+class _CopyableDetailRow extends StatelessWidget {
+  const _CopyableDetailRow({
+    required this.label,
+    required this.value,
+    required this.accent,
+    required this.copyTooltip,
+    required this.onCopied,
+  });
 
   final String label;
   final String value;
+  final Color accent;
+  final String copyTooltip;
+  final VoidCallback onCopied;
+
+  Future<void> _copy() async {
+    await Clipboard.setData(ClipboardData(text: value));
+    onCopied();
+  }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        SizedBox(
-          width: 96,
-          child: Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
+    return Material(
+      color: theme.colorScheme.surface.withValues(alpha: 0.72),
+      borderRadius: BorderRadius.circular(theme.radius.sm),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
         ),
-        Expanded(
-          child: SelectableText(
-            value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: AppFontWeight.emphasis,
+        child: Row(
+          children: <Widget>[
+            SizedBox(
+              width: 92,
+              child: Text(
+                label,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
-          ),
+            Expanded(
+              child: SelectableText(
+                value,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: AppFontWeight.emphasis,
+                ),
+              ),
+            ),
+            IconButton(
+              tooltip: copyTooltip,
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+              padding: EdgeInsets.zero,
+              icon: Icon(Icons.copy_outlined, size: 16, color: accent),
+              onPressed: () => unawaited(_copy()),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -1216,6 +1513,8 @@ class _PayNotifyCard extends StatelessWidget {
     required this.emailLabel,
     required this.phoneLabel,
     required this.whatsappLabel,
+    required this.copyTooltip,
+    required this.onCopied,
   });
 
   final String title;
@@ -1224,11 +1523,13 @@ class _PayNotifyCard extends StatelessWidget {
   final String emailLabel;
   final String phoneLabel;
   final String whatsappLabel;
+  final String copyTooltip;
+  final VoidCallback onCopied;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    const Color accent = Color(0xFF7C3AED);
     final List<(IconData, String, String)> chips = <(IconData, String, String)>[
       if (adminContact?.email != null)
         (Icons.mail_outline, emailLabel, adminContact!.email!),
@@ -1240,9 +1541,9 @@ class _PayNotifyCard extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.28),
+        color: accent.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: theme.borders.all(color: colorScheme.outlineVariant),
+        border: Border.all(color: accent.withValues(alpha: 0.32)),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.sm),
@@ -1251,16 +1552,26 @@ class _PayNotifyCard extends StatelessWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(
-                  Icons.support_agent_outlined,
-                  size: 18,
-                  color: colorScheme.primary,
+                Container(
+                  padding: EdgeInsets.all(theme.spacing.xs),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(theme.radius.sm),
+                  ),
+                  child: const Icon(
+                    Icons.support_agent_outlined,
+                    size: 18,
+                    color: accent,
+                  ),
                 ),
                 SizedBox(width: theme.spacing.xs),
-                Text(
-                  title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: AppFontWeight.emphasis,
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: AppFontWeight.emphasis,
+                      color: accent,
+                    ),
                   ),
                 ),
               ],
@@ -1269,7 +1580,7 @@ class _PayNotifyCard extends StatelessWidget {
             Text(
               guidance,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             if (chips.isNotEmpty) ...<Widget>[
@@ -1280,41 +1591,149 @@ class _PayNotifyCard extends StatelessWidget {
                 children: <Widget>[
                   for (final (IconData icon, String label, String value)
                       in chips)
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: theme.spacing.sm,
-                        vertical: theme.spacing.xs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        borderRadius: BorderRadius.circular(theme.radius.sm),
-                        border: theme.borders.all(
-                          color: colorScheme.outlineVariant,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Icon(icon, size: 16, color: colorScheme.primary),
-                          SizedBox(width: theme.spacing.xs),
-                          Text(
-                            '$label · ',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          SelectableText(
-                            value,
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              fontWeight: AppFontWeight.emphasis,
-                            ),
-                          ),
-                        ],
-                      ),
+                    _CopyableContactChip(
+                      icon: icon,
+                      label: label,
+                      value: value,
+                      accent: accent,
+                      copyTooltip: copyTooltip,
+                      onCopied: onCopied,
                     ),
                 ],
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CopyableContactChip extends StatelessWidget {
+  const _CopyableContactChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.accent,
+    required this.copyTooltip,
+    required this.onCopied,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color accent;
+  final String copyTooltip;
+  final VoidCallback onCopied;
+
+  Future<void> _copy() async {
+    await Clipboard.setData(ClipboardData(text: value));
+    onCopied();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final double maxChipWidth = MediaQuery.sizeOf(context).width * 0.9;
+    return Material(
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(theme.radius.sm),
+      child: InkWell(
+        onTap: () => unawaited(_copy()),
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        child: Container(
+          constraints: BoxConstraints(maxWidth: maxChipWidth),
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.sm,
+            vertical: theme.spacing.xs,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(theme.radius.sm),
+            border: Border.all(color: accent.withValues(alpha: 0.28)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(icon, size: 16, color: accent),
+              SizedBox(width: theme.spacing.xs),
+              Flexible(
+                child: Text.rich(
+                  TextSpan(
+                    children: <InlineSpan>[
+                      TextSpan(
+                        text: '$label · ',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      TextSpan(
+                        text: value,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: AppFontWeight.emphasis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              SizedBox(width: theme.spacing.xs),
+              Tooltip(
+                message: copyTooltip,
+                child: Icon(Icons.copy_outlined, size: 14, color: accent),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PayExtrasCard extends StatelessWidget {
+  const _PayExtrasCard({
+    required this.accent,
+    required this.icon,
+    required this.title,
+    required this.child,
+  });
+
+  final Color accent;
+  final IconData icon;
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        border: Border.all(color: accent.withValues(alpha: 0.28)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Icon(icon, size: 18, color: accent),
+                SizedBox(width: theme.spacing.xs),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: AppFontWeight.emphasis,
+                      color: accent,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.sm),
+            child,
           ],
         ),
       ),

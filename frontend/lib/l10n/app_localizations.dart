@@ -4408,11 +4408,47 @@ abstract class AppLocalizations {
   /// **'After you pay, notify platform admins by WhatsApp, email, or phone and share your proof of payment. They will activate your subscription once confirmed.'**
   String get subscriptionUpgradePayContactGuidance;
 
-  /// Label above payment channel chips on the pay step.
+  /// Step label for choosing the offline payment channel.
   ///
   /// In en, this message translates to:
-  /// **'How did you pay?'**
+  /// **'How will you pay?'**
   String get subscriptionUpgradePaymentChannelLabel;
+
+  /// Step label above bank or mobile money pay-to details.
+  ///
+  /// In en, this message translates to:
+  /// **'Send payment here'**
+  String get subscriptionUpgradePayDestinationLabel;
+
+  /// Step label above platform contact chips after payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify platform admins'**
+  String get subscriptionUpgradePayNotifyLabel;
+
+  /// Step label above notes and proof of payment fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes and proof (optional)'**
+  String get subscriptionUpgradePayExtrasLabel;
+
+  /// Guidance when payment channel is Other and both destinations are shown.
+  ///
+  /// In en, this message translates to:
+  /// **'Use either bank transfer or mobile money, then notify admins with your proof.'**
+  String get subscriptionUpgradePayOtherDestinationBody;
+
+  /// Tooltip / semantics for copying a payment or contact value.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get subscriptionUpgradeCopyValueAction;
+
+  /// SnackBar after copying a payment detail or contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard.'**
+  String get subscriptionUpgradeValueCopiedMessage;
 
   /// Optional proof upload helper on the pay step.
   ///
