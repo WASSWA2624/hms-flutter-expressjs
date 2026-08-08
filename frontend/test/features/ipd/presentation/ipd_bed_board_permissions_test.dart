@@ -82,7 +82,7 @@ AppAccessPolicy _policy({
     (AppPermission permission) =>
         permission == AppPermissions.facilityAdmin ||
         permission == AppPermissions.tenantAdmin ||
-        permission == AppPermissions.systemAdmin ||
+        permission == AppPermissions.platformAdmin ||
         permission == AppPermissions.unitManage,
   );
 

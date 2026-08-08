@@ -164,7 +164,7 @@ bool canViewSubscriptionsQueueChip(
 /// | Destructive delete / void | delete | delete ∩ — **not mounted** |
 /// | Nested cross-module read / write | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
 /// | Empty / loading / error / retry / success / validation | read chrome | read ∩ |
-/// | Route entry (deep link) | navigate | ∪ `system:admin` ([routeEntry]) |
+/// | Route entry (deep link) | navigate | ∪ `platform:admin` ([routeEntry]) |
 /// | Catalog shell entry | navigate | ∩ read + module ([catalogEntry]) |
 ///
 /// Matrix view ∪ and nested cross-module rows are _(n/a)_. Route entry ∪ is
@@ -237,7 +237,7 @@ abstract final class SubscriptionsOverviewAtomPermissions {
 /// | Destructive delete / void | delete | delete ∩ — **not mounted** ([delete]) |
 /// | Nested cross-module read / write | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
 /// | Overview KPI active plans (shared chrome) | read | read ∩ ([overviewKpi]) |
-/// | Route entry (deep link) | navigate | ∪ `system:admin` ([routeEntry]) |
+/// | Route entry (deep link) | navigate | ∪ `platform:admin` ([routeEntry]) |
 /// | Catalog shell entry | navigate | ∩ read + module ([catalogEntry]) |
 ///
 /// Matrix view ∪ and nested cross-module rows are _(n/a)_. Route entry ∪ is
@@ -322,7 +322,7 @@ abstract final class SubscriptionsPlansAtomPermissions {
 /// | Destructive delete / void | delete | delete ∩ — **not mounted** ([delete]) |
 /// | Nested cross-module read / write | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
 /// | Overview KPI past-due (shared chrome) | read | read ∩ ([pastDueChip]) |
-/// | Route entry (deep link) | navigate | ∪ `system:admin` ([routeEntry]) |
+/// | Route entry (deep link) | navigate | ∪ `platform:admin` ([routeEntry]) |
 /// | Catalog shell entry | navigate | ∩ read + module ([catalogEntry]) |
 ///
 /// Matrix view ∪ and nested cross-module rows are _(n/a)_. Route entry ∪ is
@@ -402,7 +402,7 @@ abstract final class SubscriptionsInvoicesAtomPermissions {
 /// | Revoke license (detail + confirm dialog) | delete | delete ∩ ([delete] / [revoke]) |
 /// | Nested cross-module read / write | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
 /// | Overview KPI expiring licenses (shared chrome) | read | read ∩ ([expiringLicensesChip]) |
-/// | Route entry (deep link) | navigate | ∪ `system:admin` ([routeEntry]) |
+/// | Route entry (deep link) | navigate | ∪ `platform:admin` ([routeEntry]) |
 /// | Catalog shell entry | navigate | ∩ read + module ([catalogEntry]) |
 ///
 /// Matrix view ∪ and nested cross-module rows are _(n/a)_. Route entry ∪ is
@@ -486,7 +486,7 @@ abstract final class SubscriptionsLicensesAtomPermissions {
 /// | Enable / Disable module | update | write ∩ ([toggleModule] / [update]) |
 /// | Destructive HTTP delete / void | delete | delete ∩ — **not mounted** |
 /// | Nested cross-module read / write | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
-/// | Route entry (deep link) | navigate | ∪ `system:admin` ([routeEntry]) |
+/// | Route entry (deep link) | navigate | ∪ `platform:admin` ([routeEntry]) |
 /// | Catalog shell entry | navigate | ∩ read + module ([catalogEntry]) |
 ///
 /// Matrix view ∪ and nested cross-module rows are _(n/a)_. Route entry ∪ is

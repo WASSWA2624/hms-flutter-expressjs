@@ -21,7 +21,7 @@ const {
 } = require('@validations/anesthesia-record/anesthesia-record.schema');
 
 const THEATRE_ALLOWED_ROLES = [
-  ROLES.SUPER_ADMIN,
+  ROLES.PLATFORM_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,

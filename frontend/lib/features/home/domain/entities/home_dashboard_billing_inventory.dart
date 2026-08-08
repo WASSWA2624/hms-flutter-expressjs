@@ -181,7 +181,7 @@ abstract final class HomeDashboardBillingInventory {
           id: 'manage_subscription',
           label: 'Manage subscription',
           actionClass: HomeBillingActionClass.notBillable,
-          requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
+          requiredPermissions: <AppPermission>[AppPermissions.platformAdmin],
           billingRoute: AppRoutes.subscriptions,
           auditCode: 'NOT_BILLED',
           auditNote: 'SaaS subscription path — not patient ledger',

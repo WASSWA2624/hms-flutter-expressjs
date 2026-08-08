@@ -56,7 +56,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const ROLE_PACKS = Object.freeze({
   ADMIN: 'admin',
-  SUPER_ADMIN: 'super_admin',
+  PLATFORM_ADMIN: 'platform_admin',
   TENANT_ADMIN: 'tenant_admin',
   FACILITY_ADMIN: 'facility_admin',
   DOCTOR: 'doctor',
@@ -841,7 +841,7 @@ const getDashboardSummaryByPack = async ({
     };
     const mortuaryWhere = directScope(scope, { includeTenant: true, includeFacility: true });
 
-    if (packId === ROLE_PACKS.SUPER_ADMIN) {
+    if (packId === ROLE_PACKS.PLATFORM_ADMIN) {
       const [
         tenantsTotal,
         tenantsActive,

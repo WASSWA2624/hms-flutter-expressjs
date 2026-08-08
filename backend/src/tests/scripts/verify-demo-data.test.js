@@ -323,7 +323,7 @@ describe('verify-demo-data', () => {
     mockPrisma.user_role.findMany.mockResolvedValue(
       buildUserRoleRows(DEMO_TENANT.users.map((entry) => ({
         ...entry,
-        email: entry.role === 'SUPER_ADMIN' ? 'superadmin@legacy.test' : entry.email})))
+        email: entry.role === 'PLATFORM_ADMIN' ? 'superadmin@legacy.test' : entry.email})))
     );
 
     const { verifyDemoData } = require('../../../scripts/verify-demo-data');
@@ -331,7 +331,7 @@ describe('verify-demo-data', () => {
 
     expect(result.ok).toBe(false);
     expect(result.errors).toContain(
-      'Expected role SUPER_ADMIN to use email super.admin@hosspi.com but found superadmin@legacy.test.'
+      'Expected role PLATFORM_ADMIN to use email super.admin@hosspi.com but found superadmin@legacy.test.'
     );
   });
 

@@ -26,11 +26,11 @@ const AccessRequirement clinicalWorkspaceEntryRequirement =
 ///
 /// Matrix lists ∩ `clinical:write` alone; source inventory (`screens/clinical.md`)
 /// documents `_writeRequirement` / `clinicalEncounterWriteRequirement` as ∪
-/// `clinical:write` | `system:admin` plus `encounters-vitals` — keep source.
+/// `clinical:write` | `platform:admin` plus `encounters-vitals` — keep source.
 const AccessRequirement clinicalWorkspaceWriteRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[
     AppPermissions.clinicalWrite,
-    AppPermissions.systemAdmin,
+    AppPermissions.platformAdmin,
   ],
   activeModules: <String>[clinicalEncountersVitalsModule],
 );
@@ -44,47 +44,47 @@ const AccessRequirement clinicalWriteRequirement =
     clinicalWorkspaceWriteRequirement;
 
 /// Nested lab request / order mutations (prompt narrative ∪):
-/// `clinical:write` | `lab:write` | `system:admin`.
+/// `clinical:write` | `lab:write` | `platform:admin`.
 const AccessRequirement clinicalLabOrderWriteRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[
     AppPermissions.clinicalWrite,
     AppPermissions.labWrite,
-    AppPermissions.systemAdmin,
+    AppPermissions.platformAdmin,
   ],
   activeModules: <String>[clinicalEncountersVitalsModule],
 );
 
 /// Nested radiology request / order mutations (prompt narrative ∪):
-/// `clinical:write` | `radiology:write` | `system:admin`.
+/// `clinical:write` | `radiology:write` | `platform:admin`.
 const AccessRequirement clinicalRadiologyOrderWriteRequirement =
     AccessRequirement(
       anyPermissions: <AppPermission>[
         AppPermissions.clinicalWrite,
         AppPermissions.radiologyWrite,
-        AppPermissions.systemAdmin,
+        AppPermissions.platformAdmin,
       ],
       activeModules: <String>[clinicalEncountersVitalsModule],
     );
 
 /// Nested pharmacy / prescribe mutations (prompt narrative ∪):
-/// `clinical:write` | `pharmacy:write` | `system:admin`.
+/// `clinical:write` | `pharmacy:write` | `platform:admin`.
 const AccessRequirement clinicalPharmacyOrderWriteRequirement =
     AccessRequirement(
       anyPermissions: <AppPermission>[
         AppPermissions.clinicalWrite,
         AppPermissions.pharmacyWrite,
-        AppPermissions.systemAdmin,
+        AppPermissions.platformAdmin,
       ],
       activeModules: <String>[clinicalEncountersVitalsModule],
     );
 
 /// Admission request from clinical (prompt narrative ∪):
-/// `clinical:write` | `operations:write` | `system:admin`.
+/// `clinical:write` | `operations:write` | `platform:admin`.
 const AccessRequirement clinicalAdmissionWriteRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[
     AppPermissions.clinicalWrite,
     AppPermissions.operationsWrite,
-    AppPermissions.systemAdmin,
+    AppPermissions.platformAdmin,
   ],
   activeModules: <String>[clinicalEncountersVitalsModule],
 );
@@ -236,7 +236,7 @@ ClinicalWorkspaceSection? clinicalFallbackSection(AppAccessPolicy policy) {
 /// | Follow-ups strip tab | navigate | [clinicalFollowUpsRequirement] |
 /// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
 ///
-/// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
+/// Write keeps source ∪ `clinical:write` | `platform:admin` rather than matrix ∩
 /// `clinical:write` alone. Nested order / admission rows document prompt ∪
 /// (matrix nested write _(n/a)_). Prompt route entry ∪ (`clinical:read` |
 /// `clinical:write`) and `AppRoutes.clinical` ∪ map to catalog ∩
@@ -385,7 +385,7 @@ bool canViewClinicalAssignedToMe(AppAccessPolicy policy) {
 /// | Save follow-up (nested reschedule dialog) | update | write ∪ source |
 /// | Route entry (deep link) | navigate | catalog ∩ `clinical:read` |
 ///
-/// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
+/// Write keeps source ∪ `clinical:write` | `platform:admin` rather than matrix ∩
 /// `clinical:write` alone. Prompt route entry ∪ read|write → keep
 /// [RouteAccessCatalog.clinicalEntry] (∩ `clinical:read`).
 abstract final class ClinicalFollowUpsAtomPermissions {
@@ -452,7 +452,7 @@ abstract final class ClinicalFollowUpsAtomPermissions {
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
 /// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
 ///
-/// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
+/// Write keeps source ∪ `clinical:write` | `platform:admin` rather than matrix ∩
 /// `clinical:write` alone. Nested order / admission rows document prompt ∪
 /// (matrix nested write _(n/a)_). Prompt route entry ∪ (`clinical:read` |
 /// `clinical:write`) maps to catalog ∩ `clinical:read` — keep catalog.
@@ -555,7 +555,7 @@ bool canViewClinicalInConsultation(AppAccessPolicy policy) {
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
 /// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
 ///
-/// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
+/// Write keeps source ∪ `clinical:write` | `platform:admin` rather than matrix ∩
 /// `clinical:write` alone. Nested order / admission rows document prompt ∪
 /// (matrix nested write _(n/a)_). Prompt route entry ∪ (`clinical:read` |
 /// `clinical:write`) maps to catalog ∩ `clinical:read` — keep catalog.
@@ -672,7 +672,7 @@ bool canViewClinicalRadiologyResultsPanel(AppAccessPolicy policy) {
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
 /// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
 ///
-/// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
+/// Write keeps source ∪ `clinical:write` | `platform:admin` rather than matrix ∩
 /// `clinical:write` alone. Nested order / admission rows document prompt ∪
 /// (matrix nested write _(n/a)_). Prompt route entry ∪ (`clinical:read` |
 /// `clinical:write`) and `AppRoutes.clinical` ∪ map to catalog ∩
@@ -774,7 +774,7 @@ bool canViewClinicalUrgent(AppAccessPolicy policy) {
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
 /// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
 ///
-/// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
+/// Write keeps source ∪ `clinical:write` | `platform:admin` rather than matrix ∩
 /// `clinical:write` alone. Nested order / admission rows document prompt ∪
 /// (matrix nested write _(n/a)_). Prompt route entry ∪ (`clinical:read` |
 /// `clinical:write`) maps to catalog ∩ `clinical:read` — keep catalog.
@@ -1085,7 +1085,7 @@ bool clinicalWaitingReviewBillableAtomsUseSharedBilling() {
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
 /// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
 ///
-/// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
+/// Write keeps source ∪ `clinical:write` | `platform:admin` rather than matrix ∩
 /// `clinical:write` alone. Nested order / admission rows document prompt
 /// narrative ∪ (matrix nested write _(n/a)_). Prompt route entry ∪
 /// (`clinical:read` | `clinical:write`) maps to catalog ∩ `clinical:read` —

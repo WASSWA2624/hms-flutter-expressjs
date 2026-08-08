@@ -228,7 +228,7 @@ void main() {
 
     test('admins see full shell including integrations', () {
       for (final String role in <String>[
-        'SUPER_ADMIN',
+        'PLATFORM_ADMIN',
         'TENANT_ADMIN',
         'FACILITY_ADMIN',
       ]) {
@@ -242,7 +242,7 @@ void main() {
       // /subscriptions is platform-admin only; tenant/facility admins use the
       // header upgrade/renew control instead of the workspace route.
       expect(
-        canAccess(AppRoutes.subscriptions, policyForRole('SUPER_ADMIN')),
+        canAccess(AppRoutes.subscriptions, policyForRole('PLATFORM_ADMIN')),
         isTrue,
       );
       expect(

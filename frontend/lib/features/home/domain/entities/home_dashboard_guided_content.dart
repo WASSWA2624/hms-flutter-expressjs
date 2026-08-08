@@ -129,7 +129,7 @@ List<HomeAlertItem> guidedFallbackAlerts(HomeDashboardProfile profile) {
       ),
     ],
     // Dashboard.md §1 — security / audit / integrations (permission-gated).
-    AppRole.superAdmin => <HomeAlertItem>[
+    AppRole.platformAdmin => <HomeAlertItem>[
       const HomeAlertItem(
         id: 'security_alerts',
         label: 'Security alerts',
@@ -419,7 +419,7 @@ List<HomeQueueItem> guidedFallbackQueueHints(HomeDashboardProfile profile) {
         ),
       ),
     ],
-    AppRole.superAdmin => <HomeQueueItem>[
+    AppRole.platformAdmin => <HomeQueueItem>[
       const HomeQueueItem(
         id: 'guided_platform_queue',
         label: 'Platform overview',
@@ -431,7 +431,7 @@ List<HomeQueueItem> guidedFallbackQueueHints(HomeDashboardProfile profile) {
           resource: 'tenants',
           action: 'list',
         ),
-        requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
+        requiredPermissions: <AppPermission>[AppPermissions.platformAdmin],
       ),
     ],
     _ => const <HomeQueueItem>[],

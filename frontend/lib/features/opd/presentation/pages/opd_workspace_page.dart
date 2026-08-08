@@ -1628,7 +1628,7 @@ String _flowOwnerRole(BuildContext context, OpdFlowSummary flow) {
 String _staffRoleLabel(BuildContext context, String role) {
   final AppLocalizations l10n = context.l10n;
   return switch (role.trim().toUpperCase()) {
-    'SUPER_ADMIN' ||
+    'PLATFORM_ADMIN' ||
     'TENANT_ADMIN' ||
     'FACILITY_ADMIN' => l10n.navigationSetupLabel,
     'RECEPTIONIST' => l10n.opdWorkflowReceptionTitle,

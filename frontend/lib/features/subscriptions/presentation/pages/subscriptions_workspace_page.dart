@@ -130,7 +130,7 @@ class _SubscriptionsWorkspacePageState
         _openedRouteDetailSignature = signature;
         final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
         // Deep-link detail inherits the tab's read/row-select gate: a route ∪
-        // grant (system:admin) alone must not mount the detail dialog.
+        // grant (platform:admin) alone must not mount the detail dialog.
         final bool canOpenDetail = switch (item.resource) {
           SubscriptionResource.subscriptionPlans ||
           SubscriptionResource.modules =>

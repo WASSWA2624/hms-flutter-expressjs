@@ -74,7 +74,7 @@ void main() {
         <AppPermission>[
           AppPermissions.facilityAdmin,
           AppPermissions.tenantAdmin,
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
         ],
       );
     });
@@ -121,7 +121,7 @@ void main() {
           <AppPermission>[AppPermissions.facilityAdmin],
         );
 
-        // Source tenant: tenant:admin ∪ system:admin — not facility:admin alone.
+        // Source tenant: tenant:admin ∪ platform:admin — not facility:admin alone.
         expect(
           SettingsConfigurationAtomPermissions.tenantPanel.isAllowed(
             _policy(<AppPermission>[

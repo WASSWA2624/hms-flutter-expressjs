@@ -513,9 +513,9 @@ void main() {
       );
     });
 
-    test('∪ write: system:admin satisfies reopen / encounter write', () {
+    test('∪ write: platform:admin satisfies reopen / encounter write', () {
       final AppAccessPolicy admin = _policy(
-        permissions: <AppPermission>{AppPermissions.systemAdmin},
+        permissions: <AppPermission>{AppPermissions.platformAdmin},
       );
       expect(ClinicalCompletedAtomPermissions.write.isAllowed(admin), isTrue);
       expect(ClinicalCompletedAtomPermissions.reopen.isAllowed(admin), isTrue);
@@ -1014,7 +1014,7 @@ void main() {
   );
 
   testWidgets(
-    'write ∪: system:admin mounts reopen mutations with clinical:read',
+    'write ∪: platform:admin mounts reopen mutations with clinical:read',
     (WidgetTester tester) async {
       await _pumpCompletedTab(
         tester,
@@ -1022,7 +1022,7 @@ void main() {
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.clinicalRead,
-            AppPermissions.systemAdmin,
+            AppPermissions.platformAdmin,
           },
         ),
       );

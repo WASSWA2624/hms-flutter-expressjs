@@ -104,7 +104,13 @@ const updateUser = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const user = await userService.updateUser(id, req.body, userId, ipAddress);
+  const user = await userService.updateUser(
+    id,
+    req.body,
+    userId,
+    ipAddress,
+    req.user
+  );
 
   sendSuccess(res, 200, 'messages.user.update.success', user);
 });
@@ -121,7 +127,7 @@ const deleteUser = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  await userService.deleteUser(id, userId, ipAddress);
+  await userService.deleteUser(id, userId, ipAddress, req.user);
 
   sendNoContent(res);
 });
@@ -135,7 +141,7 @@ const restoreUser = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const user = await userService.restoreUser(id, userId, ipAddress);
+  const user = await userService.restoreUser(id, userId, ipAddress, req.user);
 
   sendSuccess(res, 200, 'messages.user.restore.success', user);
 });

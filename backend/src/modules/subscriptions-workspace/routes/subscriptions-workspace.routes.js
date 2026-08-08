@@ -33,28 +33,28 @@ router.use(requireSubscriptionsWorkspaceV1);
 router.get(
   '/workspace',
   validateRequest({ query: workspaceQuerySchema }),
-  authorize(ROLES.SUPER_ADMIN, 'role'),
+  authorize(ROLES.PLATFORM_ADMIN, 'role'),
   subscriptionsWorkspaceController.getWorkspace
 );
 
 router.get(
   '/plan-detail',
   validateRequest({ query: planDetailQuerySchema }),
-  authorize(ROLES.SUPER_ADMIN, 'role'),
+  authorize(ROLES.PLATFORM_ADMIN, 'role'),
   subscriptionsWorkspaceController.getPlanDetail
 );
 
 router.get(
   '/reference-data',
   validateRequest({ query: referenceDataQuerySchema }),
-  authorize(ROLES.SUPER_ADMIN, 'role'),
+  authorize(ROLES.PLATFORM_ADMIN, 'role'),
   subscriptionsWorkspaceController.getReferenceData
 );
 
 router.get(
   '/resolve-legacy/:resource/:id',
   validateRequest({ params: resolveLegacyParamsSchema }),
-  authorize(ROLES.SUPER_ADMIN, 'role'),
+  authorize(ROLES.PLATFORM_ADMIN, 'role'),
   subscriptionsWorkspaceController.resolveLegacyRoute
 );
 

@@ -29,7 +29,7 @@ const auditLogController = require('@modules/audit-log/controllers/audit-log.con
 const COMPLIANCE_READ_SCOPES = [
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
+  PERMISSIONS.PLATFORM_ADMIN,
 ];
 
 /**

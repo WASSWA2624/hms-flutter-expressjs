@@ -14,7 +14,7 @@ const mapError = (error) => {
 
 const isSuperAdmin = (user = {}) => {
   const roles = Array.isArray(user.roles) ? user.roles : [user.role];
-  return roles.some((entry) => String(entry || '').trim().toUpperCase() === ROLES.SUPER_ADMIN);
+  return roles.some((entry) => String(entry || '').trim().toUpperCase() === ROLES.PLATFORM_ADMIN);
 };
 
 const tenantScopedWhere = (scope = {}, options = {}) => {

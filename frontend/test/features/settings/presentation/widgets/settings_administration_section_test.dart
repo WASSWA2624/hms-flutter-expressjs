@@ -229,7 +229,7 @@ void main() {
         tester,
         permissions: <AppPermission>[
           AppPermissions.profileRead,
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
         ],
         modules: _subscriptionModule,
         settingsWorkspaceVisible: true,
@@ -274,7 +274,7 @@ void main() {
         tester,
         permissions: <AppPermission>[
           AppPermissions.profileRead,
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
           AppPermissions.subscriptionsRead,
           AppPermissions.setupRead,
           AppPermissions.accessAdminRead,
@@ -382,11 +382,11 @@ void main() {
         tester,
         permissions: <AppPermission>[
           AppPermissions.profileRead,
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
           AppPermissions.subscriptionsRead,
         ],
         modules: _subscriptionModule,
-        roles: const <String>['SUPER_ADMIN'],
+        roles: const <String>['PLATFORM_ADMIN'],
         tab: 'administration',
         size: const Size(1600, 1400),
       );
@@ -580,7 +580,7 @@ Future<void> _pumpSettingsPage(
   String tab = 'administration',
   Size size = const Size(900, 1000),
 }) async {
-  final bool elevated = roles.contains('SUPER_ADMIN');
+  final bool elevated = roles.contains('PLATFORM_ADMIN');
   final AuthSession session = _session(
     permissions: permissions,
     modules: modules,
@@ -665,7 +665,7 @@ final class _FakeSettingsWorkspaceRepository
           state: SettingsWorkspaceStatus.ready,
           tenantName: 'Acme Health',
           facilityName: 'Central Hospital',
-          roleKeys: <String>['SUPER_ADMIN'],
+          roleKeys: <String>['PLATFORM_ADMIN'],
         ),
         summaryCards: const <SettingsSummaryCard>[],
         checklist: const SettingsChecklist(

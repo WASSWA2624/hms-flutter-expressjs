@@ -31,7 +31,7 @@ const {
 
 const ACCESS_ADMIN_ROLES = new Set([
   ROLES.PLATFORM_OWNER,
-  ROLES.SUPER_ADMIN,
+  ROLES.PLATFORM_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.OPERATIONS,
@@ -40,7 +40,7 @@ const ACCESS_ADMIN_ROLES = new Set([
 
 const ROLE_RANK = Object.freeze({
   [ROLES.PLATFORM_OWNER]: 120,
-  [ROLES.SUPER_ADMIN]: 100,
+  [ROLES.PLATFORM_ADMIN]: 100,
   [ROLES.TENANT_ADMIN]: 80,
   [ROLES.FACILITY_ADMIN]: 60,
   [ROLES.OPERATIONS]: 40,
@@ -49,7 +49,7 @@ const ROLE_RANK = Object.freeze({
 
 const PLATFORM_ADMIN_MANAGED_ROLES = new Set([
   ROLES.PLATFORM_OWNER,
-  ROLES.SUPER_ADMIN,
+  ROLES.PLATFORM_ADMIN,
 ]);
 
 const text = (value) => String(value || '').trim();
@@ -111,8 +111,8 @@ const resolveActorAssignablePermissionNames = (user = {}) => {
   if (roleNames.includes(ROLES.PLATFORM_OWNER)) {
     return new Set(ROLE_PERMISSIONS[ROLES.PLATFORM_OWNER] || []);
   }
-  if (roleNames.includes(ROLES.SUPER_ADMIN)) {
-    return new Set(ROLE_PERMISSIONS[ROLES.SUPER_ADMIN] || []);
+  if (roleNames.includes(ROLES.PLATFORM_ADMIN)) {
+    return new Set(ROLE_PERMISSIONS[ROLES.PLATFORM_ADMIN] || []);
   }
 
   const fromContext = getUserPermissions(user);
@@ -148,7 +148,7 @@ const canActorCreateTenantWideRole = (user = {}) => {
   const roles = new Set(resolveActorRoleNames(user));
   if (
     roles.has(ROLES.PLATFORM_OWNER) ||
-    roles.has(ROLES.SUPER_ADMIN) ||
+    roles.has(ROLES.PLATFORM_ADMIN) ||
     roles.has(ROLES.TENANT_ADMIN)
   ) {
     return true;
@@ -158,11 +158,11 @@ const canActorCreateTenantWideRole = (user = {}) => {
 };
 
 const canActorCreatePlatformRole = (user = {}) => {
-  // Match FE canCreateTenant / Platform radio: elevated role or system:admin.
+  // Match FE canCreateTenant / Platform radio: elevated role or platform:admin.
   if (userHasSuperAdminRole(user)) {
     return true;
   }
-  if (getRoleNames(user).includes(ROLES.SUPER_ADMIN)) {
+  if (getRoleNames(user).includes(ROLES.PLATFORM_ADMIN)) {
     return true;
   }
 
@@ -175,12 +175,12 @@ const canActorCreatePlatformRole = (user = {}) => {
       )
       .filter(Boolean)
   );
-  if (tokenPermissions.has(PERMISSIONS.SYSTEM_ADMIN)) {
+  if (tokenPermissions.has(PERMISSIONS.PLATFORM_ADMIN)) {
     return true;
   }
 
   const permissions = new Set(getUserPermissions(user));
-  return permissions.has(PERMISSIONS.SYSTEM_ADMIN);
+  return permissions.has(PERMISSIONS.PLATFORM_ADMIN);
 };
 
 const isPermissionNameAssignable = (permissionName, assignableSet) => {
@@ -495,7 +495,7 @@ const assertRoleScopeAllowed = async (payload = {}, user = {}) => {
   if (
     actorRoles.has(ROLES.FACILITY_ADMIN) &&
     !actorRoles.has(ROLES.TENANT_ADMIN) &&
-    !actorRoles.has(ROLES.SUPER_ADMIN)
+    !actorRoles.has(ROLES.PLATFORM_ADMIN)
   ) {
     const actorFacilityId = user.facility_id || user.facilityId || null;
     if (!actorFacilityId) {
@@ -613,7 +613,7 @@ const assertRoleNotSystemProtected = (role = {}, operation = 'delete') => {
   }
   if (
     operation === 'delete' ||
-    roleName === ROLES.SUPER_ADMIN ||
+    roleName === ROLES.PLATFORM_ADMIN ||
     roleName === ROLES.PLATFORM_OWNER
   ) {
     throw new HttpError('errors.auth.insufficient_permissions', 403, [
@@ -631,7 +631,7 @@ const assertRoleNotSystemProtected = (role = {}, operation = 'delete') => {
  * Role list/lookup where.
  *
  * - Facility-only actors: exact facility_id match (no tenant-wide roles).
- * - Tenant/super admins: facility roles for the scope plus tenant-wide (null),
+ * - Tenant/platform admins: facility roles for the scope plus tenant-wide (null),
  *   unless roleScope filter narrows to tenant or facility only.
  *
  * @param {Object} scope
@@ -691,6 +691,7 @@ const buildRoleScopeWhere = (
 module.exports = {
   ACCESS_ADMIN_ROLES,
   ROLE_RANK,
+  PLATFORM_ADMIN_MANAGED_ROLES,
   assertActorCanManageRoleRecord,
   assertPermissionIdAssignable,
   assertPermissionIdHasRequiredRead,

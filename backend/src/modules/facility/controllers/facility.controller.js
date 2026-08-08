@@ -23,7 +23,7 @@ const buildRequestContext = (req) => ({
 const hasPermission = (context, permission) =>
   Array.isArray(context.permissions) && context.permissions.includes(permission);
 
-const isSystemAdmin = (context) => hasPermission(context, PERMISSIONS.SYSTEM_ADMIN);
+const isSystemAdmin = (context) => hasPermission(context, PERMISSIONS.PLATFORM_ADMIN);
 
 const isTenantAdmin = (context) => hasPermission(context, PERMISSIONS.TENANT_ADMIN);
 

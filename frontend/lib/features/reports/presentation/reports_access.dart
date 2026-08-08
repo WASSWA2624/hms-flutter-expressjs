@@ -13,7 +13,7 @@ const String reportsActiveModule = 'reporting-analytics';
 const List<AppPermission> _reportsAdminPermissions = <AppPermission>[
   AppPermissions.tenantAdmin,
   AppPermissions.facilityAdmin,
-  AppPermissions.systemAdmin,
+  AppPermissions.platformAdmin,
 ];
 
 /// Route / workspace entry (matrix ∪): `reports:read` or `compliance:read`.

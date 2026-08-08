@@ -51,7 +51,7 @@ void main() {
         settingsConfigurationTenantRequirement.anyPermissions,
         <AppPermission>[
           AppPermissions.tenantAdmin,
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
         ],
       );
       expect(
@@ -266,7 +266,7 @@ void main() {
         tester,
         permissions: <AppPermission>[
           AppPermissions.profileRead,
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
         ],
       );
 

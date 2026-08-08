@@ -31,7 +31,7 @@ void main() {
         isNull,
       );
       expect(
-        PermissionModuleMap.moduleForPermissionCode('system:admin'),
+        PermissionModuleMap.moduleForPermissionCode('platform:admin'),
         isNull,
       );
     });

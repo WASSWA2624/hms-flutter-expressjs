@@ -10,7 +10,7 @@ const String dischargeInpatientBedModule = 'inpatient-bed-management';
 
 /// Roles allowed to plan / finalize discharge (source inventory gate).
 const List<AppRole> dischargeClinicalWriteRoles = <AppRole>[
-  AppRole.superAdmin,
+  AppRole.platformAdmin,
   AppRole.tenantAdmin,
   AppRole.facilityAdmin,
   AppRole.doctor,

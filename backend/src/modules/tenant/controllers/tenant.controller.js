@@ -24,7 +24,7 @@ const buildRequestContext = (req) => ({
 
 const isSystemAdmin = (context) =>
   Array.isArray(context.permissions)
-  && context.permissions.includes(PERMISSIONS.SYSTEM_ADMIN);
+  && context.permissions.includes(PERMISSIONS.PLATFORM_ADMIN);
 
 /**
  * List tenants with pagination

@@ -3,7 +3,7 @@ jest.mock('@repositories/dashboard-widget/dashboard-widget.repository', () => ({
 jest.mock('@lib/dashboard/summary', () => ({
   ROLE_PACKS: {
     ADMIN: 'admin',
-    SUPER_ADMIN: 'super_admin',
+    PLATFORM_ADMIN: 'platform_admin',
     TENANT_ADMIN: 'tenant_admin',
     FACILITY_ADMIN: 'facility_admin',
     DOCTOR: 'doctor',
@@ -31,11 +31,11 @@ jest.mock('@lib/dashboard/summary', () => ({
   },
   resolveEffectiveRole: jest.fn((user = {}) => {
     if (Array.isArray(user.roles) && user.roles.length) return user.roles[0];
-    return user.role || 'SUPER_ADMIN';
+    return user.role || 'PLATFORM_ADMIN';
   }),
   resolveProfileId: jest.fn((role) => {
     const profileIds = {
-      SUPER_ADMIN: 'super_admin',
+      PLATFORM_ADMIN: 'platform_admin',
       TENANT_ADMIN: 'tenant_admin',
       FACILITY_ADMIN: 'facility_admin',
       DOCTOR: 'doctor',
@@ -65,7 +65,7 @@ jest.mock('@lib/dashboard/summary', () => ({
   }),
   resolvePackId: jest.fn((profileId) => {
     const packIds = {
-      super_admin: 'super_admin',
+      platform_admin: 'platform_admin',
       tenant_admin: 'tenant_admin',
       facility_admin: 'facility_admin',
       patient: 'patient_safe',
@@ -74,7 +74,7 @@ jest.mock('@lib/dashboard/summary', () => ({
     return packIds[profileId] || profileId || 'limited';
   }),
   buildDashboardSummary: jest.fn(async () => ({
-    roleProfile: { id: 'super_admin', role: 'SUPER_ADMIN', pack: 'super_admin' },
+    roleProfile: { id: 'platform_admin', role: 'PLATFORM_ADMIN', pack: 'platform_admin' },
     summaryCards: [{ id: 'patients_today', label: 'Patients today', value: 12, format: 'number' }],
   })),
 }));
@@ -133,7 +133,7 @@ describe('dashboard-workspace service', () => {
       },
     ]);
     buildDashboardSummary.mockResolvedValueOnce({
-      roleProfile: { id: 'super_admin', role: 'SUPER_ADMIN', pack: 'super_admin' },
+      roleProfile: { id: 'platform_admin', role: 'PLATFORM_ADMIN', pack: 'platform_admin' },
       summaryCards: [
         { id: 'tenants_active', label: 'Tenants', value: 2, secondary_value: 3, format: 'ratio' },
         { id: 'facilities_active', label: 'Facilities', value: 4, format: 'number' },
@@ -145,7 +145,7 @@ describe('dashboard-workspace service', () => {
     });
 
     const result = await subject.getWorkspace({}, 1, 20, undefined, 'desc', {
-      role: 'SUPER_ADMIN',
+      role: 'PLATFORM_ADMIN',
     });
 
     expect(result.state).toBe('ready');
@@ -184,7 +184,7 @@ describe('dashboard-workspace service', () => {
     repository.findPlatformFollowUps.mockResolvedValue([]);
     repository.findPlatformAlerts.mockResolvedValue([]);
     buildDashboardSummary.mockResolvedValueOnce({
-      roleProfile: { id: 'super_admin', role: 'SUPER_ADMIN', pack: 'super_admin' },
+      roleProfile: { id: 'platform_admin', role: 'PLATFORM_ADMIN', pack: 'platform_admin' },
       summaryCards: [{ id: 'tenants_active', label: 'Tenants', value: 2, format: 'ratio' }],
       trend: { title: 'New tenant signups', subtitle: '', points: [] },
       distribution: { title: 'Subscription mix', subtitle: '', total: 0, segments: [] },
@@ -196,7 +196,7 @@ describe('dashboard-workspace service', () => {
       20,
       'updated_at',
       'desc',
-      { role: 'SUPER_ADMIN' }
+      { role: 'PLATFORM_ADMIN' }
     );
 
     expect(buildDashboardSummary).toHaveBeenCalled();
@@ -392,7 +392,7 @@ describe('dashboard-workspace service', () => {
       facilities: [{ id: 'facility-uuid', human_friendly_id: 'FAC0001', name: 'Central Hospital', facility_type: 'HOSPITAL' }],
     });
 
-    const result = await subject.getLookups({}, { role: 'SUPER_ADMIN' });
+    const result = await subject.getLookups({}, { role: 'PLATFORM_ADMIN' });
 
     expect(result).toEqual(
       expect.objectContaining({

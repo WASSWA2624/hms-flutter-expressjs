@@ -156,7 +156,7 @@ describe('Patient Controller', () => {
       };
       mockReq.user = {
         ...mockReq.user,
-        role: 'SUPER_ADMIN'
+        role: 'PLATFORM_ADMIN'
       };
       const mockPatient = { id: 'patient-1', human_friendly_id: 'PAT0000001' };
       patientService.getPatientById.mockResolvedValue(mockPatient);

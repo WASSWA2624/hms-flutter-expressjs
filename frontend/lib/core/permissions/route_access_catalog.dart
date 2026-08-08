@@ -109,9 +109,10 @@ abstract final class RouteAccessCatalog {
   );
 
   /// Route entry ∪ matches [AppRoutes.ipd] / Admission Queue matrix:
-  /// `clinical:read` | `operations:read` | `billing:read`.
+  /// `ipd:read` | `clinical:read` | `operations:read` | `billing:read`.
   static const AccessRequirement ipdEntry = AccessRequirement(
     anyPermissions: <AppPermission>[
+      AppPermissions.ipdRead,
       AppPermissions.clinicalRead,
       AppPermissions.operationsRead,
       AppPermissions.billingRead,
@@ -121,7 +122,7 @@ abstract final class RouteAccessCatalog {
   static const RouteAccessAtom ipd = RouteAccessAtom(
     routeName: 'ipd',
     path: '/ipd',
-    entryPermission: AppPermissions.clinicalRead,
+    entryPermission: AppPermissions.ipdRead,
     requirement: ipdEntry,
   );
 
@@ -266,14 +267,14 @@ abstract final class RouteAccessCatalog {
   static const AccessRequirement subscriptionsEntry = AccessRequirement(
     anyPermissions: <AppPermission>[
       AppPermissions.platformOwner,
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
     ],
-    anyRoles: <AppRole>[AppRole.platformOwner, AppRole.superAdmin],
+    anyRoles: <AppRole>[AppRole.platformOwner, AppRole.platformAdmin],
   );
   static const RouteAccessAtom subscriptions = RouteAccessAtom(
     routeName: 'subscriptions',
     path: '/subscriptions',
-    entryPermission: AppPermissions.systemAdmin,
+    entryPermission: AppPermissions.platformAdmin,
     requirement: subscriptionsEntry,
   );
 

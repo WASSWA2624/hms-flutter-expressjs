@@ -45,7 +45,7 @@ const IconData opdEncounterIcon = AppActionIcons.personAdd;
 
 const AccessRequirement opdEncounterPermissionRequirement = AccessRequirement(
   anyRoles: <AppRole>[
-    AppRole.superAdmin,
+    AppRole.platformAdmin,
     AppRole.tenantAdmin,
     AppRole.facilityAdmin,
     AppRole.receptionist,

@@ -51,7 +51,7 @@ describe('auth middleware', () => {
   });
 
   it('rejects permission checks when permission is not granted', () => {
-    const middleware = authorize('system:admin', 'permission');
+    const middleware = authorize('platform:admin', 'permission');
     const req = {
       user: {
         role: 'DOCTOR',
@@ -120,12 +120,12 @@ describe('auth middleware', () => {
     expect(next).toHaveBeenCalledWith();
   });
 
-  it('authorizes display-form super admin roles for permission checks', () => {
+  it('authorizes display-form platform admin roles for permission checks', () => {
     const middleware = authorize('clinical:read', 'permission');
     const req = {
       user: {
-        role: 'Super Admin',
-        roles: ['Super Admin']
+        role: 'Platform Admin',
+        roles: ['Platform Admin']
       }
     };
     const res = {};
@@ -136,12 +136,12 @@ describe('auth middleware', () => {
     expect(next).toHaveBeenCalledWith();
   });
 
-  it('authorizes display-form super admin roles for role checks', () => {
-    const middleware = authorize('SUPER_ADMIN', 'role');
+  it('authorizes display-form platform admin roles for role checks', () => {
+    const middleware = authorize('PLATFORM_ADMIN', 'role');
     const req = {
       user: {
-        role: 'Super Admin',
-        roles: ['Super Admin']
+        role: 'Platform Admin',
+        roles: ['Platform Admin']
       }
     };
     const res = {};

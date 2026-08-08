@@ -74,7 +74,7 @@ AppAccessPolicy _policy({
     (AppPermission permission) =>
         permission == AppPermissions.facilityAdmin ||
         permission == AppPermissions.tenantAdmin ||
-        permission == AppPermissions.systemAdmin ||
+        permission == AppPermissions.platformAdmin ||
         permission == AppPermissions.unitManage ||
         permission == AppPermissions.roomsBedsRead,
   );
@@ -440,14 +440,14 @@ void main() {
       );
     });
 
-    test('nested cross-module manage ∪: system:admin satisfies manageBeds', () {
-      final AppAccessPolicy systemAdmin = _policy(
+    test('nested cross-module manage ∪: platform:admin satisfies manageBeds', () {
+      final AppAccessPolicy platformAdmin = _policy(
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
         },
       );
-      expect(canManageIcuBedBoard(systemAdmin), isTrue);
+      expect(canManageIcuBedBoard(platformAdmin), isTrue);
       // IPD nested matrix lists unit:manage — ICU manage keeps IPD source
       // (admin perms / roles only); unit:manage alone does not unlock manage.
       final AppAccessPolicy unitOnly = _policy(

@@ -71,7 +71,7 @@ describe('seed-demo-data script', () => {
     });
 
     const seedOrgPack = jest.fn(async () => ({ tenants: { free: { id: 'tenant-free' } } }));
-    const seedAccessPack = jest.fn(async () => ({ users: { 'free:superadmin': { id: 'user-1' } } }));
+    const seedAccessPack = jest.fn(async () => ({ users: { 'free:platform_admin': { id: 'user-1' } } }));
     const seedSubscriptionsPack = jest.fn(async () => ({ subscriptions: { free: { id: 'sub-1' } } }));
     const seedClinicalCatalogPack = jest.fn(async () => ({
       lab: { tests: {}, panels: {} },

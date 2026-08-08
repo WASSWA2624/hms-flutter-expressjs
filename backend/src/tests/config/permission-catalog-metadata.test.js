@@ -7,8 +7,8 @@ describe('permission-catalog-metadata', () => {
     expect(getPermissionMetadata('patient:read')).toEqual({
       displayName: 'Patient — Read',
       description: 'Allows read access within patient.'});
-    expect(getPermissionMetadata('system:admin')).toEqual({
-      displayName: 'System — Admin',
+    expect(getPermissionMetadata('platform:admin')).toEqual({
+      displayName: 'Platform — Admin',
       description: 'Full platform administration across tenants and global settings.'});
   });
 

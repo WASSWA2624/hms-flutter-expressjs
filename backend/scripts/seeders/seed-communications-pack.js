@@ -14,7 +14,7 @@ const seedCommunicationsPack = async (ctx, orgPack, accessPack) => {
   const operations = accessPack.users[`${scenario.key}:operations`];
   const receptionist = accessPack.users[`${scenario.key}:reception`];
   const billing = accessPack.users[`${scenario.key}:billing`];
-  const superAdmin = accessPack.users[`${scenario.key}:superadmin`];
+  const platformAdmin = accessPack.users[`${scenario.key}:platform_admin`];
 
   const unreadDirectConversation = await ctx.upsert(
     'conversation',
@@ -388,7 +388,7 @@ const seedCommunicationsPack = async (ctx, orgPack, accessPack) => {
     `${scenario.key}:notification:read-billing`,
     {
       tenant_id: tenant.id,
-      user_id: superAdmin.id,
+      user_id: platformAdmin.id,
       template_id: null,
       notification_type: 'BILLING',
       priority: 'MEDIUM',
@@ -414,7 +414,7 @@ const seedCommunicationsPack = async (ctx, orgPack, accessPack) => {
       notification_id: readNotification.id,
       channel: 'SMS',
       status: 'FAILED',
-      recipient_target: superAdmin.email,
+      recipient_target: platformAdmin.email,
       provider_name: 'africas-talking-demo',
       attempt_count: 3,
       sent_at: ctx.date(-2, 55),

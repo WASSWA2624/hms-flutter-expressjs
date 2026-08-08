@@ -121,7 +121,7 @@ void main() {
     test('platform admin drops Create when Manage hubs cover them', () {
       // Platform elevated: no tenant context so grantsAll is unrestricted.
       final AppAccessPolicy policy = _policy(
-        roles: <String>['SUPER_ADMIN'],
+        roles: <String>['PLATFORM_ADMIN'],
         permissions: AppPermissions.all,
         tenantId: null,
         facilityId: null,
@@ -209,11 +209,11 @@ void main() {
         AppRole.tenantAdmin,
       );
       final HomeDashboardProfile platform = homeProfileForRole(
-        AppRole.superAdmin,
+        AppRole.platformAdmin,
       );
 
       expect(homeQueueTitle(AppRole.tenantAdmin), 'Facility management');
-      expect(homeQueueTitle(AppRole.superAdmin), 'Platform management');
+      expect(homeQueueTitle(AppRole.platformAdmin), 'Platform management');
       expect(
         homeEmptyManagementSectionTitle(tenant, l10n),
         l10n.homeFacilityManagementTitle,

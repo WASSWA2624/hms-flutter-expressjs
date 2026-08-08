@@ -71,7 +71,7 @@ const resolveBillingTenantScope = (user = {}, payload = {}) => {
   }
 
   const roles = getUserRoles(user);
-  if (roles.includes(ROLES.SUPER_ADMIN)) {
+  if (roles.includes(ROLES.PLATFORM_ADMIN)) {
     const requestedTenantId = text(payload.tenant_id || payload.tenantId);
     return requestedTenantId || actorTenantId;
   }

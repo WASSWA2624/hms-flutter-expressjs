@@ -252,10 +252,10 @@ describe('tenant-facility-workspace service', () => {
     expect(result.contact_address.phone).toBe('+256700000000');
   });
 
-  it('includes subscription summary for super admins', async () => {
+  it('includes subscription summary for platform admins', async () => {
     const result = await service.getSetup(
       { tenant_id: 'TEN0001' },
-      { role: 'SUPER_ADMIN', permissions: ['subscriptions:read'] }
+      { role: 'PLATFORM_ADMIN', permissions: ['subscriptions:read'] }
     );
 
     expect(result.subscription_summary).toEqual(
@@ -317,7 +317,7 @@ describe('tenant-facility-workspace service', () => {
       },
     ]);
 
-    const result = await service.getSetup({}, { role: 'SUPER_ADMIN' });
+    const result = await service.getSetup({}, { role: 'PLATFORM_ADMIN' });
 
     expect(result.state).toBe('tenant_context_required');
     expect(result.facility).toBeNull();

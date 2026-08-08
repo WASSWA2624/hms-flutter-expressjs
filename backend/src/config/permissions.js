@@ -89,9 +89,32 @@ const PERMISSIONS = Object.freeze({
   FINANCIAL_APPROVE: 'financial:approve',
   FACILITY_ADMIN: 'facility:admin',
   TENANT_ADMIN: 'tenant:admin',
-  SYSTEM_ADMIN: 'system:admin',
+  PLATFORM_ADMIN: 'platform:admin',
   PLATFORM_OWNER: 'platform:owner',
 });
+
+/** Legacy permission keys that still appear in JWTs / older DB rows. */
+const LEGACY_PERMISSION_ALIASES = Object.freeze({
+  'system:admin': PERMISSIONS.PLATFORM_ADMIN,
+  SYSTEM_ADMIN: PERMISSIONS.PLATFORM_ADMIN,
+});
+
+/**
+ * Normalize a permission candidate to a canonical catalog value.
+ *
+ * @param {string | null | undefined} permission
+ * @returns {string | null}
+ */
+const normalizePermissionName = (permission) => {
+  const raw = String(permission || '').trim();
+  if (!raw) return null;
+  if (LEGACY_PERMISSION_ALIASES[raw]) return LEGACY_PERMISSION_ALIASES[raw];
+  const upper = raw.toUpperCase().replace(/[\s-]+/g, '_');
+  if (LEGACY_PERMISSION_ALIASES[upper]) return LEGACY_PERMISSION_ALIASES[upper];
+  const values = Object.values(PERMISSIONS);
+  if (values.includes(raw)) return raw;
+  return null;
+};
 
 const ADMIN_ACCESS = Object.freeze([
   PERMISSIONS.TENANT_ADMIN,
@@ -179,7 +202,7 @@ const ADMIN_ACCESS = Object.freeze([
 
 const BASE_ROLE_PERMISSIONS = {
   [ROLES.PLATFORM_OWNER]: Object.values(PERMISSIONS),
-  [ROLES.SUPER_ADMIN]: Object.values(PERMISSIONS).filter(
+  [ROLES.PLATFORM_ADMIN]: Object.values(PERMISSIONS).filter(
     (permission) => permission !== PERMISSIONS.PLATFORM_OWNER
   ),
   [ROLES.TENANT_ADMIN]: ADMIN_ACCESS,
@@ -551,4 +574,6 @@ module.exports = {
   PERMISSIONS,
   ROLE_PERMISSIONS,
   ROLE_PERMISSION_TEMPLATES,
+  LEGACY_PERMISSION_ALIASES,
+  normalizePermissionName,
 };

@@ -128,7 +128,7 @@ const AccessRequirement hrWorkspaceEntryRequirement = RouteAccessCatalog.hrEntry
 const List<AppPermission> hrAccessAdminReadPermissions = <AppPermission>[
   AppPermissions.tenantAdmin,
   AppPermissions.facilityAdmin,
-  AppPermissions.systemAdmin,
+  AppPermissions.platformAdmin,
 ];
 
 /// Access tab view (matrix ∩ `hr:read` and ∪ admin keys + module).

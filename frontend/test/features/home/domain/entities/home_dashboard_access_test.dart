@@ -688,7 +688,7 @@ void main() {
         );
         final HomeDashboard dashboard = HomeDashboard(
           state: HomeDashboardLoadState.ready,
-          profile: homeProfileForRole(AppRole.superAdmin),
+          profile: homeProfileForRole(AppRole.platformAdmin),
           context: const HomeDashboardContext(),
           statusCards: const <HomeStatusCard>[],
           trend: HomeDashboardTrend.empty,

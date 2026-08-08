@@ -74,12 +74,12 @@ const resolveFk = (value, context, scopeKey = null) => {
 };
 
 const WRITE_ROLES = new Set([
-  ROLES.SUPER_ADMIN,
+  ROLES.PLATFORM_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
 ]);
 
-const TENANT_WRITE_ROLES = new Set([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN]);
+const TENANT_WRITE_ROLES = new Set([ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN]);
 
 const roleList = (user = {}) => {
   const roles = Array.isArray(user.roles) ? user.roles : [user.role];
@@ -104,7 +104,7 @@ const canManageTenant = (user = {}) =>
   roleList(user).some((entry) => TENANT_WRITE_ROLES.has(entry)) ||
   hasAnyPermission(user, [
     PERMISSIONS.TENANT_ADMIN,
-    PERMISSIONS.SYSTEM_ADMIN,
+    PERMISSIONS.PLATFORM_ADMIN,
   ]);
 
 const canManageFacility = (user = {}) =>
@@ -112,11 +112,11 @@ const canManageFacility = (user = {}) =>
   hasAnyPermission(user, [
     PERMISSIONS.FACILITY_ADMIN,
     PERMISSIONS.TENANT_ADMIN,
-    PERMISSIONS.SYSTEM_ADMIN,
+    PERMISSIONS.PLATFORM_ADMIN,
   ]);
 
 const canViewSubscriptions = (user = {}) =>
-  roleList(user).includes(ROLES.SUPER_ADMIN);
+  roleList(user).includes(ROLES.PLATFORM_ADMIN);
 
 const serializeTenant = (record) => {
   if (!record) return null;
@@ -434,7 +434,7 @@ const selectFacility = (facilities = [], facilityId = null) => {
 
 const getSetup = async (filters = {}, user = {}) => {
   const scopeResult = await repository.resolveWorkspaceScope({ filters, user });
-  const includeAllTenants = roleList(user).includes(ROLES.SUPER_ADMIN);
+  const includeAllTenants = roleList(user).includes(ROLES.PLATFORM_ADMIN);
 
   if (scopeResult.state === 'tenant_context_required') {
     const tenants = await repository.findTenants(null, includeAllTenants);

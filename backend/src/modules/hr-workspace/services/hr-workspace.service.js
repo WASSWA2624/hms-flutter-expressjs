@@ -26,7 +26,7 @@ const DEFAULT_PANEL = 'staffing';
 const DEFAULT_RESOURCE = 'staff-profiles';
 
 const HR_RECIPIENT_ROLES = Object.freeze([
-  ROLES.SUPER_ADMIN,
+  ROLES.PLATFORM_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.HR,
@@ -147,7 +147,7 @@ const {
   DEFAULT_FACILITY_DEPARTMENT_NAMES,
   inferDepartmentType,
 } = require('@lib/setup/facility-structure-catalog');
-const SYSTEM_CRITICAL_ROLES = new Set([ROLES.SUPER_ADMIN]);
+const SYSTEM_CRITICAL_ROLES = new Set([ROLES.PLATFORM_ADMIN]);
 
 const normalizeString = (value) => String(value || '').trim();
 const normalizeDate = (value) => {

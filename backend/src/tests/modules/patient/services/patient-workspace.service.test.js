@@ -213,7 +213,7 @@ describe('patient-workspace service', () => {
       {},
       {
         user: {
-          roles: ['SUPER_ADMIN']}}
+          roles: ['PLATFORM_ADMIN']}}
     );
 
     expect(prisma.tenant.findMany).toHaveBeenCalled();

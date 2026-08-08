@@ -16,15 +16,15 @@ abstract final class HomeDashboardAtomPermissions {
   static const Map<String, List<AppPermission>> statusCards =
       <String, List<AppPermission>>{
         // System admin (Dashboard.md §1)
-        'tenants_active': <AppPermission>[AppPermissions.systemAdmin],
+        'tenants_active': <AppPermission>[AppPermissions.platformAdmin],
         // facilities_active is shared with tenant admin — declare on templates.
         'subscriptions_health': <AppPermission>[
           AppPermissions.subscriptionsRead,
         ],
         'pending_registration_approvals': <AppPermission>[
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
         ],
-        'module_entitlement_issues': <AppPermission>[AppPermissions.systemAdmin],
+        'module_entitlement_issues': <AppPermission>[AppPermissions.platformAdmin],
         // Gap: platform_users / system_health — no live metric source yet.
 
         // Tenant admin (Dashboard.md §2)
@@ -281,7 +281,7 @@ abstract final class HomeDashboardAtomPermissions {
         'guided_ambulance_queue': <AppPermission>[AppPermissions.emergencyRead],
         'guided_mortuary_queue': <AppPermission>[AppPermissions.mortuaryRead],
         'guided_mortuary_cases': <AppPermission>[AppPermissions.mortuaryRead],
-        'guided_platform_queue': <AppPermission>[AppPermissions.systemAdmin],
+        'guided_platform_queue': <AppPermission>[AppPermissions.platformAdmin],
         // Do not fall back to settings→profile:read for governance setup rows.
         'guided_create_facility': <AppPermission>[AppPermissions.tenantAdmin],
         'guided_tenant_setup': <AppPermission>[AppPermissions.tenantAdmin],
@@ -326,8 +326,8 @@ abstract final class HomeDashboardAtomPermissions {
   /// Activity row ids / kinds.
   static const Map<String, List<AppPermission>> activity =
       <String, List<AppPermission>>{
-        'platform_activity': <AppPermission>[AppPermissions.systemAdmin],
-        'recent_activities': <AppPermission>[AppPermissions.systemAdmin],
+        'platform_activity': <AppPermission>[AppPermissions.platformAdmin],
+        'recent_activities': <AppPermission>[AppPermissions.platformAdmin],
         'billing_events': <AppPermission>[AppPermissions.billingRead],
       };
 

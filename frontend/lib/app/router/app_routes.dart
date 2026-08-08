@@ -77,7 +77,7 @@ final class AppRouteData {
 
 abstract final class AppRoutes {
   static const List<AppRole> adminShellRoles = <AppRole>[
-    AppRole.superAdmin,
+    AppRole.platformAdmin,
     AppRole.tenantAdmin,
     AppRole.facilityAdmin,
   ];
@@ -288,9 +288,9 @@ abstract final class AppRoutes {
     access: AppRouteAccess.authenticated,
     requiredAnyPermissions: <AppPermission>[
       AppPermissions.platformOwner,
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
     ],
-    requiredAnyRoles: <AppRole>[AppRole.platformOwner, AppRole.superAdmin],
+    requiredAnyRoles: <AppRole>[AppRole.platformOwner, AppRole.platformAdmin],
   );
   static const AppRouteData opd = AppRouteData(
     name: 'opd',
@@ -333,7 +333,7 @@ abstract final class AppRoutes {
       AppPermissions.operationsRead,
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
     ],
     requiredAnyRoles: roomsBedsWorkspaceRoles,
     requiredActiveModules: <String>['inpatient-bed-management'],
@@ -491,7 +491,7 @@ abstract final class AppRoutes {
       AppPermissions.integrationWrite,
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
     ],
     requiredAnyRoles: adminShellRoles,
     requiredActiveModules: <String>['integrations-core'],
@@ -534,7 +534,7 @@ abstract final class AppRoutes {
       AppPermissions.evidenceExport,
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
     ],
     requiredAnyRoles: reportsWorkspaceRoles,
   );
@@ -560,7 +560,7 @@ abstract final class AppRoutes {
     requiredAnyPermissions: <AppPermission>[
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
     ],
     requiredAnyRoles: tenantSetupWorkspaceRoles,
     requiresFacilityContext: true,
@@ -572,10 +572,10 @@ abstract final class AppRoutes {
     requiredAnyPermissions: <AppPermission>[
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
     ],
     requiredAnyRoles: <AppRole>[
-      AppRole.superAdmin,
+      AppRole.platformAdmin,
       AppRole.tenantAdmin,
       AppRole.facilityAdmin,
       AppRole.operations,

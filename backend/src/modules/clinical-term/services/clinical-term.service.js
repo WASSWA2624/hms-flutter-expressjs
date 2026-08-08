@@ -12,7 +12,7 @@ const { ROLES } = require('@config/roles');
 const { COMMON_PROCEDURE_TERMS } = require('../data/common-procedure-terms');
 
 const SHARED_FAVORITE_ROLES = new Set([
-  ROLES.SUPER_ADMIN,
+  ROLES.PLATFORM_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,

@@ -91,7 +91,7 @@ describe('Module Subscription Service', () => {
         subscription_id: 'SUB0001',
         human_friendly_id: 'MSUB0002'},
       {
-        user: { id: 'user-1', role: 'SUPER_ADMIN' },
+        user: { id: 'user-1', role: 'PLATFORM_ADMIN' },
         ip: '127.0.0.1',
         tenant_id: 'tenant-uuid'}
     );

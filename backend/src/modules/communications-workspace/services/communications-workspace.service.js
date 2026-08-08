@@ -20,7 +20,7 @@ const DEFAULT_PANEL = 'inbox';
 const MAX_ATTACHMENTS = 5;
 const ATTACHMENTS_ENABLED = false;
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
-const ADMIN_ROLES = new Set([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN]);
+const ADMIN_ROLES = new Set([ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN]);
 const CALL_CONTENT_PREFIX = '__hms_call__:';
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.heic']);
 const DOCUMENT_EXTENSIONS = new Set(['.pdf', '.doc', '.docx']);
@@ -38,7 +38,7 @@ const currentRoles = (user = {}) =>
   (Array.isArray(user.roles) ? user.roles : [user.role]).map((entry) => text(entry).toUpperCase()).filter(Boolean);
 const isAdminUser = (user = {}) => currentRoles(user).some((entry) => ADMIN_ROLES.has(entry));
 const isUnrestrictedDirectoryUser = (user = {}) =>
-  currentRoles(user).some((entry) => entry === ROLES.SUPER_ADMIN || entry === ROLES.TENANT_ADMIN);
+  currentRoles(user).some((entry) => entry === ROLES.PLATFORM_ADMIN || entry === ROLES.TENANT_ADMIN);
 
 const encodeCallContent = (payload) => `${CALL_CONTENT_PREFIX}${JSON.stringify(payload)}`;
 const parseCallContent = (content) => {

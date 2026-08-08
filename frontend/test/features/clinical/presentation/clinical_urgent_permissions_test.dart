@@ -891,7 +891,7 @@ void main() {
   );
 
   testWidgets(
-    'write ∪: system:admin mounts Add clinical note with clinical:read',
+    'write ∪: platform:admin mounts Add clinical note with clinical:read',
     (WidgetTester tester) async {
       await _pumpUrgentTab(
         tester,
@@ -899,7 +899,7 @@ void main() {
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.clinicalRead,
-            AppPermissions.systemAdmin,
+            AppPermissions.platformAdmin,
           },
         ),
       );

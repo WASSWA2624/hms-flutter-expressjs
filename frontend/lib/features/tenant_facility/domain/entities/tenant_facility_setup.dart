@@ -6,12 +6,12 @@ const Object _facilitySetupSnapshotUnset = Object();
 abstract final class TenantFacilityPermissions {
   static const AppPermission tenantAdmin = AppPermissions.tenantAdmin;
   static const AppPermission facilityAdmin = AppPermissions.facilityAdmin;
-  static const AppPermission systemAdmin = AppPermissions.systemAdmin;
+  static const AppPermission platformAdmin = AppPermissions.platformAdmin;
 
   static final Set<AppPermission> setupAccess = <AppPermission>{
     tenantAdmin,
     facilityAdmin,
-    systemAdmin,
+    platformAdmin,
   };
 }
 

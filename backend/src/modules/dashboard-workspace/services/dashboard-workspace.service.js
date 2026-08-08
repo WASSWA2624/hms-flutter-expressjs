@@ -16,7 +16,7 @@ const {
 const { ROLES, normalizeRoleName } = require('@config/roles');
 const { getUserPermissions } = require('@middlewares/auth.middleware');
 
-const ADMIN_ROLES = new Set([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN]);
+const ADMIN_ROLES = new Set([ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN]);
 const DEFAULT_LIMIT = 20;
 
 const DATE_PRESET_LOOKUPS = Object.freeze([
@@ -153,19 +153,19 @@ const actionDefinition = ({
 });
 
 const QUICK_ACTION_LIBRARY = Object.freeze([
-  actionDefinition({ id: 'select_context', label: 'Select tenant/facility context', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN], requiredAnyPermissions: ['system:admin', 'tenant:admin'], scope: 'platform_or_tenant', target: actionTarget('settings', 'tenant-facility-context') }),
-  actionDefinition({ id: 'create_tenant', label: 'Create tenant', allowedRoles: [ROLES.SUPER_ADMIN], requiredPermissions: ['system:admin'], scope: 'platform', target: actionTarget('settings', 'tenants', 'create') }),
-  actionDefinition({ id: 'create_facility', label: 'Create facility', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], requiredAnyPermissions: ['tenant:admin', 'facility:admin'], scope: 'tenant_or_facility', target: actionTarget('settings', 'facilities', 'create') }),
-  actionDefinition({ id: 'create_role', label: 'Create role', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], requiredAnyPermissions: ['tenant:admin', 'facility:admin', 'hr:write'], scope: 'tenant_or_facility', target: actionTarget('settings', 'roles', 'create') }),
-  actionDefinition({ id: 'create_user', label: 'Create user', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], requiredAnyPermissions: ['tenant:admin', 'facility:admin', 'hr:write'], scope: 'tenant_or_facility', target: actionTarget('settings', 'users', 'create') }),
-  actionDefinition({ id: 'manage_tenants', label: 'Manage tenants', allowedRoles: [ROLES.SUPER_ADMIN], requiredPermissions: ['system:admin'], scope: 'platform', target: actionTarget('settings', 'tenants') }),
-  actionDefinition({ id: 'manage_facilities', label: 'Manage facilities', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN], requiredAnyPermissions: ['system:admin', 'tenant:admin'], scope: 'platform_or_tenant', target: actionTarget('settings', 'facilities') }),
-  actionDefinition({ id: 'manage_roles_access', label: 'Manage roles and access', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], requiredAnyPermissions: ['tenant:admin', 'facility:admin', 'hr:write'], scope: 'tenant_or_facility', target: actionTarget('settings', 'roles') }),
-  actionDefinition({ id: 'manage_users', label: 'Manage users', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], requiredAnyPermissions: ['tenant:admin', 'facility:admin', 'hr:write'], scope: 'tenant_or_facility', target: actionTarget('settings', 'users') }),
-  actionDefinition({ id: 'manage_subscription', label: 'Manage subscription', allowedRoles: [ROLES.SUPER_ADMIN], requiredAnyPermissions: ['system:admin'], scope: 'platform', target: actionTarget('subscriptions', 'subscriptions') }),
-  actionDefinition({ id: 'manage_users_roles', label: 'Manage users and roles', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.HR], requiredAnyPermissions: ['tenant:admin', 'facility:admin', 'hr:write'], scope: 'tenant_or_facility', target: actionTarget('settings', 'users-roles') }),
-  actionDefinition({ id: 'run_report', label: 'Run report', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.BILLING, ROLES.OPERATIONS, ROLES.HR, ROLES.UNIT_MANAGER, ROLES.WARD_MANAGER, ROLES.ICU_MANAGER, ROLES.THEATRE_MANAGER, ROLES.HOUSEKEEPING_MANAGER, ROLES.BIOMED_MANAGER, ROLES.MORTUARY_MANAGER, ROLES.LAB_TECH, ROLES.RADIOLOGY_TECH, ROLES.PHARMACIST], requiredPermissions: ['reports:read'], requiredModules: ['reports'], scope: 'assigned_scope', target: actionTarget('reports', 'reports') }),
-  actionDefinition({ id: 'review_audit', label: 'Review audit/compliance', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.OPERATIONS, ROLES.MORTUARY_MANAGER, ROLES.BIOMED_MANAGER], requiredAnyPermissions: ['compliance:review', 'evidence:export'], scope: 'assigned_scope', target: actionTarget('reports', 'audit') }),
+  actionDefinition({ id: 'select_context', label: 'Select tenant/facility context', allowedRoles: [ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN], requiredAnyPermissions: ['platform:admin', 'tenant:admin'], scope: 'platform_or_tenant', target: actionTarget('settings', 'tenant-facility-context') }),
+  actionDefinition({ id: 'create_tenant', label: 'Create tenant', allowedRoles: [ROLES.PLATFORM_ADMIN], requiredPermissions: ['platform:admin'], scope: 'platform', target: actionTarget('settings', 'tenants', 'create') }),
+  actionDefinition({ id: 'create_facility', label: 'Create facility', allowedRoles: [ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], requiredAnyPermissions: ['tenant:admin', 'facility:admin'], scope: 'tenant_or_facility', target: actionTarget('settings', 'facilities', 'create') }),
+  actionDefinition({ id: 'create_role', label: 'Create role', allowedRoles: [ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], requiredAnyPermissions: ['tenant:admin', 'facility:admin', 'hr:write'], scope: 'tenant_or_facility', target: actionTarget('settings', 'roles', 'create') }),
+  actionDefinition({ id: 'create_user', label: 'Create user', allowedRoles: [ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], requiredAnyPermissions: ['tenant:admin', 'facility:admin', 'hr:write'], scope: 'tenant_or_facility', target: actionTarget('settings', 'users', 'create') }),
+  actionDefinition({ id: 'manage_tenants', label: 'Manage tenants', allowedRoles: [ROLES.PLATFORM_ADMIN], requiredPermissions: ['platform:admin'], scope: 'platform', target: actionTarget('settings', 'tenants') }),
+  actionDefinition({ id: 'manage_facilities', label: 'Manage facilities', allowedRoles: [ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN], requiredAnyPermissions: ['platform:admin', 'tenant:admin'], scope: 'platform_or_tenant', target: actionTarget('settings', 'facilities') }),
+  actionDefinition({ id: 'manage_roles_access', label: 'Manage roles and access', allowedRoles: [ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], requiredAnyPermissions: ['tenant:admin', 'facility:admin', 'hr:write'], scope: 'tenant_or_facility', target: actionTarget('settings', 'roles') }),
+  actionDefinition({ id: 'manage_users', label: 'Manage users', allowedRoles: [ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], requiredAnyPermissions: ['tenant:admin', 'facility:admin', 'hr:write'], scope: 'tenant_or_facility', target: actionTarget('settings', 'users') }),
+  actionDefinition({ id: 'manage_subscription', label: 'Manage subscription', allowedRoles: [ROLES.PLATFORM_ADMIN], requiredAnyPermissions: ['platform:admin'], scope: 'platform', target: actionTarget('subscriptions', 'subscriptions') }),
+  actionDefinition({ id: 'manage_users_roles', label: 'Manage users and roles', allowedRoles: [ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.HR], requiredAnyPermissions: ['tenant:admin', 'facility:admin', 'hr:write'], scope: 'tenant_or_facility', target: actionTarget('settings', 'users-roles') }),
+  actionDefinition({ id: 'run_report', label: 'Run report', allowedRoles: [ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.BILLING, ROLES.OPERATIONS, ROLES.HR, ROLES.UNIT_MANAGER, ROLES.WARD_MANAGER, ROLES.ICU_MANAGER, ROLES.THEATRE_MANAGER, ROLES.HOUSEKEEPING_MANAGER, ROLES.BIOMED_MANAGER, ROLES.MORTUARY_MANAGER, ROLES.LAB_TECH, ROLES.RADIOLOGY_TECH, ROLES.PHARMACIST], requiredPermissions: ['reports:read'], requiredModules: ['reports'], scope: 'assigned_scope', target: actionTarget('reports', 'reports') }),
+  actionDefinition({ id: 'review_audit', label: 'Review audit/compliance', allowedRoles: [ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.OPERATIONS, ROLES.MORTUARY_MANAGER, ROLES.BIOMED_MANAGER], requiredAnyPermissions: ['compliance:review', 'evidence:export'], scope: 'assigned_scope', target: actionTarget('reports', 'audit') }),
   actionDefinition({ id: 'register_patient', label: 'Register patient', allowedRoles: [ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST], requiredPermissions: ['patient:write'], requiredModules: ['patients'], scope: 'facility', target: actionTarget('patients', 'patients', 'create') }),
   actionDefinition({ id: 'book_appointment', label: 'Book appointment', allowedRoles: [ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST], requiredPermissions: ['patient:write'], requiredModules: ['scheduling'], scope: 'facility', target: actionTarget('scheduling', 'appointments', 'create') }),
   actionDefinition({ id: 'check_in_patient', label: 'Check in patient', allowedRoles: [ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST, ROLES.NURSE], requiredPermissions: ['patient:write'], requiredModules: ['scheduling'], scope: 'facility', target: actionTarget('scheduling', 'opd-flows') }),
@@ -283,7 +283,7 @@ const normalizeModuleEntitlements = (user = {}) => {
 const modulesEnabled = (user, modules = []) => {
   if (!modules.length) return true;
   const roles = getUserRoles(user);
-  if (roles.includes(ROLES.SUPER_ADMIN)) return true;
+  if (roles.includes(ROLES.PLATFORM_ADMIN)) return true;
 
   const enabled = normalizeModuleEntitlements(user);
   // Plan gate: missing entitlements means commercial modules are off for
@@ -1038,7 +1038,7 @@ const activeQueueDefinitions = Object.freeze({
 
 const ROLE_QUEUE_IDS = Object.freeze({
   [ROLE_PACKS.ADMIN]: ['appointments', 'admissions', 'billing_follow_up', 'maintenance_requests', 'housekeeping_tasks', 'staff_leaves'],
-  [ROLE_PACKS.SUPER_ADMIN]: [],
+  [ROLE_PACKS.PLATFORM_ADMIN]: [],
   [ROLE_PACKS.TENANT_ADMIN]: [],
   [ROLE_PACKS.FACILITY_ADMIN]: ['appointments', 'admissions', 'billing_follow_up', 'maintenance_requests', 'housekeeping_tasks', 'staff_leaves'],
   [ROLE_PACKS.DOCTOR]: [
@@ -1910,7 +1910,7 @@ const buildPlanUsage = (subscription = null, canManageSubscriptions = false) => 
 };
 
 const ALERT_MODULES_BY_PACK = Object.freeze({
-  [ROLE_PACKS.SUPER_ADMIN]: ['subscriptions', 'billing', 'operations', 'biomedical'],
+  [ROLE_PACKS.PLATFORM_ADMIN]: ['subscriptions', 'billing', 'operations', 'biomedical'],
   [ROLE_PACKS.TENANT_ADMIN]: ['subscriptions', 'operations'],
   [ROLE_PACKS.FACILITY_ADMIN]: ['billing', 'lab', 'ipd', 'operations', 'subscriptions'],
   [ROLE_PACKS.DOCTOR]: ['lab', 'radiology', 'ipd'],
@@ -2077,7 +2077,7 @@ const buildChecklist = ({ snapshot, facilityContext, packId }) => {
       ROLE_PACKS.DOCTOR,
       ROLE_PACKS.NURSE,
       ROLE_PACKS.ADMIN,
-      ROLE_PACKS.SUPER_ADMIN,
+      ROLE_PACKS.PLATFORM_ADMIN,
       ROLE_PACKS.TENANT_ADMIN,
       ROLE_PACKS.FACILITY_ADMIN,
     ].includes(packId)
@@ -2347,7 +2347,7 @@ const getWorkspace = async (
   const effectivePackId = resolvePackId(effectiveProfileId);
   const tenantContextQuickActions = resolveHomeQuickActions(user, effectivePackId, 8);
 
-  if (effectiveRole === ROLES.SUPER_ADMIN) {
+  if (effectiveRole === ROLES.PLATFORM_ADMIN) {
     return buildSuperAdminPlatformWorkspace({
       filters,
       page,
@@ -2638,7 +2638,7 @@ const getLookups = async (filters = {}, user = {}) => {
 
   const lookups = await dashboardWorkspaceRepository.findLookups({
     scope,
-    includeTenants: effectiveRole === ROLES.SUPER_ADMIN,
+    includeTenants: effectiveRole === ROLES.PLATFORM_ADMIN,
   });
 
   return {

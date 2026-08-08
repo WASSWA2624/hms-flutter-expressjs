@@ -202,7 +202,7 @@ final class AuthSession {
         .whereType<String>()
         .map((value) => value.trim())
         .where((value) => value.isNotEmpty)
-        .map(AppPermission.new)
+        .map(AppPermission.normalized)
         .toSet()
         .toList(growable: false);
   }

@@ -28,7 +28,7 @@ const mockUser = {
 
 const mockSuperAdminUser = {
   id: 'super-admin-1',
-  roles: ['SUPER_ADMIN']};
+  roles: ['PLATFORM_ADMIN']};
 
 const buildScopedDrug = (overrides = {}) => ({
   id: '123',

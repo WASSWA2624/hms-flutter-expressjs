@@ -80,7 +80,7 @@ describe('tenant scope middleware', () => {
       user: {
         id: 'user-4',
         tenant_id: 'tenant-4',
-        roles: ['SUPER_ADMIN']
+        roles: ['PLATFORM_ADMIN']
       },
       query: {},
       body: {

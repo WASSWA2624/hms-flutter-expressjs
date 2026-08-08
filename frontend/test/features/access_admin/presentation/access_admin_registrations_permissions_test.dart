@@ -94,10 +94,10 @@ AppAccessPolicy _elevatedPolicy({
   return _policy(
     permissions: permissions ??
         <AppPermission>{
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
           if (canWriteKeys) AppPermissions.tenantAdmin,
         },
-    roles: const <String>['SUPER_ADMIN'],
+    roles: const <String>['PLATFORM_ADMIN'],
   );
 }
 
@@ -211,22 +211,22 @@ void main() {
     });
 
     test(
-      'matrix ∩ system:admin maps to elevated gate (source wins over bare key)',
+      'matrix ∩ platform:admin maps to elevated gate (source wins over bare key)',
       () {
         final AppAccessPolicy bareSystem = _policy(
-          permissions: <AppPermission>{AppPermissions.systemAdmin},
+          permissions: <AppPermission>{AppPermissions.platformAdmin},
           roles: const <String>['TENANT_ADMIN'],
         );
         expect(
           accessAdminRegistrationsReadRequirement.isAllowed(bareSystem),
           isTrue,
         );
-        // Source inventory: elevated-only — bare system:admin is not enough.
+        // Source inventory: elevated-only — bare platform:admin is not enough.
         expect(canReadAccessAdminRegistrations(bareSystem), isFalse);
       },
     );
 
-    test('elevated SUPER_ADMIN satisfies Registrations read', () {
+    test('elevated PLATFORM_ADMIN satisfies Registrations read', () {
       final AppAccessPolicy elevated = _elevatedPolicy();
       expect(canReadAccessAdminRegistrations(elevated), isTrue);
       expect(
@@ -236,10 +236,10 @@ void main() {
       );
     });
 
-    test('∪ workspace: system:admin alone satisfies route entry', () {
+    test('∪ workspace: platform:admin alone satisfies route entry', () {
       final AppAccessPolicy systemOnly = _policy(
-        permissions: <AppPermission>{AppPermissions.systemAdmin},
-        roles: const <String>['SUPER_ADMIN'],
+        permissions: <AppPermission>{AppPermissions.platformAdmin},
+        roles: const <String>['PLATFORM_ADMIN'],
       );
       expect(canReadAccessAdmin(systemOnly), isTrue);
       expect(canAccessShellRoute(AppRoutes.accessAdmin, systemOnly), isTrue);
@@ -306,8 +306,8 @@ void main() {
 
     test('elevated read does not require tenant ABAC context', () {
       final AppAccessPolicy platformElevated = _policy(
-        permissions: <AppPermission>{AppPermissions.systemAdmin},
-        roles: const <String>['SUPER_ADMIN'],
+        permissions: <AppPermission>{AppPermissions.platformAdmin},
+        roles: const <String>['PLATFORM_ADMIN'],
         tenantId: null,
         facilityId: null,
       );

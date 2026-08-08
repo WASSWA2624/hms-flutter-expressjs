@@ -484,7 +484,7 @@ const getWorkspace = async (filters = {}, user = {}) => {
     settingsWorkspaceRepository.findModuleMetrics(scope),
     settingsWorkspaceRepository.findReferenceData({
       scope,
-      includeTenants: roleList(user).includes(ROLES.SUPER_ADMIN),
+      includeTenants: roleList(user).includes(ROLES.PLATFORM_ADMIN),
     }),
   ]);
 
@@ -553,7 +553,7 @@ const getReferenceData = async (filters = {}, user = {}) => {
   const scope = scopeResult.scope;
   const referenceData = await settingsWorkspaceRepository.findReferenceData({
     scope,
-    includeTenants: roleList(user).includes(ROLES.SUPER_ADMIN),
+    includeTenants: roleList(user).includes(ROLES.PLATFORM_ADMIN),
   });
 
   return {

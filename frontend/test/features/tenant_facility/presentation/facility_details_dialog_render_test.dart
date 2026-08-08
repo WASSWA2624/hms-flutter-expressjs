@@ -85,7 +85,7 @@ void main() {
         user: const AuthUserProfile(
           tenantId: 'tenant-1',
           facilityId: 'facility-1',
-          roles: <String>['SUPER_ADMIN'],
+          roles: <String>['PLATFORM_ADMIN'],
         ),
         isAuthorizationHydrated: true,
       ),

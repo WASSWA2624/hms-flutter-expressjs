@@ -103,9 +103,9 @@ HomeDashboard _tenantDashboard({required int activeCount}) {
   return HomeDashboard(
     state: HomeDashboardLoadState.ready,
     profile: const HomeDashboardProfile(
-      id: 'super_admin',
-      role: AppRole.superAdmin,
-      roleLabel: 'Super Admin',
+      id: 'platform_admin',
+      role: AppRole.platformAdmin,
+      roleLabel: 'Platform Admin',
       homeTitle: 'Dashboard',
       emptyMessage: 'Empty',
       statusCards: <HomeStatusCardTemplate>[],

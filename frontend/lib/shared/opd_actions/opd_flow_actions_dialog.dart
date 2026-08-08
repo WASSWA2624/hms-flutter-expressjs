@@ -41,7 +41,7 @@ import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/opd_actions/record_vitals_dialog.dart';
 
 const List<AppRole> _opdAdminActionRoles = <AppRole>[
-  AppRole.superAdmin,
+  AppRole.platformAdmin,
   AppRole.tenantAdmin,
   AppRole.facilityAdmin,
 ];

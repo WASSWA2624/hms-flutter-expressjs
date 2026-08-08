@@ -83,7 +83,7 @@ describe('License Service', () => {
         license_type: 'PER_USER',
         status: 'ACTIVE'},
       {
-        user: { id: 'user-1', role: 'SUPER_ADMIN' },
+        user: { id: 'user-1', role: 'PLATFORM_ADMIN' },
         ip: '127.0.0.1',
         tenant_id: 'tenant-uuid'}
     );
@@ -108,7 +108,7 @@ describe('License Service', () => {
       'LIC0001',
       { status: 'CANCELLED' },
       {
-        user: { id: 'user-1', role: 'SUPER_ADMIN' },
+        user: { id: 'user-1', role: 'PLATFORM_ADMIN' },
         ip: '127.0.0.1',
         tenant_id: 'tenant-uuid'}
     );

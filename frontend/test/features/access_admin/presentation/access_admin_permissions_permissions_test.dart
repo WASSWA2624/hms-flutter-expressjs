@@ -185,10 +185,10 @@ void main() {
       );
     });
 
-    test('∪ read: system:admin alone satisfies permissions read', () {
+    test('∪ read: platform:admin alone satisfies permissions read', () {
       final AppAccessPolicy systemOnly = _policy(
-        permissions: <AppPermission>{AppPermissions.systemAdmin},
-        roles: const <String>['SUPER_ADMIN'],
+        permissions: <AppPermission>{AppPermissions.platformAdmin},
+        roles: const <String>['PLATFORM_ADMIN'],
       );
       expect(canReadAccessAdminPermissions(systemOnly), isTrue);
     });
@@ -338,7 +338,7 @@ void main() {
         containsAll(<AppPermission>[
           AppPermissions.tenantAdmin,
           AppPermissions.facilityAdmin,
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
         ]),
       );
       expect(
@@ -437,10 +437,10 @@ void main() {
       (WidgetTester tester) async {
         final AppAccessPolicy elevated = _policy(
           permissions: <AppPermission>{
-            AppPermissions.systemAdmin,
+            AppPermissions.platformAdmin,
             AppPermissions.tenantAdmin,
           },
-          roles: const <String>['SUPER_ADMIN'],
+          roles: const <String>['PLATFORM_ADMIN'],
         );
         await _pumpPermissions(
           tester,
@@ -505,11 +505,11 @@ void main() {
     );
 
     testWidgets(
-      '∪ allowance: system:admin alone shows Permissions chrome',
+      '∪ allowance: platform:admin alone shows Permissions chrome',
       (WidgetTester tester) async {
         final AppAccessPolicy systemOnly = _policy(
-          permissions: <AppPermission>{AppPermissions.systemAdmin},
-          roles: const <String>['SUPER_ADMIN'],
+          permissions: <AppPermission>{AppPermissions.platformAdmin},
+          roles: const <String>['PLATFORM_ADMIN'],
         );
         await _pumpPermissions(
           tester,

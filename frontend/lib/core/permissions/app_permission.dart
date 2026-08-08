@@ -1,6 +1,16 @@
 final class AppPermission {
   const AppPermission(this.value);
 
+  factory AppPermission.normalized(String value) {
+    final String raw = value.trim();
+    if (raw == 'system:admin' ||
+        raw.toUpperCase().replaceAll(RegExp(r'[\s-]+'), '_') ==
+            'SYSTEM_ADMIN') {
+      return const AppPermission('platform:admin');
+    }
+    return AppPermission(raw);
+  }
+
   final String value;
 
   @override

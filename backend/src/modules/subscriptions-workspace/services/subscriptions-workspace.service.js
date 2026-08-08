@@ -214,7 +214,7 @@ const currentRoles = (user = {}) =>
     .map((entry) => text(entry).toUpperCase())
     .filter(Boolean);
 
-const isGlobalAdmin = (user = {}) => currentRoles(user).includes(ROLES.SUPER_ADMIN);
+const isGlobalAdmin = (user = {}) => currentRoles(user).includes(ROLES.PLATFORM_ADMIN);
 
 const buildPagination = (page, limit, total) => {
   const totalPages = total > 0 ? Math.ceil(total / limit) : 0;

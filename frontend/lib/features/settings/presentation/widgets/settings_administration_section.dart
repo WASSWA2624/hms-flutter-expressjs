@@ -20,7 +20,7 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 /// | --- | --- | --- |
 /// | Section chrome / tab strip entry | read | `profile:read` ∩ admin ∪ |
 /// | Tenant and facility setup tile | navigate | catalog `setup:read` ∩ facility |
-/// | Subscription plans tile | navigate | catalog platform-admin (`system:admin` ∪ `SUPER_ADMIN`) |
+/// | Subscription plans tile | navigate | catalog platform-admin (`platform:admin` ∪ `PLATFORM_ADMIN`) |
 /// | Users and access tile | navigate | catalog `access_admin:read` ∩ tenant |
 /// | Create / update / delete / nested write | — | matrix keys; **not mounted** |
 ///

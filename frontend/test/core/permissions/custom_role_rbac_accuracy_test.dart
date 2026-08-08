@@ -61,6 +61,7 @@ void main() {
     setUp(() {
       policy = _customPolicy(const <AppPermission>[
         AppPermissions.billingRead,
+        AppPermissions.claimsRead,
         AppPermissions.clinicalRead,
         AppPermissions.labRead,
         AppPermissions.profileRead,

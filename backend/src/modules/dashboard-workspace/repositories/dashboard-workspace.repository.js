@@ -11,7 +11,7 @@ const resolveWorkspaceScope = async ({ filters = {}, user = {}, effectiveRole = 
     const userTenantId = user.tenant_id || user.tenantId || null;
     const userFacilityId = user.facility_id || user.facilityId || null;
 
-    if (effectiveRole === 'SUPER_ADMIN') {
+    if (effectiveRole === 'PLATFORM_ADMIN') {
       const tenantId = await resolveIdentifierForFilter({
         value: requestedTenantId || userTenantId,
         model: 'tenant'

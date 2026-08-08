@@ -58,7 +58,7 @@ void main() {
                             fullName: 'Platform Demo',
                             email: 'super.admin@hosspi.com',
                             phone: '+256700000012',
-                            roleName: 'SUPER_ADMIN',
+                            roleName: 'PLATFORM_ADMIN',
                           ),
                           OrgAdminContact(
                             email: 'support@hosspi.com',

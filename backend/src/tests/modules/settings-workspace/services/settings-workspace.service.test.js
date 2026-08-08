@@ -72,12 +72,12 @@ describe('settings-workspace service', () => {
     expect(result.quick_actions.some((entry) => entry.module_id === 'api-key')).toBe(false);
   });
 
-  it('returns tenant-context-required state when super admin has no tenant selected', async () => {
+  it('returns tenant-context-required state when platform admin has no tenant selected', async () => {
     repository.resolveWorkspaceScope.mockResolvedValueOnce({
       state: 'tenant_context_required',
       scope: null});
 
-    const result = await service.getWorkspace({}, { role: 'SUPER_ADMIN' });
+    const result = await service.getWorkspace({}, { role: 'PLATFORM_ADMIN' });
 
     expect(result.state).toBe('tenant_context_required');
     expect(result.lookups.tenants.length).toBeGreaterThanOrEqual(0);

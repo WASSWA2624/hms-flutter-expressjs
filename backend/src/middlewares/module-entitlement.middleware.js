@@ -535,7 +535,7 @@ const isSuperAdminUser = (user = {}) => {
   return rawRoles.some((entry) => {
     const normalized =
       normalizeRoleName(entry) || String(entry || '').trim().toUpperCase();
-    return normalized === ROLES.SUPER_ADMIN;
+    return normalized === ROLES.PLATFORM_ADMIN;
   });
 };
 
@@ -569,7 +569,7 @@ const enforceModuleEntitlement = () => async (req, res, next) => {
 
     const user = req.user || {};
     // Platform operators manage catalog/subscriptions across tenants; commercial
-    // plan packaging must not block SUPER_ADMIN ops tooling.
+    // plan packaging must not block PLATFORM_ADMIN ops tooling.
     if (isSuperAdminUser(user)) {
       return next();
     }

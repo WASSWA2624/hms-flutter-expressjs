@@ -149,7 +149,7 @@ Utility scripts are located in the `scripts/` directory. See `scripts/README.md`
 
 ### Setup Default Accounts
 
-Create one default demo account for each user type in the seeded `DemoCare General Hospital` workspace (SUPER_ADMIN, TENANT_ADMIN, DOCTOR, NURSE, OPERATIONS, HR, BIOMED, HOUSE_KEEPER, etc.):
+Create one default demo account for each user type in the seeded `DemoCare General Hospital` workspace (PLATFORM_ADMIN, TENANT_ADMIN, DOCTOR, NURSE, OPERATIONS, HR, BIOMED, HOUSE_KEEPER, etc.):
 
 ```bash
 npm run setup:accounts

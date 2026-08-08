@@ -31,7 +31,7 @@ const AccessRequirement integrationsWorkspaceEntryRequirement =
         AppPermissions.integrationWrite,
         AppPermissions.tenantAdmin,
         AppPermissions.facilityAdmin,
-        AppPermissions.systemAdmin,
+        AppPermissions.platformAdmin,
       ],
       activeModules: <String>[integrationsCoreModule],
     );
@@ -48,7 +48,7 @@ const AccessRequirement integrationsWorkspaceManageRequirement =
         AppPermissions.integrationWrite,
         AppPermissions.tenantAdmin,
         AppPermissions.facilityAdmin,
-        AppPermissions.systemAdmin,
+        AppPermissions.platformAdmin,
       ],
       activeModules: <String>[integrationsCoreModule],
     );

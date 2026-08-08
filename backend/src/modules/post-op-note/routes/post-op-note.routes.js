@@ -21,7 +21,7 @@ const {
 } = require('@validations/post-op-note/post-op-note.schema');
 
 const THEATRE_ALLOWED_ROLES = [
-  ROLES.SUPER_ADMIN,
+  ROLES.PLATFORM_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,

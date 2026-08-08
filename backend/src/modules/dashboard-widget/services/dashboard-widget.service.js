@@ -52,7 +52,7 @@ const ROLE_PACKS = dashboardWidgetRepository.__private__?.ROLE_PACKS || {
 };
 
 const ROLE_PROFILE_IDS = Object.freeze({
-  [ROLES.SUPER_ADMIN]: 'super_admin',
+  [ROLES.PLATFORM_ADMIN]: 'platform_admin',
   [ROLES.TENANT_ADMIN]: 'tenant_admin',
   [ROLES.FACILITY_ADMIN]: 'facility_admin',
   [ROLES.DOCTOR]: 'doctor',
@@ -70,6 +70,8 @@ const ROLE_PROFILE_IDS = Object.freeze({
 });
 
 const PROFILE_TO_PACK = Object.freeze({
+  platform_admin: ROLE_PACKS.ADMIN,
+  // Legacy profile id retained for persisted dashboard layouts.
   super_admin: ROLE_PACKS.ADMIN,
   tenant_admin: ROLE_PACKS.ADMIN,
   facility_admin: ROLE_PACKS.ADMIN,
@@ -183,7 +185,7 @@ const resolveScope = async (query = {}, user = {}, effectiveRole = null) => {
     facility_id: user.facility_id || user.facilityId || null
   };
 
-  if (effectiveRole === ROLES.SUPER_ADMIN) {
+  if (effectiveRole === ROLES.PLATFORM_ADMIN) {
     const tenantId = query.tenant_id || userScope.tenant_id || null;
     const facilityId = query.facility_id || userScope.facility_id || null;
 

@@ -8,11 +8,11 @@ describe('effective-access', () => {
     const { getRoleNames, userHasSuperAdminRole } = require('@lib/authorization/effective-access');
     const user = {
       roles: [
-        { role: { name: ROLES.SUPER_ADMIN } },
+        { role: { name: ROLES.PLATFORM_ADMIN } },
         { role: { name: 'ADMINISTRATOR' } }]};
 
     expect(getRoleNames(user)).toEqual(
-      expect.arrayContaining([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN])
+      expect.arrayContaining([ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN])
     );
     expect(userHasSuperAdminRole(user)).toBe(true);
   });
@@ -128,9 +128,9 @@ describe('effective-access', () => {
     }
   });
 
-  test('super admin remains plan-gated in a tenant context', () => {
+  test('platform admin remains plan-gated in a tenant context', () => {
     const permissions = resolveRequestPermissionNames({
-      roles: [ROLES.SUPER_ADMIN],
+      roles: [ROLES.PLATFORM_ADMIN],
       permissions: ['clinical:read', 'billing:write'],
       module_entitlements: [
         { module_slug: 'encounters-vitals', is_active: true }],
@@ -140,13 +140,13 @@ describe('effective-access', () => {
     expect(permissions).not.toContain('billing:write');
   });
 
-  test('platform super admin without tenant context keeps platform grants', () => {
+  test('platform platform admin without tenant context keeps platform grants', () => {
     const permissions = resolveRequestPermissionNames({
-      roles: [ROLES.SUPER_ADMIN],
-      permissions: ['system:admin']});
+      roles: [ROLES.PLATFORM_ADMIN],
+      permissions: ['platform:admin']});
 
     expect(permissions).toEqual(
-      expect.arrayContaining(['system:admin', 'reports:read'])
+      expect.arrayContaining(['platform:admin', 'reports:read'])
     );
   });
 

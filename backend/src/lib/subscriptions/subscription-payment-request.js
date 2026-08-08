@@ -319,7 +319,7 @@ const submitPaymentRequest = async (payload = {}, files = [], user = {}, ip = nu
 };
 
 /**
- * List pending payment requests for platform super admins.
+ * List pending payment requests for platform platform admins.
  *
  * @returns {Promise<Array<Object>>}
  */

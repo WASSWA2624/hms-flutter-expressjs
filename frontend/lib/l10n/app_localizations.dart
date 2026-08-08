@@ -38846,8 +38846,8 @@ abstract class AppLocalizations {
   /// Permission catalog label.
   ///
   /// In en, this message translates to:
-  /// **'System — Admin'**
-  String get permissionCatalogSystemAdmin;
+  /// **'Platform — Admin'**
+  String get permissionCatalogPlatformAdmin;
 
   /// Permission catalog label.
   ///
@@ -44348,7 +44348,7 @@ abstract class AppLocalizations {
   /// **'All facilities'**
   String get accessAdminAllFacilitiesFilterLabel;
 
-  /// Manage users filter choice to show users across every tenant (super admin).
+  /// Manage users filter choice to show users across every tenant (platform admin).
   ///
   /// In en, this message translates to:
   /// **'All tenants'**

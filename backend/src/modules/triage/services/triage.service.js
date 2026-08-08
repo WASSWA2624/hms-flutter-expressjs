@@ -133,7 +133,7 @@ const normalizeNotes = (value) => {
   const normalized = typeof value === 'string' ? value.trim() : '';
   return normalized || null;
 };
-const isElevatedContext = (context = {}) => Array.isArray(context.roles) && context.roles.includes('SUPER_ADMIN');
+const isElevatedContext = (context = {}) => Array.isArray(context.roles) && context.roles.includes('PLATFORM_ADMIN');
 
 const assertEncounterScope = (encounter, context = {}) => {
   if (!encounter || isElevatedContext(context)) return;

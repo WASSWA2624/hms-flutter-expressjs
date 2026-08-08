@@ -86,7 +86,7 @@ const Set<String> _backendPermissionCodes = <String>{
   'financial:approve',
   'facility:admin',
   'tenant:admin',
-  'system:admin',
+  'platform:admin',
   'platform:owner',
 };
 

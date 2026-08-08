@@ -13,7 +13,7 @@ void main() {
       final AppAccessPolicy policy = AppAccessPolicy.fromSession(
         AuthSession(
           tokens: SessionTokens(accessToken: 't'),
-          user: const AuthUserProfile(roles: <String>['SUPER_ADMIN']),
+          user: const AuthUserProfile(roles: <String>['PLATFORM_ADMIN']),
         ),
       );
 
@@ -135,7 +135,7 @@ void main() {
       final AppAccessPolicy policy = AppAccessPolicy.fromSession(
         AuthSession(
           tokens: SessionTokens(accessToken: 't'),
-          user: const AuthUserProfile(roles: <String>['SUPER_ADMIN']),
+          user: const AuthUserProfile(roles: <String>['PLATFORM_ADMIN']),
         ),
       );
 

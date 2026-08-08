@@ -136,21 +136,21 @@ void main() {
   );
 
   testWidgets(
-    'system:admin ∪ with profile:read mounts authorized workspace chrome',
+    'platform:admin ∪ with profile:read mounts authorized workspace chrome',
     (WidgetTester tester) async {
       await _pumpWorkspace(
         tester,
         workspace: _workspace(SettingsWorkspaceStatus.ready),
         permissions: <AppPermission>[
           AppPermissions.profileRead,
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
         ],
-        roles: const <String>['SUPER_ADMIN'],
+        roles: const <String>['PLATFORM_ADMIN'],
       );
 
       expect(find.text('Administrative setup workspace'), findsOneWidget);
       expect(find.text('Open'), findsOneWidget);
-      // Create remains ∩ facility:admin — system:admin alone does not mount it.
+      // Create remains ∩ facility:admin — platform:admin alone does not mount it.
       expect(find.text('Create'), findsNothing);
     },
   );

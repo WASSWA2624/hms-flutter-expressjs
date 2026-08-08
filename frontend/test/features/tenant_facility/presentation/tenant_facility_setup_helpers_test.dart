@@ -477,7 +477,7 @@ void main() {
       final AppAccessPolicy platform = AppAccessPolicy.fromSession(
         AuthSession(
           tokens: SessionTokens(accessToken: 't'),
-          user: const AuthUserProfile(roles: <String>['SUPER_ADMIN']),
+          user: const AuthUserProfile(roles: <String>['PLATFORM_ADMIN']),
         ),
       );
       final AppAccessPolicy tenant = AppAccessPolicy.fromSession(
@@ -521,7 +521,7 @@ void main() {
       final AppAccessPolicy platform = AppAccessPolicy.fromSession(
         AuthSession(
           tokens: SessionTokens(accessToken: 't'),
-          user: const AuthUserProfile(roles: <String>['SUPER_ADMIN']),
+          user: const AuthUserProfile(roles: <String>['PLATFORM_ADMIN']),
         ),
       );
       final AppAccessPolicy tenant = AppAccessPolicy.fromSession(

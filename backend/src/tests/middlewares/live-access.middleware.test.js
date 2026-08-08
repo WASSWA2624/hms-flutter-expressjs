@@ -53,9 +53,9 @@ describe('live-access.middleware', () => {
         {
           role_id: 'role-1',
           role: {
-            name: ROLES.SUPER_ADMIN,
+            name: ROLES.PLATFORM_ADMIN,
             permissions: [
-              { permission: { name: 'system:admin' } },
+              { permission: { name: 'platform:admin' } },
               { permission: { name: 'clinical:read' } }]}}]});
     resolveTenantModuleEntitlements.mockResolvedValue([
       { module_slug: 'encounters-vitals', is_active: true }]);
@@ -64,23 +64,23 @@ describe('live-access.middleware', () => {
       user: {
         id: 'user-1',
         tenant_id: 'tenant-1',
-        roles: [ROLES.SUPER_ADMIN],
-        permissions: ['system:admin', 'clinical:read']}};
+        roles: [ROLES.PLATFORM_ADMIN],
+        permissions: ['platform:admin', 'clinical:read']}};
     const next = jest.fn();
 
     await hydrateLiveAccess()(req, {}, next);
 
     expect(next).toHaveBeenCalledWith();
-    expect(req.user.roles).toEqual([ROLES.SUPER_ADMIN]);
-    expect(req.user.role).toBe(ROLES.SUPER_ADMIN);
+    expect(req.user.roles).toEqual([ROLES.PLATFORM_ADMIN]);
+    expect(req.user.role).toBe(ROLES.PLATFORM_ADMIN);
   });
 
-  it('plan-gates super admins when operating in a tenant', async () => {
+  it('plan-gates platform admins when operating in a tenant', async () => {
     authRepository.findUserById.mockResolvedValue({
       id: 'user-1',
       tenant_id: 'tenant-1',
       status: 'ACTIVE',
-      roles: [ROLES.SUPER_ADMIN],
+      roles: [ROLES.PLATFORM_ADMIN],
       role_permissions: ['clinical:read', 'billing:write']});
     resolveTenantModuleEntitlements.mockResolvedValue([
       { module_slug: 'encounters-vitals', is_active: true }]);
@@ -88,7 +88,7 @@ describe('live-access.middleware', () => {
       user: {
         id: 'user-1',
         tenant_id: 'tenant-1',
-        roles: [ROLES.SUPER_ADMIN],
+        roles: [ROLES.PLATFORM_ADMIN],
         permissions: ['clinical:read', 'billing:write']}};
     const next = jest.fn();
 

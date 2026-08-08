@@ -145,7 +145,7 @@ describe('subscriptions-workspace.service', () => {
       20,
       'updated_at',
       'desc',
-      { role: 'SUPER_ADMIN' }
+      { role: 'PLATFORM_ADMIN' }
     );
 
     expect(result.summary).toEqual(
@@ -190,7 +190,7 @@ describe('subscriptions-workspace.service', () => {
     const result = await subject.resolveLegacyRoute(
       'subscriptions',
       'SUB0001',
-      { role: 'SUPER_ADMIN' }
+      { role: 'PLATFORM_ADMIN' }
     );
 
     expect(repository.resolveLegacyRecord).toHaveBeenCalledWith(
@@ -218,7 +218,7 @@ describe('subscriptions-workspace.service', () => {
       20,
       'issued_at',
       'asc',
-      { role: 'SUPER_ADMIN' }
+      { role: 'PLATFORM_ADMIN' }
     );
 
     expect(repository.findItems).toHaveBeenCalledWith(
@@ -244,7 +244,7 @@ describe('subscriptions-workspace.service', () => {
       20,
       'change_status',
       'desc',
-      { role: 'SUPER_ADMIN' }
+      { role: 'PLATFORM_ADMIN' }
     );
 
     expect(repository.findItems).toHaveBeenCalledWith(

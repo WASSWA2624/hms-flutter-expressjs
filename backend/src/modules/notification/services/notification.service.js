@@ -24,7 +24,7 @@ const HUB_SORT_FIELDS = new Set([
   'notification_type']);
 
 const ADMIN_NOTIFICATION_ROLES = new Set([
-  ROLES.SUPER_ADMIN,
+  ROLES.PLATFORM_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN]);
 const DEFAULT_DELIVERY_CHANNELS = ['IN_APP'];
@@ -104,7 +104,7 @@ const resolveActorRoles = (actor = {}) =>
     .map((entry) => normalizeRoleName(entry) || String(entry || '').trim().toUpperCase())
     .filter(Boolean);
 
-const isGlobalAdmin = (actor = {}) => resolveActorRoles(actor).includes(ROLES.SUPER_ADMIN);
+const isGlobalAdmin = (actor = {}) => resolveActorRoles(actor).includes(ROLES.PLATFORM_ADMIN);
 const hasAdminNotificationAccess = (actor = {}) =>
   resolveActorRoles(actor).some((role) => ADMIN_NOTIFICATION_ROLES.has(role));
 

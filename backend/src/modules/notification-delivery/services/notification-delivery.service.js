@@ -21,7 +21,7 @@ const DELIVERY_SORT_FIELDS = new Set([
   'channel']);
 
 const ADMIN_NOTIFICATION_ROLES = new Set([
-  ROLES.SUPER_ADMIN,
+  ROLES.PLATFORM_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN]);
 
@@ -40,7 +40,7 @@ const actorRoles = (actor = {}) =>
   (Array.isArray(actor.roles) ? actor.roles : actor.role ? [actor.role] : [])
     .map((entry) => normalizeRoleName(entry) || String(entry || '').trim().toUpperCase())
     .filter(Boolean);
-const isGlobalAdmin = (actor = {}) => actorRoles(actor).includes(ROLES.SUPER_ADMIN);
+const isGlobalAdmin = (actor = {}) => actorRoles(actor).includes(ROLES.PLATFORM_ADMIN);
 const hasAdminNotificationAccess = (actor = {}) =>
   actorRoles(actor).some((entry) => ADMIN_NOTIFICATION_ROLES.has(entry));
 

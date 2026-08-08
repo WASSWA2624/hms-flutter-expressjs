@@ -192,10 +192,10 @@ void main() {
       );
     });
 
-    test('∪ read: system:admin alone satisfies roles read', () {
+    test('∪ read: platform:admin alone satisfies roles read', () {
       final AppAccessPolicy systemOnly = _policy(
-        permissions: <AppPermission>{AppPermissions.systemAdmin},
-        roles: const <String>['SUPER_ADMIN'],
+        permissions: <AppPermission>{AppPermissions.platformAdmin},
+        roles: const <String>['PLATFORM_ADMIN'],
       );
       expect(canReadAccessAdminRoles(systemOnly), isTrue);
     });
@@ -331,7 +331,7 @@ void main() {
         containsAll(<AppPermission>[
           AppPermissions.tenantAdmin,
           AppPermissions.facilityAdmin,
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
         ]),
       );
       expect(
@@ -343,8 +343,8 @@ void main() {
     test('Registrations panel only when elevated', () {
       final AppAccessPolicy tenant = _policy();
       final AppAccessPolicy elevated = _policy(
-        permissions: <AppPermission>{AppPermissions.systemAdmin},
-        roles: const <String>['SUPER_ADMIN'],
+        permissions: <AppPermission>{AppPermissions.platformAdmin},
+        roles: const <String>['PLATFORM_ADMIN'],
       );
       expect(
         accessAdminAllowedPanels(tenant)
@@ -424,11 +424,11 @@ void main() {
     );
 
     testWidgets(
-      '∪ allowance: system:admin alone shows Roles chrome + write',
+      '∪ allowance: platform:admin alone shows Roles chrome + write',
       (WidgetTester tester) async {
         final AppAccessPolicy systemOnly = _policy(
-          permissions: <AppPermission>{AppPermissions.systemAdmin},
-          roles: const <String>['SUPER_ADMIN'],
+          permissions: <AppPermission>{AppPermissions.platformAdmin},
+          roles: const <String>['PLATFORM_ADMIN'],
         );
         await _pumpRoles(
           tester,

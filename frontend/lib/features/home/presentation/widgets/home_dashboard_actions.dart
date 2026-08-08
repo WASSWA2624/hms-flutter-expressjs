@@ -760,7 +760,7 @@ homeActionLibrary = <String, HomeActionDefinition>{
     icon: Icons.analytics_outlined,
     route: AppRoutes.reports,
     allowedRoles: <AppRole>[
-      AppRole.superAdmin,
+      AppRole.platformAdmin,
       AppRole.tenantAdmin,
       AppRole.facilityAdmin,
       AppRole.billing,
@@ -785,17 +785,17 @@ homeActionLibrary = <String, HomeActionDefinition>{
     label: 'Manage subscription',
     icon: Icons.workspace_premium_outlined,
     route: AppRoutes.subscriptions,
-    allowedRoles: <AppRole>[AppRole.superAdmin],
-    requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
+    allowedRoles: <AppRole>[AppRole.platformAdmin],
+    requiredPermissions: <AppPermission>[AppPermissions.platformAdmin],
   ),
   'select_context': HomeActionDefinition(
     id: 'select_context',
     label: 'Select tenant/facility',
     icon: Icons.account_tree_outlined,
     route: AppRoutes.tenantFacilitySetup,
-    allowedRoles: <AppRole>[AppRole.superAdmin, AppRole.tenantAdmin],
+    allowedRoles: <AppRole>[AppRole.platformAdmin, AppRole.tenantAdmin],
     requiredAnyPermissions: <AppPermission>[
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
       AppPermissions.tenantAdmin,
     ],
   ),
@@ -804,8 +804,8 @@ homeActionLibrary = <String, HomeActionDefinition>{
     label: 'Create tenant',
     icon: Icons.add_business_outlined,
     route: AppRoutes.tenantFacilitySetup,
-    allowedRoles: <AppRole>[AppRole.superAdmin],
-    requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
+    allowedRoles: <AppRole>[AppRole.platformAdmin],
+    requiredPermissions: <AppPermission>[AppPermissions.platformAdmin],
   ),
   'create_facility': HomeActionDefinition(
     id: 'create_facility',
@@ -813,12 +813,12 @@ homeActionLibrary = <String, HomeActionDefinition>{
     icon: Icons.apartment_outlined,
     route: AppRoutes.tenantFacilitySetup,
     allowedRoles: <AppRole>[
-      AppRole.superAdmin,
+      AppRole.platformAdmin,
       AppRole.tenantAdmin,
       AppRole.facilityAdmin,
     ],
     requiredAnyPermissions: <AppPermission>[
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
     ],
@@ -829,12 +829,12 @@ homeActionLibrary = <String, HomeActionDefinition>{
     icon: Icons.add_moderator_outlined,
     route: AppRoutes.accessAdmin,
     allowedRoles: <AppRole>[
-      AppRole.superAdmin,
+      AppRole.platformAdmin,
       AppRole.tenantAdmin,
       AppRole.facilityAdmin,
     ],
     requiredAnyPermissions: <AppPermission>[
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
       AppPermissions.hrWrite,
@@ -846,12 +846,12 @@ homeActionLibrary = <String, HomeActionDefinition>{
     icon: Icons.person_add_alt_1_outlined,
     route: AppRoutes.accessAdmin,
     allowedRoles: <AppRole>[
-      AppRole.superAdmin,
+      AppRole.platformAdmin,
       AppRole.tenantAdmin,
       AppRole.facilityAdmin,
     ],
     requiredAnyPermissions: <AppPermission>[
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
       AppPermissions.hrWrite,
@@ -862,17 +862,17 @@ homeActionLibrary = <String, HomeActionDefinition>{
     label: 'Manage tenants',
     icon: Icons.corporate_fare_outlined,
     route: AppRoutes.tenantFacilitySetup,
-    allowedRoles: <AppRole>[AppRole.superAdmin],
-    requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
+    allowedRoles: <AppRole>[AppRole.platformAdmin],
+    requiredPermissions: <AppPermission>[AppPermissions.platformAdmin],
   ),
   'manage_facilities': HomeActionDefinition(
     id: 'manage_facilities',
     label: 'Manage facilities',
     icon: Icons.domain_outlined,
     route: AppRoutes.tenantFacilitySetup,
-    allowedRoles: <AppRole>[AppRole.superAdmin, AppRole.tenantAdmin],
+    allowedRoles: <AppRole>[AppRole.platformAdmin, AppRole.tenantAdmin],
     requiredAnyPermissions: <AppPermission>[
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
       AppPermissions.tenantAdmin,
     ],
   ),
@@ -882,12 +882,12 @@ homeActionLibrary = <String, HomeActionDefinition>{
     icon: Icons.admin_panel_settings_outlined,
     route: AppRoutes.accessAdmin,
     allowedRoles: <AppRole>[
-      AppRole.superAdmin,
+      AppRole.platformAdmin,
       AppRole.tenantAdmin,
       AppRole.facilityAdmin,
     ],
     requiredAnyPermissions: <AppPermission>[
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
       AppPermissions.hrWrite,
@@ -899,12 +899,12 @@ homeActionLibrary = <String, HomeActionDefinition>{
     icon: Icons.people_outline,
     route: AppRoutes.accessAdmin,
     allowedRoles: <AppRole>[
-      AppRole.superAdmin,
+      AppRole.platformAdmin,
       AppRole.tenantAdmin,
       AppRole.facilityAdmin,
     ],
     requiredAnyPermissions: <AppPermission>[
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
       AppPermissions.hrWrite,
@@ -916,7 +916,7 @@ homeActionLibrary = <String, HomeActionDefinition>{
     icon: Icons.manage_accounts_outlined,
     route: AppRoutes.accessAdmin,
     allowedRoles: <AppRole>[
-      AppRole.superAdmin,
+      AppRole.platformAdmin,
       AppRole.tenantAdmin,
       AppRole.facilityAdmin,
       AppRole.operations,
@@ -924,7 +924,7 @@ homeActionLibrary = <String, HomeActionDefinition>{
     requiredAnyPermissions: <AppPermission>[
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
     ],
   ),
   'manage_staff_access': HomeActionDefinition(
@@ -942,7 +942,7 @@ homeActionLibrary = <String, HomeActionDefinition>{
     icon: Icons.policy_outlined,
     route: AppRoutes.reports,
     allowedRoles: <AppRole>[
-      AppRole.superAdmin,
+      AppRole.platformAdmin,
       AppRole.tenantAdmin,
       AppRole.facilityAdmin,
       AppRole.operations,
@@ -1656,7 +1656,7 @@ String homeQueueItemSubtitle(HomeQueueItem item) {
 
 String homeTrendTitle(AppRole role, String fallback) {
   final String title = switch (role) {
-    AppRole.superAdmin => 'New tenant signups',
+    AppRole.platformAdmin => 'New tenant signups',
     AppRole.tenantAdmin => 'Facilities performance trend',
     AppRole.facilityAdmin => 'OPD flow by hour',
     AppRole.doctor => 'Consultation trend',
@@ -1682,7 +1682,7 @@ String homeTrendTitle(AppRole role, String fallback) {
 
 String homeDistributionTitle(AppRole role, String fallback) {
   final String title = switch (role) {
-    AppRole.superAdmin => 'Subscription mix',
+    AppRole.platformAdmin => 'Subscription mix',
     AppRole.tenantAdmin => 'Module adoption donut',
     AppRole.facilityAdmin => 'Bed readiness donut',
     AppRole.doctor => 'Patient acuity mix',
@@ -1706,7 +1706,7 @@ String homeDistributionTitle(AppRole role, String fallback) {
 
 String homeQueueTitle(AppRole role) {
   return switch (role) {
-    AppRole.superAdmin => 'Platform management',
+    AppRole.platformAdmin => 'Platform management',
     AppRole.tenantAdmin => 'Facility management',
     AppRole.facilityAdmin => 'Operations',
     AppRole.doctor => 'Worklist',
@@ -1735,7 +1735,7 @@ String? homeEmptyManagementSectionTitle(
     return null;
   }
   return switch (profile.role) {
-    AppRole.superAdmin => l10n.homePlatformManagementTitle,
+    AppRole.platformAdmin => l10n.homePlatformManagementTitle,
     AppRole.tenantAdmin => l10n.homeFacilityManagementTitle,
     _ => null,
   };

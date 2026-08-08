@@ -10,7 +10,7 @@ const {
   resolvePublicIdentifier} = require('@lib/billing/identifiers');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 
-const GLOBAL_SCOPE_ROLES = new Set(['SUPER_ADMIN', 'APP_ADMIN', 'SYSTEM_ADMIN', 'PLATFORM_ADMIN']);
+const GLOBAL_SCOPE_ROLES = new Set(['PLATFORM_ADMIN', 'APP_ADMIN', 'SYSTEM_ADMIN', 'PLATFORM_ADMIN']);
 
 const hasGlobalScopeAccess = (user = {}) => {
   const roles = [

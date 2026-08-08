@@ -373,7 +373,7 @@ void main() {
         AppPermissions.unitManage,
         AppPermissions.facilityAdmin,
         AppPermissions.tenantAdmin,
-        AppPermissions.systemAdmin,
+        AppPermissions.platformAdmin,
       ]),
     );
     expect(
@@ -456,7 +456,7 @@ void main() {
         AppPermissions.operationsRead,
         AppPermissions.tenantAdmin,
         AppPermissions.facilityAdmin,
-        AppPermissions.systemAdmin,
+        AppPermissions.platformAdmin,
       ]),
     );
     expect(

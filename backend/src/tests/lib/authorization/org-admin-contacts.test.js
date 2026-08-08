@@ -137,7 +137,7 @@ describe('org-admin-contacts', () => {
         ];
       }
       if (
-        roleNames.includes(ROLES.SUPER_ADMIN) ||
+        roleNames.includes(ROLES.PLATFORM_ADMIN) ||
         roleNames.includes(ROLES.PLATFORM_OWNER)
       ) {
         return [
@@ -146,14 +146,14 @@ describe('org-admin-contacts', () => {
             email: 'platform1@example.com',
             firstName: 'Platform',
             lastName: 'One',
-            roleName: ROLES.SUPER_ADMIN,
+            roleName: ROLES.PLATFORM_ADMIN,
           }),
           adminRow({
             id: 'p2',
             email: 'platform2@example.com',
             firstName: 'Platform',
             lastName: 'Two',
-            roleName: ROLES.SUPER_ADMIN,
+            roleName: ROLES.PLATFORM_ADMIN,
           }),
         ];
       }
@@ -192,7 +192,7 @@ describe('org-admin-contacts', () => {
         full_name: 'Support Twin',
         email: 'support@hosspi.com',
         phone: '+256700000001',
-        role_name: ROLES.SUPER_ADMIN,
+        role_name: ROLES.PLATFORM_ADMIN,
       },
     ]);
     expect(contacts).toHaveLength(1);

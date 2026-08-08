@@ -20928,7 +20928,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get permissionCatalogTenantAdmin => 'Tenant — Admin';
 
   @override
-  String get permissionCatalogSystemAdmin => 'System — Admin';
+  String get permissionCatalogPlatformAdmin => 'Platform — Admin';
 
   @override
   String get permissionCatalogPlatformOwner => 'Platform — Owner';

@@ -18,7 +18,7 @@ enum HomeDashboardLayoutTier {
 
 HomeDashboardLayoutTier homeLayoutTierForRole(AppRole role) {
   return switch (role) {
-    AppRole.superAdmin => HomeDashboardLayoutTier.platform,
+    AppRole.platformAdmin => HomeDashboardLayoutTier.platform,
     AppRole.tenantAdmin => HomeDashboardLayoutTier.organization,
     AppRole.facilityAdmin ||
     AppRole.operations => HomeDashboardLayoutTier.facilityCommand,

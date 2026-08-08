@@ -8,7 +8,7 @@ import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entiti
 const String roomsBedsInpatientBedManagementModule = 'inpatient-bed-management';
 
 const List<AppRole> _roomsBedsAdminRoles = <AppRole>[
-  AppRole.superAdmin,
+  AppRole.platformAdmin,
   AppRole.tenantAdmin,
   AppRole.facilityAdmin,
 ];
@@ -37,7 +37,7 @@ const AccessRequirement roomsBedsWorkspaceEntryRequirement =
     RouteAccessCatalog.roomsBedsEntry;
 
 /// Prompt / AppRoutes route-entry ∪: `clinical:read` | `operations:read` |
-/// `tenant:admin` | `facility:admin` | `system:admin` + module.
+/// `tenant:admin` | `facility:admin` | `platform:admin` + module.
 ///
 /// Matches [AppRoutes.roomsBeds] `requiredAnyPermissions`. Catalog entry stays
 /// [roomsBedsWorkspaceEntryRequirement] (`rooms_beds:read`).
@@ -48,7 +48,7 @@ const AccessRequirement roomsBedsWorkspaceRouteUnionRequirement =
         AppPermissions.operationsRead,
         AppPermissions.tenantAdmin,
         AppPermissions.facilityAdmin,
-        AppPermissions.systemAdmin,
+        AppPermissions.platformAdmin,
       ],
       activeModules: <String>[roomsBedsInpatientBedManagementModule],
     );
@@ -71,7 +71,7 @@ const AccessRequirement roomsBedsAdminRequirement = AccessRequirement(
     AppPermissions.unitManage,
     AppPermissions.tenantAdmin,
     AppPermissions.facilityAdmin,
-    AppPermissions.systemAdmin,
+    AppPermissions.platformAdmin,
   ],
   activeModules: <String>[roomsBedsInpatientBedManagementModule],
 );

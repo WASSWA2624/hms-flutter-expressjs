@@ -93,7 +93,7 @@ describe('Subscription Invoice Service', () => {
         subscription_id: 'SUB0001',
         invoice_id: 'INV0002',
         human_friendly_id: 'SUBINV0002'},
-      { id: 'user-1', role: 'SUPER_ADMIN' },
+      { id: 'user-1', role: 'PLATFORM_ADMIN' },
       '127.0.0.1'
     );
 
@@ -111,7 +111,7 @@ describe('Subscription Invoice Service', () => {
     const result = await subscriptionInvoiceService.collectSubscriptionInvoice(
       'SUBINV0001',
       { payment_method: 'cash', notes: 'Front desk collection' },
-      { id: 'user-1', role: 'SUPER_ADMIN' },
+      { id: 'user-1', role: 'PLATFORM_ADMIN' },
       '127.0.0.1'
     );
 

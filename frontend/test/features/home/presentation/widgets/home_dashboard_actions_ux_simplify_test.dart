@@ -35,7 +35,7 @@ void main() {
 
     test('denies HomeActionDefinition with empty permission lists', () {
       final AppAccessPolicy policy = _elevatedPolicy(
-        roles: <String>['SUPER_ADMIN'],
+        roles: <String>['PLATFORM_ADMIN'],
         permissions: AppPermissions.all,
       );
       const HomeActionDefinition bare = HomeActionDefinition(
@@ -54,7 +54,7 @@ void main() {
 
     test('dedupes alias ids against the canonical definition', () {
       final AppAccessPolicy policy = _elevatedPolicy(
-        roles: <String>['SUPER_ADMIN'],
+        roles: <String>['PLATFORM_ADMIN'],
         permissions: AppPermissions.all,
       );
 
@@ -76,10 +76,10 @@ void main() {
 
     test('empty actions omit ids already shown as next steps', () {
       final AppAccessPolicy policy = _elevatedPolicy(
-        roles: <String>['SUPER_ADMIN'],
+        roles: <String>['PLATFORM_ADMIN'],
         permissions: AppPermissions.all,
       );
-      final HomeDashboardProfile profile = homeProfileForRole(AppRole.superAdmin);
+      final HomeDashboardProfile profile = homeProfileForRole(AppRole.platformAdmin);
 
       final List<HomeActionDefinition> quick = homeDeduplicateQuickActionsAgainstManage(
         homeVisibleActions(

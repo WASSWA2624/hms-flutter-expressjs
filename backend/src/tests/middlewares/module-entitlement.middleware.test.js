@@ -58,7 +58,7 @@ describe('module entitlement middleware', () => {
   test('allows platform infrastructure paths without commercial entitlement lookup', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
-      user: { tenant_id: 'tenant-free', roles: ['SUPER_ADMIN'] }};
+      user: { tenant_id: 'tenant-free', roles: ['PLATFORM_ADMIN'] }};
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
@@ -71,7 +71,7 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/dashboard-workspace/workspace',
-      user: { tenant_id: 'tenant-dashboard', roles: ['SUPER_ADMIN'] }};
+      user: { tenant_id: 'tenant-dashboard', roles: ['PLATFORM_ADMIN'] }};
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
@@ -418,13 +418,13 @@ describe('module entitlement middleware', () => {
     expect(error.statusCode).toBe(403);
   });
 
-  test('allows SUPER_ADMIN to access commercial modules without plan entitlement', async () => {
+  test('allows PLATFORM_ADMIN to access commercial modules without plan entitlement', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/subscription-plans',
       user: {
         tenant_id: 'tenant-advanced-demo',
-        roles: ['SUPER_ADMIN']}};
+        roles: ['PLATFORM_ADMIN']}};
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 

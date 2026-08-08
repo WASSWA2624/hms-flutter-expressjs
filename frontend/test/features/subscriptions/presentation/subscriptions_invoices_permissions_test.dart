@@ -373,10 +373,10 @@ void main() {
       );
     });
 
-    test('∪ route entry: system:admin alone satisfies AppRoutes entry', () {
+    test('∪ route entry: platform:admin alone satisfies AppRoutes entry', () {
       final AppAccessPolicy systemOnly = _policy(
-        permissions: <AppPermission>{AppPermissions.systemAdmin},
-        roles: const <String>['SUPER_ADMIN'],
+        permissions: <AppPermission>{AppPermissions.platformAdmin},
+        roles: const <String>['PLATFORM_ADMIN'],
         modules: const <AppModuleEntitlement>[],
         tenantId: null,
       );
@@ -552,12 +552,12 @@ void main() {
     );
 
     testWidgets(
-      '∪ allowance: system:admin satisfies route entry; invoices atoms still '
+      '∪ allowance: platform:admin satisfies route entry; invoices atoms still '
       'need subscriptions:read ∩ module',
       (WidgetTester tester) async {
-        // Non-elevated holder of system:admin (route ∪) without subscriptions:*.
+        // Non-elevated holder of platform:admin (route ∪) without subscriptions:*.
         final AppAccessPolicy systemOnly = _policy(
-          permissions: <AppPermission>{AppPermissions.systemAdmin},
+          permissions: <AppPermission>{AppPermissions.platformAdmin},
           roles: const <String>['OTHER'],
         );
         expect(
@@ -912,11 +912,11 @@ void main() {
         expect(AppRoutes.subscriptions.name, 'subscriptions');
         expect(
           RouteAccessCatalog.subscriptionsEntry.anyPermissions,
-          <AppPermission>[AppPermissions.platformOwner, AppPermissions.systemAdmin],
+          <AppPermission>[AppPermissions.platformOwner, AppPermissions.platformAdmin],
         );
         expect(
           RouteAccessCatalog.subscriptionsEntry.anyRoles,
-          <AppRole>[AppRole.platformOwner, AppRole.superAdmin],
+          <AppRole>[AppRole.platformOwner, AppRole.platformAdmin],
         );
         expect(
           SubscriptionsInvoicesAtomPermissions.catalogEntry,

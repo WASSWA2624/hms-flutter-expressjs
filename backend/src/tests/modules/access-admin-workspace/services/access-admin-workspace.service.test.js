@@ -128,7 +128,7 @@ describe('access-admin-workspace service', () => {
     expect(lookups.permissions.length).toBeGreaterThan(0);
   });
 
-  it('syncs catalog for explicit tenant when super admin requests reference data', async () => {
+  it('syncs catalog for explicit tenant when platform admin requests reference data', async () => {
     repository.resolveWorkspaceScope.mockResolvedValue({
       state: 'tenant_context_required',
       scope: null});
@@ -149,7 +149,7 @@ describe('access-admin-workspace service', () => {
 
     const lookups = await service.getReferenceData(
       { tenantId: 'TEN0001' },
-      { roles: ['SUPER_ADMIN'] }
+      { roles: ['PLATFORM_ADMIN'] }
     );
 
     expect(ensureTenantPermissionCatalog).toHaveBeenCalledWith('TEN0001');
@@ -175,7 +175,7 @@ describe('access-admin-workspace service', () => {
           human_friendly_id: 'PRM0001',
           name: 'clinical:read'}]});
 
-    const lookups = await service.getReferenceData({}, { roles: ['SUPER_ADMIN'] });
+    const lookups = await service.getReferenceData({}, { roles: ['PLATFORM_ADMIN'] });
 
     expect(ensureTenantPermissionCatalog).not.toHaveBeenCalled();
     expect(lookups.tenants).toHaveLength(1);
@@ -187,7 +187,7 @@ describe('access-admin-workspace service', () => {
       state: 'tenant_context_required',
       scope: null});
 
-    const data = await service.getWorkspace({}, 1, 20, { roles: ['SUPER_ADMIN'] });
+    const data = await service.getWorkspace({}, 1, 20, { roles: ['PLATFORM_ADMIN'] });
 
     expect(data.state).toBe('tenant_context_required');
     expect(data.items).toEqual([]);

@@ -43,8 +43,8 @@ void main() {
       }
     });
 
-    test('super admin profile uses platform create and manage actions', () {
-      final profile = homeProfileForRole(AppRole.superAdmin);
+    test('platform admin profile uses platform create and manage actions', () {
+      final profile = homeProfileForRole(AppRole.platformAdmin);
 
       expect(profile.quickActionIds, isEmpty);
       expect(profile.emptyActionIds, <String>[

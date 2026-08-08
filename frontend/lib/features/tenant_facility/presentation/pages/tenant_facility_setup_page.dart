@@ -116,7 +116,7 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
     final bool canManageFacility = accessPolicy.canManageFacility();
     final bool canEditStructure = accessPolicy.canEditFacilitySetupStructure();
     final bool canManageAccess = accessPolicy.grantsAny(const <AppPermission>[
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
       AppPermissions.hrWrite,

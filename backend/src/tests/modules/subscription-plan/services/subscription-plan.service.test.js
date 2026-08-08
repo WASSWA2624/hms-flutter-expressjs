@@ -97,7 +97,7 @@ describe('Subscription Plan Service', () => {
         name: 'Advanced',
         price: 99,
         billing_cycle: 'MONTHLY'},
-      { id: 'user-1', role: 'SUPER_ADMIN' },
+      { id: 'user-1', role: 'PLATFORM_ADMIN' },
       '127.0.0.1'
     );
 

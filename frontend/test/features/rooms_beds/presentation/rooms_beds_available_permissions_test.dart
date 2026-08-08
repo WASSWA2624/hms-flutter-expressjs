@@ -450,7 +450,7 @@ void main() {
           AppPermissions.operationsRead,
           AppPermissions.tenantAdmin,
           AppPermissions.facilityAdmin,
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
         ]),
       );
       expect(

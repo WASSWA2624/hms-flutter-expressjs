@@ -19,7 +19,7 @@ const {
   listRolePermissionsQuerySchema
 } = require('@validations/role-permission/role-permission.schema');
 
-const ADMIN_ROLE_SET = ['TENANT_ADMIN', 'FACILITY_ADMIN', 'SUPER_ADMIN', 'OPERATIONS', 'HR'];
+const ADMIN_ROLE_SET = ['TENANT_ADMIN', 'FACILITY_ADMIN', 'PLATFORM_ADMIN', 'OPERATIONS', 'HR'];
 
 /**
  * @description List role-permissions with pagination and filters

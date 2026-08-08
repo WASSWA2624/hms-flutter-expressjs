@@ -306,7 +306,7 @@ const previewReportDataset = async (datasetKey, payload = {}, user = {}) => {
     const allowed =
       permissions.includes('compliance:read') ||
       permissions.includes('compliance:review') ||
-      permissions.includes('system:admin') ||
+      permissions.includes('platform:admin') ||
       permissions.includes('tenant:admin') ||
       permissions.includes('facility:admin');
     if (!allowed) {

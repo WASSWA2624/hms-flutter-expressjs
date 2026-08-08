@@ -460,7 +460,7 @@ final List<WorkflowActionDefinition> _doctorAssignmentActions =
         // is not in the entitlement map even though they can assign doctors.
         accessRequirement: const AccessRequirement(
           anyRoles: <AppRole>[
-            AppRole.superAdmin,
+            AppRole.platformAdmin,
             AppRole.tenantAdmin,
             AppRole.facilityAdmin,
             AppRole.receptionist,

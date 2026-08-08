@@ -22,7 +22,7 @@ void main() {
       expect(policy.grants(AppPermissions.clinicalWrite), isTrue);
       expect(policy.grants(AppPermissions.billingWrite), isTrue);
       expect(policy.grants(AppPermissions.financialApprove), isTrue);
-      expect(policy.grants(AppPermissions.systemAdmin), isFalse);
+      expect(policy.grants(AppPermissions.platformAdmin), isFalse);
     });
 
     test(
@@ -158,7 +158,7 @@ void main() {
     test('normalizes display-form elevated role names', () {
       final session = AuthSession(
         tokens: SessionTokens(accessToken: 'access-token'),
-        user: const AuthUserProfile(roles: <String>['Super Admin']),
+        user: const AuthUserProfile(roles: <String>['Platform Admin']),
       );
 
       final policy = AppAccessPolicy.fromSession(session);
@@ -168,17 +168,17 @@ void main() {
         requiresFacilityContext: true,
       );
 
-      expect(policy.hasRole(AppRole.superAdmin), isTrue);
+      expect(policy.hasRole(AppRole.platformAdmin), isTrue);
       expect(policy.isElevated, isTrue);
       expect(requirement.isAllowed(policy), isTrue);
     });
 
-    test('tenant-context super admin remains bounded by the active plan', () {
+    test('tenant-context platform admin remains bounded by the active plan', () {
       final session = AuthSession(
         tokens: SessionTokens(accessToken: 'access-token'),
         user: const AuthUserProfile(
           tenantId: 'tenant-1',
-          roles: <String>['SUPER_ADMIN'],
+          roles: <String>['PLATFORM_ADMIN'],
         ),
         permissions: const <AppPermission>[
           AppPermissions.clinicalRead,
@@ -247,7 +247,7 @@ void main() {
           anyRoles: <AppRole>[AppRole.facilityAdmin],
           anyPermissions: <AppPermission>[
             AppPermissions.facilityAdmin,
-            AppPermissions.systemAdmin,
+            AppPermissions.platformAdmin,
           ],
           activeModules: <String>['settings'],
           requiresTenantContext: true,
@@ -682,7 +682,7 @@ void main() {
           user: const AuthUserProfile(
             tenantId: 'tenant-1',
             facilityId: 'facility-1',
-            roles: <String>['SUPER_ADMIN'],
+            roles: <String>['PLATFORM_ADMIN'],
           ),
           subscriptionSummary: const TenantSubscriptionSummary(
             tierCode: 'ADVANCED',

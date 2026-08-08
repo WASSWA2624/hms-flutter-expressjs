@@ -20,7 +20,7 @@ const upload = multer({
 // Permission RBAC so custom roles with facility:admin / tenant:admin / hr:* work
 // (canonical FACILITY_ADMIN role name is not required).
 const TENANT_FACILITY_WORKSPACE_SCOPES = [
-  PERMISSIONS.SYSTEM_ADMIN,
+  PERMISSIONS.PLATFORM_ADMIN,
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
   PERMISSIONS.HR_READ,

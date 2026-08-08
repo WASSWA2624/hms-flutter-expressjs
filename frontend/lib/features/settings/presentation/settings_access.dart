@@ -189,11 +189,11 @@ abstract final class SettingsAccessibilityAtomPermissions {
 const List<AppPermission> settingsAdminAnyPermissions = <AppPermission>[
   AppPermissions.facilityAdmin,
   AppPermissions.tenantAdmin,
-  AppPermissions.systemAdmin,
+  AppPermissions.platformAdmin,
 ];
 
 /// View / read UI for Administration boundaries:
-/// `profile:read` ∩ (`facility:admin` ∪ `tenant:admin` ∪ `system:admin`).
+/// `profile:read` ∩ (`facility:admin` ∪ `tenant:admin` ∪ `platform:admin`).
 ///
 /// Admin keys are core/platform (not plan-module mapped). Nested navigate
 /// destinations add their own [RouteAccessCatalog] gates (and subscription
@@ -242,8 +242,8 @@ const AccessRequirement settingsAdministrationAccessAdminNavigateRequirement =
 /// sources (documented mapping vs tab admin ∪). Create / update / delete and
 /// nested cross-module write rows are matrix-documented but **not mounted**
 /// on this navigate-only surface. Admin / profile keys are core/platform;
-/// subscriptions navigate is platform-admin only (catalog `system:admin` ∪
-/// `SUPER_ADMIN`). Setup navigate requires facility context; access admin
+/// subscriptions navigate is platform-admin only (catalog `platform:admin` ∪
+/// `PLATFORM_ADMIN`). Setup navigate requires facility context; access admin
 /// requires tenant context.
 ///
 /// | Atom | Kind | Gate |
@@ -332,12 +332,12 @@ const List<AppPermission> settingsWorkspaceViewAnyPermissions =
     <AppPermission>[
       AppPermissions.facilityAdmin,
       AppPermissions.tenantAdmin,
-      AppPermissions.systemAdmin,
+      AppPermissions.platformAdmin,
       AppPermissions.hrRead,
     ];
 
 /// Matrix view / read UI:
-/// `profile:read` ∩ (`facility:admin` ∪ `tenant:admin` ∪ `system:admin` ∪ `hr:read`).
+/// `profile:read` ∩ (`facility:admin` ∪ `tenant:admin` ∪ `platform:admin` ∪ `hr:read`).
 ///
 /// Admin / profile keys are core/platform; `hr:read` is plan-scoped to
 /// `hr-rosters` via [PermissionModuleMap] when that union arm is used.
@@ -353,7 +353,7 @@ const AccessRequirement settingsWorkspaceAdminRequirement = AccessRequirement(
   allPermissions: <AppPermission>[AppPermissions.profileRead],
   anyPermissions: settingsAdminAnyPermissions,
   anyRoles: <AppRole>[
-    AppRole.superAdmin,
+    AppRole.platformAdmin,
     AppRole.tenantAdmin,
     AppRole.facilityAdmin,
   ],
@@ -470,7 +470,7 @@ abstract final class SettingsWorkspaceAtomPermissions {
 // ---------------------------------------------------------------------------
 
 /// View / read UI for Configuration:
-/// `profile:read` ∩ (`facility:admin` ∪ `tenant:admin` ∪ `system:admin`).
+/// `profile:read` ∩ (`facility:admin` ∪ `tenant:admin` ∪ `platform:admin`).
 const AccessRequirement settingsConfigurationReadRequirement =
     AccessRequirement(
       allPermissions: <AppPermission>[AppPermissions.profileRead],
@@ -478,14 +478,14 @@ const AccessRequirement settingsConfigurationReadRequirement =
     );
 
 /// Tenant defaults panel — source gate (differs from matrix update ∩
-/// `facility:admin`): `tenant:admin` ∪ `system:admin` + tenant context.
+/// `facility:admin`): `tenant:admin` ∪ `platform:admin` + tenant context.
 const AccessRequirement settingsConfigurationTenantRequirement =
     AccessRequirement(
       anyPermissions: <AppPermission>[
         AppPermissions.tenantAdmin,
-        AppPermissions.systemAdmin,
+        AppPermissions.platformAdmin,
       ],
-      anyRoles: <AppRole>[AppRole.superAdmin, AppRole.tenantAdmin],
+      anyRoles: <AppRole>[AppRole.platformAdmin, AppRole.tenantAdmin],
       requiresTenantContext: true,
     );
 
@@ -496,10 +496,10 @@ const AccessRequirement settingsConfigurationFacilityRequirement =
       anyPermissions: <AppPermission>[
         AppPermissions.tenantAdmin,
         AppPermissions.facilityAdmin,
-        AppPermissions.systemAdmin,
+        AppPermissions.platformAdmin,
       ],
       anyRoles: <AppRole>[
-        AppRole.superAdmin,
+        AppRole.platformAdmin,
         AppRole.tenantAdmin,
         AppRole.facilityAdmin,
       ],

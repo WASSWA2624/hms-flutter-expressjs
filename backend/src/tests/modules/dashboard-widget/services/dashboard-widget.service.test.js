@@ -401,7 +401,7 @@ describe('Dashboard Widget Service', () => {
 
     it('resolves role-profile mapping using hierarchy for all canonical staff roles', async () => {
       const roleCases = [
-        ['SUPER_ADMIN', 'super_admin', 'super_admin'],
+        ['PLATFORM_ADMIN', 'platform_admin', 'platform_admin'],
         ['TENANT_ADMIN', 'tenant_admin', 'tenant_admin'],
         ['FACILITY_ADMIN', 'facility_admin', 'facility_admin'],
         ['DOCTOR', 'doctor', 'doctor'],
@@ -448,7 +448,7 @@ describe('Dashboard Widget Service', () => {
       }
     });
 
-    it('allows SUPER_ADMIN platform scope when tenant context is missing', async () => {
+    it('allows PLATFORM_ADMIN platform scope when tenant context is missing', async () => {
       dashboardWidgetRepository.getDashboardSummaryByPack.mockResolvedValue({
         metrics: {
           tenantsActive: 2,
@@ -463,12 +463,12 @@ describe('Dashboard Widget Service', () => {
 
       const result = await dashboardWidgetService.getDashboardSummary(
         { days: 7 },
-        { id: 'user-1', roles: ['SUPER_ADMIN'] }
+        { id: 'user-1', roles: ['PLATFORM_ADMIN'] }
       );
 
       expect(dashboardWidgetRepository.getDashboardSummaryByPack).toHaveBeenCalledWith(
         expect.objectContaining({
-          packId: 'super_admin',
+          packId: 'platform_admin',
           scope: expect.objectContaining({ platform: true })})
       );
       expect(result.summaryCards).toEqual(

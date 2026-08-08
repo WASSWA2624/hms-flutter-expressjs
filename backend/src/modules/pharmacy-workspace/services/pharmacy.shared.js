@@ -208,7 +208,7 @@ const applyDateRangeFilter = (where, field, fromValue, toValue) => {
 const resolveScopedUserContext = (user = {}) => {
   const normalizedUser = normalizeUserContext(user || {});
   const roles = Array.isArray(normalizedUser.roles) ? normalizedUser.roles : [];
-  const canManageAllTenants = roles.includes(ROLES.SUPER_ADMIN);
+  const canManageAllTenants = roles.includes(ROLES.PLATFORM_ADMIN);
   const tenantId = normalizedUser.tenant_id || null;
   const facilityId = normalizedUser.facility_id || null;
 

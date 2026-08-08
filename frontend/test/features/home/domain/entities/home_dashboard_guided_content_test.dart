@@ -55,7 +55,7 @@ void main() {
 
     test('system admin surfaces security, audit, and integration alerts', () {
       final alerts = guidedFallbackAlerts(
-        homeProfileForRole(AppRole.superAdmin),
+        homeProfileForRole(AppRole.platformAdmin),
       );
 
       expect(
@@ -81,9 +81,9 @@ void main() {
   });
 
   group('guidedFallbackQueueHints platform', () {
-    test('super admin uses platform queue id (system:admin)', () {
+    test('platform admin uses platform queue id (platform:admin)', () {
       final hints = guidedFallbackQueueHints(
-        homeProfileForRole(AppRole.superAdmin),
+        homeProfileForRole(AppRole.platformAdmin),
       );
 
       expect(

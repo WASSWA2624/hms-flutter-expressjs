@@ -34,10 +34,10 @@ const { provisionTrialSubscription } = require('@lib/subscriptions/tenant-onboar
 const service = require('../../../../modules/access-admin-workspace/services/access-admin-workspace.service');
 
 describe('access-admin-workspace registrations billing scan', () => {
-  const superAdmin = {
+  const platformAdmin = {
     id: 'admin-uuid',
-    roles: ['SUPER_ADMIN'],
-    permissions: ['system:admin'],
+    roles: ['PLATFORM_ADMIN'],
+    permissions: ['platform:admin'],
   };
 
   const tenantAdmin = {
@@ -121,8 +121,8 @@ describe('access-admin-workspace registrations billing scan', () => {
 
   it('registration-follow-ups GET is idempotent on replay', async () => {
     const query = { panel: 'registrations', resource: 'registration-follow-ups' };
-    const first = await service.getWorkspace(query, 1, 20, superAdmin);
-    const second = await service.getWorkspace(query, 1, 20, superAdmin);
+    const first = await service.getWorkspace(query, 1, 20, platformAdmin);
+    const second = await service.getWorkspace(query, 1, 20, platformAdmin);
 
     expect(first.items).toEqual(second.items);
     expect(authRepository.findPendingRegistrationApprovals).toHaveBeenCalledTimes(2);
@@ -130,7 +130,7 @@ describe('access-admin-workspace registrations billing scan', () => {
   });
 
   it('activate registration provisions trial subscription, not patient billing', async () => {
-    await service.activateRegistration('USR0001', superAdmin, '127.0.0.1');
+    await service.activateRegistration('USR0001', platformAdmin, '127.0.0.1');
 
     expect(authRepository.updateUserStatus).toHaveBeenCalledWith(pendingUser.id, 'ACTIVE');
     expect(provisionTrialSubscription).toHaveBeenCalledWith('tenant-uuid');
@@ -140,8 +140,8 @@ describe('access-admin-workspace registrations billing scan', () => {
   });
 
   it('activate registration is idempotent when replayed for same pending user', async () => {
-    await service.activateRegistration('USR0001', superAdmin);
-    await service.activateRegistration('USR0001', superAdmin);
+    await service.activateRegistration('USR0001', platformAdmin);
+    await service.activateRegistration('USR0001', platformAdmin);
 
     expect(authRepository.updateUserStatus).toHaveBeenCalledTimes(2);
     expect(provisionTrialSubscription).toHaveBeenCalledTimes(2);
@@ -150,7 +150,7 @@ describe('access-admin-workspace registrations billing scan', () => {
   });
 
   it('reject registration updates status without billing ledger mutation', async () => {
-    const data = await service.rejectRegistration('USR0001', superAdmin, '127.0.0.1');
+    const data = await service.rejectRegistration('USR0001', platformAdmin, '127.0.0.1');
 
     expect(data.status).toBe('INACTIVE');
     expect(authRepository.updateUserStatus).toHaveBeenCalledWith(pendingUser.id, 'INACTIVE');
@@ -199,7 +199,7 @@ describe('access-admin-workspace registrations billing scan', () => {
 
   it('activate audit documents NOT_BILLED SaaS path without patient ledger mutation', async () => {
     const { createAuditLog } = require('@lib/audit');
-    await service.activateRegistration('USR0001', superAdmin, '127.0.0.1');
+    await service.activateRegistration('USR0001', platformAdmin, '127.0.0.1');
 
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({

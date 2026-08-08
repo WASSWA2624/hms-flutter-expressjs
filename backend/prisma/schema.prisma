@@ -8,7 +8,7 @@ datasource db {
 }
 
 enum UserRole {
-  SUPER_ADMIN
+  PLATFORM_ADMIN
   TENANT_ADMIN
   FACILITY_ADMIN
   DOCTOR
@@ -1626,7 +1626,7 @@ model verification_token {
 model role {
   id                String    @id @default(uuid()) @db.VarChar(36)
   human_friendly_id String?   @db.VarChar(32)
-  /// Null tenant_id = platform-scoped role (super-admin / cross-tenant).
+  /// Null tenant_id = platform-scoped role (platform-admin / cross-tenant).
   tenant_id         String?   @db.VarChar(36)
   facility_id       String?   @db.VarChar(36)
   name              String    @db.VarChar(120)

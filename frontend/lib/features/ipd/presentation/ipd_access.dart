@@ -9,7 +9,7 @@ import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 const String ipdInpatientBedManagementModule = 'inpatient-bed-management';
 
 const List<AppRole> _ipdAdminActionRoles = <AppRole>[
-  AppRole.superAdmin,
+  AppRole.platformAdmin,
   AppRole.tenantAdmin,
   AppRole.facilityAdmin,
 ];
@@ -114,14 +114,14 @@ const AccessRequirement ipdBillingPanelReadRequirement =
 /// source.
 const AccessRequirement ipdBedManageRequirement = AccessRequirement(
   anyRoles: <AppRole>[
-    AppRole.superAdmin,
+    AppRole.platformAdmin,
     AppRole.tenantAdmin,
     AppRole.facilityAdmin,
   ],
   anyPermissions: <AppPermission>[
     AppPermissions.tenantAdmin,
     AppPermissions.facilityAdmin,
-    AppPermissions.systemAdmin,
+    AppPermissions.platformAdmin,
   ],
   activeModules: <String>[ipdInpatientBedManagementModule],
 );

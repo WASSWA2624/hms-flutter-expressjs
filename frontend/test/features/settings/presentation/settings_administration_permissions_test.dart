@@ -54,7 +54,7 @@ void main() {
         <AppPermission>[
           AppPermissions.facilityAdmin,
           AppPermissions.tenantAdmin,
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
         ],
       );
     });
@@ -162,7 +162,7 @@ void main() {
         final AppAccessPolicy platformAdmin = _policy(
           <AppPermission>[
             AppPermissions.profileRead,
-            AppPermissions.systemAdmin,
+            AppPermissions.platformAdmin,
           ],
         );
         expect(

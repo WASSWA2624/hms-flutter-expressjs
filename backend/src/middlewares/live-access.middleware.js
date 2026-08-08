@@ -137,7 +137,7 @@ const hydrateLiveAccess = () => async (req, res, next) => {
     );
 
     // Keep request roles as canonical name strings. Prisma returns user_role
-    // rows; authorize()/RBAC compare against SUPER_ADMIN etc. and must not see
+    // rows; authorize()/RBAC compare against PLATFORM_ADMIN etc. and must not see
     // nested ORM objects (which stringify to "[OBJECT OBJECT]").
     const liveRoleNames = getRoleNames(liveUser);
     user.roles = liveRoleNames.length

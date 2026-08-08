@@ -9,7 +9,7 @@ const { HttpError } = require('@lib/errors');
 const { ROLES, normalizeRoleName } = require('@config/roles');
 
 const ADMIN_ROLES = new Set([
-  ROLES.SUPER_ADMIN,
+  ROLES.PLATFORM_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
 ]);

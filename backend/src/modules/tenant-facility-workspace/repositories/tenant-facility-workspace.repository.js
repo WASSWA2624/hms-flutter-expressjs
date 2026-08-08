@@ -16,7 +16,7 @@ const mapError = (error) => {
 
 const isSuperAdmin = (user = {}) => {
   const roles = Array.isArray(user.roles) ? user.roles : [user.role];
-  return roles.some((entry) => String(entry || '').trim().toUpperCase() === ROLES.SUPER_ADMIN);
+  return roles.some((entry) => String(entry || '').trim().toUpperCase() === ROLES.PLATFORM_ADMIN);
 };
 
 const tenantScopedWhere = (scope = {}, options = {}) => {
@@ -60,10 +60,10 @@ const hasAnyPermission = (user = {}, required = []) => {
 const canViewAllFacilitiesInTenant = (user = {}) => {
   const roles = new Set(roleNames(user));
   return (
-    roles.has(ROLES.SUPER_ADMIN) ||
+    roles.has(ROLES.PLATFORM_ADMIN) ||
     roles.has(ROLES.TENANT_ADMIN) ||
     hasAnyPermission(user, [
-      PERMISSIONS.SYSTEM_ADMIN,
+      PERMISSIONS.PLATFORM_ADMIN,
       PERMISSIONS.TENANT_ADMIN,
     ])
   );

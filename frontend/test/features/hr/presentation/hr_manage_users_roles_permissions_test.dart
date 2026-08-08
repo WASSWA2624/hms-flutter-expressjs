@@ -349,12 +349,12 @@ void main() {
       expect(hrAllowedSections(facility).contains(HrDeskSection.access), isTrue);
     });
 
-    test('∪ read: system:admin + hr:read satisfies Access tab', () {
-      // Session role SYSTEM_ADMIN canonicalizes to SUPER_ADMIN (elevated).
+    test('∪ read: platform:admin + hr:read satisfies Access tab', () {
+      // Session role SYSTEM_ADMIN canonicalizes to PLATFORM_ADMIN (elevated).
       final AppAccessPolicy system = _policy(
         permissions: <AppPermission>{
           AppPermissions.hrRead,
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
         },
         roles: const <String>['SYSTEM_ADMIN'],
       );
@@ -365,11 +365,11 @@ void main() {
       expect(canCreateHrAccess(system), isTrue);
       expect(canDeleteHrAccess(system), isTrue);
 
-      // Permission-only system:admin (no elevated role) still reads via ∪.
+      // Permission-only platform:admin (no elevated role) still reads via ∪.
       final AppAccessPolicy systemPermOnly = _policy(
         permissions: <AppPermission>{
           AppPermissions.hrRead,
-          AppPermissions.systemAdmin,
+          AppPermissions.platformAdmin,
         },
         roles: const <String>['HR'],
       );

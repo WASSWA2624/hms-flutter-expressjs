@@ -27,9 +27,40 @@ const { checkUserDuplicates } = require('@lib/user/user-similarity');
 const {
   assertPermissionNamesIncludeRequiredReads,
 } = require('@lib/authorization/permission-read-dependency');
+const {
+  PLATFORM_ADMIN_MANAGED_ROLES,
+  canActorManagePlatformAdmins,
+} = require('@lib/authorization/assignable-access');
+const { normalizeRoleName } = require('@config/roles');
 const prisma = require('@prisma/client');
 
 const USER_SIMILARITY_LOOKUP_LIMIT = 500;
+
+const loadTargetRoleNames = async (userId) => {
+  const rows = await prisma.user_role.findMany({
+    where: { user_id: userId, deleted_at: null },
+    select: { role: { select: { name: true } } },
+  });
+  return rows
+    .map((row) => normalizeRoleName(row?.role?.name))
+    .filter(Boolean);
+};
+
+/**
+ * Platform owners may CRUD every account. Non-owners cannot mutate users that
+ * hold PLATFORM_ADMIN / PLATFORM_OWNER roles.
+ */
+const assertActorCanMutateTargetAccount = async (targetUserId, actor = {}) => {
+  if (!targetUserId || canActorManagePlatformAdmins(actor)) {
+    return;
+  }
+  const roleNames = await loadTargetRoleNames(targetUserId);
+  if (roleNames.some((name) => PLATFORM_ADMIN_MANAGED_ROLES.has(name))) {
+    throw new HttpError('errors.auth.insufficient_permissions', 403, [
+      { field: 'user_id', reason: 'platform_admin_account_forbidden' },
+    ]);
+  }
+};
 
 const stripSimilarityPayloadFields = (data = {}) => {
   const { confirm_similar: _confirmSimilar, ...payload } = data;
@@ -574,7 +605,7 @@ const createUser = async (data, userId, ipAddress) => {
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<Object>} Updated user
  */
-const updateUser = async (id, data, userId, ipAddress) => {
+const updateUser = async (id, data, userId, ipAddress, actor = {}) => {
   try {
     const resolvedUserId = await resolveUserId(id);
     // Get current state for audit
@@ -583,6 +614,8 @@ const updateUser = async (id, data, userId, ipAddress) => {
     if (!before) {
       throw new HttpError('errors.user.not_found', 404);
     }
+
+    await assertActorCanMutateTargetAccount(resolvedUserId, actor);
 
     const confirmSimilar = data?.confirm_similar === true;
     const strippedData = stripSimilarityPayloadFields(data || {});
@@ -634,7 +667,7 @@ const updateUser = async (id, data, userId, ipAddress) => {
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<void>}
  */
-const deleteUser = async (id, userId, ipAddress) => {
+const deleteUser = async (id, userId, ipAddress, actor = {}) => {
   try {
     const resolvedUserId = await resolveUserId(id);
     // Get current state for audit
@@ -643,6 +676,8 @@ const deleteUser = async (id, userId, ipAddress) => {
     if (!before) {
       throw new HttpError('errors.user.not_found', 404);
     }
+
+    await assertActorCanMutateTargetAccount(resolvedUserId, actor);
 
     await userRepository.softDelete(resolvedUserId);
 
@@ -670,9 +705,10 @@ const deleteUser = async (id, userId, ipAddress) => {
 /**
  * Restore soft-deleted user
  */
-const restoreUser = async (id, userId, ipAddress) => {
+const restoreUser = async (id, userId, ipAddress, actor = {}) => {
   try {
     const resolvedUserId = await resolveUserId(id, { includeDeleted: true });
+    await assertActorCanMutateTargetAccount(resolvedUserId, actor);
     const user = await userRepository.restore(resolvedUserId);
 
     createAuditLog({

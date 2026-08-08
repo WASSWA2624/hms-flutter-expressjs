@@ -9,9 +9,9 @@ void main() {
       const HomeDashboard dashboard = HomeDashboard(
         state: HomeDashboardLoadState.ready,
         profile: HomeDashboardProfile(
-          id: 'super_admin',
-          role: AppRole.superAdmin,
-          roleLabel: 'Super Admin',
+          id: 'platform_admin',
+          role: AppRole.platformAdmin,
+          roleLabel: 'Platform Admin',
           homeTitle: 'Dashboard',
           emptyMessage: 'Empty',
           statusCards: <HomeStatusCardTemplate>[],
@@ -73,9 +73,9 @@ void main() {
       const HomeDashboard dashboard = HomeDashboard(
         state: HomeDashboardLoadState.ready,
         profile: HomeDashboardProfile(
-          id: 'super_admin',
-          role: AppRole.superAdmin,
-          roleLabel: 'Super Admin',
+          id: 'platform_admin',
+          role: AppRole.platformAdmin,
+          roleLabel: 'Platform Admin',
           homeTitle: 'Dashboard',
           emptyMessage: 'Empty',
           statusCards: <HomeStatusCardTemplate>[],
@@ -116,9 +116,9 @@ void main() {
       const HomeDashboard baseline = HomeDashboard(
         state: HomeDashboardLoadState.ready,
         profile: HomeDashboardProfile(
-          id: 'super_admin',
-          role: AppRole.superAdmin,
-          roleLabel: 'Super Admin',
+          id: 'platform_admin',
+          role: AppRole.platformAdmin,
+          roleLabel: 'Platform Admin',
           homeTitle: 'Dashboard',
           emptyMessage: 'Empty',
           statusCards: <HomeStatusCardTemplate>[],
@@ -162,9 +162,9 @@ void main() {
       const HomeDashboard freshServer = HomeDashboard(
         state: HomeDashboardLoadState.ready,
         profile: HomeDashboardProfile(
-          id: 'super_admin',
-          role: AppRole.superAdmin,
-          roleLabel: 'Super Admin',
+          id: 'platform_admin',
+          role: AppRole.platformAdmin,
+          roleLabel: 'Platform Admin',
           homeTitle: 'Dashboard',
           emptyMessage: 'Empty',
           statusCards: <HomeStatusCardTemplate>[],

@@ -350,7 +350,7 @@ class _ManageUsersPanelState
   String? statusFilter;
 
   /// Defaults to the widest list the actor is allowed to see.
-  /// Super admin: all tenants + facilities. Tenant admin: all facilities.
+  /// Platform admin: all tenants + facilities. Tenant admin: all facilities.
   /// Facility-scoped actors keep their facility from session scope.
   bool allTenants = true;
   bool allFacilities = true;
@@ -359,6 +359,19 @@ class _ManageUsersPanelState
   static const String _facilityFilterKey = 'facility';
   static const String _roleFilterKey = 'role';
   static const String _statusFilterKey = 'status';
+
+  bool get _canManageProtectedUsers =>
+      ref.read(appAccessPolicyProvider).canManagePlatformAdmins();
+
+  bool _canDeleteUser(AccessAdminItem user) {
+    if (user.isDeleted) {
+      return false;
+    }
+    if (_canManageProtectedUsers) {
+      return true;
+    }
+    return !user.isDemo && !user.isSystemCritical;
+  }
 
   @override
   void initState() {
@@ -535,7 +548,7 @@ class _ManageUsersPanelState
   }
 
   Future<void> _confirmDeleteUser(AccessAdminItem user) async {
-    if (user.isDemo || user.isSystemCritical || user.isDeleted) {
+    if (!_canDeleteUser(user)) {
       return;
     }
     final AppLocalizations l10n = context.l10n;
@@ -695,6 +708,7 @@ class _ManageUsersPanelState
         item: detail.item,
         detail: detail,
         canWrite: canWrite,
+        canDeleteProtected: _canManageProtectedUsers,
         repository: repository,
         lookups: workspaceData?.lookups ?? const AccessAdminLookups(),
         tenantId: detail.item.tenantId ?? item.tenantId,
@@ -958,7 +972,7 @@ class _ManageUsersPanelState
                               ? () => unawaited(_openEditUserDialog(user))
                               : null,
                         ),
-                        if (!user.isDemo && !user.isSystemCritical)
+                        if (_canDeleteUser(user))
                           AppButton.tertiary(
                             leadingIcon: Icons.delete_outline,
                             label: l10n.tenantFacilityDeleteAction,
@@ -2970,6 +2984,7 @@ class _AccessAdminUserDetailDialog extends StatefulWidget {
     required this.item,
     required this.detail,
     required this.canWrite,
+    required this.canDeleteProtected,
     required this.repository,
     required this.lookups,
     required this.onStatusChanged,
@@ -2983,6 +2998,7 @@ class _AccessAdminUserDetailDialog extends StatefulWidget {
   final AccessAdminItem item;
   final AccessAdminUserDetail detail;
   final bool canWrite;
+  final bool canDeleteProtected;
   final AccessAdminRepository repository;
   final AccessAdminLookups lookups;
   final String? tenantId;
@@ -3620,7 +3636,8 @@ class _AccessAdminUserDetailDialogState
             isLoading: _saving,
             onPressed: _saving ? null : _toggleStatus,
           ),
-          if (!item.isDemo && !item.isSystemCritical)
+          if (widget.canDeleteProtected ||
+              (!item.isDemo && !item.isSystemCritical))
             AppButton.secondary(
               leadingIcon: Icons.delete_outline,
               label: l10n.accessAdminDeleteUserAction,

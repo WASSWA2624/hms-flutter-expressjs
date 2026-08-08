@@ -174,7 +174,7 @@ final class HomeRepositoryImpl implements HomeRepository {
     if (_session == null) {
       return true;
     }
-    if (profile.role == AppRole.superAdmin) {
+    if (profile.role == AppRole.platformAdmin) {
       return false;
     }
 

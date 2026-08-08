@@ -41,14 +41,14 @@ const Map<AppRole, int> _homeRoleRanks = <AppRole, int>{
   AppRole.mortuaryManager: 22,
   AppRole.facilityAdmin: 23,
   AppRole.tenantAdmin: 24,
-  AppRole.superAdmin: 25,
+  AppRole.platformAdmin: 25,
 };
 
 const Map<AppRole, HomeDashboardProfile>
 homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
-  AppRole.superAdmin: HomeDashboardProfile(
-    id: 'super_admin',
-    role: AppRole.superAdmin,
+  AppRole.platformAdmin: HomeDashboardProfile(
+    id: 'platform_admin',
+    role: AppRole.platformAdmin,
     roleLabel: 'Platform administrator',
     homeTitle: 'Platform',
     emptyMessage: '',
@@ -58,12 +58,12 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         id: 'tenants_active',
         label: 'Tenants',
         format: 'ratio',
-        requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
+        requiredPermissions: <AppPermission>[AppPermissions.platformAdmin],
       ),
       HomeStatusCardTemplate(
         id: 'facilities_active',
         label: 'Facilities',
-        requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
+        requiredPermissions: <AppPermission>[AppPermissions.platformAdmin],
       ),
       HomeStatusCardTemplate(
         id: 'subscriptions_health',
@@ -74,12 +74,12 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       HomeStatusCardTemplate(
         id: 'pending_registration_approvals',
         label: 'Approvals',
-        requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
+        requiredPermissions: <AppPermission>[AppPermissions.platformAdmin],
       ),
       HomeStatusCardTemplate(
         id: 'module_entitlement_issues',
         label: 'Entitlements',
-        requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
+        requiredPermissions: <AppPermission>[AppPermissions.platformAdmin],
       ),
     ],
     // Create intents are covered by Platform management Manage hubs.
@@ -1849,9 +1849,9 @@ HomeDashboardProfile homeProfileForAccessPolicy(AppAccessPolicy policy) {
 
   bool has(AppPermission permission) => permissions.contains(permission);
 
-  if (policy.isElevated || has(AppPermissions.systemAdmin)) {
+  if (policy.isElevated || has(AppPermissions.platformAdmin)) {
     return expandHomeProfileForPermissions(
-      homeDashboardProfiles[AppRole.superAdmin]!,
+      homeDashboardProfiles[AppRole.platformAdmin]!,
       policy,
     );
   }

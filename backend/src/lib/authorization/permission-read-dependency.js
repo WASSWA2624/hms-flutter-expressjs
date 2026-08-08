@@ -2,7 +2,7 @@
  * Guard: non-read actions require the matching domain `:read` atom when it
  * exists in the canonical catalog (e.g. billing:write ⇒ billing:read).
  *
- * Domains without a catalog `:read` (system:admin, break_glass:*, …) are
+ * Domains without a catalog `:read` (platform:admin, break_glass:*, …) are
  * exempt — there is nothing to attach.
  */
 

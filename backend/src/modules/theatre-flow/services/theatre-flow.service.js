@@ -38,7 +38,7 @@ const STAGE_INDEX = new Map(
   THEATRE_STAGE_SEQUENCE.map((stage, index) => [stage, index])
 );
 const REOPEN_ALLOWED_ROLES = new Set([
-  ROLES.SUPER_ADMIN,
+  ROLES.PLATFORM_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR]);

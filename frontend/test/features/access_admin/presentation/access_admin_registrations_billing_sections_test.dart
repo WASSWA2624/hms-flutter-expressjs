@@ -76,11 +76,11 @@ AppAccessPolicy _elevatedPolicy({
       user: AuthUserProfile(
         tenantId: 'tenant-1',
         facilityId: 'facility-1',
-        roles: const <String>['SUPER_ADMIN'],
+        roles: const <String>['PLATFORM_ADMIN'],
       ),
       permissions: permissions ??
           <AppPermission>{
-            AppPermissions.systemAdmin,
+            AppPermissions.platformAdmin,
             if (canWriteKeys) AppPermissions.tenantAdmin,
           },
       isAuthorizationHydrated: true,

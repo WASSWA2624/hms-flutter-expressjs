@@ -589,7 +589,7 @@ void main() {
         patientRepository: patientRepository,
         opdRepository: opdRepository,
         size: const Size(1280, 900),
-        roles: const <String>['SUPER_ADMIN'],
+        roles: const <String>['PLATFORM_ADMIN'],
       );
 
       expect(find.text('Complete record'), findsOneWidget);
@@ -639,7 +639,7 @@ void main() {
         patientRepository: patientRepository,
         opdRepository: opdRepository,
         size: const Size(1280, 900),
-        roles: const <String>['SUPER_ADMIN'],
+        roles: const <String>['PLATFORM_ADMIN'],
       );
 
       expect(find.byTooltip('Potential matches needing review.'), findsOneWidget);
@@ -727,7 +727,7 @@ void main() {
         patientRepository: patientRepository,
         opdRepository: opdRepository,
         size: const Size(1400, 900),
-        roles: const <String>['SUPER_ADMIN'],
+        roles: const <String>['PLATFORM_ADMIN'],
       );
 
       await tester.tap(find.text('Register patient'));
@@ -908,7 +908,7 @@ void main() {
       patientRepository: patientRepository,
       opdRepository: opdRepository,
       size: const Size(1000, 820),
-      roles: const <String>['SUPER_ADMIN'],
+      roles: const <String>['PLATFORM_ADMIN'],
     );
 
     await tester.tap(find.text('Amina Kato').first);
@@ -946,7 +946,7 @@ void main() {
       patientRepository: patientRepository,
       opdRepository: opdRepository,
       size: const Size(1000, 920),
-      roles: const <String>['SUPER_ADMIN'],
+      roles: const <String>['PLATFORM_ADMIN'],
     );
 
     await tester.tap(find.text('Amina Kato').first);
@@ -1009,7 +1009,7 @@ void main() {
       patientRepository: patientRepository,
       opdRepository: opdRepository,
       size: const Size(1100, 960),
-      roles: const <String>['SUPER_ADMIN'],
+      roles: const <String>['PLATFORM_ADMIN'],
     );
 
     await tester.tap(find.text('Amina Kato').first);
@@ -1105,7 +1105,7 @@ void main() {
       opdRepository: opdRepository,
       ipdRepository: ipdRepository,
       size: const Size(1100, 960),
-      roles: const <String>['SUPER_ADMIN'],
+      roles: const <String>['PLATFORM_ADMIN'],
     );
 
     await tester.tap(find.text('Amina Kato').first);
@@ -1209,7 +1209,7 @@ void main() {
       opdRepository: opdRepository,
       dischargeRepository: dischargeRepository,
       size: const Size(1100, 960),
-      roles: const <String>['SUPER_ADMIN'],
+      roles: const <String>['PLATFORM_ADMIN'],
     );
 
     await tester.tap(find.text('Amina Kato').first);
@@ -1364,7 +1364,7 @@ void main() {
       patientRepository: patientRepository,
       opdRepository: opdRepository,
       size: const Size(1200, 960),
-      roles: const <String>['SUPER_ADMIN'],
+      roles: const <String>['PLATFORM_ADMIN'],
     );
 
     await tester.tap(find.text('Amina Kato').first);

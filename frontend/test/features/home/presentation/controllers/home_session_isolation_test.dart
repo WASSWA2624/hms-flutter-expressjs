@@ -100,11 +100,11 @@ void main() {
 }
 
 HomeDashboard _platformDashboard({required int value}) {
-  final HomeDashboardProfile profile = homeProfileForRole(AppRole.superAdmin);
+  final HomeDashboardProfile profile = homeProfileForRole(AppRole.platformAdmin);
   return HomeDashboard(
     state: HomeDashboardLoadState.ready,
     profile: profile,
-    context: const HomeDashboardContext(roleValue: 'SUPER_ADMIN'),
+    context: const HomeDashboardContext(roleValue: 'PLATFORM_ADMIN'),
     statusCards: <HomeStatusCard>[
       HomeStatusCard(
         id: 'tenants_active',

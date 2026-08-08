@@ -6,7 +6,7 @@ import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_en
 
 /// Product label from UI-permission prompts (`access administration`).
 ///
-/// Admin keys (`tenant:admin` / `facility:admin` / `system:admin`) are
+/// Admin keys (`tenant:admin` / `facility:admin` / `platform:admin`) are
 /// core/platform rights (not [PermissionModuleMap]-scoped). Subscription
 /// stripping of commercial modules does not revoke these keys; the workspace
 /// API lives under platform facility structure.
@@ -19,10 +19,10 @@ const String accessAdminActiveModule = 'access_admin';
 const List<AppPermission> accessAdminReadPermissions = <AppPermission>[
   AppPermissions.tenantAdmin,
   AppPermissions.facilityAdmin,
-  AppPermissions.systemAdmin,
+  AppPermissions.platformAdmin,
 ];
 
-/// View / read UI (matrix ∪): `tenant:admin` | `facility:admin` | `system:admin`.
+/// View / read UI (matrix ∪): `tenant:admin` | `facility:admin` | `platform:admin`.
 ///
 /// Aligns with `AppRoutes.accessAdmin` and settings access-admin link.
 const AccessRequirement accessAdminWorkspaceReadRequirement =
@@ -89,14 +89,14 @@ const AccessRequirement accessAdminPermissionsReadRequirement =
 const AccessRequirement accessAdminPermissionsWriteRequirement =
     accessAdminWriteRequirement;
 
-/// Registrations tab read (matrix ∩ `system:admin`).
+/// Registrations tab read (matrix ∩ `platform:admin`).
 ///
-/// Source inventory additionally requires elevated (`SUPER_ADMIN`). Prefer
+/// Source inventory additionally requires elevated (`PLATFORM_ADMIN`). Prefer
 /// [canReadAccessAdminRegistrations] / [canAccessAccessAdminRegistrations].
 /// Workspace route entry still uses [accessAdminWorkspaceReadRequirement] (∪).
 const AccessRequirement accessAdminRegistrationsReadRequirement =
     AccessRequirement(
-      allPermissions: <AppPermission>[AppPermissions.systemAdmin],
+      allPermissions: <AppPermission>[AppPermissions.platformAdmin],
     );
 
 /// Registrations create / update / delete (matrix ∩): `tenant:admin`.
@@ -207,12 +207,12 @@ bool canMutateAccessAdminPermissions(
   return canWriteAccessAdmin(policy, workspaceCanWrite: workspaceCanWrite);
 }
 
-/// Registrations tab read — matrix ∩ `system:admin` (see
+/// Registrations tab read — matrix ∩ `platform:admin` (see
 /// [accessAdminRegistrationsReadRequirement]).
 ///
 /// Source inventory (`screens/admin-access.md`) keeps the tab **elevated-only**
-/// (`SUPER_ADMIN`). Prefer that gate so bare `system:admin` without elevation
-/// does not unlock the panel. Elevated role packs include `system:admin`.
+/// (`PLATFORM_ADMIN`). Prefer that gate so bare `platform:admin` without elevation
+/// does not unlock the panel. Elevated role packs include `platform:admin`.
 bool canReadAccessAdminRegistrations(AppAccessPolicy policy) {
   return policy.isElevated;
 }
@@ -455,7 +455,7 @@ abstract final class AccessAdminPermissionsAtomPermissions {
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Registrations tab | navigate / progressive-disclosure | elevated (source); matrix ∩ `system:admin` |
+/// | Registrations tab | navigate / progressive-disclosure | elevated (source); matrix ∩ `platform:admin` |
 /// | Search / filters / columns / pagination | read chrome | elevated |
 /// | Empty / error / retry | read chrome | elevated |
 /// | Row select → registration detail | read | elevated |
@@ -466,7 +466,7 @@ abstract final class AccessAdminPermissionsAtomPermissions {
 /// | Nested cross-module | n/a | _(n/a)_ |
 ///
 /// Workspace entry remains read ∪ (`tenant:admin` \| `facility:admin` \|
-/// `system:admin`). This tab is stricter than that union. Source inventory
+/// `platform:admin`). This tab is stricter than that union. Source inventory
 /// maps write chrome to workspace `canWrite`; matrix ∩ `tenant:admin` plus
 /// elevated tab gate via [canMutateAccessAdminRegistrations].
 abstract final class AccessAdminRegistrationsAtomPermissions {

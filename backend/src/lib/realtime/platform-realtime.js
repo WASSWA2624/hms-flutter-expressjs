@@ -1,5 +1,5 @@
 /**
- * Platform-scoped realtime publishing for Super Admin dashboards.
+ * Platform-scoped realtime publishing for Platform Admin dashboards.
  *
  * CRUD realtime requires tenant_id on the resource; platform entities such as
  * tenant do not have one. This helper resolves platform admin recipients and
@@ -12,7 +12,7 @@ const { logger } = require('@lib/logging');
 const { publishDomainEvent } = require('@lib/websocket/emit');
 
 const PLATFORM_REALTIME_RECIPIENT_ROLES = Object.freeze([
-  ROLES.SUPER_ADMIN,
+  ROLES.PLATFORM_ADMIN,
   ROLES.OPERATIONS
 ]);
 
@@ -52,7 +52,7 @@ const findPlatformAdminRecipientUserIds = async (extraUserIds = []) => {
 };
 
 /**
- * Publish a platform-scoped realtime event to Super Admin / Operations users.
+ * Publish a platform-scoped realtime event to Platform Admin / Operations users.
  *
  * @param {Object} params
  * @param {string} params.event

@@ -19,7 +19,7 @@ void main() {
 
     test('uses override descriptions for elevated permissions', () {
       expect(
-        l10n.permissionCatalogDescriptionForCode('system:admin'),
+        l10n.permissionCatalogDescriptionForCode('platform:admin'),
         'Full platform administration across tenants and global settings.',
       );
       expect(

@@ -12,7 +12,11 @@
  */
 
 const { ROLES } = require('@config/roles');
-const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
+const {
+  PERMISSIONS,
+  ROLE_PERMISSIONS,
+  normalizePermissionName,
+} = require('@config/permissions');
 const { normalizeRoleName } = require('@config/roles');
 const {
   filterVersionDisabledPermissionNames,
@@ -38,15 +42,18 @@ const text = (value) => String(value || '').trim();
 
 const extractPermissionName = (entry) => {
   if (entry == null) return '';
-  if (typeof entry === 'string') return text(entry);
-  return text(
-    entry.name ||
-      entry.code ||
-      entry.permission_name ||
-      entry.permissionName ||
-      entry.permission?.name ||
-      entry.permission?.code
-  );
+  const raw =
+    typeof entry === 'string'
+      ? text(entry)
+      : text(
+          entry.name ||
+            entry.code ||
+            entry.permission_name ||
+            entry.permissionName ||
+            entry.permission?.name ||
+            entry.permission?.code
+        );
+  return normalizePermissionName(raw) || raw;
 };
 
 const extractModuleCode = (entry) => {
@@ -101,7 +108,7 @@ const userHasPlatformOwnerRole = (user = {}) =>
 const userHasSuperAdminRole = (user = {}) => {
   const roles = getRoleNames(user);
   return (
-    roles.includes(ROLES.PLATFORM_OWNER) || roles.includes(ROLES.SUPER_ADMIN)
+    roles.includes(ROLES.PLATFORM_OWNER) || roles.includes(ROLES.PLATFORM_ADMIN)
   );
 };
 

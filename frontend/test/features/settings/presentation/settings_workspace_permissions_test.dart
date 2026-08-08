@@ -90,7 +90,7 @@ void main() {
         SettingsWorkspaceAtomPermissions.tab.isAllowed(
           _policy(<AppPermission>[
             AppPermissions.profileRead,
-            AppPermissions.systemAdmin,
+            AppPermissions.platformAdmin,
           ]),
         ),
         isTrue,

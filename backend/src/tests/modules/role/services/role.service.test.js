@@ -294,7 +294,7 @@ describe('Role Service', () => {
           },
           'user-123',
           '127.0.0.1',
-          { id: 'user-123', roles: ['SUPER_ADMIN'] }
+          { id: 'user-123', roles: ['PLATFORM_ADMIN'] }
         )
       ).rejects.toMatchObject({
         messageKey: 'errors.role.similar_exists',
@@ -342,7 +342,7 @@ describe('Role Service', () => {
           },
           'user-123',
           '127.0.0.1',
-          { id: 'user-123', roles: ['SUPER_ADMIN'] }
+          { id: 'user-123', roles: ['PLATFORM_ADMIN'] }
         )
       ).rejects.toMatchObject({
         messageKey: 'errors.role.similar_exists',
@@ -427,7 +427,7 @@ describe('Role Service', () => {
       expect(roleRepository.create).not.toHaveBeenCalled();
     });
 
-    it('should create platform-scoped role for super admin', async () => {
+    it('should create platform-scoped role for platform admin', async () => {
       const mockRole = {
         id: 'role-platform',
         human_friendly_id: 'ROLPLAT',
@@ -448,7 +448,7 @@ describe('Role Service', () => {
         },
         'user-123',
         '127.0.0.1',
-        { id: 'user-123', roles: ['SUPER_ADMIN'] }
+        { id: 'user-123', roles: ['PLATFORM_ADMIN'] }
       );
 
       expect(result).toEqual(
@@ -493,7 +493,7 @@ describe('Role Service', () => {
         {
           id: 'user-123',
           roles: [],
-          permissions: ['system:admin']
+          permissions: ['platform:admin']
         }
       );
 

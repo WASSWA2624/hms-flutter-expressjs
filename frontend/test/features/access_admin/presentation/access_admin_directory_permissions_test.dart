@@ -201,10 +201,10 @@ void main() {
       );
     });
 
-    test('∪ read: system:admin alone satisfies directory read', () {
+    test('∪ read: platform:admin alone satisfies directory read', () {
       final AppAccessPolicy systemOnly = _policy(
-        permissions: <AppPermission>{AppPermissions.systemAdmin},
-        roles: const <String>['SUPER_ADMIN'],
+        permissions: <AppPermission>{AppPermissions.platformAdmin},
+        roles: const <String>['PLATFORM_ADMIN'],
       );
       expect(canReadAccessAdminDirectory(systemOnly), isTrue);
     });
@@ -272,8 +272,8 @@ void main() {
     test('Registrations panel only when elevated', () {
       final AppAccessPolicy tenant = _policy();
       final AppAccessPolicy elevated = _policy(
-        permissions: <AppPermission>{AppPermissions.systemAdmin},
-        roles: const <String>['SUPER_ADMIN'],
+        permissions: <AppPermission>{AppPermissions.platformAdmin},
+        roles: const <String>['PLATFORM_ADMIN'],
       );
       expect(
         accessAdminAllowedPanels(tenant)
@@ -466,11 +466,11 @@ void main() {
     );
 
     testWidgets(
-      '∪ allowance: system:admin alone shows Directory chrome',
+      '∪ allowance: platform:admin alone shows Directory chrome',
       (WidgetTester tester) async {
         final AppAccessPolicy systemOnly = _policy(
-          permissions: <AppPermission>{AppPermissions.systemAdmin},
-          roles: const <String>['SUPER_ADMIN'],
+          permissions: <AppPermission>{AppPermissions.platformAdmin},
+          roles: const <String>['PLATFORM_ADMIN'],
         );
         await _pumpDirectory(
           tester,

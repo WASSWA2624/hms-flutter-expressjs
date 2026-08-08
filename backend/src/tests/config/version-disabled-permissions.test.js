@@ -114,11 +114,11 @@ describe('version-disabled-permissions', () => {
 
   test('strips deferred grants from platform super-admin JWT path', () => {
     const permissions = resolveRequestPermissionNames({
-      roles: [ROLES.SUPER_ADMIN],
-      permissions: ['system:admin', 'emergency:read', 'biomed:read'],
+      roles: [ROLES.PLATFORM_ADMIN],
+      permissions: ['platform:admin', 'emergency:read', 'biomed:read'],
     });
 
-    expect(permissions).toContain('system:admin');
+    expect(permissions).toContain('platform:admin');
     expect(permissions).toContain('reports:read');
     expect(permissions).not.toContain('emergency:read');
     expect(permissions).not.toContain('biomed:read');

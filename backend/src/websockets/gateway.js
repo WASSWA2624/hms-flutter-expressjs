@@ -167,7 +167,7 @@ const canConnectionReceivePayload = (ws, payload = {}, event = null) => {
         .filter(Boolean)
     );
     if (
-      !grantedPermissions.has('system:admin') &&
+      !grantedPermissions.has('platform:admin') &&
       !requiredPermissions.some((permission) =>
         grantedPermissions.has(permission)
       )
@@ -471,7 +471,7 @@ const getSensitiveEvents = () => {
       value: [
         roles.TENANT_ADMIN || 'TENANT_ADMIN',
         roles.FACILITY_ADMIN || 'FACILITY_ADMIN',
-        roles.SUPER_ADMIN || 'SUPER_ADMIN']},
+        roles.PLATFORM_ADMIN || 'PLATFORM_ADMIN']},
     [BILLING_EVENTS.BILLING_REFUND_PROCESSED]: {
       type: 'permission',
       value: [

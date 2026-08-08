@@ -97,7 +97,7 @@ const HR_ROLE_CATALOG = Object.freeze(
 const HR_ASSIGNABLE_ROLE_NAMES = Object.freeze(
   HR_ROLE_CATALOG.map((entry) => entry.code).filter(
     (code) =>
-      ![ROLES.PLATFORM_OWNER, ROLES.SUPER_ADMIN, ROLES.PATIENT, ROLES.OTHER].includes(
+      ![ROLES.PLATFORM_OWNER, ROLES.PLATFORM_ADMIN, ROLES.PATIENT, ROLES.OTHER].includes(
         code
       )
   )

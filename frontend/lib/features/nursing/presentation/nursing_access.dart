@@ -16,7 +16,7 @@ const List<AppRole> nursingWriteRoles = <AppRole>[
   AppRole.theatreManager,
   AppRole.facilityAdmin,
   AppRole.tenantAdmin,
-  AppRole.superAdmin,
+  AppRole.platformAdmin,
 ];
 
 /// View / read UI (matrix ∪): `clinical:read` | `patient:read` +

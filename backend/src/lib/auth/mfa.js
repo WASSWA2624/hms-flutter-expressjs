@@ -3,7 +3,7 @@ const { decrypt } = require('@lib/crypto');
 const { ROLES, normalizeRoleName } = require('@config/roles');
 
 const PRIVILEGED_MFA_ROLES = new Set([
-  ROLES.SUPER_ADMIN,
+  ROLES.PLATFORM_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
 ]);

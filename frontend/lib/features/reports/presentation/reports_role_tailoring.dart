@@ -183,7 +183,7 @@ bool reportsIsAdminOverlay(AppAccessPolicy policy) {
   return policy.grantsAny(const <AppPermission>[
     AppPermissions.tenantAdmin,
     AppPermissions.facilityAdmin,
-    AppPermissions.systemAdmin,
+    AppPermissions.platformAdmin,
   ]);
 }
 
@@ -225,7 +225,7 @@ Set<ReportsDomainPack> reportsDomainPacks(AppAccessPolicy policy) {
         AppRole.mortuaryManager,
         AppRole.tenantAdmin,
         AppRole.facilityAdmin,
-        AppRole.superAdmin,
+        AppRole.platformAdmin,
         AppRole.integrationAdmin,
       ])) {
     return <ReportsDomainPack>{};

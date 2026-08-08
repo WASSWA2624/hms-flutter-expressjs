@@ -24,7 +24,7 @@ describe('permissions config', () => {
   });
 
   it('grants emergency delete to admin roles', () => {
-    const superAdminPermissions = ROLE_PERMISSIONS[ROLES.SUPER_ADMIN] || [];
+    const superAdminPermissions = ROLE_PERMISSIONS[ROLES.PLATFORM_ADMIN] || [];
     const tenantAdminPermissions = ROLE_PERMISSIONS[ROLES.TENANT_ADMIN] || [];
     const facilityAdminPermissions = ROLE_PERMISSIONS[ROLES.FACILITY_ADMIN] || [];
 
@@ -84,9 +84,9 @@ describe('permissions config', () => {
   });
 
   it('normalizes display-form administrator roles to canonical roles', () => {
-    expect(normalizeRoleName('Super Admin')).toBe(ROLES.SUPER_ADMIN);
-    expect(normalizeRoleName('super-admin')).toBe(ROLES.SUPER_ADMIN);
-    expect(normalizeRoleName('superadmin')).toBe(ROLES.SUPER_ADMIN);
+    expect(normalizeRoleName('Platform Admin')).toBe(ROLES.PLATFORM_ADMIN);
+    expect(normalizeRoleName('super-admin')).toBe(ROLES.PLATFORM_ADMIN);
+    expect(normalizeRoleName('superadmin')).toBe(ROLES.PLATFORM_ADMIN);
     expect(normalizeRoleName('Administrator')).toBe(ROLES.TENANT_ADMIN);
   });
 
@@ -100,7 +100,7 @@ describe('permissions config', () => {
 
   it('exposes atomic domain:action permission keys only', () => {
     const values = Object.values(PERMISSIONS);
-    expect(values).toHaveLength(82);
+    expect(values).toHaveLength(83);
     for (const value of values) {
       expect(value).toMatch(/^[a-z0-9_]+:[a-z0-9_]+$/);
       expect(value.split(':')).toHaveLength(2);

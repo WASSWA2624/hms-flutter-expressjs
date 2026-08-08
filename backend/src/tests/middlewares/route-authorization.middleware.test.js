@@ -78,12 +78,12 @@ describe('high-risk route permission wiring', () => {
       PERMISSIONS.HR_READ,
       PERMISSIONS.TENANT_ADMIN,
       PERMISSIONS.FACILITY_ADMIN,
-      PERMISSIONS.SYSTEM_ADMIN];
+      PERMISSIONS.PLATFORM_ADMIN];
     const writeScopes = [
       PERMISSIONS.HR_WRITE,
       PERMISSIONS.TENANT_ADMIN,
       PERMISSIONS.FACILITY_ADMIN,
-      PERMISSIONS.SYSTEM_ADMIN];
+      PERMISSIONS.PLATFORM_ADMIN];
 
     expect(authorize.mock.calls).toEqual([
       [readScopes, 'permission'],
@@ -101,7 +101,7 @@ describe('high-risk route permission wiring', () => {
     const adminScopes = [
       PERMISSIONS.TENANT_ADMIN,
       PERMISSIONS.FACILITY_ADMIN,
-      PERMISSIONS.SYSTEM_ADMIN];
+      PERMISSIONS.PLATFORM_ADMIN];
 
     expect(authorize).toHaveBeenCalledTimes(5);
     authorize.mock.calls.forEach((call) => {

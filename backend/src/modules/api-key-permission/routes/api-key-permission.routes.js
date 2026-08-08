@@ -17,7 +17,7 @@ const {
   listApiKeyPermissionsQuerySchema
 } = require('@validations/api-key-permission/api-key-permission.schema');
 
-const ADMIN_ROLE_SET = ['TENANT_ADMIN', 'FACILITY_ADMIN', 'SUPER_ADMIN', 'OPERATIONS'];
+const ADMIN_ROLE_SET = ['TENANT_ADMIN', 'FACILITY_ADMIN', 'PLATFORM_ADMIN', 'OPERATIONS'];
 
 router.get(
   '/',

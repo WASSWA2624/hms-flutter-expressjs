@@ -4,7 +4,7 @@
 const String demoAccountPassword = 'Hosspi@2624.';
 
 enum DemoAccount {
-  superAdmin('super.admin@hosspi.com'),
+  platformAdmin('super.admin@hosspi.com'),
   tenantAdmin('tenant.admin@hosspi.com'),
   facilityAdmin('facility.admin@hosspi.com'),
   doctor('doctor@hosspi.com'),

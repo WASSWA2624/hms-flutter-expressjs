@@ -211,12 +211,12 @@ void main() {
     );
 
     test(
-      'write ∪: system:admin satisfies mark/reschedule without clinical:write',
+      'write ∪: platform:admin satisfies mark/reschedule without clinical:write',
       () {
         final AppAccessPolicy adminReader = _policy(
           permissions: <AppPermission>{
             AppPermissions.clinicalRead,
-            AppPermissions.systemAdmin,
+            AppPermissions.platformAdmin,
           },
         );
         expect(ClinicalFollowUpsAtomPermissions.tab.isAllowed(adminReader),
@@ -425,7 +425,7 @@ void main() {
   );
 
   testWidgets(
-    'write ∪: system:admin mounts Mark completed without clinical:write',
+    'write ∪: platform:admin mounts Mark completed without clinical:write',
     (WidgetTester tester) async {
       await _pumpFollowUpsTab(
         tester,
@@ -436,7 +436,7 @@ void main() {
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.clinicalRead,
-            AppPermissions.systemAdmin,
+            AppPermissions.platformAdmin,
           },
         ),
       );

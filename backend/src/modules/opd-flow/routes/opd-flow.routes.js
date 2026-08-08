@@ -212,7 +212,7 @@ router.post(
   authenticate(),
   authorize(
     [
-      ROLES.SUPER_ADMIN,
+      ROLES.PLATFORM_ADMIN,
       ROLES.TENANT_ADMIN,
       ROLES.FACILITY_ADMIN,
       ROLES.RECEPTIONIST,
@@ -298,7 +298,7 @@ router.post(
     body: recordVitalsSchema
   }),
   authenticate(),
-  authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR, ROLES.NURSE], 'role'),
+  authorize([ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR, ROLES.NURSE], 'role'),
   opdFlowController.recordVitals
 );
 
@@ -322,7 +322,7 @@ router.post(
     body: assignDoctorSchema
   }),
   authenticate(),
-  authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST, ROLES.NURSE], 'role'),
+  authorize([ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST, ROLES.NURSE], 'role'),
   opdFlowController.assignDoctor
 );
 
@@ -352,7 +352,7 @@ router.post(
     body: doctorReviewSchema
   }),
   authenticate(),
-  authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR], 'role'),
+  authorize([ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR], 'role'),
   opdFlowController.doctorReview
 );
 
@@ -375,7 +375,7 @@ router.post(
   '/:id/disposition',
   validateRequest({ params: encounterIdParamsSchema, body: dispositionSchema }),
   authenticate(),
-  authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR], 'role'),
+  authorize([ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR], 'role'),
   opdFlowController.disposition
 );
 
@@ -433,7 +433,7 @@ router.post(
     body: correctStageSchema
   }),
   authenticate(),
-  authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], 'role'),
+  authorize([ROLES.PLATFORM_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], 'role'),
   opdFlowController.correctStage
 );
 

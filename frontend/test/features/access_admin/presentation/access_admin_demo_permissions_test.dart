@@ -209,10 +209,10 @@ void main() {
       );
     });
 
-    test('∪ read: system:admin alone satisfies Demo read', () {
+    test('∪ read: platform:admin alone satisfies Demo read', () {
       final AppAccessPolicy systemOnly = _policy(
-        permissions: <AppPermission>{AppPermissions.systemAdmin},
-        roles: const <String>['SUPER_ADMIN'],
+        permissions: <AppPermission>{AppPermissions.platformAdmin},
+        roles: const <String>['PLATFORM_ADMIN'],
       );
       expect(canReadAccessAdminDemo(systemOnly), isTrue);
     });
@@ -467,11 +467,11 @@ void main() {
     );
 
     testWidgets(
-      '∪ allowance: system:admin alone shows Demo chrome',
+      '∪ allowance: platform:admin alone shows Demo chrome',
       (WidgetTester tester) async {
         final AppAccessPolicy systemOnly = _policy(
-          permissions: <AppPermission>{AppPermissions.systemAdmin},
-          roles: const <String>['SUPER_ADMIN'],
+          permissions: <AppPermission>{AppPermissions.platformAdmin},
+          roles: const <String>['PLATFORM_ADMIN'],
         );
         await _pumpDemo(
           tester,
@@ -487,7 +487,7 @@ void main() {
 
         expect(find.text(l10n.accessAdminPanelDemo), findsOneWidget);
         expect(find.text('Demo Nurse'), findsWidgets);
-        // Elevated SUPER_ADMIN qualifies write via canWriteAccessAdmin.
+        // Elevated PLATFORM_ADMIN qualifies write via canWriteAccessAdmin.
         expect(find.text(l10n.accessAdminCreateUserAction), findsOneWidget);
       },
     );

@@ -108,7 +108,7 @@ describe('Subscription Service', () => {
         tenant_id: 'TEN0001',
         plan_id: 'PLAN0001',
         human_friendly_id: 'SUB0002'},
-      { id: 'user-1', role: 'SUPER_ADMIN' },
+      { id: 'user-1', role: 'PLATFORM_ADMIN' },
       '127.0.0.1'
     );
 
@@ -142,7 +142,7 @@ describe('Subscription Service', () => {
     const result = await subscriptionService.updateSubscription(
       'SUB0001',
       { status: 'PAST_DUE' },
-      { id: 'user-2', role: 'SUPER_ADMIN' },
+      { id: 'user-2', role: 'PLATFORM_ADMIN' },
       '127.0.0.1'
     );
 
@@ -231,7 +231,7 @@ describe('Subscription Service', () => {
 
     const result = await subscriptionService.getSubscriptionUpgradeRecommendation(
       'SUB0001',
-      { role: 'SUPER_ADMIN' }
+      { role: 'PLATFORM_ADMIN' }
     );
 
     expect(result).toEqual(
@@ -289,7 +289,7 @@ describe('Subscription Service', () => {
 
     const result = await subscriptionService.getSubscriptionUpgradeRecommendation(
       'SUB0001',
-      { role: 'SUPER_ADMIN' }
+      { role: 'PLATFORM_ADMIN' }
     );
 
     expect(result).toEqual(

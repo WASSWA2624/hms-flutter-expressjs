@@ -14,9 +14,9 @@ const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
 
 describe('assignable-access', () => {
   describe('canActorCreateTenantWideRole', () => {
-    it('allows platform owners and super admins', () => {
+    it('allows platform owners and platform admins', () => {
       expect(canActorCreateTenantWideRole({ roles: [ROLES.PLATFORM_OWNER] })).toBe(true);
-      expect(canActorCreateTenantWideRole({ roles: [ROLES.SUPER_ADMIN] })).toBe(true);
+      expect(canActorCreateTenantWideRole({ roles: [ROLES.PLATFORM_ADMIN] })).toBe(true);
       expect(canActorCreateTenantWideRole({ roles: [ROLES.TENANT_ADMIN] })).toBe(true);
     });
 
@@ -28,16 +28,16 @@ describe('assignable-access', () => {
   describe('canActorCreatePlatformRole', () => {
     it('allows elevated platform roles', () => {
       expect(canActorCreatePlatformRole({ roles: [ROLES.PLATFORM_OWNER] })).toBe(true);
-      expect(canActorCreatePlatformRole({ roles: [ROLES.SUPER_ADMIN] })).toBe(true);
+      expect(canActorCreatePlatformRole({ roles: [ROLES.PLATFORM_ADMIN] })).toBe(true);
       expect(canActorCreatePlatformRole({ roles: [ROLES.TENANT_ADMIN] })).toBe(false);
       expect(canActorCreatePlatformRole({ roles: [ROLES.FACILITY_ADMIN] })).toBe(false);
     });
 
-    it('allows system:admin permission holders', () => {
+    it('allows platform:admin permission holders', () => {
       expect(
         canActorCreatePlatformRole({
           roles: [],
-          permissions: [PERMISSIONS.SYSTEM_ADMIN]
+          permissions: [PERMISSIONS.PLATFORM_ADMIN]
         })
       ).toBe(true);
     });
@@ -49,21 +49,21 @@ describe('assignable-access', () => {
         roles: [ROLES.FACILITY_ADMIN]});
       expect(names.has(PERMISSIONS.FACILITY_ADMIN)).toBe(true);
       expect(names.has(PERMISSIONS.TENANT_ADMIN)).toBe(false);
-      expect(names.has(PERMISSIONS.SYSTEM_ADMIN)).toBe(false);
+      expect(names.has(PERMISSIONS.PLATFORM_ADMIN)).toBe(false);
     });
 
     it('includes tenant:admin for tenant admins', () => {
       const names = resolveActorAssignablePermissionNames({
         roles: [ROLES.TENANT_ADMIN]});
       expect(names.has(PERMISSIONS.TENANT_ADMIN)).toBe(true);
-      expect(names.has(PERMISSIONS.SYSTEM_ADMIN)).toBe(false);
+      expect(names.has(PERMISSIONS.PLATFORM_ADMIN)).toBe(false);
     });
 
-    it('keeps a full ceiling for super admins even when JWT permissions are plan-gated', () => {
+    it('keeps a full ceiling for platform admins even when JWT permissions are plan-gated', () => {
       const names = resolveActorAssignablePermissionNames({
-        roles: [ROLES.SUPER_ADMIN],
+        roles: [ROLES.PLATFORM_ADMIN],
         permissions: [PERMISSIONS.PROFILE_READ, PERMISSIONS.PATIENT_READ]});
-      expect(names.has(PERMISSIONS.SYSTEM_ADMIN)).toBe(true);
+      expect(names.has(PERMISSIONS.PLATFORM_ADMIN)).toBe(true);
       expect(names.has(PERMISSIONS.MORTUARY_READ)).toBe(true);
       expect(names.has(PERMISSIONS.LAB_WRITE)).toBe(true);
       expect(names.has(PERMISSIONS.PLATFORM_OWNER)).toBe(false);
@@ -74,24 +74,24 @@ describe('assignable-access', () => {
         roles: [ROLES.PLATFORM_OWNER],
       });
       expect(ownerNames.has(PERMISSIONS.PLATFORM_OWNER)).toBe(true);
-      expect(ownerNames.has(PERMISSIONS.SYSTEM_ADMIN)).toBe(true);
+      expect(ownerNames.has(PERMISSIONS.PLATFORM_ADMIN)).toBe(true);
     });
   });
 
   describe('isRoleWithinActorCeiling platform admin management', () => {
-    it('blocks super admins from assigning SUPER_ADMIN', () => {
+    it('blocks platform admins from assigning PLATFORM_ADMIN', () => {
       expect(
         isRoleWithinActorCeiling(
-          { name: ROLES.SUPER_ADMIN, permissions: ROLE_PERMISSIONS[ROLES.SUPER_ADMIN].map((name) => ({ name })) },
-          { roles: [ROLES.SUPER_ADMIN] }
+          { name: ROLES.PLATFORM_ADMIN, permissions: ROLE_PERMISSIONS[ROLES.PLATFORM_ADMIN].map((name) => ({ name })) },
+          { roles: [ROLES.PLATFORM_ADMIN] }
         )
       ).toBe(false);
     });
 
-    it('allows platform owners to assign SUPER_ADMIN', () => {
+    it('allows platform owners to assign PLATFORM_ADMIN', () => {
       expect(
         isRoleWithinActorCeiling(
-          { name: ROLES.SUPER_ADMIN, permissions: ROLE_PERMISSIONS[ROLES.SUPER_ADMIN].map((name) => ({ name })) },
+          { name: ROLES.PLATFORM_ADMIN, permissions: ROLE_PERMISSIONS[ROLES.PLATFORM_ADMIN].map((name) => ({ name })) },
           { roles: [ROLES.PLATFORM_OWNER] }
         )
       ).toBe(true);
@@ -104,7 +104,7 @@ describe('assignable-access', () => {
         [
           { id: '1', name: PERMISSIONS.FACILITY_ADMIN },
           { id: '2', name: PERMISSIONS.TENANT_ADMIN },
-          { id: '3', name: PERMISSIONS.SYSTEM_ADMIN }],
+          { id: '3', name: PERMISSIONS.PLATFORM_ADMIN }],
         { roles: [ROLES.FACILITY_ADMIN] }
       );
       expect(filtered.map((entry) => entry.name)).toEqual([PERMISSIONS.FACILITY_ADMIN]);
@@ -164,7 +164,7 @@ describe('assignable-access', () => {
         isRoleWithinActorCeiling(
           {
             name: 'CUSTOM_ADMIN',
-            permissions: [{ permission: { name: PERMISSIONS.SYSTEM_ADMIN } }]},
+            permissions: [{ permission: { name: PERMISSIONS.PLATFORM_ADMIN } }]},
           { roles: [ROLES.TENANT_ADMIN] }
         )
       ).toBe(false);
@@ -229,7 +229,7 @@ describe('assignable-access', () => {
       const tenant = new Set(ROLE_PERMISSIONS[ROLES.TENANT_ADMIN] || []);
       expect(facility.has(PERMISSIONS.TENANT_ADMIN)).toBe(false);
       expect(tenant.has(PERMISSIONS.TENANT_ADMIN)).toBe(true);
-      expect(tenant.has(PERMISSIONS.SYSTEM_ADMIN)).toBe(false);
+      expect(tenant.has(PERMISSIONS.PLATFORM_ADMIN)).toBe(false);
     });
   });
 });

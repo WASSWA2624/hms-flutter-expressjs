@@ -112,7 +112,8 @@ const MODEL_PREFIX_OVERRIDES = Object.freeze({
   permission: 'PER'});
 
 const ROLE_PREFIX_MAP = Object.freeze({
-  SUPER_ADMIN: 'SUP',
+  PLATFORM_OWNER: 'OWN',
+  PLATFORM_ADMIN: 'SUP',
   TENANT_ADMIN: 'TEN',
   FACILITY_ADMIN: 'FAC',
   HR: 'HRM',

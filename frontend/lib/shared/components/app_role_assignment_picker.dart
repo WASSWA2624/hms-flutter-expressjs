@@ -636,7 +636,7 @@ _RoleLogicalGroup _classifyRole(AppRoleAssignmentOption role) {
   final String normalized = haystack.replaceAll(RegExp(r'[^A-Z0-9]+'), '_');
 
   if (_containsAny(normalized, const <String>[
-    'SUPER_ADMIN',
+    'PLATFORM_ADMIN',
     'TENANT_ADMIN',
     'FACILITY_ADMIN',
     'SYSTEM_ADMIN',

@@ -102,14 +102,14 @@ const AccessRequirement icuFollowUpsWriteRequirement =
 /// `unit:manage`) so manage stays on rooms-beds admin, not HR unit packs.
 const AccessRequirement icuBedBoardManageRequirement = AccessRequirement(
   anyRoles: <AppRole>[
-    AppRole.superAdmin,
+    AppRole.platformAdmin,
     AppRole.tenantAdmin,
     AppRole.facilityAdmin,
   ],
   anyPermissions: <AppPermission>[
     AppPermissions.tenantAdmin,
     AppPermissions.facilityAdmin,
-    AppPermissions.systemAdmin,
+    AppPermissions.platformAdmin,
   ],
   activeModules: <String>['inpatient-bed-management'],
 );

@@ -13,8 +13,8 @@ void main() {
       );
       expect(
         requiredReadPermissionFor(
-          'system:admin',
-          catalogCodes: const <String>['system:admin'],
+          'platform:admin',
+          catalogCodes: const <String>['platform:admin'],
         ),
         isNull,
       );

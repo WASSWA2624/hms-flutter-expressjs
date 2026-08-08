@@ -111,7 +111,7 @@ const main = async () => {
       roles: {
         some: {
           deleted_at: null,
-          role: { name: 'SUPER_ADMIN', deleted_at: null },
+          role: { name: 'PLATFORM_ADMIN', deleted_at: null },
         },
       },
     },
@@ -122,7 +122,7 @@ const main = async () => {
     user.id,
     {
       id: platformAdmin?.id || null,
-      roles: ['SUPER_ADMIN'],
+      roles: ['PLATFORM_ADMIN'],
     },
     '127.0.0.1'
   );

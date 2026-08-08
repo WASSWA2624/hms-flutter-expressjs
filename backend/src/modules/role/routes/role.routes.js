@@ -23,7 +23,7 @@ const {
 const ACCESS_ADMIN_SCOPES = [
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN];
+  PERMISSIONS.PLATFORM_ADMIN];
 
 /**
  * @description List roles with pagination and filters

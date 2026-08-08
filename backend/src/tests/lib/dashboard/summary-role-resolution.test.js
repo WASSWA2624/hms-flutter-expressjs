@@ -34,9 +34,9 @@ describe('dashboard summary role resolution', () => {
 
 const { ROLE_PACKS, metricsToRoleSummary } = require('@lib/dashboard/summary');
 
-describe('super admin dashboard summary cards', () => {
+describe('platform admin dashboard summary cards', () => {
   it('maps subscription health to tenant coverage instead of subscription record counts', () => {
-    const cards = metricsToRoleSummary(ROLE_PACKS.SUPER_ADMIN, {
+    const cards = metricsToRoleSummary(ROLE_PACKS.PLATFORM_ADMIN, {
       tenantsTotal: 3,
       tenantsActive: 3,
       tenantsWithoutSubscription: 2,

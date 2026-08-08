@@ -30,7 +30,7 @@ describe('permission-read-dependency', () => {
 
     it('returns null for read actions and domains without a catalog read', () => {
       expect(requiredReadPermissionFor(PERMISSIONS.BILLING_READ)).toBeNull();
-      expect(requiredReadPermissionFor(PERMISSIONS.SYSTEM_ADMIN)).toBeNull();
+      expect(requiredReadPermissionFor(PERMISSIONS.PLATFORM_ADMIN)).toBeNull();
       expect(requiredReadPermissionFor(PERMISSIONS.TENANT_ADMIN)).toBeNull();
       expect(requiredReadPermissionFor(PERMISSIONS.BREAK_GLASS_REQUEST)).toBeNull();
       expect(requiredReadPermissionFor(PERMISSIONS.FINANCIAL_APPROVE)).toBeNull();
@@ -84,7 +84,7 @@ describe('permission-read-dependency', () => {
         assertPermissionNamesIncludeRequiredReads([
           PERMISSIONS.LAB_READ,
           PERMISSIONS.LAB_WRITE,
-          PERMISSIONS.SYSTEM_ADMIN,
+          PERMISSIONS.PLATFORM_ADMIN,
           PERMISSIONS.BREAK_GLASS_APPROVE,
         ])
       ).not.toThrow();
@@ -96,13 +96,13 @@ describe('permission-read-dependency', () => {
       expect(
         expandPermissionNamesWithRequiredReads([
           PERMISSIONS.PHARMACY_WRITE,
-          PERMISSIONS.SYSTEM_ADMIN,
+          PERMISSIONS.PLATFORM_ADMIN,
         ]).sort()
       ).toEqual(
         [
           PERMISSIONS.PHARMACY_READ,
           PERMISSIONS.PHARMACY_WRITE,
-          PERMISSIONS.SYSTEM_ADMIN,
+          PERMISSIONS.PLATFORM_ADMIN,
         ].sort()
       );
     });

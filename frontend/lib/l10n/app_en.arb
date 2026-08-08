@@ -26846,8 +26846,8 @@
   "@permissionCatalogFacilityAdmin": {"description": "Permission catalog label."},
   "permissionCatalogTenantAdmin": "Tenant — Admin",
   "@permissionCatalogTenantAdmin": {"description": "Permission catalog label."},
-  "permissionCatalogSystemAdmin": "System — Admin",
-  "@permissionCatalogSystemAdmin": {"description": "Permission catalog label."},
+  "permissionCatalogPlatformAdmin": "Platform — Admin",
+  "@permissionCatalogPlatformAdmin": {"description": "Permission catalog label."},
   "permissionCatalogPlatformOwner": "Platform — Owner",
   "@permissionCatalogPlatformOwner": {"description": "Permission catalog label."},
   "hrAccessEmptyUsersLabel": "No staff accounts match your search.",
@@ -30897,7 +30897,7 @@
   },
   "accessAdminAllTenantsFilterLabel": "All tenants",
   "@accessAdminAllTenantsFilterLabel": {
-    "description": "Manage users filter choice to show users across every tenant (super admin)."
+    "description": "Manage users filter choice to show users across every tenant (platform admin)."
   },
   "accessAdminAllRolesFilterLabel": "All roles",
   "@accessAdminAllRolesFilterLabel": {

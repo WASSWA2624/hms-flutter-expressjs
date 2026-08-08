@@ -69,7 +69,7 @@ void main() {
             user: const AuthUserProfile(
               id: 'admin-1',
               email: 'admin@example.com',
-              roles: <String>['SUPER_ADMIN'],
+              roles: <String>['PLATFORM_ADMIN'],
             ),
           ),
         ),

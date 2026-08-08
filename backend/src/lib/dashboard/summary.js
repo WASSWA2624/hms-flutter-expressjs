@@ -3,7 +3,7 @@ const { ROLES, ROLE_HIERARCHY, normalizeRoleName } = require('@config/roles');
 
 const ROLE_PACKS = Object.freeze({
   ADMIN: 'admin',
-  SUPER_ADMIN: 'super_admin',
+  PLATFORM_ADMIN: 'platform_admin',
   TENANT_ADMIN: 'tenant_admin',
   FACILITY_ADMIN: 'facility_admin',
   DOCTOR: 'doctor',
@@ -31,7 +31,7 @@ const ROLE_PACKS = Object.freeze({
 });
 
 const ROLE_PROFILE_IDS = Object.freeze({
-  [ROLES.SUPER_ADMIN]: 'super_admin',
+  [ROLES.PLATFORM_ADMIN]: 'platform_admin',
   [ROLES.TENANT_ADMIN]: 'tenant_admin',
   [ROLES.FACILITY_ADMIN]: 'facility_admin',
   [ROLES.DOCTOR]: 'doctor',
@@ -59,7 +59,9 @@ const ROLE_PROFILE_IDS = Object.freeze({
 });
 
 const PROFILE_TO_PACK = Object.freeze({
-  super_admin: ROLE_PACKS.SUPER_ADMIN,
+  platform_admin: ROLE_PACKS.PLATFORM_ADMIN,
+  // Legacy profile id retained for persisted dashboard layouts.
+  super_admin: ROLE_PACKS.PLATFORM_ADMIN,
   tenant_admin: ROLE_PACKS.TENANT_ADMIN,
   facility_admin: ROLE_PACKS.FACILITY_ADMIN,
   doctor: ROLE_PACKS.DOCTOR,
@@ -223,7 +225,7 @@ const resolveScope = async (query = {}, user = {}, effectiveRole = null, reposit
     facility_id: user.facility_id || user.facilityId || null,
   };
 
-  if (effectiveRole === ROLES.SUPER_ADMIN) {
+  if (effectiveRole === ROLES.PLATFORM_ADMIN) {
     const tenantId = query.tenant_id || userScope.tenant_id || null;
     const facilityId = query.facility_id || userScope.facility_id || null;
 
@@ -339,9 +341,9 @@ const activityItem = (id, title, count) => ({
 });
 
 const SUMMARY_METADATA_BY_PACK = Object.freeze({
-  [ROLE_PACKS.SUPER_ADMIN]: {
-    allowed_roles: [ROLES.SUPER_ADMIN],
-    required_permissions: ['system:admin'],
+  [ROLE_PACKS.PLATFORM_ADMIN]: {
+    allowed_roles: [ROLES.PLATFORM_ADMIN],
+    required_permissions: ['platform:admin'],
     required_modules: [],
     scope: 'platform',
   },
@@ -560,7 +562,7 @@ const withSummaryMetadata = (packId, cards = []) => {
 };
 
 const rawMetricsToRoleSummary = (packId, metrics = {}) => {
-  if (packId === ROLE_PACKS.SUPER_ADMIN) {
+  if (packId === ROLE_PACKS.PLATFORM_ADMIN) {
     const tenantsTotal = Number(metrics.tenantsTotal || 0);
     const tenantsWithoutSubscription = Number(metrics.tenantsWithoutSubscription || 0);
     const tenantsWithSubscription = Number.isFinite(Number(metrics.tenantsWithSubscription))
@@ -575,7 +577,7 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
         value: metrics.tenantsActive || 0,
         secondary_value: tenantsTotal,
         format: 'ratio',
-        required_permissions: ['system:admin'],
+        required_permissions: ['platform:admin'],
       },
       {
         id: 'facilities_active',
@@ -583,7 +585,7 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
         value: metrics.facilitiesActive ?? metrics.facilitiesTotal ?? 0,
         secondary_value: metrics.facilitiesTotal ?? metrics.facilitiesActive ?? 0,
         format: 'ratio',
-        required_permissions: ['system:admin'],
+        required_permissions: ['platform:admin'],
       },
       {
         id: 'subscriptions_health',
@@ -603,13 +605,13 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
         id: 'module_entitlement_issues',
         label: 'Entitlements',
         value: metrics.moduleEntitlementIssues || 0,
-        required_permissions: ['system:admin'],
+        required_permissions: ['platform:admin'],
       },
       {
         id: 'pending_registration_approvals',
         label: 'Approvals',
         value: metrics.pendingRegistrationApprovals || 0,
-        required_permissions: ['system:admin'],
+        required_permissions: ['platform:admin'],
         hint:
           Number(metrics.pendingRegistrationApprovals || 0) > 0
             ? 'New accounts awaiting platform approval'
@@ -1060,7 +1062,7 @@ const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
         : Promise.resolve(0),
     ]);
 
-    const isPlatformAdmin = packId === ROLE_PACKS.SUPER_ADMIN;
+    const isPlatformAdmin = packId === ROLE_PACKS.PLATFORM_ADMIN;
     const isPharmacist = packId === ROLE_PACKS.PHARMACIST;
 
     const trendPoints = isPharmacist && Array.isArray(packData?.mostSold?.qty) && packData.mostSold.qty.length

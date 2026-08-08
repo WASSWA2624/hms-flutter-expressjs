@@ -201,7 +201,7 @@ describe('tenant guard query extension', () => {
 
     const result = await runWithRequestContext(
       {
-        actor: { roles: ['SUPER_ADMIN'] },
+        actor: { roles: ['PLATFORM_ADMIN'] },
         scope: { tenant_id: 'tenant-1' }
       },
       () =>

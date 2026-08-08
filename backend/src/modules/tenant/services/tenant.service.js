@@ -37,7 +37,7 @@ const TENANT_SIMILARITY_LOOKUP_LIMIT = 7500;
 
 const isSystemAdminContext = (context = {}) =>
   Array.isArray(context.permissions)
-  && context.permissions.includes(PERMISSIONS.SYSTEM_ADMIN);
+  && context.permissions.includes(PERMISSIONS.PLATFORM_ADMIN);
 
 const assertCanAccessTenantRecord = (tenant, context = {}) => {
   // Trusted internal callers omit permissions.

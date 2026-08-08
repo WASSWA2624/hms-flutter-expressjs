@@ -392,7 +392,7 @@ void main() {
           AppRouteGuardRequest(
             location: targetLocation,
             grantedPermissions: AppPermissionGrant(<AppPermission>{
-              AppPermissions.systemAdmin,
+              AppPermissions.platformAdmin,
             }),
           ),
         ),
@@ -403,7 +403,7 @@ void main() {
         sessionState: SessionState.authenticated(
           session: AuthSession(
             tokens: SessionTokens(accessToken: 'access-token'),
-            user: const AuthUserProfile(roles: <String>['SUPER_ADMIN']),
+            user: const AuthUserProfile(roles: <String>['PLATFORM_ADMIN']),
             moduleEntitlements: const <AppModuleEntitlement>[
               AppModuleEntitlement(code: 'subscription-controls'),
             ],

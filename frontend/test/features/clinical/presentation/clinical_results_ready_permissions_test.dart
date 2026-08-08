@@ -640,9 +640,9 @@ void main() {
       );
     });
 
-    test('∪ allowance: system:admin satisfies clinical write source gate', () {
+    test('∪ allowance: platform:admin satisfies clinical write source gate', () {
       final AppAccessPolicy admin = _policy(
-        permissions: <AppPermission>{AppPermissions.systemAdmin},
+        permissions: <AppPermission>{AppPermissions.platformAdmin},
       );
       expect(ClinicalResultsReadyAtomPermissions.write.isAllowed(admin), isTrue);
       expect(
@@ -1254,7 +1254,7 @@ void main() {
   );
 
   testWidgets(
-    'write ∪: system:admin mounts Add clinical note with clinical:read',
+    'write ∪: platform:admin mounts Add clinical note with clinical:read',
     (WidgetTester tester) async {
       await _pumpResultsReadyTab(
         tester,
@@ -1262,7 +1262,7 @@ void main() {
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.clinicalRead,
-            AppPermissions.systemAdmin,
+            AppPermissions.platformAdmin,
           },
         ),
       );

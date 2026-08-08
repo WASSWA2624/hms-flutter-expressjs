@@ -77,7 +77,7 @@ const CLINICAL_FLOW_ROLES = new Set([
 
 const SYSTEM_CRITICAL_ROLES = new Set([
   ROLES.PLATFORM_OWNER,
-  ROLES.SUPER_ADMIN,
+  ROLES.PLATFORM_ADMIN,
 ]);
 
 const text = (value) => String(value || '').trim();
@@ -113,7 +113,7 @@ const permissionList = (user = {}) => resolveRequestPermissionNames(user);
 
 const ADMIN_WRITE_PERMISSIONS = new Set([
   PERMISSIONS.PLATFORM_OWNER,
-  PERMISSIONS.SYSTEM_ADMIN,
+  PERMISSIONS.PLATFORM_ADMIN,
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
 ]);
@@ -121,7 +121,7 @@ const ADMIN_WRITE_PERMISSIONS = new Set([
 const canWriteAccess = (user = {}) => {
   const writeRoles = new Set([
     ROLES.PLATFORM_OWNER,
-    ROLES.SUPER_ADMIN,
+    ROLES.PLATFORM_ADMIN,
     ROLES.TENANT_ADMIN,
     ROLES.FACILITY_ADMIN,
     ROLES.OPERATIONS,
@@ -133,8 +133,8 @@ const canWriteAccess = (user = {}) => {
 };
 
 const isSuperAdmin = (user = {}) =>
-  roleList(user).includes(ROLES.SUPER_ADMIN) ||
-  permissionList(user).includes(PERMISSIONS.SYSTEM_ADMIN);
+  roleList(user).includes(ROLES.PLATFORM_ADMIN) ||
+  permissionList(user).includes(PERMISSIONS.PLATFORM_ADMIN);
 
 const hasTenantAdminScope = (user = {}) =>
   roleList(user).includes(ROLES.TENANT_ADMIN) ||

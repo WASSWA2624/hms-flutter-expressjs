@@ -117,7 +117,7 @@ const notifyPlanModuleEntitlementChange = async (planRecord, user) => {
       resource: planRecord,
       resource_type: 'subscription_plan',
       actor_user_id: user?.id || null,
-      recipient_roles: [ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.SUPER_ADMIN],
+      recipient_roles: [ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.PLATFORM_ADMIN],
       payload: {
         reason: 'subscription_plan_updated',
         plan_id: planRecord?.human_friendly_id || planRecord?.id || null}});
