@@ -17,7 +17,8 @@ const {
   createTenantSchema,
   updateTenantSchema,
   tenantIdParamsSchema,
-  listTenantsQuerySchema
+  listTenantsQuerySchema,
+  permanentDeleteTenantQuerySchema
 } = require('@validations/tenant/tenant.schema');
 
 const TENANT_READ_SCOPES = [
@@ -64,7 +65,9 @@ router.post(
 
 router.delete(
   '/:id/permanent',
-  validateRequest({ params: tenantIdParamsSchema }),
+  validateRequest({
+    params: tenantIdParamsSchema,
+    query: permanentDeleteTenantQuerySchema}),
   authenticate(),
   authorize(PLATFORM_TENANT_SCOPES, 'permission'),
   tenantController.permanentDeleteTenant

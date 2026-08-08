@@ -8367,6 +8367,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'This record changed. Refresh and try again.';
 
   @override
+  String get tenantFacilityPermanentDeleteBlockedTitle =>
+      'Cannot permanently delete tenant';
+
+  @override
+  String get tenantFacilityPermanentDeleteBlockedActiveSubscriptionMessage =>
+      'This tenant still has an active, trial, or past-due subscription. Cancel or end the subscription first, or permanently delete anyway.';
+
+  @override
+  String get tenantFacilityPermanentDeleteAnywayWarning =>
+      'Delete anyway will permanently erase this tenant, all facilities, related data, and any remaining subscription records. This cannot be undone.';
+
+  @override
+  String get tenantFacilityPermanentDeleteAnywayAction => 'Delete anyway';
+
+  @override
+  String get tenantFacilityPermanentDeleteBlockedCancelAction => 'Cancel';
+
+  @override
+  String get tenantFacilityPermanentDeleteRequiresSoftDeleteMessage =>
+      'Soft-delete the tenant first, then permanently delete it.';
+
+  @override
   String get errorValidationTitle => 'Check the details';
 
   @override

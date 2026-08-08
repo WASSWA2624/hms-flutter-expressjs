@@ -9,6 +9,15 @@ extension AppLocalizationsBuildContext on BuildContext {
 
 extension AppFailureLocalizations on AppLocalizations {
   String failureTitle(AppFailure failure) {
+    final String? knownTitle = switch (failure.code) {
+      'PERMANENT_DELETE_BLOCKED' =>
+        tenantFacilityPermanentDeleteBlockedTitle,
+      _ => null,
+    };
+    if (knownTitle != null) {
+      return knownTitle;
+    }
+
     return switch (failure.category) {
       AppFailureCategory.network => errorNetworkTitle,
       AppFailureCategory.timeout => errorTimeoutTitle,

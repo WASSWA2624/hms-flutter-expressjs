@@ -298,11 +298,12 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   }
 
   @override
-  Future<Result<void>> permanentDeleteTenant(String id) {
+  Future<Result<void>> permanentDeleteTenant(String id, {bool force = false}) {
     return _apiClient.delete<void>(
       ApiEndpoints.nested(HmsApiResource.tenants, id, const <String>[
         'permanent',
       ]),
+      queryParameters: <String, Object?>{if (force) 'force': true},
       decoder: _decodeVoid,
     );
   }

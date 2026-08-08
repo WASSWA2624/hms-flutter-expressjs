@@ -161,9 +161,17 @@ const listTenantsQuerySchema = listQuerySchema.extend({
   search: z.string().trim().optional(),
   include_deleted: z.enum(['true', 'false']).optional()});
 
+/**
+ * Permanent delete query validation
+ * Used for DELETE /tenants/:id/permanent
+ */
+const permanentDeleteTenantQuerySchema = z.object({
+  force: optionalBooleanSchema});
+
 module.exports = {
   createTenantSchema,
   updateTenantSchema,
   tenantIdParamsSchema,
-  listTenantsQuerySchema
+  listTenantsQuerySchema,
+  permanentDeleteTenantQuerySchema
 };

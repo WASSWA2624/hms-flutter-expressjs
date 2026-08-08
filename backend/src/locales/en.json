@@ -399,6 +399,8 @@
   "errors.tenant.duplicate_slug": "A tenant with this slug already exists",
   "errors.tenant.not_found": "Tenant not found",
   "errors.tenant.similar_exists": "A similar tenant already exists. Confirm to create anyway.",
+  "errors.tenant.permanent_delete_blocked": "This tenant still has an active, trial, or past-due subscription. Cancel or end the subscription first, or permanently delete anyway.",
+  "errors.tenant.permanent_delete_requires_soft_delete": "Soft-delete the tenant first, then permanently delete it.",
   "errors.tenant_facility.workspace_not_enabled": "Tenant and facility workspace is not enabled",
   "errors.terms_acceptance.not_found": "Terms acceptance not found",
   "errors.theatre_case.not_found": "Theatre case not found",

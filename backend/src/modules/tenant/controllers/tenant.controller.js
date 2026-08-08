@@ -146,8 +146,9 @@ const restoreTenant = asyncHandler(async (req, res) => {
 const permanentDeleteTenant = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const context = buildRequestContext(req);
+  const force = req.query?.force === true;
 
-  await tenantService.permanentDeleteTenant(id, context);
+  await tenantService.permanentDeleteTenant(id, context, { force });
 
   return sendNoContent(res);
 });

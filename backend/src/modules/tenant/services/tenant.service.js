@@ -764,8 +764,10 @@ const restoreTenant = async (id, context = {}) => {
 
 /**
  * Permanently delete a soft-deleted tenant, its facilities, and related data.
+ * Pass `{ force: true }` to override the active-subscription guard.
  */
-const permanentDeleteTenant = async (id, context = {}) => {
+const permanentDeleteTenant = async (id, context = {}, options = {}) => {
+  const force = options.force === true;
   const normalizedId = String(id ?? '').trim();
   const tenantId = await resolveTenantIdIncludingDeleted(normalizedId);
   const tenant = await tenantRepository.findById(tenantId, { includeDeleted: true });
@@ -778,7 +780,9 @@ const permanentDeleteTenant = async (id, context = {}) => {
     throw new HttpError('errors.tenant.permanent_delete_requires_soft_delete', 400);
   }
 
-  await assertNoActiveSubscriptions(tenantId);
+  if (!force) {
+    await assertNoActiveSubscriptions(tenantId);
+  }
 
   await createAuditLog({
     action: 'TENANT_PERMANENTLY_DELETED',
@@ -792,7 +796,8 @@ const permanentDeleteTenant = async (id, context = {}) => {
     details: {
       name: tenant.name,
       slug: tenant.slug,
-      irreversible: true}});
+      irreversible: true,
+      forced: force}});
 
   const { facilityIds } = await tenantRepository.permanentDelete(tenantId);
 
@@ -804,6 +809,7 @@ const permanentDeleteTenant = async (id, context = {}) => {
     payload: {
       name: tenant.name,
       permanent: true,
+      forced: force,
       cascaded_facility_ids: facilityIds}});
 };
 

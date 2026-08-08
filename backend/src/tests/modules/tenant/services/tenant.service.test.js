@@ -1067,5 +1067,43 @@ describe('Tenant Service', () => {
 
       expect(tenantRepository.permanentDelete).not.toHaveBeenCalled();
     });
+
+    it('should block permanent delete when an active subscription remains', async () => {
+      const prisma = require('@prisma/client');
+      tenantRepository.findById.mockResolvedValue({
+        id: 'tenant-123',
+        name: 'Test Hospital',
+        deleted_at: new Date()});
+      prisma.subscription.count.mockResolvedValue(1);
+
+      await expect(permanentDeleteTenant('tenant-123')).rejects.toMatchObject({
+        messageKey: 'errors.tenant.permanent_delete_blocked',
+        statusCode: 409,
+        errors: [{ reason: 'active_subscription' }],
+      });
+      expect(tenantRepository.permanentDelete).not.toHaveBeenCalled();
+    });
+
+    it('should permanently delete when force overrides an active subscription', async () => {
+      const prisma = require('@prisma/client');
+      tenantRepository.findById.mockResolvedValue({
+        id: 'tenant-123',
+        name: 'Test Hospital',
+        slug: 'test-hospital__deleted__tenant123',
+        deleted_at: new Date()});
+      prisma.subscription.count.mockResolvedValue(1);
+      tenantRepository.permanentDelete.mockResolvedValue({
+        facilityIds: ['facility-1']});
+
+      await permanentDeleteTenant('tenant-123', { user_id: 'user-1' }, { force: true });
+
+      expect(prisma.subscription.count).not.toHaveBeenCalled();
+      expect(tenantRepository.permanentDelete).toHaveBeenCalledWith('tenant-123');
+      expect(createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'TENANT_PERMANENTLY_DELETED',
+          details: expect.objectContaining({ forced: true })}),
+      );
+    });
   });
 });

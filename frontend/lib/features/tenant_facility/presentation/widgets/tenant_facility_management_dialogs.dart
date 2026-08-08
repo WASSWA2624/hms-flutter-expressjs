@@ -621,7 +621,7 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
       return;
     }
 
-    final bool? confirmed = await showAppDialog<bool>(
+    final Object? confirmed = await showAppDialog<Object?>(
       context: context,
       builder: (BuildContext dialogContext) => AppConfirmActionDialog(
         title: l10n.tenantFacilityPermanentDeleteConfirmationTitle,
@@ -630,6 +630,9 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
         submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
         destructive: true,
         icon: const Icon(Icons.delete_forever_outlined),
+        shouldPopOnFailure: (AppFailure failure) =>
+            failure.code == 'PERMANENT_DELETE_BLOCKED',
+        failurePopValue: 'blocked',
         onConfirm: () async {
           final Result<void> result = await ref
               .read(tenantFacilityRepositoryProvider)
@@ -649,10 +652,55 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
       ),
     );
 
-    if (!mounted || confirmed != true) {
+    if (!mounted) {
       return;
     }
 
+    if (confirmed == true) {
+      _markPermanentDeleteTenantSuccess(tenant);
+      return;
+    }
+
+    if (confirmed != 'blocked') {
+      return;
+    }
+
+    final bool? deleteAnyway = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.tenantFacilityPermanentDeleteBlockedTitle,
+        body:
+            '${l10n.tenantFacilityPermanentDeleteBlockedActiveSubscriptionMessage}\n\n'
+            '${l10n.tenantFacilityPermanentDeleteAnywayWarning}',
+        submitLabel: l10n.tenantFacilityPermanentDeleteAnywayAction,
+        cancelLabel: l10n.tenantFacilityPermanentDeleteBlockedCancelAction,
+        destructive: true,
+        icon: const Icon(Icons.delete_forever_outlined),
+        onConfirm: () async {
+          final Result<void> result = await ref
+              .read(tenantFacilityRepositoryProvider)
+              .permanentDeleteTenant(tenant.mutationId, force: true);
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) {
+              if (failure.category == AppFailureCategory.notFound) {
+                return null;
+              }
+              return failure;
+            },
+          );
+        },
+      ),
+    );
+
+    if (!mounted || deleteAnyway != true) {
+      return;
+    }
+
+    _markPermanentDeleteTenantSuccess(tenant);
+  }
+
+  void _markPermanentDeleteTenantSuccess(TenantProfile tenant) {
     _markMutated();
     _removeTenantLocally(tenant);
     _syncPlatformDashboard(ref);

@@ -34,12 +34,15 @@ class AppConfirmActionDialog extends StatefulWidget {
     this.noteAutofocus = false,
     this.destructive = false,
     this.submitLeadingIcon,
+    this.cancelLabel,
     this.cancelLeadingIcon = AppActionIcons.cancel,
     this.maxWidth = 600,
     this.sectionDensity = AppFormSectionDensity.regular,
     this.scrollable = false,
     this.pinActionsToBottom = false,
     this.initialMaximized = false,
+    this.shouldPopOnFailure,
+    this.failurePopValue,
     super.key,
   });
 
@@ -57,6 +60,7 @@ class AppConfirmActionDialog extends StatefulWidget {
   final bool noteAutofocus;
   final bool destructive;
   final IconData? submitLeadingIcon;
+  final String? cancelLabel;
   final IconData cancelLeadingIcon;
   final double maxWidth;
   final AppFormSectionDensity sectionDensity;
@@ -65,6 +69,10 @@ class AppConfirmActionDialog extends StatefulWidget {
   final bool initialMaximized;
   final Future<AppFailure?> Function()? onConfirm;
   final Future<AppFailure?> Function(String note)? onConfirmWithNote;
+  /// When true for a failure from [onConfirm], close with [failurePopValue]
+  /// instead of keeping the dialog open with an error banner.
+  final bool Function(AppFailure failure)? shouldPopOnFailure;
+  final Object? failurePopValue;
 
   bool get _hasNoteField =>
       noteFieldLabel != null && noteFieldLabel!.trim().isNotEmpty;
@@ -159,6 +167,7 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
         onSubmit: _submit,
         destructive: widget.destructive,
         submitLeadingIcon: widget.submitLeadingIcon,
+        cancelLabel: widget.cancelLabel,
         cancelLeadingIcon: widget.cancelLeadingIcon,
       ),
     );
@@ -210,6 +219,10 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
     }
     if (failure == null) {
       Navigator.of(context).pop(true);
+      return;
+    }
+    if (widget.shouldPopOnFailure?.call(failure) == true) {
+      Navigator.of(context).pop(widget.failurePopValue);
       return;
     }
     setState(() {
@@ -768,6 +781,7 @@ List<Widget> _actionDialogButtons(
   required VoidCallback onSubmit,
   bool destructive = false,
   IconData? submitLeadingIcon,
+  String? cancelLabel,
   IconData cancelLeadingIcon = AppActionIcons.cancel,
 }) {
   final AppLocalizations l10n = context.l10n;
@@ -776,7 +790,7 @@ List<Widget> _actionDialogButtons(
 
   return <Widget>[
     AppButton.close(
-      label: l10n.commonCancelActionLabel,
+      label: cancelLabel ?? l10n.commonCancelActionLabel,
       leadingIcon: cancelLeadingIcon,
       enabled: !isSaving,
       fullWidth: compact,

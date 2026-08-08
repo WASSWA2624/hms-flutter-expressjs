@@ -133,6 +133,10 @@ abstract final class ValidationMessagePresenter {
       'network.rate_limited' => _rateLimitedMessage(l10n, failure),
       'auth.reset_password.invalid_token' ||
       'auth.token_invalid' => l10n.authResetPasswordInvalidTokenMessage,
+      'PERMANENT_DELETE_BLOCKED' =>
+        l10n.tenantFacilityPermanentDeleteBlockedActiveSubscriptionMessage,
+      'PERMANENT_DELETE_REQUIRES_SOFT_DELETE' =>
+        l10n.tenantFacilityPermanentDeleteRequiresSoftDeleteMessage,
       _ => null,
     };
   }

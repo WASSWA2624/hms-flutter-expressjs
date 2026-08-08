@@ -15376,6 +15376,42 @@ abstract class AppLocalizations {
   /// **'This record changed. Refresh and try again.'**
   String get errorConflictMessage;
 
+  /// Title when permanent tenant delete is blocked by business rules.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot permanently delete tenant'**
+  String get tenantFacilityPermanentDeleteBlockedTitle;
+
+  /// Body when permanent tenant delete is blocked because a live subscription still exists.
+  ///
+  /// In en, this message translates to:
+  /// **'This tenant still has an active, trial, or past-due subscription. Cancel or end the subscription first, or permanently delete anyway.'**
+  String get tenantFacilityPermanentDeleteBlockedActiveSubscriptionMessage;
+
+  /// Extra warning shown with the Delete anyway option after a subscription block.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete anyway will permanently erase this tenant, all facilities, related data, and any remaining subscription records. This cannot be undone.'**
+  String get tenantFacilityPermanentDeleteAnywayWarning;
+
+  /// Confirm action that force-overrides the active subscription block.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete anyway'**
+  String get tenantFacilityPermanentDeleteAnywayAction;
+
+  /// Dismiss action on the permanent-delete subscription block dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get tenantFacilityPermanentDeleteBlockedCancelAction;
+
+  /// Body when permanent tenant delete is attempted on a still-active tenant.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft-delete the tenant first, then permanently delete it.'**
+  String get tenantFacilityPermanentDeleteRequiresSoftDeleteMessage;
+
   /// Title for a validation failure.
   ///
   /// In en, this message translates to:

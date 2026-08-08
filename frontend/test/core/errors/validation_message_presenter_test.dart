@@ -94,5 +94,17 @@ void main() {
         'Email verified. Awaiting platform approval before sign-in.',
       );
     });
+
+    test('explains permanent tenant delete blocked by active subscription', () {
+      final AppFailure failure = AppFailure.conflict(
+        code: 'PERMANENT_DELETE_BLOCKED',
+        detailMessage: 'errors.tenant.permanent_delete_blocked',
+      );
+
+      expect(
+        ValidationMessagePresenter.displayMessage(failure, l10n),
+        l10n.tenantFacilityPermanentDeleteBlockedActiveSubscriptionMessage,
+      );
+    });
   });
 }

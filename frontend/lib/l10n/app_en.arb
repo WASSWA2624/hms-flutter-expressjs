@@ -10654,6 +10654,30 @@
   "@errorConflictMessage": {
     "description": "Safe user-facing message for a conflict failure without leaking record details."
   },
+  "tenantFacilityPermanentDeleteBlockedTitle": "Cannot permanently delete tenant",
+  "@tenantFacilityPermanentDeleteBlockedTitle": {
+    "description": "Title when permanent tenant delete is blocked by business rules."
+  },
+  "tenantFacilityPermanentDeleteBlockedActiveSubscriptionMessage": "This tenant still has an active, trial, or past-due subscription. Cancel or end the subscription first, or permanently delete anyway.",
+  "@tenantFacilityPermanentDeleteBlockedActiveSubscriptionMessage": {
+    "description": "Body when permanent tenant delete is blocked because a live subscription still exists."
+  },
+  "tenantFacilityPermanentDeleteAnywayWarning": "Delete anyway will permanently erase this tenant, all facilities, related data, and any remaining subscription records. This cannot be undone.",
+  "@tenantFacilityPermanentDeleteAnywayWarning": {
+    "description": "Extra warning shown with the Delete anyway option after a subscription block."
+  },
+  "tenantFacilityPermanentDeleteAnywayAction": "Delete anyway",
+  "@tenantFacilityPermanentDeleteAnywayAction": {
+    "description": "Confirm action that force-overrides the active subscription block."
+  },
+  "tenantFacilityPermanentDeleteBlockedCancelAction": "Cancel",
+  "@tenantFacilityPermanentDeleteBlockedCancelAction": {
+    "description": "Dismiss action on the permanent-delete subscription block dialog."
+  },
+  "tenantFacilityPermanentDeleteRequiresSoftDeleteMessage": "Soft-delete the tenant first, then permanently delete it.",
+  "@tenantFacilityPermanentDeleteRequiresSoftDeleteMessage": {
+    "description": "Body when permanent tenant delete is attempted on a still-active tenant."
+  },
   "errorValidationTitle": "Check the details",
   "@errorValidationTitle": {
     "description": "Title for a validation failure."

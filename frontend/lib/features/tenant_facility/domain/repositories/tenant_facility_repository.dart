@@ -83,7 +83,7 @@ abstract interface class TenantFacilityRepository {
 
   Future<Result<TenantProfile>> restoreTenant(String id);
 
-  Future<Result<void>> permanentDeleteTenant(String id);
+  Future<Result<void>> permanentDeleteTenant(String id, {bool force = false});
 
   Future<Result<void>> deleteFacility(String id);
 
