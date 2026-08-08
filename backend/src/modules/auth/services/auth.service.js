@@ -1893,28 +1893,29 @@ const verifyEmail = async (data) => {
     details: { email: verificationToken.user.email }
   });
 
+  // Verification is already committed; never block the HTTP response on SMTP.
   if (shouldSendAwaitingApprovalEmail && verificationToken.user.email) {
-    try {
-      const deliveryResult = await sendAwaitingApprovalEmail({
-        email: verificationToken.user.email,
-        locale: request_context?.locale,
-        platformAdminContact: resolvePlatformAdminContact(),
-      });
-      if (!deliveryResult?.sent) {
-        logger.warn('Awaiting-approval email was not delivered.', {
+    void sendAwaitingApprovalEmail({
+      email: verificationToken.user.email,
+      locale: request_context?.locale,
+      platformAdminContact: resolvePlatformAdminContact(),
+    })
+      .then((deliveryResult) => {
+        if (!deliveryResult?.sent) {
+          logger.warn('Awaiting-approval email was not delivered.', {
+            context: 'verify_email_awaiting_approval',
+            email: verificationToken.user.email,
+            provider: deliveryResult?.provider || null,
+          });
+        }
+      })
+      .catch((error) => {
+        logger.warn('Awaiting-approval email send failed.', {
           context: 'verify_email_awaiting_approval',
           email: verificationToken.user.email,
-          provider: deliveryResult?.provider || null,
+          error: error?.message || String(error),
         });
-      }
-    } catch (error) {
-      // Verification already succeeded; do not fail the request on email issues.
-      logger.warn('Awaiting-approval email send failed.', {
-        context: 'verify_email_awaiting_approval',
-        email: verificationToken.user.email,
-        error: error?.message || String(error),
       });
-    }
   }
 
   return {
