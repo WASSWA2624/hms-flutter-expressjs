@@ -33,10 +33,42 @@ describe('permissions config', () => {
     expect(facilityAdminPermissions).toContain(PERMISSIONS.EMERGENCY_DELETE);
   });
 
+  it('keeps EMT, PARAMEDIC, and CHARGE_NURSE as distinct canonical roles', () => {
+    expect(normalizeRoleName('EMT')).toBe(ROLES.EMT);
+    expect(normalizeRoleName('paramedic')).toBe(ROLES.PARAMEDIC);
+    expect(normalizeRoleName('CHARGE_NURSE')).toBe(ROLES.CHARGE_NURSE);
+    expect(normalizeRoleName('ambulance_driver')).toBe(ROLES.AMBULANCE_OPERATOR);
+    expect(normalizeRoleName('FACILITY_BILLING')).toBe(ROLES.BILLING);
+  });
+
   it('normalizes ambulance legacy aliases to AMBULANCE_OPERATOR', () => {
     expect(normalizeRoleName('ambulance_driver')).toBe(ROLES.AMBULANCE_OPERATOR);
-    expect(normalizeRoleName('EMT')).toBe(ROLES.AMBULANCE_OPERATOR);
-    expect(normalizeRoleName('paramedic')).toBe(ROLES.AMBULANCE_OPERATOR);
+  });
+
+  it('differentiates specialty packs from their former template clones', () => {
+    expect(ROLE_PERMISSIONS[ROLES.FACILITY_BILLING]).toBeUndefined();
+    expect(ROLE_PERMISSIONS[ROLES.PHARMACY_TECHNICIAN]).not.toEqual(
+      ROLE_PERMISSIONS[ROLES.PHARMACIST]
+    );
+    expect(ROLE_PERMISSIONS[ROLES.MEDICAL_CODER]).not.toEqual(
+      ROLE_PERMISSIONS[ROLES.BILLING]
+    );
+    expect(ROLE_PERMISSIONS[ROLES.ACCOUNTANT]).not.toEqual(
+      ROLE_PERMISSIONS[ROLES.BILLING]
+    );
+    expect(ROLE_PERMISSIONS[ROLES.CHARGE_NURSE]).not.toEqual(
+      ROLE_PERMISSIONS[ROLES.WARD_MANAGER]
+    );
+    expect(ROLE_PERMISSIONS[ROLES.SURGEON]).not.toEqual(
+      ROLE_PERMISSIONS[ROLES.DOCTOR]
+    );
+    expect(ROLE_PERMISSIONS[ROLES.EMERGENCY_PHYSICIAN]).toEqual(
+      expect.arrayContaining([PERMISSIONS.EMERGENCY_READ, PERMISSIONS.EMERGENCY_WRITE])
+    );
+    expect(ROLE_PERMISSIONS[ROLES.EMT]).not.toEqual(
+      ROLE_PERMISSIONS[ROLES.PARAMEDIC]
+    );
+    expect(ROLE_PERMISSIONS[ROLES.DOCTOR]).not.toContain(PERMISSIONS.NURSING_READ);
   });
 
   it('normalizes radiology legacy aliases to RADIOLOGY_TECH', () => {
@@ -79,7 +111,14 @@ describe('permissions config', () => {
       PERMISSIONS.PRICING_PHARMACY_WRITE
     );
     expect(ROLE_PERMISSIONS[ROLES.ACCOUNTANT]).toEqual(
-      ROLE_PERMISSIONS[ROLES.BILLING]
+      expect.arrayContaining([
+        PERMISSIONS.BILLING_READ,
+        PERMISSIONS.FINANCIAL_APPROVE,
+        PERMISSIONS.PRICING_FACILITY_READ,
+      ])
+    );
+    expect(ROLE_PERMISSIONS[ROLES.ACCOUNTANT]).not.toContain(
+      PERMISSIONS.LAST_OFFICE_WRITE
     );
   });
 

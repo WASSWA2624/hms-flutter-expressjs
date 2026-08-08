@@ -65,7 +65,6 @@ const departmentForRole = (scenarioKey, role) => {
     PHARMACY_TECHNICIAN: 'Pharmacy',
     PHARMACY_BILLING: 'Pharmacy',
     BILLING: 'Billing',
-    FACILITY_BILLING: 'Billing',
     MEDICAL_CODER: 'Billing',
     ADMISSIONS_COORDINATOR: 'Front Office',
     MEDICAL_RECORDS_CLERK: 'Front Office',
@@ -151,12 +150,37 @@ const seedAccessPack = async (ctx, orgPack) => {
       result.roles[`${scenario.key}:${roleName}`] = role;
 
       for (const permissionName of ROLE_PERMISSION_MAP[roleName] || []) {
+        const permissionId =
+          result.permissions[`${scenario.key}:${permissionName}`]?.id;
+        if (!permissionId) {
+          continue;
+        }
+
+        // Catalog sync may have already linked this pair under a different id.
+        // Prefer revive/update over insert to avoid unique(role_id, permission_id).
+        const existingLink = await ctx.prisma.role_permission.findFirst({
+          where: {
+            role_id: role.id,
+            permission_id: permissionId,
+          },
+          select: { id: true, deleted_at: true },
+        });
+        if (existingLink) {
+          if (existingLink.deleted_at != null) {
+            await ctx.prisma.role_permission.update({
+              where: { id: existingLink.id },
+              data: { deleted_at: null },
+            });
+          }
+          continue;
+        }
+
         await ctx.upsert(
           'role_permission',
           `${scenario.key}:role-permission:${roleName}:${permissionName}`,
           {
             role_id: role.id,
-            permission_id: result.permissions[`${scenario.key}:${permissionName}`].id,
+            permission_id: permissionId,
           },
           {
             publicIdPrefix: 'RPERM',

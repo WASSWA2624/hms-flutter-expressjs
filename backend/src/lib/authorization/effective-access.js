@@ -1,7 +1,10 @@
 /**
  * Effective access calculation
  *
- * Formula:
+ * A user may hold one or more roles (`user_role`). Net rights are the
+ * permission union of all assigned roles (plus module/direct grants), then
+ * intersected with subscription and assigned-module ceilings:
+ *
  *   union(role ∪ module ∪ direct-user grants)
  *   ∩ active subscription permissions
  *   ∩ assigned modules

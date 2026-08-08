@@ -915,7 +915,8 @@ final class AppAccessPolicy {
         'LICENSED_PRACTICAL_NURSE': AppRole.nurse,
         'TRIAGE_NURSE': AppRole.nurse,
         'MIDWIFE': AppRole.nurse,
-        'CHARGE_NURSE': AppRole.wardManager,
+        // Charge nurse is nursing-led (not a full ward-manager clone).
+        'CHARGE_NURSE': AppRole.nurse,
         'PHYSIOTHERAPIST': AppRole.nurse,
         'OCCUPATIONAL_THERAPIST': AppRole.nurse,
         'RESPIRATORY_THERAPIST': AppRole.nurse,
@@ -925,15 +926,15 @@ final class AppAccessPolicy {
         'MEDICAL_LABORATORY_SCIENTIST': AppRole.labTech,
         'PATHOLOGIST': AppRole.labTech,
         'SONOGRAPHER': AppRole.radiologyTech,
+        // JWT restore uses parent packs; live rights still come from /auth/me.
         'PHARMACY_TECHNICIAN': AppRole.pharmacist,
-        // OPD_DOCTOR / ICU_DOCTOR / PHARMACY_BILLING use tailored backend packs;
-        // do not alias them to a broader parent (would over-grant on JWT restore).
         'FACILITY_BILLING': AppRole.billing,
         'PARAMEDIC': AppRole.ambulanceOperator,
         'EMT': AppRole.ambulanceOperator,
         'MEDICAL_RECORDS_CLERK': AppRole.receptionist,
         'ADMISSIONS_COORDINATOR': AppRole.receptionist,
         'MEDICAL_CODER': AppRole.billing,
+        'ACCOUNTANT': AppRole.billing,
         'IT_SUPPORT': AppRole.operations,
         'SECURITY_OFFICER': AppRole.houseKeeper,
         'CHAPLAIN': AppRole.other,
@@ -973,10 +974,8 @@ final class AppAccessPolicy {
       'HOSPITAL_ADMIN' ||
       'HOSPITAL_MANAGER' => AppRole.facilityAdmin.value,
       'AMBULANCE_DRIVER' ||
-      'EMT' ||
-      'PARAMEDIC' => AppRole.ambulanceOperator.value,
+      'AMBULANCE_OPERATOR' => AppRole.ambulanceOperator.value,
       'WARD_IN_CHARGE' ||
-      'CHARGE_NURSE' ||
       'MATRON' => AppRole.wardManager.value,
       'MORTUARY_OFFICER' || 'MORGUE_ATTENDANT' => AppRole.mortuaryStaff.value,
       'HOUSEKEEPING_SUPERVISOR' => AppRole.housekeepingManager.value,

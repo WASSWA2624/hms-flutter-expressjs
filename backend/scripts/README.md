@@ -70,24 +70,23 @@ Source of truth: `scripts/seeders/seed-catalog.js` (`DEMO_TENANT.users`). Re-see
 |39 | `admissions@hosspi.com`         | ADMISSIONS_COORDINATOR       |                           |
 |40 | `records@hosspi.com`            | MEDICAL_RECORDS_CLERK        |                           |
 |41 | `billing@hosspi.com`            | BILLING                      |                           |
-|42 | `facility.billing@hosspi.com`   | FACILITY_BILLING             |                           |
-|43 | `coder@hosspi.com`              | MEDICAL_CODER                |                           |
-|44 | `operations@hosspi.com`         | OPERATIONS                   |                           |
-|45 | `hr@hosspi.com`                 | HR                           |                           |
-|46 | `biomed@hosspi.com`             | BIOMED                       | BIOMED_MANAGER            |
-|47 | `housekeeping@hosspi.com`       | HOUSE_KEEPER                 | HOUSEKEEPING_MANAGER      |
-|48 | `ambulance@hosspi.com`          | AMBULANCE_OPERATOR           |                           |
-|49 | `paramedic@hosspi.com`          | PARAMEDIC                    |                           |
-|50 | `emt@hosspi.com`                | EMT                          |                           |
-|51 | `physio@hosspi.com`             | PHYSIOTHERAPIST              |                           |
-|52 | `ot@hosspi.com`                 | OCCUPATIONAL_THERAPIST       |                           |
-|53 | `rt@hosspi.com`                 | RESPIRATORY_THERAPIST        |                           |
-|54 | `dietitian@hosspi.com`          | DIETITIAN                    |                           |
-|55 | `social@hosspi.com`             | SOCIAL_WORKER                |                           |
-|56 | `psychologist@hosspi.com`       | CLINICAL_PSYCHOLOGIST        |                           |
-|57 | `mortuary.staff@hosspi.com`     | MORTUARY_STAFF               |                           |
-|58 | `mortuary.manager@hosspi.com`   | MORTUARY_MANAGER             |                           |
-|59 | `patient.portal@hosspi.com`     | PATIENT                      |                           |
+|42 | `coder@hosspi.com`              | MEDICAL_CODER                |                           |
+|43 | `operations@hosspi.com`         | OPERATIONS                   |                           |
+|44 | `hr@hosspi.com`                 | HR                           |                           |
+|45 | `biomed@hosspi.com`             | BIOMED                       | BIOMED_MANAGER            |
+|46 | `housekeeping@hosspi.com`       | HOUSE_KEEPER                 | HOUSEKEEPING_MANAGER      |
+|47 | `ambulance@hosspi.com`          | AMBULANCE_OPERATOR           |                           |
+|48 | `paramedic@hosspi.com`          | PARAMEDIC                    |                           |
+|49 | `emt@hosspi.com`                | EMT                          |                           |
+|50 | `physio@hosspi.com`             | PHYSIOTHERAPIST              |                           |
+|51 | `ot@hosspi.com`                 | OCCUPATIONAL_THERAPIST       |                           |
+|52 | `rt@hosspi.com`                 | RESPIRATORY_THERAPIST        |                           |
+|53 | `dietitian@hosspi.com`          | DIETITIAN                    |                           |
+|54 | `social@hosspi.com`             | SOCIAL_WORKER                |                           |
+|55 | `psychologist@hosspi.com`       | CLINICAL_PSYCHOLOGIST        |                           |
+|56 | `mortuary.staff@hosspi.com`     | MORTUARY_STAFF               |                           |
+|57 | `mortuary.manager@hosspi.com`   | MORTUARY_MANAGER             |                           |
+|58 | `patient.portal@hosspi.com`     | PATIENT                      |                           |
 
 #### Seeded Scenarios
 

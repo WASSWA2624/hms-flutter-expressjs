@@ -191,12 +191,16 @@ const ROLE_OVERRIDES = Object.freeze({
     description: 'Platform administrator with unrestricted access across all tenants.',
   },
   TENANT_ADMIN: {
-    displayName: 'Tenant Admin',
+    displayName: 'Org Admin',
     description: 'Hospital group administrator responsible for tenant-wide operations.',
   },
   FACILITY_ADMIN: {
     displayName: 'Facility Admin',
     description: 'Facility administrator managing users, modules, and local settings.',
+  },
+  INTEGRATION_ADMIN: {
+    displayName: 'Integration Admin',
+    description: 'Administrator for integrations, APIs, and external system connectors.',
   },
   DOCTOR: {
     displayName: 'Doctor',
@@ -210,62 +214,214 @@ const ROLE_OVERRIDES = Object.freeze({
     displayName: 'ICU Doctor',
     description: 'Critical-care physician focused on ICU and inpatient clinical workflows.',
   },
+  ATTENDING_PHYSICIAN: {
+    displayName: 'Attending',
+    description: 'Senior physician responsible for supervising clinical care.',
+  },
+  RESIDENT_PHYSICIAN: {
+    displayName: 'Resident',
+    description: 'Physician in postgraduate training with supervised clinical privileges.',
+  },
   SURGEON: {
     displayName: 'Surgeon',
     description: 'Surgical physician with clinical and theatre visibility.',
   },
-  PHARMACY_BILLING: {
-    displayName: 'Pharmacy Billing Officer',
-    description: 'Billing staff managing pharmacy invoices and pharmacy price lists.',
+  ANESTHESIOLOGIST: {
+    displayName: 'Anesthesiologist',
+    description: 'Physician managing anesthesia and perioperative patient safety.',
   },
-  FACILITY_BILLING: {
-    displayName: 'Facility Billing Officer',
-    description: 'Billing staff managing facility invoices, claims, and facility price lists.',
+  PHYSICIAN_ASSISTANT: {
+    displayName: 'Physician Assistant',
+    description: 'Advanced practice clinician supporting physician-led care.',
+  },
+  EMERGENCY_PHYSICIAN: {
+    displayName: 'ED Physician',
+    description: 'Emergency department physician managing acute presentations.',
+  },
+  DENTIST: {
+    displayName: 'Dentist',
+    description: 'Dental clinician with clinical documentation privileges.',
+  },
+  RADIOLOGIST: {
+    displayName: 'Radiologist',
+    description: 'Physician interpreting imaging studies and radiology reports.',
   },
   NURSE: {
-    displayName: 'Nurse',
+    displayName: 'Nurse (RN)',
     description: 'Registered nurse with bedside care and clinical charting access.',
   },
+  LICENSED_PRACTICAL_NURSE: {
+    displayName: 'LPN',
+    description: 'Licensed practical nurse providing bedside and procedural support.',
+  },
+  NURSE_PRACTITIONER: {
+    displayName: 'Nurse Practitioner',
+    description: 'Advanced practice nurse with expanded clinical order privileges.',
+  },
+  TRIAGE_NURSE: {
+    displayName: 'Triage Nurse',
+    description: 'Nurse prioritizing intake acuity and emergency queues.',
+  },
+  MIDWIFE: {
+    displayName: 'Midwife',
+    description: 'Midwifery clinician supporting maternal and newborn care.',
+  },
+  CHARGE_NURSE: {
+    displayName: 'Charge Nurse',
+    description: 'Shift lead nurse coordinating unit staffing and bedside care.',
+  },
+  PHYSIOTHERAPIST: {
+    displayName: 'Physiotherapist',
+    description: 'Allied health clinician delivering physical therapy.',
+  },
+  OCCUPATIONAL_THERAPIST: {
+    displayName: 'Occupational Therapist',
+    description: 'Allied health clinician supporting functional recovery.',
+  },
+  RESPIRATORY_THERAPIST: {
+    displayName: 'Respiratory Therapist',
+    description: 'Allied health clinician managing respiratory support.',
+  },
+  DIETITIAN: {
+    displayName: 'Dietitian',
+    description: 'Nutrition clinician managing dietary plans and counseling.',
+  },
+  SOCIAL_WORKER: {
+    displayName: 'Social Worker',
+    description: 'Care coordination and psychosocial support staff.',
+  },
+  CLINICAL_PSYCHOLOGIST: {
+    displayName: 'Psychologist',
+    description: 'Clinical psychologist providing mental health assessment and therapy.',
+  },
   LAB_TECH: {
-    displayName: 'Lab Technologist',
+    displayName: 'Lab Tech',
     description: 'Laboratory staff member processing orders and releasing results.',
   },
+  MEDICAL_LABORATORY_SCIENTIST: {
+    displayName: 'Lab Scientist',
+    description: 'Laboratory scientist performing and validating diagnostic tests.',
+  },
+  PATHOLOGIST: {
+    displayName: 'Pathologist',
+    description: 'Physician specializing in laboratory diagnosis and pathology.',
+  },
   RADIOLOGY_TECH: {
-    displayName: 'Radiology Technologist',
+    displayName: 'Radiology Tech',
     description: 'Imaging staff member managing radiology orders and studies.',
+  },
+  SONOGRAPHER: {
+    displayName: 'Sonographer',
+    description: 'Ultrasound technologist performing sonography studies.',
   },
   PHARMACIST: {
     displayName: 'Pharmacist',
     description: 'Pharmacy staff member dispensing medications and reviewing orders.',
+  },
+  PHARMACY_TECHNICIAN: {
+    displayName: 'Pharmacy Tech',
+    description: 'Pharmacy support staff assisting with dispensing and inventory.',
   },
   RECEPTIONIST: {
     displayName: 'Receptionist',
     description:
       'Front-desk staff handling patient registration, visitor/staff meetings, desk queues, communications, and reporting.',
   },
+  ADMISSIONS_COORDINATOR: {
+    displayName: 'Admissions',
+    description: 'Staff coordinating patient admissions and front-office intake.',
+  },
+  MEDICAL_RECORDS_CLERK: {
+    displayName: 'Medical Records',
+    description: 'Health information staff maintaining records and registrations.',
+  },
   BILLING: {
-    displayName: 'Billing Officer',
+    displayName: 'Billing',
     description: 'Finance staff managing invoices, claims, and payment workflows.',
   },
+  PHARMACY_BILLING: {
+    displayName: 'Pharmacy Billing',
+    description: 'Billing staff managing pharmacy invoices and pharmacy price lists.',
+  },
+  MEDICAL_CODER: {
+    displayName: 'Medical Coder',
+    description: 'Coding specialist preparing claims and billing documentation.',
+  },
+  ACCOUNTANT: {
+    displayName: 'Accountant',
+    description: 'Finance staff managing ledgers, reconciliation, and reporting.',
+  },
   OPERATIONS: {
-    displayName: 'Operations Lead',
+    displayName: 'Operations',
     description: 'Operations staff overseeing compliance, governance, and reporting.',
   },
+  OPERATIONS_STAFF: {
+    displayName: 'Operations Staff',
+    description: 'Operations support staff with limited governance access.',
+  },
   HR: {
-    displayName: 'HR Officer',
+    displayName: 'HR',
     description: 'Human resources staff managing workforce records, units, and rosters.',
   },
+  HR_STAFF: {
+    displayName: 'HR Staff',
+    description: 'Human resources support staff with limited workforce access.',
+  },
+  IT_SUPPORT: {
+    displayName: 'IT Support',
+    description: 'Technical support staff with operational troubleshooting access.',
+  },
+  DISCHARGE_PLANNER: {
+    displayName: 'Discharge Planner',
+    description: 'Staff coordinating discharge plans and post-acute transitions.',
+  },
   BIOMED: {
-    displayName: 'Biomedical Engineer',
+    displayName: 'Biomed',
     description: 'Biomedical staff maintaining equipment and service records.',
   },
+  BIOMED_MANAGER: {
+    displayName: 'Biomed Manager',
+    description: 'Manager overseeing biomedical engineering and equipment lifecycle.',
+  },
   HOUSE_KEEPER: {
-    displayName: 'Housekeeping Staff',
+    displayName: 'Housekeeping',
     description: 'Support staff with limited operational visibility.',
+  },
+  HOUSEKEEPING_MANAGER: {
+    displayName: 'Housekeeping Manager',
+    description: 'Manager supervising environmental services and housekeeping teams.',
+  },
+  FOOD_SERVICE_WORKER: {
+    displayName: 'Food Service',
+    description: 'Dietary support staff with limited operational visibility.',
+  },
+  PORTER: {
+    displayName: 'Porter',
+    description: 'Patient transport and ward support staff.',
+  },
+  SECURITY_OFFICER: {
+    displayName: 'Security',
+    description: 'Security personnel with limited operational visibility.',
+  },
+  MAINTENANCE_ENGINEER: {
+    displayName: 'Maintenance',
+    description: 'Facilities maintenance staff supporting equipment and infrastructure.',
+  },
+  CHAPLAIN: {
+    displayName: 'Chaplain',
+    description: 'Pastoral care staff supporting patients and families.',
   },
   AMBULANCE_OPERATOR: {
     displayName: 'Ambulance Operator',
     description: 'Emergency transport staff managing ambulance and emergency cases.',
+  },
+  PARAMEDIC: {
+    displayName: 'Paramedic',
+    description: 'Advanced pre-hospital clinician supporting emergency transport.',
+  },
+  EMT: {
+    displayName: 'EMT',
+    description: 'Emergency medical technician supporting ambulance response.',
   },
   UNIT_MANAGER: {
     displayName: 'Unit Manager',
@@ -283,21 +439,21 @@ const ROLE_OVERRIDES = Object.freeze({
     displayName: 'Theatre Manager',
     description: 'Operating theatre manager coordinating surgical schedules and staff.',
   },
-  HOUSEKEEPING_MANAGER: {
-    displayName: 'Housekeeping Manager',
-    description: 'Manager supervising environmental services and housekeeping teams.',
-  },
-  BIOMED_MANAGER: {
-    displayName: 'Biomedical Manager',
-    description: 'Manager overseeing biomedical engineering and equipment lifecycle.',
-  },
   MORTUARY_STAFF: {
-    displayName: 'Mortuary Officer',
+    displayName: 'Mortuary Staff',
     description: 'Mortuary staff handling intake, storage, and case documentation.',
   },
   MORTUARY_MANAGER: {
     displayName: 'Mortuary Manager',
     description: 'Mortuary manager approving releases, audits, and complex cases.',
+  },
+  SUPPORT_STAFF: {
+    displayName: 'Support Staff',
+    description: 'General facility support with limited operational visibility.',
+  },
+  VISITOR_GUEST: {
+    displayName: 'Visitor',
+    description: 'Limited guest access for visitor workflows.',
   },
   PATIENT: {
     displayName: 'Patient',
@@ -306,58 +462,6 @@ const ROLE_OVERRIDES = Object.freeze({
   OTHER: {
     displayName: 'Other',
     description: 'Limited-access role for ancillary or uncategorized users.',
-  },
-  ATTENDING_PHYSICIAN: {
-    displayName: 'Attending Physician',
-    description: 'Senior physician responsible for supervising clinical care.',
-  },
-  RESIDENT_PHYSICIAN: {
-    displayName: 'Resident Physician',
-    description: 'Physician in postgraduate training with supervised clinical privileges.',
-  },
-  LICENSED_PRACTICAL_NURSE: {
-    displayName: 'Licensed Practical Nurse',
-    description: 'Licensed practical nurse providing bedside and procedural support.',
-  },
-  NURSE_PRACTITIONER: {
-    displayName: 'Nurse Practitioner',
-    description: 'Advanced practice nurse with expanded clinical order privileges.',
-  },
-  MEDICAL_LABORATORY_SCIENTIST: {
-    displayName: 'Medical Laboratory Scientist',
-    description: 'Laboratory scientist performing and validating diagnostic tests.',
-  },
-  PHARMACY_TECHNICIAN: {
-    displayName: 'Pharmacy Technician',
-    description: 'Pharmacy support staff assisting with dispensing and inventory.',
-  },
-  MEDICAL_RECORDS_CLERK: {
-    displayName: 'Medical Records Clerk',
-    description: 'Health information staff maintaining records and registrations.',
-  },
-  ADMISSIONS_COORDINATOR: {
-    displayName: 'Admissions Coordinator',
-    description: 'Staff coordinating patient admissions and front-office intake.',
-  },
-  MEDICAL_CODER: {
-    displayName: 'Medical Coder',
-    description: 'Coding specialist preparing claims and billing documentation.',
-  },
-  IT_SUPPORT: {
-    displayName: 'IT Support',
-    description: 'Technical support staff with operational troubleshooting access.',
-  },
-  SECURITY_OFFICER: {
-    displayName: 'Security Officer',
-    description: 'Security personnel with limited operational visibility.',
-  },
-  FOOD_SERVICE_WORKER: {
-    displayName: 'Food Service Worker',
-    description: 'Dietary support staff with limited operational visibility.',
-  },
-  MAINTENANCE_ENGINEER: {
-    displayName: 'Maintenance Engineer',
-    description: 'Facilities maintenance staff supporting equipment and infrastructure.',
   },
 });
 

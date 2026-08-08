@@ -1,9 +1,12 @@
 /**
  * Canonical role catalog for HMS access control.
  *
- * Multiple role assignments are supported through `user_role`. These constants
- * define canonical names used by backend authorization, seeds, and frontend
- * alignment.
+ * Multiple role assignments are supported through `user_role`. A user's net
+ * access is the union of permission packs from every assigned role (then
+ * intersected with subscription / module ceilings in effective-access).
+ *
+ * Keep roles specific: avoid identical packs under different codes, and do not
+ * alias distinct ROLES keys onto each other in LEGACY_ROLE_ALIASES.
  */
 const ROLES = Object.freeze({
   PLATFORM_OWNER: 'PLATFORM_OWNER',
@@ -29,7 +32,6 @@ const ROLES = Object.freeze({
   PHARMACY_BILLING: 'PHARMACY_BILLING',
   RECEPTIONIST: 'RECEPTIONIST',
   BILLING: 'BILLING',
-  FACILITY_BILLING: 'FACILITY_BILLING',
   OPERATIONS: 'OPERATIONS',
   HR: 'HR',
   BIOMED: 'BIOMED',
@@ -93,8 +95,8 @@ const LEGACY_ROLE_ALIASES = Object.freeze({
   HOSPITAL_ADMIN: ROLES.FACILITY_ADMIN,
   HOSPITAL_MANAGER: ROLES.FACILITY_ADMIN,
   AMBULANCE_DRIVER: ROLES.AMBULANCE_OPERATOR,
-  EMT: ROLES.AMBULANCE_OPERATOR,
-  PARAMEDIC: ROLES.AMBULANCE_OPERATOR,
+  // EMT / PARAMEDIC / CHARGE_NURSE stay as distinct ROLES keys (do not collapse).
+  FACILITY_BILLING: ROLES.BILLING,
   RADIOGRAPHER: ROLES.RADIOLOGY_TECH,
   RADIOLOGY_TECHNICIAN: ROLES.RADIOLOGY_TECH,
   IMAGING_TECH: ROLES.RADIOLOGY_TECH,
@@ -103,7 +105,6 @@ const LEGACY_ROLE_ALIASES = Object.freeze({
   BIOMEDICAL_ENGINEER: ROLES.BIOMED,
   MORTUARY_ATTENDANT: ROLES.MORTUARY_STAFF,
   WARD_IN_CHARGE: ROLES.WARD_MANAGER,
-  CHARGE_NURSE: ROLES.WARD_MANAGER,
   MATRON: ROLES.WARD_MANAGER,
   MORTUARY_OFFICER: ROLES.MORTUARY_STAFF,
   MORGUE_ATTENDANT: ROLES.MORTUARY_STAFF,
@@ -115,7 +116,6 @@ const LEGACY_ROLE_ALIASES = Object.freeze({
   PA: ROLES.PHYSICIAN_ASSISTANT,
   ATTENDING: ROLES.ATTENDING_PHYSICIAN,
   RESIDENT: ROLES.RESIDENT_PHYSICIAN,
-  MEDICAL_CODER: ROLES.MEDICAL_CODER,
   CODING_SPECIALIST: ROLES.MEDICAL_CODER,
   HIM_OFFICER: ROLES.MEDICAL_RECORDS_CLERK,
   HEALTH_INFORMATION_OFFICER: ROLES.MEDICAL_RECORDS_CLERK,

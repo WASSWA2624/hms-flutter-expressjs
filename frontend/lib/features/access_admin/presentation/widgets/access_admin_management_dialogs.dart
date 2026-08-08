@@ -2508,28 +2508,18 @@ class _AccessAdminRoleDetailDialogState
             title: l10n.accessAdminRolePermissionsLabel,
             description: l10n.accessAdminRoleDetailPermissionsDescription,
             titleIcon: Icons.lock_outline,
-            actions: hasPermissions
-                ? (canManagePermissions
-                      ? <Widget>[
-                          AppButton.secondary(
-                            label: l10n.accessAdminEditRolePermissionsAction,
-                            leadingIcon: Icons.tune_outlined,
-                            enabled: !_saving,
-                            onPressed: _saving
-                                ? null
-                                : () => unawaited(_addPermissions()),
-                          ),
-                        ]
-                      : <Widget>[
-                          Text(
-                            l10n.hrAccessPermissionCountLabel(
-                              permissionOptions.length,
-                            ),
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                        ])
+            headerActions: hasPermissions && canManagePermissions
+                ? <Widget>[
+                    AppButton.secondary(
+                      dense: true,
+                      label: l10n.accessAdminEditRolePermissionsAction,
+                      leadingIcon: Icons.tune_outlined,
+                      enabled: !_saving,
+                      onPressed: _saving
+                          ? null
+                          : () => unawaited(_addPermissions()),
+                    ),
+                  ]
                 : const <Widget>[],
             child: hasPermissions
                 ? AppPermissionGroupedView(
