@@ -1827,7 +1827,7 @@ class _TenantDetailsSummary extends StatelessWidget {
             items: <AppInfoSheetItem>[
               AppInfoSheetItem(
                 label: l10n.tenantFacilityDefaultCurrencyLabel,
-                value: tenant.currency,
+                value: resolveDefaultCurrency(tenantCurrency: tenant.currency),
               ),
               AppInfoSheetItem(
                 label: l10n.settingsConfigurationConsultationFeeLabel,

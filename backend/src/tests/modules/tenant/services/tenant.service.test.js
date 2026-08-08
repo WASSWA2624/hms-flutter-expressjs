@@ -401,7 +401,12 @@ describe('Tenant Service', () => {
       );
       expect(tenantRepository.releaseSlugFromSoftDeletedTenants).toHaveBeenCalledWith('new-hospital');
       expect(tenantRepository.createWithDefaultFacility).toHaveBeenCalledWith(
-        tenantData,
+        expect.objectContaining({
+          name: 'New Hospital',
+          slug: 'new-hospital',
+          is_active: true,
+          extension_json: { currency: 'UGX' },
+        }),
         { facilityName: 'New Hospital Main Facility' }
       );
       expect(createAuditLog).toHaveBeenCalledWith({

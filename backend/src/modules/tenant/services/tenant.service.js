@@ -27,6 +27,8 @@ const {
 const {
   resolveTenantContact,
   hasResolvedContact,
+  DEFAULT_TENANT_CURRENCY,
+  normalizeText,
 } = require('@lib/tenant/resolve-tenant-contact');
 
 const TENANT_SIMILARITY_LOOKUP_LIMIT = 7500;
@@ -353,6 +355,19 @@ const createTenant = async (data, context = {}) => {
   const confirmSimilar = data?.confirm_similar === true;
   const payload = { ...data };
   delete payload.confirm_similar;
+
+  const existingExtension =
+    payload.extension_json && typeof payload.extension_json === 'object'
+      ? { ...payload.extension_json }
+      : {};
+  const existingCurrency = normalizeText(existingExtension.currency)?.toUpperCase();
+  payload.extension_json = {
+    ...existingExtension,
+    currency:
+      existingCurrency && /^[A-Z]{3}$/.test(existingCurrency)
+        ? existingCurrency
+        : DEFAULT_TENANT_CURRENCY,
+  };
 
   const duplicateCheck = await assertTenantUniqueness({
     data: payload,
