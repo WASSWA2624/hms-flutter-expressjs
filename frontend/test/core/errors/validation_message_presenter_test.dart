@@ -77,8 +77,8 @@ void main() {
 
       expect(
         ValidationMessagePresenter.displayMessage(failure, l10n),
-        'Email verified. Awaiting platform approval before sign-in.\n'
-        'If approval is delayed, contact the platform admin:\n'
+        'Your account is awaiting platform admin activation before you can sign in.\n'
+        'If activation is taking longer than expected, contact a platform admin:\n'
         'Email: admin@hosspi.com\n'
         'Phone: +256700000000',
       );
@@ -91,7 +91,7 @@ void main() {
 
       expect(
         ValidationMessagePresenter.displayMessage(failure, l10n),
-        'Email verified. Awaiting platform approval before sign-in.',
+        'Your account is awaiting platform admin activation before you can sign in.',
       );
     });
 

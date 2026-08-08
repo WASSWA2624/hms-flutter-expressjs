@@ -33,7 +33,13 @@ jest.mock('@lib/authorization/org-admin-contacts', () => ({
   resolveOrgAdminContacts: jest.fn().mockResolvedValue({
     tenant_admins: [],
     facility_admins: [],
-    platform_admins: [],
+    platform_admins: [
+      {
+        full_name: 'Platform Admin',
+        email: 'platform.admin@hosspi.com',
+        phone: '+256700000000',
+      },
+    ],
   }),
 }));
 jest.mock('@config/env', () => ({
@@ -431,7 +437,14 @@ describe('Auth Service', () => {
               reason: 'platform_approval_required',
               platform_admin_contact: {
                 email: 'platform.admin@hosspi.com',
-                phone: '+256700000000'}})]});
+                phone: '+256700000000'},
+              platform_admin_contacts: expect.arrayContaining([
+                expect.objectContaining({
+                  email: 'platform.admin@hosspi.com',
+                  phone: '+256700000000',
+                }),
+              ]),
+            })]});
     });
 
     it('hydrates roles before issuing a token when tenant selection is implicit', async () => {
@@ -1007,6 +1020,16 @@ describe('Auth Service', () => {
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'EMAIL_VERIFIED'
       }));
+      expect(result).toHaveProperty('awaiting_platform_approval', true);
+      expect(result).toHaveProperty('platform_admin_contact.email', 'platform.admin@hosspi.com');
+      expect(result.platform_admin_contacts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            email: 'platform.admin@hosspi.com',
+            phone: '+256700000000',
+          }),
+        ])
+      );
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
         to: 'test@example.com',
         subject: 'Next steps for your Hospital Management System account',

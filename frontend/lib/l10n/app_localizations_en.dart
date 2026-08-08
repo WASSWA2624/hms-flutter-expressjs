@@ -8071,15 +8071,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authEmailVerifiedAwaitingApprovalBody =>
-      'Email verified. A platform admin will approve before you can sign in.';
+      'Email verified. A platform admin must activate your account before you can sign in.';
 
   @override
   String get authAccountPendingApprovalMessage =>
-      'Email verified. Awaiting platform approval before sign-in.';
+      'Your account is awaiting platform admin activation before you can sign in.';
 
   @override
   String get authAccountPendingApprovalContactHint =>
-      'If approval is delayed, contact the platform admin:';
+      'If activation is taking longer than expected, contact a platform admin:';
 
   @override
   String authAccountPendingApprovalEmailLine(String email) {

@@ -2,6 +2,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
 
 abstract interface class AuthRepository {
   Future<Result<AuthSession?>> restoreSession();
@@ -25,7 +26,10 @@ abstract interface class AuthRepository {
     String? interests,
   });
 
-  Future<Result<void>> verifyEmail({required String token, String? email});
+  Future<Result<EmailVerificationResult>> verifyEmail({
+    required String token,
+    String? email,
+  });
 
   Future<Result<void>> resendEmailVerification({required String email});
 

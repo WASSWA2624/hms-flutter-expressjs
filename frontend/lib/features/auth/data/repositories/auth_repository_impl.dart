@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/auth/data/dtos/auth_identify_dto.dart';
 import 'package:hosspi_hms/features/auth/data/dtos/auth_session_dto.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -122,11 +123,14 @@ final class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Result<void>> verifyEmail({required String token, String? email}) {
+  Future<Result<EmailVerificationResult>> verifyEmail({
+    required String token,
+    String? email,
+  }) {
     final normalizedToken = token.trim();
     if (normalizedToken.isEmpty) {
       return Future.value(
-        Result<void>.failure(
+        Result<EmailVerificationResult>.failure(
           AppFailure.validation(
             code: 'auth.verify_email.invalid_token',
             validationFields: const <String>{'token'},
@@ -135,7 +139,7 @@ final class AuthRepositoryImpl implements AuthRepository {
       );
     }
 
-    return _publicApiClient.post<void>(
+    return _publicApiClient.post<EmailVerificationResult>(
       ApiEndpoints.auth(AuthEndpoint.verifyEmail),
       data: <String, Object?>{
         'token': normalizedToken,
@@ -143,7 +147,29 @@ final class AuthRepositoryImpl implements AuthRepository {
           'email': _normalizedOptional(email)?.toLowerCase(),
       },
       decoder: (data) =>
-          ApiResponseEnvelope.decodeData<void>(data, decoder: (_) {}),
+          ApiResponseEnvelope.decodeData<EmailVerificationResult>(
+            data,
+            decoder: (payload) {
+              if (payload is! Map) {
+                return const EmailVerificationResult(
+                  awaitingPlatformApproval: true,
+                );
+              }
+
+              final Object? awaitingRaw =
+                  payload['awaiting_platform_approval'] ??
+                  payload['awaitingPlatformApproval'];
+              final bool awaitingPlatformApproval = awaitingRaw is bool
+                  ? awaitingRaw
+                  : true;
+
+              return EmailVerificationResult(
+                awaitingPlatformApproval: awaitingPlatformApproval,
+                platformAdminContacts:
+                    AuthPlatformAdminContact.listFromResponseData(payload),
+              );
+            },
+          ),
     );
   }
 

@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/verify_email_page.dart';
@@ -66,12 +67,18 @@ void main() {
 
       expect(find.byType(VerifyEmailPage), findsNothing);
       expect(find.byType(LoginPage), findsOneWidget);
-      expect(find.byType(SnackBar), findsOneWidget);
-      expect(find.textContaining(l10n.authEmailVerifiedTitle), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+      expect(find.text(l10n.authEmailVerifiedTitle), findsOneWidget);
       expect(
         find.textContaining(l10n.authEmailVerifiedAwaitingApprovalBody),
         findsOneWidget,
       );
+      expect(
+        find.textContaining(l10n.authAccountPendingApprovalContactHint),
+        findsOneWidget,
+      );
+      expect(find.textContaining('admin@hosspi.com'), findsOneWidget);
+      expect(find.textContaining('+256700000000'), findsOneWidget);
       expect(
         find.widgetWithText(FilledButton, l10n.authLoginActionLabel),
         findsOneWidget,
@@ -291,7 +298,7 @@ final class _VerifyEmailRepository implements AuthRepository {
   String? lastResendEmail;
 
   @override
-  Future<Result<void>> verifyEmail({
+  Future<Result<EmailVerificationResult>> verifyEmail({
     required String token,
     String? email,
   }) async {
@@ -300,9 +307,19 @@ final class _VerifyEmailRepository implements AuthRepository {
     lastToken = token;
     lastEmail = email;
     if (verifyFailure != null) {
-      return Result<void>.failure(verifyFailure!);
+      return Result<EmailVerificationResult>.failure(verifyFailure!);
     }
-    return const Result<void>.success(null);
+    return const Result<EmailVerificationResult>.success(
+      EmailVerificationResult(
+        awaitingPlatformApproval: true,
+        platformAdminContacts: <AuthPlatformAdminContact>[
+          AuthPlatformAdminContact(
+            email: 'admin@hosspi.com',
+            phone: '+256700000000',
+          ),
+        ],
+      ),
+    );
   }
 
   @override

@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/register_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_shell_layout.dart';
@@ -353,7 +354,10 @@ abstract class _BaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Result<void>> verifyEmail({required String token, String? email}) {
+  Future<Result<EmailVerificationResult>> verifyEmail({
+    required String token,
+    String? email,
+  }) {
     throw UnsupportedError('verifyEmail is not used by this test.');
   }
 

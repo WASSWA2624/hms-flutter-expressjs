@@ -10260,17 +10260,17 @@
   "@authEmailVerifiedBody": {
     "description": "Email verification success body."
   },
-  "authEmailVerifiedAwaitingApprovalBody": "Email verified. A platform admin will approve before you can sign in.",
+  "authEmailVerifiedAwaitingApprovalBody": "Email verified. A platform admin must activate your account before you can sign in.",
   "@authEmailVerifiedAwaitingApprovalBody": {
-    "description": "Email verification success body when platform approval is still required."
+    "description": "Email verification success body when platform activation is still required."
   },
-  "authAccountPendingApprovalMessage": "Email verified. Awaiting platform approval before sign-in.",
+  "authAccountPendingApprovalMessage": "Your account is awaiting platform admin activation before you can sign in.",
   "@authAccountPendingApprovalMessage": {
-    "description": "Login failure message when email is verified but platform approval is pending."
+    "description": "Login failure message when email is verified but platform activation is pending."
   },
-  "authAccountPendingApprovalContactHint": "If approval is delayed, contact the platform admin:",
+  "authAccountPendingApprovalContactHint": "If activation is taking longer than expected, contact a platform admin:",
   "@authAccountPendingApprovalContactHint": {
-    "description": "Hint shown under pending-approval message when platform admin contact is available."
+    "description": "Hint shown under pending-activation message when platform admin contact is available."
   },
   "authAccountPendingApprovalEmailLine": "Email: {email}",
   "@authAccountPendingApprovalEmailLine": {

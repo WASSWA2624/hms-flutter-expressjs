@@ -51,7 +51,7 @@ const resolveAccountStatusErrorKey = (status) => {
 
 const isEmailVerified = (user = {}) => Boolean(user.email_verified_at);
 
-const resolvePendingAccountError = (user = {}) => {
+const resolvePendingAccountError = async (user = {}) => {
   if (!isEmailVerified(user)) {
     return {
       messageKey: 'errors.auth.email_verification_required',
@@ -63,28 +63,73 @@ const resolvePendingAccountError = (user = {}) => {
     };
   }
 
+  const contactsPayload = await resolvePlatformAdminContactsForAuth();
   return {
     messageKey: 'errors.auth.account_pending_approval',
     details: [{
       reason: 'platform_approval_required',
       email: user.email || null,
       phone: user.phone || null,
-      platform_admin_contact: resolvePlatformAdminContact(),
+      ...contactsPayload,
     }],
   };
 };
 
-const assertUserCanAuthenticate = (user = {}) => {
+const assertUserCanAuthenticate = async (user = {}) => {
   if (user.status === 'ACTIVE') {
     return;
   }
 
   if (user.status === 'PENDING') {
-    const pending = resolvePendingAccountError(user);
+    const pending = await resolvePendingAccountError(user);
     throw new HttpError(pending.messageKey, 403, pending.details);
   }
 
   throw new HttpError(resolveAccountStatusErrorKey(user.status), 403);
+};
+
+/**
+ * Resolve platform admin contact(s) for auth messaging (login / verify).
+ * Prefers live PLATFORM_ADMIN users, then env support contact.
+ */
+const resolvePlatformAdminContactsForAuth = async () => {
+  const primary = resolvePlatformAdminContact();
+  let contacts = [];
+  try {
+    const org = await resolveOrgAdminContacts({
+      tenantId: null,
+      facilityId: null,
+    });
+    contacts = Array.isArray(org.platform_admins) ? org.platform_admins : [];
+  } catch (error) {
+    logger.warn('Failed to resolve platform admin contacts for auth messaging.', {
+      error: error?.message || String(error),
+    });
+  }
+
+  const normalized = contacts
+    .map((entry) => ({
+      full_name: String(entry?.full_name || '').trim() || null,
+      email: String(entry?.email || '').trim() || null,
+      phone: String(entry?.phone || '').trim() || null,
+    }))
+    .filter((entry) => entry.email || entry.phone);
+
+  if (normalized.length === 0 && (primary?.email || primary?.phone)) {
+    normalized.push({
+      full_name: null,
+      email: primary.email || null,
+      phone: primary.phone || null,
+    });
+  }
+
+  return {
+    platform_admin_contact: {
+      email: primary?.email || normalized[0]?.email || null,
+      phone: primary?.phone || normalized[0]?.phone || null,
+    },
+    platform_admin_contacts: normalized,
+  };
 };
 
 const isSoftDeletedRecord = (record) => Boolean(record?.deleted_at);
@@ -1444,7 +1489,7 @@ const login = async (data) => {
     if (activeUsers.length === 1) {
       user = await authRepository.findUserById(activeUsers[0].id);
     } else if (pendingUsers.length > 0) {
-      const pending = resolvePendingAccountError(pendingUsers[0]);
+      const pending = await resolvePendingAccountError(pendingUsers[0]);
       throw new HttpError(pending.messageKey, 403, pending.details);
     } else if (suspendedUsers.length > 0) {
       throw new HttpError('errors.auth.account_suspended', 403);
@@ -1458,7 +1503,7 @@ const login = async (data) => {
   }
 
   // Check if user is active
-  assertUserCanAuthenticate(user);
+  await assertUserCanAuthenticate(user);
   assertTenantAllowsLogin(user);
 
   // Verify password
@@ -1811,7 +1856,7 @@ const refresh = async (data) => {
   }
 
   // Check if user is active
-  assertUserCanAuthenticate(session.user);
+  await assertUserCanAuthenticate(session.user);
   assertTenantAllowsLogin(session.user);
   assertFacilityAllowsLogin(session.user, {
     selectedFacilityId: session.user.facility_id || null,
@@ -2087,16 +2132,22 @@ const verifyEmail = async (data) => {
       });
   }
 
+  if (alreadyActive) {
+    return {
+      message: 'messages.auth.email_verified.success',
+      already_active: true,
+      awaiting_platform_approval: false,
+      next_path: '/login',
+    };
+  }
+
+  const contactsPayload = await resolvePlatformAdminContactsForAuth();
   return {
-    message: alreadyActive
-      ? 'messages.auth.email_verified.success'
-      : 'messages.auth.email_verified.awaiting_approval',
-    already_active: alreadyActive,
-    awaiting_platform_approval: !alreadyActive,
-    next_path: alreadyActive ? '/login' : '/login',
-    ...(alreadyActive
-      ? {}
-      : { platform_admin_contact: resolvePlatformAdminContact() }),
+    message: 'messages.auth.email_verified.awaiting_approval',
+    already_active: false,
+    awaiting_platform_approval: true,
+    next_path: '/login',
+    ...contactsPayload,
   };
 };
 

@@ -280,7 +280,7 @@ final class NetworkFailureMapper {
     return matches;
   }
 
-  /// Encodes platform admin contact from pending-approval error details.
+  /// Encodes platform admin contact(s) from pending-approval error details.
   ///
   /// Stored as JSON in [AppFailure.detailMessage] for localized presentation.
   String? _platformAdminContactDetail(Object? data) {
@@ -289,6 +289,13 @@ final class NetworkFailureMapper {
     }
 
     Map<Object?, Object?>? contactMap;
+    List<Object?>? contactsList;
+    final Object? topLevelContacts =
+        data['platform_admin_contacts'] ?? data['platformAdminContacts'];
+    if (topLevelContacts is List<Object?>) {
+      contactsList = topLevelContacts;
+    }
+
     final Object? topLevel =
         data['platform_admin_contact'] ?? data['platformAdminContact'];
     if (topLevel is Map<Object?, Object?>) {
@@ -300,6 +307,11 @@ final class NetworkFailureMapper {
           if (entry is! Map<Object?, Object?>) {
             continue;
           }
+          final Object? nestedContacts =
+              entry['platform_admin_contacts'] ?? entry['platformAdminContacts'];
+          if (nestedContacts is List<Object?> && contactsList == null) {
+            contactsList = nestedContacts;
+          }
           final Object? nested =
               entry['platform_admin_contact'] ?? entry['platformAdminContact'];
           if (nested is Map<Object?, Object?>) {
@@ -310,22 +322,55 @@ final class NetworkFailureMapper {
       }
     }
 
-    if (contactMap == null) {
+    final List<Map<String, String>> contacts = <Map<String, String>>[];
+    if (contactsList != null) {
+      for (final Object? entry in contactsList) {
+        if (entry is! Map<Object?, Object?>) {
+          continue;
+        }
+        final Map<String, String>? normalized = _normalizeContactMap(entry);
+        if (normalized != null) {
+          contacts.add(normalized);
+        }
+      }
+    }
+
+    if (contacts.isEmpty && contactMap != null) {
+      final Map<String, String>? normalized = _normalizeContactMap(contactMap);
+      if (normalized != null) {
+        contacts.add(normalized);
+      }
+    }
+
+    if (contacts.isEmpty) {
       return null;
     }
 
+    return jsonEncode(<String, Object?>{
+      'email': contacts.first['email'],
+      'phone': contacts.first['phone'],
+      'contacts': contacts,
+    });
+  }
+
+  Map<String, String>? _normalizeContactMap(Map<Object?, Object?> contactMap) {
     final String? email = contactMap['email']?.toString().trim();
     final String? phone = contactMap['phone']?.toString().trim();
+    final String? fullName =
+        (contactMap['full_name'] ?? contactMap['fullName'] ?? contactMap['name'])
+            ?.toString()
+            .trim();
     final bool hasEmail = email != null && email.isNotEmpty;
     final bool hasPhone = phone != null && phone.isNotEmpty;
     if (!hasEmail && !hasPhone) {
       return null;
     }
 
-    return jsonEncode(<String, String>{
+    return <String, String>{
+      if (fullName != null && fullName.isNotEmpty) 'full_name': fullName,
       if (hasEmail) 'email': email,
       if (hasPhone) 'phone': phone,
-    });
+    };
   }
 
   String _unauthorizedFailureCode(Object? data) {

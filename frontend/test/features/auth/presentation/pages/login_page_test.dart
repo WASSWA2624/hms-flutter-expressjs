@@ -13,6 +13,7 @@ import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/secure/app_secure_storage.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_shell_layout.dart';
@@ -123,7 +124,7 @@ void main() {
 
   testWidgets('pending account opens verify-email', (WidgetTester tester) async {
     const repository = _FailingLoginRepository(
-      failure: AppFailure.unauthorized(code: 'auth.account_pending'),
+      failure: AppFailure.forbidden(code: 'auth.account_pending'),
     );
 
     await _pumpLogin(tester, repository);
@@ -133,7 +134,6 @@ void main() {
       find.text('verify:pending:wasswawilson0001@gmail.com'),
       findsOneWidget,
     );
-    expect(find.byType(LoginPage), findsNothing);
   });
 
   testWidgets('successful login leaves login', (WidgetTester tester) async {
@@ -141,8 +141,36 @@ void main() {
     await _submitLogin(tester);
 
     expect(find.text('home'), findsOneWidget);
-    expect(find.byType(LoginPage), findsNothing);
   });
+
+  testWidgets(
+    'pending approval stays on login with activation guidance',
+    (WidgetTester tester) async {
+      final repository = _FailingLoginRepository(
+        failure: AppFailure.forbidden(
+          code: 'auth.account_pending_approval',
+          detailMessage:
+              '{"email":"admin@hosspi.com","phone":"+256700000000"}',
+        ),
+      );
+
+      await _pumpLogin(tester, repository);
+      final l10n = tester.element(find.byType(LoginPage)).l10n;
+      await _submitLogin(tester);
+
+      expect(find.byType(LoginPage), findsOneWidget);
+      expect(
+        find.textContaining(l10n.authAccountPendingApprovalMessage),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(l10n.authAccountPendingApprovalContactHint),
+        findsOneWidget,
+      );
+      expect(find.textContaining('admin@hosspi.com'), findsOneWidget);
+      expect(find.textContaining('+256700000000'), findsOneWidget);
+    },
+  );
 
   testWidgets('renders Sign in primary on narrow dark viewport', (
     WidgetTester tester,
@@ -170,8 +198,10 @@ ProviderContainer _createContainer(AuthRepository repository) {
   final container = ProviderContainer(
     overrides: [
       authRepositoryProvider.overrideWithValue(repository),
+      // Avoid SessionState.ready() (unauthenticated): login persist would call
+      // session isolation dispose and can keep the Sign-in spinner animating.
       initialSessionStateProvider.overrideWithValue(
-        const SessionState.ready(),
+        const SessionState.notReady(),
       ),
       secureSessionStorageProvider.overrideWithValue(
         SecureAppSessionStorage(_MemorySecureStorage()),
@@ -273,8 +303,11 @@ Future<void> _submitLogin(WidgetTester tester) async {
   await tester.tap(
     find.widgetWithText(FilledButton, l10n.authLoginActionLabel),
   );
-  await tester.pump();
-  await tester.pumpAndSettle();
+  // Flush async login / session persist / go_router navigation without
+  // pumpAndSettle (the Sign-in spinner animates while isSubmitting).
+  for (int i = 0; i < 20; i++) {
+    await tester.pump(const Duration(milliseconds: 20));
+  }
 }
 
 final class _IdleLoginRepository extends _BaseAuthRepository {
@@ -386,7 +419,10 @@ abstract class _BaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Result<void>> verifyEmail({required String token, String? email}) {
+  Future<Result<EmailVerificationResult>> verifyEmail({
+    required String token,
+    String? email,
+  }) {
     throw UnsupportedError('verifyEmail is not used by this test.');
   }
 

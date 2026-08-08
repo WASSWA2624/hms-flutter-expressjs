@@ -4,6 +4,7 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 
 final authControllerProvider =
@@ -18,6 +19,7 @@ final class AuthControllerState {
     this.passwordResetSubmitted = false,
     this.passwordResetCompleted = false,
     this.emailVerificationCompleted = false,
+    this.platformAdminContacts = const <AuthPlatformAdminContact>[],
     this.identifyTenants = const <AuthTenantOption>[],
   });
 
@@ -28,6 +30,7 @@ final class AuthControllerState {
   final bool passwordResetSubmitted;
   final bool passwordResetCompleted;
   final bool emailVerificationCompleted;
+  final List<AuthPlatformAdminContact> platformAdminContacts;
   final List<AuthTenantOption> identifyTenants;
 
   AuthControllerState copyWith({
@@ -39,6 +42,8 @@ final class AuthControllerState {
     bool? passwordResetSubmitted,
     bool? passwordResetCompleted,
     bool? emailVerificationCompleted,
+    List<AuthPlatformAdminContact>? platformAdminContacts,
+    bool clearPlatformAdminContacts = false,
     List<AuthTenantOption>? identifyTenants,
     bool clearIdentifyTenants = false,
   }) {
@@ -54,6 +59,9 @@ final class AuthControllerState {
           passwordResetCompleted ?? this.passwordResetCompleted,
       emailVerificationCompleted:
           emailVerificationCompleted ?? this.emailVerificationCompleted,
+      platformAdminContacts: clearPlatformAdminContacts
+          ? const <AuthPlatformAdminContact>[]
+          : platformAdminContacts ?? this.platformAdminContacts,
       identifyTenants: clearIdentifyTenants
           ? const <AuthTenantOption>[]
           : identifyTenants ?? this.identifyTenants,
@@ -108,11 +116,15 @@ final class AuthController extends Notifier<AuthControllerState> {
   }
 
   void clearEmailVerificationCompleted() {
-    if (!state.emailVerificationCompleted) {
+    if (!state.emailVerificationCompleted &&
+        state.platformAdminContacts.isEmpty) {
       return;
     }
 
-    state = state.copyWith(emailVerificationCompleted: false);
+    state = state.copyWith(
+      emailVerificationCompleted: false,
+      clearPlatformAdminContacts: true,
+    );
   }
 
   Future<bool> login({
@@ -358,6 +370,7 @@ final class AuthController extends Notifier<AuthControllerState> {
       isSubmitting: true,
       clearFailure: true,
       emailVerificationCompleted: false,
+      clearPlatformAdminContacts: true,
     );
 
     final result = await ref
@@ -365,11 +378,12 @@ final class AuthController extends Notifier<AuthControllerState> {
         .verifyEmail(token: token, email: email);
 
     return result.when(
-      success: (_) {
+      success: (EmailVerificationResult verification) {
         state = state.copyWith(
           isSubmitting: false,
           clearFailure: true,
           emailVerificationCompleted: true,
+          platformAdminContacts: verification.platformAdminContacts,
         );
         return true;
       },

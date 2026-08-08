@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
 enum OrganizationDeactivatedScope { tenant, facility }
@@ -113,8 +114,7 @@ abstract final class ValidationMessagePresenter {
       'auth.account_pending' => l10n.authAccountPendingMessage,
       'auth.account_pending_approval' => pendingApprovalMessage(
         l10n,
-        email: _platformAdminContactField(failure.detailMessage, 'email'),
-        phone: _platformAdminContactField(failure.detailMessage, 'phone'),
+        contacts: platformAdminContactsFromDetail(failure.detailMessage),
       ),
       'auth.tenant_deactivated' => organizationDeactivatedMessage(
         l10n,
@@ -141,30 +141,99 @@ abstract final class ValidationMessagePresenter {
     };
   }
 
-  /// Login / verify-email copy when the account still needs platform approval.
+  /// Login / verify-email copy when the account still needs platform activation.
   static String pendingApprovalMessage(
     AppLocalizations l10n, {
     String? email,
     String? phone,
+    List<AuthPlatformAdminContact> contacts = const <AuthPlatformAdminContact>[],
+    bool emailJustVerified = false,
   }) {
-    final String? trimmedEmail = email?.trim();
-    final String? trimmedPhone = phone?.trim();
-    final bool hasEmail =
-        trimmedEmail != null && trimmedEmail.isNotEmpty;
-    final bool hasPhone =
-        trimmedPhone != null && trimmedPhone.isNotEmpty;
+    final List<AuthPlatformAdminContact> resolvedContacts =
+        <AuthPlatformAdminContact>[
+          ...contacts.where(
+            (AuthPlatformAdminContact contact) => contact.hasContactDetails,
+          ),
+        ];
+    if (resolvedContacts.isEmpty) {
+      final AuthPlatformAdminContact fallback = AuthPlatformAdminContact(
+        email: email,
+        phone: phone,
+      );
+      if (fallback.hasContactDetails) {
+        resolvedContacts.add(fallback);
+      }
+    }
 
-    if (!hasEmail && !hasPhone) {
-      return l10n.authAccountPendingApprovalMessage;
+    final String baseMessage = emailJustVerified
+        ? l10n.authEmailVerifiedAwaitingApprovalBody
+        : l10n.authAccountPendingApprovalMessage;
+
+    if (resolvedContacts.isEmpty) {
+      return baseMessage;
     }
 
     final List<String> lines = <String>[
-      l10n.authAccountPendingApprovalMessage,
+      baseMessage,
       l10n.authAccountPendingApprovalContactHint,
-      if (hasEmail) l10n.authAccountPendingApprovalEmailLine(trimmedEmail),
-      if (hasPhone) l10n.authAccountPendingApprovalPhoneLine(trimmedPhone),
+      for (final AuthPlatformAdminContact contact in resolvedContacts)
+        ..._contactLines(l10n, contact),
     ];
     return lines.join('\n');
+  }
+
+  static Iterable<String> _contactLines(
+    AppLocalizations l10n,
+    AuthPlatformAdminContact contact,
+  ) {
+    final String? name = contact.fullName?.trim();
+    final String? email = contact.email?.trim();
+    final String? phone = contact.phone?.trim();
+    return <String>[
+      if (name != null && name.isNotEmpty) name,
+      if (email != null && email.isNotEmpty)
+        l10n.authAccountPendingApprovalEmailLine(email),
+      if (phone != null && phone.isNotEmpty)
+        l10n.authAccountPendingApprovalPhoneLine(phone),
+    ];
+  }
+
+  /// Parses encoded platform-admin contact JSON from [AppFailure.detailMessage].
+  static List<AuthPlatformAdminContact> platformAdminContactsFromDetail(
+    String? detailMessage,
+  ) {
+    final String? raw = detailMessage?.trim();
+    if (raw == null || raw.isEmpty || !raw.startsWith('{')) {
+      return const <AuthPlatformAdminContact>[];
+    }
+
+    try {
+      final Object? decoded = jsonDecode(raw);
+      if (decoded is! Map) {
+        return const <AuthPlatformAdminContact>[];
+      }
+
+      final Object? contactsRaw = decoded['contacts'];
+      if (contactsRaw is List) {
+        final List<AuthPlatformAdminContact> contacts = contactsRaw
+            .map(AuthPlatformAdminContact.fromJson)
+            .where((AuthPlatformAdminContact c) => c.hasContactDetails)
+            .toList(growable: false);
+        if (contacts.isNotEmpty) {
+          return contacts;
+        }
+      }
+
+      final AuthPlatformAdminContact single =
+          AuthPlatformAdminContact.fromJson(decoded);
+      if (single.hasContactDetails) {
+        return <AuthPlatformAdminContact>[single];
+      }
+    } on FormatException {
+      return const <AuthPlatformAdminContact>[];
+    }
+
+    return const <AuthPlatformAdminContact>[];
   }
 
   /// Login copy when the tenant or facility was soft-deleted.
