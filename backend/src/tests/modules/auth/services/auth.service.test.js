@@ -1284,6 +1284,35 @@ describe('Auth Service', () => {
       }));
     });
 
+    it('uses request origin for reset links in non-production', async () => {
+      const forgotData = {
+        email: 'test@example.com',
+        tenant_id: 'tenant-123',
+        request_context: { origin: 'http://127.0.0.1:5201' },
+      };
+
+      authRepository.findUserByEmailAndTenant.mockResolvedValue({
+        id: 'user-123',
+        email: 'test@example.com',
+        tenant_id: 'tenant-123',
+        facility_id: 'facility-123',
+      });
+      authRepository.deleteExpiredTokens.mockResolvedValue({});
+      authRepository.createVerificationToken.mockResolvedValue({});
+      createAuditLog.mockResolvedValue({});
+
+      await authService.forgotPassword(forgotData);
+
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining(
+            'http://127.0.0.1:5201/reset-password?token='
+          ),
+          html: expect.stringContaining('http://127.0.0.1:5201/reset-password?token='),
+        })
+      );
+    });
+
     it('should reject when user does not exist', async () => {
       authRepository.findUserByEmailAndTenant.mockResolvedValue(null);
 

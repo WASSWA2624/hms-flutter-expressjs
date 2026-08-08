@@ -168,7 +168,7 @@ const buildEnv = () => {
   const STORAGE_PROVIDER = process.env.STORAGE_PROVIDER || 'local';
   const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || null;
   const CSRF_SECRET = process.env.CSRF_SECRET || null;
-  const APP_PUBLIC_URL = process.env.APP_PUBLIC_URL || 'http://localhost:8081';
+  const APP_PUBLIC_URL = process.env.APP_PUBLIC_URL || 'http://127.0.0.1:5201';
   const APP_DISPLAY_NAME =
     String(process.env.APP_DISPLAY_NAME || 'Hospital Management System').trim() ||
     'Hospital Management System';

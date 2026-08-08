@@ -283,10 +283,11 @@ const getBaseAppUrl = (requestContext = {}) => {
   return String(env.APP_PUBLIC_URL || '').replace(/\/+$/, '');
 };
 
-const buildResetPasswordLink = (token, email) =>
-  `${getBaseAppUrl()}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+const buildResetPasswordLink = (token, email, requestContext = {}) =>
+  `${getBaseAppUrl(requestContext)}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
 
-const buildLoginLink = () => `${getBaseAppUrl()}/login`;
+const buildLoginLink = (requestContext = {}) =>
+  `${getBaseAppUrl(requestContext)}/login`;
 
 const createEmailVerificationTokens = async (userId) => {
   await authRepository.deleteExpiredTokens(userId, EMAIL_VERIFICATION_TOKEN_TYPE);
@@ -533,9 +534,10 @@ const sendPasswordResetEmail = async ({
   expiresAt,
   locale,
   timeZone,
+  request_context,
 }) => {
   const resolvedLocale = resolveLocale(locale);
-  const link = buildResetPasswordLink(resetToken, email);
+  const link = buildResetPasswordLink(resetToken, email, request_context);
   const expiryDate =
     resolveExpiryDate(expiresAt) ||
     new Date(Date.now() + PASSWORD_RESET_EXPIRY_HOURS * 60 * 60 * 1000);
@@ -2336,6 +2338,7 @@ const forgotPassword = async (data) => {
     expiresAt,
     locale: request_context?.locale,
     timeZone: request_context?.timezone,
+    request_context,
   });
 
   // Keep response generic to avoid account enumeration side effects,
