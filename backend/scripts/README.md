@@ -23,10 +23,43 @@ npm run db:verify:demo
 
 #### Seeded Credentials
 
-- `platform.owner@hosspi.com` — PLATFORM_OWNER (full catalog, including `platform:owner`)
-- `platform.admin@hosspi.com` — PLATFORM_ADMIN
-- Role-based demo users such as `tenant.admin@hosspi.com`, `doctor@hosspi.com`, `nurse@hosspi.com`, `radiology@hosspi.com`, and `biomed@hosspi.com`
-- Default password for every seeded account: `Hosspi@2624.`
+Default password for **every** seeded account: `Hosspi@2624.`
+
+Source of truth: `scripts/seeders/seed-catalog.js` (`DEMO_TENANT.users`). Re-seed with `npm run db:seed:demo` or `node scripts/setup-default-accounts.js`.
+
+| # | Email                           | Primary role       | Extra roles               |
+|---|---------------------------------|--------------------|---------------------------|
+| 1 | `platform.owner@hosspi.com`     | PLATFORM_OWNER     |                           |
+| 2 | `platform.admin@hosspi.com`     | PLATFORM_ADMIN     |                           |
+| 3 | `tenant.admin@hosspi.com`       | TENANT_ADMIN       | UNIT_MANAGER              |
+| 4 | `facility.admin@hosspi.com`     | FACILITY_ADMIN     |                           |
+| 5 | `integration.admin@hosspi.com`  | INTEGRATION_ADMIN  |                           |
+| 6 | `hr.staff@hosspi.com`           | HR_STAFF           |                           |
+| 7 | `operations.staff@hosspi.com`   | OPERATIONS_STAFF   |                           |
+| 8 | `discharge@hosspi.com`          | DISCHARGE_PLANNER  |                           |
+| 9 | `dentist@hosspi.com`            | DENTIST            |                           |
+|10 | `radiologist@hosspi.com`        | RADIOLOGIST        |                           |
+|11 | `sonographer@hosspi.com`        | SONOGRAPHER        |                           |
+|12 | `accountant@hosspi.com`         | ACCOUNTANT         |                           |
+|13 | `support@hosspi.com`            | SUPPORT_STAFF      |                           |
+|14 | `visitor@hosspi.com`            | VISITOR_GUEST      |                           |
+|15 | `doctor@hosspi.com`             | DOCTOR             |                           |
+|16 | `nurse@hosspi.com`              | NURSE              | WARD_MANAGER, ICU_MANAGER |
+|17 | `lab@hosspi.com`                | LAB_TECH           |                           |
+|18 | `radiology@hosspi.com`          | RADIOLOGY_TECH     |                           |
+|19 | `pharmacy@hosspi.com`           | PHARMACIST         |                           |
+|20 | `pharmacy2@hosspi.com`          | PHARMACIST         |                           |
+|21 | `reception@hosspi.com`          | RECEPTIONIST       |                           |
+|22 | `billing@hosspi.com`            | BILLING            |                           |
+|23 | `operations@hosspi.com`         | OPERATIONS         |                           |
+|24 | `hr@hosspi.com`                 | HR                 |                           |
+|25 | `biomed@hosspi.com`             | BIOMED             | BIOMED_MANAGER            |
+|26 | `housekeeping@hosspi.com`       | HOUSE_KEEPER       | HOUSEKEEPING_MANAGER      |
+|27 | `ambulance@hosspi.com`          | AMBULANCE_OPERATOR |                           |
+|28 | `physio@hosspi.com`             | PHYSIOTHERAPIST    |                           |
+|29 | `mortuary.staff@hosspi.com`     | MORTUARY_STAFF     |                           |
+|30 | `mortuary.manager@hosspi.com`   | MORTUARY_MANAGER   |                           |
+|31 | `patient.portal@hosspi.com`     | PATIENT            |                           |
 
 #### Seeded Scenarios
 
@@ -93,26 +126,14 @@ node scripts/setup-default-accounts.js
 **⚠️ SECURITY WARNING**: All accounts are created with the default password:
 
 ```
-Hosspi@2624
+Hosspi@2624.
 ```
 
 **You MUST change all passwords immediately after first login in production!**
 
 #### Notable Accounts Created
 
-
-| Email                       | Role           | Tenant                    |
-| --------------------------- | -------------- | ------------------------- |
-| `platform.owner@hosspi.com` | PLATFORM_OWNER | DemoCare General Hospital |
-| `platform.admin@hosspi.com` | PLATFORM_ADMIN | DemoCare General Hospital |
-| `tenant.admin@hosspi.com`   | TENANT_ADMIN   | DemoCare General Hospital |
-| `facility.admin@hosspi.com` | FACILITY_ADMIN | DemoCare General Hospital |
-| `doctor@hosspi.com`         | DOCTOR         | DemoCare General Hospital |
-| `nurse@hosspi.com`          | NURSE          | DemoCare General Hospital |
-| `lab@hosspi.com`            | LAB_TECH       | DemoCare General Hospital |
-| `radiology@hosspi.com`      | RADIOLOGY_TECH | DemoCare General Hospital |
-| `pharmacy@hosspi.com`       | PHARMACIST     | DemoCare General Hospital |
-
+See the full **Seeded Credentials** table above (all `DEMO_TENANT.users` emails). Tenant for each: DemoCare General Hospital.
 
 #### Account Details
 
@@ -169,7 +190,7 @@ To customize the demo baseline, edit `scripts/seeders/seed-catalog.js` and keep 
 #### Related Documentation
 
 - [Prisma Guide](../prisma/guide.md)
-- [Authentication & Security Rules](../.cursor/rules/auth-security.mdc)
+- [Authentication &amp; Security Rules](../.cursor/rules/auth-security.mdc)
 - [Project Structure](../.cursor/rules/project-structure.mdc)
 
 ---
@@ -248,11 +269,11 @@ Seeds curated, deterministic demo data packs, an FK-aware volume expansion pack,
 
 #### Volume defaults
 
-| Setting | Behavior |
-| --- | --- |
-| unset / default | `SEED_RECORD_COUNT=1000` — applicable operational tables target 1000 rows each |
-| `SEED_RECORD_COUNT=100` | Lighter volume run |
-| `SEED_RECORD_COUNT=0` | Curated hero scenarios only |
+| Setting                   | Behavior                                                                          |
+| ------------------------- | --------------------------------------------------------------------------------- |
+| unset / default           | `SEED_RECORD_COUNT=1000` — applicable operational tables target 1000 rows each |
+| `SEED_RECORD_COUNT=100` | Lighter volume run                                                                |
+| `SEED_RECORD_COUNT=0`   | Curated hero scenarios only                                                       |
 
 Intentional exceptions (not volume-filled): singleton tenant/facility/subscription/license, plan/add-on/module catalogs, role/permission catalogs.
 
@@ -358,4 +379,3 @@ if (require.main === module) {
 
 module.exports = { main };
 ```
-

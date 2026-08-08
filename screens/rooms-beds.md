@@ -1,146 +1,63 @@
-# Action inventory — `/rooms-beds`
+Default password: Hosspi@2624.
 
-Primary surface: `RoomsBedsWorkspacePage` (`frontend/lib/features/rooms_beds/presentation/pages/rooms_beds_workspace_page.dart`).
+1. platform.owner@hosspi.com
 
-Write gates (client): `canAdminBeds` (elevated / tenant / facility / system admin) for catalog add room/bed, status mutations, manage catalog; `canIpdWrite` (`clinicalWrite`) for assign / release / transfer. Module navigation (IPD / housekeeping / operations) does not require bed admin. Unauthorized write controls do not render. Backend auth remains authoritative.
+2. platform.admin@hosspi.com
 
-Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
+3. tenant.admin@hosspi.com
 
----
+4. facility.admin@hosspi.com
 
-## Task inventory — duplicates / redundant surfaces
+5. integration.admin@hosspi.com
 
-| Duplicate / redundant surface | Outcome | Merge / removal |
-| --- | --- | --- |
-| Tab-strip **Refresh** (primary fallback + secondary) | Reload board | **Removed** — board syncs after mutations / realtime / scaffold **Try again** |
-| Turnover secondary **Open operations** | Navigate to operations | **Removed** — out-of-service tab primary + maintenance next-action are the entries |
-| Detail action matching row **Next action** (assign / release / mark available / manage transfer / open operations) | Same write / navigation | **Omitted** from detail — next-action is the sole primary for that goal |
-| Detail **Readiness** tile | Restate status | **Removed** — status tile remains |
-| Advanced **Status** filter on Available / Occupied / Turnover / Out of service | Same scope as tab | **Removed** on status-scoped tabs — All beds keeps status filter |
-| Unauthorized write next-actions shown disabled with lock | No access | **Omitted** — write next-actions absent; row select opens detail |
-| Release / transfer **admission** field when admission already known | Restate linked admission | **Removed** — confirm / destination ward only; admission still required when unknown |
-| Mobile list without next-action trailing | Same stage write as desktop | **Fixed** — `RoomsBedsNextActionButton` on mobile `trailing` |
-| Reserved next-action **Assign** (disabled until available) | Dead primary | **Fixed** — reserved next-action is **Mark available** (release hold) |
+6. hr.staff@hosspi.com
 
----
+7. operations.staff@hosspi.com
 
-## Rooms & beds workspace screen
+8. discharge@hosspi.com
 
-### Tab strip
+9. dentist@hosspi.com
 
-- **All beds / Available / Occupied / Turnover / Out of service**
-  - Location: Page chrome `AppTabStrip`.
-  - Opens modal: No.
-  - Immediate result: Switches `_section`, updates URL `?section=…`, client-filters board.
-  - Condition: Always when workspace loads.
-  - Counts: total / available / occupied / turnover / blocked aggregates.
+10. radiologist@hosspi.com
 
-- **Add room** (primary on All when authorized)
-  - Location: Tab-strip primary.
-  - Opens modal: Yes — tenant facility room form.
-  - Immediate result: Creates room; board refresh.
-  - Condition: `canAdminBeds`; omitted when unauthorized.
+11. sonographer@hosspi.com
 
-- **Add bed** (primary on Available when authorized; secondary on All)
-  - Location: Tab-strip toolbar.
-  - Opens modal: Yes — tenant facility bed form.
-  - Immediate result: Creates bed; board refresh.
-  - Condition: `canAdminBeds`; omitted when unauthorized.
+12. accountant@hosspi.com
 
-- **IPD** (primary on Occupied)
-  - Location: Tab-strip primary.
-  - Opens modal: No — navigates to `/ipd`.
-  - Immediate result: Leaves rooms-beds for IPD workspace.
+13. support@hosspi.com
 
-- **Open housekeeping** (primary on Turnover)
-  - Location: Tab-strip primary.
-  - Opens modal: No — navigates to `/housekeeping`.
+14. visitor@hosspi.com
 
-- **Open operations** (primary on Out of service)
-  - Location: Tab-strip primary.
-  - Opens modal: No — navigates to `/operations`.
+15. doctor@hosspi.com
 
-- **Manage catalog** (secondary when authorized)
-  - Location: Tab-strip secondary.
-  - Opens modal: No — navigates to tenant facility setup.
-  - Condition: `canAdminBeds`; omitted when unauthorized.
+16. nurse@hosspi.com
 
-Tab-strip **Refresh** was removed.
+17. lab@hosspi.com
 
-- **Try again** (page load / inline failure)
-  - Location: `AsyncStateScaffold` / `AppFailureStateView`.
-  - Opens modal: No.
-  - Immediate result: Retries workspace load / refresh.
-  - Condition: Load or mutation failure surface.
+18. radiology@hosspi.com
 
-### Search / filters / table chrome
+19. pharmacy@hosspi.com
 
-- **Search**, **Clear**, **Filters** (advanced), **Settings** (columns), pagination
-  - Location: `AppListTable` / `AppSearchBar` chrome.
-  - Opens modal: Advanced filters (facility / ward / room; **status only on All beds**); Table Settings.
-  - Immediate result: Filters/search/columns/pagination for the active section.
-  - Condition: Always when board is loaded.
+20. pharmacy2@hosspi.com
 
-### Empty / no-results
+21. reception@hosspi.com
 
-- **Empty board**
-  - Location: `AppWorkspaceStatePanel.empty`.
-  - Opens modal: No.
-  - Immediate result: Empty copy; section primary remains when authorized.
-  - Condition: Empty page.
+22. billing@hosspi.com
 
-### Row activation / next-action
+23. operations@hosspi.com
 
-- **Row select** (desktop row / mobile item)
-  - Location: Table row / mobile list item.
-  - Opens modal: Bed detail (identity tiles, complementary writes, assignment history).
-  - Immediate result: Selects bed and opens detail; omits the row next-action from detail actions.
-  - Condition: Always when rows exist.
+24. hr@hosspi.com
 
-- **Next action** (status/capability-aware label)
-  - Location: `next_action` column (always visible on desktop); mobile list item `trailing`.
-  - Opens modal: Assign / release confirm / manage transfer when that is next; mark available mutates directly; housekeeping / operations navigate.
-  - Immediate result: Sole primary write/navigation for the row.
-  - Condition: Write next-actions require matching capability; unauthorized write next-actions absent (use row select). Navigation next-actions always available.
+25. biomed@hosspi.com
 
-### Detail dialog
+26. housekeeping@hosspi.com
 
-- **Close**
-  - Location: Dialog actions.
-  - Opens modal: No (closes detail).
-  - Immediate result: Dismisses detail.
+27. ambulance@hosspi.com
 
-- **Open IPD admission**
-  - Location: Detail body (when admission linked).
-  - Opens modal: No — navigates to `/ipd?admission=…`.
-  - Immediate result: Opens the linked admission in IPD.
+28. physio@hosspi.com
 
-- **Complementary writes** (reserve, status marks, assign / release / transfer / manage transfer, housekeeping / operations links)
-  - Location: Detail action wrap.
-  - Opens modal: Assign / release / transfer / manage-transfer forms when applicable; status mutates directly.
-  - Immediate result: Mutates via controller; snackbar; board refresh.
-  - Condition: Capability + status; action omitted when it equals the row next-action; ineligible / unauthorized writes absent.
+29. mortuary.staff@hosspi.com
 
-### Nested dialogs (from next-action or detail)
+30. mortuary.manager@hosspi.com
 
-- **Assign** — admission number required.
-- **Release** — confirm body when admission known; admission field only when unknown.
-- **Request transfer** — destination ward required; admission field only when unknown.
-- **Manage transfer** — shared transfer update dialog (approve / start / complete / cancel + destination bed).
-- **Add room / Add bed** — tenant facility forms.
-
----
-
-## Manual checks (Req 7)
-
-- [x] Next action on available bed opens Assign (not detail first).
-- [x] Next action on occupied opens Release confirm without re-asking admission when linked.
-- [x] Next action on cleaning / reserved / blocked is Mark available; detail omits Mark available.
-- [x] Next action on maintenance / out-of-service opens Operations; detail omits Open operations.
-- [x] Row select opens detail; detail omits the label that matches that row’s next-action.
-- [x] Detail has no readiness tile; no toolbar Refresh; no turnover Open operations secondary.
-- [x] Status filter only on All beds.
-- [x] Without write capability, write next-actions and unauthorized catalog actions are absent.
-- [x] Mobile trailing exposes the same next-action as the desktop column.
-
-Automated: `frontend/test/features/rooms_beds/presentation/rooms_beds_ux_simplify_test.dart`, `rooms_beds_status_helpers_test.dart`.
+31. patient.portal@hosspi.com

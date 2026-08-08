@@ -7,26 +7,38 @@ const tenantFacilityRepository = require('@repositories/tenant-facility-workspac
 
 const DEMO_EMAIL_SUFFIX = '@hosspi.com';
 
-/** Seeded demo accounts only — not every address on the demo domain. */
+/** Seeded demo accounts only — mirrors `DEMO_TENANT.users` in seed-catalog.js. */
 const DEMO_USER_EMAILS = new Set([
   'platform.owner@hosspi.com',
   'platform.admin@hosspi.com',
   'tenant.admin@hosspi.com',
   'facility.admin@hosspi.com',
+  'integration.admin@hosspi.com',
+  'hr.staff@hosspi.com',
+  'operations.staff@hosspi.com',
+  'discharge@hosspi.com',
+  'dentist@hosspi.com',
+  'radiologist@hosspi.com',
+  'sonographer@hosspi.com',
+  'accountant@hosspi.com',
+  'support@hosspi.com',
+  'visitor@hosspi.com',
   'doctor@hosspi.com',
   'nurse@hosspi.com',
   'lab@hosspi.com',
   'radiology@hosspi.com',
   'pharmacy@hosspi.com',
+  'pharmacy2@hosspi.com',
   'reception@hosspi.com',
   'billing@hosspi.com',
   'operations@hosspi.com',
   'hr@hosspi.com',
   'biomed@hosspi.com',
   'housekeeping@hosspi.com',
+  'ambulance@hosspi.com',
+  'physio@hosspi.com',
   'mortuary.staff@hosspi.com',
   'mortuary.manager@hosspi.com',
-  'ambulance@hosspi.com',
   'patient.portal@hosspi.com',
 ]);
 

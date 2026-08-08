@@ -162,6 +162,26 @@ const seedAccessPack = async (ctx, orgPack) => {
         ? orgPack.departments[`${scenario.key}:${departmentName}`]
         : null;
 
+      // Avoid unique(tenant_id, email) collisions from legacy addresses or
+      // prior non-deterministic rows before the curated seed UUID upsert.
+      const seedUserId = ctx.id(`user:${scenario.key}:user:${userDefinition.key}`);
+      const emailConflicts = await ctx.prisma.user.findMany({
+        where: {
+          email: userDefinition.email,
+          NOT: { id: seedUserId },
+        },
+        select: { id: true },
+      });
+      for (const conflict of emailConflicts) {
+        await ctx.prisma.user.update({
+          where: { id: conflict.id },
+          data: {
+            email: `archived+${conflict.id.slice(0, 8)}+${userDefinition.email}`,
+            deleted_at: new Date(),
+          },
+        });
+      }
+
       const user = await ctx.upsert(
         'user',
         `${scenario.key}:user:${userDefinition.key}`,
@@ -173,6 +193,7 @@ const seedAccessPack = async (ctx, orgPack) => {
           phone: `+2567${ctx.hash(userDefinition.email).slice(0, 8)}`,
           password_hash: passwordHash,
           status: 'ACTIVE',
+          deleted_at: null,
         },
         {
           tenantCode: scenario.tenant_code,
