@@ -697,6 +697,10 @@ final class SubscriptionUpgradeContextDto {
               annualPrice:
                   _double(plan['annual_price']) ??
                   _extensionAnnualPrice(plan['extension_json'])?.toDouble(),
+              maxUsers: _int(plan['max_users']),
+              maxFacilities: _int(plan['max_facilities']),
+              maxStorageMb: _int(plan['max_storage_mb']),
+              includedModuleSlugs: _stringList(plan['included_module_slugs']),
             );
           })
           .whereType<SubscriptionUpgradePlanOption>()

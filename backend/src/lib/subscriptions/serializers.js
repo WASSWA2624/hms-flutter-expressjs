@@ -135,6 +135,47 @@ const resolveIncludedModuleIds = (record) => {
   return ids;
 };
 
+const resolveIncludedModuleSlugs = (includedModuleIds = [], catalogModules = null) => {
+  if (!Array.isArray(includedModuleIds) || includedModuleIds.length === 0) {
+    return [];
+  }
+  if (!Array.isArray(catalogModules) || catalogModules.length === 0) {
+    return includedModuleIds
+      .map((value) => safeString(value))
+      .filter((value) => value.includes('-') || value.includes('_'));
+  }
+
+  const byId = new Map();
+  for (const moduleRecord of catalogModules) {
+    if (!moduleRecord) continue;
+    const publicId = safePublicId(
+      moduleRecord.human_friendly_id,
+      moduleRecord.id
+    );
+    const slug = safeString(moduleRecord.slug);
+    if (publicId && slug) {
+      byId.set(publicId, slug);
+    }
+    if (moduleRecord.id && slug) {
+      byId.set(String(moduleRecord.id), slug);
+    }
+    if (slug) {
+      byId.set(slug, slug);
+    }
+  }
+
+  const seen = new Set();
+  const slugs = [];
+  for (const entry of includedModuleIds) {
+    const key = safeString(entry);
+    const slug = byId.get(key) || (key.includes('-') ? key : null);
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    slugs.push(slug);
+  }
+  return slugs;
+};
+
 const serializeSubscriptionPlan = (record, { catalogModules = null } = {}) => {
   if (!record) return null;
 
@@ -178,6 +219,10 @@ const serializeSubscriptionPlan = (record, { catalogModules = null } = {}) => {
     add_on_eligibility_json: record.add_on_eligibility_json || null,
     extension_json: record.extension_json || null,
     included_module_ids: includedModuleIds,
+    included_module_slugs: resolveIncludedModuleSlugs(
+      includedModuleIds,
+      catalogModules
+    ),
     subscription_count: safeNumber(record?._count?.subscriptions, 0),
     created_at: record.created_at || null,
     updated_at: record.updated_at || null,

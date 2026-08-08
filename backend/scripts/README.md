@@ -23,7 +23,8 @@ npm run db:verify:demo
 
 #### Seeded Credentials
 
-- `super.admin@hosspi.com`
+- `platform.owner@hosspi.com` — PLATFORM_OWNER (full catalog, including `platform:owner`)
+- `platform.admin@hosspi.com` — PLATFORM_ADMIN
 - Role-based demo users such as `tenant.admin@hosspi.com`, `doctor@hosspi.com`, `nurse@hosspi.com`, `radiology@hosspi.com`, and `biomed@hosspi.com`
 - Default password for every seeded account: `Hosspi@2624.`
 
@@ -31,7 +32,7 @@ npm run db:verify:demo
 
 - One tenant: `DemoCare General Hospital`
 - One facility: `DemoCare General Hospital`
-- One assignment per seeded role, with some users holding scoped manager roles: `PLATFORM_ADMIN`, `TENANT_ADMIN`, `FACILITY_ADMIN`, `DOCTOR`, `NURSE`, `LAB_TECH`, `RADIOLOGY_TECH`, `PHARMACIST`, `RECEPTIONIST`, `BILLING`, `OPERATIONS`, `HR`, `BIOMED`, `HOUSE_KEEPER`, `AMBULANCE_OPERATOR`, `UNIT_MANAGER`, `WARD_MANAGER`, `ICU_MANAGER`, `THEATRE_MANAGER`, `HOUSEKEEPING_MANAGER`, `BIOMED_MANAGER`, `MORTUARY_STAFF`, `MORTUARY_MANAGER`, `PATIENT`
+- One assignment per seeded role, with some users holding scoped manager roles: `PLATFORM_OWNER`, `PLATFORM_ADMIN`, `TENANT_ADMIN`, `FACILITY_ADMIN`, `DOCTOR`, `NURSE`, `LAB_TECH`, `RADIOLOGY_TECH`, `PHARMACIST`, `RECEPTIONIST`, `BILLING`, `OPERATIONS`, `HR`, `BIOMED`, `HOUSE_KEEPER`, `AMBULANCE_OPERATOR`, `UNIT_MANAGER`, `WARD_MANAGER`, `ICU_MANAGER`, `THEATRE_MANAGER`, `HOUSEKEEPING_MANAGER`, `BIOMED_MANAGER`, `MORTUARY_STAFF`, `MORTUARY_MANAGER`, `PATIENT`
 - Subscription catalog aligned to the commercial baseline, including Basic facility limit correction and add-on eligibility rules
 - One active advanced-plan subscription with a paid invoice and active license for the seeded tenant
 - Communications scenarios covering an unread direct escalation, an archived billing thread, a sensitive biomedical incident channel, attachments, notifications, and templates
@@ -48,6 +49,7 @@ Compatibility wrapper that seeds the curated tenant and account baseline without
 
 This script initializes the system with default accounts for:
 
+- **PLATFORM_OWNER**: Highest platform authority (manage platform admins and owner-only controls)
 - **PLATFORM_ADMIN**: Platform-level administrator (manages multiple hospitals)
 - **TENANT_ADMIN**: Hospital/tenant-level administrator
 - **FACILITY_ADMIN**: Facility-level administrator
@@ -101,7 +103,8 @@ Hosspi@2624
 
 | Email                       | Role           | Tenant                    |
 | --------------------------- | -------------- | ------------------------- |
-| `super.admin@hosspi.com`    | PLATFORM_ADMIN    | DemoCare General Hospital |
+| `platform.owner@hosspi.com` | PLATFORM_OWNER | DemoCare General Hospital |
+| `platform.admin@hosspi.com` | PLATFORM_ADMIN | DemoCare General Hospital |
 | `tenant.admin@hosspi.com`   | TENANT_ADMIN   | DemoCare General Hospital |
 | `facility.admin@hosspi.com` | FACILITY_ADMIN | DemoCare General Hospital |
 | `doctor@hosspi.com`         | DOCTOR         | DemoCare General Hospital |

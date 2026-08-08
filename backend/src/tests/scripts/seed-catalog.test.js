@@ -34,7 +34,8 @@ describe('seed-catalog', () => {
 
   it('pins the default seeded login emails for the demo workspace', () => {
     expect(DEMO_TENANT.users.map((entry) => entry.email)).toEqual([
-      'super.admin@hosspi.com',
+      'platform.owner@hosspi.com',
+      'platform.admin@hosspi.com',
       'tenant.admin@hosspi.com',
       'facility.admin@hosspi.com',
       'integration.admin@hosspi.com',

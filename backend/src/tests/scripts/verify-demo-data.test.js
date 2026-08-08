@@ -331,7 +331,7 @@ describe('verify-demo-data', () => {
 
     expect(result.ok).toBe(false);
     expect(result.errors).toContain(
-      'Expected role PLATFORM_ADMIN to use email super.admin@hosspi.com but found superadmin@legacy.test.'
+      'Expected role PLATFORM_ADMIN to use email platform.admin@hosspi.com but found superadmin@legacy.test.'
     );
   });
 

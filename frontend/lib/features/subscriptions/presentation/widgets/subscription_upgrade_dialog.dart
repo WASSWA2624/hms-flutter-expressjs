@@ -614,7 +614,7 @@ class _SubscriptionUpgradeDialogState
       icon: Icon(
         isRenewal ? Icons.autorenew : Icons.workspace_premium_outlined,
       ),
-      maxWidth: 800,
+      maxWidth: 1080,
       initialMaximized: false,
       scrollable: true,
       content: AppFormShell(
@@ -622,15 +622,15 @@ class _SubscriptionUpgradeDialogState
         autovalidateMode: _autovalidateMode,
         formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
-          AppWizardStepper(
-            steps: <AppWizardStepItem>[
-              for (final _UpgradeStep step in steps)
-                AppWizardStepItem(id: step, label: _stepTitle(l10n, step)),
-            ],
-            currentIndex: _stepIndex,
-            showCurrentTitle: false,
-          ),
-          SizedBox(height: theme.spacing.lg),
+          if (_step != _UpgradeStep.plan) ...<Widget>[
+            Text(
+              _stepTitle(l10n, _step),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: AppFontWeight.emphasis,
+              ),
+            ),
+            SizedBox(height: theme.spacing.md),
+          ],
           for (final _UpgradeStep step in steps)
             Visibility(
               visible: step == _step,
@@ -692,7 +692,6 @@ class _SubscriptionUpgradeDialogState
             monthlyLabel: l10n.subscriptionUpgradeBillingMonthlyLabel,
             annualLabel: l10n.subscriptionUpgradeBillingAnnualLabel,
             currentPlanLabel: l10n.subscriptionUpgradeCurrentPlanBadge,
-            billingCycleHint: l10n.subscriptionUpgradeBillingCycleHint,
             emptyTitle: _failure != null
                 ? l10n.failureTitle(_failure!)
                 : l10n.subscriptionUpgradePlansEmptyTitle,

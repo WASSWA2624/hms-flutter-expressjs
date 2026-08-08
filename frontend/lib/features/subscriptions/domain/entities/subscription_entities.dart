@@ -1090,6 +1090,10 @@ final class SubscriptionUpgradePlanOption {
     this.price,
     this.monthlyPrice,
     this.annualPrice,
+    this.maxUsers,
+    this.maxFacilities,
+    this.maxStorageMb,
+    this.includedModuleSlugs = const <String>[],
   });
 
   final String id;
@@ -1099,6 +1103,10 @@ final class SubscriptionUpgradePlanOption {
   final double? price;
   final double? monthlyPrice;
   final double? annualPrice;
+  final int? maxUsers;
+  final int? maxFacilities;
+  final int? maxStorageMb;
+  final List<String> includedModuleSlugs;
 
   double? priceFor(SubscriptionUpgradeBillingCycle cycle) {
     return switch (cycle) {

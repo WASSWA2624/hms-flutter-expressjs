@@ -160,14 +160,30 @@ const notifyPlatformAdmin = async ({
  */
 const getUpgradeContext = async (user = {}) => {
   const tenantId = resolveBillingTenantScope(user);
-  const [overviewSubscription, plans, summary] = await Promise.all([
+  const [overviewSubscription, plans, summary, catalogModules] = await Promise.all([
     loadCurrentSubscription(tenantId).catch(() => null),
     loadUpgradePlans(tenantId),
     resolveTenantSubscriptionSummary(tenantId),
+    runWithoutTenantGuard(() =>
+      prisma.module.findMany({
+        where: { deleted_at: null },
+        select: {
+          id: true,
+          human_friendly_id: true,
+          slug: true,
+          name: true,
+          is_add_on: true,
+          minimum_plan_tier_code: true,
+          extension_json: true,
+        },
+      })
+    ).catch(() => []),
   ]);
 
   const currentPlanId = overviewSubscription?.plan_id || null;
-  const serializedPlans = plans.map(serializeSubscriptionPlan);
+  const serializedPlans = plans.map((plan) =>
+    serializeSubscriptionPlan(plan, { catalogModules })
+  );
   const recommendedPlan =
     serializedPlans.find((plan) => plan.id !== safePublicId(
       overviewSubscription?.plan?.human_friendly_id,

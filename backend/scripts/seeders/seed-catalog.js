@@ -249,7 +249,7 @@ const DEMO_TENANTS = Object.freeze([
     ],
     users: [
       { key: 'platform_owner', role: 'PLATFORM_OWNER', email: 'platform.owner@hosspi.com', first_name: 'Owner', last_name: 'Demo', title: 'Platform Owner' },
-      { key: 'platform_admin', role: 'PLATFORM_ADMIN', email: 'super.admin@hosspi.com', first_name: 'Platform', last_name: 'Demo', title: 'Platform Administrator' },
+      { key: 'platform_admin', role: 'PLATFORM_ADMIN', email: 'platform.admin@hosspi.com', first_name: 'Platform', last_name: 'Demo', title: 'Platform Administrator' },
       { key: 'tenant_admin', role: 'TENANT_ADMIN', email: 'tenant.admin@hosspi.com', first_name: 'Taylor', last_name: 'Demo', title: 'Hospital Administrator', extra_roles: ['UNIT_MANAGER'] },
       { key: 'facility_admin', role: 'FACILITY_ADMIN', email: 'facility.admin@hosspi.com', first_name: 'Morgan', last_name: 'Demo', title: 'Facility Administrator' },
       { key: 'integration_admin', role: 'INTEGRATION_ADMIN', email: 'integration.admin@hosspi.com', first_name: 'Indigo', last_name: 'Demo', title: 'Integration Administrator' },

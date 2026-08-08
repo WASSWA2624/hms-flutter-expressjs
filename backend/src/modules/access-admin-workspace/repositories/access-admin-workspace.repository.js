@@ -9,7 +9,8 @@ const DEMO_EMAIL_SUFFIX = '@hosspi.com';
 
 /** Seeded demo accounts only — not every address on the demo domain. */
 const DEMO_USER_EMAILS = new Set([
-  'super.admin@hosspi.com',
+  'platform.owner@hosspi.com',
+  'platform.admin@hosspi.com',
   'tenant.admin@hosspi.com',
   'facility.admin@hosspi.com',
   'doctor@hosspi.com',

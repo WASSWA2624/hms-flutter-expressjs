@@ -37,7 +37,7 @@
 | `hr@hosspi.com` | `hr` | Strong workforce |
 | `facility.admin@hosspi.com` | `facility_admin` | Broad command strip |
 | `operations@hosspi.com` | `operations` | Mid; fill gaps when data exists |
-| `super.admin@hosspi.com` | `super_admin` | Platform chrome |
+| `platform.admin@hosspi.com` | `platform_admin` | Platform chrome |
 | `tenant.admin@hosspi.com` | `tenant_admin` | Org chrome |
 | `biomed@hosspi.com` | `biomed` | Mid / thin |
 | `housekeeping@hosspi.com` | `house_keeper` | Task-first / thin |
