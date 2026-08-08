@@ -408,6 +408,13 @@ const findRoles = async ({
           .filter((value) => value != null && String(value).trim() !== '')
       ),
     ];
+    const tenantIds = [
+      ...new Set(
+        items
+          .map((entry) => entry.tenant_id)
+          .filter((value) => value != null && String(value).trim() !== '')
+      ),
+    ];
     let facilityNameById = new Map();
     if (facilityIds.length > 0) {
       const facilities = await prisma.facility.findMany({
@@ -418,11 +425,24 @@ const findRoles = async ({
         facilities.map((facility) => [facility.id, facility.name])
       );
     }
+    let tenantNameById = new Map();
+    if (tenantIds.length > 0) {
+      const tenants = await prisma.tenant.findMany({
+        where: { id: { in: tenantIds }, deleted_at: null },
+        select: { id: true, name: true },
+      });
+      tenantNameById = new Map(
+        tenants.map((tenant) => [tenant.id, tenant.name])
+      );
+    }
 
     const enriched = items.map((entry) => ({
       ...entry,
       facility_name: entry.facility_id
         ? facilityNameById.get(entry.facility_id) || null
+        : null,
+      tenant_name: entry.tenant_id
+        ? tenantNameById.get(entry.tenant_id) || null
         : null,
     }));
 
@@ -460,7 +480,32 @@ const findPermissions = async ({ scope = {}, filters = {}, skip = 0, take = 20, 
       prisma.permission.count({ where }),
     ]);
 
-    return { items, total };
+    const tenantIds = [
+      ...new Set(
+        items
+          .map((entry) => entry.tenant_id)
+          .filter((value) => value != null && String(value).trim() !== '')
+      ),
+    ];
+    let tenantNameById = new Map();
+    if (tenantIds.length > 0) {
+      const tenants = await prisma.tenant.findMany({
+        where: { id: { in: tenantIds }, deleted_at: null },
+        select: { id: true, name: true },
+      });
+      tenantNameById = new Map(
+        tenants.map((tenant) => [tenant.id, tenant.name])
+      );
+    }
+
+    const enriched = items.map((entry) => ({
+      ...entry,
+      tenant_name: entry.tenant_id
+        ? tenantNameById.get(entry.tenant_id) || null
+        : null,
+    }));
+
+    return { items: enriched, total };
   } catch (error) {
     mapError(error);
   }

@@ -458,6 +458,17 @@ List<AppListTableColumn<AccessAdminItem>> _roleColumns(
       cellBuilder: (_, AccessAdminItem item) => Text(item.title),
     ),
     AppListTableColumn<AccessAdminItem>(
+      id: 'role_tenant',
+      label: l10n.settingsWorkspaceTenantLabel,
+      sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
+          appListTableCompareText(left.tenantName, right.tenantName),
+      cellBuilder: (_, AccessAdminItem item) => Text(
+        (item.tenantName ?? '').trim().isNotEmpty
+            ? item.tenantName!.trim()
+            : '—',
+      ),
+    ),
+    AppListTableColumn<AccessAdminItem>(
       id: 'role_scope',
       label: l10n.accessAdminColumnScope,
       sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
@@ -517,6 +528,17 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminPermissionColumns(
       sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
           appListTableCompareText(left.title, right.title),
       cellBuilder: (_, AccessAdminItem item) => Text(item.title),
+    ),
+    AppListTableColumn<AccessAdminItem>(
+      id: 'perm_tenant',
+      label: l10n.settingsWorkspaceTenantLabel,
+      sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
+          appListTableCompareText(left.tenantName, right.tenantName),
+      cellBuilder: (_, AccessAdminItem item) => Text(
+        (item.tenantName ?? '').trim().isNotEmpty
+            ? item.tenantName!.trim()
+            : '—',
+      ),
     ),
     AppListTableColumn<AccessAdminItem>(
       id: 'perm_description',

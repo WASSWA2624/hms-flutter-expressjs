@@ -1354,6 +1354,20 @@ class _ManageRolesPermissionsPanelState
 
   @override
   void initState() {
+    // Platform admins otherwise default to every tenant's catalog copy of the
+    // same system roles (shared ROL####### sequences look like duplicates).
+    if (_canPickTenant) {
+      final String? sessionTenantId = ref
+          .read(sessionStateProvider)
+          .session
+          ?.user
+          ?.tenantId
+          ?.trim();
+      if (sessionTenantId != null && sessionTenantId.isNotEmpty) {
+        tenantFilter = sessionTenantId;
+        allTenants = false;
+      }
+    }
     super.initState();
     widget.reloadListenable?.addListener(_onExternalReload);
   }
@@ -1821,6 +1835,7 @@ class _ManageRolesPermissionsPanelState
         ? Icons.key_outlined
         : Icons.admin_panel_settings_outlined;
     final bool isPermissions = widget.panel == AccessAdminPanel.permissions;
+    final bool showTenantColumn = canPickTenant && allTenants;
     final List<AppListTableColumn<AccessAdminItem>> permissionColumns =
         accessAdminPermissionColumns(context);
     final List<AppListTableColumn<AccessAdminItem>> permissionDefaults =
@@ -1829,6 +1844,7 @@ class _ManageRolesPermissionsPanelState
               (AppListTableColumn<AccessAdminItem> column) =>
                   column.id == 'perm_id' ||
                   column.id == 'perm_name' ||
+                  (showTenantColumn && column.id == 'perm_tenant') ||
                   column.id == 'perm_description',
             )
             .toList(growable: false);
@@ -1836,7 +1852,8 @@ class _ManageRolesPermissionsPanelState
         permissionColumns
             .where(
               (AppListTableColumn<AccessAdminItem> column) =>
-                  column.id == 'perm_code',
+                  column.id == 'perm_code' ||
+                  (!showTenantColumn && column.id == 'perm_tenant'),
             )
             .toList(growable: false);
     final bool roleActionsBusy = _roleActionBusyKey != null;
@@ -1854,8 +1871,8 @@ class _ManageRolesPermissionsPanelState
             child: buildTable(
           l10n: l10n,
           columnVisibilityStorageKey: isPermissions
-              ? 'access_admin_manage_permissions_v3'
-              : 'access_admin_manage_roles_v2',
+              ? 'access_admin_manage_permissions_v4'
+              : 'access_admin_manage_roles_v3',
           onRowSelected: isPermissions
               ? (AccessAdminItem permission) =>
                     unawaited(_openPermissionDetail(permission))
@@ -1931,6 +1948,22 @@ class _ManageRolesPermissionsPanelState
                       );
                     },
                   ),
+                  if (showTenantColumn)
+                    AppListTableColumn<AccessAdminItem>(
+                      id: 'tenant',
+                      label: l10n.settingsWorkspaceTenantLabel,
+                      sortComparator:
+                          (AccessAdminItem left, AccessAdminItem right) =>
+                              appListTableCompareText(
+                                left.tenantName,
+                                right.tenantName,
+                              ),
+                      cellBuilder: (_, AccessAdminItem item) => Text(
+                        (item.tenantName ?? '').trim().isNotEmpty
+                            ? item.tenantName!.trim()
+                            : '—',
+                      ),
+                    ),
                   AppListTableColumn<AccessAdminItem>(
                     id: 'scope',
                     label: l10n.accessAdminColumnScope,
@@ -2047,6 +2080,22 @@ class _ManageRolesPermissionsPanelState
           columnChoices: isPermissions
               ? permissionChoices
               : <AppListTableColumn<AccessAdminItem>>[
+                  if (!showTenantColumn)
+                    AppListTableColumn<AccessAdminItem>(
+                      id: 'tenant',
+                      label: l10n.settingsWorkspaceTenantLabel,
+                      sortComparator:
+                          (AccessAdminItem left, AccessAdminItem right) =>
+                              appListTableCompareText(
+                                left.tenantName,
+                                right.tenantName,
+                              ),
+                      cellBuilder: (_, AccessAdminItem item) => Text(
+                        (item.tenantName ?? '').trim().isNotEmpty
+                            ? item.tenantName!.trim()
+                            : '—',
+                      ),
+                    ),
                   AppListTableColumn<AccessAdminItem>(
                     id: 'details',
                     label: l10n.accessAdminColumnDetails,

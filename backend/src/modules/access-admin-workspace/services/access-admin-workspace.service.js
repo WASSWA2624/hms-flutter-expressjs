@@ -242,6 +242,7 @@ const serializeRole = (record) => {
     display_name: record.display_name || record.name,
     description: record.description || null,
     tenant_id: record.tenant_id || null,
+    tenant_name: record.tenant_name || null,
     facility_id: record.facility_id || null,
     facility_name: record.facility_name || null,
     scope: record.facility_id
@@ -270,7 +271,8 @@ const serializePermission = (record) => {
     name: record.name,
     display_name: record.display_name || record.name,
     description: record.description || null,
-    tenant_id: safePublicId(record.tenant_id),
+    tenant_id: record.tenant_id || null,
+    tenant_name: record.tenant_name || null,
     role_count: record._count?.roles || 0,
     user_count: record._count?.users || 0,
     updated_at: record.updated_at,
