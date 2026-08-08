@@ -2964,6 +2964,30 @@
   "@subscriptionUpgradeCurrentPlanBadge": {
     "description": "Badge shown on the tenant's current plan tile."
   },
+  "subscriptionUpgradeFeaturesColumnLabel": "Features",
+  "@subscriptionUpgradeFeaturesColumnLabel": {
+    "description": "Left column header for the upgrade plan comparison table."
+  },
+  "subscriptionUpgradePriceRowLabel": "Price",
+  "@subscriptionUpgradePriceRowLabel": {
+    "description": "Price row label in the upgrade plan comparison table."
+  },
+  "subscriptionUpgradeCustomContactUsAction": "Contact us",
+  "@subscriptionUpgradeCustomContactUsAction": {
+    "description": "Opens platform admin contacts for Custom plan negotiation."
+  },
+  "subscriptionUpgradeCustomContactDialogTitle": "Negotiate Custom plan",
+  "@subscriptionUpgradeCustomContactDialogTitle": {
+    "description": "Title for the Custom plan platform-admin contact dialog."
+  },
+  "subscriptionUpgradeCustomContactDialogBody": "Contact platform admins below to negotiate pricing and packaging for a Custom plan.",
+  "@subscriptionUpgradeCustomContactDialogBody": {
+    "description": "Body text for the Custom plan platform-admin contact dialog."
+  },
+  "subscriptionUpgradeCustomContactEmptyMessage": "No platform admin contacts are configured. Ask your account owner for negotiation details.",
+  "@subscriptionUpgradeCustomContactEmptyMessage": {
+    "description": "Shown when Custom plan contact dialog has no admin email or phone."
+  },
   "subscriptionUpgradeInvoiceEmailLabel": "Invoice email",
   "@subscriptionUpgradeInvoiceEmailLabel": {
     "description": "Email field label for subscription invoice delivery."

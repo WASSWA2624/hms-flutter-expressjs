@@ -172,11 +172,44 @@ class _SubscriptionUpgradeDialogState
 
   bool get _isLastStep => _stepIndex >= _steps.length - 1;
 
-  String _planLabel(AppLocalizations l10n, SubscriptionUpgradePlanOption plan) {
-    if (plan.tierCode == null || plan.tierCode!.isEmpty) {
-      return plan.label;
-    }
-    return '${plan.label} (${plan.tierCode})';
+  String _planLabel(SubscriptionUpgradePlanOption plan) => plan.label;
+
+  Future<void> _showCustomPlanContactDialog({
+    PlatformAdminContact? adminContact,
+  }) {
+    final AppLocalizations l10n = context.l10n;
+    return showAppDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AppDialog(
+          title: Text(l10n.subscriptionUpgradeCustomContactDialogTitle),
+          icon: const Icon(Icons.support_agent_outlined),
+          content: SizedBox(
+            width: 420,
+            child: adminContact?.hasContact == true
+                ? _AdminContactSection(
+                    adminContact: adminContact!,
+                    title: l10n.subscriptionUpgradeAdminContactTitle,
+                    body: l10n.subscriptionUpgradeCustomContactDialogBody,
+                    emailLabel: l10n.subscriptionUpgradeAdminContactEmailLabel,
+                    phoneLabel: l10n.subscriptionUpgradeAdminContactPhoneLabel,
+                  )
+                : AppMessagePanel(
+                    message: l10n.subscriptionUpgradeCustomContactEmptyMessage,
+                    icon: Icons.support_agent_outlined,
+                    tone: AppWorkspaceStatusTone.warning,
+                  ),
+          ),
+          actions: buildAppDialogWizardActions(
+            cancelLabel: l10n.commonCloseActionLabel,
+            primaryLabel: l10n.commonCloseActionLabel,
+            onCancel: () => Navigator.of(dialogContext).maybePop(),
+            onPrimary: () => Navigator.of(dialogContext).maybePop(),
+            primaryIcon: Icons.close,
+          ),
+        );
+      },
+    );
   }
 
   String _billingCycleServerValue() {
@@ -218,25 +251,32 @@ class _SubscriptionUpgradeDialogState
             summary != null &&
             summary.headerState != TenantSubscriptionHeaderState.active;
 
+        final List<SubscriptionUpgradePlanOption> commercialPlans =
+            contextData.plans
+                .where(
+                  (SubscriptionUpgradePlanOption plan) => !plan.isDeveloperPlan,
+                )
+                .toList(growable: false);
+
         final String? preferredPlanId = preferRenewal
             ? currentPlanId
             : (contextData.recommendedPlanId ??
                   currentPlanId ??
-                  contextData.plans.firstOrNull?.id);
+                  commercialPlans.firstOrNull?.id);
 
         final bool preferredInCatalog =
             preferredPlanId != null &&
-            contextData.plans.any(
+            commercialPlans.any(
               (SubscriptionUpgradePlanOption plan) =>
                   plan.id == preferredPlanId,
             );
         final String? selectedPlanId = preferredInCatalog
             ? preferredPlanId
-            : contextData.plans.firstOrNull?.id;
+            : commercialPlans.firstOrNull?.id;
 
         SubscriptionUpgradeBillingCycle billingCycle =
             SubscriptionUpgradeBillingCycle.monthly;
-        final SubscriptionUpgradePlanOption? seedPlan = contextData.plans
+        final SubscriptionUpgradePlanOption? seedPlan = commercialPlans
             .where(
               (SubscriptionUpgradePlanOption plan) => plan.id == selectedPlanId,
             )
@@ -692,18 +732,25 @@ class _SubscriptionUpgradeDialogState
             monthlyLabel: l10n.subscriptionUpgradeBillingMonthlyLabel,
             annualLabel: l10n.subscriptionUpgradeBillingAnnualLabel,
             currentPlanLabel: l10n.subscriptionUpgradeCurrentPlanBadge,
+            featuresColumnLabel: l10n.subscriptionUpgradeFeaturesColumnLabel,
+            priceRowLabel: l10n.subscriptionUpgradePriceRowLabel,
+            contactUsLabel: l10n.subscriptionUpgradeCustomContactUsAction,
             emptyTitle: _failure != null
                 ? l10n.failureTitle(_failure!)
                 : l10n.subscriptionUpgradePlansEmptyTitle,
             emptyMessage: _failure != null
                 ? ValidationMessagePresenter.displayMessage(_failure!, l10n)
                 : l10n.subscriptionUpgradePlansEmptyMessage,
-            planLabelBuilder: (SubscriptionUpgradePlanOption plan) =>
-                _planLabel(l10n, plan),
+            planLabelBuilder: _planLabel,
             onBillingCycleChanged: (SubscriptionUpgradeBillingCycle cycle) {
               unawaited(_onBillingCycleChanged(cycle));
             },
             onSelected: (String planId) => unawaited(_onPlanChanged(planId)),
+            onContactCustomPlan: () {
+              unawaited(
+                _showCustomPlanContactDialog(adminContact: adminContact),
+              );
+            },
           ),
           if (_failure != null &&
               (contextData?.plans.isEmpty ?? true)) ...<Widget>[

@@ -1152,6 +1152,22 @@ final class SubscriptionUpgradePlanOption {
     final double? amount = priceFor(cycle);
     return amount != null && amount <= 0;
   }
+
+  bool get isDeveloperPlan {
+    final String tier = (tierCode ?? '').trim().toUpperCase();
+    if (tier == 'DEVELOPER') {
+      return true;
+    }
+    return label.trim().toLowerCase() == 'developer';
+  }
+
+  bool get isCustomPlan {
+    final String tier = (tierCode ?? '').trim().toUpperCase();
+    if (tier == 'CUSTOM') {
+      return true;
+    }
+    return label.trim().toLowerCase() == 'custom';
+  }
 }
 
 @immutable

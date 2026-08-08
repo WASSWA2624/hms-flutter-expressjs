@@ -4348,6 +4348,42 @@ abstract class AppLocalizations {
   /// **'Current plan'**
   String get subscriptionUpgradeCurrentPlanBadge;
 
+  /// Left column header for the upgrade plan comparison table.
+  ///
+  /// In en, this message translates to:
+  /// **'Features'**
+  String get subscriptionUpgradeFeaturesColumnLabel;
+
+  /// Price row label in the upgrade plan comparison table.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get subscriptionUpgradePriceRowLabel;
+
+  /// Opens platform admin contacts for Custom plan negotiation.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact us'**
+  String get subscriptionUpgradeCustomContactUsAction;
+
+  /// Title for the Custom plan platform-admin contact dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Negotiate Custom plan'**
+  String get subscriptionUpgradeCustomContactDialogTitle;
+
+  /// Body text for the Custom plan platform-admin contact dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact platform admins below to negotiate pricing and packaging for a Custom plan.'**
+  String get subscriptionUpgradeCustomContactDialogBody;
+
+  /// Shown when Custom plan contact dialog has no admin email or phone.
+  ///
+  /// In en, this message translates to:
+  /// **'No platform admin contacts are configured. Ask your account owner for negotiation details.'**
+  String get subscriptionUpgradeCustomContactEmptyMessage;
+
   /// Email field label for subscription invoice delivery.
   ///
   /// In en, this message translates to:

@@ -2272,6 +2272,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionUpgradeCurrentPlanBadge => 'Current plan';
 
   @override
+  String get subscriptionUpgradeFeaturesColumnLabel => 'Features';
+
+  @override
+  String get subscriptionUpgradePriceRowLabel => 'Price';
+
+  @override
+  String get subscriptionUpgradeCustomContactUsAction => 'Contact us';
+
+  @override
+  String get subscriptionUpgradeCustomContactDialogTitle =>
+      'Negotiate Custom plan';
+
+  @override
+  String get subscriptionUpgradeCustomContactDialogBody =>
+      'Contact platform admins below to negotiate pricing and packaging for a Custom plan.';
+
+  @override
+  String get subscriptionUpgradeCustomContactEmptyMessage =>
+      'No platform admin contacts are configured. Ask your account owner for negotiation details.';
+
+  @override
   String get subscriptionUpgradeInvoiceEmailLabel => 'Invoice email';
 
   @override
