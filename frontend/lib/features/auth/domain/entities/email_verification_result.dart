@@ -11,11 +11,19 @@ final class EmailVerificationResult {
 
 /// Platform admin contact shown when approval is still pending.
 final class AuthPlatformAdminContact {
-  const AuthPlatformAdminContact({this.fullName, this.email, this.phone});
+  const AuthPlatformAdminContact({
+    this.fullName,
+    this.email,
+    this.phone,
+    this.roleName,
+    this.isSupportChannel = false,
+  });
 
   final String? fullName;
   final String? email;
   final String? phone;
+  final String? roleName;
+  final bool isSupportChannel;
 
   bool get hasContactDetails {
     final String? trimmedEmail = email?.trim();
@@ -39,10 +47,17 @@ final class AuthPlatformAdminContact {
       return text.isEmpty ? null : text;
     }
 
+    final bool supportChannel =
+        map['is_support_channel'] == true ||
+        map['isSupportChannel'] == true ||
+        (read('role_name') ?? read('roleName')) == 'PLATFORM_SUPPORT';
+
     return AuthPlatformAdminContact(
       fullName: read('full_name') ?? read('fullName') ?? read('name'),
       email: read('email'),
       phone: read('phone'),
+      roleName: read('role_name') ?? read('roleName'),
+      isSupportChannel: supportChannel,
     );
   }
 

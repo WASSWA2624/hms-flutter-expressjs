@@ -197,6 +197,11 @@ const findPlatformAdminContacts = async () => {
 };
 
 const appendEnvPlatformSupportContact = (contacts = []) => {
+  if (Array.isArray(contacts) && contacts.length > 0) {
+    // Prefer live platform admins; env is only a fallback when none exist.
+    return contacts;
+  }
+
   const envContact = resolveEnvPlatformSupportContact();
   const email = normalizeString(envContact?.email);
   const phone = normalizeString(envContact?.phone);
@@ -204,21 +209,7 @@ const appendEnvPlatformSupportContact = (contacts = []) => {
     return contacts;
   }
 
-  const emailKey = normalizeEmail(email);
-  const alreadyListed = contacts.some((contact) => {
-    const contactEmail = normalizeEmail(contact.email);
-    const contactPhone = normalizeString(contact.phone);
-    return (
-      (emailKey && contactEmail === emailKey) ||
-      (phone && contactPhone === phone)
-    );
-  });
-  if (alreadyListed) {
-    return contacts;
-  }
-
   return [
-    ...contacts,
     {
       id: null,
       full_name: null,

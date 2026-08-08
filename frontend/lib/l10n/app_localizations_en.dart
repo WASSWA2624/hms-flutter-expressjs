@@ -8117,6 +8117,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authAccountPendingApprovalTitle => 'Account pending approval';
 
   @override
+  String get authAccountPendingApprovalStatusLabel => 'Awaiting approval';
+
+  @override
+  String get authAccountPendingApprovalContactsTitle => 'Platform admins';
+
+  @override
+  String get authAccountPendingApprovalAdminRoleLabel =>
+      'Platform administrator';
+
+  @override
   String get authAccountPendingApprovalMessage =>
       'Your account is awaiting platform admin approval before you can sign in.';
 

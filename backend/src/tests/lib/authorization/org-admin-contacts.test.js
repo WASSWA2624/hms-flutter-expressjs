@@ -170,14 +170,10 @@ describe('org-admin-contacts', () => {
     expect(result.platform_admins.map((row) => row.email)).toEqual([
       'platform1@example.com',
       'platform2@example.com',
-      'support@hosspi.com',
     ]);
-    expect(result.platform_admins.at(-1)).toEqual(
-      expect.objectContaining({
-        is_support_channel: true,
-        role_name: 'PLATFORM_SUPPORT',
-      })
-    );
+    expect(
+      result.platform_admins.every((row) => row.is_support_channel !== true)
+    ).toBe(true);
     expect(
       prisma.user_role.findMany.mock.calls.every(
         ([args]) => args.take === undefined
@@ -185,7 +181,7 @@ describe('org-admin-contacts', () => {
     ).toBe(true);
   });
 
-  it('does not duplicate env support when a platform admin already matches', () => {
+  it('does not append env support when live platform admins already exist', () => {
     const contacts = appendEnvPlatformSupportContact([
       {
         id: 'p1',
@@ -196,5 +192,16 @@ describe('org-admin-contacts', () => {
       },
     ]);
     expect(contacts).toHaveLength(1);
+  });
+
+  it('appends env support when no live platform admins exist', () => {
+    const contacts = appendEnvPlatformSupportContact([]);
+    expect(contacts).toEqual([
+      expect.objectContaining({
+        email: 'support@hosspi.com',
+        is_support_channel: true,
+        role_name: 'PLATFORM_SUPPORT',
+      }),
+    ]);
   });
 });

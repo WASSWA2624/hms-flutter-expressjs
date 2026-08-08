@@ -77,8 +77,8 @@ void main() {
         find.textContaining(l10n.authAccountPendingApprovalContactHint),
         findsOneWidget,
       );
-      expect(find.textContaining('admin@hosspi.com'), findsOneWidget);
-      expect(find.textContaining('+256700000000'), findsOneWidget);
+      expect(find.textContaining('admin@hosspi.com'), findsWidgets);
+      expect(find.textContaining('+256700000000'), findsWidgets);
       expect(
         find.widgetWithText(FilledButton, l10n.authLoginActionLabel),
         findsOneWidget,

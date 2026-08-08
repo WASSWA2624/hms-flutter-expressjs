@@ -14950,6 +14950,24 @@ abstract class AppLocalizations {
   /// **'Account pending approval'**
   String get authAccountPendingApprovalTitle;
 
+  /// Status label inside the pending-approval dialog callout.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting approval'**
+  String get authAccountPendingApprovalStatusLabel;
+
+  /// Section title above platform admin contacts in the pending-approval dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform admins'**
+  String get authAccountPendingApprovalContactsTitle;
+
+  /// Fallback role label for platform admin contacts without a role name.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform administrator'**
+  String get authAccountPendingApprovalAdminRoleLabel;
+
   /// Login failure message when email is verified but platform approval is pending.
   ///
   /// In en, this message translates to:

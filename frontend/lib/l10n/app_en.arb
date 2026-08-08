@@ -10312,6 +10312,18 @@
   "@authAccountPendingApprovalTitle": {
     "description": "Dialog title when sign-in is blocked until platform admin approval."
   },
+  "authAccountPendingApprovalStatusLabel": "Awaiting approval",
+  "@authAccountPendingApprovalStatusLabel": {
+    "description": "Status label inside the pending-approval dialog callout."
+  },
+  "authAccountPendingApprovalContactsTitle": "Platform admins",
+  "@authAccountPendingApprovalContactsTitle": {
+    "description": "Section title above platform admin contacts in the pending-approval dialog."
+  },
+  "authAccountPendingApprovalAdminRoleLabel": "Platform administrator",
+  "@authAccountPendingApprovalAdminRoleLabel": {
+    "description": "Fallback role label for platform admin contacts without a role name."
+  },
   "authAccountPendingApprovalMessage": "Your account is awaiting platform admin approval before you can sign in.",
   "@authAccountPendingApprovalMessage": {
     "description": "Login failure message when email is verified but platform approval is pending."
