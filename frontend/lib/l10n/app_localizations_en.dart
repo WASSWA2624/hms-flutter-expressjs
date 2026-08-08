@@ -24225,6 +24225,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminPanelRegistrations => 'Pending registrations';
 
   @override
+  String get accessAdminPanelPayments => 'Payment requests';
+
+  @override
   String get accessAdminPhoneLabel => 'Phone';
 
   @override

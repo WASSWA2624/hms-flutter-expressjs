@@ -669,7 +669,7 @@ class _SubscriptionUpgradeDialogState
                   ? Icons.autorenew
                   : Icons.workspace_premium_outlined),
       ),
-      maxWidth: 720,
+      maxWidth: noPayment ? 560 : 920,
       initialMaximized: false,
       scrollable: true,
       content: AppFormShell(
@@ -677,7 +677,7 @@ class _SubscriptionUpgradeDialogState
         autovalidateMode: _autovalidateMode,
         formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
-          if (_step != _UpgradeStep.plan) ...<Widget>[
+          if (_step != _UpgradeStep.plan && _step != _UpgradeStep.pay) ...<Widget>[
             Text(
               _stepTitle(l10n, _step),
               style: theme.textTheme.titleMedium?.copyWith(
@@ -840,66 +840,37 @@ class _SubscriptionUpgradeDialogState
     final PlatformBankTransferDetails? bank = contextData?.bankTransferDetails;
     final PlatformMobileMoneyDetails? mobile = contextData?.mobileMoneyDetails;
     final String planLabel = _selectedPlanDisplayLabel(l10n);
+    final List<(String, String)> bankRows = <(String, String)>[
+      if (bank?.accountName != null)
+        (l10n.subscriptionBankAccountNameLabel, bank!.accountName!),
+      if (bank?.bankName != null)
+        (l10n.subscriptionPlatformBankNameLabel, bank!.bankName!),
+      if (bank?.branch != null)
+        (l10n.subscriptionBankBranchLabel, bank!.branch!),
+      if (bank?.accountNumber != null)
+        (l10n.subscriptionBankAccountNumberLabel, bank!.accountNumber!),
+      if (bank?.swiftCode != null)
+        (l10n.subscriptionBankSwiftLabel, bank!.swiftCode!),
+      if (bank?.iban != null) (l10n.subscriptionBankIbanLabel, bank!.iban!),
+    ];
+    final List<(String, String)> mobileRows = <(String, String)>[
+      if (mobile?.accountName != null)
+        (l10n.subscriptionMobileMoneyAccountNameLabel, mobile!.accountName!),
+      if (mobile?.mtn != null)
+        (l10n.subscriptionMobileMoneyMtnLabel, mobile!.mtn!),
+      if (mobile?.airtel != null)
+        (l10n.subscriptionMobileMoneyAirtelLabel, mobile!.airtel!),
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(theme.radius.md),
-            border: theme.borders.all(),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(theme.spacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  planLabel,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: AppFontWeight.emphasis,
-                  ),
-                ),
-                SizedBox(height: theme.spacing.xs),
-                Text(
-                  _billingCycleLabel(l10n),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                SizedBox(height: theme.spacing.sm),
-                Row(
-                  children: <Widget>[
-                    Text(
-                      l10n.subscriptionUpgradeAmountDueLabel,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (_isFxLoading)
-                      SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: colorScheme.primary,
-                        ),
-                      )
-                    else
-                      Text(
-                        _formattedAmountDue(context),
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: AppFontWeight.emphasis,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        _PaySummaryStrip(
+          planLabel: planLabel,
+          billingCycleLabel: _billingCycleLabel(l10n),
+          amountDueLabel: l10n.subscriptionUpgradeAmountDueLabel,
+          amountValue: _isFxLoading ? null : _formattedAmountDue(context),
+          isLoading: _isFxLoading,
         ),
         if (_fxWarning != null) ...<Widget>[
           SizedBox(height: theme.spacing.sm),
@@ -910,119 +881,130 @@ class _SubscriptionUpgradeDialogState
             density: AppContentPanelDensity.compact,
           ),
         ],
-        if (bank?.hasDetails == true) ...<Widget>[
-          SizedBox(height: theme.spacing.lg),
-          Text(
-            l10n.subscriptionBankTransferDetailsTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: AppFontWeight.emphasis,
-            ),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          _InstructionDetails(
-            rows: <(String, String)>[
-              if (bank!.accountName != null)
-                (l10n.subscriptionBankAccountNameLabel, bank.accountName!),
-              if (bank.bankName != null)
-                (l10n.subscriptionPlatformBankNameLabel, bank.bankName!),
-              if (bank.branch != null)
-                (l10n.subscriptionBankBranchLabel, bank.branch!),
-              if (bank.accountNumber != null)
-                (l10n.subscriptionBankAccountNumberLabel, bank.accountNumber!),
-              if (bank.swiftCode != null)
-                (l10n.subscriptionBankSwiftLabel, bank.swiftCode!),
-              if (bank.iban != null)
-                (l10n.subscriptionBankIbanLabel, bank.iban!),
-            ],
-          ),
-        ],
-        if (mobile?.hasDetails == true) ...<Widget>[
-          SizedBox(height: theme.spacing.lg),
-          Text(
-            l10n.subscriptionMobileMoneyDetailsTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: AppFontWeight.emphasis,
-            ),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          _InstructionDetails(
-            rows: <(String, String)>[
-              if (mobile!.accountName != null)
-                (l10n.subscriptionMobileMoneyAccountNameLabel, mobile.accountName!),
-              if (mobile.mtn != null)
-                (l10n.subscriptionMobileMoneyMtnLabel, mobile.mtn!),
-              if (mobile.airtel != null)
-                (l10n.subscriptionMobileMoneyAirtelLabel, mobile.airtel!),
-            ],
-          ),
-        ],
-        if (adminContact?.hasContact == true) ...<Widget>[
-          SizedBox(height: theme.spacing.lg),
-          _AdminContactSection(
-            adminContact: adminContact!,
-            title: l10n.subscriptionUpgradeAdminContactTitle,
-            body: l10n.subscriptionUpgradePayContactGuidance,
-            emailLabel: l10n.subscriptionUpgradeAdminContactEmailLabel,
-            phoneLabel: l10n.subscriptionUpgradeAdminContactPhoneLabel,
-            whatsappLabel: l10n.subscriptionUpgradeAdminContactWhatsappLabel,
-            flat: true,
-          ),
-        ] else ...<Widget>[
-          SizedBox(height: theme.spacing.lg),
-          AppMessagePanel(
-            message: l10n.subscriptionUpgradePayContactGuidance,
-            icon: Icons.support_agent_outlined,
-            density: AppContentPanelDensity.compact,
-          ),
-        ],
-        SizedBox(height: theme.spacing.lg),
+        SizedBox(height: theme.spacing.md),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool sideBySide =
+                constraints.maxWidth >= 640 &&
+                bankRows.isNotEmpty &&
+                mobileRows.isNotEmpty;
+            final Widget? bankCard = bankRows.isEmpty
+                ? null
+                : _PayDestinationCard(
+                    icon: Icons.account_balance_outlined,
+                    title: l10n.subscriptionBankTransferDetailsTitle,
+                    rows: bankRows,
+                  );
+            final Widget? mobileCard = mobileRows.isEmpty
+                ? null
+                : _PayDestinationCard(
+                    icon: Icons.phone_android_outlined,
+                    title: l10n.subscriptionMobileMoneyDetailsTitle,
+                    rows: mobileRows,
+                  );
+
+            if (sideBySide) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(child: bankCard!),
+                  SizedBox(width: theme.spacing.sm),
+                  Expanded(child: mobileCard!),
+                ],
+              );
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                if (bankCard != null) bankCard,
+                if (bankCard != null && mobileCard != null)
+                  SizedBox(height: theme.spacing.sm),
+                if (mobileCard != null) mobileCard,
+              ],
+            );
+          },
+        ),
+        SizedBox(height: theme.spacing.md),
+        _PayNotifyCard(
+          title: l10n.subscriptionUpgradeAdminContactTitle,
+          guidance: l10n.subscriptionUpgradePayContactGuidance,
+          adminContact: adminContact,
+          emailLabel: l10n.subscriptionUpgradeAdminContactEmailLabel,
+          phoneLabel: l10n.subscriptionUpgradeAdminContactPhoneLabel,
+          whatsappLabel: l10n.subscriptionUpgradeAdminContactWhatsappLabel,
+        ),
+        SizedBox(height: theme.spacing.md),
         Text(
           l10n.subscriptionUpgradePaymentChannelLabel,
-          style: theme.textTheme.titleSmall?.copyWith(
+          style: theme.textTheme.labelLarge?.copyWith(
             fontWeight: AppFontWeight.emphasis,
           ),
         ),
-        SizedBox(height: theme.spacing.sm),
+        SizedBox(height: theme.spacing.xs),
         Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.sm,
+          spacing: theme.spacing.xs,
+          runSpacing: theme.spacing.xs,
           children: <Widget>[
             for (final SubscriptionPaymentMethodId channel in _payChannels)
-              FilterChip(
+              ChoiceChip(
                 selected: _paymentMethod == channel,
                 label: Text(subscriptionPaymentMethodLabel(l10n, channel)),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 onSelected: (_) {
                   setState(() => _paymentMethod = channel);
                 },
               ),
           ],
         ),
-        SizedBox(height: theme.spacing.md),
-        AppTextField(
-          controller: _notesController,
-          labelText: l10n.subscriptionUpgradeNotesLabel,
-          maxLines: 2,
-        ),
-        SizedBox(height: theme.spacing.md),
-        AppFileUploadPanel(
-          title: l10n.subscriptionUpgradeProofLabel,
-          emptyDescription: l10n.subscriptionUpgradeProofOptionalBody,
-          chooseLabel: l10n.subscriptionUpgradeAttachProofAction,
-          clearLabel: l10n.subscriptionUpgradeRemoveProofAction,
-          fileNames: _proofFileName == null
-              ? const <String>[]
-              : <String>[_proofFileName!],
-          onChoose: _pickProof,
-          onClear: () => setState(() {
-            _proofFileName = null;
-            _proofBytes = null;
-            _proofMimeType = null;
-          }),
-          enabled: !_isSubmitting,
-          tone: AppWorkspaceStatusTone.info,
+        SizedBox(height: theme.spacing.sm),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final Widget notes = AppTextField(
+              controller: _notesController,
+              labelText: l10n.subscriptionUpgradeNotesLabel,
+              maxLines: 2,
+            );
+            final Widget proof = AppFileUploadPanel(
+              title: l10n.subscriptionUpgradeProofLabel,
+              emptyDescription: l10n.subscriptionUpgradeProofOptionalBody,
+              chooseLabel: l10n.subscriptionUpgradeAttachProofAction,
+              clearLabel: l10n.subscriptionUpgradeRemoveProofAction,
+              fileNames: _proofFileName == null
+                  ? const <String>[]
+                  : <String>[_proofFileName!],
+              onChoose: _pickProof,
+              onClear: () => setState(() {
+                _proofFileName = null;
+                _proofBytes = null;
+                _proofMimeType = null;
+              }),
+              enabled: !_isSubmitting,
+              tone: AppWorkspaceStatusTone.info,
+            );
+            if (constraints.maxWidth < 560) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  notes,
+                  SizedBox(height: theme.spacing.sm),
+                  proof,
+                ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(flex: 5, child: notes),
+                SizedBox(width: theme.spacing.sm),
+                Expanded(flex: 4, child: proof),
+              ],
+            );
+          },
         ),
         if (_proofFileName != null && _proofBytes != null) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
+          SizedBox(height: theme.spacing.sm),
           _ProofPreview(
             fileName: _proofFileName!,
             proofBytes: _proofBytes!,
@@ -1039,44 +1021,303 @@ class _SubscriptionUpgradeDialogState
   }
 }
 
-class _InstructionDetails extends StatelessWidget {
-  const _InstructionDetails({required this.rows});
+class _PaySummaryStrip extends StatelessWidget {
+  const _PaySummaryStrip({
+    required this.planLabel,
+    required this.billingCycleLabel,
+    required this.amountDueLabel,
+    required this.amountValue,
+    required this.isLoading,
+  });
 
+  final String planLabel;
+  final String billingCycleLabel;
+  final String amountDueLabel;
+  final String? amountValue;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: 0.22),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.md,
+          vertical: theme.spacing.sm,
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(
+              Icons.workspace_premium_outlined,
+              size: 22,
+              color: colorScheme.primary,
+            ),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    planLabel,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: AppFontWeight.emphasis,
+                    ),
+                  ),
+                  Text(
+                    billingCycleLabel,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                Text(
+                  amountDueLabel,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (isLoading)
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colorScheme.primary,
+                    ),
+                  )
+                else
+                  Text(
+                    amountValue ?? '—',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: AppFontWeight.emphasis,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PayDestinationCard extends StatelessWidget {
+  const _PayDestinationCard({
+    required this.icon,
+    required this.title,
+    required this.rows,
+  });
+
+  final IconData icon;
+  final String title;
   final List<(String, String)> rows;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Column(
-      children: <Widget>[
-        for (final (String label, String value) in rows)
-          Padding(
-            padding: EdgeInsets.only(bottom: theme.spacing.sm),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        border: theme.borders.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
               children: <Widget>[
-                SizedBox(
-                  width: 132,
-                  child: Text(
-                    label,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: AppFontWeight.emphasis,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
+                Icon(icon, size: 18, color: colorScheme.primary),
+                SizedBox(width: theme.spacing.xs),
                 Expanded(
-                  child: SelectableText(
-                    value,
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                 ),
               ],
             ),
+            SizedBox(height: theme.spacing.sm),
+            ...<Widget>[
+              for (int index = 0; index < rows.length; index++) ...<Widget>[
+                if (index > 0) SizedBox(height: theme.spacing.xs),
+                _CompactDetailRow(
+                  label: rows[index].$1,
+                  value: rows[index].$2,
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactDetailRow extends StatelessWidget {
+  const _CompactDetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        SizedBox(
+          width: 96,
+          child: Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
+        ),
+        Expanded(
+          child: SelectableText(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: AppFontWeight.emphasis,
+            ),
+          ),
+        ),
       ],
+    );
+  }
+}
+
+class _PayNotifyCard extends StatelessWidget {
+  const _PayNotifyCard({
+    required this.title,
+    required this.guidance,
+    required this.adminContact,
+    required this.emailLabel,
+    required this.phoneLabel,
+    required this.whatsappLabel,
+  });
+
+  final String title;
+  final String guidance;
+  final PlatformAdminContact? adminContact;
+  final String emailLabel;
+  final String phoneLabel;
+  final String whatsappLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<(IconData, String, String)> chips = <(IconData, String, String)>[
+      if (adminContact?.email != null)
+        (Icons.mail_outline, emailLabel, adminContact!.email!),
+      if (adminContact?.phone != null)
+        (Icons.phone_outlined, phoneLabel, adminContact!.phone!),
+      if (adminContact?.whatsapp != null)
+        (Icons.chat_outlined, whatsappLabel, adminContact!.whatsapp!),
+    ];
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        border: theme.borders.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Icon(
+                  Icons.support_agent_outlined,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                SizedBox(width: theme.spacing.xs),
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: AppFontWeight.emphasis,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.xs),
+            Text(
+              guidance,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (chips.isNotEmpty) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  for (final (IconData icon, String label, String value)
+                      in chips)
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: theme.spacing.sm,
+                        vertical: theme.spacing.xs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(theme.radius.sm),
+                        border: theme.borders.all(
+                          color: colorScheme.outlineVariant,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Icon(icon, size: 16, color: colorScheme.primary),
+                          SizedBox(width: theme.spacing.xs),
+                          Text(
+                            '$label · ',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          SelectableText(
+                            value,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              fontWeight: AppFontWeight.emphasis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1172,7 +1413,6 @@ class _AdminContactSection extends StatelessWidget {
     required this.emailLabel,
     required this.phoneLabel,
     required this.whatsappLabel,
-    this.flat = false,
   });
 
   final PlatformAdminContact adminContact;
@@ -1181,7 +1421,6 @@ class _AdminContactSection extends StatelessWidget {
   final String emailLabel;
   final String phoneLabel;
   final String whatsappLabel;
-  final bool flat;
 
   @override
   Widget build(BuildContext context) {
@@ -1211,29 +1450,6 @@ class _AdminContactSection extends StatelessWidget {
         ),
     ];
 
-    if (flat) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Text(
-            title,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: AppFontWeight.emphasis,
-            ),
-          ),
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            body,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          ..._spaced(theme, contacts),
-        ],
-      );
-    }
-
     return AppSectionPanel(
       title: title,
       description: body,
@@ -1241,19 +1457,6 @@ class _AdminContactSection extends StatelessWidget {
       tone: AppWorkspaceStatusTone.info,
       children: contacts,
     );
-  }
-
-  List<Widget> _spaced(ThemeData theme, List<Widget> children) {
-    if (children.isEmpty) {
-      return children;
-    }
-    final List<Widget> spaced = <Widget>[children.first];
-    for (final Widget child in children.skip(1)) {
-      spaced
-        ..add(SizedBox(height: theme.spacing.sm))
-        ..add(child);
-    }
-    return spaced;
   }
 }
 

@@ -44585,6 +44585,12 @@ abstract class AppLocalizations {
   /// **'Pending registrations'**
   String get accessAdminPanelRegistrations;
 
+  /// Access admin subscription payment requests panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment requests'**
+  String get accessAdminPanelPayments;
+
   /// Access admin phone field label.
   ///
   /// In en, this message translates to:

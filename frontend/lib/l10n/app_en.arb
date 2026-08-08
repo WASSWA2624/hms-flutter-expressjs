@@ -31087,6 +31087,10 @@
   "@accessAdminPanelRegistrations": {
     "description": "Access admin pending tenant registrations panel label."
   },
+  "accessAdminPanelPayments": "Payment requests",
+  "@accessAdminPanelPayments": {
+    "description": "Access admin subscription payment requests panel label."
+  },
   "accessAdminPhoneLabel": "Phone",
   "@accessAdminPhoneLabel": {
     "description": "Access admin phone field label."
