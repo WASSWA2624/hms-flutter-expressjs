@@ -1,12 +1,43 @@
 /**
- * Resolve tenant / facility administrator contacts for staff escalation.
+ * Resolve tenant / facility / platform administrator contacts for staff
+ * escalation (subscription renewals, soft-delete recovery, etc.).
  *
- * Exposed on auth payloads so non-billing users can report subscription
- * expiry / renewal needs to the right administrators.
+ * Exposed on auth payloads so non-billing users can contact every admin in
+ * their hierarchy — not a capped sample.
  */
 
 const prisma = require('@prisma/client');
 const { ROLES } = require('@config/roles');
+const env = require('@config/env');
+
+const ADMIN_CONTACT_INCLUDE = Object.freeze({
+  role: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+  user: {
+    select: {
+      id: true,
+      email: true,
+      phone: true,
+      status: true,
+      profile: {
+        select: {
+          first_name: true,
+          middle_name: true,
+          last_name: true,
+        },
+      },
+    },
+  },
+});
+
+const ADMIN_CONTACT_ORDER = Object.freeze([
+  { created_at: 'asc' },
+  { id: 'asc' },
+]);
 
 const normalizeString = (value) => {
   if (value == null) {
@@ -16,10 +47,20 @@ const normalizeString = (value) => {
   return text.length > 0 ? text : null;
 };
 
+const normalizeEmail = (value) => {
+  const email = normalizeString(value);
+  return email ? email.toLowerCase() : null;
+};
+
 const buildFullName = (...parts) => {
   const tokens = parts.map(normalizeString).filter(Boolean);
   return tokens.length > 0 ? tokens.join(' ') : null;
 };
+
+const resolveEnvPlatformSupportContact = () => ({
+  email: String(env.PLATFORM_ADMIN_EMAIL || '').trim() || null,
+  phone: String(env.PLATFORM_ADMIN_PHONE || '').trim() || null,
+});
 
 const serializeAdminContact = (userRole = null) => {
   const user = userRole?.user;
@@ -51,12 +92,40 @@ const serializeAdminContact = (userRole = null) => {
   };
 };
 
+const dedupeContacts = (contacts = []) => {
+  const merged = [];
+  const seenIds = new Set();
+  const seenEmails = new Set();
+
+  for (const contact of contacts) {
+    if (!contact || typeof contact !== 'object') {
+      continue;
+    }
+    const id = normalizeString(contact.id);
+    const email = normalizeEmail(contact.email);
+    if (id && seenIds.has(id)) {
+      continue;
+    }
+    if (!id && email && seenEmails.has(email)) {
+      continue;
+    }
+    if (id) {
+      seenIds.add(id);
+    }
+    if (email) {
+      seenEmails.add(email);
+    }
+    merged.push(contact);
+  }
+
+  return merged;
+};
+
 const findAdminUserRoles = async ({
   tenantId,
   roleName,
   facilityId = null,
-  take = 3,
-}) => {
+} = {}) => {
   if (!tenantId || !roleName) {
     return [];
   }
@@ -74,43 +143,13 @@ const findAdminUserRoles = async ({
     },
   };
 
-  const include = {
-    role: {
-      select: {
-        id: true,
-        name: true,
-      },
-    },
-    user: {
-      select: {
-        id: true,
-        email: true,
-        phone: true,
-        status: true,
-        profile: {
-          select: {
-            first_name: true,
-            middle_name: true,
-            last_name: true,
-          },
-        },
-      },
-    },
-  };
-
-  const orderBy = [
-    { created_at: 'asc' },
-    { id: 'asc' },
-  ];
-
   if (!facilityId) {
     const rows = await prisma.user_role.findMany({
       where: baseWhere,
-      orderBy,
-      take,
-      include,
+      orderBy: ADMIN_CONTACT_ORDER,
+      include: ADMIN_CONTACT_INCLUDE,
     });
-    return rows.map(serializeAdminContact).filter(Boolean);
+    return dedupeContacts(rows.map(serializeAdminContact));
   }
 
   const [facilityScoped, tenantWide] = await Promise.all([
@@ -119,75 +158,122 @@ const findAdminUserRoles = async ({
         ...baseWhere,
         facility_id: facilityId,
       },
-      orderBy,
-      take,
-      include,
+      orderBy: ADMIN_CONTACT_ORDER,
+      include: ADMIN_CONTACT_INCLUDE,
     }),
     prisma.user_role.findMany({
       where: {
         ...baseWhere,
         facility_id: null,
       },
-      orderBy,
-      take,
-      include,
+      orderBy: ADMIN_CONTACT_ORDER,
+      include: ADMIN_CONTACT_INCLUDE,
     }),
   ]);
 
-  const merged = [];
-  const seen = new Set();
-  for (const row of [...facilityScoped, ...tenantWide]) {
-    const contact = serializeAdminContact(row);
-    if (!contact?.id || seen.has(contact.id)) {
-      continue;
-    }
-    seen.add(contact.id);
-    merged.push(contact);
-    if (merged.length >= take) {
-      break;
-    }
+  return dedupeContacts(
+    [...facilityScoped, ...tenantWide].map(serializeAdminContact)
+  );
+};
+
+const findPlatformAdminContacts = async () => {
+  const rows = await prisma.user_role.findMany({
+    where: {
+      deleted_at: null,
+      role: {
+        deleted_at: null,
+        name: ROLES.SUPER_ADMIN,
+      },
+      user: {
+        deleted_at: null,
+        status: 'ACTIVE',
+      },
+    },
+    orderBy: ADMIN_CONTACT_ORDER,
+    include: ADMIN_CONTACT_INCLUDE,
+  });
+
+  return dedupeContacts(rows.map(serializeAdminContact));
+};
+
+const appendEnvPlatformSupportContact = (contacts = []) => {
+  const envContact = resolveEnvPlatformSupportContact();
+  const email = normalizeString(envContact?.email);
+  const phone = normalizeString(envContact?.phone);
+  if (!email && !phone) {
+    return contacts;
   }
-  return merged;
+
+  const emailKey = normalizeEmail(email);
+  const alreadyListed = contacts.some((contact) => {
+    const contactEmail = normalizeEmail(contact.email);
+    const contactPhone = normalizeString(contact.phone);
+    return (
+      (emailKey && contactEmail === emailKey) ||
+      (phone && contactPhone === phone)
+    );
+  });
+  if (alreadyListed) {
+    return contacts;
+  }
+
+  return [
+    ...contacts,
+    {
+      id: null,
+      full_name: null,
+      email,
+      phone,
+      role_name: 'PLATFORM_SUPPORT',
+      is_support_channel: true,
+    },
+  ];
 };
 
 /**
  * @param {Object} params
  * @param {string} params.tenantId
  * @param {string|null} [params.facilityId]
- * @returns {Promise<{ tenant_admins: Object[], facility_admins: Object[] }>}
+ * @returns {Promise<{
+ *   tenant_admins: Object[],
+ *   facility_admins: Object[],
+ *   platform_admins: Object[],
+ * }>}
  */
 const resolveOrgAdminContacts = async ({
   tenantId,
   facilityId = null,
 } = {}) => {
-  if (!tenantId) {
-    return {
-      tenant_admins: [],
-      facility_admins: [],
-    };
-  }
-
-  const [tenant_admins, facility_admins] = await Promise.all([
-    findAdminUserRoles({
-      tenantId,
-      roleName: ROLES.TENANT_ADMIN,
-      take: 3,
-    }),
-    findAdminUserRoles({
-      tenantId,
-      roleName: ROLES.FACILITY_ADMIN,
-      facilityId: facilityId || null,
-      take: 3,
-    }),
-  ]);
+  const [tenant_admins, facility_admins, platformUserAdmins] = await Promise.all(
+    [
+      tenantId
+        ? findAdminUserRoles({
+            tenantId,
+            roleName: ROLES.TENANT_ADMIN,
+          })
+        : Promise.resolve([]),
+      tenantId
+        ? findAdminUserRoles({
+            tenantId,
+            roleName: ROLES.FACILITY_ADMIN,
+            facilityId: facilityId || null,
+          })
+        : Promise.resolve([]),
+      findPlatformAdminContacts(),
+    ]
+  );
 
   return {
     tenant_admins,
     facility_admins,
+    platform_admins: appendEnvPlatformSupportContact(platformUserAdmins),
   };
 };
 
 module.exports = {
   resolveOrgAdminContacts,
   serializeAdminContact,
+  findAdminUserRoles,
+  findPlatformAdminContacts,
+  appendEnvPlatformSupportContact,
 };

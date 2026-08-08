@@ -15,6 +15,7 @@ class SubscriptionExpiredPromptHost extends StatefulWidget {
     required this.summary,
     required this.platformAdminContact,
     required this.child,
+    this.platformAdminContacts = const <OrgAdminContact>[],
     this.tenantAdminContacts = const <OrgAdminContact>[],
     this.facilityAdminContacts = const <OrgAdminContact>[],
     this.canManageBilling = false,
@@ -24,6 +25,7 @@ class SubscriptionExpiredPromptHost extends StatefulWidget {
 
   final TenantSubscriptionSummary? summary;
   final PlatformAdminContact? platformAdminContact;
+  final List<OrgAdminContact> platformAdminContacts;
   final List<OrgAdminContact> tenantAdminContacts;
   final List<OrgAdminContact> facilityAdminContacts;
   final Widget child;
@@ -97,6 +99,7 @@ class _SubscriptionExpiredPromptHostState
         headerState: summary.headerState,
         tenantAdmins: widget.tenantAdminContacts,
         facilityAdmins: widget.facilityAdminContacts,
+        platformAdmins: widget.platformAdminContacts,
         platformAdminContact: widget.platformAdminContact,
       );
       if (mounted) {

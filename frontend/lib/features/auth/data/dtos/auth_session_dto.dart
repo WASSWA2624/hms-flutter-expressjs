@@ -15,6 +15,7 @@ final class AuthSessionDto {
     this.moduleEntitlements = const <AppModuleEntitlement>[],
     this.subscriptionSummary,
     this.platformAdminContact,
+    this.platformAdminContacts = const <OrgAdminContact>[],
     this.tenantAdminContacts = const <OrgAdminContact>[],
     this.facilityAdminContacts = const <OrgAdminContact>[],
   });
@@ -54,6 +55,9 @@ final class AuthSessionDto {
       platformAdminContact: userMap == null
           ? null
           : platformAdminContactFromResponseData(userMap),
+      platformAdminContacts: userMap == null
+          ? const <OrgAdminContact>[]
+          : platformAdminContactsFromResponseData(userMap),
       tenantAdminContacts: userMap == null
           ? const <OrgAdminContact>[]
           : orgAdminContactsFromResponseData(
@@ -79,6 +83,7 @@ final class AuthSessionDto {
   final List<AppModuleEntitlement> moduleEntitlements;
   final TenantSubscriptionSummary? subscriptionSummary;
   final PlatformAdminContact? platformAdminContact;
+  final List<OrgAdminContact> platformAdminContacts;
   final List<OrgAdminContact> tenantAdminContacts;
   final List<OrgAdminContact> facilityAdminContacts;
 
@@ -97,6 +102,7 @@ final class AuthSessionDto {
       platformAdminContact: platformAdminContact,
       isAuthorizationHydrated: true,
       isModuleCatalogHydrated: true,
+      platformAdminContacts: platformAdminContacts,
       tenantAdminContacts: tenantAdminContacts,
       facilityAdminContacts: facilityAdminContacts,
     );
@@ -196,6 +202,40 @@ final class AuthSessionDto {
       contactMap,
     );
     return parsed.hasContact ? parsed : null;
+  }
+
+  static List<OrgAdminContact> platformAdminContactsFromResponseData(
+    Object? data,
+  ) {
+    final Map<String, Object?>? map = _asStringKeyedMap(data);
+    if (map == null) {
+      return const <OrgAdminContact>[];
+    }
+
+    final List<OrgAdminContact> listed = orgAdminContactsFromResponseData(
+      map,
+      'platform_admin_contacts',
+      'platformAdminContacts',
+    );
+    if (listed.isNotEmpty) {
+      return listed;
+    }
+
+    // Legacy payloads only expose the singular env support contact.
+    final PlatformAdminContact? legacy = platformAdminContactFromResponseData(
+      map,
+    );
+    if (legacy == null || !legacy.hasContact) {
+      return const <OrgAdminContact>[];
+    }
+    return <OrgAdminContact>[
+      OrgAdminContact(
+        email: legacy.email,
+        phone: legacy.phone,
+        roleName: 'PLATFORM_SUPPORT',
+        isSupportChannel: true,
+      ),
+    ];
   }
 
   static List<OrgAdminContact> orgAdminContactsFromResponseData(

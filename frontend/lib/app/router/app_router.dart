@@ -899,6 +899,8 @@ class _AppShell extends ConsumerWidget {
     return SubscriptionExpiredPromptHost(
       summary: session?.subscriptionSummary,
       platformAdminContact: session?.platformAdminContact,
+      platformAdminContacts:
+          session?.platformAdminContacts ?? const <OrgAdminContact>[],
       tenantAdminContacts:
           session?.tenantAdminContacts ?? const <OrgAdminContact>[],
       facilityAdminContacts:
@@ -1088,6 +1090,7 @@ Widget? _subscriptionHeaderAction({
           headerState: summary.headerState,
           tenantAdmins: session.tenantAdminContacts,
           facilityAdmins: session.facilityAdminContacts,
+          platformAdmins: session.platformAdminContacts,
           platformAdminContact: session.platformAdminContact,
         ),
       );

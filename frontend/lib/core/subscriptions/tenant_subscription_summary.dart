@@ -61,6 +61,7 @@ final class OrgAdminContact {
     this.email,
     this.phone,
     this.roleName,
+    this.isSupportChannel = false,
   });
 
   final String? id;
@@ -68,6 +69,9 @@ final class OrgAdminContact {
   final String? email;
   final String? phone;
   final String? roleName;
+
+  /// Env / ops support channel (not a named user account).
+  final bool isSupportChannel;
 
   bool get hasContact =>
       (fullName?.trim().isNotEmpty ?? false) ||
@@ -92,6 +96,12 @@ final class OrgAdminContact {
     if (json == null) {
       return const OrgAdminContact();
     }
+    final String? roleName =
+        _string(json['role_name']) ?? _string(json['roleName']);
+    final bool supportChannel =
+        json['is_support_channel'] == true ||
+        json['isSupportChannel'] == true ||
+        (roleName?.toUpperCase() == 'PLATFORM_SUPPORT');
     return OrgAdminContact(
       id: _string(json['id']),
       fullName:
@@ -100,7 +110,8 @@ final class OrgAdminContact {
           _composeName(json),
       email: _string(json['email']),
       phone: _string(json['phone']),
-      roleName: _string(json['role_name']) ?? _string(json['roleName']),
+      roleName: roleName,
+      isSupportChannel: supportChannel,
     );
   }
 

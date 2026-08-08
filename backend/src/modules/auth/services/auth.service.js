@@ -215,6 +215,7 @@ const enrichAuthUserPayload = async (user = {}) => {
     module_entitlements,
     subscription_summary,
     platform_admin_contact: resolvePlatformAdminContact(),
+    platform_admin_contacts: orgAdminContacts.platform_admins,
     tenant_admin_contacts: orgAdminContacts.tenant_admins,
     facility_admin_contacts: orgAdminContacts.facility_admins,
   };

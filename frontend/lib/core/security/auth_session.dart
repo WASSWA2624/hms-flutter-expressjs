@@ -16,6 +16,8 @@ final class AuthSession {
     this.platformAdminContact,
     this.isAuthorizationHydrated = false,
     this.isModuleCatalogHydrated = false,
+    Iterable<OrgAdminContact> platformAdminContacts =
+        const <OrgAdminContact>[],
     Iterable<OrgAdminContact> tenantAdminContacts = const <OrgAdminContact>[],
     Iterable<OrgAdminContact> facilityAdminContacts = const <OrgAdminContact>[],
   }) : subject =
@@ -27,6 +29,9 @@ final class AuthSession {
          for (final entitlement in moduleEntitlements)
            entitlement.normalizedCode: entitlement,
        }),
+       platformAdminContacts = List<OrgAdminContact>.unmodifiable(
+         platformAdminContacts,
+       ),
        tenantAdminContacts = List<OrgAdminContact>.unmodifiable(
          tenantAdminContacts,
        ),
@@ -66,6 +71,7 @@ final class AuthSession {
   /// True after `/auth/me` (or an equivalent profile enrich) has applied plan
   /// modules — even when the resulting catalog is empty.
   final bool isModuleCatalogHydrated;
+  final List<OrgAdminContact> platformAdminContacts;
   final List<OrgAdminContact> tenantAdminContacts;
   final List<OrgAdminContact> facilityAdminContacts;
 
@@ -99,6 +105,7 @@ final class AuthSession {
     PlatformAdminContact? platformAdminContact,
     bool? isAuthorizationHydrated,
     bool? isModuleCatalogHydrated,
+    Iterable<OrgAdminContact>? platformAdminContacts,
     Iterable<OrgAdminContact>? tenantAdminContacts,
     Iterable<OrgAdminContact>? facilityAdminContacts,
   }) {
@@ -114,6 +121,8 @@ final class AuthSession {
           isAuthorizationHydrated ?? this.isAuthorizationHydrated,
       isModuleCatalogHydrated:
           isModuleCatalogHydrated ?? this.isModuleCatalogHydrated,
+      platformAdminContacts:
+          platformAdminContacts ?? this.platformAdminContacts,
       tenantAdminContacts: tenantAdminContacts ?? this.tenantAdminContacts,
       facilityAdminContacts:
           facilityAdminContacts ?? this.facilityAdminContacts,

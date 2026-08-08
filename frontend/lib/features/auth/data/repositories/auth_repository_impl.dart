@@ -305,6 +305,8 @@ final class AuthRepositoryImpl implements AuthRepository {
               AuthSessionDto.subscriptionSummaryFromResponseData(payload);
           final platformAdminContact =
               AuthSessionDto.platformAdminContactFromResponseData(payload);
+          final platformAdminContacts =
+              AuthSessionDto.platformAdminContactsFromResponseData(payload);
           final tenantAdminContacts =
               AuthSessionDto.orgAdminContactsFromResponseData(
                 payload,
@@ -342,6 +344,7 @@ final class AuthRepositoryImpl implements AuthRepository {
             );
           }
           enriched = enriched.copyWith(
+            platformAdminContacts: platformAdminContacts,
             tenantAdminContacts: tenantAdminContacts,
             facilityAdminContacts: facilityAdminContacts,
           );

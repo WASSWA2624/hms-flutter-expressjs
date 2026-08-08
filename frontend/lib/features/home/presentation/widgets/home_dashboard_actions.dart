@@ -1439,6 +1439,7 @@ Future<void> homeOpenTenantSubscriptionSurface(
     headerState: summary.headerState,
     tenantAdmins: session?.tenantAdminContacts ?? const <OrgAdminContact>[],
     facilityAdmins: session?.facilityAdminContacts ?? const <OrgAdminContact>[],
+    platformAdmins: session?.platformAdminContacts ?? const <OrgAdminContact>[],
     platformAdminContact: session?.platformAdminContact,
   );
 }
