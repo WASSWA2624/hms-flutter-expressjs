@@ -15223,7 +15223,7 @@ abstract class AppLocalizations {
   /// Link and action label to start password reset.
   ///
   /// In en, this message translates to:
-  /// **'Forgot password?'**
+  /// **'Reset password'**
   String get authForgotPasswordActionLabel;
 
   /// Submit action on forgot password form.

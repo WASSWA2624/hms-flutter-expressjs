@@ -31,6 +31,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(l10n.authBackToLoginActionLabel), findsOneWidget);
+      expect(find.text(l10n.authForgotPasswordActionLabel), findsOneWidget);
       expect(find.text(l10n.authHowToRegisterActionLabel), findsOneWidget);
       expect(find.textContaining(l10n.authTenantNameLabel), findsNothing);
       expect(find.textContaining(l10n.authFacilityNameLabel), findsOneWidget);
@@ -100,6 +101,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('login'), findsOneWidget);
+  });
+
+  testWidgets('Reset password opens forgot-password', (
+    WidgetTester tester,
+  ) async {
+    await _pumpRegister(tester, const _IdleRegisterRepository());
+    final l10n = tester.element(find.byType(RegisterPage)).l10n;
+
+    await tester.tap(find.text(l10n.authForgotPasswordActionLabel));
+    await tester.pumpAndSettle();
+
+    expect(find.text('forgot-password'), findsOneWidget);
   });
 
   testWidgets('validation failure stays on register', (
@@ -245,6 +258,10 @@ Future<void> _pumpRegister(
             ),
           );
         },
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (_, _) => const Scaffold(body: Text('forgot-password')),
       ),
       GoRoute(
         path: '/verify-email',

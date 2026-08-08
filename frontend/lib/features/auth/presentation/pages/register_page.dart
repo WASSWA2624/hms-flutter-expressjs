@@ -247,6 +247,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   SizedBox(width: theme.spacing.sm),
                   Flexible(
                     child: AuthTextLink(
+                      label: l10n.authForgotPasswordActionLabel,
+                      onPressed: state.isSubmitting
+                          ? null
+                          : () =>
+                              context.go(AppRoutes.forgotPassword.location()),
+                    ),
+                  ),
+                  SizedBox(width: theme.spacing.sm),
+                  Flexible(
+                    child: AuthTextLink(
                       label: l10n.authHowToRegisterActionLabel,
                       onPressed: state.isSubmitting
                           ? null

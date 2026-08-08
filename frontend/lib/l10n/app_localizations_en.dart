@@ -8274,7 +8274,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter your facility account email. If it matches an account, we send reset instructions.';
 
   @override
-  String get authForgotPasswordActionLabel => 'Forgot password?';
+  String get authForgotPasswordActionLabel => 'Reset password';
 
   @override
   String get authForgotPasswordSubmitLabel => 'Send reset instructions';

@@ -10510,7 +10510,7 @@
   "@authForgotPasswordBody": {
     "description": "Forgot password page body."
   },
-  "authForgotPasswordActionLabel": "Forgot password?",
+  "authForgotPasswordActionLabel": "Reset password",
   "@authForgotPasswordActionLabel": {
     "description": "Link and action label to start password reset."
   },
