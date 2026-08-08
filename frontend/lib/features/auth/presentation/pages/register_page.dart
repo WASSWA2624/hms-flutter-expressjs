@@ -232,17 +232,28 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 isLoading: state.isSubmitting,
                 onPressed: _submit,
               ),
-              AuthTextLink(
-                label: l10n.authBackToLoginActionLabel,
-                onPressed: state.isSubmitting
-                    ? null
-                    : () => context.go(AppRoutes.login.location()),
-              ),
-              AuthTextLink(
-                label: l10n.authHowToRegisterActionLabel,
-                onPressed: state.isSubmitting
-                    ? null
-                    : () => showAuthRegistrationGuideDialog(context),
+              SizedBox(height: theme.spacing.sm),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Flexible(
+                    child: AuthTextLink(
+                      label: l10n.authBackToLoginActionLabel,
+                      onPressed: state.isSubmitting
+                          ? null
+                          : () => context.go(AppRoutes.login.location()),
+                    ),
+                  ),
+                  SizedBox(width: theme.spacing.sm),
+                  Flexible(
+                    child: AuthTextLink(
+                      label: l10n.authHowToRegisterActionLabel,
+                      onPressed: state.isSubmitting
+                          ? null
+                          : () => showAuthRegistrationGuideDialog(context),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
