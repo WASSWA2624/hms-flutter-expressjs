@@ -218,7 +218,7 @@ final class AccessAdminItemDto {
     );
 
     return AccessAdminItem(
-      id: _publicId(json),
+      id: _itemId(json),
       resource: resource,
       displayId: _string(
         json['display_id'] ??
@@ -278,6 +278,17 @@ final class AccessAdminItemDto {
       updatedAt: _dateTime(json['updated_at']),
       deletedAt: _dateTime(json['deleted_at']),
     );
+  }
+
+  /// Mutation / detail IDs. Registration activate/reject expect the **user**
+  /// public id (`id` / `user_id`), not the follow-up worklist `display_id`.
+  String _itemId(Map<String, dynamic> source) {
+    if (resource == AccessAdminResource.registrationFollowUps) {
+      return _string(
+        source['user_id'] ?? source['id'] ?? source['display_id'],
+      );
+    }
+    return _publicId(source);
   }
 
   String _titleForResource() {

@@ -181,7 +181,7 @@ class _ManageSubscriptionApprovalsPanelState
 
     setState(() => _mutating = true);
     final Result<void> result = await _repository.activateRegistration(
-      item.effectiveDisplayId,
+      item.id,
     );
     if (!mounted) {
       return;
@@ -232,7 +232,7 @@ class _ManageSubscriptionApprovalsPanelState
 
     setState(() => _mutating = true);
     final Result<void> result = await _repository.rejectRegistration(
-      item.effectiveDisplayId,
+      item.id,
     );
     if (!mounted) {
       return;

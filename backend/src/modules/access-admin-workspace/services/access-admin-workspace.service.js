@@ -1008,10 +1008,23 @@ const resolveLegacyRoute = async (resource, identifier) => {
 };
 
 const loadRegistrationUser = async (userIdentifier) => {
-  const scopedUser = await repository.findUserByIdentifier(userIdentifier, {
+  let scopedUser = await repository.findUserByIdentifier(userIdentifier, {
     tenant_id: null,
     facility_id: null,
   });
+
+  // Clients may send the registration follow-up display id; resolve to the user.
+  if (!scopedUser?.id) {
+    const linkedUserId = await repository.findRegistrationFollowUpUserId(
+      userIdentifier,
+    );
+    if (linkedUserId) {
+      scopedUser = await repository.findUserByIdentifier(linkedUserId, {
+        tenant_id: null,
+        facility_id: null,
+      });
+    }
+  }
 
   if (!scopedUser?.id) {
     throw new HttpError('errors.auth.registration_not_pending', 404);

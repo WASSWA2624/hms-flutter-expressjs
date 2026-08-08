@@ -164,7 +164,7 @@ void main() {
   });
 
   testWidgets(
-    'pending approval stays on login with approval guidance',
+    'pending approval stays on login with approval guidance dialog',
     (WidgetTester tester) async {
       final repository = _FailingLoginRepository(
         failure: AppFailure.forbidden(
@@ -177,8 +177,13 @@ void main() {
       await _pumpLogin(tester, repository);
       final l10n = tester.element(find.byType(LoginPage)).l10n;
       await _submitLogin(tester);
+      await tester.pumpAndSettle();
 
       expect(find.byType(LoginPage), findsOneWidget);
+      expect(
+        find.text(l10n.authAccountPendingApprovalTitle.toUpperCase()),
+        findsOneWidget,
+      );
       expect(
         find.textContaining(l10n.authAccountPendingApprovalMessage),
         findsOneWidget,
@@ -189,6 +194,7 @@ void main() {
       );
       expect(find.textContaining('admin@hosspi.com'), findsOneWidget);
       expect(find.textContaining('+256700000000'), findsOneWidget);
+      expect(find.text('Access denied'), findsNothing);
     },
   );
 

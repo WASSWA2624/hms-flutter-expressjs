@@ -487,7 +487,7 @@ void main() {
       await tester.tap(activateButton.first);
       await tester.pumpAndSettle();
 
-      verify(() => repository.activateRegistration('REG-1')).called(1);
+      verify(() => repository.activateRegistration('reg-1')).called(1);
       verify(() => repository.getWorkspace(any())).called(greaterThan(1));
       expect(find.text(l10n.accessAdminEmptyTitle), findsOneWidget);
     });
@@ -532,7 +532,7 @@ void main() {
       await tester.tap(find.text(l10n.accessAdminRejectRegistrationAction));
       await tester.pumpAndSettle();
 
-      verify(() => repository.rejectRegistration('REG-1')).called(1);
+      verify(() => repository.rejectRegistration('reg-1')).called(1);
       expect(find.text(l10n.accessAdminEmptyTitle), findsOneWidget);
     });
 

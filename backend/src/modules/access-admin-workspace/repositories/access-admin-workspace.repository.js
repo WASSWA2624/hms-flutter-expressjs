@@ -692,6 +692,26 @@ const findUserByIdentifier = async (identifier, scope = {}) => {
   }
 };
 
+const findRegistrationFollowUpUserId = async (identifier) => {
+  try {
+    const followUpId = await resolveIdentifierForFilter({
+      value: identifier,
+      model: 'registration_follow_up',
+    });
+    if (!followUpId) {
+      return null;
+    }
+
+    const followUp = await prisma.registration_follow_up.findFirst({
+      where: { id: followUpId, deleted_at: null },
+      select: { user_id: true },
+    });
+    return followUp?.user_id || null;
+  } catch (error) {
+    mapError(error);
+  }
+};
+
 const findLookups = async (
   scope = {},
   includeAllTenants = false,
@@ -805,6 +825,7 @@ module.exports = {
   findRoles,
   findSummary,
   findUserByIdentifier,
+  findRegistrationFollowUpUserId,
   findUserRoles,
   findUsers,
   isDemoUser,

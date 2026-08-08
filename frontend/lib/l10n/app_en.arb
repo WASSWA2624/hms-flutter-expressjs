@@ -10308,6 +10308,10 @@
   "@authEmailVerifiedAwaitingApprovalBody": {
     "description": "Email verification success body when platform approval is still required."
   },
+  "authAccountPendingApprovalTitle": "Account pending approval",
+  "@authAccountPendingApprovalTitle": {
+    "description": "Dialog title when sign-in is blocked until platform admin approval."
+  },
   "authAccountPendingApprovalMessage": "Your account is awaiting platform admin approval before you can sign in.",
   "@authAccountPendingApprovalMessage": {
     "description": "Login failure message when email is verified but platform approval is pending."

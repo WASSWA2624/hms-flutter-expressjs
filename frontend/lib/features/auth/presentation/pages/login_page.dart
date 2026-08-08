@@ -6,10 +6,12 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/config/app_config.dart';
 import 'package:hosspi_hms/core/config/app_config_provider.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/validation_message_presenter.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_pending_approval_dialog.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_primary_button.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_registration_guide_dialog.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
@@ -33,9 +35,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _identifierFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
-  bool _showEmailVerifiedNotice = false;
-  List<AuthPlatformAdminContact> _verifiedNoticeContacts =
-      const <AuthPlatformAdminContact>[];
 
   @override
   void initState() {
@@ -68,10 +67,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         );
       } else if (showEmailVerified) {
         auth.clearEmailVerificationCompleted();
-        setState(() {
-          _showEmailVerifiedNotice = true;
-          _verifiedNoticeContacts = verifiedContacts;
-        });
+        final AppConfig config = ref.read(appConfigProvider);
+        _openPendingApprovalDialog(
+          contacts: _resolvedContacts(verifiedContacts, config),
+          emailJustVerified: true,
+        );
       }
     });
   }
@@ -90,7 +90,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final l10n = context.l10n;
     final state = ref.watch(authControllerProvider);
     final theme = Theme.of(context);
-    final AppConfig config = ref.watch(appConfigProvider);
+    final bool showInlineFailure =
+        state.failure != null &&
+        state.failure!.code != 'auth.account_pending_approval';
 
     return AuthPageFrame(
       title: l10n.authLoginTitle,
@@ -103,19 +105,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              if (_showEmailVerifiedNotice) ...<Widget>[
-                AppFormInformationBanner.message(
-                  title: l10n.authEmailVerifiedTitle,
-                  message: ValidationMessagePresenter.pendingApprovalMessage(
-                    l10n,
-                    emailJustVerified: true,
-                    contacts: _resolvedNoticeContacts(config),
-                  ),
-                  variant: AppFormInformationVariant.info,
-                ),
-                SizedBox(height: theme.spacing.md),
-              ],
-              if (state.failure != null) ...<Widget>[
+              if (showInlineFailure) ...<Widget>[
                 AppFormInformationBanner.failure(
                   context: context,
                   failure: state.failure!,
@@ -192,9 +182,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
-  List<AuthPlatformAdminContact> _resolvedNoticeContacts(AppConfig config) {
-    if (_verifiedNoticeContacts.isNotEmpty) {
-      return _verifiedNoticeContacts;
+  List<AuthPlatformAdminContact> _resolvedContacts(
+    List<AuthPlatformAdminContact> contacts,
+    AppConfig config,
+  ) {
+    final List<AuthPlatformAdminContact> resolved = contacts
+        .where((AuthPlatformAdminContact contact) => contact.hasContactDetails)
+        .toList(growable: false);
+    if (resolved.isNotEmpty) {
+      return resolved;
     }
 
     final AuthPlatformAdminContact fallback = AuthPlatformAdminContact(
@@ -206,6 +202,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       return <AuthPlatformAdminContact>[fallback];
     }
     return const <AuthPlatformAdminContact>[];
+  }
+
+  Future<void> _openPendingApprovalDialog({
+    required List<AuthPlatformAdminContact> contacts,
+    bool emailJustVerified = false,
+  }) {
+    return showAuthPendingApprovalDialog(
+      context,
+      contacts: contacts,
+      emailJustVerified: emailJustVerified,
+    );
   }
 
   Future<void> _submit() async {
@@ -229,7 +236,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
 
     if (!success) {
-      final failure = ref.read(authControllerProvider).failure;
+      final AppFailure? failure = ref.read(authControllerProvider).failure;
       if (failure?.code == 'auth.account_pending') {
         final identifier = _identifierController.text.trim();
         context.go(
@@ -241,12 +248,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           ),
         );
       } else if (failure?.code == 'auth.account_pending_approval') {
-        // Stay on login — failure banner explains approval is pending.
-        if (_showEmailVerifiedNotice) {
-          setState(() {
-            _showEmailVerifiedNotice = false;
-          });
-        }
+        final AppConfig config = ref.read(appConfigProvider);
+        final List<AuthPlatformAdminContact> contacts = _resolvedContacts(
+          ValidationMessagePresenter.platformAdminContactsFromDetail(
+            failure?.detailMessage,
+          ),
+          config,
+        );
+        ref.read(authControllerProvider.notifier).clearFailure();
+        await _openPendingApprovalDialog(contacts: contacts);
       }
       return;
     }

@@ -14944,6 +14944,12 @@ abstract class AppLocalizations {
   /// **'Email verified. A platform admin must approve your account before you can sign in.'**
   String get authEmailVerifiedAwaitingApprovalBody;
 
+  /// Dialog title when sign-in is blocked until platform admin approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Account pending approval'**
+  String get authAccountPendingApprovalTitle;
+
   /// Login failure message when email is verified but platform approval is pending.
   ///
   /// In en, this message translates to:

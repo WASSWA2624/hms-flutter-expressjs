@@ -568,13 +568,13 @@ final class AccessAdminWorkspaceController
 
   Future<AppFailure?> activateRegistration(AccessAdminItem item) {
     return _submitAction(
-      () => _repository.activateRegistration(item.effectiveDisplayId),
+      () => _repository.activateRegistration(item.id),
     );
   }
 
   Future<AppFailure?> rejectRegistration(AccessAdminItem item) {
     return _submitAction(
-      () => _repository.rejectRegistration(item.effectiveDisplayId),
+      () => _repository.rejectRegistration(item.id),
     );
   }
 

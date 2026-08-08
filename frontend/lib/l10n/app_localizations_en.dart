@@ -8114,6 +8114,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Email verified. A platform admin must approve your account before you can sign in.';
 
   @override
+  String get authAccountPendingApprovalTitle => 'Account pending approval';
+
+  @override
   String get authAccountPendingApprovalMessage =>
       'Your account is awaiting platform admin approval before you can sign in.';
 
