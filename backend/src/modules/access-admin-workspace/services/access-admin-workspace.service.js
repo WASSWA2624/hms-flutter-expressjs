@@ -137,6 +137,7 @@ const ADMIN_WRITE_PERMISSIONS = new Set([
   PERMISSIONS.PLATFORM_ADMIN,
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.HR_WRITE,
 ]);
 
 const canWriteAccess = (user = {}) => {
@@ -146,6 +147,7 @@ const canWriteAccess = (user = {}) => {
     ROLES.TENANT_ADMIN,
     ROLES.FACILITY_ADMIN,
     ROLES.OPERATIONS,
+    ROLES.HR,
   ]);
   return (
     roleList(user).some((entry) => writeRoles.has(entry)) ||

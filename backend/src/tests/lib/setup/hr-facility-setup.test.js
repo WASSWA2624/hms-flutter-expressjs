@@ -27,16 +27,24 @@ describe('hr-facility-setup policy', () => {
       { id: 'tenant' },
       { id: 'department' },
       { id: 'unit' },
-      { id: 'user' }];
+      { id: 'user' },
+      { id: 'role' },
+      { id: 'permission' }];
 
     expect(filterSetupModulesForUser(modules, hrUser).map((entry) => entry.id)).toEqual(
-      HR_FACILITY_SETUP_MODULE_IDS,
+      ['user', 'role', 'permission'],
     );
-    expect(filterSetupModulesForUser(modules, facilityAdminUser)).toHaveLength(4);
+    expect(HR_FACILITY_SETUP_MODULE_IDS).toEqual(
+      expect.arrayContaining(['user', 'role', 'permission']),
+    );
+    expect(filterSetupModulesForUser(modules, facilityAdminUser)).toHaveLength(6);
   });
 
   it('allows HR write only on HR facility setup modules', () => {
-    expect(canWriteSetupModule(hrUser, 'department')).toBe(true);
+    expect(canWriteSetupModule(hrUser, 'user')).toBe(true);
+    expect(canWriteSetupModule(hrUser, 'role')).toBe(true);
+    expect(canWriteSetupModule(hrUser, 'permission')).toBe(true);
+    expect(canWriteSetupModule(hrUser, 'department')).toBe(false);
     expect(canWriteSetupModule(hrUser, 'tenant')).toBe(false);
     expect(canWriteSetupModule(facilityAdminUser, 'tenant')).toBe(true);
   });

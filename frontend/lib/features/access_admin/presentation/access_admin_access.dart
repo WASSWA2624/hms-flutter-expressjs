@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -159,8 +158,8 @@ bool canMutateAccessAdminDemo(
   return canWriteAccessAdmin(policy, workspaceCanWrite: workspaceCanWrite);
 }
 
-/// Effective write gate: matrix ∩ `tenant:admin` and workspace `canWrite`.
-/// Elevated actors also qualify when the workspace reports `canWrite`.
+/// Effective write gate: matrix ∩ `tenant:admin`, HR `hr:write`, or elevated —
+/// intersected with workspace `canWrite`.
 bool canWriteAccessAdmin(
   AppAccessPolicy policy, {
   bool workspaceCanWrite = true,
@@ -168,7 +167,14 @@ bool canWriteAccessAdmin(
   if (!workspaceCanWrite) {
     return false;
   }
-  return accessAdminWriteRequirement.isAllowed(policy) || policy.isElevated;
+  if (policy.isElevated) {
+    return true;
+  }
+  if (accessAdminWriteRequirement.isAllowed(policy)) {
+    return true;
+  }
+  // HR manages users/roles/permissions from Facility setup with full rights.
+  return policy.grants(AppPermissions.hrWrite);
 }
 
 /// Demo password reset: same write ∩ gate plus workspace demo-reset flag.

@@ -1143,6 +1143,7 @@ final class AppAccessPolicy {
       AppRole.hr => const <AppPermission>[
         AppPermissions.hrRead,
         AppPermissions.hrWrite,
+        AppPermissions.setupRead,
         AppPermissions.unitRead,
         AppPermissions.unitManage,
         AppPermissions.rosterRead,

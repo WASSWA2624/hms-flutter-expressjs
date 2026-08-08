@@ -217,11 +217,12 @@ void main() {
       expect(canAccess(AppRoutes.patients, policy), isFalse);
     });
 
-    test('hr sees hr workspace and reports but not admin setup', () {
+    test('hr sees hr workspace, facility setup (access tabs), and reports', () {
       final policy = policyForRole('HR');
 
       expect(canAccess(AppRoutes.hr, policy), isTrue);
-      expect(canAccess(AppRoutes.tenantFacilitySetup, policy), isFalse);
+      expect(canAccess(AppRoutes.tenantFacilitySetup, policy), isTrue);
+      expect(canAccess(AppRoutes.accessAdmin, policy), isFalse);
       expect(canAccess(AppRoutes.reports, policy), isTrue);
       expect(canAccess(AppRoutes.patients, policy), isFalse);
     });

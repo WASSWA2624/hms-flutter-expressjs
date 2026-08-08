@@ -52,7 +52,7 @@ describe('settings-workspace service', () => {
     expect(result.state).toBe('ready');
     expect(result.summary_cards).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: 'organization', total_modules: 10 })])
+        expect.objectContaining({ id: 'organization', total_modules: 9 })])
     );
     expect(result.module_groups).toEqual(
       expect.arrayContaining([
@@ -108,7 +108,14 @@ describe('settings-workspace service', () => {
       .flatMap((group) => group.modules)
       .map((module) => module.module_id);
 
-    expect(moduleIds).toEqual(['department', 'unit']);
-    expect(result.stats.total_modules).toBe(2);
+    expect(moduleIds).toEqual([
+      'user',
+      'user-profile',
+      'role',
+      'permission',
+      'role-permission',
+      'user-role',
+    ]);
+    expect(result.stats.total_modules).toBe(6);
   });
 });

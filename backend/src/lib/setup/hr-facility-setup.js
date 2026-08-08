@@ -1,7 +1,14 @@
 const { ROLES } = require('@config/roles');
 const { PERMISSIONS } = require('@config/permissions');
 
-const HR_FACILITY_SETUP_MODULE_IDS = Object.freeze(['department', 'unit']);
+const HR_FACILITY_SETUP_MODULE_IDS = Object.freeze([
+  'user',
+  'role',
+  'permission',
+  'role-permission',
+  'user-role',
+  'user-profile',
+]);
 
 const ADMIN_SETUP_ROLES = Object.freeze([
   ROLES.PLATFORM_ADMIN,

@@ -89,7 +89,7 @@ void main() {
       );
     });
 
-    test('HR role alone cannot manage facility or see setup desk sections', () {
+    test('HR role can open access tabs but not facility structure', () {
       final AppAccessPolicy policy = AppAccessPolicy.fromSession(
         AuthSession(
           tokens: SessionTokens(accessToken: 't'),
@@ -104,13 +104,24 @@ void main() {
       expect(policy.canManageFacility(), isFalse);
       expect(policy.canManageTenant(), isFalse);
       expect(policy.canEditFacilitySetupStructure(), isFalse);
+      expect(policy.grants(AppPermissions.setupRead), isTrue);
+      expect(policy.grants(AppPermissions.hrWrite), isTrue);
       expect(
         tenantFacilityVisibleSetupDeskSections(
           canManageTenant: policy.canManageTenant(),
           canManageFacility: policy.canManageFacility(),
-          canManageAccess: false,
+          canManageAccess: policy.grantsAny(const <AppPermission>[
+            AppPermissions.platformAdmin,
+            AppPermissions.tenantAdmin,
+            AppPermissions.facilityAdmin,
+            AppPermissions.hrWrite,
+          ]),
         ),
-        isEmpty,
+        <TenantFacilitySetupDeskSection>[
+          TenantFacilitySetupDeskSection.roles,
+          TenantFacilitySetupDeskSection.permissions,
+          TenantFacilitySetupDeskSection.users,
+        ],
       );
     });
 

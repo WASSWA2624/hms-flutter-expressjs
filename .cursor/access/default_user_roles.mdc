@@ -30,7 +30,7 @@ Seed on install; see `permissions.mdc` for semantics.
 - `housekeeper`: `housekeeping` tasks and areas; housekeeping reporting.
 - `biomedical_engineer`: `biomedical` equipment maintenance; biomedical reporting.
 - `mortuary_attendant`: `mortuary` workflow; mortuary reporting.
-- `hr_staff`: `hr` administration; HR reporting.
+- `hr_staff`: `hr` administration; HR reporting; Facility Admin users/roles/permissions tabs (full rights).
 - `patient`: own patient data only; own-data reporting.
 - `visitor_guest`: limited visitor info only; allowed-visitor reporting.
 
