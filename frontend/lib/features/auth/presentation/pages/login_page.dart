@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/config/app_config.dart';
 import 'package:hosspi_hms/core/config/app_config_provider.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/validation_message_presenter.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
@@ -170,23 +171,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 isLoading: state.isSubmitting,
                 onPressed: _submit,
               ),
-              AuthTextLink(
-                label: l10n.authForgotPasswordActionLabel,
-                onPressed: state.isSubmitting
-                    ? null
-                    : () => context.go(AppRoutes.forgotPassword.location()),
-              ),
-              AuthTextLink(
-                label: l10n.authCreateAccountActionLabel,
-                onPressed: state.isSubmitting
-                    ? null
-                    : () => context.go(AppRoutes.register.location()),
-              ),
-              AuthTextLink(
-                label: l10n.authHowToRegisterActionLabel,
-                onPressed: state.isSubmitting
-                    ? null
-                    : () => showAuthRegistrationGuideDialog(context),
+              SizedBox(height: theme.spacing.sm),
+              _LoginSecondaryLinks(
+                forgotPasswordLabel: l10n.authForgotPasswordActionLabel,
+                createAccountLabel: l10n.authCreateAccountActionLabel,
+                howToRegisterLabel: l10n.authHowToRegisterActionLabel,
+                enabled: !state.isSubmitting,
+                onForgotPassword: () =>
+                    context.go(AppRoutes.forgotPassword.location()),
+                onCreateAccount: () =>
+                    context.go(AppRoutes.register.location()),
+                onHowToRegister: () =>
+                    showAuthRegistrationGuideDialog(context),
               ),
             ],
           ),
@@ -313,5 +309,63 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       _formKey = GlobalKey<FormState>();
       _autovalidateMode = AutovalidateMode.disabled;
     });
+  }
+}
+
+class _LoginSecondaryLinks extends StatelessWidget {
+  const _LoginSecondaryLinks({
+    required this.forgotPasswordLabel,
+    required this.createAccountLabel,
+    required this.howToRegisterLabel,
+    required this.enabled,
+    required this.onForgotPassword,
+    required this.onCreateAccount,
+    required this.onHowToRegister,
+  });
+
+  final String forgotPasswordLabel;
+  final String createAccountLabel;
+  final String howToRegisterLabel;
+  final bool enabled;
+  final VoidCallback onForgotPassword;
+  final VoidCallback onCreateAccount;
+  final VoidCallback onHowToRegister;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isLarge =
+        AppBreakpoints.of(context).index >= AppBreakpoint.lg.index;
+    final List<Widget> links = <Widget>[
+      AuthTextLink(
+        label: forgotPasswordLabel,
+        onPressed: enabled ? onForgotPassword : null,
+      ),
+      AuthTextLink(
+        label: createAccountLabel,
+        onPressed: enabled ? onCreateAccount : null,
+      ),
+      AuthTextLink(
+        label: howToRegisterLabel,
+        onPressed: enabled ? onHowToRegister : null,
+      ),
+    ];
+
+    if (isLarge) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          for (int i = 0; i < links.length; i++) ...<Widget>[
+            if (i > 0) SizedBox(width: theme.spacing.sm),
+            Flexible(child: links[i]),
+          ],
+        ],
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: links,
+    );
   }
 }
