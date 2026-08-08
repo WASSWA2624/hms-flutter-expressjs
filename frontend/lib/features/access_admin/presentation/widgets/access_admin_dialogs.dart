@@ -21,6 +21,7 @@ import 'package:hosspi_hms/features/access_admin/presentation/widgets/user_mutat
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/user_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -836,6 +837,13 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
     return null;
   }
 
+  final AppLocalizations l10n = context.l10n;
+  final String? sessionFacilityName = ref
+      .read(sessionStateProvider)
+      .session
+      ?.user
+      ?.facilityName;
+
   List<AccessAdminLookupOption> initialFacilityOptions =
       List<AccessAdminLookupOption>.from(
         prefetched?.facilities ?? state.data.lookups.facilities,
@@ -844,29 +852,24 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
   // session facility — never fan out across every campus in the tenant.
   if (needsFacilityScope && (sessionFacilityId ?? '').trim().isNotEmpty) {
     final String pinnedFacilityId = sessionFacilityId!.trim();
-    initialFacilityOptions = initialFacilityOptions
-        .where(
-          (AccessAdminLookupOption option) => option.id == pinnedFacilityId,
-        )
-        .map(
-          (AccessAdminLookupOption option) => AccessAdminLookupOption(
-            id: option.id,
-            label: option.label,
-            displayName: option.displayName,
-            permissionCount: option.permissionCount,
-            meta: option.meta ?? initialTenantId,
-          ),
-        )
-        .toList(growable: false);
-    if (initialFacilityOptions.isEmpty) {
-      initialFacilityOptions = <AccessAdminLookupOption>[
-        AccessAdminLookupOption(
-          id: pinnedFacilityId,
-          label: pinnedFacilityId,
-          meta: initialTenantId,
+    final AccessAdminLookupOption? matched = _matchPinnedFacilityOption(
+      options: initialFacilityOptions,
+      pinnedFacilityId: pinnedFacilityId,
+      sessionFacilityName: sessionFacilityName,
+    );
+    initialFacilityOptions = <AccessAdminLookupOption>[
+      AccessAdminLookupOption(
+        id: matched?.id ?? pinnedFacilityId,
+        label: _facilityScopeUiLabel(
+          l10n: l10n,
+          sessionFacilityName: sessionFacilityName,
+          optionLabel: matched?.label,
         ),
-      ];
-    }
+        displayName: matched?.displayName,
+        permissionCount: matched?.permissionCount ?? 0,
+        meta: matched?.meta ?? initialTenantId,
+      ),
+    ];
   }
 
   AccessAdminItem? createdRole;
@@ -892,20 +895,24 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
         return loaded;
       }
       final String pinnedFacilityId = sessionFacilityId!.trim();
-      return loaded
-          .where(
-            (AccessAdminLookupOption option) => option.id == pinnedFacilityId,
-          )
-          .map(
-            (AccessAdminLookupOption option) => AccessAdminLookupOption(
-              id: option.id,
-              label: option.label,
-              displayName: option.displayName,
-              permissionCount: option.permissionCount,
-              meta: option.meta ?? tenantId,
-            ),
-          )
-          .toList(growable: false);
+      final AccessAdminLookupOption? matched = _matchPinnedFacilityOption(
+        options: loaded,
+        pinnedFacilityId: pinnedFacilityId,
+        sessionFacilityName: sessionFacilityName,
+      );
+      return <AccessAdminLookupOption>[
+        AccessAdminLookupOption(
+          id: matched?.id ?? pinnedFacilityId,
+          label: _facilityScopeUiLabel(
+            l10n: l10n,
+            sessionFacilityName: sessionFacilityName,
+            optionLabel: matched?.label,
+          ),
+          displayName: matched?.displayName,
+          permissionCount: matched?.permissionCount ?? 0,
+          meta: matched?.meta ?? tenantId,
+        ),
+      ];
     },
     loadAllFacilityOptions: provideAllFacilitiesLoader
         ? () => loadAccessAdminAllFacilityOptions(ref, state)
@@ -1721,6 +1728,53 @@ Future<List<AccessAdminLookupOption>> loadAccessAdminAllFacilityOptions(
   return facilities;
 }
 
+bool _looksLikeUuid(String value) {
+  return RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  ).hasMatch(value.trim());
+}
+
+/// Never surface raw UUIDs in the create-role Scope checkbox list.
+String _facilityScopeUiLabel({
+  required AppLocalizations l10n,
+  String? sessionFacilityName,
+  String? optionLabel,
+}) {
+  final String sessionName = (sessionFacilityName ?? '').trim();
+  if (sessionName.isNotEmpty) {
+    return sessionName;
+  }
+  final String optionName = (optionLabel ?? '').trim();
+  if (optionName.isNotEmpty && !_looksLikeUuid(optionName)) {
+    return optionName;
+  }
+  return l10n.tenantFacilitySetupTabFacility;
+}
+
+AccessAdminLookupOption? _matchPinnedFacilityOption({
+  required List<AccessAdminLookupOption> options,
+  required String pinnedFacilityId,
+  String? sessionFacilityName,
+}) {
+  for (final AccessAdminLookupOption option in options) {
+    if (option.id == pinnedFacilityId) {
+      return option;
+    }
+  }
+  final String sessionName = (sessionFacilityName ?? '').trim().toLowerCase();
+  if (sessionName.isNotEmpty) {
+    for (final AccessAdminLookupOption option in options) {
+      if (option.label.trim().toLowerCase() == sessionName) {
+        return option;
+      }
+    }
+  }
+  if (options.length == 1) {
+    return options.first;
+  }
+  return null;
+}
+
 Future<List<AccessAdminLookupOption>> loadAccessAdminFacilityOptions(
   WidgetRef ref,
   String tenantId,
@@ -1759,11 +1813,21 @@ Future<List<AccessAdminLookupOption>> loadAccessAdminFacilityOptions(
   return result.when(
     success: (AppPage<FacilityProfile> page) => page.items
         .map(
-          (FacilityProfile facility) => AccessAdminLookupOption(
-            id: facility.mutationId,
-            label: facility.name,
-            meta: tenantId,
-          ),
+          (FacilityProfile facility) {
+            final String name = facility.name.trim();
+            final String publicId = facility.id.trim();
+            final String mutationId = facility.mutationId.trim();
+            return AccessAdminLookupOption(
+              // Prefer public id for UI identity; mutation id remains API-safe.
+              id: publicId.isNotEmpty ? publicId : mutationId,
+              label: name.isNotEmpty
+                  ? name
+                  : (publicId.isNotEmpty && !_looksLikeUuid(publicId)
+                        ? publicId
+                        : mutationId),
+              meta: tenantId,
+            );
+          },
         )
         .toList(growable: false),
     failure: (_) => const <AccessAdminLookupOption>[],
