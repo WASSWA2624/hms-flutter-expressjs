@@ -45322,10 +45322,10 @@ abstract class AppLocalizations {
   /// **'Demo account'**
   String get accessAdminUserDetailDemoAccountTitle;
 
-  /// Banner message for demo user accounts.
+  /// Explains that demo accounts are immutable in access admin.
   ///
   /// In en, this message translates to:
-  /// **'This is a demo account. Some destructive actions may be restricted.'**
+  /// **'This is a seeded demo account. It cannot be edited, deleted, or have its roles or permissions changed.'**
   String get accessAdminUserDetailDemoAccountMessage;
 
   /// Banner title for system-critical user accounts.

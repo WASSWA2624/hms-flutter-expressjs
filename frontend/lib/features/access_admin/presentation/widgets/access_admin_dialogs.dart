@@ -642,6 +642,9 @@ Future<AccessAdminItem?> openAccessAdminEditUserDialog(
   if (!context.mounted) {
     return null;
   }
+  if (!canMutateAccessAdminDemoAccount(detail?.item ?? user)) {
+    return null;
+  }
 
   final AccessAdminItem baseline = detail?.item ?? user;
   final String excludeUserId = baseline.mutationId.trim().isNotEmpty

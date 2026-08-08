@@ -225,8 +225,22 @@ final class AccessAdminWorkspaceController
   }
 
   Future<AppFailure?> setUserStatus(AccessAdminItem item, String status) {
+    if (!canMutateAccessAdminDemoAccount(item)) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
     return _submitAction(
       () => _repository.setUserStatus(item.mutationId, status),
+      refreshSession: true,
+    );
+  }
+
+  Future<AppFailure?> deleteUser(AccessAdminItem item) {
+    if (!canMutateAccessAdminDemoAccount(item)) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+    return _submitAction(
+      () => _repository.deleteUser(item.mutationId),
+      removeItemId: item.id,
       refreshSession: true,
     );
   }

@@ -24676,7 +24676,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminUserDetailDemoAccountMessage =>
-      'This is a demo account. Some destructive actions may be restricted.';
+      'This is a seeded demo account. It cannot be edited, deleted, or have its roles or permissions changed.';
 
   @override
   String get accessAdminUserDetailSystemAccountTitle => 'Protected account';

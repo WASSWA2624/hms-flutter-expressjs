@@ -650,7 +650,7 @@ class _WorklistPanel extends StatelessWidget {
 
   Future<void> _toggleUserStatus(AccessAdminItem item) async {
     // Defense-in-depth: next_action is unmounted when !canWrite (write ∩).
-    if (!canWrite) {
+    if (!canWrite || !canMutateAccessAdminDemoAccount(item)) {
       return;
     }
     final String nextStatus = item.status == 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';

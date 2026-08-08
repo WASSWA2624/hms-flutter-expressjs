@@ -320,15 +320,16 @@ Widget? accessAdminMobileNextAction(
   }
 
   return switch (resource) {
-    AccessAdminResource.users ||
-    AccessAdminResource.demoUsers => AppButton.tertiary(
-      label: item.status == 'ACTIVE'
-          ? context.l10n.accessAdminDeactivateAction
-          : context.l10n.accessAdminActivateAction,
-      onPressed: onUserStatusToggle == null
-          ? null
-          : () => onUserStatusToggle(item),
-    ),
+    AccessAdminResource.users || AccessAdminResource.demoUsers
+        when !item.isDemo =>
+      AppButton.tertiary(
+        label: item.status == 'ACTIVE'
+            ? context.l10n.accessAdminDeactivateAction
+            : context.l10n.accessAdminActivateAction,
+        onPressed: onUserStatusToggle == null
+            ? null
+            : () => onUserStatusToggle(item),
+      ),
     AccessAdminResource.roles
         when !item.isSystemCritical || canMutateSystemCatalog =>
       AppButton.tertiary(
@@ -755,6 +756,9 @@ AppListTableColumn<AccessAdminItem> _userNextActionColumn(
     label: l10n.accessAdminManageUserAction,
     alwaysVisible: true,
     cellBuilder: (BuildContext context, AccessAdminItem item) {
+      if (item.isDemo) {
+        return const SizedBox.shrink();
+      }
       final String label = item.status == 'ACTIVE'
           ? l10n.accessAdminDeactivateAction
           : l10n.accessAdminActivateAction;

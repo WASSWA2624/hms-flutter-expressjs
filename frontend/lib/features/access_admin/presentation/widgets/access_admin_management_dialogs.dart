@@ -364,14 +364,21 @@ class _ManageUsersPanelState
   bool get _canManageProtectedUsers =>
       ref.read(appAccessPolicyProvider).canManagePlatformAdmins();
 
-  bool _canDeleteUser(AccessAdminItem user) {
+  bool _canMutateUser(AccessAdminItem user) {
     if (user.isDeleted) {
+      return false;
+    }
+    return canMutateAccessAdminDemoAccount(user);
+  }
+
+  bool _canDeleteUser(AccessAdminItem user) {
+    if (!_canMutateUser(user)) {
       return false;
     }
     if (_canManageProtectedUsers) {
       return true;
     }
-    return !user.isDemo && !user.isSystemCritical;
+    return !user.isSystemCritical;
   }
 
   @override
@@ -497,6 +504,9 @@ class _ManageUsersPanelState
     AccessAdminItem item, {
     AccessAdminUserDetail? detail,
   }) async {
+    if (!_canMutateUser(item)) {
+      return;
+    }
     final AccessAdminWorkspaceState? state = buildWorkspaceState();
     if (state == null || !mounted) {
       return;
@@ -588,7 +598,7 @@ class _ManageUsersPanelState
   }
 
   Future<void> _confirmRestoreUser(AccessAdminItem user) async {
-    if (!user.isDeleted) {
+    if (!user.isDeleted || !canMutateAccessAdminDemoAccount(user)) {
       return;
     }
     final AppLocalizations l10n = context.l10n;
@@ -940,6 +950,9 @@ class _ManageUsersPanelState
                   final double actionGap = theme.spacing.md;
                   final bool actionsEnabled = !loading && !mutating;
                   if (user.isDeleted) {
+                    if (!canMutateAccessAdminDemoAccount(user)) {
+                      return const SizedBox.shrink();
+                    }
                     return Padding(
                       padding: EdgeInsetsDirectional.only(
                         end: theme.spacing.sm,
@@ -963,16 +976,17 @@ class _ManageUsersPanelState
                       runSpacing: theme.spacing.xs,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: <Widget>[
-                        AppButton.tertiary(
-                          leadingIcon: Icons.edit_outlined,
-                          label: l10n.tenantFacilityEditAction,
-                          semanticLabel: l10n.tenantFacilityEditAction,
-                          tooltip: l10n.tenantFacilityEditAction,
-                          enabled: actionsEnabled,
-                          onPressed: actionsEnabled
-                              ? () => unawaited(_openEditUserDialog(user))
-                              : null,
-                        ),
+                        if (_canMutateUser(user))
+                          AppButton.tertiary(
+                            leadingIcon: Icons.edit_outlined,
+                            label: l10n.tenantFacilityEditAction,
+                            semanticLabel: l10n.tenantFacilityEditAction,
+                            tooltip: l10n.tenantFacilityEditAction,
+                            enabled: actionsEnabled,
+                            onPressed: actionsEnabled
+                                ? () => unawaited(_openEditUserDialog(user))
+                                : null,
+                          ),
                         if (_canDeleteUser(user))
                           AppButton.tertiary(
                             leadingIcon: Icons.delete_outline,
@@ -3663,7 +3677,10 @@ class _AccessAdminUserDetailDialogState
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final AccessAdminItem item = _item;
-    final bool canMutate = widget.canWrite && !item.isDeleted;
+    final bool canMutate =
+        widget.canWrite &&
+        !item.isDeleted &&
+        canMutateAccessAdminDemoAccount(item);
 
     return AppDialog(
       title: Text(l10n.accessAdminCreateUserDetailsSectionTitle),
@@ -3734,8 +3751,7 @@ class _AccessAdminUserDetailDialogState
             isLoading: _saving,
             onPressed: _saving ? null : _toggleStatus,
           ),
-          if (widget.canDeleteProtected ||
-              (!item.isDemo && !item.isSystemCritical))
+          if (widget.canDeleteProtected || !item.isSystemCritical)
             AppButton.secondary(
               leadingIcon: Icons.delete_outline,
               label: l10n.accessAdminDeleteUserAction,

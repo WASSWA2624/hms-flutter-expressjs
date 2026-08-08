@@ -31,6 +31,7 @@ const {
   PLATFORM_ADMIN_MANAGED_ROLES,
   canActorManagePlatformAdmins,
 } = require('@lib/authorization/assignable-access');
+const { assertDemoUserNotMutable, assertUserIdNotDemoProtected } = require('@lib/authorization/demo-user-guard');
 const { normalizeRoleName } = require('@config/roles');
 const prisma = require('@prisma/client');
 
@@ -615,6 +616,7 @@ const updateUser = async (id, data, userId, ipAddress, actor = {}) => {
       throw new HttpError('errors.user.not_found', 404);
     }
 
+    assertDemoUserNotMutable(before, 'update');
     await assertActorCanMutateTargetAccount(resolvedUserId, actor);
 
     const confirmSimilar = data?.confirm_similar === true;
@@ -677,6 +679,7 @@ const deleteUser = async (id, userId, ipAddress, actor = {}) => {
       throw new HttpError('errors.user.not_found', 404);
     }
 
+    assertDemoUserNotMutable(before, 'delete');
     await assertActorCanMutateTargetAccount(resolvedUserId, actor);
 
     await userRepository.softDelete(resolvedUserId);
@@ -708,6 +711,14 @@ const deleteUser = async (id, userId, ipAddress, actor = {}) => {
 const restoreUser = async (id, userId, ipAddress, actor = {}) => {
   try {
     const resolvedUserId = await resolveUserId(id, { includeDeleted: true });
+    const before = await userRepository.findById(resolvedUserId, {}, {
+      includeDeleted: true,
+    });
+    if (before) {
+      assertDemoUserNotMutable(before, 'restore');
+    } else {
+      await assertUserIdNotDemoProtected(resolvedUserId, 'restore');
+    }
     await assertActorCanMutateTargetAccount(resolvedUserId, actor);
     const user = await userRepository.restore(resolvedUserId);
 

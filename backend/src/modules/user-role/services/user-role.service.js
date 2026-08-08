@@ -12,6 +12,7 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { resolveIdentifierForPayload } = require('@lib/billing/identifiers');
 const { assertRoleIdAssignable } = require('@lib/authorization/assignable-access');
+const { assertUserIdNotDemoProtected } = require('@lib/authorization/demo-user-guard');
 
 const resolveUserRoleId = async (identifier) =>
   resolveIdentifierForPayload({
@@ -153,6 +154,7 @@ const getUserRoleById = async (id, userId, ipAddress) => {
 const createUserRole = async (data, userId, ipAddress, actor = null) => {
   try {
     const payload = await normalizeUserRolePayload(data);
+    await assertUserIdNotDemoProtected(payload.user_id, 'assign_role');
     if (actor) {
       await assertRoleIdAssignable(payload.role_id, actor);
     }
@@ -195,7 +197,11 @@ const updateUserRole = async (id, data, userId, ipAddress, actor = null) => {
       throw new HttpError('errors.user_role.not_found', 404);
     }
 
+    await assertUserIdNotDemoProtected(before.user_id, 'update_role');
     const payload = await normalizeUserRolePayload(data);
+    if (payload.user_id) {
+      await assertUserIdNotDemoProtected(payload.user_id, 'update_role');
+    }
     if (actor && payload.role_id) {
       await assertRoleIdAssignable(payload.role_id, actor);
     }
@@ -236,6 +242,8 @@ const deleteUserRole = async (id, userId, ipAddress) => {
     if (!before) {
       throw new HttpError('errors.user_role.not_found', 404);
     }
+
+    await assertUserIdNotDemoProtected(before.user_id, 'remove_role');
 
     await userRoleRepository.softDelete(resolvedId);
 

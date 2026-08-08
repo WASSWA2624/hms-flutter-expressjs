@@ -445,6 +445,7 @@
   "errors.unit.restore_requires_active_department": "Cannot restore a unit while its department is deleted",
   "errors.unit.restore_requires_active_facility": "Cannot restore a unit while its facility is deleted",
   "errors.user.not_found": "User not found",
+  "errors.user.demo_protected": "Demo and default users cannot be edited, deleted, or have their roles changed",
   "errors.user.email_exists_in_tenant": "A user with this email already exists in this tenant",
   "errors.user.phone_exists_in_tenant": "A user with this phone number already exists in this tenant",
   "errors.user.contact_exists_in_tenant": "Email and phone are already used by another user in this tenant",

@@ -31627,9 +31627,9 @@
   "@accessAdminUserDetailDemoAccountTitle": {
     "description": "Banner title for demo user accounts."
   },
-  "accessAdminUserDetailDemoAccountMessage": "This is a demo account. Some destructive actions may be restricted.",
+  "accessAdminUserDetailDemoAccountMessage": "This is a seeded demo account. It cannot be edited, deleted, or have its roles or permissions changed.",
   "@accessAdminUserDetailDemoAccountMessage": {
-    "description": "Banner message for demo user accounts."
+    "description": "Explains that demo accounts are immutable in access admin."
   },
   "accessAdminUserDetailSystemAccountTitle": "Protected account",
   "@accessAdminUserDetailSystemAccountTitle": {

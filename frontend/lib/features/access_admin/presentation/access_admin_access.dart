@@ -225,6 +225,13 @@ bool canMutateAccessAdminSystemCatalog(
   return policy.isElevated;
 }
 
+/// Demo / default seeded accounts are immutable (profile, status, roles,
+/// permissions, delete). Password reset for demo remains a separate elevated
+/// action where mounted.
+bool canMutateAccessAdminDemoAccount(AccessAdminItem item) {
+  return !item.isDemo;
+}
+
 /// Registrations tab read — matrix ∩ `platform:admin` (see
 /// [accessAdminRegistrationsReadRequirement]).
 ///
