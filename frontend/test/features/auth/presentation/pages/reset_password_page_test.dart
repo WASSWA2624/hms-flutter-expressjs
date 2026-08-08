@@ -16,8 +16,35 @@ import 'package:hosspi_hms/features/auth/presentation/pages/reset_password_page.
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_shell_layout.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/app_email_field.dart';
 
 void main() {
+  testWidgets(
+    'code mode with email query hides email field',
+    (WidgetTester tester) async {
+      await _pumpResetPassword(
+        tester,
+        _ResetPasswordRepository(),
+        location: '/reset-password?email=nurse%40example.com',
+      );
+      final l10n = tester.element(find.byType(ResetPasswordPage)).l10n;
+
+      expect(find.byType(AppEmailField), findsNothing);
+      expect(find.byType(EditableText), findsNWidgets(3));
+      expect(find.text(l10n.authResetPasswordCodeModeBody), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'code mode without email still shows email field',
+    (WidgetTester tester) async {
+      await _pumpResetPassword(tester, _ResetPasswordRepository());
+
+      expect(find.byType(AppEmailField), findsOneWidget);
+      expect(find.byType(EditableText), findsNWidgets(4));
+    },
+  );
+
   testWidgets(
     'code mode shows one Reset primary and no Password updated hub',
     (WidgetTester tester) async {
@@ -70,9 +97,9 @@ void main() {
       );
       final l10n = tester.element(find.byType(ResetPasswordPage)).l10n;
 
-      await tester.enterText(find.byType(EditableText).at(1), '123456');
+      await tester.enterText(find.byType(EditableText).at(0), '123456');
+      await tester.enterText(find.byType(EditableText).at(1), 'NewPass12');
       await tester.enterText(find.byType(EditableText).at(2), 'NewPass12');
-      await tester.enterText(find.byType(EditableText).at(3), 'NewPass12');
       tester.view.viewInsets = FakeViewPadding.zero;
       await tester.pump();
       await tester.tap(find.text(l10n.authResetPasswordActionLabel));
@@ -91,6 +118,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(l10n.authResetPasswordTitle), findsNothing);
+      expect(find.text(l10n.authEmailLabel), findsNothing);
       expect(repository.resetPasswordCalls, 1);
       expect(repository.lastEmail, 'nurse@example.com');
       expect(repository.lastCode, '123456');

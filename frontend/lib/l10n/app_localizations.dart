@@ -15289,7 +15289,7 @@ abstract class AppLocalizations {
   /// Reset password page body when using code entry.
   ///
   /// In en, this message translates to:
-  /// **'Enter email, the six-digit code, and a new password.'**
+  /// **'Enter the six-digit code and a new password.'**
   String get authResetPasswordCodeModeBody;
 
   /// Label for password reset code field.

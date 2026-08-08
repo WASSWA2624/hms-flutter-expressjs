@@ -10554,7 +10554,7 @@
   "@authResetPasswordBody": {
     "description": "Reset password page body."
   },
-  "authResetPasswordCodeModeBody": "Enter email, the six-digit code, and a new password.",
+  "authResetPasswordCodeModeBody": "Enter the six-digit code and a new password.",
   "@authResetPasswordCodeModeBody": {
     "description": "Reset password page body when using code entry."
   },

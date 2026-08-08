@@ -8312,7 +8312,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authResetPasswordCodeModeBody =>
-      'Enter email, the six-digit code, and a new password.';
+      'Enter the six-digit code and a new password.';
 
   @override
   String get authResetPasswordCodeLabel => 'Reset code';

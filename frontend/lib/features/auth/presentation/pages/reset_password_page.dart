@@ -67,6 +67,21 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
         !RegExp(r'^\d{6}$').hasMatch(token);
   }
 
+  bool get _hasKnownEmail {
+    final String fromWidget = widget.email?.trim() ?? '';
+    if (fromWidget.isNotEmpty) {
+      return true;
+    }
+    return _emailController.text.trim().isNotEmpty;
+  }
+
+  String get _resolvedEmail {
+    final String fromWidget = widget.email?.trim().toLowerCase() ?? '';
+    if (fromWidget.isNotEmpty) {
+      return fromWidget;
+    }
+    return _emailController.text.trim().toLowerCase();
+  }
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -102,19 +117,21 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
               SizedBox(height: theme.spacing.md),
             ],
             if (!_usesLinkToken) ...<Widget>[
-              AppEmailField(
-                controller: _emailController,
-                labelText: l10n.authEmailLabel,
-                textInputAction: TextInputAction.next,
-                invalidEmailMessage: l10n.authEmailInvalidMessage,
-                requiredMessage: l10n.validationRequired,
-                isRequired: true,
-                onChanged: (_) => _clearFormFeedback(),
-                onFocusChanged: _handleFieldFocusChanged,
-                focusNode: _emailFocusNode,
-                enabled: !state.isSubmitting,
-              ),
-              SizedBox(height: theme.spacing.md),
+              if (!_hasKnownEmail) ...<Widget>[
+                AppEmailField(
+                  controller: _emailController,
+                  labelText: l10n.authEmailLabel,
+                  textInputAction: TextInputAction.next,
+                  invalidEmailMessage: l10n.authEmailInvalidMessage,
+                  requiredMessage: l10n.validationRequired,
+                  isRequired: true,
+                  onChanged: (_) => _clearFormFeedback(),
+                  onFocusChanged: _handleFieldFocusChanged,
+                  focusNode: _emailFocusNode,
+                  enabled: !state.isSubmitting,
+                ),
+                SizedBox(height: theme.spacing.md),
+              ],
               AppTextField(
                 controller: _codeController,
                 labelText: l10n.authResetPasswordCodeLabel,
@@ -238,9 +255,12 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
 
     final token = _usesLinkToken ? widget.token!.trim() : null;
     final code = !_usesLinkToken ? _codeController.text.trim() : null;
-    final email = !_usesLinkToken
-        ? _emailController.text.trim().toLowerCase()
-        : null;
+    final email = !_usesLinkToken ? _resolvedEmail : null;
+
+    if (!_usesLinkToken && (email == null || email.isEmpty)) {
+      _enableValidationRefresh();
+      return;
+    }
 
     final bool completed = await ref
         .read(authControllerProvider.notifier)
