@@ -220,4 +220,34 @@ describe('tenant guard query extension', () => {
       where: { city: 'Kampala' }
     });
   });
+
+  it('keeps bypassTenantGuard active for sync callbacks that return promises', async () => {
+    const {
+      getGuardContext,
+      runWithoutTenantGuard,
+    } = require('../../prisma/tenant-guard');
+
+    // Simulate Prisma query extensions that resume after the sync callback
+    // returns a Promise — the previous ALS wiring dropped bypass there.
+    const deferredGuardRead = () =>
+      new Promise((resolve) => {
+        setImmediate(() => {
+          resolve(getGuardContext());
+        });
+      });
+
+    const withoutFixShape = await runWithRequestContext(
+      {
+        actor: { roles: ['TENANT_ADMIN'] },
+        scope: { tenant_id: 'tenant-1' }
+      },
+      async () => {
+        const context = await runWithoutTenantGuard(() => deferredGuardRead());
+        return context;
+      }
+    );
+
+    expect(withoutFixShape.bypass).toBe(true);
+    expect(withoutFixShape.context?.bypassTenantGuard).toBe(true);
+  });
 });

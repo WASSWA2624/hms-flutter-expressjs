@@ -82,9 +82,14 @@ const getGuardContext = () => {
  * Run a callback with tenant-guard bypass so platform-scoped catalog rows
  * (tenant_id null) remain readable for tenant actors.
  *
+ * Important: the ALS callback must be `async` and `await` the inner work.
+ * Prisma query extensions often resume after a sync `() => prisma.*()` callback
+ * returns a Promise, which drops `bypassTenantGuard` and re-applies tenant
+ * scoping (hiding global catalog rows such as subscription plans).
+ *
  * @template T
  * @param {() => T | Promise<T>} callback
- * @returns {T | Promise<T>}
+ * @returns {Promise<T>}
  */
 const runWithoutTenantGuard = (callback) => {
   const { runWithRequestContext } = loadRequestContextStore();
@@ -92,8 +97,9 @@ const runWithoutTenantGuard = (callback) => {
   return runWithRequestContext(
     {
       ...parent,
-      bypassTenantGuard: true},
-    callback
+      bypassTenantGuard: true,
+    },
+    async () => callback()
   );
 };
 
@@ -336,6 +342,7 @@ module.exports = {
   buildTenantGuardModelMetadata,
   buildGuardedWhere,
   createTenantGuardQueryExtension,
+  getGuardContext,
   withTenantGuard,
   runWithoutTenantGuard,
   injectTenantId,
