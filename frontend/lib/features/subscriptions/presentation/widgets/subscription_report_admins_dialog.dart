@@ -222,7 +222,7 @@ class _SubscriptionReportAdminsDialogState
               urgent: true,
             ),
           ],
-          SizedBox(height: theme.spacing.lg),
+          SizedBox(height: theme.spacing.md),
           Text(
             l10n.subscriptionReportContactsIntro,
             style: theme.textTheme.titleSmall?.copyWith(
@@ -230,7 +230,7 @@ class _SubscriptionReportAdminsDialogState
               fontWeight: AppFontWeight.emphasis,
             ),
           ),
-          SizedBox(height: theme.spacing.sm),
+          SizedBox(height: theme.spacing.xs),
           if (_refreshing)
             Padding(
               padding: EdgeInsets.only(bottom: theme.spacing.sm),
@@ -336,63 +336,52 @@ class _PackageHeroCard extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(theme.radius.lg),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[
-            planTheme.background,
-            Color.alphaBlend(
-              planTheme.foreground.withValues(alpha: 0.08),
-              planTheme.background,
-            ),
-          ],
-        ),
-        border: Border.all(color: planTheme.border),
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        color: planTheme.background,
       ),
       child: Padding(
-        padding: EdgeInsets.all(theme.spacing.lg),
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.md,
+          vertical: theme.spacing.sm,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
                     color: planTheme.foreground.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(theme.radius.md),
-                    border: Border.all(
-                      color: planTheme.border.withValues(alpha: 0.8),
-                    ),
+                    borderRadius: BorderRadius.circular(theme.radius.sm),
                   ),
                   child: Icon(
                     Icons.workspace_premium_rounded,
+                    size: 20,
                     color: planTheme.foreground,
                   ),
                 ),
-                SizedBox(width: theme.spacing.md),
+                SizedBox(width: theme.spacing.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
                         l10n.subscriptionReportCurrentPackageLabel,
-                        style: theme.textTheme.labelLarge?.copyWith(
+                        style: theme.textTheme.labelMedium?.copyWith(
                           color: planTheme.foreground.withValues(alpha: 0.9),
                           fontWeight: AppFontWeight.emphasis,
                           letterSpacing: 0.2,
                         ),
                       ),
-                      SizedBox(height: theme.spacing.xs),
                       Text(
                         packageLabel,
-                        style: theme.textTheme.headlineSmall?.copyWith(
+                        style: theme.textTheme.titleMedium?.copyWith(
                           color: planTheme.foreground,
                           fontWeight: AppFontWeight.emphasis,
-                          height: 1.15,
+                          height: 1.2,
                         ),
                       ),
                     ],
@@ -402,24 +391,23 @@ class _PackageHeroCard extends StatelessWidget {
                   label: statusLabel,
                   foreground: planTheme.foreground,
                   background: theme.colorScheme.surface.withValues(alpha: 0.72),
-                  border: planTheme.border,
                 ),
               ],
             ),
             if (dateCaption != null) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
+              SizedBox(height: theme.spacing.xs),
               Row(
                 children: <Widget>[
                   Icon(
                     Icons.event_outlined,
-                    size: 18,
+                    size: 16,
                     color: planTheme.foreground,
                   ),
                   SizedBox(width: theme.spacing.xs),
                   Flexible(
                     child: Text(
                       dateCaption,
-                      style: theme.textTheme.bodyMedium?.copyWith(
+                      style: theme.textTheme.bodySmall?.copyWith(
                         color: planTheme.foreground,
                         fontWeight: AppFontWeight.emphasis,
                       ),
@@ -429,54 +417,42 @@ class _PackageHeroCard extends StatelessWidget {
               ),
             ],
             if (nextPlanLabel != null) ...<Widget>[
-              SizedBox(height: theme.spacing.md),
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(theme.spacing.md),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface.withValues(alpha: 0.72),
-                  borderRadius: BorderRadius.circular(theme.radius.md),
-                  border: Border.all(color: planTheme.border),
-                ),
-                child: Row(
-                  children: <Widget>[
-                    Icon(
-                      Icons.trending_up_rounded,
-                      color: planTheme.foreground,
+              SizedBox(height: theme.spacing.xs),
+              Row(
+                children: <Widget>[
+                  Icon(
+                    Icons.trending_up_rounded,
+                    size: 18,
+                    color: planTheme.foreground,
+                  ),
+                  SizedBox(width: theme.spacing.xs),
+                  Text(
+                    '${l10n.subscriptionReportNextPlanLabel}: ',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: AppFontWeight.emphasis,
                     ),
-                    SizedBox(width: theme.spacing.sm),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            l10n.subscriptionReportNextPlanLabel,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: AppFontWeight.emphasis,
-                            ),
-                          ),
-                          SizedBox(height: theme.spacing.xs),
-                          Text(
-                            nextPlanLabel!,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: planTheme.foreground,
-                              fontWeight: AppFontWeight.emphasis,
-                            ),
-                          ),
-                        ],
+                  ),
+                  Expanded(
+                    child: Text(
+                      nextPlanLabel!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: planTheme.foreground,
+                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.xs),
             Text(
               guidanceMessage,
-              style: theme.textTheme.bodyLarge?.copyWith(
+              style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface,
-                height: 1.4,
+                height: 1.3,
               ),
             ),
           ],
@@ -510,14 +486,11 @@ class _ExpiryNoticeCard extends StatelessWidget {
     final Color background = urgent
         ? theme.statusColors.errorContainer
         : planTheme.background;
-    final Color border = urgent
-        ? theme.statusColors.error.withValues(alpha: 0.45)
-        : planTheme.border;
 
     return AppContentPanel(
       density: AppContentPanelDensity.compact,
       backgroundColor: background,
-      borderColor: border,
+      borderColor: Colors.transparent,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -556,13 +529,11 @@ class _StatusChip extends StatelessWidget {
     required this.label,
     required this.foreground,
     required this.background,
-    required this.border,
   });
 
   final String label;
   final Color foreground;
   final Color background;
-  final Color border;
 
   @override
   Widget build(BuildContext context) {
@@ -570,12 +541,11 @@ class _StatusChip extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
+        vertical: theme.spacing.xs / 2,
       ),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: Border.all(color: border),
       ),
       child: Text(
         label,
@@ -610,27 +580,34 @@ class _AdminContactGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final Color dividerColor = theme.colorScheme.outlineVariant.withValues(
+      alpha: 0.55,
+    );
 
-    return AppSectionPanel(
+    return AppCollapsibleSection(
       title: title,
-      leadingIcon: leadingIcon,
-      tone: AppWorkspaceStatusTone.neutral,
-      density: AppContentPanelDensity.compact,
+      titleIcon: leadingIcon,
       initiallyExpanded: true,
       backgroundColor: planTheme.rowTint,
-      borderColor: planTheme.border,
-      children: <Widget>[
-        for (int index = 0; index < contacts.length; index += 1) ...<Widget>[
-          if (index > 0) SizedBox(height: theme.spacing.sm),
-          _AdminContactCard(
-            contact: contacts[index],
-            roleFallback: roleFallback,
-            planTheme: planTheme,
-            supportDisplayName: supportDisplayName,
-            supportRoleLabel: supportRoleLabel,
-          ),
+      borderColor: Colors.transparent,
+      accentColor: planTheme.foreground,
+      contentPadding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          for (int index = 0; index < contacts.length; index += 1) ...<Widget>[
+            if (index > 0) Divider(height: 1, thickness: 1, color: dividerColor),
+            _AdminContactCard(
+              contact: contacts[index],
+              roleFallback: roleFallback,
+              planTheme: planTheme,
+              supportDisplayName: supportDisplayName,
+              supportRoleLabel: supportRoleLabel,
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -656,7 +633,6 @@ class _AdminContactCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
     final bool support = contact.isSupportChannel;
     final String displayName = support
         ? (supportDisplayName ?? l10n.subscriptionReportPlatformSupportName)
@@ -667,24 +643,19 @@ class _AdminContactCard extends StatelessWidget {
               ? contact.roleName!.trim().replaceAll('_', ' ')
               : roleFallback);
 
-    return Container(
-      padding: EdgeInsets.all(theme.spacing.md),
-      decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(color: planTheme.border.withValues(alpha: 0.7)),
-      ),
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool horizontal =
               constraints.maxWidth >= _horizontalLayoutMinWidth;
           final Widget avatar = CircleAvatar(
-            radius: 20,
+            radius: 16,
             backgroundColor: planTheme.background,
             foregroundColor: planTheme.foreground,
             child: Text(
               _initials(displayName),
-              style: theme.textTheme.labelMedium?.copyWith(
+              style: theme.textTheme.labelSmall?.copyWith(
                 fontWeight: AppFontWeight.emphasis,
                 color: planTheme.foreground,
               ),
@@ -696,7 +667,7 @@ class _AdminContactCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 avatar,
-                SizedBox(width: theme.spacing.md),
+                SizedBox(width: theme.spacing.sm),
                 Expanded(
                   flex: 3,
                   child: Text(
@@ -722,7 +693,7 @@ class _AdminContactCard extends StatelessWidget {
                   ),
                 ),
                 if (contact.email != null) ...<Widget>[
-                  SizedBox(width: theme.spacing.md),
+                  SizedBox(width: theme.spacing.sm),
                   Expanded(
                     flex: 3,
                     child: _ContactLine(
@@ -735,7 +706,7 @@ class _AdminContactCard extends StatelessWidget {
                   ),
                 ],
                 if (contact.phone != null) ...<Widget>[
-                  SizedBox(width: theme.spacing.md),
+                  SizedBox(width: theme.spacing.sm),
                   Expanded(
                     flex: 2,
                     child: _ContactLine(
@@ -766,7 +737,6 @@ class _AdminContactCard extends StatelessWidget {
                         fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
-                    SizedBox(height: theme.spacing.xs),
                     Text(
                       roleLabel,
                       style: theme.textTheme.labelMedium?.copyWith(
@@ -775,7 +745,7 @@ class _AdminContactCard extends StatelessWidget {
                       ),
                     ),
                     if (contact.email != null) ...<Widget>[
-                      SizedBox(height: theme.spacing.xs),
+                      SizedBox(height: theme.spacing.xs / 2),
                       _ContactLine(
                         icon: Icons.mail_outline,
                         label: l10n.subscriptionUpgradeAdminContactEmailLabel,
@@ -784,7 +754,7 @@ class _AdminContactCard extends StatelessWidget {
                       ),
                     ],
                     if (contact.phone != null) ...<Widget>[
-                      SizedBox(height: theme.spacing.xs),
+                      SizedBox(height: theme.spacing.xs / 2),
                       _ContactLine(
                         icon: Icons.phone_outlined,
                         label: l10n.subscriptionUpgradeAdminContactPhoneLabel,
