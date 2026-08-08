@@ -10506,7 +10506,7 @@
   "@authForgotPasswordTitle": {
     "description": "Forgot password page title."
   },
-  "authForgotPasswordBody": "Enter your facility account email. We send reset instructions if it matches.",
+  "authForgotPasswordBody": "Enter your facility account email. If it matches an account, we send reset instructions.",
   "@authForgotPasswordBody": {
     "description": "Forgot password page body."
   },
@@ -10526,9 +10526,21 @@
   "@authForgotPasswordSubmittedTitle": {
     "description": "Title after forgot password request succeeds."
   },
-  "authForgotPasswordSubmittedBody": "If an account exists, we sent a reset link and six-digit code.",
+  "authForgotPasswordSubmittedBody": "We sent a reset link and six-digit code to your email.",
   "@authForgotPasswordSubmittedBody": {
     "description": "Body after forgot password request succeeds."
+  },
+  "authForgotPasswordAccountNotFoundTitle": "No account found",
+  "@authForgotPasswordAccountNotFoundTitle": {
+    "description": "Title when forgot-password email does not match an account."
+  },
+  "authForgotPasswordAccountNotFoundBody": "We could not find a facility account for that email. Check the address, or create an account if you have not registered yet.",
+  "@authForgotPasswordAccountNotFoundBody": {
+    "description": "Guidance when forgot-password email does not match an account."
+  },
+  "authForgotPasswordAccountNotFoundNextStep": "Next: create an account, or go back and sign in with a different email.",
+  "@authForgotPasswordAccountNotFoundNextStep": {
+    "description": "Next-action hint when forgot-password email is unknown."
   },
   "authResetPasswordWithCodeActionLabel": "Enter reset code",
   "@authResetPasswordWithCodeActionLabel": {

@@ -2320,9 +2320,8 @@ const forgotPassword = async (data) => {
   // Find user
   const user = await authRepository.findUserByEmailAndTenant(email, tenant_id);
 
-  // Don't reveal if user exists or not (security best practice)
   if (!user) {
-    return { message: 'messages.auth.password_reset.email_sent' };
+    throw new HttpError('errors.auth.user_not_found', 401);
   }
 
   // Delete old password reset tokens

@@ -7,7 +7,9 @@ import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.da
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_primary_button.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_registration_guide_dialog.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
@@ -46,10 +48,12 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final state = ref.watch(authControllerProvider);
-    final theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final AuthControllerState state = ref.watch(authControllerProvider);
+    final ThemeData theme = Theme.of(context);
     final bool needsTenantChoice = state.identifyTenants.length > 1;
+    final bool accountNotFound =
+        state.failure?.code == 'auth.account_not_found';
 
     return AuthPageFrame(
       title: l10n.authForgotPasswordTitle,
@@ -62,7 +66,15 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            if (state.failure != null) ...<Widget>[
+            if (accountNotFound) ...<Widget>[
+              AppFormInformationBanner.message(
+                title: l10n.authForgotPasswordAccountNotFoundTitle,
+                message:
+                    '${l10n.authForgotPasswordAccountNotFoundBody}\n\n'
+                    '${l10n.authForgotPasswordAccountNotFoundNextStep}',
+              ),
+              SizedBox(height: theme.spacing.md),
+            ] else if (state.failure != null) ...<Widget>[
               AppFormInformationBanner.failure(
                 context: context,
                 failure: state.failure!,
@@ -112,11 +124,37 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 onPressed: _submit,
               ),
             ],
-            AuthTextLink(
-              label: l10n.authBackToLoginActionLabel,
-              onPressed: state.isSubmitting
-                  ? null
-                  : () => context.go(AppRoutes.login.location()),
+            SizedBox(height: theme.spacing.sm),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Flexible(
+                  child: AuthTextLink(
+                    label: l10n.authBackToLoginActionLabel,
+                    onPressed: state.isSubmitting
+                        ? null
+                        : () => context.go(AppRoutes.login.location()),
+                  ),
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Flexible(
+                  child: AuthTextLink(
+                    label: l10n.authCreateAccountActionLabel,
+                    onPressed: state.isSubmitting
+                        ? null
+                        : () => context.go(AppRoutes.register.location()),
+                  ),
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Flexible(
+                  child: AuthTextLink(
+                    label: l10n.authHowToRegisterActionLabel,
+                    onPressed: state.isSubmitting
+                        ? null
+                        : () => showAuthRegistrationGuideDialog(context),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -126,7 +164,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
 
   Future<void> _submit({String? tenantId}) async {
     ref.read(authControllerProvider.notifier).clearFailure();
-    final form = _formKey.currentState;
+    final FormState? form = _formKey.currentState;
     if (form == null || !form.validate()) {
       _enableValidationRefresh();
       return;

@@ -1284,15 +1284,19 @@ describe('Auth Service', () => {
       }));
     });
 
-    it('should not reveal if user does not exist', async () => {
+    it('should reject when user does not exist', async () => {
       authRepository.findUserByEmailAndTenant.mockResolvedValue(null);
 
-      const result = await authService.forgotPassword({
-        email: 'nonexistent@example.com',
-        tenant_id: 'tenant-123'
+      await expect(
+        authService.forgotPassword({
+          email: 'nonexistent@example.com',
+          tenant_id: 'tenant-123'
+        })
+      ).rejects.toMatchObject({
+        messageKey: 'errors.auth.user_not_found',
+        statusCode: 401,
       });
 
-      expect(result).toHaveProperty('message');
       expect(authRepository.createVerificationToken).not.toHaveBeenCalled();
     });
 

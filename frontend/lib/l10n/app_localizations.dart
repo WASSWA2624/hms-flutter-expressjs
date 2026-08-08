@@ -15217,7 +15217,7 @@ abstract class AppLocalizations {
   /// Forgot password page body.
   ///
   /// In en, this message translates to:
-  /// **'Enter your facility account email. We send reset instructions if it matches.'**
+  /// **'Enter your facility account email. If it matches an account, we send reset instructions.'**
   String get authForgotPasswordBody;
 
   /// Link and action label to start password reset.
@@ -15247,8 +15247,26 @@ abstract class AppLocalizations {
   /// Body after forgot password request succeeds.
   ///
   /// In en, this message translates to:
-  /// **'If an account exists, we sent a reset link and six-digit code.'**
+  /// **'We sent a reset link and six-digit code to your email.'**
   String get authForgotPasswordSubmittedBody;
+
+  /// Title when forgot-password email does not match an account.
+  ///
+  /// In en, this message translates to:
+  /// **'No account found'**
+  String get authForgotPasswordAccountNotFoundTitle;
+
+  /// Guidance when forgot-password email does not match an account.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not find a facility account for that email. Check the address, or create an account if you have not registered yet.'**
+  String get authForgotPasswordAccountNotFoundBody;
+
+  /// Next-action hint when forgot-password email is unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: create an account, or go back and sign in with a different email.'**
+  String get authForgotPasswordAccountNotFoundNextStep;
 
   /// Action to open reset password page in code entry mode.
   ///

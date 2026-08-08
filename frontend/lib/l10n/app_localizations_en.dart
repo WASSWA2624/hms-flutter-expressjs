@@ -8271,7 +8271,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authForgotPasswordBody =>
-      'Enter your facility account email. We send reset instructions if it matches.';
+      'Enter your facility account email. If it matches an account, we send reset instructions.';
 
   @override
   String get authForgotPasswordActionLabel => 'Forgot password?';
@@ -8288,7 +8288,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authForgotPasswordSubmittedBody =>
-      'If an account exists, we sent a reset link and six-digit code.';
+      'We sent a reset link and six-digit code to your email.';
+
+  @override
+  String get authForgotPasswordAccountNotFoundTitle => 'No account found';
+
+  @override
+  String get authForgotPasswordAccountNotFoundBody =>
+      'We could not find a facility account for that email. Check the address, or create an account if you have not registered yet.';
+
+  @override
+  String get authForgotPasswordAccountNotFoundNextStep =>
+      'Next: create an account, or go back and sign in with a different email.';
 
   @override
   String get authResetPasswordWithCodeActionLabel => 'Enter reset code';

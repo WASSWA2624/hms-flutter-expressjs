@@ -291,10 +291,12 @@ final class AuthController extends Notifier<AuthControllerState> {
           if (result.tenants.isEmpty) {
             state = state.copyWith(
               isSubmitting: false,
-              clearFailure: true,
-              passwordResetSubmitted: true,
+              failure: const AppFailure.unauthorized(
+                code: 'auth.account_not_found',
+              ),
+              passwordResetSubmitted: false,
             );
-            return true;
+            return false;
           }
 
           if (result.tenants.length == 1) {

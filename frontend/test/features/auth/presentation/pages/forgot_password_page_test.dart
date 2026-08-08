@@ -27,11 +27,43 @@ void main() {
       expect(find.text(l10n.authForgotPasswordTitle), findsOneWidget);
       expect(find.text(l10n.authForgotPasswordSubmitLabel), findsOneWidget);
       expect(find.text(l10n.authBackToLoginActionLabel), findsOneWidget);
+      expect(find.text(l10n.authCreateAccountActionLabel), findsOneWidget);
+      expect(find.text(l10n.authHowToRegisterActionLabel), findsOneWidget);
       expect(
         find.text(l10n.authResetPasswordWithCodeActionLabel),
         findsNothing,
       );
       expect(find.text(l10n.authForgotPasswordSubmittedTitle), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'unknown email shows not-found guidance and stays on page',
+    (WidgetTester tester) async {
+      final repository = _ForgotPasswordRepository(
+        tenants: const <AuthTenantOption>[],
+      );
+
+      await _pumpForgotPassword(tester, repository);
+      final l10n = tester.element(find.byType(ForgotPasswordPage)).l10n;
+
+      await tester.enterText(find.byType(EditableText), 'missing@example.com');
+      await tester.tap(find.text(l10n.authForgotPasswordSubmitLabel));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ForgotPasswordPage), findsOneWidget);
+      expect(find.byType(ResetPasswordPage), findsNothing);
+      expect(
+        find.text(l10n.authForgotPasswordAccountNotFoundTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(l10n.authForgotPasswordAccountNotFoundBody),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.authCreateAccountActionLabel), findsOneWidget);
+      expect(repository.forgotPasswordCalls, 0);
     },
   );
 
@@ -198,6 +230,10 @@ Future<void> _pumpForgotPassword(
           GoRoute(
             path: '/login',
             builder: (_, _) => const Scaffold(body: Text('login')),
+          ),
+          GoRoute(
+            path: '/register',
+            builder: (_, _) => const Scaffold(body: Text('register')),
           ),
         ],
       ),
