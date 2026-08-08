@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/network/http_response_cache_interceptor.dart';
 import 'package:hosspi_hms/core/network/network_failure_mapper.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_token_provider.dart';
+import 'package:hosspi_hms/core/utils/client_timezone.dart';
 
 final networkFailureMapperProvider = Provider<NetworkFailureMapper>((ref) {
   return const NetworkFailureMapper();
@@ -29,6 +30,8 @@ String? _readRequestLocale(Ref ref) {
   return ref.read(appLocaleProvider)?.languageCode;
 }
 
+String? _readRequestTimezone() => readClientTimeZoneId();
+
 final publicDioProvider = Provider<Dio>((ref) {
   final config = ref.watch(appConfigProvider);
   final csrfDio = Dio(_dioBaseOptions(config));
@@ -37,7 +40,10 @@ final publicDioProvider = Provider<Dio>((ref) {
   final dio = Dio(_dioBaseOptions(config));
   configureDioAdapter(dio);
   dio.interceptors.addAll(<Interceptor>[
-    LocaleInterceptor(readLocale: () => _readRequestLocale(ref)),
+    LocaleInterceptor(
+      readLocale: () => _readRequestLocale(ref),
+      readTimezone: _readRequestTimezone,
+    ),
     CsrfInterceptor(tokenDio: csrfDio, retryClient: dio),
     SafeDiagnosticsInterceptor(
       enabled: !config.isProduction && config.logLevel == AppLogLevel.debug,
@@ -70,7 +76,10 @@ final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(_dioBaseOptions(config));
   configureDioAdapter(dio);
   dio.interceptors.addAll(<Interceptor>[
-    LocaleInterceptor(readLocale: () => _readRequestLocale(ref)),
+    LocaleInterceptor(
+      readLocale: () => _readRequestLocale(ref),
+      readTimezone: _readRequestTimezone,
+    ),
     CsrfInterceptor(tokenDio: csrfDio, retryClient: dio),
     AuthInterceptor(
       readAccessToken: tokenProvider.readAccessToken,

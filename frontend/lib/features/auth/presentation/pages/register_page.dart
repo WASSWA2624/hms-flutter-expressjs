@@ -46,6 +46,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       // Fresh visit: drop sibling-route failure / reset shells from shared auth state.
       final AuthController auth = ref.read(authControllerProvider.notifier);
       auth.clearFailure();
+      auth.clearSubmitting();
       auth.clearIdentifyTenants();
       auth.clearPasswordResetSubmitted();
     });

@@ -10,22 +10,33 @@ typedef DiagnosticsLogSink = void Function(String message);
 const authorizationHeaderName = 'Authorization';
 const csrfHeaderName = 'x-csrf-token';
 const localeHeaderName = 'x-locale';
+const timezoneHeaderName = 'x-timezone';
 const authRetryExtraKey = 'auth_retry';
 const csrfRetryExtraKey = 'csrf_retry';
 
 typedef RequestLocaleReader = String? Function();
+typedef RequestTimezoneReader = String? Function();
 
 final class LocaleInterceptor extends Interceptor {
-  LocaleInterceptor({required RequestLocaleReader readLocale})
-    : _readLocale = readLocale;
+  LocaleInterceptor({
+    required RequestLocaleReader readLocale,
+    RequestTimezoneReader? readTimezone,
+  }) : _readLocale = readLocale,
+       _readTimezone = readTimezone;
 
   final RequestLocaleReader _readLocale;
+  final RequestTimezoneReader? _readTimezone;
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     final String? locale = _readLocale()?.trim();
     if (locale != null && locale.isNotEmpty) {
       options.headers[localeHeaderName] = locale;
+    }
+
+    final String? timezone = _readTimezone?.call()?.trim();
+    if (timezone != null && timezone.isNotEmpty) {
+      options.headers[timezoneHeaderName] = timezone;
     }
 
     handler.next(options);

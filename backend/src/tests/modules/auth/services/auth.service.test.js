@@ -596,6 +596,40 @@ describe('Auth Service', () => {
       }));
     });
 
+    it('should format verification expiry using the client timezone', async () => {
+      const registerData = {
+        email: 'tz-user@example.com',
+        password: 'Password123!',
+        facility_name: 'Timezone Clinic',
+        admin_name: 'Jane Doe',
+        facility_type: 'CLINIC',
+        phone: '256701234567',
+        request_context: {
+          locale: 'en',
+          timezone: 'UTC',
+        },
+      };
+
+      hashPassword.mockResolvedValue('hashedpassword');
+      authRepository.findUserByEmail.mockResolvedValue(null);
+      authRepository.registerFacilityOwner.mockResolvedValue({
+        id: 'user-tz-123',
+        email: 'tz-user@example.com',
+        tenant_id: 'tenant-123',
+        facility_id: 'facility-123',
+        status: 'PENDING',
+        password_hash: 'hashedpassword',
+      });
+      authRepository.createVerificationToken.mockResolvedValue({});
+      createAuditLog.mockResolvedValue({});
+
+      await authService.register(registerData);
+
+      const lastEmailCall = sendEmail.mock.calls[sendEmail.mock.calls.length - 1][0];
+      expect(lastEmailCall.text).toMatch(/Expires in 15 minutes:.*UTC/);
+      expect(lastEmailCall.html).toMatch(/Expires in 15 minutes:.*UTC/);
+    });
+
     it('should resend verification when email already exists in pending state', async () => {
       const registerData = {
         email: 'pending@example.com',

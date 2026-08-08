@@ -25,7 +25,12 @@ class AuthPrimaryButton extends StatelessWidget {
     final bool canPress = !isLoading && onPressed != null;
 
     final Widget button = FilledButton(
-      onPressed: canPress ? onPressed : null,
+      // Keep the primary fill while loading so the CTA does not look disabled.
+      onPressed: isLoading
+          ? () {}
+          : canPress
+          ? onPressed
+          : null,
       style: FilledButton.styleFrom(
         minimumSize: Size(fullWidth ? double.infinity : 0, 48),
         padding: EdgeInsets.symmetric(

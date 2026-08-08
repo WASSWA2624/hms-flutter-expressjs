@@ -63,6 +63,10 @@ void main() {
 
     expect(find.byType(RegisterPage), findsOneWidget);
     expect(find.text(l10n.authWrongPasswordMessage), findsNothing);
+    final FilledButton createAccount = tester.widget(
+      find.widgetWithText(FilledButton, l10n.authRegisterActionLabel),
+    );
+    expect(createAccount.onPressed, isNotNull);
   });
 
   testWidgets('Back to sign in opens login', (WidgetTester tester) async {

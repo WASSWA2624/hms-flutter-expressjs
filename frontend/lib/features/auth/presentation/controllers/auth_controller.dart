@@ -75,6 +75,14 @@ final class AuthController extends Notifier<AuthControllerState> {
     state = state.copyWith(clearFailure: true);
   }
 
+  void clearSubmitting() {
+    if (!state.isSubmitting) {
+      return;
+    }
+
+    state = state.copyWith(isSubmitting: false);
+  }
+
   void clearIdentifyTenants() {
     if (state.identifyTenants.isEmpty) {
       return;
@@ -162,34 +170,39 @@ final class AuthController extends Notifier<AuthControllerState> {
       clearFailure: true,
       registrationSubmitted: false,
     );
-    final result = await ref
-        .read(authRepositoryProvider)
-        .register(
-          email: email,
-          password: password,
-          facilityName: facilityName,
-          adminName: adminName,
-          facilityType: facilityType,
-          phone: phone,
-          tenantName: tenantName,
-          location: location,
-          interests: interests,
-        );
+    try {
+      final result = await ref
+          .read(authRepositoryProvider)
+          .register(
+            email: email,
+            password: password,
+            facilityName: facilityName,
+            adminName: adminName,
+            facilityType: facilityType,
+            phone: phone,
+            tenantName: tenantName,
+            location: location,
+            interests: interests,
+          );
 
-    return result.when(
-      success: (_) {
-        state = state.copyWith(
-          isSubmitting: false,
-          clearFailure: true,
-          registrationSubmitted: false,
-        );
-        return true;
-      },
-      failure: (AppFailure failure) {
-        state = state.copyWith(isSubmitting: false, failure: failure);
-        return false;
-      },
-    );
+      return result.when(
+        success: (_) {
+          state = state.copyWith(
+            isSubmitting: false,
+            clearFailure: true,
+            registrationSubmitted: false,
+          );
+          return true;
+        },
+        failure: (AppFailure failure) {
+          state = state.copyWith(isSubmitting: false, failure: failure);
+          return false;
+        },
+      );
+    } catch (_) {
+      state = state.copyWith(isSubmitting: false);
+      rethrow;
+    }
   }
 
   Future<bool> changePassword({

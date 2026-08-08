@@ -344,7 +344,9 @@ const getRoleNames = (user = {}) => uniqueValues(
     .filter(Boolean)
 );
 
-const formatExpiryDateTime = (expiresAt, locale) => {
+const formatExpiryDateTime = (expiresAt, locale, timeZone) => {
+  const resolvedTimeZone =
+    typeof timeZone === 'string' ? timeZone.trim().slice(0, 64) : '';
   try {
     return new Intl.DateTimeFormat(locale || 'en', {
       year: 'numeric',
@@ -354,9 +356,23 @@ const formatExpiryDateTime = (expiresAt, locale) => {
       minute: '2-digit',
       second: '2-digit',
       timeZoneName: 'short',
+      ...(resolvedTimeZone ? { timeZone: resolvedTimeZone } : {}),
     }).format(expiresAt);
   } catch {
-    return expiresAt.toISOString();
+    try {
+      // Invalid client timezone — fall back to locale defaults (no forced zone).
+      return new Intl.DateTimeFormat(locale || 'en', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short',
+      }).format(expiresAt);
+    } catch {
+      return expiresAt.toISOString();
+    }
   }
 };
 
@@ -364,12 +380,17 @@ const buildVerificationEmailMessage = ({
   code,
   expiresAt,
   locale,
+  timeZone,
 }) => {
   const resolvedLocale = resolveLocale(locale);
   const expiryDate =
     resolveExpiryDate(expiresAt) ||
     new Date(Date.now() + EMAIL_VERIFICATION_EXPIRY_MINUTES * 60 * 1000);
-  const expiresAtLabel = formatExpiryDateTime(expiryDate, resolvedLocale);
+  const expiresAtLabel = formatExpiryDateTime(
+    expiryDate,
+    resolvedLocale,
+    timeZone
+  );
   const subject = translate('messages.auth.email_verification.subject', resolvedLocale, {
     app_name: VERIFICATION_EMAIL_APP_NAME,
   });
@@ -442,11 +463,13 @@ const sendVerificationEmail = async ({
   code,
   expiresAt,
   locale,
+  timeZone,
 }) => {
   const payload = buildVerificationEmailMessage({
     code,
     expiresAt,
     locale,
+    timeZone,
   });
 
   return sendEmail({
@@ -464,13 +487,18 @@ const sendPasswordResetEmail = async ({
   resetCode,
   expiresAt,
   locale,
+  timeZone,
 }) => {
   const resolvedLocale = resolveLocale(locale);
   const link = buildResetPasswordLink(resetToken, email);
   const expiryDate =
     resolveExpiryDate(expiresAt) ||
     new Date(Date.now() + PASSWORD_RESET_EXPIRY_HOURS * 60 * 60 * 1000);
-  const expiresAtLabel = formatExpiryDateTime(expiryDate, resolvedLocale);
+  const expiresAtLabel = formatExpiryDateTime(
+    expiryDate,
+    resolvedLocale,
+    timeZone
+  );
   const subject = translate('messages.auth.password_reset.subject', resolvedLocale, {
     app_name: APP_DISPLAY_NAME,
   });
@@ -1004,6 +1032,7 @@ const handleExistingEmailRegistration = async ({
     plainPassword: null,
     expiresAt: verification.expiresAt,
     locale: request_context?.locale,
+    timeZone: request_context?.timezone,
   });
   ensureEmailDelivered(deliveryResult, 'register_existing_email', {
     code: verification.code,
@@ -1500,6 +1529,7 @@ const register = async (data) => {
     plainPassword: password,
     expiresAt: verification.expiresAt,
     locale: request_context?.locale,
+    timeZone: request_context?.timezone,
   });
   ensureEmailDelivered(deliveryResult, 'register_new_user', {
     code: verification.code,
@@ -1978,6 +2008,7 @@ const resendVerification = async (data) => {
       plainPassword: null,
       expiresAt: tokens.expiresAt,
       locale: request_context?.locale,
+      timeZone: request_context?.timezone,
     });
     ensureEmailDelivered(deliveryResult, 'resend_verification', {
       code: tokens.code,
@@ -2039,6 +2070,7 @@ const forgotPassword = async (data) => {
     resetCode: code,
     expiresAt,
     locale: request_context?.locale,
+    timeZone: request_context?.timezone,
   });
 
   // Keep response generic to avoid account enumeration side effects,
