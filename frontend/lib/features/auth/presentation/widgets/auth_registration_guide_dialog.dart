@@ -22,8 +22,9 @@ class AuthRegistrationGuideDialog extends StatelessWidget {
     return AppDialog(
       title: Text(l10n.authRegistrationGuideTitle),
       scrollable: true,
-      initialMaximized: false,
-      maxWidth: 520,
+      pinActionsToBottom: true,
+      initialMaximized: true,
+      maxWidth: 640,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -32,30 +33,31 @@ class AuthRegistrationGuideDialog extends StatelessWidget {
             l10n.authRegistrationGuideIntro,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
+              height: 1.45,
             ),
           ),
-          SizedBox(height: theme.spacing.lg),
+          SizedBox(height: theme.spacing.xl),
           _GuideStep(
             step: 1,
             title: l10n.authRegistrationGuideStepCreateTitle,
             body: l10n.authRegistrationGuideStepCreateBody,
             icon: Icons.person_add_alt_1_rounded,
           ),
-          SizedBox(height: theme.spacing.md),
+          SizedBox(height: theme.spacing.lg),
           _GuideStep(
             step: 2,
             title: l10n.authRegistrationGuideStepVerifyTitle,
             body: l10n.authRegistrationGuideStepVerifyBody,
             icon: Icons.mark_email_read_outlined,
           ),
-          SizedBox(height: theme.spacing.md),
+          SizedBox(height: theme.spacing.lg),
           _GuideStep(
             step: 3,
             title: l10n.authRegistrationGuideStepApproveTitle,
             body: l10n.authRegistrationGuideStepApproveBody,
             icon: Icons.verified_user_outlined,
           ),
-          SizedBox(height: theme.spacing.md),
+          SizedBox(height: theme.spacing.lg),
           _GuideStep(
             step: 4,
             title: l10n.authRegistrationGuideStepSignInTitle,
