@@ -89,7 +89,7 @@ void main() {
   );
 
   testWidgets(
-    'facility-only actor shows single facility without select-all',
+    'facility-only actor omits Scope section and still creates facility role',
     (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -136,11 +136,14 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
+      expect(find.text('Scope'), findsNothing);
       expect(find.text('Facility(ies)'), findsNothing);
       expect(find.text('Select all'), findsNothing);
       expect(find.text('Platform'), findsNothing);
       expect(find.text('Tenant(s)'), findsNothing);
-      expect(find.text('Main Campus'), findsOneWidget);
+      expect(find.text('Main Campus'), findsNothing);
+      expect(find.textContaining('Role name'), findsWidgets);
+      expect(find.textContaining('Display name'), findsWidgets);
     },
   );
 
