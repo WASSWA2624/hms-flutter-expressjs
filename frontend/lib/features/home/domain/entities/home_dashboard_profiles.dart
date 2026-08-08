@@ -77,6 +77,11 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         requiredPermissions: <AppPermission>[AppPermissions.platformAdmin],
       ),
       HomeStatusCardTemplate(
+        id: 'pending_subscription_activations',
+        label: 'Activations',
+        requiredPermissions: <AppPermission>[AppPermissions.platformAdmin],
+      ),
+      HomeStatusCardTemplate(
         id: 'module_entitlement_issues',
         label: 'Entitlements',
         requiredPermissions: <AppPermission>[AppPermissions.platformAdmin],
@@ -101,6 +106,11 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'pending_registration_approvals': HomeMetricRouteTarget(
         queryParameters: <String, String>{
           'section': 'subscription-approvals',
+        },
+      ),
+      'pending_subscription_activations': HomeMetricRouteTarget(
+        queryParameters: <String, String>{
+          'section': 'subscription-activations',
         },
       ),
       'tenants_active': HomeMetricRouteTarget(

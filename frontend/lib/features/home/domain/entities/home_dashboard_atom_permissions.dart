@@ -24,6 +24,9 @@ abstract final class HomeDashboardAtomPermissions {
         'pending_registration_approvals': <AppPermission>[
           AppPermissions.platformAdmin,
         ],
+        'pending_subscription_activations': <AppPermission>[
+          AppPermissions.platformAdmin,
+        ],
         'module_entitlement_issues': <AppPermission>[AppPermissions.platformAdmin],
         // Gap: platform_users / system_health — no live metric source yet.
 

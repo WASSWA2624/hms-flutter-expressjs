@@ -435,6 +435,7 @@ AppRouteData? _clinicalMetricRoute({
   if (profile.id == 'platform_admin' || profile.id == 'super_admin') {
     return switch (cardId) {
       'pending_registration_approvals' ||
+      'pending_subscription_activations' ||
       'tenants_active' ||
       'facilities_active'
           when policy.grants(AppPermissions.platformAdmin) =>

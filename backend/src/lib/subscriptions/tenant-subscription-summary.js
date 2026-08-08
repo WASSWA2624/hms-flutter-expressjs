@@ -211,6 +211,7 @@ const resolveTenantSubscriptionSummary = async (tenantId) => {
 const resolvePlatformAdminContact = () => ({
   email: String(env.PLATFORM_ADMIN_EMAIL || '').trim() || null,
   phone: String(env.PLATFORM_ADMIN_PHONE || '').trim() || null,
+  whatsapp: String(env.PLATFORM_WHATSAPP || env.PLATFORM_ADMIN_PHONE || '').trim() || null,
 });
 
 const resolvePlatformBankTransferDetails = () => {
@@ -235,6 +236,22 @@ const resolvePlatformBankTransferDetails = () => {
   };
 };
 
+const resolvePlatformMobileMoneyDetails = () => {
+  const accountName = String(env.PLATFORM_MOBILE_MONEY_NAME || '').trim() || null;
+  const mtn = String(env.PLATFORM_MOBILE_MONEY_MTN || '').trim() || null;
+  const airtel = String(env.PLATFORM_MOBILE_MONEY_AIRTEL || '').trim() || null;
+
+  if (!mtn && !airtel) {
+    return null;
+  }
+
+  return {
+    account_name: accountName,
+    mtn,
+    airtel,
+  };
+};
+
 module.exports = {
   COMMERCIAL_TIER_LADDER,
   resolveDaysUntil,
@@ -243,5 +260,6 @@ module.exports = {
   resolveNextUpgradePlan,
   resolvePlatformAdminContact,
   resolvePlatformBankTransferDetails,
+  resolvePlatformMobileMoneyDetails,
   resolveTenantSubscriptionSummary,
 };

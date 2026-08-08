@@ -9,13 +9,13 @@ import 'package:hosspi_hms/core/currency/effective_default_currency_provider.dar
 import 'package:hosspi_hms/core/currency/fx_currency_utils.dart';
 import 'package:hosspi_hms/core/currency/fx_rate_service.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/errors/validation_message_presenter.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
+import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/subscriptions/data/repositories/subscriptions_repository_impl.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
-import 'package:hosspi_hms/features/subscriptions/presentation/widgets/mobile_money_provider_selector.dart';
-import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_payment_method_selector.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_payment_methods.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_plan_selector.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -24,7 +24,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
-enum _UpgradeStep { plan, paymentMethod, paymentDetails, proof, contact }
+enum _UpgradeStep { plan, pay, confirm }
 
 /// Result of a successful subscription upgrade/renew/free-plan submission.
 enum SubscriptionUpgradeDialogResult { paidSubmitted, freeSubmitted }
@@ -64,16 +64,8 @@ class SubscriptionUpgradeDialog extends ConsumerStatefulWidget {
 class _SubscriptionUpgradeDialogState
     extends ConsumerState<SubscriptionUpgradeDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final GlobalKey<State<AppPhoneField>> _phoneFieldKey =
-      GlobalKey<State<AppPhoneField>>();
   final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _invoiceEmailController = TextEditingController();
-  final TextEditingController _referenceController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _bankNameController = TextEditingController();
-  final TextEditingController _cardHolderController = TextEditingController();
-  final TextEditingController _cardLastFourController = TextEditingController();
 
   SubscriptionUpgradeContext? _context;
   AppFailure? _failure;
@@ -89,12 +81,18 @@ class _SubscriptionUpgradeDialogState
       SubscriptionUpgradeBillingCycle.monthly;
   SubscriptionPaymentMethodId _paymentMethod =
       SubscriptionPaymentMethodId.mobileMoney;
-  MobileMoneyProviderId _mobileMoneyProvider = MobileMoneyProviderId.mtn;
   String? _proofFileName;
   List<int>? _proofBytes;
   String? _proofMimeType;
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
   _UpgradeStep _step = _UpgradeStep.plan;
+
+  static const List<SubscriptionPaymentMethodId> _payChannels =
+      <SubscriptionPaymentMethodId>[
+        SubscriptionPaymentMethodId.mobileMoney,
+        SubscriptionPaymentMethodId.bankTransfer,
+        SubscriptionPaymentMethodId.other,
+      ];
 
   @override
   void initState() {
@@ -105,13 +103,7 @@ class _SubscriptionUpgradeDialogState
   @override
   void dispose() {
     _amountController.dispose();
-    _invoiceEmailController.dispose();
-    _referenceController.dispose();
     _notesController.dispose();
-    _phoneController.dispose();
-    _bankNameController.dispose();
-    _cardHolderController.dispose();
-    _cardLastFourController.dispose();
     super.dispose();
   }
 
@@ -135,14 +127,6 @@ class _SubscriptionUpgradeDialogState
     return null;
   }
 
-  bool get _showReferenceField =>
-      _paymentMethod == SubscriptionPaymentMethodId.mobileMoney ||
-      _paymentMethod == SubscriptionPaymentMethodId.bankTransfer;
-
-  bool get _requiresProof =>
-      !_isNoPaymentPlan &&
-      subscriptionPaymentMethodRequiresProof(_paymentMethod);
-
   bool get _isNoPaymentPlan {
     final SubscriptionUpgradePlanOption? plan = _selectedPlan;
     if (plan == null) {
@@ -153,15 +137,9 @@ class _SubscriptionUpgradeDialogState
 
   List<_UpgradeStep> get _steps {
     if (_isNoPaymentPlan) {
-      return const <_UpgradeStep>[_UpgradeStep.plan, _UpgradeStep.contact];
+      return const <_UpgradeStep>[_UpgradeStep.plan, _UpgradeStep.confirm];
     }
-    return <_UpgradeStep>[
-      _UpgradeStep.plan,
-      _UpgradeStep.paymentMethod,
-      _UpgradeStep.paymentDetails,
-      if (_requiresProof) _UpgradeStep.proof,
-      _UpgradeStep.contact,
-    ];
+    return const <_UpgradeStep>[_UpgradeStep.plan, _UpgradeStep.pay];
   }
 
   void _ensureStepInFlow() {
@@ -198,6 +176,8 @@ class _SubscriptionUpgradeDialogState
                     body: l10n.subscriptionUpgradeCustomContactDialogBody,
                     emailLabel: l10n.subscriptionUpgradeAdminContactEmailLabel,
                     phoneLabel: l10n.subscriptionUpgradeAdminContactPhoneLabel,
+                    whatsappLabel:
+                        l10n.subscriptionUpgradeAdminContactWhatsappLabel,
                   )
                 : AppMessagePanel(
                     message: l10n.subscriptionUpgradeCustomContactEmptyMessage,
@@ -224,6 +204,15 @@ class _SubscriptionUpgradeDialogState
     };
   }
 
+  String _billingCycleLabel(AppLocalizations l10n) {
+    return switch (_billingCycle) {
+      SubscriptionUpgradeBillingCycle.monthly =>
+        l10n.subscriptionUpgradeBillingMonthlyLabel,
+      SubscriptionUpgradeBillingCycle.annual =>
+        l10n.subscriptionUpgradeBillingAnnualLabel,
+    };
+  }
+
   Future<void> _loadContext() async {
     if (!ref.read(appAccessPolicyProvider).canManageSubscriptionBilling()) {
       if (!mounted) {
@@ -246,68 +235,67 @@ class _SubscriptionUpgradeDialogState
       return;
     }
 
-    result.when(
-      success: (SubscriptionUpgradeContext contextData) {
-        final String? currentPlanId =
-            contextData.currentPlanId ??
-            contextData.summary?.planId ??
-            widget.initialSummary?.planId;
-        final List<SubscriptionUpgradePlanOption> commercialPlans =
-            contextData.plans
-                .where(
-                  (SubscriptionUpgradePlanOption plan) => !plan.isDeveloperPlan,
-                )
-                .toList(growable: false);
+    if (result.isFailure) {
+      setState(() {
+        _failure = (result as ResultFailure<SubscriptionUpgradeContext>).failure;
+        _isLoading = false;
+      });
+      return;
+    }
 
-        // Prefer the tenant's current package; fall back to recommendation / first plan.
-        final String? preferredPlanId =
-            currentPlanId ??
-            contextData.recommendedPlanId ??
-            commercialPlans.firstOrNull?.id;
+    final SubscriptionUpgradeContext contextData =
+        (result as ResultSuccess<SubscriptionUpgradeContext>).value;
 
-        final bool preferredInCatalog =
-            preferredPlanId != null &&
-            commercialPlans.any(
-              (SubscriptionUpgradePlanOption plan) =>
-                  plan.id == preferredPlanId,
-            );
-        final String? selectedPlanId = preferredInCatalog
-            ? preferredPlanId
-            : commercialPlans.firstOrNull?.id;
+    final String? currentPlanId =
+        contextData.currentPlanId ??
+        contextData.summary?.planId ??
+        widget.initialSummary?.planId;
+    final List<SubscriptionUpgradePlanOption> commercialPlans = contextData
+        .plans
+        .where(
+          (SubscriptionUpgradePlanOption plan) => !plan.isDeveloperPlan,
+        )
+        .toList(growable: false);
 
-        SubscriptionUpgradeBillingCycle billingCycle =
-            SubscriptionUpgradeBillingCycle.monthly;
-        final SubscriptionUpgradePlanOption? seedPlan = commercialPlans
-            .where(
-              (SubscriptionUpgradePlanOption plan) => plan.id == selectedPlanId,
-            )
-            .firstOrNull;
-        final String seedCycle = (seedPlan?.billingCycle ?? '')
-            .trim()
-            .toUpperCase();
-        if (seedCycle.contains('YEAR') || seedCycle == 'ANNUAL') {
-          billingCycle = SubscriptionUpgradeBillingCycle.annual;
-        }
+    final String? preferredPlanId =
+        currentPlanId ??
+        contextData.recommendedPlanId ??
+        commercialPlans.firstOrNull?.id;
 
-        setState(() {
-          _context = contextData;
-          _selectedPlanId = selectedPlanId;
-          _billingCycle = billingCycle;
-          _currency = ref.read(effectiveDefaultCurrencyProvider);
-          _isLoading = false;
-        });
+    final bool preferredInCatalog =
+        preferredPlanId != null &&
+        commercialPlans.any(
+          (SubscriptionUpgradePlanOption plan) => plan.id == preferredPlanId,
+        );
+    final String? selectedPlanId = preferredInCatalog
+        ? preferredPlanId
+        : commercialPlans.firstOrNull?.id;
 
-        _syncUsdPriceFromSelection();
-        unawaited(_refreshDisplayFxRate());
-        unawaited(_applyConvertedAmount());
-      },
-      failure: (AppFailure failure) {
-        setState(() {
-          _failure = failure;
-          _isLoading = false;
-        });
-      },
-    );
+    SubscriptionUpgradeBillingCycle billingCycle =
+        SubscriptionUpgradeBillingCycle.monthly;
+    final SubscriptionUpgradePlanOption? seedPlan = commercialPlans
+        .where(
+          (SubscriptionUpgradePlanOption plan) => plan.id == selectedPlanId,
+        )
+        .firstOrNull;
+    final String seedCycle = (seedPlan?.billingCycle ?? '')
+        .trim()
+        .toUpperCase();
+    if (seedCycle.contains('YEAR') || seedCycle == 'ANNUAL') {
+      billingCycle = SubscriptionUpgradeBillingCycle.annual;
+    }
+
+    _currency = ref.read(tenantDefaultCurrencyProvider);
+    _selectedPlanId = selectedPlanId;
+    _billingCycle = billingCycle;
+    _context = contextData;
+    _syncUsdPriceFromSelection();
+    await _refreshDisplayFxRate();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _isLoading = false);
+    unawaited(_applyConvertedAmount());
   }
 
   void _syncUsdPriceFromSelection() {
@@ -456,23 +444,9 @@ class _SubscriptionUpgradeDialogState
     switch (_step) {
       case _UpgradeStep.plan:
         return _selectedPlan != null;
-      case _UpgradeStep.paymentMethod:
-        return true;
-      case _UpgradeStep.paymentDetails:
-        AppPhoneField.commitPhone(_phoneFieldKey);
+      case _UpgradeStep.pay:
         return validateAndSaveAppForm(_formKey);
-      case _UpgradeStep.proof:
-        if (_requiresProof && _proofBytes == null) {
-          setState(() {
-            _failure = AppFailure.validation(
-              code: 'subscription.proof_required',
-              detailMessage: context.l10n.subscriptionProofRequiredMessage,
-            );
-          });
-          return false;
-        }
-        return true;
-      case _UpgradeStep.contact:
+      case _UpgradeStep.confirm:
         return true;
     }
   }
@@ -512,30 +486,9 @@ class _SubscriptionUpgradeDialogState
     }
 
     final bool noPayment = _isNoPaymentPlan;
-
-    if (!noPayment) {
-      AppPhoneField.commitPhone(_phoneFieldKey);
-      // Re-validate payment details form before submit.
-      if (!validateAndSaveAppForm(_formKey)) {
-        setState(() => _step = _UpgradeStep.paymentDetails);
-        return;
-      }
-    }
-
     final String? planId = _selectedPlanId;
     if (planId == null || planId.isEmpty) {
       setState(() => _step = _UpgradeStep.plan);
-      return;
-    }
-
-    if (!noPayment && _requiresProof && _proofBytes == null) {
-      setState(() {
-        _step = _UpgradeStep.proof;
-        _failure = AppFailure.validation(
-          code: 'subscription.proof_required',
-          detailMessage: context.l10n.subscriptionProofRequiredMessage,
-        );
-      });
       return;
     }
 
@@ -543,12 +496,6 @@ class _SubscriptionUpgradeDialogState
       _isSubmitting = true;
       _failure = null;
     });
-
-    final String? provider = noPayment
-        ? null
-        : (_paymentMethod == SubscriptionPaymentMethodId.mobileMoney
-              ? _mobileMoneyProvider.serverValue
-              : null);
 
     final result = await ref
         .read(subscriptionsRepositoryProvider)
@@ -563,22 +510,8 @@ class _SubscriptionUpgradeDialogState
                 : normalizeCurrencyAmount(_amountController.text),
             currency: noPayment ? subscriptionPlanBaseCurrencyCode : _currency,
             billingCycle: _billingCycleServerValue(),
-            invoiceEmail: noPayment
-                ? null
-                : _emptyToNull(_invoiceEmailController.text),
-            reference: noPayment || !_showReferenceField
-                ? null
-                : _emptyToNull(_referenceController.text),
+            reference: null,
             notes: _buildSubmissionNotes(noPayment: noPayment),
-            paymentProvider: provider,
-            payerPhone: noPayment ? null : _emptyToNull(_phoneController.text),
-            bankName: noPayment ? null : _emptyToNull(_bankNameController.text),
-            cardHolderName: noPayment
-                ? null
-                : _emptyToNull(_cardHolderController.text),
-            cardLastFour: noPayment
-                ? null
-                : _emptyToNull(_cardLastFourController.text),
             proofBytes: noPayment ? null : _proofBytes,
             proofFileName: noPayment ? null : _proofFileName,
             proofMimeType: noPayment ? null : _proofMimeType,
@@ -611,7 +544,7 @@ class _SubscriptionUpgradeDialogState
         : 'upgrade';
     final String composed = noPayment
         ? 'flow:$intent;billing_cycle:${_billingCycleServerValue()};no_payment:true'
-        : 'flow:$intent;billing_cycle:${_billingCycleServerValue()}';
+        : 'flow:$intent;billing_cycle:${_billingCycleServerValue()};channel:${_paymentMethod.serverValue}';
     if (base.isEmpty) {
       return composed;
     }
@@ -643,16 +576,25 @@ class _SubscriptionUpgradeDialogState
   String _stepTitle(AppLocalizations l10n, _UpgradeStep step) {
     return switch (step) {
       _UpgradeStep.plan => l10n.subscriptionUpgradeStepPlanTitle,
-      _UpgradeStep.paymentMethod =>
-        l10n.subscriptionUpgradeStepPaymentMethodTitle,
-      _UpgradeStep.paymentDetails =>
-        l10n.subscriptionUpgradeStepPaymentDetailsTitle,
-      _UpgradeStep.proof => l10n.subscriptionUpgradeStepProofTitle,
-      _UpgradeStep.contact =>
-        _isNoPaymentPlan
-            ? l10n.subscriptionUpgradeStepConfirmTitle
-            : l10n.subscriptionUpgradeStepContactTitle,
+      _UpgradeStep.pay => l10n.subscriptionUpgradeStepPayTitle,
+      _UpgradeStep.confirm => l10n.subscriptionUpgradeStepConfirmTitle,
     };
+  }
+
+  String _formattedAmountDue(BuildContext context) {
+    final String raw = normalizeCurrencyAmount(_amountController.text);
+    final double? amount = double.tryParse(raw);
+    if (amount == null) {
+      return _amountController.text.trim().isEmpty
+          ? '—'
+          : '${_currency.trim().toUpperCase()} ${_amountController.text.trim()}';
+    }
+    return AppFormatters.currency(
+      amount,
+      Localizations.localeOf(context),
+      currencyCode: _currency,
+      decimalDigits: decimalDigitsForCurrency(_currency),
+    );
   }
 
   @override
@@ -664,6 +606,16 @@ class _SubscriptionUpgradeDialogState
     final bool canManageBilling = ref
         .watch(appAccessPolicyProvider)
         .canManageSubscriptionBilling();
+    ref.listen<String>(tenantDefaultCurrencyProvider, (
+      String? previous,
+      String next,
+    ) {
+      if (previous == next ||
+          next.trim().toUpperCase() == _currency.trim().toUpperCase()) {
+        return;
+      }
+      unawaited(_onCurrencyChanged(next));
+    });
 
     if (!canManageBilling) {
       return AppDialog(
@@ -717,7 +669,7 @@ class _SubscriptionUpgradeDialogState
                   ? Icons.autorenew
                   : Icons.workspace_premium_outlined),
       ),
-      maxWidth: 1080,
+      maxWidth: 720,
       initialMaximized: false,
       scrollable: true,
       content: AppFormShell(
@@ -756,16 +708,14 @@ class _SubscriptionUpgradeDialogState
         primaryLabel: _isLastStep
             ? (noPayment
                   ? l10n.subscriptionUpgradeConfirmFreeAction(planLabel)
-                  : (isRenewal
-                        ? l10n.subscriptionRenewSubmitAction
-                        : l10n.subscriptionUpgradeSubmitAction))
+                  : l10n.subscriptionUpgradeNotifyAdminsAction)
             : l10n.commonNextActionLabel,
         showBack: !_isFirstStep,
         isSubmitting: _isSubmitting,
         primaryIcon: _isLastStep
             ? (noPayment
                   ? Icons.check_circle_outline
-                  : Icons.payments_outlined)
+                  : Icons.notifications_active_outlined)
             : Icons.arrow_forward,
         onCancel: () => Navigator.of(context).maybePop(),
         onBack: _goBack,
@@ -841,51 +791,34 @@ class _SubscriptionUpgradeDialogState
           ],
         ],
       ),
-      _UpgradeStep.paymentMethod => SubscriptionPaymentMethodSelector(
-        selected: _paymentMethod,
-        onSelected: (SubscriptionPaymentMethodId method) {
-          setState(() {
-            _paymentMethod = method;
-            if (!_steps.contains(_step)) {
-              _step = _UpgradeStep.paymentMethod;
-            }
-          });
-        },
-      ),
-      _UpgradeStep.paymentDetails => _buildPaymentDetailsStep(
+      _UpgradeStep.pay => _buildPayStep(
         l10n: l10n,
         theme: theme,
         colorScheme: colorScheme,
         contextData: contextData,
+        adminContact: adminContact,
       ),
-      _UpgradeStep.proof => Column(
+      _UpgradeStep.confirm => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          AppFileUploadPanel(
-            title: l10n.subscriptionUpgradeProofLabel,
-            emptyDescription: l10n.subscriptionUpgradeProofStepBody,
-            chooseLabel: l10n.subscriptionUpgradeAttachProofAction,
-            clearLabel: l10n.subscriptionUpgradeRemoveProofAction,
-            fileNames: _proofFileName == null
-                ? const <String>[]
-                : <String>[_proofFileName!],
-            onChoose: _pickProof,
-            onClear: () => setState(() {
-              _proofFileName = null;
-              _proofBytes = null;
-              _proofMimeType = null;
-            }),
-            enabled: !_isSubmitting,
-            tone: AppWorkspaceStatusTone.info,
-          ),
-          if (_proofFileName != null && _proofBytes != null) ...<Widget>[
-            SizedBox(height: theme.spacing.md),
-            _ProofPreview(
-              fileName: _proofFileName!,
-              proofBytes: _proofBytes!,
-              proofMimeType: _proofMimeType,
+          AppMessagePanel(
+            message: l10n.subscriptionUpgradeFreePlanStepBody(
+              _selectedPlanDisplayLabel(l10n),
             ),
-          ],
+            icon: Icons.verified_outlined,
+            tone: AppWorkspaceStatusTone.success,
+            density: AppContentPanelDensity.compact,
+          ),
+          SizedBox(height: theme.spacing.md),
+          if (adminContact?.hasContact == true)
+            _AdminContactSection(
+              adminContact: adminContact!,
+              title: l10n.subscriptionUpgradeFreePlanAdminContactTitle,
+              body: l10n.subscriptionUpgradeFreePlanAdminContactBody,
+              emailLabel: l10n.subscriptionUpgradeAdminContactEmailLabel,
+              phoneLabel: l10n.subscriptionUpgradeAdminContactPhoneLabel,
+              whatsappLabel: l10n.subscriptionUpgradeAdminContactWhatsappLabel,
+            ),
           SizedBox(height: theme.spacing.md),
           AppTextField(
             controller: _notesController,
@@ -894,227 +827,210 @@ class _SubscriptionUpgradeDialogState
           ),
         ],
       ),
-      _UpgradeStep.contact => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (_isNoPaymentPlan) ...<Widget>[
-            AppMessagePanel(
-              message: l10n.subscriptionUpgradeFreePlanStepBody(
-                _selectedPlanDisplayLabel(l10n),
-              ),
-              icon: Icons.verified_outlined,
-              tone: AppWorkspaceStatusTone.success,
-              density: AppContentPanelDensity.compact,
-            ),
-            SizedBox(height: theme.spacing.md),
-          ],
-          if (adminContact?.hasContact == true)
-            _AdminContactSection(
-              adminContact: adminContact!,
-              title: _isNoPaymentPlan
-                  ? l10n.subscriptionUpgradeFreePlanAdminContactTitle
-                  : l10n.subscriptionUpgradeAdminContactTitle,
-              body: _isNoPaymentPlan
-                  ? l10n.subscriptionUpgradeFreePlanAdminContactBody
-                  : l10n.subscriptionUpgradeAdminContactBody,
-              emailLabel: l10n.subscriptionUpgradeAdminContactEmailLabel,
-              phoneLabel: l10n.subscriptionUpgradeAdminContactPhoneLabel,
-            )
-          else if (!_isNoPaymentPlan)
-            AppMessagePanel(
-              title: l10n.subscriptionUpgradeAdminContactTitle,
-              message: l10n.subscriptionUpgradeAdminContactBody,
-              icon: Icons.support_agent_outlined,
-            ),
-          if (!_isNoPaymentPlan &&
-              !_requiresProof &&
-              _paymentMethod != SubscriptionPaymentMethodId.other) ...<Widget>[
-            SizedBox(height: theme.spacing.md),
-            AppTextField(
-              controller: _notesController,
-              labelText: l10n.subscriptionUpgradeNotesLabel,
-              maxLines: 2,
-            ),
-          ],
-          if (_isNoPaymentPlan) ...<Widget>[
-            SizedBox(height: theme.spacing.md),
-            AppTextField(
-              controller: _notesController,
-              labelText: l10n.subscriptionUpgradeNotesLabel,
-              maxLines: 2,
-            ),
-          ],
-        ],
-      ),
     };
   }
 
-  Widget _buildPaymentDetailsStep({
+  Widget _buildPayStep({
     required AppLocalizations l10n,
     required ThemeData theme,
     required ColorScheme colorScheme,
     required SubscriptionUpgradeContext? contextData,
+    required PlatformAdminContact? adminContact,
   }) {
-    final bool isMobileMoney =
-        _paymentMethod == SubscriptionPaymentMethodId.mobileMoney;
-    final int amountDigits = decimalDigitsForCurrency(_currency);
-    final Widget amountField = AppCurrencyAmountField(
-      amountController: _amountController,
-      currency: _currency,
-      isLoading: _isFxLoading,
-      convertOnCurrencyChange: false,
-      onCurrencyChanged: (String? value) {
-        if (value != null) {
-          unawaited(_onCurrencyChanged(value));
-        }
-      },
-      amountLabelText: l10n.subscriptionUpgradeAmountLabel,
-      currencyLabelText: l10n.billingCurrencyLabel,
-      isRequired: true,
-      allowZero: false,
-      decimalDigits: amountDigits,
-    );
-
-    final List<Widget> methodFields = _paymentDetailFields(
-      l10n,
-      theme,
-      contextData,
-    );
+    final PlatformBankTransferDetails? bank = contextData?.bankTransferDetails;
+    final PlatformMobileMoneyDetails? mobile = contextData?.mobileMoneyDetails;
+    final String planLabel = _selectedPlanDisplayLabel(l10n);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (methodFields.isNotEmpty) ...<Widget>[
-          ..._spacedFields(theme, methodFields),
-          SizedBox(height: theme.spacing.md),
-        ],
-        AppSectionPanel(
-          leadingIcon: Icons.receipt_long_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          density: AppContentPanelDensity.compact,
-          children: <Widget>[
-            AppEmailField(
-              controller: _invoiceEmailController,
-              labelText: l10n.subscriptionUpgradeInvoiceEmailLabel,
-              helperText: l10n.subscriptionUpgradeInvoiceEmailHelper,
-              invalidEmailMessage: l10n.authEmailInvalidMessage,
-              requiredMessage: l10n.validationRequired,
-              isRequired: true,
-              textInputAction: TextInputAction.next,
-            ),
-            if (isMobileMoney)
-              AppPhoneField(
-                key: _phoneFieldKey,
-                controller: _phoneController,
-                labelText: l10n.subscriptionMobileMoneyPhoneLabel,
-                countryLabelText: l10n.appPhoneCountryLabel,
-                countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
-                countryNoResultsText: l10n.appPhoneCountryNoResults,
-                numberLabelText: l10n.appPhoneNumberLabel,
-                numberHintText: l10n.appPhoneNumberHint,
-                invalidPhoneMessage: l10n.appPhoneInvalidMessage,
-                requiredMessage: l10n.validationRequired,
-                isRequired: true,
-                textInputAction: TextInputAction.next,
-                enabled: !_isSubmitting,
-              ),
-            amountField,
-            if (_fxWarning != null)
-              Text(
-                _fxWarning!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.tertiary,
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(theme.radius.md),
+            border: theme.borders.all(),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(theme.spacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  planLabel,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: AppFontWeight.emphasis,
+                  ),
                 ),
-              ),
-            if (_showReferenceField)
-              AppTextField(
-                controller: _referenceController,
-                labelText: l10n.subscriptionUpgradeReferenceLabel,
-                hintText: l10n.subscriptionPaymentReferenceHint,
-                isRequired: true,
-              ),
-            if (_paymentMethod == SubscriptionPaymentMethodId.other)
-              AppTextField(
-                controller: _notesController,
-                labelText: l10n.subscriptionUpgradeNotesLabel,
-                maxLines: 3,
-                isRequired: true,
+                SizedBox(height: theme.spacing.xs),
+                Text(
+                  _billingCycleLabel(l10n),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                SizedBox(height: theme.spacing.sm),
+                Row(
+                  children: <Widget>[
+                    Text(
+                      l10n.subscriptionUpgradeAmountDueLabel,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (_isFxLoading)
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colorScheme.primary,
+                        ),
+                      )
+                    else
+                      Text(
+                        _formattedAmountDue(context),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: AppFontWeight.emphasis,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_fxWarning != null) ...<Widget>[
+          SizedBox(height: theme.spacing.sm),
+          AppMessagePanel(
+            message: _fxWarning!,
+            icon: Icons.currency_exchange,
+            tone: AppWorkspaceStatusTone.warning,
+            density: AppContentPanelDensity.compact,
+          ),
+        ],
+        if (bank?.hasDetails == true) ...<Widget>[
+          SizedBox(height: theme.spacing.lg),
+          Text(
+            l10n.subscriptionBankTransferDetailsTitle,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: AppFontWeight.emphasis,
+            ),
+          ),
+          SizedBox(height: theme.spacing.sm),
+          _InstructionDetails(
+            rows: <(String, String)>[
+              if (bank!.accountName != null)
+                (l10n.subscriptionBankAccountNameLabel, bank.accountName!),
+              if (bank.bankName != null)
+                (l10n.subscriptionPlatformBankNameLabel, bank.bankName!),
+              if (bank.branch != null)
+                (l10n.subscriptionBankBranchLabel, bank.branch!),
+              if (bank.accountNumber != null)
+                (l10n.subscriptionBankAccountNumberLabel, bank.accountNumber!),
+              if (bank.swiftCode != null)
+                (l10n.subscriptionBankSwiftLabel, bank.swiftCode!),
+              if (bank.iban != null)
+                (l10n.subscriptionBankIbanLabel, bank.iban!),
+            ],
+          ),
+        ],
+        if (mobile?.hasDetails == true) ...<Widget>[
+          SizedBox(height: theme.spacing.lg),
+          Text(
+            l10n.subscriptionMobileMoneyDetailsTitle,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: AppFontWeight.emphasis,
+            ),
+          ),
+          SizedBox(height: theme.spacing.sm),
+          _InstructionDetails(
+            rows: <(String, String)>[
+              if (mobile!.accountName != null)
+                (l10n.subscriptionMobileMoneyAccountNameLabel, mobile.accountName!),
+              if (mobile.mtn != null)
+                (l10n.subscriptionMobileMoneyMtnLabel, mobile.mtn!),
+              if (mobile.airtel != null)
+                (l10n.subscriptionMobileMoneyAirtelLabel, mobile.airtel!),
+            ],
+          ),
+        ],
+        if (adminContact?.hasContact == true) ...<Widget>[
+          SizedBox(height: theme.spacing.lg),
+          _AdminContactSection(
+            adminContact: adminContact!,
+            title: l10n.subscriptionUpgradeAdminContactTitle,
+            body: l10n.subscriptionUpgradePayContactGuidance,
+            emailLabel: l10n.subscriptionUpgradeAdminContactEmailLabel,
+            phoneLabel: l10n.subscriptionUpgradeAdminContactPhoneLabel,
+            whatsappLabel: l10n.subscriptionUpgradeAdminContactWhatsappLabel,
+            flat: true,
+          ),
+        ] else ...<Widget>[
+          SizedBox(height: theme.spacing.lg),
+          AppMessagePanel(
+            message: l10n.subscriptionUpgradePayContactGuidance,
+            icon: Icons.support_agent_outlined,
+            density: AppContentPanelDensity.compact,
+          ),
+        ],
+        SizedBox(height: theme.spacing.lg),
+        Text(
+          l10n.subscriptionUpgradePaymentChannelLabel,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: AppFontWeight.emphasis,
+          ),
+        ),
+        SizedBox(height: theme.spacing.sm),
+        Wrap(
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.sm,
+          children: <Widget>[
+            for (final SubscriptionPaymentMethodId channel in _payChannels)
+              FilterChip(
+                selected: _paymentMethod == channel,
+                label: Text(subscriptionPaymentMethodLabel(l10n, channel)),
+                onSelected: (_) {
+                  setState(() => _paymentMethod = channel);
+                },
               ),
           ],
         ),
+        SizedBox(height: theme.spacing.md),
+        AppTextField(
+          controller: _notesController,
+          labelText: l10n.subscriptionUpgradeNotesLabel,
+          maxLines: 2,
+        ),
+        SizedBox(height: theme.spacing.md),
+        AppFileUploadPanel(
+          title: l10n.subscriptionUpgradeProofLabel,
+          emptyDescription: l10n.subscriptionUpgradeProofOptionalBody,
+          chooseLabel: l10n.subscriptionUpgradeAttachProofAction,
+          clearLabel: l10n.subscriptionUpgradeRemoveProofAction,
+          fileNames: _proofFileName == null
+              ? const <String>[]
+              : <String>[_proofFileName!],
+          onChoose: _pickProof,
+          onClear: () => setState(() {
+            _proofFileName = null;
+            _proofBytes = null;
+            _proofMimeType = null;
+          }),
+          enabled: !_isSubmitting,
+          tone: AppWorkspaceStatusTone.info,
+        ),
+        if (_proofFileName != null && _proofBytes != null) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          _ProofPreview(
+            fileName: _proofFileName!,
+            proofBytes: _proofBytes!,
+            proofMimeType: _proofMimeType,
+          ),
+        ],
       ],
     );
-  }
-
-  List<Widget> _paymentDetailFields(
-    AppLocalizations l10n,
-    ThemeData theme,
-    SubscriptionUpgradeContext? contextData,
-  ) {
-    final List<Widget> fields = switch (_paymentMethod) {
-      SubscriptionPaymentMethodId.mobileMoney => <Widget>[
-        MobileMoneyProviderSelector(
-          selected: _mobileMoneyProvider,
-          onSelected: (MobileMoneyProviderId provider) {
-            setState(() => _mobileMoneyProvider = provider);
-          },
-        ),
-      ],
-      SubscriptionPaymentMethodId.bankTransfer => <Widget>[
-        if (contextData?.bankTransferDetails?.hasDetails == true)
-          _BankTransferDetailsSection(
-            details: contextData!.bankTransferDetails!,
-            title: l10n.subscriptionBankTransferDetailsTitle,
-            accountNameLabel: l10n.subscriptionBankAccountNameLabel,
-            bankNameLabel: l10n.subscriptionPlatformBankNameLabel,
-            branchLabel: l10n.subscriptionBankBranchLabel,
-            accountNumberLabel: l10n.subscriptionBankAccountNumberLabel,
-            swiftLabel: l10n.subscriptionBankSwiftLabel,
-            ibanLabel: l10n.subscriptionBankIbanLabel,
-          ),
-        AppTextField(
-          controller: _bankNameController,
-          labelText: l10n.subscriptionBankNameLabel,
-        ),
-      ],
-      SubscriptionPaymentMethodId.creditCard ||
-      SubscriptionPaymentMethodId.debitCard => <Widget>[
-        AppResponsiveFieldRow.two(
-          left: AppTextField(
-            controller: _cardHolderController,
-            labelText: l10n.subscriptionCardHolderNameLabel,
-            isRequired: true,
-          ),
-          right: AppTextField(
-            controller: _cardLastFourController,
-            labelText: l10n.subscriptionCardLastFourLabel,
-            keyboardType: TextInputType.number,
-            isRequired: true,
-            inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(4),
-            ],
-          ),
-        ),
-      ],
-      SubscriptionPaymentMethodId.cash => const <Widget>[],
-      SubscriptionPaymentMethodId.other => const <Widget>[],
-    };
-
-    return _spacedFields(theme, fields);
-  }
-
-  List<Widget> _spacedFields(ThemeData theme, List<Widget> fields) {
-    if (fields.isEmpty) {
-      return fields;
-    }
-    final List<Widget> spaced = <Widget>[fields.first];
-    for (final Widget field in fields.skip(1)) {
-      spaced
-        ..add(SizedBox(height: theme.spacing.sm))
-        ..add(field);
-    }
-    return spaced;
   }
 
   static String? _emptyToNull(String value) {
@@ -1123,80 +1039,43 @@ class _SubscriptionUpgradeDialogState
   }
 }
 
-class _BankTransferDetailsSection extends StatelessWidget {
-  const _BankTransferDetailsSection({
-    required this.details,
-    required this.title,
-    required this.accountNameLabel,
-    required this.bankNameLabel,
-    required this.branchLabel,
-    required this.accountNumberLabel,
-    required this.swiftLabel,
-    required this.ibanLabel,
-  });
+class _InstructionDetails extends StatelessWidget {
+  const _InstructionDetails({required this.rows});
 
-  final PlatformBankTransferDetails details;
-  final String title;
-  final String accountNameLabel;
-  final String bankNameLabel;
-  final String branchLabel;
-  final String accountNumberLabel;
-  final String swiftLabel;
-  final String ibanLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppSectionPanel(
-      title: title,
-      leadingIcon: Icons.account_balance_outlined,
-      tone: AppWorkspaceStatusTone.info,
-      density: AppContentPanelDensity.compact,
-      children: <Widget>[
-        if (details.accountName != null)
-          _BankDetailRow(label: accountNameLabel, value: details.accountName!),
-        if (details.bankName != null)
-          _BankDetailRow(label: bankNameLabel, value: details.bankName!),
-        if (details.branch != null)
-          _BankDetailRow(label: branchLabel, value: details.branch!),
-        if (details.accountNumber != null)
-          _BankDetailRow(
-            label: accountNumberLabel,
-            value: details.accountNumber!,
-          ),
-        if (details.swiftCode != null)
-          _BankDetailRow(label: swiftLabel, value: details.swiftCode!),
-        if (details.iban != null)
-          _BankDetailRow(label: ibanLabel, value: details.iban!),
-      ],
-    );
-  }
-}
-
-class _BankDetailRow extends StatelessWidget {
-  const _BankDetailRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
+  final List<(String, String)> rows;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
       children: <Widget>[
-        SizedBox(
-          width: 132,
-          child: Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: AppFontWeight.emphasis,
+        for (final (String label, String value) in rows)
+          Padding(
+            padding: EdgeInsets.only(bottom: theme.spacing.sm),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                SizedBox(
+                  width: 132,
+                  child: Text(
+                    label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: AppFontWeight.emphasis,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: SelectableText(
+                    value,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: AppFontWeight.emphasis,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-        Expanded(
-          child: SelectableText(value, style: theme.textTheme.bodySmall),
-        ),
       ],
     );
   }
@@ -1292,6 +1171,8 @@ class _AdminContactSection extends StatelessWidget {
     required this.body,
     required this.emailLabel,
     required this.phoneLabel,
+    required this.whatsappLabel,
+    this.flat = false,
   });
 
   final PlatformAdminContact adminContact;
@@ -1299,34 +1180,80 @@ class _AdminContactSection extends StatelessWidget {
   final String body;
   final String emailLabel;
   final String phoneLabel;
+  final String whatsappLabel;
+  final bool flat;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final List<Widget> contacts = <Widget>[
+      if (adminContact.email != null)
+        _ContactDetail(
+          label: emailLabel,
+          value: adminContact.email!,
+          icon: Icons.mail_outline,
+          color: colorScheme.primary,
+        ),
+      if (adminContact.phone != null)
+        _ContactDetail(
+          label: phoneLabel,
+          value: adminContact.phone!,
+          icon: Icons.phone_outlined,
+          color: colorScheme.primary,
+        ),
+      if (adminContact.whatsapp != null)
+        _ContactDetail(
+          label: whatsappLabel,
+          value: adminContact.whatsapp!,
+          icon: Icons.chat_outlined,
+          color: colorScheme.primary,
+        ),
+    ];
+
+    if (flat) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: AppFontWeight.emphasis,
+            ),
+          ),
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            body,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: theme.spacing.sm),
+          ..._spaced(theme, contacts),
+        ],
+      );
+    }
 
     return AppSectionPanel(
       title: title,
       description: body,
       leadingIcon: Icons.support_agent_outlined,
       tone: AppWorkspaceStatusTone.info,
-      children: <Widget>[
-        if (adminContact.email != null)
-          _ContactDetail(
-            label: emailLabel,
-            value: adminContact.email!,
-            icon: Icons.mail_outline,
-            color: colorScheme.primary,
-          ),
-        if (adminContact.phone != null)
-          _ContactDetail(
-            label: phoneLabel,
-            value: adminContact.phone!,
-            icon: Icons.phone_outlined,
-            color: colorScheme.primary,
-          ),
-      ],
+      children: contacts,
     );
+  }
+
+  List<Widget> _spaced(ThemeData theme, List<Widget> children) {
+    if (children.isEmpty) {
+      return children;
+    }
+    final List<Widget> spaced = <Widget>[children.first];
+    for (final Widget child in children.skip(1)) {
+      spaced
+        ..add(SizedBox(height: theme.spacing.sm))
+        ..add(child);
+    }
+    return spaced;
   }
 }
 

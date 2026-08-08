@@ -907,6 +907,8 @@ final class AccessAdminWorkspaceController
       AccessAdminPanel.entitlements => AccessAdminResource.moduleEntitlements,
       AccessAdminPanel.registrations =>
         AccessAdminResource.registrationFollowUps,
+      AccessAdminPanel.payments =>
+        AccessAdminResource.subscriptionPaymentRequests,
       AccessAdminPanel.demo => AccessAdminResource.demoUsers,
     };
   }

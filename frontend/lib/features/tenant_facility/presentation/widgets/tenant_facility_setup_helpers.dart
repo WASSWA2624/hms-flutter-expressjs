@@ -23,7 +23,9 @@ enum TenantFacilitySetupDeskSection {
   users,
   clinicalCatalog,
   /// Platform-only queue of self-registered accounts awaiting Pro trial activation.
-  subscriptionApprovals;
+  subscriptionApprovals,
+  /// Platform-only queue of paid subscription requests awaiting activation.
+  subscriptionActivations;
 
   /// Canonical `?section=` query value for this tab.
   String get routeQueryValue {
@@ -41,6 +43,8 @@ enum TenantFacilitySetupDeskSection {
       TenantFacilitySetupDeskSection.users => 'users',
       TenantFacilitySetupDeskSection.subscriptionApprovals =>
         'subscription-approvals',
+      TenantFacilitySetupDeskSection.subscriptionActivations =>
+        'subscription-activations',
     };
   }
 
@@ -89,6 +93,11 @@ enum TenantFacilitySetupDeskSection {
       case 'account-approvals':
       case 'registration-approvals':
         return TenantFacilitySetupDeskSection.subscriptionApprovals;
+      case 'subscription-activations':
+      case 'subscription_activations':
+      case 'activations':
+      case 'payment-activations':
+        return TenantFacilitySetupDeskSection.subscriptionActivations;
       default:
         return null;
     }
@@ -156,7 +165,8 @@ bool tenantFacilitySetupDeskSectionVisible({
     TenantFacilitySetupDeskSection.roles ||
     TenantFacilitySetupDeskSection.permissions ||
     TenantFacilitySetupDeskSection.users => canManageAccess,
-    TenantFacilitySetupDeskSection.subscriptionApprovals => isElevated,
+    TenantFacilitySetupDeskSection.subscriptionApprovals ||
+    TenantFacilitySetupDeskSection.subscriptionActivations => isElevated,
   };
 }
 
@@ -570,6 +580,8 @@ String tenantFacilitySetupDeskSectionLabel(
     TenantFacilitySetupDeskSection.users => l10n.tenantFacilitySetupTabUsers,
     TenantFacilitySetupDeskSection.subscriptionApprovals =>
       l10n.tenantFacilitySetupTabSubscriptionApprovals,
+    TenantFacilitySetupDeskSection.subscriptionActivations =>
+      l10n.tenantFacilitySetupTabSubscriptionActivations,
   };
 }
 
@@ -591,6 +603,8 @@ IconData tenantFacilitySetupDeskSectionIcon(
     TenantFacilitySetupDeskSection.users => Icons.people_outline,
     TenantFacilitySetupDeskSection.subscriptionApprovals =>
       Icons.verified_user_outlined,
+    TenantFacilitySetupDeskSection.subscriptionActivations =>
+      Icons.payments_outlined,
   };
 }
 
@@ -616,6 +630,7 @@ String? tenantFacilitySetupDeskCreateLabel(
     TenantFacilitySetupDeskSection.permissions => null,
     TenantFacilitySetupDeskSection.users => l10n.accessAdminCreateUserAction,
     TenantFacilitySetupDeskSection.subscriptionApprovals => null,
+    TenantFacilitySetupDeskSection.subscriptionActivations => null,
   };
 }
 
@@ -636,6 +651,7 @@ IconData? tenantFacilitySetupDeskCreateIcon(
     TenantFacilitySetupDeskSection.permissions => null,
     TenantFacilitySetupDeskSection.users => Icons.person_add_alt_1_outlined,
     TenantFacilitySetupDeskSection.subscriptionApprovals => null,
+    TenantFacilitySetupDeskSection.subscriptionActivations => null,
   };
 }
 

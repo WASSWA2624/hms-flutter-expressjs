@@ -205,18 +205,21 @@ class SubscriptionPlanSelector extends StatelessWidget {
     }
 
     final String currency = displayCurrency.trim().toUpperCase();
-    if (currency.isEmpty || currency == subscriptionPlanBaseCurrencyCode) {
+    final double? rate = usdToDisplayRate;
+    final bool useDisplayCurrency =
+        currency.isNotEmpty &&
+        currency != subscriptionPlanBaseCurrencyCode &&
+        rate != null;
+
+    if (!useDisplayCurrency) {
       return AppFormatters.currency(
         usdAmount,
         Localizations.localeOf(context),
         currencyCode: subscriptionPlanBaseCurrencyCode,
-        decimalDigits: decimalDigitsForCurrency(subscriptionPlanBaseCurrencyCode),
+        decimalDigits: decimalDigitsForCurrency(
+          subscriptionPlanBaseCurrencyCode,
+        ),
       );
-    }
-
-    final double? rate = usdToDisplayRate;
-    if (rate == null) {
-      return '…';
     }
 
     final double converted = roundConvertedAmount(usdAmount * rate, currency);

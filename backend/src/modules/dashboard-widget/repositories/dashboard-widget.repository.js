@@ -853,6 +853,7 @@ const getDashboardSummaryByPack = async ({
         moduleEntitlementIssues,
         tenantsWithoutSubscription,
         pendingRegistrationApprovals,
+        pendingSubscriptionActivations,
         trendDates,
         subscriptionStatusCounts,
       ] = await Promise.all([
@@ -904,6 +905,16 @@ const getDashboardSummaryByPack = async ({
             },
           },
         }).catch(() => 0),
+        (async () => {
+          try {
+            const {
+              countPendingPaymentRequests,
+            } = require('@lib/subscriptions/subscription-payment-request');
+            return await countPendingPaymentRequests();
+          } catch (_error) {
+            return 0;
+          }
+        })(),
         selectDateSeries(
           prisma.tenant,
           { deleted_at: null, created_at: { gte: trendStart } },
@@ -936,6 +947,7 @@ const getDashboardSummaryByPack = async ({
           subscriptionsExpiring,
           moduleEntitlementIssues,
           pendingRegistrationApprovals,
+          pendingSubscriptionActivations,
         },
         trendDates,
         statusCounts,

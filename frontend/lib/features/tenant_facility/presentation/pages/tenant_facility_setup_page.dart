@@ -35,6 +35,7 @@ import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/departm
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/department_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_catalog_config_panel.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_similarity_dialog.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/manage_subscription_activations_panel.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/manage_subscription_approvals_panel.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/room_details_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/room_similarity_dialog.dart';
@@ -688,6 +689,8 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
       TenantFacilitySetupDeskSection.users => const ManageUsersPanel(),
       TenantFacilitySetupDeskSection.subscriptionApprovals =>
         const ManageSubscriptionApprovalsPanel(),
+      TenantFacilitySetupDeskSection.subscriptionActivations =>
+        const ManageSubscriptionActivationsPanel(),
     };
   }
 

@@ -24,14 +24,16 @@ enum TenantSubscriptionHeaderState {
 
 @immutable
 final class PlatformAdminContact {
-  const PlatformAdminContact({this.email, this.phone});
+  const PlatformAdminContact({this.email, this.phone, this.whatsapp});
 
   final String? email;
   final String? phone;
+  final String? whatsapp;
 
   bool get hasContact =>
       (email?.trim().isNotEmpty ?? false) ||
-      (phone?.trim().isNotEmpty ?? false);
+      (phone?.trim().isNotEmpty ?? false) ||
+      (whatsapp?.trim().isNotEmpty ?? false);
 
   factory PlatformAdminContact.fromJson(Map<String, Object?>? json) {
     if (json == null) {
@@ -41,6 +43,40 @@ final class PlatformAdminContact {
     return PlatformAdminContact(
       email: _string(json['email']),
       phone: _string(json['phone']),
+      whatsapp: _string(json['whatsapp']),
+    );
+  }
+
+  static String? _string(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+}
+
+@immutable
+final class PlatformMobileMoneyDetails {
+  const PlatformMobileMoneyDetails({this.accountName, this.mtn, this.airtel});
+
+  final String? accountName;
+  final String? mtn;
+  final String? airtel;
+
+  bool get hasDetails =>
+      (mtn?.trim().isNotEmpty ?? false) ||
+      (airtel?.trim().isNotEmpty ?? false);
+
+  factory PlatformMobileMoneyDetails.fromJson(Map<String, Object?>? json) {
+    if (json == null) {
+      return const PlatformMobileMoneyDetails();
+    }
+
+    return PlatformMobileMoneyDetails(
+      accountName: _string(json['account_name']),
+      mtn: _string(json['mtn']),
+      airtel: _string(json['airtel']),
     );
   }
 

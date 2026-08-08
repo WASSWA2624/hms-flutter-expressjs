@@ -8,6 +8,7 @@ enum AccessAdminPanel {
   permissions('permissions'),
   entitlements('entitlements'),
   registrations('registrations'),
+  payments('payments'),
   demo('demo');
 
   const AccessAdminPanel(this.serverValue);
@@ -44,6 +45,10 @@ enum AccessAdminResource {
   registrationFollowUps(
     'registration-follow-ups',
     AccessAdminPanel.registrations,
+  ),
+  subscriptionPaymentRequests(
+    'subscription-payment-requests',
+    AccessAdminPanel.payments,
   );
 
   const AccessAdminResource(this.serverValue, this.defaultPanel);

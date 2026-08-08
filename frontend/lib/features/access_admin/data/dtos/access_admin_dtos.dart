@@ -236,7 +236,9 @@ final class AccessAdminItemDto {
       subtitle: _subtitleForResource(),
       status: _nullableString(json['status']),
       tenantId: _nullableString(json['tenant_id']),
-      tenantName: _nullableString(json['tenant_name']),
+      tenantName:
+          _nullableString(json['tenant_name']) ??
+          _nullableString(json['tenant_label']),
       facilityId: _nullableString(json['facility_id']),
       facilityName: _nullableString(json['facility_name']),
       roleScope:
@@ -246,9 +248,12 @@ final class AccessAdminItemDto {
               : _nullableString(json['tenant_id']) != null
               ? 'tenant'
               : 'platform'),
-      email: _nullableString(json['email']),
+      email:
+          _nullableString(json['email']) ??
+          _nullableString(json['submitted_by_email']),
       phone: _nullableString(json['phone']),
-      positionTitle: _nullableString(json['position_title']),
+      positionTitle:
+          _nullableString(json['position_title']) ?? _paymentAmountLabel(json),
       profileName: _nullableString(json['profile_name']),
       firstName: _nullableString(json['first_name']),
       lastName: _nullableString(json['last_name']),
@@ -268,14 +273,17 @@ final class AccessAdminItemDto {
       isDemo: json['is_demo'] == true,
       isClinicalFlowRole: json['is_clinical_flow_role'] == true,
       isSystemCritical: json['is_system_critical'] == true,
-      userLabel: _nullableString(json['user_label']),
+      userLabel:
+          _nullableString(json['user_label']) ??
+          _nullableString(json['payment_method']),
       roleName: _nullableString(json['role_name']),
       permissionName: _nullableString(json['permission_name']),
       entitlementDenied: json['entitlement_denied'] == true,
       entitlementDenialReason: _nullableString(
         json['entitlement_denial_reason'],
       ),
-      updatedAt: _dateTime(json['updated_at']),
+      updatedAt:
+          _dateTime(json['updated_at']) ?? _dateTime(json['submitted_at']),
       deletedAt: _dateTime(json['deleted_at']),
     );
   }
@@ -313,6 +321,11 @@ final class AccessAdminItemDto {
         return _nullableString(json['admin_name']) ??
             _nullableString(json['tenant_name']) ??
             _string(json['email']);
+      case AccessAdminResource.subscriptionPaymentRequests:
+        return _nullableString(json['tenant_label']) ??
+            _nullableString(json['tenant_name']) ??
+            _nullableString(json['plan_label']) ??
+            _string(json['id']);
     }
   }
 
@@ -338,7 +351,29 @@ final class AccessAdminItemDto {
           return '$facilityName · $facilityType';
         }
         return facilityName ?? facilityType;
+      case AccessAdminResource.subscriptionPaymentRequests:
+        final String? plan = _nullableString(json['plan_label']);
+        final String? method = _nullableString(json['payment_method']);
+        if (plan != null && method != null) {
+          return '$plan · $method';
+        }
+        return plan ?? method;
     }
+  }
+
+  String? _paymentAmountLabel(Map<String, dynamic> source) {
+    if (resource != AccessAdminResource.subscriptionPaymentRequests) {
+      return null;
+    }
+    final String? amount = _nullableString(source['amount']);
+    final String? currency = _nullableString(source['currency']);
+    if (amount == null) {
+      return null;
+    }
+    if (currency == null) {
+      return amount;
+    }
+    return '$currency $amount';
   }
 
   static List<AccessAdminRoleRef> _roles(Object? value) {

@@ -17,7 +17,7 @@ const {
 } = require('@lib/authorization/assignable-access');
 const { createAuditLog } = require('@lib/audit');
 const { provisionTrialSubscription } = require('@lib/subscriptions/tenant-onboarding');
-const { listPendingPaymentRequests } = require('@lib/subscriptions/subscription-payment-request');
+const { listPendingPaymentRequests, activatePaymentRequest } = require('@lib/subscriptions/subscription-payment-request');
 const authRepository = require('@repositories/auth/auth.repository');
 const repository = require('@repositories/access-admin-workspace/access-admin-workspace.repository');
 const { logger } = require('@lib/logging');
@@ -1247,6 +1247,8 @@ const restoreAccessDefaults = async (payload = {}, actor = {}, ip = null) => {
 module.exports = {
   approveRegistration,
   activateRegistration,
+  activatePaymentRequest: (requestId, actor, ip) =>
+    activatePaymentRequest(requestId, actor, ip),
   getReferenceData,
   getUserDetail,
   getWorkspace,

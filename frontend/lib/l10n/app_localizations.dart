@@ -2608,6 +2608,78 @@ abstract class AppLocalizations {
   /// **'Subscription approvals'**
   String get tenantFacilitySetupTabSubscriptionApprovals;
 
+  /// Platform setup tab for activating paid subscription payment requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription activations'**
+  String get tenantFacilitySetupTabSubscriptionActivations;
+
+  /// Intro text above the pending subscription activations worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm offline payments and activate the requested package. The tenant receives a confirmation email with package, dates, amount, and period.'**
+  String get tenantFacilitySubscriptionActivationsIntro;
+
+  /// Search hint for pending subscription activations.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by tenant, plan, email, or reference'**
+  String get tenantFacilitySubscriptionActivationsSearchHint;
+
+  /// Tenant column in pending subscription activations table.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant'**
+  String get tenantFacilitySubscriptionActivationsTenantColumn;
+
+  /// Package column in pending subscription activations table.
+  ///
+  /// In en, this message translates to:
+  /// **'Package'**
+  String get tenantFacilitySubscriptionActivationsPlanColumn;
+
+  /// Amount column in pending subscription activations table.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get tenantFacilitySubscriptionActivationsAmountColumn;
+
+  /// Empty state title for pending subscription activations.
+  ///
+  /// In en, this message translates to:
+  /// **'No payments awaiting activation'**
+  String get tenantFacilitySubscriptionActivationsEmptyTitle;
+
+  /// Empty state body for pending subscription activations.
+  ///
+  /// In en, this message translates to:
+  /// **'When a tenant submits payment for a package, the request appears here for activation.'**
+  String get tenantFacilitySubscriptionActivationsEmpty;
+
+  /// Confirm dialog title for activating a paid subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate subscription?'**
+  String get tenantFacilitySubscriptionActivationsActivateTitle;
+
+  /// Confirm dialog body for activating a paid subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate {name}? The package will start immediately and a confirmation email will be sent.'**
+  String tenantFacilitySubscriptionActivationsActivateBody(String name);
+
+  /// SnackBar after successful subscription activation.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription activated. Confirmation email sent.'**
+  String get tenantFacilitySubscriptionActivationsActivateSuccess;
+
+  /// Primary action to activate a pending subscription payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate'**
+  String get tenantFacilitySubscriptionActivationsActivateAction;
+
   /// Intro text above the subscription approvals worklist.
   ///
   /// In en, this message translates to:
@@ -4312,6 +4384,66 @@ abstract class AppLocalizations {
   /// **'Confirm'**
   String get subscriptionUpgradeStepConfirmTitle;
 
+  /// Paid subscription wizard step showing amount and pay-to instructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay and notify'**
+  String get subscriptionUpgradeStepPayTitle;
+
+  /// Label for the converted amount due on the pay step.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount due'**
+  String get subscriptionUpgradeAmountDueLabel;
+
+  /// Primary action after offline payment to notify platform admins.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ve paid — notify admins'**
+  String get subscriptionUpgradeNotifyAdminsAction;
+
+  /// Guidance for contacting platform admins after offline payment.
+  ///
+  /// In en, this message translates to:
+  /// **'After you pay, notify platform admins by WhatsApp, email, or phone and share your proof of payment. They will activate your subscription once confirmed.'**
+  String get subscriptionUpgradePayContactGuidance;
+
+  /// Label above payment channel chips on the pay step.
+  ///
+  /// In en, this message translates to:
+  /// **'How did you pay?'**
+  String get subscriptionUpgradePaymentChannelLabel;
+
+  /// Optional proof upload helper on the pay step.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Attach a receipt or screenshot, or send it to admins via WhatsApp or email.'**
+  String get subscriptionUpgradeProofOptionalBody;
+
+  /// Section title for platform mobile money pay-to numbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile money'**
+  String get subscriptionMobileMoneyDetailsTitle;
+
+  /// Label for mobile money account name.
+  ///
+  /// In en, this message translates to:
+  /// **'Account name'**
+  String get subscriptionMobileMoneyAccountNameLabel;
+
+  /// Label for platform MTN mobile money number.
+  ///
+  /// In en, this message translates to:
+  /// **'MTN'**
+  String get subscriptionMobileMoneyMtnLabel;
+
+  /// Label for platform Airtel mobile money number.
+  ///
+  /// In en, this message translates to:
+  /// **'Airtel'**
+  String get subscriptionMobileMoneyAirtelLabel;
+
   /// Shown on the final wizard step when a free or zero-price plan is selected.
   ///
   /// In en, this message translates to:
@@ -4509,6 +4641,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Phone'**
   String get subscriptionUpgradeAdminContactPhoneLabel;
+
+  /// Label for platform admin WhatsApp in the upgrade dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp'**
+  String get subscriptionUpgradeAdminContactWhatsappLabel;
 
   /// Tooltip for copying an admin contact email in the ask-an-admin dialog.
   ///

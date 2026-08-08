@@ -248,6 +248,10 @@ bool canAccessAccessAdminPanel(
   if (panel == AccessAdminPanel.registrations) {
     return canAccessAccessAdminRegistrations(policy);
   }
+  // Payment activations are managed from Facility setup, not Access Admin tabs.
+  if (panel == AccessAdminPanel.payments) {
+    return false;
+  }
   return panel != AccessAdminPanel.overview;
 }
 

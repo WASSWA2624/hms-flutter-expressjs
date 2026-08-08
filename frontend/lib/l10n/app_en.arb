@@ -1740,6 +1740,59 @@
   "@tenantFacilitySetupTabSubscriptionApprovals": {
     "description": "Platform setup tab for approving new facility registrations and assigning Pro trial."
   },
+  "tenantFacilitySetupTabSubscriptionActivations": "Subscription activations",
+  "@tenantFacilitySetupTabSubscriptionActivations": {
+    "description": "Platform setup tab for activating paid subscription payment requests."
+  },
+  "tenantFacilitySubscriptionActivationsIntro": "Confirm offline payments and activate the requested package. The tenant receives a confirmation email with package, dates, amount, and period.",
+  "@tenantFacilitySubscriptionActivationsIntro": {
+    "description": "Intro text above the pending subscription activations worklist."
+  },
+  "tenantFacilitySubscriptionActivationsSearchHint": "Search by tenant, plan, email, or reference",
+  "@tenantFacilitySubscriptionActivationsSearchHint": {
+    "description": "Search hint for pending subscription activations."
+  },
+  "tenantFacilitySubscriptionActivationsTenantColumn": "Tenant",
+  "@tenantFacilitySubscriptionActivationsTenantColumn": {
+    "description": "Tenant column in pending subscription activations table."
+  },
+  "tenantFacilitySubscriptionActivationsPlanColumn": "Package",
+  "@tenantFacilitySubscriptionActivationsPlanColumn": {
+    "description": "Package column in pending subscription activations table."
+  },
+  "tenantFacilitySubscriptionActivationsAmountColumn": "Amount",
+  "@tenantFacilitySubscriptionActivationsAmountColumn": {
+    "description": "Amount column in pending subscription activations table."
+  },
+  "tenantFacilitySubscriptionActivationsEmptyTitle": "No payments awaiting activation",
+  "@tenantFacilitySubscriptionActivationsEmptyTitle": {
+    "description": "Empty state title for pending subscription activations."
+  },
+  "tenantFacilitySubscriptionActivationsEmpty": "When a tenant submits payment for a package, the request appears here for activation.",
+  "@tenantFacilitySubscriptionActivationsEmpty": {
+    "description": "Empty state body for pending subscription activations."
+  },
+  "tenantFacilitySubscriptionActivationsActivateTitle": "Activate subscription?",
+  "@tenantFacilitySubscriptionActivationsActivateTitle": {
+    "description": "Confirm dialog title for activating a paid subscription."
+  },
+  "tenantFacilitySubscriptionActivationsActivateBody": "Activate {name}? The package will start immediately and a confirmation email will be sent.",
+  "@tenantFacilitySubscriptionActivationsActivateBody": {
+    "description": "Confirm dialog body for activating a paid subscription.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilitySubscriptionActivationsActivateSuccess": "Subscription activated. Confirmation email sent.",
+  "@tenantFacilitySubscriptionActivationsActivateSuccess": {
+    "description": "SnackBar after successful subscription activation."
+  },
+  "tenantFacilitySubscriptionActivationsActivateAction": "Activate",
+  "@tenantFacilitySubscriptionActivationsActivateAction": {
+    "description": "Primary action to activate a pending subscription payment."
+  },
   "tenantFacilitySubscriptionApprovalsIntro": "Review verified facility registrations. Approving assigns a Pro package for 3 months, then Free.",
   "@tenantFacilitySubscriptionApprovalsIntro": {
     "description": "Intro text above the subscription approvals worklist."
@@ -2945,6 +2998,46 @@
   "@subscriptionUpgradeStepConfirmTitle": {
     "description": "Final wizard step title when a free plan needs no payment."
   },
+  "subscriptionUpgradeStepPayTitle": "Pay and notify",
+  "@subscriptionUpgradeStepPayTitle": {
+    "description": "Paid subscription wizard step showing amount and pay-to instructions."
+  },
+  "subscriptionUpgradeAmountDueLabel": "Amount due",
+  "@subscriptionUpgradeAmountDueLabel": {
+    "description": "Label for the converted amount due on the pay step."
+  },
+  "subscriptionUpgradeNotifyAdminsAction": "I've paid — notify admins",
+  "@subscriptionUpgradeNotifyAdminsAction": {
+    "description": "Primary action after offline payment to notify platform admins."
+  },
+  "subscriptionUpgradePayContactGuidance": "After you pay, notify platform admins by WhatsApp, email, or phone and share your proof of payment. They will activate your subscription once confirmed.",
+  "@subscriptionUpgradePayContactGuidance": {
+    "description": "Guidance for contacting platform admins after offline payment."
+  },
+  "subscriptionUpgradePaymentChannelLabel": "How did you pay?",
+  "@subscriptionUpgradePaymentChannelLabel": {
+    "description": "Label above payment channel chips on the pay step."
+  },
+  "subscriptionUpgradeProofOptionalBody": "Optional. Attach a receipt or screenshot, or send it to admins via WhatsApp or email.",
+  "@subscriptionUpgradeProofOptionalBody": {
+    "description": "Optional proof upload helper on the pay step."
+  },
+  "subscriptionMobileMoneyDetailsTitle": "Mobile money",
+  "@subscriptionMobileMoneyDetailsTitle": {
+    "description": "Section title for platform mobile money pay-to numbers."
+  },
+  "subscriptionMobileMoneyAccountNameLabel": "Account name",
+  "@subscriptionMobileMoneyAccountNameLabel": {
+    "description": "Label for mobile money account name."
+  },
+  "subscriptionMobileMoneyMtnLabel": "MTN",
+  "@subscriptionMobileMoneyMtnLabel": {
+    "description": "Label for platform MTN mobile money number."
+  },
+  "subscriptionMobileMoneyAirtelLabel": "Airtel",
+  "@subscriptionMobileMoneyAirtelLabel": {
+    "description": "Label for platform Airtel mobile money number."
+  },
   "subscriptionUpgradeFreePlanStepBody": "No payment needed. Confirm to switch to {plan}.",
   "@subscriptionUpgradeFreePlanStepBody": {
     "description": "Shown on the final wizard step when a free or zero-price plan is selected.",
@@ -3086,6 +3179,10 @@
   "subscriptionUpgradeAdminContactPhoneLabel": "Phone",
   "@subscriptionUpgradeAdminContactPhoneLabel": {
     "description": "Label for platform admin phone in the upgrade dialog."
+  },
+  "subscriptionUpgradeAdminContactWhatsappLabel": "WhatsApp",
+  "@subscriptionUpgradeAdminContactWhatsappLabel": {
+    "description": "Label for platform admin WhatsApp in the upgrade dialog."
   },
   "subscriptionReportCopyEmailAction": "Copy email",
   "@subscriptionReportCopyEmailAction": {

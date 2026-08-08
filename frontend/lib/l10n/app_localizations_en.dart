@@ -1331,6 +1331,51 @@ class AppLocalizationsEn extends AppLocalizations {
       'Subscription approvals';
 
   @override
+  String get tenantFacilitySetupTabSubscriptionActivations =>
+      'Subscription activations';
+
+  @override
+  String get tenantFacilitySubscriptionActivationsIntro =>
+      'Confirm offline payments and activate the requested package. The tenant receives a confirmation email with package, dates, amount, and period.';
+
+  @override
+  String get tenantFacilitySubscriptionActivationsSearchHint =>
+      'Search by tenant, plan, email, or reference';
+
+  @override
+  String get tenantFacilitySubscriptionActivationsTenantColumn => 'Tenant';
+
+  @override
+  String get tenantFacilitySubscriptionActivationsPlanColumn => 'Package';
+
+  @override
+  String get tenantFacilitySubscriptionActivationsAmountColumn => 'Amount';
+
+  @override
+  String get tenantFacilitySubscriptionActivationsEmptyTitle =>
+      'No payments awaiting activation';
+
+  @override
+  String get tenantFacilitySubscriptionActivationsEmpty =>
+      'When a tenant submits payment for a package, the request appears here for activation.';
+
+  @override
+  String get tenantFacilitySubscriptionActivationsActivateTitle =>
+      'Activate subscription?';
+
+  @override
+  String tenantFacilitySubscriptionActivationsActivateBody(String name) {
+    return 'Activate $name? The package will start immediately and a confirmation email will be sent.';
+  }
+
+  @override
+  String get tenantFacilitySubscriptionActivationsActivateSuccess =>
+      'Subscription activated. Confirmation email sent.';
+
+  @override
+  String get tenantFacilitySubscriptionActivationsActivateAction => 'Activate';
+
+  @override
   String get tenantFacilitySubscriptionApprovalsIntro =>
       'Review verified facility registrations. Approving assigns a Pro package for 3 months, then Free.';
 
@@ -2254,6 +2299,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionUpgradeStepConfirmTitle => 'Confirm';
 
   @override
+  String get subscriptionUpgradeStepPayTitle => 'Pay and notify';
+
+  @override
+  String get subscriptionUpgradeAmountDueLabel => 'Amount due';
+
+  @override
+  String get subscriptionUpgradeNotifyAdminsAction =>
+      'I\'ve paid — notify admins';
+
+  @override
+  String get subscriptionUpgradePayContactGuidance =>
+      'After you pay, notify platform admins by WhatsApp, email, or phone and share your proof of payment. They will activate your subscription once confirmed.';
+
+  @override
+  String get subscriptionUpgradePaymentChannelLabel => 'How did you pay?';
+
+  @override
+  String get subscriptionUpgradeProofOptionalBody =>
+      'Optional. Attach a receipt or screenshot, or send it to admins via WhatsApp or email.';
+
+  @override
+  String get subscriptionMobileMoneyDetailsTitle => 'Mobile money';
+
+  @override
+  String get subscriptionMobileMoneyAccountNameLabel => 'Account name';
+
+  @override
+  String get subscriptionMobileMoneyMtnLabel => 'MTN';
+
+  @override
+  String get subscriptionMobileMoneyAirtelLabel => 'Airtel';
+
+  @override
   String subscriptionUpgradeFreePlanStepBody(String plan) {
     return 'No payment needed. Confirm to switch to $plan.';
   }
@@ -2364,6 +2442,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get subscriptionUpgradeAdminContactPhoneLabel => 'Phone';
+
+  @override
+  String get subscriptionUpgradeAdminContactWhatsappLabel => 'WhatsApp';
 
   @override
   String get subscriptionReportCopyEmailAction => 'Copy email';

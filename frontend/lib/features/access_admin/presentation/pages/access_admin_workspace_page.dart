@@ -593,6 +593,7 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
       AccessAdminPanel.permissions => Icons.key_outlined,
       AccessAdminPanel.entitlements => Icons.extension_outlined,
       AccessAdminPanel.registrations => Icons.pending_actions_outlined,
+      AccessAdminPanel.payments => Icons.payments_outlined,
       AccessAdminPanel.demo => Icons.science_outlined,
     };
   }
@@ -607,6 +608,7 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
         context.l10n.accessAdminPanelEntitlements,
       AccessAdminPanel.registrations =>
         context.l10n.accessAdminPanelRegistrations,
+      AccessAdminPanel.payments => context.l10n.accessAdminPanelPayments,
       AccessAdminPanel.demo => context.l10n.accessAdminPanelDemo,
     };
   }

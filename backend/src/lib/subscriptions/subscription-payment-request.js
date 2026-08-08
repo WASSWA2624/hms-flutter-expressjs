@@ -17,6 +17,7 @@ const { runWithoutTenantGuard } = require('../../prisma/tenant-guard');
 const {
   resolvePlatformAdminContact,
   resolvePlatformBankTransferDetails,
+  resolvePlatformMobileMoneyDetails,
   resolveTenantSubscriptionSummary,
 } = require('@lib/subscriptions/tenant-subscription-summary');
 const { serializeSubscriptionPlan } = require('@lib/subscriptions/serializers');
@@ -39,6 +40,41 @@ const parseExtensionJson = (value) => {
     return {};
   }
   return { ...value };
+};
+
+const getCycleDays = (billingCycle) => {
+  const cycle = text(billingCycle).toUpperCase();
+  if (cycle.includes('YEAR') || cycle === 'ANNUAL') return 365;
+  if (cycle.includes('QUARTER')) return 90;
+  return 30;
+};
+
+const addBillingCycle = (baseDate, billingCycle) => {
+  const date = new Date(baseDate);
+  const cycle = text(billingCycle).toUpperCase();
+  if (cycle.includes('YEAR') || cycle === 'ANNUAL') {
+    date.setFullYear(date.getFullYear() + 1);
+    return date;
+  }
+  if (cycle.includes('QUARTER')) {
+    date.setMonth(date.getMonth() + 3);
+    return date;
+  }
+  date.setMonth(date.getMonth() + 1);
+  return date;
+};
+
+const formatMoney = (amount, currency) => {
+  const value = text(amount) || '0';
+  const code = text(currency).toUpperCase() || 'UGX';
+  return `${code} ${value}`;
+};
+
+const formatDate = (value) => {
+  if (!value) return 'Not set';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Not set';
+  return date.toISOString().slice(0, 10);
 };
 
 const {
@@ -144,11 +180,52 @@ const notifyPlatformAdmin = async ({
     `Reference: ${reference || 'Not specified'}`,
     `Submitted by: ${submitterEmail || 'Unknown'}`,
     '',
-    'Review and activate the subscription in the platform admin workspace.',
+    'Review pending subscription activations in Tenant setup → Subscription activations.',
   ];
 
   return sendEmail({
     to: adminEmail,
+    subject,
+    text: lines.join('\n'),
+  });
+};
+
+const notifyTenantActivation = async ({
+  email,
+  tenantName,
+  planLabel,
+  amount,
+  currency,
+  billingCycle,
+  startDate,
+  endDate,
+}) => {
+  if (!email) {
+    return { sent: false, provider: 'skipped' };
+  }
+
+  const period =
+    text(billingCycle).toUpperCase().includes('YEAR') ||
+    text(billingCycle).toUpperCase() === 'ANNUAL'
+      ? 'Annual'
+      : 'Monthly';
+  const subject = `Subscription activated — ${planLabel || 'Hosspi'}`;
+  const lines = [
+    `Hello${tenantName ? ` from ${tenantName}` : ''},`,
+    '',
+    'Your subscription payment was confirmed and your account is now active.',
+    '',
+    `Package: ${planLabel || 'Not specified'}`,
+    `Period: ${period}`,
+    `Amount paid: ${formatMoney(amount, currency)}`,
+    `Start date: ${formatDate(startDate)}`,
+    `End date: ${formatDate(endDate)}`,
+    '',
+    'Thank you for choosing Hosspi.',
+  ];
+
+  return sendEmail({
+    to: email,
     subject,
     text: lines.join('\n'),
   });
@@ -213,6 +290,7 @@ const getUpgradeContext = async (user = {}) => {
     payment_methods: PAYMENT_METHODS,
     platform_admin_contact: resolvePlatformAdminContact(),
     bank_transfer_details: resolvePlatformBankTransferDetails(),
+    mobile_money_details: resolvePlatformMobileMoneyDetails(),
     expiring_soon_days: Number(env.SUBSCRIPTION_EXPIRING_SOON_DAYS) || 14,
   };
 };
@@ -377,6 +455,8 @@ const listPendingPaymentRequests = async () => {
           plan_label: entry.plan_label || null,
           payment_method: entry.payment_method || null,
           amount: entry.amount || null,
+          currency: entry.currency || null,
+          billing_cycle: entry.billing_cycle || null,
           reference: entry.reference || null,
           notes: entry.notes || null,
           proof: entry.proof || null,
@@ -394,8 +474,193 @@ const listPendingPaymentRequests = async () => {
   });
 };
 
+/**
+ * @returns {Promise<number>}
+ */
+const countPendingPaymentRequests = async () => {
+  const items = await listPendingPaymentRequests();
+  return items.length;
+};
+
+/**
+ * Activate a pending subscription payment request (platform admin).
+ *
+ * @param {string} requestId
+ * @param {Object} actor
+ * @param {string|null} ip
+ * @returns {Promise<Object>}
+ */
+const activatePaymentRequest = async (requestId, actor = {}, ip = null) => {
+  const requestIdentifier = text(requestId);
+  if (!requestIdentifier) {
+    throw new HttpError('errors.validation.invalid', 400, [{ field: 'request_id' }]);
+  }
+
+  const subscriptions = await prisma.subscription.findMany({
+    where: { deleted_at: null },
+    include: {
+      tenant: { select: { id: true, human_friendly_id: true, name: true } },
+      plan: true,
+      pending_plan: true,
+    },
+    orderBy: [{ updated_at: 'desc' }],
+    take: 200,
+  });
+
+  let matchedSubscription = null;
+  let matchedRequest = null;
+
+  for (const subscription of subscriptions) {
+    const extension = parseExtensionJson(subscription.extension_json);
+    const requests = Array.isArray(extension.pending_payment_requests)
+      ? extension.pending_payment_requests
+      : [];
+    const found = requests.find(
+      (entry) =>
+        text(entry?.id) === requestIdentifier &&
+        text(entry?.status).toUpperCase() === 'PENDING'
+    );
+    if (found) {
+      matchedSubscription = subscription;
+      matchedRequest = found;
+      break;
+    }
+  }
+
+  if (!matchedSubscription || !matchedRequest) {
+    throw new HttpError('errors.subscription.payment_request_not_found', 404);
+  }
+
+  const billingCycle =
+    text(matchedRequest.billing_cycle).toUpperCase() ||
+    text(matchedSubscription.pending_plan?.billing_cycle).toUpperCase() ||
+    text(matchedSubscription.plan?.billing_cycle).toUpperCase() ||
+    'MONTHLY';
+
+  const now = new Date();
+  const baseDate =
+    matchedSubscription.end_date && new Date(matchedSubscription.end_date) > now
+      ? new Date(matchedSubscription.end_date)
+      : now;
+  const startDate = now;
+  const endDate = addBillingCycle(baseDate, billingCycle);
+
+  let targetPlanId = matchedSubscription.pending_plan_id || matchedSubscription.plan_id;
+  if (matchedRequest.target_plan_id) {
+    const resolved = await resolvePlanRecord(
+      matchedRequest.target_plan_id,
+      matchedSubscription.tenant_id
+    );
+    if (resolved) {
+      targetPlanId = resolved.id;
+    }
+  }
+
+  const extension = parseExtensionJson(matchedSubscription.extension_json);
+  const requests = Array.isArray(extension.pending_payment_requests)
+    ? extension.pending_payment_requests
+    : [];
+  const activatedAt = now.toISOString();
+  extension.pending_payment_requests = requests.map((entry) => {
+    if (text(entry?.id) !== requestIdentifier) {
+      return entry;
+    }
+    return {
+      ...entry,
+      status: 'ACTIVATED',
+      activated_at: activatedAt,
+      activated_by_user_id: actor.id || null,
+      activated_by_email: actor.email || null,
+    };
+  });
+  extension.latest_payment_request = {
+    ...matchedRequest,
+    status: 'ACTIVATED',
+    activated_at: activatedAt,
+    activated_by_user_id: actor.id || null,
+    activated_by_email: actor.email || null,
+  };
+
+  await prisma.subscription.update({
+    where: { id: matchedSubscription.id },
+    data: {
+      plan_id: targetPlanId,
+      pending_plan_id: null,
+      status: 'ACTIVE',
+      start_date: matchedSubscription.start_date || startDate,
+      end_date: endDate,
+      change_status: 'NONE',
+      change_requested_at: null,
+      change_effective_at: now,
+      extension_json: extension,
+    },
+  });
+
+  const planLabel =
+    matchedRequest.plan_label ||
+    matchedSubscription.pending_plan?.name ||
+    matchedSubscription.plan?.name ||
+    null;
+
+  const notifyEmail =
+    text(matchedRequest.invoice_email) ||
+    text(matchedRequest.submitted_by_email) ||
+    text(actor.email);
+
+  await notifyTenantActivation({
+    email: notifyEmail,
+    tenantName: matchedSubscription.tenant?.name,
+    planLabel,
+    amount: matchedRequest.amount,
+    currency: matchedRequest.currency,
+    billingCycle,
+    startDate,
+    endDate,
+  }).catch(() => {});
+
+  await createAuditLog({
+    tenant_id: matchedSubscription.tenant_id,
+    user_id: actor.id || null,
+    action: 'SUBSCRIPTION_PAYMENT_ACTIVATED',
+    entity: 'subscription',
+    entity_id: matchedSubscription.id,
+    ip_address: ip,
+    details: {
+      request_id: requestIdentifier,
+      plan_label: planLabel,
+      amount: matchedRequest.amount,
+      currency: matchedRequest.currency,
+      billing_cycle: billingCycle,
+      start_date: startDate.toISOString(),
+      end_date: endDate.toISOString(),
+    },
+  }).catch(() => {});
+
+  return {
+    request_id: requestIdentifier,
+    status: 'ACTIVATED',
+    subscription_id: safePublicId(
+      matchedSubscription.human_friendly_id,
+      matchedSubscription.id
+    ),
+    tenant_id: safePublicId(
+      matchedSubscription.tenant?.human_friendly_id,
+      matchedSubscription.tenant_id
+    ),
+    plan_label: planLabel,
+    start_date: startDate.toISOString(),
+    end_date: endDate.toISOString(),
+    amount: matchedRequest.amount,
+    currency: matchedRequest.currency,
+    billing_cycle: billingCycle,
+    notified_email: notifyEmail || null,
+  };
+};
+
 module.exports = {
   PAYMENT_METHODS,
+  activatePaymentRequest,
+  countPendingPaymentRequests,
   getUpgradeContext,
   listPendingPaymentRequests,
   submitPaymentRequest,

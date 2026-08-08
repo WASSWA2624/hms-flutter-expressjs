@@ -1182,6 +1182,7 @@ final class SubscriptionUpgradeContext {
     this.paymentMethods = const <String>[],
     this.platformAdminContact,
     this.bankTransferDetails,
+    this.mobileMoneyDetails,
     this.expiringSoonDays = 14,
   });
 
@@ -1194,6 +1195,7 @@ final class SubscriptionUpgradeContext {
   final List<String> paymentMethods;
   final PlatformAdminContact? platformAdminContact;
   final PlatformBankTransferDetails? bankTransferDetails;
+  final PlatformMobileMoneyDetails? mobileMoneyDetails;
   final int expiringSoonDays;
 }
 

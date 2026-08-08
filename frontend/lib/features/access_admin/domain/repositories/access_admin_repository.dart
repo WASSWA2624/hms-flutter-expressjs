@@ -90,4 +90,6 @@ abstract interface class AccessAdminRepository {
   Future<Result<void>> approveRegistration(String userId);
 
   Future<Result<void>> rejectRegistration(String userId);
+
+  Future<Result<void>> activatePaymentRequest(String requestId);
 }

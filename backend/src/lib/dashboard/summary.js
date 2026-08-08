@@ -621,6 +621,20 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
           query: { section: 'subscription-approvals' },
         },
       },
+      {
+        id: 'pending_subscription_activations',
+        label: 'Activations',
+        value: metrics.pendingSubscriptionActivations || 0,
+        required_permissions: ['platform:admin'],
+        hint:
+          Number(metrics.pendingSubscriptionActivations || 0) > 0
+            ? 'Payments awaiting subscription activation'
+            : null,
+        route_target: {
+          path: '/admin/setup',
+          query: { section: 'subscription-activations' },
+        },
+      },
     ];
   }
 

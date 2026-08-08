@@ -88,6 +88,12 @@ router.post(
   accessAdminWorkspaceController.rejectRegistration
 );
 
+router.post(
+  '/payment-requests/:requestId/activate',
+  authorize(PLATFORM_ADMIN_SCOPES, 'permission'),
+  accessAdminWorkspaceController.activatePaymentRequest
+);
+
 router.get(
   '/resolve-legacy/:resource/:id',
   validateRequest({ params: resolveLegacyParamsSchema }),

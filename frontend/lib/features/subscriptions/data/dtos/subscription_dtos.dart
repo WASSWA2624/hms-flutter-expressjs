@@ -666,6 +666,7 @@ final class SubscriptionUpgradeContextDto {
     final Object? summaryRaw = json['subscription_summary'];
     final Object? contactRaw = json['platform_admin_contact'];
     final Object? bankDetailsRaw = json['bank_transfer_details'];
+    final Object? mobileMoneyRaw = json['mobile_money_details'];
     final SubscriptionJsonMap currentSubscription =
         currentSubscriptionRaw is Map
         ? _map(currentSubscriptionRaw)
@@ -714,6 +715,9 @@ final class SubscriptionUpgradeContextDto {
           : null,
       bankTransferDetails: bankDetailsRaw is Map
           ? PlatformBankTransferDetails.fromJson(_map(bankDetailsRaw))
+          : null,
+      mobileMoneyDetails: mobileMoneyRaw is Map
+          ? PlatformMobileMoneyDetails.fromJson(_map(mobileMoneyRaw))
           : null,
       expiringSoonDays: _int(json['expiring_soon_days']) ?? 14,
     );

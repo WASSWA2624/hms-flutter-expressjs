@@ -35,9 +35,10 @@ const getUpgradeContext = asyncHandler(async (req, res) => {
 });
 
 const submitPaymentRequest = asyncHandler(async (req, res) => {
+  const files = req.file ? [req.file] : req.files || [];
   const data = await subscriptionsWorkspaceService.submitPaymentRequest(
     req.body,
-    req.files,
+    files,
     req.user,
     req.ip
   );

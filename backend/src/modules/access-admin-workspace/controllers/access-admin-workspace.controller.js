@@ -57,6 +57,22 @@ const rejectRegistration = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.access_admin_workspace.registration_rejected.success', data);
 });
 
+const activatePaymentRequest = asyncHandler(async (req, res) => {
+  const requestId =
+    req.params.requestId || req.params.requestIdentifier || req.params.id;
+  const data = await accessAdminWorkspaceService.activatePaymentRequest(
+    requestId,
+    req.user,
+    req.ip
+  );
+  return sendSuccess(
+    res,
+    200,
+    'messages.access_admin_workspace.payment_request_activated.success',
+    data
+  );
+});
+
 const resolveLegacyRoute = asyncHandler(async (req, res) => {
   const data = await accessAdminWorkspaceService.resolveLegacyRoute(
     req.params.resource,
@@ -77,6 +93,7 @@ const restoreAccessDefaults = asyncHandler(async (req, res) => {
 module.exports = {
   approveRegistration,
   activateRegistration,
+  activatePaymentRequest,
   getReferenceData,
   getUserDetail,
   getWorkspace,
