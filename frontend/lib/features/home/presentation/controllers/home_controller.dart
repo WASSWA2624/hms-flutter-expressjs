@@ -11,11 +11,8 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
 
-final homeControllerProvider =
-    FutureProvider.family<Result<HomeDashboard>, HomeDashboardRequest>((
-      ref,
-      request,
-    ) {
+final homeControllerProvider = FutureProvider.autoDispose
+    .family<Result<HomeDashboard>, HomeDashboardRequest>((ref, request) {
       watchSessionDashboardScope(ref);
       listenForRealtimeRefresh(
         ref: ref,
@@ -85,11 +82,8 @@ final homeControllerProvider =
       return ref.watch(homeRepositoryProvider).loadDashboard(request);
     });
 
-final homeLookupsControllerProvider =
-    FutureProvider.family<Result<HomeDashboardLookups>, HomeDashboardRequest>((
-      ref,
-      request,
-    ) {
+final homeLookupsControllerProvider = FutureProvider.autoDispose
+    .family<Result<HomeDashboardLookups>, HomeDashboardRequest>((ref, request) {
       watchSessionDashboardScope(ref);
       return ref.watch(homeRepositoryProvider).loadLookups(request);
     });

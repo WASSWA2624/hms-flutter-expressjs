@@ -438,7 +438,12 @@ class AsyncStateScaffold<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (value.isLoading && !value.hasValue) {
+    // Soft refreshes often arrive as AsyncLoading(previous) or AsyncData with
+    // isRefreshing/isLoading. When keep-previous is off (session switches),
+    // never paint the retained payload.
+    final bool hideRetainedPayload =
+        value.isLoading && !keepPreviousDataDuringRefresh;
+    if (hideRetainedPayload || (value.isLoading && !value.hasValue)) {
       final Widget loadingChrome = _loadingChrome();
       if (_shouldDeferLoadingToShell(context)) {
         return ShellLoadingReporter(
@@ -452,6 +457,8 @@ class AsyncStateScaffold<T> extends StatelessWidget {
     return ShellLoadingReporter(
       isLoading: false,
       child: value.when(
+        skipLoadingOnReload: keepPreviousDataDuringRefresh,
+        skipLoadingOnRefresh: keepPreviousDataDuringRefresh,
         data: (result) {
           return result.when(
             success: (data) {

@@ -278,4 +278,27 @@ void main() {
     expect(find.text('Dashboard: Organization'), findsOneWidget);
     expect(find.text('Loading'), findsNothing);
   });
+
+  testWidgets(
+    'AsyncStateScaffold hides previous data when keepPrevious is false',
+    (WidgetTester tester) async {
+      await pumpComponent(
+        tester,
+        AsyncStateScaffold<String>(
+          value: const AsyncLoading<Result<String>>().copyWithPrevious(
+            const AsyncData<Result<String>>(
+              Result<String>.success('Stale platform metrics'),
+            ),
+          ),
+          keepPreviousDataDuringRefresh: false,
+          loadingTitle: 'Loading',
+          loadingBody: 'Preparing content.',
+          dataBuilder: (_, value) => Text('Dashboard: $value'),
+        ),
+      );
+
+      expect(find.text('Loading'), findsOneWidget);
+      expect(find.text('Dashboard: Stale platform metrics'), findsNothing);
+    },
+  );
 }

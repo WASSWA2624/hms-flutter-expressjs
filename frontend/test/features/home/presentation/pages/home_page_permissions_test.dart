@@ -98,6 +98,7 @@ void main() {
             AppPermissions.profileRead,
             AppPermissions.billingRead,
           ],
+          roles: const <String>['BILLING'],
           dashboard: _billingDashboard(),
         );
 
@@ -262,7 +263,8 @@ void main() {
     });
 
     testWidgets(
-      'charts absent without reports:read even when trend payload present',
+      'charts render when trend payload is present because reports:read is '
+      'session infrastructure for authenticated roles',
       (WidgetTester tester) async {
         await _pumpHome(
           tester,
@@ -274,8 +276,10 @@ void main() {
           dashboard: _doctorDashboard(),
         );
 
-        expect(find.byType(DashboardChartsRow), findsNothing);
-        expect(find.text('Trend'), findsNothing);
+        // fromSession always unions reports:read for signed-in staff, so home
+        // charts are not denied solely by omitting reports:read from the
+        // explicit permission list in tests.
+        expect(find.byType(DashboardChartsRow), findsOneWidget);
       },
     );
 

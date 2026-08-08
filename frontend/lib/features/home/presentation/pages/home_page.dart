@@ -64,32 +64,19 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
 
     final dashboard = ref.watch(homeControllerProvider(request));
-    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final HomeDashboardProfile expectedProfile = homeProfileForAccessPolicy(
-      accessPolicy,
-    );
     if (_awaitingFreshDashboard && dashboard.isLoading) {
       _sawLoadingAfterScopeChange = true;
     }
-    final HomeDashboard? loadedDashboard = switch (dashboard) {
-      AsyncData<Result<HomeDashboard>>(:final value) => value.when(
-        success: (HomeDashboard data) => data,
-        failure: (_) => null,
-      ),
-      _ => null,
-    };
-    // Clear only after a fresh load cycle, or when the keep-alive payload
-    // already matches the live role (sync local dashboards may skip loading).
+    // Same-role account switches (e.g. platform admin A → B) keep prior AsyncData
+    // until reload finishes. Never clear on role match alone — that re-exposes
+    // the previous user's metrics. Require a real load cycle after the scope
+    // change (local sync dashboards still briefly enter loading).
     if (_awaitingFreshDashboard &&
+        _sawLoadingAfterScopeChange &&
         !dashboard.isLoading &&
         (dashboard.hasValue || dashboard.hasError)) {
-      final bool roleMatches =
-          loadedDashboard == null ||
-          loadedDashboard.profile.role == expectedProfile.role;
-      if (_sawLoadingAfterScopeChange || roleMatches) {
-        _awaitingFreshDashboard = false;
-        _sawLoadingAfterScopeChange = false;
-      }
+      _awaitingFreshDashboard = false;
+      _sawLoadingAfterScopeChange = false;
     }
 
     final HomeDashboardOptimisticPatchState? optimisticState = ref.watch(
@@ -137,13 +124,10 @@ class _HomePageState extends ConsumerState<HomePage> {
       );
     });
 
-    final bool suppressStaleAccountData =
-        _awaitingFreshDashboard &&
-        !_sawLoadingAfterScopeChange &&
-        loadedDashboard != null &&
-        loadedDashboard.profile.role != expectedProfile.role;
+    // While the session/account scope is changing, never paint the previous
+    // keep-alive payload — including same-role switches where metrics differ.
     final AsyncValue<Result<HomeDashboard>> displayValue =
-        suppressStaleAccountData
+        _awaitingFreshDashboard
         ? const AsyncLoading<Result<HomeDashboard>>()
         : dashboard;
 
