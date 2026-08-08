@@ -3028,6 +3028,22 @@
   "@subscriptionUpgradeAdminContactPhoneLabel": {
     "description": "Label for platform admin phone in the upgrade dialog."
   },
+  "subscriptionReportCopyEmailAction": "Copy email",
+  "@subscriptionReportCopyEmailAction": {
+    "description": "Tooltip for copying an admin contact email in the ask-an-admin dialog."
+  },
+  "subscriptionReportEmailCopiedMessage": "Email copied.",
+  "@subscriptionReportEmailCopiedMessage": {
+    "description": "SnackBar confirmation after copying an admin contact email."
+  },
+  "subscriptionReportCopyPhoneAction": "Copy phone",
+  "@subscriptionReportCopyPhoneAction": {
+    "description": "Tooltip for copying an admin contact phone in the ask-an-admin dialog."
+  },
+  "subscriptionReportPhoneCopiedMessage": "Phone copied.",
+  "@subscriptionReportPhoneCopiedMessage": {
+    "description": "SnackBar confirmation after copying an admin contact phone."
+  },
   "subscriptionUpgradeSubmitAction": "Submit payment",
   "@subscriptionUpgradeSubmitAction": {
     "description": "Submit action label for the subscription upgrade dialog."

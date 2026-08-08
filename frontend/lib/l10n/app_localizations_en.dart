@@ -2323,6 +2323,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionUpgradeAdminContactPhoneLabel => 'Phone';
 
   @override
+  String get subscriptionReportCopyEmailAction => 'Copy email';
+
+  @override
+  String get subscriptionReportEmailCopiedMessage => 'Email copied.';
+
+  @override
+  String get subscriptionReportCopyPhoneAction => 'Copy phone';
+
+  @override
+  String get subscriptionReportPhoneCopiedMessage => 'Phone copied.';
+
+  @override
   String get subscriptionUpgradeSubmitAction => 'Submit payment';
 
   @override

@@ -701,6 +701,8 @@ class _AdminContactCard extends StatelessWidget {
                       label: l10n.subscriptionUpgradeAdminContactEmailLabel,
                       value: contact.email!,
                       accent: planTheme.foreground,
+                      copyTooltip: l10n.subscriptionReportCopyEmailAction,
+                      copiedMessage: l10n.subscriptionReportEmailCopiedMessage,
                       compact: true,
                     ),
                   ),
@@ -714,6 +716,8 @@ class _AdminContactCard extends StatelessWidget {
                       label: l10n.subscriptionUpgradeAdminContactPhoneLabel,
                       value: contact.phone!,
                       accent: planTheme.foreground,
+                      copyTooltip: l10n.subscriptionReportCopyPhoneAction,
+                      copiedMessage: l10n.subscriptionReportPhoneCopiedMessage,
                       compact: true,
                     ),
                   ),
@@ -751,6 +755,8 @@ class _AdminContactCard extends StatelessWidget {
                         label: l10n.subscriptionUpgradeAdminContactEmailLabel,
                         value: contact.email!,
                         accent: planTheme.foreground,
+                        copyTooltip: l10n.subscriptionReportCopyEmailAction,
+                        copiedMessage: l10n.subscriptionReportEmailCopiedMessage,
                       ),
                     ],
                     if (contact.phone != null) ...<Widget>[
@@ -760,6 +766,8 @@ class _AdminContactCard extends StatelessWidget {
                         label: l10n.subscriptionUpgradeAdminContactPhoneLabel,
                         value: contact.phone!,
                         accent: planTheme.foreground,
+                        copyTooltip: l10n.subscriptionReportCopyPhoneAction,
+                        copiedMessage: l10n.subscriptionReportPhoneCopiedMessage,
                       ),
                     ],
                   ],
@@ -795,6 +803,8 @@ class _ContactLine extends StatelessWidget {
     required this.label,
     required this.value,
     required this.accent,
+    required this.copyTooltip,
+    required this.copiedMessage,
     this.compact = false,
   });
 
@@ -802,27 +812,31 @@ class _ContactLine extends StatelessWidget {
   final String label;
   final String value;
   final Color accent;
+  final String copyTooltip;
+  final String copiedMessage;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
 
     return Semantics(
       label: '$label: $value',
       child: Row(
-        mainAxisSize: compact ? MainAxisSize.max : MainAxisSize.max,
         children: <Widget>[
           Icon(icon, size: 18, color: accent),
           SizedBox(width: theme.spacing.sm),
           Expanded(
-            child: SelectableText(
-              value,
-              maxLines: compact ? 1 : null,
-              style: theme.textTheme.bodyMedium?.copyWith(
+            child: AppCopyableIdentifier(
+              value: value,
+              tooltip: copyTooltip,
+              copiedTooltip: copiedMessage,
+              copiedMessage: copiedMessage,
+              semanticLabel: '$copyTooltip: $value',
+              maxLines: compact ? 1 : 2,
+              textStyle: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: AppFontWeight.emphasis,
-                color: colorScheme.onSurface,
+                color: theme.colorScheme.onSurface,
                 height: 1.25,
               ),
             ),

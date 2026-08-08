@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
@@ -6,11 +7,32 @@ import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_report_admins_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
+import 'package:hosspi_hms/shared/components/app_copyable_identifier.dart';
 
 void main() {
   testWidgets(
     'report admins dialog shows package, upgrade guidance, and contacts',
     (WidgetTester tester) async {
+      final List<String> copiedValues = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall methodCall) async {
+          if (methodCall.method == 'Clipboard.setData') {
+            final Map<Object?, Object?> arguments = Map<Object?, Object?>.from(
+              methodCall.arguments as Map,
+            );
+            copiedValues.add(arguments['text']! as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
@@ -94,6 +116,21 @@ void main() {
       expect(find.text('Tenant Admin'), findsOneWidget);
       expect(find.text('Platform Demo'), findsOneWidget);
       expect(find.text('Hosspi platform support'), findsOneWidget);
+      expect(find.byType(AppCopyableIdentifier), findsWidgets);
+
+      await tester.tap(find.text('facility.admin@hosspi.com'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(copiedValues, <String>['facility.admin@hosspi.com']);
+      expect(find.text('Email copied.'), findsOneWidget);
+
+      await tester.tap(find.text('+256700000010'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(copiedValues, <String>[
+        'facility.admin@hosspi.com',
+        '+256700000010',
+      ]);
     },
   );
 }

@@ -4444,6 +4444,30 @@ abstract class AppLocalizations {
   /// **'Phone'**
   String get subscriptionUpgradeAdminContactPhoneLabel;
 
+  /// Tooltip for copying an admin contact email in the ask-an-admin dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy email'**
+  String get subscriptionReportCopyEmailAction;
+
+  /// SnackBar confirmation after copying an admin contact email.
+  ///
+  /// In en, this message translates to:
+  /// **'Email copied.'**
+  String get subscriptionReportEmailCopiedMessage;
+
+  /// Tooltip for copying an admin contact phone in the ask-an-admin dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy phone'**
+  String get subscriptionReportCopyPhoneAction;
+
+  /// SnackBar confirmation after copying an admin contact phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone copied.'**
+  String get subscriptionReportPhoneCopiedMessage;
+
   /// Submit action label for the subscription upgrade dialog.
   ///
   /// In en, this message translates to:
