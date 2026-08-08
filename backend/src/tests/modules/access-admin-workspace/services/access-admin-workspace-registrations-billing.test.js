@@ -26,11 +26,15 @@ jest.mock('@lib/audit', () => ({
 jest.mock('@lib/subscriptions/tenant-onboarding', () => ({
   provisionTrialSubscription: jest.fn().mockResolvedValue({ id: 'sub-uuid' }),
 }));
+jest.mock('@services/auth/auth.service', () => ({
+  sendAccountApprovedEmail: jest.fn().mockResolvedValue({ sent: true, provider: 'smtp' }),
+}));
 
 const repository = require('@repositories/access-admin-workspace/access-admin-workspace.repository');
 const authRepository = require('@repositories/auth/auth.repository');
 const clinicalRequestBilling = require('@lib/billing/clinical-request-billing');
 const { provisionTrialSubscription } = require('@lib/subscriptions/tenant-onboarding');
+const { sendAccountApprovedEmail } = require('@services/auth/auth.service');
 const service = require('../../../../modules/access-admin-workspace/services/access-admin-workspace.service');
 
 describe('access-admin-workspace registrations billing scan', () => {
@@ -39,6 +43,7 @@ describe('access-admin-workspace registrations billing scan', () => {
     roles: ['PLATFORM_ADMIN'],
     permissions: ['platform:admin'],
   };
+  const superAdmin = platformAdmin;
 
   const tenantAdmin = {
     id: 'tenant-admin-uuid',
@@ -134,6 +139,12 @@ describe('access-admin-workspace registrations billing scan', () => {
 
     expect(authRepository.updateUserStatus).toHaveBeenCalledWith(pendingUser.id, 'ACTIVE');
     expect(provisionTrialSubscription).toHaveBeenCalledWith('tenant-uuid');
+    expect(sendAccountApprovedEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: pendingUser.email,
+        facilityName: 'Main Campus',
+      })
+    );
     expect(clinicalRequestBilling.upsertClinicalRequestBilling).not.toHaveBeenCalled();
     expect(clinicalRequestBilling.receiveClinicalRequestPayment).not.toHaveBeenCalled();
     expect(clinicalRequestBilling.adjustClinicalRequestBilling).not.toHaveBeenCalled();

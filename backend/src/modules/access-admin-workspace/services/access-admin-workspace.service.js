@@ -20,6 +20,8 @@ const { provisionTrialSubscription } = require('@lib/subscriptions/tenant-onboar
 const { listPendingPaymentRequests } = require('@lib/subscriptions/subscription-payment-request');
 const authRepository = require('@repositories/auth/auth.repository');
 const repository = require('@repositories/access-admin-workspace/access-admin-workspace.repository');
+const { logger } = require('@lib/logging');
+const { sendAccountApprovedEmail } = require('@services/auth/auth.service');
 
 const DEFAULT_DEMO_RESET_PASSWORD = process.env.DEMO_RESET_PASSWORD || 'Hosspi@2624.';
 
@@ -1044,6 +1046,42 @@ const activateRegistration = async (userIdentifier, actor = {}, ip = null) => {
       phone: user.phone || null,
     },
   }).catch(() => {});
+
+  if (user.email) {
+    const adminName = [
+      user.profile?.first_name,
+      user.profile?.last_name,
+    ]
+      .map((part) => String(part || '').trim())
+      .filter(Boolean)
+      .join(' ')
+      .trim() || user.email.split('@')[0] || 'Admin';
+    const facilityName =
+      user.facility?.name || user.tenant?.name || 'your facility';
+
+    // Activation is already committed; do not block the API on SMTP.
+    void sendAccountApprovedEmail({
+      email: user.email,
+      adminName,
+      facilityName,
+    })
+      .then((deliveryResult) => {
+        if (!deliveryResult?.sent) {
+          logger.warn('Account-approved email was not delivered.', {
+            context: 'activate_registration_approved',
+            email: user.email,
+            provider: deliveryResult?.provider || null,
+          });
+        }
+      })
+      .catch((error) => {
+        logger.warn('Account-approved email send failed.', {
+          context: 'activate_registration_approved',
+          email: user.email,
+          error: error?.message || String(error),
+        });
+      });
+  }
 
   return serializeRegistrationFollowUp({
     email: user.email,

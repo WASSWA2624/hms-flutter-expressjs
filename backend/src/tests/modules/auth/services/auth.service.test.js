@@ -1061,6 +1061,31 @@ describe('Auth Service', () => {
     });
   });
 
+  describe('sendAccountApprovedEmail', () => {
+    it('sends approval guidance to the tenant admin', async () => {
+      sendEmail.mockResolvedValue({ sent: true, provider: 'smtp' });
+
+      const result = await authService.sendAccountApprovedEmail({
+        email: 'owner@example.com',
+        adminName: 'Jane Doe',
+        facilityName: 'Mirembe Clinic',
+        locale: 'en',
+      });
+
+      expect(result).toEqual({ sent: true, provider: 'smtp' });
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'owner@example.com',
+          subject: 'Your Hospital Management System account has been approved',
+          text: expect.stringContaining('Jane Doe'),
+          html: expect.stringContaining('/login'),
+        })
+      );
+      expect(sendEmail.mock.calls[0][0].text).toContain('Mirembe Clinic');
+      expect(sendEmail.mock.calls[0][0].text).toContain('Invite your team');
+    });
+  });
+
   describe('verifyPhone', () => {
     it('should verify phone with valid token', async () => {
       const verifyData = {

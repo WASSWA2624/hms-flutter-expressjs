@@ -781,6 +781,175 @@ const sendAwaitingApprovalEmail = async ({
   });
 };
 
+/**
+ * Build the post-activation account-approved email.
+ *
+ * @param {Object} params
+ * @param {string} [params.locale]
+ * @param {string} [params.adminName]
+ * @param {string} [params.facilityName]
+ * @returns {{ subject: string, text: string, html: string, attachments: Array }}
+ */
+const buildAccountApprovedEmailMessage = ({
+  locale,
+  adminName,
+  facilityName,
+} = {}) => {
+  const resolvedLocale = resolveLocale(locale);
+  const loginLink = buildLoginLink();
+  const resolvedAdminName = toNormalizedString(adminName) || 'Admin';
+  const resolvedFacilityName =
+    toNormalizedString(facilityName) || 'your facility';
+  const subject = translate(
+    'messages.auth.account_approved.subject',
+    resolvedLocale,
+    { app_name: APP_DISPLAY_NAME }
+  );
+  const preheader = translate(
+    'messages.auth.account_approved.preheader',
+    resolvedLocale,
+    { facility_name: resolvedFacilityName }
+  );
+  const title = translate(
+    'messages.auth.account_approved.title',
+    resolvedLocale
+  );
+  const intro = translate(
+    'messages.auth.account_approved.intro',
+    resolvedLocale,
+    {
+      app_name: APP_DISPLAY_NAME,
+      admin_name: resolvedAdminName,
+      facility_name: resolvedFacilityName,
+    }
+  );
+  const nextStepsTitle = translate(
+    'messages.auth.account_approved.next_steps_title',
+    resolvedLocale
+  );
+  const stepLogin = translate(
+    'messages.auth.account_approved.step_login',
+    resolvedLocale
+  );
+  const stepWorkspace = translate(
+    'messages.auth.account_approved.step_workspace',
+    resolvedLocale
+  );
+  const stepTeam = translate(
+    'messages.auth.account_approved.step_team',
+    resolvedLocale
+  );
+  const loginAction = translate(
+    'messages.auth.account_approved.login_action',
+    resolvedLocale
+  );
+  const signature = translate(
+    'messages.auth.account_approved.signature',
+    resolvedLocale,
+    { app_name: APP_DISPLAY_NAME }
+  );
+  const logoAlt = translate(
+    'messages.auth.account_approved.logo_alt',
+    resolvedLocale,
+    { app_name: APP_DISPLAY_NAME }
+  );
+  const { logoSrc, attachments } = resolveEmailLogoAsset();
+
+  const text = [
+    subject,
+    '',
+    intro,
+    '',
+    nextStepsTitle,
+    `1. ${stepLogin}`,
+    loginLink,
+    `2. ${stepWorkspace}`,
+    `3. ${stepTeam}`,
+    '',
+    signature,
+  ].join('\n');
+
+  const html = `<!doctype html>
+<html lang="${escapeHtml(resolvedLocale)}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>${escapeHtml(subject)}</title>
+</head>
+<body style="font-family:Segoe UI,Tahoma,Arial,sans-serif;background:#f4f7fb;padding:20px;">
+  <div style="display:none!important;opacity:0;color:transparent;height:0;width:0;overflow:hidden;visibility:hidden;mso-hide:all;">
+    ${escapeHtml(preheader)}
+  </div>
+  <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #dbe4f3;border-radius:12px;padding:24px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+      ${logoSrc
+        ? `<img src="${escapeHtml(logoSrc)}" alt="${escapeHtml(logoAlt)}" width="44" height="44" style="display:block;width:44px;height:44px;border:0;border-radius:10px;background:#ffffff;padding:4px;" />`
+        : ''}
+      <div>
+        <p style="margin:0 0 4px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;">${escapeHtml(APP_DISPLAY_NAME)}</p>
+        <h1 style="margin:0;font-size:22px;color:#0f172a;">${escapeHtml(title)}</h1>
+      </div>
+    </div>
+    <p style="margin:0 0 14px;color:#1e293b;line-height:1.5;">${escapeHtml(intro)}</p>
+    <p style="margin:0 0 8px;color:#0f172a;font-weight:700;">${escapeHtml(nextStepsTitle)}</p>
+    <ol style="margin:0 0 16px;padding-left:18px;color:#334155;font-size:14px;line-height:1.5;">
+      <li style="margin-bottom:8px;">
+        ${escapeHtml(stepLogin)}
+        <div style="margin-top:8px;">
+          <a href="${escapeHtml(loginLink)}" style="display:inline-block;background:#0b88e6;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700;">${escapeHtml(loginAction)}</a>
+        </div>
+        <div style="margin-top:8px;word-break:break-all;">
+          <a href="${escapeHtml(loginLink)}" style="color:#0b66c3;word-break:break-word;">${escapeHtml(loginLink)}</a>
+        </div>
+      </li>
+      <li style="margin-bottom:8px;">${escapeHtml(stepWorkspace)}</li>
+      <li>${escapeHtml(stepTeam)}</li>
+    </ol>
+    <p style="margin:0;color:#0f172a;white-space:pre-line;">${escapeHtml(signature)}</p>
+  </div>
+</body>
+</html>`;
+
+  return {
+    subject,
+    text,
+    html,
+    attachments,
+  };
+};
+
+/**
+ * Notify the registering tenant admin that platform approval succeeded.
+ * Best-effort — callers should not block activation on delivery.
+ *
+ * @param {Object} params
+ * @param {string} params.email
+ * @param {string} [params.locale]
+ * @param {string} [params.adminName]
+ * @param {string} [params.facilityName]
+ * @returns {Promise<{ sent?: boolean, provider?: string }|null>}
+ */
+const sendAccountApprovedEmail = async ({
+  email,
+  locale,
+  adminName,
+  facilityName,
+}) => {
+  const payload = buildAccountApprovedEmailMessage({
+    locale,
+    adminName,
+    facilityName,
+  });
+
+  return sendEmail({
+    to: email,
+    subject: payload.subject,
+    text: payload.text,
+    html: payload.html,
+    attachments: payload.attachments,
+  });
+};
+
 const ensureEmailDelivered = (deliveryResult, context, options = {}) => {
   if (deliveryResult?.sent) {
     return;
@@ -2204,5 +2373,6 @@ module.exports = {
   changePassword,
   refresh,
   logout,
-  getMe
+  getMe,
+  sendAccountApprovedEmail,
 };
