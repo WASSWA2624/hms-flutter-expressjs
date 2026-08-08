@@ -2114,11 +2114,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionExpiredPromptContactAdminAction => 'Got it';
 
   @override
-  String get subscriptionReportAdminsDialogTitle => 'Who can renew?';
+  String get subscriptionReportAdminsDialogTitle =>
+      'Ask an admin to manage subscription';
 
   @override
   String get subscriptionReportAdminsDialogBody =>
-      'Some features are limited. Ask an admin below to renew or upgrade.';
+      'Contact a tenant or facility admin below and ask them to activate, renew, or upgrade the subscription so you can continue using full services.';
 
   @override
   String get subscriptionReportFacilityAdminsLabel => 'Facility administrators';

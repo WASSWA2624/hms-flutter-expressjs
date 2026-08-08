@@ -128,7 +128,7 @@ void main() {
 
       expect(find.text('Administration boundaries'), findsOneWidget);
       expect(find.text('Tenant and facility setup'), findsOneWidget);
-      expect(find.text('Subscription plans'), findsOneWidget);
+      expect(find.text('Subscription plans'), findsNothing);
       expect(find.text('Users and access'), findsOneWidget);
       expect(find.text('Create'), findsNothing);
       expect(find.text('Delete'), findsNothing);
@@ -158,7 +158,7 @@ void main() {
   );
 
   testWidgets(
-    'subscriptions tile stripped without subscription-controls module',
+    'subscriptions tile stripped without platform admin',
     (WidgetTester tester) async {
       await _pumpSection(
         tester,
@@ -167,7 +167,7 @@ void main() {
           AppPermissions.facilityAdmin,
           AppPermissions.subscriptionsRead,
         ],
-        modules: const <AppModuleEntitlement>[],
+        modules: _subscriptionModule,
         settingsWorkspaceVisible: true,
       );
 
@@ -229,8 +229,7 @@ void main() {
         tester,
         permissions: <AppPermission>[
           AppPermissions.profileRead,
-          AppPermissions.facilityAdmin,
-          AppPermissions.subscriptionsRead,
+          AppPermissions.systemAdmin,
         ],
         modules: _subscriptionModule,
         settingsWorkspaceVisible: true,
@@ -355,7 +354,7 @@ void main() {
       );
 
       expect(find.text('Administration boundaries'), findsOneWidget);
-      expect(find.text('Subscription plans'), findsOneWidget);
+      expect(find.text('Subscription plans'), findsNothing);
       expect(find.text('Users and access'), findsOneWidget);
       expect(find.text('Tenant and facility setup'), findsNothing);
     },

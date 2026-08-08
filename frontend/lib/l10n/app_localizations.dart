@@ -4078,16 +4078,16 @@ abstract class AppLocalizations {
   /// **'Got it'**
   String get subscriptionExpiredPromptContactAdminAction;
 
-  /// Title for the dialog that shows org admins to contact about subscription renewal.
+  /// Title for the dialog that shows org admins to contact about subscription activation, renewal, or upgrade.
   ///
   /// In en, this message translates to:
-  /// **'Who can renew?'**
+  /// **'Ask an admin to manage subscription'**
   String get subscriptionReportAdminsDialogTitle;
 
-  /// Body for the report-to-admins dialog when subscription is expiring soon.
+  /// Body for the report-to-admins dialog guiding non-admin staff to contact org admins.
   ///
   /// In en, this message translates to:
-  /// **'Some features are limited. Ask an admin below to renew or upgrade.'**
+  /// **'Contact a tenant or facility admin below and ask them to activate, renew, or upgrade the subscription so you can continue using full services.'**
   String get subscriptionReportAdminsDialogBody;
 
   /// Section title for facility admin contacts.

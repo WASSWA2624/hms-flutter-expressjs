@@ -137,24 +137,9 @@ void main() {
     });
 
     test(
-      'subscription strip: subscriptions navigate needs subscription-controls',
+      'subscription strip: subscriptions navigate needs platform admin',
       () {
-        final AppAccessPolicy noModule = _policy(
-          <AppPermission>[
-            AppPermissions.profileRead,
-            AppPermissions.facilityAdmin,
-            AppPermissions.subscriptionsRead,
-          ],
-          modules: const <AppModuleEntitlement>[],
-        );
-        expect(
-          SettingsAdministrationAtomPermissions.subscriptions.isAllowed(
-            noModule,
-          ),
-          isFalse,
-        );
-
-        final AppAccessPolicy withModule = _policy(
+        final AppAccessPolicy tenantAdmin = _policy(
           <AppPermission>[
             AppPermissions.profileRead,
             AppPermissions.facilityAdmin,
@@ -169,7 +154,20 @@ void main() {
         );
         expect(
           SettingsAdministrationAtomPermissions.subscriptions.isAllowed(
-            withModule,
+            tenantAdmin,
+          ),
+          isFalse,
+        );
+
+        final AppAccessPolicy platformAdmin = _policy(
+          <AppPermission>[
+            AppPermissions.profileRead,
+            AppPermissions.systemAdmin,
+          ],
+        );
+        expect(
+          SettingsAdministrationAtomPermissions.subscriptions.isAllowed(
+            platformAdmin,
           ),
           isTrue,
         );

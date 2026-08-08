@@ -2755,13 +2755,13 @@
   "@subscriptionExpiredPromptContactAdminAction": {
     "description": "Dismiss action for non-billing users on the expired prompt."
   },
-  "subscriptionReportAdminsDialogTitle": "Who can renew?",
+  "subscriptionReportAdminsDialogTitle": "Ask an admin to manage subscription",
   "@subscriptionReportAdminsDialogTitle": {
-    "description": "Title for the dialog that shows org admins to contact about subscription renewal."
+    "description": "Title for the dialog that shows org admins to contact about subscription activation, renewal, or upgrade."
   },
-  "subscriptionReportAdminsDialogBody": "Some features are limited. Ask an admin below to renew or upgrade.",
+  "subscriptionReportAdminsDialogBody": "Contact a tenant or facility admin below and ask them to activate, renew, or upgrade the subscription so you can continue using full services.",
   "@subscriptionReportAdminsDialogBody": {
-    "description": "Body for the report-to-admins dialog when subscription is expiring soon."
+    "description": "Body for the report-to-admins dialog guiding non-admin staff to contact org admins."
   },
   "subscriptionReportFacilityAdminsLabel": "Facility administrators",
   "@subscriptionReportFacilityAdminsLabel": {

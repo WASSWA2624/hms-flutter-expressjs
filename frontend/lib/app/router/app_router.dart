@@ -1053,9 +1053,6 @@ Widget? _subscriptionHeaderAction({
   final bool canManageBilling = ref
       .watch(appAccessPolicyProvider)
       .canManageSubscriptionBilling();
-  final bool needsAttention =
-      summary.headerState == TenantSubscriptionHeaderState.expired ||
-      summary.headerState == TenantSubscriptionHeaderState.expiringSoon;
 
   VoidCallback? onPressed;
   if (canManageBilling) {
@@ -1083,7 +1080,7 @@ Widget? _subscriptionHeaderAction({
         failure: (_) {},
       );
     };
-  } else if (needsAttention) {
+  } else {
     onPressed = () {
       unawaited(
         showSubscriptionReportAdminsDialog(

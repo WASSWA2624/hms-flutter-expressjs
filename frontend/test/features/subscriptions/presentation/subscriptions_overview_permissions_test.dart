@@ -445,6 +445,17 @@ void main() {
       );
     });
 
+    test('∪ route entry: subscriptions:read alone cannot enter workspace', () {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.subscriptionsRead},
+      );
+      expect(canEnterSubscriptionsWorkspace(reader), isFalse);
+      expect(
+        SubscriptionsOverviewAtomPermissions.routeEntry.isAllowed(reader),
+        isFalse,
+      );
+    });
+
     test('nested cross-module _(n/a)_ reuses workspace read/write ∩', () {
       expect(
         SubscriptionsOverviewAtomPermissions.nestedRead,
@@ -909,8 +920,12 @@ void main() {
       (WidgetTester tester) async {
         expect(AppRoutes.subscriptions.name, 'subscriptions');
         expect(
-          RouteAccessCatalog.subscriptionsEntry.allPermissions,
-          <AppPermission>[AppPermissions.subscriptionsRead],
+          RouteAccessCatalog.subscriptionsEntry.anyPermissions,
+          <AppPermission>[AppPermissions.systemAdmin],
+        );
+        expect(
+          RouteAccessCatalog.subscriptionsEntry.anyRoles,
+          <AppRole>[AppRole.superAdmin],
         );
         expect(
           SubscriptionsOverviewAtomPermissions.catalogEntry,

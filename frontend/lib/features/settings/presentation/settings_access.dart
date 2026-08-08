@@ -225,8 +225,8 @@ const AccessRequirement settingsAdministrationDeleteRequirement =
 const AccessRequirement settingsAdministrationTenantFacilityNavigateRequirement =
     RouteAccessCatalog.setupEntry;
 
-/// Navigate → subscriptions. Source [RouteAccessCatalog.subscriptionsEntry]
-/// (`subscriptions:read` ∩ `subscription-controls`).
+/// Navigate → subscriptions. Platform admins only
+/// ([RouteAccessCatalog.subscriptionsEntry]).
 const AccessRequirement settingsAdministrationSubscriptionsNavigateRequirement =
     RouteAccessCatalog.subscriptionsEntry;
 
@@ -242,15 +242,16 @@ const AccessRequirement settingsAdministrationAccessAdminNavigateRequirement =
 /// sources (documented mapping vs tab admin ∪). Create / update / delete and
 /// nested cross-module write rows are matrix-documented but **not mounted**
 /// on this navigate-only surface. Admin / profile keys are core/platform;
-/// subscriptions navigate applies `subscription-controls` plan module +
-/// destination ABAC (setup: facility; access admin: tenant).
+/// subscriptions navigate is platform-admin only (catalog `system:admin` ∪
+/// `SUPER_ADMIN`). Setup navigate requires facility context; access admin
+/// requires tenant context.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Administration boundaries strip tab | navigate | read ∩∪ ([tab]) |
 /// | Section title / body chrome | read chrome | ([read] / [listChrome]) |
 /// | Tenant and facility setup tile | navigate | catalog setup ([tenantFacilitySetup]) |
-/// | Subscription plans tile | navigate | catalog subscriptions ([subscriptions]) |
+/// | Subscription plans tile | navigate | catalog subscriptions platform-admin ([subscriptions]) |
 /// | Users and access tile | navigate | catalog access admin ([accessAdmin]) |
 /// | Loading / empty / error / retry | read chrome | ([loading] / [empty] / [retry]) — empty collapses when no destinations |
 /// | Create / update / delete affordances | create/update/delete | matrix ∩ — **not mounted** |

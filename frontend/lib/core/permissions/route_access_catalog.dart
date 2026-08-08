@@ -259,14 +259,18 @@ abstract final class RouteAccessCatalog {
     requirement: claimsEntry,
   );
 
+  /// Platform subscriptions workspace — platform admins only.
+  ///
+  /// Tenant/facility staff use the shell header upgrade/renew control instead
+  /// of navigating to `/subscriptions` directly.
   static const AccessRequirement subscriptionsEntry = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.subscriptionsRead],
-    activeModules: <String>['subscription-controls'],
+    anyPermissions: <AppPermission>[AppPermissions.systemAdmin],
+    anyRoles: <AppRole>[AppRole.superAdmin],
   );
   static const RouteAccessAtom subscriptions = RouteAccessAtom(
     routeName: 'subscriptions',
     path: '/subscriptions',
-    entryPermission: AppPermissions.subscriptionsRead,
+    entryPermission: AppPermissions.systemAdmin,
     requirement: subscriptionsEntry,
   );
 

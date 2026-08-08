@@ -21,22 +21,16 @@ const AccessRequirement subscriptionsWorkspaceReadRequirement =
 const AccessRequirement subscriptionsReadRequirement =
     subscriptionsWorkspaceReadRequirement;
 
-/// Catalog shell entry — unique atom from [RouteAccessCatalog.subscriptions]
-/// (∩ `subscriptions:read` + module).
+/// Catalog shell entry — platform admins only ([RouteAccessCatalog.subscriptions]).
 const AccessRequirement subscriptionsWorkspaceCatalogEntryRequirement =
     RouteAccessCatalog.subscriptionsEntry;
 
-/// Prompt / [AppRoutes.subscriptions] route-entry ∪: `system:admin`
-/// (SUPER_ADMIN). Catalog entry stays
-/// [subscriptionsWorkspaceCatalogEntryRequirement].
+/// [AppRoutes.subscriptions] route entry — same platform-admin gate as catalog.
 const AccessRequirement subscriptionsWorkspaceRouteEntryRequirement =
-    AccessRequirement(
-      anyPermissions: <AppPermission>[AppPermissions.systemAdmin],
-      anyRoles: <AppRole>[AppRole.superAdmin],
-    );
+    RouteAccessCatalog.subscriptionsEntry;
 
 /// Alias matching historical / prompt "route entry" naming when AppRoutes ∪
-/// is intended (not the catalog `subscriptions:read` atom).
+/// is intended (not the workspace `subscriptions:read` content atoms).
 const AccessRequirement subscriptionsWorkspaceAppRouteRequirement =
     subscriptionsWorkspaceRouteEntryRequirement;
 
@@ -89,8 +83,7 @@ final class SubscriptionsCapabilities {
 }
 
 bool canEnterSubscriptionsWorkspace(AppAccessPolicy policy) {
-  return subscriptionsWorkspaceCatalogEntryRequirement.isAllowed(policy) ||
-      subscriptionsWorkspaceRouteEntryRequirement.isAllowed(policy);
+  return subscriptionsWorkspaceRouteEntryRequirement.isAllowed(policy);
 }
 
 bool canReadSubscriptions(AppAccessPolicy policy) {

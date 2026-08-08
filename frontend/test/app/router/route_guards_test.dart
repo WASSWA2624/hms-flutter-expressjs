@@ -363,7 +363,7 @@ void main() {
       );
     });
 
-    test('gates the subscriptions workspace to super admins only', () {
+    test('gates the subscriptions workspace to platform admins only', () {
       final Uri targetLocation = Uri(path: AppRoutes.subscriptions.path);
       const AppRouteGuards guards = AppRouteGuards(
         sessionState: SessionState.authenticated(),
@@ -381,6 +381,18 @@ void main() {
             location: targetLocation,
             grantedPermissions: AppPermissionGrant(<AppPermission>{
               AppPermissions.subscriptionsRead,
+            }),
+          ),
+        ),
+        AppRoutes.forbidden.locationWithFrom(targetLocation),
+      );
+
+      expect(
+        guards.redirect(
+          AppRouteGuardRequest(
+            location: targetLocation,
+            grantedPermissions: AppPermissionGrant(<AppPermission>{
+              AppPermissions.systemAdmin,
             }),
           ),
         ),

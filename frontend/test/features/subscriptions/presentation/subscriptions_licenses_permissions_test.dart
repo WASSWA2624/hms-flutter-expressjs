@@ -1003,8 +1003,12 @@ void main() {
       (WidgetTester tester) async {
         expect(AppRoutes.subscriptions.name, 'subscriptions');
         expect(
-          RouteAccessCatalog.subscriptionsEntry.allPermissions,
-          <AppPermission>[AppPermissions.subscriptionsRead],
+          RouteAccessCatalog.subscriptionsEntry.anyPermissions,
+          <AppPermission>[AppPermissions.systemAdmin],
+        );
+        expect(
+          RouteAccessCatalog.subscriptionsEntry.anyRoles,
+          <AppRole>[AppRole.superAdmin],
         );
         expect(
           SubscriptionsLicensesAtomPermissions.catalogEntry,

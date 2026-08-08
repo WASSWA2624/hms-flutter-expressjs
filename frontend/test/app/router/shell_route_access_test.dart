@@ -239,19 +239,19 @@ void main() {
         expect(canAccess(AppRoutes.tenantFacilitySetup, policy), isTrue, reason: role);
       }
 
-      // subscriptions:read is on admin packs — all admins may open it when
-      // the subscription-controls module is entitled.
+      // /subscriptions is platform-admin only; tenant/facility admins use the
+      // header upgrade/renew control instead of the workspace route.
       expect(
         canAccess(AppRoutes.subscriptions, policyForRole('SUPER_ADMIN')),
         isTrue,
       );
       expect(
         canAccess(AppRoutes.subscriptions, policyForRole('TENANT_ADMIN')),
-        isTrue,
+        isFalse,
       );
       expect(
         canAccess(AppRoutes.subscriptions, policyForRole('FACILITY_ADMIN')),
-        isTrue,
+        isFalse,
       );
     });
 
