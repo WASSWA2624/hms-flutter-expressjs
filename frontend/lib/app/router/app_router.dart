@@ -1097,7 +1097,11 @@ Widget? _subscriptionHeaderAction({
     };
   }
 
-  return SubscriptionHeaderButton(summary: summary, onPressed: onPressed);
+  return SubscriptionHeaderButton(
+    summary: summary,
+    onPressed: onPressed,
+    showUpgradeHint: canManageBilling,
+  );
 }
 
 UserMenuProfileData? _userMenuProfile(AuthSession? session) {

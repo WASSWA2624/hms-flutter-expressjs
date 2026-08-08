@@ -10,6 +10,7 @@ final class SubscriptionHeaderButton extends StatelessWidget {
   const SubscriptionHeaderButton({
     required this.summary,
     this.onPressed,
+    this.showUpgradeHint = true,
     super.key,
   });
 
@@ -17,6 +18,10 @@ final class SubscriptionHeaderButton extends StatelessWidget {
 
   /// When null, the badge is display-only (no upgrade/renew action).
   final VoidCallback? onPressed;
+
+  /// When false (non-admins), the active badge shows only the package name.
+  /// Expire / expiring labels are unchanged either way.
+  final bool showUpgradeHint;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +31,12 @@ final class SubscriptionHeaderButton extends StatelessWidget {
     final bool compact = breakpoint.isMobile;
     final bool interactive = onPressed != null;
     final _SubscriptionHeaderPresentation presentation =
-        _SubscriptionHeaderPresentation.fromSummary(summary, l10n, theme);
+        _SubscriptionHeaderPresentation.fromSummary(
+          summary,
+          l10n,
+          theme,
+          showUpgradeHint: showUpgradeHint,
+        );
 
     final Widget content = compact
         ? Icon(presentation.icon, size: theme.appTokens.listIconSize)
@@ -109,8 +119,9 @@ final class _SubscriptionHeaderPresentation {
   factory _SubscriptionHeaderPresentation.fromSummary(
     TenantSubscriptionSummary summary,
     AppLocalizations l10n,
-    ThemeData theme,
-  ) {
+    ThemeData theme, {
+    required bool showUpgradeHint,
+  }) {
     final bool noPaidSubscription =
         summary.headerState == TenantSubscriptionHeaderState.unknown ||
         !_hasText(summary.subscriptionId) ||
@@ -130,6 +141,7 @@ final class _SubscriptionHeaderPresentation {
             fallback: noPaidSubscription
                 ? l10n.subscriptionHeaderFreeLabel
                 : l10n.subscriptionHeaderActiveLabel,
+            showUpgradeHint: showUpgradeHint,
           ),
           icon: noPaidSubscription
               ? Icons.workspace_premium_outlined
@@ -167,6 +179,7 @@ final class _SubscriptionHeaderPresentation {
             summary: summary,
             l10n: l10n,
             fallback: l10n.subscriptionHeaderFreeLabel,
+            showUpgradeHint: showUpgradeHint,
           ),
           icon: Icons.workspace_premium_outlined,
           foreground: freeTheme.foreground,
@@ -180,10 +193,15 @@ final class _SubscriptionHeaderPresentation {
     required TenantSubscriptionSummary summary,
     required AppLocalizations l10n,
     required String fallback,
+    required bool showUpgradeHint,
   }) {
     final String planLabel = _hasText(summary.planLabel)
         ? summary.planLabel!.trim()
         : fallback;
+    if (!showUpgradeHint) {
+      return planLabel;
+    }
+
     final String? nextPlanLabel = _hasText(summary.nextPlanLabel)
         ? summary.nextPlanLabel!.trim()
         : null;
