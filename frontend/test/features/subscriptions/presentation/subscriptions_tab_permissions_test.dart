@@ -1079,11 +1079,11 @@ void main() {
         expect(AppRoutes.subscriptions.name, 'subscriptions');
         expect(
           RouteAccessCatalog.subscriptionsEntry.anyPermissions,
-          <AppPermission>[AppPermissions.systemAdmin],
+          <AppPermission>[AppPermissions.platformOwner, AppPermissions.systemAdmin],
         );
         expect(
           RouteAccessCatalog.subscriptionsEntry.anyRoles,
-          <AppRole>[AppRole.superAdmin],
+          <AppRole>[AppRole.platformOwner, AppRole.superAdmin],
         );
         expect(
           SubscriptionsAtomPermissions.catalogEntry,

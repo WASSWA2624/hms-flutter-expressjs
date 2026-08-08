@@ -81,6 +81,11 @@ const PERMISSION_OVERRIDES = Object.freeze({
     displayName: 'System — Admin',
     description: 'Full platform administration across tenants and global settings.',
   },
+  'platform:owner': {
+    displayName: 'Platform — Owner',
+    description:
+      'Highest platform authority. Manage super/platform administrators and owner-only controls.',
+  },
   'financial:approve': {
     displayName: 'Financial — Approve',
     description: 'Approve financial transactions, adjustments, and billing exceptions.',
@@ -176,6 +181,11 @@ const PERMISSION_OVERRIDES = Object.freeze({
 });
 
 const ROLE_OVERRIDES = Object.freeze({
+  PLATFORM_OWNER: {
+    displayName: 'Platform Owner',
+    description:
+      'Highest platform authority that manages super/platform administrators and owner-only controls.',
+  },
   SUPER_ADMIN: {
     displayName: 'Super Admin',
     description: 'Platform administrator with unrestricted access across all tenants.',

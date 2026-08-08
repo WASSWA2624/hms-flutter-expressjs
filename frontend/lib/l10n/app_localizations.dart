@@ -38849,6 +38849,12 @@ abstract class AppLocalizations {
   /// **'System — Admin'**
   String get permissionCatalogSystemAdmin;
 
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform — Owner'**
+  String get permissionCatalogPlatformOwner;
+
   /// Empty state for HR user directory.
   ///
   /// In en, this message translates to:

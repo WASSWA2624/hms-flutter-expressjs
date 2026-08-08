@@ -182,7 +182,7 @@ const findPlatformAdminContacts = async () => {
       deleted_at: null,
       role: {
         deleted_at: null,
-        name: ROLES.SUPER_ADMIN,
+        name: { in: [ROLES.PLATFORM_OWNER, ROLES.SUPER_ADMIN] },
       },
       user: {
         deleted_at: null,

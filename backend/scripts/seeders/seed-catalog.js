@@ -166,6 +166,7 @@ const DEMO_CORE_MODULE_CATALOG = Object.freeze([
 ]);
 
 const DEMO_ROLE_CODES = Object.freeze([
+  'PLATFORM_OWNER',
   'SUPER_ADMIN',
   'TENANT_ADMIN',
   'FACILITY_ADMIN',
@@ -247,6 +248,7 @@ const DEMO_TENANTS = Object.freeze([
       'Human Resources',
     ],
     users: [
+      { key: 'platform_owner', role: 'PLATFORM_OWNER', email: 'platform.owner@hosspi.com', first_name: 'Owner', last_name: 'Demo', title: 'Platform Owner' },
       { key: 'superadmin', role: 'SUPER_ADMIN', email: 'super.admin@hosspi.com', first_name: 'Platform', last_name: 'Demo', title: 'Platform Administrator' },
       { key: 'tenant_admin', role: 'TENANT_ADMIN', email: 'tenant.admin@hosspi.com', first_name: 'Taylor', last_name: 'Demo', title: 'Hospital Administrator', extra_roles: ['UNIT_MANAGER'] },
       { key: 'facility_admin', role: 'FACILITY_ADMIN', email: 'facility.admin@hosspi.com', first_name: 'Morgan', last_name: 'Demo', title: 'Facility Administrator' },

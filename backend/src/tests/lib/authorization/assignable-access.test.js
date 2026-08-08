@@ -14,7 +14,8 @@ const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
 
 describe('assignable-access', () => {
   describe('canActorCreateTenantWideRole', () => {
-    it('allows super and tenant admins', () => {
+    it('allows platform owners and super admins', () => {
+      expect(canActorCreateTenantWideRole({ roles: [ROLES.PLATFORM_OWNER] })).toBe(true);
       expect(canActorCreateTenantWideRole({ roles: [ROLES.SUPER_ADMIN] })).toBe(true);
       expect(canActorCreateTenantWideRole({ roles: [ROLES.TENANT_ADMIN] })).toBe(true);
     });
@@ -25,7 +26,8 @@ describe('assignable-access', () => {
   });
 
   describe('canActorCreatePlatformRole', () => {
-    it('allows super admins only by role', () => {
+    it('allows elevated platform roles', () => {
+      expect(canActorCreatePlatformRole({ roles: [ROLES.PLATFORM_OWNER] })).toBe(true);
       expect(canActorCreatePlatformRole({ roles: [ROLES.SUPER_ADMIN] })).toBe(true);
       expect(canActorCreatePlatformRole({ roles: [ROLES.TENANT_ADMIN] })).toBe(false);
       expect(canActorCreatePlatformRole({ roles: [ROLES.FACILITY_ADMIN] })).toBe(false);
@@ -64,6 +66,35 @@ describe('assignable-access', () => {
       expect(names.has(PERMISSIONS.SYSTEM_ADMIN)).toBe(true);
       expect(names.has(PERMISSIONS.MORTUARY_READ)).toBe(true);
       expect(names.has(PERMISSIONS.LAB_WRITE)).toBe(true);
+      expect(names.has(PERMISSIONS.PLATFORM_OWNER)).toBe(false);
+    });
+
+    it('includes platform:owner only for platform owners', () => {
+      const ownerNames = resolveActorAssignablePermissionNames({
+        roles: [ROLES.PLATFORM_OWNER],
+      });
+      expect(ownerNames.has(PERMISSIONS.PLATFORM_OWNER)).toBe(true);
+      expect(ownerNames.has(PERMISSIONS.SYSTEM_ADMIN)).toBe(true);
+    });
+  });
+
+  describe('isRoleWithinActorCeiling platform admin management', () => {
+    it('blocks super admins from assigning SUPER_ADMIN', () => {
+      expect(
+        isRoleWithinActorCeiling(
+          { name: ROLES.SUPER_ADMIN, permissions: ROLE_PERMISSIONS[ROLES.SUPER_ADMIN].map((name) => ({ name })) },
+          { roles: [ROLES.SUPER_ADMIN] }
+        )
+      ).toBe(false);
+    });
+
+    it('allows platform owners to assign SUPER_ADMIN', () => {
+      expect(
+        isRoleWithinActorCeiling(
+          { name: ROLES.SUPER_ADMIN, permissions: ROLE_PERMISSIONS[ROLES.SUPER_ADMIN].map((name) => ({ name })) },
+          { roles: [ROLES.PLATFORM_OWNER] }
+        )
+      ).toBe(true);
     });
   });
 

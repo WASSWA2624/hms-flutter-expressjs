@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/permissions/version_disabled_permissions.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 
 enum AppRole {
+  platformOwner('PLATFORM_OWNER'),
   superAdmin('SUPER_ADMIN'),
   tenantAdmin('TENANT_ADMIN'),
   facilityAdmin('FACILITY_ADMIN'),
@@ -124,6 +125,7 @@ abstract final class AppPermissions {
   static const facilityAdmin = AppPermission('facility:admin');
   static const tenantAdmin = AppPermission('tenant:admin');
   static const systemAdmin = AppPermission('system:admin');
+  static const platformOwner = AppPermission('platform:owner');
 
   static const adminAccess = <AppPermission>[
     tenantAdmin,
@@ -212,6 +214,13 @@ abstract final class AppPermissions {
   static final Set<AppPermission> all = <AppPermission>{
     ...adminAccess,
     systemAdmin,
+    platformOwner,
+  };
+
+  /// Full pack without owner-only rights (SUPER_ADMIN ceiling).
+  static final Set<AppPermission> superAdminAccess = <AppPermission>{
+    ...adminAccess,
+    systemAdmin,
   };
 }
 
@@ -232,7 +241,10 @@ final class AppAccessPolicy {
     final rolePermissions = (user?.roles ?? const <String>[])
         .expand(_permissionsForRoleCode)
         .toSet();
-    final bool elevated = roles.contains(AppRole.superAdmin);
+    final bool elevated =
+        roles.contains(AppRole.platformOwner) ||
+        roles.contains(AppRole.superAdmin);
+    final bool platformOwner = roles.contains(AppRole.platformOwner);
     final Map<String, AppModuleEntitlement> entitlements =
         session?.moduleEntitlements ?? const <String, AppModuleEntitlement>{};
     final String? tenantId = _nonEmpty(user?.tenantId);
@@ -243,7 +255,8 @@ final class AppAccessPolicy {
     // (JWT-only restore before /auth/me). Never union role packs on top of
     // backend grants — that over-grants UI vs API.
     final Set<AppPermission> merged = <AppPermission>{
-      if (elevated) ...AppPermissions.all,
+      if (platformOwner) ...AppPermissions.all,
+      if (elevated && !platformOwner) ...AppPermissions.superAdminAccess,
       if (explicitPermissions.isNotEmpty ||
           (session?.isAuthorizationHydrated ?? false))
         ...explicitPermissions
@@ -312,7 +325,10 @@ final class AppAccessPolicy {
     );
   }
 
-  bool get isElevated => roles.contains(AppRole.superAdmin);
+  bool get isElevated =>
+      roles.contains(AppRole.platformOwner) ||
+      roles.contains(AppRole.superAdmin);
+  bool get isPlatformOwner => roles.contains(AppRole.platformOwner);
   bool get isPlatformElevated => isElevated && !hasTenantContext;
   bool get hasTenantContext => tenantId != null;
   bool get hasFacilityContext => facilityId != null;
@@ -361,7 +377,15 @@ final class AppAccessPolicy {
   }
 
   bool canCreateTenant() {
-    return isElevated || grants(AppPermissions.systemAdmin);
+    return isElevated ||
+        grants(AppPermissions.platformOwner) ||
+        grants(AppPermissions.systemAdmin);
+  }
+
+  /// Only platform owners may create/assign/manage SUPER_ADMIN (and owner)
+  /// users and roles.
+  bool canManagePlatformAdmins() {
+    return isPlatformOwner || grants(AppPermissions.platformOwner);
   }
 
   /// Tenant-wide roles (facility_id null) may be created by super/tenant admins.
@@ -975,7 +999,8 @@ final class AppAccessPolicy {
 
   static Iterable<AppPermission> _permissionsForRole(AppRole role) {
     return switch (role) {
-      AppRole.superAdmin => AppPermissions.all,
+      AppRole.platformOwner => AppPermissions.all,
+      AppRole.superAdmin => AppPermissions.superAdminAccess,
       AppRole.tenantAdmin => AppPermissions.adminAccess,
       AppRole.facilityAdmin => AppPermissions.adminAccess.where(
         (permission) => permission != AppPermissions.tenantAdmin,

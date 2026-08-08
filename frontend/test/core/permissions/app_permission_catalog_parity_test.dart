@@ -87,6 +87,7 @@ const Set<String> _backendPermissionCodes = <String>{
   'facility:admin',
   'tenant:admin',
   'system:admin',
+  'platform:owner',
 };
 
 void main() {

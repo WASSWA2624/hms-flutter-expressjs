@@ -76,6 +76,11 @@ describe('org-admin-contacts', () => {
   it('returns all tenant/facility/platform admins without a take cap', async () => {
     prisma.user_role.findMany.mockImplementation(async ({ where }) => {
       const roleName = where?.role?.name;
+      const roleNames = Array.isArray(roleName?.in)
+        ? roleName.in
+        : roleName
+          ? [roleName]
+          : [];
       if (roleName === ROLES.TENANT_ADMIN) {
         return [
           adminRow({
@@ -131,7 +136,10 @@ describe('org-admin-contacts', () => {
           }),
         ];
       }
-      if (roleName === ROLES.SUPER_ADMIN) {
+      if (
+        roleNames.includes(ROLES.SUPER_ADMIN) ||
+        roleNames.includes(ROLES.PLATFORM_OWNER)
+      ) {
         return [
           adminRow({
             id: 'p1',

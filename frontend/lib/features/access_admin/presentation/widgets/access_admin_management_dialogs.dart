@@ -868,11 +868,22 @@ class _ManageUsersPanelState
             AppListTableColumn<AccessAdminItem>(
               id: 'name',
               label: l10n.accessAdminColumnName,
+              sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
+                  appListTableCompareText(left.title, right.title),
               cellBuilder: (_, AccessAdminItem item) => Text(item.title),
             ),
             AppListTableColumn<AccessAdminItem>(
               id: 'roles',
               label: l10n.accessAdminColumnRoles,
+              sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
+                  appListTableCompareText(
+                    left.roles
+                        .map((AccessAdminRoleRef role) => role.name)
+                        .join(', '),
+                    right.roles
+                        .map((AccessAdminRoleRef role) => role.name)
+                        .join(', '),
+                  ),
               cellBuilder: (_, AccessAdminItem item) {
                 if (item.roles.isEmpty) {
                   return const Text('—');
@@ -889,6 +900,15 @@ class _ManageUsersPanelState
             AppListTableColumn<AccessAdminItem>(
               id: 'status',
               label: l10n.accessAdminColumnStatus,
+              sortComparator: (AccessAdminItem left, AccessAdminItem right) {
+                final String leftStatus = left.isDeleted
+                    ? l10n.tenantFacilityStructureDeletedStatus
+                    : (left.status ?? '—');
+                final String rightStatus = right.isDeleted
+                    ? l10n.tenantFacilityStructureDeletedStatus
+                    : (right.status ?? '—');
+                return appListTableCompareText(leftStatus, rightStatus);
+              },
               cellBuilder: (_, AccessAdminItem item) => Text(
                 item.isDeleted
                     ? l10n.tenantFacilityStructureDeletedStatus
@@ -960,12 +980,26 @@ class _ManageUsersPanelState
             AppListTableColumn<AccessAdminItem>(
               id: 'id',
               label: l10n.accessAdminColumnId,
+              sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
+                  appListTableCompareText(
+                    left.effectiveDisplayId,
+                    right.effectiveDisplayId,
+                  ),
               cellBuilder: (_, AccessAdminItem item) =>
                   Text(item.effectiveDisplayId),
             ),
             AppListTableColumn<AccessAdminItem>(
               id: 'facility',
               label: l10n.accessAdminColumnFacility,
+              sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
+                  appListTableCompareText(
+                    left.facilityName?.trim().isNotEmpty == true
+                        ? left.facilityName!
+                        : (left.facilityId ?? '—'),
+                    right.facilityName?.trim().isNotEmpty == true
+                        ? right.facilityName!
+                        : (right.facilityId ?? '—'),
+                  ),
               cellBuilder: (_, AccessAdminItem item) => Text(
                 item.facilityName?.trim().isNotEmpty == true
                     ? item.facilityName!
@@ -975,6 +1009,11 @@ class _ManageUsersPanelState
             AppListTableColumn<AccessAdminItem>(
               id: 'details',
               label: l10n.accessAdminColumnDetails,
+              sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
+                  appListTableCompareText(
+                    left.subtitle ?? left.email ?? '—',
+                    right.subtitle ?? right.email ?? '—',
+                  ),
               cellBuilder: (_, AccessAdminItem item) =>
                   Text(item.subtitle ?? item.email ?? '—'),
             ),

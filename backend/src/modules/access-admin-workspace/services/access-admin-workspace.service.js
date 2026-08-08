@@ -75,7 +75,10 @@ const CLINICAL_FLOW_ROLES = new Set([
   ROLES.ICU_MANAGER,
 ]);
 
-const SYSTEM_CRITICAL_ROLES = new Set([ROLES.SUPER_ADMIN]);
+const SYSTEM_CRITICAL_ROLES = new Set([
+  ROLES.PLATFORM_OWNER,
+  ROLES.SUPER_ADMIN,
+]);
 
 const text = (value) => String(value || '').trim();
 const safePublicId = (...values) => resolvePublicIdentifier(...values) || null;
@@ -109,6 +112,7 @@ const buildPagination = (page, limit, total) => ({
 const permissionList = (user = {}) => resolveRequestPermissionNames(user);
 
 const ADMIN_WRITE_PERMISSIONS = new Set([
+  PERMISSIONS.PLATFORM_OWNER,
   PERMISSIONS.SYSTEM_ADMIN,
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
@@ -116,6 +120,7 @@ const ADMIN_WRITE_PERMISSIONS = new Set([
 
 const canWriteAccess = (user = {}) => {
   const writeRoles = new Set([
+    ROLES.PLATFORM_OWNER,
     ROLES.SUPER_ADMIN,
     ROLES.TENANT_ADMIN,
     ROLES.FACILITY_ADMIN,

@@ -20931,6 +20931,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get permissionCatalogSystemAdmin => 'System — Admin';
 
   @override
+  String get permissionCatalogPlatformOwner => 'Platform — Owner';
+
+  @override
   String get hrAccessEmptyUsersLabel => 'No staff accounts match your search.';
 
   @override

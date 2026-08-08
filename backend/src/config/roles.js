@@ -6,6 +6,7 @@
  * alignment.
  */
 const ROLES = Object.freeze({
+  PLATFORM_OWNER: 'PLATFORM_OWNER',
   SUPER_ADMIN: 'SUPER_ADMIN',
   TENANT_ADMIN: 'TENANT_ADMIN',
   FACILITY_ADMIN: 'FACILITY_ADMIN',
@@ -141,7 +142,10 @@ const normalizeRoleName = (role) => {
 
 const isCanonicalRole = (role) => normalizeRoleName(role) !== null;
 
-const ELEVATED_ROLES = Object.freeze([ROLES.SUPER_ADMIN]);
+const ELEVATED_ROLES = Object.freeze([
+  ROLES.PLATFORM_OWNER,
+  ROLES.SUPER_ADMIN,
+]);
 const STAFF_PATIENT_FLOW_DENIED_ROLES = Object.freeze([
   ROLES.PATIENT,
   ROLES.HOUSE_KEEPER,
@@ -174,7 +178,8 @@ const ROLE_HIERARCHY = Object.freeze({
   [ROLES.MORTUARY_MANAGER]: 21,
   [ROLES.FACILITY_ADMIN]: 22,
   [ROLES.TENANT_ADMIN]: 23,
-  [ROLES.SUPER_ADMIN]: 24
+  [ROLES.SUPER_ADMIN]: 24,
+  [ROLES.PLATFORM_OWNER]: 25,
 });
 
 module.exports = {

@@ -13,6 +13,7 @@ const { getUserPermissions } = require('@middlewares/auth.middleware');
 const {
   getRoleNames,
   userHasSuperAdminRole,
+  userHasPlatformOwnerRole,
 } = require('@lib/authorization/effective-access');
 const { resolveIdentifierForPayload } = require('@lib/billing/identifiers');
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
@@ -29,6 +30,7 @@ const {
 } = require('@lib/subscriptions/tenant-entitlements');
 
 const ACCESS_ADMIN_ROLES = new Set([
+  ROLES.PLATFORM_OWNER,
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
@@ -37,12 +39,18 @@ const ACCESS_ADMIN_ROLES = new Set([
 ]);
 
 const ROLE_RANK = Object.freeze({
+  [ROLES.PLATFORM_OWNER]: 120,
   [ROLES.SUPER_ADMIN]: 100,
   [ROLES.TENANT_ADMIN]: 80,
   [ROLES.FACILITY_ADMIN]: 60,
   [ROLES.OPERATIONS]: 40,
   [ROLES.HR]: 40,
 });
+
+const PLATFORM_ADMIN_MANAGED_ROLES = new Set([
+  ROLES.PLATFORM_OWNER,
+  ROLES.SUPER_ADMIN,
+]);
 
 const text = (value) => String(value || '').trim();
 
@@ -98,8 +106,11 @@ const resolveActorMaxRank = (user = {}) => {
 
 const resolveActorAssignablePermissionNames = (user = {}) => {
   const roleNames = resolveActorRoleNames(user);
-  // Super admins keep a full assignment ceiling. Plan entitlements still gate
-  // which module-scoped rights can be granted to a specific tenant.
+  // Platform owners keep the full assignment ceiling, including rights that
+  // manage super/platform admins. Super admins stay below that owner tier.
+  if (roleNames.includes(ROLES.PLATFORM_OWNER)) {
+    return new Set(ROLE_PERMISSIONS[ROLES.PLATFORM_OWNER] || []);
+  }
   if (roleNames.includes(ROLES.SUPER_ADMIN)) {
     return new Set(ROLE_PERMISSIONS[ROLES.SUPER_ADMIN] || []);
   }
@@ -114,9 +125,32 @@ const resolveActorAssignablePermissionNames = (user = {}) => {
   );
 };
 
+const canActorManagePlatformAdmins = (user = {}) => {
+  if (userHasPlatformOwnerRole(user)) {
+    return true;
+  }
+  const tokenPermissions = new Set(
+    (Array.isArray(user.permissions) ? user.permissions : [])
+      .map((entry) =>
+        typeof entry === 'string'
+          ? text(entry)
+          : text(entry?.name || entry?.permission?.name || entry?.code)
+      )
+      .filter(Boolean)
+  );
+  if (tokenPermissions.has(PERMISSIONS.PLATFORM_OWNER)) {
+    return true;
+  }
+  return getUserPermissions(user).includes(PERMISSIONS.PLATFORM_OWNER);
+};
+
 const canActorCreateTenantWideRole = (user = {}) => {
   const roles = new Set(resolveActorRoleNames(user));
-  if (roles.has(ROLES.SUPER_ADMIN) || roles.has(ROLES.TENANT_ADMIN)) {
+  if (
+    roles.has(ROLES.PLATFORM_OWNER) ||
+    roles.has(ROLES.SUPER_ADMIN) ||
+    roles.has(ROLES.TENANT_ADMIN)
+  ) {
     return true;
   }
   // Facility admins (and below) may only create facility-scoped roles.
@@ -206,6 +240,13 @@ const isRoleWithinActorCeiling = (role = {}, user = {}) => {
   }
 
   const roleName = normalizeRoleName(role.name);
+  if (
+    PLATFORM_ADMIN_MANAGED_ROLES.has(roleName) &&
+    !canActorManagePlatformAdmins(user)
+  ) {
+    return false;
+  }
+
   const roleRank = ROLE_RANK[roleName];
   if (roleRank != null && roleRank > resolveActorMaxRank(user)) {
     return false;
@@ -479,8 +520,7 @@ const assertRoleScopeAllowed = async (payload = {}, user = {}) => {
 };
 
 const assertActorTenantMatches = (tenantId, user = {}) => {
-  const actorRoles = new Set(resolveActorRoleNames(user));
-  if (actorRoles.has(ROLES.SUPER_ADMIN)) {
+  if (userHasSuperAdminRole(user)) {
     return;
   }
   const actorTenantId = user.tenant_id || user.tenantId || null;
@@ -502,7 +542,7 @@ const assertActorCanManageRoleRecord = (role = {}, user = {}) => {
   }
 
   const actorRoles = new Set(resolveActorRoleNames(user));
-  if (actorRoles.has(ROLES.SUPER_ADMIN)) {
+  if (userHasSuperAdminRole(user)) {
     if (!isRoleWithinActorCeiling(role, user)) {
       throw new HttpError('errors.auth.insufficient_permissions', 403, [
         { field: 'role_id', reason: 'above_actor_ceiling' },
@@ -571,7 +611,11 @@ const assertRoleNotSystemProtected = (role = {}, operation = 'delete') => {
   if (!roleName || !ROLE_PERMISSIONS[roleName]) {
     return;
   }
-  if (operation === 'delete' || roleName === ROLES.SUPER_ADMIN) {
+  if (
+    operation === 'delete' ||
+    roleName === ROLES.SUPER_ADMIN ||
+    roleName === ROLES.PLATFORM_OWNER
+  ) {
     throw new HttpError('errors.auth.insufficient_permissions', 403, [
       {
         field: 'role_id',
@@ -659,6 +703,7 @@ module.exports = {
   buildRoleScopeWhere,
   canActorCreatePlatformRole,
   canActorCreateTenantWideRole,
+  canActorManagePlatformAdmins,
   collectRolePermissionNames,
   filterPermissionRecordsByCeiling,
   filterRoleRecordsByCeiling,

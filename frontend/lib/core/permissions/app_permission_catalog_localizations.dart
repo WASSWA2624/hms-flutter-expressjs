@@ -94,6 +94,7 @@ extension AppPermissionCatalogLocalizations on AppLocalizations {
       'facility:admin' => permissionCatalogFacilityAdmin,
       'tenant:admin' => permissionCatalogTenantAdmin,
       'system:admin' => permissionCatalogSystemAdmin,
+      'platform:owner' => permissionCatalogPlatformOwner,
       _ => code,
     };
   }
@@ -153,6 +154,8 @@ String? _permissionDescriptionOverride(String code) {
       'Manage tenant-wide settings, facilities, subscriptions, and access.',
     'system:admin' =>
       'Full platform administration across tenants and global settings.',
+    'platform:owner' =>
+      'Highest platform authority. Manage super/platform administrators and owner-only controls.',
     'financial:approve' =>
       'Approve financial transactions, adjustments, and billing exceptions.',
     'pricing:pharmacy_read' =>

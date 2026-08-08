@@ -95,8 +95,15 @@ const getRoleNames = (user = {}) => {
   return uniqueValues(names);
 };
 
-const userHasSuperAdminRole = (user = {}) =>
-  getRoleNames(user).includes(ROLES.SUPER_ADMIN);
+const userHasPlatformOwnerRole = (user = {}) =>
+  getRoleNames(user).includes(ROLES.PLATFORM_OWNER);
+
+const userHasSuperAdminRole = (user = {}) => {
+  const roles = getRoleNames(user);
+  return (
+    roles.includes(ROLES.PLATFORM_OWNER) || roles.includes(ROLES.SUPER_ADMIN)
+  );
+};
 
 /**
  * Direct user permission grants (user_permission).
@@ -441,5 +448,6 @@ module.exports = {
   resolveModulePermissionNames,
   resolveRequestPermissionNames,
   resolveRolePermissionNames,
+  userHasPlatformOwnerRole,
   userHasSuperAdminRole,
 };

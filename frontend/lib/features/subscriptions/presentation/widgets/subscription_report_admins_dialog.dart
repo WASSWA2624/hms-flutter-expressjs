@@ -650,6 +650,8 @@ class _AdminContactCard extends StatelessWidget {
   final String? supportDisplayName;
   final String? supportRoleLabel;
 
+  static const double _horizontalLayoutMinWidth = 560;
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -672,10 +674,11 @@ class _AdminContactCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(theme.radius.md),
         border: Border.all(color: planTheme.border.withValues(alpha: 0.7)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          CircleAvatar(
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool horizontal =
+              constraints.maxWidth >= _horizontalLayoutMinWidth;
+          final Widget avatar = CircleAvatar(
             radius: 20,
             backgroundColor: planTheme.background,
             foregroundColor: planTheme.foreground,
@@ -686,48 +689,115 @@ class _AdminContactCard extends StatelessWidget {
                 color: planTheme.foreground,
               ),
             ),
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          );
+
+          if (horizontal) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
-                Text(
-                  displayName,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: AppFontWeight.emphasis,
+                avatar,
+                SizedBox(width: theme.spacing.md),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: AppFontWeight.emphasis,
+                    ),
                   ),
                 ),
-                SizedBox(height: theme.spacing.xs),
-                Text(
-                  roleLabel,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: planTheme.foreground,
-                    fontWeight: AppFontWeight.emphasis,
+                SizedBox(width: theme.spacing.sm),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    roleLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: planTheme.foreground,
+                      fontWeight: AppFontWeight.emphasis,
+                    ),
                   ),
                 ),
                 if (contact.email != null) ...<Widget>[
-                  SizedBox(height: theme.spacing.xs),
-                  _ContactLine(
-                    icon: Icons.mail_outline,
-                    label: l10n.subscriptionUpgradeAdminContactEmailLabel,
-                    value: contact.email!,
-                    accent: planTheme.foreground,
+                  SizedBox(width: theme.spacing.md),
+                  Expanded(
+                    flex: 3,
+                    child: _ContactLine(
+                      icon: Icons.mail_outline,
+                      label: l10n.subscriptionUpgradeAdminContactEmailLabel,
+                      value: contact.email!,
+                      accent: planTheme.foreground,
+                      compact: true,
+                    ),
                   ),
                 ],
                 if (contact.phone != null) ...<Widget>[
-                  SizedBox(height: theme.spacing.xs),
-                  _ContactLine(
-                    icon: Icons.phone_outlined,
-                    label: l10n.subscriptionUpgradeAdminContactPhoneLabel,
-                    value: contact.phone!,
-                    accent: planTheme.foreground,
+                  SizedBox(width: theme.spacing.md),
+                  Expanded(
+                    flex: 2,
+                    child: _ContactLine(
+                      icon: Icons.phone_outlined,
+                      label: l10n.subscriptionUpgradeAdminContactPhoneLabel,
+                      value: contact.phone!,
+                      accent: planTheme.foreground,
+                      compact: true,
+                    ),
                   ),
                 ],
               ],
-            ),
-          ),
-        ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              avatar,
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      displayName,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: AppFontWeight.emphasis,
+                      ),
+                    ),
+                    SizedBox(height: theme.spacing.xs),
+                    Text(
+                      roleLabel,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: planTheme.foreground,
+                        fontWeight: AppFontWeight.emphasis,
+                      ),
+                    ),
+                    if (contact.email != null) ...<Widget>[
+                      SizedBox(height: theme.spacing.xs),
+                      _ContactLine(
+                        icon: Icons.mail_outline,
+                        label: l10n.subscriptionUpgradeAdminContactEmailLabel,
+                        value: contact.email!,
+                        accent: planTheme.foreground,
+                      ),
+                    ],
+                    if (contact.phone != null) ...<Widget>[
+                      SizedBox(height: theme.spacing.xs),
+                      _ContactLine(
+                        icon: Icons.phone_outlined,
+                        label: l10n.subscriptionUpgradeAdminContactPhoneLabel,
+                        value: contact.phone!,
+                        accent: planTheme.foreground,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -755,12 +825,14 @@ class _ContactLine extends StatelessWidget {
     required this.label,
     required this.value,
     required this.accent,
+    this.compact = false,
   });
 
   final IconData icon;
   final String label;
   final String value;
   final Color accent;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -770,12 +842,14 @@ class _ContactLine extends StatelessWidget {
     return Semantics(
       label: '$label: $value',
       child: Row(
+        mainAxisSize: compact ? MainAxisSize.max : MainAxisSize.max,
         children: <Widget>[
           Icon(icon, size: 18, color: accent),
           SizedBox(width: theme.spacing.sm),
           Expanded(
             child: SelectableText(
               value,
+              maxLines: compact ? 1 : null,
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: AppFontWeight.emphasis,
                 color: colorScheme.onSurface,

@@ -29,6 +29,7 @@ const PROFILE_GENDER_BY_ROLE = Object.freeze({
 const departmentForRole = (scenarioKey, role) => {
   const lookup = {
     SUPER_ADMIN: 'Operations',
+    PLATFORM_OWNER: 'Operations',
     TENANT_ADMIN: 'Operations',
     FACILITY_ADMIN: 'Operations',
     INTEGRATION_ADMIN: 'Compliance',
@@ -222,7 +223,7 @@ const seedAccessPack = async (ctx, orgPack) => {
         );
       }
 
-      if (userDefinition.role !== 'PATIENT' && userDefinition.role !== 'SUPER_ADMIN') {
+      if (userDefinition.role !== 'PATIENT' && userDefinition.role !== 'SUPER_ADMIN' && userDefinition.role !== 'PLATFORM_OWNER') {
         const staffProfile = await ctx.upsert(
           'staff_profile',
           `${scenario.key}:staff:${userDefinition.key}`,

@@ -26848,6 +26848,8 @@
   "@permissionCatalogTenantAdmin": {"description": "Permission catalog label."},
   "permissionCatalogSystemAdmin": "System — Admin",
   "@permissionCatalogSystemAdmin": {"description": "Permission catalog label."},
+  "permissionCatalogPlatformOwner": "Platform — Owner",
+  "@permissionCatalogPlatformOwner": {"description": "Permission catalog label."},
   "hrAccessEmptyUsersLabel": "No staff accounts match your search.",
   "@hrAccessEmptyUsersLabel": {
     "description": "Empty state for HR user directory."

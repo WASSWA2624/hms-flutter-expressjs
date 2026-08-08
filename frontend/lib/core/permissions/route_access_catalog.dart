@@ -264,8 +264,11 @@ abstract final class RouteAccessCatalog {
   /// Tenant/facility staff use the shell header upgrade/renew control instead
   /// of navigating to `/subscriptions` directly.
   static const AccessRequirement subscriptionsEntry = AccessRequirement(
-    anyPermissions: <AppPermission>[AppPermissions.systemAdmin],
-    anyRoles: <AppRole>[AppRole.superAdmin],
+    anyPermissions: <AppPermission>[
+      AppPermissions.platformOwner,
+      AppPermissions.systemAdmin,
+    ],
+    anyRoles: <AppRole>[AppRole.platformOwner, AppRole.superAdmin],
   );
   static const RouteAccessAtom subscriptions = RouteAccessAtom(
     routeName: 'subscriptions',

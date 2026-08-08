@@ -90,6 +90,7 @@ const PERMISSIONS = Object.freeze({
   FACILITY_ADMIN: 'facility:admin',
   TENANT_ADMIN: 'tenant:admin',
   SYSTEM_ADMIN: 'system:admin',
+  PLATFORM_OWNER: 'platform:owner',
 });
 
 const ADMIN_ACCESS = Object.freeze([
@@ -177,7 +178,10 @@ const ADMIN_ACCESS = Object.freeze([
 ]);
 
 const BASE_ROLE_PERMISSIONS = {
-  [ROLES.SUPER_ADMIN]: Object.values(PERMISSIONS),
+  [ROLES.PLATFORM_OWNER]: Object.values(PERMISSIONS),
+  [ROLES.SUPER_ADMIN]: Object.values(PERMISSIONS).filter(
+    (permission) => permission !== PERMISSIONS.PLATFORM_OWNER
+  ),
   [ROLES.TENANT_ADMIN]: ADMIN_ACCESS,
   [ROLES.FACILITY_ADMIN]: ADMIN_ACCESS.filter(
     (permission) => permission !== PERMISSIONS.TENANT_ADMIN
