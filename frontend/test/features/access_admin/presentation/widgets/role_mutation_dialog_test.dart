@@ -89,7 +89,7 @@ void main() {
   );
 
   testWidgets(
-    'facility-only actor shows only Facility(ies) without Platform/Tenant radios',
+    'facility-only actor shows facility targets without Facility(ies) label',
     (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -131,7 +131,7 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Facility(ies)'), findsOneWidget);
+      expect(find.text('Facility(ies)'), findsNothing);
       expect(find.text('Platform'), findsNothing);
       expect(find.text('Tenant(s)'), findsNothing);
       expect(find.text('Main Campus'), findsOneWidget);

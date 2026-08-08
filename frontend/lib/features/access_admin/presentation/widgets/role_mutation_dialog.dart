@@ -501,16 +501,7 @@ Future<bool?> showRoleMutationDialog({
                     density: AppFormSectionDensity.compact,
                     title: l10n.accessAdminRoleScopeLabel,
                     children: <Widget>[
-                      if (createScopeOptions.length <= 1)
-                        Text(
-                          createScopeOptions.isEmpty
-                              ? l10n.accessAdminRoleScopeLabel
-                              : createScopeOptions.first.label,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: AppFontWeight.emphasis,
-                          ),
-                        )
-                      else
+                      if (createScopeOptions.length > 1)
                         AppRadioGroup<RoleCreateScopeKind>(
                           value: createScopeKind,
                           enabled: !isSubmitting,
@@ -526,7 +517,15 @@ Future<bool?> showRoleMutationDialog({
                                   }
                                   onCreateScopeChanged(value);
                                 },
+                        )
+                      else if (createScopeOptions.isEmpty)
+                        Text(
+                          l10n.accessAdminRoleScopeLabel,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: AppFontWeight.emphasis,
+                          ),
                         ),
+                      // Single Facility(ies) scope: omit redundant label; checkboxes follow.
                       if (createScopeKind ==
                           RoleCreateScopeKind.tenants) ...<Widget>[
                         SizedBox(height: theme.spacing.sm),
