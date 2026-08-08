@@ -15,7 +15,7 @@ final class AccessAdminLookupOptionDto {
       id: _string(json['id']),
       label: _string(json['label']),
       meta: _nullableString(
-        json['description'] ?? json['facility_type'] ?? json['meta'],
+        json['tenant_id'] ?? json['description'] ?? json['meta'],
       ),
       displayName: _nullableString(json['display_name']),
       permissionCount: _int(json['permission_count']),

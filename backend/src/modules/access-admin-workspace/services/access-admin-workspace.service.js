@@ -465,6 +465,7 @@ const buildLookups = (records = {}, user = null, enabledModules = null) => {
     facilities: (records.facilities || []).map((entry) => ({
       id: safePublicId(entry.human_friendly_id, entry.id),
       label: entry.name,
+      tenant_id: safePublicId(entry.tenant_id),
       facility_type: entry.facility_type || null,
     })),
     roles: roles.map((entry) => ({

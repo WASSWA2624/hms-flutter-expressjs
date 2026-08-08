@@ -1680,7 +1680,17 @@ Future<List<AccessAdminLookupOption>> loadAccessAdminFacilityOptions(
     failure: (_) => null,
   );
   if (fromReference != null) {
-    return fromReference;
+    return fromReference
+        .map(
+          (AccessAdminLookupOption facility) => AccessAdminLookupOption(
+            id: facility.id,
+            label: facility.label,
+            displayName: facility.displayName,
+            permissionCount: facility.permissionCount,
+            meta: tenantId,
+          ),
+        )
+        .toList(growable: false);
   }
 
   final Result<AppPage<FacilityProfile>> result = await ref
@@ -1695,6 +1705,7 @@ Future<List<AccessAdminLookupOption>> loadAccessAdminFacilityOptions(
           (FacilityProfile facility) => AccessAdminLookupOption(
             id: facility.mutationId,
             label: facility.name,
+            meta: tenantId,
           ),
         )
         .toList(growable: false),

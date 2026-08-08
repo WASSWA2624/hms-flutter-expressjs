@@ -900,17 +900,12 @@ Future<bool?> showRoleMutationDialog({
             return <AccessAdminRoleDraft>[
               for (final String id in targets)
                 AccessAdminRoleDraft(
-                  tenantId:
-                      facilityOptions
-                          .where(
-                            (AccessAdminLookupOption option) => option.id == id,
-                          )
-                          .map(
-                            (AccessAdminLookupOption option) => option.meta,
-                          )
-                          .firstOrNull ??
-                      tenantId ??
-                      selectedTenantId,
+                  tenantId: _resolveFacilityDraftTenantId(
+                    facilityId: id,
+                    facilityOptions: facilityOptions,
+                    tenantId: tenantId,
+                    selectedTenantId: selectedTenantId,
+                  ),
                   facilityId: id,
                   name: name,
                   displayName: displayName,
@@ -935,6 +930,48 @@ Future<bool?> showRoleMutationDialog({
   displayNameController.dispose();
   descriptionController.dispose();
   return saved;
+}
+
+/// Prefers dialog/session tenant; falls back to option meta only when it looks
+/// like a tenant id. Facility lookups used to stash `facility_type` in meta,
+/// which must never be sent as `tenant_id`.
+String? _resolveFacilityDraftTenantId({
+  required String facilityId,
+  required List<AccessAdminLookupOption> facilityOptions,
+  String? tenantId,
+  String? selectedTenantId,
+}) {
+  final String? fromDialog =
+      _nonEmptyScopeId(tenantId) ?? _nonEmptyScopeId(selectedTenantId);
+  if (fromDialog != null) {
+    return fromDialog;
+  }
+
+  final String? meta = facilityOptions
+      .where((AccessAdminLookupOption option) => option.id == facilityId)
+      .map((AccessAdminLookupOption option) => _nonEmptyScopeId(option.meta))
+      .whereType<String>()
+      .firstOrNull;
+  if (meta != null && _looksLikeTenantScopeId(meta)) {
+    return meta;
+  }
+  return null;
+}
+
+String? _nonEmptyScopeId(String? value) {
+  final String trimmed = (value ?? '').trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
+bool _looksLikeTenantScopeId(String value) {
+  final bool looksLikeUuid = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  ).hasMatch(value);
+  if (looksLikeUuid) {
+    return true;
+  }
+  // Friendly ids (e.g. TEN-…); reject facility_type enums like HOSPITAL/PHARMACY.
+  return RegExp(r'^[A-Za-z]{2,}-\S+$').hasMatch(value);
 }
 
 class _RoleTargetMultiSelect extends StatelessWidget {
