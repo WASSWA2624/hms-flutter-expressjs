@@ -76,7 +76,11 @@ const resolveEntityId = async ({
     includeDeleted,
   });
 
-  return resolved || normalized;
+  if (resolved) return resolved;
+  // Never treat an unresolved friendly id as a primary key — callers would
+  // silently miss soft-deleted rows (e.g. permanent role purge).
+  if (isUuidLike(normalized)) return normalized;
+  return null;
 };
 
 module.exports = {

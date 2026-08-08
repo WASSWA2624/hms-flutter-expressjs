@@ -587,6 +587,9 @@ const deleteRole = async (id, userId, ipAddress, actor = null) => {
 const restoreRole = async (id, userId, ipAddress, actor = null) => {
   try {
     const resolvedRoleId = await resolveRoleId(id, { includeDeleted: true });
+    if (!resolvedRoleId) {
+      throw new HttpError('errors.role.not_found', 404);
+    }
     const before = await roleRepository.findById(resolvedRoleId, {
       includeDeleted: true
     });
@@ -648,12 +651,17 @@ const restoreRole = async (id, userId, ipAddress, actor = null) => {
 const permanentDeleteRole = async (id, userId, ipAddress, actor = null) => {
   try {
     const resolvedRoleId = await resolveRoleId(id, { includeDeleted: true });
+    if (!resolvedRoleId) {
+      throw new HttpError('errors.role.not_found', 404);
+    }
     const before = await roleRepository.findById(resolvedRoleId, {
       includeDeleted: true
     });
 
+    // resolveEntityId may return an unresolved friendly id when lookup misses;
+    // never treat that as a successful purge.
     if (!before) {
-      return;
+      throw new HttpError('errors.role.not_found', 404);
     }
     if (!before.deleted_at) {
       throw new HttpError('errors.role.permanent_delete_requires_soft_delete', 400);
@@ -667,13 +675,13 @@ const permanentDeleteRole = async (id, userId, ipAddress, actor = null) => {
       removed_user_ids: removedUserIds,
       removed_user_assignments: removedUserAssignments,
       removed_permissions: removedPermissions
-    } = await roleRepository.permanentDelete(resolvedRoleId);
+    } = await roleRepository.permanentDelete(before.id);
 
     createAuditLog({
       user_id: userId,
       action: 'ROLE_PERMANENTLY_DELETED',
       entity: 'role',
-      entity_id: resolvedRoleId,
+      entity_id: before.id,
       diff: {
         before,
         irreversible: true,

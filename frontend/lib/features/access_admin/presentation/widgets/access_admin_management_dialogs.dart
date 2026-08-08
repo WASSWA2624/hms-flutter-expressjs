@@ -1081,32 +1081,54 @@ class _ManageUsersPanelState
 }
 
 bool _isSameAccessAdminRole(AccessAdminItem left, AccessAdminItem right) {
-  final String leftUuid = (left.resourceUuid ?? left.mutationId).trim();
-  final String rightUuid = (right.resourceUuid ?? right.mutationId).trim();
-  if (leftUuid.isNotEmpty && rightUuid.isNotEmpty && leftUuid == rightUuid) {
-    return true;
+  final Set<String> leftKeys = _roleLifecycleKeys(left);
+  final Set<String> rightKeys = _roleLifecycleKeys(right);
+  if (leftKeys.isNotEmpty && rightKeys.isNotEmpty) {
+    return leftKeys.any(rightKeys.contains);
   }
   // Fall back only when UUIDs are unavailable — never match on display id alone
   // (duplicate human_friendly_id across scopes is possible).
-  return leftUuid.isEmpty &&
-      rightUuid.isEmpty &&
-      left.id == right.id &&
+  return left.id == right.id &&
       left.roleScope == right.roleScope &&
       left.facilityId == right.facilityId &&
       left.tenantId == right.tenantId;
 }
 
-String _roleLifecycleKey(AccessAdminItem role) {
-  final String uuid = (role.resourceUuid ?? role.mutationId).trim();
-  if (uuid.isNotEmpty) {
-    return uuid;
-  }
-  return <String>[
+/// All known identifiers for a role so purge/soft-delete pending state survives
+/// friendly-id vs resource_uuid mismatches across reloads.
+Set<String> _roleLifecycleKeys(AccessAdminItem role) {
+  return <String?>{
+    role.resourceUuid,
+    role.mutationId,
     role.id,
-    role.roleScope ?? '',
-    role.facilityId ?? '',
-    role.tenantId ?? '',
-  ].join('|');
+    role.displayId,
+    role.effectiveDisplayId,
+  }
+      .whereType<String>()
+      .map((String value) => value.trim())
+      .where((String value) => value.isNotEmpty)
+      .toSet();
+}
+
+String _roleLifecycleKey(AccessAdminItem role) {
+  final Set<String> keys = _roleLifecycleKeys(role);
+  if (keys.isEmpty) {
+    return <String>[
+      role.id,
+      role.roleScope ?? '',
+      role.facilityId ?? '',
+      role.tenantId ?? '',
+    ].join('|');
+  }
+  // Prefer raw UUID when present so purge keys align with mutation APIs.
+  for (final String key in keys) {
+    if (RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(key)) {
+      return key;
+    }
+  }
+  return keys.first;
 }
 
 /// Keep soft-delete / purge visible when a silent refresh is briefly stale or
@@ -1118,14 +1140,23 @@ List<AccessAdminItem> _mergeRoleLifecycleItems({
 }) {
   final Map<String, AccessAdminItem> merged = <String, AccessAdminItem>{};
   for (final AccessAdminItem item in serverItems) {
-    final String key = _roleLifecycleKey(item);
-    if (pendingPurgedKeys.contains(key)) {
+    final Set<String> itemKeys = _roleLifecycleKeys(item);
+    if (itemKeys.any(pendingPurgedKeys.contains)) {
       continue;
     }
-    final AccessAdminItem? pending = pendingSoftDeleted[key];
+    final String key = _roleLifecycleKey(item);
+    AccessAdminItem? pending;
+    for (final String itemKey in itemKeys) {
+      pending = pendingSoftDeleted[itemKey];
+      if (pending != null) {
+        break;
+      }
+    }
     if (pending != null) {
       if (item.isDeleted) {
-        pendingSoftDeleted.remove(key);
+        for (final String itemKey in itemKeys) {
+          pendingSoftDeleted.remove(itemKey);
+        }
         merged[key] = item;
       } else {
         merged[key] = item.copyWith(deletedAt: pending.deletedAt);
@@ -1137,15 +1168,16 @@ List<AccessAdminItem> _mergeRoleLifecycleItems({
 
   for (final MapEntry<String, AccessAdminItem> entry
       in pendingSoftDeleted.entries) {
-    if (pendingPurgedKeys.contains(entry.key)) {
+    if (pendingPurgedKeys.contains(entry.key) ||
+        _roleLifecycleKeys(entry.value).any(pendingPurgedKeys.contains)) {
       continue;
     }
-    merged.putIfAbsent(entry.key, () => entry.value);
+    merged.putIfAbsent(_roleLifecycleKey(entry.value), () => entry.value);
   }
 
   for (final String key in pendingPurgedKeys.toList(growable: false)) {
     final bool stillOnServer = serverItems.any(
-      (AccessAdminItem item) => _roleLifecycleKey(item) == key,
+      (AccessAdminItem item) => _roleLifecycleKeys(item).contains(key),
     );
     if (!stillOnServer) {
       pendingPurgedKeys.remove(key);
@@ -1251,9 +1283,11 @@ class _ManageRolesPermissionsPanelState
     final AccessAdminItem softDeleted = role.isDeleted
         ? role
         : role.copyWith(deletedAt: DateTime.now().toUtc());
-    final String key = _roleLifecycleKey(softDeleted);
-    _pendingSoftDeletedRoles[key] = softDeleted;
-    _pendingPurgedRoleKeys.remove(key);
+    final Set<String> keys = _roleLifecycleKeys(softDeleted);
+    for (final String key in keys) {
+      _pendingSoftDeletedRoles[key] = softDeleted;
+      _pendingPurgedRoleKeys.remove(key);
+    }
     if (!mounted) {
       return;
     }
@@ -1274,9 +1308,10 @@ class _ManageRolesPermissionsPanelState
   }
 
   void _markRoleRestoredLocally(AccessAdminItem role) {
-    final String key = _roleLifecycleKey(role);
-    _pendingSoftDeletedRoles.remove(key);
-    _pendingPurgedRoleKeys.remove(key);
+    for (final String key in _roleLifecycleKeys(role)) {
+      _pendingSoftDeletedRoles.remove(key);
+      _pendingPurgedRoleKeys.remove(key);
+    }
     if (!mounted) {
       return;
     }
@@ -1293,9 +1328,10 @@ class _ManageRolesPermissionsPanelState
   }
 
   void _markRolePurgedLocally(AccessAdminItem role) {
-    final String key = _roleLifecycleKey(role);
-    _pendingSoftDeletedRoles.remove(key);
-    _pendingPurgedRoleKeys.add(key);
+    for (final String key in _roleLifecycleKeys(role)) {
+      _pendingSoftDeletedRoles.remove(key);
+      _pendingPurgedRoleKeys.add(key);
+    }
     if (!mounted) {
       return;
     }
@@ -1752,12 +1788,18 @@ class _ManageRolesPermissionsPanelState
         onConfirm: () => _runRoleLifecycleMutation(
           role,
           () async {
+            final String roleId =
+                (role.resourceUuid ?? role.mutationId).trim().isNotEmpty
+                ? (role.resourceUuid ?? role.mutationId).trim()
+                : role.id;
             final Result<void> result = await repository.permanentDeleteRole(
-              role.mutationId,
+              roleId,
             );
             return result.when(
               success: (_) => const Result<void>.success(null),
               failure: (AppFailure failure) {
+                // Absence after a race is fine; unresolved ids must not look
+                // like a successful purge while the soft-deleted row remains.
                 if (failure.category == AppFailureCategory.notFound) {
                   return const Result<void>.success(null);
                 }
@@ -1778,9 +1820,28 @@ class _ManageRolesPermissionsPanelState
     mutated = true;
     _markRolePurgedLocally(role);
     await _syncRoleListAfterLifecycle(resetPage: items.isEmpty);
-    if (mounted) {
-      _markRolePurgedLocally(role);
+    if (!mounted) {
+      return;
     }
+    // If the row is still present after reload, the purge did not stick.
+    final bool stillPresent = items.any(
+      (AccessAdminItem entry) => _isSameAccessAdminRole(entry, role),
+    );
+    if (stillPresent) {
+      _setRoleActionBusy(role, busy: false);
+      for (final String key in _roleLifecycleKeys(role)) {
+        _pendingPurgedRoleKeys.remove(key);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.failureMessage(AppFailure.unexpected())),
+          ),
+        );
+      }
+      return;
+    }
+    _markRolePurgedLocally(role);
   }
 
   @override
