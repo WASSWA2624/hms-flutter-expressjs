@@ -3,7 +3,9 @@ const { ROLES } = require('@config/roles');
 const repository = require('@repositories/subscriptions-workspace/subscriptions-workspace.repository');
 const {
   getUpgradeContext: loadUpgradeContext,
-  submitPaymentRequest: createPaymentRequest} = require('@lib/subscriptions/subscription-payment-request');
+  submitPaymentRequest: createPaymentRequest,
+  cancelPaymentRequest: cancelTenantPaymentRequest,
+} = require('@lib/subscriptions/subscription-payment-request');
 const {
   SUBSCRIPTIONS_BILLING_CYCLES,
   SUBSCRIPTIONS_CHANGE_STATUS_VALUES,
@@ -754,4 +756,6 @@ module.exports = {
   getUpgradeContext: loadUpgradeContext,
   getWorkspace,
   resolveLegacyRoute,
-  submitPaymentRequest: createPaymentRequest};
+  submitPaymentRequest: createPaymentRequest,
+  cancelPaymentRequest: cancelTenantPaymentRequest,
+};

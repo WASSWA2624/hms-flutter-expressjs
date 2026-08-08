@@ -61,7 +61,17 @@ const restoreAccessDefaultsSchema = z.object({
   roleNames: z.array(z.string().trim().min(1).max(120)).max(100).optional(),
 });
 
+const paymentRequestParamsSchema = z.object({
+  requestId: uuidOrFriendlyIdentifierSchema,
+});
+
+const paymentRequestRejectBodySchema = z.object({
+  reason: z.string().trim().min(1).max(2000),
+});
+
 module.exports = {
+  paymentRequestParamsSchema,
+  paymentRequestRejectBodySchema,
   referenceDataQuerySchema,
   resolveLegacyParamsSchema,
   restoreAccessDefaultsSchema,

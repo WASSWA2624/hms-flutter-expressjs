@@ -72,4 +72,16 @@ router.post(
   subscriptionsWorkspaceController.submitPaymentRequest
 );
 
+router.post(
+  '/payment-requests/:requestId/cancel',
+  authorize(PERMISSIONS.SUBSCRIPTIONS_WRITE, 'permission'),
+  subscriptionsWorkspaceController.cancelPaymentRequest
+);
+
+router.post(
+  '/payment-requests/cancel',
+  authorize(PERMISSIONS.SUBSCRIPTIONS_WRITE, 'permission'),
+  subscriptionsWorkspaceController.cancelPaymentRequest
+);
+
 module.exports = router;

@@ -138,13 +138,13 @@ const AccessRequirement hrAccessReadRequirement = AccessRequirement(
   activeModules: <String>[hrRostersModule],
 );
 
-/// Create (matrix ∩): `tenant:admin` + module.
+/// Create (facility-scoped): source `hr:write` + module.
 ///
-/// Source inventory (`screens/hr.md`) maps Access write chrome to
-/// [canWriteHrAccess] (`hr:write`). Prefer [canCreateHrAccess], which
-/// intersects this requirement with source `hr:write`.
+/// Facility setup / Access panels use workspace `canWrite` (backend HR write).
+/// Matrix previously required `tenant:admin`; HR manages access within facility
+/// like facility admin without tenant-admin elevation.
 const AccessRequirement hrAccessCreateRequirement = AccessRequirement(
-  allPermissions: <AppPermission>[AppPermissions.tenantAdmin],
+  allPermissions: <AppPermission>[AppPermissions.hrWrite],
   activeModules: <String>[hrRostersModule],
 );
 
@@ -187,12 +187,9 @@ bool canWriteHrAccess(WidgetRef ref) {
   return canWriteHrAccessPolicy(ref.read(appAccessPolicyProvider));
 }
 
-/// Create atoms: source `hr:write` ∩ matrix `tenant:admin`.
+/// Create atoms: source `hr:write` within facility scope.
 bool canCreateHrAccess(AppAccessPolicy policy) {
-  if (!canWriteHrAccessPolicy(policy)) {
-    return false;
-  }
-  return hrAccessCreateRequirement.isAllowed(policy) || policy.isElevated;
+  return canWriteHrAccessPolicy(policy);
 }
 
 /// Update atoms: same intersection as create.
@@ -505,8 +502,8 @@ abstract final class HrPayrollDraftsAtomPermissions {
 /// | Route entry (deep link) | navigate | catalog ∩ `hr:read` + facility |
 ///
 /// Source inventory maps Access write chrome to [canWriteHrAccess] (`hr:write`).
-/// Matrix create/update ∩ `tenant:admin` is applied via [canCreateHrAccess] /
-/// [canUpdateHrAccess]. Delete matches source `hr:write`. Prefer helpers over
+/// Create/update use facility-scoped `hr:write` (same as workspace canWrite).
+/// Delete matches source `hr:write`. Prefer helpers over
 /// bare [create]/[update]/[delete] requirements alone.
 abstract final class HrAccessAtomPermissions {
   static const AccessRequirement tab = hrAccessReadRequirement;

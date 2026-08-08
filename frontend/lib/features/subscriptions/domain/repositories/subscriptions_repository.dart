@@ -69,4 +69,6 @@ abstract interface class SubscriptionsRepository {
   Future<Result<void>> submitPaymentRequest(
     SubscriptionPaymentRequestDraft draft,
   );
+
+  Future<Result<void>> cancelPaymentRequest({String? requestId});
 }

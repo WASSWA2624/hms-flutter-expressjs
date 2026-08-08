@@ -42,15 +42,18 @@ const ROLE_RANK = Object.freeze({
   [ROLES.PLATFORM_OWNER]: 120,
   [ROLES.PLATFORM_ADMIN]: 100,
   [ROLES.TENANT_ADMIN]: 80,
+  // HR manages facility access like facility admin (assignment ceiling / rank).
   [ROLES.FACILITY_ADMIN]: 60,
+  [ROLES.HR]: 60,
   [ROLES.OPERATIONS]: 40,
-  [ROLES.HR]: 40,
 });
 
 const PLATFORM_ADMIN_MANAGED_ROLES = new Set([
   ROLES.PLATFORM_OWNER,
   ROLES.PLATFORM_ADMIN,
 ]);
+
+const CATALOG_PERMISSION_NAMES = new Set(Object.values(PERMISSIONS));
 
 const text = (value) => String(value || '').trim();
 
@@ -99,6 +102,37 @@ const resolveActorRoleNames = (user = {}) => {
   return [...new Set(roles.map(normalizeRoleName).filter(Boolean))];
 };
 
+const hasElevatedAccessAdminRole = (roleNames = []) => {
+  const roles = roleNames instanceof Set ? roleNames : new Set(roleNames);
+  return (
+    roles.has(ROLES.PLATFORM_OWNER) ||
+    roles.has(ROLES.PLATFORM_ADMIN) ||
+    roles.has(ROLES.TENANT_ADMIN)
+  );
+};
+
+/**
+ * Facility-bound access managers (facility admin / HR) — not tenant/platform.
+ * Pins role mutations to the actor facility and allows reuse of tenant defaults.
+ */
+const isFacilityScopedAccessActor = (user = {}) => {
+  const roles = new Set(resolveActorRoleNames(user));
+  if (hasElevatedAccessAdminRole(roles)) {
+    return false;
+  }
+  return roles.has(ROLES.FACILITY_ADMIN) || roles.has(ROLES.HR);
+};
+
+const isCatalogProtectedRoleName = (roleName) => {
+  const normalized = normalizeRoleName(roleName);
+  return Boolean(normalized && ROLE_PERMISSIONS[normalized]);
+};
+
+const isCatalogProtectedPermissionName = (permissionName) => {
+  const name = text(permissionName);
+  return Boolean(name && CATALOG_PERMISSION_NAMES.has(name));
+};
+
 const resolveActorMaxRank = (user = {}) => {
   const ranks = resolveActorRoleNames(user).map((role) => ROLE_RANK[role] || 0);
   return ranks.length > 0 ? Math.max(...ranks) : 0;
@@ -113,6 +147,16 @@ const resolveActorAssignablePermissionNames = (user = {}) => {
   }
   if (roleNames.includes(ROLES.PLATFORM_ADMIN)) {
     return new Set(ROLE_PERMISSIONS[ROLES.PLATFORM_ADMIN] || []);
+  }
+
+  // HR manages users/roles/permissions like facility admin within facility
+  // scope; shell/menu rights still come from the HR role pack only.
+  if (
+    roleNames.includes(ROLES.HR) &&
+    !roleNames.includes(ROLES.FACILITY_ADMIN) &&
+    !hasElevatedAccessAdminRole(roleNames)
+  ) {
+    return new Set(ROLE_PERMISSIONS[ROLES.FACILITY_ADMIN] || []);
   }
 
   const fromContext = getUserPermissions(user);
@@ -491,12 +535,7 @@ const assertRoleScopeAllowed = async (payload = {}, user = {}) => {
     ]);
   }
 
-  const actorRoles = new Set(resolveActorRoleNames(user));
-  if (
-    actorRoles.has(ROLES.FACILITY_ADMIN) &&
-    !actorRoles.has(ROLES.TENANT_ADMIN) &&
-    !actorRoles.has(ROLES.PLATFORM_ADMIN)
-  ) {
+  if (isFacilityScopedAccessActor(user)) {
     const actorFacilityId = user.facility_id || user.facilityId || null;
     if (!actorFacilityId) {
       throw new HttpError('errors.auth.scope_mismatch', 403, [
@@ -541,7 +580,6 @@ const assertActorCanManageRoleRecord = (role = {}, user = {}) => {
     throw new HttpError('errors.role.not_found', 404);
   }
 
-  const actorRoles = new Set(resolveActorRoleNames(user));
   if (userHasSuperAdminRole(user)) {
     if (!isRoleWithinActorCeiling(role, user)) {
       throw new HttpError('errors.auth.insufficient_permissions', 403, [
@@ -575,10 +613,7 @@ const assertActorCanManageRoleRecord = (role = {}, user = {}) => {
     ]);
   }
 
-  if (
-    actorRoles.has(ROLES.FACILITY_ADMIN) &&
-    !actorRoles.has(ROLES.TENANT_ADMIN)
-  ) {
+  if (isFacilityScopedAccessActor(user)) {
     const actorFacilityId = user.facility_id || user.facilityId || null;
     if (!actorFacilityId) {
       throw new HttpError('errors.auth.scope_mismatch', 403, [
@@ -608,7 +643,7 @@ const assertActorCanManageRoleRecord = (role = {}, user = {}) => {
  */
 const assertRoleNotSystemProtected = (role = {}, operation = 'delete') => {
   const roleName = normalizeRoleName(role.name);
-  if (!roleName || !ROLE_PERMISSIONS[roleName]) {
+  if (!isCatalogProtectedRoleName(roleName)) {
     return;
   }
   if (
@@ -621,6 +656,32 @@ const assertRoleNotSystemProtected = (role = {}, operation = 'delete') => {
         field: 'role_id',
         reason: 'system_role_protected',
         role: roleName,
+        operation,
+      },
+    ]);
+  }
+};
+
+/**
+ * Block delete (and identity mutation) of canonical catalog permissions.
+ * Tenant/facility actors may still create custom permission rows.
+ * @param {Object} permission
+ * @param {'update'|'delete'} [operation='delete']
+ */
+const assertPermissionNotSystemProtected = (
+  permission = {},
+  operation = 'delete'
+) => {
+  const permissionName = text(permission.name);
+  if (!isCatalogProtectedPermissionName(permissionName)) {
+    return;
+  }
+  if (operation === 'delete') {
+    throw new HttpError('errors.auth.insufficient_permissions', 403, [
+      {
+        field: 'permission_id',
+        reason: 'system_permission_protected',
+        permission: permissionName,
         operation,
       },
     ]);
@@ -697,6 +758,7 @@ module.exports = {
   assertPermissionIdHasRequiredRead,
   assertPermissionIdsAssignable,
   assertPermissionNamesAssignable,
+  assertPermissionNotSystemProtected,
   assertRoleIdAssignable,
   assertRoleNotSystemProtected,
   assertRoleScopeAllowed,
@@ -708,6 +770,9 @@ module.exports = {
   collectRolePermissionNames,
   filterPermissionRecordsByCeiling,
   filterRoleRecordsByCeiling,
+  isCatalogProtectedPermissionName,
+  isCatalogProtectedRoleName,
+  isFacilityScopedAccessActor,
   isRoleWithinActorCeiling,
   resolveActorAssignablePermissionNames,
   resolveActorMaxRank,

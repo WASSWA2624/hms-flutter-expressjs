@@ -207,6 +207,48 @@ class _ManageSubscriptionActivationsPanelState
     );
   }
 
+  Future<void> _reject(AccessAdminItem item) async {
+    if (_mutating) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final String subject = item.title.isEmpty
+        ? (item.planLabel ?? item.effectiveDisplayId)
+        : item.title;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.tenantFacilitySubscriptionActivationsRejectTitle,
+        body: l10n.tenantFacilitySubscriptionActivationsRejectBody(subject),
+        submitLabel: l10n.tenantFacilitySubscriptionActivationsRejectAction,
+        submitLeadingIcon: Icons.cancel_outlined,
+        destructive: true,
+        noteFieldLabel: l10n.tenantFacilitySubscriptionActivationsRejectReasonLabel,
+        noteIsRequired: true,
+        noteMaxLines: 4,
+        onConfirmWithNote: (String reason) async {
+          final Result<void> result = await _repository.rejectPaymentRequest(
+            item.mutationId,
+            reason,
+          );
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.tenantFacilitySubscriptionActivationsRejectSuccess),
+      ),
+    );
+    unawaited(_reload(resetPage: false, silent: true));
+  }
+
   AppPage<AccessAdminItem> get _currentPage => AppPage<AccessAdminItem>(
     items: _items,
     request: _pageRequest,
@@ -251,10 +293,21 @@ class _ManageSubscriptionActivationsPanelState
         label: l10n.tenantFacilitySubscriptionApprovalsActionsColumn,
         alwaysVisible: true,
         cellBuilder: (BuildContext context, AccessAdminItem item) {
-          return AppButton.tertiary(
-            label: l10n.tenantFacilitySubscriptionActivationsActivateAction,
-            leadingIcon: Icons.check_circle_outline,
-            onPressed: _mutating ? null : () => unawaited(_activate(item)),
+          return Wrap(
+            spacing: Theme.of(context).spacing.xs,
+            runSpacing: Theme.of(context).spacing.xs,
+            children: <Widget>[
+              AppButton.tertiary(
+                label: l10n.tenantFacilitySubscriptionActivationsActivateAction,
+                leadingIcon: Icons.check_circle_outline,
+                onPressed: _mutating ? null : () => unawaited(_activate(item)),
+              ),
+              AppButton.tertiary(
+                label: l10n.tenantFacilitySubscriptionActivationsRejectAction,
+                leadingIcon: Icons.cancel_outlined,
+                onPressed: _mutating ? null : () => unawaited(_reject(item)),
+              ),
+            ],
           );
         },
       ),
@@ -335,12 +388,24 @@ class _ManageSubscriptionActivationsPanelState
                       icon: Icons.email_outlined,
                     ),
                 ],
-                trailing: AppButton.tertiary(
-                  label:
-                      l10n.tenantFacilitySubscriptionActivationsActivateAction,
-                  onPressed: _mutating
-                      ? null
-                      : () => unawaited(_activate(item)),
+                trailing: Wrap(
+                  spacing: theme.spacing.xs,
+                  children: <Widget>[
+                    AppButton.tertiary(
+                      label: l10n
+                          .tenantFacilitySubscriptionActivationsActivateAction,
+                      onPressed: _mutating
+                          ? null
+                          : () => unawaited(_activate(item)),
+                    ),
+                    AppButton.tertiary(
+                      label:
+                          l10n.tenantFacilitySubscriptionActivationsRejectAction,
+                      onPressed: _mutating
+                          ? null
+                          : () => unawaited(_reject(item)),
+                    ),
+                  ],
                 ),
               );
             },

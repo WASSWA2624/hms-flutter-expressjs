@@ -373,6 +373,29 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
       decoder: (_) {},
     );
   }
+
+  @override
+  Future<Result<void>> cancelPaymentRequest({String? requestId}) {
+    final String? id = requestId?.trim();
+    if (id != null && id.isNotEmpty) {
+      return _apiClient.post<void>(
+        ApiEndpoints.nested(
+          HmsApiResource.subscriptionsWorkspace,
+          'payment-requests',
+          <String>[id, 'cancel'],
+        ),
+        decoder: (_) {},
+      );
+    }
+    return _apiClient.post<void>(
+      ApiEndpoints.nested(
+        HmsApiResource.subscriptionsWorkspace,
+        'payment-requests',
+        const <String>['cancel'],
+      ),
+      decoder: (_) {},
+    );
+  }
 }
 
 Map<String, Object?> _planPayload(

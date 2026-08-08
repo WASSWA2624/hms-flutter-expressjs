@@ -13,11 +13,14 @@ const { clearLiveAccessCaches } = require('@middlewares/live-access.middleware')
 const {
   filterPermissionRecordsByCeiling,
   canActorCreateTenantWideRole,
+  isFacilityScopedAccessActor,
+  isCatalogProtectedRoleName,
+  isCatalogProtectedPermissionName,
   resolveAssignablePlanModules,
 } = require('@lib/authorization/assignable-access');
 const { createAuditLog } = require('@lib/audit');
 const { provisionTrialSubscription } = require('@lib/subscriptions/tenant-onboarding');
-const { listPendingPaymentRequests, activatePaymentRequest } = require('@lib/subscriptions/subscription-payment-request');
+const { listPendingPaymentRequests, activatePaymentRequest, rejectPaymentRequest } = require('@lib/subscriptions/subscription-payment-request');
 const authRepository = require('@repositories/auth/auth.repository');
 const repository = require('@repositories/access-admin-workspace/access-admin-workspace.repository');
 const { logger } = require('@lib/logging');
@@ -81,10 +84,7 @@ const CLINICAL_FLOW_ROLES = new Set([
   ROLES.ICU_MANAGER,
 ]);
 
-const SYSTEM_CRITICAL_ROLES = new Set([
-  ROLES.PLATFORM_OWNER,
-  ROLES.PLATFORM_ADMIN,
-]);
+const SYSTEM_CRITICAL_ROLES = new Set(Object.keys(ROLE_PERMISSIONS));
 
 const text = (value) => String(value || '').trim();
 const safePublicId = (...values) => resolvePublicIdentifier(...values) || null;
@@ -257,7 +257,8 @@ const serializeRole = (record) => {
     permissions,
     user_count: record._count?.users || 0,
     is_clinical_flow_role: CLINICAL_FLOW_ROLES.has(roleName),
-    is_system_critical: SYSTEM_CRITICAL_ROLES.has(roleName),
+    is_system_critical:
+      SYSTEM_CRITICAL_ROLES.has(roleName) || isCatalogProtectedRoleName(roleName),
     deleted_at: record.deleted_at || null,
     updated_at: record.updated_at,
   };
@@ -277,6 +278,7 @@ const serializePermission = (record) => {
     tenant_name: record.tenant_name || null,
     role_count: record._count?.roles || 0,
     user_count: record._count?.users || 0,
+    is_system_critical: isCatalogProtectedPermissionName(record.name),
     updated_at: record.updated_at,
   };
 };
@@ -670,15 +672,18 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
   }
 
   const scope = scopeResult.scope;
-  const includeTenantWideRoles = canActorCreateTenantWideRole(user);
+  const canManageTenantWideRoles = canActorCreateTenantWideRole(user);
+  // Facility admin / HR reuse tenant default roles for assignment; create stays facility-only.
+  const includeTenantWideRoles =
+    canManageTenantWideRoles || isFacilityScopedAccessActor(user);
   const requestedRoleScope = text(query.role_scope || query.roleScope).toLowerCase();
   const roleScope =
     requestedRoleScope === 'tenant' || requestedRoleScope === 'facility'
       ? requestedRoleScope
       : null;
-  // Facility-only actors cannot request tenant-wide role lists.
+  // Facility-only actors cannot manage tenant-wide roles, but may list them for reuse.
   const effectiveRoleScope =
-    !includeTenantWideRoles && roleScope === 'tenant' ? 'facility' : roleScope;
+    !canManageTenantWideRoles && roleScope === 'tenant' ? null : roleScope;
 
   const filters = {
     search: text(query.search),
@@ -787,7 +792,7 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
       role_id: filters.role_id,
       role_scope: effectiveRoleScope,
       record_id: text(query.id || query.recordId) || null,
-      can_view_tenant_roles: includeTenantWideRoles,
+      can_view_tenant_roles: canManageTenantWideRoles,
     },
     lookups: buildLookups(lookups, user),
     items: serializeItems(resource, itemsResult.items || [], subscription),
@@ -852,7 +857,8 @@ const getReferenceData = async (query = {}, user = {}) => {
   const requestedTenantId = text(query.tenant_id || query.tenantId);
   const requestedFacilityId = text(query.facility_id || query.facilityId) || null;
   const canAssignPermissions = canWriteAccess(user);
-  const includeTenantWideRoles = canActorCreateTenantWideRole(user);
+  const includeTenantWideRoles =
+    canActorCreateTenantWideRole(user) || isFacilityScopedAccessActor(user);
   const includeOptions = {
     ...buildLookupIncludeOptions(parseIncludeSet(query)),
     includeTenantWide: includeTenantWideRoles,
@@ -1251,6 +1257,8 @@ module.exports = {
   activateRegistration,
   activatePaymentRequest: (requestId, actor, ip) =>
     activatePaymentRequest(requestId, actor, ip),
+  rejectPaymentRequest: (requestId, payload, actor, ip) =>
+    rejectPaymentRequest(requestId, payload, actor, ip),
   getReferenceData,
   getUserDetail,
   getWorkspace,

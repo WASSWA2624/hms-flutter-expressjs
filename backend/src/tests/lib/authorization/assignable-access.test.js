@@ -52,6 +52,17 @@ describe('assignable-access', () => {
       expect(names.has(PERMISSIONS.PLATFORM_ADMIN)).toBe(false);
     });
 
+    it('gives HR the facility-admin assignment ceiling without elevating shell pack', () => {
+      const names = resolveActorAssignablePermissionNames({
+        roles: [ROLES.HR],
+        permissions: [PERMISSIONS.HR_READ, PERMISSIONS.HR_WRITE],
+      });
+      expect(names.has(PERMISSIONS.FACILITY_ADMIN)).toBe(true);
+      expect(names.has(PERMISSIONS.CLINICAL_READ)).toBe(true);
+      expect(names.has(PERMISSIONS.TENANT_ADMIN)).toBe(false);
+      expect(names.has(PERMISSIONS.PLATFORM_ADMIN)).toBe(false);
+    });
+
     it('includes tenant:admin for tenant admins', () => {
       const names = resolveActorAssignablePermissionNames({
         roles: [ROLES.TENANT_ADMIN]});
@@ -75,6 +86,52 @@ describe('assignable-access', () => {
       });
       expect(ownerNames.has(PERMISSIONS.PLATFORM_OWNER)).toBe(true);
       expect(ownerNames.has(PERMISSIONS.PLATFORM_ADMIN)).toBe(true);
+    });
+  });
+
+  describe('isFacilityScopedAccessActor', () => {
+    const {
+      isFacilityScopedAccessActor,
+    } = require('@lib/authorization/assignable-access');
+
+    it('treats facility admin and HR as facility-scoped', () => {
+      expect(isFacilityScopedAccessActor({ roles: [ROLES.FACILITY_ADMIN] })).toBe(true);
+      expect(isFacilityScopedAccessActor({ roles: [ROLES.HR] })).toBe(true);
+    });
+
+    it('excludes tenant and platform admins', () => {
+      expect(isFacilityScopedAccessActor({ roles: [ROLES.TENANT_ADMIN] })).toBe(false);
+      expect(isFacilityScopedAccessActor({ roles: [ROLES.PLATFORM_ADMIN] })).toBe(false);
+      expect(
+        isFacilityScopedAccessActor({
+          roles: [ROLES.HR, ROLES.TENANT_ADMIN],
+        })
+      ).toBe(false);
+    });
+  });
+
+  describe('isRoleWithinActorCeiling HR reuse', () => {
+    it('allows HR to assign built-in clinical roles within facility-admin ceiling', () => {
+      expect(
+        isRoleWithinActorCeiling(
+          {
+            name: ROLES.DOCTOR,
+            permissions: (ROLE_PERMISSIONS[ROLES.DOCTOR] || []).map((name) => ({
+              name,
+            })),
+          },
+          { roles: [ROLES.HR] }
+        )
+      ).toBe(true);
+    });
+
+    it('blocks HR from assigning tenant admin', () => {
+      expect(
+        isRoleWithinActorCeiling(
+          { name: ROLES.TENANT_ADMIN },
+          { roles: [ROLES.HR] }
+        )
+      ).toBe(false);
     });
   });
 

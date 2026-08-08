@@ -45,6 +45,21 @@ const submitPaymentRequest = asyncHandler(async (req, res) => {
   return sendSuccess(res, 201, 'messages.subscriptions_workspace.payment_request.success', data);
 });
 
+const cancelPaymentRequest = asyncHandler(async (req, res) => {
+  const requestId = req.params.requestId || req.body?.request_id || null;
+  const data = await subscriptionsWorkspaceService.cancelPaymentRequest(
+    requestId,
+    req.user,
+    req.ip
+  );
+  return sendSuccess(
+    res,
+    200,
+    'messages.subscriptions_workspace.payment_request_cancelled.success',
+    data
+  );
+});
+
 const getPlanDetail = asyncHandler(async (req, res) => {
   const planId = req.query.planId || req.query.plan_id || req.params.planId;
   const data = await subscriptionsWorkspaceService.getPlanDetail(planId, req.user);
@@ -52,9 +67,11 @@ const getPlanDetail = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  cancelPaymentRequest,
   getPlanDetail,
   getReferenceData,
   getUpgradeContext,
   getWorkspace,
   resolveLegacyRoute,
   submitPaymentRequest};
+

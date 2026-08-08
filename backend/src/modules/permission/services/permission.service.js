@@ -10,6 +10,9 @@
 const permissionRepository = require('@repositories/permission/permission.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const {
+  assertPermissionNotSystemProtected,
+} = require('@lib/authorization/assignable-access');
 
 /**
  * List permissions with pagination and filtering
@@ -172,6 +175,8 @@ const deletePermission = async (id, userId, ipAddress) => {
     if (!before) {
       throw new HttpError('errors.permission.not_found', 404);
     }
+
+    assertPermissionNotSystemProtected(before, 'delete');
 
     await permissionRepository.softDelete(id);
 

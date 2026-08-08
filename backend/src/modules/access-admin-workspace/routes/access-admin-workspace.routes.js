@@ -9,6 +9,8 @@ const {
   referenceDataQuerySchema,
   resolveLegacyParamsSchema,
   restoreAccessDefaultsSchema,
+  paymentRequestParamsSchema,
+  paymentRequestRejectBodySchema,
   userIdentifierParamsSchema,
   workspaceQuerySchema,
 } = require('@validations/access-admin-workspace/access-admin-workspace.schema');
@@ -92,8 +94,19 @@ router.post(
 
 router.post(
   '/payment-requests/:requestId/activate',
+  validateRequest({ params: paymentRequestParamsSchema }),
   authorize(PLATFORM_ADMIN_SCOPES, 'permission'),
   accessAdminWorkspaceController.activatePaymentRequest
+);
+
+router.post(
+  '/payment-requests/:requestId/reject',
+  validateRequest({
+    params: paymentRequestParamsSchema,
+    body: paymentRequestRejectBodySchema,
+  }),
+  authorize(PLATFORM_ADMIN_SCOPES, 'permission'),
+  accessAdminWorkspaceController.rejectPaymentRequest
 );
 
 router.get(

@@ -668,6 +668,7 @@ final class SubscriptionUpgradeContextDto {
     final Object? bankDetailsRaw = json['bank_transfer_details'];
     final Object? mobileMoneyRaw = json['mobile_money_details'];
     final Object? pendingRaw = json['pending_payment_request'];
+    final Object? latestRaw = json['latest_payment_request'];
     final Object? scheduledRaw = json['scheduled_plan_change'];
     final Object? policyRaw = json['policy'];
     final SubscriptionJsonMap currentSubscription =
@@ -680,9 +681,38 @@ final class SubscriptionUpgradeContextDto {
     final SubscriptionJsonMap pendingMap = pendingRaw is Map
         ? _map(pendingRaw)
         : const <String, Object?>{};
+    final SubscriptionJsonMap latestMap = latestRaw is Map
+        ? _map(latestRaw)
+        : const <String, Object?>{};
     final SubscriptionJsonMap scheduledMap = scheduledRaw is Map
         ? _map(scheduledRaw)
         : const <String, Object?>{};
+
+    SubscriptionPendingPaymentRequest? parseRequest(SubscriptionJsonMap map) {
+      if (map.isEmpty) {
+        return null;
+      }
+      return SubscriptionPendingPaymentRequest(
+        id: _string(map['id']),
+        status: _string(map['status']),
+        paymentMethod: _string(map['payment_method']),
+        targetPlanId: _string(map['target_plan_id']),
+        planLabel: _string(map['plan_label']),
+        amount: _string(map['amount']),
+        currency: _string(map['currency']),
+        billingCycle: _string(map['billing_cycle']),
+        reference: _string(map['reference']),
+        submittedAt: _dateTime(map['submitted_at']),
+        submittedByEmail: _string(map['submitted_by_email']),
+        progress: _string(map['progress']),
+        rejectionReason: _string(map['rejection_reason']),
+        rejectedAt: _dateTime(map['rejected_at']),
+        rejectedByEmail: _string(map['rejected_by_email']),
+        cancelledAt: _dateTime(map['cancelled_at']),
+        activatedAt: _dateTime(map['activated_at']),
+        canCancel: _bool(map['can_cancel']) ?? false,
+      );
+    }
 
     return SubscriptionUpgradeContext(
       summary: summaryRaw is Map
@@ -732,22 +762,8 @@ final class SubscriptionUpgradeContextDto {
           ? PlatformMobileMoneyDetails.fromJson(_map(mobileMoneyRaw))
           : null,
       expiringSoonDays: _int(json['expiring_soon_days']) ?? 14,
-      pendingPaymentRequest: pendingMap.isEmpty
-          ? null
-          : SubscriptionPendingPaymentRequest(
-              id: _string(pendingMap['id']),
-              status: _string(pendingMap['status']),
-              paymentMethod: _string(pendingMap['payment_method']),
-              targetPlanId: _string(pendingMap['target_plan_id']),
-              planLabel: _string(pendingMap['plan_label']),
-              amount: _string(pendingMap['amount']),
-              currency: _string(pendingMap['currency']),
-              billingCycle: _string(pendingMap['billing_cycle']),
-              reference: _string(pendingMap['reference']),
-              submittedAt: _dateTime(pendingMap['submitted_at']),
-              submittedByEmail: _string(pendingMap['submitted_by_email']),
-              progress: _string(pendingMap['progress']),
-            ),
+      pendingPaymentRequest: parseRequest(pendingMap),
+      latestPaymentRequest: parseRequest(latestMap) ?? parseRequest(pendingMap),
       scheduledPlanChange: scheduledMap.isEmpty
           ? null
           : SubscriptionScheduledPlanChange(
@@ -762,6 +778,9 @@ final class SubscriptionUpgradeContextDto {
       policy: SubscriptionUpgradePolicy(
         canSubmitPaymentRequest:
             _bool(policyMap['can_submit_payment_request']) ?? true,
+        canChangePlan: _bool(policyMap['can_change_plan']) ?? true,
+        canCancelPaymentRequest:
+            _bool(policyMap['can_cancel_payment_request']) ?? false,
         canUpgradeOverPending:
             _bool(policyMap['can_upgrade_over_pending']) ?? false,
         pendingTargetPlanId: _string(policyMap['pending_target_plan_id']),

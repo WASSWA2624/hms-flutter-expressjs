@@ -1185,6 +1185,12 @@ final class SubscriptionPendingPaymentRequest {
     this.submittedAt,
     this.submittedByEmail,
     this.progress,
+    this.rejectionReason,
+    this.rejectedAt,
+    this.rejectedByEmail,
+    this.cancelledAt,
+    this.activatedAt,
+    this.canCancel = false,
   });
 
   final String? id;
@@ -1199,10 +1205,28 @@ final class SubscriptionPendingPaymentRequest {
   final DateTime? submittedAt;
   final String? submittedByEmail;
   final String? progress;
+  final String? rejectionReason;
+  final DateTime? rejectedAt;
+  final String? rejectedByEmail;
+  final DateTime? cancelledAt;
+  final DateTime? activatedAt;
+  final bool canCancel;
 
   bool get isPending {
     final String normalized = (status ?? '').trim().toUpperCase();
     return normalized == 'PENDING' || normalized == 'PENDING_REVIEW';
+  }
+
+  bool get isRejected {
+    return (status ?? '').trim().toUpperCase() == 'REJECTED';
+  }
+
+  bool get isActivated {
+    return (status ?? '').trim().toUpperCase() == 'ACTIVATED';
+  }
+
+  bool get isCancelledByUser {
+    return (status ?? '').trim().toUpperCase() == 'CANCELLED_BY_USER';
   }
 }
 
@@ -1227,6 +1251,8 @@ final class SubscriptionScheduledPlanChange {
 final class SubscriptionUpgradePolicy {
   const SubscriptionUpgradePolicy({
     this.canSubmitPaymentRequest = true,
+    this.canChangePlan = true,
+    this.canCancelPaymentRequest = false,
     this.canUpgradeOverPending = false,
     this.pendingTargetPlanId,
     this.pendingTargetPlanRank,
@@ -1238,6 +1264,8 @@ final class SubscriptionUpgradePolicy {
   });
 
   final bool canSubmitPaymentRequest;
+  final bool canChangePlan;
+  final bool canCancelPaymentRequest;
   final bool canUpgradeOverPending;
   final String? pendingTargetPlanId;
   final int? pendingTargetPlanRank;
@@ -1263,6 +1291,7 @@ final class SubscriptionUpgradeContext {
     this.mobileMoneyDetails,
     this.expiringSoonDays = 14,
     this.pendingPaymentRequest,
+    this.latestPaymentRequest,
     this.scheduledPlanChange,
     this.policy = const SubscriptionUpgradePolicy(),
   });
@@ -1279,6 +1308,7 @@ final class SubscriptionUpgradeContext {
   final PlatformMobileMoneyDetails? mobileMoneyDetails;
   final int expiringSoonDays;
   final SubscriptionPendingPaymentRequest? pendingPaymentRequest;
+  final SubscriptionPendingPaymentRequest? latestPaymentRequest;
   final SubscriptionScheduledPlanChange? scheduledPlanChange;
   final SubscriptionUpgradePolicy policy;
 }

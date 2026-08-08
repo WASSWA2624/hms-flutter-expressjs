@@ -1793,6 +1793,31 @@
   "@tenantFacilitySubscriptionActivationsActivateAction": {
     "description": "Primary action to activate a pending subscription payment."
   },
+  "tenantFacilitySubscriptionActivationsRejectTitle": "Reject activation request?",
+  "@tenantFacilitySubscriptionActivationsRejectTitle": {
+    "description": "Title for rejecting a subscription activation request."
+  },
+  "tenantFacilitySubscriptionActivationsRejectBody": "Reject activation for {name}? The tenant will see your reason and can contact platform admins.",
+  "@tenantFacilitySubscriptionActivationsRejectBody": {
+    "description": "Body for rejecting a subscription activation request.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilitySubscriptionActivationsRejectReasonLabel": "Rejection reason",
+  "@tenantFacilitySubscriptionActivationsRejectReasonLabel": {
+    "description": "Required reason field when rejecting a subscription activation."
+  },
+  "tenantFacilitySubscriptionActivationsRejectAction": "Reject",
+  "@tenantFacilitySubscriptionActivationsRejectAction": {
+    "description": "Reject pending subscription payment request."
+  },
+  "tenantFacilitySubscriptionActivationsRejectSuccess": "Activation request rejected.",
+  "@tenantFacilitySubscriptionActivationsRejectSuccess": {
+    "description": "Success snackbar after rejecting a subscription activation."
+  },
   "tenantFacilitySubscriptionApprovalsIntro": "Review verified facility registrations. Approving assigns a Pro package for 3 months, then Free.",
   "@tenantFacilitySubscriptionApprovalsIntro": {
     "description": "Intro text above the subscription approvals worklist."
@@ -3340,7 +3365,7 @@
   "@subscriptionUpgradePendingRequestTitle": {
     "description": "Title when a payment activation request is already pending."
   },
-  "subscriptionUpgradePendingRequestBody": "Your payment for {planLabel} is awaiting admin activation. You cannot submit another request unless you upgrade to a higher package.",
+  "subscriptionUpgradePendingRequestBody": "Your payment for {planLabel} is awaiting admin activation. Cancel this request to choose a different package, or wait for an admin to activate or reject it.",
   "@subscriptionUpgradePendingRequestBody": {
     "description": "Body explaining pending activation progress.",
     "placeholders": {
@@ -3348,6 +3373,55 @@
         "type": "String"
       }
     }
+  },
+  "subscriptionUpgradePendingLockedBody": "Plan changes are locked while activation is in progress.",
+  "@subscriptionUpgradePendingLockedBody": {
+    "description": "Shown when the user cannot change plans during a pending activation."
+  },
+  "subscriptionUpgradeCancelRequestAction": "Cancel request",
+  "@subscriptionUpgradeCancelRequestAction": {
+    "description": "Action to cancel a pending activation request."
+  },
+  "subscriptionUpgradeCancelRequestTitle": "Cancel activation request?",
+  "@subscriptionUpgradeCancelRequestTitle": {
+    "description": "Confirm cancel of pending activation request."
+  },
+  "subscriptionUpgradeCancelRequestBody": "Cancel the pending activation for {planLabel}? You can then submit a different package request.",
+  "@subscriptionUpgradeCancelRequestBody": {
+    "description": "Body for cancelling a pending activation request.",
+    "placeholders": {
+      "planLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionUpgradeCancelRequestSuccess": "Activation request cancelled.",
+  "@subscriptionUpgradeCancelRequestSuccess": {
+    "description": "Success after cancelling a pending activation request."
+  },
+  "subscriptionUpgradeRejectedTitle": "Activation request rejected",
+  "@subscriptionUpgradeRejectedTitle": {
+    "description": "Title when the latest activation request was rejected."
+  },
+  "subscriptionUpgradeRejectedBody": "Your request for {planLabel} was rejected. Reason: {reason}. Contact platform admins for more information, then submit a new request if needed.",
+  "@subscriptionUpgradeRejectedBody": {
+    "description": "Body when an activation request was rejected.",
+    "placeholders": {
+      "planLabel": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionUpgradeContactAdminsAction": "Contact admins",
+  "@subscriptionUpgradeContactAdminsAction": {
+    "description": "Hint/action for contacting platform admins after rejection."
+  },
+  "subscriptionUpgradeHigherPackageOnlyMessage": "Cancel the pending activation request before choosing a different package.",
+  "@subscriptionUpgradeHigherPackageOnlyMessage": {
+    "description": "Validation when a pending request blocks plan changes."
   },
   "subscriptionUpgradeScheduledChangeBody": "{planLabel} is scheduled to start on {startDate}, after your current period ends.",
   "@subscriptionUpgradeScheduledChangeBody": {
@@ -3364,10 +3438,6 @@
   "subscriptionUpgradePrepaidStartsAfterBody": "Your current subscription is still running. Paid packages start after the current period ends.",
   "@subscriptionUpgradePrepaidStartsAfterBody": {
     "description": "Info that prepaid renewals/upgrades/downgrades start after the current period."
-  },
-  "subscriptionUpgradeHigherPackageOnlyMessage": "Choose a higher package than the pending request to continue.",
-  "@subscriptionUpgradeHigherPackageOnlyMessage": {
-    "description": "Validation when a pending request blocks non-upgrade submissions."
   },
   "subscriptionPaidCancelForbiddenMessage": "A paid subscription cannot be cancelled. Contact platform admins if you need help.",
   "@subscriptionPaidCancelForbiddenMessage": {

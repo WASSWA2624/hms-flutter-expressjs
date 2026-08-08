@@ -796,6 +796,19 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
     );
   }
 
+  @override
+  Future<Result<void>> rejectPaymentRequest(String requestId, String reason) {
+    return _apiClient.post<void>(
+      ApiEndpoints.nested(
+        HmsApiResource.accessAdminWorkspace,
+        'payment-requests',
+        <String>[requestId, 'reject'],
+      ),
+      data: <String, Object?>{'reason': reason},
+      decoder: (_) {},
+    );
+  }
+
   Map<String, Object> _withoutEmpty(Map<String, Object?> values) {
     final Map<String, Object> normalized = <String, Object>{};
     values.forEach((String key, Object? value) {

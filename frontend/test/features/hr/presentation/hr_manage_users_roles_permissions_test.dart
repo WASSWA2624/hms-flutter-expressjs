@@ -395,7 +395,7 @@ void main() {
     });
 
     test(
-      'create ∩: source hr:write ∩ matrix tenant:admin (noted mapping)',
+      'create ∩: facility-scoped hr:write allows Access mutations',
       () {
         final AppAccessPolicy tenantWriter = _policy(
           permissions: <AppPermission>{
@@ -412,6 +412,13 @@ void main() {
           },
           roles: const <String>['FACILITY_ADMIN'],
         );
+        final AppAccessPolicy hrWriter = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.hrRead,
+            AppPermissions.hrWrite,
+          },
+          roles: const <String>['HR'],
+        );
         final AppAccessPolicy tenantWithoutHrWrite = _policy(
           permissions: <AppPermission>{
             AppPermissions.hrRead,
@@ -423,15 +430,17 @@ void main() {
         expect(canUpdateHrAccess(tenantWriter), isTrue);
         expect(canDeleteHrAccess(tenantWriter), isTrue);
 
-        // Facility admin can read ∪ and delete ∩ hr:write, but create needs
-        // matrix ∩ tenant:admin (intersected with source hr:write).
+        // Facility admin / HR with hr:write can mutate access within facility.
         expect(canReadHrAccess(facilityWriter), isTrue);
         expect(canDeleteHrAccess(facilityWriter), isTrue);
-        expect(canCreateHrAccess(facilityWriter), isFalse);
-        expect(canUpdateHrAccess(facilityWriter), isFalse);
+        expect(canCreateHrAccess(facilityWriter), isTrue);
+        expect(canUpdateHrAccess(facilityWriter), isTrue);
+        expect(canCreateHrAccess(hrWriter), isTrue);
+        expect(canUpdateHrAccess(hrWriter), isTrue);
+        expect(canDeleteHrAccess(hrWriter), isTrue);
 
-        // Matrix create alone is insufficient without source hr:write.
-        expect(hrAccessCreateRequirement.isAllowed(tenantWithoutHrWrite), isTrue);
+        // hr:write is required for create/update/delete.
+        expect(hrAccessCreateRequirement.isAllowed(tenantWithoutHrWrite), isFalse);
         expect(canCreateHrAccess(tenantWithoutHrWrite), isFalse);
       },
     );

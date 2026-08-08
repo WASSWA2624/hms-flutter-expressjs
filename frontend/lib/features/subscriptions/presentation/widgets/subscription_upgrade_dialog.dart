@@ -22,6 +22,7 @@ import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscript
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_plan_selector.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
@@ -260,6 +261,7 @@ class _SubscriptionUpgradeDialogState
         .toList(growable: false);
 
     final String? preferredPlanId =
+        contextData.pendingPaymentRequest?.targetPlanId ??
         currentPlanId ??
         contextData.recommendedPlanId ??
         commercialPlans.firstOrNull?.id;
@@ -490,59 +492,55 @@ class _SubscriptionUpgradeDialogState
     });
   }
 
-  int _planRank(SubscriptionUpgradePlanOption? plan) {
-    if (plan == null) {
-      return -1;
-    }
-    const Map<String, int> ranks = <String, int>{
-      'FREE': 0,
-      'BASIC': 1,
-      'ADVANCED': 2,
-      'PRO': 3,
-      'CUSTOM': 4,
-      'DEVELOPER': 5,
-    };
-    final String tier = (plan.tierCode ?? '').trim().toUpperCase();
-    if (ranks.containsKey(tier)) {
-      return ranks[tier]!;
-    }
-    return plan.price?.round() ?? -1;
-  }
-
   bool _canProceedWithSelectedPlan() {
     final SubscriptionUpgradeContext? contextData = _context;
     final SubscriptionUpgradePlanOption? selected = _selectedPlan;
     if (contextData == null || selected == null) {
       return false;
     }
+    if (!contextData.policy.canChangePlan ||
+        contextData.pendingPaymentRequest?.isPending == true) {
+      return false;
+    }
+    return contextData.policy.canSubmitPaymentRequest;
+  }
 
+  Future<void> _cancelPendingRequest() async {
     final SubscriptionPendingPaymentRequest? pending =
-        contextData.pendingPaymentRequest;
-    final SubscriptionUpgradePolicy policy = contextData.policy;
-
-    if (pending == null && policy.canSubmitPaymentRequest) {
-      return true;
+        _context?.pendingPaymentRequest;
+    if (pending == null || !pending.isPending) {
+      return;
     }
-
-    final int selectedRank = _planRank(selected);
-    final int floorRank =
-        policy.pendingTargetPlanRank ??
-        _planRank(
-          contextData.plans
-              .where(
-                (SubscriptionUpgradePlanOption plan) =>
-                    plan.id ==
-                    (pending?.targetPlanId ??
-                        contextData.scheduledPlanChange?.pendingPlanId),
-              )
-              .firstOrNull,
-        );
-
-    if (floorRank < 0) {
-      return selectedRank > (policy.currentPlanRank ?? -1);
+    final AppLocalizations l10n = context.l10n;
+    final String planLabel = pending.planLabel?.trim().isNotEmpty == true
+        ? pending.planLabel!
+        : (_context?.currentPlanLabel ?? '—');
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.subscriptionUpgradeCancelRequestTitle,
+        body: l10n.subscriptionUpgradeCancelRequestBody(planLabel),
+        submitLabel: l10n.subscriptionUpgradeCancelRequestAction,
+        submitLeadingIcon: Icons.cancel_outlined,
+        destructive: true,
+        onConfirm: () async {
+          final Result<void> result = await ref
+              .read(subscriptionsRepositoryProvider)
+              .cancelPaymentRequest(requestId: pending.id);
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+    if (confirmed != true || !mounted) {
+      return;
     }
-
-    return selectedRank > floorRank;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.subscriptionUpgradeCancelRequestSuccess)),
+    );
+    await _loadContext();
   }
 
   Widget _buildPolicyBanners({
@@ -557,21 +555,98 @@ class _SubscriptionUpgradeDialogState
     final List<Widget> banners = <Widget>[];
     final SubscriptionPendingPaymentRequest? pending =
         contextData.pendingPaymentRequest;
+    final SubscriptionPendingPaymentRequest? latest =
+        contextData.latestPaymentRequest;
     final SubscriptionScheduledPlanChange? scheduled =
         contextData.scheduledPlanChange;
+    final PlatformAdminContact? adminContact =
+        contextData.platformAdminContact;
 
     if (pending != null && pending.isPending) {
       banners.add(
         AppMessagePanel(
           title: l10n.subscriptionUpgradePendingRequestTitle,
-          message: l10n.subscriptionUpgradePendingRequestBody(
-            pending.planLabel?.trim().isNotEmpty == true
-                ? pending.planLabel!
-                : (contextData.currentPlanLabel ?? '—'),
-          ),
+          message:
+              '${l10n.subscriptionUpgradePendingRequestBody(pending.planLabel?.trim().isNotEmpty == true ? pending.planLabel! : (contextData.currentPlanLabel ?? '—'))}\n${l10n.subscriptionUpgradePendingLockedBody}',
           icon: Icons.hourglass_top_outlined,
           tone: AppWorkspaceStatusTone.info,
           density: AppContentPanelDensity.compact,
+          children: <Widget>[
+            SizedBox(height: theme.spacing.sm),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: AppButton.secondary(
+                label: l10n.subscriptionUpgradeCancelRequestAction,
+                leadingIcon: Icons.cancel_outlined,
+                enabled: !_isSubmitting && !_isLoading,
+                onPressed: _isSubmitting || _isLoading
+                    ? null
+                    : () => unawaited(_cancelPendingRequest()),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (latest != null && latest.isRejected) {
+      banners.add(
+        AppMessagePanel(
+          title: l10n.subscriptionUpgradeRejectedTitle,
+          message: l10n.subscriptionUpgradeRejectedBody(
+            latest.planLabel?.trim().isNotEmpty == true
+                ? latest.planLabel!
+                : (contextData.currentPlanLabel ?? '—'),
+            latest.rejectionReason?.trim().isNotEmpty == true
+                ? latest.rejectionReason!
+                : '—',
+          ),
+          icon: Icons.report_gmailerrorred_outlined,
+          tone: AppWorkspaceStatusTone.warning,
+          density: AppContentPanelDensity.compact,
+          children: <Widget>[
+            if (adminContact != null) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              Text(
+                l10n.subscriptionUpgradeContactAdminsAction,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: AppFontWeight.emphasis,
+                ),
+              ),
+              SizedBox(height: theme.spacing.xs),
+              Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  if (adminContact.email != null)
+                    _CopyableContactChip(
+                      icon: Icons.mail_outline,
+                      label: l10n.subscriptionUpgradeAdminContactEmailLabel,
+                      value: adminContact.email!,
+                      accent: const Color(0xFF7C3AED),
+                      copyTooltip: l10n.subscriptionUpgradeCopyValueAction,
+                      onCopied: () => _showCopiedSnack(l10n),
+                    ),
+                  if (adminContact.phone != null)
+                    _CopyableContactChip(
+                      icon: Icons.phone_outlined,
+                      label: l10n.subscriptionUpgradeAdminContactPhoneLabel,
+                      value: adminContact.phone!,
+                      accent: const Color(0xFF7C3AED),
+                      copyTooltip: l10n.subscriptionUpgradeCopyValueAction,
+                      onCopied: () => _showCopiedSnack(l10n),
+                    ),
+                  if (adminContact.whatsapp != null)
+                    _CopyableContactChip(
+                      icon: Icons.chat_outlined,
+                      label: l10n.subscriptionUpgradeAdminContactWhatsappLabel,
+                      value: adminContact.whatsapp!,
+                      accent: const Color(0xFF7C3AED),
+                      copyTooltip: l10n.subscriptionUpgradeCopyValueAction,
+                      onCopied: () => _showCopiedSnack(l10n),
+                    ),
+                ],
+              ),
+            ],
+          ],
         ),
       );
     }
@@ -596,7 +671,8 @@ class _SubscriptionUpgradeDialogState
           density: AppContentPanelDensity.compact,
         ),
       );
-    } else if (contextData.policy.prepaidStartsAfterCurrent) {
+    } else if (contextData.policy.prepaidStartsAfterCurrent &&
+        pending == null) {
       banners.add(
         AppMessagePanel(
           message: l10n.subscriptionUpgradePrepaidStartsAfterBody,
@@ -903,7 +979,11 @@ class _SubscriptionUpgradeDialogState
             theme: theme,
             contextData: contextData,
           ),
-          SubscriptionPlanSelector(
+          IgnorePointer(
+            ignoring: !(contextData?.policy.canChangePlan ?? true),
+            child: Opacity(
+              opacity: (contextData?.policy.canChangePlan ?? true) ? 1 : 0.72,
+              child: SubscriptionPlanSelector(
             plans:
                 contextData?.plans ?? const <SubscriptionUpgradePlanOption>[],
             selectedPlanId: _selectedPlanId,
@@ -933,6 +1013,8 @@ class _SubscriptionUpgradeDialogState
                 _showCustomPlanContactDialog(adminContact: adminContact),
               );
             },
+              ),
+            ),
           ),
           if (_fxWarning != null) ...<Widget>[
             SizedBox(height: theme.spacing.sm),

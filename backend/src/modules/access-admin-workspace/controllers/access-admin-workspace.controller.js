@@ -73,6 +73,23 @@ const activatePaymentRequest = asyncHandler(async (req, res) => {
   );
 });
 
+const rejectPaymentRequest = asyncHandler(async (req, res) => {
+  const requestId =
+    req.params.requestId || req.params.requestIdentifier || req.params.id;
+  const data = await accessAdminWorkspaceService.rejectPaymentRequest(
+    requestId,
+    req.body,
+    req.user,
+    req.ip
+  );
+  return sendSuccess(
+    res,
+    200,
+    'messages.access_admin_workspace.payment_request_rejected.success',
+    data
+  );
+});
+
 const resolveLegacyRoute = asyncHandler(async (req, res) => {
   const data = await accessAdminWorkspaceService.resolveLegacyRoute(
     req.params.resource,
@@ -97,6 +114,7 @@ module.exports = {
   getReferenceData,
   getUserDetail,
   getWorkspace,
+  rejectPaymentRequest,
   rejectRegistration,
   resetDemoUserPassword,
   resolveLegacyRoute,

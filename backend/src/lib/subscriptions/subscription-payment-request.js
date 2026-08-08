@@ -123,13 +123,31 @@ const subscriptionHasPaidCommitment = (subscription) => {
   return price > 0 && ['ACTIVE', 'TRIAL', 'PAST_DUE'].includes(status);
 };
 
-const serializePendingPaymentRequest = (entry) => {
+const serializePaymentRequest = (entry) => {
   if (!entry) {
     return null;
   }
+  const status = text(entry.status).toUpperCase() || 'PENDING';
+  const progress = (() => {
+    switch (status) {
+      case 'PENDING':
+        return 'AWAITING_ADMIN_ACTIVATION';
+      case 'ACTIVATED':
+        return 'APPROVED';
+      case 'REJECTED':
+        return 'REJECTED';
+      case 'CANCELLED_BY_USER':
+        return 'CANCELLED';
+      case 'SUPERSEDED':
+        return 'SUPERSEDED';
+      default:
+        return status;
+    }
+  })();
+
   return {
     id: entry.id || null,
-    status: text(entry.status).toUpperCase() || 'PENDING',
+    status,
     payment_method: entry.payment_method || null,
     target_plan_id: entry.target_plan_id || null,
     plan_label: entry.plan_label || null,
@@ -137,10 +155,100 @@ const serializePendingPaymentRequest = (entry) => {
     currency: entry.currency || null,
     billing_cycle: entry.billing_cycle || null,
     reference: entry.reference || null,
+    notes: entry.notes || null,
     submitted_at: entry.submitted_at || null,
     submitted_by_email: entry.submitted_by_email || null,
-    progress: 'AWAITING_ADMIN_ACTIVATION',
+    rejection_reason: entry.rejection_reason || null,
+    rejected_at: entry.rejected_at || null,
+    rejected_by_email: entry.rejected_by_email || null,
+    cancelled_at: entry.cancelled_at || null,
+    activated_at: entry.activated_at || null,
+    progress,
+    can_cancel: status === 'PENDING',
   };
+};
+
+const serializePendingPaymentRequest = (entry) => serializePaymentRequest(entry);
+
+const findSubscriptionForPaymentRequest = async (requestId) => {
+  const requestIdentifier = text(requestId);
+  if (!requestIdentifier) {
+    return { subscription: null, request: null };
+  }
+
+  const subscriptions = await prisma.subscription.findMany({
+    where: { deleted_at: null },
+    include: {
+      tenant: { select: { id: true, human_friendly_id: true, name: true } },
+      plan: true,
+      pending_plan: true,
+    },
+    orderBy: [{ updated_at: 'desc' }],
+    take: 200,
+  });
+
+  for (const subscription of subscriptions) {
+    const extension = parseExtensionJson(subscription.extension_json);
+    const requests = listPaymentRequests(extension);
+    const found = requests.find((entry) => text(entry?.id) === requestIdentifier);
+    if (found) {
+      return { subscription, request: found, extension, requests };
+    }
+  }
+
+  return { subscription: null, request: null, extension: null, requests: [] };
+};
+
+const clearPendingPlanIfMatchingRequest = (subscription, request, updateData = {}) => {
+  if (!subscription?.pending_plan_id || !request?.target_plan_id) {
+    return updateData;
+  }
+  const pendingPublic = safePublicId(
+    subscription.pending_plan?.human_friendly_id,
+    subscription.pending_plan_id
+  );
+  const requestTarget = text(request.target_plan_id);
+  if (
+    pendingPublic === requestTarget ||
+    text(subscription.pending_plan_id) === requestTarget
+  ) {
+    updateData.pending_plan_id = null;
+    updateData.change_status = 'NONE';
+    updateData.change_requested_at = null;
+    updateData.change_effective_at = null;
+  }
+  return updateData;
+};
+
+const notifyTenantRejection = async ({
+  email,
+  tenantName,
+  planLabel,
+  reason,
+}) => {
+  if (!email) {
+    return { sent: false, provider: 'skipped' };
+  }
+
+  const subject = `Subscription activation rejected — ${planLabel || 'Hosspi'}`;
+  const lines = [
+    `Hello${tenantName ? ` from ${tenantName}` : ''},`,
+    '',
+    'Your subscription activation request was rejected by a platform admin.',
+    '',
+    `Package: ${planLabel || 'Not specified'}`,
+    `Reason: ${reason || 'Not specified'}`,
+    '',
+    'You may contact platform admins for more information, or submit a new request after cancelling is not needed (this request is already closed).',
+    '',
+    'Thank you for choosing Hosspi.',
+  ];
+
+  return sendEmail({
+    to: email,
+    subject,
+    text: lines.join('\n'),
+  });
 };
 
 const getCycleDays = (billingCycle) => {
@@ -433,21 +541,14 @@ const getUpgradeContext = async (user = {}) => {
 
   const extension = parseExtensionJson(overviewSubscription?.extension_json);
   const pendingEntry = listPendingPaymentEntries(extension)[0] || null;
+  const latestEntry = extension.latest_payment_request || pendingEntry || null;
   const periodRunning = overviewSubscription
     ? isPeriodRunning(overviewSubscription)
     : false;
   const hasPaid = overviewSubscription
     ? subscriptionHasPaidCommitment(overviewSubscription)
     : false;
-
-  let pendingTargetRank = null;
-  if (pendingEntry?.target_plan_id) {
-    const pendingTarget = await resolvePlanRecord(
-      pendingEntry.target_plan_id,
-      tenantId
-    );
-    pendingTargetRank = pendingTarget ? planRank(pendingTarget) : null;
-  }
+  const hasPendingActivation = Boolean(pendingEntry);
 
   const scheduledChange =
     overviewSubscription?.pending_plan_id &&
@@ -492,13 +593,16 @@ const getUpgradeContext = async (user = {}) => {
     bank_transfer_details: resolvePlatformBankTransferDetails(),
     mobile_money_details: resolvePlatformMobileMoneyDetails(),
     expiring_soon_days: Number(env.SUBSCRIPTION_EXPIRING_SOON_DAYS) || 14,
-    pending_payment_request: serializePendingPaymentRequest(pendingEntry),
+    pending_payment_request: serializePaymentRequest(pendingEntry),
+    latest_payment_request: serializePaymentRequest(latestEntry),
     scheduled_plan_change: scheduledChange,
     policy: {
-      can_submit_payment_request: !pendingEntry,
-      can_upgrade_over_pending: Boolean(pendingEntry),
+      can_submit_payment_request: !hasPendingActivation,
+      can_change_plan: !hasPendingActivation,
+      can_cancel_payment_request: hasPendingActivation,
+      can_upgrade_over_pending: false,
       pending_target_plan_id: pendingEntry?.target_plan_id || null,
-      pending_target_plan_rank: pendingTargetRank,
+      pending_target_plan_rank: null,
       current_plan_rank: overviewSubscription?.plan
         ? planRank(overviewSubscription.plan)
         : null,
@@ -546,48 +650,15 @@ const submitPaymentRequest = async (payload = {}, files = [], user = {}, ip = nu
   const pendingRequests = listPendingPaymentEntries(extension);
   if (pendingRequests.length > 0) {
     const existing = pendingRequests[0];
-    let existingTarget = subscription.plan;
-    if (existing?.target_plan_id) {
-      existingTarget =
-        (await resolvePlanRecord(existing.target_plan_id, tenantId)) ||
-        subscription.plan;
-    }
-    const isHigherUpgrade =
-      targetPlan && comparePlans(targetPlan, existingTarget) > 0;
-    if (!isHigherUpgrade) {
-      throw new HttpError('errors.subscription.payment_request_already_pending', 409, [
-        {
-          field: 'payment_request',
-          reason: 'duplicate_pending',
-          request_id: existing.id || null,
-          plan_label: existing.plan_label || null,
-          submitted_at: existing.submitted_at || null,
-        },
-      ]);
-    }
-  } else if (
-    subscription.pending_plan_id &&
-    subscription.change_effective_at &&
-    ['PENDING_UPGRADE', 'PENDING_DOWNGRADE'].includes(
-      text(subscription.change_status).toUpperCase()
-    )
-  ) {
-    const scheduledTarget = subscription.pending_plan || subscription.plan;
-    const isHigherUpgrade =
-      targetPlan && comparePlans(targetPlan, scheduledTarget) > 0;
-    if (!isHigherUpgrade) {
-      throw new HttpError('errors.subscription.payment_request_already_pending', 409, [
-        {
-          field: 'payment_request',
-          reason: 'scheduled_change_pending',
-          pending_plan_id: safePublicId(
-            subscription.pending_plan?.human_friendly_id,
-            subscription.pending_plan_id
-          ),
-          change_effective_at: subscription.change_effective_at,
-        },
-      ]);
-    }
+    throw new HttpError('errors.subscription.payment_request_already_pending', 409, [
+      {
+        field: 'payment_request',
+        reason: 'duplicate_pending',
+        request_id: existing.id || null,
+        plan_label: existing.plan_label || null,
+        submitted_at: existing.submitted_at || null,
+      },
+    ]);
   }
 
   const proofFile = Array.isArray(files) ? files[0] : null;
@@ -625,22 +696,12 @@ const submitPaymentRequest = async (payload = {}, files = [], user = {}, ip = nu
     submitted_by_email: user.email || null,
   };
 
-  const retainedHistory = listPaymentRequests(extension)
-    .filter((entry) => text(entry?.status).toUpperCase() !== 'PENDING')
-    .slice(0, 9);
+  const retainedHistory = listPaymentRequests(extension).slice(0, 19);
 
-  const supersededPending = pendingRequests.map((entry) => ({
-    ...entry,
-    status: 'SUPERSEDED',
-    superseded_at: submittedAt,
-    superseded_by_request_id: requestId,
-  }));
-
-  extension.pending_payment_requests = [
-    paymentRequest,
-    ...supersededPending,
-    ...retainedHistory,
-  ].slice(0, 20);
+  extension.pending_payment_requests = [paymentRequest, ...retainedHistory].slice(
+    0,
+    20
+  );
   extension.latest_payment_request = paymentRequest;
 
   const updateData = {
@@ -690,7 +751,6 @@ const submitPaymentRequest = async (payload = {}, files = [], user = {}, ip = nu
       change_kind: changeKind,
       starts_after_current: periodRunning,
       has_proof: Boolean(proof),
-      superseded_request_ids: supersededPending.map((entry) => entry.id),
     },
   }).catch(() => {});
 
@@ -1008,16 +1068,202 @@ const activatePaymentRequest = async (requestId, actor = {}, ip = null) => {
   };
 };
 
+/**
+ * Reject a pending subscription payment request (platform admin).
+ *
+ * @param {string} requestId
+ * @param {{ reason?: string }} payload
+ * @param {Object} actor
+ * @param {string|null} ip
+ * @returns {Promise<Object>}
+ */
+const rejectPaymentRequest = async (
+  requestId,
+  payload = {},
+  actor = {},
+  ip = null
+) => {
+  const reason = text(payload.reason);
+  if (!reason) {
+    throw new HttpError('errors.validation.field.required', 400, [
+      { field: 'reason' },
+    ]);
+  }
+
+  const matched = await findSubscriptionForPaymentRequest(requestId);
+  const matchedSubscription = matched.subscription;
+  const matchedRequest = matched.request;
+  if (!matchedSubscription || !matchedRequest) {
+    throw new HttpError('errors.subscription.payment_request_not_found', 404);
+  }
+
+  const status = text(matchedRequest.status).toUpperCase();
+  if (status === 'ACTIVATED') {
+    throw new HttpError('errors.subscription.payment_request_already_approved', 400);
+  }
+  if (status !== 'PENDING') {
+    throw new HttpError('errors.subscription.payment_request_not_pending', 400);
+  }
+
+  const now = new Date();
+  const rejectedAt = now.toISOString();
+  const extension = parseExtensionJson(matchedSubscription.extension_json);
+  const requests = listPaymentRequests(extension);
+  const updatedRequest = {
+    ...matchedRequest,
+    status: 'REJECTED',
+    rejection_reason: reason,
+    rejected_at: rejectedAt,
+    rejected_by_user_id: actor.id || null,
+    rejected_by_email: actor.email || null,
+  };
+
+  extension.pending_payment_requests = requests.map((entry) =>
+    text(entry?.id) === text(matchedRequest.id) ? updatedRequest : entry
+  );
+  extension.latest_payment_request = updatedRequest;
+
+  const updateData = clearPendingPlanIfMatchingRequest(
+    matchedSubscription,
+    matchedRequest,
+    { extension_json: extension }
+  );
+
+  await prisma.subscription.update({
+    where: { id: matchedSubscription.id },
+    data: updateData,
+  });
+
+  const notifyEmail =
+    text(matchedRequest.invoice_email) ||
+    text(matchedRequest.submitted_by_email) ||
+    null;
+
+  await notifyTenantRejection({
+    email: notifyEmail,
+    tenantName: matchedSubscription.tenant?.name,
+    planLabel: matchedRequest.plan_label,
+    reason,
+  }).catch(() => {});
+
+  await createAuditLog({
+    tenant_id: matchedSubscription.tenant_id,
+    user_id: actor.id || null,
+    action: 'SUBSCRIPTION_PAYMENT_REJECTED',
+    entity: 'subscription',
+    entity_id: matchedSubscription.id,
+    ip_address: ip,
+    details: {
+      request_id: matchedRequest.id,
+      reason,
+      plan_label: matchedRequest.plan_label || null,
+    },
+  }).catch(() => {});
+
+  return {
+    request_id: matchedRequest.id,
+    status: 'REJECTED',
+    rejection_reason: reason,
+    plan_label: matchedRequest.plan_label || null,
+    notified_email: notifyEmail,
+  };
+};
+
+/**
+ * Cancel a pending activation request (tenant user).
+ * Approved activations cannot be cancelled.
+ *
+ * @param {string|null} requestId
+ * @param {Object} user
+ * @param {string|null} ip
+ * @returns {Promise<Object>}
+ */
+const cancelPaymentRequest = async (requestId = null, user = {}, ip = null) => {
+  const tenantId = resolveBillingTenantScope(user);
+  const subscription = await loadCurrentSubscription(tenantId);
+  const extension = parseExtensionJson(subscription.extension_json);
+  const requests = listPaymentRequests(extension);
+  const pending = listPendingPaymentEntries(extension);
+
+  let matchedRequest = null;
+  if (text(requestId)) {
+    matchedRequest = requests.find((entry) => text(entry?.id) === text(requestId));
+    if (!matchedRequest) {
+      throw new HttpError('errors.subscription.payment_request_not_found', 404);
+    }
+    const status = text(matchedRequest.status).toUpperCase();
+    if (status === 'ACTIVATED') {
+      throw new HttpError(
+        'errors.subscription.payment_request_already_approved',
+        400
+      );
+    }
+    if (status !== 'PENDING') {
+      throw new HttpError('errors.subscription.payment_request_not_pending', 400);
+    }
+  } else {
+    matchedRequest = pending[0] || null;
+    if (!matchedRequest) {
+      throw new HttpError('errors.subscription.payment_request_not_found', 404);
+    }
+  }
+
+  const cancelledAt = new Date().toISOString();
+  const updatedRequest = {
+    ...matchedRequest,
+    status: 'CANCELLED_BY_USER',
+    cancelled_at: cancelledAt,
+    cancelled_by_user_id: user.id || null,
+    cancelled_by_email: user.email || null,
+  };
+
+  extension.pending_payment_requests = requests.map((entry) =>
+    text(entry?.id) === text(matchedRequest.id) ? updatedRequest : entry
+  );
+  extension.latest_payment_request = updatedRequest;
+
+  const updateData = clearPendingPlanIfMatchingRequest(subscription, matchedRequest, {
+    extension_json: extension,
+  });
+
+  await prisma.subscription.update({
+    where: { id: subscription.id },
+    data: updateData,
+  });
+
+  await createAuditLog({
+    tenant_id: tenantId,
+    user_id: user.id || null,
+    action: 'SUBSCRIPTION_PAYMENT_CANCELLED',
+    entity: 'subscription',
+    entity_id: subscription.id,
+    ip_address: ip,
+    details: {
+      request_id: matchedRequest.id,
+      plan_label: matchedRequest.plan_label || null,
+    },
+  }).catch(() => {});
+
+  return {
+    request_id: matchedRequest.id,
+    status: 'CANCELLED_BY_USER',
+    plan_label: matchedRequest.plan_label || null,
+    progress: 'CANCELLED',
+  };
+};
+
 module.exports = {
   PAYMENT_METHODS,
   activatePaymentRequest,
   applyDueScheduledPlanChanges,
+  cancelPaymentRequest,
   comparePlans,
   countPendingPaymentRequests,
   getUpgradeContext,
   isPeriodRunning,
   listPendingPaymentRequests,
   planRank,
+  rejectPaymentRequest,
   submitPaymentRequest,
   subscriptionHasPaidCommitment,
 };

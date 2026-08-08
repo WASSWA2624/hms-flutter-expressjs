@@ -1376,6 +1376,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilitySubscriptionActivationsActivateAction => 'Activate';
 
   @override
+  String get tenantFacilitySubscriptionActivationsRejectTitle =>
+      'Reject activation request?';
+
+  @override
+  String tenantFacilitySubscriptionActivationsRejectBody(String name) {
+    return 'Reject activation for $name? The tenant will see your reason and can contact platform admins.';
+  }
+
+  @override
+  String get tenantFacilitySubscriptionActivationsRejectReasonLabel =>
+      'Rejection reason';
+
+  @override
+  String get tenantFacilitySubscriptionActivationsRejectAction => 'Reject';
+
+  @override
+  String get tenantFacilitySubscriptionActivationsRejectSuccess =>
+      'Activation request rejected.';
+
+  @override
   String get tenantFacilitySubscriptionApprovalsIntro =>
       'Review verified facility registrations. Approving assigns a Pro package for 3 months, then Free.';
 
@@ -2572,8 +2592,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String subscriptionUpgradePendingRequestBody(String planLabel) {
-    return 'Your payment for $planLabel is awaiting admin activation. You cannot submit another request unless you upgrade to a higher package.';
+    return 'Your payment for $planLabel is awaiting admin activation. Cancel this request to choose a different package, or wait for an admin to activate or reject it.';
   }
+
+  @override
+  String get subscriptionUpgradePendingLockedBody =>
+      'Plan changes are locked while activation is in progress.';
+
+  @override
+  String get subscriptionUpgradeCancelRequestAction => 'Cancel request';
+
+  @override
+  String get subscriptionUpgradeCancelRequestTitle =>
+      'Cancel activation request?';
+
+  @override
+  String subscriptionUpgradeCancelRequestBody(String planLabel) {
+    return 'Cancel the pending activation for $planLabel? You can then submit a different package request.';
+  }
+
+  @override
+  String get subscriptionUpgradeCancelRequestSuccess =>
+      'Activation request cancelled.';
+
+  @override
+  String get subscriptionUpgradeRejectedTitle => 'Activation request rejected';
+
+  @override
+  String subscriptionUpgradeRejectedBody(String planLabel, String reason) {
+    return 'Your request for $planLabel was rejected. Reason: $reason. Contact platform admins for more information, then submit a new request if needed.';
+  }
+
+  @override
+  String get subscriptionUpgradeContactAdminsAction => 'Contact admins';
+
+  @override
+  String get subscriptionUpgradeHigherPackageOnlyMessage =>
+      'Cancel the pending activation request before choosing a different package.';
 
   @override
   String subscriptionUpgradeScheduledChangeBody(
@@ -2586,10 +2641,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get subscriptionUpgradePrepaidStartsAfterBody =>
       'Your current subscription is still running. Paid packages start after the current period ends.';
-
-  @override
-  String get subscriptionUpgradeHigherPackageOnlyMessage =>
-      'Choose a higher package than the pending request to continue.';
 
   @override
   String get subscriptionPaidCancelForbiddenMessage =>

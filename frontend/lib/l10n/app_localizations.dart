@@ -2680,6 +2680,36 @@ abstract class AppLocalizations {
   /// **'Activate'**
   String get tenantFacilitySubscriptionActivationsActivateAction;
 
+  /// Title for rejecting a subscription activation request.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject activation request?'**
+  String get tenantFacilitySubscriptionActivationsRejectTitle;
+
+  /// Body for rejecting a subscription activation request.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject activation for {name}? The tenant will see your reason and can contact platform admins.'**
+  String tenantFacilitySubscriptionActivationsRejectBody(String name);
+
+  /// Required reason field when rejecting a subscription activation.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejection reason'**
+  String get tenantFacilitySubscriptionActivationsRejectReasonLabel;
+
+  /// Reject pending subscription payment request.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get tenantFacilitySubscriptionActivationsRejectAction;
+
+  /// Success snackbar after rejecting a subscription activation.
+  ///
+  /// In en, this message translates to:
+  /// **'Activation request rejected.'**
+  String get tenantFacilitySubscriptionActivationsRejectSuccess;
+
   /// Intro text above the subscription approvals worklist.
   ///
   /// In en, this message translates to:
@@ -4885,8 +4915,62 @@ abstract class AppLocalizations {
   /// Body explaining pending activation progress.
   ///
   /// In en, this message translates to:
-  /// **'Your payment for {planLabel} is awaiting admin activation. You cannot submit another request unless you upgrade to a higher package.'**
+  /// **'Your payment for {planLabel} is awaiting admin activation. Cancel this request to choose a different package, or wait for an admin to activate or reject it.'**
   String subscriptionUpgradePendingRequestBody(String planLabel);
+
+  /// Shown when the user cannot change plans during a pending activation.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan changes are locked while activation is in progress.'**
+  String get subscriptionUpgradePendingLockedBody;
+
+  /// Action to cancel a pending activation request.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel request'**
+  String get subscriptionUpgradeCancelRequestAction;
+
+  /// Confirm cancel of pending activation request.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel activation request?'**
+  String get subscriptionUpgradeCancelRequestTitle;
+
+  /// Body for cancelling a pending activation request.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel the pending activation for {planLabel}? You can then submit a different package request.'**
+  String subscriptionUpgradeCancelRequestBody(String planLabel);
+
+  /// Success after cancelling a pending activation request.
+  ///
+  /// In en, this message translates to:
+  /// **'Activation request cancelled.'**
+  String get subscriptionUpgradeCancelRequestSuccess;
+
+  /// Title when the latest activation request was rejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Activation request rejected'**
+  String get subscriptionUpgradeRejectedTitle;
+
+  /// Body when an activation request was rejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Your request for {planLabel} was rejected. Reason: {reason}. Contact platform admins for more information, then submit a new request if needed.'**
+  String subscriptionUpgradeRejectedBody(String planLabel, String reason);
+
+  /// Hint/action for contacting platform admins after rejection.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact admins'**
+  String get subscriptionUpgradeContactAdminsAction;
+
+  /// Validation when a pending request blocks plan changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel the pending activation request before choosing a different package.'**
+  String get subscriptionUpgradeHigherPackageOnlyMessage;
 
   /// Body explaining a prepaid plan change that starts after the current period.
   ///
@@ -4902,12 +4986,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your current subscription is still running. Paid packages start after the current period ends.'**
   String get subscriptionUpgradePrepaidStartsAfterBody;
-
-  /// Validation when a pending request blocks non-upgrade submissions.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a higher package than the pending request to continue.'**
-  String get subscriptionUpgradeHigherPackageOnlyMessage;
 
   /// Error when attempting to cancel a paid subscription.
   ///
