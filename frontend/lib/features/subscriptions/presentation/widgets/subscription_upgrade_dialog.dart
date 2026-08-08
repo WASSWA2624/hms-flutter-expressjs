@@ -248,14 +248,10 @@ class _SubscriptionUpgradeDialogState
 
     result.when(
       success: (SubscriptionUpgradeContext contextData) {
-        final String? currentPlanId = contextData.currentPlanId;
-        final TenantSubscriptionSummary? summary =
-            contextData.summary ?? widget.initialSummary;
-        final bool preferRenewal =
-            currentPlanId != null &&
-            summary != null &&
-            summary.headerState != TenantSubscriptionHeaderState.active;
-
+        final String? currentPlanId =
+            contextData.currentPlanId ??
+            contextData.summary?.planId ??
+            widget.initialSummary?.planId;
         final List<SubscriptionUpgradePlanOption> commercialPlans =
             contextData.plans
                 .where(
@@ -263,11 +259,11 @@ class _SubscriptionUpgradeDialogState
                 )
                 .toList(growable: false);
 
-        final String? preferredPlanId = preferRenewal
-            ? currentPlanId
-            : (contextData.recommendedPlanId ??
-                  currentPlanId ??
-                  commercialPlans.firstOrNull?.id);
+        // Prefer the tenant's current package; fall back to recommendation / first plan.
+        final String? preferredPlanId =
+            currentPlanId ??
+            contextData.recommendedPlanId ??
+            commercialPlans.firstOrNull?.id;
 
         final bool preferredInCatalog =
             preferredPlanId != null &&
@@ -845,22 +841,16 @@ class _SubscriptionUpgradeDialogState
           ],
         ],
       ),
-      _UpgradeStep.paymentMethod => AppSectionPanel(
-        title: l10n.subscriptionUpgradePaymentMethodSectionTitle,
-        leadingIcon: Icons.account_balance_wallet_outlined,
-        children: <Widget>[
-          SubscriptionPaymentMethodSelector(
-            selected: _paymentMethod,
-            onSelected: (SubscriptionPaymentMethodId method) {
-              setState(() {
-                _paymentMethod = method;
-                if (!_steps.contains(_step)) {
-                  _step = _UpgradeStep.paymentMethod;
-                }
-              });
-            },
-          ),
-        ],
+      _UpgradeStep.paymentMethod => SubscriptionPaymentMethodSelector(
+        selected: _paymentMethod,
+        onSelected: (SubscriptionPaymentMethodId method) {
+          setState(() {
+            _paymentMethod = method;
+            if (!_steps.contains(_step)) {
+              _step = _UpgradeStep.paymentMethod;
+            }
+          });
+        },
       ),
       _UpgradeStep.paymentDetails => _buildPaymentDetailsStep(
         l10n: l10n,
