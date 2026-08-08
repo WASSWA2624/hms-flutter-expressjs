@@ -805,6 +805,35 @@ const ensureEmailDelivered = (deliveryResult, context, options = {}) => {
   ]);
 };
 
+/**
+ * Deliver an auth email without letting SMTP latency hang the HTTP response in
+ * development. Production still awaits delivery and enforces ensureEmailDelivered.
+ */
+const deliverAuthEmail = async (sendPromise, context, options = {}) => {
+  if (env.NODE_ENV === 'development') {
+    logger.warn('Auth email delivery queued; continuing auth flow in development.', {
+      context: context || 'verification_email',
+      verification_code: options.code || undefined,
+    });
+
+    void Promise.resolve(sendPromise)
+      .then((deliveryResult) => {
+        ensureEmailDelivered(deliveryResult, context, options);
+      })
+      .catch((error) => {
+        logger.warn('Background auth email delivery failed in development.', {
+          context: context || 'verification_email',
+          error: error?.message || 'unknown_error',
+          verification_code: options.code || undefined,
+        });
+      });
+    return;
+  }
+
+  const deliveryResult = await sendPromise;
+  ensureEmailDelivered(deliveryResult, context, options);
+};
+
 const resolveAdminDisplayName = (user, fallbackName) => {
   const first = String(user?.profile?.first_name || '').trim();
   const last = String(user?.profile?.last_name || '').trim();
@@ -1024,19 +1053,20 @@ const handleExistingEmailRegistration = async ({
     facility_type
   );
   const verification = await createEmailVerificationTokens(user.id);
-  const deliveryResult = await sendVerificationEmail({
-    email: normalizedEmail,
-    adminName: resolveAdminDisplayName(user, admin_name),
-    facilityName: user.facility?.name || user.tenant?.name || facility_name,
-    code: verification.code,
-    plainPassword: null,
-    expiresAt: verification.expiresAt,
-    locale: request_context?.locale,
-    timeZone: request_context?.timezone,
-  });
-  ensureEmailDelivered(deliveryResult, 'register_existing_email', {
-    code: verification.code,
-  });
+  await deliverAuthEmail(
+    sendVerificationEmail({
+      email: normalizedEmail,
+      adminName: resolveAdminDisplayName(user, admin_name),
+      facilityName: user.facility?.name || user.tenant?.name || facility_name,
+      code: verification.code,
+      plainPassword: null,
+      expiresAt: verification.expiresAt,
+      locale: request_context?.locale,
+      timeZone: request_context?.timezone,
+    }),
+    'register_existing_email',
+    { code: verification.code }
+  );
 
   await persistRegistrationFollowUp({
     user,
@@ -1521,19 +1551,20 @@ const register = async (data) => {
   // Create a verification code for the email verification form.
   const verification = await createEmailVerificationTokens(user.id);
 
-  const deliveryResult = await sendVerificationEmail({
-    email: normalizedEmail,
-    adminName: admin_name,
-    facilityName: facility_name,
-    code: verification.code,
-    plainPassword: password,
-    expiresAt: verification.expiresAt,
-    locale: request_context?.locale,
-    timeZone: request_context?.timezone,
-  });
-  ensureEmailDelivered(deliveryResult, 'register_new_user', {
-    code: verification.code,
-  });
+  await deliverAuthEmail(
+    sendVerificationEmail({
+      email: normalizedEmail,
+      adminName: admin_name,
+      facilityName: facility_name,
+      code: verification.code,
+      plainPassword: password,
+      expiresAt: verification.expiresAt,
+      locale: request_context?.locale,
+      timeZone: request_context?.timezone,
+    }),
+    'register_new_user',
+    { code: verification.code }
+  );
 
   await persistRegistrationFollowUp({
     user,
@@ -1996,23 +2027,24 @@ const resendVerification = async (data) => {
 
   if (type === 'email') {
     const tokens = await createEmailVerificationTokens(user.id);
-    const deliveryResult = await sendVerificationEmail({
-      email: normalizedEmail || user.email,
-      adminName:
-        user.profile?.first_name ||
-        user.profile?.last_name ||
-        user.email ||
-        'Admin',
-      facilityName: user.facility?.name || user.tenant?.name || 'your facility',
-      code: tokens.code,
-      plainPassword: null,
-      expiresAt: tokens.expiresAt,
-      locale: request_context?.locale,
-      timeZone: request_context?.timezone,
-    });
-    ensureEmailDelivered(deliveryResult, 'resend_verification', {
-      code: tokens.code,
-    });
+    await deliverAuthEmail(
+      sendVerificationEmail({
+        email: normalizedEmail || user.email,
+        adminName:
+          user.profile?.first_name ||
+          user.profile?.last_name ||
+          user.email ||
+          'Admin',
+        facilityName: user.facility?.name || user.tenant?.name || 'your facility',
+        code: tokens.code,
+        plainPassword: null,
+        expiresAt: tokens.expiresAt,
+        locale: request_context?.locale,
+        timeZone: request_context?.timezone,
+      }),
+      'resend_verification',
+      { code: tokens.code }
+    );
   } else {
     await authRepository.deleteExpiredTokens(user.id, tokenType);
     const token = crypto.randomInt(0, 1000000).toString().padStart(6, '0');

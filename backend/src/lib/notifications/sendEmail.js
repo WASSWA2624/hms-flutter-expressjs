@@ -15,6 +15,32 @@ const STORAGE = {
   UNKNOWN: 'unknown',
   SMTP: 'smtp',
   SKIPPED: 'skipped',
+  TIMEOUT: 'timeout',
+};
+
+// Keep auth flows (register / resend / password reset) responsive even when
+// Gmail/SMTP stalls past nodemailer's socket timers.
+const SMTP_CONNECTION_TIMEOUT_MS = 5_000;
+const SMTP_GREETING_TIMEOUT_MS = 5_000;
+const SMTP_SOCKET_TIMEOUT_MS = 8_000;
+const SMTP_SEND_TIMEOUT_MS = 8_000;
+
+const resetTransporter = () => {
+  transporter = null;
+};
+
+const withTimeout = (promise, timeoutMs, message) => {
+  let timer;
+  return Promise.race([
+    promise.finally(() => {
+      if (timer) clearTimeout(timer);
+    }),
+    new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        reject(new Error(message));
+      }, timeoutMs);
+    }),
+  ]);
 };
 
 const DEFAULT_SENDER_NAME =
@@ -134,9 +160,9 @@ const getTransporter = () => {
       pass: env.SMTP_PASS,
     },
     // Prevent register/login flows from hanging when SMTP is unreachable.
-    connectionTimeout: 10_000,
-    greetingTimeout: 10_000,
-    socketTimeout: 20_000,
+    connectionTimeout: SMTP_CONNECTION_TIMEOUT_MS,
+    greetingTimeout: SMTP_GREETING_TIMEOUT_MS,
+    socketTimeout: SMTP_SOCKET_TIMEOUT_MS,
   });
 
   return transporter;
@@ -193,36 +219,49 @@ const sendEmail = async (data) => {
 
     const envelopeFrom = resolveEnvelopeFrom();
 
-    await smtpTransporter.sendMail({
-      from: fromHeader,
-      replyTo: resolveReplyToHeader(),
-      to: recipients,
-      envelope: envelopeFrom
-        ? {
-            from: envelopeFrom,
-            to: recipients,
-          }
-        : undefined,
-      subject,
-      text,
-      html,
-      attachments,
-      headers: {
-        'Auto-Submitted': 'auto-generated',
-        'X-Auto-Response-Suppress': 'All',
-        Precedence: 'bulk',
-      },
-    });
+    await withTimeout(
+      smtpTransporter.sendMail({
+        from: fromHeader,
+        replyTo: resolveReplyToHeader(),
+        to: recipients,
+        envelope: envelopeFrom
+          ? {
+              from: envelopeFrom,
+              to: recipients,
+            }
+          : undefined,
+        subject,
+        text,
+        html,
+        attachments,
+        headers: {
+          'Auto-Submitted': 'auto-generated',
+          'X-Auto-Response-Suppress': 'All',
+          Precedence: 'bulk',
+        },
+      }),
+      SMTP_SEND_TIMEOUT_MS,
+      `SMTP send timed out after ${SMTP_SEND_TIMEOUT_MS}ms`
+    );
 
     return { sent: true, provider: STORAGE.SMTP };
   } catch (error) {
+    const timedOut = String(error?.message || '').includes('SMTP send timed out');
+    if (timedOut) {
+      // Drop the pooled transport; a hung socket can poison later sends.
+      resetTransporter();
+    }
+
     logger.error('Email delivery failed.', {
       recipient: recipients.map(maskEmail),
       subject,
       error: error?.message || 'unknown_error',
     });
 
-    return { sent: false, provider: STORAGE.UNKNOWN };
+    return {
+      sent: false,
+      provider: timedOut ? STORAGE.TIMEOUT : STORAGE.UNKNOWN,
+    };
   }
 };
 

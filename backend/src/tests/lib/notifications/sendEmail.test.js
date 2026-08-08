@@ -104,7 +104,12 @@ describe('sendEmail helper', () => {
       secure: false,
       auth: {
         user: 'mailer@example.com',
-        pass: 'secret'}});
+        pass: 'secret',
+      },
+      connectionTimeout: 5_000,
+      greetingTimeout: 5_000,
+      socketTimeout: 8_000,
+    });
     expect(sendMail).toHaveBeenCalledWith(
       expect.objectContaining({
         from: '"HMS Mailer" <no-reply@example.com>',
@@ -117,5 +122,48 @@ describe('sendEmail helper', () => {
         text: 'Body text'})
     );
     expect(logger.error).not.toHaveBeenCalled();
+  });
+
+  it('returns timeout provider when SMTP send exceeds the overall deadline', async () => {
+    jest.useFakeTimers();
+    try {
+      const sendMail = jest.fn(
+        () =>
+          new Promise(() => {
+            // Never resolves — overall Promise.race timeout must win.
+          })
+      );
+      const createTransport = jest.fn(() => ({ sendMail }));
+
+      const { sendEmail, logger } = loadSendEmail({
+        envOverrides: {
+          SMTP_HOST: 'smtp.example.com',
+          SMTP_PORT: 587,
+          SMTP_USER: 'mailer@example.com',
+          SMTP_PASS: 'secret',
+          SMTP_FROM: '"Mailer" <mailer@example.com>',
+        },
+        nodemailerFactory: () => ({ createTransport }),
+      });
+
+      const resultPromise = sendEmail({
+        to: 'patient@example.com',
+        subject: 'Subject line',
+        text: 'Body text',
+      });
+
+      await jest.advanceTimersByTimeAsync(8_000);
+      const result = await resultPromise;
+
+      expect(result).toEqual({ sent: false, provider: 'timeout' });
+      expect(logger.error).toHaveBeenCalledWith(
+        'Email delivery failed.',
+        expect.objectContaining({
+          error: expect.stringContaining('SMTP send timed out'),
+        })
+      );
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
