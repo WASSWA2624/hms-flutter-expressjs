@@ -8,6 +8,7 @@ import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controlle
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_primary_button.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -27,11 +28,9 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
   final _emailController = TextEditingController();
   final _codeController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
   final _emailFocusNode = FocusNode();
   final _codeFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
-  final _confirmPasswordFocusNode = FocusNode();
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
   @override
@@ -52,11 +51,9 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
     _emailController.dispose();
     _codeController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
     _emailFocusNode.dispose();
     _codeFocusNode.dispose();
     _passwordFocusNode.dispose();
-    _confirmPasswordFocusNode.dispose();
     super.dispose();
   }
 
@@ -82,11 +79,12 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
     }
     return _emailController.text.trim().toLowerCase();
   }
+
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final state = ref.watch(authControllerProvider);
-    final theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final AuthControllerState state = ref.watch(authControllerProvider);
+    final ThemeData theme = Theme.of(context);
 
     return AuthPageFrame(
       title: l10n.authResetPasswordTitle,
@@ -103,8 +101,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
           children: <Widget>[
             if (state.passwordResetSubmitted && !_usesLinkToken) ...<Widget>[
               AppFormInformationBanner.message(
-                title: l10n.authForgotPasswordSubmittedTitle,
-                message: l10n.authForgotPasswordSubmittedBody,
+                message: _deliveryMessage(l10n, state),
                 variant: AppFormInformationVariant.success,
               ),
               SizedBox(height: theme.spacing.md),
@@ -164,7 +161,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
               enableObscureTextToggle: true,
               showObscuredTextLabel: l10n.authShowPasswordLabel,
               hideObscuredTextLabel: l10n.authHidePasswordLabel,
-              textInputAction: TextInputAction.next,
+              textInputAction: TextInputAction.done,
               autofillHints: const <String>[AutofillHints.newPassword],
               validator: AppValidators.minLength(
                 8,
@@ -175,34 +172,6 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
               onChanged: (_) => _clearFormFeedback(),
               onFocusChanged: _handleFieldFocusChanged,
               focusNode: _passwordFocusNode,
-              enabled: !state.isSubmitting,
-            ),
-            SizedBox(height: theme.spacing.md),
-            AppTextField(
-              controller: _confirmPasswordController,
-              labelText: l10n.authConfirmPasswordLabel,
-              obscureText: true,
-              enableObscureTextToggle: true,
-              showObscuredTextLabel: l10n.authShowPasswordLabel,
-              hideObscuredTextLabel: l10n.authHidePasswordLabel,
-              textInputAction: TextInputAction.done,
-              validator: (value) {
-                final requiredError = AppValidators.requiredText(
-                  l10n.validationRequired,
-                  trim: false,
-                )(value);
-                if (requiredError != null) {
-                  return requiredError;
-                }
-
-                return value == _passwordController.text
-                    ? null
-                    : l10n.authPasswordMismatchMessage;
-              },
-              isRequired: true,
-              onChanged: (_) => _clearFormFeedback(),
-              onFocusChanged: _handleFieldFocusChanged,
-              focusNode: _confirmPasswordFocusNode,
               enabled: !state.isSubmitting,
               onFieldSubmitted: (_) => _submit(),
             ),
@@ -245,31 +214,52 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
     );
   }
 
+  String _deliveryMessage(AppLocalizations l10n, AuthControllerState state) {
+    final String? maskedEmail =
+        state.passwordResetMaskedEmail ?? _maskEmail(_resolvedEmail);
+    final String? maskedPhone = state.passwordResetMaskedPhone;
+
+    if (maskedEmail != null &&
+        maskedEmail.isNotEmpty &&
+        maskedPhone != null &&
+        maskedPhone.isNotEmpty) {
+      return l10n.authForgotPasswordSubmittedMessageWithPhone(
+        maskedEmail,
+        maskedPhone,
+      );
+    }
+    if (maskedEmail != null && maskedEmail.isNotEmpty) {
+      return l10n.authForgotPasswordSubmittedMessage(maskedEmail);
+    }
+    return l10n.authForgotPasswordSubmittedBody;
+  }
+
   Future<void> _submit() async {
     ref.read(authControllerProvider.notifier).clearFailure();
-    final form = _formKey.currentState;
+    final FormState? form = _formKey.currentState;
     if (form == null || !form.validate()) {
       _enableValidationRefresh();
       return;
     }
 
-    final token = _usesLinkToken ? widget.token!.trim() : null;
-    final code = !_usesLinkToken ? _codeController.text.trim() : null;
-    final email = !_usesLinkToken ? _resolvedEmail : null;
+    final String? token = _usesLinkToken ? widget.token!.trim() : null;
+    final String? code = !_usesLinkToken ? _codeController.text.trim() : null;
+    final String? email = !_usesLinkToken ? _resolvedEmail : null;
 
     if (!_usesLinkToken && (email == null || email.isEmpty)) {
       _enableValidationRefresh();
       return;
     }
 
+    final String password = _passwordController.text;
     final bool completed = await ref
         .read(authControllerProvider.notifier)
         .resetPassword(
           token: token,
           email: email,
           code: code,
-          newPassword: _passwordController.text,
-          confirmPassword: _confirmPasswordController.text,
+          newPassword: password,
+          confirmPassword: password,
         );
     if (!mounted || !completed) {
       return;
@@ -311,4 +301,31 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
       _autovalidateMode = AutovalidateMode.disabled;
     });
   }
+}
+
+String? _maskEmail(String? value) {
+  final String email = (value ?? '').trim().toLowerCase();
+  final int at = email.indexOf('@');
+  if (at <= 0 || at == email.length - 1) {
+    return null;
+  }
+  final String local = email.substring(0, at);
+  final String domain = email.substring(at + 1);
+  final String visibleLocal = local.substring(0, local.length >= 2 ? 2 : local.length);
+  final List<String> domainParts = domain.split('.');
+  final String maskedDomain = domainParts
+      .asMap()
+      .entries
+      .map((MapEntry<int, String> entry) {
+        final String part = entry.value;
+        if (part.isEmpty) {
+          return part;
+        }
+        if (entry.key == domainParts.length - 1) {
+          return part;
+        }
+        return '${part.substring(0, 1)}***';
+      })
+      .join('.');
+  return '$visibleLocal***@$maskedDomain';
 }

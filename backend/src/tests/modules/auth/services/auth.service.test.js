@@ -1282,6 +1282,11 @@ describe('Auth Service', () => {
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'PASSWORD_RESET_REQUESTED'
       }));
+      expect(result).toEqual(
+        expect.objectContaining({
+          masked_email: expect.any(String),
+        })
+      );
     });
 
     it('uses request origin for reset links in non-production', async () => {

@@ -10528,7 +10528,31 @@
   },
   "authForgotPasswordSubmittedBody": "We sent a reset link and six-digit code to your email.",
   "@authForgotPasswordSubmittedBody": {
-    "description": "Body after forgot password request succeeds."
+    "description": "Fallback body after forgot password request succeeds."
+  },
+  "authForgotPasswordSubmittedMessage": "Reset code sent to {email}.",
+  "@authForgotPasswordSubmittedMessage": {
+    "description": "Brief success message with a masked email after forgot password.",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "wa***@g***.com"
+      }
+    }
+  },
+  "authForgotPasswordSubmittedMessageWithPhone": "Reset code sent to {email} and {phone}.",
+  "@authForgotPasswordSubmittedMessageWithPhone": {
+    "description": "Brief success message with masked email and phone after forgot password.",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "wa***@g***.com"
+      },
+      "phone": {
+        "type": "String",
+        "example": "+256***321"
+      }
+    }
   },
   "authForgotPasswordAccountNotFoundTitle": "No account found",
   "@authForgotPasswordAccountNotFoundTitle": {

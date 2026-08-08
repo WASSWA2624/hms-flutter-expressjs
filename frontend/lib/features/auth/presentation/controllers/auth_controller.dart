@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/password_reset_request_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 
 final authControllerProvider =
@@ -22,6 +23,8 @@ final class AuthControllerState {
     this.awaitingPlatformApproval = false,
     this.platformAdminContacts = const <AuthPlatformAdminContact>[],
     this.identifyTenants = const <AuthTenantOption>[],
+    this.passwordResetMaskedEmail,
+    this.passwordResetMaskedPhone,
   });
 
   final bool isSubmitting;
@@ -34,6 +37,8 @@ final class AuthControllerState {
   final bool awaitingPlatformApproval;
   final List<AuthPlatformAdminContact> platformAdminContacts;
   final List<AuthTenantOption> identifyTenants;
+  final String? passwordResetMaskedEmail;
+  final String? passwordResetMaskedPhone;
 
   AuthControllerState copyWith({
     bool? isSubmitting,
@@ -49,6 +54,9 @@ final class AuthControllerState {
     bool clearPlatformAdminContacts = false,
     List<AuthTenantOption>? identifyTenants,
     bool clearIdentifyTenants = false,
+    String? passwordResetMaskedEmail,
+    String? passwordResetMaskedPhone,
+    bool clearPasswordResetContacts = false,
   }) {
     return AuthControllerState(
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -70,6 +78,12 @@ final class AuthControllerState {
       identifyTenants: clearIdentifyTenants
           ? const <AuthTenantOption>[]
           : identifyTenants ?? this.identifyTenants,
+      passwordResetMaskedEmail: clearPasswordResetContacts
+          ? null
+          : passwordResetMaskedEmail ?? this.passwordResetMaskedEmail,
+      passwordResetMaskedPhone: clearPasswordResetContacts
+          ? null
+          : passwordResetMaskedPhone ?? this.passwordResetMaskedPhone,
     );
   }
 }
@@ -105,11 +119,16 @@ final class AuthController extends Notifier<AuthControllerState> {
   }
 
   void clearPasswordResetSubmitted() {
-    if (!state.passwordResetSubmitted) {
+    if (!state.passwordResetSubmitted &&
+        state.passwordResetMaskedEmail == null &&
+        state.passwordResetMaskedPhone == null) {
       return;
     }
 
-    state = state.copyWith(passwordResetSubmitted: false);
+    state = state.copyWith(
+      passwordResetSubmitted: false,
+      clearPasswordResetContacts: true,
+    );
   }
 
   void clearPasswordResetCompleted() {
@@ -276,6 +295,7 @@ final class AuthController extends Notifier<AuthControllerState> {
       clearFailure: true,
       passwordResetSubmitted: false,
       clearIdentifyTenants: true,
+      clearPasswordResetContacts: true,
     );
 
     final AuthRepository repository = ref.read(authRepositoryProvider);
@@ -439,12 +459,14 @@ final class AuthController extends Notifier<AuthControllerState> {
     );
 
     return result.when(
-      success: (_) {
+      success: (PasswordResetRequestResult delivery) {
         state = state.copyWith(
           isSubmitting: false,
           clearFailure: true,
           passwordResetSubmitted: true,
           clearIdentifyTenants: true,
+          passwordResetMaskedEmail: delivery.maskedEmail,
+          passwordResetMaskedPhone: delivery.maskedPhone,
         );
         return true;
       },

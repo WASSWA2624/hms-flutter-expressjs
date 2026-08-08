@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/password_reset_request_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/reset_password_page.dart';
@@ -30,7 +31,7 @@ void main() {
       final l10n = tester.element(find.byType(ResetPasswordPage)).l10n;
 
       expect(find.byType(AppEmailField), findsNothing);
-      expect(find.byType(EditableText), findsNWidgets(3));
+      expect(find.byType(EditableText), findsNWidgets(2));
       expect(find.text(l10n.authResetPasswordCodeModeBody), findsOneWidget);
     },
   );
@@ -41,7 +42,7 @@ void main() {
       await _pumpResetPassword(tester, _ResetPasswordRepository());
 
       expect(find.byType(AppEmailField), findsOneWidget);
-      expect(find.byType(EditableText), findsNWidgets(4));
+      expect(find.byType(EditableText), findsNWidgets(3));
     },
   );
 
@@ -99,7 +100,6 @@ void main() {
 
       await tester.enterText(find.byType(EditableText).at(0), '123456');
       await tester.enterText(find.byType(EditableText).at(1), 'NewPass12');
-      await tester.enterText(find.byType(EditableText).at(2), 'NewPass12');
       tester.view.viewInsets = FakeViewPadding.zero;
       await tester.pump();
       await tester.tap(find.text(l10n.authResetPasswordActionLabel));
@@ -118,7 +118,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(l10n.authResetPasswordTitle), findsNothing);
-      expect(find.text(l10n.authEmailLabel), findsNothing);
+      expect(find.byType(AppEmailField), findsNothing);
       expect(repository.resetPasswordCalls, 1);
       expect(repository.lastEmail, 'nurse@example.com');
       expect(repository.lastCode, '123456');
@@ -139,7 +139,6 @@ void main() {
       final l10n = tester.element(find.byType(ResetPasswordPage)).l10n;
 
       await tester.enterText(find.byType(EditableText).at(0), 'NewPass12');
-      await tester.enterText(find.byType(EditableText).at(1), 'NewPass12');
       tester.view.viewInsets = FakeViewPadding.zero;
       await tester.tap(find.text(l10n.authResetPasswordActionLabel));
       await tester.pump();
@@ -186,7 +185,6 @@ void main() {
     final l10n = tester.element(find.byType(ResetPasswordPage)).l10n;
 
     await tester.enterText(find.byType(EditableText).at(0), 'NewPass12');
-    await tester.enterText(find.byType(EditableText).at(1), 'NewPass12');
     tester.view.viewInsets = FakeViewPadding.zero;
     await tester.tap(find.text(l10n.authResetPasswordActionLabel));
     await tester.pump();
@@ -360,11 +358,13 @@ final class _ResetPasswordRepository implements AuthRepository {
   }
 
   @override
-  Future<Result<void>> forgotPassword({
+  Future<Result<PasswordResetRequestResult>> forgotPassword({
     required String email,
     required String tenantId,
   }) async {
-    return const Result<void>.success(null);
+    return const Result<PasswordResetRequestResult>.success(
+      PasswordResetRequestResult(),
+    );
   }
 
   @override

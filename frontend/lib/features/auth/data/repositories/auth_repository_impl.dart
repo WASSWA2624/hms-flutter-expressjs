@@ -13,6 +13,7 @@ import 'package:hosspi_hms/features/auth/data/dtos/auth_identify_dto.dart';
 import 'package:hosspi_hms/features/auth/data/dtos/auth_session_dto.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/password_reset_request_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -231,14 +232,14 @@ final class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Result<void>> forgotPassword({
+  Future<Result<PasswordResetRequestResult>> forgotPassword({
     required String email,
     required String tenantId,
   }) {
     final normalizedEmail = email.trim().toLowerCase();
     if (normalizedEmail.isEmpty || tenantId.trim().isEmpty) {
       return Future.value(
-        Result<void>.failure(
+        Result<PasswordResetRequestResult>.failure(
           AppFailure.validation(
             code: 'auth.forgot_password.invalid_input',
             validationFields: const <String>{'email', 'tenant_id'},
@@ -247,14 +248,17 @@ final class AuthRepositoryImpl implements AuthRepository {
       );
     }
 
-    return _publicApiClient.post<void>(
+    return _publicApiClient.post<PasswordResetRequestResult>(
       ApiEndpoints.auth(AuthEndpoint.forgotPassword),
       data: <String, Object?>{
         'email': normalizedEmail,
         'tenant_id': tenantId.trim(),
       },
       decoder: (data) =>
-          ApiResponseEnvelope.decodeData<void>(data, decoder: (_) {}),
+          ApiResponseEnvelope.decodeData<PasswordResetRequestResult>(
+            data,
+            decoder: PasswordResetRequestResult.fromResponseData,
+          ),
     );
   }
 

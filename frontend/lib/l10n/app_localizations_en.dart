@@ -8291,6 +8291,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'We sent a reset link and six-digit code to your email.';
 
   @override
+  String authForgotPasswordSubmittedMessage(String email) {
+    return 'Reset code sent to $email.';
+  }
+
+  @override
+  String authForgotPasswordSubmittedMessageWithPhone(
+    String email,
+    String phone,
+  ) {
+    return 'Reset code sent to $email and $phone.';
+  }
+
+  @override
   String get authForgotPasswordAccountNotFoundTitle => 'No account found';
 
   @override

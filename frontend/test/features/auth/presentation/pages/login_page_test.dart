@@ -14,6 +14,7 @@ import 'package:hosspi_hms/core/storage/secure/app_secure_storage.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/password_reset_request_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_shell_layout.dart';
@@ -458,7 +459,7 @@ abstract class _BaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Result<void>> forgotPassword({
+  Future<Result<PasswordResetRequestResult>> forgotPassword({
     required String email,
     required String tenantId,
   }) {

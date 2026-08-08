@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/password_reset_request_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/reset_password_page.dart';
@@ -86,8 +87,11 @@ void main() {
 
       expect(find.byType(ForgotPasswordPage), findsNothing);
       expect(find.byType(ResetPasswordPage), findsOneWidget);
-      expect(find.text(l10n.authForgotPasswordSubmittedTitle), findsOneWidget);
-      expect(find.text(l10n.authForgotPasswordSubmittedBody), findsOneWidget);
+      expect(find.text(l10n.authForgotPasswordSubmittedTitle), findsNothing);
+      expect(
+        find.text(l10n.authForgotPasswordSubmittedMessage('nu***@e***.com')),
+        findsOneWidget,
+      );
       expect(
         find.text(l10n.authResetPasswordWithCodeActionLabel),
         findsNothing,
@@ -130,7 +134,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(ResetPasswordPage), findsOneWidget);
-      expect(find.text(l10n.authForgotPasswordSubmittedTitle), findsOneWidget);
+      expect(find.text(l10n.authForgotPasswordSubmittedTitle), findsNothing);
+      expect(
+        find.text(l10n.authForgotPasswordSubmittedMessage('mu***@e***.com')),
+        findsOneWidget,
+      );
       expect(repository.forgotPasswordCalls, 1);
       expect(repository.lastForgotTenantId, 't2');
     },
@@ -281,7 +289,7 @@ final class _ForgotPasswordRepository implements AuthRepository {
   }
 
   @override
-  Future<Result<void>> forgotPassword({
+  Future<Result<PasswordResetRequestResult>> forgotPassword({
     required String email,
     required String tenantId,
   }) async {
@@ -289,7 +297,9 @@ final class _ForgotPasswordRepository implements AuthRepository {
     forgotPasswordCalls += 1;
     lastForgotEmail = email;
     lastForgotTenantId = tenantId;
-    return const Result<void>.success(null);
+    return const Result<PasswordResetRequestResult>.success(
+      PasswordResetRequestResult(),
+    );
   }
 
   @override

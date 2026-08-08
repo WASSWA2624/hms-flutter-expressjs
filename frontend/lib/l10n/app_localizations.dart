@@ -15244,11 +15244,26 @@ abstract class AppLocalizations {
   /// **'Check your email'**
   String get authForgotPasswordSubmittedTitle;
 
-  /// Body after forgot password request succeeds.
+  /// Fallback body after forgot password request succeeds.
   ///
   /// In en, this message translates to:
   /// **'We sent a reset link and six-digit code to your email.'**
   String get authForgotPasswordSubmittedBody;
+
+  /// Brief success message with a masked email after forgot password.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset code sent to {email}.'**
+  String authForgotPasswordSubmittedMessage(String email);
+
+  /// Brief success message with masked email and phone after forgot password.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset code sent to {email} and {phone}.'**
+  String authForgotPasswordSubmittedMessageWithPhone(
+    String email,
+    String phone,
+  );
 
   /// Title when forgot-password email does not match an account.
   ///

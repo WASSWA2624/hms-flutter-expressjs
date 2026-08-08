@@ -289,6 +289,45 @@ const buildResetPasswordLink = (token, email, requestContext = {}) =>
 const buildLoginLink = (requestContext = {}) =>
   `${getBaseAppUrl(requestContext)}/login`;
 
+const maskEmailAddress = (value) => {
+  const email = String(value || '').trim().toLowerCase();
+  const at = email.indexOf('@');
+  if (at <= 0 || at === email.length - 1) {
+    return null;
+  }
+  const local = email.slice(0, at);
+  const domain = email.slice(at + 1);
+  const visibleLocal = local.slice(0, Math.min(2, local.length));
+  const domainParts = domain.split('.');
+  const maskedDomain = domainParts
+    .map((part, index) => {
+      if (!part) {
+        return part;
+      }
+      if (index === domainParts.length - 1) {
+        return part;
+      }
+      return `${part.slice(0, 1)}***`;
+    })
+    .join('.');
+  return `${visibleLocal}***@${maskedDomain}`;
+};
+
+const maskPhoneNumber = (value) => {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return null;
+  }
+  const digits = raw.replace(/\D/g, '');
+  if (digits.length < 7) {
+    return null;
+  }
+  const prefix = digits.slice(0, Math.min(3, digits.length - 3));
+  const suffix = digits.slice(-3);
+  const plus = raw.trim().startsWith('+') ? '+' : '';
+  return `${plus}${prefix}***${suffix}`;
+};
+
 const createEmailVerificationTokens = async (userId) => {
   await authRepository.deleteExpiredTokens(userId, EMAIL_VERIFICATION_TOKEN_TYPE);
 
@@ -2362,7 +2401,11 @@ const forgotPassword = async (data) => {
     details: { email }
   });
 
-  return { message: 'messages.auth.password_reset.email_sent' };
+  return {
+    message: 'messages.auth.password_reset.email_sent',
+    masked_email: maskEmailAddress(user.email),
+    masked_phone: maskPhoneNumber(user.phone),
+  };
 };
 
 /**
