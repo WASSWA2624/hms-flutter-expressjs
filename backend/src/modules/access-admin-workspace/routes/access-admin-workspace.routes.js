@@ -24,7 +24,10 @@ const ACCESS_ADMIN_SCOPES = [
   PERMISSIONS.PLATFORM_ADMIN,
 ];
 
-const PLATFORM_ADMIN_SCOPES = [PERMISSIONS.PLATFORM_ADMIN];
+const PLATFORM_ADMIN_SCOPES = [
+  PERMISSIONS.PLATFORM_ADMIN,
+  PERMISSIONS.PLATFORM_OWNER,
+];
 
 const requireAccessAdminWorkspaceV1 = (_req, _res, next) => {
   if (!isFeatureEnabled('access_admin_workspace_v1')) {
@@ -64,10 +67,18 @@ router.post(
 );
 
 router.post(
+  '/registrations/:userIdentifier/approve',
+  validateRequest({ params: userIdentifierParamsSchema }),
+  authorize(PLATFORM_ADMIN_SCOPES, 'permission'),
+  accessAdminWorkspaceController.approveRegistration
+);
+
+// Legacy alias — prefer /approve.
+router.post(
   '/registrations/:userIdentifier/activate',
   validateRequest({ params: userIdentifierParamsSchema }),
   authorize(PLATFORM_ADMIN_SCOPES, 'permission'),
-  accessAdminWorkspaceController.activateRegistration
+  accessAdminWorkspaceController.approveRegistration
 );
 
 router.post(

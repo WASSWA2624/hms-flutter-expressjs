@@ -118,7 +118,7 @@ const main = async () => {
     select: { id: true },
   });
 
-  await accessAdminWorkspaceService.activateRegistration(
+  await accessAdminWorkspaceService.approveRegistration(
     user.id,
     {
       id: platformAdmin?.id || null,

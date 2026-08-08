@@ -134,8 +134,8 @@ describe('access-admin-workspace registrations billing scan', () => {
     expect(clinicalRequestBilling.upsertClinicalRequestBilling).not.toHaveBeenCalled();
   });
 
-  it('activate registration provisions trial subscription, not patient billing', async () => {
-    await service.activateRegistration('USR0001', platformAdmin, '127.0.0.1');
+  it('approve registration provisions trial subscription, not patient billing', async () => {
+    await service.approveRegistration('USR0001', platformAdmin, '127.0.0.1');
 
     expect(authRepository.updateUserStatus).toHaveBeenCalledWith(pendingUser.id, 'ACTIVE');
     expect(provisionTrialSubscription).toHaveBeenCalledWith('tenant-uuid');
@@ -150,9 +150,9 @@ describe('access-admin-workspace registrations billing scan', () => {
     expect(clinicalRequestBilling.adjustClinicalRequestBilling).not.toHaveBeenCalled();
   });
 
-  it('activate registration is idempotent when replayed for same pending user', async () => {
-    await service.activateRegistration('USR0001', platformAdmin);
-    await service.activateRegistration('USR0001', platformAdmin);
+  it('approve registration is idempotent when replayed for same pending user', async () => {
+    await service.approveRegistration('USR0001', platformAdmin);
+    await service.approveRegistration('USR0001', platformAdmin);
 
     expect(authRepository.updateUserStatus).toHaveBeenCalledTimes(2);
     expect(provisionTrialSubscription).toHaveBeenCalledTimes(2);
@@ -170,9 +170,9 @@ describe('access-admin-workspace registrations billing scan', () => {
     expect(clinicalRequestBilling.receiveClinicalRequestPayment).not.toHaveBeenCalled();
   });
 
-  it('denies activate/reject for non-elevated tenant admin', async () => {
+  it('denies approve/reject for non-elevated tenant admin', async () => {
     await expect(
-      service.activateRegistration('USR0001', tenantAdmin)
+      service.approveRegistration('USR0001', tenantAdmin)
     ).rejects.toMatchObject({ statusCode: 403 });
     await expect(
       service.rejectRegistration('USR0001', tenantAdmin)
@@ -210,11 +210,11 @@ describe('access-admin-workspace registrations billing scan', () => {
 
   it('activate audit documents NOT_BILLED SaaS path without patient ledger mutation', async () => {
     const { createAuditLog } = require('@lib/audit');
-    await service.activateRegistration('USR0001', platformAdmin, '127.0.0.1');
+    await service.approveRegistration('USR0001', platformAdmin, '127.0.0.1');
 
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: 'TENANT_REGISTRATION_ACTIVATED',
+        action: 'TENANT_REGISTRATION_APPROVED',
         entity: 'user',
       })
     );

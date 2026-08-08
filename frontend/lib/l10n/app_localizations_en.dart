@@ -1332,7 +1332,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilitySubscriptionApprovalsIntro =>
-      'Review verified facility registrations. Activating assigns a Pro package for 3 months, then Free.';
+      'Review verified facility registrations. Approving assigns a Pro package for 3 months, then Free.';
 
   @override
   String get tenantFacilitySubscriptionApprovalsSearchHint =>
@@ -1356,17 +1356,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'When a facility owner verifies their email, they appear here for platform approval.';
 
   @override
-  String get tenantFacilitySubscriptionApprovalsActivateTitle =>
-      'Activate account?';
+  String get tenantFacilitySubscriptionApprovalsApproveTitle =>
+      'Approve account?';
 
   @override
-  String tenantFacilitySubscriptionApprovalsActivateBody(String name) {
-    return 'Activate $name and assign a Pro package for 3 months. After that the account moves to Free.';
+  String tenantFacilitySubscriptionApprovalsApproveBody(String name) {
+    return 'Approve $name and assign a Pro package for 3 months. After that the account moves to Free.';
   }
 
   @override
-  String get tenantFacilitySubscriptionApprovalsActivateSuccess =>
-      'Account activated with a 3-month Pro trial.';
+  String get tenantFacilitySubscriptionApprovalsApproveSuccess =>
+      'Account approved with a 3-month Pro trial.';
 
   @override
   String get tenantFacilitySubscriptionApprovalsRejectTitle =>
@@ -1405,11 +1405,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilitySubscriptionApprovalsPlanDescription =>
-      'What activation provisions for this tenant.';
+      'What approval provisions for this tenant.';
 
   @override
   String get tenantFacilitySubscriptionApprovalsPlanBody =>
-      'Activation assigns the Pro package for 3 months. When that window ends, the tenant is automatically moved to the Free package.';
+      'Approval assigns the Pro package for 3 months. When that window ends, the tenant is automatically moved to the Free package.';
 
   @override
   String get tenantFacilitySubscriptionApprovalsActionsSection => 'Actions';
@@ -24080,7 +24080,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminPhoneLabel => 'Phone';
 
   @override
-  String get accessAdminActivateRegistrationAction => 'Activate account';
+  String get accessAdminApproveRegistrationAction => 'Approve account';
 
   @override
   String get accessAdminRejectRegistrationAction => 'Reject';

@@ -280,12 +280,15 @@ final class AccessAdminItemDto {
     );
   }
 
-  /// Mutation / detail IDs. Registration activate/reject expect the **user**
-  /// public id (`id` / `user_id`), not the follow-up worklist `display_id`.
+  /// Mutation / detail IDs. Registration approve/reject expect the **user**
+  /// id (`resource_uuid` / `user_id` / `id`), not the follow-up `display_id`.
   String _itemId(Map<String, dynamic> source) {
     if (resource == AccessAdminResource.registrationFollowUps) {
       return _string(
-        source['user_id'] ?? source['id'] ?? source['display_id'],
+        source['resource_uuid'] ??
+            source['user_id'] ??
+            source['id'] ??
+            source['display_id'],
       );
     }
     return _publicId(source);

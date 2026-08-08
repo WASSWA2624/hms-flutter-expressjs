@@ -450,7 +450,7 @@ abstract final class AccessAdminPermissionsAtomPermissions {
 /// Financial classifications: [AccessAdminRegistrationsBillingInventory]
 /// (`access_admin_registrations_billing.dart`). All mounted atoms are
 /// `NOT_REQUIRED` / `NOT_BILLED` / `NO_CHARGE`; no patient Billing posts.
-/// Activate provisions a SaaS trial via subscriptions onboarding and must not
+/// Approval provisions a SaaS trial via subscriptions onboarding and must not
 /// mutate historical patient ledgers.
 ///
 /// | Atom | Kind | Gate |
@@ -459,7 +459,7 @@ abstract final class AccessAdminPermissionsAtomPermissions {
 /// | Search / filters / columns / pagination | read chrome | elevated |
 /// | Empty / error / retry | read chrome | elevated |
 /// | Row select → registration detail | read | elevated |
-/// | Activate registration (next-action) | update | elevated + write ∩ + canWrite |
+/// | Approve registration (next-action) | update | elevated + write ∩ + canWrite |
 /// | Reject registration (detail) | delete | elevated + write ∩ + canWrite |
 /// | Create user / Create role primary | create | _(absent on this resource)_ ; create ∩ if added |
 /// | Detail Close | progressive-disclosure | elevated |

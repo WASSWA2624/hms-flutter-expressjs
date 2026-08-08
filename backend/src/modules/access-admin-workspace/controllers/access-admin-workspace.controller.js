@@ -36,14 +36,17 @@ const resetDemoUserPassword = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.access_admin_workspace.demo_reset.success', data);
 });
 
-const activateRegistration = asyncHandler(async (req, res) => {
-  const data = await accessAdminWorkspaceService.activateRegistration(
+const approveRegistration = asyncHandler(async (req, res) => {
+  const data = await accessAdminWorkspaceService.approveRegistration(
     req.params.userIdentifier,
     req.user,
     req.ip
   );
-  return sendSuccess(res, 200, 'messages.access_admin_workspace.registration_activated.success', data);
+  return sendSuccess(res, 200, 'messages.access_admin_workspace.registration_approved.success', data);
 });
+
+/** @deprecated Prefer approveRegistration — kept for older clients. */
+const activateRegistration = approveRegistration;
 
 const rejectRegistration = asyncHandler(async (req, res) => {
   const data = await accessAdminWorkspaceService.rejectRegistration(
@@ -72,6 +75,7 @@ const restoreAccessDefaults = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  approveRegistration,
   activateRegistration,
   getReferenceData,
   getUserDetail,

@@ -1740,7 +1740,7 @@
   "@tenantFacilitySetupTabSubscriptionApprovals": {
     "description": "Platform setup tab for approving new facility registrations and assigning Pro trial."
   },
-  "tenantFacilitySubscriptionApprovalsIntro": "Review verified facility registrations. Activating assigns a Pro package for 3 months, then Free.",
+  "tenantFacilitySubscriptionApprovalsIntro": "Review verified facility registrations. Approving assigns a Pro package for 3 months, then Free.",
   "@tenantFacilitySubscriptionApprovalsIntro": {
     "description": "Intro text above the subscription approvals worklist."
   },
@@ -1768,13 +1768,13 @@
   "@tenantFacilitySubscriptionApprovalsEmpty": {
     "description": "Empty-state body for subscription approvals."
   },
-  "tenantFacilitySubscriptionApprovalsActivateTitle": "Activate account?",
-  "@tenantFacilitySubscriptionApprovalsActivateTitle": {
-    "description": "Confirm dialog title when activating a pending registration."
+  "tenantFacilitySubscriptionApprovalsApproveTitle": "Approve account?",
+  "@tenantFacilitySubscriptionApprovalsApproveTitle": {
+    "description": "Confirm dialog title when approving a pending registration."
   },
-  "tenantFacilitySubscriptionApprovalsActivateBody": "Activate {name} and assign a Pro package for 3 months. After that the account moves to Free.",
-  "@tenantFacilitySubscriptionApprovalsActivateBody": {
-    "description": "Confirm dialog body when activating a pending registration.",
+  "tenantFacilitySubscriptionApprovalsApproveBody": "Approve {name} and assign a Pro package for 3 months. After that the account moves to Free.",
+  "@tenantFacilitySubscriptionApprovalsApproveBody": {
+    "description": "Confirm dialog body when approving a pending registration.",
     "placeholders": {
       "name": {
         "type": "String",
@@ -1782,9 +1782,9 @@
       }
     }
   },
-  "tenantFacilitySubscriptionApprovalsActivateSuccess": "Account activated with a 3-month Pro trial.",
-  "@tenantFacilitySubscriptionApprovalsActivateSuccess": {
-    "description": "SnackBar after successful registration activation."
+  "tenantFacilitySubscriptionApprovalsApproveSuccess": "Account approved with a 3-month Pro trial.",
+  "@tenantFacilitySubscriptionApprovalsApproveSuccess": {
+    "description": "SnackBar after successful registration approval."
   },
   "tenantFacilitySubscriptionApprovalsRejectTitle": "Reject registration?",
   "@tenantFacilitySubscriptionApprovalsRejectTitle": {
@@ -1828,17 +1828,17 @@
   "@tenantFacilitySubscriptionApprovalsPlanSection": {
     "description": "Collapsible section title for plan assignment details."
   },
-  "tenantFacilitySubscriptionApprovalsPlanDescription": "What activation provisions for this tenant.",
+  "tenantFacilitySubscriptionApprovalsPlanDescription": "What approval provisions for this tenant.",
   "@tenantFacilitySubscriptionApprovalsPlanDescription": {
     "description": "Collapsible section description for plan assignment."
   },
-  "tenantFacilitySubscriptionApprovalsPlanBody": "Activation assigns the Pro package for 3 months. When that window ends, the tenant is automatically moved to the Free package.",
+  "tenantFacilitySubscriptionApprovalsPlanBody": "Approval assigns the Pro package for 3 months. When that window ends, the tenant is automatically moved to the Free package.",
   "@tenantFacilitySubscriptionApprovalsPlanBody": {
     "description": "Body explaining Pro trial then Free downgrade."
   },
   "tenantFacilitySubscriptionApprovalsActionsSection": "Actions",
   "@tenantFacilitySubscriptionApprovalsActionsSection": {
-    "description": "Section title for activate/reject buttons in the detail dialog."
+    "description": "Section title for approve/reject buttons in the detail dialog."
   },
   "tenantFacilitySetupTabClinicalCatalog": "Clinical Services",
   "@tenantFacilitySetupTabClinicalCatalog": {
@@ -30899,9 +30899,9 @@
   "@accessAdminPhoneLabel": {
     "description": "Access admin phone field label."
   },
-  "accessAdminActivateRegistrationAction": "Activate account",
-  "@accessAdminActivateRegistrationAction": {
-    "description": "Activate a pending tenant registration."
+  "accessAdminApproveRegistrationAction": "Approve account",
+  "@accessAdminApproveRegistrationAction": {
+    "description": "Approve a pending tenant registration."
   },
   "accessAdminRejectRegistrationAction": "Reject",
   "@accessAdminRejectRegistrationAction": {

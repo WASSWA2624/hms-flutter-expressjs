@@ -81,7 +81,7 @@ void main() {
         reason: 'Status toggle stays on the list next-action only',
       );
       expect(
-        pageSource.contains('accessAdminActivateRegistrationAction'),
+        pageSource.contains('accessAdminApproveRegistrationAction'),
         isFalse,
         reason: 'Activate registration stays on the list next-action only',
       );
@@ -150,7 +150,7 @@ void main() {
           toggled = item;
         },
         onRoleEdit: (_) {},
-        onRegistrationActivate: (_) async {},
+        onRegistrationApprove: (_) async {},
       );
 
       expect(action, isA<AppButton>());
@@ -180,7 +180,7 @@ void main() {
           canWrite: false,
           onUserStatusToggle: (_) async {},
           onRoleEdit: (_) {},
-          onRegistrationActivate: (_) async {},
+          onRegistrationApprove: (_) async {},
         ),
         isNull,
       );
@@ -209,7 +209,7 @@ void main() {
         onRoleEdit: (AccessAdminItem item) {
           edited = item;
         },
-        onRegistrationActivate: (_) async {},
+        onRegistrationApprove: (_) async {},
       );
 
       await tester.pumpWidget(wrap(action!));
@@ -239,7 +239,7 @@ void main() {
           canWrite: true,
           onUserStatusToggle: (_) async {},
           onRoleEdit: (_) {},
-          onRegistrationActivate: (_) async {},
+          onRegistrationApprove: (_) async {},
         ),
         isNull,
       );

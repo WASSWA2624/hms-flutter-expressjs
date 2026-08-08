@@ -43,7 +43,7 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminDefaultColumns(
   required bool canWrite,
   required Future<void> Function(AccessAdminItem item) onUserStatusToggle,
   required void Function(AccessAdminItem item) onRoleEdit,
-  required Future<void> Function(AccessAdminItem item) onRegistrationActivate,
+  required Future<void> Function(AccessAdminItem item) onRegistrationApprove,
 }) {
   final List<AppListTableColumn<AccessAdminItem>> all =
       accessAdminAllColumnsForResource(
@@ -52,7 +52,7 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminDefaultColumns(
         canWrite: canWrite,
         onUserStatusToggle: onUserStatusToggle,
         onRoleEdit: onRoleEdit,
-        onRegistrationActivate: onRegistrationActivate,
+        onRegistrationApprove: onRegistrationApprove,
       );
   final Set<String> defaultIds = switch (resource) {
     AccessAdminResource.users ||
@@ -107,7 +107,7 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminColumnChoices(
   required bool canWrite,
   required Future<void> Function(AccessAdminItem item) onUserStatusToggle,
   required void Function(AccessAdminItem item) onRoleEdit,
-  required Future<void> Function(AccessAdminItem item) onRegistrationActivate,
+  required Future<void> Function(AccessAdminItem item) onRegistrationApprove,
 }) {
   return accessAdminAllColumnsForResource(
     context,
@@ -115,7 +115,7 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminColumnChoices(
     canWrite: canWrite,
     onUserStatusToggle: onUserStatusToggle,
     onRoleEdit: onRoleEdit,
-    onRegistrationActivate: onRegistrationActivate,
+    onRegistrationApprove: onRegistrationApprove,
   );
 }
 
@@ -125,7 +125,7 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminAllColumnsForResource(
   required bool canWrite,
   required Future<void> Function(AccessAdminItem item) onUserStatusToggle,
   required void Function(AccessAdminItem item) onRoleEdit,
-  required Future<void> Function(AccessAdminItem item) onRegistrationActivate,
+  required Future<void> Function(AccessAdminItem item) onRegistrationApprove,
 }) {
   return switch (resource) {
     AccessAdminResource.users || AccessAdminResource.demoUsers => _userColumns(
@@ -143,7 +143,7 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminAllColumnsForResource(
     AccessAdminResource.registrationFollowUps => _registrationColumns(
       context,
       canWrite: canWrite,
-      onRegistrationActivate: onRegistrationActivate,
+      onRegistrationApprove: onRegistrationApprove,
     ),
     _ => _userColumns(
       context,
@@ -273,7 +273,7 @@ bool accessAdminSearchMatcher(
   }
 
   if (resource == AccessAdminResource.registrationFollowUps) {
-    haystack.add(l10n.accessAdminActivateRegistrationAction.toLowerCase());
+    haystack.add(l10n.accessAdminApproveRegistrationAction.toLowerCase());
   }
   if (resource == AccessAdminResource.users ||
       resource == AccessAdminResource.demoUsers) {
@@ -301,7 +301,7 @@ Widget? accessAdminMobileNextAction(
   required bool canWrite,
   required Future<void> Function(AccessAdminItem item)? onUserStatusToggle,
   required void Function(AccessAdminItem item)? onRoleEdit,
-  required Future<void> Function(AccessAdminItem item)? onRegistrationActivate,
+  required Future<void> Function(AccessAdminItem item)? onRegistrationApprove,
 }) {
   if (!canWrite) {
     return null;
@@ -323,10 +323,10 @@ Widget? accessAdminMobileNextAction(
       onPressed: onRoleEdit == null ? null : () => onRoleEdit(item),
     ),
     AccessAdminResource.registrationFollowUps => AppButton.tertiary(
-      label: context.l10n.accessAdminActivateRegistrationAction,
-      onPressed: onRegistrationActivate == null
+      label: context.l10n.accessAdminApproveRegistrationAction,
+      onPressed: onRegistrationApprove == null
           ? null
-          : () => onRegistrationActivate(item),
+          : () => onRegistrationApprove(item),
     ),
     _ => null,
   };
@@ -641,7 +641,7 @@ List<AppListTableColumn<AccessAdminItem>> _entitlementColumns(
 List<AppListTableColumn<AccessAdminItem>> _registrationColumns(
   BuildContext context, {
   required bool canWrite,
-  required Future<void> Function(AccessAdminItem item) onRegistrationActivate,
+  required Future<void> Function(AccessAdminItem item) onRegistrationApprove,
 }) {
   final AppLocalizations l10n = context.l10n;
   return <AppListTableColumn<AccessAdminItem>>[
@@ -687,7 +687,7 @@ List<AppListTableColumn<AccessAdminItem>> _registrationColumns(
     if (canWrite)
       _registrationNextActionColumn(
         context,
-        onRegistrationActivate: onRegistrationActivate,
+        onRegistrationApprove: onRegistrationApprove,
       ),
     AppListTableColumn<AccessAdminItem>(
       id: 'reg_email',
@@ -744,17 +744,17 @@ AppListTableColumn<AccessAdminItem> _roleNextActionColumn(
 
 AppListTableColumn<AccessAdminItem> _registrationNextActionColumn(
   BuildContext context, {
-  required Future<void> Function(AccessAdminItem item) onRegistrationActivate,
+  required Future<void> Function(AccessAdminItem item) onRegistrationApprove,
 }) {
   final AppLocalizations l10n = context.l10n;
   return AppListTableColumn<AccessAdminItem>(
     id: 'next_action',
-    label: l10n.accessAdminActivateRegistrationAction,
+    label: l10n.accessAdminApproveRegistrationAction,
     alwaysVisible: true,
     cellBuilder: (BuildContext context, AccessAdminItem item) {
       return AppButton.tertiary(
-        label: l10n.accessAdminActivateRegistrationAction,
-        onPressed: () => onRegistrationActivate(item),
+        label: l10n.accessAdminApproveRegistrationAction,
+        onPressed: () => onRegistrationApprove(item),
       );
     },
   );

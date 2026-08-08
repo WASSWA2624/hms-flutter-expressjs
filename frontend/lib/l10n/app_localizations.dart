@@ -2611,7 +2611,7 @@ abstract class AppLocalizations {
   /// Intro text above the subscription approvals worklist.
   ///
   /// In en, this message translates to:
-  /// **'Review verified facility registrations. Activating assigns a Pro package for 3 months, then Free.'**
+  /// **'Review verified facility registrations. Approving assigns a Pro package for 3 months, then Free.'**
   String get tenantFacilitySubscriptionApprovalsIntro;
 
   /// Search hint for subscription approvals worklist.
@@ -2653,20 +2653,20 @@ abstract class AppLocalizations {
   /// Confirm dialog title when activating a pending registration.
   ///
   /// In en, this message translates to:
-  /// **'Activate account?'**
-  String get tenantFacilitySubscriptionApprovalsActivateTitle;
+  /// **'Approve account?'**
+  String get tenantFacilitySubscriptionApprovalsApproveTitle;
 
   /// Confirm dialog body when activating a pending registration.
   ///
   /// In en, this message translates to:
-  /// **'Activate {name} and assign a Pro package for 3 months. After that the account moves to Free.'**
-  String tenantFacilitySubscriptionApprovalsActivateBody(String name);
+  /// **'Approve {name} and assign a Pro package for 3 months. After that the account moves to Free.'**
+  String tenantFacilitySubscriptionApprovalsApproveBody(String name);
 
   /// SnackBar after successful registration activation.
   ///
   /// In en, this message translates to:
-  /// **'Account activated with a 3-month Pro trial.'**
-  String get tenantFacilitySubscriptionApprovalsActivateSuccess;
+  /// **'Account approved with a 3-month Pro trial.'**
+  String get tenantFacilitySubscriptionApprovalsApproveSuccess;
 
   /// Confirm dialog title when rejecting a pending registration.
   ///
@@ -2725,13 +2725,13 @@ abstract class AppLocalizations {
   /// Collapsible section description for plan assignment.
   ///
   /// In en, this message translates to:
-  /// **'What activation provisions for this tenant.'**
+  /// **'What approval provisions for this tenant.'**
   String get tenantFacilitySubscriptionApprovalsPlanDescription;
 
   /// Body explaining Pro trial then Free downgrade.
   ///
   /// In en, this message translates to:
-  /// **'Activation assigns the Pro package for 3 months. When that window ends, the tenant is automatically moved to the Free package.'**
+  /// **'Approval assigns the Pro package for 3 months. When that window ends, the tenant is automatically moved to the Free package.'**
   String get tenantFacilitySubscriptionApprovalsPlanBody;
 
   /// Section title for activate/reject buttons in the detail dialog.
@@ -44354,11 +44354,11 @@ abstract class AppLocalizations {
   /// **'Phone'**
   String get accessAdminPhoneLabel;
 
-  /// Activate a pending tenant registration.
+  /// Approve a pending tenant registration.
   ///
   /// In en, this message translates to:
-  /// **'Activate account'**
-  String get accessAdminActivateRegistrationAction;
+  /// **'Approve account'**
+  String get accessAdminApproveRegistrationAction;
 
   /// Reject a pending tenant registration.
   ///

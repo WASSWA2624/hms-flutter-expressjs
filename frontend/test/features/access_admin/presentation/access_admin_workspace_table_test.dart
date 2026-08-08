@@ -41,7 +41,7 @@ void main() {
               canWrite: true,
               onUserStatusToggle: noopAsync,
               onRoleEdit: noopRoleEdit,
-              onRegistrationActivate: noopAsync,
+              onRegistrationApprove: noopAsync,
             );
         expect(
           columns.length,
@@ -70,7 +70,7 @@ void main() {
                   canWrite: true,
                   onUserStatusToggle: noopAsync,
                   onRoleEdit: noopRoleEdit,
-                  onRegistrationActivate: noopAsync,
+                  onRegistrationApprove: noopAsync,
                 )
                 .map((AppListTableColumn<AccessAdminItem> column) => column.id)
                 .whereType<String>()
@@ -96,7 +96,7 @@ void main() {
                   canWrite: true,
                   onUserStatusToggle: noopAsync,
                   onRoleEdit: noopRoleEdit,
-                  onRegistrationActivate: noopAsync,
+                  onRegistrationApprove: noopAsync,
                 )
                 .map((AppListTableColumn<AccessAdminItem> column) => column.id)
                 .whereType<String>()
@@ -159,7 +159,7 @@ void main() {
       );
     });
 
-    testWidgets('matches registration activate action label', (
+    testWidgets('matches registration approve action label', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(wrap(const SizedBox.shrink()));
@@ -178,7 +178,7 @@ void main() {
           context,
           AccessAdminResource.registrationFollowUps,
           item,
-          'activate account',
+          'approve account',
         ),
         isTrue,
       );
@@ -210,7 +210,7 @@ void main() {
   });
 
   group('registration next action column', () {
-    testWidgets('uses Activate account label', (WidgetTester tester) async {
+    testWidgets('uses Approve account label', (WidgetTester tester) async {
       await tester.pumpWidget(wrap(const SizedBox.shrink()));
       final BuildContext context = tester.element(find.byType(SizedBox));
       final AppLocalizations l10n = context.l10n;
@@ -222,14 +222,14 @@ void main() {
             canWrite: true,
             onUserStatusToggle: noopAsync,
             onRoleEdit: noopRoleEdit,
-            onRegistrationActivate: noopAsync,
+            onRegistrationApprove: noopAsync,
           );
       final AppListTableColumn<AccessAdminItem> nextAction = columns.firstWhere(
         (AppListTableColumn<AccessAdminItem> column) =>
             column.id == 'next_action',
       );
 
-      expect(nextAction.label, l10n.accessAdminActivateRegistrationAction);
+      expect(nextAction.label, l10n.accessAdminApproveRegistrationAction);
     });
   });
 }

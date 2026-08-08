@@ -69,7 +69,7 @@ abstract final class AccessAdminRegistrationsBillingInventory {
         ),
         AccessAdminRegistrationsFinancialAtom(
           id: 'activate_registration',
-          label: 'Activate registration (next-action / mobile trailing)',
+          label: 'Approve registration (next-action / mobile trailing)',
           financialClass: AccessAdminRegistrationsFinancialClass.notBilled,
           auditCode: 'NOT_BILLED',
         ),
@@ -157,7 +157,7 @@ abstract final class AccessAdminRegistrationsBillingInventory {
 /// billing records.
 const String accessAdminRegistrationsBillingScopeNote =
     'Pending tenant registrations are elevated-only access-administration '
-    'workflows. Activate provisions a SaaS trial via the subscriptions '
+    'workflows. Approval provisions a SaaS trial via the subscriptions '
     'onboarding path; reject updates user status only. No patient invoice, '
     'payment, or adjustment is collected on this tab. Activation must not '
     'alter historical patient Billing ledger rows; demo/seed financial data '

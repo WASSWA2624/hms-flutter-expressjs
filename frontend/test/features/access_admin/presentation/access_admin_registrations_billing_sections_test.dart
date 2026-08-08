@@ -419,7 +419,7 @@ void main() {
 
       expect(find.text('Pending Clinic'), findsWidgets);
       expect(
-        find.text(l10n.accessAdminActivateRegistrationAction),
+        find.text(l10n.accessAdminApproveRegistrationAction),
         findsNothing,
       );
     });
@@ -463,7 +463,7 @@ void main() {
           _registrationsData(items: items),
         );
       });
-      when(() => repository.activateRegistration(any())).thenAnswer((_) async {
+      when(() => repository.approveRegistration(any())).thenAnswer((_) async {
         activated = true;
         return const Result<void>.success(null);
       });
@@ -482,12 +482,12 @@ void main() {
 
       final Finder activateButton = find.widgetWithText(
         AppButton,
-        l10n.accessAdminActivateRegistrationAction,
+        l10n.accessAdminApproveRegistrationAction,
       );
       await tester.tap(activateButton.first);
       await tester.pumpAndSettle();
 
-      verify(() => repository.activateRegistration('reg-1')).called(1);
+      verify(() => repository.approveRegistration('reg-1')).called(1);
       verify(() => repository.getWorkspace(any())).called(greaterThan(1));
       expect(find.text(l10n.accessAdminEmptyTitle), findsOneWidget);
     });
@@ -730,7 +730,7 @@ void main() {
       final AppLocalizations l10n = context.l10n;
 
       expect(
-        find.text(l10n.accessAdminActivateRegistrationAction),
+        find.text(l10n.accessAdminApproveRegistrationAction),
         findsWidgets,
       );
 

@@ -231,7 +231,7 @@ void main() {
 
       expect(find.text(l10n.accessAdminCreateUserAction), findsNothing);
       expect(find.text(l10n.accessAdminCreateRoleAction), findsNothing);
-      expect(find.text(l10n.accessAdminActivateRegistrationAction), findsNothing);
+      expect(find.text(l10n.accessAdminApproveRegistrationAction), findsNothing);
 
       final AppListTable<AccessAdminItem> table = tester
           .widgetList<AppListTable<AccessAdminItem>>(

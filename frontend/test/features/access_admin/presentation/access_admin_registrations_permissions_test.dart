@@ -565,7 +565,7 @@ void main() {
         expect(find.text(l10n.accessAdminPanelRegistrations), findsNothing);
         expect(find.text('Pending Clinic'), findsNothing);
         expect(
-          find.text(l10n.accessAdminActivateRegistrationAction),
+          find.text(l10n.accessAdminApproveRegistrationAction),
           findsNothing,
         );
         expect(find.textContaining('no access'), findsNothing);
@@ -696,7 +696,7 @@ void main() {
         expect(find.text(l10n.accessAdminPanelRegistrations), findsOneWidget);
         expect(find.text('Pending Clinic'), findsWidgets);
         expect(
-          find.text(l10n.accessAdminActivateRegistrationAction),
+          find.text(l10n.accessAdminApproveRegistrationAction),
           findsWidgets,
         );
         // Create chrome is for users/roles resources only.
@@ -722,7 +722,7 @@ void main() {
 
         expect(find.text('Pending Clinic'), findsWidgets);
         expect(
-          find.text(l10n.accessAdminActivateRegistrationAction),
+          find.text(l10n.accessAdminApproveRegistrationAction),
           findsNothing,
         );
         expect(
@@ -768,7 +768,7 @@ void main() {
           _registrationsData(items: items),
         );
       });
-      when(() => repository.activateRegistration(any())).thenAnswer((
+      when(() => repository.approveRegistration(any())).thenAnswer((
         _,
       ) async {
         activated = true;
@@ -830,13 +830,13 @@ void main() {
       // Column header shares the activate label; tap the button, not the header.
       final Finder activateButton = find.widgetWithText(
         AppButton,
-        l10n.accessAdminActivateRegistrationAction,
+        l10n.accessAdminApproveRegistrationAction,
       );
       expect(activateButton, findsWidgets);
       await tester.tap(activateButton.first);
       await tester.pumpAndSettle();
 
-      verify(() => repository.activateRegistration('reg-1')).called(1);
+      verify(() => repository.approveRegistration('reg-1')).called(1);
       expect(find.text(l10n.accessAdminEmptyTitle), findsOneWidget);
     });
 
@@ -988,7 +988,7 @@ void main() {
       expect(find.text(l10n.accessAdminPanelRegistrations), findsOneWidget);
       expect(find.byType(AppListTableMobileItem), findsWidgets);
       expect(
-        find.text(l10n.accessAdminActivateRegistrationAction),
+        find.text(l10n.accessAdminApproveRegistrationAction),
         findsWidgets,
       );
     });
@@ -1012,7 +1012,7 @@ void main() {
       expect(find.byType(AccessAdminWorkspacePage), findsOneWidget);
       expect(find.text(l10n.accessAdminPanelRegistrations), findsOneWidget);
       expect(
-        find.text(l10n.accessAdminActivateRegistrationAction),
+        find.text(l10n.accessAdminApproveRegistrationAction),
         findsNothing,
       );
     });
@@ -1036,7 +1036,7 @@ void main() {
       expect(find.text(l10n.accessAdminPanelRegistrations), findsOneWidget);
       expect(find.text('Pending Clinic'), findsWidgets);
       expect(
-        find.text(l10n.accessAdminActivateRegistrationAction),
+        find.text(l10n.accessAdminApproveRegistrationAction),
         findsWidgets,
       );
     });
@@ -1121,7 +1121,7 @@ void main() {
               canWrite: false,
               onUserStatusToggle: (_) async {},
               onRoleEdit: (_) {},
-              onRegistrationActivate: (_) async {},
+              onRegistrationApprove: (_) async {},
             )
             .map((AppListTableColumn<AccessAdminItem> column) => column.id)
             .whereType<String>()
@@ -1143,7 +1143,7 @@ void main() {
               canWrite: true,
               onUserStatusToggle: (_) async {},
               onRoleEdit: (_) {},
-              onRegistrationActivate: (_) async {},
+              onRegistrationApprove: (_) async {},
             )
             .map((AppListTableColumn<AccessAdminItem> column) => column.id)
             .whereType<String>()
@@ -1167,7 +1167,7 @@ void main() {
           canWrite: false,
           onUserStatusToggle: (_) async {},
           onRoleEdit: (_) {},
-          onRegistrationActivate: (_) async {},
+          onRegistrationApprove: (_) async {},
         ),
         isNull,
       );

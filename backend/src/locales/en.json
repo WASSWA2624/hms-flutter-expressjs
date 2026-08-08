@@ -750,6 +750,7 @@
   "messages.access_admin_workspace.reference_data.success": "Access admin reference data loaded successfully",
   "messages.access_admin_workspace.user_detail.success": "User access details loaded successfully",
   "messages.access_admin_workspace.demo_reset.success": "Demo user password reset successfully",
+  "messages.access_admin_workspace.registration_approved.success": "Registration approved successfully",
   "messages.access_admin_workspace.registration_activated.success": "Registration approved successfully",
   "messages.access_admin_workspace.registration_rejected.success": "Registration rejected successfully",
   "messages.access_admin_workspace.resolve_legacy.success": "Legacy access route resolved successfully",

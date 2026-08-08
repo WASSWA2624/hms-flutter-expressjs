@@ -566,15 +566,15 @@ final class AccessAdminWorkspaceController
     );
   }
 
-  Future<AppFailure?> activateRegistration(AccessAdminItem item) {
+  Future<AppFailure?> approveRegistration(AccessAdminItem item) {
     return _submitAction(
-      () => _repository.activateRegistration(item.id),
+      () => _repository.approveRegistration(item.mutationId),
     );
   }
 
   Future<AppFailure?> rejectRegistration(AccessAdminItem item) {
     return _submitAction(
-      () => _repository.rejectRegistration(item.id),
+      () => _repository.rejectRegistration(item.mutationId),
     );
   }
 

@@ -1035,7 +1035,7 @@ void main() {
             canWrite: false,
             onUserStatusToggle: (_) async {},
             onRoleEdit: (_) {},
-            onRegistrationActivate: (_) async {},
+            onRegistrationApprove: (_) async {},
           )
           .map((AppListTableColumn<AccessAdminItem> column) => column.id)
           .whereType<String>()
@@ -1056,7 +1056,7 @@ void main() {
             canWrite: true,
             onUserStatusToggle: (_) async {},
             onRoleEdit: (_) {},
-            onRegistrationActivate: (_) async {},
+            onRegistrationApprove: (_) async {},
           )
           .map((AppListTableColumn<AccessAdminItem> column) => column.id)
           .whereType<String>()

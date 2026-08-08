@@ -85,6 +85,21 @@ const SYSTEM_CRITICAL_ROLES = new Set([
 const text = (value) => String(value || '').trim();
 const safePublicId = (...values) => resolvePublicIdentifier(...values) || null;
 
+/** Prefer friendly IDs for UI, but never drop the raw UUID (needed for mutations). */
+const publicOrRawId = (...values) => {
+  const publicId = safePublicId(...values);
+  if (publicId) {
+    return publicId;
+  }
+  for (const value of values) {
+    const normalized = String(value || '').trim();
+    if (normalized) {
+      return normalized;
+    }
+  }
+  return null;
+};
+
 const roleList = (user = {}) => {
   const roles = Array.isArray(user.roles) ? user.roles : [user.role];
   return roles
@@ -135,8 +150,10 @@ const canWriteAccess = (user = {}) => {
 };
 
 const isSuperAdmin = (user = {}) =>
+  roleList(user).includes(ROLES.PLATFORM_OWNER) ||
   roleList(user).includes(ROLES.PLATFORM_ADMIN) ||
-  permissionList(user).includes(PERMISSIONS.PLATFORM_ADMIN);
+  permissionList(user).includes(PERMISSIONS.PLATFORM_ADMIN) ||
+  permissionList(user).includes(PERMISSIONS.PLATFORM_OWNER);
 
 const hasTenantAdminScope = (user = {}) =>
   roleList(user).includes(ROLES.TENANT_ADMIN) ||
@@ -325,11 +342,14 @@ const serializeRegistrationFollowUp = (record = {}) => {
       : normalizedStatus === 'INACTIVE'
         ? 'INACTIVE'
         : 'PENDING_APPROVAL';
+  const userPublicId = publicOrRawId(user.human_friendly_id, user.id);
+  const followUpPublicId = publicOrRawId(record.human_friendly_id, record.id);
 
   return {
-    id: safePublicId(user.human_friendly_id, user.id),
-    display_id: safePublicId(record.human_friendly_id, record.id),
-    user_id: safePublicId(user.human_friendly_id, user.id),
+    id: userPublicId,
+    display_id: followUpPublicId,
+    user_id: userPublicId,
+    resource_uuid: user.id || null,
     email: record.email || user.email || null,
     phone: record.phone || user.phone || null,
     admin_name: record.admin_name || null,
@@ -1017,15 +1037,18 @@ const resolveLegacyRoute = async (resource, identifier) => {
 };
 
 const loadRegistrationUser = async (userIdentifier) => {
-  let scopedUser = await repository.findUserByIdentifier(userIdentifier, {
-    tenant_id: null,
-    facility_id: null,
-  });
+  const identifier = text(userIdentifier);
+  let scopedUser = identifier
+    ? await repository.findUserByIdentifier(identifier, {
+        tenant_id: null,
+        facility_id: null,
+      })
+    : null;
 
   // Clients may send the registration follow-up display id; resolve to the user.
-  if (!scopedUser?.id) {
+  if (!scopedUser?.id && identifier) {
     const linkedUserId = await repository.findRegistrationFollowUpUserId(
-      userIdentifier,
+      identifier,
     );
     if (linkedUserId) {
       scopedUser = await repository.findUserByIdentifier(linkedUserId, {
@@ -1033,6 +1056,11 @@ const loadRegistrationUser = async (userIdentifier) => {
         facility_id: null,
       });
     }
+  }
+
+  // Last resort: resolve by email when the client sent a blank/invalid id.
+  if (!scopedUser?.id && identifier && identifier.includes('@')) {
+    scopedUser = await authRepository.findUserByEmail(identifier.toLowerCase());
   }
 
   if (!scopedUser?.id) {
@@ -1047,7 +1075,7 @@ const loadRegistrationUser = async (userIdentifier) => {
   return user;
 };
 
-const activateRegistration = async (userIdentifier, actor = {}, ip = null) => {
+const approveRegistration = async (userIdentifier, actor = {}, ip = null) => {
   requireSuperAdmin(actor);
   const user = await loadRegistrationUser(userIdentifier);
 
@@ -1056,7 +1084,7 @@ const activateRegistration = async (userIdentifier, actor = {}, ip = null) => {
   await provisionTrialSubscription(user.tenant_id);
 
   await createAuditLog({
-    action: 'TENANT_REGISTRATION_ACTIVATED',
+    action: 'TENANT_REGISTRATION_APPROVED',
     entity: 'user',
     entity_id: user.id,
     user_id: actor.id || null,
@@ -1081,7 +1109,7 @@ const activateRegistration = async (userIdentifier, actor = {}, ip = null) => {
     const facilityName =
       user.facility?.name || user.tenant?.name || 'your facility';
 
-    // Activation is already committed; do not block the API on SMTP.
+    // Approval is already committed; do not block the API on SMTP.
     void sendAccountApprovedEmail({
       email: user.email,
       adminName,
@@ -1090,7 +1118,7 @@ const activateRegistration = async (userIdentifier, actor = {}, ip = null) => {
       .then((deliveryResult) => {
         if (!deliveryResult?.sent) {
           logger.warn('Account-approved email was not delivered.', {
-            context: 'activate_registration_approved',
+            context: 'approve_registration_approved',
             email: user.email,
             provider: deliveryResult?.provider || null,
           });
@@ -1098,7 +1126,7 @@ const activateRegistration = async (userIdentifier, actor = {}, ip = null) => {
       })
       .catch((error) => {
         logger.warn('Account-approved email send failed.', {
-          context: 'activate_registration_approved',
+          context: 'approve_registration_approved',
           email: user.email,
           error: error?.message || String(error),
         });
@@ -1118,6 +1146,9 @@ const activateRegistration = async (userIdentifier, actor = {}, ip = null) => {
     updated_at: new Date(),
   });
 };
+
+/** @deprecated Prefer approveRegistration — kept for older clients. */
+const activateRegistration = approveRegistration;
 
 const rejectRegistration = async (userIdentifier, actor = {}, ip = null) => {
   requireSuperAdmin(actor);
@@ -1208,6 +1239,7 @@ const restoreAccessDefaults = async (payload = {}, actor = {}, ip = null) => {
 };
 
 module.exports = {
+  approveRegistration,
   activateRegistration,
   getReferenceData,
   getUserDetail,

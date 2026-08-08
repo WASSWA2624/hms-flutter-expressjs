@@ -157,7 +157,7 @@ class _ManageSubscriptionApprovalsPanelState
     }
   }
 
-  Future<void> _activate(AccessAdminItem item) async {
+  Future<void> _approve(AccessAdminItem item) async {
     if (_mutating) {
       return;
     }
@@ -168,9 +168,9 @@ class _ManageSubscriptionApprovalsPanelState
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
       builder: (_) => AppConfirmActionDialog(
-        title: l10n.tenantFacilitySubscriptionApprovalsActivateTitle,
-        body: l10n.tenantFacilitySubscriptionApprovalsActivateBody(subject),
-        submitLabel: l10n.accessAdminActivateRegistrationAction,
+        title: l10n.tenantFacilitySubscriptionApprovalsApproveTitle,
+        body: l10n.tenantFacilitySubscriptionApprovalsApproveBody(subject),
+        submitLabel: l10n.accessAdminApproveRegistrationAction,
         submitLeadingIcon: Icons.check_circle_outline,
         onConfirm: () async => null,
       ),
@@ -180,8 +180,8 @@ class _ManageSubscriptionApprovalsPanelState
     }
 
     setState(() => _mutating = true);
-    final Result<void> result = await _repository.activateRegistration(
-      item.id,
+    final Result<void> result = await _repository.approveRegistration(
+      item.mutationId,
     );
     if (!mounted) {
       return;
@@ -192,7 +192,7 @@ class _ManageSubscriptionApprovalsPanelState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              l10n.tenantFacilitySubscriptionApprovalsActivateSuccess,
+              l10n.tenantFacilitySubscriptionApprovalsApproveSuccess,
             ),
           ),
         );
@@ -232,7 +232,7 @@ class _ManageSubscriptionApprovalsPanelState
 
     setState(() => _mutating = true);
     final Result<void> result = await _repository.rejectRegistration(
-      item.id,
+      item.mutationId,
     );
     if (!mounted) {
       return;
@@ -263,7 +263,7 @@ class _ManageSubscriptionApprovalsPanelState
       context: context,
       builder: (_) => _SubscriptionApprovalDetailDialog(
         item: item,
-        onActivate: () => _activate(item),
+        onApprove: () => _approve(item),
         onReject: () => _reject(item),
         mutating: _mutating,
       ),
@@ -322,9 +322,9 @@ class _ManageSubscriptionApprovalsPanelState
         alwaysVisible: true,
         cellBuilder: (BuildContext context, AccessAdminItem item) {
           return AppButton.tertiary(
-            label: l10n.accessAdminActivateRegistrationAction,
+            label: l10n.accessAdminApproveRegistrationAction,
             leadingIcon: Icons.check_circle_outline,
-            onPressed: _mutating ? null : () => unawaited(_activate(item)),
+            onPressed: _mutating ? null : () => unawaited(_approve(item)),
           );
         },
       ),
@@ -409,10 +409,10 @@ class _ManageSubscriptionApprovalsPanelState
                     ),
                 ],
                 trailing: AppButton.tertiary(
-                  label: l10n.accessAdminActivateRegistrationAction,
+                  label: l10n.accessAdminApproveRegistrationAction,
                   onPressed: _mutating
                       ? null
-                      : () => unawaited(_activate(item)),
+                      : () => unawaited(_approve(item)),
                 ),
               );
             },
@@ -426,13 +426,13 @@ class _ManageSubscriptionApprovalsPanelState
 class _SubscriptionApprovalDetailDialog extends StatelessWidget {
   const _SubscriptionApprovalDetailDialog({
     required this.item,
-    required this.onActivate,
+    required this.onApprove,
     required this.onReject,
     required this.mutating,
   });
 
   final AccessAdminItem item;
-  final Future<void> Function() onActivate;
+  final Future<void> Function() onApprove;
   final Future<void> Function() onReject;
   final bool mutating;
 
@@ -576,12 +576,12 @@ class _SubscriptionApprovalDetailDialog extends StatelessWidget {
                 final bool wide = constraints.maxWidth >= 420;
                 final List<Widget> buttons = <Widget>[
                   AppButton(
-                    label: l10n.accessAdminActivateRegistrationAction,
+                    label: l10n.accessAdminApproveRegistrationAction,
                     leadingIcon: Icons.check_circle_outline,
                     onPressed: mutating
                         ? null
                         : () async {
-                            await onActivate();
+                            await onApprove();
                             if (context.mounted) {
                               Navigator.of(context).pop(true);
                             }

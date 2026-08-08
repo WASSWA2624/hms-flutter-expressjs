@@ -670,7 +670,7 @@ class _WorklistPanel extends StatelessWidget {
           canWrite: canWrite,
           onUserStatusToggle: _toggleUserStatus,
           onRoleEdit: onRoleEdit,
-          onRegistrationActivate: controller.activateRegistration,
+          onRegistrationApprove: controller.approveRegistration,
         );
     final List<AppListTableColumn<AccessAdminItem>> columnChoices =
         accessAdminColumnChoices(
@@ -679,7 +679,7 @@ class _WorklistPanel extends StatelessWidget {
           canWrite: canWrite,
           onUserStatusToggle: _toggleUserStatus,
           onRoleEdit: onRoleEdit,
-          onRegistrationActivate: controller.activateRegistration,
+          onRegistrationApprove: controller.approveRegistration,
         );
 
     return AppListTable<AccessAdminItem>(
@@ -766,7 +766,7 @@ class _WorklistPanel extends StatelessWidget {
             canWrite: canWrite,
             onUserStatusToggle: _toggleUserStatus,
             onRoleEdit: onRoleEdit,
-            onRegistrationActivate: controller.activateRegistration,
+            onRegistrationApprove: controller.approveRegistration,
           ),
         );
       },
@@ -1007,7 +1007,7 @@ class _DetailContent extends ConsumerWidget {
 
     if (canWrite &&
         item.resource == AccessAdminResource.registrationFollowUps) {
-      // Activate stays on the list next-action; detail only offers Reject.
+      // Approve stays on the list next-action; detail only offers Reject.
       actions.add(
         AppButton.secondary(
           label: context.l10n.accessAdminRejectRegistrationAction,

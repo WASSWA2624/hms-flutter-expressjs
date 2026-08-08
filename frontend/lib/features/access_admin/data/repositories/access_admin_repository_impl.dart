@@ -761,12 +761,12 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   }
 
   @override
-  Future<Result<void>> activateRegistration(String userId) {
+  Future<Result<void>> approveRegistration(String userId) {
     return _apiClient.post<void>(
       ApiEndpoints.nested(
         HmsApiResource.accessAdminWorkspace,
         'registrations',
-        <String>[userId, 'activate'],
+        <String>[userId, 'approve'],
       ),
       decoder: (_) {},
     );
