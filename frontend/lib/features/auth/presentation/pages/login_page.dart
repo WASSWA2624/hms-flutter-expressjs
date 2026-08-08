@@ -11,6 +11,7 @@ import 'package:hosspi_hms/features/auth/domain/entities/email_verification_resu
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_primary_button.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_registration_guide_dialog.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -177,6 +178,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 onPressed: state.isSubmitting
                     ? null
                     : () => context.go(AppRoutes.register.location()),
+              ),
+              AuthTextLink(
+                label: l10n.authHowToRegisterActionLabel,
+                onPressed: state.isSubmitting
+                    ? null
+                    : () => showAuthRegistrationGuideDialog(context),
               ),
             ],
           ),

@@ -35,9 +35,29 @@ void main() {
       );
       expect(find.text(l10n.authForgotPasswordActionLabel), findsOneWidget);
       expect(find.text(l10n.authCreateAccountActionLabel), findsOneWidget);
+      expect(find.text(l10n.authHowToRegisterActionLabel), findsOneWidget);
       expect(find.byType(Divider), findsNothing);
     },
   );
+
+  testWidgets('How to register opens onboarding guide dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpLogin(tester, const _IdleLoginRepository());
+    final l10n = tester.element(find.byType(LoginPage)).l10n;
+
+    await tester.tap(find.text(l10n.authHowToRegisterActionLabel));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.authRegistrationGuideTitle), findsWidgets);
+    expect(find.text(l10n.authRegistrationGuideStepCreateTitle), findsOneWidget);
+    expect(find.text(l10n.authRegistrationGuideStepVerifyTitle), findsOneWidget);
+    expect(
+      find.text(l10n.authRegistrationGuideStepActivateTitle),
+      findsOneWidget,
+    );
+    expect(find.text(l10n.authRegistrationGuideStepSignInTitle), findsOneWidget);
+  });
 
   testWidgets('keeps wrong password message visible after login fails', (
     WidgetTester tester,

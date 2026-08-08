@@ -8040,6 +8040,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authBackToLoginActionLabel => 'Back to sign in';
 
   @override
+  String get authHowToRegisterActionLabel => 'How to register';
+
+  @override
+  String get authRegistrationGuideTitle => 'How to register';
+
+  @override
+  String get authRegistrationGuideIntro =>
+      'Follow these steps to create your facility account and get into the HMS workspace.';
+
+  @override
+  String get authRegistrationGuideStepCreateTitle => 'Create your account';
+
+  @override
+  String get authRegistrationGuideStepCreateBody =>
+      'Open Create account and enter the facility administrator details: email, password, admin name, facility name, and facility type. Phone and location are optional.';
+
+  @override
+  String get authRegistrationGuideStepVerifyTitle => 'Verify your email';
+
+  @override
+  String get authRegistrationGuideStepVerifyBody =>
+      'Check your inbox for a verification code, then enter it on the verify email screen. You can request a new code if the first one expires or never arrives.';
+
+  @override
+  String get authRegistrationGuideStepActivateTitle =>
+      'Wait for account activation';
+
+  @override
+  String get authRegistrationGuideStepActivateBody =>
+      'After email verification, a platform administrator must activate your facility account. If activation takes longer than expected, contact a platform admin using the contact details shown after verification or on sign-in.';
+
+  @override
+  String get authRegistrationGuideStepSignInTitle =>
+      'Sign in to your workspace';
+
+  @override
+  String get authRegistrationGuideStepSignInBody =>
+      'Once your account is activated, sign in with the same email (or phone) and password you used during registration to open your facility workspace.';
+
+  @override
   String get authVerifyEmailActionLabel => 'Verify';
 
   @override

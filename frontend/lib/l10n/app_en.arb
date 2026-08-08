@@ -10216,6 +10216,50 @@
   "@authBackToLoginActionLabel": {
     "description": "Navigate back to login action label."
   },
+  "authHowToRegisterActionLabel": "How to register",
+  "@authHowToRegisterActionLabel": {
+    "description": "Opens onboarding guide for facility registration."
+  },
+  "authRegistrationGuideTitle": "How to register",
+  "@authRegistrationGuideTitle": {
+    "description": "Title for the registration onboarding guide dialog."
+  },
+  "authRegistrationGuideIntro": "Follow these steps to create your facility account and get into the HMS workspace.",
+  "@authRegistrationGuideIntro": {
+    "description": "Intro text for the registration onboarding guide dialog."
+  },
+  "authRegistrationGuideStepCreateTitle": "Create your account",
+  "@authRegistrationGuideStepCreateTitle": {
+    "description": "Step 1 title in the registration guide."
+  },
+  "authRegistrationGuideStepCreateBody": "Open Create account and enter the facility administrator details: email, password, admin name, facility name, and facility type. Phone and location are optional.",
+  "@authRegistrationGuideStepCreateBody": {
+    "description": "Step 1 body in the registration guide."
+  },
+  "authRegistrationGuideStepVerifyTitle": "Verify your email",
+  "@authRegistrationGuideStepVerifyTitle": {
+    "description": "Step 2 title in the registration guide."
+  },
+  "authRegistrationGuideStepVerifyBody": "Check your inbox for a verification code, then enter it on the verify email screen. You can request a new code if the first one expires or never arrives.",
+  "@authRegistrationGuideStepVerifyBody": {
+    "description": "Step 2 body in the registration guide."
+  },
+  "authRegistrationGuideStepActivateTitle": "Wait for account activation",
+  "@authRegistrationGuideStepActivateTitle": {
+    "description": "Step 3 title in the registration guide."
+  },
+  "authRegistrationGuideStepActivateBody": "After email verification, a platform administrator must activate your facility account. If activation takes longer than expected, contact a platform admin using the contact details shown after verification or on sign-in.",
+  "@authRegistrationGuideStepActivateBody": {
+    "description": "Step 3 body in the registration guide."
+  },
+  "authRegistrationGuideStepSignInTitle": "Sign in to your workspace",
+  "@authRegistrationGuideStepSignInTitle": {
+    "description": "Step 4 title in the registration guide."
+  },
+  "authRegistrationGuideStepSignInBody": "Once your account is activated, sign in with the same email (or phone) and password you used during registration to open your facility workspace.",
+  "@authRegistrationGuideStepSignInBody": {
+    "description": "Step 4 body in the registration guide."
+  },
   "authVerifyEmailActionLabel": "Verify",
   "@authVerifyEmailActionLabel": {
     "description": "Email verification form submit action label."

@@ -14824,6 +14824,72 @@ abstract class AppLocalizations {
   /// **'Back to sign in'**
   String get authBackToLoginActionLabel;
 
+  /// Opens onboarding guide for facility registration.
+  ///
+  /// In en, this message translates to:
+  /// **'How to register'**
+  String get authHowToRegisterActionLabel;
+
+  /// Title for the registration onboarding guide dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'How to register'**
+  String get authRegistrationGuideTitle;
+
+  /// Intro text for the registration onboarding guide dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow these steps to create your facility account and get into the HMS workspace.'**
+  String get authRegistrationGuideIntro;
+
+  /// Step 1 title in the registration guide.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your account'**
+  String get authRegistrationGuideStepCreateTitle;
+
+  /// Step 1 body in the registration guide.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Create account and enter the facility administrator details: email, password, admin name, facility name, and facility type. Phone and location are optional.'**
+  String get authRegistrationGuideStepCreateBody;
+
+  /// Step 2 title in the registration guide.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email'**
+  String get authRegistrationGuideStepVerifyTitle;
+
+  /// Step 2 body in the registration guide.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your inbox for a verification code, then enter it on the verify email screen. You can request a new code if the first one expires or never arrives.'**
+  String get authRegistrationGuideStepVerifyBody;
+
+  /// Step 3 title in the registration guide.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for account activation'**
+  String get authRegistrationGuideStepActivateTitle;
+
+  /// Step 3 body in the registration guide.
+  ///
+  /// In en, this message translates to:
+  /// **'After email verification, a platform administrator must activate your facility account. If activation takes longer than expected, contact a platform admin using the contact details shown after verification or on sign-in.'**
+  String get authRegistrationGuideStepActivateBody;
+
+  /// Step 4 title in the registration guide.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to your workspace'**
+  String get authRegistrationGuideStepSignInTitle;
+
+  /// Step 4 body in the registration guide.
+  ///
+  /// In en, this message translates to:
+  /// **'Once your account is activated, sign in with the same email (or phone) and password you used during registration to open your facility workspace.'**
+  String get authRegistrationGuideStepSignInBody;
+
   /// Email verification form submit action label.
   ///
   /// In en, this message translates to:
@@ -14872,22 +14938,22 @@ abstract class AppLocalizations {
   /// **'Your account is verified. You can now sign in.'**
   String get authEmailVerifiedBody;
 
-  /// Email verification success body when platform approval is still required.
+  /// Email verification success body when platform activation is still required.
   ///
   /// In en, this message translates to:
-  /// **'Email verified. A platform admin will approve before you can sign in.'**
+  /// **'Email verified. A platform admin must activate your account before you can sign in.'**
   String get authEmailVerifiedAwaitingApprovalBody;
 
-  /// Login failure message when email is verified but platform approval is pending.
+  /// Login failure message when email is verified but platform activation is pending.
   ///
   /// In en, this message translates to:
-  /// **'Email verified. Awaiting platform approval before sign-in.'**
+  /// **'Your account is awaiting platform admin activation before you can sign in.'**
   String get authAccountPendingApprovalMessage;
 
-  /// Hint shown under pending-approval message when platform admin contact is available.
+  /// Hint shown under pending-activation message when platform admin contact is available.
   ///
   /// In en, this message translates to:
-  /// **'If approval is delayed, contact the platform admin:'**
+  /// **'If activation is taking longer than expected, contact a platform admin:'**
   String get authAccountPendingApprovalContactHint;
 
   /// Platform admin email line on pending-approval auth messages.
