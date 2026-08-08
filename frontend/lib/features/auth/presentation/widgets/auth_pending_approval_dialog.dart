@@ -50,7 +50,7 @@ class AuthPendingApprovalDialog extends StatelessWidget {
       ),
       scrollable: true,
       pinActionsToBottom: true,
-      initialMaximized: false,
+      initialMaximized: true,
       maxWidth: 560,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
