@@ -14869,14 +14869,14 @@ abstract class AppLocalizations {
   /// Step 3 title in the registration guide.
   ///
   /// In en, this message translates to:
-  /// **'Wait for account activation'**
-  String get authRegistrationGuideStepActivateTitle;
+  /// **'Wait for account approval'**
+  String get authRegistrationGuideStepApproveTitle;
 
   /// Step 3 body in the registration guide.
   ///
   /// In en, this message translates to:
-  /// **'After email verification, a platform administrator must activate your facility account. If activation takes longer than expected, contact a platform admin using the contact details shown after verification or on sign-in.'**
-  String get authRegistrationGuideStepActivateBody;
+  /// **'After email verification, a platform administrator must approve your facility account. If approval takes longer than expected, contact a platform admin using the contact details shown after verification or on sign-in.'**
+  String get authRegistrationGuideStepApproveBody;
 
   /// Step 4 title in the registration guide.
   ///
@@ -14887,7 +14887,7 @@ abstract class AppLocalizations {
   /// Step 4 body in the registration guide.
   ///
   /// In en, this message translates to:
-  /// **'Once your account is activated, sign in with the same email (or phone) and password you used during registration to open your facility workspace.'**
+  /// **'Once your account is approved, sign in with the same email (or phone) and password you used during registration to open your facility workspace.'**
   String get authRegistrationGuideStepSignInBody;
 
   /// Email verification form submit action label.
@@ -14938,22 +14938,22 @@ abstract class AppLocalizations {
   /// **'Your account is verified. You can now sign in.'**
   String get authEmailVerifiedBody;
 
-  /// Email verification success body when platform activation is still required.
+  /// Email verification success body when platform approval is still required.
   ///
   /// In en, this message translates to:
-  /// **'Email verified. A platform admin must activate your account before you can sign in.'**
+  /// **'Email verified. A platform admin must approve your account before you can sign in.'**
   String get authEmailVerifiedAwaitingApprovalBody;
 
-  /// Login failure message when email is verified but platform activation is pending.
+  /// Login failure message when email is verified but platform approval is pending.
   ///
   /// In en, this message translates to:
-  /// **'Your account is awaiting platform admin activation before you can sign in.'**
+  /// **'Your account is awaiting platform admin approval before you can sign in.'**
   String get authAccountPendingApprovalMessage;
 
-  /// Hint shown under pending-activation message when platform admin contact is available.
+  /// Hint shown under pending-approval message when platform admin contact is available.
   ///
   /// In en, this message translates to:
-  /// **'If activation is taking longer than expected, contact a platform admin:'**
+  /// **'If approval is taking longer than expected, contact a platform admin:'**
   String get authAccountPendingApprovalContactHint;
 
   /// Platform admin email line on pending-approval auth messages.

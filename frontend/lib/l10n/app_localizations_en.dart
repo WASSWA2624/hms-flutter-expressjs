@@ -8064,12 +8064,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Check your inbox for a verification code, then enter it on the verify email screen. You can request a new code if the first one expires or never arrives.';
 
   @override
-  String get authRegistrationGuideStepActivateTitle =>
-      'Wait for account activation';
+  String get authRegistrationGuideStepApproveTitle =>
+      'Wait for account approval';
 
   @override
-  String get authRegistrationGuideStepActivateBody =>
-      'After email verification, a platform administrator must activate your facility account. If activation takes longer than expected, contact a platform admin using the contact details shown after verification or on sign-in.';
+  String get authRegistrationGuideStepApproveBody =>
+      'After email verification, a platform administrator must approve your facility account. If approval takes longer than expected, contact a platform admin using the contact details shown after verification or on sign-in.';
 
   @override
   String get authRegistrationGuideStepSignInTitle =>
@@ -8077,7 +8077,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authRegistrationGuideStepSignInBody =>
-      'Once your account is activated, sign in with the same email (or phone) and password you used during registration to open your facility workspace.';
+      'Once your account is approved, sign in with the same email (or phone) and password you used during registration to open your facility workspace.';
 
   @override
   String get authVerifyEmailActionLabel => 'Verify';
@@ -8111,15 +8111,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authEmailVerifiedAwaitingApprovalBody =>
-      'Email verified. A platform admin must activate your account before you can sign in.';
+      'Email verified. A platform admin must approve your account before you can sign in.';
 
   @override
   String get authAccountPendingApprovalMessage =>
-      'Your account is awaiting platform admin activation before you can sign in.';
+      'Your account is awaiting platform admin approval before you can sign in.';
 
   @override
   String get authAccountPendingApprovalContactHint =>
-      'If activation is taking longer than expected, contact a platform admin:';
+      'If approval is taking longer than expected, contact a platform admin:';
 
   @override
   String authAccountPendingApprovalEmailLine(String email) {

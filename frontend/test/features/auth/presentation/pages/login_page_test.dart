@@ -53,7 +53,7 @@ void main() {
     expect(find.text(l10n.authRegistrationGuideStepCreateTitle), findsOneWidget);
     expect(find.text(l10n.authRegistrationGuideStepVerifyTitle), findsOneWidget);
     expect(
-      find.text(l10n.authRegistrationGuideStepActivateTitle),
+      find.text(l10n.authRegistrationGuideStepApproveTitle),
       findsOneWidget,
     );
     expect(find.text(l10n.authRegistrationGuideStepSignInTitle), findsOneWidget);
@@ -164,7 +164,7 @@ void main() {
   });
 
   testWidgets(
-    'pending approval stays on login with activation guidance',
+    'pending approval stays on login with approval guidance',
     (WidgetTester tester) async {
       final repository = _FailingLoginRepository(
         failure: AppFailure.forbidden(

@@ -9,7 +9,7 @@ final class EmailVerificationResult {
   final List<AuthPlatformAdminContact> platformAdminContacts;
 }
 
-/// Platform admin contact shown when activation is still pending.
+/// Platform admin contact shown when approval is still pending.
 final class AuthPlatformAdminContact {
   const AuthPlatformAdminContact({this.fullName, this.email, this.phone});
 

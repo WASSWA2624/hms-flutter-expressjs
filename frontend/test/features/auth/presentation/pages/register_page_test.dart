@@ -51,7 +51,7 @@ void main() {
     expect(find.text(l10n.authRegistrationGuideStepCreateTitle), findsOneWidget);
     expect(find.text(l10n.authRegistrationGuideStepVerifyTitle), findsOneWidget);
     expect(
-      find.text(l10n.authRegistrationGuideStepActivateTitle),
+      find.text(l10n.authRegistrationGuideStepApproveTitle),
       findsOneWidget,
     );
     expect(find.text(l10n.authRegistrationGuideStepSignInTitle), findsOneWidget);

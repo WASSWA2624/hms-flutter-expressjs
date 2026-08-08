@@ -51,8 +51,8 @@ class AuthRegistrationGuideDialog extends StatelessWidget {
           SizedBox(height: theme.spacing.md),
           _GuideStep(
             step: 3,
-            title: l10n.authRegistrationGuideStepActivateTitle,
-            body: l10n.authRegistrationGuideStepActivateBody,
+            title: l10n.authRegistrationGuideStepApproveTitle,
+            body: l10n.authRegistrationGuideStepApproveBody,
             icon: Icons.verified_user_outlined,
           ),
           SizedBox(height: theme.spacing.md),

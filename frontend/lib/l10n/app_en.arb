@@ -10244,19 +10244,19 @@
   "@authRegistrationGuideStepVerifyBody": {
     "description": "Step 2 body in the registration guide."
   },
-  "authRegistrationGuideStepActivateTitle": "Wait for account activation",
-  "@authRegistrationGuideStepActivateTitle": {
+  "authRegistrationGuideStepApproveTitle": "Wait for account approval",
+  "@authRegistrationGuideStepApproveTitle": {
     "description": "Step 3 title in the registration guide."
   },
-  "authRegistrationGuideStepActivateBody": "After email verification, a platform administrator must activate your facility account. If activation takes longer than expected, contact a platform admin using the contact details shown after verification or on sign-in.",
-  "@authRegistrationGuideStepActivateBody": {
+  "authRegistrationGuideStepApproveBody": "After email verification, a platform administrator must approve your facility account. If approval takes longer than expected, contact a platform admin using the contact details shown after verification or on sign-in.",
+  "@authRegistrationGuideStepApproveBody": {
     "description": "Step 3 body in the registration guide."
   },
   "authRegistrationGuideStepSignInTitle": "Sign in to your workspace",
   "@authRegistrationGuideStepSignInTitle": {
     "description": "Step 4 title in the registration guide."
   },
-  "authRegistrationGuideStepSignInBody": "Once your account is activated, sign in with the same email (or phone) and password you used during registration to open your facility workspace.",
+  "authRegistrationGuideStepSignInBody": "Once your account is approved, sign in with the same email (or phone) and password you used during registration to open your facility workspace.",
   "@authRegistrationGuideStepSignInBody": {
     "description": "Step 4 body in the registration guide."
   },
@@ -10304,17 +10304,17 @@
   "@authEmailVerifiedBody": {
     "description": "Email verification success body."
   },
-  "authEmailVerifiedAwaitingApprovalBody": "Email verified. A platform admin must activate your account before you can sign in.",
+  "authEmailVerifiedAwaitingApprovalBody": "Email verified. A platform admin must approve your account before you can sign in.",
   "@authEmailVerifiedAwaitingApprovalBody": {
-    "description": "Email verification success body when platform activation is still required."
+    "description": "Email verification success body when platform approval is still required."
   },
-  "authAccountPendingApprovalMessage": "Your account is awaiting platform admin activation before you can sign in.",
+  "authAccountPendingApprovalMessage": "Your account is awaiting platform admin approval before you can sign in.",
   "@authAccountPendingApprovalMessage": {
-    "description": "Login failure message when email is verified but platform activation is pending."
+    "description": "Login failure message when email is verified but platform approval is pending."
   },
-  "authAccountPendingApprovalContactHint": "If activation is taking longer than expected, contact a platform admin:",
+  "authAccountPendingApprovalContactHint": "If approval is taking longer than expected, contact a platform admin:",
   "@authAccountPendingApprovalContactHint": {
-    "description": "Hint shown under pending-activation message when platform admin contact is available."
+    "description": "Hint shown under pending-approval message when platform admin contact is available."
   },
   "authAccountPendingApprovalEmailLine": "Email: {email}",
   "@authAccountPendingApprovalEmailLine": {

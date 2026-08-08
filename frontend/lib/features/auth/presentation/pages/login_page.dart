@@ -241,7 +241,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           ),
         );
       } else if (failure?.code == 'auth.account_pending_approval') {
-        // Stay on login — failure banner explains activation is pending.
+        // Stay on login — failure banner explains approval is pending.
         if (_showEmailVerifiedNotice) {
           setState(() {
             _showEmailVerifiedNotice = false;
