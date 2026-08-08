@@ -12,6 +12,7 @@ const {
 const { clearLiveAccessCaches } = require('@middlewares/live-access.middleware');
 const {
   filterPermissionRecordsByCeiling,
+  filterRoleRecordsByCeiling,
   canActorCreateTenantWideRole,
   isFacilityScopedAccessActor,
   isCatalogProtectedRoleName,

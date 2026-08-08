@@ -144,11 +144,20 @@ const isFacilityScopedAccessActor = (user = {}) => {
   if (roles.has(ROLES.FACILITY_ADMIN) || roles.has(ROLES.HR)) {
     return true;
   }
-  // JWT sessions sometimes omit role names while still carrying write rights.
-  const permissions = new Set(getUserPermissions(user));
+  // Prefer explicit JWT permission strings — avoid getUserPermissions here so
+  // workspace lookups cannot recurse through effective-access during list loads.
+  const tokenPermissions = new Set(
+    (Array.isArray(user.permissions) ? user.permissions : [])
+      .map((entry) =>
+        typeof entry === 'string'
+          ? text(entry)
+          : text(entry?.name || entry?.permission?.name || entry?.code)
+      )
+      .filter(Boolean)
+  );
   return (
-    permissions.has(PERMISSIONS.HR_WRITE) ||
-    permissions.has(PERMISSIONS.FACILITY_ADMIN)
+    tokenPermissions.has(PERMISSIONS.HR_WRITE) ||
+    tokenPermissions.has(PERMISSIONS.FACILITY_ADMIN)
   );
 };
 
