@@ -667,9 +667,21 @@ final class SubscriptionUpgradeContextDto {
     final Object? contactRaw = json['platform_admin_contact'];
     final Object? bankDetailsRaw = json['bank_transfer_details'];
     final Object? mobileMoneyRaw = json['mobile_money_details'];
+    final Object? pendingRaw = json['pending_payment_request'];
+    final Object? scheduledRaw = json['scheduled_plan_change'];
+    final Object? policyRaw = json['policy'];
     final SubscriptionJsonMap currentSubscription =
         currentSubscriptionRaw is Map
         ? _map(currentSubscriptionRaw)
+        : const <String, Object?>{};
+    final SubscriptionJsonMap policyMap = policyRaw is Map
+        ? _map(policyRaw)
+        : const <String, Object?>{};
+    final SubscriptionJsonMap pendingMap = pendingRaw is Map
+        ? _map(pendingRaw)
+        : const <String, Object?>{};
+    final SubscriptionJsonMap scheduledMap = scheduledRaw is Map
+        ? _map(scheduledRaw)
         : const <String, Object?>{};
 
     return SubscriptionUpgradeContext(
@@ -720,7 +732,77 @@ final class SubscriptionUpgradeContextDto {
           ? PlatformMobileMoneyDetails.fromJson(_map(mobileMoneyRaw))
           : null,
       expiringSoonDays: _int(json['expiring_soon_days']) ?? 14,
+      pendingPaymentRequest: pendingMap.isEmpty
+          ? null
+          : SubscriptionPendingPaymentRequest(
+              id: _string(pendingMap['id']),
+              status: _string(pendingMap['status']),
+              paymentMethod: _string(pendingMap['payment_method']),
+              targetPlanId: _string(pendingMap['target_plan_id']),
+              planLabel: _string(pendingMap['plan_label']),
+              amount: _string(pendingMap['amount']),
+              currency: _string(pendingMap['currency']),
+              billingCycle: _string(pendingMap['billing_cycle']),
+              reference: _string(pendingMap['reference']),
+              submittedAt: _dateTime(pendingMap['submitted_at']),
+              submittedByEmail: _string(pendingMap['submitted_by_email']),
+              progress: _string(pendingMap['progress']),
+            ),
+      scheduledPlanChange: scheduledMap.isEmpty
+          ? null
+          : SubscriptionScheduledPlanChange(
+              pendingPlanId: _string(scheduledMap['pending_plan_id']),
+              pendingPlanLabel: _string(scheduledMap['pending_plan_label']),
+              changeStatus: _string(scheduledMap['change_status']),
+              changeEffectiveAt: _dateTime(scheduledMap['change_effective_at']),
+              currentPeriodEndsAt: _dateTime(
+                scheduledMap['current_period_ends_at'],
+              ),
+            ),
+      policy: SubscriptionUpgradePolicy(
+        canSubmitPaymentRequest:
+            _bool(policyMap['can_submit_payment_request']) ?? true,
+        canUpgradeOverPending:
+            _bool(policyMap['can_upgrade_over_pending']) ?? false,
+        pendingTargetPlanId: _string(policyMap['pending_target_plan_id']),
+        pendingTargetPlanRank: _int(policyMap['pending_target_plan_rank']),
+        currentPlanRank: _int(policyMap['current_plan_rank']),
+        canCancel: _bool(policyMap['can_cancel']) ?? true,
+        periodRunning: _bool(policyMap['period_running']) ??
+            (_bool(currentSubscription['period_running']) ?? false),
+        immediateDowngradeAllowed:
+            _bool(policyMap['immediate_downgrade_allowed']) ?? true,
+        prepaidStartsAfterCurrent:
+            _bool(policyMap['prepaid_starts_after_current']) ?? false,
+      ),
     );
+  }
+
+  static bool? _bool(Object? value) {
+    if (value is bool) {
+      return value;
+    }
+    if (value is num) {
+      return value != 0;
+    }
+    final String? text = _string(value)?.toLowerCase();
+    if (text == 'true' || text == '1') {
+      return true;
+    }
+    if (text == 'false' || text == '0') {
+      return false;
+    }
+    return null;
+  }
+
+  static DateTime? _dateTime(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is DateTime) {
+      return value.toUtc();
+    }
+    return DateTime.tryParse(value.toString())?.toUtc();
   }
 
   static double? _double(Object? value) {

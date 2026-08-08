@@ -1171,6 +1171,84 @@ final class SubscriptionUpgradePlanOption {
 }
 
 @immutable
+final class SubscriptionPendingPaymentRequest {
+  const SubscriptionPendingPaymentRequest({
+    this.id,
+    this.status,
+    this.paymentMethod,
+    this.targetPlanId,
+    this.planLabel,
+    this.amount,
+    this.currency,
+    this.billingCycle,
+    this.reference,
+    this.submittedAt,
+    this.submittedByEmail,
+    this.progress,
+  });
+
+  final String? id;
+  final String? status;
+  final String? paymentMethod;
+  final String? targetPlanId;
+  final String? planLabel;
+  final String? amount;
+  final String? currency;
+  final String? billingCycle;
+  final String? reference;
+  final DateTime? submittedAt;
+  final String? submittedByEmail;
+  final String? progress;
+
+  bool get isPending {
+    final String normalized = (status ?? '').trim().toUpperCase();
+    return normalized == 'PENDING' || normalized == 'PENDING_REVIEW';
+  }
+}
+
+@immutable
+final class SubscriptionScheduledPlanChange {
+  const SubscriptionScheduledPlanChange({
+    this.pendingPlanId,
+    this.pendingPlanLabel,
+    this.changeStatus,
+    this.changeEffectiveAt,
+    this.currentPeriodEndsAt,
+  });
+
+  final String? pendingPlanId;
+  final String? pendingPlanLabel;
+  final String? changeStatus;
+  final DateTime? changeEffectiveAt;
+  final DateTime? currentPeriodEndsAt;
+}
+
+@immutable
+final class SubscriptionUpgradePolicy {
+  const SubscriptionUpgradePolicy({
+    this.canSubmitPaymentRequest = true,
+    this.canUpgradeOverPending = false,
+    this.pendingTargetPlanId,
+    this.pendingTargetPlanRank,
+    this.currentPlanRank,
+    this.canCancel = true,
+    this.periodRunning = false,
+    this.immediateDowngradeAllowed = true,
+    this.prepaidStartsAfterCurrent = false,
+  });
+
+  final bool canSubmitPaymentRequest;
+  final bool canUpgradeOverPending;
+  final String? pendingTargetPlanId;
+  final int? pendingTargetPlanRank;
+  final int? currentPlanRank;
+  final bool canCancel;
+  final bool periodRunning;
+  final bool immediateDowngradeAllowed;
+  final bool prepaidStartsAfterCurrent;
+}
+
+@immutable
 final class SubscriptionUpgradeContext {
   const SubscriptionUpgradeContext({
     this.summary,
@@ -1184,6 +1262,9 @@ final class SubscriptionUpgradeContext {
     this.bankTransferDetails,
     this.mobileMoneyDetails,
     this.expiringSoonDays = 14,
+    this.pendingPaymentRequest,
+    this.scheduledPlanChange,
+    this.policy = const SubscriptionUpgradePolicy(),
   });
 
   final TenantSubscriptionSummary? summary;
@@ -1197,6 +1278,9 @@ final class SubscriptionUpgradeContext {
   final PlatformBankTransferDetails? bankTransferDetails;
   final PlatformMobileMoneyDetails? mobileMoneyDetails;
   final int expiringSoonDays;
+  final SubscriptionPendingPaymentRequest? pendingPaymentRequest;
+  final SubscriptionScheduledPlanChange? scheduledPlanChange;
+  final SubscriptionUpgradePolicy policy;
 }
 
 @immutable

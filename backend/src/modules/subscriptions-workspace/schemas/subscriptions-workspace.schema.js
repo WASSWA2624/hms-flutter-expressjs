@@ -73,6 +73,8 @@ const paymentRequestBodySchema = z.object({
   payment_method: z.string().trim().max(40).optional(),
   amount: z.string().trim().max(40).optional().nullable(),
   currency: z.string().trim().max(3).optional().nullable(),
+  billing_cycle: z.string().trim().max(40).optional().nullable(),
+  invoice_email: z.string().trim().email().max(254).optional().nullable(),
   reference: z.string().trim().max(120).optional().nullable(),
   notes: z.string().trim().max(10000).optional().nullable(),
   payment_provider: z.string().trim().max(80).optional().nullable(),

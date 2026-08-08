@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/currency/fx_currency_utils.dart';
 import 'package:hosspi_hms/core/permissions/commercial_module_tiers.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/subscriptions/subscription_plan_theme.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
@@ -61,7 +62,10 @@ class SubscriptionPlanSelector extends StatelessWidget {
   final String? emptyMessage;
 
   static const double _featureColumnWidth = 132;
+  static const double _compactFeatureColumnWidth = 108;
   static const double _planColumnWidth = 112;
+  static const double _compactPlanColumnWidth = 96;
+  static const double _cardsBreakpointWidth = 640;
 
   @override
   Widget build(BuildContext context) {
@@ -90,74 +94,107 @@ class SubscriptionPlanSelector extends StatelessWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        AppRadioGroup<SubscriptionUpgradeBillingCycle>(
-          value: billingCycle,
-          dense: true,
-          layout: AppRadioGroupLayout.horizontal,
-          presentation: AppRadioGroupPresentation.borderless,
-          options: <AppRadioOption<SubscriptionUpgradeBillingCycle>>[
-            AppRadioOption<SubscriptionUpgradeBillingCycle>(
-              value: SubscriptionUpgradeBillingCycle.monthly,
-              label: monthlyLabel,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double maxWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final AppBreakpoint breakpoint = AppBreakpoints.fromWidth(maxWidth);
+        final bool useCards =
+            breakpoint.isMobile || maxWidth < _cardsBreakpointWidth;
+        final bool compactTable = !useCards && maxWidth < AppBreakpoints.lg;
+        final double featureWidth = compactTable
+            ? _compactFeatureColumnWidth
+            : _featureColumnWidth;
+        final double basePlanWidth = compactTable
+            ? _compactPlanColumnWidth
+            : _planColumnWidth;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AppRadioGroup<SubscriptionUpgradeBillingCycle>(
+              value: billingCycle,
+              dense: true,
+              layout: maxWidth < 360
+                  ? AppRadioGroupLayout.wrap
+                  : AppRadioGroupLayout.horizontal,
+              presentation: AppRadioGroupPresentation.borderless,
+              options: <AppRadioOption<SubscriptionUpgradeBillingCycle>>[
+                AppRadioOption<SubscriptionUpgradeBillingCycle>(
+                  value: SubscriptionUpgradeBillingCycle.monthly,
+                  label: monthlyLabel,
+                ),
+                AppRadioOption<SubscriptionUpgradeBillingCycle>(
+                  value: SubscriptionUpgradeBillingCycle.annual,
+                  label: annualLabel,
+                ),
+              ],
+              onChanged: (SubscriptionUpgradeBillingCycle? value) {
+                if (value != null) {
+                  onBillingCycleChanged(value);
+                }
+              },
             ),
-            AppRadioOption<SubscriptionUpgradeBillingCycle>(
-              value: SubscriptionUpgradeBillingCycle.annual,
-              label: annualLabel,
-            ),
+            SizedBox(height: theme.spacing.sm),
+            if (useCards)
+              _PlanCardsList(
+                plans: ordered,
+                selectedPlanId: selectedPlanId,
+                currentPlanId: currentPlanId,
+                priceRowLabel: priceRowLabel,
+                currentPlanLabel: currentPlanLabel,
+                contactUsLabel: contactUsLabel,
+                planLabelBuilder: planLabelBuilder,
+                priceLabelBuilder: (SubscriptionUpgradePlanOption plan) =>
+                    _priceLabel(context, plan),
+                onSelected: onSelected,
+                onContactCustomPlan: onContactCustomPlan,
+              )
+            else
+              Builder(
+                builder: (BuildContext context) {
+                  final double minTableWidth =
+                      featureWidth + ordered.length * basePlanWidth;
+                  final bool fillWidth = maxWidth >= minTableWidth;
+                  final double planWidth = fillWidth
+                      ? math.max(
+                          basePlanWidth,
+                          (maxWidth - featureWidth) / ordered.length,
+                        )
+                      : basePlanWidth;
+
+                  final Widget table = _PlanComparisonTable(
+                    plans: ordered,
+                    selectedPlanId: selectedPlanId,
+                    currentPlanId: currentPlanId,
+                    featuresColumnLabel: featuresColumnLabel,
+                    priceRowLabel: priceRowLabel,
+                    currentPlanLabel: currentPlanLabel,
+                    contactUsLabel: contactUsLabel,
+                    featureColumnWidth: featureWidth,
+                    planColumnWidth: planWidth,
+                    compact: compactTable,
+                    planLabelBuilder: planLabelBuilder,
+                    priceLabelBuilder: (SubscriptionUpgradePlanOption plan) =>
+                        _priceLabel(context, plan),
+                    onSelected: onSelected,
+                    onContactCustomPlan: onContactCustomPlan,
+                  );
+
+                  if (fillWidth) {
+                    return table;
+                  }
+
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(width: minTableWidth, child: table),
+                  );
+                },
+              ),
           ],
-          onChanged: (SubscriptionUpgradeBillingCycle? value) {
-            if (value != null) {
-              onBillingCycleChanged(value);
-            }
-          },
-        ),
-        SizedBox(height: theme.spacing.sm),
-        LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final double maxWidth = constraints.maxWidth.isFinite
-                ? constraints.maxWidth
-                : MediaQuery.sizeOf(context).width;
-            final double minTableWidth =
-                _featureColumnWidth + ordered.length * _planColumnWidth;
-            final bool fillWidth = maxWidth >= minTableWidth;
-            final double planWidth = fillWidth
-                ? math.max(
-                    _planColumnWidth,
-                    (maxWidth - _featureColumnWidth) / ordered.length,
-                  )
-                : _planColumnWidth;
-
-            final Widget table = _PlanComparisonTable(
-              plans: ordered,
-              selectedPlanId: selectedPlanId,
-              currentPlanId: currentPlanId,
-              featuresColumnLabel: featuresColumnLabel,
-              priceRowLabel: priceRowLabel,
-              currentPlanLabel: currentPlanLabel,
-              contactUsLabel: contactUsLabel,
-              featureColumnWidth: _featureColumnWidth,
-              planColumnWidth: planWidth,
-              planLabelBuilder: planLabelBuilder,
-              priceLabelBuilder: (SubscriptionUpgradePlanOption plan) =>
-                  _priceLabel(context, plan),
-              onSelected: onSelected,
-              onContactCustomPlan: onContactCustomPlan,
-            );
-
-            if (fillWidth) {
-              return table;
-            }
-
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(width: minTableWidth, child: table),
-            );
-          },
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -232,6 +269,392 @@ class SubscriptionPlanSelector extends StatelessWidget {
   }
 }
 
+class _PlanCardsList extends StatelessWidget {
+  const _PlanCardsList({
+    required this.plans,
+    required this.selectedPlanId,
+    required this.currentPlanId,
+    required this.priceRowLabel,
+    required this.currentPlanLabel,
+    required this.contactUsLabel,
+    required this.planLabelBuilder,
+    required this.priceLabelBuilder,
+    required this.onSelected,
+    this.onContactCustomPlan,
+  });
+
+  final List<SubscriptionUpgradePlanOption> plans;
+  final String? selectedPlanId;
+  final String? currentPlanId;
+  final String priceRowLabel;
+  final String currentPlanLabel;
+  final String contactUsLabel;
+  final String Function(SubscriptionUpgradePlanOption plan) planLabelBuilder;
+  final String Function(SubscriptionUpgradePlanOption plan) priceLabelBuilder;
+  final ValueChanged<String> onSelected;
+  final VoidCallback? onContactCustomPlan;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (int index = 0; index < plans.length; index += 1) ...<Widget>[
+          if (index > 0) SizedBox(height: theme.spacing.sm),
+          _PlanCard(
+            plan: plans[index],
+            label: planLabelBuilder(plans[index]),
+            priceLabel: priceLabelBuilder(plans[index]),
+            priceRowLabel: priceRowLabel,
+            selected: selectedPlanId == plans[index].id,
+            isCurrentPlan: plans[index].id == currentPlanId,
+            currentPlanLabel: currentPlanLabel,
+            contactUsLabel: contactUsLabel,
+            onTap: () => onSelected(plans[index].id),
+            onContactUs: plans[index].isCustomPlan ? onContactCustomPlan : null,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _PlanCard extends StatelessWidget {
+  const _PlanCard({
+    required this.plan,
+    required this.label,
+    required this.priceLabel,
+    required this.priceRowLabel,
+    required this.selected,
+    required this.isCurrentPlan,
+    required this.currentPlanLabel,
+    required this.contactUsLabel,
+    required this.onTap,
+    this.onContactUs,
+  });
+
+  final SubscriptionUpgradePlanOption plan;
+  final String label;
+  final String priceLabel;
+  final String priceRowLabel;
+  final bool selected;
+  final bool isCurrentPlan;
+  final String currentPlanLabel;
+  final String contactUsLabel;
+  final VoidCallback onTap;
+  final VoidCallback? onContactUs;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final SubscriptionPlanTheme planTheme = SubscriptionPlanTheme.resolve(
+      theme,
+      plan.tierCode ?? label,
+    );
+    final Color fill = isCurrentPlan
+        ? Color.alphaBlend(
+            planTheme.foreground.withValues(alpha: 0.22),
+            planTheme.background,
+          )
+        : selected
+        ? Color.alphaBlend(
+            planTheme.foreground.withValues(alpha: 0.12),
+            planTheme.background,
+          )
+        : theme.colorScheme.surface;
+
+    final List<SubscriptionPlanComparisonFeature> limitFeatures =
+        SubscriptionPlanComparisonCatalog.features
+            .where(
+              (SubscriptionPlanComparisonFeature feature) =>
+                  feature.limitKey != null,
+            )
+            .toList(growable: false);
+    final List<SubscriptionPlanComparisonFeature> moduleFeatures =
+        SubscriptionPlanComparisonCatalog.features
+            .where(
+              (SubscriptionPlanComparisonFeature feature) =>
+                  feature.moduleSlug != null,
+            )
+            .toList(growable: false);
+
+    return Material(
+      color: fill,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        side: BorderSide(
+          color: selected || isCurrentPlan
+              ? planTheme.foreground
+              : theme.colorScheme.outlineVariant,
+          width: selected || isCurrentPlan ? 1.6 : 1,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.all(theme.spacing.sm),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Icon(
+                    selected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    size: 20,
+                    color: selected
+                        ? planTheme.foreground
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  SizedBox(width: theme.spacing.xs),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          label,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: AppFontWeight.emphasis,
+                            color: planTheme.foreground,
+                          ),
+                        ),
+                        if (isCurrentPlan) ...<Widget>[
+                          SizedBox(height: theme.spacing.xs / 2),
+                          Text(
+                            currentPlanLabel,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: planTheme.foreground,
+                              fontWeight: AppFontWeight.emphasis,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: <Widget>[
+                        Text(
+                          priceRowLabel,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Text(
+                          priceLabel,
+                          textAlign: TextAlign.end,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: AppFontWeight.emphasis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (plan.isCustomPlan && onContactUs != null) ...<Widget>[
+                SizedBox(height: theme.spacing.sm),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: AppButton(
+                    label: contactUsLabel,
+                    dense: true,
+                    variant: AppButtonVariant.secondary,
+                    leadingIcon: Icons.support_agent_outlined,
+                    onPressed: onContactUs,
+                  ),
+                ),
+              ],
+              SizedBox(height: theme.spacing.sm),
+              Wrap(
+                spacing: theme.spacing.sm,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  for (final SubscriptionPlanComparisonFeature feature
+                      in limitFeatures)
+                    _LimitChip(
+                      label: feature.label,
+                      value: SubscriptionPlanComparisonCatalog.limitValue(
+                        plan,
+                        feature.limitKey!,
+                      ),
+                      accent: planTheme.foreground,
+                    ),
+                ],
+              ),
+              SizedBox(height: theme.spacing.sm),
+              LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final int columns = constraints.maxWidth >= 420
+                      ? 2
+                      : 1;
+                  if (columns == 1) {
+                    return Column(
+                      children: <Widget>[
+                        for (
+                          int i = 0;
+                          i < moduleFeatures.length;
+                          i += 1
+                        ) ...<Widget>[
+                          if (i > 0) SizedBox(height: theme.spacing.xs),
+                          _ModuleFeatureRow(
+                            feature: moduleFeatures[i],
+                            plan: plan,
+                          ),
+                        ],
+                      ],
+                    );
+                  }
+
+                  final List<Widget> left = <Widget>[];
+                  final List<Widget> right = <Widget>[];
+                  for (int i = 0; i < moduleFeatures.length; i += 1) {
+                    final Widget row = _ModuleFeatureRow(
+                      feature: moduleFeatures[i],
+                      plan: plan,
+                    );
+                    if (i.isEven) {
+                      left.add(row);
+                    } else {
+                      right.add(row);
+                    }
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        child: Column(
+                          children: <Widget>[
+                            for (int i = 0; i < left.length; i += 1) ...<Widget>[
+                              if (i > 0) SizedBox(height: theme.spacing.xs),
+                              left[i],
+                            ],
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: theme.spacing.sm),
+                      Expanded(
+                        child: Column(
+                          children: <Widget>[
+                            for (int i = 0; i < right.length; i += 1) ...<
+                              Widget
+                            >[
+                              if (i > 0) SizedBox(height: theme.spacing.xs),
+                              right[i],
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LimitChip extends StatelessWidget {
+  const _LimitChip({
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        border: Border.all(color: accent.withValues(alpha: 0.28)),
+      ),
+      child: Text.rich(
+        TextSpan(
+          children: <InlineSpan>[
+            TextSpan(
+              text: '$label · ',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            TextSpan(
+              text: value,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: AppFontWeight.emphasis,
+                color: accent,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ModuleFeatureRow extends StatelessWidget {
+  const _ModuleFeatureRow({required this.feature, required this.plan});
+
+  final SubscriptionPlanComparisonFeature feature;
+  final SubscriptionUpgradePlanOption plan;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final SubscriptionPlanTheme planTheme = SubscriptionPlanTheme.resolve(
+      theme,
+      plan.tierCode ?? plan.label,
+    );
+    final String? moduleSlug = feature.moduleSlug;
+    final bool included =
+        moduleSlug != null &&
+        SubscriptionPlanComparisonCatalog.includesModule(plan, moduleSlug);
+
+    return Row(
+      children: <Widget>[
+        Icon(
+          included ? Icons.check_rounded : Icons.close_rounded,
+          size: 18,
+          color: included
+              ? planTheme.foreground
+              : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
+        ),
+        SizedBox(width: theme.spacing.xs),
+        Expanded(
+          child: Text(
+            feature.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: included
+                  ? theme.colorScheme.onSurface
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _PlanComparisonTable extends StatelessWidget {
   const _PlanComparisonTable({
     required this.plans,
@@ -246,6 +669,7 @@ class _PlanComparisonTable extends StatelessWidget {
     required this.planLabelBuilder,
     required this.priceLabelBuilder,
     required this.onSelected,
+    this.compact = false,
     this.onContactCustomPlan,
   });
 
@@ -258,6 +682,7 @@ class _PlanComparisonTable extends StatelessWidget {
   final String contactUsLabel;
   final double featureColumnWidth;
   final double planColumnWidth;
+  final bool compact;
   final String Function(SubscriptionUpgradePlanOption plan) planLabelBuilder;
   final String Function(SubscriptionUpgradePlanOption plan) priceLabelBuilder;
   final ValueChanged<String> onSelected;
@@ -288,6 +713,7 @@ class _PlanComparisonTable extends StatelessWidget {
             currentPlanLabel: currentPlanLabel,
             featureColumnWidth: featureColumnWidth,
             planColumnWidth: planColumnWidth,
+            compact: compact,
             planLabelBuilder: planLabelBuilder,
             onSelected: onSelected,
           ),
@@ -299,10 +725,12 @@ class _PlanComparisonTable extends StatelessWidget {
             selectedPlanId: selectedPlanId,
             currentPlanId: currentPlanId,
             emphasize: true,
+            compact: compact,
             cellBuilder: (SubscriptionUpgradePlanOption plan) => _PriceCell(
               priceLabel: priceLabelBuilder(plan),
               isCustomPlan: plan.isCustomPlan,
               contactUsLabel: contactUsLabel,
+              compact: compact,
               onContactUs: plan.isCustomPlan ? onContactCustomPlan : null,
             ),
             onSelected: onSelected,
@@ -320,6 +748,7 @@ class _PlanComparisonTable extends StatelessWidget {
               selectedPlanId: selectedPlanId,
               currentPlanId: currentPlanId,
               showTopBorder: true,
+              compact: compact,
               cellBuilder: (SubscriptionUpgradePlanOption plan) => _FeatureCell(
                 feature: SubscriptionPlanComparisonCatalog.features[index],
                 plan: plan,
@@ -343,6 +772,7 @@ class _HeaderRow extends StatelessWidget {
     required this.planColumnWidth,
     required this.planLabelBuilder,
     required this.onSelected,
+    this.compact = false,
   });
 
   final List<SubscriptionUpgradePlanOption> plans;
@@ -352,6 +782,7 @@ class _HeaderRow extends StatelessWidget {
   final String currentPlanLabel;
   final double featureColumnWidth;
   final double planColumnWidth;
+  final bool compact;
   final String Function(SubscriptionUpgradePlanOption plan) planLabelBuilder;
   final ValueChanged<String> onSelected;
 
@@ -368,7 +799,7 @@ class _HeaderRow extends StatelessWidget {
             child: Container(
               alignment: Alignment.centerLeft,
               padding: EdgeInsets.symmetric(
-                horizontal: theme.spacing.sm,
+                horizontal: compact ? theme.spacing.xs : theme.spacing.sm,
                 vertical: theme.spacing.sm,
               ),
               color: theme.colorScheme.surfaceContainerHighest.withValues(
@@ -391,6 +822,7 @@ class _HeaderRow extends StatelessWidget {
                 selected: selectedPlanId == plan.id,
                 isCurrentPlan: plan.id == currentPlanId,
                 currentPlanLabel: currentPlanLabel,
+                compact: compact,
                 onTap: () => onSelected(plan.id),
               ),
             ),
@@ -408,6 +840,7 @@ class _PlanHeaderCell extends StatelessWidget {
     required this.isCurrentPlan,
     required this.currentPlanLabel,
     required this.onTap,
+    this.compact = false,
   });
 
   final SubscriptionUpgradePlanOption plan;
@@ -416,6 +849,7 @@ class _PlanHeaderCell extends StatelessWidget {
   final bool isCurrentPlan;
   final String currentPlanLabel;
   final VoidCallback onTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -442,9 +876,9 @@ class _PlanHeaderCell extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: EdgeInsets.fromLTRB(
-            theme.spacing.xs,
+            compact ? theme.spacing.xs / 2 : theme.spacing.xs,
             theme.spacing.sm,
-            theme.spacing.xs,
+            compact ? theme.spacing.xs / 2 : theme.spacing.xs,
             theme.spacing.sm,
           ),
           decoration: BoxDecoration(
@@ -465,7 +899,7 @@ class _PlanHeaderCell extends StatelessWidget {
                 selected
                     ? Icons.radio_button_checked
                     : Icons.radio_button_unchecked,
-                size: 18,
+                size: compact ? 16 : 18,
                 color: selected
                     ? planTheme.foreground
                     : theme.colorScheme.onSurfaceVariant,
@@ -480,6 +914,7 @@ class _PlanHeaderCell extends StatelessWidget {
                   fontWeight: AppFontWeight.emphasis,
                   color: planTheme.foreground,
                   height: 1.15,
+                  fontSize: compact ? 12 : null,
                 ),
               ),
               if (isCurrentPlan) ...<Widget>[
@@ -516,6 +951,7 @@ class _DataRow extends StatelessWidget {
     required this.onSelected,
     this.emphasize = false,
     this.showTopBorder = false,
+    this.compact = false,
   });
 
   final String label;
@@ -528,6 +964,7 @@ class _DataRow extends StatelessWidget {
   final ValueChanged<String> onSelected;
   final bool emphasize;
   final bool showTopBorder;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -545,7 +982,7 @@ class _DataRow extends StatelessWidget {
             child: Container(
               alignment: Alignment.centerLeft,
               padding: EdgeInsets.symmetric(
-                horizontal: theme.spacing.sm,
+                horizontal: compact ? theme.spacing.xs : theme.spacing.sm,
                 vertical: theme.spacing.xs + 2,
               ),
               decoration: BoxDecoration(
@@ -566,6 +1003,7 @@ class _DataRow extends StatelessWidget {
                   fontWeight: emphasize
                       ? AppFontWeight.emphasis
                       : FontWeight.w500,
+                  fontSize: compact ? 12 : null,
                 ),
               ),
             ),
@@ -580,7 +1018,9 @@ class _DataRow extends StatelessWidget {
                   child: Container(
                     alignment: Alignment.center,
                     padding: EdgeInsets.symmetric(
-                      horizontal: theme.spacing.xs,
+                      horizontal: compact
+                          ? theme.spacing.xs / 2
+                          : theme.spacing.xs,
                       vertical: theme.spacing.xs + 2,
                     ),
                     decoration: BoxDecoration(
@@ -626,12 +1066,14 @@ class _PriceCell extends StatelessWidget {
     required this.priceLabel,
     required this.isCustomPlan,
     required this.contactUsLabel,
+    this.compact = false,
     this.onContactUs,
   });
 
   final String priceLabel;
   final bool isCustomPlan;
   final String contactUsLabel;
+  final bool compact;
   final VoidCallback? onContactUs;
 
   @override
@@ -644,10 +1086,12 @@ class _PriceCell extends StatelessWidget {
         Text(
           priceLabel,
           textAlign: TextAlign.center,
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.labelLarge?.copyWith(
             fontWeight: AppFontWeight.emphasis,
+            fontSize: compact ? 11 : null,
+            height: 1.15,
           ),
         ),
         if (isCustomPlan && onContactUs != null) ...<Widget>[
@@ -656,7 +1100,7 @@ class _PriceCell extends StatelessWidget {
             label: contactUsLabel,
             dense: true,
             variant: AppButtonVariant.secondary,
-            leadingIcon: Icons.support_agent_outlined,
+            leadingIcon: compact ? null : Icons.support_agent_outlined,
             onPressed: onContactUs,
           ),
         ],

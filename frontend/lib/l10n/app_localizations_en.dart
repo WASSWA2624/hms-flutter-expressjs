@@ -2567,6 +2567,35 @@ class AppLocalizationsEn extends AppLocalizations {
       'Payment submitted. The platform team will review and activate your subscription.';
 
   @override
+  String get subscriptionUpgradePendingRequestTitle =>
+      'Activation request in progress';
+
+  @override
+  String subscriptionUpgradePendingRequestBody(String planLabel) {
+    return 'Your payment for $planLabel is awaiting admin activation. You cannot submit another request unless you upgrade to a higher package.';
+  }
+
+  @override
+  String subscriptionUpgradeScheduledChangeBody(
+    String planLabel,
+    String startDate,
+  ) {
+    return '$planLabel is scheduled to start on $startDate, after your current period ends.';
+  }
+
+  @override
+  String get subscriptionUpgradePrepaidStartsAfterBody =>
+      'Your current subscription is still running. Paid packages start after the current period ends.';
+
+  @override
+  String get subscriptionUpgradeHigherPackageOnlyMessage =>
+      'Choose a higher package than the pending request to continue.';
+
+  @override
+  String get subscriptionPaidCancelForbiddenMessage =>
+      'A paid subscription cannot be cancelled. Contact platform admins if you need help.';
+
+  @override
   String get subscriptionPaymentMethodBankTransfer => 'Bank transfer';
 
   @override

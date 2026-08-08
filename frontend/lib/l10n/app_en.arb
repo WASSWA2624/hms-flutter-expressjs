@@ -3336,6 +3336,43 @@
   "@subscriptionUpgradeSubmittedMessage": {
     "description": "Success message after submitting a paid subscription payment request."
   },
+  "subscriptionUpgradePendingRequestTitle": "Activation request in progress",
+  "@subscriptionUpgradePendingRequestTitle": {
+    "description": "Title when a payment activation request is already pending."
+  },
+  "subscriptionUpgradePendingRequestBody": "Your payment for {planLabel} is awaiting admin activation. You cannot submit another request unless you upgrade to a higher package.",
+  "@subscriptionUpgradePendingRequestBody": {
+    "description": "Body explaining pending activation progress.",
+    "placeholders": {
+      "planLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionUpgradeScheduledChangeBody": "{planLabel} is scheduled to start on {startDate}, after your current period ends.",
+  "@subscriptionUpgradeScheduledChangeBody": {
+    "description": "Body explaining a prepaid plan change that starts after the current period.",
+    "placeholders": {
+      "planLabel": {
+        "type": "String"
+      },
+      "startDate": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionUpgradePrepaidStartsAfterBody": "Your current subscription is still running. Paid packages start after the current period ends.",
+  "@subscriptionUpgradePrepaidStartsAfterBody": {
+    "description": "Info that prepaid renewals/upgrades/downgrades start after the current period."
+  },
+  "subscriptionUpgradeHigherPackageOnlyMessage": "Choose a higher package than the pending request to continue.",
+  "@subscriptionUpgradeHigherPackageOnlyMessage": {
+    "description": "Validation when a pending request blocks non-upgrade submissions."
+  },
+  "subscriptionPaidCancelForbiddenMessage": "A paid subscription cannot be cancelled. Contact platform admins if you need help.",
+  "@subscriptionPaidCancelForbiddenMessage": {
+    "description": "Error when attempting to cancel a paid subscription."
+  },
   "subscriptionPaymentMethodBankTransfer": "Bank transfer",
   "@subscriptionPaymentMethodBankTransfer": {
     "description": "Payment method label for manual bank transfer."

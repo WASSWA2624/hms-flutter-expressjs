@@ -41,7 +41,12 @@ const resolveTenantModuleEntitlements = async (tenantId) => {
   }
 
   // Lazy expiry: Pro onboarding trials become Free after end_date.
+  // Also apply prepaid plan changes that are due.
   await downgradeExpiredOnboardingTrials(tenantId).catch(() => 0);
+  const {
+    applyDueScheduledPlanChanges,
+  } = require('@lib/subscriptions/subscription-payment-request');
+  await applyDueScheduledPlanChanges(tenantId).catch(() => 0);
 
   const now = new Date();
   const records = await prisma.module_subscription.findMany({

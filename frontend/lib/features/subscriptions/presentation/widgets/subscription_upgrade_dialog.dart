@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/errors/validation_message_presenter.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/subscriptions/subscription_plan_theme.dart';
 import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
@@ -456,6 +457,14 @@ class _SubscriptionUpgradeDialogState
     if (!_validateCurrentStep()) {
       return;
     }
+    if (_step == _UpgradeStep.plan && !_canProceedWithSelectedPlan()) {
+      setState(() {
+        _failure = AppFailure.validation(
+          detailMessage: context.l10n.subscriptionUpgradeHigherPackageOnlyMessage,
+        );
+      });
+      return;
+    }
     final List<_UpgradeStep> steps = _steps;
     final int nextIndex = _stepIndex + 1;
     if (nextIndex >= steps.length) {
@@ -481,8 +490,150 @@ class _SubscriptionUpgradeDialogState
     });
   }
 
+  int _planRank(SubscriptionUpgradePlanOption? plan) {
+    if (plan == null) {
+      return -1;
+    }
+    const Map<String, int> ranks = <String, int>{
+      'FREE': 0,
+      'BASIC': 1,
+      'ADVANCED': 2,
+      'PRO': 3,
+      'CUSTOM': 4,
+      'DEVELOPER': 5,
+    };
+    final String tier = (plan.tierCode ?? '').trim().toUpperCase();
+    if (ranks.containsKey(tier)) {
+      return ranks[tier]!;
+    }
+    return plan.price?.round() ?? -1;
+  }
+
+  bool _canProceedWithSelectedPlan() {
+    final SubscriptionUpgradeContext? contextData = _context;
+    final SubscriptionUpgradePlanOption? selected = _selectedPlan;
+    if (contextData == null || selected == null) {
+      return false;
+    }
+
+    final SubscriptionPendingPaymentRequest? pending =
+        contextData.pendingPaymentRequest;
+    final SubscriptionUpgradePolicy policy = contextData.policy;
+
+    if (pending == null && policy.canSubmitPaymentRequest) {
+      return true;
+    }
+
+    final int selectedRank = _planRank(selected);
+    final int floorRank =
+        policy.pendingTargetPlanRank ??
+        _planRank(
+          contextData.plans
+              .where(
+                (SubscriptionUpgradePlanOption plan) =>
+                    plan.id ==
+                    (pending?.targetPlanId ??
+                        contextData.scheduledPlanChange?.pendingPlanId),
+              )
+              .firstOrNull,
+        );
+
+    if (floorRank < 0) {
+      return selectedRank > (policy.currentPlanRank ?? -1);
+    }
+
+    return selectedRank > floorRank;
+  }
+
+  Widget _buildPolicyBanners({
+    required AppLocalizations l10n,
+    required ThemeData theme,
+    required SubscriptionUpgradeContext? contextData,
+  }) {
+    if (contextData == null) {
+      return const SizedBox.shrink();
+    }
+
+    final List<Widget> banners = <Widget>[];
+    final SubscriptionPendingPaymentRequest? pending =
+        contextData.pendingPaymentRequest;
+    final SubscriptionScheduledPlanChange? scheduled =
+        contextData.scheduledPlanChange;
+
+    if (pending != null && pending.isPending) {
+      banners.add(
+        AppMessagePanel(
+          title: l10n.subscriptionUpgradePendingRequestTitle,
+          message: l10n.subscriptionUpgradePendingRequestBody(
+            pending.planLabel?.trim().isNotEmpty == true
+                ? pending.planLabel!
+                : (contextData.currentPlanLabel ?? '—'),
+          ),
+          icon: Icons.hourglass_top_outlined,
+          tone: AppWorkspaceStatusTone.info,
+          density: AppContentPanelDensity.compact,
+        ),
+      );
+    }
+
+    if (scheduled != null) {
+      final String startDate = scheduled.changeEffectiveAt != null
+          ? AppFormatters.mediumDate(
+              scheduled.changeEffectiveAt!.toLocal(),
+              Localizations.localeOf(context),
+            )
+          : '—';
+      banners.add(
+        AppMessagePanel(
+          message: l10n.subscriptionUpgradeScheduledChangeBody(
+            scheduled.pendingPlanLabel?.trim().isNotEmpty == true
+                ? scheduled.pendingPlanLabel!
+                : '—',
+            startDate,
+          ),
+          icon: Icons.event_available_outlined,
+          tone: AppWorkspaceStatusTone.info,
+          density: AppContentPanelDensity.compact,
+        ),
+      );
+    } else if (contextData.policy.prepaidStartsAfterCurrent) {
+      banners.add(
+        AppMessagePanel(
+          message: l10n.subscriptionUpgradePrepaidStartsAfterBody,
+          icon: Icons.schedule_outlined,
+          tone: AppWorkspaceStatusTone.info,
+          density: AppContentPanelDensity.compact,
+        ),
+      );
+    }
+
+    if (banners.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (int i = 0; i < banners.length; i++) ...<Widget>[
+          if (i > 0) SizedBox(height: theme.spacing.sm),
+          banners[i],
+        ],
+        SizedBox(height: theme.spacing.md),
+      ],
+    );
+  }
+
   Future<void> _submit() async {
     if (!_validateCurrentStep()) {
+      return;
+    }
+    if (!_canProceedWithSelectedPlan()) {
+      setState(() {
+        _failure = AppFailure.validation(
+          detailMessage:
+              context.l10n.subscriptionUpgradeHigherPackageOnlyMessage,
+        );
+      });
       return;
     }
 
@@ -661,6 +812,13 @@ class _SubscriptionUpgradeDialogState
     final bool noPayment = _isNoPaymentPlan;
     final String planLabel = _selectedPlanDisplayLabel(l10n);
 
+    final double viewportWidth = MediaQuery.sizeOf(context).width;
+    final double planStepMaxWidth = viewportWidth < AppBreakpoints.md
+        ? viewportWidth
+        : viewportWidth < AppBreakpoints.lg
+        ? 720
+        : 920;
+
     return AppDialog(
       title: Text(_dialogTitle(l10n)),
       icon: Icon(
@@ -670,8 +828,7 @@ class _SubscriptionUpgradeDialogState
                   ? Icons.autorenew
                   : Icons.workspace_premium_outlined),
       ),
-      maxWidth: noPayment ? 560 : 920,
-      initialMaximized: false,
+      maxWidth: noPayment ? 560 : planStepMaxWidth,
       scrollable: true,
       content: AppFormShell(
         formKey: _formKey,
@@ -720,7 +877,11 @@ class _SubscriptionUpgradeDialogState
             : Icons.arrow_forward,
         onCancel: () => Navigator.of(context).maybePop(),
         onBack: _goBack,
-        onPrimary: _isLastStep ? _submit : _goNext,
+        onPrimary: _isLastStep
+            ? (_canProceedWithSelectedPlan() ? _submit : null)
+            : (_step == _UpgradeStep.plan && !_canProceedWithSelectedPlan()
+                  ? null
+                  : _goNext),
       ),
     );
   }
@@ -737,6 +898,11 @@ class _SubscriptionUpgradeDialogState
       _UpgradeStep.plan => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          _buildPolicyBanners(
+            l10n: l10n,
+            theme: theme,
+            contextData: contextData,
+          ),
           SubscriptionPlanSelector(
             plans:
                 contextData?.plans ?? const <SubscriptionUpgradePlanOption>[],
@@ -774,6 +940,18 @@ class _SubscriptionUpgradeDialogState
               message: _fxWarning!,
               icon: Icons.currency_exchange,
               tone: AppWorkspaceStatusTone.warning,
+              density: AppContentPanelDensity.compact,
+            ),
+          ],
+          if (_failure != null) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            AppMessagePanel(
+              message: ValidationMessagePresenter.displayMessage(
+                _failure!,
+                l10n,
+              ),
+              icon: Icons.error_outline,
+              tone: AppWorkspaceStatusTone.error,
               density: AppContentPanelDensity.compact,
             ),
           ],
@@ -1298,43 +1476,50 @@ class _PaySummaryStrip extends StatelessWidget {
           horizontal: theme.spacing.md,
           vertical: theme.spacing.sm + 2,
         ),
-        child: Row(
-          children: <Widget>[
-            Container(
-              padding: EdgeInsets.all(theme.spacing.xs),
-              decoration: BoxDecoration(
-                color: planTheme.foreground.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(theme.radius.sm),
-              ),
-              child: Icon(
-                Icons.workspace_premium_outlined,
-                size: 22,
-                color: planTheme.foreground,
-              ),
-            ),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    planLabel,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: AppFontWeight.emphasis,
-                      color: planTheme.foreground,
-                    ),
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool stack = constraints.maxWidth < 360;
+            final Widget planInfo = Row(
+              children: <Widget>[
+                Container(
+                  padding: EdgeInsets.all(theme.spacing.xs),
+                  decoration: BoxDecoration(
+                    color: planTheme.foreground.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(theme.radius.sm),
                   ),
-                  Text(
-                    billingCycleLabel,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: planTheme.foreground.withValues(alpha: 0.8),
-                    ),
+                  child: Icon(
+                    Icons.workspace_premium_outlined,
+                    size: 22,
+                    color: planTheme.foreground,
                   ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        planLabel,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: AppFontWeight.emphasis,
+                          color: planTheme.foreground,
+                        ),
+                      ),
+                      Text(
+                        billingCycleLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: planTheme.foreground.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+            final Widget amountInfo = Column(
+              crossAxisAlignment: stack
+                  ? CrossAxisAlignment.start
+                  : CrossAxisAlignment.end,
               children: <Widget>[
                 Text(
                   amountDueLabel,
@@ -1360,8 +1545,26 @@ class _PaySummaryStrip extends StatelessWidget {
                     ),
                   ),
               ],
-            ),
-          ],
+            );
+
+            if (stack) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  planInfo,
+                  SizedBox(height: theme.spacing.sm),
+                  amountInfo,
+                ],
+              );
+            }
+
+            return Row(
+              children: <Widget>[
+                Expanded(child: planInfo),
+                amountInfo,
+              ],
+            );
+          },
         ),
       ),
     );

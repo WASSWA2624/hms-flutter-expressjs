@@ -33,6 +33,10 @@ const {
   evaluatePlanSupport,
   normalizeTierCode} = require('@lib/subscriptions/policies');
 const {
+  isPeriodRunning,
+  subscriptionHasPaidCommitment,
+} = require('@lib/subscriptions/subscription-payment-request');
+const {
   resolveEntityId,
   resolveIdentifierForFilter,
   resolveIdentifierForPayload} = require('@lib/billing/identifiers');
@@ -358,6 +362,14 @@ const createSubscription = async (data, user, ip) => {
 
 const updateSubscription = async (id, data, user, ip) => {
   const before = await loadSubscriptionRecord(id, user);
+  const nextStatus = data?.status ? String(data.status).trim().toUpperCase() : null;
+  if (
+    nextStatus === 'CANCELLED' &&
+    subscriptionHasPaidCommitment(before)
+  ) {
+    throw new HttpError('errors.subscription.paid_cancel_forbidden', 400);
+  }
+
   const payload = await resolveSubscriptionPayload(data, user, before.tenant_id);
   await subscriptionRepository.update(before.id, payload);
   const subscription = await loadSubscriptionRecord(before.id, user);
@@ -396,6 +408,10 @@ const cancelSubscription = async (id, user, ip) => {
 
   if (before.status === 'CANCELLED') {
     throw new HttpError('errors.subscription.already_cancelled', 400);
+  }
+
+  if (subscriptionHasPaidCommitment(before)) {
+    throw new HttpError('errors.subscription.paid_cancel_forbidden', 400);
   }
 
   await subscriptionRepository.update(before.id, {
@@ -572,11 +588,32 @@ const downgradeSubscription = async (id, data, user, ip) => {
     throw new HttpError('errors.subscription.invalid_downgrade_path', 400);
   }
 
+  const now = new Date();
+  if (isPeriodRunning(before, now)) {
+    const requestedEffectiveAt = data.effective_at
+      ? new Date(data.effective_at)
+      : null;
+    const periodEnd = before.end_date ? new Date(before.end_date) : null;
+    const effectiveOk =
+      requestedEffectiveAt &&
+      !Number.isNaN(requestedEffectiveAt.getTime()) &&
+      periodEnd &&
+      !Number.isNaN(periodEnd.getTime()) &&
+      requestedEffectiveAt.getTime() >= periodEnd.getTime();
+    if (!effectiveOk) {
+      throw new HttpError('errors.subscription.downgrade_while_active', 400);
+    }
+  }
+
   await subscriptionRepository.update(before.id, {
     pending_plan_id: targetPlan.id,
     change_status: 'PENDING_DOWNGRADE',
     change_requested_at: new Date(),
-    change_effective_at: data.effective_at ? new Date(data.effective_at) : null,
+    change_effective_at: data.effective_at
+      ? new Date(data.effective_at)
+      : before.end_date
+        ? new Date(before.end_date)
+        : null,
     proration_amount: targetPrice - currentPrice,
     proration_currency_code: 'USD'});
   const subscription = await loadSubscriptionRecord(before.id, user);

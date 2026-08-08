@@ -4876,6 +4876,45 @@ abstract class AppLocalizations {
   /// **'Payment submitted. The platform team will review and activate your subscription.'**
   String get subscriptionUpgradeSubmittedMessage;
 
+  /// Title when a payment activation request is already pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Activation request in progress'**
+  String get subscriptionUpgradePendingRequestTitle;
+
+  /// Body explaining pending activation progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Your payment for {planLabel} is awaiting admin activation. You cannot submit another request unless you upgrade to a higher package.'**
+  String subscriptionUpgradePendingRequestBody(String planLabel);
+
+  /// Body explaining a prepaid plan change that starts after the current period.
+  ///
+  /// In en, this message translates to:
+  /// **'{planLabel} is scheduled to start on {startDate}, after your current period ends.'**
+  String subscriptionUpgradeScheduledChangeBody(
+    String planLabel,
+    String startDate,
+  );
+
+  /// Info that prepaid renewals/upgrades/downgrades start after the current period.
+  ///
+  /// In en, this message translates to:
+  /// **'Your current subscription is still running. Paid packages start after the current period ends.'**
+  String get subscriptionUpgradePrepaidStartsAfterBody;
+
+  /// Validation when a pending request blocks non-upgrade submissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a higher package than the pending request to continue.'**
+  String get subscriptionUpgradeHigherPackageOnlyMessage;
+
+  /// Error when attempting to cancel a paid subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'A paid subscription cannot be cancelled. Contact platform admins if you need help.'**
+  String get subscriptionPaidCancelForbiddenMessage;
+
   /// Payment method label for manual bank transfer.
   ///
   /// In en, this message translates to:

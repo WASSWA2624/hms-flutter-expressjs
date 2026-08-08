@@ -5860,7 +5860,7 @@ abstract final class _SubscriptionsText {
   static const String activate = 'Activate';
   static const String cancelSubscription = 'Cancel subscription';
   static const String cancelSubscriptionBody =
-      'Cancel this subscription? The tenant loses access according to plan rules.';
+      'Cancel this subscription? Paid subscriptions cannot be cancelled. Free or unpaid access may end according to plan rules.';
   static const String cancelledStatusEditHint =
       'Status is Cancelled. Use Activate to restore access; this form only updates dates.';
   static const String enableModule = 'Enable module';
