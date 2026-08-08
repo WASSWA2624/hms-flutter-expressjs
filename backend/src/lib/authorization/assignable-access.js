@@ -53,7 +53,28 @@ const PLATFORM_ADMIN_MANAGED_ROLES = new Set([
   ROLES.PLATFORM_ADMIN,
 ]);
 
+/** Elevation keys that facility managers (HR / facility admin) must not grant. */
+const ADMIN_RIGHTS_PERMISSIONS = new Set([
+  PERMISSIONS.PLATFORM_OWNER,
+  PERMISSIONS.PLATFORM_ADMIN,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+]);
+
+/** Built-in admin roles facility managers must not assign. */
+const ADMIN_RIGHTS_ROLES = new Set([
+  ROLES.PLATFORM_OWNER,
+  ROLES.PLATFORM_ADMIN,
+  ROLES.TENANT_ADMIN,
+  ROLES.FACILITY_ADMIN,
+]);
+
 const CATALOG_PERMISSION_NAMES = new Set(Object.values(PERMISSIONS));
+
+const nonAdminPermissionNames = () =>
+  Object.values(PERMISSIONS).filter(
+    (name) => !ADMIN_RIGHTS_PERMISSIONS.has(name)
+  );
 
 const text = (value) => String(value || '').trim();
 
@@ -120,7 +141,15 @@ const isFacilityScopedAccessActor = (user = {}) => {
   if (hasElevatedAccessAdminRole(roles)) {
     return false;
   }
-  return roles.has(ROLES.FACILITY_ADMIN) || roles.has(ROLES.HR);
+  if (roles.has(ROLES.FACILITY_ADMIN) || roles.has(ROLES.HR)) {
+    return true;
+  }
+  // JWT sessions sometimes omit role names while still carrying write rights.
+  const permissions = new Set(getUserPermissions(user));
+  return (
+    permissions.has(PERMISSIONS.HR_WRITE) ||
+    permissions.has(PERMISSIONS.FACILITY_ADMIN)
+  );
 };
 
 const isCatalogProtectedRoleName = (roleName) => {
@@ -149,14 +178,10 @@ const resolveActorAssignablePermissionNames = (user = {}) => {
     return new Set(ROLE_PERMISSIONS[ROLES.PLATFORM_ADMIN] || []);
   }
 
-  // HR manages users/roles/permissions like facility admin within facility
-  // scope; shell/menu rights still come from the HR role pack only.
-  if (
-    roleNames.includes(ROLES.HR) &&
-    !roleNames.includes(ROLES.FACILITY_ADMIN) &&
-    !hasElevatedAccessAdminRole(roleNames)
-  ) {
-    return new Set(ROLE_PERMISSIONS[ROLES.FACILITY_ADMIN] || []);
+  // Facility HR / facility admin: grant any non-admin permission (plan modules
+  // still gate the catalog). Do not fall through to JWT shell packs.
+  if (isFacilityScopedAccessActor(user)) {
+    return new Set(nonAdminPermissionNames());
   }
 
   const fromContext = getUserPermissions(user);
@@ -186,6 +211,11 @@ const canActorManagePlatformAdmins = (user = {}) => {
     return true;
   }
   return getUserPermissions(user).includes(PERMISSIONS.PLATFORM_OWNER);
+};
+
+const canActorGrantAdminRights = (user = {}) => {
+  const roles = new Set(resolveActorRoleNames(user));
+  return hasElevatedAccessAdminRole(roles) || canActorManagePlatformAdmins(user);
 };
 
 const canActorCreateTenantWideRole = (user = {}) => {
@@ -284,6 +314,10 @@ const isRoleWithinActorCeiling = (role = {}, user = {}) => {
   }
 
   const roleName = normalizeRoleName(role.name);
+  if (ADMIN_RIGHTS_ROLES.has(roleName) && !canActorGrantAdminRights(user)) {
+    return false;
+  }
+
   if (
     PLATFORM_ADMIN_MANAGED_ROLES.has(roleName) &&
     !canActorManagePlatformAdmins(user)
@@ -808,6 +842,8 @@ const buildRoleScopeWhere = (
 
 module.exports = {
   ACCESS_ADMIN_ROLES,
+  ADMIN_RIGHTS_PERMISSIONS,
+  ADMIN_RIGHTS_ROLES,
   ROLE_RANK,
   PLATFORM_ADMIN_MANAGED_ROLES,
   assertActorCanManageRoleRecord,
@@ -823,6 +859,7 @@ module.exports = {
   buildRoleScopeWhere,
   canActorCreatePlatformRole,
   canActorCreateTenantWideRole,
+  canActorGrantAdminRights,
   canActorManagePlatformAdmins,
   collectRolePermissionNames,
   filterPermissionRecordsByCeiling,

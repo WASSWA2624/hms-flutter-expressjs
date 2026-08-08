@@ -44,23 +44,35 @@ describe('assignable-access', () => {
   });
 
   describe('resolveActorAssignablePermissionNames', () => {
-    it('unions role permission maps for the actor', () => {
+    it('gives facility admins every non-admin permission', () => {
       const names = resolveActorAssignablePermissionNames({
         roles: [ROLES.FACILITY_ADMIN]});
-      expect(names.has(PERMISSIONS.FACILITY_ADMIN)).toBe(true);
+      expect(names.has(PERMISSIONS.FACILITY_ADMIN)).toBe(false);
       expect(names.has(PERMISSIONS.TENANT_ADMIN)).toBe(false);
       expect(names.has(PERMISSIONS.PLATFORM_ADMIN)).toBe(false);
+      expect(names.has(PERMISSIONS.CLINICAL_READ)).toBe(true);
+      expect(names.has(PERMISSIONS.HR_WRITE)).toBe(true);
     });
 
-    it('gives HR the facility-admin assignment ceiling without elevating shell pack', () => {
+    it('gives HR every non-admin permission, not the JWT shell pack', () => {
       const names = resolveActorAssignablePermissionNames({
         roles: [ROLES.HR],
         permissions: [PERMISSIONS.HR_READ, PERMISSIONS.HR_WRITE],
       });
-      expect(names.has(PERMISSIONS.FACILITY_ADMIN)).toBe(true);
+      expect(names.has(PERMISSIONS.FACILITY_ADMIN)).toBe(false);
       expect(names.has(PERMISSIONS.CLINICAL_READ)).toBe(true);
+      expect(names.has(PERMISSIONS.LAB_WRITE)).toBe(true);
       expect(names.has(PERMISSIONS.TENANT_ADMIN)).toBe(false);
       expect(names.has(PERMISSIONS.PLATFORM_ADMIN)).toBe(false);
+    });
+
+    it('treats hr:write without an HR role as a facility assignment ceiling', () => {
+      const names = resolveActorAssignablePermissionNames({
+        roles: [],
+        permissions: [PERMISSIONS.HR_READ, PERMISSIONS.HR_WRITE, PERMISSIONS.PROFILE_READ],
+      });
+      expect(names.has(PERMISSIONS.CLINICAL_READ)).toBe(true);
+      expect(names.has(PERMISSIONS.FACILITY_ADMIN)).toBe(false);
     });
 
     it('includes tenant:admin for tenant admins', () => {
@@ -133,6 +145,15 @@ describe('assignable-access', () => {
         )
       ).toBe(false);
     });
+
+    it('blocks HR from assigning facility admin', () => {
+      expect(
+        isRoleWithinActorCeiling(
+          { name: ROLES.FACILITY_ADMIN },
+          { roles: [ROLES.HR] }
+        )
+      ).toBe(false);
+    });
   });
 
   describe('isRoleWithinActorCeiling platform admin management', () => {
@@ -161,10 +182,11 @@ describe('assignable-access', () => {
         [
           { id: '1', name: PERMISSIONS.FACILITY_ADMIN },
           { id: '2', name: PERMISSIONS.TENANT_ADMIN },
-          { id: '3', name: PERMISSIONS.PLATFORM_ADMIN }],
+          { id: '3', name: PERMISSIONS.PLATFORM_ADMIN },
+          { id: '4', name: PERMISSIONS.CLINICAL_READ }],
         { roles: [ROLES.FACILITY_ADMIN] }
       );
-      expect(filtered.map((entry) => entry.name)).toEqual([PERMISSIONS.FACILITY_ADMIN]);
+      expect(filtered.map((entry) => entry.name)).toEqual([PERMISSIONS.CLINICAL_READ]);
     });
 
     it('also drops module-scoped permissions outside the plan', () => {

@@ -87,7 +87,7 @@ const createUser = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const user = await userService.createUser(req.body, userId, ipAddress);
+  const user = await userService.createUser(req.body, userId, ipAddress, req.user);
 
   sendSuccess(res, 201, 'messages.user.create.success', user);
 });

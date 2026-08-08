@@ -29,6 +29,7 @@ const {
 } = require('@lib/authorization/permission-read-dependency');
 const {
   PLATFORM_ADMIN_MANAGED_ROLES,
+  assertPermissionIdsAssignable,
   canActorManagePlatformAdmins,
 } = require('@lib/authorization/assignable-access');
 const { assertDemoUserNotMutable, assertUserIdNotDemoProtected } = require('@lib/authorization/demo-user-guard');
@@ -338,7 +339,7 @@ const assertUserUniqueness = async ({
   return duplicateCheck;
 };
 
-const normalizeUserPayload = async (data, isUpdate = false) => {
+const normalizeUserPayload = async (data, isUpdate = false, actor = null) => {
   const next = { ...(data || {}) };
   const normalizedPositionTitle = typeof next.position_title === 'string' ? next.position_title.trim() : '';
   const rawPassword = typeof next.password === 'string' ? next.password.trim() : '';
@@ -381,25 +382,35 @@ const normalizeUserPayload = async (data, isUpdate = false) => {
   }
 
   if (permissionIds !== undefined) {
-    next.permission_ids = await Promise.all(
-      permissionIds.map((permissionId) =>
-        resolveIdentifierForPayload({
-          value: permissionId,
-          model: 'permission',
-          field: 'permission_ids'})
-      )
-    );
-    if (next.permission_ids.length > 0) {
-      const permissionRecords = await prisma.permission.findMany({
-        where: {
-          id: { in: next.permission_ids },
-          deleted_at: null,
-        },
-        select: { name: true },
-      });
-      assertPermissionNamesIncludeRequiredReads(
-        permissionRecords.map((entry) => entry.name)
+    if (actor) {
+      next.permission_ids = await assertPermissionIdsAssignable(
+        permissionIds,
+        actor,
+        {
+          tenantId: next.tenant_id || actor.tenant_id || actor.tenantId || null,
+        }
       );
+    } else {
+      next.permission_ids = await Promise.all(
+        permissionIds.map((permissionId) =>
+          resolveIdentifierForPayload({
+            value: permissionId,
+            model: 'permission',
+            field: 'permission_ids'})
+        )
+      );
+      if (next.permission_ids.length > 0) {
+        const permissionRecords = await prisma.permission.findMany({
+          where: {
+            id: { in: next.permission_ids },
+            deleted_at: null,
+          },
+          select: { name: true },
+        });
+        assertPermissionNamesIncludeRequiredReads(
+          permissionRecords.map((entry) => entry.name)
+        );
+      }
     }
   }
 
@@ -556,11 +567,15 @@ const getUserById = async (id, userId, ipAddress) => {
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<Object>} Created user
  */
-const createUser = async (data, userId, ipAddress) => {
+const createUser = async (data, userId, ipAddress, actor = null) => {
   try {
     const confirmSimilar = data?.confirm_similar === true;
     const strippedData = stripSimilarityPayloadFields(data || {});
-    const normalizedPayload = await normalizeUserPayload(strippedData, false);
+    const normalizedPayload = await normalizeUserPayload(
+      strippedData,
+      false,
+      actor || { id: userId }
+    );
     await assertUserUniqueness({
       tenantId: normalizedPayload.tenant_id,
       email: normalizedPayload.email,
@@ -621,7 +636,11 @@ const updateUser = async (id, data, userId, ipAddress, actor = {}) => {
 
     const confirmSimilar = data?.confirm_similar === true;
     const strippedData = stripSimilarityPayloadFields(data || {});
-    const normalizedPayload = await normalizeUserPayload(strippedData, true);
+    const normalizedPayload = await normalizeUserPayload(
+      strippedData,
+      true,
+      actor
+    );
     await assertUserUniqueness({
       tenantId: normalizedPayload.tenant_id ?? before.tenant_id,
       email: normalizedPayload.email ?? before.email,

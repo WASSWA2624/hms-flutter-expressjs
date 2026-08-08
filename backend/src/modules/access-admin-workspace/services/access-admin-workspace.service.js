@@ -444,11 +444,12 @@ const serializeUserDetail = (record) => {
 };
 
 const buildLookups = (records = {}, user = null, enabledModules = null) => {
-  // Role directory lookups should show every in-scope role. Ceiling filtering
-  // belongs on assignable permission catalogs / assignment APIs, not the role
-  // list itself — otherwise custom roles with broad packs disappear for
-  // plan-gated actors even though they exist in the tenant.
-  const roles = records.roles || [];
+  // Hide admin roles from facility-scoped assigners; other actors still see the
+  // full in-scope directory (assignment APIs re-check ceiling).
+  const roles =
+    user && isFacilityScopedAccessActor(user)
+      ? filterRoleRecordsByCeiling(records.roles || [], user)
+      : records.roles || [];
   const permissions = user
     ? filterPermissionRecordsByCeiling(
         records.permissions || [],

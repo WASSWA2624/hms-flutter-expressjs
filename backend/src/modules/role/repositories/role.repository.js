@@ -9,6 +9,20 @@
 
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
+const { runWithoutTenantGuard } = require('../../../prisma/tenant-guard');
+
+/**
+ * Tenant-guard findFirst/findUnique inject `deleted_at: null` unless the caller
+ * already mentions `deleted_at`. Soft-deleted lookups must either mention it or
+ * bypass the guard — otherwise restore/permanent-delete never see the row.
+ */
+const roleWhereById = (id, { includeDeleted = false } = {}) =>
+  includeDeleted
+    ? {
+        id,
+        OR: [{ deleted_at: null }, { deleted_at: { not: null } }]
+      }
+    : { id, deleted_at: null };
 
 /**
  * Find role by ID
@@ -21,10 +35,7 @@ const { HttpError } = require('@lib/errors');
 const findById = async (id, { includeDeleted = false } = {}) => {
   try {
     return await prisma.role.findFirst({
-      where: {
-        id,
-        ...(includeDeleted ? {} : { deleted_at: null })
-      }
+      where: roleWhereById(id, { includeDeleted })
     });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
@@ -258,39 +269,43 @@ const softDelete = async (id) => {
  */
 const restore = async (id) => {
   try {
-    const existing = await prisma.role.findUnique({
-      where: { id },
-      select: { id: true, deleted_at: true }
-    });
+    // Soft-deleted rows are invisible to tenant-guard find/update unless we
+    // bypass (guard forces deleted_at: null on those operations).
+    return await runWithoutTenantGuard(async () => {
+      const existing = await prisma.role.findFirst({
+        where: roleWhereById(id, { includeDeleted: true }),
+        select: { id: true, deleted_at: true }
+      });
 
-    if (!existing || !existing.deleted_at) {
-      throw Object.assign(new Error('Record not found'), { code: 'P2025' });
-    }
+      if (!existing || !existing.deleted_at) {
+        throw Object.assign(new Error('Record not found'), { code: 'P2025' });
+      }
 
-    return await prisma.$transaction(async (tx) => {
-      const restoredPermissions = await tx.role_permission.updateMany({
-        where: {
-          role_id: id,
-          deleted_at: existing.deleted_at
-        },
-        data: { deleted_at: null }
+      return prisma.$transaction(async (tx) => {
+        const restoredPermissions = await tx.role_permission.updateMany({
+          where: {
+            role_id: id,
+            deleted_at: existing.deleted_at
+          },
+          data: { deleted_at: null }
+        });
+        const restoredAssignments = await tx.user_role.updateMany({
+          where: {
+            role_id: id,
+            deleted_at: existing.deleted_at
+          },
+          data: { deleted_at: null }
+        });
+        const role = await tx.role.update({
+          where: { id },
+          data: { deleted_at: null }
+        });
+        return {
+          role,
+          restored_permissions: restoredPermissions.count || 0,
+          restored_user_assignments: restoredAssignments.count || 0
+        };
       });
-      const restoredAssignments = await tx.user_role.updateMany({
-        where: {
-          role_id: id,
-          deleted_at: existing.deleted_at
-        },
-        data: { deleted_at: null }
-      });
-      const role = await tx.role.update({
-        where: { id },
-        data: { deleted_at: null }
-      });
-      return {
-        role,
-        restored_permissions: restoredPermissions.count || 0,
-        restored_user_assignments: restoredAssignments.count || 0
-      };
     });
   } catch (error) {
     if (error.code === 'P2025') {
@@ -309,49 +324,53 @@ const restore = async (id) => {
  */
 const permanentDelete = async (id) => {
   try {
-    const existing = await prisma.role.findUnique({
-      where: { id },
-      select: { id: true, deleted_at: true }
-    });
-
-    if (!existing) {
-      return {
-        removed_user_ids: [],
-        removed_user_assignments: 0,
-        removed_permissions: 0
-      };
-    }
-    if (!existing.deleted_at) {
-      throw new HttpError('errors.role.permanent_delete_requires_soft_delete', 400);
-    }
-
-    return await prisma.$transaction(async (tx) => {
-      // Scan all attachments (active or soft-deleted) so no user keeps this role.
-      const assignments = await tx.user_role.findMany({
-        where: { role_id: id },
-        select: { id: true, user_id: true }
+    // Hard-delete must see soft-deleted role / role_permission / user_role rows.
+    // Tenant-guard otherwise forces deleted_at: null and the purge no-ops or 404s.
+    return await runWithoutTenantGuard(async () => {
+      const existing = await prisma.role.findFirst({
+        where: roleWhereById(id, { includeDeleted: true }),
+        select: { id: true, deleted_at: true }
       });
-      const removedUserIds = [
-        ...new Set(
-          assignments
-            .map((row) => String(row.user_id || '').trim())
-            .filter(Boolean)
-        )
-      ];
 
-      const removedAssignments = await tx.user_role.deleteMany({
-        where: { role_id: id }
-      });
-      const removedPermissions = await tx.role_permission.deleteMany({
-        where: { role_id: id }
-      });
-      await tx.role.delete({ where: { id } });
+      if (!existing) {
+        return {
+          removed_user_ids: [],
+          removed_user_assignments: 0,
+          removed_permissions: 0
+        };
+      }
+      if (!existing.deleted_at) {
+        throw new HttpError('errors.role.permanent_delete_requires_soft_delete', 400);
+      }
 
-      return {
-        removed_user_ids: removedUserIds,
-        removed_user_assignments: removedAssignments.count || 0,
-        removed_permissions: removedPermissions.count || 0
-      };
+      return prisma.$transaction(async (tx) => {
+        // Scan all attachments (active or soft-deleted) so no user keeps this role.
+        const assignments = await tx.user_role.findMany({
+          where: { role_id: id },
+          select: { id: true, user_id: true }
+        });
+        const removedUserIds = [
+          ...new Set(
+            assignments
+              .map((row) => String(row.user_id || '').trim())
+              .filter(Boolean)
+          )
+        ];
+
+        const removedAssignments = await tx.user_role.deleteMany({
+          where: { role_id: id }
+        });
+        const removedPermissions = await tx.role_permission.deleteMany({
+          where: { role_id: id }
+        });
+        await tx.role.delete({ where: { id } });
+
+        return {
+          removed_user_ids: removedUserIds,
+          removed_user_assignments: removedAssignments.count || 0,
+          removed_permissions: removedPermissions.count || 0
+        };
+      });
     });
   } catch (error) {
     if (error instanceof HttpError) {

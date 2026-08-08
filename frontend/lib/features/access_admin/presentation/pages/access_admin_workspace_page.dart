@@ -884,11 +884,12 @@ class _DetailContent extends ConsumerWidget {
             label: l10n.accessAdminColumnScope,
             value: accessAdminRoleScopeLabel(context, item),
           ),
-          if ((item.subtitle ?? '').trim().isNotEmpty)
-            _DetailRow(
-              label: l10n.accessAdminCreateRoleDetailsSectionTitle,
-              value: item.subtitle!,
-            ),
+          _DetailRow(
+            label: l10n.accessAdminRoleDescriptionLabel,
+            value: (item.subtitle ?? '').trim().isEmpty
+                ? '—'
+                : item.subtitle!.trim(),
+          ),
           _DetailRow(
             label: l10n.accessAdminRolePermissionsLabel,
             value: l10n.hrAccessPermissionCountLabel(

@@ -5,6 +5,14 @@ const normalizeIdentifier = (value) => (typeof value === 'string' ? value.trim()
 
 const isMissingIdentifier = (value) => normalizeIdentifier(value).length === 0;
 
+/** Mention deleted_at so tenant-guard does not force active-only rows. */
+const withIncludeDeletedWhere = (where = {}) => ({
+  AND: [
+    { ...(where || {}) },
+    { OR: [{ deleted_at: null }, { deleted_at: { not: null } }] },
+  ],
+});
+
 const resolveModelRecordByIdentifier = async ({
   model,
   identifier,
@@ -22,9 +30,11 @@ const resolveModelRecordByIdentifier = async ({
     return null;
   }
 
-  const baseWhere = { ...(where || {}) };
+  let baseWhere = { ...(where || {}) };
   if (!includeDeleted && baseWhere.deleted_at === undefined) {
     baseWhere.deleted_at = null;
+  } else if (includeDeleted && baseWhere.deleted_at === undefined) {
+    baseWhere = withIncludeDeletedWhere(baseWhere);
   }
 
   const queryShape = include ? { include } : { select };

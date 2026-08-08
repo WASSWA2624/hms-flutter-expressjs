@@ -1192,26 +1192,36 @@ bool _rolePermanentDeleteNameMatches(
   String typed, {
   required AppLocalizations l10n,
 }) {
-  final String needle = typed.trim().toLowerCase();
+  final String needle = _normalizeRoleConfirmName(typed);
   if (needle.isEmpty) {
     return false;
   }
   final String title = role.title.trim();
   final String displayName = (role.displayName ?? '').trim();
   final String name = (role.name ?? '').trim();
-  final String deletedLabel =
-      '$title · ${l10n.tenantFacilityStructureDeletedStatus}';
+  final String deletedStatus = l10n.tenantFacilityStructureDeletedStatus;
   final List<String> accepted = <String>[
     title,
     displayName,
     name,
-    deletedLabel,
-    if (displayName.isNotEmpty)
-      '$displayName · ${l10n.tenantFacilityStructureDeletedStatus}',
+    '$title · $deletedStatus',
+    '$title - $deletedStatus',
+    if (displayName.isNotEmpty) ...<String>[
+      '$displayName · $deletedStatus',
+      '$displayName - $deletedStatus',
+    ],
   ];
   return accepted.any(
-    (String value) => value.trim().toLowerCase() == needle,
+    (String value) => _normalizeRoleConfirmName(value) == needle,
   );
+}
+
+String _normalizeRoleConfirmName(String value) {
+  return value
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[\u00b7\u2022\u2219]'), '-')
+      .replaceAll(RegExp(r'\s+'), ' ');
 }
 
 /// Roles/permissions table/CRUD shared by manage dialog and setup tabs.
@@ -1797,14 +1807,7 @@ class _ManageRolesPermissionsPanelState
             );
             return result.when(
               success: (_) => const Result<void>.success(null),
-              failure: (AppFailure failure) {
-                // Absence after a race is fine; unresolved ids must not look
-                // like a successful purge while the soft-deleted row remains.
-                if (failure.category == AppFailureCategory.notFound) {
-                  return const Result<void>.success(null);
-                }
-                return Result<void>.failure(failure);
-              },
+              failure: (AppFailure failure) => Result<void>.failure(failure),
             );
           },
         ),
@@ -2755,12 +2758,7 @@ class _RoleDetailSummaryCard extends StatelessWidget {
     final String? technicalName = _isDistinctLabel(role.name, <String>[title])
         ? role.name!.trim()
         : null;
-    final String? description = _isDistinctLabel(
-          role.subtitle,
-          <String>[title, if (technicalName != null) technicalName],
-        )
-        ? role.subtitle!.trim()
-        : null;
+    final String description = (role.subtitle ?? '').trim();
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -2811,22 +2809,30 @@ class _RoleDetailSummaryCard extends StatelessWidget {
                           ),
                         ),
                       ],
-                      if (description != null) ...<Widget>[
-                        SizedBox(height: theme.spacing.xs),
-                        Text(
-                          description,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colors.onSurfaceVariant,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
                 SizedBox(width: theme.spacing.sm),
                 _RoleScopeBadge(item: role),
               ],
+            ),
+            SizedBox(height: theme.spacing.md),
+            Text(
+              l10n.accessAdminRoleDescriptionLabel,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+                fontWeight: AppFontWeight.emphasis,
+              ),
+            ),
+            SizedBox(height: theme.spacing.xs),
+            Text(
+              description.isEmpty ? '—' : description,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: description.isEmpty
+                    ? colors.onSurfaceVariant
+                    : colors.onSurface,
+                height: 1.4,
+              ),
             ),
             SizedBox(height: theme.spacing.md),
             Wrap(
