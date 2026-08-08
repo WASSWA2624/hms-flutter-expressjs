@@ -8,9 +8,8 @@ HomeDashboard? readSuccessfulHomeDashboard(
   WidgetRef ref,
   HomeDashboardRequest request,
 ) {
-  final AsyncValue<Result<HomeDashboard>> asyncValue = ref.read(
-    homeControllerProvider(request),
-  );
+  final AsyncValue<Result<HomeDashboard>> asyncValue =
+      watchHomeDashboardForWidget(ref, request);
 
   return switch (asyncValue) {
     AsyncData<Result<HomeDashboard>>(:final value) => value.when(

@@ -2,7 +2,23 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_atom_permissions.dart';
 
-enum HomeDashboardLoadState { ready, tenantContextRequired }
+enum HomeDashboardLoadState { ready, partial, tenantContextRequired }
+
+/// Server load phase for progressive home dashboard painting.
+enum HomeDashboardPhase {
+  /// KPIs + facility context only (`state: partial`).
+  core,
+
+  /// Full workspace pack including queues, activity, and snapshot.
+  full,
+}
+
+extension HomeDashboardPhaseX on HomeDashboardPhase {
+  String get apiValue => switch (this) {
+    HomeDashboardPhase.core => 'core',
+    HomeDashboardPhase.full => 'full',
+  };
+}
 
 /// Most-sold lookback presets for the pharmacist home dashboard.
 enum HomeMostSoldPeriod {
@@ -66,6 +82,7 @@ final class HomeDashboardRequest {
     this.mostSoldLimit,
     this.mostSoldFrom,
     this.mostSoldTo,
+    this.phase,
   });
 
   factory HomeDashboardRequest.fromQuery(Map<String, String> query) {
@@ -84,6 +101,11 @@ final class HomeDashboardRequest {
       mostSoldTo: DateTime.tryParse(
         (query['most_sold_to'] ?? query['mostSoldTo'] ?? '').trim(),
       ),
+      phase: switch ((query['phase'] ?? '').trim().toLowerCase()) {
+        'core' => HomeDashboardPhase.core,
+        'full' => HomeDashboardPhase.full,
+        _ => null,
+      },
     );
   }
 
@@ -95,12 +117,14 @@ final class HomeDashboardRequest {
   final int? mostSoldLimit;
   final DateTime? mostSoldFrom;
   final DateTime? mostSoldTo;
+  final HomeDashboardPhase? phase;
 
   Map<String, Object?> toQueryParameters() {
     return <String, Object?>{
       if (tenantId != null) 'tenant_id': tenantId,
       if (facilityId != null) 'facility_id': facilityId,
       'limit': 5,
+      if (phase != null) 'phase': phase!.apiValue,
       if (mostSoldPeriod != null && mostSoldPeriod != HomeMostSoldPeriod.custom)
         'most_sold_period': mostSoldPeriod!.apiValue,
       if (mostSoldPeriod == HomeMostSoldPeriod.custom)
@@ -120,6 +144,8 @@ final class HomeDashboardRequest {
     int? mostSoldLimit,
     DateTime? mostSoldFrom,
     DateTime? mostSoldTo,
+    HomeDashboardPhase? phase,
+    bool clearPhase = false,
     bool clearMostSoldFrom = false,
     bool clearMostSoldTo = false,
   }) {
@@ -132,6 +158,7 @@ final class HomeDashboardRequest {
           ? null
           : mostSoldFrom ?? this.mostSoldFrom,
       mostSoldTo: clearMostSoldTo ? null : mostSoldTo ?? this.mostSoldTo,
+      phase: clearPhase ? null : (phase ?? this.phase),
     );
   }
 
@@ -145,7 +172,8 @@ final class HomeDashboardRequest {
         other.mostSoldPeriod == mostSoldPeriod &&
         other.mostSoldLimit == mostSoldLimit &&
         other.mostSoldFrom == mostSoldFrom &&
-        other.mostSoldTo == mostSoldTo;
+        other.mostSoldTo == mostSoldTo &&
+        other.phase == phase;
   }
 
   @override
@@ -156,6 +184,7 @@ final class HomeDashboardRequest {
     mostSoldLimit,
     mostSoldFrom,
     mostSoldTo,
+    phase,
   );
 }
 
@@ -199,6 +228,7 @@ final class HomeDashboard {
   final bool usesFallbackData;
 
   HomeDashboard copyWith({
+    HomeDashboardLoadState? state,
     HomeDashboardProfile? profile,
     HomeDashboardContext? context,
     List<HomeStatusCard>? statusCards,
@@ -217,7 +247,7 @@ final class HomeDashboard {
     bool? usesFallbackData,
   }) {
     return HomeDashboard(
-      state: state,
+      state: state ?? this.state,
       profile: profile ?? this.profile,
       context: context ?? this.context,
       statusCards: statusCards ?? this.statusCards,
@@ -240,6 +270,9 @@ final class HomeDashboard {
   bool get isTenantContextRequired {
     return state == HomeDashboardLoadState.tenantContextRequired;
   }
+
+  /// Core pack painted; queues/activity/insights may still be loading.
+  bool get isEnriching => state == HomeDashboardLoadState.partial;
 
   bool get hasLiveContent {
     return statusCards.any((HomeStatusCard card) => card.numericValue > 0) ||

@@ -10,6 +10,7 @@ void homeInvalidateDashboard(
   Ref ref, [
   HomeDashboardRequest request = HomeDashboardRequest.empty,
 ]) {
+  ref.invalidate(homeCoreControllerProvider(request));
   ref.invalidate(homeControllerProvider(request));
 }
 
@@ -21,6 +22,7 @@ void homeOnDashboardMutationSuccess(
   if (patch != null && !patch.isEmpty) {
     homeApplyDashboardOptimisticPatch(ref, request, patch);
   }
+  ref.invalidate(homeCoreControllerProvider(request));
   ref.invalidate(homeControllerProvider(request));
 }
 

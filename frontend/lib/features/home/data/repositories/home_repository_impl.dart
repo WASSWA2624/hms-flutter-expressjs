@@ -160,6 +160,7 @@ final class HomeRepositoryImpl implements HomeRepository {
       mostSoldLimit: request.mostSoldLimit,
       mostSoldFrom: request.mostSoldFrom,
       mostSoldTo: request.mostSoldTo,
+      phase: request.phase,
     );
   }
 

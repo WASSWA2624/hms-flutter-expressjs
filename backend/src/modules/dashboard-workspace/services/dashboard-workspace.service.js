@@ -2166,6 +2166,7 @@ const buildSuperAdminPlatformWorkspace = async ({
   effectiveRole,
   effectiveProfileId,
   effectivePackId,
+  phase = 'full',
 }) => {
   const baseSummary = await buildDashboardSummary({
     query: { days: 7, platform: true },
@@ -2173,11 +2174,69 @@ const buildSuperAdminPlatformWorkspace = async ({
     repository: dashboardWidgetRepository,
   });
   const quickActionResolution = resolveHomeQuickActions(user, effectivePackId, 8);
+  const statusStrip = buildStatusStrip(baseSummary);
+
+  if (phase === 'core') {
+    return {
+      state: 'partial',
+      generated_at: new Date().toISOString(),
+      role_profile: baseSummary.roleProfile,
+      context: {
+        role: baseSummary.roleProfile,
+        tenant_id: null,
+        facility_id: null,
+        facility_name: null,
+        facility_type: null,
+      },
+      panel_summaries: [],
+      status_strip: statusStrip,
+      summary_cards: statusStrip,
+      trend: baseSummary.trend,
+      distribution: baseSummary.distribution,
+      quick_actions: quickActionResolution.quickActions,
+      quick_action_ids: quickActionResolution.quickActions.map((action) => action.id),
+      hidden_reason_map: quickActionResolution.hiddenReasonMap,
+      overview: {
+        hero: {
+          role_profile_id: effectiveProfileId,
+          role: effectiveRole,
+          facility_name: null,
+          facility_type: null,
+        },
+        checklist: { completed_count: 0, total_count: 0, items: [] },
+        trend: baseSummary.trend,
+        distribution: baseSummary.distribution,
+        alerts: [],
+        queue_preview: [],
+        value_proof: [],
+        insights_preview: [],
+        module_recommendations: [],
+        plan_usage: { state: 'unavailable', metrics: [] },
+        activity_preview: [],
+        help_cards: [],
+      },
+      queue: {
+        items: [],
+        pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), 0),
+      },
+      activity: {
+        items: [],
+        pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), 0),
+      },
+      insights: {
+        signals: [],
+        module_recommendations: [],
+        plan_usage: { state: 'unavailable', metrics: [] },
+        help_cards: [],
+      },
+      getting_started: { completed_count: 0, total_count: 0, items: [] },
+    };
+  }
+
   const [followUps, platformAlerts] = await Promise.all([
     dashboardWorkspaceRepository.findPlatformFollowUps({ limit: 5 }),
     dashboardWorkspaceRepository.findPlatformAlerts({ limit: 3 }),
   ]);
-  const statusStrip = buildStatusStrip(baseSummary);
 
   return {
     state: 'ready',
@@ -2247,14 +2306,81 @@ const buildTenantAdminOrganizationWorkspace = async ({
   effectiveProfileId,
   effectivePackId,
   scope,
+  phase = 'full',
 }) => {
-  const baseSummary = await buildDashboardSummary({
-    query: { ...scope, days: 7 },
-    user,
-    repository: dashboardWidgetRepository,
-  });
+  const [baseSummary, facilityContext] = await Promise.all([
+    buildDashboardSummary({
+      query: { ...scope, days: 7 },
+      user,
+      repository: dashboardWidgetRepository,
+    }),
+    dashboardWorkspaceRepository.findFacilityContext(scope),
+  ]);
   const quickActionResolution = resolveHomeQuickActions(user, effectivePackId, 8);
-  const [followUps, tenantAlerts, facilityContext] = await Promise.all([
+  const statusStrip = buildStatusStrip(baseSummary);
+  const context = {
+    role: baseSummary.roleProfile,
+    tenant_id: dashboardWorkspaceRepository.safePublicId(scope.tenant_id),
+    facility_id: dashboardWorkspaceRepository.safePublicId(
+      facilityContext?.human_friendly_id,
+      scope.facility_id
+    ),
+    facility_name: facilityContext?.name || null,
+    facility_type: facilityContext?.facility_type || null,
+  };
+
+  if (phase === 'core') {
+    return {
+      state: 'partial',
+      generated_at: new Date().toISOString(),
+      role_profile: baseSummary.roleProfile,
+      context,
+      panel_summaries: [],
+      status_strip: statusStrip,
+      summary_cards: statusStrip,
+      trend: baseSummary.trend,
+      distribution: baseSummary.distribution,
+      quick_actions: quickActionResolution.quickActions,
+      quick_action_ids: quickActionResolution.quickActions.map((action) => action.id),
+      hidden_reason_map: quickActionResolution.hiddenReasonMap,
+      overview: {
+        hero: {
+          role_profile_id: effectiveProfileId,
+          role: effectiveRole,
+          facility_name: facilityContext?.name || null,
+          facility_type: facilityContext?.facility_type || null,
+        },
+        checklist: { completed_count: 0, total_count: 0, items: [] },
+        trend: baseSummary.trend,
+        distribution: baseSummary.distribution,
+        alerts: [],
+        queue_preview: [],
+        value_proof: [],
+        insights_preview: [],
+        module_recommendations: [],
+        plan_usage: { state: 'unavailable', metrics: [] },
+        activity_preview: [],
+        help_cards: [],
+      },
+      queue: {
+        items: [],
+        pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), 0),
+      },
+      activity: {
+        items: [],
+        pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), 0),
+      },
+      insights: {
+        signals: [],
+        module_recommendations: [],
+        plan_usage: { state: 'unavailable', metrics: [] },
+        help_cards: [],
+      },
+      getting_started: { completed_count: 0, total_count: 0, items: [] },
+    };
+  }
+
+  const [followUps, tenantAlerts] = await Promise.all([
     dashboardWorkspaceRepository.findTenantFollowUps({
       tenantId: scope.tenant_id,
       limit: 5,
@@ -2263,24 +2389,13 @@ const buildTenantAdminOrganizationWorkspace = async ({
       tenantId: scope.tenant_id,
       limit: 3,
     }),
-    dashboardWorkspaceRepository.findFacilityContext(scope),
   ]);
-  const statusStrip = buildStatusStrip(baseSummary);
 
   return {
     state: 'ready',
     generated_at: new Date().toISOString(),
     role_profile: baseSummary.roleProfile,
-    context: {
-      role: baseSummary.roleProfile,
-      tenant_id: dashboardWorkspaceRepository.safePublicId(scope.tenant_id),
-      facility_id: dashboardWorkspaceRepository.safePublicId(
-        facilityContext?.human_friendly_id,
-        scope.facility_id
-      ),
-      facility_name: facilityContext?.name || null,
-      facility_type: facilityContext?.facility_type || null,
-    },
+    context,
     panel_summaries: [
       { id: 'follow_up', count: followUps.length },
       { id: 'alerts', count: tenantAlerts.length },
@@ -2346,6 +2461,9 @@ const getWorkspace = async (
   const effectiveProfileId = resolveProfileId(effectiveRole);
   const effectivePackId = resolvePackId(effectiveProfileId);
   const tenantContextQuickActions = resolveHomeQuickActions(user, effectivePackId, 8);
+  const phase = normalizeString(filters.phase || filters.load_phase || 'full').toLowerCase() === 'core'
+    ? 'core'
+    : 'full';
 
   if (effectiveRole === ROLES.PLATFORM_ADMIN) {
     return buildSuperAdminPlatformWorkspace({
@@ -2356,6 +2474,7 @@ const getWorkspace = async (
       effectiveRole,
       effectiveProfileId,
       effectivePackId,
+      phase,
     });
   }
 
@@ -2418,28 +2537,34 @@ const getWorkspace = async (
       effectiveProfileId,
       effectivePackId,
       scope: scopeResult.scope,
+      phase,
     });
   }
 
   const scope = scopeResult.scope;
-  const baseSummary = await buildDashboardSummary({
-    query: {
-      ...scope,
-      days: 7,
-      most_sold_period: filters.most_sold_period || filters.mostSoldPeriod,
-      most_sold_limit: filters.most_sold_limit || filters.mostSoldLimit,
-      most_sold_from: filters.most_sold_from || filters.mostSoldFrom,
-      most_sold_to: filters.most_sold_to || filters.mostSoldTo,
-    },
-    user,
-    repository: dashboardWidgetRepository,
-  });
+  const summaryQuery = {
+    ...scope,
+    days: 7,
+    most_sold_period: filters.most_sold_period || filters.mostSoldPeriod,
+    most_sold_limit: filters.most_sold_limit || filters.mostSoldLimit,
+    most_sold_from: filters.most_sold_from || filters.mostSoldFrom,
+    most_sold_to: filters.most_sold_to || filters.mostSoldTo,
+  };
+  // KPI summary and facility context are independent — fetch together so the
+  // progressive "core" phase can paint as soon as both resolve.
+  const [baseSummary, facilityContext] = await Promise.all([
+    buildDashboardSummary({
+      query: summaryQuery,
+      user,
+      repository: dashboardWidgetRepository,
+    }),
+    dashboardWorkspaceRepository.findFacilityContext(scope),
+  ]);
   const packId = baseSummary.roleProfile?.pack || ROLE_PACKS.ADMIN;
   const canManageSubscriptions = ADMIN_ROLES.has(effectiveRole);
   const quickActionResolution = resolveHomeQuickActions(user, packId, 8);
 
   if (packId === ROLE_PACKS.PATIENT_SAFE) {
-    const facilityContext = await dashboardWorkspaceRepository.findFacilityContext(scope);
     const statusStrip = buildStatusStrip(baseSummary);
     const safePlanUsage = { state: 'unavailable', metrics: [], manage_action_allowed: false };
     const patientAlerts = statusStrip
@@ -2512,8 +2637,67 @@ const getWorkspace = async (
     };
   }
 
-  const [facilityContext, subscription, queueItems, activityItems, snapshot] = await Promise.all([
-    dashboardWorkspaceRepository.findFacilityContext(scope),
+  // Progressive core pack: KPIs + context only so the client can paint while
+  // queues, activity, subscription insights, and snapshot counts still load.
+  if (phase === 'core') {
+    const statusStrip = buildStatusStrip(baseSummary);
+    return {
+      state: 'partial',
+      generated_at: new Date().toISOString(),
+      role_profile: baseSummary.roleProfile,
+      context: {
+        role: baseSummary.roleProfile,
+        tenant_id: dashboardWorkspaceRepository.safePublicId(scope.tenant_id),
+        facility_id: dashboardWorkspaceRepository.safePublicId(facilityContext?.human_friendly_id, scope.facility_id),
+        facility_name: facilityContext?.name || null,
+        facility_type: facilityContext?.facility_type || null,
+        nurse_context: baseSummary.scope?.nurse_context || null,
+        department_name: baseSummary.scope?.department_name || null,
+      },
+      panel_summaries: [],
+      status_strip: statusStrip,
+      summary_cards: statusStrip,
+      trend: baseSummary.trend,
+      distribution: baseSummary.distribution,
+      most_sold: baseSummary.most_sold || null,
+      quick_actions: quickActionResolution.quickActions,
+      quick_action_ids: quickActionResolution.quickActions.map((action) => action.id),
+      hidden_reason_map: quickActionResolution.hiddenReasonMap,
+      overview: {
+        hero: {
+          role_profile_id: baseSummary.roleProfile?.id || 'operations',
+          role: baseSummary.roleProfile?.role || effectiveRole,
+          facility_name: facilityContext?.name || null,
+          facility_type: facilityContext?.facility_type || null,
+        },
+        checklist: { completed_count: 0, total_count: 0, items: [] },
+        trend: baseSummary.trend,
+        distribution: baseSummary.distribution,
+        most_sold: baseSummary.most_sold || null,
+        alerts: [],
+        queue_preview: [],
+        results_preview: [],
+        follow_up_preview: [],
+        value_proof: [],
+        insights_preview: [],
+        module_recommendations: [],
+        plan_usage: { state: 'unavailable', metrics: [], manage_action_allowed: canManageSubscriptions },
+        activity_preview: [],
+        help_cards: [],
+      },
+      queue: { items: [], pagination: buildPagination(1, Number(limit || DEFAULT_LIMIT), 0) },
+      activity: { items: [], pagination: buildPagination(1, Number(limit || DEFAULT_LIMIT), 0) },
+      insights: {
+        signals: [],
+        module_recommendations: [],
+        plan_usage: { state: 'unavailable', metrics: [], manage_action_allowed: canManageSubscriptions },
+        help_cards: [],
+      },
+      getting_started: { completed_count: 0, total_count: 0, items: [] },
+    };
+  }
+
+  const [subscription, queueItems, activityItems, snapshot] = await Promise.all([
     dashboardWorkspaceRepository.findCurrentSubscription(scope),
     getQueueItems({ scope, packId, filters, page, limit, sortBy, order, user }),
     getActivityItems({ scope, packId, filters, page, limit, sortBy, order }),

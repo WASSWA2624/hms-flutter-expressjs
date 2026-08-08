@@ -56,6 +56,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             return;
           }
           homeClearDashboardOptimisticPatch(ref, request);
+          ref.invalidate(homeCoreControllerProvider(request));
           ref.invalidate(homeControllerProvider(request));
           ref.invalidate(homeLookupsControllerProvider(request));
         });
@@ -63,7 +64,10 @@ class _HomePageState extends ConsumerState<HomePage> {
       _boundSessionScope = sessionScope;
     }
 
-    final dashboard = ref.watch(homeControllerProvider(request));
+    final dashboard = watchHomeDashboardForWidget(ref, request);
+    final AsyncValue<Result<HomeDashboard>> fullDashboard = ref.watch(
+      homeControllerProvider(request),
+    );
     if (_awaitingFreshDashboard && dashboard.isLoading) {
       _sawLoadingAfterScopeChange = true;
     }
@@ -101,6 +105,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         _sawLoadingAfterScopeChange = false;
       });
       homeClearDashboardOptimisticPatch(ref, request);
+      ref.invalidate(homeCoreControllerProvider(request));
       ref.invalidate(homeControllerProvider(request));
       ref.invalidate(homeLookupsControllerProvider(request));
     });
@@ -145,6 +150,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         centerVertically: false,
         onRetry: () {
           homeClearDashboardOptimisticPatch(ref, request);
+          ref.invalidate(homeCoreControllerProvider(request));
           ref.invalidate(homeControllerProvider(request));
         },
         dataBuilder: (BuildContext context, HomeDashboard snapshot) {
@@ -152,7 +158,16 @@ class _HomePageState extends ConsumerState<HomePage> {
             snapshot,
             optimisticState,
           );
-          return _HomeDashboardContent(dashboard: display, request: request);
+          final bool isUpdating =
+              display.isEnriching ||
+              (!_awaitingFreshDashboard &&
+                  (fullDashboard.isLoading || fullDashboard.isReloading) &&
+                  dashboard.hasValue);
+          return _HomeDashboardContent(
+            dashboard: display,
+            request: request,
+            isUpdating: isUpdating,
+          );
         },
       ),
     );
@@ -160,10 +175,15 @@ class _HomePageState extends ConsumerState<HomePage> {
 }
 
 class _HomeDashboardContent extends ConsumerWidget {
-  const _HomeDashboardContent({required this.dashboard, required this.request});
+  const _HomeDashboardContent({
+    required this.dashboard,
+    required this.request,
+    this.isUpdating = false,
+  });
 
   final HomeDashboard dashboard;
   final HomeDashboardRequest request;
+  final bool isUpdating;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -232,6 +252,24 @@ class _HomeDashboardContent extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
+            if (isUpdating) ...<Widget>[
+              LinearProgressIndicator(
+                minHeight: 2,
+                color: theme.colorScheme.primary,
+                backgroundColor: theme.colorScheme.primary.withValues(
+                  alpha: 0.12,
+                ),
+              ),
+              SizedBox(height: spacing.xs),
+              Text(
+                l10n.homeUpdatingBanner,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: AppFontWeight.emphasis,
+                ),
+              ),
+              SizedBox(height: spacing.sm),
+            ],
             if (authorized.isTenantContextRequired)
               HomeTenantContextPanel(
                 tenantOptions: authorized.tenantOptions,

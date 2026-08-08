@@ -11212,6 +11212,12 @@ abstract class AppLocalizations {
   /// **'Loading readiness.'**
   String get homeLoadingBody;
 
+  /// Banner shown while the home dashboard enriches after the core KPI pack has painted.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating dashboard…'**
+  String get homeUpdatingBanner;
+
   /// Section heading for home dashboard KPI cards.
   ///
   /// In en, this message translates to:

@@ -41,10 +41,75 @@ void main() {
         failure: (_) => fail('Expected a successful dashboard result.'),
       );
       expect(repository.callCount, 1);
-      expect(repository.lastRequest, HomeDashboardRequest.empty);
+      expect(repository.lastRequest?.phase, HomeDashboardPhase.core);
       expect(
         container.read(homeControllerProvider(HomeDashboardRequest.empty)),
         isA<AsyncData<Result<HomeDashboard>>>(),
+      );
+    });
+
+    test('enriches a partial core pack with the full workspace', () async {
+      final HomeDashboard core = _dashboardFixture(
+        role: AppRole.doctor,
+        state: HomeDashboardLoadState.partial,
+      );
+      final HomeDashboard full = _dashboardFixture(
+        role: AppRole.doctor,
+        state: HomeDashboardLoadState.ready,
+      );
+      final repository = _SequencedHomeRepository(<Result<HomeDashboard>>[
+        Result<HomeDashboard>.success(core),
+        Result<HomeDashboard>.success(full),
+      ]);
+      final container = ProviderContainer(
+        overrides: [homeRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final List<HomeDashboardLoadState> states = <HomeDashboardLoadState>[];
+      final subscription = container.listen(
+        homeCoreControllerProvider(HomeDashboardRequest.empty),
+        (
+          AsyncValue<Result<HomeDashboard>>? previous,
+          AsyncValue<Result<HomeDashboard>> next,
+        ) {
+          next.whenData((Result<HomeDashboard> result) {
+            result.when(
+              success: (HomeDashboard dashboard) => states.add(dashboard.state),
+              failure: (_) {},
+            );
+          });
+        },
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+
+      final Result<HomeDashboard> coreResult = await container.read(
+        homeCoreControllerProvider(HomeDashboardRequest.empty).future,
+      );
+      coreResult.when(
+        success: (HomeDashboard dashboard) {
+          expect(dashboard.state, HomeDashboardLoadState.partial);
+        },
+        failure: (_) => fail('Expected partial core pack.'),
+      );
+
+      final Result<HomeDashboard> completed = await container.read(
+        homeControllerProvider(HomeDashboardRequest.empty).future,
+      );
+
+      expect(repository.callCount, 2);
+      expect(repository.phases, <HomeDashboardPhase>[
+        HomeDashboardPhase.core,
+        HomeDashboardPhase.full,
+      ]);
+      expect(states, contains(HomeDashboardLoadState.partial));
+      completed.when(
+        success: (HomeDashboard dashboard) {
+          expect(dashboard.state, HomeDashboardLoadState.ready);
+          expect(dashboard, same(full));
+        },
+        failure: (_) => fail('Expected enriched dashboard.'),
       );
     });
 
@@ -227,11 +292,14 @@ void main() {
   });
 }
 
-HomeDashboard _dashboardFixture({AppRole role = AppRole.tenantAdmin}) {
+HomeDashboard _dashboardFixture({
+  AppRole role = AppRole.tenantAdmin,
+  HomeDashboardLoadState state = HomeDashboardLoadState.ready,
+}) {
   final profile = homeProfileForRole(role);
 
   return HomeDashboard(
-    state: HomeDashboardLoadState.ready,
+    state: state,
     profile: profile,
     context: HomeDashboardContext(
       roleValue: profile.role.value,
@@ -279,11 +347,13 @@ final class _SequencedHomeRepository implements HomeRepository {
 
   final List<Result<HomeDashboard>> results;
   int callCount = 0;
+  final List<HomeDashboardPhase?> phases = <HomeDashboardPhase?>[];
 
   @override
   Future<Result<HomeDashboard>> loadDashboard(
     HomeDashboardRequest request,
   ) async {
+    phases.add(request.phase);
     final int index = callCount.clamp(0, results.length - 1);
     callCount += 1;
     return results[index];

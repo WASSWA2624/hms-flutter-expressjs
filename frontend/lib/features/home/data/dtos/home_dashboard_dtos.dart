@@ -101,7 +101,11 @@ final class HomeDashboardDto {
     ).toEntity();
 
     return HomeDashboard(
-      state: HomeDashboardLoadState.ready,
+      state: switch (state) {
+        'tenant_context_required' => HomeDashboardLoadState.tenantContextRequired,
+        'partial' => HomeDashboardLoadState.partial,
+        _ => HomeDashboardLoadState.ready,
+      },
       profile: profile,
       context: HomeDashboardContext(
         roleValue: roleValue,

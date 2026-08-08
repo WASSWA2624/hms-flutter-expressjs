@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/features/home/data/repositories/home_repository_impl.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
+import 'package:hosspi_hms/features/home/domain/repositories/home_repository.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
 
 /// Clears default home dashboard providers when the session epoch bumps.
@@ -24,6 +25,7 @@ final homeSessionIsolationBinderProvider = Provider<int>((Ref ref) {
       return;
     }
     const HomeDashboardRequest request = HomeDashboardRequest.empty;
+    ref.invalidate(homeCoreControllerProvider(request));
     ref.invalidate(homeControllerProvider(request));
     ref.invalidate(homeLookupsControllerProvider(request));
     ref.read(homeDashboardOptimisticPatchProvider(request).notifier).state =
@@ -32,8 +34,24 @@ final homeSessionIsolationBinderProvider = Provider<int>((Ref ref) {
   return ref.watch(sessionEpochProvider);
 });
 
-final homeControllerProvider = FutureProvider.autoDispose
+/// Soft realtime refreshes skip the core phase so queues/activity do not
+/// briefly clear while the full pack reloads.
+final Set<HomeDashboardRequest> _homeFullOnlyReloads = <HomeDashboardRequest>{};
+
+/// Fast KPI pack (`phase=core`). Painted immediately while [homeControllerProvider]
+/// enriches queues, activity, and snapshot counts.
+final homeCoreControllerProvider = FutureProvider.autoDispose
     .family<Result<HomeDashboard>, HomeDashboardRequest>((ref, request) {
+      watchSessionDashboardScope(ref);
+      return ref
+          .watch(homeRepositoryProvider)
+          .loadDashboard(request.copyWith(phase: HomeDashboardPhase.core));
+    });
+
+/// Full workspace pack. Depends on [homeCoreControllerProvider] so enrichment
+/// starts only after the core pack resolves (or skips core on soft refresh).
+final homeControllerProvider = FutureProvider.autoDispose
+    .family<Result<HomeDashboard>, HomeDashboardRequest>((ref, request) async {
       watchSessionDashboardScope(ref);
       listenForRealtimeRefresh(
         ref: ref,
@@ -92,16 +110,82 @@ final homeControllerProvider = FutureProvider.autoDispose
                 null;
           }
 
-          // Soft invalidate: AsyncStateScaffold keeps prior KPI/chart values
-          // visible while the new pack loads (no full-page remount).
+          // Soft invalidate: keep prior KPIs visible; reload full pack only.
+          _homeFullOnlyReloads.add(request);
           ref.invalidateSelf();
         },
       );
 
       // Watch (not read) so /auth/me enrichment and role/permission updates
       // rebuild the dashboard instead of leaving a stale limited fallback.
-      return ref.watch(homeRepositoryProvider).loadDashboard(request);
+      final HomeRepository repository = ref.watch(homeRepositoryProvider);
+      final bool fullOnly = _homeFullOnlyReloads.remove(request);
+      if (fullOnly) {
+        return repository.loadDashboard(
+          request.copyWith(phase: HomeDashboardPhase.full),
+        );
+      }
+
+      final Result<HomeDashboard> core = await ref.watch(
+        homeCoreControllerProvider(request).future,
+      );
+      final bool shouldEnrich = core.when(
+        success: (HomeDashboard dashboard) => dashboard.isEnriching,
+        failure: (_) => false,
+      );
+      if (!shouldEnrich) {
+        return core;
+      }
+
+      return repository.loadDashboard(
+        request.copyWith(phase: HomeDashboardPhase.full),
+      );
     });
+
+/// Progressive view: core KPIs as soon as ready, then the full pack.
+///
+/// Prefer this over watching [homeControllerProvider] alone so the page can
+/// paint before queues/activity finish loading.
+AsyncValue<Result<HomeDashboard>> watchHomeDashboard(
+  Ref ref,
+  HomeDashboardRequest request,
+) {
+  final AsyncValue<Result<HomeDashboard>> full = ref.watch(
+    homeControllerProvider(request),
+  );
+  final AsyncValue<Result<HomeDashboard>> core = ref.watch(
+    homeCoreControllerProvider(request),
+  );
+
+  if (full.hasValue) {
+    return full;
+  }
+  if (core.hasValue) {
+    return core;
+  }
+  return full;
+}
+
+/// Widget-ref variant of [watchHomeDashboard].
+AsyncValue<Result<HomeDashboard>> watchHomeDashboardForWidget(
+  WidgetRef ref,
+  HomeDashboardRequest request,
+) {
+  final AsyncValue<Result<HomeDashboard>> full = ref.watch(
+    homeControllerProvider(request),
+  );
+  final AsyncValue<Result<HomeDashboard>> core = ref.watch(
+    homeCoreControllerProvider(request),
+  );
+
+  if (full.hasValue) {
+    return full;
+  }
+  if (core.hasValue) {
+    return core;
+  }
+  return full;
+}
 
 final homeLookupsControllerProvider = FutureProvider.autoDispose
     .family<Result<HomeDashboardLookups>, HomeDashboardRequest>((ref, request) {
@@ -167,8 +251,9 @@ HomeDashboard? _readSuccessfulHomeDashboard(
   Ref ref,
   HomeDashboardRequest request,
 ) {
-  final AsyncValue<Result<HomeDashboard>> asyncValue = ref.read(
-    homeControllerProvider(request),
+  final AsyncValue<Result<HomeDashboard>> asyncValue = watchHomeDashboard(
+    ref,
+    request,
   );
 
   return switch (asyncValue) {

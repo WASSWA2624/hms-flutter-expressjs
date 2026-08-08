@@ -5934,6 +5934,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeLoadingBody => 'Loading readiness.';
 
   @override
+  String get homeUpdatingBanner => 'Updating dashboard…';
+
+  @override
   String get homeTodayAtAGlanceTitle => 'Today at a glance';
 
   @override

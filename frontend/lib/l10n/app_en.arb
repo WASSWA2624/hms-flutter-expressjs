@@ -7585,6 +7585,10 @@
   "@homeLoadingBody": {
     "description": "Body shown while the home feature controller loads readiness state."
   },
+  "homeUpdatingBanner": "Updating dashboard…",
+  "@homeUpdatingBanner": {
+    "description": "Banner shown while the home dashboard enriches after the core KPI pack has painted."
+  },
   "homeTodayAtAGlanceTitle": "Today at a glance",
   "@homeTodayAtAGlanceTitle": {
     "description": "Section heading for home dashboard KPI cards."
