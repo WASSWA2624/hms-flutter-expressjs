@@ -28,6 +28,8 @@ const {
   resolveTenantContact,
   hasResolvedContact,
   DEFAULT_TENANT_CURRENCY,
+  DEFAULT_TENANT_CONSULTATION_FEE,
+  resolveDefaultConsultationFee,
   normalizeText,
 } = require('@lib/tenant/resolve-tenant-contact');
 
@@ -361,12 +363,26 @@ const createTenant = async (data, context = {}) => {
       ? { ...payload.extension_json }
       : {};
   const existingCurrency = normalizeText(existingExtension.currency)?.toUpperCase();
+  const existingBilling =
+    existingExtension.billing && typeof existingExtension.billing === 'object'
+      ? { ...existingExtension.billing }
+      : {};
+  const hasExplicitFee =
+    existingBilling.standard_consultation_fee !== undefined &&
+    existingBilling.standard_consultation_fee !== null &&
+    String(existingBilling.standard_consultation_fee).trim() !== '';
   payload.extension_json = {
     ...existingExtension,
     currency:
       existingCurrency && /^[A-Z]{3}$/.test(existingCurrency)
         ? existingCurrency
         : DEFAULT_TENANT_CURRENCY,
+    billing: {
+      ...existingBilling,
+      standard_consultation_fee: hasExplicitFee
+        ? resolveDefaultConsultationFee(existingBilling.standard_consultation_fee)
+        : DEFAULT_TENANT_CONSULTATION_FEE,
+    },
   };
 
   const duplicateCheck = await assertTenantUniqueness({

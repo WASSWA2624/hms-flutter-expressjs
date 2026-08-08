@@ -80,7 +80,7 @@ describe('resolve-tenant-contact', () => {
     expect(hasResolvedContact(contact)).toBe(true);
   });
 
-  it('builds registration extension with UGX default currency and owner contact', () => {
+  it('builds registration extension with UGX defaults and owner contact', () => {
     expect(
       buildRegistrationContactExtension({
         admin_name: ' Wilson Wasswa ',
@@ -89,6 +89,9 @@ describe('resolve-tenant-contact', () => {
       })
     ).toEqual({
       currency: 'UGX',
+      billing: {
+        standard_consultation_fee: 25000,
+      },
       contact: {
         name: 'Wilson Wasswa',
         email: 'owner@example.com',

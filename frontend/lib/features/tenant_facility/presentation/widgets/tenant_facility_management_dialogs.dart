@@ -1831,7 +1831,18 @@ class _TenantDetailsSummary extends StatelessWidget {
               ),
               AppInfoSheetItem(
                 label: l10n.settingsConfigurationConsultationFeeLabel,
-                value: tenant.standardConsultationFee,
+                value: () {
+                  final String feeAmount = resolveDefaultConsultationFee(
+                    fee: tenant.standardConsultationFee,
+                  );
+                  final num? parsed = num.tryParse(
+                    normalizeCurrencyAmount(feeAmount),
+                  );
+                  final String formatted = parsed == null
+                      ? feeAmount
+                      : formatCurrencyAmountInput(parsed);
+                  return '${resolveDefaultCurrency(tenantCurrency: tenant.currency)} $formatted';
+                }(),
               ),
             ],
           ),

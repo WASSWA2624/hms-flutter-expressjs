@@ -4,6 +4,9 @@ import 'package:flutter/services.dart';
 
 const String appDefaultCurrencyCode = 'UGX';
 
+/// Default standard consultation fee for new tenants (UGX).
+const String appDefaultConsultationFeeAmount = '25000';
+
 /// Resolves default currency with facility override over tenant, then app fallback.
 String resolveDefaultCurrency({
   String? facilityCurrency,
@@ -18,6 +21,15 @@ String resolveDefaultCurrency({
     return tenant.toUpperCase();
   }
   return appDefaultCurrencyCode;
+}
+
+/// Resolves consultation fee text with an optional override, then app default.
+String resolveDefaultConsultationFee({String? fee}) {
+  final String? normalized = fee == null ? null : normalizeCurrencyAmount(fee);
+  if (normalized != null && normalized.isNotEmpty) {
+    return normalized;
+  }
+  return appDefaultConsultationFeeAmount;
 }
 
 /// Prefer a facility default when set; otherwise tenant, then [appDefaultCurrencyCode].

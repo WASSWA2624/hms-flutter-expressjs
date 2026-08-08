@@ -791,7 +791,9 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     _phoneController = TextEditingController(text: widget.tenant?.contactPhone);
     _emailController = TextEditingController(text: widget.tenant?.contactEmail);
     _feeController = TextEditingController(
-      text: widget.tenant?.standardConsultationFee,
+      text: resolveDefaultConsultationFee(
+        fee: widget.tenant?.standardConsultationFee,
+      ),
     );
     _isActive = widget.tenant?.isActive ?? true;
     _currency = resolveDefaultCurrency(tenantCurrency: widget.tenant?.currency);
@@ -825,7 +827,9 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
       _contactNameController.text = widget.tenant?.contactName ?? '';
       _phoneController.text = widget.tenant?.contactPhone ?? '';
       _emailController.text = widget.tenant?.contactEmail ?? '';
-      _feeController.text = widget.tenant?.standardConsultationFee ?? '';
+      _feeController.text = resolveDefaultConsultationFee(
+        fee: widget.tenant?.standardConsultationFee,
+      );
       _isActive = widget.tenant?.isActive ?? true;
       _currency = resolveDefaultCurrency(
         tenantCurrency: widget.tenant?.currency,

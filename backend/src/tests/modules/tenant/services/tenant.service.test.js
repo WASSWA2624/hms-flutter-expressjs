@@ -405,7 +405,12 @@ describe('Tenant Service', () => {
           name: 'New Hospital',
           slug: 'new-hospital',
           is_active: true,
-          extension_json: { currency: 'UGX' },
+          extension_json: {
+            currency: 'UGX',
+            billing: {
+              standard_consultation_fee: 25000,
+            },
+          },
         }),
         { facilityName: 'New Hospital Main Facility' }
       );

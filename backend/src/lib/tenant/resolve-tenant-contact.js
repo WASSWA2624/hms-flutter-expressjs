@@ -137,6 +137,20 @@ const resolveTenantContact = (tenant) => {
 /** App default ISO currency for new tenants (matches frontend appDefaultCurrencyCode). */
 const DEFAULT_TENANT_CURRENCY = 'UGX';
 
+/** Default standard consultation fee for new tenants (UGX). */
+const DEFAULT_TENANT_CONSULTATION_FEE = 25000;
+
+const resolveDefaultConsultationFee = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return DEFAULT_TENANT_CONSULTATION_FEE;
+  }
+  const parsed = typeof value === 'number' ? value : Number(String(value).replace(/,/g, '').trim());
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return DEFAULT_TENANT_CONSULTATION_FEE;
+  }
+  return parsed;
+};
+
 /**
  * Build extension_json payload for facility-owner registration.
  *
@@ -145,13 +159,15 @@ const DEFAULT_TENANT_CURRENCY = 'UGX';
  * @param {string} [params.email]
  * @param {string} [params.phone]
  * @param {string} [params.currency]
- * @returns {{ currency: string, contact: { name: string|null, email: string|null, phone: string|null } }}
+ * @param {number|string} [params.standard_consultation_fee]
+ * @returns {{ currency: string, billing: { standard_consultation_fee: number }, contact: { name: string|null, email: string|null, phone: string|null } }}
  */
 const buildRegistrationContactExtension = ({
   admin_name,
   email,
   phone,
   currency,
+  standard_consultation_fee,
 } = {}) => {
   const normalizedCurrency = normalizeText(currency)?.toUpperCase();
   return {
@@ -159,6 +175,11 @@ const buildRegistrationContactExtension = ({
       normalizedCurrency && /^[A-Z]{3}$/.test(normalizedCurrency)
         ? normalizedCurrency
         : DEFAULT_TENANT_CURRENCY,
+    billing: {
+      standard_consultation_fee: resolveDefaultConsultationFee(
+        standard_consultation_fee,
+      ),
+    },
     contact: {
       name: normalizeText(admin_name),
       email: normalizeText(email),
@@ -172,8 +193,10 @@ const hasResolvedContact = (contact) =>
 
 module.exports = {
   DEFAULT_TENANT_CURRENCY,
+  DEFAULT_TENANT_CONSULTATION_FEE,
   PRIMARY_TENANT_ADMIN_INCLUDE,
   resolveTenantContact,
+  resolveDefaultConsultationFee,
   buildRegistrationContactExtension,
   hasResolvedContact,
   buildFullName,
