@@ -20,6 +20,7 @@ const {
   softDeleteWardCascade,
   softDeleteRoomCascade,
   softDeleteTenantStructureInTx,
+  restoreTenantStructureInTx,
   restoreRoom,
   restoreUnit,
   restoreWard,
@@ -136,6 +137,50 @@ describe('cascade-soft-delete', () => {
     expect(tx.facility.updateMany).toHaveBeenCalled();
     expect(tx.bed.updateMany).toHaveBeenCalled();
     expect(tx.department.updateMany).toHaveBeenCalled();
+    // Per-facility descendant pass after tenant-scoped structure soft-delete.
+    expect(tx.bed.findMany.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('restores tenant facilities and structure matching deleted_at', async () => {
+    const deletedAt = new Date('2026-08-08T12:00:00.000Z');
+    const tx = createTx();
+    tx.facility.findMany.mockResolvedValue([
+      {
+        id: 'fac-1',
+        tenant_id: 'ten-1',
+        name: 'Main',
+        facility_type: 'HOSPITAL',
+        is_active: true,
+      },
+    ]);
+
+    const result = await restoreTenantStructureInTx(tx, 'ten-1', deletedAt);
+
+    expect(result.facilities).toHaveLength(1);
+    expect(tx.facility.updateMany).toHaveBeenCalledWith({
+      where: { tenant_id: 'ten-1', deleted_at: deletedAt },
+      data: { deleted_at: null },
+    });
+    expect(tx.department.updateMany).toHaveBeenCalledWith({
+      where: { tenant_id: 'ten-1', deleted_at: deletedAt },
+      data: { deleted_at: null },
+    });
+    expect(tx.unit.updateMany).toHaveBeenCalledWith({
+      where: { tenant_id: 'ten-1', deleted_at: deletedAt },
+      data: { deleted_at: null },
+    });
+    expect(tx.ward.updateMany).toHaveBeenCalledWith({
+      where: { tenant_id: 'ten-1', deleted_at: deletedAt },
+      data: { deleted_at: null },
+    });
+    expect(tx.room.updateMany).toHaveBeenCalledWith({
+      where: { tenant_id: 'ten-1', deleted_at: deletedAt },
+      data: { deleted_at: null },
+    });
+    expect(tx.bed.updateMany).toHaveBeenCalledWith({
+      where: { tenant_id: 'ten-1', deleted_at: deletedAt },
+      data: { deleted_at: null },
+    });
   });
 
   it('blocks room restore when ward is deleted', async () => {

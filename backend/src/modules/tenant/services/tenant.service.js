@@ -583,7 +583,8 @@ const updateTenant = async (id, data, context = {}) => {
 };
 
 /**
- * Delete tenant (soft delete) and cascade soft-delete to all active facilities.
+ * Delete tenant (soft delete) and cascade soft-delete to facilities and
+ * facility structure (departments, units, wards, rooms, beds).
  *
  * @param {string} id - Tenant ID
  * @param {Object} context - Request context for audit
@@ -702,7 +703,8 @@ const assertNoActiveSubscriptions = async (tenantId) => {
 };
 
 /**
- * Restore soft-deleted tenant and cascade-restore facilities soft-deleted with it.
+ * Restore soft-deleted tenant and cascade-restore facilities and structure
+ * soft-deleted with it.
  */
 const restoreTenant = async (id, context = {}) => {
   const normalizedId = String(id ?? '').trim();

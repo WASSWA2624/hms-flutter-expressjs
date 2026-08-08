@@ -7,10 +7,14 @@
  *   Ward → Room → Bed
  *   Room → Bed
  *
- * Soft-delete cascades to hierarchical descendants. Restore is parent-only
- * (children stay deleted until restored individually) and requires an active
- * parent chain. Optional parents (e.g. ward.department_id) are not cascade-
- * deleted with the parent and must be flagged in the UI when deleted.
+ * Soft-delete cascades to hierarchical descendants.
+ * Tenant restore cascade-restores facilities and structure soft-deleted with
+ * the same deleted_at timestamp; independent earlier soft-deletes are left
+ * alone. Standalone facility/department/ward/room/bed restore remains
+ * parent-only (children stay deleted until restored individually) and
+ * requires an active parent chain. Optional parents (e.g. ward.department_id)
+ * are not cascade-deleted with the parent and must be flagged in the UI when
+ * deleted.
  */
 
 const prisma = require('@prisma/client');
@@ -96,8 +100,8 @@ const softDeleteFacilityDescendantsInTx = async (tx, facilityId, deletedAt) => {
 };
 
 /**
- * Soft-delete tenant-scoped structure that may lack facility_id, then each
- * facility and its descendants.
+ * Soft-delete tenant-scoped structure, then each facility and its descendants.
+ * All cascade rows share the same deletedAt for matching restore.
  */
 const softDeleteTenantStructureInTx = async (tx, tenantId, deletedAt) => {
   const orphanBeds = await tx.bed.findMany({
@@ -166,10 +170,58 @@ const softDeleteTenantStructureInTx = async (tx, tenantId, deletedAt) => {
     },
   });
 
+  for (const facility of facilities) {
+    // Catch any facility-scoped structure that may not have been covered above.
+    await softDeleteFacilityDescendantsInTx(tx, facility.id, deletedAt);
+  }
+
   if (facilities.length > 0) {
     await tx.facility.updateMany({
       where: { tenant_id: tenantId, deleted_at: null },
       data: { deleted_at: deletedAt },
+    });
+  }
+
+  return { facilities };
+};
+
+/**
+ * Restore facilities and structure soft-deleted together with a tenant
+ * (matching deleted_at). Independently soft-deleted rows keep their tombstones.
+ */
+const restoreTenantStructureInTx = async (tx, tenantId, deletedAt) => {
+  const facilities = await tx.facility.findMany({
+    where: {
+      tenant_id: tenantId,
+      deleted_at: deletedAt,
+    },
+    select: {
+      id: true,
+      tenant_id: true,
+      name: true,
+      facility_type: true,
+      is_active: true,
+    },
+  });
+
+  if (facilities.length > 0) {
+    await tx.facility.updateMany({
+      where: {
+        tenant_id: tenantId,
+        deleted_at: deletedAt,
+      },
+      data: { deleted_at: null },
+    });
+  }
+
+  // Parent-before-child order for any mid-tx readers of active parents.
+  for (const model of ['department', 'unit', 'ward', 'room', 'bed']) {
+    await tx[model].updateMany({
+      where: {
+        tenant_id: tenantId,
+        deleted_at: deletedAt,
+      },
+      data: { deleted_at: null },
     });
   }
 
@@ -459,6 +511,7 @@ module.exports = {
   softDeleteFacilityCascade,
   softDeleteFacilityDescendantsInTx,
   softDeleteTenantStructureInTx,
+  restoreTenantStructureInTx,
   restoreDepartment,
   restoreUnit,
   restoreWard,
