@@ -562,6 +562,7 @@ Future<bool?> showRoleMutationDialog({
                             options: tenantOptions,
                             selectedIds: selectedTenantIds,
                             enabled: !isSubmitting,
+                            enableSelectAll: isCreate,
                             emptySelectionError: selectedTenantIds.isEmpty
                                 ? l10n.accessAdminRoleTargetsRequired
                                 : null,
@@ -624,6 +625,7 @@ Future<bool?> showRoleMutationDialog({
                             options: facilityOptions,
                             selectedIds: selectedFacilityIds,
                             enabled: !isSubmitting,
+                            enableSelectAll: isCreate,
                             emptySelectionError: selectedFacilityIds.isEmpty
                                 ? l10n.accessAdminRoleTargetsRequired
                                 : null,
@@ -941,6 +943,7 @@ class _RoleTargetMultiSelect extends StatelessWidget {
     required this.selectedIds,
     required this.onChanged,
     required this.enabled,
+    this.enableSelectAll = false,
     this.emptySelectionError,
   });
 
@@ -948,16 +951,57 @@ class _RoleTargetMultiSelect extends StatelessWidget {
   final Set<String> selectedIds;
   final ValueChanged<Set<String>> onChanged;
   final bool enabled;
+  final bool enableSelectAll;
   final String? emptySelectionError;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final int selectedCount = options
+        .where((AccessAdminLookupOption option) => selectedIds.contains(option.id))
+        .length;
+    final bool allSelected =
+        options.isNotEmpty && selectedCount == options.length;
+    final bool noneSelected = selectedCount == 0;
+    final bool? selectAllValue = allSelected
+        ? true
+        : noneSelected
+        ? false
+        : null;
+    final bool showSelectAll = enableSelectAll && options.length > 1;
+    final String selectAllLabel = allSelected
+        ? l10n.commonDeselectAllActionLabel
+        : l10n.commonSelectAllActionLabel;
 
     // Flat wrap under the Scope section — no nested card/heading.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        if (showSelectAll) ...<Widget>[
+          _RoleTargetCheckbox(
+            label: selectAllLabel,
+            value: selectAllValue,
+            tristate: true,
+            enabled: enabled,
+            onChanged: enabled
+                ? (bool? checked) {
+                    // Material tristate: false/null → true (select all),
+                    // true → false (clear).
+                    if (checked == false) {
+                      onChanged(<String>{});
+                    } else {
+                      onChanged(
+                        options
+                            .map((AccessAdminLookupOption option) => option.id)
+                            .toSet(),
+                      );
+                    }
+                  }
+                : null,
+          ),
+          SizedBox(height: theme.spacing.xs),
+        ],
         Wrap(
           spacing: theme.spacing.md,
           runSpacing: theme.spacing.xs,
@@ -966,12 +1010,12 @@ class _RoleTargetMultiSelect extends StatelessWidget {
             for (final AccessAdminLookupOption option in options)
               _RoleTargetCheckbox(
                 label: option.label,
-                selected: selectedIds.contains(option.id),
+                value: selectedIds.contains(option.id),
                 enabled: enabled,
                 onChanged: enabled
-                    ? (bool checked) {
+                    ? (bool? checked) {
                         final Set<String> next = Set<String>.from(selectedIds);
-                        if (checked) {
+                        if (checked ?? false) {
                           next.add(option.id);
                         } else {
                           next.remove(option.id);
@@ -992,22 +1036,35 @@ class _RoleTargetMultiSelect extends StatelessWidget {
 class _RoleTargetCheckbox extends StatelessWidget {
   const _RoleTargetCheckbox({
     required this.label,
-    required this.selected,
+    required this.value,
     required this.enabled,
     required this.onChanged,
+    this.tristate = false,
   });
 
   final String label;
-  final bool selected;
+  final bool? value;
   final bool enabled;
-  final ValueChanged<bool>? onChanged;
+  final ValueChanged<bool?>? onChanged;
+  final bool tristate;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final bool isSelected = value == true;
+    final bool isIndeterminate = tristate && value == null;
 
     return InkWell(
-      onTap: onChanged == null ? null : () => onChanged!(!selected),
+      onTap: onChanged == null
+          ? null
+          : () {
+              if (tristate) {
+                // Match Checkbox tristate tap: false/null → true, true → false.
+                onChanged!(value == true ? false : true);
+              } else {
+                onChanged!(!(value ?? false));
+              }
+            },
       borderRadius: BorderRadius.circular(theme.radius.sm),
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
@@ -1018,10 +1075,9 @@ class _RoleTargetCheckbox extends StatelessWidget {
               width: 24,
               height: 24,
               child: Checkbox(
-                value: selected,
-                onChanged: onChanged == null
-                    ? null
-                    : (bool? value) => onChanged!(value ?? false),
+                value: value,
+                tristate: tristate,
+                onChanged: onChanged,
                 visualDensity: VisualDensity.compact,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
@@ -1033,6 +1089,9 @@ class _RoleTargetCheckbox extends StatelessWidget {
                 color: enabled
                     ? theme.colorScheme.onSurface
                     : theme.disabledColor,
+                fontWeight: isSelected || isIndeterminate
+                    ? AppFontWeight.emphasis
+                    : null,
               ),
             ),
           ],
