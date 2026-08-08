@@ -2883,6 +2883,19 @@
   "@subscriptionUpgradeDialogTitle": {
     "description": "Title for the subscription upgrade and payment dialog."
   },
+  "subscriptionConfirmFreeDialogTitle": "Confirm Free plan",
+  "@subscriptionConfirmFreeDialogTitle": {
+    "description": "Dialog title when confirming a free or zero-price plan change (not an upgrade)."
+  },
+  "subscriptionConfirmPlanDialogTitle": "Confirm {plan}",
+  "@subscriptionConfirmPlanDialogTitle": {
+    "description": "Dialog title when confirming a named free or zero-price plan.",
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
   "subscriptionRenewDialogTitle": "Renew subscription",
   "@subscriptionRenewDialogTitle": {
     "description": "Title when the tenant is renewing the current subscription plan."
@@ -2932,13 +2945,35 @@
   "@subscriptionUpgradeStepConfirmTitle": {
     "description": "Final wizard step title when a free plan needs no payment."
   },
-  "subscriptionUpgradeFreePlanStepBody": "No payment needed. Confirm to request this free plan.",
+  "subscriptionUpgradeFreePlanStepBody": "No payment needed. Confirm to switch to {plan}.",
   "@subscriptionUpgradeFreePlanStepBody": {
-    "description": "Shown on the final wizard step when a free or zero-price plan is selected."
+    "description": "Shown on the final wizard step when a free or zero-price plan is selected.",
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
   },
-  "subscriptionUpgradeConfirmFreeAction": "Confirm free plan",
+  "subscriptionUpgradeConfirmFreeAction": "Confirm {plan}",
   "@subscriptionUpgradeConfirmFreeAction": {
-    "description": "Submit action when the selected upgrade plan requires no payment."
+    "description": "Submit action when the selected plan requires no payment.",
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionUpgradeFreePlanAdminContactTitle": "Platform support",
+  "@subscriptionUpgradeFreePlanAdminContactTitle": {
+    "description": "Contact section title on the free-plan confirm step (no billing/payment context)."
+  },
+  "subscriptionUpgradeFreePlanAdminContactBody": "Questions about this change? Contact platform admins below.",
+  "@subscriptionUpgradeFreePlanAdminContactBody": {
+    "description": "Contact section body on the free-plan confirm step (avoids payment-after-access wording)."
+  },
+  "subscriptionUpgradeFreeSubmittedMessage": "Free plan request submitted. The platform team will review and apply the change.",
+  "@subscriptionUpgradeFreeSubmittedMessage": {
+    "description": "Success message after submitting a free or zero-price plan change request."
   },
   "subscriptionUpgradePlansEmptyTitle": "No plans available",
   "@subscriptionUpgradePlansEmptyTitle": {
@@ -3178,7 +3213,7 @@
   },
   "subscriptionUpgradeSubmittedMessage": "Payment submitted. The platform team will review and activate your subscription.",
   "@subscriptionUpgradeSubmittedMessage": {
-    "description": "Success message after submitting a subscription payment request."
+    "description": "Success message after submitting a paid subscription payment request."
   },
   "subscriptionPaymentMethodBankTransfer": "Bank transfer",
   "@subscriptionPaymentMethodBankTransfer": {

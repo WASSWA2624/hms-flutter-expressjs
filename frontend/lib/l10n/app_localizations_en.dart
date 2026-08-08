@@ -2208,6 +2208,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionUpgradeDialogTitle => 'Upgrade subscription';
 
   @override
+  String get subscriptionConfirmFreeDialogTitle => 'Confirm Free plan';
+
+  @override
+  String subscriptionConfirmPlanDialogTitle(String plan) {
+    return 'Confirm $plan';
+  }
+
+  @override
   String get subscriptionRenewDialogTitle => 'Renew subscription';
 
   @override
@@ -2246,11 +2254,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionUpgradeStepConfirmTitle => 'Confirm';
 
   @override
-  String get subscriptionUpgradeFreePlanStepBody =>
-      'No payment needed. Confirm to request this free plan.';
+  String subscriptionUpgradeFreePlanStepBody(String plan) {
+    return 'No payment needed. Confirm to switch to $plan.';
+  }
 
   @override
-  String get subscriptionUpgradeConfirmFreeAction => 'Confirm free plan';
+  String subscriptionUpgradeConfirmFreeAction(String plan) {
+    return 'Confirm $plan';
+  }
+
+  @override
+  String get subscriptionUpgradeFreePlanAdminContactTitle => 'Platform support';
+
+  @override
+  String get subscriptionUpgradeFreePlanAdminContactBody =>
+      'Questions about this change? Contact platform admins below.';
+
+  @override
+  String get subscriptionUpgradeFreeSubmittedMessage =>
+      'Free plan request submitted. The platform team will review and apply the change.';
 
   @override
   String get subscriptionUpgradePlansEmptyTitle => 'No plans available';

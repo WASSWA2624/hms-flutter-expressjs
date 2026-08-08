@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/currency/effective_default_currency_provider.dart';
 import 'package:hosspi_hms/core/currency/fx_currency_utils.dart';
 import 'package:hosspi_hms/core/currency/fx_rate_service.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -25,12 +26,15 @@ import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 enum _UpgradeStep { plan, paymentMethod, paymentDetails, proof, contact }
 
-Future<bool?> showSubscriptionUpgradeDialog(
+/// Result of a successful subscription upgrade/renew/free-plan submission.
+enum SubscriptionUpgradeDialogResult { paidSubmitted, freeSubmitted }
+
+Future<SubscriptionUpgradeDialogResult?> showSubscriptionUpgradeDialog(
   BuildContext context, {
   TenantSubscriptionSummary? initialSummary,
   PlatformAdminContact? initialAdminContact,
 }) {
-  return showAppDialog<bool>(
+  return showAppDialog<SubscriptionUpgradeDialogResult>(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {
@@ -79,6 +83,7 @@ class _SubscriptionUpgradeDialogState
   String? _selectedPlanId;
   String _currency = appDefaultCurrencyCode;
   double? _usdPlanPrice;
+  double? _usdToDisplayRate;
   String? _fxWarning;
   SubscriptionUpgradeBillingCycle _billingCycle =
       SubscriptionUpgradeBillingCycle.monthly;
@@ -292,10 +297,12 @@ class _SubscriptionUpgradeDialogState
           _context = contextData;
           _selectedPlanId = selectedPlanId;
           _billingCycle = billingCycle;
+          _currency = ref.read(effectiveDefaultCurrencyProvider);
           _isLoading = false;
         });
 
         _syncUsdPriceFromSelection();
+        unawaited(_refreshDisplayFxRate());
         unawaited(_applyConvertedAmount());
       },
       failure: (AppFailure failure) {
@@ -309,6 +316,34 @@ class _SubscriptionUpgradeDialogState
 
   void _syncUsdPriceFromSelection() {
     _usdPlanPrice = _selectedPlan?.priceFor(_billingCycle);
+  }
+
+  Future<void> _refreshDisplayFxRate() async {
+    final String targetCurrency = _currency.trim().toUpperCase();
+    if (targetCurrency.isEmpty ||
+        targetCurrency == subscriptionPlanBaseCurrencyCode) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _usdToDisplayRate = 1;
+        _fxWarning = null;
+      });
+      return;
+    }
+
+    final double? rate = await ref
+        .read(fxRateServiceProvider)
+        .convertUsdTo(targetCurrency);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _usdToDisplayRate = rate;
+      _fxWarning = rate == null
+          ? context.l10n.subscriptionFxRateErrorMessage
+          : null;
+    });
   }
 
   Future<void> _applyConvertedAmount() async {
@@ -390,7 +425,11 @@ class _SubscriptionUpgradeDialogState
   }
 
   Future<void> _onCurrencyChanged(String currency) async {
-    setState(() => _currency = currency);
+    setState(() {
+      _currency = currency;
+      _usdToDisplayRate = null;
+    });
+    await _refreshDisplayFxRate();
     await _applyConvertedAmount();
   }
 
@@ -555,7 +594,11 @@ class _SubscriptionUpgradeDialogState
     }
 
     result.when(
-      success: (_) => Navigator.of(context).pop(true),
+      success: (_) => Navigator.of(context).pop(
+        noPayment
+            ? SubscriptionUpgradeDialogResult.freeSubmitted
+            : SubscriptionUpgradeDialogResult.paidSubmitted,
+      ),
       failure: (AppFailure failure) {
         setState(() {
           _failure = failure;
@@ -577,6 +620,28 @@ class _SubscriptionUpgradeDialogState
       return composed;
     }
     return '$composed\n$base';
+  }
+
+  String _selectedPlanDisplayLabel(AppLocalizations l10n) {
+    final String? label = _selectedPlan?.label.trim();
+    if (label != null && label.isNotEmpty) {
+      return label;
+    }
+    return l10n.subscriptionHeaderFreeLabel;
+  }
+
+  String _dialogTitle(AppLocalizations l10n) {
+    if (_isNoPaymentPlan) {
+      final String? label = _selectedPlan?.label.trim();
+      if (label != null && label.isNotEmpty) {
+        return l10n.subscriptionConfirmPlanDialogTitle(label);
+      }
+      return l10n.subscriptionConfirmFreeDialogTitle;
+    }
+    if (_flowIntent == SubscriptionPaymentFlowIntent.renewal) {
+      return l10n.subscriptionRenewDialogTitle;
+    }
+    return l10n.subscriptionUpgradeDialogTitle;
   }
 
   String _stepTitle(AppLocalizations l10n, _UpgradeStep step) {
@@ -644,15 +709,17 @@ class _SubscriptionUpgradeDialogState
     final PlatformAdminContact? adminContact =
         contextData?.platformAdminContact ?? widget.initialAdminContact;
     final List<_UpgradeStep> steps = _steps;
+    final bool noPayment = _isNoPaymentPlan;
+    final String planLabel = _selectedPlanDisplayLabel(l10n);
 
     return AppDialog(
-      title: Text(
-        isRenewal
-            ? l10n.subscriptionRenewDialogTitle
-            : l10n.subscriptionUpgradeDialogTitle,
-      ),
+      title: Text(_dialogTitle(l10n)),
       icon: Icon(
-        isRenewal ? Icons.autorenew : Icons.workspace_premium_outlined,
+        noPayment
+            ? Icons.check_circle_outline
+            : (isRenewal
+                  ? Icons.autorenew
+                  : Icons.workspace_premium_outlined),
       ),
       maxWidth: 1080,
       initialMaximized: false,
@@ -691,8 +758,8 @@ class _SubscriptionUpgradeDialogState
         cancelLabel: l10n.commonCancelActionLabel,
         backLabel: l10n.commonBackActionLabel,
         primaryLabel: _isLastStep
-            ? (_isNoPaymentPlan
-                  ? l10n.subscriptionUpgradeConfirmFreeAction
+            ? (noPayment
+                  ? l10n.subscriptionUpgradeConfirmFreeAction(planLabel)
                   : (isRenewal
                         ? l10n.subscriptionRenewSubmitAction
                         : l10n.subscriptionUpgradeSubmitAction))
@@ -700,7 +767,7 @@ class _SubscriptionUpgradeDialogState
         showBack: !_isFirstStep,
         isSubmitting: _isSubmitting,
         primaryIcon: _isLastStep
-            ? (_isNoPaymentPlan
+            ? (noPayment
                   ? Icons.check_circle_outline
                   : Icons.payments_outlined)
             : Icons.arrow_forward,
@@ -735,6 +802,8 @@ class _SubscriptionUpgradeDialogState
             featuresColumnLabel: l10n.subscriptionUpgradeFeaturesColumnLabel,
             priceRowLabel: l10n.subscriptionUpgradePriceRowLabel,
             contactUsLabel: l10n.subscriptionUpgradeCustomContactUsAction,
+            displayCurrency: _currency,
+            usdToDisplayRate: _usdToDisplayRate,
             emptyTitle: _failure != null
                 ? l10n.failureTitle(_failure!)
                 : l10n.subscriptionUpgradePlansEmptyTitle,
@@ -752,6 +821,15 @@ class _SubscriptionUpgradeDialogState
               );
             },
           ),
+          if (_fxWarning != null) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            AppMessagePanel(
+              message: _fxWarning!,
+              icon: Icons.currency_exchange,
+              tone: AppWorkspaceStatusTone.warning,
+              density: AppContentPanelDensity.compact,
+            ),
+          ],
           if (_failure != null &&
               (contextData?.plans.isEmpty ?? true)) ...<Widget>[
             SizedBox(height: theme.spacing.sm),
@@ -831,7 +909,9 @@ class _SubscriptionUpgradeDialogState
         children: <Widget>[
           if (_isNoPaymentPlan) ...<Widget>[
             AppMessagePanel(
-              message: l10n.subscriptionUpgradeFreePlanStepBody,
+              message: l10n.subscriptionUpgradeFreePlanStepBody(
+                _selectedPlanDisplayLabel(l10n),
+              ),
               icon: Icons.verified_outlined,
               tone: AppWorkspaceStatusTone.success,
               density: AppContentPanelDensity.compact,
@@ -841,8 +921,12 @@ class _SubscriptionUpgradeDialogState
           if (adminContact?.hasContact == true)
             _AdminContactSection(
               adminContact: adminContact!,
-              title: l10n.subscriptionUpgradeAdminContactTitle,
-              body: l10n.subscriptionUpgradeAdminContactBody,
+              title: _isNoPaymentPlan
+                  ? l10n.subscriptionUpgradeFreePlanAdminContactTitle
+                  : l10n.subscriptionUpgradeAdminContactTitle,
+              body: _isNoPaymentPlan
+                  ? l10n.subscriptionUpgradeFreePlanAdminContactBody
+                  : l10n.subscriptionUpgradeAdminContactBody,
               emailLabel: l10n.subscriptionUpgradeAdminContactEmailLabel,
               phoneLabel: l10n.subscriptionUpgradeAdminContactPhoneLabel,
             )

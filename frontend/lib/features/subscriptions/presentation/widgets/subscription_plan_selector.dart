@@ -28,6 +28,8 @@ class SubscriptionPlanSelector extends StatelessWidget {
     this.featuresColumnLabel = 'Features',
     this.priceRowLabel = 'Price',
     this.contactUsLabel = 'Contact us',
+    this.displayCurrency = subscriptionPlanBaseCurrencyCode,
+    this.usdToDisplayRate,
     this.onContactCustomPlan,
     this.emptyTitle,
     this.emptyMessage,
@@ -44,6 +46,13 @@ class SubscriptionPlanSelector extends StatelessWidget {
   final String featuresColumnLabel;
   final String priceRowLabel;
   final String contactUsLabel;
+
+  /// Currency used for the price row (tenant/facility default).
+  /// Plan catalog amounts are stored in [subscriptionPlanBaseCurrencyCode].
+  final String displayCurrency;
+
+  /// USD → [displayCurrency] rate. Null while loading or when FX fails.
+  final double? usdToDisplayRate;
   final VoidCallback? onContactCustomPlan;
   final String Function(SubscriptionUpgradePlanOption plan) planLabelBuilder;
   final ValueChanged<SubscriptionUpgradeBillingCycle> onBillingCycleChanged;
@@ -190,15 +199,32 @@ class SubscriptionPlanSelector extends StatelessWidget {
   }
 
   String _priceLabel(BuildContext context, SubscriptionUpgradePlanOption plan) {
-    final double? amount = plan.priceFor(billingCycle);
-    if (amount == null) {
+    final double? usdAmount = plan.priceFor(billingCycle);
+    if (usdAmount == null) {
       return '—';
     }
+
+    final String currency = displayCurrency.trim().toUpperCase();
+    if (currency.isEmpty || currency == subscriptionPlanBaseCurrencyCode) {
+      return AppFormatters.currency(
+        usdAmount,
+        Localizations.localeOf(context),
+        currencyCode: subscriptionPlanBaseCurrencyCode,
+        decimalDigits: decimalDigitsForCurrency(subscriptionPlanBaseCurrencyCode),
+      );
+    }
+
+    final double? rate = usdToDisplayRate;
+    if (rate == null) {
+      return '…';
+    }
+
+    final double converted = roundConvertedAmount(usdAmount * rate, currency);
     return AppFormatters.currency(
-      amount,
+      converted,
       Localizations.localeOf(context),
-      currencyCode: subscriptionPlanBaseCurrencyCode,
-      decimalDigits: amount % 1 == 0 ? 0 : 2,
+      currencyCode: currency,
+      decimalDigits: decimalDigitsForCurrency(currency),
     );
   }
 }

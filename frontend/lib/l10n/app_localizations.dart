@@ -4234,6 +4234,18 @@ abstract class AppLocalizations {
   /// **'Upgrade subscription'**
   String get subscriptionUpgradeDialogTitle;
 
+  /// Dialog title when confirming a free or zero-price plan change (not an upgrade).
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Free plan'**
+  String get subscriptionConfirmFreeDialogTitle;
+
+  /// Dialog title when confirming a named free or zero-price plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm {plan}'**
+  String subscriptionConfirmPlanDialogTitle(String plan);
+
   /// Title when the tenant is renewing the current subscription plan.
   ///
   /// In en, this message translates to:
@@ -4303,14 +4315,32 @@ abstract class AppLocalizations {
   /// Shown on the final wizard step when a free or zero-price plan is selected.
   ///
   /// In en, this message translates to:
-  /// **'No payment needed. Confirm to request this free plan.'**
-  String get subscriptionUpgradeFreePlanStepBody;
+  /// **'No payment needed. Confirm to switch to {plan}.'**
+  String subscriptionUpgradeFreePlanStepBody(String plan);
 
-  /// Submit action when the selected upgrade plan requires no payment.
+  /// Submit action when the selected plan requires no payment.
   ///
   /// In en, this message translates to:
-  /// **'Confirm free plan'**
-  String get subscriptionUpgradeConfirmFreeAction;
+  /// **'Confirm {plan}'**
+  String subscriptionUpgradeConfirmFreeAction(String plan);
+
+  /// Contact section title on the free-plan confirm step (no billing/payment context).
+  ///
+  /// In en, this message translates to:
+  /// **'Platform support'**
+  String get subscriptionUpgradeFreePlanAdminContactTitle;
+
+  /// Contact section body on the free-plan confirm step (avoids payment-after-access wording).
+  ///
+  /// In en, this message translates to:
+  /// **'Questions about this change? Contact platform admins below.'**
+  String get subscriptionUpgradeFreePlanAdminContactBody;
+
+  /// Success message after submitting a free or zero-price plan change request.
+  ///
+  /// In en, this message translates to:
+  /// **'Free plan request submitted. The platform team will review and apply the change.'**
+  String get subscriptionUpgradeFreeSubmittedMessage;
 
   /// Title when the upgrade dialog has no selectable plans.
   ///
@@ -4666,7 +4696,7 @@ abstract class AppLocalizations {
   /// **'Attach proof of payment for this method.'**
   String get subscriptionProofRequiredMessage;
 
-  /// Success message after submitting a subscription payment request.
+  /// Success message after submitting a paid subscription payment request.
   ///
   /// In en, this message translates to:
   /// **'Payment submitted. The platform team will review and activate your subscription.'**

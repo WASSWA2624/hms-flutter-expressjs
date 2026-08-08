@@ -146,12 +146,13 @@ class _SubscriptionExpiredPromptHostState
     }
 
     if (renewNow == true) {
-      final bool? submitted = await showSubscriptionUpgradeDialog(
-        context,
-        initialSummary: summary,
-        initialAdminContact: widget.platformAdminContact,
-      );
-      if (submitted == true) {
+      final SubscriptionUpgradeDialogResult? submitted =
+          await showSubscriptionUpgradeDialog(
+            context,
+            initialSummary: summary,
+            initialAdminContact: widget.platformAdminContact,
+          );
+      if (submitted != null) {
         await widget.onRenewed?.call();
       }
     }

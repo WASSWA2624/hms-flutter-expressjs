@@ -1059,18 +1059,26 @@ Widget? _subscriptionHeaderAction({
   VoidCallback? onPressed;
   if (canManageBilling) {
     onPressed = () async {
-      final bool? submitted = await showSubscriptionUpgradeDialog(
-        context,
-        initialSummary: summary,
-        initialAdminContact: session.platformAdminContact,
-      );
-      if (submitted != true || !context.mounted) {
+      final SubscriptionUpgradeDialogResult? submitted =
+          await showSubscriptionUpgradeDialog(
+            context,
+            initialSummary: summary,
+            initialAdminContact: session.platformAdminContact,
+          );
+      if (submitted == null || !context.mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.subscriptionUpgradeSubmittedMessage)),
-      );
+      final String message = switch (submitted) {
+        SubscriptionUpgradeDialogResult.freeSubmitted =>
+          l10n.subscriptionUpgradeFreeSubmittedMessage,
+        SubscriptionUpgradeDialogResult.paidSubmitted =>
+          l10n.subscriptionUpgradeSubmittedMessage,
+      };
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
 
       final refreshResult = await ref
           .read(authRepositoryProvider)
