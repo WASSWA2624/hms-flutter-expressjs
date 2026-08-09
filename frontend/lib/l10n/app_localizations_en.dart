@@ -20736,7 +20736,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrQueuePayrollDrafts => 'Payroll drafts';
 
   @override
-  String get hrQueueRosterDrafts => 'Roster drafts';
+  String get hrQueueRosterDrafts => 'Rosters';
 
   @override
   String get hrQueueSwapRequests => 'Swap requests';
@@ -20775,10 +20775,59 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRolePositionColumnLabel => 'Role / position';
 
   @override
-  String get hrRosterDraftsSummaryLabel => 'Roster drafts';
+  String get hrRosterDraftsSummaryLabel => 'Rosters';
 
   @override
-  String get hrRosterDraftTitle => 'Roster draft';
+  String get hrRosterDraftTitle => 'Roster';
+
+  @override
+  String get hrRosterNameLabel => 'Name';
+
+  @override
+  String get hrRosterRecurringLabel => 'Recurring';
+
+  @override
+  String get hrRosterStatusCompleted => 'Completed';
+
+  @override
+  String get hrRosterStatusDraft => 'Draft';
+
+  @override
+  String get hrRosterAttachedStaffTitle => 'Assigned staff';
+
+  @override
+  String get hrRosterAddStaffAction => 'Add staff';
+
+  @override
+  String get hrRosterRemoveStaffAction => 'Remove';
+
+  @override
+  String get hrRosterRespectHolidaysLabel => 'Respect public holidays';
+
+  @override
+  String get hrRosterPublicHolidaysLabel =>
+      'Public holidays (YYYY-MM-DD, comma-separated)';
+
+  @override
+  String get hrRosterWorkingDaysLabel => 'Working days';
+
+  @override
+  String get hrRosterDefaultStartTimeLabel => 'Default start time';
+
+  @override
+  String get hrRosterDefaultEndTimeLabel => 'Default end time';
+
+  @override
+  String get hrCreateRosterDialogTitle => 'Create roster';
+
+  @override
+  String get hrRosterDetailDialogTitle => 'Roster details';
+
+  @override
+  String get hrRosterNoStaffLabel => 'No staff assigned to this roster yet.';
+
+  @override
+  String get hrRosterSelectStaffLabel => 'Staff member';
 
   @override
   String get hrRosterReportLabel => 'Roster report';
@@ -21694,7 +21743,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get hrShiftTemplateAction => 'Schedule templates';
+  String get hrShiftTemplateAction => 'Create roster';
 
   @override
   String get hrShiftTemplateDialogTitle => 'Schedule pattern';

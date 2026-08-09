@@ -5728,6 +5728,8 @@ model nurse_roster {
   tenant_id         String            @db.VarChar(36)
   facility_id       String?           @db.VarChar(36)
   department_id     String?           @db.VarChar(36)
+  name              String?           @db.VarChar(255)
+  is_recurring      Boolean           @default(false)
   period_start      DateTime
   period_end        DateTime
   status            NurseRosterStatus @default(DRAFT)

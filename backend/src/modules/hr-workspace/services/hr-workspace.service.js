@@ -356,11 +356,32 @@ const mapSwap = (item) => ({
   }),
 });
 
+const collectRosterStaffIds = (item = {}) => {
+  const ids = new Set();
+  const attached = item?.constraints?.attached_staff_ids;
+  if (Array.isArray(attached)) {
+    for (const id of attached) {
+      if (id) ids.add(String(id));
+    }
+  }
+  for (const shift of item.shifts || []) {
+    for (const assignment of shift.assignments || []) {
+      if (assignment?.staff_profile_id) {
+        ids.add(String(assignment.staff_profile_id));
+      }
+    }
+  }
+  return ids;
+};
+
 const mapRoster = (item) => ({
   id: resolveDisplayId(item),
   queue: 'ROSTER_DRAFTS',
   display_id: resolveDisplayId(item),
   backend_identifier: item.id,
+  name: item.name || null,
+  roster_name: item.name || null,
+  is_recurring: Boolean(item.is_recurring),
   status: item.status,
   facility_id: item.facility_id || null,
   facility_display_id: resolveDisplayId(item.facility || {}),
@@ -369,6 +390,8 @@ const mapRoster = (item) => ({
   period_start: item.period_start,
   period_end: item.period_end,
   period_label: formatDateRangeLabel(item.period_start, item.period_end),
+  assignment_count: collectRosterStaffIds(item).size,
+  constraints: item.constraints || null,
   timeline_at: item.updated_at || item.created_at,
   target_path: buildWorkbenchPath({
     panel: 'roster',
@@ -461,6 +484,7 @@ const buildRosterSearchWhere = (search) => {
   return {
     OR: [
       { human_friendly_id: { contains: search, mode: 'insensitive' } },
+      { name: { contains: search, mode: 'insensitive' } },
       { status: { contains: search, mode: 'insensitive' } },
     ],
   };
@@ -627,7 +651,6 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20) => {
       },
     }),
     repo.countRosters({
-      status: 'DRAFT',
       ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
       ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
     }),
@@ -849,7 +872,7 @@ const listQueueItems = async ({ queue, scope, skip, take, orderBy }) => {
 
   if (queue === 'ROSTER_DRAFTS') {
     const whereClause = {
-      status: scope.status || 'DRAFT',
+      ...(scope.status ? { status: scope.status } : {}),
       ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
       ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
       ...(scope.rosterId ? { id: scope.rosterId } : {}),

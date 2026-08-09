@@ -16,6 +16,7 @@ describe('Nurse Roster Schemas', () => {
     const validData = {
       tenant_id: '550e8400-e29b-41d4-a716-446655440000',
       facility_id: '550e8400-e29b-41d4-a716-446655440001',
+      name: 'February nursing roster',
       period_start: '2026-02-01T00:00:00.000Z',
       period_end: '2026-02-28T23:59:59.000Z',
       status: 'DRAFT'

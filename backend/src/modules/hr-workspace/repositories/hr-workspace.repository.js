@@ -186,6 +186,18 @@ const findManyRosters = async ({ where = {}, skip = 0, take = 20, orderBy = { cr
         deleted_at: null,
         ...(where || {}),
       },
+      include: {
+        shifts: {
+          where: { deleted_at: null },
+          select: {
+            id: true,
+            assignments: {
+              where: { deleted_at: null },
+              select: { staff_profile_id: true },
+            },
+          },
+        },
+      },
       skip,
       take,
       orderBy,

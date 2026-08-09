@@ -42,6 +42,7 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_payroll_wizard_di
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_record_availability_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_request_leave_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_shift_detail_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_actions.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
@@ -390,14 +391,13 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         HrShiftsAtomPermissions.scheduleTemplates.isAllowed(policy)
             ? <AppSearchBarAction>[
                 AppSearchBarAction(
-                  icon: Icons.view_week_outlined,
+                  icon: Icons.edit_calendar_outlined,
                   label: l10n.hrShiftTemplateAction,
                   tooltip: l10n.hrShiftTemplateAction,
                   enabled: !state.isRefreshing,
                   onPressed: state.isRefreshing
                       ? null
-                      : () =>
-                            showHrManageScheduleTemplatesDialog(context, ref),
+                      : () => showHrCreateRosterDialog(context, ref),
                 ),
               ]
             : const <AppSearchBarAction>[],
@@ -920,8 +920,13 @@ class _HrWorkQueueTable extends ConsumerWidget {
     final bool showQueueFacet =
         section != HrDeskSection.payroll && queueChoices.length > 1;
 
-    void onRowSelected(HrWorkItem item) =>
-        _showWorkItemDialog(context, ref, item);
+    void onRowSelected(HrWorkItem item) {
+      if (item.queue == HrQueue.rosterDrafts) {
+        unawaited(showHrRosterDetailDialog(context, ref, item));
+        return;
+      }
+      _showWorkItemDialog(context, ref, item);
+    }
     void onNextAction(HrWorkItem item) =>
         unawaited(_handleWorkItemNextAction(context, ref, item));
 
@@ -999,7 +1004,7 @@ class _HrWorkQueueTable extends ConsumerWidget {
           onQueueChanged?.call(nextQueue);
         },
         // Filters → Settings → Export → section action (Request leave /
-        // Schedule templates). Payroll and Access have no trailing action.
+        // Create roster). Payroll and Access have no trailing action.
         trailingActions: searchTrailingActions,
       ),
       itemKeyBuilder: (HrWorkItem item) => ValueKey<String>(item.id),
@@ -1785,6 +1790,7 @@ String _workItemTitle(BuildContext context, HrWorkItem item) {
       item.staffNumber,
     ]).ifEmpty(l10n.hrSwapRequestTitle),
     HrQueue.rosterDrafts => hrJoinDisplay(<String?>[
+      item.rosterName,
       item.periodLabel,
       item.rosterId,
     ]).ifEmpty(l10n.hrRosterDraftTitle),
@@ -1982,6 +1988,7 @@ List<AppListTableColumn<HrWorkItem>> _workQueueColumns(
       _workItemRosterColumn(l10n, context),
       _workItemAssignmentsColumn(l10n),
       _workItemPeriodColumn(l10n, context),
+      _workItemRecurringColumn(l10n),
     ],
     HrQueue.unassignedShifts ||
     HrQueue.overdueShifts => <AppListTableColumn<HrWorkItem>>[
@@ -2160,13 +2167,34 @@ AppListTableColumn<HrWorkItem> _workItemRosterColumn(
     id: 'roster',
     label: l10n.hrRosterDraftTitle,
     sortComparator: (HrWorkItem left, HrWorkItem right) =>
-        appListTableCompareText(left.periodLabel, right.periodLabel),
+        appListTableCompareText(
+          left.rosterName ?? left.periodLabel,
+          right.rosterName ?? right.periodLabel,
+        ),
     cellBuilder: (BuildContext context, HrWorkItem item) {
       return AppCopyableIdentifierCell(
-        title: (item.periodLabel ?? item.rosterId ?? '').ifEmpty(
-          context.l10n.hrRosterDraftTitle,
-        ),
+        title: (item.rosterName ?? item.periodLabel ?? item.rosterId ?? '')
+            .ifEmpty(context.l10n.hrRosterDraftTitle),
         identifier: item.rosterId ?? item.effectiveId,
+      );
+    },
+  );
+}
+
+AppListTableColumn<HrWorkItem> _workItemRecurringColumn(AppLocalizations l10n) {
+  return AppListTableColumn<HrWorkItem>(
+    id: 'recurring',
+    label: l10n.hrRosterRecurringLabel,
+    sortComparator: (HrWorkItem left, HrWorkItem right) =>
+        appListTableCompareNumber(
+          left.isRecurring ? 1 : 0,
+          right.isRecurring ? 1 : 0,
+        ),
+    cellBuilder: (BuildContext context, HrWorkItem item) {
+      return Text(
+        item.isRecurring
+            ? context.l10n.commonYesLabel
+            : context.l10n.commonNoLabel,
       );
     },
   );
@@ -2229,6 +2257,11 @@ AppListTableColumn<HrWorkItem> _workItemStatusColumn(AppLocalizations l10n) {
     sortComparator: (HrWorkItem left, HrWorkItem right) =>
         appListTableCompareText(left.status, right.status),
     cellBuilder: (BuildContext context, HrWorkItem item) {
+      if (item.queue == HrQueue.rosterDrafts) {
+        return _StatusBadge(
+          status: hrRosterStatusLabel(context.l10n, item.status),
+        );
+      }
       return _StatusBadge(status: item.status);
     },
   );

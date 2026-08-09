@@ -26,9 +26,9 @@ enum HrQueue {
 
 enum HrDeskSection {
   staffDirectory,
+  shiftRoster,
   leaveRequests,
   swapRequests,
-  shiftRoster,
   unassignedShifts,
   payroll,
   access;
@@ -951,12 +951,14 @@ final class HrWorkItem {
     this.shiftId,
     this.shiftType,
     this.rosterId,
+    this.rosterName,
     this.payrollRunId,
     this.periodLabel,
     this.startAt,
     this.endAt,
     this.timelineAt,
     this.assignmentCount = 0,
+    this.isRecurring = false,
     this.reason,
   });
 
@@ -975,12 +977,14 @@ final class HrWorkItem {
   final String? shiftId;
   final String? shiftType;
   final String? rosterId;
+  final String? rosterName;
   final String? payrollRunId;
   final String? periodLabel;
   final DateTime? startAt;
   final DateTime? endAt;
   final DateTime? timelineAt;
   final int assignmentCount;
+  final bool isRecurring;
   final String? reason;
 
   String get effectiveId => displayId ?? id;

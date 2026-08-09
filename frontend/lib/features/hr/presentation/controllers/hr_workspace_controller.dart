@@ -1110,6 +1110,53 @@ final class HrWorkspaceController
     );
   }
 
+  Future<AppFailure?> createRoster(Map<String, Object?> payload) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.createRoster(payload),
+      refreshWorkItemsAfter: true,
+      refreshReferencesAfter: true,
+    );
+  }
+
+  Future<Result<Map<String, Object?>>> getRoster(String rosterId) {
+    return _repository.getRoster(rosterId);
+  }
+
+  Future<Result<Map<String, Object?>>> attachRosterStaff({
+    required String rosterId,
+    required String staffProfileId,
+  }) async {
+    final Result<Map<String, Object?>> result = await _repository
+        .attachRosterStaff(rosterId: rosterId, staffProfileId: staffProfileId);
+    result.when(
+      success: (_) {
+        unawaited(_refreshWorkItems(showLoading: false));
+      },
+      failure: (_) {},
+    );
+    return result;
+  }
+
+  Future<Result<Map<String, Object?>>> detachRosterStaff({
+    required String rosterId,
+    required String staffProfileId,
+  }) async {
+    final Result<Map<String, Object?>> result = await _repository
+        .detachRosterStaff(rosterId: rosterId, staffProfileId: staffProfileId);
+    result.when(
+      success: (_) {
+        unawaited(_refreshWorkItems(showLoading: false));
+      },
+      failure: (_) {},
+    );
+    return result;
+  }
+
   Future<AppFailure?> updateShiftTemplate(
     String templateId,
     Map<String, Object?> payload,

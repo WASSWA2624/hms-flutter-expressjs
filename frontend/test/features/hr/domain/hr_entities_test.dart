@@ -89,14 +89,15 @@ void main() {
         HrDeskSection.values,
         containsAll(<HrDeskSection>[
           HrDeskSection.staffDirectory,
+          HrDeskSection.shiftRoster,
           HrDeskSection.leaveRequests,
           HrDeskSection.swapRequests,
-          HrDeskSection.shiftRoster,
           HrDeskSection.unassignedShifts,
           HrDeskSection.payroll,
           HrDeskSection.access,
         ]),
       );
+      expect(HrDeskSection.values.indexOf(HrDeskSection.shiftRoster), 1);
     });
 
     test('routeQueryValue matches canonical section params', () {

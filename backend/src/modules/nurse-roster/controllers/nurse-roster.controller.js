@@ -111,6 +111,36 @@ const generateNurseRoster = asyncHandler(async (req, res) => {
   sendSuccess(res, 200, 'messages.nurse_roster.generate.success', roster);
 });
 
+const attachRosterStaff = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user?.id;
+  const ipAddress = req.ip;
+
+  const roster = await nurseRosterService.attachRosterStaff(
+    id,
+    req.body.staff_profile_id,
+    userId,
+    ipAddress
+  );
+
+  sendSuccess(res, 200, 'messages.nurse_roster.attach_staff.success', roster);
+});
+
+const detachRosterStaff = asyncHandler(async (req, res) => {
+  const { id, staffProfileId } = req.params;
+  const userId = req.user?.id;
+  const ipAddress = req.ip;
+
+  const roster = await nurseRosterService.detachRosterStaff(
+    id,
+    staffProfileId,
+    userId,
+    ipAddress
+  );
+
+  sendSuccess(res, 200, 'messages.nurse_roster.detach_staff.success', roster);
+});
+
 module.exports = {
   listNurseRosters,
   getNurseRosterById,
@@ -118,5 +148,7 @@ module.exports = {
   updateNurseRoster,
   deleteNurseRoster,
   publishNurseRoster,
-  generateNurseRoster
+  generateNurseRoster,
+  attachRosterStaff,
+  detachRosterStaff,
 };

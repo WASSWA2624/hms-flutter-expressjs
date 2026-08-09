@@ -268,7 +268,7 @@ Future<void> _openScheduleTemplates(
     repository: repository,
     accessPolicy: accessPolicy,
   );
-  await tester.tap(_searchAction('Schedule templates'));
+  await tester.tap(_searchAction('Create roster'));
   await tester.pumpAndSettle();
 }
 
@@ -450,7 +450,7 @@ void main() {
   });
 
   testWidgets(
-    'read-only: Shifts list chrome visible; Schedule templates absent (∩ denial)',
+    'read-only: Shifts list chrome visible; Create roster absent (∩ denial)',
     (WidgetTester tester) async {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.hrRead},
@@ -462,8 +462,8 @@ void main() {
         accessPolicy: reader,
       );
 
-      expect(_tab('Roster drafts'), findsOneWidget);
-      expect(_searchAction('Schedule templates'), findsNothing);
+      expect(_tab('Rosters'), findsOneWidget);
+      expect(_searchAction('Create roster'), findsNothing);
       expect(find.text('Publish roster'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
       expect(find.byTooltip('Filters'), findsOneWidget);
@@ -471,7 +471,7 @@ void main() {
   );
 
   testWidgets(
-    '∩ denial: hr:write alone hides Schedule templates and Publish',
+    '∩ denial: hr:write alone hides Create roster and Publish',
     (WidgetTester tester) async {
       final AppAccessPolicy hrWriter = _policy(
         permissions: <AppPermission>{
@@ -486,8 +486,8 @@ void main() {
         accessPolicy: hrWriter,
       );
 
-      expect(_tab('Roster drafts'), findsOneWidget);
-      expect(_searchAction('Schedule templates'), findsNothing);
+      expect(_tab('Rosters'), findsOneWidget);
+      expect(_searchAction('Create roster'), findsNothing);
       expect(find.text('Publish roster'), findsNothing);
       expect(find.text('Override shift'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
@@ -495,7 +495,7 @@ void main() {
   );
 
   testWidgets(
-    'roster:write ∩: Schedule templates mounts; Publish absent without publish',
+    'roster:write ∩: Create roster mounts; Publish absent without publish',
     (WidgetTester tester) async {
       final AppAccessPolicy rosterWriter = _policy(
         permissions: <AppPermission>{
@@ -510,7 +510,7 @@ void main() {
         accessPolicy: rosterWriter,
       );
 
-      expect(_searchAction('Schedule templates'), findsOneWidget);
+      expect(_searchAction('Create roster'), findsOneWidget);
       expect(find.text('Publish roster'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -533,7 +533,7 @@ void main() {
         workItems: const <HrWorkItem>[_rosterDraft],
       );
 
-      expect(_searchAction('Schedule templates'), findsNothing);
+      expect(_searchAction('Create roster'), findsNothing);
       expect(find.text('Publish roster'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -558,7 +558,7 @@ void main() {
         initialLocation: '/hr?section=swap-requests&queue=SWAP_REQUESTS',
       );
 
-      expect(_searchAction('Schedule templates'), findsNothing);
+      expect(_searchAction('Create roster'), findsNothing);
       expect(find.text('Approve swap'), findsWidgets);
       expect(find.text('Publish roster'), findsNothing);
     },
@@ -616,7 +616,19 @@ void main() {
       expect(find.text('Publish roster'), findsNothing);
       expect(find.text('Approve swap'), findsNothing);
 
-      // Roster draft row title uses periodLabel ("Week 12").
+      when(() => repository.getRoster(any())).thenAnswer(
+        (_) async => const Result<Map<String, Object?>>.success(
+          <String, Object?>{
+            'name': 'Week 12',
+            'status': 'DRAFT',
+            'is_recurring': false,
+            'human_friendly_id': 'RST-1001',
+            'staff': <Object?>[],
+          },
+        ),
+      );
+
+      // Roster row title uses periodLabel ("Week 12").
       await tester.tap(find.text('Week 12').first);
       await tester.pumpAndSettle();
 
@@ -628,7 +640,7 @@ void main() {
   );
 
   testWidgets(
-    'template dialog: create/edit present with roster:write; delete needs hr:write',
+    'create roster dialog mounts with roster:write',
     (WidgetTester tester) async {
       final AppAccessPolicy rosterOnly = _policy(
         permissions: <AppPermission>{
@@ -637,36 +649,20 @@ void main() {
         },
       );
 
+      when(() => repository.createRoster(any())).thenAnswer(
+        (_) async => const Result<Object?>.success(null),
+      );
+
       await _openScheduleTemplates(
         tester,
         repository: repository,
         accessPolicy: rosterOnly,
       );
 
-      expect(find.text('Create schedule'), findsOneWidget);
-      expect(find.byTooltip('Edit'), findsOneWidget);
-      expect(find.byTooltip('Delete'), findsNothing);
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(find.text('Working days'), findsWidgets);
+      expect(find.text('Recurring'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
-
-      await tester.tap(find.byIcon(Icons.close).first);
-      await tester.pumpAndSettle();
-
-      final AppAccessPolicy rosterAndHrWrite = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.hrRead,
-          AppPermissions.hrWrite,
-          AppPermissions.rosterWrite,
-        },
-      );
-      await _openScheduleTemplates(
-        tester,
-        repository: repository,
-        accessPolicy: rosterAndHrWrite,
-      );
-
-      expect(find.text('Create schedule'), findsOneWidget);
-      expect(find.byTooltip('Edit'), findsOneWidget);
-      expect(find.byTooltip('Delete'), findsOneWidget);
     },
   );
 
@@ -752,8 +748,8 @@ void main() {
         accessPolicy: noModule,
       );
 
-      expect(_tab('Roster drafts'), findsNothing);
-      expect(_searchAction('Schedule templates'), findsNothing);
+      expect(_tab('Rosters'), findsNothing);
+      expect(_searchAction('Create roster'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -776,9 +772,9 @@ void main() {
       themeMode: ThemeMode.dark,
     );
 
-    expect(_tab('Roster drafts'), findsOneWidget);
+    expect(_tab('Rosters'), findsOneWidget);
     // Compact widths hide toolbar labels; tooltip remains the stable atom.
-    expect(find.byTooltip('Schedule templates'), findsOneWidget);
+    expect(find.byTooltip('Create roster'), findsOneWidget);
     expect(find.textContaining('no access'), findsNothing);
 
     await _pumpShiftsTab(
@@ -790,7 +786,7 @@ void main() {
       physicalSize: const Size(390, 844),
       themeMode: ThemeMode.dark,
     );
-    expect(find.byTooltip('Schedule templates'), findsNothing);
+    expect(find.byTooltip('Create roster'), findsNothing);
   });
 
   testWidgets('desktop light: empty queue without HR activity secondary', (
@@ -807,7 +803,7 @@ void main() {
       themeMode: ThemeMode.light,
     );
 
-    expect(_tab('Roster drafts'), findsOneWidget);
+    expect(_tab('Rosters'), findsOneWidget);
     expect(find.byTooltip('HR activity'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });
@@ -833,8 +829,8 @@ void main() {
         accessPolicy: writeOnly,
       );
 
-      expect(_tab('Roster drafts'), findsNothing);
-      expect(_searchAction('Schedule templates'), findsNothing);
+      expect(_tab('Rosters'), findsNothing);
+      expect(_searchAction('Create roster'), findsNothing);
     },
   );
 }

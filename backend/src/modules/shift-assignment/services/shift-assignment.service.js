@@ -1,6 +1,7 @@
 const shiftAssignmentRepository = require('@repositories/shift-assignment/shift-assignment.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const prisma = require('@prisma/client');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
@@ -89,6 +90,56 @@ const createShiftAssignment = async (data, userId, ipAddress) => {
         model: 'staff_profile',
         field: 'staff_profile_id',
         where: { deleted_at: null }})};
+
+    const shift = await prisma.shift.findFirst({
+      where: { id: payload.shift_id, deleted_at: null },
+      select: {
+        id: true,
+        start_time: true,
+        end_time: true,
+        nurse_roster_id: true,
+      },
+    });
+    if (!shift) throw new HttpError('errors.shift.not_found', 404);
+
+    const duplicateOnShift = await prisma.shift_assignment.findFirst({
+      where: {
+        deleted_at: null,
+        shift_id: payload.shift_id,
+        staff_profile_id: payload.staff_profile_id,
+      },
+      select: { id: true },
+    });
+    if (duplicateOnShift) {
+      throw new HttpError('errors.shift_assignment.duplicate', 409, [
+        { staff_profile_id: payload.staff_profile_id, shift_id: payload.shift_id },
+      ]);
+    }
+
+    const overlapping = await prisma.shift_assignment.findFirst({
+      where: {
+        deleted_at: null,
+        staff_profile_id: payload.staff_profile_id,
+        shift: {
+          deleted_at: null,
+          id: { not: shift.id },
+          start_time: { lt: shift.end_time },
+          end_time: { gt: shift.start_time },
+        },
+      },
+      select: {
+        id: true,
+        shift_id: true,
+      },
+    });
+    if (overlapping) {
+      throw new HttpError('errors.shift_assignment.schedule_conflict', 409, [
+        {
+          staff_profile_id: payload.staff_profile_id,
+          conflicting_shift_id: overlapping.shift_id,
+        },
+      ]);
+    }
 
     const shiftAssignment = await shiftAssignmentRepository.create(payload);
     createAuditLog({

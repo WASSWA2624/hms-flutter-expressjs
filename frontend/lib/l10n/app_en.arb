@@ -26735,7 +26735,7 @@
   "@hrQueuePayrollDrafts": {
     "description": "Human resources workspace text for hrQueuePayrollDrafts."
   },
-  "hrQueueRosterDrafts": "Roster drafts",
+  "hrQueueRosterDrafts": "Rosters",
   "@hrQueueRosterDrafts": {
     "description": "Human resources workspace text for hrQueueRosterDrafts."
   },
@@ -26787,13 +26787,77 @@
   "@hrRolePositionColumnLabel": {
     "description": "Human resources workspace text for hrRolePositionColumnLabel."
   },
-  "hrRosterDraftsSummaryLabel": "Roster drafts",
+  "hrRosterDraftsSummaryLabel": "Rosters",
   "@hrRosterDraftsSummaryLabel": {
     "description": "Human resources workspace text for hrRosterDraftsSummaryLabel."
   },
-  "hrRosterDraftTitle": "Roster draft",
+  "hrRosterDraftTitle": "Roster",
   "@hrRosterDraftTitle": {
     "description": "Human resources workspace text for hrRosterDraftTitle."
+  },
+  "hrRosterNameLabel": "Name",
+  "@hrRosterNameLabel": {
+    "description": "Roster name field label."
+  },
+  "hrRosterRecurringLabel": "Recurring",
+  "@hrRosterRecurringLabel": {
+    "description": "Whether a roster repeats."
+  },
+  "hrRosterStatusCompleted": "Completed",
+  "@hrRosterStatusCompleted": {
+    "description": "Completed roster status label (published)."
+  },
+  "hrRosterStatusDraft": "Draft",
+  "@hrRosterStatusDraft": {
+    "description": "Draft roster status label."
+  },
+  "hrRosterAttachedStaffTitle": "Assigned staff",
+  "@hrRosterAttachedStaffTitle": {
+    "description": "Roster detail section for attached staff."
+  },
+  "hrRosterAddStaffAction": "Add staff",
+  "@hrRosterAddStaffAction": {
+    "description": "Add staff member to a roster."
+  },
+  "hrRosterRemoveStaffAction": "Remove",
+  "@hrRosterRemoveStaffAction": {
+    "description": "Remove staff member from a roster."
+  },
+  "hrRosterRespectHolidaysLabel": "Respect public holidays",
+  "@hrRosterRespectHolidaysLabel": {
+    "description": "Skip public holidays when materializing roster shifts."
+  },
+  "hrRosterPublicHolidaysLabel": "Public holidays (YYYY-MM-DD, comma-separated)",
+  "@hrRosterPublicHolidaysLabel": {
+    "description": "Public holiday dates for a roster."
+  },
+  "hrRosterWorkingDaysLabel": "Working days",
+  "@hrRosterWorkingDaysLabel": {
+    "description": "Which weekdays the roster covers."
+  },
+  "hrRosterDefaultStartTimeLabel": "Default start time",
+  "@hrRosterDefaultStartTimeLabel": {
+    "description": "Default shift start time for a flexible roster."
+  },
+  "hrRosterDefaultEndTimeLabel": "Default end time",
+  "@hrRosterDefaultEndTimeLabel": {
+    "description": "Default shift end time for a flexible roster."
+  },
+  "hrCreateRosterDialogTitle": "Create roster",
+  "@hrCreateRosterDialogTitle": {
+    "description": "Title for create roster dialog."
+  },
+  "hrRosterDetailDialogTitle": "Roster details",
+  "@hrRosterDetailDialogTitle": {
+    "description": "Title for roster details dialog."
+  },
+  "hrRosterNoStaffLabel": "No staff assigned to this roster yet.",
+  "@hrRosterNoStaffLabel": {
+    "description": "Empty state for roster staff list."
+  },
+  "hrRosterSelectStaffLabel": "Staff member",
+  "@hrRosterSelectStaffLabel": {
+    "description": "Staff picker when attaching to a roster."
   },
   "hrRosterReportLabel": "Roster report",
   "@hrRosterReportLabel": {
@@ -27798,9 +27862,9 @@
       }
     }
   },
-  "hrShiftTemplateAction": "Schedule templates",
+  "hrShiftTemplateAction": "Create roster",
   "@hrShiftTemplateAction": {
-    "description": "Toolbar action that opens the schedule templates manage dialog."
+    "description": "Toolbar action that opens create roster on the Rosters tab."
   },
   "hrShiftTemplateDialogTitle": "Schedule pattern",
   "@hrShiftTemplateDialogTitle": {

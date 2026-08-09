@@ -514,6 +514,7 @@ final class HrWorkItemDto {
           _string(json['nurse_roster_display_id']) ??
           _string(json['nurse_roster_id']) ??
           _string(json['display_id']),
+      rosterName: _string(json['name']) ?? _string(json['roster_name']),
       payrollRunId: queue == HrQueue.payrollDrafts
           ? _string(json['display_id'])
           : null,
@@ -522,6 +523,7 @@ final class HrWorkItemDto {
       endAt: _date(json['end_date']) ?? _date(json['end_time']),
       timelineAt: _date(json['timeline_at']),
       assignmentCount: _int(json['assignment_count']) ?? 0,
+      isRecurring: json['is_recurring'] == true,
       reason: _string(json['reason']),
     );
   }

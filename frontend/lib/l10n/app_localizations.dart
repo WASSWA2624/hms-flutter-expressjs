@@ -38360,7 +38360,7 @@ abstract class AppLocalizations {
   /// Human resources workspace text for hrQueueRosterDrafts.
   ///
   /// In en, this message translates to:
-  /// **'Roster drafts'**
+  /// **'Rosters'**
   String get hrQueueRosterDrafts;
 
   /// Human resources workspace text for hrQueueSwapRequests.
@@ -38438,14 +38438,110 @@ abstract class AppLocalizations {
   /// Human resources workspace text for hrRosterDraftsSummaryLabel.
   ///
   /// In en, this message translates to:
-  /// **'Roster drafts'**
+  /// **'Rosters'**
   String get hrRosterDraftsSummaryLabel;
 
   /// Human resources workspace text for hrRosterDraftTitle.
   ///
   /// In en, this message translates to:
-  /// **'Roster draft'**
+  /// **'Roster'**
   String get hrRosterDraftTitle;
+
+  /// Roster name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get hrRosterNameLabel;
+
+  /// Whether a roster repeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring'**
+  String get hrRosterRecurringLabel;
+
+  /// Completed roster status label (published).
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get hrRosterStatusCompleted;
+
+  /// Draft roster status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get hrRosterStatusDraft;
+
+  /// Roster detail section for attached staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned staff'**
+  String get hrRosterAttachedStaffTitle;
+
+  /// Add staff member to a roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Add staff'**
+  String get hrRosterAddStaffAction;
+
+  /// Remove staff member from a roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get hrRosterRemoveStaffAction;
+
+  /// Skip public holidays when materializing roster shifts.
+  ///
+  /// In en, this message translates to:
+  /// **'Respect public holidays'**
+  String get hrRosterRespectHolidaysLabel;
+
+  /// Public holiday dates for a roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Public holidays (YYYY-MM-DD, comma-separated)'**
+  String get hrRosterPublicHolidaysLabel;
+
+  /// Which weekdays the roster covers.
+  ///
+  /// In en, this message translates to:
+  /// **'Working days'**
+  String get hrRosterWorkingDaysLabel;
+
+  /// Default shift start time for a flexible roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Default start time'**
+  String get hrRosterDefaultStartTimeLabel;
+
+  /// Default shift end time for a flexible roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Default end time'**
+  String get hrRosterDefaultEndTimeLabel;
+
+  /// Title for create roster dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Create roster'**
+  String get hrCreateRosterDialogTitle;
+
+  /// Title for roster details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster details'**
+  String get hrRosterDetailDialogTitle;
+
+  /// Empty state for roster staff list.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff assigned to this roster yet.'**
+  String get hrRosterNoStaffLabel;
+
+  /// Staff picker when attaching to a roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff member'**
+  String get hrRosterSelectStaffLabel;
 
   /// Human resources workspace text for hrRosterReportLabel.
   ///
@@ -40127,10 +40223,10 @@ abstract class AppLocalizations {
   /// **'{separationType} · Last day {lastDay}'**
   String hrSeparationBannerMessage(String separationType, String lastDay);
 
-  /// Toolbar action that opens the schedule templates manage dialog.
+  /// Toolbar action that opens create roster on the Rosters tab.
   ///
   /// In en, this message translates to:
-  /// **'Schedule templates'**
+  /// **'Create roster'**
   String get hrShiftTemplateAction;
 
   /// Dialog title for shift template create/edit.

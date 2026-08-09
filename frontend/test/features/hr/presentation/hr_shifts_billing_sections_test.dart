@@ -427,14 +427,26 @@ void main() {
       );
 
       expect(find.text('Week 12'), findsWidgets);
-      expect(_searchAction('Schedule templates'), findsOneWidget);
+      expect(_searchAction('Create roster'), findsOneWidget);
       _expectNoPatientBillingAffordances();
       expectFlatSections(tester);
     });
 
     testWidgets(
-      'work-item detail: sibling quick-actions section; no financial controls',
+      'roster detail: assigned staff section; no financial controls',
       (WidgetTester tester) async {
+        when(() => repository.getRoster(any())).thenAnswer(
+          (_) async => const Result<Map<String, Object?>>.success(
+            <String, Object?>{
+              'name': 'Week 12',
+              'status': 'DRAFT',
+              'is_recurring': false,
+              'human_friendly_id': 'RST-1001',
+              'staff': <Object?>[],
+            },
+          ),
+        );
+
         await _pumpShiftsTab(
           tester,
           repository: repository,
@@ -448,24 +460,19 @@ void main() {
           ),
         );
 
-        await tester.tap(_tableRowInkWell().first);
+        await tester.tap(find.text('Week 12').first);
         await tester.pumpAndSettle();
 
         expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-        expect(find.text('Publish roster'), findsWidgets);
-        expect(find.text('Preview roster generation'), findsWidgets);
+        expect(find.textContaining('Roster'), findsWidgets);
+        expect(find.text('Assigned staff'), findsWidgets);
         _expectNoPatientBillingAffordances();
-        expect(find.byType(AppCollapsibleSection), findsAtLeastNWidgets(1));
         expectFlatSections(tester);
-        expectFlatTitledSectionLayout(
-          tester,
-          contextLabel: 'Shifts work-item detail',
-        );
       },
     );
 
     testWidgets(
-      'schedule templates dialog: flat sections; no billing affordances',
+      'Create roster dialog: flat sections; no billing affordances',
       (WidgetTester tester) async {
         await _pumpShiftsTab(
           tester,
@@ -480,24 +487,19 @@ void main() {
           ),
         );
 
-        await tester.tap(_searchAction('Schedule templates'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Schedule templates'), findsWidgets);
-        expect(find.text('Day pattern'), findsWidgets);
-        _expectNoPatientBillingAffordances();
-        expectFlatSections(tester);
-
-        await tester.tap(find.text('Day pattern'));
-        await tester.pumpAndSettle();
-
-        expect(find.byType(AppCollapsibleSection), findsAtLeastNWidgets(1));
-        _expectNoPatientBillingAffordances();
-        expectFlatSections(tester);
-        expectFlatTitledSectionLayout(
-          tester,
-          contextLabel: 'Shifts template detail',
+        when(() => repository.createRoster(any())).thenAnswer(
+          (_) async => const Result<Object?>.success(null),
         );
+
+        await tester.tap(_searchAction('Create roster'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Create roster'), findsWidgets);
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        expect(find.text('Working days'), findsWidgets);
+        expect(find.text('Recurring'), findsWidgets);
+        _expectNoPatientBillingAffordances();
+        expectFlatSections(tester);
       },
     );
 
@@ -512,7 +514,7 @@ void main() {
           ),
         );
 
-        expect(_searchAction('Schedule templates'), findsNothing);
+        expect(_searchAction('Create roster'), findsNothing);
         expect(find.text('Publish roster'), findsNothing);
         _expectNoPatientBillingAffordances();
         expectFlatSections(tester);

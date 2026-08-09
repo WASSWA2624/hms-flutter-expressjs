@@ -14,23 +14,35 @@ const {
   isoDateSchema
 } = require('@lib/validation/zod');
 
+const weekdaySchema = z.enum(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']);
+
 const constraintsSchema = z.object({
   max_shifts_per_nurse: z.number().int().positive().optional(),
   max_shifts_per_week: z.number().int().positive().optional(),
   max_hours_per_week: z.number().min(0).optional(),
   min_rest_hours: z.number().min(0).optional(),
   max_consecutive_working_days: z.number().int().positive().optional(),
-  skill_matching: z.boolean().optional()
+  skill_matching: z.boolean().optional(),
+  respect_public_holidays: z.boolean().optional(),
+  public_holidays: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
+  working_days: z.array(weekdaySchema).optional(),
+  default_start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  default_end_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  attached_staff_ids: z.array(uuidOrFriendlyIdentifierSchema).optional(),
+  shift_type: z.enum(['DAY', 'NIGHT', 'SWING', 'ON_CALL']).optional(),
 }).optional();
 
 const createNurseRosterSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema,
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  name: z.string().trim().min(1).max(255).optional(),
+  is_recurring: z.boolean().default(false),
   period_start: isoDateSchema,
   period_end: isoDateSchema,
   status: z.enum(['DRAFT', 'PUBLISHED']).default('DRAFT'),
-  constraints: constraintsSchema
+  constraints: constraintsSchema,
+  materialize_shifts: z.boolean().default(true),
 }).refine((data) => {
   const start = new Date(data.period_start);
   const end = new Date(data.period_end);
@@ -43,6 +55,8 @@ const createNurseRosterSchema = z.object({
 const updateNurseRosterSchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  name: z.string().trim().min(1).max(255).optional(),
+  is_recurring: z.boolean().optional(),
   period_start: isoDateSchema.optional(),
   period_end: isoDateSchema.optional(),
   status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
@@ -83,6 +97,15 @@ const nurseRosterIdParamsSchema = z.object({
   id: uuidOrFriendlyIdentifierSchema
 });
 
+const rosterStaffParamsSchema = z.object({
+  id: uuidOrFriendlyIdentifierSchema,
+  staffProfileId: uuidOrFriendlyIdentifierSchema
+});
+
+const attachRosterStaffSchema = z.object({
+  staff_profile_id: uuidOrFriendlyIdentifierSchema
+});
+
 const listNurseRostersQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -98,5 +121,7 @@ module.exports = {
   publishNurseRosterSchema,
   generateNurseRosterSchema,
   nurseRosterIdParamsSchema,
+  rosterStaffParamsSchema,
+  attachRosterStaffSchema,
   listNurseRostersQuerySchema
 };

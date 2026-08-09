@@ -438,6 +438,74 @@ final class HrRepositoryImpl implements HrRepository {
   }
 
   @override
+  Future<Result<Object?>> createRoster(Map<String, Object?> payload) {
+    return _postCollection(HmsApiResource.nurseRosters, payload);
+  }
+
+  @override
+  Future<Result<Map<String, Object?>>> getRoster(String rosterId) {
+    return _apiClient.get<Map<String, Object?>>(
+      ApiEndpoints.byId(HmsApiResource.nurseRosters, rosterId),
+      decoder: (Object? data) {
+        final Object? payload = passthroughResponseData(data);
+        if (payload is Map<String, Object?>) {
+          return payload;
+        }
+        if (payload is Map) {
+          return Map<String, Object?>.from(payload);
+        }
+        return <String, Object?>{};
+      },
+    );
+  }
+
+  @override
+  Future<Result<Map<String, Object?>>> attachRosterStaff({
+    required String rosterId,
+    required String staffProfileId,
+  }) {
+    return _apiClient.post<Map<String, Object?>>(
+      ApiEndpoints.nested(HmsApiResource.nurseRosters, rosterId, <String>[
+        'staff',
+      ]),
+      data: <String, Object?>{'staff_profile_id': staffProfileId},
+      decoder: (Object? data) {
+        final Object? payload = passthroughResponseData(data);
+        if (payload is Map<String, Object?>) {
+          return payload;
+        }
+        if (payload is Map) {
+          return Map<String, Object?>.from(payload);
+        }
+        return <String, Object?>{};
+      },
+    );
+  }
+
+  @override
+  Future<Result<Map<String, Object?>>> detachRosterStaff({
+    required String rosterId,
+    required String staffProfileId,
+  }) {
+    return _apiClient.delete<Map<String, Object?>>(
+      ApiEndpoints.nested(HmsApiResource.nurseRosters, rosterId, <String>[
+        'staff',
+        staffProfileId,
+      ]),
+      decoder: (Object? data) {
+        final Object? payload = passthroughResponseData(data);
+        if (payload is Map<String, Object?>) {
+          return payload;
+        }
+        if (payload is Map) {
+          return Map<String, Object?>.from(payload);
+        }
+        return <String, Object?>{};
+      },
+    );
+  }
+
+  @override
   Future<Result<HrPayrollPreview>> previewPayrollRun(
     String payrollRunId, {
     String? staffProfileId,

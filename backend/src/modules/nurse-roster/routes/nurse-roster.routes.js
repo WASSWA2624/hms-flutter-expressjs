@@ -10,6 +10,8 @@ const {
   publishNurseRosterSchema,
   generateNurseRosterSchema,
   nurseRosterIdParamsSchema,
+  rosterStaffParamsSchema,
+  attachRosterStaffSchema,
   listNurseRostersQuerySchema} = require('@validations/nurse-roster/nurse-roster.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
@@ -22,5 +24,7 @@ router.put('/:id', validateRequest({ params: nurseRosterIdParamsSchema, body: up
 router.delete('/:id', validateRequest({ params: nurseRosterIdParamsSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), nurseRosterController.deleteNurseRoster);
 router.post('/:id/publish', validateRequest({ params: nurseRosterIdParamsSchema, body: publishNurseRosterSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), nurseRosterController.publishNurseRoster);
 router.post('/:id/generate', validateRequest({ params: nurseRosterIdParamsSchema, body: generateNurseRosterSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), nurseRosterController.generateNurseRoster);
+router.post('/:id/staff', validateRequest({ params: nurseRosterIdParamsSchema, body: attachRosterStaffSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), nurseRosterController.attachRosterStaff);
+router.delete('/:id/staff/:staffProfileId', validateRequest({ params: rosterStaffParamsSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), nurseRosterController.detachRosterStaff);
 
 module.exports = router;

@@ -14,15 +14,15 @@ Refactor the HR workspace so every worklist is a **primary `AppTabStrip` tab**�
 
 - One tab level only. No nested queue strip.
 - **Entity-per-primary** flat strip (order):
-  1. Human resources (`staff`) — staff directory  
-  2. Leave requests (`leave-requests`)  
-  3. Swap requests (`swap-requests`)  
-  4. Roster drafts (`shift-roster` / `shifts` aliases)  
+  1. Human resources / Staff members (`staff`) — Users CRUD  
+  2. Rosters (`shift-roster` / `roster` aliases) — roster CRUD + staff assignment  
+  3. Leave requests (`leave-requests`)  
+  4. Swap requests (`swap-requests`)  
   5. Unassigned shifts (`unassigned-shifts`; overdue deep-links here)  
   6. Payroll drafts (`payroll`)  
   7. Manage users and roles (`access`)  
 - Each worklist tab loads exactly one queue. Desk Filters stay **status-only** (no queue facet). Dialog “Work queues” may still offer all queues in Filters.
-- Trailing actions: Add staff / Request leave / Schedule templates (Roster drafts only).
+- Trailing actions: Create user / Request leave / **Create roster** (Rosters only).
 
 **Definitions**
 
@@ -37,34 +37,38 @@ Refactor the HR workspace so every worklist is a **primary `AppTabStrip` tab**�
 4. **Counts:** Leave / swap / roster / unassigned(+overdue) / payroll badges are section-scoped. Unauthorized tabs absent.
 5. **States & sync:** Load/empty/error/success; soft-refresh; theme tokens; responsive (overflow “More” OK on narrow).
 6. **Tests:** Entity map, deep-links, permission/billing suites; nested switcher absent; authorized chrome remains.
+7. **Rosters:** Name, ID, assigned staff count, period, recurring flag, draft/completed status; flexible days/hours with public-holiday awareness; detail dialog add/remove staff with duplicate/conflict guards.
 
 ## Constraints
 
 - Reuse `HrWorkspacePage`, controller, work-item table, dialogs, shared kit. No parallel HR shell.
 - Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `prompts/.cursor/prompt.mdc`, `frontend/.cursor/layouts.mdc`.
-- Out of scope: new entities, payroll math, access RBAC redesign, Reports, production seeding.
+- Out of scope: payroll math, access RBAC redesign, Reports, production seeding.
 
 ## Acceptance Criteria
 
 | # | Criterion | Maps to |
 | --- | --- | --- |
-| A1 | Strip shows Leave, Swap, Roster drafts, Unassigned, Payroll (+ staff/access when entitled); no nested queue row. | R1, R2 |
+| A1 | Strip shows Staff, Rosters, Leave, Swap, Unassigned, Payroll (+ access when entitled); no nested queue row. | R1, R2 |
 | A2 | Each worklist tab loads its own queue; Filters do not switch desk queues. | R2, R3 |
 | A3 | `?section=` / `?queue=` and Home links land on the owning primary. | R3 |
 | A4 | Badges/actions permission-gated; unauthorized chrome absent. | R4 |
 | A5 | Themes/viewports usable; lists refresh after mutations. | R5 |
 | A6 | Updated HR tests pass. | R6 |
+| A7 | Create roster + roster detail staff add/remove with conflict guards. | R7 |
 
 ## Relevant Files
 
 - `frontend/lib/features/hr/domain/entities/hr_entities.dart`
 - `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart`
+- `frontend/lib/features/hr/presentation/widgets/hr_roster_dialogs.dart`
 - `frontend/lib/features/hr/presentation/widgets/hr_queue_switcher.dart`
 - `frontend/lib/features/hr/presentation/hr_access.dart`
+- `backend/src/modules/nurse-roster/`
 - Home metric routes under `frontend/lib/features/home/`
 - Tests under `frontend/test/features/hr/`
 
 ## Verification
 
-- Unit/widget: seven-section map; queue→section; no nested strip.
-- Manual: `/hr` shows Swap + Roster drafts + Unassigned as primaries; Payroll unchanged; light/dark + narrow overflow.
+- Unit/widget: seven-section map with Rosters after Staff; queue→section; no nested strip.
+- Manual: `/hr` shows Rosters next to Staff members; Create roster; detail staff assign; light/dark + narrow overflow.
