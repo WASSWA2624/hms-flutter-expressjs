@@ -768,17 +768,9 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                             padding: EdgeInsets.all(theme.spacing.md),
                             child: Text(l10n.hrRosterNoSchedulePreviewLabel),
                           )
-                        : Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              theme.spacing.md,
-                              theme.spacing.sm,
-                              theme.spacing.md,
-                              theme.spacing.md,
-                            ),
-                            child: HrRosterCalendarPreview(
-                              days: _previewDays(),
-                              onShowDetails: _showPeriodDetails,
-                            ),
+                        : HrRosterCalendarPreview(
+                            days: _previewDays(),
+                            onShowDetails: _showPeriodDetails,
                           ),
                   ),
                   SizedBox(height: theme.spacing.md),

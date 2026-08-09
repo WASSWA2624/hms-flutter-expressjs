@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_weekly_schedule_editor.dart';
@@ -345,7 +347,7 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
       context: context,
       builder: (BuildContext dialogContext) {
         final Size viewport = MediaQuery.sizeOf(dialogContext);
-        final double contentHeight = (viewport.height * 0.78).clamp(360.0, 760.0);
+        final double contentHeight = (viewport.height * 0.86).clamp(420.0, 900.0);
         return AppDialog(
           title: Text(dialogContext.l10n.hrRosterPreviewSectionTitle),
           icon: const Icon(Icons.calendar_month_outlined),
@@ -355,21 +357,13 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
           content: SizedBox(
             height: contentHeight,
             width: double.infinity,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                Theme.of(dialogContext).spacing.md,
-                0,
-                Theme.of(dialogContext).spacing.md,
-                Theme.of(dialogContext).spacing.sm,
-              ),
-              child: HrRosterCalendarPreview(
-                days: widget.days,
-                expanded: true,
-                onShowDetails: (HrRosterPeriodDetails details) {
-                  Navigator.of(dialogContext).maybePop();
-                  widget.onShowDetails(details);
-                },
-              ),
+            child: HrRosterCalendarPreview(
+              days: widget.days,
+              expanded: true,
+              onShowDetails: (HrRosterPeriodDetails details) {
+                Navigator.of(dialogContext).maybePop();
+                widget.onShowDetails(details);
+              },
             ),
           ),
           actions: <Widget>[
@@ -396,9 +390,12 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
         final bool heightBounded = constraints.hasBoundedHeight &&
             constraints.maxHeight.isFinite &&
             constraints.maxHeight < double.infinity;
-        final double fallbackBoardHeight = widget.expanded
-            ? (narrow ? 360.0 : 440.0)
-            : (narrow ? 240.0 : 280.0);
+        final double fallbackBoardHeight = switch (_mode) {
+          HrRosterPreviewMode.month =>
+            widget.expanded ? (narrow ? 360.0 : 440.0) : (narrow ? 240.0 : 280.0),
+          HrRosterPreviewMode.week || HrRosterPreviewMode.day =>
+            widget.expanded ? (narrow ? 480.0 : 560.0) : (narrow ? 320.0 : 380.0),
+        };
 
         final Widget board = Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -460,11 +457,13 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
           ],
         );
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: heightBounded ? MainAxisSize.max : MainAxisSize.min,
-          children: <Widget>[
-            _CalendarChrome(
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: heightBounded ? MainAxisSize.max : MainAxisSize.min,
+            children: <Widget>[
+              _CalendarChrome(
                 narrow: narrow,
                 mode: _mode,
                 title: switch (_mode) {
@@ -528,6 +527,7 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
               SizedBox(height: theme.spacing.xs),
               _CompactLegend(l10n: l10n),
             ],
+          ),
         );
       },
     );
@@ -1044,19 +1044,21 @@ class _TimeGrid extends StatelessWidget {
   final DateTime focus;
   final ValueChanged<DateTime> onDayHeaderTap;
 
+  /// Readable hour-row height; shorter viewports scroll instead of crushing.
+  static const double _minHourHeight = 36;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final int span = (gridEndMinutes - gridStartMinutes).clamp(60, 24 * 60);
     final int hourCount = (span / 60).ceil().clamp(1, 24);
-    final int labelStep = hourCount >= 18 ? 3 : (hourCount >= 12 ? 2 : 1);
 
     return Column(
       children: <Widget>[
         Row(
           children: <Widget>[
-            const SizedBox(width: 44),
+            const SizedBox(width: 48),
             for (final DateTime date in dates)
               Expanded(
                 child: InkWell(
@@ -1107,7 +1109,7 @@ class _TimeGrid extends StatelessWidget {
         ),
         Row(
           children: <Widget>[
-            const SizedBox(width: 44),
+            const SizedBox(width: 48),
             for (final DateTime date in dates)
               Expanded(
                 child: Padding(
@@ -1117,10 +1119,10 @@ class _TimeGrid extends StatelessWidget {
                       final HrRosterDayPreview? day =
                           byKey[hrRosterDateKey(date)];
                       if (day?.isHoliday != true) {
-                        return const SizedBox(height: 18);
+                        return const SizedBox(height: 16);
                       }
                       return Container(
-                        height: 18,
+                        height: 16,
                         alignment: Alignment.centerLeft,
                         padding: const EdgeInsets.symmetric(horizontal: 6),
                         decoration: BoxDecoration(
@@ -1145,47 +1147,71 @@ class _TimeGrid extends StatelessWidget {
         ),
         SizedBox(height: theme.spacing.xs),
         Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              SizedBox(
-                width: 44,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    for (int i = 0; i <= hourCount; i++)
-                      Opacity(
-                        opacity: i % labelStep == 0 ? 1 : 0,
-                        child: Text(
-                          hrRosterFormatMinutes(
-                            (gridStartMinutes + i * 60).clamp(
-                              gridStartMinutes,
-                              gridEndMinutes,
-                            ),
-                          ),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontSize: 9,
-                            height: 1,
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final double viewportHeight = constraints.maxHeight.isFinite
+                  ? constraints.maxHeight
+                  : hourCount * _minHourHeight;
+              final double contentHeight = math.max(
+                viewportHeight,
+                hourCount * _minHourHeight,
+              );
+              final double hourHeight = contentHeight / hourCount;
+
+              return Scrollbar(
+                thumbVisibility: contentHeight > viewportHeight + 0.5,
+                child: SingleChildScrollView(
+                  child: SizedBox(
+                    height: contentHeight,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        SizedBox(
+                          width: 48,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: <Widget>[
+                              for (int i = 0; i <= hourCount; i++)
+                                Positioned(
+                                  top: (i * hourHeight) - 6,
+                                  left: 0,
+                                  right: 2,
+                                  child: Text(
+                                    hrRosterFormatMinutes(
+                                      (gridStartMinutes + i * 60).clamp(
+                                        gridStartMinutes,
+                                        gridEndMinutes,
+                                      ),
+                                    ),
+                                    textAlign: TextAlign.right,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                      fontSize: 11,
+                                      height: 1,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
-                      ),
-                  ],
-                ),
-              ),
-              for (final DateTime date in dates)
-                Expanded(
-                  child: _DayColumn(
-                    day: byKey[hrRosterDateKey(date)],
-                    inPeriod:
-                        !date.isBefore(periodStart) && !date.isAfter(periodEnd),
-                    gridStartMinutes: gridStartMinutes,
-                    gridEndMinutes: gridEndMinutes,
-                    hourCount: hourCount,
-                    useAbsoluteBusy: true,
+                        for (final DateTime date in dates)
+                          Expanded(
+                            child: _DayColumn(
+                              day: byKey[hrRosterDateKey(date)],
+                              inPeriod: !date.isBefore(periodStart) &&
+                                  !date.isAfter(periodEnd),
+                              gridStartMinutes: gridStartMinutes,
+                              gridEndMinutes: gridEndMinutes,
+                              hourCount: hourCount,
+                              useAbsoluteBusy: true,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-            ],
+              );
+            },
           ),
         ),
       ],
@@ -1257,34 +1283,60 @@ class _DayDualColumnGrid extends StatelessWidget {
         ],
         SizedBox(height: theme.spacing.xs),
         Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Expanded(
-                child: _HalfDayColumn(
-                  labelHours: const <int>[6, 8, 10, 12, 14, 16, 18],
-                  windowStartMinutes: _daytimeStart,
-                  windowEndMinutes: _daytimeEnd,
-                  wrapsMidnight: false,
-                  day: preview,
-                  inPeriod: inPeriod,
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              const double minHourHeight = 36;
+              const int hoursPerColumn = 12;
+              final double viewportHeight = constraints.maxHeight.isFinite
+                  ? constraints.maxHeight
+                  : hoursPerColumn * minHourHeight;
+              final double contentHeight = math.max(
+                viewportHeight,
+                hoursPerColumn * minHourHeight,
+              );
+
+              return Scrollbar(
+                thumbVisibility: contentHeight > viewportHeight + 0.5,
+                child: SingleChildScrollView(
+                  child: SizedBox(
+                    height: contentHeight,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        Expanded(
+                          child: _HalfDayColumn(
+                            labelHours: const <int>[
+                              6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+                            ],
+                            windowStartMinutes: _daytimeStart,
+                            windowEndMinutes: _daytimeEnd,
+                            wrapsMidnight: false,
+                            day: preview,
+                            inPeriod: inPeriod,
+                          ),
+                        ),
+                        VerticalDivider(
+                          width: theme.spacing.sm,
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                        Expanded(
+                          child: _HalfDayColumn(
+                            labelHours: const <int>[
+                              18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6,
+                            ],
+                            windowStartMinutes: _nightWindowStart,
+                            windowEndMinutes: _nightWindowStart + _nightSpan,
+                            wrapsMidnight: true,
+                            day: preview,
+                            inPeriod: inPeriod,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              VerticalDivider(
-                width: theme.spacing.sm,
-                color: theme.colorScheme.outlineVariant,
-              ),
-              Expanded(
-                child: _HalfDayColumn(
-                  labelHours: const <int>[18, 20, 22, 0, 2, 4, 6],
-                  windowStartMinutes: _nightWindowStart,
-                  windowEndMinutes: _nightWindowStart + _nightSpan,
-                  wrapsMidnight: true,
-                  day: preview,
-                  inPeriod: inPeriod,
-                ),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ],
@@ -1328,25 +1380,39 @@ class _HalfDayColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final HrRosterDayPreview? preview = day;
+    final int labelCount = labelHours.length;
+    final double labelStep =
+        labelCount <= 1 ? 1.0 : 1.0 / (labelCount - 1);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         SizedBox(
-          width: 36,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              for (final int hour in labelHours)
-                Text(
-                  hrRosterFormatMinutes(hour * 60),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontSize: 9,
-                    height: 1,
-                  ),
-                ),
-            ],
+          width: 40,
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final double height = constraints.maxHeight;
+              return Stack(
+                clipBehavior: Clip.none,
+                children: <Widget>[
+                  for (int i = 0; i < labelCount; i++)
+                    Positioned(
+                      top: (i * labelStep * height) - 6,
+                      left: 0,
+                      right: 2,
+                      child: Text(
+                        hrRosterFormatMinutes(labelHours[i] * 60),
+                        textAlign: TextAlign.right,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 11,
+                          height: 1,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ),
         Expanded(
@@ -1363,9 +1429,9 @@ class _HalfDayColumn extends StatelessWidget {
                 final int span = _span;
                 return Stack(
                   children: <Widget>[
-                    for (int i = 0; i < labelHours.length; i++)
+                    for (int i = 0; i < labelCount; i++)
                       Positioned(
-                        top: (i / (labelHours.length - 1)) * height,
+                        top: i * labelStep * height,
                         left: 0,
                         right: 0,
                         child: Divider(
