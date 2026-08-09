@@ -782,7 +782,7 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                             onShowDetails: _showPeriodDetails,
                           ),
                   ),
-                  SizedBox(height: theme.spacing.lg),
+                  SizedBox(height: theme.spacing.xl),
                   Row(
                     children: <Widget>[
                       Icon(
