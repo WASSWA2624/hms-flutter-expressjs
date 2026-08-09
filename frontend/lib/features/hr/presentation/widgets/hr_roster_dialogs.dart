@@ -360,51 +360,58 @@ Future<void> showHrCreateRosterDialog(
                             });
                           },
                         ),
-                        Row(
-                          children: <Widget>[
-                            Checkbox(
-                              tristate: true,
-                              value: monthDaysValue,
-                              onChanged: (bool? value) {
-                                setLocal(() {
-                                  if (value == false) {
-                                    monthDays.clear();
-                                  } else {
-                                    monthDays
-                                      ..clear()
-                                      ..addAll(_allMonthDays(maxMonthDay));
-                                  }
-                                });
-                              },
-                            ),
-                            Expanded(
-                              child: Text(
-                                l10n.hrRosterMonthDaysLabel,
-                                style: theme.textTheme.titleSmall,
-                              ),
-                            ),
-                          ],
+                        Builder(
+                          builder: (BuildContext context) {
+                            void toggleAllMonthDays() {
+                              setLocal(() {
+                                if (monthDaysValue == true) {
+                                  monthDays.clear();
+                                } else {
+                                  monthDays
+                                    ..clear()
+                                    ..addAll(_allMonthDays(maxMonthDay));
+                                }
+                              });
+                            }
+
+                            return Row(
+                              children: <Widget>[
+                                Checkbox(
+                                  tristate: true,
+                                  value: monthDaysValue,
+                                  onChanged: (_) => toggleAllMonthDays(),
+                                ),
+                                Expanded(
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: toggleAllMonthDays,
+                                    child: Text(
+                                      l10n.hrRosterMonthDaysLabel,
+                                      style: theme.textTheme.titleSmall,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                         Wrap(
                           spacing: theme.spacing.xs,
                           runSpacing: theme.spacing.xs,
                           children: <Widget>[
                             for (int day = 1; day <= maxMonthDay; day++)
-                              FilterChip(
-                                label: Text('$day'),
+                              _HrMonthDayChip(
+                                day: day,
                                 selected: monthDays.contains(day),
-                                onSelected: (bool selected) {
+                                onTap: () {
                                   setLocal(() {
-                                    if (selected) {
-                                      monthDays.add(day);
-                                    } else {
+                                    if (monthDays.contains(day)) {
                                       monthDays.remove(day);
+                                    } else {
+                                      monthDays.add(day);
                                     }
                                   });
                                 },
-                                visualDensity: VisualDensity.compact,
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
                               ),
                           ],
                         ),
@@ -525,5 +532,75 @@ Future<void> showHrCreateRosterDialog(
   nameController.dispose();
   if (saved == true && context.mounted) {
     showHrMutationSnackBar(context, null);
+  }
+}
+
+class _HrMonthDayChip extends StatelessWidget {
+  const _HrMonthDayChip({
+    required this.day,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final int day;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final Color fill = selected
+        ? scheme.primary.withValues(alpha: 0.16)
+        : scheme.error.withValues(alpha: 0.10);
+    final Color edge = selected
+        ? scheme.primary.withValues(alpha: 0.72)
+        : scheme.error.withValues(alpha: 0.48);
+    final Color accent = selected ? scheme.primary : scheme.error;
+    final Color labelColor = selected
+        ? scheme.primary
+        : scheme.onSurface.withValues(alpha: 0.72);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: fill,
+            borderRadius: BorderRadius.circular(theme.radius.sm),
+            border: Border.all(color: edge),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: theme.spacing.xs + 2,
+              vertical: theme.spacing.xs,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  selected ? Icons.check_rounded : Icons.close_rounded,
+                  size: 14,
+                  color: accent,
+                ),
+                SizedBox(width: theme.spacing.xs),
+                Text(
+                  '$day',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: labelColor,
+                    fontFeatures: const <FontFeature>[
+                      FontFeature.tabularFigures(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

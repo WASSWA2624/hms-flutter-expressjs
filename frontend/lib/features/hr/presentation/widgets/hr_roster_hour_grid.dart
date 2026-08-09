@@ -214,20 +214,28 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
     required ThemeData theme,
     required AppLocalizations l10n,
     required Map<int, Set<int>> hoursByDay,
-    required double cellWidth,
+    required double? cellWidth,
   }) {
     final ColorScheme scheme = theme.colorScheme;
-    final Color selectedFill = scheme.primary.withValues(alpha: 0.82);
+    final Color selectedFill = scheme.primary.withValues(alpha: 0.88);
     final Color selectedEdge = scheme.primary;
-    final Color idleFill = scheme.surfaceContainerHighest.withValues(alpha: 0.42);
-    final Color idleEdge = scheme.outlineVariant.withValues(alpha: 0.55);
+    final Color idleFill = scheme.surfaceContainerHighest.withValues(alpha: 0.38);
+    final Color idleEdge = scheme.outlineVariant.withValues(alpha: 0.42);
     final Color lockedFill = scheme.surfaceContainerHighest.withValues(
-      alpha: 0.22,
+      alpha: 0.18,
     );
-    final Color lockedEdge = scheme.outlineVariant.withValues(alpha: 0.28);
+    final Color lockedEdge = scheme.outlineVariant.withValues(alpha: 0.22);
     final bool hasAnyHours = hoursByDay.values.any(
       (Set<int> hours) => hours.isNotEmpty,
     );
+    final bool flexibleHours = cellWidth == null;
+
+    Widget hourSlot({required Widget child}) {
+      if (flexibleHours) {
+        return Expanded(child: child);
+      }
+      return SizedBox(width: cellWidth, child: child);
+    }
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -280,11 +288,12 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
                     ),
                   ),
                   for (int hour = 0; hour < _hourCount; hour++)
-                    SizedBox(
-                      width: cellWidth,
+                    hourSlot(
                       child: Text(
                         hour.toString().padLeft(2, '0'),
                         textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.clip,
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: scheme.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
@@ -299,7 +308,7 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
               SizedBox(height: theme.spacing.xs),
               for (final int day in kHrWeekDayOrder)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 3),
+                  padding: const EdgeInsets.only(bottom: 2),
                   child: Row(
                     children: <Widget>[
                       SizedBox(
@@ -325,33 +334,33 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
                         ),
                       ),
                       for (int hour = 0; hour < _hourCount; hour++)
-                        _HourCell(
-                          selected: hoursByDay[day]!.contains(hour),
-                          selectedStart:
-                              hoursByDay[day]!.contains(hour) &&
-                              !hoursByDay[day]!.contains(hour - 1),
-                          selectedEnd:
-                              hoursByDay[day]!.contains(hour) &&
-                              !hoursByDay[day]!.contains(hour + 1),
-                          locked: _dayLocked(day),
-                          width: cellWidth,
-                          height: _cellHeight,
-                          selectedFill: selectedFill,
-                          selectedEdge: selectedEdge,
-                          idleFill: idleFill,
-                          idleEdge: idleEdge,
-                          lockedFill: lockedFill,
-                          lockedEdge: lockedEdge,
-                          onPrimary: scheme.onPrimary,
-                          onTap: _dayLocked(day)
-                              ? null
-                              : () {
-                                  HapticFeedback.selectionClick();
-                                  _toggleCell(day, hour);
-                                },
-                          onDragEnter: _dayLocked(day)
-                              ? null
-                              : () => _paintCell(day, hour),
+                        hourSlot(
+                          child: _HourCell(
+                            selected: hoursByDay[day]!.contains(hour),
+                            selectedStart:
+                                hoursByDay[day]!.contains(hour) &&
+                                !hoursByDay[day]!.contains(hour - 1),
+                            selectedEnd:
+                                hoursByDay[day]!.contains(hour) &&
+                                !hoursByDay[day]!.contains(hour + 1),
+                            locked: _dayLocked(day),
+                            height: _cellHeight,
+                            selectedFill: selectedFill,
+                            selectedEdge: selectedEdge,
+                            idleFill: idleFill,
+                            idleEdge: idleEdge,
+                            lockedFill: lockedFill,
+                            lockedEdge: lockedEdge,
+                            onTap: _dayLocked(day)
+                                ? null
+                                : () {
+                                    HapticFeedback.selectionClick();
+                                    _toggleCell(day, hour);
+                                  },
+                            onDragEnter: _dayLocked(day)
+                                ? null
+                                : () => _paintCell(day, hour),
+                          ),
                         ),
                     ],
                   ),
@@ -368,24 +377,24 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final Map<int, Set<int>> hoursByDay = _hoursByDay();
+    // Match horizontal padding inside [_buildGrid] so cells never overflow.
+    final double gridHorizontalPad = theme.spacing.sm * 2;
 
     final Widget grid = LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double maxWidth = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
-        final double rawCellWidth =
-            (maxWidth - _dayLabelWidth) / _hourCount;
+        final double hoursWidth =
+            (maxWidth - gridHorizontalPad - _dayLabelWidth).clamp(0.0, double.infinity);
+        final double rawCellWidth = hoursWidth / _hourCount;
         final bool needsScroll = rawCellWidth < _minCellWidth;
-        final double cellWidth = needsScroll
-            ? _minCellWidth
-            : rawCellWidth;
 
         final Widget body = _buildGrid(
           theme: theme,
           l10n: l10n,
           hoursByDay: hoursByDay,
-          cellWidth: cellWidth,
+          cellWidth: needsScroll ? _minCellWidth : null,
         );
 
         if (!needsScroll) {
@@ -395,7 +404,10 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: SizedBox(
-            width: _dayLabelWidth + (_minCellWidth * _hourCount),
+            width:
+                gridHorizontalPad +
+                _dayLabelWidth +
+                (_minCellWidth * _hourCount),
             child: body,
           ),
         );
@@ -557,7 +569,6 @@ class _HourCell extends StatelessWidget {
     required this.selectedStart,
     required this.selectedEnd,
     required this.locked,
-    required this.width,
     required this.height,
     required this.selectedFill,
     required this.selectedEdge,
@@ -565,7 +576,6 @@ class _HourCell extends StatelessWidget {
     required this.idleEdge,
     required this.lockedFill,
     required this.lockedEdge,
-    required this.onPrimary,
     required this.onTap,
     required this.onDragEnter,
   });
@@ -574,7 +584,6 @@ class _HourCell extends StatelessWidget {
   final bool selectedStart;
   final bool selectedEnd;
   final bool locked;
-  final double width;
   final double height;
   final Color selectedFill;
   final Color selectedEdge;
@@ -582,61 +591,56 @@ class _HourCell extends StatelessWidget {
   final Color idleEdge;
   final Color lockedFill;
   final Color lockedEdge;
-  final Color onPrimary;
   final VoidCallback? onTap;
   final VoidCallback? onDragEnter;
 
   @override
   Widget build(BuildContext context) {
+    final bool inRange = selected && !locked;
+    final bool seamlessLeft = inRange && !selectedStart;
+    final bool seamlessRight = inRange && !selectedEnd;
+
     final BorderRadius radius = BorderRadius.horizontal(
-      left: Radius.circular(selected && selectedStart ? 5 : 2),
-      right: Radius.circular(selected && selectedEnd ? 5 : 2),
+      left: Radius.circular(inRange && selectedStart ? 6 : 0),
+      right: Radius.circular(inRange && selectedEnd ? 6 : 0),
     );
 
+    final Color fill = locked
+        ? lockedFill
+        : selected
+        ? selectedFill
+        : idleFill;
+
     final Widget cell = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 0.5, vertical: 1.5),
+      padding: EdgeInsets.only(
+        left: seamlessLeft ? 0 : (inRange ? 0 : 0.5),
+        right: seamlessRight ? 0 : (inRange ? 0 : 0.5),
+        top: 2,
+        bottom: 2,
+      ),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: locked
-              ? lockedFill
-              : selected
-              ? selectedFill
-              : idleFill,
-          borderRadius: radius,
-          border: Border.all(
-            color: locked
-                ? lockedEdge
-                : selected
-                ? selectedEdge
-                : idleEdge,
-            width: selected && !locked ? 1 : 0.7,
-          ),
-          boxShadow: selected && !locked
+          color: fill,
+          borderRadius: inRange
+              ? radius
+              : BorderRadius.circular(locked ? 2 : 3),
+          border: inRange
+              ? null
+              : Border.all(
+                  color: locked ? lockedEdge : idleEdge,
+                  width: 0.7,
+                ),
+          boxShadow: inRange && selectedStart
               ? <BoxShadow>[
                   BoxShadow(
-                    color: selectedEdge.withValues(alpha: 0.22),
-                    blurRadius: 2,
+                    color: selectedEdge.withValues(alpha: 0.18),
+                    blurRadius: 3,
                     offset: const Offset(0, 1),
                   ),
                 ]
               : null,
         ),
-        child: SizedBox(
-          height: height - 3,
-          width: width - 1,
-          child: selected && !locked
-              ? Align(
-                  child: Container(
-                    width: 4,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: onPrimary.withValues(alpha: 0.85),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                )
-              : null,
-        ),
+        child: SizedBox(height: height - 4, width: double.infinity),
       ),
     );
 
