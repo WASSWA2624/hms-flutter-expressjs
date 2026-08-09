@@ -26863,6 +26863,38 @@
   "@hrRosterOverviewSectionTitle": {
     "description": "Collapsible overview section title on roster details."
   },
+  "hrRosterOverviewNameLabel": "Roster name",
+  "@hrRosterOverviewNameLabel": {
+    "description": "Informative label for the roster display name in overview."
+  },
+  "hrRosterOverviewIdLabel": "Roster ID",
+  "@hrRosterOverviewIdLabel": {
+    "description": "Informative label for the roster identifier in overview."
+  },
+  "hrRosterOverviewPeriodLabel": "Roster period",
+  "@hrRosterOverviewPeriodLabel": {
+    "description": "Informative label for the roster date range in overview."
+  },
+  "hrRosterOverviewRecurringLabel": "Recurring schedule",
+  "@hrRosterOverviewRecurringLabel": {
+    "description": "Informative label for whether the roster repeats."
+  },
+  "hrRosterOverviewStatusLabel": "Roster status",
+  "@hrRosterOverviewStatusLabel": {
+    "description": "Informative label for roster lifecycle status in overview."
+  },
+  "hrRosterOverviewAssignedStaffLabel": "Assigned staff",
+  "@hrRosterOverviewAssignedStaffLabel": {
+    "description": "Informative label for staff assignment count in overview."
+  },
+  "hrRosterOverviewFacilityLabel": "Facility",
+  "@hrRosterOverviewFacilityLabel": {
+    "description": "Informative label for facility name in roster overview."
+  },
+  "hrRosterOverviewDepartmentLabel": "Department",
+  "@hrRosterOverviewDepartmentLabel": {
+    "description": "Informative label for department name in roster overview."
+  },
   "hrRosterPreviewSectionTitle": "Roster preview",
   "@hrRosterPreviewSectionTitle": {
     "description": "Collapsible roster calendar preview section title."
@@ -27043,6 +27075,14 @@
   "hrRosterPreviewShowMiniAction": "Show mini calendar",
   "@hrRosterPreviewShowMiniAction": {
     "description": "Show the side mini-month picker."
+  },
+  "hrRosterPreviewDaytimeLabel": "Daytime",
+  "@hrRosterPreviewDaytimeLabel": {
+    "description": "Daytime column header in roster day preview (e.g. 06:00–18:00)."
+  },
+  "hrRosterPreviewNighttimeLabel": "Nighttime",
+  "@hrRosterPreviewNighttimeLabel": {
+    "description": "Nighttime column header in roster day preview (e.g. 18:00–06:00)."
   },
   "hrRosterPreviewJumpToPeriodAction": "Roster period",
   "@hrRosterPreviewJumpToPeriodAction": {

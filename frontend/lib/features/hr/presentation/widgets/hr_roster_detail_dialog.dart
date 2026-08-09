@@ -4,6 +4,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
@@ -523,26 +524,22 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
     }
   }
 
-  Future<void> _printRoster({bool staffOnly = false}) async {
+  Future<void> _printRoster() async {
     final AppLocalizations l10n = context.l10n;
-    final Set<String> selected = staffOnly
-        ? <String>{'staff'}
-        : <String>{'overview', 'staff', 'schedule'};
+    final Set<String> selected = <String>{'overview', 'staff', 'schedule'};
 
-    if (!staffOnly) {
-      final Set<String>? chosen = await showAppDialog<Set<String>>(
-        context: context,
-        builder: (BuildContext context) {
-          return _HrRosterPrintSectionsDialog(initialSelection: selected);
-        },
-      );
-      if (chosen == null || chosen.isEmpty) {
-        return;
-      }
-      selected
-        ..clear()
-        ..addAll(chosen);
+    final Set<String>? chosen = await showAppDialog<Set<String>>(
+      context: context,
+      builder: (BuildContext context) {
+        return _HrRosterPrintSectionsDialog(initialSelection: selected);
+      },
+    );
+    if (chosen == null || chosen.isEmpty) {
+      return;
     }
+    selected
+      ..clear()
+      ..addAll(chosen);
 
     final String html = _buildPrintHtml(l10n, selected);
     if (!mounted) {
@@ -564,16 +561,16 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
     if (sections.contains('overview')) {
       buffer.writeln('<h2>${l10n.hrRosterOverviewSectionTitle}</h2><ul>');
       buffer.writeln(
-        '<li><strong>${l10n.hrRosterNameLabel}:</strong> ${_informativeName(l10n)}</li>',
+        '<li><strong>${l10n.hrRosterOverviewNameLabel}:</strong> ${_informativeName(l10n)}</li>',
       );
       buffer.writeln(
-        '<li><strong>${l10n.hrQueueItemColumnLabel}:</strong> $_rosterId</li>',
+        '<li><strong>${l10n.hrRosterOverviewIdLabel}:</strong> $_rosterId</li>',
       );
       buffer.writeln(
-        '<li><strong>${l10n.hrPeriodColumnLabel}:</strong> ${roster['period_label'] ?? widget.item.periodLabel ?? ''}</li>',
+        '<li><strong>${l10n.hrRosterOverviewPeriodLabel}:</strong> ${roster['period_label'] ?? widget.item.periodLabel ?? ''}</li>',
       );
       buffer.writeln(
-        '<li><strong>${l10n.hrStatusColumnLabel}:</strong> ${_rosterStatusLabel(l10n, roster['status']?.toString())}</li>',
+        '<li><strong>${l10n.hrRosterOverviewStatusLabel}:</strong> ${_rosterStatusLabel(l10n, roster['status']?.toString())}</li>',
       );
       buffer.writeln('</ul>');
     }
@@ -730,14 +727,8 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final List<_RosterStaffRow> visible = _visibleStaff;
-    final bool allSelected =
-        visible.isNotEmpty &&
-        visible.every(
-          (_RosterStaffRow row) =>
-              _selectedStaffIds.contains(row.staffProfileId),
-        );
-    final bool noneSelected = visible.every(
-      (_RosterStaffRow row) => !_selectedStaffIds.contains(row.staffProfileId),
+    final bool canWriteStaff = HrShiftsAtomPermissions.write.isAllowed(
+      ref.watch(appAccessPolicyProvider),
     );
 
     return AppDialog(
@@ -763,6 +754,7 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                       emptyValue: l10n.profileUnknownValue,
                       spacing: theme.spacing.lg,
                       runSpacing: theme.spacing.sm,
+                      layout: AppInfoSheetLayout.inline,
                       items: _overviewItems(l10n),
                     ),
                   ),
@@ -770,181 +762,153 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                   AppCollapsibleSection(
                     title: l10n.hrRosterPreviewSectionTitle,
                     titleIcon: Icons.calendar_month_outlined,
+                    contentPadding: EdgeInsets.zero,
                     child: _previewDays().isEmpty
-                        ? Text(l10n.hrRosterNoSchedulePreviewLabel)
-                        : HrRosterCalendarPreview(
-                            days: _previewDays(),
-                            onShowDetails: _showPeriodDetails,
+                        ? Padding(
+                            padding: EdgeInsets.all(theme.spacing.md),
+                            child: Text(l10n.hrRosterNoSchedulePreviewLabel),
+                          )
+                        : Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              theme.spacing.md,
+                              theme.spacing.sm,
+                              theme.spacing.md,
+                              theme.spacing.md,
+                            ),
+                            child: HrRosterCalendarPreview(
+                              days: _previewDays(),
+                              onShowDetails: _showPeriodDetails,
+                            ),
                           ),
                   ),
                   SizedBox(height: theme.spacing.md),
-                  AppCollapsibleSection(
-                    title: l10n.hrRosterAttachedStaffTitle,
-                    titleIcon: Icons.groups_outlined,
-                    headerActions: <Widget>[
-                      _RosterCountChip(
-                        count: _staffRows.length,
-                        labeledCount: l10n.hrRosterAssignedStaffCountChip(
-                          _staffRows.length,
+                  Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.groups_outlined,
+                        size: theme.appTokens.listIconSize,
+                        color: theme.colorScheme.primary,
+                      ),
+                      SizedBox(width: theme.spacing.sm),
+                      Expanded(
+                        child: Text(
+                          l10n.hrRosterAttachedStaffTitle,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: AppFontWeight.emphasis,
+                          ),
                         ),
                       ),
-                      GestureDetector(
-                        onTap: () {},
-                        behavior: HitTestBehavior.opaque,
-                        child: Checkbox(
-                          tristate: true,
-                          value: allSelected
-                              ? true
-                              : noneSelected
-                              ? false
-                              : null,
-                          onChanged: _busy || visible.isEmpty
-                              ? null
-                              : (bool? value) {
-                                  setState(() {
-                                    if (value == true) {
-                                      _selectedStaffIds.addAll(
-                                        visible.map(
-                                          (_RosterStaffRow row) =>
-                                              row.staffProfileId,
-                                        ),
-                                      );
-                                    } else {
-                                      for (final _RosterStaffRow row
-                                          in visible) {
-                                        _selectedStaffIds.remove(
-                                          row.staffProfileId,
-                                        );
-                                      }
-                                    }
-                                  });
-                                },
+                      Text(
+                        l10n.hrRosterAssignedStaffCountChip(_staffRows.length),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
-                      ),
-                      AppAccessActionGate(
-                        requirement: HrShiftsAtomPermissions.write,
-                        builder: (BuildContext context, bool isAllowed) {
-                          return AppButton.tertiary(
-                            leadingIcon: Icons.person_remove_outlined,
-                            label: l10n.hrRosterRemoveSelectedStaffAction,
-                            tooltip: l10n.hrRosterRemoveSelectedStaffAction,
-                            color: theme.colorScheme.error,
-                            enabled:
-                                isAllowed &&
-                                !_busy &&
-                                _selectedStaffIds.isNotEmpty,
-                            onPressed:
-                                !isAllowed ||
-                                    _busy ||
-                                    _selectedStaffIds.isEmpty
-                                ? null
-                                : _removeSelected,
-                          );
-                        },
-                      ),
-                      AppAccessActionGate(
-                        requirement: HrShiftsAtomPermissions.write,
-                        builder: (BuildContext context, bool isAllowed) {
-                          return AppButton.secondary(
-                            leadingIcon: Icons.person_add_alt_1_outlined,
-                            label: l10n.hrRosterAddStaffAction,
-                            tooltip: l10n.hrRosterAddStaffAction,
-                            enabled: isAllowed && !_busy,
-                            onPressed: !isAllowed || _busy ? null : _addStaff,
-                          );
-                        },
                       ),
                     ],
-                    child: SizedBox(
-                      height: 420,
-                      child: AppListTable<_RosterStaffRow>(
-                        page: AppPage<_RosterStaffRow>(
-                          items: visible,
-                          request: AppPageRequest(
-                            pageSize: visible.isEmpty ? 20 : visible.length,
-                          ),
-                          totalItemCount: visible.length,
+                  ),
+                  SizedBox(height: theme.spacing.xs),
+                  SizedBox(
+                    height: 280,
+                    child: AppListTable<_RosterStaffRow>(
+                      page: AppPage<_RosterStaffRow>(
+                        items: visible,
+                        request: AppPageRequest(
+                          pageSize: visible.isEmpty ? 20 : visible.length,
                         ),
-                        enableExport: true,
-                        columnVisibilityStorageKey: 'hr_roster_assigned_staff_v1',
-                        columnVisibilityLabel:
-                            l10n.commonTableSettingsActionLabel,
-                        search: AppListTableSearch<_RosterStaffRow>(
-                          controller: _staffSearchController,
-                          semanticLabel: l10n.hrSearchLabel,
-                          hintText: l10n.hrSearchHint,
-                          clearLabel: l10n.hrClearFiltersAction,
-                          matcher: (_RosterStaffRow row, String query) => true,
-                          onSubmitted: (String value) =>
-                              setState(() => _staffSearchQuery = value),
-                          onClear: () => setState(() {
-                            _staffSearchQuery = '';
-                            _categoryFilter = null;
-                          }),
-                          showAdvancedFilterButton: true,
-                          advancedFilterButtonLabel:
-                              l10n.commonFiltersActionLabel,
-                          advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-                          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-                          advancedFilterResetLabel: l10n.hrClearFiltersAction,
-                          allFieldsLabel: l10n.opdAllFieldsFilterLabel,
-                          filterGroups: <AppSearchBarFilterGroup>[
-                            AppSearchBarFilterGroup(
-                              key: 'category',
-                              label: l10n.hrRosterStaffCategoryLabel,
-                              allLabel: l10n.opdAllFieldsFilterLabel,
-                              choices: <AppSearchBarFilterChoice>[
-                                for (final AppSelectOption<String> option
-                                    in _staffCategoryOptions(l10n))
-                                  AppSearchBarFilterChoice(
-                                    value: option.value,
-                                    label: option.label,
+                        totalItemCount: visible.length,
+                      ),
+                      forceCompact: true,
+                      padEmptyRows: false,
+                      enableExport: true,
+                      columnVisibilityStorageKey: 'hr_roster_assigned_staff_v1',
+                      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+                      search: AppListTableSearch<_RosterStaffRow>(
+                        controller: _staffSearchController,
+                        semanticLabel: l10n.hrSearchLabel,
+                        hintText: l10n.hrSearchHint,
+                        clearLabel: l10n.hrClearFiltersAction,
+                        matcher: (_RosterStaffRow row, String query) => true,
+                        onSubmitted: (String value) =>
+                            setState(() => _staffSearchQuery = value),
+                        onClear: () => setState(() {
+                          _staffSearchQuery = '';
+                          _categoryFilter = null;
+                        }),
+                        showAdvancedFilterButton: true,
+                        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                        advancedFilterResetLabel: l10n.hrClearFiltersAction,
+                        allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+                        filterGroups: <AppSearchBarFilterGroup>[
+                          AppSearchBarFilterGroup(
+                            key: 'category',
+                            label: l10n.hrRosterStaffCategoryLabel,
+                            allLabel: l10n.opdAllFieldsFilterLabel,
+                            choices: <AppSearchBarFilterChoice>[
+                              for (final AppSelectOption<String> option
+                                  in _staffCategoryOptions(l10n))
+                                AppSearchBarFilterChoice(
+                                  value: option.value,
+                                  label: option.label,
+                                ),
+                            ],
+                          ),
+                        ],
+                        filterValue: AppSearchBarFilterValue(
+                          options: <String, String>{
+                            if (_categoryFilter != null)
+                              'category': _categoryFilter!,
+                          },
+                        ),
+                        onFilterChanged: (AppSearchBarFilterValue value) {
+                          setState(() {
+                            _categoryFilter = value.option('category');
+                          });
+                        },
+                        trailingActions: <AppSearchBarAction>[
+                          if (canWriteStaff)
+                            AppSearchBarAction(
+                              icon: Icons.person_remove_outlined,
+                              label: l10n.hrRosterRemoveSelectedStaffAction,
+                              tooltip: l10n.hrRosterRemoveSelectedStaffAction,
+                              destructive: true,
+                              enabled: !_busy && _selectedStaffIds.isNotEmpty,
+                              onPressed: _busy || _selectedStaffIds.isEmpty
+                                  ? null
+                                  : _removeSelected,
+                            ),
+                          if (canWriteStaff)
+                            AppSearchBarAction(
+                              icon: Icons.person_add_alt_1_outlined,
+                              label: l10n.hrRosterAddStaffAction,
+                              tooltip: l10n.hrRosterAddStaffAction,
+                              enabled: !_busy,
+                              onPressed: _busy ? null : _addStaff,
+                            ),
+                        ],
+                      ),
+                      columns: _staffColumns(l10n, visible: visible),
+                      emptyBuilder: (_) => Text(l10n.hrRosterNoStaffLabel),
+                      mobileItemBuilder:
+                          (BuildContext context, _RosterStaffRow row) {
+                            return AppListTableMobileItem(
+                              title: row.title,
+                              caption:
+                                  row.staffNumber ??
+                                  row.displayId ??
+                                  row.staffProfileId,
+                              meta: <AppListTableMobileMeta>[
+                                if ((row.staffCategory ?? '').isNotEmpty)
+                                  AppListTableMobileMeta(
+                                    label: _staffCategoryLabel(
+                                      l10n,
+                                      row.staffCategory,
+                                    ),
                                   ),
                               ],
-                            ),
-                          ],
-                          filterValue: AppSearchBarFilterValue(
-                            options: <String, String>{
-                              if (_categoryFilter != null)
-                                'category': _categoryFilter!,
-                            },
-                          ),
-                          onFilterChanged: (AppSearchBarFilterValue value) {
-                            setState(() {
-                              _categoryFilter = value.option('category');
-                            });
+                            );
                           },
-                          trailingActions: <AppSearchBarAction>[
-                            AppSearchBarAction(
-                              icon: Icons.print_outlined,
-                              label: l10n.hrRosterPrintStaffTableAction,
-                              tooltip: l10n.hrRosterPrintStaffTableAction,
-                              onPressed: () => _printRoster(staffOnly: true),
-                            ),
-                          ],
-                        ),
-                        columns: _staffColumns(l10n),
-                        emptyBuilder: (_) => Text(l10n.hrRosterNoStaffLabel),
-                        mobileItemBuilder:
-                            (BuildContext context, _RosterStaffRow row) {
-                              return AppListTableMobileItem(
-                                title: row.title,
-                                caption:
-                                    row.staffNumber ??
-                                    row.displayId ??
-                                    row.staffProfileId,
-                                meta: <AppListTableMobileMeta>[
-                                  if ((row.staffCategory ?? '').isNotEmpty)
-                                    AppListTableMobileMeta(
-                                      label: _staffCategoryLabel(
-                                        l10n,
-                                        row.staffCategory,
-                                      ),
-                                    ),
-                                ],
-                              );
-                            },
-                      ),
                     ),
                   ),
                 ],
@@ -970,7 +934,7 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
           label: l10n.commonPrintActionLabel,
           tooltip: l10n.commonPrintActionLabel,
           enabled: _roster != null && !_busy,
-          onPressed: _roster == null || _busy ? null : () => _printRoster(),
+          onPressed: _roster == null || _busy ? null : _printRoster,
         ),
         AppButton.secondary(
           label: l10n.commonCancelActionLabel,
@@ -984,57 +948,99 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
     final Map<String, Object?> roster = _roster ?? <String, Object?>{};
     return <AppInfoSheetItem>[
       AppInfoSheetItem(
-        label: l10n.hrRosterNameLabel,
+        label: l10n.hrRosterOverviewNameLabel,
         value: _informativeName(l10n),
       ),
       AppInfoSheetItem(
-        label: l10n.hrQueueItemColumnLabel,
+        label: l10n.hrRosterOverviewIdLabel,
         value: _rosterId,
         copyable: true,
       ),
       AppInfoSheetItem(
-        label: l10n.hrPeriodColumnLabel,
+        label: l10n.hrRosterOverviewPeriodLabel,
         value:
             (roster['period_label'] ?? widget.item.periodLabel)?.toString() ??
             '',
       ),
       AppInfoSheetItem(
-        label: l10n.hrRosterRecurringLabel,
+        label: l10n.hrRosterOverviewRecurringLabel,
         value: (roster['is_recurring'] == true || widget.item.isRecurring)
             ? l10n.commonYesLabel
             : l10n.commonNoLabel,
       ),
       AppInfoSheetItem(
-        label: l10n.hrStatusColumnLabel,
+        label: l10n.hrRosterOverviewStatusLabel,
         value: _rosterStatusLabel(
           l10n,
           (roster['status'] ?? widget.item.status)?.toString(),
         ),
       ),
       AppInfoSheetItem(
-        label: l10n.hrAssignmentsSectionTitle,
+        label: l10n.hrRosterOverviewAssignedStaffLabel,
         value: _staffRows.length.toString(),
       ),
       if ((roster['facility_name'] ?? '').toString().trim().isNotEmpty)
         AppInfoSheetItem(
-          label: l10n.hrDepartmentLabel,
+          label: l10n.hrRosterOverviewFacilityLabel,
           value: roster['facility_name']?.toString(),
         ),
       if ((roster['department_name'] ?? '').toString().trim().isNotEmpty)
         AppInfoSheetItem(
-          label: l10n.hrDepartmentLabel,
+          label: l10n.hrRosterOverviewDepartmentLabel,
           value: roster['department_name']?.toString(),
         ),
     ];
   }
 
   List<AppListTableColumn<_RosterStaffRow>> _staffColumns(
-    AppLocalizations l10n,
-  ) {
+    AppLocalizations l10n, {
+    required List<_RosterStaffRow> visible,
+  }) {
+    final bool allSelected =
+        visible.isNotEmpty &&
+        visible.every(
+          (_RosterStaffRow row) =>
+              _selectedStaffIds.contains(row.staffProfileId),
+        );
+    final bool noneSelected = visible.every(
+      (_RosterStaffRow row) => !_selectedStaffIds.contains(row.staffProfileId),
+    );
+
     return <AppListTableColumn<_RosterStaffRow>>[
       AppListTableColumn<_RosterStaffRow>(
         id: 'select',
         label: l10n.hrRosterSelectAllStaffAction,
+        alwaysVisible: true,
+        fixedWidth: 48,
+        headerBuilder: (BuildContext context) {
+          return Center(
+            child: Checkbox(
+              tristate: true,
+              value: allSelected
+                  ? true
+                  : noneSelected
+                  ? false
+                  : null,
+              onChanged: _busy || visible.isEmpty
+                  ? null
+                  : (bool? value) {
+                      setState(() {
+                        if (value == true) {
+                          _selectedStaffIds.addAll(
+                            visible.map(
+                              (_RosterStaffRow row) => row.staffProfileId,
+                            ),
+                          );
+                        } else {
+                          for (final _RosterStaffRow row in visible) {
+                            _selectedStaffIds.remove(row.staffProfileId);
+                          }
+                        }
+                      });
+                    },
+            ),
+          );
+        },
         cellBuilder: (BuildContext context, _RosterStaffRow row) {
           final bool selected = _selectedStaffIds.contains(row.staffProfileId);
           return Checkbox(
@@ -1137,40 +1143,6 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
         },
       ),
     ];
-  }
-}
-
-class _RosterCountChip extends StatelessWidget {
-  const _RosterCountChip({required this.count, required this.labeledCount});
-
-  final int count;
-  final String labeledCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final AppActionLabelScope? labelScope = AppActionLabelScope.maybeOf(
-      context,
-    );
-    final bool showLabel =
-        labelScope?.forceIconOnly != true && (labelScope?.showLabels ?? true);
-
-    return GestureDetector(
-      onTap: () {},
-      behavior: HitTestBehavior.opaque,
-      child: Chip(
-        avatar: Icon(
-          Icons.format_list_numbered_outlined,
-          size: 16,
-          color: colorScheme.primary,
-        ),
-        label: Text(showLabel ? labeledCount : '$count'),
-        backgroundColor: colorScheme.primaryContainer,
-        visualDensity: VisualDensity.compact,
-        labelStyle: theme.textTheme.labelSmall,
-      ),
-    );
   }
 }
 

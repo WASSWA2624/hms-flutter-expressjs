@@ -4,6 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_copyable_identifier.dart';
 
+/// How [AppInfoSheetRow] presents a field label relative to its value.
+enum AppInfoSheetLayout {
+  /// Label on its own line above the value.
+  stacked,
+
+  /// Single line: `Label: value`.
+  inline,
+}
+
 @immutable
 final class AppInfoSheetItem {
   const AppInfoSheetItem({
@@ -40,6 +49,7 @@ class AppInfoSheetRow extends StatelessWidget {
     this.copyPlaceholderValues = const <String>{},
     this.maxLines = 3,
     this.showDivider = false,
+    this.layout = AppInfoSheetLayout.stacked,
     super.key,
   });
 
@@ -53,45 +63,63 @@ class AppInfoSheetRow extends StatelessWidget {
   final Set<String> copyPlaceholderValues;
   final int maxLines;
   final bool showDivider;
+  final AppInfoSheetLayout layout;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final TextStyle? labelStyle = theme.textTheme.labelMedium?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
+      fontWeight: AppFontWeight.emphasis,
+    );
+    final Widget valueWidget = copyable
+        ? AppCopyableIdentifier(
+            value: value,
+            tooltip: copyTooltip,
+            copiedMessage: copiedMessage,
+            semanticLabel: copySemanticLabel,
+            showCopyIcon: showCopyIcon,
+            maxLines: maxLines,
+            placeholderValues: copyPlaceholderValues,
+            textStyle: valueStyle,
+          )
+        : Text(
+            value,
+            maxLines: maxLines,
+            overflow: TextOverflow.ellipsis,
+            style: valueStyle,
+          );
+
+    final Widget body = layout == AppInfoSheetLayout.inline
+        ? Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              Text('$label: ', style: labelStyle),
+              valueWidget,
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: labelStyle,
+              ),
+              SizedBox(height: theme.spacing.xs),
+              valueWidget,
+            ],
+          );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: theme.spacing.xs),
-        copyable
-            ? AppCopyableIdentifier(
-                value: value,
-                tooltip: copyTooltip,
-                copiedMessage: copiedMessage,
-                semanticLabel: copySemanticLabel,
-                showCopyIcon: showCopyIcon,
-                maxLines: maxLines,
-                placeholderValues: copyPlaceholderValues,
-                textStyle: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: AppFontWeight.emphasis,
-                ),
-              )
-            : Text(
-                value,
-                maxLines: maxLines,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: AppFontWeight.emphasis,
-                ),
-              ),
+        body,
         if (showDivider)
           Padding(
             padding: EdgeInsets.only(top: theme.spacing.sm),
@@ -118,6 +146,7 @@ class AppInfoSheetGrid extends StatelessWidget {
     this.minItemWidth = 120,
     this.spacing,
     this.runSpacing,
+    this.layout = AppInfoSheetLayout.stacked,
     super.key,
   });
 
@@ -127,12 +156,16 @@ class AppInfoSheetGrid extends StatelessWidget {
   final double minItemWidth;
   final double? spacing;
   final double? runSpacing;
+  final AppInfoSheetLayout layout;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final double gap = spacing ?? theme.spacing.md;
     final double rowGap = runSpacing ?? gap;
+    final double effectiveMinWidth = layout == AppInfoSheetLayout.inline
+        ? math.max(minItemWidth, 180)
+        : minItemWidth;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -151,7 +184,7 @@ class AppInfoSheetGrid extends StatelessWidget {
             for (final AppInfoSheetItem item in items)
               ConstrainedBox(
                 constraints: BoxConstraints(
-                  minWidth: math.min(minItemWidth, itemMaxWidth),
+                  minWidth: math.min(effectiveMinWidth, itemMaxWidth),
                   maxWidth: itemMaxWidth,
                 ),
                 child: AppInfoSheetRow(
@@ -163,6 +196,7 @@ class AppInfoSheetGrid extends StatelessWidget {
                   copySemanticLabel: item.copySemanticLabel,
                   showCopyIcon: item.showCopyIcon,
                   copyPlaceholderValues: item.copyPlaceholderValues,
+                  layout: layout,
                 ),
               ),
           ],

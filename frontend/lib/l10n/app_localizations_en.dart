@@ -20833,6 +20833,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterOverviewSectionTitle => 'Roster overview';
 
   @override
+  String get hrRosterOverviewNameLabel => 'Roster name';
+
+  @override
+  String get hrRosterOverviewIdLabel => 'Roster ID';
+
+  @override
+  String get hrRosterOverviewPeriodLabel => 'Roster period';
+
+  @override
+  String get hrRosterOverviewRecurringLabel => 'Recurring schedule';
+
+  @override
+  String get hrRosterOverviewStatusLabel => 'Roster status';
+
+  @override
+  String get hrRosterOverviewAssignedStaffLabel => 'Assigned staff';
+
+  @override
+  String get hrRosterOverviewFacilityLabel => 'Facility';
+
+  @override
+  String get hrRosterOverviewDepartmentLabel => 'Department';
+
+  @override
   String get hrRosterPreviewSectionTitle => 'Roster preview';
 
   @override
@@ -20968,6 +20992,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrRosterPreviewShowMiniAction => 'Show mini calendar';
+
+  @override
+  String get hrRosterPreviewDaytimeLabel => 'Daytime';
+
+  @override
+  String get hrRosterPreviewNighttimeLabel => 'Nighttime';
 
   @override
   String get hrRosterPreviewJumpToPeriodAction => 'Roster period';

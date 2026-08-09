@@ -38549,6 +38549,54 @@ abstract class AppLocalizations {
   /// **'Roster overview'**
   String get hrRosterOverviewSectionTitle;
 
+  /// Informative label for the roster display name in overview.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster name'**
+  String get hrRosterOverviewNameLabel;
+
+  /// Informative label for the roster identifier in overview.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster ID'**
+  String get hrRosterOverviewIdLabel;
+
+  /// Informative label for the roster date range in overview.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster period'**
+  String get hrRosterOverviewPeriodLabel;
+
+  /// Informative label for whether the roster repeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring schedule'**
+  String get hrRosterOverviewRecurringLabel;
+
+  /// Informative label for roster lifecycle status in overview.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster status'**
+  String get hrRosterOverviewStatusLabel;
+
+  /// Informative label for staff assignment count in overview.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned staff'**
+  String get hrRosterOverviewAssignedStaffLabel;
+
+  /// Informative label for facility name in roster overview.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get hrRosterOverviewFacilityLabel;
+
+  /// Informative label for department name in roster overview.
+  ///
+  /// In en, this message translates to:
+  /// **'Department'**
+  String get hrRosterOverviewDepartmentLabel;
+
   /// Collapsible roster calendar preview section title.
   ///
   /// In en, this message translates to:
@@ -38812,6 +38860,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show mini calendar'**
   String get hrRosterPreviewShowMiniAction;
+
+  /// Daytime column header in roster day preview (e.g. 06:00–18:00).
+  ///
+  /// In en, this message translates to:
+  /// **'Daytime'**
+  String get hrRosterPreviewDaytimeLabel;
+
+  /// Nighttime column header in roster day preview (e.g. 18:00–06:00).
+  ///
+  /// In en, this message translates to:
+  /// **'Nighttime'**
+  String get hrRosterPreviewNighttimeLabel;
 
   /// Jump calendar focus back to the roster period start.
   ///
