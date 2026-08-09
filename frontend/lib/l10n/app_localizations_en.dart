@@ -20979,6 +20979,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterPreviewPickPeriodAction => 'Select date';
 
   @override
+  String get hrRosterPreviewPickRangeAction => 'Select dates';
+
+  @override
   String get hrRosterPreviewViewMenuLabel => 'Calendar view';
 
   @override

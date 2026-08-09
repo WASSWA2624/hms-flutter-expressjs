@@ -758,7 +758,7 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                       items: _overviewItems(l10n),
                     ),
                   ),
-                  SizedBox(height: theme.spacing.md),
+                  SizedBox(height: theme.spacing.lg),
                   AppCollapsibleSection(
                     title: l10n.hrRosterPreviewSectionTitle,
                     titleIcon: Icons.calendar_month_outlined,
@@ -773,7 +773,7 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                             onShowDetails: _showPeriodDetails,
                           ),
                   ),
-                  SizedBox(height: theme.spacing.md),
+                  SizedBox(height: theme.spacing.lg),
                   Row(
                     children: <Widget>[
                       Icon(
@@ -798,7 +798,7 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                       ),
                     ],
                   ),
-                  SizedBox(height: theme.spacing.xs),
+                  SizedBox(height: theme.spacing.sm),
                   AppListTable<_RosterStaffRow>(
                     page: AppPage<_RosterStaffRow>(
                       items: visible,

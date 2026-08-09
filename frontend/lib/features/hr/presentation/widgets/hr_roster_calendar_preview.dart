@@ -1,9 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_weekly_schedule_editor.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+
+/// Shared roster-preview status colors (busy / free / holiday / off).
+@immutable
+final class HrRosterPreviewColors {
+  const HrRosterPreviewColors(this.scheme);
+
+  final ColorScheme scheme;
+
+  Color get busy => scheme.primary;
+  Color get free => scheme.primaryContainer;
+  Color get holiday => scheme.tertiary;
+  Color get onHoliday => scheme.onTertiary;
+  Color get off => scheme.surfaceContainerHighest;
+  Color get workingFill => scheme.primaryContainer.withValues(alpha: 0.42);
+  Color get offFill => scheme.surfaceContainerHighest.withValues(alpha: 0.85);
+  Color get busyBlock => scheme.primary.withValues(alpha: 0.92);
+}
 
 enum HrRosterPreviewMode { month, week, day }
 
@@ -239,6 +257,9 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
   HrRosterPreviewMode _mode = HrRosterPreviewMode.month;
   late DateTime _focus;
   bool _showMini = true;
+  DateTimeRange? _customRange;
+
+  static const int _maxCustomWeekDays = 14;
 
   @override
   void initState() {
@@ -261,11 +282,98 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
   DateTime get _periodStart => hrRosterDateOnly(widget.days.first.date);
   DateTime get _periodEnd => hrRosterDateOnly(widget.days.last.date);
 
-  void _setFocus(DateTime value) =>
-      setState(() => _focus = hrRosterDateOnly(value));
+  DateTime get _viewStart {
+    final DateTimeRange? range = _customRange;
+    if (range != null) {
+      return hrRosterDateOnly(range.start);
+    }
+    return switch (_mode) {
+      HrRosterPreviewMode.day => _focus,
+      HrRosterPreviewMode.week => hrRosterWeekStart(_focus),
+      HrRosterPreviewMode.month => DateTime(_focus.year, _focus.month, 1),
+    };
+  }
+
+  DateTime get _viewEnd {
+    final DateTimeRange? range = _customRange;
+    if (range != null) {
+      return hrRosterDateOnly(range.end);
+    }
+    return switch (_mode) {
+      HrRosterPreviewMode.day => _focus,
+      HrRosterPreviewMode.week =>
+        hrRosterWeekStart(_focus).add(const Duration(days: 6)),
+      HrRosterPreviewMode.month => DateTime(_focus.year, _focus.month + 1, 0),
+    };
+  }
+
+  List<DateTime> get _weekDates {
+    final DateTimeRange? range = _customRange;
+    if (range != null) {
+      final DateTime start = hrRosterDateOnly(range.start);
+      final DateTime end = hrRosterDateOnly(range.end);
+      final int dayCount = end.difference(start).inDays + 1;
+      if (dayCount >= 1 && dayCount <= _maxCustomWeekDays) {
+        return <DateTime>[
+          for (int i = 0; i < dayCount; i++) start.add(Duration(days: i)),
+        ];
+      }
+    }
+    return <DateTime>[
+      for (int i = 0; i < 7; i++)
+        hrRosterWeekStart(_focus).add(Duration(days: i)),
+    ];
+  }
+
+  void _setFocus(DateTime value) {
+    setState(() {
+      _focus = hrRosterDateOnly(value);
+      _customRange = null;
+    });
+  }
+
+  void _goToday() {
+    setState(() {
+      _focus = hrRosterDateOnly(DateTime.now());
+      _customRange = null;
+    });
+  }
+
+  void _applyCustomRange(DateTimeRange range) {
+    final DateTime start = hrRosterDateOnly(range.start);
+    final DateTime end = hrRosterDateOnly(range.end);
+    final int dayCount = end.difference(start).inDays + 1;
+    setState(() {
+      _customRange = DateTimeRange(start: start, end: end);
+      _focus = start;
+      if (dayCount <= 1) {
+        _mode = HrRosterPreviewMode.day;
+      } else if (dayCount <= _maxCustomWeekDays) {
+        _mode = HrRosterPreviewMode.week;
+      } else {
+        _mode = HrRosterPreviewMode.month;
+      }
+    });
+  }
 
   void _shift({int months = 0, int weeks = 0, int days = 0}) {
     setState(() {
+      final DateTimeRange? range = _customRange;
+      if (range != null) {
+        final int spanDays =
+            hrRosterDateOnly(range.end).difference(hrRosterDateOnly(range.start)).inDays;
+        final int stepDays = months != 0
+            ? months * 30
+            : (weeks != 0 ? weeks * 7 : days);
+        final DateTime nextStart =
+            hrRosterDateOnly(range.start).add(Duration(days: stepDays));
+        _customRange = DateTimeRange(
+          start: nextStart,
+          end: nextStart.add(Duration(days: spanDays)),
+        );
+        _focus = nextStart;
+        return;
+      }
       if (months != 0) {
         _focus = DateTime(_focus.year, _focus.month + months, _focus.day);
       } else if (weeks != 0) {
@@ -289,6 +397,7 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
     setState(() {
       _focus = hrRosterDateOnly(day.date);
       _mode = HrRosterPreviewMode.day;
+      _customRange = null;
     });
     widget.onShowDetails(
       HrRosterPeriodDetails(
@@ -300,24 +409,13 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
   }
 
   void _openSummary() {
+    final DateTime start = _viewStart;
+    final DateTime end = _viewEnd;
     final HrRosterPeriodScope scope = switch (_mode) {
       HrRosterPreviewMode.month => HrRosterPeriodScope.month,
       HrRosterPreviewMode.week => HrRosterPeriodScope.week,
       HrRosterPreviewMode.day => HrRosterPeriodScope.day,
     };
-    final DateTime start;
-    final DateTime end;
-    switch (scope) {
-      case HrRosterPeriodScope.day:
-        start = _focus;
-        end = _focus;
-      case HrRosterPeriodScope.week:
-        start = hrRosterWeekStart(_focus);
-        end = start.add(const Duration(days: 6));
-      case HrRosterPeriodScope.month:
-        start = DateTime(_focus.year, _focus.month, 1);
-        end = DateTime(_focus.year, _focus.month + 1, 0);
-    }
     widget.onShowDetails(
       HrRosterPeriodDetails(
         scope: scope,
@@ -327,16 +425,25 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
     );
   }
 
-  Future<void> _pickDate() async {
-    final DateTime? picked = await showDatePicker(
+  Future<void> _pickRange() async {
+    final DateTime firstDate = DateTime(_periodStart.year - 1);
+    final DateTime lastDate = DateTime(_periodEnd.year + 1, 12, 31);
+    final DateTimeRange initial =
+        _customRange ??
+        DateTimeRange(start: _viewStart, end: _viewEnd);
+    final DateTimeRange? picked = await showDateRangePicker(
       context: context,
-      initialDate: _focus,
-      firstDate: DateTime(_periodStart.year - 1),
-      lastDate: DateTime(_periodEnd.year + 1, 12, 31),
-      helpText: context.l10n.hrRosterPreviewPickPeriodAction,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      initialDateRange: DateTimeRange(
+        start: initial.start.isBefore(firstDate) ? firstDate : initial.start,
+        end: initial.end.isAfter(lastDate) ? lastDate : initial.end,
+      ),
+      helpText: context.l10n.hrRosterPreviewPickRangeAction,
+      saveText: context.l10n.commonSaveActionLabel,
     );
     if (picked != null && mounted) {
-      _setFocus(picked);
+      _applyCustomRange(picked);
     }
   }
 
@@ -375,6 +482,17 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
     );
   }
 
+  String _chromeTitle(MaterialLocalizations materials) {
+    if (_customRange != null) {
+      return '${materials.formatShortDate(_viewStart)} – ${materials.formatShortDate(_viewEnd)}';
+    }
+    return switch (_mode) {
+      HrRosterPreviewMode.month => materials.formatMonthYear(_focus),
+      HrRosterPreviewMode.week => hrRosterWeekRangeLabel(materials, _focus),
+      HrRosterPreviewMode.day => materials.formatFullDate(_focus),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -395,6 +513,9 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
             widget.expanded ? (narrow ? 520.0 : 600.0) : (narrow ? 360.0 : 420.0),
         };
 
+        final bool showActionLabels =
+            AppBreakpoints.fromWidth(constraints.maxWidth).showsToolbarActionLabels;
+
         final Widget board = Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -405,6 +526,8 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
                   focus: _focus,
                   periodStart: _periodStart,
                   periodEnd: _periodEnd,
+                  highlightStart: _viewStart,
+                  highlightEnd: _viewEnd,
                   byKey: _byKey,
                   onSelect: _setFocus,
                 ),
@@ -421,14 +544,13 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
                   byKey: _byKey,
                   periodStart: _periodStart,
                   periodEnd: _periodEnd,
+                  highlightStart: _viewStart,
+                  highlightEnd: _viewEnd,
                   onDayTap: _openDay,
                   onSelectOutside: _setFocus,
                 ),
                 HrRosterPreviewMode.week => _TimeGrid(
-                  dates: <DateTime>[
-                    for (int i = 0; i < 7; i++)
-                      hrRosterWeekStart(_focus).add(Duration(days: i)),
-                  ],
+                  dates: _weekDates,
                   byKey: _byKey,
                   periodStart: _periodStart,
                   periodEnd: _periodEnd,
@@ -463,17 +585,12 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
             children: <Widget>[
               _CalendarChrome(
                 narrow: narrow,
+                showActionLabels: showActionLabels,
                 mode: _mode,
-                title: switch (_mode) {
-                  HrRosterPreviewMode.month =>
-                    materials.formatMonthYear(_focus),
-                  HrRosterPreviewMode.week =>
-                    hrRosterWeekRangeLabel(materials, _focus),
-                  HrRosterPreviewMode.day => materials.formatFullDate(_focus),
-                },
+                title: _chromeTitle(materials),
                 onModeChanged: (HrRosterPreviewMode mode) =>
                     setState(() => _mode = mode),
-                onToday: () => _setFocus(_periodStart),
+                onToday: _goToday,
                 onPrevious: () {
                   switch (_mode) {
                     case HrRosterPreviewMode.month:
@@ -494,7 +611,7 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
                       _shift(days: 1);
                   }
                 },
-                onPickPeriod: _pickDate,
+                onPickPeriod: _pickRange,
                 onToggleMini: narrow
                     ? null
                     : () => setState(() => _showMini = !_showMini),
@@ -512,9 +629,9 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
-                    onPressed: _pickDate,
-                    icon: const Icon(Icons.edit_calendar_outlined, size: 16),
-                    label: Text(l10n.hrRosterPreviewPickPeriodAction),
+                    onPressed: _pickRange,
+                    icon: const Icon(Icons.date_range_outlined, size: 16),
+                    label: Text(l10n.hrRosterPreviewPickRangeAction),
                     style: TextButton.styleFrom(
                       visualDensity: VisualDensity.compact,
                       padding: EdgeInsets.zero,
@@ -535,6 +652,7 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
 class _CalendarChrome extends StatelessWidget {
   const _CalendarChrome({
     required this.narrow,
+    required this.showActionLabels,
     required this.mode,
     required this.title,
     required this.onModeChanged,
@@ -549,6 +667,7 @@ class _CalendarChrome extends StatelessWidget {
   });
 
   final bool narrow;
+  final bool showActionLabels;
   final HrRosterPreviewMode mode;
   final String title;
   final ValueChanged<HrRosterPreviewMode> onModeChanged;
@@ -560,6 +679,30 @@ class _CalendarChrome extends StatelessWidget {
   final bool miniVisible;
   final VoidCallback? onMaximize;
   final VoidCallback onSummary;
+
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+  }) {
+    if (showActionLabels && onPressed != null) {
+      return TextButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18),
+        label: Text(label),
+        style: TextButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+        ),
+      );
+    }
+    return IconButton(
+      tooltip: label,
+      visualDensity: VisualDensity.compact,
+      onPressed: onPressed,
+      icon: Icon(icon, size: 20),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -649,36 +792,31 @@ class _CalendarChrome extends StatelessWidget {
 
     final List<Widget> trailing = <Widget>[
       viewSwitcher,
-      IconButton(
-        tooltip: l10n.hrRosterPreviewPickPeriodAction,
-        visualDensity: VisualDensity.compact,
+      _actionButton(
+        icon: Icons.date_range_outlined,
+        label: l10n.hrRosterPreviewPickRangeAction,
         onPressed: onPickPeriod,
-        icon: const Icon(Icons.edit_calendar_outlined, size: 20),
       ),
-      IconButton(
-        tooltip: l10n.hrRosterPreviewSummaryAction,
-        visualDensity: VisualDensity.compact,
+      _actionButton(
+        icon: Icons.info_outline,
+        label: l10n.hrRosterPreviewSummaryAction,
         onPressed: onSummary,
-        icon: const Icon(Icons.info_outline, size: 20),
       ),
       if (onToggleMini != null)
-        IconButton(
-          tooltip: miniVisible
+        _actionButton(
+          icon: miniVisible
+              ? Icons.view_sidebar_outlined
+              : Icons.view_sidebar,
+          label: miniVisible
               ? l10n.hrRosterPreviewHideMiniAction
               : l10n.hrRosterPreviewShowMiniAction,
-          visualDensity: VisualDensity.compact,
           onPressed: onToggleMini,
-          icon: Icon(
-            miniVisible ? Icons.view_sidebar_outlined : Icons.view_sidebar,
-            size: 20,
-          ),
         ),
       if (onMaximize != null)
-        IconButton(
-          tooltip: l10n.hrRosterPreviewMaximizeAction,
-          visualDensity: VisualDensity.compact,
+        _actionButton(
+          icon: Icons.open_in_full,
+          label: l10n.hrRosterPreviewMaximizeAction,
           onPressed: onMaximize,
-          icon: const Icon(Icons.open_in_full, size: 18),
         ),
     ];
 
@@ -691,11 +829,10 @@ class _CalendarChrome extends StatelessWidget {
               Expanded(child: titleText),
               viewSwitcher,
               if (onMaximize != null)
-                IconButton(
-                  tooltip: l10n.hrRosterPreviewMaximizeAction,
-                  visualDensity: VisualDensity.compact,
+                _actionButton(
+                  icon: Icons.open_in_full,
+                  label: l10n.hrRosterPreviewMaximizeAction,
                   onPressed: onMaximize,
-                  icon: const Icon(Icons.open_in_full, size: 18),
                 ),
             ],
           ),
@@ -704,17 +841,15 @@ class _CalendarChrome extends StatelessWidget {
             children: <Widget>[
               nav,
               const Spacer(),
-              IconButton(
-                tooltip: l10n.hrRosterPreviewPickPeriodAction,
-                visualDensity: VisualDensity.compact,
+              _actionButton(
+                icon: Icons.date_range_outlined,
+                label: l10n.hrRosterPreviewPickRangeAction,
                 onPressed: onPickPeriod,
-                icon: const Icon(Icons.edit_calendar_outlined, size: 20),
               ),
-              IconButton(
-                tooltip: l10n.hrRosterPreviewSummaryAction,
-                visualDensity: VisualDensity.compact,
+              _actionButton(
+                icon: Icons.info_outline,
+                label: l10n.hrRosterPreviewSummaryAction,
                 onPressed: onSummary,
-                icon: const Icon(Icons.info_outline, size: 20),
               ),
             ],
           ),
@@ -738,6 +873,8 @@ class _MiniMonthPicker extends StatelessWidget {
     required this.focus,
     required this.periodStart,
     required this.periodEnd,
+    required this.highlightStart,
+    required this.highlightEnd,
     required this.byKey,
     required this.onSelect,
   });
@@ -745,6 +882,8 @@ class _MiniMonthPicker extends StatelessWidget {
   final DateTime focus;
   final DateTime periodStart;
   final DateTime periodEnd;
+  final DateTime highlightStart;
+  final DateTime highlightEnd;
   final Map<String, HrRosterDayPreview> byKey;
   final ValueChanged<DateTime> onSelect;
 
@@ -805,23 +944,29 @@ class _MiniMonthPicker extends StatelessWidget {
                   );
                   final bool selected =
                       hrRosterDateKey(date) == hrRosterDateKey(focus);
+                  final bool inHighlight = !date.isBefore(highlightStart) &&
+                      !date.isAfter(highlightEnd);
                   final bool inPeriod =
                       !date.isBefore(periodStart) && !date.isAfter(periodEnd);
                   final HrRosterDayPreview? day = byKey[hrRosterDateKey(date)];
+                  final HrRosterPreviewColors colors =
+                      HrRosterPreviewColors(theme.colorScheme);
                   return InkWell(
                     onTap: () => onSelect(date),
                     customBorder: const CircleBorder(),
                     child: Center(
                       child: Container(
-                        width: 24,
-                        height: 24,
+                        width: 26,
+                        height: 26,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: selected
-                              ? theme.colorScheme.primary
+                              ? colors.busy
                               : day?.isHoliday == true
-                              ? theme.colorScheme.tertiary.withValues(alpha: 0.25)
+                              ? colors.holiday
+                              : inHighlight
+                              ? colors.free
                               : null,
                         ),
                         child: Text(
@@ -829,12 +974,14 @@ class _MiniMonthPicker extends StatelessWidget {
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: selected
                                 ? theme.colorScheme.onPrimary
+                                : day?.isHoliday == true
+                                ? colors.onHoliday
                                 : inPeriod
                                 ? null
                                 : theme.colorScheme.onSurfaceVariant.withValues(
                                     alpha: 0.45,
                                   ),
-                            fontWeight: selected
+                            fontWeight: selected || inHighlight
                                 ? FontWeight.w700
                                 : FontWeight.w500,
                           ),
@@ -858,6 +1005,8 @@ class _MonthGrid extends StatelessWidget {
     required this.byKey,
     required this.periodStart,
     required this.periodEnd,
+    required this.highlightStart,
+    required this.highlightEnd,
     required this.onDayTap,
     required this.onSelectOutside,
   });
@@ -866,6 +1015,8 @@ class _MonthGrid extends StatelessWidget {
   final Map<String, HrRosterDayPreview> byKey;
   final DateTime periodStart;
   final DateTime periodEnd;
+  final DateTime highlightStart;
+  final DateTime highlightEnd;
   final ValueChanged<HrRosterDayPreview> onDayTap;
   final ValueChanged<DateTime> onSelectOutside;
 
@@ -920,12 +1071,19 @@ class _MonthGrid extends StatelessWidget {
                   final bool inMonth = date.month == focus.month;
                   final bool inPeriod =
                       !date.isBefore(periodStart) && !date.isAfter(periodEnd);
+                  final bool inHighlight = !date.isBefore(highlightStart) &&
+                      !date.isAfter(highlightEnd);
                   final HrRosterDayPreview? day = byKey[hrRosterDateKey(date)];
                   final bool selected =
                       hrRosterDateKey(date) == hrRosterDateKey(focus);
+                  final HrRosterPreviewColors colors =
+                      HrRosterPreviewColors(theme.colorScheme);
 
                   return DecoratedBox(
                     decoration: BoxDecoration(
+                      color: inHighlight
+                          ? colors.free.withValues(alpha: 0.35)
+                          : null,
                       border: Border.all(
                         color: theme.colorScheme.outlineVariant.withValues(
                           alpha: 0.45,
@@ -954,9 +1112,7 @@ class _MonthGrid extends StatelessWidget {
                                   alignment: Alignment.center,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: selected
-                                        ? theme.colorScheme.primary
-                                        : null,
+                                    color: selected ? colors.busy : null,
                                   ),
                                   child: Text(
                                     '${date.day}',
@@ -981,13 +1137,13 @@ class _MonthGrid extends StatelessWidget {
                                 right: 3,
                                 bottom: 3,
                                 child: Container(
-                                  height: 14,
+                                  height: 16,
                                   alignment: Alignment.center,
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 3,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: theme.colorScheme.tertiary,
+                                    color: colors.holiday,
                                     borderRadius: BorderRadius.circular(999),
                                   ),
                                   child: Text(
@@ -995,9 +1151,29 @@ class _MonthGrid extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onTertiary,
+                                      color: colors.onHoliday,
                                       fontSize: 8,
                                       height: 1,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else if (day != null &&
+                                inPeriod &&
+                                !day.isWorkingDay)
+                              Positioned(
+                                left: 4,
+                                right: 4,
+                                bottom: 4,
+                                height: 8,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: colors.off,
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: theme.colorScheme.outline
+                                          .withValues(alpha: 0.5),
                                     ),
                                   ),
                                 ),
@@ -1009,7 +1185,7 @@ class _MonthGrid extends StatelessWidget {
                                 left: 4,
                                 right: 4,
                                 bottom: 4,
-                                height: 5,
+                                height: 8,
                                 child: _BusyFreeBar(day: day),
                               ),
                           ],
@@ -1414,6 +1590,8 @@ class _HalfDayColumn extends StatelessWidget {
               builder: (BuildContext context, BoxConstraints constraints) {
                 final double height = constraints.maxHeight;
                 final int span = _span;
+                final HrRosterPreviewColors colors =
+                    HrRosterPreviewColors(theme.colorScheme);
                 return Stack(
                   clipBehavior: Clip.hardEdge,
                   children: <Widget>[
@@ -1432,18 +1610,11 @@ class _HalfDayColumn extends StatelessWidget {
                       ),
                     if (preview != null && inPeriod && preview.isWorkingDay)
                       Positioned.fill(
-                        child: ColoredBox(
-                          color: theme.colorScheme.tertiaryContainer.withValues(
-                            alpha: 0.16,
-                          ),
-                        ),
+                        child: ColoredBox(color: colors.workingFill),
                       ),
                     if (preview != null && inPeriod && !preview.isWorkingDay)
                       Positioned.fill(
-                        child: ColoredBox(
-                          color: theme.colorScheme.surfaceContainerHighest
-                              .withValues(alpha: 0.4),
-                        ),
+                        child: ColoredBox(color: colors.offFill),
                       ),
                     for (final HrRosterMinuteRange range in _displayBusy)
                       Positioned(
@@ -1455,9 +1626,7 @@ class _HalfDayColumn extends StatelessWidget {
                         right: 3,
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(
-                              alpha: 0.8,
-                            ),
+                            color: colors.busyBlock,
                             borderRadius: BorderRadius.circular(5),
                           ),
                         ),
@@ -1495,6 +1664,8 @@ class _DayColumn extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final int span = (gridEndMinutes - gridStartMinutes).clamp(1, 24 * 60);
     final HrRosterDayPreview? preview = day;
+    final HrRosterPreviewColors colors =
+        HrRosterPreviewColors(theme.colorScheme);
     final List<HrRosterMinuteRange> busy = preview == null
         ? const <HrRosterMinuteRange>[]
         : useAbsoluteBusy
@@ -1529,19 +1700,11 @@ class _DayColumn extends StatelessWidget {
                 ),
               if (preview != null && inPeriod && preview.isWorkingDay)
                 Positioned.fill(
-                  child: ColoredBox(
-                    color: theme.colorScheme.tertiaryContainer.withValues(
-                      alpha: 0.18,
-                    ),
-                  ),
+                  child: ColoredBox(color: colors.workingFill),
                 ),
               if (preview != null && inPeriod && !preview.isWorkingDay)
                 Positioned.fill(
-                  child: ColoredBox(
-                    color: theme.colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.45,
-                    ),
-                  ),
+                  child: ColoredBox(color: colors.offFill),
                 ),
               for (final HrRosterMinuteRange range in busy)
                 if (range.endMinutes > gridStartMinutes &&
@@ -1568,7 +1731,7 @@ class _DayColumn extends StatelessWidget {
                     right: 3,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.78),
+                        color: colors.busyBlock,
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
@@ -1589,18 +1752,18 @@ class _BusyFreeBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final HrRosterPreviewColors colors =
+        HrRosterPreviewColors(theme.colorScheme);
     final int span = (day.dayEndMinutes - day.dayStartMinutes).clamp(1, 24 * 60);
     return ClipRRect(
       borderRadius: BorderRadius.circular(999),
       child: SizedBox(
-        height: 6,
+        height: 8,
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             return Stack(
               children: <Widget>[
-                Positioned.fill(
-                  child: ColoredBox(color: theme.colorScheme.tertiaryContainer),
-                ),
+                Positioned.fill(child: ColoredBox(color: colors.free)),
                 for (final HrRosterMinuteRange range in day.busyRanges)
                   Positioned(
                     left:
@@ -1611,7 +1774,7 @@ class _BusyFreeBar extends StatelessWidget {
                         constraints.maxWidth,
                     top: 0,
                     bottom: 0,
-                    child: ColoredBox(color: theme.colorScheme.primary),
+                    child: ColoredBox(color: colors.busy),
                   ),
               ],
             );
@@ -1630,38 +1793,42 @@ class _CompactLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    Widget swatch(Color color, String label) {
+    final HrRosterPreviewColors colors =
+        HrRosterPreviewColors(theme.colorScheme);
+    Widget swatch(Color color, String label, {Color? border}) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Container(
-            width: 10,
-            height: 10,
+            width: 14,
+            height: 14,
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: border ?? theme.colorScheme.outline.withValues(alpha: 0.55),
+              ),
             ),
           ),
           SizedBox(width: theme.spacing.xs),
-          Text(label, style: theme.textTheme.labelSmall),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       );
     }
 
     return Wrap(
-      spacing: theme.spacing.sm,
-      runSpacing: 2,
+      spacing: theme.spacing.md,
+      runSpacing: theme.spacing.xs,
       children: <Widget>[
-        swatch(theme.colorScheme.primary, l10n.hrRosterAvailableLabel),
-        swatch(
-          theme.colorScheme.tertiaryContainer,
-          l10n.hrRosterFreeHoursLabel,
-        ),
-        swatch(theme.colorScheme.tertiary, l10n.hrRosterPublicHolidayLabel),
-        swatch(
-          theme.colorScheme.surfaceContainerHighest,
-          l10n.hrRosterDayOffLabel,
-        ),
+        swatch(colors.busy, l10n.hrRosterAvailableLabel),
+        swatch(colors.free, l10n.hrRosterFreeHoursLabel),
+        swatch(colors.holiday, l10n.hrRosterPublicHolidayLabel),
+        swatch(colors.off, l10n.hrRosterDayOffLabel),
       ],
     );
   }

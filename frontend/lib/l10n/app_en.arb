@@ -27056,6 +27056,10 @@
   "@hrRosterPreviewPickPeriodAction": {
     "description": "Manually pick a calendar preview date/period."
   },
+  "hrRosterPreviewPickRangeAction": "Select dates",
+  "@hrRosterPreviewPickRangeAction": {
+    "description": "Open a date-range picker for a custom roster preview window."
+  },
   "hrRosterPreviewViewMenuLabel": "Calendar view",
   "@hrRosterPreviewViewMenuLabel": {
     "description": "Dropdown to switch day/week/month preview."

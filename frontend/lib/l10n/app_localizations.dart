@@ -38831,6 +38831,12 @@ abstract class AppLocalizations {
   /// **'Select date'**
   String get hrRosterPreviewPickPeriodAction;
 
+  /// Open a date-range picker for a custom roster preview window.
+  ///
+  /// In en, this message translates to:
+  /// **'Select dates'**
+  String get hrRosterPreviewPickRangeAction;
+
   /// Dropdown to switch day/week/month preview.
   ///
   /// In en, this message translates to:
