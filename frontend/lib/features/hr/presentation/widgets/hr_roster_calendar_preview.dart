@@ -394,7 +394,7 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
           HrRosterPreviewMode.month =>
             widget.expanded ? (narrow ? 360.0 : 440.0) : (narrow ? 240.0 : 280.0),
           HrRosterPreviewMode.week || HrRosterPreviewMode.day =>
-            widget.expanded ? (narrow ? 480.0 : 560.0) : (narrow ? 320.0 : 380.0),
+            widget.expanded ? (narrow ? 520.0 : 600.0) : (narrow ? 360.0 : 420.0),
         };
 
         final Widget board = Row(
@@ -1044,9 +1044,6 @@ class _TimeGrid extends StatelessWidget {
   final DateTime focus;
   final ValueChanged<DateTime> onDayHeaderTap;
 
-  /// Readable hour-row height; shorter viewports scroll instead of crushing.
-  static const double _minHourHeight = 36;
-
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -1149,67 +1146,61 @@ class _TimeGrid extends StatelessWidget {
         Expanded(
           child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
-              final double viewportHeight = constraints.maxHeight.isFinite
-                  ? constraints.maxHeight
-                  : hourCount * _minHourHeight;
-              final double contentHeight = math.max(
-                viewportHeight,
-                hourCount * _minHourHeight,
-              );
-              final double hourHeight = contentHeight / hourCount;
+              final double height = constraints.maxHeight;
+              final double hourHeight = height / hourCount;
+              // Keep every hour marked when space allows; thin views skip labels.
+              final int labelStep = hourHeight >= 16
+                  ? 1
+                  : hourHeight >= 11
+                  ? 2
+                  : 3;
 
-              return Scrollbar(
-                thumbVisibility: contentHeight > viewportHeight + 0.5,
-                child: SingleChildScrollView(
-                  child: SizedBox(
-                    height: contentHeight,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  SizedBox(
+                    width: 48,
+                    child: Stack(
+                      clipBehavior: Clip.hardEdge,
                       children: <Widget>[
-                        SizedBox(
-                          width: 48,
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: <Widget>[
-                              for (int i = 0; i <= hourCount; i++)
-                                Positioned(
-                                  top: (i * hourHeight) - 6,
-                                  left: 0,
-                                  right: 2,
-                                  child: Text(
-                                    hrRosterFormatMinutes(
-                                      (gridStartMinutes + i * 60).clamp(
-                                        gridStartMinutes,
-                                        gridEndMinutes,
-                                      ),
-                                    ),
-                                    textAlign: TextAlign.right,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                      fontSize: 11,
-                                      height: 1,
-                                    ),
+                        for (int i = 0; i <= hourCount; i++)
+                          if (i % labelStep == 0)
+                            Positioned(
+                              top: (i / hourCount) * height -
+                                  (i == hourCount ? 10 : 5),
+                              left: 0,
+                              right: 2,
+                              child: Text(
+                                hrRosterFormatMinutes(
+                                  (gridStartMinutes + i * 60).clamp(
+                                    gridStartMinutes,
+                                    gridEndMinutes,
                                   ),
                                 ),
-                            ],
-                          ),
-                        ),
-                        for (final DateTime date in dates)
-                          Expanded(
-                            child: _DayColumn(
-                              day: byKey[hrRosterDateKey(date)],
-                              inPeriod: !date.isBefore(periodStart) &&
-                                  !date.isAfter(periodEnd),
-                              gridStartMinutes: gridStartMinutes,
-                              gridEndMinutes: gridEndMinutes,
-                              hourCount: hourCount,
-                              useAbsoluteBusy: true,
+                                textAlign: TextAlign.right,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: hourHeight >= 14 ? 11 : 9,
+                                  height: 1,
+                                ),
+                              ),
                             ),
-                          ),
                       ],
                     ),
                   ),
-                ),
+                  for (final DateTime date in dates)
+                    Expanded(
+                      child: _DayColumn(
+                        day: byKey[hrRosterDateKey(date)],
+                        inPeriod: !date.isBefore(periodStart) &&
+                            !date.isAfter(periodEnd),
+                        gridStartMinutes: gridStartMinutes,
+                        gridEndMinutes: gridEndMinutes,
+                        hourCount: hourCount,
+                        useAbsoluteBusy: true,
+                      ),
+                    ),
+                ],
               );
             },
           ),

@@ -799,109 +799,109 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                     ],
                   ),
                   SizedBox(height: theme.spacing.xs),
-                  SizedBox(
-                    height: 280,
-                    child: AppListTable<_RosterStaffRow>(
-                      page: AppPage<_RosterStaffRow>(
-                        items: visible,
-                        request: AppPageRequest(
-                          pageSize: visible.isEmpty ? 20 : visible.length,
-                        ),
-                        totalItemCount: visible.length,
+                  AppListTable<_RosterStaffRow>(
+                    page: AppPage<_RosterStaffRow>(
+                      items: visible,
+                      request: AppPageRequest(
+                        pageSize: visible.isEmpty ? 20 : visible.length,
                       ),
-                      forceCompact: true,
-                      padEmptyRows: false,
-                      enableExport: true,
-                      columnVisibilityStorageKey: 'hr_roster_assigned_staff_v1',
-                      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-                      search: AppListTableSearch<_RosterStaffRow>(
-                        controller: _staffSearchController,
-                        semanticLabel: l10n.hrSearchLabel,
-                        hintText: l10n.hrSearchHint,
-                        clearLabel: l10n.hrClearFiltersAction,
-                        matcher: (_RosterStaffRow row, String query) => true,
-                        onSubmitted: (String value) =>
-                            setState(() => _staffSearchQuery = value),
-                        onClear: () => setState(() {
-                          _staffSearchQuery = '';
-                          _categoryFilter = null;
-                        }),
-                        showAdvancedFilterButton: true,
-                        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-                        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-                        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-                        advancedFilterResetLabel: l10n.hrClearFiltersAction,
-                        allFieldsLabel: l10n.opdAllFieldsFilterLabel,
-                        filterGroups: <AppSearchBarFilterGroup>[
-                          AppSearchBarFilterGroup(
-                            key: 'category',
-                            label: l10n.hrRosterStaffCategoryLabel,
-                            allLabel: l10n.opdAllFieldsFilterLabel,
-                            choices: <AppSearchBarFilterChoice>[
-                              for (final AppSelectOption<String> option
-                                  in _staffCategoryOptions(l10n))
-                                AppSearchBarFilterChoice(
-                                  value: option.value,
-                                  label: option.label,
+                      totalItemCount: visible.length,
+                    ),
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    forceCompact: true,
+                    padEmptyRows: false,
+                    maxVisibleItems: visible.isEmpty ? 1 : visible.length,
+                    enableExport: true,
+                    columnVisibilityStorageKey: 'hr_roster_assigned_staff_v1',
+                    columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+                    search: AppListTableSearch<_RosterStaffRow>(
+                      controller: _staffSearchController,
+                      semanticLabel: l10n.hrSearchLabel,
+                      hintText: l10n.hrSearchHint,
+                      clearLabel: l10n.hrClearFiltersAction,
+                      matcher: (_RosterStaffRow row, String query) => true,
+                      onSubmitted: (String value) =>
+                          setState(() => _staffSearchQuery = value),
+                      onClear: () => setState(() {
+                        _staffSearchQuery = '';
+                        _categoryFilter = null;
+                      }),
+                      showAdvancedFilterButton: true,
+                      advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                      advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                      advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                      advancedFilterResetLabel: l10n.hrClearFiltersAction,
+                      allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+                      filterGroups: <AppSearchBarFilterGroup>[
+                        AppSearchBarFilterGroup(
+                          key: 'category',
+                          label: l10n.hrRosterStaffCategoryLabel,
+                          allLabel: l10n.opdAllFieldsFilterLabel,
+                          choices: <AppSearchBarFilterChoice>[
+                            for (final AppSelectOption<String> option
+                                in _staffCategoryOptions(l10n))
+                              AppSearchBarFilterChoice(
+                                value: option.value,
+                                label: option.label,
+                              ),
+                          ],
+                        ),
+                      ],
+                      filterValue: AppSearchBarFilterValue(
+                        options: <String, String>{
+                          if (_categoryFilter != null)
+                            'category': _categoryFilter!,
+                        },
+                      ),
+                      onFilterChanged: (AppSearchBarFilterValue value) {
+                        setState(() {
+                          _categoryFilter = value.option('category');
+                        });
+                      },
+                      trailingActions: <AppSearchBarAction>[
+                        if (canWriteStaff)
+                          AppSearchBarAction(
+                            icon: Icons.person_remove_outlined,
+                            label: l10n.hrRosterRemoveSelectedStaffAction,
+                            tooltip: l10n.hrRosterRemoveSelectedStaffAction,
+                            destructive: true,
+                            enabled: !_busy && _selectedStaffIds.isNotEmpty,
+                            onPressed: _busy || _selectedStaffIds.isEmpty
+                                ? null
+                                : _removeSelected,
+                          ),
+                        if (canWriteStaff)
+                          AppSearchBarAction(
+                            icon: Icons.person_add_alt_1_outlined,
+                            label: l10n.hrRosterAddStaffAction,
+                            tooltip: l10n.hrRosterAddStaffAction,
+                            enabled: !_busy,
+                            onPressed: _busy ? null : _addStaff,
+                          ),
+                      ],
+                    ),
+                    columns: _staffColumns(l10n, visible: visible),
+                    emptyBuilder: (_) => Text(l10n.hrRosterNoStaffLabel),
+                    mobileItemBuilder:
+                        (BuildContext context, _RosterStaffRow row) {
+                          return AppListTableMobileItem(
+                            title: row.title,
+                            caption:
+                                row.staffNumber ??
+                                row.displayId ??
+                                row.staffProfileId,
+                            meta: <AppListTableMobileMeta>[
+                              if ((row.staffCategory ?? '').isNotEmpty)
+                                AppListTableMobileMeta(
+                                  label: _staffCategoryLabel(
+                                    l10n,
+                                    row.staffCategory,
+                                  ),
                                 ),
                             ],
-                          ),
-                        ],
-                        filterValue: AppSearchBarFilterValue(
-                          options: <String, String>{
-                            if (_categoryFilter != null)
-                              'category': _categoryFilter!,
-                          },
-                        ),
-                        onFilterChanged: (AppSearchBarFilterValue value) {
-                          setState(() {
-                            _categoryFilter = value.option('category');
-                          });
+                          );
                         },
-                        trailingActions: <AppSearchBarAction>[
-                          if (canWriteStaff)
-                            AppSearchBarAction(
-                              icon: Icons.person_remove_outlined,
-                              label: l10n.hrRosterRemoveSelectedStaffAction,
-                              tooltip: l10n.hrRosterRemoveSelectedStaffAction,
-                              destructive: true,
-                              enabled: !_busy && _selectedStaffIds.isNotEmpty,
-                              onPressed: _busy || _selectedStaffIds.isEmpty
-                                  ? null
-                                  : _removeSelected,
-                            ),
-                          if (canWriteStaff)
-                            AppSearchBarAction(
-                              icon: Icons.person_add_alt_1_outlined,
-                              label: l10n.hrRosterAddStaffAction,
-                              tooltip: l10n.hrRosterAddStaffAction,
-                              enabled: !_busy,
-                              onPressed: _busy ? null : _addStaff,
-                            ),
-                        ],
-                      ),
-                      columns: _staffColumns(l10n, visible: visible),
-                      emptyBuilder: (_) => Text(l10n.hrRosterNoStaffLabel),
-                      mobileItemBuilder:
-                          (BuildContext context, _RosterStaffRow row) {
-                            return AppListTableMobileItem(
-                              title: row.title,
-                              caption:
-                                  row.staffNumber ??
-                                  row.displayId ??
-                                  row.staffProfileId,
-                              meta: <AppListTableMobileMeta>[
-                                if ((row.staffCategory ?? '').isNotEmpty)
-                                  AppListTableMobileMeta(
-                                    label: _staffCategoryLabel(
-                                      l10n,
-                                      row.staffCategory,
-                                    ),
-                                  ),
-                              ],
-                            );
-                          },
-                    ),
                   ),
                 ],
               ],
