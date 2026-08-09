@@ -1839,104 +1839,540 @@ Future<void> showHrRosterPeriodDetailsDialog(
   required HrRosterPeriodDetails details,
 }) {
   final AppLocalizations l10n = context.l10n;
-  final ThemeData theme = Theme.of(context);
-  final MaterialLocalizations materials = MaterialLocalizations.of(context);
-  final List<HrRosterDayPreview> days = details.days;
-  final String title = switch (details.scope) {
-    HrRosterPeriodScope.day => l10n.hrRosterDayDetailsTitle,
-    HrRosterPeriodScope.week => l10n.hrRosterWeekDetailsTitle,
-    HrRosterPeriodScope.month => l10n.hrRosterMonthDetailsTitle,
-  };
-  final String heading = switch (details.scope) {
-    HrRosterPeriodScope.day when days.isNotEmpty =>
-      '${hrDayLabel(l10n, days.first.date.weekday == DateTime.sunday ? 0 : days.first.date.weekday)} · ${days.first.label}',
-    HrRosterPeriodScope.week => hrRosterWeekRangeLabel(materials, details.focus),
-    HrRosterPeriodScope.month => materials.formatMonthYear(details.focus),
-    _ => materials.formatFullDate(details.focus),
-  };
-
-  final int working = days
-      .where((HrRosterDayPreview d) => d.isWorkingDay)
-      .length;
-  final int busy = days
-      .where((HrRosterDayPreview d) => d.shifts.isNotEmpty)
-      .length;
-  final int holidays = days.where((HrRosterDayPreview d) => d.isHoliday).length;
+  final bool showActionLabels =
+      AppBreakpoints.of(context).showsToolbarActionLabels;
 
   return showAppDialog<void>(
     context: context,
     builder: (BuildContext context) {
-      return AppDialog(
-        title: Text(title),
-        icon: Icon(switch (details.scope) {
-          HrRosterPeriodScope.day => Icons.event_note_outlined,
-          HrRosterPeriodScope.week => Icons.view_week_outlined,
-          HrRosterPeriodScope.month => Icons.calendar_month_outlined,
-        }),
-        content: days.isEmpty
-            ? Text(l10n.hrRosterPeriodNoDaysLabel)
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(heading, style: theme.textTheme.titleMedium),
-                  SizedBox(height: theme.spacing.sm),
-                  if (details.scope == HrRosterPeriodScope.day) ...<Widget>[
-                    Text(days.first.statusLabel(l10n)),
-                    if (days.first.isWorkingDay) ...<Widget>[
-                      SizedBox(height: theme.spacing.sm),
-                      Text(
-                        '${l10n.hrRosterDayWorkingHoursLabel}: ${hrRosterFormatMinutes(days.first.dayStartMinutes)}–${hrRosterFormatMinutes(days.first.dayEndMinutes)}',
-                      ),
-                      Text(l10n.hrRosterDayBusyHoursLabel),
-                      if (days.first.busyRanges.isEmpty)
-                        Text(l10n.hrRosterDayNoShiftsLabel)
-                      else
-                        for (final HrRosterMinuteRange range
-                            in days.first.busyRanges)
-                          Text('• ${range.label}'),
-                      Text(l10n.hrRosterDayFreeHoursLabel),
-                      for (final HrRosterMinuteRange range
-                          in days.first.freeRanges)
-                        Text('• ${range.label}'),
-                    ],
-                    SizedBox(height: theme.spacing.sm),
-                    Text(l10n.hrRosterDayShiftsLabel),
-                    if (days.first.shifts.isEmpty)
-                      Text(l10n.hrRosterDayNoShiftsLabel)
-                    else
-                      for (final HrRosterShiftWindow shift
-                          in days.first.shifts)
-                        Text(shift.summary),
-                  ] else ...<Widget>[
-                    Text('${l10n.hrRosterPeriodWorkingDaysLabel}: $working'),
-                    Text('${l10n.hrRosterPeriodBusyDaysLabel}: $busy'),
-                    Text('${l10n.hrRosterPeriodHolidayDaysLabel}: $holidays'),
-                    SizedBox(height: theme.spacing.sm),
-                    for (final HrRosterDayPreview day in days)
-                      Padding(
-                        padding: EdgeInsets.only(bottom: theme.spacing.xs),
-                        child: Row(
-                          children: <Widget>[
-                            SizedBox(width: 88, child: Text(day.label)),
-                            Expanded(child: Text(day.statusLabel(l10n))),
-                            if (day.shifts.isNotEmpty)
-                              Text('${day.shifts.length}'),
-                          ],
-                        ),
-                      ),
-                  ],
-                ],
-              ),
-        actions: <Widget>[
-          AppButton.secondary(
-            label: l10n.commonCancelActionLabel,
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-        ],
+      return AppActionLabelScope(
+        showLabels: showActionLabels,
+        forceIconOnly: !showActionLabels,
+        child: AppDialog(
+          title: Text(switch (details.scope) {
+            HrRosterPeriodScope.day => l10n.hrRosterDayDetailsTitle,
+            HrRosterPeriodScope.week => l10n.hrRosterWeekDetailsTitle,
+            HrRosterPeriodScope.month => l10n.hrRosterMonthDetailsTitle,
+          }),
+          icon: Icon(switch (details.scope) {
+            HrRosterPeriodScope.day => Icons.event_note_outlined,
+            HrRosterPeriodScope.week => Icons.view_week_outlined,
+            HrRosterPeriodScope.month => Icons.calendar_month_outlined,
+          }),
+          maxWidth: details.scope == HrRosterPeriodScope.day ? 520 : 720,
+          scrollable: true,
+          stackActionsWhenCompact: false,
+          denseActions: true,
+          content: details.days.isEmpty
+              ? Text(l10n.hrRosterPeriodNoDaysLabel)
+              : details.scope == HrRosterPeriodScope.day
+              ? _RosterDayDetailsBody(day: details.days.first)
+              : _RosterPeriodDetailsBody(details: details),
+          actions: <Widget>[
+            AppButton.close(
+              label: l10n.commonCloseActionLabel,
+              tooltip: l10n.commonCloseActionLabel,
+              dense: true,
+              onPressed: () => Navigator.of(context).maybePop(),
+            ),
+          ],
+        ),
       );
     },
   );
+}
+
+class _RosterDayDetailsBody extends StatelessWidget {
+  const _RosterDayDetailsBody({required this.day});
+
+  final HrRosterDayPreview day;
+
+  Color _toneColor(HrRosterPreviewColors colors) {
+    return switch (day.tone) {
+      HrRosterDayTone.holiday => colors.holiday,
+      HrRosterDayTone.off => colors.off,
+      HrRosterDayTone.busy => colors.busy,
+      HrRosterDayTone.free => colors.free,
+      HrRosterDayTone.mixed => colors.busy,
+    };
+  }
+
+  Color _toneOnColor(ThemeData theme, HrRosterPreviewColors colors) {
+    return switch (day.tone) {
+      HrRosterDayTone.holiday => colors.onHoliday,
+      HrRosterDayTone.off => theme.colorScheme.onSurface,
+      HrRosterDayTone.busy => theme.colorScheme.onPrimary,
+      HrRosterDayTone.free => theme.colorScheme.onPrimaryContainer,
+      HrRosterDayTone.mixed => theme.colorScheme.onPrimary,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final MaterialLocalizations materials = MaterialLocalizations.of(context);
+    final HrRosterPreviewColors colors =
+        HrRosterPreviewColors(theme.colorScheme);
+    final String weekday = hrDayLabel(
+      l10n,
+      day.date.weekday == DateTime.sunday ? 0 : day.date.weekday,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    weekday,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: theme.spacing.xs / 2),
+                  Text(
+                    materials.formatFullDate(day.date),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: AppFontWeight.emphasis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: theme.spacing.sm,
+                vertical: theme.spacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: _toneColor(colors),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.35),
+                ),
+              ),
+              child: Text(
+                day.statusLabel(l10n),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: _toneOnColor(theme, colors),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: theme.spacing.md),
+        if (day.isWorkingDay) ...<Widget>[
+          _DetailsSection(
+            title: l10n.hrRosterDayWorkingHoursLabel,
+            child: Text(
+              '${hrRosterFormatMinutes(day.dayStartMinutes)}–${hrRosterFormatMinutes(day.dayEndMinutes)}',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: AppFontWeight.emphasis,
+              ),
+            ),
+          ),
+          SizedBox(height: theme.spacing.md),
+          _DetailsSection(
+            title: l10n.hrRosterDayBusyHoursLabel,
+            accent: colors.busy,
+            child: day.busyRanges.isEmpty
+                ? Text(
+                    l10n.hrRosterDayNoShiftsLabel,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  )
+                : Wrap(
+                    spacing: theme.spacing.sm,
+                    runSpacing: theme.spacing.xs,
+                    children: <Widget>[
+                      for (final HrRosterMinuteRange range in day.busyRanges)
+                        _RangeChip(
+                          label: range.label,
+                          color: colors.busy,
+                          onColor: theme.colorScheme.onPrimary,
+                        ),
+                    ],
+                  ),
+          ),
+          SizedBox(height: theme.spacing.md),
+          _DetailsSection(
+            title: l10n.hrRosterDayFreeHoursLabel,
+            accent: colors.free,
+            child: day.freeRanges.isEmpty
+                ? Text(
+                    '—',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  )
+                : Wrap(
+                    spacing: theme.spacing.sm,
+                    runSpacing: theme.spacing.xs,
+                    children: <Widget>[
+                      for (final HrRosterMinuteRange range in day.freeRanges)
+                        _RangeChip(
+                          label: range.label,
+                          color: colors.free,
+                          onColor: theme.colorScheme.onPrimaryContainer,
+                        ),
+                    ],
+                  ),
+          ),
+          SizedBox(height: theme.spacing.md),
+        ],
+        _DetailsSection(
+          title: l10n.hrRosterDayShiftsLabel,
+          child: day.shifts.isEmpty
+              ? Text(
+                  l10n.hrRosterDayNoShiftsLabel,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                )
+              : Column(
+                  children: <Widget>[
+                    for (int i = 0; i < day.shifts.length; i++) ...<Widget>[
+                      if (i > 0) SizedBox(height: theme.spacing.sm),
+                      _ShiftTile(shift: day.shifts[i], colors: colors),
+                    ],
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RosterPeriodDetailsBody extends StatelessWidget {
+  const _RosterPeriodDetailsBody({required this.details});
+
+  final HrRosterPeriodDetails details;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final MaterialLocalizations materials = MaterialLocalizations.of(context);
+    final HrRosterPreviewColors colors =
+        HrRosterPreviewColors(theme.colorScheme);
+    final List<HrRosterDayPreview> days = details.days;
+    final int working =
+        days.where((HrRosterDayPreview d) => d.isWorkingDay).length;
+    final int busyDays =
+        days.where((HrRosterDayPreview d) => d.shifts.isNotEmpty).length;
+    final int holidays =
+        days.where((HrRosterDayPreview d) => d.isHoliday).length;
+    final String heading = switch (details.scope) {
+      HrRosterPeriodScope.week =>
+        hrRosterWeekRangeLabel(materials, details.focus),
+      HrRosterPeriodScope.month => materials.formatMonthYear(details.focus),
+      HrRosterPeriodScope.day => materials.formatFullDate(details.focus),
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          heading,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: AppFontWeight.emphasis,
+          ),
+        ),
+        SizedBox(height: theme.spacing.md),
+        Wrap(
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.sm,
+          children: <Widget>[
+            _StatChip(
+              label: l10n.hrRosterPeriodWorkingDaysLabel,
+              value: '$working',
+              color: colors.free,
+              onColor: theme.colorScheme.onPrimaryContainer,
+            ),
+            _StatChip(
+              label: l10n.hrRosterPeriodBusyDaysLabel,
+              value: '$busyDays',
+              color: colors.busy,
+              onColor: theme.colorScheme.onPrimary,
+            ),
+            _StatChip(
+              label: l10n.hrRosterPeriodHolidayDaysLabel,
+              value: '$holidays',
+              color: colors.holiday,
+              onColor: colors.onHoliday,
+            ),
+          ],
+        ),
+        SizedBox(height: theme.spacing.lg),
+        for (final HrRosterDayPreview day in days) ...<Widget>[
+          _PeriodDayRow(day: day, colors: colors),
+          SizedBox(height: theme.spacing.sm),
+        ],
+      ],
+    );
+  }
+}
+
+class _DetailsSection extends StatelessWidget {
+  const _DetailsSection({
+    required this.title,
+    required this.child,
+    this.accent,
+  });
+
+  final String title;
+  final Widget child;
+  final Color? accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                if (accent != null) ...<Widget>[
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: accent,
+                      borderRadius: BorderRadius.circular(3),
+                      border: Border.all(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: theme.spacing.xs),
+                ],
+                Text(
+                  title,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.sm),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RangeChip extends StatelessWidget {
+  const _RangeChip({
+    required this.label,
+    required this.color,
+    required this.onColor,
+  });
+
+  final String label;
+  final Color color;
+  final Color onColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: onColor,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.onColor,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+  final Color onColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.md,
+        vertical: theme.spacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            value,
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: onColor,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: onColor.withValues(alpha: 0.9),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShiftTile extends StatelessWidget {
+  const _ShiftTile({required this.shift, required this.colors});
+
+  final HrRosterShiftWindow shift;
+  final HrRosterPreviewColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.workingFill,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colors.busy.withValues(alpha: 0.35)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.schedule_outlined, size: 18, color: colors.busy),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(
+              child: Text(
+                shift.summary,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: AppFontWeight.emphasis,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PeriodDayRow extends StatelessWidget {
+  const _PeriodDayRow({required this.day, required this.colors});
+
+  final HrRosterDayPreview day;
+  final HrRosterPreviewColors colors;
+
+  Color get _tone {
+    return switch (day.tone) {
+      HrRosterDayTone.holiday => colors.holiday,
+      HrRosterDayTone.off => colors.off,
+      HrRosterDayTone.busy => colors.busy,
+      HrRosterDayTone.free => colors.free,
+      HrRosterDayTone.mixed => colors.busy,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.sm,
+        ),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 8,
+              height: 32,
+              decoration: BoxDecoration(
+                color: _tone,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            SizedBox(width: theme.spacing.sm),
+            SizedBox(
+              width: 96,
+              child: Text(
+                day.label,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                day.statusLabel(l10n),
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+            if (day.shifts.isNotEmpty)
+              Text(
+                '${day.shifts.length}',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: colors.busy,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 String hrRosterDateKey(DateTime value) {
