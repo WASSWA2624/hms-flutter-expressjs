@@ -31627,6 +31627,33 @@
       }
     }
   },
+  "accessAdminUserAccessRolesCountChip": "Roles: {count}",
+  "@accessAdminUserAccessRolesCountChip": {
+    "description": "Labeled assigned-roles count chip in the user access panel header.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accessAdminUserAccessDirectPermissionsCountChip": "Direct: {count}",
+  "@accessAdminUserAccessDirectPermissionsCountChip": {
+    "description": "Labeled direct-permissions count chip in the user access panel header.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accessAdminUserAccessEffectivePermissionsCountChip": "Effective: {count}",
+  "@accessAdminUserAccessEffectivePermissionsCountChip": {
+    "description": "Labeled effective-permissions count chip in the user access panel header.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "accessAdminUserDetailDemoAccountTitle": "Demo account",
   "@accessAdminUserDetailDemoAccountTitle": {
     "description": "Banner title for demo user accounts."

@@ -45322,6 +45322,24 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No permissions} =1{1 permission} other{{count} permissions}}'**
   String accessAdminUserAccessPermissionCountLabel(int count);
 
+  /// Labeled assigned-roles count chip in the user access panel header.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles: {count}'**
+  String accessAdminUserAccessRolesCountChip(int count);
+
+  /// Labeled direct-permissions count chip in the user access panel header.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct: {count}'**
+  String accessAdminUserAccessDirectPermissionsCountChip(int count);
+
+  /// Labeled effective-permissions count chip in the user access panel header.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective: {count}'**
+  String accessAdminUserAccessEffectivePermissionsCountChip(int count);
+
   /// Banner title for demo user accounts.
   ///
   /// In en, this message translates to:

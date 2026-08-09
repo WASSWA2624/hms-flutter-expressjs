@@ -4233,8 +4233,12 @@ class _UserDetailInfoTile extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final AppLocalizations l10n = context.l10n;
+    final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+    );
     final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
       fontWeight: AppFontWeight.emphasis,
+      color: colorScheme.onSurface,
     );
 
     return Padding(
@@ -4242,30 +4246,36 @@ class _UserDetailInfoTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(icon, size: 18, color: colorScheme.primary),
+          Padding(
+            padding: EdgeInsets.only(top: theme.spacing.xs / 2),
+            child: Icon(icon, size: 18, color: colorScheme.primary),
+          ),
           SizedBox(width: theme.spacing.sm),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  label,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                SizedBox(height: theme.spacing.xs),
-                if (copyable)
-                  AppCopyableIdentifier(
-                    value: value,
-                    tooltip: l10n.copyIdentifierAction,
-                    copiedMessage: l10n.identifierCopiedMessage,
-                    textStyle: valueStyle,
+            child: copyable
+                ? Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: theme.spacing.xs,
+                    runSpacing: theme.spacing.xs / 2,
+                    children: <Widget>[
+                      Text('$label:', style: labelStyle),
+                      AppCopyableIdentifier(
+                        value: value,
+                        tooltip: l10n.copyIdentifierAction,
+                        copiedMessage: l10n.identifierCopiedMessage,
+                        textStyle: valueStyle,
+                      ),
+                    ],
                   )
-                else
-                  Text(value, style: valueStyle),
-              ],
-            ),
+                : Text.rich(
+                    TextSpan(
+                      children: <InlineSpan>[
+                        TextSpan(text: '$label: ', style: labelStyle),
+                        TextSpan(text: value, style: valueStyle),
+                      ],
+                    ),
+                    softWrap: true,
+                  ),
           ),
         ],
       ),

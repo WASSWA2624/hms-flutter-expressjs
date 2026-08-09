@@ -3,6 +3,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/app_permission_catalog_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_permission_assignment_picker.dart';
@@ -47,6 +48,10 @@ final class AppUserAccessDirectPermission {
 ///
 /// [effectivePermissions] is the merged grant set (roles + directs). When null,
 /// the panel derives it from [roleGroups] and [directPermissions].
+///
+/// Section counts and write actions live in each [AppCollapsibleSection]
+/// header (`headerActions`): labeled on large screens, icon-only / numeric on
+/// phones via [AppActionLabelScope].
 class AppUserAccessPanel extends StatelessWidget {
   const AppUserAccessPanel({
     required this.roleGroups,
@@ -150,6 +155,7 @@ class AppUserAccessPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final int removableRoleCount = roleGroups
         .where((AppUserAccessRoleGroup group) => group.canRemove)
         .length;
@@ -161,20 +167,30 @@ class AppUserAccessPanel extends StatelessWidget {
       children: <Widget>[
         AppCollapsibleSection(
           title: l10n.accessAdminAssignedRolesLabel,
-          description: l10n.accessAdminUserDetailRolesSectionDescription,
           titleIcon: Icons.groups_outlined,
           initiallyExpanded: rolesInitiallyExpanded,
-          actions: <Widget>[
-            _HeaderActions(
+          headerActions: <Widget>[
+            _CountChip(
               count: roleGroups.length,
-              canWrite: canWrite,
-              isBusy: isBusy,
-              addLabel: l10n.accessAdminUserAccessAddRoleAction,
-              addIcon: Icons.person_add_alt_1_outlined,
-              onAdd: onAddRole,
-              removeAllLabel: l10n.accessAdminUserAccessRemoveAllRolesAction,
-              onRemoveAll: removableRoleCount > 0 ? onRemoveAllRoles : null,
+              labeledCount: l10n.accessAdminUserAccessRolesCountChip(
+                roleGroups.length,
+              ),
             ),
+            if (canWrite && removableRoleCount > 0 && onRemoveAllRoles != null)
+              AppButton.tertiary(
+                leadingIcon: Icons.delete_sweep_outlined,
+                label: l10n.accessAdminUserAccessRemoveAllRolesAction,
+                color: colorScheme.error,
+                tooltip: l10n.accessAdminUserAccessRemoveAllRolesAction,
+                onPressed: isBusy ? null : onRemoveAllRoles,
+              ),
+            if (canWrite && onAddRole != null)
+              AppButton.secondary(
+                leadingIcon: Icons.person_add_alt_1_outlined,
+                label: l10n.accessAdminUserAccessAddRoleAction,
+                tooltip: l10n.accessAdminUserAccessAddRoleAction,
+                onPressed: isBusy ? null : onAddRole,
+              ),
           ],
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -206,23 +222,33 @@ class AppUserAccessPanel extends StatelessWidget {
         SizedBox(height: theme.spacing.md),
         AppCollapsibleSection(
           title: l10n.hrAccessDirectPermissionsLabel,
-          description: l10n.accessAdminUserAccessDirectPermissionsDescription,
           titleIcon: Icons.key_outlined,
           initiallyExpanded: permissionsInitiallyExpanded,
-          actions: <Widget>[
-            _HeaderActions(
+          headerActions: <Widget>[
+            _CountChip(
               count: directPermissions.length,
-              canWrite: canWrite,
-              isBusy: isBusy,
-              addLabel: l10n.accessAdminUserAccessAddDirectPermissionAction,
-              addIcon: Icons.add_outlined,
-              onAdd: onAddDirectPermission,
-              removeAllLabel:
-                  l10n.accessAdminUserAccessRemoveAllDirectPermissionsAction,
-              onRemoveAll: directPermissions.isNotEmpty
-                  ? onRemoveAllDirectPermissions
-                  : null,
+              labeledCount: l10n.accessAdminUserAccessDirectPermissionsCountChip(
+                directPermissions.length,
+              ),
             ),
+            if (canWrite &&
+                directPermissions.isNotEmpty &&
+                onRemoveAllDirectPermissions != null)
+              AppButton.tertiary(
+                leadingIcon: Icons.delete_sweep_outlined,
+                label: l10n.accessAdminUserAccessRemoveAllDirectPermissionsAction,
+                color: colorScheme.error,
+                tooltip:
+                    l10n.accessAdminUserAccessRemoveAllDirectPermissionsAction,
+                onPressed: isBusy ? null : onRemoveAllDirectPermissions,
+              ),
+            if (canWrite && onAddDirectPermission != null)
+              AppButton.secondary(
+                leadingIcon: Icons.add_outlined,
+                label: l10n.accessAdminUserAccessAddDirectPermissionAction,
+                tooltip: l10n.accessAdminUserAccessAddDirectPermissionAction,
+                onPressed: isBusy ? null : onAddDirectPermission,
+              ),
           ],
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -254,16 +280,15 @@ class AppUserAccessPanel extends StatelessWidget {
         SizedBox(height: theme.spacing.md),
         AppCollapsibleSection(
           title: l10n.accessAdminEffectivePermissionsLabel,
-          description: l10n.accessAdminUserDetailPermissionsSectionDescription,
           titleIcon: Icons.verified_user_outlined,
           initiallyExpanded: effectiveInitiallyExpanded,
-          actions: <Widget>[
-            _HeaderActions(
+          headerActions: <Widget>[
+            _CountChip(
               count: effectiveOptions.length,
-              canWrite: false,
-              isBusy: isBusy,
-              addLabel: '',
-              addIcon: Icons.add_outlined,
+              labeledCount:
+                  l10n.accessAdminUserAccessEffectivePermissionsCountChip(
+                effectiveOptions.length,
+              ),
             ),
           ],
           child: AppPermissionGroupedView(
@@ -277,63 +302,37 @@ class AppUserAccessPanel extends StatelessWidget {
   }
 }
 
-class _HeaderActions extends StatelessWidget {
-  const _HeaderActions({
-    required this.count,
-    required this.canWrite,
-    required this.isBusy,
-    required this.addLabel,
-    required this.addIcon,
-    this.onAdd,
-    this.removeAllLabel,
-    this.onRemoveAll,
-  });
+class _CountChip extends StatelessWidget {
+  const _CountChip({required this.count, required this.labeledCount});
 
   final int count;
-  final bool canWrite;
-  final bool isBusy;
-  final String addLabel;
-  final IconData addIcon;
-  final VoidCallback? onAdd;
-  final String? removeAllLabel;
-  final VoidCallback? onRemoveAll;
+  final String labeledCount;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final AppActionLabelScope? labelScope = AppActionLabelScope.maybeOf(
+      context,
+    );
+    final bool showLabel = labelScope?.forceIconOnly != true &&
+        (labelScope?.showLabels ?? true);
 
-    return Wrap(
-      spacing: theme.spacing.xs,
-      runSpacing: theme.spacing.xs,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: <Widget>[
-        Chip(
-          avatar: Icon(
-            Icons.format_list_numbered_outlined,
-            size: 16,
-            color: colorScheme.primary,
-          ),
-          label: Text('$count'),
-          backgroundColor: colorScheme.primaryContainer,
-          visualDensity: VisualDensity.compact,
-          labelStyle: theme.textTheme.labelSmall,
+    // Absorb taps so the parent section header does not toggle expand/collapse.
+    return GestureDetector(
+      onTap: () {},
+      behavior: HitTestBehavior.opaque,
+      child: Chip(
+        avatar: Icon(
+          Icons.format_list_numbered_outlined,
+          size: 16,
+          color: colorScheme.primary,
         ),
-        if (canWrite && onRemoveAll != null && removeAllLabel != null)
-          AppButton.tertiary(
-            leadingIcon: Icons.delete_sweep_outlined,
-            label: removeAllLabel!,
-            color: colorScheme.error,
-            tooltip: removeAllLabel,
-            onPressed: isBusy ? null : onRemoveAll,
-          ),
-        if (canWrite && onAdd != null)
-          AppButton.secondary(
-            leadingIcon: addIcon,
-            label: addLabel,
-            onPressed: isBusy ? null : onAdd,
-          ),
-      ],
+        label: Text(showLabel ? labeledCount : '$count'),
+        backgroundColor: colorScheme.primaryContainer,
+        visualDensity: VisualDensity.compact,
+        labelStyle: theme.textTheme.labelSmall,
+      ),
     );
   }
 }

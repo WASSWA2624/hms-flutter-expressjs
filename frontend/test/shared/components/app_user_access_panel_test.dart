@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/app_user_access_panel.dart';
 
 Widget _wrap(Widget child) {
-  return MaterialApp(
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    home: Scaffold(body: SingleChildScrollView(child: child)),
+  return ProviderScope(
+    child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: SingleChildScrollView(child: child)),
+    ),
   );
 }
 
@@ -106,10 +109,95 @@ void main() {
       expect(find.text('Add permission'), findsOneWidget);
       expect(find.text('Remove all roles'), findsNothing);
       expect(find.text('Remove all permissions'), findsNothing);
+      expect(find.text('Roles: 0'), findsOneWidget);
+      expect(find.text('Direct: 0'), findsOneWidget);
       expect(
         find.textContaining('Prefer assigning a role'),
         findsOneWidget,
       );
+      expect(
+        find.text('Roles set the baseline permissions for this user.'),
+        findsNothing,
+      );
+      expect(
+        find.text('Direct permissions can be removed one at a time.'),
+        findsNothing,
+      );
+      expect(
+        find.text('Effective access from roles plus direct grants.'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('places labeled counts and actions in section headers', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          AppUserAccessPanel(
+            roleGroups: const <AppUserAccessRoleGroup>[
+              AppUserAccessRoleGroup(
+                roleId: 'role-nurse',
+                roleName: 'NURSE',
+                userRoleId: 'ur-1',
+              ),
+            ],
+            directPermissions: const <AppUserAccessDirectPermission>[
+              AppUserAccessDirectPermission(id: 'perm-1', name: 'profile:read'),
+            ],
+            canWrite: true,
+            onAddRole: () {},
+            onRemoveAllRoles: () {},
+            onAddDirectPermission: () {},
+            onRemoveAllDirectPermissions: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Roles: 1'), findsOneWidget);
+      expect(find.text('Direct: 1'), findsOneWidget);
+      expect(find.text('Effective: 1'), findsOneWidget);
+      expect(find.text('Remove all roles'), findsOneWidget);
+      expect(find.text('Add role'), findsOneWidget);
+      expect(find.text('Add permission'), findsOneWidget);
+    });
+
+    testWidgets('header actions become icon-only on narrow screens', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _wrap(
+          AppUserAccessPanel(
+            roleGroups: const <AppUserAccessRoleGroup>[
+              AppUserAccessRoleGroup(
+                roleId: 'role-nurse',
+                roleName: 'NURSE',
+                userRoleId: 'ur-1',
+              ),
+            ],
+            directPermissions: const <AppUserAccessDirectPermission>[],
+            canWrite: true,
+            onAddRole: () {},
+            onRemoveAllRoles: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Roles: 1'), findsNothing);
+      expect(find.text('1'), findsWidgets);
+      expect(find.text('Add role'), findsNothing);
+      expect(find.text('Remove all roles'), findsNothing);
+      expect(find.byIcon(Icons.person_add_alt_1_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.delete_sweep_outlined), findsOneWidget);
+      expect(find.byTooltip('Add role'), findsOneWidget);
+      expect(find.byTooltip('Remove all roles'), findsOneWidget);
     });
 
     testWidgets('collapses assigned roles and direct permissions sections', (

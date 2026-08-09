@@ -24675,6 +24675,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String accessAdminUserAccessRolesCountChip(int count) {
+    return 'Roles: $count';
+  }
+
+  @override
+  String accessAdminUserAccessDirectPermissionsCountChip(int count) {
+    return 'Direct: $count';
+  }
+
+  @override
+  String accessAdminUserAccessEffectivePermissionsCountChip(int count) {
+    return 'Effective: $count';
+  }
+
+  @override
   String get accessAdminUserDetailDemoAccountTitle => 'Demo account';
 
   @override
