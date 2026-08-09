@@ -27020,9 +27020,9 @@
   "@hrRosterDefaultEndTimeLabel": {
     "description": "Default shift end time for a flexible roster."
   },
-  "hrCreateRosterDialogTitle": "Create roster",
+  "hrCreateRosterDialogTitle": "Create roster template",
   "@hrCreateRosterDialogTitle": {
-    "description": "Title for create roster dialog."
+    "description": "Title for create roster template dialog."
   },
   "hrRosterDetailDialogTitle": "Roster details",
   "@hrRosterDetailDialogTitle": {
@@ -28316,9 +28316,9 @@
       }
     }
   },
-  "hrShiftTemplateAction": "Create roster",
+  "hrShiftTemplateAction": "Create roster template",
   "@hrShiftTemplateAction": {
-    "description": "Toolbar action that opens create roster on the Rosters tab."
+    "description": "Toolbar action that opens create roster template on the Rosters tab."
   },
   "hrShiftTemplateDialogTitle": "Schedule pattern",
   "@hrShiftTemplateDialogTitle": {

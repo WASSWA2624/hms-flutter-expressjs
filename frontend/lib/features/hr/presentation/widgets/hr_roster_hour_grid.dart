@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_weekly_schedule_editor.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -36,9 +37,13 @@ class HrRosterHourGrid extends StatefulWidget {
 class _HrRosterHourGridState extends State<HrRosterHourGrid> {
   static const int _hourCount = 24;
   static const int _slotMinutes = 30;
-  static const double _dayLabelWidth = 132;
+  static const double _dayLabelWidthComfortable = 128;
+  static const double _dayLabelWidthCompact = 88;
   static const double _minHourWidth = 22;
-  static const double _cellHeight = 32;
+  static const double _cellHeightComfortable = 32;
+  static const double _cellHeightCompact = 28;
+  static const double _hourHeaderHeightComfortable = 34;
+  static const double _hourHeaderHeightCompact = 28;
 
   int? _anchorDay;
   int? _anchorSlot;
@@ -287,168 +292,134 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
       return SizedBox(width: hourWidth, child: child);
     }
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.85)),
-        color: scheme.surface,
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: scheme.shadow.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          theme.spacing.sm,
-          theme.spacing.xs,
-          theme.spacing.sm,
-          theme.spacing.sm,
-        ),
-        child: Listener(
-          onPointerUp: (_) {
-            if (_anchorDay != null && _anchorSlot != null && !_dragging) {
-              // Pointer up may land outside a cell; still toggle the anchor.
-              final int day = _anchorDay!;
-              final int slot = _anchorSlot!;
-              if (_dragBaseRanges != null) {
-                _applyRanges(day, _dragBaseRanges!);
-              }
-              HapticFeedback.selectionClick();
-              _toggleSlot(day, slot);
-            }
-            _resetPointerState();
-          },
-          onPointerCancel: (_) => _resetPointerState(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Listener(
+      onPointerUp: (_) {
+        if (_anchorDay != null && _anchorSlot != null && !_dragging) {
+          // Pointer up may land outside a cell; still toggle the anchor.
+          final int day = _anchorDay!;
+          final int slot = _anchorSlot!;
+          if (_dragBaseRanges != null) {
+            _applyRanges(day, _dragBaseRanges!);
+          }
+          HapticFeedback.selectionClick();
+          _toggleSlot(day, slot);
+        }
+        _resetPointerState();
+      },
+      onPointerCancel: (_) => _resetPointerState(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: <Widget>[
-                  SizedBox(
-                    width: _dayLabelWidth,
-                    child: _WeekBulkActions(
-                      onSelectAll: _selectAll,
-                      onClearAll: hasAnyHours ? _clearAll : null,
-                      selectAllLabel: l10n.hrRosterSelectAllHoursAction,
-                      clearAllLabel: l10n.hrRosterClearAllHoursAction,
-                    ),
-                  ),
-                  for (int hour = 0; hour < _hourCount; hour++)
-                    hourSlot(
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Text(
-                          hour.toString().padLeft(2, '0'),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.clip,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                            fontFeatures: const <FontFeature>[
-                              FontFeature.tabularFigures(),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+              SizedBox(
+                width: _dayLabelWidth,
+                child: _WeekBulkActions(
+                  onSelectAll: _selectAll,
+                  onClearAll: hasAnyHours ? _clearAll : null,
+                  selectAllLabel: l10n.hrRosterSelectAllHoursAction,
+                  clearAllLabel: l10n.hrRosterClearAllHoursAction,
+                ),
               ),
-              SizedBox(height: theme.spacing.xs),
-              for (final int day in kHrWeekDayOrder)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 3),
-                  child: Row(
-                    children: <Widget>[
-                      SizedBox(
-                        width: _dayLabelWidth,
-                        height: _cellHeight,
-                        child: _DayLabel(
-                          day: day,
-                          label: hrDayLabel(l10n, day),
-                          hasHours: rangesByDay[day]!.isNotEmpty,
-                          locked: _dayLocked(day),
-                          rangesByDay: rangesByDay,
-                          dayLocked: _dayLocked,
-                          dayLabel: (int value) => hrDayLabel(l10n, value),
-                          onCopyToAll: () => _copyToAll(day),
-                          onCopyToFollowing: () => _copyToFollowing(day),
-                          onCopyFrom: (int sourceDay) =>
-                              _copyFrom(day, sourceDay),
-                          onClear: () => _clearDay(day),
-                          copyToAllLabel: l10n.hrRosterCopyHoursToAllAction,
-                          copyToFollowingLabel:
-                              l10n.hrRosterCopyHoursToFollowingAction,
-                          copyFromLabel: l10n.hrRosterCopyHoursFromAction,
-                          clearLabel: l10n.hrRosterClearDayHoursAction,
-                        ),
-                      ),
-                      for (int hour = 0; hour < _hourCount; hour++)
-                        hourSlot(
-                          child: Row(
-                            children: <Widget>[
-                              for (int half = 0; half < 2; half++)
-                                Expanded(
-                                  child: _HalfHourCell(
-                                    coverage: _coverageFraction(
-                                      rangesByDay[day]!,
-                                      (hour * 2 + half) * _slotMinutes,
-                                      (hour * 2 + half + 1) * _slotMinutes,
-                                    ),
-                                    selectedStart: _isRangeEdge(
-                                      rangesByDay[day]!,
-                                      (hour * 2 + half) * _slotMinutes,
-                                      isStart: true,
-                                    ),
-                                    selectedEnd: _isRangeEdge(
-                                      rangesByDay[day]!,
-                                      (hour * 2 + half + 1) * _slotMinutes,
-                                      isStart: false,
-                                    ),
-                                    locked: _dayLocked(day),
-                                    height: _cellHeight,
-                                    selectedFill: selectedFill,
-                                    partialFill: partialFill,
-                                    selectedEdge: selectedEdge,
-                                    idleFill: idleFill,
-                                    idleEdge: idleEdge,
-                                    lockedFill: lockedFill,
-                                    lockedEdge: lockedEdge,
-                                    onPointerDown: _dayLocked(day)
-                                        ? null
-                                        : (PointerDownEvent event) =>
-                                              _onSlotPointerDown(
-                                                day,
-                                                hour * 2 + half,
-                                                event,
-                                              ),
-                                    onPointerEnter: _dayLocked(day)
-                                        ? null
-                                        : () => _onSlotPointerEnter(
-                                            day,
-                                            hour * 2 + half,
-                                          ),
-                                    onSecondaryTap: _dayLocked(day)
-                                        ? null
-                                        : () => _adjustHourMinutes(
-                                            day: day,
-                                            hour: hour,
-                                          ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                    ],
+              for (int hour = 0; hour < _hourCount; hour++)
+                hourSlot(
+                  child: _HourHeader(
+                    hour: hour,
+                    height: _hourHeaderHeight,
                   ),
                 ),
             ],
           ),
-        ),
+          SizedBox(height: theme.spacing.xs),
+          for (final int day in kHrWeekDayOrder)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 3),
+              child: Row(
+                children: <Widget>[
+                  SizedBox(
+                    width: _dayLabelWidth,
+                    height: _cellHeight,
+                    child: _DayLabel(
+                      day: day,
+                      label: hrDayLabel(l10n, day),
+                      hasHours: rangesByDay[day]!.isNotEmpty,
+                      locked: _dayLocked(day),
+                      rangesByDay: rangesByDay,
+                      dayLocked: _dayLocked,
+                      dayLabel: (int value) => hrDayLabel(l10n, value),
+                      onCopyToAll: () => _copyToAll(day),
+                      onCopyToFollowing: () => _copyToFollowing(day),
+                      onCopyFrom: (int sourceDay) =>
+                          _copyFrom(day, sourceDay),
+                      onClear: () => _clearDay(day),
+                      copyToAllLabel: l10n.hrRosterCopyHoursToAllAction,
+                      copyToFollowingLabel:
+                          l10n.hrRosterCopyHoursToFollowingAction,
+                      copyFromLabel: l10n.hrRosterCopyHoursFromAction,
+                      clearLabel: l10n.hrRosterClearDayHoursAction,
+                    ),
+                  ),
+                  for (int hour = 0; hour < _hourCount; hour++)
+                    hourSlot(
+                      child: Row(
+                        children: <Widget>[
+                          for (int half = 0; half < 2; half++)
+                            Expanded(
+                              child: _HalfHourCell(
+                                coverage: _coverageFraction(
+                                  rangesByDay[day]!,
+                                  (hour * 2 + half) * _slotMinutes,
+                                  (hour * 2 + half + 1) * _slotMinutes,
+                                ),
+                                selectedStart: _isRangeEdge(
+                                  rangesByDay[day]!,
+                                  (hour * 2 + half) * _slotMinutes,
+                                  isStart: true,
+                                ),
+                                selectedEnd: _isRangeEdge(
+                                  rangesByDay[day]!,
+                                  (hour * 2 + half + 1) * _slotMinutes,
+                                  isStart: false,
+                                ),
+                                locked: _dayLocked(day),
+                                height: _cellHeight,
+                                selectedFill: selectedFill,
+                                partialFill: partialFill,
+                                selectedEdge: selectedEdge,
+                                idleFill: idleFill,
+                                idleEdge: idleEdge,
+                                lockedFill: lockedFill,
+                                lockedEdge: lockedEdge,
+                                onPointerDown: _dayLocked(day)
+                                    ? null
+                                    : (PointerDownEvent event) =>
+                                          _onSlotPointerDown(
+                                            day,
+                                            hour * 2 + half,
+                                            event,
+                                          ),
+                                onPointerEnter: _dayLocked(day)
+                                    ? null
+                                    : () => _onSlotPointerEnter(
+                                        day,
+                                        hour * 2 + half,
+                                      ),
+                                onSecondaryTap: _dayLocked(day)
+                                    ? null
+                                    : () => _adjustHourMinutes(
+                                        day: day,
+                                        hour: hour,
+                                      ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -460,15 +431,13 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
     final Map<int, List<_MinuteRange>> rangesByDay = <int, List<_MinuteRange>>{
       for (final int day in kHrWeekDayOrder) day: _rangesForDay(day),
     };
-    final double gridHorizontalPad = theme.spacing.sm * 2;
-
     final Widget grid = LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double maxWidth = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
-        final double hoursWidth = (maxWidth - gridHorizontalPad - _dayLabelWidth)
-            .clamp(0.0, double.infinity);
+        final double hoursWidth =
+            (maxWidth - _dayLabelWidth).clamp(0.0, double.infinity);
         final double rawHourWidth = hoursWidth / _hourCount;
         final bool needsScroll = rawHourWidth < _minHourWidth;
 
@@ -486,8 +455,7 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: SizedBox(
-            width:
-                gridHorizontalPad + _dayLabelWidth + (_minHourWidth * _hourCount),
+            width: _dayLabelWidth + (_minHourWidth * _hourCount),
             child: body,
           ),
         );
@@ -667,6 +635,69 @@ bool _isRangeEdge(
   return false;
 }
 
+class _HourHeader extends StatelessWidget {
+  const _HourHeader({
+    required this.hour,
+    required this.height,
+  });
+
+  final int hour;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final bool major = hour % 3 == 0;
+    final String hh = hour.toString().padLeft(2, '0');
+
+    return SizedBox(
+      height: height,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: <Widget>[
+          Text(
+            hh,
+            maxLines: 1,
+            overflow: TextOverflow.clip,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: major ? scheme.primary : scheme.onSurface,
+              fontWeight: major ? FontWeight.w800 : FontWeight.w600,
+              height: 1,
+              fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+            ),
+          ),
+          Text(
+            ':00',
+            maxLines: 1,
+            overflow: TextOverflow.clip,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+              fontSize: 9,
+              height: 1.1,
+              fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(height: 2),
+          Container(
+            height: major ? 5 : 3,
+            width: major ? 2 : 1,
+            decoration: BoxDecoration(
+              color: major
+                  ? scheme.primary.withValues(alpha: 0.75)
+                  : scheme.outlineVariant,
+              borderRadius: BorderRadius.circular(1),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _WeekBulkActions extends StatelessWidget {
   const _WeekBulkActions({
     required this.onSelectAll,
@@ -685,52 +716,44 @@ class _WeekBulkActions extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.55)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(3),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: _BulkActionChip(
-                icon: Icons.select_all_outlined,
-                label: selectAllLabel,
-                foreground: scheme.primary,
-                background: scheme.primary.withValues(alpha: 0.10),
-                onPressed: onSelectAll,
-              ),
-            ),
-            SizedBox(width: theme.spacing.xs),
-            Expanded(
-              child: _BulkActionChip(
-                icon: Icons.clear_all,
-                label: clearAllLabel,
-                foreground: onClearAll == null
-                    ? scheme.onSurface.withValues(alpha: 0.38)
-                    : scheme.error,
-                background: onClearAll == null
-                    ? scheme.surface.withValues(alpha: 0.4)
-                    : scheme.error.withValues(alpha: 0.08),
-                onPressed: onClearAll,
-              ),
-            ),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _BulkActionButton(
+          icon: Icons.done_all_outlined,
+          label: selectAllLabel,
+          foreground: scheme.primary,
+          background: scheme.primary.withValues(alpha: 0.12),
+          border: scheme.primary.withValues(alpha: 0.28),
+          onPressed: onSelectAll,
         ),
-      ),
+        SizedBox(height: theme.spacing.xs),
+        _BulkActionButton(
+          icon: Icons.remove_done_outlined,
+          label: clearAllLabel,
+          foreground: onClearAll == null
+              ? scheme.onSurface.withValues(alpha: 0.38)
+              : scheme.error,
+          background: onClearAll == null
+              ? scheme.surfaceContainerHighest.withValues(alpha: 0.35)
+              : scheme.error.withValues(alpha: 0.10),
+          border: onClearAll == null
+              ? scheme.outlineVariant.withValues(alpha: 0.45)
+              : scheme.error.withValues(alpha: 0.28),
+          onPressed: onClearAll,
+        ),
+      ],
     );
   }
 }
 
-class _BulkActionChip extends StatelessWidget {
-  const _BulkActionChip({
+class _BulkActionButton extends StatelessWidget {
+  const _BulkActionButton({
     required this.icon,
     required this.label,
     required this.foreground,
     required this.background,
+    required this.border,
     required this.onPressed,
   });
 
@@ -738,6 +761,7 @@ class _BulkActionChip extends StatelessWidget {
   final String label;
   final Color foreground;
   final Color background;
+  final Color border;
   final VoidCallback? onPressed;
 
   @override
@@ -748,28 +772,29 @@ class _BulkActionChip extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(theme.radius.sm - 1),
+        borderRadius: BorderRadius.circular(theme.radius.sm),
         child: Ink(
           decoration: BoxDecoration(
             color: background,
-            borderRadius: BorderRadius.circular(theme.radius.sm - 1),
+            borderRadius: BorderRadius.circular(theme.radius.sm),
+            border: Border.all(color: border),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+            child: Row(
               children: <Widget>[
-                Icon(icon, size: 14, color: foreground),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: foreground,
-                    fontWeight: FontWeight.w700,
-                    height: 1.1,
+                Icon(icon, size: 15, color: foreground),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: foreground,
+                      fontWeight: FontWeight.w700,
+                      height: 1.1,
+                    ),
                   ),
                 ),
               ],

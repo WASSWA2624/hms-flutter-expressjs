@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
@@ -196,7 +197,7 @@ Future<void> showHrCreateRosterDialog(
     submitLabel: l10n.hrShiftTemplateAction,
     cancelLabel: l10n.commonCloseActionLabel,
     submitIcon: Icons.save_outlined,
-    maxWidth: 980,
+    maxWidth: 1040,
     buildFields:
         (
           BuildContext context,
@@ -207,6 +208,11 @@ Future<void> showHrCreateRosterDialog(
           return StatefulBuilder(
             builder: (BuildContext context, StateSetter setLocal) {
               final ThemeData theme = Theme.of(context);
+              final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+              final bool compact = breakpoint.isMobile;
+              final EdgeInsets sectionPadding = EdgeInsets.all(
+                compact ? theme.spacing.sm : theme.spacing.md,
+              );
               final int maxMonthDay = _maxDayOfMonthForRoster(
                 isRecurring: isRecurring,
                 periodStart: periodStart,
@@ -234,7 +240,7 @@ Future<void> showHrCreateRosterDialog(
                   AppCollapsibleSection(
                     title: l10n.hrRosterDetailsSectionTitle,
                     titleIcon: Icons.info_outline,
-                    contentPadding: EdgeInsets.all(theme.spacing.md),
+                    contentPadding: sectionPadding,
                     child: AppFormSection(
                       children: <Widget>[
                         AppTextField(
@@ -248,6 +254,7 @@ Future<void> showHrCreateRosterDialog(
                         ),
                         AppResponsiveFieldRow(
                           gap: AppResponsiveFieldRowGap.form,
+                          breakpoint: AppBreakpoints.lg,
                           children: <Widget>[
                             AppCheckboxField(
                               title: l10n.hrRosterRecurringLabel,
@@ -395,38 +402,47 @@ Future<void> showHrCreateRosterDialog(
                             );
                           },
                         ),
-                        Wrap(
-                          spacing: theme.spacing.xs,
-                          runSpacing: theme.spacing.xs,
-                          children: <Widget>[
-                            for (int day = 1; day <= maxMonthDay; day++)
-                              _HrMonthDayChip(
-                                day: day,
-                                selected: monthDays.contains(day),
-                                onTap: () {
-                                  setLocal(() {
-                                    if (monthDays.contains(day)) {
-                                      monthDays.remove(day);
-                                    } else {
-                                      monthDays.add(day);
-                                    }
-                                  });
-                                },
-                              ),
-                          ],
+                        LayoutBuilder(
+                          builder:
+                              (BuildContext context, BoxConstraints constraints) {
+                            final double chipGap = compact
+                                ? theme.spacing.xs
+                                : theme.spacing.xs + 2;
+                            return Wrap(
+                              spacing: chipGap,
+                              runSpacing: chipGap,
+                              children: <Widget>[
+                                for (int day = 1; day <= maxMonthDay; day++)
+                                  _HrMonthDayChip(
+                                    day: day,
+                                    selected: monthDays.contains(day),
+                                    compact: compact,
+                                    onTap: () {
+                                      setLocal(() {
+                                        if (monthDays.contains(day)) {
+                                          monthDays.remove(day);
+                                        } else {
+                                          monthDays.add(day);
+                                        }
+                                      });
+                                    },
+                                  ),
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ),
                   ),
-                  SizedBox(height: theme.spacing.md),
+                  SizedBox(height: compact ? theme.spacing.sm : theme.spacing.md),
                   AppCollapsibleSection(
                     title: l10n.hrRosterWeekHoursTitle,
                     titleIcon: Icons.view_week_outlined,
                     contentPadding: EdgeInsets.fromLTRB(
+                      compact ? theme.spacing.sm : theme.spacing.md,
                       theme.spacing.sm,
-                      theme.spacing.xs,
-                      theme.spacing.sm,
-                      theme.spacing.sm,
+                      compact ? theme.spacing.sm : theme.spacing.md,
+                      compact ? theme.spacing.sm : theme.spacing.md,
                     ),
                     child: HrRosterHourGrid(
                       schedule: schedule,
@@ -540,11 +556,13 @@ class _HrMonthDayChip extends StatelessWidget {
     required this.day,
     required this.selected,
     required this.onTap,
+    this.compact = false,
   });
 
   final int day;
   final bool selected;
   final VoidCallback onTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -574,27 +592,30 @@ class _HrMonthDayChip extends StatelessWidget {
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.xs + 2,
-              vertical: theme.spacing.xs,
+              horizontal: compact ? theme.spacing.xs : theme.spacing.xs + 2,
+              vertical: compact ? 4 : theme.spacing.xs,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Icon(
                   selected ? Icons.check_rounded : Icons.close_rounded,
-                  size: 14,
+                  size: compact ? 12 : 14,
                   color: accent,
                 ),
-                SizedBox(width: theme.spacing.xs),
+                SizedBox(width: compact ? 4 : theme.spacing.xs),
                 Text(
                   '$day',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: labelColor,
-                    fontFeatures: const <FontFeature>[
-                      FontFeature.tabularFigures(),
-                    ],
-                  ),
+                  style: (compact
+                          ? theme.textTheme.labelSmall
+                          : theme.textTheme.labelMedium)
+                      ?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: labelColor,
+                        fontFeatures: const <FontFeature>[
+                          FontFeature.tabularFigures(),
+                        ],
+                      ),
                 ),
               ],
             ),
