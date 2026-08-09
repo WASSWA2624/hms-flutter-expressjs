@@ -324,13 +324,16 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
     await showAppDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) {
+        final Size viewport = MediaQuery.sizeOf(dialogContext);
+        final double contentHeight = (viewport.height * 0.78).clamp(360.0, 760.0);
         return AppDialog(
           title: Text(dialogContext.l10n.hrRosterPreviewSectionTitle),
           icon: const Icon(Icons.calendar_month_outlined),
           maxWidth: 1200,
           scrollable: false,
           content: SizedBox(
-            height: MediaQuery.sizeOf(dialogContext).height * 0.72,
+            height: contentHeight,
+            width: double.infinity,
             child: HrRosterCalendarPreview(
               days: widget.days,
               expanded: true,
@@ -361,9 +364,77 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool narrow = constraints.maxWidth < 640;
         final bool showSideMini = !narrow && _showMini;
-        final double boardHeight = widget.expanded
-            ? (narrow ? 420.0 : 520.0)
-            : (narrow ? 250.0 : 290.0);
+        final bool heightBounded = constraints.hasBoundedHeight &&
+            constraints.maxHeight.isFinite &&
+            constraints.maxHeight < double.infinity;
+        final double fallbackBoardHeight = widget.expanded
+            ? (narrow ? 360.0 : 440.0)
+            : (narrow ? 240.0 : 280.0);
+
+        final Widget board = Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (showSideMini) ...<Widget>[
+              SizedBox(
+                width: 168,
+                child: _MiniMonthPicker(
+                  focus: _focus,
+                  periodStart: _periodStart,
+                  periodEnd: _periodEnd,
+                  byKey: _byKey,
+                  onSelect: _setFocus,
+                ),
+              ),
+              VerticalDivider(
+                width: theme.spacing.md,
+                color: theme.colorScheme.outlineVariant,
+              ),
+            ],
+            Expanded(
+              child: switch (_mode) {
+                HrRosterPreviewMode.month => _MonthGrid(
+                  focus: _focus,
+                  byKey: _byKey,
+                  periodStart: _periodStart,
+                  periodEnd: _periodEnd,
+                  onDayTap: _openDay,
+                  onSelectOutside: _setFocus,
+                ),
+                HrRosterPreviewMode.week => _TimeGrid(
+                  dates: <DateTime>[
+                    for (int i = 0; i < 7; i++)
+                      hrRosterWeekStart(_focus).add(Duration(days: i)),
+                  ],
+                  byKey: _byKey,
+                  periodStart: _periodStart,
+                  periodEnd: _periodEnd,
+                  gridStartMinutes: _gridStartMinutes,
+                  gridEndMinutes: _gridEndMinutes,
+                  focus: _focus,
+                  onDayHeaderTap: (DateTime date) {
+                    final HrRosterDayPreview? day =
+                        _byKey[hrRosterDateKey(date)];
+                    if (day != null) {
+                      _openDay(day);
+                    } else {
+                      _setFocus(date);
+                    }
+                  },
+                ),
+                HrRosterPreviewMode.day => _TimeGrid(
+                  dates: <DateTime>[_focus],
+                  byKey: _byKey,
+                  periodStart: _periodStart,
+                  periodEnd: _periodEnd,
+                  gridStartMinutes: _gridStartMinutes,
+                  gridEndMinutes: _gridEndMinutes,
+                  focus: _focus,
+                  onDayHeaderTap: (_) {},
+                ),
+              },
+            ),
+          ],
+        );
 
         return DecoratedBox(
           decoration: BoxDecoration(
@@ -377,6 +448,7 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
             padding: EdgeInsets.all(theme.spacing.sm),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: heightBounded ? MainAxisSize.max : MainAxisSize.min,
               children: <Widget>[
                 _CalendarChrome(
                   narrow: narrow,
@@ -420,75 +492,10 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
                   onSummary: _openSummary,
                 ),
                 SizedBox(height: theme.spacing.sm),
-                SizedBox(
-                  height: boardHeight,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      if (showSideMini) ...<Widget>[
-                        SizedBox(
-                          width: 168,
-                          child: _MiniMonthPicker(
-                            focus: _focus,
-                            periodStart: _periodStart,
-                            periodEnd: _periodEnd,
-                            byKey: _byKey,
-                            onSelect: _setFocus,
-                          ),
-                        ),
-                        VerticalDivider(
-                          width: theme.spacing.md,
-                          color: theme.colorScheme.outlineVariant,
-                        ),
-                      ],
-                      Expanded(
-                        child: switch (_mode) {
-                          HrRosterPreviewMode.month => _MonthGrid(
-                            focus: _focus,
-                            byKey: _byKey,
-                            periodStart: _periodStart,
-                            periodEnd: _periodEnd,
-                            onDayTap: _openDay,
-                            onSelectOutside: _setFocus,
-                          ),
-                          HrRosterPreviewMode.week => _TimeGrid(
-                            dates: <DateTime>[
-                              for (int i = 0; i < 7; i++)
-                                hrRosterWeekStart(
-                                  _focus,
-                                ).add(Duration(days: i)),
-                            ],
-                            byKey: _byKey,
-                            periodStart: _periodStart,
-                            periodEnd: _periodEnd,
-                            gridStartMinutes: _gridStartMinutes,
-                            gridEndMinutes: _gridEndMinutes,
-                            focus: _focus,
-                            onDayHeaderTap: (DateTime date) {
-                              final HrRosterDayPreview? day =
-                                  _byKey[hrRosterDateKey(date)];
-                              if (day != null) {
-                                _openDay(day);
-                              } else {
-                                _setFocus(date);
-                              }
-                            },
-                          ),
-                          HrRosterPreviewMode.day => _TimeGrid(
-                            dates: <DateTime>[_focus],
-                            byKey: _byKey,
-                            periodStart: _periodStart,
-                            periodEnd: _periodEnd,
-                            gridStartMinutes: _gridStartMinutes,
-                            gridEndMinutes: _gridEndMinutes,
-                            focus: _focus,
-                            onDayHeaderTap: (_) {},
-                          ),
-                        },
-                      ),
-                    ],
-                  ),
-                ),
+                if (heightBounded)
+                  Expanded(child: board)
+                else
+                  SizedBox(height: fallbackBoardHeight, child: board),
                 if (narrow) ...<Widget>[
                   SizedBox(height: theme.spacing.xs),
                   Align(
