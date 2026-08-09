@@ -38693,6 +38693,36 @@ abstract class AppLocalizations {
   /// **'Clear all'**
   String get hrRosterClearAllHoursAction;
 
+  /// Select all hours on the create-roster week grid.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get hrRosterSelectAllHoursAction;
+
+  /// Title for fine-tuning start/end minutes within one hour.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust hour'**
+  String get hrRosterAdjustHourTimeTitle;
+
+  /// Hint for the hour minute adjustment dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Set exact start and end times within hour {hour}.'**
+  String hrRosterAdjustHourTimeHint(String hour);
+
+  /// Start time within the selected hour.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get hrRosterHourStartMinuteLabel;
+
+  /// End time within the selected hour.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get hrRosterHourEndMinuteLabel;
+
   /// Collapsible section title for roster identity and options.
   ///
   /// In en, this message translates to:

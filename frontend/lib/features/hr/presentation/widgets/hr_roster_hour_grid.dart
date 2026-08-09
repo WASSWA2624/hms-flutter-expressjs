@@ -5,11 +5,12 @@ import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_weekly_schedule_editor.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 
-/// Visual week hour grid: days on the Y-axis, hours across the X-axis.
+/// Visual week hour grid: days on the Y-axis, half-hour slots across the X-axis.
 ///
-/// Tap or drag hour cells to paint working time. Use each day menu to copy
-/// hours between days.
+/// Click a slot to toggle it. Click and drag across a day row to select a
+/// contiguous range. Right-click a slot to fine-tune minutes within that hour.
 class HrRosterHourGrid extends StatefulWidget {
   const HrRosterHourGrid({
     required this.schedule,
@@ -34,110 +35,82 @@ class HrRosterHourGrid extends StatefulWidget {
 
 class _HrRosterHourGridState extends State<HrRosterHourGrid> {
   static const int _hourCount = 24;
-  static const double _dayLabelWidth = 112;
-  static const double _minCellWidth = 20;
+  static const int _slotMinutes = 30;
+  static const double _dayLabelWidth = 118;
+  static const double _minHourWidth = 22;
   static const double _cellHeight = 30;
 
-  /// When non-null, drag paint is adding (`true`) or clearing (`false`).
-  bool? _paintSelect;
-  int? _paintDay;
+  int? _anchorDay;
+  int? _anchorSlot;
+  bool _dragging = false;
+  List<_MinuteRange>? _dragBaseRanges;
 
   bool _isWeekend(int day) => day == 0 || day == 6;
 
   bool _dayLocked(int day) => widget.respectWeekends && _isWeekend(day);
 
-  Map<int, Set<int>> _hoursByDay() {
-    return <int, Set<int>>{
-      for (final int day in kHrWeekDayOrder)
-        day: _hoursFromDay(widget.schedule.days[day]!),
-    };
-  }
+  List<_MinuteRange> _rangesForDay(int day) =>
+      _rangesFromDay(widget.schedule.days[day]!);
 
-  Set<int> _hoursFromDay(HrDayScheduleDraft day) {
-    final Set<int> hours = <int>{};
-    for (final HrScheduleSlotDraft slot in day.filledSlots) {
-      final int startMinute = slot.start!.totalMinutes;
-      final int endMinute = slot.end!.totalMinutes;
-      for (int minute = startMinute; minute < endMinute; minute += 60) {
-        hours.add(minute ~/ 60);
-      }
-    }
-    return hours;
-  }
-
-  void _applyHours(int day, Set<int> hours) {
+  void _applyRanges(int day, List<_MinuteRange> ranges) {
     if (_dayLocked(day)) {
       widget.schedule.days[day]!.replaceSlots(const <HrAvailabilitySlot>[]);
       widget.onChanged();
       return;
     }
-    widget.schedule.days[day]!.replaceSlots(_slotsFromHours(hours));
+    widget.schedule.days[day]!.replaceSlots(_slotsFromRanges(ranges));
     widget.onChanged();
   }
 
-  List<HrAvailabilitySlot> _slotsFromHours(Set<int> hours) {
-    if (hours.isEmpty) {
-      return const <HrAvailabilitySlot>[];
-    }
-    final List<int> sorted = hours.toList()..sort();
-    final List<HrAvailabilitySlot> slots = <HrAvailabilitySlot>[];
-    int runStart = sorted.first;
-    int prev = sorted.first;
-    void flush(int endHourInclusive) {
-      final int endExclusive = endHourInclusive + 1;
-      slots.add(
-        HrAvailabilitySlot(
-          startTime: '${runStart.toString().padLeft(2, '0')}:00',
-          endTime: endExclusive >= 24
-              ? '23:59'
-              : '${endExclusive.toString().padLeft(2, '0')}:00',
-        ),
-      );
-    }
-
-    for (int i = 1; i < sorted.length; i++) {
-      final int hour = sorted[i];
-      if (hour == prev + 1) {
-        prev = hour;
-        continue;
-      }
-      flush(prev);
-      runStart = hour;
-      prev = hour;
-    }
-    flush(prev);
-    return slots;
-  }
-
-  void _toggleCell(int day, int hour) {
+  void _toggleSlot(int day, int slot) {
     if (_dayLocked(day)) {
       return;
     }
-    final Set<int> hours = Set<int>.from(
-      _hoursFromDay(widget.schedule.days[day]!),
-    );
-    final bool selecting = !hours.contains(hour);
-    if (selecting) {
-      hours.add(hour);
-    } else {
-      hours.remove(hour);
-    }
-    _paintSelect = selecting;
-    _paintDay = day;
-    _applyHours(day, hours);
+    final List<_MinuteRange> ranges = _rangesForDay(day);
+    final int start = slot * _slotMinutes;
+    final int end = start + _slotMinutes;
+    final double coverage = _coverageFraction(ranges, start, end);
+    final List<_MinuteRange> next = coverage > 0
+        ? _removeCoverage(ranges, start, end)
+        : _addCoverage(ranges, start, end);
+    _applyRanges(day, next);
   }
 
-  void _paintCell(int day, int hour) {
-    if (_paintSelect == null || _paintDay != day || _dayLocked(day)) {
+  void _selectSlotRange(int day, int fromSlot, int toSlot) {
+    if (_dayLocked(day)) {
       return;
     }
-    final Set<int> hours = Set<int>.from(
-      _hoursFromDay(widget.schedule.days[day]!),
+    final int low = fromSlot < toSlot ? fromSlot : toSlot;
+    final int high = fromSlot < toSlot ? toSlot : fromSlot;
+    final List<_MinuteRange> base =
+        _dragBaseRanges ?? _rangesForDay(day);
+    final List<_MinuteRange> next = _addCoverage(
+      base,
+      low * _slotMinutes,
+      (high + 1) * _slotMinutes,
     );
-    final bool changed = _paintSelect! ? hours.add(hour) : hours.remove(hour);
-    if (changed) {
-      _applyHours(day, hours);
+    _applyRanges(day, next);
+  }
+
+  void _selectAll() {
+    final List<HrAvailabilitySlot> fullDay = <HrAvailabilitySlot>[
+      const HrAvailabilitySlot(startTime: '00:00', endTime: '23:59'),
+    ];
+    for (final int day in kHrWeekDayOrder) {
+      if (_dayLocked(day)) {
+        widget.schedule.days[day]!.replaceSlots(const <HrAvailabilitySlot>[]);
+        continue;
+      }
+      widget.schedule.days[day]!.replaceSlots(fullDay);
     }
+    widget.onChanged();
+  }
+
+  void _clearAll() {
+    for (final int day in kHrWeekDayOrder) {
+      widget.schedule.days[day]!.replaceSlots(const <HrAvailabilitySlot>[]);
+    }
+    widget.onChanged();
   }
 
   void _copyToAll(int sourceDay) {
@@ -190,11 +163,87 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
     widget.onChanged();
   }
 
-  void _clearAll() {
-    for (final int day in kHrWeekDayOrder) {
-      widget.schedule.days[day]!.replaceSlots(const <HrAvailabilitySlot>[]);
+  Future<void> _adjustHourMinutes({
+    required int day,
+    required int hour,
+  }) async {
+    if (_dayLocked(day)) {
+      return;
     }
-    widget.onChanged();
+    final List<_MinuteRange> ranges = _rangesForDay(day);
+    final int hourStart = hour * 60;
+    final int hourEnd = hourStart + 60;
+    final _MinuteRange? existing = _intersection(ranges, hourStart, hourEnd);
+
+    final int startMinute = existing == null
+        ? 0
+        : (existing.start - hourStart).clamp(0, 59);
+    int endMinute = existing == null
+        ? 60
+        : (existing.end - hourStart).clamp(1, 60);
+    if (endMinute <= startMinute) {
+      endMinute = (startMinute + _slotMinutes).clamp(1, 60);
+    }
+
+    final ({int startMinute, int endMinute})? result =
+        await showAppDialog<({int startMinute, int endMinute})>(
+          context: context,
+          builder: (BuildContext dialogContext) {
+            return _HourMinuteDialog(
+              hour: hour,
+              initialStartMinute: startMinute,
+              initialEndMinute: endMinute,
+            );
+          },
+        );
+    if (result == null || !mounted) {
+      return;
+    }
+    final List<_MinuteRange> withoutHour = _removeCoverage(
+      ranges,
+      hourStart,
+      hourEnd,
+    );
+    final List<_MinuteRange> next = result.endMinute > result.startMinute
+        ? _addCoverage(
+            withoutHour,
+            hourStart + result.startMinute,
+            hourStart + result.endMinute,
+          )
+        : withoutHour;
+    _applyRanges(day, next);
+  }
+
+  void _onSlotPointerDown(int day, int slot, PointerDownEvent event) {
+    if (_dayLocked(day)) {
+      return;
+    }
+    // Right-click is handled by onSecondaryTap; don't start a paint gesture.
+    if ((event.buttons & 0x02) != 0) {
+      return;
+    }
+    _anchorDay = day;
+    _anchorSlot = slot;
+    _dragging = false;
+    _dragBaseRanges = _rangesForDay(day);
+  }
+
+  void _onSlotPointerEnter(int day, int slot) {
+    if (_anchorDay != day || _anchorSlot == null || _dragBaseRanges == null) {
+      return;
+    }
+    if (slot == _anchorSlot && !_dragging) {
+      return;
+    }
+    _dragging = true;
+    _selectSlotRange(day, _anchorSlot!, slot);
+  }
+
+  void _resetPointerState() {
+    _anchorDay = null;
+    _anchorSlot = null;
+    _dragging = false;
+    _dragBaseRanges = null;
   }
 
   @override
@@ -213,28 +262,29 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
   Widget _buildGrid({
     required ThemeData theme,
     required AppLocalizations l10n,
-    required Map<int, Set<int>> hoursByDay,
-    required double? cellWidth,
+    required Map<int, List<_MinuteRange>> rangesByDay,
+    required double? hourWidth,
   }) {
     final ColorScheme scheme = theme.colorScheme;
     final Color selectedFill = scheme.primary.withValues(alpha: 0.88);
     final Color selectedEdge = scheme.primary;
+    final Color partialFill = scheme.primary.withValues(alpha: 0.45);
     final Color idleFill = scheme.surfaceContainerHighest.withValues(alpha: 0.38);
     final Color idleEdge = scheme.outlineVariant.withValues(alpha: 0.42);
     final Color lockedFill = scheme.surfaceContainerHighest.withValues(
       alpha: 0.18,
     );
     final Color lockedEdge = scheme.outlineVariant.withValues(alpha: 0.22);
-    final bool hasAnyHours = hoursByDay.values.any(
-      (Set<int> hours) => hours.isNotEmpty,
+    final bool hasAnyHours = rangesByDay.values.any(
+      (List<_MinuteRange> ranges) => ranges.isNotEmpty,
     );
-    final bool flexibleHours = cellWidth == null;
+    final bool flexibleHours = hourWidth == null;
 
     Widget hourSlot({required Widget child}) {
       if (flexibleHours) {
         return Expanded(child: child);
       }
-      return SizedBox(width: cellWidth, child: child);
+      return SizedBox(width: hourWidth, child: child);
     }
 
     return DecoratedBox(
@@ -259,13 +309,19 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
         ),
         child: Listener(
           onPointerUp: (_) {
-            _paintSelect = null;
-            _paintDay = null;
+            if (_anchorDay != null && _anchorSlot != null && !_dragging) {
+              // Pointer up may land outside a cell; still toggle the anchor.
+              final int day = _anchorDay!;
+              final int slot = _anchorSlot!;
+              if (_dragBaseRanges != null) {
+                _applyRanges(day, _dragBaseRanges!);
+              }
+              HapticFeedback.selectionClick();
+              _toggleSlot(day, slot);
+            }
+            _resetPointerState();
           },
-          onPointerCancel: (_) {
-            _paintSelect = null;
-            _paintDay = null;
-          },
+          onPointerCancel: (_) => _resetPointerState(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -273,18 +329,34 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
                 children: <Widget>[
                   SizedBox(
                     width: _dayLabelWidth,
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: TextButton(
-                        style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: theme.spacing.xs,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: theme.spacing.xs,
+                            ),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
+                          onPressed: _selectAll,
+                          child: Text(l10n.hrRosterSelectAllHoursAction),
                         ),
-                        onPressed: hasAnyHours ? _clearAll : null,
-                        child: Text(l10n.hrRosterClearAllHoursAction),
-                      ),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: theme.spacing.xs,
+                            ),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: hasAnyHours ? _clearAll : null,
+                          child: Text(l10n.hrRosterClearAllHoursAction),
+                        ),
+                      ],
                     ),
                   ),
                   for (int hour = 0; hour < _hourCount; hour++)
@@ -316,9 +388,9 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
                         child: _DayLabel(
                           day: day,
                           label: hrDayLabel(l10n, day),
-                          hasHours: hoursByDay[day]!.isNotEmpty,
+                          hasHours: rangesByDay[day]!.isNotEmpty,
                           locked: _dayLocked(day),
-                          hoursByDay: hoursByDay,
+                          rangesByDay: rangesByDay,
                           dayLocked: _dayLocked,
                           dayLabel: (int value) => hrDayLabel(l10n, value),
                           onCopyToAll: () => _copyToAll(day),
@@ -335,31 +407,58 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
                       ),
                       for (int hour = 0; hour < _hourCount; hour++)
                         hourSlot(
-                          child: _HourCell(
-                            selected: hoursByDay[day]!.contains(hour),
-                            selectedStart:
-                                hoursByDay[day]!.contains(hour) &&
-                                !hoursByDay[day]!.contains(hour - 1),
-                            selectedEnd:
-                                hoursByDay[day]!.contains(hour) &&
-                                !hoursByDay[day]!.contains(hour + 1),
-                            locked: _dayLocked(day),
-                            height: _cellHeight,
-                            selectedFill: selectedFill,
-                            selectedEdge: selectedEdge,
-                            idleFill: idleFill,
-                            idleEdge: idleEdge,
-                            lockedFill: lockedFill,
-                            lockedEdge: lockedEdge,
-                            onTap: _dayLocked(day)
-                                ? null
-                                : () {
-                                    HapticFeedback.selectionClick();
-                                    _toggleCell(day, hour);
-                                  },
-                            onDragEnter: _dayLocked(day)
-                                ? null
-                                : () => _paintCell(day, hour),
+                          child: Row(
+                            children: <Widget>[
+                              for (int half = 0; half < 2; half++)
+                                Expanded(
+                                  child: _HalfHourCell(
+                                    coverage: _coverageFraction(
+                                      rangesByDay[day]!,
+                                      (hour * 2 + half) * _slotMinutes,
+                                      (hour * 2 + half + 1) * _slotMinutes,
+                                    ),
+                                    selectedStart: _isRangeEdge(
+                                      rangesByDay[day]!,
+                                      (hour * 2 + half) * _slotMinutes,
+                                      isStart: true,
+                                    ),
+                                    selectedEnd: _isRangeEdge(
+                                      rangesByDay[day]!,
+                                      (hour * 2 + half + 1) * _slotMinutes,
+                                      isStart: false,
+                                    ),
+                                    locked: _dayLocked(day),
+                                    height: _cellHeight,
+                                    selectedFill: selectedFill,
+                                    partialFill: partialFill,
+                                    selectedEdge: selectedEdge,
+                                    idleFill: idleFill,
+                                    idleEdge: idleEdge,
+                                    lockedFill: lockedFill,
+                                    lockedEdge: lockedEdge,
+                                    onPointerDown: _dayLocked(day)
+                                        ? null
+                                        : (PointerDownEvent event) =>
+                                              _onSlotPointerDown(
+                                                day,
+                                                hour * 2 + half,
+                                                event,
+                                              ),
+                                    onPointerEnter: _dayLocked(day)
+                                        ? null
+                                        : () => _onSlotPointerEnter(
+                                            day,
+                                            hour * 2 + half,
+                                          ),
+                                    onSecondaryTap: _dayLocked(day)
+                                        ? null
+                                        : () => _adjustHourMinutes(
+                                            day: day,
+                                            hour: hour,
+                                          ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                     ],
@@ -376,8 +475,9 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
-    final Map<int, Set<int>> hoursByDay = _hoursByDay();
-    // Match horizontal padding inside [_buildGrid] so cells never overflow.
+    final Map<int, List<_MinuteRange>> rangesByDay = <int, List<_MinuteRange>>{
+      for (final int day in kHrWeekDayOrder) day: _rangesForDay(day),
+    };
     final double gridHorizontalPad = theme.spacing.sm * 2;
 
     final Widget grid = LayoutBuilder(
@@ -385,16 +485,16 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
         final double maxWidth = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
-        final double hoursWidth =
-            (maxWidth - gridHorizontalPad - _dayLabelWidth).clamp(0.0, double.infinity);
-        final double rawCellWidth = hoursWidth / _hourCount;
-        final bool needsScroll = rawCellWidth < _minCellWidth;
+        final double hoursWidth = (maxWidth - gridHorizontalPad - _dayLabelWidth)
+            .clamp(0.0, double.infinity);
+        final double rawHourWidth = hoursWidth / _hourCount;
+        final bool needsScroll = rawHourWidth < _minHourWidth;
 
         final Widget body = _buildGrid(
           theme: theme,
           l10n: l10n,
-          hoursByDay: hoursByDay,
-          cellWidth: needsScroll ? _minCellWidth : null,
+          rangesByDay: rangesByDay,
+          hourWidth: needsScroll ? _minHourWidth : null,
         );
 
         if (!needsScroll) {
@@ -405,9 +505,7 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
           scrollDirection: Axis.horizontal,
           child: SizedBox(
             width:
-                gridHorizontalPad +
-                _dayLabelWidth +
-                (_minCellWidth * _hourCount),
+                gridHorizontalPad + _dayLabelWidth + (_minHourWidth * _hourCount),
             child: body,
           ),
         );
@@ -434,13 +532,166 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
   }
 }
 
+class _MinuteRange {
+  const _MinuteRange(this.start, this.end);
+
+  final int start;
+  final int end;
+}
+
+List<_MinuteRange> _rangesFromDay(HrDayScheduleDraft day) {
+  final List<_MinuteRange> ranges = <_MinuteRange>[];
+  for (final HrScheduleSlotDraft slot in day.filledSlots) {
+    final int start = slot.start!.totalMinutes.clamp(0, 24 * 60);
+    int end = slot.end!.totalMinutes.clamp(0, 24 * 60);
+    if (slot.end!.hour == 23 && slot.end!.minute == 59) {
+      end = 24 * 60;
+    }
+    if (end > start) {
+      ranges.add(_MinuteRange(start, end));
+    }
+  }
+  return _mergeRanges(ranges);
+}
+
+List<HrAvailabilitySlot> _slotsFromRanges(List<_MinuteRange> ranges) {
+  final List<_MinuteRange> merged = _mergeRanges(ranges);
+  return <HrAvailabilitySlot>[
+    for (final _MinuteRange range in merged)
+      HrAvailabilitySlot(
+        startTime: _formatMinute(range.start),
+        endTime: _formatMinute(range.end, isEnd: true),
+      ),
+  ];
+}
+
+String _formatMinute(int minute, {bool isEnd = false}) {
+  if (isEnd && minute >= 24 * 60) {
+    return '23:59';
+  }
+  final int clamped = minute.clamp(0, 24 * 60 - (isEnd ? 1 : 0));
+  final int hour = clamped ~/ 60;
+  final int min = clamped % 60;
+  return '${hour.toString().padLeft(2, '0')}:${min.toString().padLeft(2, '0')}';
+}
+
+List<_MinuteRange> _mergeRanges(List<_MinuteRange> input) {
+  if (input.isEmpty) {
+    return const <_MinuteRange>[];
+  }
+  final List<_MinuteRange> sorted = List<_MinuteRange>.from(input)
+    ..sort((a, b) => a.start.compareTo(b.start));
+  final List<_MinuteRange> merged = <_MinuteRange>[sorted.first];
+  for (int i = 1; i < sorted.length; i++) {
+    final _MinuteRange current = sorted[i];
+    final _MinuteRange last = merged.last;
+    if (current.start <= last.end) {
+      merged[merged.length - 1] = _MinuteRange(
+        last.start,
+        current.end > last.end ? current.end : last.end,
+      );
+    } else {
+      merged.add(current);
+    }
+  }
+  return merged;
+}
+
+List<_MinuteRange> _addCoverage(
+  List<_MinuteRange> ranges,
+  int start,
+  int end,
+) {
+  if (end <= start) {
+    return ranges;
+  }
+  return _mergeRanges(<_MinuteRange>[...ranges, _MinuteRange(start, end)]);
+}
+
+List<_MinuteRange> _removeCoverage(
+  List<_MinuteRange> ranges,
+  int start,
+  int end,
+) {
+  if (end <= start) {
+    return ranges;
+  }
+  final List<_MinuteRange> next = <_MinuteRange>[];
+  for (final _MinuteRange range in ranges) {
+    if (range.end <= start || range.start >= end) {
+      next.add(range);
+      continue;
+    }
+    if (range.start < start) {
+      next.add(_MinuteRange(range.start, start));
+    }
+    if (range.end > end) {
+      next.add(_MinuteRange(end, range.end));
+    }
+  }
+  return _mergeRanges(next);
+}
+
+double _coverageFraction(List<_MinuteRange> ranges, int start, int end) {
+  if (end <= start) {
+    return 0;
+  }
+  int covered = 0;
+  for (final _MinuteRange range in ranges) {
+    final int lo = range.start > start ? range.start : start;
+    final int hi = range.end < end ? range.end : end;
+    if (hi > lo) {
+      covered += hi - lo;
+    }
+  }
+  return (covered / (end - start)).clamp(0.0, 1.0);
+}
+
+_MinuteRange? _intersection(
+  List<_MinuteRange> ranges,
+  int start,
+  int end,
+) {
+  int? lo;
+  int? hi;
+  for (final _MinuteRange range in ranges) {
+    final int a = range.start > start ? range.start : start;
+    final int b = range.end < end ? range.end : end;
+    if (b <= a) {
+      continue;
+    }
+    lo = lo == null || a < lo ? a : lo;
+    hi = hi == null || b > hi ? b : hi;
+  }
+  if (lo == null || hi == null) {
+    return null;
+  }
+  return _MinuteRange(lo, hi);
+}
+
+bool _isRangeEdge(
+  List<_MinuteRange> ranges,
+  int minute, {
+  required bool isStart,
+}) {
+  for (final _MinuteRange range in ranges) {
+    if (isStart && range.start == minute) {
+      return true;
+    }
+    if (!isStart && range.end == minute) {
+      return true;
+    }
+  }
+  return false;
+}
+
 class _DayLabel extends StatelessWidget {
   const _DayLabel({
     required this.day,
     required this.label,
     required this.hasHours,
     required this.locked,
-    required this.hoursByDay,
+    required this.rangesByDay,
     required this.dayLocked,
     required this.dayLabel,
     required this.onCopyToAll,
@@ -457,7 +708,7 @@ class _DayLabel extends StatelessWidget {
   final String label;
   final bool hasHours;
   final bool locked;
-  final Map<int, Set<int>> hoursByDay;
+  final Map<int, List<_MinuteRange>> rangesByDay;
   final bool Function(int day) dayLocked;
   final String Function(int day) dayLabel;
   final VoidCallback onCopyToAll;
@@ -542,7 +793,7 @@ class _DayLabel extends StatelessWidget {
                   value: 'from:$sourceDay',
                   enabled:
                       !dayLocked(day) &&
-                      (hoursByDay[sourceDay]?.isNotEmpty ?? false),
+                      (rangesByDay[sourceDay]?.isNotEmpty ?? false),
                   child: Text(dayLabel(sourceDay)),
                 ),
             const PopupMenuDivider(),
@@ -563,53 +814,61 @@ class _DayLabel extends StatelessWidget {
   }
 }
 
-class _HourCell extends StatelessWidget {
-  const _HourCell({
-    required this.selected,
+class _HalfHourCell extends StatelessWidget {
+  const _HalfHourCell({
+    required this.coverage,
     required this.selectedStart,
     required this.selectedEnd,
     required this.locked,
     required this.height,
     required this.selectedFill,
+    required this.partialFill,
     required this.selectedEdge,
     required this.idleFill,
     required this.idleEdge,
     required this.lockedFill,
     required this.lockedEdge,
-    required this.onTap,
-    required this.onDragEnter,
+    required this.onPointerDown,
+    required this.onPointerEnter,
+    required this.onSecondaryTap,
   });
 
-  final bool selected;
+  final double coverage;
   final bool selectedStart;
   final bool selectedEnd;
   final bool locked;
   final double height;
   final Color selectedFill;
+  final Color partialFill;
   final Color selectedEdge;
   final Color idleFill;
   final Color idleEdge;
   final Color lockedFill;
   final Color lockedEdge;
-  final VoidCallback? onTap;
-  final VoidCallback? onDragEnter;
+  final ValueChanged<PointerDownEvent>? onPointerDown;
+  final VoidCallback? onPointerEnter;
+  final VoidCallback? onSecondaryTap;
 
   @override
   Widget build(BuildContext context) {
-    final bool inRange = selected && !locked;
-    final bool seamlessLeft = inRange && !selectedStart;
-    final bool seamlessRight = inRange && !selectedEnd;
-
-    final BorderRadius radius = BorderRadius.horizontal(
-      left: Radius.circular(inRange && selectedStart ? 6 : 0),
-      right: Radius.circular(inRange && selectedEnd ? 6 : 0),
-    );
+    final bool fullySelected = !locked && coverage >= 0.999;
+    final bool partiallySelected = !locked && coverage > 0 && !fullySelected;
+    final bool inRange = fullySelected || partiallySelected;
+    final bool seamlessLeft = fullySelected && !selectedStart;
+    final bool seamlessRight = fullySelected && !selectedEnd;
 
     final Color fill = locked
         ? lockedFill
-        : selected
+        : fullySelected
         ? selectedFill
+        : partiallySelected
+        ? partialFill
         : idleFill;
+
+    final BorderRadius radius = BorderRadius.horizontal(
+      left: Radius.circular(inRange && selectedStart ? 5 : 0),
+      right: Radius.circular(inRange && selectedEnd ? 5 : 0),
+    );
 
     final Widget cell = Padding(
       padding: EdgeInsets.only(
@@ -630,33 +889,177 @@ class _HourCell extends StatelessWidget {
                   color: locked ? lockedEdge : idleEdge,
                   width: 0.7,
                 ),
-          boxShadow: inRange && selectedStart
-              ? <BoxShadow>[
-                  BoxShadow(
-                    color: selectedEdge.withValues(alpha: 0.18),
-                    blurRadius: 3,
-                    offset: const Offset(0, 1),
+        ),
+        child: SizedBox(
+          height: height - 4,
+          width: double.infinity,
+          child: partiallySelected
+              ? Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: FractionallySizedBox(
+                    widthFactor: coverage.clamp(0.15, 1.0),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: selectedFill,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: const SizedBox.expand(),
+                    ),
                   ),
-                ]
+                )
               : null,
         ),
-        child: SizedBox(height: height - 4, width: double.infinity),
       ),
     );
 
-    if (locked || onTap == null) {
+    if (locked || onPointerDown == null) {
       return cell;
     }
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (_) => onDragEnter?.call(),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        onPanUpdate: (_) => onDragEnter?.call(),
-        child: cell,
+      onEnter: (_) => onPointerEnter?.call(),
+      child: Listener(
+        onPointerDown: onPointerDown,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onSecondaryTap: onSecondaryTap,
+          child: cell,
+        ),
       ),
+    );
+  }
+}
+
+class _HourMinuteDialog extends StatefulWidget {
+  const _HourMinuteDialog({
+    required this.hour,
+    required this.initialStartMinute,
+    required this.initialEndMinute,
+  });
+
+  final int hour;
+  final int initialStartMinute;
+  final int initialEndMinute;
+
+  @override
+  State<_HourMinuteDialog> createState() => _HourMinuteDialogState();
+}
+
+class _HourMinuteDialogState extends State<_HourMinuteDialog> {
+  late int _startMinute = widget.initialStartMinute.clamp(0, 59);
+  late int _endMinute = widget.initialEndMinute.clamp(1, 60);
+
+  String _labelForMinute(int minute) {
+    final String hour = widget.hour.toString().padLeft(2, '0');
+    if (minute >= 60) {
+      final int nextHour = (widget.hour + 1) % 24;
+      return '${nextHour.toString().padLeft(2, '0')}:00';
+    }
+    return '$hour:${minute.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final bool valid = _endMinute > _startMinute;
+
+    return AppDialog(
+      title: Text(l10n.hrRosterAdjustHourTimeTitle),
+      icon: const Icon(Icons.schedule_outlined),
+      showMaximizeButton: false,
+      maxWidth: 420,
+      initialMaximized: false,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            l10n.hrRosterAdjustHourTimeHint(
+              widget.hour.toString().padLeft(2, '0'),
+            ),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: theme.spacing.md),
+          Text(
+            l10n.hrRosterHourStartMinuteLabel,
+            style: theme.textTheme.labelLarge,
+          ),
+          SizedBox(height: theme.spacing.xs),
+          DropdownButton<int>(
+            value: _startMinute,
+            isExpanded: true,
+            items: <DropdownMenuItem<int>>[
+              for (int minute = 0; minute <= 59; minute++)
+                DropdownMenuItem<int>(
+                  value: minute,
+                  child: Text(_labelForMinute(minute)),
+                ),
+            ],
+            onChanged: (int? value) {
+              if (value == null) {
+                return;
+              }
+              setState(() => _startMinute = value);
+            },
+          ),
+          SizedBox(height: theme.spacing.md),
+          Text(
+            l10n.hrRosterHourEndMinuteLabel,
+            style: theme.textTheme.labelLarge,
+          ),
+          SizedBox(height: theme.spacing.xs),
+          DropdownButton<int>(
+            value: _endMinute,
+            isExpanded: true,
+            items: <DropdownMenuItem<int>>[
+              for (int minute = 1; minute <= 60; minute++)
+                DropdownMenuItem<int>(
+                  value: minute,
+                  child: Text(_labelForMinute(minute)),
+                ),
+            ],
+            onChanged: (int? value) {
+              if (value == null) {
+                return;
+              }
+              setState(() => _endMinute = value);
+            },
+          ),
+          if (!valid) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            Text(
+              l10n.hrAvailabilityEndAfterStartError,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ],
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.primary(
+          onPressed: () {
+            if (!valid) {
+              return;
+            }
+            Navigator.of(context).pop((
+              startMinute: _startMinute,
+              endMinute: _endMinute,
+            ));
+          },
+          enabled: valid,
+          icon: Icons.check,
+          label: l10n.appDateRangeApplyAction,
+        ),
+        AppButton.close(
+          onPressed: () => Navigator.of(context).pop(),
+          label: l10n.commonCloseActionLabel,
+        ),
+      ],
     );
   }
 }

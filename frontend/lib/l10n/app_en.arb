@@ -26959,6 +26959,31 @@
   "@hrRosterClearAllHoursAction": {
     "description": "Clear all painted weekly hours on create roster."
   },
+  "hrRosterSelectAllHoursAction": "Select all",
+  "@hrRosterSelectAllHoursAction": {
+    "description": "Select all hours on the create-roster week grid."
+  },
+  "hrRosterAdjustHourTimeTitle": "Adjust hour",
+  "@hrRosterAdjustHourTimeTitle": {
+    "description": "Title for fine-tuning start/end minutes within one hour."
+  },
+  "hrRosterAdjustHourTimeHint": "Set exact start and end times within hour {hour}.",
+  "@hrRosterAdjustHourTimeHint": {
+    "description": "Hint for the hour minute adjustment dialog.",
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      }
+    }
+  },
+  "hrRosterHourStartMinuteLabel": "Start",
+  "@hrRosterHourStartMinuteLabel": {
+    "description": "Start time within the selected hour."
+  },
+  "hrRosterHourEndMinuteLabel": "End",
+  "@hrRosterHourEndMinuteLabel": {
+    "description": "End time within the selected hour."
+  },
   "hrRosterDetailsSectionTitle": "Roster details",
   "@hrRosterDetailsSectionTitle": {
     "description": "Collapsible section title for roster identity and options."

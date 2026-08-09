@@ -20911,6 +20911,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterClearAllHoursAction => 'Clear all';
 
   @override
+  String get hrRosterSelectAllHoursAction => 'Select all';
+
+  @override
+  String get hrRosterAdjustHourTimeTitle => 'Adjust hour';
+
+  @override
+  String hrRosterAdjustHourTimeHint(String hour) {
+    return 'Set exact start and end times within hour $hour.';
+  }
+
+  @override
+  String get hrRosterHourStartMinuteLabel => 'Start';
+
+  @override
+  String get hrRosterHourEndMinuteLabel => 'End';
+
+  @override
   String get hrRosterDetailsSectionTitle => 'Roster details';
 
   @override
