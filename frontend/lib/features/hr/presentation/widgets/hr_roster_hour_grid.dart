@@ -36,9 +36,9 @@ class HrRosterHourGrid extends StatefulWidget {
 class _HrRosterHourGridState extends State<HrRosterHourGrid> {
   static const int _hourCount = 24;
   static const int _slotMinutes = 30;
-  static const double _dayLabelWidth = 118;
+  static const double _dayLabelWidth = 132;
   static const double _minHourWidth = 22;
-  static const double _cellHeight = 30;
+  static const double _cellHeight = 32;
 
   int? _anchorDay;
   int? _anchorSlot;
@@ -326,52 +326,33 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: <Widget>[
                   SizedBox(
                     width: _dayLabelWidth,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        TextButton(
-                          style: TextButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: theme.spacing.xs,
-                            ),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          onPressed: _selectAll,
-                          child: Text(l10n.hrRosterSelectAllHoursAction),
-                        ),
-                        TextButton(
-                          style: TextButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: theme.spacing.xs,
-                            ),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          onPressed: hasAnyHours ? _clearAll : null,
-                          child: Text(l10n.hrRosterClearAllHoursAction),
-                        ),
-                      ],
+                    child: _WeekBulkActions(
+                      onSelectAll: _selectAll,
+                      onClearAll: hasAnyHours ? _clearAll : null,
+                      selectAllLabel: l10n.hrRosterSelectAllHoursAction,
+                      clearAllLabel: l10n.hrRosterClearAllHoursAction,
                     ),
                   ),
                   for (int hour = 0; hour < _hourCount; hour++)
                     hourSlot(
-                      child: Text(
-                        hour.toString().padLeft(2, '0'),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.clip,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                          fontFeatures: const <FontFeature>[
-                            FontFeature.tabularFigures(),
-                          ],
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          hour.toString().padLeft(2, '0'),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.clip,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                            fontFeatures: const <FontFeature>[
+                              FontFeature.tabularFigures(),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -380,11 +361,12 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
               SizedBox(height: theme.spacing.xs),
               for (final int day in kHrWeekDayOrder)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
+                  padding: const EdgeInsets.only(bottom: 3),
                   child: Row(
                     children: <Widget>[
                       SizedBox(
                         width: _dayLabelWidth,
+                        height: _cellHeight,
                         child: _DayLabel(
                           day: day,
                           label: hrDayLabel(l10n, day),
@@ -685,6 +667,120 @@ bool _isRangeEdge(
   return false;
 }
 
+class _WeekBulkActions extends StatelessWidget {
+  const _WeekBulkActions({
+    required this.onSelectAll,
+    required this.onClearAll,
+    required this.selectAllLabel,
+    required this.clearAllLabel,
+  });
+
+  final VoidCallback onSelectAll;
+  final VoidCallback? onClearAll;
+  final String selectAllLabel;
+  final String clearAllLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.55)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(3),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: _BulkActionChip(
+                icon: Icons.select_all_outlined,
+                label: selectAllLabel,
+                foreground: scheme.primary,
+                background: scheme.primary.withValues(alpha: 0.10),
+                onPressed: onSelectAll,
+              ),
+            ),
+            SizedBox(width: theme.spacing.xs),
+            Expanded(
+              child: _BulkActionChip(
+                icon: Icons.clear_all,
+                label: clearAllLabel,
+                foreground: onClearAll == null
+                    ? scheme.onSurface.withValues(alpha: 0.38)
+                    : scheme.error,
+                background: onClearAll == null
+                    ? scheme.surface.withValues(alpha: 0.4)
+                    : scheme.error.withValues(alpha: 0.08),
+                onPressed: onClearAll,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BulkActionChip extends StatelessWidget {
+  const _BulkActionChip({
+    required this.icon,
+    required this.label,
+    required this.foreground,
+    required this.background,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color foreground;
+  final Color background;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(theme.radius.sm - 1),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(theme.radius.sm - 1),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(icon, size: 14, color: foreground),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: foreground,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _DayLabel extends StatelessWidget {
   const _DayLabel({
     required this.day,
@@ -720,93 +816,224 @@ class _DayLabel extends StatelessWidget {
   final String copyFromLabel;
   final String clearLabel;
 
+  String get _shortLabel {
+    final String trimmed = label.trim();
+    if (trimmed.length <= 3) {
+      return trimmed;
+    }
+    return trimmed.substring(0, 3);
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: locked
-                  ? theme.colorScheme.onSurface.withValues(alpha: 0.38)
-                  : hasHours
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
+    final ColorScheme scheme = theme.colorScheme;
+    final Color accent = locked
+        ? scheme.onSurface.withValues(alpha: 0.38)
+        : hasHours
+        ? scheme.primary
+        : scheme.onSurfaceVariant;
+    final Color fill = locked
+        ? scheme.surfaceContainerHighest.withValues(alpha: 0.28)
+        : hasHours
+        ? scheme.primary.withValues(alpha: 0.10)
+        : scheme.surfaceContainerHighest.withValues(alpha: 0.38);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        border: Border.all(
+          color: locked
+              ? scheme.outlineVariant.withValues(alpha: 0.35)
+              : hasHours
+              ? scheme.primary.withValues(alpha: 0.35)
+              : scheme.outlineVariant.withValues(alpha: 0.55),
         ),
-        PopupMenuButton<String>(
-          tooltip: copyToAllLabel,
-          padding: EdgeInsets.zero,
-          enabled: !locked,
-          onSelected: (String value) {
-            if (value == 'all') {
-              onCopyToAll();
-              return;
-            }
-            if (value == 'following') {
-              onCopyToFollowing();
-              return;
-            }
-            if (value == 'clear') {
-              onClear();
-              return;
-            }
-            if (value.startsWith('from:')) {
-              final int? source = int.tryParse(value.substring(5));
-              if (source != null) {
-                onCopyFrom(source);
-              }
-            }
-          },
-          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            PopupMenuItem<String>(
-              value: 'all',
-              enabled: hasHours,
-              child: Text(copyToAllLabel),
+      ),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.only(start: 8, end: 2),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: locked
+                    ? scheme.outline
+                    : hasHours
+                    ? scheme.primary
+                    : scheme.outlineVariant,
+              ),
             ),
-            PopupMenuItem<String>(
-              value: 'following',
-              enabled: hasHours,
-              child: Text(copyToFollowingLabel),
-            ),
-            const PopupMenuDivider(),
-            PopupMenuItem<String>(
-              enabled: false,
-              height: 28,
+            SizedBox(width: theme.spacing.xs),
+            Expanded(
               child: Text(
-                copyFromLabel,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                _shortLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.w700,
+                  color: accent,
+                  letterSpacing: 0.2,
                 ),
               ),
             ),
-            for (final int sourceDay in kHrWeekDayOrder)
-              if (sourceDay != day)
-                PopupMenuItem<String>(
-                  value: 'from:$sourceDay',
-                  enabled:
-                      !dayLocked(day) &&
-                      (rangesByDay[sourceDay]?.isNotEmpty ?? false),
-                  child: Text(dayLabel(sourceDay)),
+            if (locked)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: 6),
+                child: Icon(
+                  Icons.lock_outline,
+                  size: 13,
+                  color: scheme.onSurface.withValues(alpha: 0.38),
                 ),
-            const PopupMenuDivider(),
-            PopupMenuItem<String>(
-              value: 'clear',
-              enabled: hasHours,
-              child: Text(clearLabel),
-            ),
+              )
+            else
+              PopupMenuButton<String>(
+                tooltip: copyToAllLabel,
+                padding: EdgeInsets.zero,
+                offset: const Offset(0, 28),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(theme.radius.md),
+                ),
+                onSelected: (String value) {
+                  if (value == 'all') {
+                    onCopyToAll();
+                    return;
+                  }
+                  if (value == 'following') {
+                    onCopyToFollowing();
+                    return;
+                  }
+                  if (value == 'clear') {
+                    onClear();
+                    return;
+                  }
+                  if (value.startsWith('from:')) {
+                    final int? source = int.tryParse(value.substring(5));
+                    if (source != null) {
+                      onCopyFrom(source);
+                    }
+                  }
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  PopupMenuItem<String>(
+                    value: 'all',
+                    enabled: hasHours,
+                    child: _DayMenuRow(
+                      icon: Icons.copy_all_outlined,
+                      label: copyToAllLabel,
+                      enabled: hasHours,
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'following',
+                    enabled: hasHours,
+                    child: _DayMenuRow(
+                      icon: Icons.arrow_forward_outlined,
+                      label: copyToFollowingLabel,
+                      enabled: hasHours,
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem<String>(
+                    enabled: false,
+                    height: 30,
+                    child: Text(
+                      copyFromLabel,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ),
+                  for (final int sourceDay in kHrWeekDayOrder)
+                    if (sourceDay != day)
+                      PopupMenuItem<String>(
+                        value: 'from:$sourceDay',
+                        enabled:
+                            !dayLocked(day) &&
+                            (rangesByDay[sourceDay]?.isNotEmpty ?? false),
+                        child: _DayMenuRow(
+                          icon: Icons.calendar_view_day_outlined,
+                          label: dayLabel(sourceDay),
+                          enabled:
+                              rangesByDay[sourceDay]?.isNotEmpty ?? false,
+                          emphasize:
+                              rangesByDay[sourceDay]?.isNotEmpty ?? false,
+                        ),
+                      ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem<String>(
+                    value: 'clear',
+                    enabled: hasHours,
+                    child: _DayMenuRow(
+                      icon: Icons.clear_outlined,
+                      label: clearLabel,
+                      enabled: hasHours,
+                      destructive: true,
+                    ),
+                  ),
+                ],
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: Icon(
+                    Icons.more_horiz,
+                    size: 18,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
           ],
-          child: Icon(
-            Icons.more_vert,
-            size: 16,
-            color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+class _DayMenuRow extends StatelessWidget {
+  const _DayMenuRow({
+    required this.icon,
+    required this.label,
+    required this.enabled,
+    this.emphasize = false,
+    this.destructive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool enabled;
+  final bool emphasize;
+  final bool destructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final Color color = !enabled
+        ? scheme.onSurface.withValues(alpha: 0.38)
+        : destructive
+        ? scheme.error
+        : emphasize
+        ? scheme.primary
+        : scheme.onSurface;
+
+    return Row(
+      children: <Widget>[
+        Icon(icon, size: 16, color: color),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: color,
+              fontWeight: emphasize || destructive
+                  ? FontWeight.w700
+                  : FontWeight.w500,
+            ),
           ),
         ),
       ],
