@@ -20833,7 +20833,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterOverviewSectionTitle => 'Roster overview';
 
   @override
-  String get hrRosterPreviewSectionTitle => 'Roster schedule';
+  String get hrRosterPreviewSectionTitle => 'Roster preview';
 
   @override
   String get hrRosterRemoveSelectedStaffAction => 'Remove selected';
@@ -20875,7 +20875,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterPrintStaffSection => 'Assigned staff';
 
   @override
-  String get hrRosterPrintScheduleSection => 'Schedule';
+  String get hrRosterPrintScheduleSection => 'Preview';
 
   @override
   String get hrRosterNameHelper =>
@@ -20887,19 +20887,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get hrRosterZoomInAction => 'Zoom in';
+  String get hrRosterDayOffLabel => 'Non-working day';
 
   @override
-  String get hrRosterZoomOutAction => 'Zoom out';
+  String get hrRosterPublicHolidayLabel => 'Public holiday';
 
   @override
-  String get hrRosterDayOffLabel => 'Off / holiday';
+  String get hrRosterAvailableLabel => 'Busy';
 
   @override
-  String get hrRosterAvailableLabel => 'Scheduled';
+  String get hrRosterFreeHoursLabel => 'Free';
 
   @override
-  String get hrRosterUnassignedDayLabel => 'Open';
+  String get hrRosterUnassignedDayLabel => 'Open (no shifts)';
 
   @override
   String get hrRosterPrintStaffTableAction => 'Print staff list';
@@ -20907,6 +20907,30 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get hrRosterNoSchedulePreviewLabel =>
       'No schedule days in this period.';
+
+  @override
+  String get hrRosterDayDetailsTitle => 'Day details';
+
+  @override
+  String get hrRosterDayWorkingHoursLabel => 'Working window';
+
+  @override
+  String get hrRosterDayBusyHoursLabel => 'Busy hours';
+
+  @override
+  String get hrRosterDayFreeHoursLabel => 'Free hours';
+
+  @override
+  String get hrRosterDayShiftsLabel => 'Shifts';
+
+  @override
+  String get hrRosterDayNoShiftsLabel => 'No shifts on this day.';
+
+  @override
+  String get hrRosterPreviewLegendTitle => 'Legend';
+
+  @override
+  String get hrRosterPreviewTapHint => 'Tap a day for details';
 
   @override
   String get hrRosterReportLabel => 'Roster report';

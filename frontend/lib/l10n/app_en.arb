@@ -26863,9 +26863,9 @@
   "@hrRosterOverviewSectionTitle": {
     "description": "Collapsible overview section title on roster details."
   },
-  "hrRosterPreviewSectionTitle": "Roster schedule",
+  "hrRosterPreviewSectionTitle": "Roster preview",
   "@hrRosterPreviewSectionTitle": {
-    "description": "Collapsible real-roster preview section title."
+    "description": "Collapsible roster calendar preview section title."
   },
   "hrRosterRemoveSelectedStaffAction": "Remove selected",
   "@hrRosterRemoveSelectedStaffAction": {
@@ -26919,9 +26919,9 @@
   "@hrRosterPrintStaffSection": {
     "description": "Print option for assigned staff list."
   },
-  "hrRosterPrintScheduleSection": "Schedule",
+  "hrRosterPrintScheduleSection": "Preview",
   "@hrRosterPrintScheduleSection": {
-    "description": "Print option for roster schedule grid."
+    "description": "Print option for roster calendar preview."
   },
   "hrRosterNameHelper": "Use a clear label, e.g. “ICU nights · Aug 2026” or “ED locum cover · Week 34”.",
   "@hrRosterNameHelper": {
@@ -26936,25 +26936,25 @@
       }
     }
   },
-  "hrRosterZoomInAction": "Zoom in",
-  "@hrRosterZoomInAction": {
-    "description": "Zoom in on roster schedule preview."
-  },
-  "hrRosterZoomOutAction": "Zoom out",
-  "@hrRosterZoomOutAction": {
-    "description": "Zoom out on roster schedule preview."
-  },
-  "hrRosterDayOffLabel": "Off / holiday",
+  "hrRosterDayOffLabel": "Non-working day",
   "@hrRosterDayOffLabel": {
-    "description": "Label for non-working or holiday day in roster preview."
+    "description": "Label for non-working day in roster preview."
   },
-  "hrRosterAvailableLabel": "Scheduled",
+  "hrRosterPublicHolidayLabel": "Public holiday",
+  "@hrRosterPublicHolidayLabel": {
+    "description": "Label for a public holiday day in roster preview."
+  },
+  "hrRosterAvailableLabel": "Busy",
   "@hrRosterAvailableLabel": {
-    "description": "Label for scheduled working day in roster preview."
+    "description": "Busy/scheduled hours in roster preview legend."
   },
-  "hrRosterUnassignedDayLabel": "Open",
+  "hrRosterFreeHoursLabel": "Free",
+  "@hrRosterFreeHoursLabel": {
+    "description": "Free hours in roster preview legend."
+  },
+  "hrRosterUnassignedDayLabel": "Open (no shifts)",
   "@hrRosterUnassignedDayLabel": {
-    "description": "Label for working day without assignments in preview."
+    "description": "Working day with no shifts in roster preview."
   },
   "hrRosterPrintStaffTableAction": "Print staff list",
   "@hrRosterPrintStaffTableAction": {
@@ -26962,7 +26962,39 @@
   },
   "hrRosterNoSchedulePreviewLabel": "No schedule days in this period.",
   "@hrRosterNoSchedulePreviewLabel": {
-    "description": "Empty state for roster schedule preview."
+    "description": "Empty state for roster calendar preview."
+  },
+  "hrRosterDayDetailsTitle": "Day details",
+  "@hrRosterDayDetailsTitle": {
+    "description": "Dialog title when opening a roster preview day."
+  },
+  "hrRosterDayWorkingHoursLabel": "Working window",
+  "@hrRosterDayWorkingHoursLabel": {
+    "description": "Label for the day's default working hours."
+  },
+  "hrRosterDayBusyHoursLabel": "Busy hours",
+  "@hrRosterDayBusyHoursLabel": {
+    "description": "Section title for busy/shift hours on a day."
+  },
+  "hrRosterDayFreeHoursLabel": "Free hours",
+  "@hrRosterDayFreeHoursLabel": {
+    "description": "Section title for free hours on a day."
+  },
+  "hrRosterDayShiftsLabel": "Shifts",
+  "@hrRosterDayShiftsLabel": {
+    "description": "Section title for shifts on a roster preview day."
+  },
+  "hrRosterDayNoShiftsLabel": "No shifts on this day.",
+  "@hrRosterDayNoShiftsLabel": {
+    "description": "Empty shifts list on day details."
+  },
+  "hrRosterPreviewLegendTitle": "Legend",
+  "@hrRosterPreviewLegendTitle": {
+    "description": "Legend heading under roster calendar preview."
+  },
+  "hrRosterPreviewTapHint": "Tap a day for details",
+  "@hrRosterPreviewTapHint": {
+    "description": "Hint under roster calendar preview."
   },
   "hrRosterReportLabel": "Roster report",
   "@hrRosterReportLabel": {

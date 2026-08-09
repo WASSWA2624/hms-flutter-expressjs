@@ -38549,10 +38549,10 @@ abstract class AppLocalizations {
   /// **'Roster overview'**
   String get hrRosterOverviewSectionTitle;
 
-  /// Collapsible real-roster preview section title.
+  /// Collapsible roster calendar preview section title.
   ///
   /// In en, this message translates to:
-  /// **'Roster schedule'**
+  /// **'Roster preview'**
   String get hrRosterPreviewSectionTitle;
 
   /// Bulk-remove selected staff from a roster.
@@ -38633,10 +38633,10 @@ abstract class AppLocalizations {
   /// **'Assigned staff'**
   String get hrRosterPrintStaffSection;
 
-  /// Print option for roster schedule grid.
+  /// Print option for roster calendar preview.
   ///
   /// In en, this message translates to:
-  /// **'Schedule'**
+  /// **'Preview'**
   String get hrRosterPrintScheduleSection;
 
   /// Helper text encouraging informative roster names.
@@ -38651,34 +38651,34 @@ abstract class AppLocalizations {
   /// **'Staff: {count}'**
   String hrRosterAssignedStaffCountChip(int count);
 
-  /// Zoom in on roster schedule preview.
+  /// Label for non-working day in roster preview.
   ///
   /// In en, this message translates to:
-  /// **'Zoom in'**
-  String get hrRosterZoomInAction;
-
-  /// Zoom out on roster schedule preview.
-  ///
-  /// In en, this message translates to:
-  /// **'Zoom out'**
-  String get hrRosterZoomOutAction;
-
-  /// Label for non-working or holiday day in roster preview.
-  ///
-  /// In en, this message translates to:
-  /// **'Off / holiday'**
+  /// **'Non-working day'**
   String get hrRosterDayOffLabel;
 
-  /// Label for scheduled working day in roster preview.
+  /// Label for a public holiday day in roster preview.
   ///
   /// In en, this message translates to:
-  /// **'Scheduled'**
+  /// **'Public holiday'**
+  String get hrRosterPublicHolidayLabel;
+
+  /// Busy/scheduled hours in roster preview legend.
+  ///
+  /// In en, this message translates to:
+  /// **'Busy'**
   String get hrRosterAvailableLabel;
 
-  /// Label for working day without assignments in preview.
+  /// Free hours in roster preview legend.
   ///
   /// In en, this message translates to:
-  /// **'Open'**
+  /// **'Free'**
+  String get hrRosterFreeHoursLabel;
+
+  /// Working day with no shifts in roster preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Open (no shifts)'**
   String get hrRosterUnassignedDayLabel;
 
   /// Print action on the assigned staff table toolbar.
@@ -38687,11 +38687,59 @@ abstract class AppLocalizations {
   /// **'Print staff list'**
   String get hrRosterPrintStaffTableAction;
 
-  /// Empty state for roster schedule preview.
+  /// Empty state for roster calendar preview.
   ///
   /// In en, this message translates to:
   /// **'No schedule days in this period.'**
   String get hrRosterNoSchedulePreviewLabel;
+
+  /// Dialog title when opening a roster preview day.
+  ///
+  /// In en, this message translates to:
+  /// **'Day details'**
+  String get hrRosterDayDetailsTitle;
+
+  /// Label for the day's default working hours.
+  ///
+  /// In en, this message translates to:
+  /// **'Working window'**
+  String get hrRosterDayWorkingHoursLabel;
+
+  /// Section title for busy/shift hours on a day.
+  ///
+  /// In en, this message translates to:
+  /// **'Busy hours'**
+  String get hrRosterDayBusyHoursLabel;
+
+  /// Section title for free hours on a day.
+  ///
+  /// In en, this message translates to:
+  /// **'Free hours'**
+  String get hrRosterDayFreeHoursLabel;
+
+  /// Section title for shifts on a roster preview day.
+  ///
+  /// In en, this message translates to:
+  /// **'Shifts'**
+  String get hrRosterDayShiftsLabel;
+
+  /// Empty shifts list on day details.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts on this day.'**
+  String get hrRosterDayNoShiftsLabel;
+
+  /// Legend heading under roster calendar preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Legend'**
+  String get hrRosterPreviewLegendTitle;
+
+  /// Hint under roster calendar preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a day for details'**
+  String get hrRosterPreviewTapHint;
 
   /// Human resources workspace text for hrRosterReportLabel.
   ///

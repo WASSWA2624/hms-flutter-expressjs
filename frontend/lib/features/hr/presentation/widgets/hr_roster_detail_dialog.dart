@@ -8,6 +8,7 @@ import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_weekly_schedule_editor.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -145,8 +146,6 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
   final TextEditingController _staffSearchController = TextEditingController();
   String _staffSearchQuery = '';
   String? _categoryFilter;
-  final TransformationController _previewTransform = TransformationController();
-  double _previewScale = 1;
 
   @override
   void initState() {
@@ -165,7 +164,6 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
   @override
   void dispose() {
     _staffSearchController.dispose();
-    _previewTransform.dispose();
     super.dispose();
   }
 
@@ -269,10 +267,14 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
     );
   }
 
-  void _setPreviewScale(double next) {
-    final double clamped = next.clamp(0.5, 2.5);
-    setState(() => _previewScale = clamped);
-    _previewTransform.value = Matrix4.diagonal3Values(clamped, clamped, 1);
+  Future<void> _showDayDetails(_RosterDayPreview day) async {
+    final AppLocalizations l10n = context.l10n;
+    await showAppDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return _RosterDayDetailsDialog(day: day, l10n: l10n);
+      },
+    );
   }
 
   Future<void> _addStaff() async {
@@ -598,7 +600,8 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
       for (final _RosterDayPreview day in _previewDays()) {
         buffer.writeln(
           '<li>${day.label}: ${day.statusLabel(l10n)}'
-          '${day.staffNames.isEmpty ? '' : ' — ${day.staffNames.join(', ')}'}</li>',
+          '${day.isHoliday ? ' (${l10n.hrRosterPublicHolidayLabel})' : ''}'
+          '${day.shifts.isEmpty ? '' : ' — ${day.shifts.map((_RosterShiftWindow shift) => shift.summary).join('; ')}'}</li>',
         );
       }
       buffer.writeln('</ul>');
@@ -625,18 +628,37 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
         day.toString(),
     };
     final bool respectHolidays = constraints['respect_public_holidays'] != false;
-    final Map<String, List<String>> staffByDay = <String, List<String>>{};
-    for (final Object? shiftRaw in (roster['shifts'] as List?) ?? const <Object?>[]) {
+    final (int startHour, int startMinute) = _parseHourMinute(
+      constraints['default_start_time']?.toString(),
+      8,
+      0,
+    );
+    final (int endHour, int endMinute) = _parseHourMinute(
+      constraints['default_end_time']?.toString(),
+      17,
+      0,
+    );
+    final int dayStartMinutes = startHour * 60 + startMinute;
+    final int dayEndMinutes = _dayEndMinutesSafe(
+      dayStartMinutes,
+      endHour * 60 + endMinute,
+    );
+
+    final Map<String, List<_RosterShiftWindow>> shiftsByDay =
+        <String, List<_RosterShiftWindow>>{};
+    for (final Object? shiftRaw
+        in (roster['shifts'] as List?) ?? const <Object?>[]) {
       if (shiftRaw is! Map) {
         continue;
       }
       final Map<String, Object?> shift = Map<String, Object?>.from(shiftRaw);
       final DateTime? shiftStart = _parseDate(shift['start_time']);
-      if (shiftStart == null) {
+      final DateTime? shiftEnd = _parseDate(shift['end_time']);
+      if (shiftStart == null || shiftEnd == null) {
         continue;
       }
       final String key = _dateKey(shiftStart);
-      final List<String> names = staffByDay.putIfAbsent(key, () => <String>[]);
+      final List<String> names = <String>[];
       for (final Object? assignmentRaw
           in (shift['assignments'] as List?) ?? const <Object?>[]) {
         if (assignmentRaw is! Map) {
@@ -665,28 +687,43 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
           names.add(name);
         }
       }
+      shiftsByDay
+          .putIfAbsent(key, () => <_RosterShiftWindow>[])
+          .add(
+            _RosterShiftWindow(
+              start: shiftStart,
+              end: shiftEnd,
+              staffNames: names,
+              shiftType: shift['shift_type']?.toString(),
+            ),
+          );
     }
 
     final List<_RosterDayPreview> days = <_RosterDayPreview>[];
-    DateTime cursor = DateTime.utc(start.year, start.month, start.day);
-    final DateTime last = DateTime.utc(end.year, end.month, end.day);
+    DateTime cursor = DateTime(start.year, start.month, start.day);
+    final DateTime last = DateTime(end.year, end.month, end.day);
     while (!cursor.isAfter(last)) {
       final String key = _dateKey(cursor);
       final String code = _kWeekdayCodes[cursor.weekday] ?? 'MON';
-      final bool holiday = respectHolidays && holidays.contains(key);
+      final bool holiday = holidays.contains(key);
+      final bool treatedAsHoliday = respectHolidays && holiday;
       final bool workingDay = working.contains(code);
-      final List<String> names = staffByDay[key] ?? const <String>[];
-      final _RosterDayKind kind = !workingDay || holiday
-          ? _RosterDayKind.off
-          : names.isEmpty
-          ? _RosterDayKind.open
-          : _RosterDayKind.scheduled;
+      final List<_RosterShiftWindow> dayShifts =
+          List<_RosterShiftWindow>.from(
+            shiftsByDay[key] ?? const <_RosterShiftWindow>[],
+          )..sort(
+            (_RosterShiftWindow a, _RosterShiftWindow b) =>
+                a.start.compareTo(b.start),
+          );
       days.add(
         _RosterDayPreview(
           date: cursor,
           label: key,
-          kind: kind,
-          staffNames: names,
+          isHoliday: holiday,
+          isWorkingDay: workingDay && !treatedAsHoliday,
+          dayStartMinutes: dayStartMinutes,
+          dayEndMinutes: dayEndMinutes,
+          shifts: dayShifts,
         ),
       );
       cursor = cursor.add(const Duration(days: 1));
@@ -734,6 +771,17 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                       runSpacing: theme.spacing.sm,
                       items: _overviewItems(l10n),
                     ),
+                  ),
+                  SizedBox(height: theme.spacing.md),
+                  AppCollapsibleSection(
+                    title: l10n.hrRosterPreviewSectionTitle,
+                    titleIcon: Icons.calendar_month_outlined,
+                    child: _previewDays().isEmpty
+                        ? Text(l10n.hrRosterNoSchedulePreviewLabel)
+                        : _RosterCalendarPreview(
+                            days: _previewDays(),
+                            onDayTap: _showDayDetails,
+                          ),
                   ),
                   SizedBox(height: theme.spacing.md),
                   AppCollapsibleSection(
@@ -903,39 +951,6 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                               );
                             },
                       ),
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.md),
-                  AppCollapsibleSection(
-                    title: l10n.hrRosterPreviewSectionTitle,
-                    titleIcon: Icons.calendar_view_week_outlined,
-                    headerActions: <Widget>[
-                      AppButton.secondary(
-                        leadingIcon: Icons.zoom_out,
-                        label: l10n.hrRosterZoomOutAction,
-                        tooltip: l10n.hrRosterZoomOutAction,
-                        onPressed: () => _setPreviewScale(_previewScale - 0.2),
-                      ),
-                      AppButton.secondary(
-                        leadingIcon: Icons.zoom_in,
-                        label: l10n.hrRosterZoomInAction,
-                        tooltip: l10n.hrRosterZoomInAction,
-                        onPressed: () => _setPreviewScale(_previewScale + 0.2),
-                      ),
-                    ],
-                    child: SizedBox(
-                      height: 280,
-                      child: _previewDays().isEmpty
-                          ? Text(l10n.hrRosterNoSchedulePreviewLabel)
-                          : InteractiveViewer(
-                              transformationController: _previewTransform,
-                              minScale: 0.5,
-                              maxScale: 2.5,
-                              boundaryMargin: const EdgeInsets.all(48),
-                              child: _RosterSchedulePreview(
-                                days: _previewDays(),
-                              ),
-                            ),
                     ),
                   ),
                 ],
@@ -1165,82 +1180,490 @@ class _RosterCountChip extends StatelessWidget {
   }
 }
 
-enum _RosterDayKind { off, open, scheduled }
+enum _RosterDayTone { holiday, off, busy, free, mixed }
+
+class _RosterMinuteRange {
+  const _RosterMinuteRange({required this.startMinutes, required this.endMinutes});
+
+  final int startMinutes;
+  final int endMinutes;
+
+  String get label =>
+      '${_formatMinutes(startMinutes)}–${_formatMinutes(endMinutes)}';
+}
+
+class _RosterShiftWindow {
+  const _RosterShiftWindow({
+    required this.start,
+    required this.end,
+    required this.staffNames,
+    this.shiftType,
+  });
+
+  final DateTime start;
+  final DateTime end;
+  final List<String> staffNames;
+  final String? shiftType;
+
+  int get startMinutes => start.hour * 60 + start.minute;
+  int get endMinutes {
+    final int raw = end.hour * 60 + end.minute;
+    return raw <= startMinutes ? raw + (24 * 60) : raw;
+  }
+
+  String get summary {
+    final String staff = staffNames.isEmpty ? '' : ' (${staffNames.join(', ')})';
+    return '${_formatHm(start)}–${_formatHm(end)}$staff';
+  }
+}
 
 class _RosterDayPreview {
   const _RosterDayPreview({
     required this.date,
     required this.label,
-    required this.kind,
-    required this.staffNames,
+    required this.isHoliday,
+    required this.isWorkingDay,
+    required this.dayStartMinutes,
+    required this.dayEndMinutes,
+    required this.shifts,
   });
 
   final DateTime date;
   final String label;
-  final _RosterDayKind kind;
-  final List<String> staffNames;
+  final bool isHoliday;
+  final bool isWorkingDay;
+  final int dayStartMinutes;
+  final int dayEndMinutes;
+  final List<_RosterShiftWindow> shifts;
+
+  List<_RosterMinuteRange> get busyRanges {
+    if (!isWorkingDay) {
+      return const <_RosterMinuteRange>[];
+    }
+    final List<_RosterMinuteRange> ranges = <_RosterMinuteRange>[];
+    for (final _RosterShiftWindow shift in shifts) {
+      final int start = shift.startMinutes.clamp(dayStartMinutes, dayEndMinutes);
+      final int end = shift.endMinutes.clamp(dayStartMinutes, dayEndMinutes);
+      if (end > start) {
+        ranges.add(_RosterMinuteRange(startMinutes: start, endMinutes: end));
+      }
+    }
+    return _mergeRanges(ranges);
+  }
+
+  List<_RosterMinuteRange> get freeRanges {
+    if (!isWorkingDay) {
+      return const <_RosterMinuteRange>[];
+    }
+    final List<_RosterMinuteRange> busy = busyRanges;
+    if (busy.isEmpty) {
+      return <_RosterMinuteRange>[
+        _RosterMinuteRange(
+          startMinutes: dayStartMinutes,
+          endMinutes: dayEndMinutes,
+        ),
+      ];
+    }
+    final List<_RosterMinuteRange> free = <_RosterMinuteRange>[];
+    int cursor = dayStartMinutes;
+    for (final _RosterMinuteRange range in busy) {
+      if (range.startMinutes > cursor) {
+        free.add(
+          _RosterMinuteRange(
+            startMinutes: cursor,
+            endMinutes: range.startMinutes,
+          ),
+        );
+      }
+      cursor = range.endMinutes > cursor ? range.endMinutes : cursor;
+    }
+    if (cursor < dayEndMinutes) {
+      free.add(
+        _RosterMinuteRange(startMinutes: cursor, endMinutes: dayEndMinutes),
+      );
+    }
+    return free;
+  }
+
+  _RosterDayTone get tone {
+    if (isHoliday) {
+      return _RosterDayTone.holiday;
+    }
+    if (!isWorkingDay) {
+      return _RosterDayTone.off;
+    }
+    if (shifts.isEmpty) {
+      return _RosterDayTone.free;
+    }
+    if (freeRanges.isEmpty) {
+      return _RosterDayTone.busy;
+    }
+    return _RosterDayTone.mixed;
+  }
 
   String statusLabel(AppLocalizations l10n) {
-    return switch (kind) {
-      _RosterDayKind.off => l10n.hrRosterDayOffLabel,
-      _RosterDayKind.open => l10n.hrRosterUnassignedDayLabel,
-      _RosterDayKind.scheduled => l10n.hrRosterAvailableLabel,
-    };
+    if (isHoliday) {
+      return l10n.hrRosterPublicHolidayLabel;
+    }
+    if (!isWorkingDay) {
+      return l10n.hrRosterDayOffLabel;
+    }
+    if (shifts.isEmpty) {
+      return l10n.hrRosterUnassignedDayLabel;
+    }
+    if (freeRanges.isEmpty) {
+      return l10n.hrRosterAvailableLabel;
+    }
+    return '${l10n.hrRosterAvailableLabel} / ${l10n.hrRosterFreeHoursLabel}';
+  }
+
+  List<String> get staffNames {
+    final Set<String> names = <String>{};
+    for (final _RosterShiftWindow shift in shifts) {
+      names.addAll(shift.staffNames);
+    }
+    return names.toList(growable: false);
   }
 }
 
-class _RosterSchedulePreview extends StatelessWidget {
-  const _RosterSchedulePreview({required this.days});
+class _RosterCalendarPreview extends StatelessWidget {
+  const _RosterCalendarPreview({
+    required this.days,
+    required this.onDayTap,
+  });
 
   final List<_RosterDayPreview> days;
+  final ValueChanged<_RosterDayPreview> onDayTap;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          for (final _RosterDayPreview day in days)
-            Container(
-              width: 120,
-              margin: EdgeInsets.only(right: theme.spacing.sm),
-              padding: EdgeInsets.all(theme.spacing.sm),
-              decoration: BoxDecoration(
-                color: switch (day.kind) {
-                  _RosterDayKind.off =>
-                    theme.colorScheme.surfaceContainerHighest,
-                  _RosterDayKind.open =>
-                    theme.colorScheme.tertiaryContainer.withValues(alpha: 0.45),
-                  _RosterDayKind.scheduled =>
-                    theme.colorScheme.primaryContainer.withValues(alpha: 0.55),
-                },
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: theme.colorScheme.outlineVariant),
+    final int leading = (days.first.date.weekday - DateTime.monday) % 7;
+    final int trailing = (DateTime.sunday - days.last.date.weekday) % 7;
+    final int cellCount = leading + days.length + trailing;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          l10n.hrRosterPreviewTapHint,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: theme.spacing.sm),
+        Row(
+          children: <Widget>[
+            for (final int weekday in <int>[
+              DateTime.monday,
+              DateTime.tuesday,
+              DateTime.wednesday,
+              DateTime.thursday,
+              DateTime.friday,
+              DateTime.saturday,
+              DateTime.sunday,
+            ])
+              Expanded(
+                child: Text(
+                  hrDayLabel(l10n, weekday == DateTime.sunday ? 0 : weekday)
+                      .substring(0, 3),
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelMedium,
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          ],
+        ),
+        SizedBox(height: theme.spacing.xs),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: cellCount,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 7,
+            mainAxisSpacing: theme.spacing.xs,
+            crossAxisSpacing: theme.spacing.xs,
+            childAspectRatio: 0.85,
+          ),
+          itemBuilder: (BuildContext context, int index) {
+            if (index < leading || index >= leading + days.length) {
+              return const SizedBox.shrink();
+            }
+            final _RosterDayPreview day = days[index - leading];
+            return _RosterCalendarDayCell(
+              day: day,
+              onTap: () => onDayTap(day),
+            );
+          },
+        ),
+        SizedBox(height: theme.spacing.sm),
+        Text(l10n.hrRosterPreviewLegendTitle, style: theme.textTheme.labelLarge),
+        SizedBox(height: theme.spacing.xs),
+        Wrap(
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.xs,
+          children: <Widget>[
+            _RosterLegendSwatch(
+              color: theme.colorScheme.primary.withValues(alpha: 0.75),
+              label: l10n.hrRosterAvailableLabel,
+            ),
+            _RosterLegendSwatch(
+              color: theme.colorScheme.tertiaryContainer,
+              label: l10n.hrRosterFreeHoursLabel,
+            ),
+            _RosterLegendSwatch(
+              color: theme.colorScheme.secondaryContainer,
+              label: l10n.hrRosterPublicHolidayLabel,
+            ),
+            _RosterLegendSwatch(
+              color: theme.colorScheme.surfaceContainerHighest,
+              label: l10n.hrRosterDayOffLabel,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _RosterCalendarDayCell extends StatelessWidget {
+  const _RosterCalendarDayCell({
+    required this.day,
+    required this.onTap,
+  });
+
+  final _RosterDayPreview day;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final Color background = switch (day.tone) {
+      _RosterDayTone.holiday => colors.secondaryContainer,
+      _RosterDayTone.off => colors.surfaceContainerHighest,
+      _RosterDayTone.free => colors.tertiaryContainer.withValues(alpha: 0.7),
+      _RosterDayTone.busy => colors.primaryContainer.withValues(alpha: 0.85),
+      _RosterDayTone.mixed => colors.surfaceContainerHigh,
+    };
+
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.all(theme.spacing.xs),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Row(
                 children: <Widget>[
-                  Text(day.label, style: theme.textTheme.labelLarge),
-                  SizedBox(height: theme.spacing.xs),
-                  Text(
-                    day.statusLabel(l10n),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  if (day.staffNames.isNotEmpty) ...<Widget>[
-                    SizedBox(height: theme.spacing.xs),
-                    Text(
-                      day.staffNames.join('\n'),
-                      style: theme.textTheme.labelSmall,
+                  Expanded(
+                    child: Text(
+                      '${day.date.day}',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ],
+                  ),
+                  if (day.isHoliday)
+                    Icon(
+                      Icons.celebration_outlined,
+                      size: 14,
+                      color: colors.onSecondaryContainer,
+                    ),
                 ],
               ),
+              SizedBox(height: theme.spacing.xs),
+              Expanded(
+                child: day.isWorkingDay
+                    ? _RosterHourBar(day: day)
+                    : Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          day.isHoliday
+                              ? context.l10n.hrRosterPublicHolidayLabel
+                              : context.l10n.hrRosterDayOffLabel,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelSmall,
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RosterHourBar extends StatelessWidget {
+  const _RosterHourBar({required this.day});
+
+  final _RosterDayPreview day;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final int span = (day.dayEndMinutes - day.dayStartMinutes).clamp(1, 24 * 60);
+    final List<_RosterMinuteRange> busy = day.busyRanges;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          return Stack(
+            children: <Widget>[
+              Positioned.fill(
+                child: ColoredBox(
+                  color: theme.colorScheme.tertiaryContainer.withValues(
+                    alpha: 0.85,
+                  ),
+                ),
+              ),
+              for (final _RosterMinuteRange range in busy)
+                Positioned(
+                  left:
+                      ((range.startMinutes - day.dayStartMinutes) / span) *
+                      constraints.maxWidth,
+                  width:
+                      ((range.endMinutes - range.startMinutes) / span) *
+                      constraints.maxWidth,
+                  top: 0,
+                  bottom: 0,
+                  child: ColoredBox(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.8),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _RosterLegendSwatch extends StatelessWidget {
+  const _RosterLegendSwatch({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+        ),
+        SizedBox(width: theme.spacing.xs),
+        Text(label, style: theme.textTheme.labelSmall),
+      ],
+    );
+  }
+}
+
+class _RosterDayDetailsDialog extends StatelessWidget {
+  const _RosterDayDetailsDialog({
+    required this.day,
+    required this.l10n,
+  });
+
+  final _RosterDayPreview day;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String weekday = hrDayLabel(
+      l10n,
+      day.date.weekday == DateTime.sunday ? 0 : day.date.weekday,
+    );
+
+    return AppDialog(
+      title: Text(l10n.hrRosterDayDetailsTitle),
+      icon: Icon(
+        day.isHoliday
+            ? Icons.celebration_outlined
+            : Icons.event_note_outlined,
+      ),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(
+            '$weekday · ${day.label}',
+            style: theme.textTheme.titleMedium,
+          ),
+          SizedBox(height: theme.spacing.xs),
+          Text(day.statusLabel(l10n), style: theme.textTheme.bodyMedium),
+          if (day.isWorkingDay) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            Text(
+              l10n.hrRosterDayWorkingHoursLabel,
+              style: theme.textTheme.labelLarge,
             ),
+            Text(
+              '${_formatMinutes(day.dayStartMinutes)}–${_formatMinutes(day.dayEndMinutes)}',
+            ),
+            SizedBox(height: theme.spacing.md),
+            Text(
+              l10n.hrRosterDayBusyHoursLabel,
+              style: theme.textTheme.labelLarge,
+            ),
+            if (day.busyRanges.isEmpty)
+              Text(l10n.hrRosterDayNoShiftsLabel)
+            else
+              for (final _RosterMinuteRange range in day.busyRanges)
+                Text('• ${range.label}'),
+            SizedBox(height: theme.spacing.md),
+            Text(
+              l10n.hrRosterDayFreeHoursLabel,
+              style: theme.textTheme.labelLarge,
+            ),
+            if (day.freeRanges.isEmpty)
+              Text(l10n.hrRosterAvailableLabel)
+            else
+              for (final _RosterMinuteRange range in day.freeRanges)
+                Text('• ${range.label}'),
+          ],
+          SizedBox(height: theme.spacing.md),
+          Text(l10n.hrRosterDayShiftsLabel, style: theme.textTheme.labelLarge),
+          if (day.shifts.isEmpty)
+            Text(l10n.hrRosterDayNoShiftsLabel)
+          else
+            for (final _RosterShiftWindow shift in day.shifts) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              Text(
+                '${_formatHm(shift.start)}–${_formatHm(shift.end)}'
+                '${shift.shiftType == null || shift.shiftType!.isEmpty ? '' : ' · ${hrShiftTypeLabel(l10n, shift.shiftType)}'}',
+                style: theme.textTheme.bodyMedium,
+              ),
+              if (shift.staffNames.isNotEmpty)
+                Text(
+                  shift.staffNames.join(', '),
+                  style: theme.textTheme.bodySmall,
+                ),
+            ],
         ],
       ),
+      actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonCancelActionLabel,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ],
     );
   }
 }
@@ -1379,10 +1802,10 @@ DateTime? _parseDate(Object? value) {
 }
 
 String _dateKey(DateTime value) {
-  final DateTime utc = value.toUtc();
-  final String y = utc.year.toString().padLeft(4, '0');
-  final String m = utc.month.toString().padLeft(2, '0');
-  final String d = utc.day.toString().padLeft(2, '0');
+  final DateTime local = value.isUtc ? value.toLocal() : value;
+  final String y = local.year.toString().padLeft(4, '0');
+  final String m = local.month.toString().padLeft(2, '0');
+  final String d = local.day.toString().padLeft(2, '0');
   return '$y-$m-$d';
 }
 
@@ -1394,6 +1817,64 @@ Map<String, Object?> _map(Object? value) {
     return Map<String, Object?>.from(value);
   }
   return <String, Object?>{};
+}
+
+(int, int) _parseHourMinute(String? raw, int fallbackHour, int fallbackMinute) {
+  final List<String> parts = (raw ?? '').split(':');
+  if (parts.length >= 2) {
+    final int? hour = int.tryParse(parts[0]);
+    final int? minute = int.tryParse(parts[1]);
+    if (hour != null && minute != null) {
+      return (hour.clamp(0, 23), minute.clamp(0, 59));
+    }
+  }
+  return (fallbackHour, fallbackMinute);
+}
+
+int _dayEndMinutesSafe(int startMinutes, int endMinutes) {
+  if (endMinutes > startMinutes) {
+    return endMinutes;
+  }
+  return startMinutes + 60;
+}
+
+String _formatMinutes(int minutes) {
+  final int normalized = minutes % (24 * 60);
+  final int hour = normalized ~/ 60;
+  final int minute = normalized % 60;
+  return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+}
+
+String _formatHm(DateTime value) {
+  final DateTime local = value.toLocal();
+  return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+}
+
+List<_RosterMinuteRange> _mergeRanges(List<_RosterMinuteRange> input) {
+  if (input.isEmpty) {
+    return const <_RosterMinuteRange>[];
+  }
+  final List<_RosterMinuteRange> sorted = List<_RosterMinuteRange>.from(input)
+    ..sort(
+      (_RosterMinuteRange a, _RosterMinuteRange b) =>
+          a.startMinutes.compareTo(b.startMinutes),
+    );
+  final List<_RosterMinuteRange> merged = <_RosterMinuteRange>[sorted.first];
+  for (int i = 1; i < sorted.length; i++) {
+    final _RosterMinuteRange current = sorted[i];
+    final _RosterMinuteRange last = merged.last;
+    if (current.startMinutes <= last.endMinutes) {
+      merged[merged.length - 1] = _RosterMinuteRange(
+        startMinutes: last.startMinutes,
+        endMinutes: current.endMinutes > last.endMinutes
+            ? current.endMinutes
+            : last.endMinutes,
+      );
+    } else {
+      merged.add(current);
+    }
+  }
+  return merged;
 }
 
 extension on String {
