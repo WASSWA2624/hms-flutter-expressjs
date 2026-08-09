@@ -210,7 +210,10 @@ Future<void> showHrCreateRosterDialog(
               final ThemeData theme = Theme.of(context);
               final AppBreakpoint breakpoint = AppBreakpoints.of(context);
               final bool compact = breakpoint.isMobile;
-              final EdgeInsets sectionPadding = EdgeInsets.all(
+              final EdgeInsets detailsPadding = EdgeInsets.fromLTRB(
+                compact ? theme.spacing.sm : theme.spacing.md,
+                compact ? theme.spacing.xs : theme.spacing.sm,
+                compact ? theme.spacing.sm : theme.spacing.md,
                 compact ? theme.spacing.sm : theme.spacing.md,
               );
               final int maxMonthDay = _maxDayOfMonthForRoster(
@@ -240,20 +243,21 @@ Future<void> showHrCreateRosterDialog(
                   AppCollapsibleSection(
                     title: l10n.hrRosterDetailsSectionTitle,
                     titleIcon: Icons.info_outline,
-                    contentPadding: sectionPadding,
+                    contentPadding: detailsPadding,
                     child: AppFormSection(
+                      density: AppFormSectionDensity.compact,
                       children: <Widget>[
                         AppTextField(
                           controller: nameController,
                           labelText: l10n.hrRosterNameLabel,
                           hintText: l10n.hrRosterNameHelper,
                           isRequired: true,
+                          isDense: true,
                           validator: AppValidators.requiredText(
                             l10n.hrFieldRequiredLabel(l10n.hrRosterNameLabel),
                           ),
                         ),
                         AppResponsiveFieldRow(
-                          gap: AppResponsiveFieldRowGap.form,
                           breakpoint: AppBreakpoints.lg,
                           children: <Widget>[
                             AppCheckboxField(
@@ -295,7 +299,6 @@ Future<void> showHrCreateRosterDialog(
                         ),
                         if (!isRecurring)
                           AppResponsiveFieldRow(
-                            gap: AppResponsiveFieldRowGap.form,
                             children: <Widget>[
                               AppDateField(
                                 value: periodStart,
@@ -348,7 +351,8 @@ Future<void> showHrCreateRosterDialog(
                           labelText: l10n.hrDepartmentLabel,
                           hintText: l10n.hrRosterDepartmentHelper,
                           allowClear: false,
-                          enableSpeechToText: false,
+                          isDense: true,
+                          enableSpeechToText: true,
                           options: <AppSelectOption<String>>[
                             AppSelectOption<String>(
                               value: _kRosterAllDepartments,
@@ -402,34 +406,30 @@ Future<void> showHrCreateRosterDialog(
                             );
                           },
                         ),
-                        LayoutBuilder(
-                          builder:
-                              (BuildContext context, BoxConstraints constraints) {
-                            final double chipGap = compact
-                                ? theme.spacing.xs
-                                : theme.spacing.xs + 2;
-                            return Wrap(
-                              spacing: chipGap,
-                              runSpacing: chipGap,
-                              children: <Widget>[
-                                for (int day = 1; day <= maxMonthDay; day++)
-                                  _HrMonthDayChip(
-                                    day: day,
-                                    selected: monthDays.contains(day),
-                                    compact: compact,
-                                    onTap: () {
-                                      setLocal(() {
-                                        if (monthDays.contains(day)) {
-                                          monthDays.remove(day);
-                                        } else {
-                                          monthDays.add(day);
-                                        }
-                                      });
-                                    },
-                                  ),
-                              ],
-                            );
-                          },
+                        Wrap(
+                          spacing: compact
+                              ? theme.spacing.xs
+                              : theme.spacing.xs + 2,
+                          runSpacing: compact
+                              ? theme.spacing.xs
+                              : theme.spacing.xs + 2,
+                          children: <Widget>[
+                            for (int day = 1; day <= maxMonthDay; day++)
+                              _HrMonthDayChip(
+                                day: day,
+                                selected: monthDays.contains(day),
+                                compact: compact,
+                                onTap: () {
+                                  setLocal(() {
+                                    if (monthDays.contains(day)) {
+                                      monthDays.remove(day);
+                                    } else {
+                                      monthDays.add(day);
+                                    }
+                                  });
+                                },
+                              ),
+                          ],
                         ),
                       ],
                     ),

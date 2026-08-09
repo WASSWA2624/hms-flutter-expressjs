@@ -268,7 +268,7 @@ Future<void> _openScheduleTemplates(
     repository: repository,
     accessPolicy: accessPolicy,
   );
-  await tester.tap(_searchAction('Create roster'));
+  await tester.tap(_searchAction('Create roster template'));
   await tester.pumpAndSettle();
 }
 
@@ -450,7 +450,7 @@ void main() {
   });
 
   testWidgets(
-    'read-only: Shifts list chrome visible; Create roster absent (∩ denial)',
+    'read-only: Shifts list chrome visible; Create roster template absent (∩ denial)',
     (WidgetTester tester) async {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.hrRead},
@@ -463,7 +463,7 @@ void main() {
       );
 
       expect(_tab('Rosters'), findsOneWidget);
-      expect(_searchAction('Create roster'), findsNothing);
+      expect(_searchAction('Create roster template'), findsNothing);
       expect(find.text('Publish roster'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
       expect(find.byTooltip('Filters'), findsOneWidget);
@@ -471,7 +471,7 @@ void main() {
   );
 
   testWidgets(
-    '∩ denial: hr:write alone hides Create roster and Publish',
+    '∩ denial: hr:write alone hides Create roster template and Publish',
     (WidgetTester tester) async {
       final AppAccessPolicy hrWriter = _policy(
         permissions: <AppPermission>{
@@ -487,7 +487,7 @@ void main() {
       );
 
       expect(_tab('Rosters'), findsOneWidget);
-      expect(_searchAction('Create roster'), findsNothing);
+      expect(_searchAction('Create roster template'), findsNothing);
       expect(find.text('Publish roster'), findsNothing);
       expect(find.text('Override shift'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
@@ -495,7 +495,7 @@ void main() {
   );
 
   testWidgets(
-    'roster:write ∩: Create roster mounts; Publish absent without publish',
+    'roster:write ∩: Create roster template mounts; Publish absent without publish',
     (WidgetTester tester) async {
       final AppAccessPolicy rosterWriter = _policy(
         permissions: <AppPermission>{
@@ -510,7 +510,7 @@ void main() {
         accessPolicy: rosterWriter,
       );
 
-      expect(_searchAction('Create roster'), findsOneWidget);
+      expect(_searchAction('Create roster template'), findsOneWidget);
       expect(find.text('Publish roster'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -533,7 +533,7 @@ void main() {
         workItems: const <HrWorkItem>[_rosterDraft],
       );
 
-      expect(_searchAction('Create roster'), findsNothing);
+      expect(_searchAction('Create roster template'), findsNothing);
       expect(find.text('Publish roster'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -558,7 +558,7 @@ void main() {
         initialLocation: '/hr?section=swap-requests&queue=SWAP_REQUESTS',
       );
 
-      expect(_searchAction('Create roster'), findsNothing);
+      expect(_searchAction('Create roster template'), findsNothing);
       expect(find.text('Approve swap'), findsWidgets);
       expect(find.text('Publish roster'), findsNothing);
     },
@@ -750,7 +750,7 @@ void main() {
       );
 
       expect(_tab('Rosters'), findsNothing);
-      expect(_searchAction('Create roster'), findsNothing);
+      expect(_searchAction('Create roster template'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -775,7 +775,7 @@ void main() {
 
     expect(_tab('Rosters'), findsOneWidget);
     // Compact widths hide toolbar labels; tooltip remains the stable atom.
-    expect(find.byTooltip('Create roster'), findsOneWidget);
+    expect(find.byTooltip('Create roster template'), findsOneWidget);
     expect(find.textContaining('no access'), findsNothing);
 
     await _pumpShiftsTab(
@@ -787,7 +787,7 @@ void main() {
       physicalSize: const Size(390, 844),
       themeMode: ThemeMode.dark,
     );
-    expect(find.byTooltip('Create roster'), findsNothing);
+    expect(find.byTooltip('Create roster template'), findsNothing);
   });
 
   testWidgets('desktop light: empty queue without HR activity secondary', (
@@ -831,7 +831,7 @@ void main() {
       );
 
       expect(_tab('Rosters'), findsNothing);
-      expect(_searchAction('Create roster'), findsNothing);
+      expect(_searchAction('Create roster template'), findsNothing);
     },
   );
 }

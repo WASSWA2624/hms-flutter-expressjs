@@ -20957,7 +20957,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterDefaultEndTimeLabel => 'Default end time';
 
   @override
-  String get hrCreateRosterDialogTitle => 'Create roster';
+  String get hrCreateRosterDialogTitle => 'Create roster template';
 
   @override
   String get hrRosterDetailDialogTitle => 'Roster details';
@@ -22092,7 +22092,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get hrShiftTemplateAction => 'Create roster';
+  String get hrShiftTemplateAction => 'Create roster template';
 
   @override
   String get hrShiftTemplateDialogTitle => 'Schedule pattern';

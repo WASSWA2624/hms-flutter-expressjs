@@ -427,7 +427,7 @@ void main() {
       );
 
       expect(find.text('Week 12'), findsWidgets);
-      expect(_searchAction('Create roster'), findsOneWidget);
+      expect(_searchAction('Create roster template'), findsOneWidget);
       _expectNoPatientBillingAffordances();
       expectFlatSections(tester);
     });
@@ -472,7 +472,7 @@ void main() {
     );
 
     testWidgets(
-      'Create roster dialog: flat sections; no billing affordances',
+      'Create roster template dialog: flat sections; no billing affordances',
       (WidgetTester tester) async {
         await _pumpShiftsTab(
           tester,
@@ -491,10 +491,10 @@ void main() {
           (_) async => const Result<Object?>.success(null),
         );
 
-        await tester.tap(_searchAction('Create roster'));
+        await tester.tap(_searchAction('Create roster template'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Create roster'), findsWidgets);
+        expect(find.text('Create roster template'), findsWidgets);
         expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
         expect(find.text('Working days'), findsWidgets);
         expect(find.text('Recurring'), findsWidgets);
@@ -514,7 +514,7 @@ void main() {
           ),
         );
 
-        expect(_searchAction('Create roster'), findsNothing);
+        expect(_searchAction('Create roster template'), findsNothing);
         expect(find.text('Publish roster'), findsNothing);
         _expectNoPatientBillingAffordances();
         expectFlatSections(tester);

@@ -269,6 +269,10 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
     required AppLocalizations l10n,
     required Map<int, List<_MinuteRange>> rangesByDay,
     required double? hourWidth,
+    required double dayLabelWidth,
+    required double cellHeight,
+    required double hourHeaderHeight,
+    required bool compactChrome,
   }) {
     final ColorScheme scheme = theme.colorScheme;
     final Color selectedFill = scheme.primary.withValues(alpha: 0.88);
@@ -314,19 +318,21 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[
               SizedBox(
-                width: _dayLabelWidth,
+                width: dayLabelWidth,
                 child: _WeekBulkActions(
                   onSelectAll: _selectAll,
                   onClearAll: hasAnyHours ? _clearAll : null,
                   selectAllLabel: l10n.hrRosterSelectAllHoursAction,
                   clearAllLabel: l10n.hrRosterClearAllHoursAction,
+                  compact: compactChrome,
                 ),
               ),
               for (int hour = 0; hour < _hourCount; hour++)
                 hourSlot(
                   child: _HourHeader(
                     hour: hour,
-                    height: _hourHeaderHeight,
+                    height: hourHeaderHeight,
+                    compact: compactChrome,
                   ),
                 ),
             ],
@@ -334,17 +340,18 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
           SizedBox(height: theme.spacing.xs),
           for (final int day in kHrWeekDayOrder)
             Padding(
-              padding: const EdgeInsets.only(bottom: 3),
+              padding: EdgeInsets.only(bottom: compactChrome ? 2 : 3),
               child: Row(
                 children: <Widget>[
                   SizedBox(
-                    width: _dayLabelWidth,
-                    height: _cellHeight,
+                    width: dayLabelWidth,
+                    height: cellHeight,
                     child: _DayLabel(
                       day: day,
                       label: hrDayLabel(l10n, day),
                       hasHours: rangesByDay[day]!.isNotEmpty,
                       locked: _dayLocked(day),
+                      compact: compactChrome,
                       rangesByDay: rangesByDay,
                       dayLocked: _dayLocked,
                       dayLabel: (int value) => hrDayLabel(l10n, value),
@@ -383,7 +390,7 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
                                   isStart: false,
                                 ),
                                 locked: _dayLocked(day),
-                                height: _cellHeight,
+                                height: cellHeight,
                                 selectedFill: selectedFill,
                                 partialFill: partialFill,
                                 selectedEdge: selectedEdge,
@@ -436,8 +443,18 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
         final double maxWidth = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
+        final bool compactChrome = maxWidth < AppBreakpoints.lg;
+        final double dayLabelWidth = compactChrome
+            ? _dayLabelWidthCompact
+            : _dayLabelWidthComfortable;
+        final double cellHeight = compactChrome
+            ? _cellHeightCompact
+            : _cellHeightComfortable;
+        final double hourHeaderHeight = compactChrome
+            ? _hourHeaderHeightCompact
+            : _hourHeaderHeightComfortable;
         final double hoursWidth =
-            (maxWidth - _dayLabelWidth).clamp(0.0, double.infinity);
+            (maxWidth - dayLabelWidth).clamp(0.0, double.infinity);
         final double rawHourWidth = hoursWidth / _hourCount;
         final bool needsScroll = rawHourWidth < _minHourWidth;
 
@@ -446,17 +463,24 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
           l10n: l10n,
           rangesByDay: rangesByDay,
           hourWidth: needsScroll ? _minHourWidth : null,
+          dayLabelWidth: dayLabelWidth,
+          cellHeight: cellHeight,
+          hourHeaderHeight: hourHeaderHeight,
+          compactChrome: compactChrome,
         );
 
         if (!needsScroll) {
           return body;
         }
 
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: _dayLabelWidth + (_minHourWidth * _hourCount),
-            child: body,
+        return Scrollbar(
+          thumbVisibility: true,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: dayLabelWidth + (_minHourWidth * _hourCount),
+              child: body,
+            ),
           ),
         );
       },
@@ -639,10 +663,12 @@ class _HourHeader extends StatelessWidget {
   const _HourHeader({
     required this.hour,
     required this.height,
+    required this.compact,
   });
 
   final int hour;
   final double height;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -657,30 +683,45 @@ class _HourHeader extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.end,
         children: <Widget>[
           Text(
-            hh,
+            compact ? hh : hh,
             maxLines: 1,
             overflow: TextOverflow.clip,
             textAlign: TextAlign.center,
             style: theme.textTheme.labelMedium?.copyWith(
               color: major ? scheme.primary : scheme.onSurface,
               fontWeight: major ? FontWeight.w800 : FontWeight.w600,
+              fontSize: compact ? 11 : null,
               height: 1,
               fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
             ),
           ),
-          Text(
-            ':00',
-            maxLines: 1,
-            overflow: TextOverflow.clip,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-              fontSize: 9,
-              height: 1.1,
-              fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+          if (!compact)
+            Text(
+              ':00',
+              maxLines: 1,
+              overflow: TextOverflow.clip,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+                fontSize: 9,
+                height: 1.1,
+                fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+              ),
+            )
+          else
+            Text(
+              'h',
+              maxLines: 1,
+              overflow: TextOverflow.clip,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+                fontSize: 8,
+                height: 1,
+              ),
             ),
-          ),
           const SizedBox(height: 2),
           Container(
             height: major ? 5 : 3,
@@ -704,17 +745,53 @@ class _WeekBulkActions extends StatelessWidget {
     required this.onClearAll,
     required this.selectAllLabel,
     required this.clearAllLabel,
+    required this.compact,
   });
 
   final VoidCallback onSelectAll;
   final VoidCallback? onClearAll;
   final String selectAllLabel;
   final String clearAllLabel;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+
+    if (compact) {
+      return Row(
+        children: <Widget>[
+          Expanded(
+            child: _BulkIconButton(
+              icon: Icons.done_all_outlined,
+              tooltip: selectAllLabel,
+              foreground: scheme.primary,
+              background: scheme.primary.withValues(alpha: 0.12),
+              border: scheme.primary.withValues(alpha: 0.28),
+              onPressed: onSelectAll,
+            ),
+          ),
+          SizedBox(width: theme.spacing.xs),
+          Expanded(
+            child: _BulkIconButton(
+              icon: Icons.remove_done_outlined,
+              tooltip: clearAllLabel,
+              foreground: onClearAll == null
+                  ? scheme.onSurface.withValues(alpha: 0.38)
+                  : scheme.error,
+              background: onClearAll == null
+                  ? scheme.surfaceContainerHighest.withValues(alpha: 0.35)
+                  : scheme.error.withValues(alpha: 0.10),
+              border: onClearAll == null
+                  ? scheme.outlineVariant.withValues(alpha: 0.45)
+                  : scheme.error.withValues(alpha: 0.28),
+              onPressed: onClearAll,
+            ),
+          ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -743,6 +820,50 @@ class _WeekBulkActions extends StatelessWidget {
           onPressed: onClearAll,
         ),
       ],
+    );
+  }
+}
+
+class _BulkIconButton extends StatelessWidget {
+  const _BulkIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.foreground,
+    required this.background,
+    required this.border,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final Color foreground;
+  final Color background;
+  final Color border;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(theme.radius.sm),
+          child: Ink(
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(theme.radius.sm),
+              border: Border.all(color: border),
+            ),
+            child: SizedBox(
+              height: 36,
+              child: Icon(icon, size: 16, color: foreground),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -812,6 +933,7 @@ class _DayLabel extends StatelessWidget {
     required this.label,
     required this.hasHours,
     required this.locked,
+    required this.compact,
     required this.rangesByDay,
     required this.dayLocked,
     required this.dayLabel,
@@ -829,6 +951,7 @@ class _DayLabel extends StatelessWidget {
   final String label;
   final bool hasHours;
   final bool locked;
+  final bool compact;
   final Map<int, List<_MinuteRange>> rangesByDay;
   final bool Function(int day) dayLocked;
   final String Function(int day) dayLabel;
@@ -877,7 +1000,7 @@ class _DayLabel extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsetsDirectional.only(start: 8, end: 2),
+        padding: EdgeInsetsDirectional.only(start: compact ? 6 : 8, end: 2),
         child: Row(
           children: <Widget>[
             Container(

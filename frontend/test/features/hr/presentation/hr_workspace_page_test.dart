@@ -336,13 +336,13 @@ void main() {
 
     await _selectTab(tester, 'Swap requests');
     expect(_searchAction('Request leave'), findsNothing);
-    expect(_searchAction('Create roster'), findsNothing);
+    expect(_searchAction('Create roster template'), findsNothing);
 
     await _selectTab(tester, 'Rosters');
-    expect(_searchAction('Create roster'), findsOneWidget);
+    expect(_searchAction('Create roster template'), findsOneWidget);
 
     await _selectTab(tester, 'Unassigned shifts');
-    expect(_searchAction('Create roster'), findsNothing);
+    expect(_searchAction('Create roster template'), findsNothing);
 
     await _selectTab(tester, 'Payroll drafts');
     expect(find.byType(AppTabToolbarPrimary), findsNothing);

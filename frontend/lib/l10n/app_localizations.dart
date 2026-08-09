@@ -38777,10 +38777,10 @@ abstract class AppLocalizations {
   /// **'Default end time'**
   String get hrRosterDefaultEndTimeLabel;
 
-  /// Title for create roster dialog.
+  /// Title for create roster template dialog.
   ///
   /// In en, this message translates to:
-  /// **'Create roster'**
+  /// **'Create roster template'**
   String get hrCreateRosterDialogTitle;
 
   /// Title for roster details dialog.
@@ -40889,10 +40889,10 @@ abstract class AppLocalizations {
   /// **'{separationType} · Last day {lastDay}'**
   String hrSeparationBannerMessage(String separationType, String lastDay);
 
-  /// Toolbar action that opens create roster on the Rosters tab.
+  /// Toolbar action that opens create roster template on the Rosters tab.
   ///
   /// In en, this message translates to:
-  /// **'Create roster'**
+  /// **'Create roster template'**
   String get hrShiftTemplateAction;
 
   /// Dialog title for shift template create/edit.
