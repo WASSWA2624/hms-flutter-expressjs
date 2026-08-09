@@ -26979,6 +26979,10 @@
   "@hrRosterMonthDaysClearAction": {
     "description": "Clear day-of-month selection (apply every day)."
   },
+  "hrRosterMonthDaysRequiredMessage": "Select at least one day of the month.",
+  "@hrRosterMonthDaysRequiredMessage": {
+    "description": "Validation when no month days are selected on create roster."
+  },
   "hrRosterDefaultStartTimeLabel": "Default start time",
   "@hrRosterDefaultStartTimeLabel": {
     "description": "Default shift start time for a flexible roster."

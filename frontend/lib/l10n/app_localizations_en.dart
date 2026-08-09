@@ -20927,6 +20927,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterMonthDaysClearAction => 'Clear days';
 
   @override
+  String get hrRosterMonthDaysRequiredMessage =>
+      'Select at least one day of the month.';
+
+  @override
   String get hrRosterDefaultStartTimeLabel => 'Default start time';
 
   @override

@@ -38723,6 +38723,12 @@ abstract class AppLocalizations {
   /// **'Clear days'**
   String get hrRosterMonthDaysClearAction;
 
+  /// Validation when no month days are selected on create roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one day of the month.'**
+  String get hrRosterMonthDaysRequiredMessage;
+
   /// Default shift start time for a flexible roster.
   ///
   /// In en, this message translates to:

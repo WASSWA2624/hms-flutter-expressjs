@@ -86,6 +86,73 @@ _scheduleLegacyDefaults(HrWeeklyScheduleDraft schedule) {
   );
 }
 
+int _maxDayOfMonthForRoster({
+  required bool isRecurring,
+  required DateTime? periodStart,
+  required DateTime? periodEnd,
+}) {
+  if (!isRecurring && periodStart != null && periodEnd != null) {
+    int maxDay = 28;
+    DateTime cursor = DateTime(periodStart.year, periodStart.month);
+    final DateTime lastMonth = DateTime(periodEnd.year, periodEnd.month);
+    while (!cursor.isAfter(lastMonth)) {
+      final int daysInMonth = DateTime(cursor.year, cursor.month + 1, 0).day;
+      if (daysInMonth > maxDay) {
+        maxDay = daysInMonth;
+      }
+      cursor = DateTime(cursor.year, cursor.month + 1);
+    }
+    return maxDay.clamp(28, 31);
+  }
+  return 31;
+}
+
+Set<int> _allMonthDays(int maxDay) => <int>{
+  for (int day = 1; day <= maxDay; day++) day,
+};
+
+void _clampMonthDays(Set<int> monthDays, int maxDay) {
+  monthDays.removeWhere((int day) => day < 1 || day > maxDay);
+}
+
+bool? _monthDaysTriState(Set<int> monthDays, int maxDay) {
+  final int selected = monthDays.where((int day) => day <= maxDay).length;
+  if (selected <= 0) {
+    return false;
+  }
+  if (selected >= maxDay) {
+    return true;
+  }
+  return null;
+}
+
+List<int> _monthDaysForPayload({
+  required Set<int> monthDays,
+  required bool isRecurring,
+  required DateTime? periodStart,
+  required DateTime? periodEnd,
+}) {
+  final List<int> selected = monthDays.toList()..sort();
+  if (isRecurring || periodStart == null || periodEnd == null) {
+    return selected.where((int day) => day >= 1 && day <= 31).toList();
+  }
+
+  // Keep only day numbers that exist in at least one month of the period.
+  final Set<int> valid = <int>{};
+  DateTime cursor = DateTime(periodStart.year, periodStart.month);
+  final DateTime lastMonth = DateTime(periodEnd.year, periodEnd.month);
+  while (!cursor.isAfter(lastMonth)) {
+    final int daysInMonth = DateTime(cursor.year, cursor.month + 1, 0).day;
+    for (final int day in selected) {
+      if (day >= 1 && day <= daysInMonth) {
+        valid.add(day);
+      }
+    }
+    cursor = DateTime(cursor.year, cursor.month + 1);
+  }
+  return valid.toList()..sort();
+}
+
 Future<void> showHrCreateRosterDialog(
   BuildContext context,
   WidgetRef ref,
@@ -120,7 +187,7 @@ Future<void> showHrCreateRosterDialog(
   bool isRecurring = true;
   bool respectHolidays = true;
   bool respectWeekends = true;
-  final Set<int> monthDays = <int>{};
+  final Set<int> monthDays = _allMonthDays(31);
 
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
@@ -140,6 +207,27 @@ Future<void> showHrCreateRosterDialog(
           return StatefulBuilder(
             builder: (BuildContext context, StateSetter setLocal) {
               final ThemeData theme = Theme.of(context);
+              final int maxMonthDay = _maxDayOfMonthForRoster(
+                isRecurring: isRecurring,
+                periodStart: periodStart,
+                periodEnd: periodEnd,
+              );
+              final bool? monthDaysValue = _monthDaysTriState(
+                monthDays,
+                maxMonthDay,
+              );
+
+              void syncWeekendsOnHours() {
+                if (!respectWeekends) {
+                  return;
+                }
+                for (final int day in <int>[0, 6]) {
+                  schedule.days[day]!.replaceSlots(
+                    const <HrAvailabilitySlot>[],
+                  );
+                }
+              }
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
@@ -164,8 +252,21 @@ Future<void> showHrCreateRosterDialog(
                             AppCheckboxField(
                               title: l10n.hrRosterRecurringLabel,
                               value: isRecurring,
-                              onChanged: (bool value) =>
-                                  setLocal(() => isRecurring = value),
+                              onChanged: (bool value) {
+                                setLocal(() {
+                                  isRecurring = value;
+                                  final int nextMax = _maxDayOfMonthForRoster(
+                                    isRecurring: isRecurring,
+                                    periodStart: periodStart,
+                                    periodEnd: periodEnd,
+                                  );
+                                  _clampMonthDays(monthDays, nextMax);
+                                  if (monthDays.isEmpty) {
+                                    monthDays.addAll(_allMonthDays(nextMax));
+                                  }
+                                  syncWeekendsOnHours();
+                                });
+                              },
                             ),
                             AppCheckboxField(
                               title: l10n.hrRosterRespectHolidaysLabel,
@@ -173,13 +274,17 @@ Future<void> showHrCreateRosterDialog(
                               onChanged: (bool value) =>
                                   setLocal(() => respectHolidays = value),
                             ),
+                            AppCheckboxField(
+                              title: l10n.hrRosterRespectWeekendsLabel,
+                              value: respectWeekends,
+                              onChanged: (bool value) {
+                                setLocal(() {
+                                  respectWeekends = value;
+                                  syncWeekendsOnHours();
+                                });
+                              },
+                            ),
                           ],
-                        ),
-                        AppCheckboxField(
-                          title: l10n.hrRosterRespectWeekendsLabel,
-                          value: respectWeekends,
-                          onChanged: (bool value) =>
-                              setLocal(() => respectWeekends = value),
                         ),
                         if (!isRecurring)
                           AppResponsiveFieldRow(
@@ -195,8 +300,17 @@ Future<void> showHrCreateRosterDialog(
                                 pickerButtonLabel: l10n.hrPickDateAction,
                                 invalidDateMessage: l10n.appDateInvalidMessage,
                                 enableSpeechToText: false,
-                                onChanged: (DateTime? value) =>
-                                    setLocal(() => periodStart = value),
+                                onChanged: (DateTime? value) {
+                                  setLocal(() {
+                                    periodStart = value;
+                                    final int nextMax = _maxDayOfMonthForRoster(
+                                      isRecurring: isRecurring,
+                                      periodStart: periodStart,
+                                      periodEnd: periodEnd,
+                                    );
+                                    _clampMonthDays(monthDays, nextMax);
+                                  });
+                                },
                               ),
                               AppDateField(
                                 value: periodEnd,
@@ -208,8 +322,17 @@ Future<void> showHrCreateRosterDialog(
                                 pickerButtonLabel: l10n.hrPickDateAction,
                                 invalidDateMessage: l10n.appDateInvalidMessage,
                                 enableSpeechToText: false,
-                                onChanged: (DateTime? value) =>
-                                    setLocal(() => periodEnd = value),
+                                onChanged: (DateTime? value) {
+                                  setLocal(() {
+                                    periodEnd = value;
+                                    final int nextMax = _maxDayOfMonthForRoster(
+                                      isRecurring: isRecurring,
+                                      periodStart: periodStart,
+                                      periodEnd: periodEnd,
+                                    );
+                                    _clampMonthDays(monthDays, nextMax);
+                                  });
+                                },
                               ),
                             ],
                           ),
@@ -237,29 +360,28 @@ Future<void> showHrCreateRosterDialog(
                             });
                           },
                         ),
-                        Text(
-                          l10n.hrRosterMonthDaysLabel,
-                          style: theme.textTheme.titleSmall,
-                        ),
-                        AppMutedText(l10n.hrRosterMonthDaysHint),
-                        SizedBox(height: theme.spacing.xs),
                         Row(
                           children: <Widget>[
-                            TextButton(
-                              onPressed: () => setLocal(() {
-                                monthDays
-                                  ..clear()
-                                  ..addAll(
-                                    List<int>.generate(31, (int i) => i + 1),
-                                  );
-                              }),
-                              child: Text(l10n.hrRosterMonthDaysSelectAllAction),
+                            Checkbox(
+                              tristate: true,
+                              value: monthDaysValue,
+                              onChanged: (bool? value) {
+                                setLocal(() {
+                                  if (value == false) {
+                                    monthDays.clear();
+                                  } else {
+                                    monthDays
+                                      ..clear()
+                                      ..addAll(_allMonthDays(maxMonthDay));
+                                  }
+                                });
+                              },
                             ),
-                            TextButton(
-                              onPressed: monthDays.isEmpty
-                                  ? null
-                                  : () => setLocal(() => monthDays.clear()),
-                              child: Text(l10n.hrRosterMonthDaysClearAction),
+                            Expanded(
+                              child: Text(
+                                l10n.hrRosterMonthDaysLabel,
+                                style: theme.textTheme.titleSmall,
+                              ),
                             ),
                           ],
                         ),
@@ -267,7 +389,7 @@ Future<void> showHrCreateRosterDialog(
                           spacing: theme.spacing.xs,
                           runSpacing: theme.spacing.xs,
                           children: <Widget>[
-                            for (int day = 1; day <= 31; day++)
+                            for (int day = 1; day <= maxMonthDay; day++)
                               FilterChip(
                                 label: Text('$day'),
                                 selected: monthDays.contains(day),
@@ -330,6 +452,26 @@ Future<void> showHrCreateRosterDialog(
         }
       }
 
+      final int maxMonthDay = _maxDayOfMonthForRoster(
+        isRecurring: isRecurring,
+        periodStart: periodStart,
+        periodEnd: periodEnd,
+      );
+      _clampMonthDays(monthDays, maxMonthDay);
+      final List<int> monthDayList = _monthDaysForPayload(
+        monthDays: monthDays,
+        isRecurring: isRecurring,
+        periodStart: periodStart,
+        periodEnd: periodEnd,
+      );
+      if (monthDayList.isEmpty) {
+        return Future<AppFailure?>.value(
+          AppFailure.validation(
+            detailMessage: l10n.hrRosterMonthDaysRequiredMessage,
+          ),
+        );
+      }
+
       final String? scheduleError = schedule.validate(l10n);
       if (scheduleError != null) {
         return Future<AppFailure?>.value(
@@ -345,8 +487,6 @@ Future<void> showHrCreateRosterDialog(
       final DateTime effectiveStart = periodStart ?? DateTime.now();
       final DateTime effectiveEnd =
           periodEnd ?? DateTime.now().add(const Duration(days: 7));
-
-      final List<int> monthDayList = monthDays.toList()..sort();
 
       final Map<String, Object?> payload = <String, Object?>{
         'tenant_id': tenantId,
