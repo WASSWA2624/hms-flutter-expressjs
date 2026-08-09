@@ -20840,16 +20840,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterDraftTitle => 'Roster';
 
   @override
-  String get hrRosterNameLabel => 'Name';
+  String get hrRosterNameLabel => 'Roster name';
 
   @override
   String get hrRosterRecurringLabel => 'Recurring';
+
+  @override
+  String get hrRosterRecurringHelper =>
+      'Recurring templates have no fixed period; staff can be scheduled on an ongoing cycle.';
+
+  @override
+  String get hrRosterDepartmentHelper =>
+      'Only staff in this department can be assigned to this roster.';
 
   @override
   String get hrRosterStatusCompleted => 'Completed';
 
   @override
   String get hrRosterStatusDraft => 'Draft';
+
+  @override
+  String get hrRosterStatusFieldLabel => 'Status';
 
   @override
   String get hrRosterAttachedStaffTitle => 'Assigned staff';
@@ -20862,6 +20873,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrRosterRespectHolidaysLabel => 'Respect public holidays';
+
+  @override
+  String get hrRosterRespectHolidaysHelper =>
+      'Skip generating shifts on public holidays listed below.';
 
   @override
   String get hrRosterPublicHolidaysLabel =>
@@ -20962,7 +20977,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrRosterNameHelper =>
-      'Use a clear label, e.g. “ICU nights · Aug 2026” or “ED locum cover · Week 34”.';
+      'e.g. ICU nights · Aug 2026 or ED locum cover · Week 34';
 
   @override
   String hrRosterAssignedStaffCountChip(int count) {

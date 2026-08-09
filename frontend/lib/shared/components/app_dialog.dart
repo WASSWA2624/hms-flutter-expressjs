@@ -823,10 +823,11 @@ class _DialogActions extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final bool showActionLabels =
         AppBreakpoints.of(context).showsToolbarActionLabels;
-    // Compact chrome: keep footer height tight on every breakpoint.
+    // Footer chrome: doubled vertical inset from the prior xs baseline; keep
+    // horizontal inset and inter-button gaps tight around the actions.
     final EdgeInsets padding = EdgeInsets.symmetric(
-      horizontal: compact ? theme.spacing.sm : (dense ? theme.spacing.sm : theme.spacing.md),
-      vertical: theme.spacing.xs,
+      horizontal: theme.spacing.xs,
+      vertical: theme.spacing.xs * 2,
     );
 
     final Widget actionRow;

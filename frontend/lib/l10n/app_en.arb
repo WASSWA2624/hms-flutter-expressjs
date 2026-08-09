@@ -26871,13 +26871,21 @@
   "@hrRosterDraftTitle": {
     "description": "Human resources workspace text for hrRosterDraftTitle."
   },
-  "hrRosterNameLabel": "Name",
+  "hrRosterNameLabel": "Roster name",
   "@hrRosterNameLabel": {
     "description": "Roster name field label."
   },
   "hrRosterRecurringLabel": "Recurring",
   "@hrRosterRecurringLabel": {
     "description": "Whether a roster repeats."
+  },
+  "hrRosterRecurringHelper": "Recurring templates have no fixed period; staff can be scheduled on an ongoing cycle.",
+  "@hrRosterRecurringHelper": {
+    "description": "Explains the recurring roster template checkbox."
+  },
+  "hrRosterDepartmentHelper": "Only staff in this department can be assigned to this roster.",
+  "@hrRosterDepartmentHelper": {
+    "description": "Explains department scoping for roster staff assignment."
   },
   "hrRosterStatusCompleted": "Completed",
   "@hrRosterStatusCompleted": {
@@ -26886,6 +26894,10 @@
   "hrRosterStatusDraft": "Draft",
   "@hrRosterStatusDraft": {
     "description": "Draft roster status label."
+  },
+  "hrRosterStatusFieldLabel": "Status",
+  "@hrRosterStatusFieldLabel": {
+    "description": "Status field label on create/edit roster."
   },
   "hrRosterAttachedStaffTitle": "Assigned staff",
   "@hrRosterAttachedStaffTitle": {
@@ -26902,6 +26914,10 @@
   "hrRosterRespectHolidaysLabel": "Respect public holidays",
   "@hrRosterRespectHolidaysLabel": {
     "description": "Skip public holidays when materializing roster shifts."
+  },
+  "hrRosterRespectHolidaysHelper": "Skip generating shifts on public holidays listed below.",
+  "@hrRosterRespectHolidaysHelper": {
+    "description": "Helper for the respect public holidays checkbox."
   },
   "hrRosterPublicHolidaysLabel": "Public holidays (YYYY-MM-DD, comma-separated)",
   "@hrRosterPublicHolidaysLabel": {
@@ -27031,9 +27047,9 @@
   "@hrRosterPrintScheduleSection": {
     "description": "Print option for roster calendar preview."
   },
-  "hrRosterNameHelper": "Use a clear label, e.g. “ICU nights · Aug 2026” or “ED locum cover · Week 34”.",
+  "hrRosterNameHelper": "e.g. ICU nights · Aug 2026 or ED locum cover · Week 34",
   "@hrRosterNameHelper": {
-    "description": "Helper text encouraging informative roster names."
+    "description": "Placeholder example for the roster name field."
   },
   "hrRosterAssignedStaffCountChip": "Staff: {count}",
   "@hrRosterAssignedStaffCountChip": {

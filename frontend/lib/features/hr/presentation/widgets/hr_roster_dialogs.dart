@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
@@ -38,6 +39,24 @@ String hrRosterStatusLabel(AppLocalizations l10n, String? status) {
   }
 }
 
+String? _resolveRosterFacilityId(WidgetRef ref, HrWorkspaceState? state) {
+  final String? sessionFacilityId = ref
+      .read(sessionStateProvider)
+      .session
+      ?.user
+      ?.facilityId
+      ?.trim();
+  if (sessionFacilityId != null && sessionFacilityId.isNotEmpty) {
+    return sessionFacilityId;
+  }
+  final List<HrOption> facilities =
+      state?.referenceData.facilities ?? const <HrOption>[];
+  if (facilities.isEmpty) {
+    return null;
+  }
+  return facilities.first.value;
+}
+
 Future<void> showHrCreateRosterDialog(
   BuildContext context,
   WidgetRef ref,
@@ -64,7 +83,7 @@ Future<void> showHrCreateRosterDialog(
   final TextEditingController holidaysController = TextEditingController();
   DateTime? periodStart = DateTime.now();
   DateTime? periodEnd = DateTime.now().add(const Duration(days: 7));
-  String? facilityId;
+  final String? facilityId = _resolveRosterFacilityId(ref, state);
   String? departmentId;
   String status = 'DRAFT';
   bool isRecurring = false;
@@ -78,7 +97,7 @@ Future<void> showHrCreateRosterDialog(
     title: Text(l10n.hrCreateRosterDialogTitle),
     icon: const Icon(Icons.edit_calendar_outlined),
     submitLabel: l10n.hrShiftTemplateAction,
-    cancelLabel: l10n.commonCancelActionLabel,
+    cancelLabel: l10n.commonCloseActionLabel,
     submitIcon: Icons.save_outlined,
     maxWidth: 720,
     buildFields:
@@ -95,82 +114,92 @@ Future<void> showHrCreateRosterDialog(
                   AppTextField(
                     controller: nameController,
                     labelText: l10n.hrRosterNameLabel,
-                    helperText: l10n.hrRosterNameHelper,
+                    hintText: l10n.hrRosterNameHelper,
                     isRequired: true,
                     validator: AppValidators.requiredText(
                       l10n.hrFieldRequiredLabel(l10n.hrRosterNameLabel),
                     ),
                   ),
-                  AppDateField(
-                    value: periodStart,
-                    labelText: l10n.hrStartDateLabel,
-                    isRequired: true,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2100),
-                    currentDate: DateTime.now(),
-                    pickerButtonLabel: l10n.hrPickDateAction,
-                    invalidDateMessage: l10n.appDateInvalidMessage,
-                    onChanged: (DateTime? value) =>
-                        setLocal(() => periodStart = value),
+                  AppCheckboxField(
+                    title: l10n.hrRosterRecurringLabel,
+                    subtitle: l10n.hrRosterRecurringHelper,
+                    value: isRecurring,
+                    onChanged: (bool value) =>
+                        setLocal(() => isRecurring = value),
                   ),
-                  AppDateField(
-                    value: periodEnd,
-                    labelText: l10n.hrEndDateLabel,
-                    isRequired: true,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2100),
-                    currentDate: DateTime.now(),
-                    pickerButtonLabel: l10n.hrPickDateAction,
-                    invalidDateMessage: l10n.appDateInvalidMessage,
-                    onChanged: (DateTime? value) =>
-                        setLocal(() => periodEnd = value),
-                  ),
-                  AppSelectField<String>.searchable(
-                    value: facilityId,
-                    labelText: l10n.hrDepartmentLabel,
-                    options: hrSelectOptions(
-                      state?.referenceData.facilities ?? const <HrOption>[],
+                  if (!isRecurring)
+                    AppResponsiveFieldRow(
+                      gap: AppResponsiveFieldRowGap.form,
+                      children: <Widget>[
+                        AppDateField(
+                          value: periodStart,
+                          labelText: l10n.hrStartDateLabel,
+                          isRequired: true,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100),
+                          currentDate: DateTime.now(),
+                          pickerButtonLabel: l10n.hrPickDateAction,
+                          invalidDateMessage: l10n.appDateInvalidMessage,
+                          enableSpeechToText: false,
+                          onChanged: (DateTime? value) =>
+                              setLocal(() => periodStart = value),
+                        ),
+                        AppDateField(
+                          value: periodEnd,
+                          labelText: l10n.hrEndDateLabel,
+                          isRequired: true,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100),
+                          currentDate: DateTime.now(),
+                          pickerButtonLabel: l10n.hrPickDateAction,
+                          invalidDateMessage: l10n.appDateInvalidMessage,
+                          enableSpeechToText: false,
+                          onChanged: (DateTime? value) =>
+                              setLocal(() => periodEnd = value),
+                        ),
+                      ],
                     ),
-                    onChanged: (String? value) =>
-                        setLocal(() => facilityId = value),
-                  ),
                   AppSelectField<String>.searchable(
                     value: departmentId,
                     labelText: l10n.hrDepartmentLabel,
+                    helperText: l10n.hrRosterDepartmentHelper,
                     options: hrSelectOptions(
                       state?.referenceData.departments ?? const <HrOption>[],
                     ),
                     onChanged: (String? value) =>
                         setLocal(() => departmentId = value),
                   ),
-                  AppSelectField<String>(
-                    value: status,
-                    labelText: l10n.hrStatusColumnLabel,
-                    options: <AppSelectOption<String>>[
-                      AppSelectOption<String>(
-                        value: 'DRAFT',
-                        label: l10n.hrRosterStatusDraft,
+                  Text(
+                    l10n.hrRosterStatusFieldLabel,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  AppResponsiveFieldRow(
+                    gap: AppResponsiveFieldRowGap.form,
+                    children: <Widget>[
+                      AppCheckboxField(
+                        title: l10n.hrRosterStatusDraft,
+                        value: status == 'DRAFT',
+                        onChanged: (bool value) {
+                          if (value) {
+                            setLocal(() => status = 'DRAFT');
+                          }
+                        },
                       ),
-                      AppSelectOption<String>(
-                        value: 'PUBLISHED',
-                        label: l10n.hrRosterStatusCompleted,
+                      AppCheckboxField(
+                        title: l10n.hrRosterStatusCompleted,
+                        value: status == 'PUBLISHED',
+                        onChanged: (bool value) {
+                          if (value) {
+                            setLocal(() => status = 'PUBLISHED');
+                          }
+                        },
                       ),
                     ],
-                    onChanged: (String? value) {
-                      if (value != null) {
-                        setLocal(() => status = value);
-                      }
-                    },
                   ),
-                  AppSwitchField(
-                    value: isRecurring,
-                    title: l10n.hrRosterRecurringLabel,
-                    onChanged: (bool value) =>
-                        setLocal(() => isRecurring = value),
-                  ),
-                  AppSwitchField(
-                    value: respectHolidays,
+                  AppCheckboxField(
                     title: l10n.hrRosterRespectHolidaysLabel,
+                    subtitle: l10n.hrRosterRespectHolidaysHelper,
+                    value: respectHolidays,
                     onChanged: (bool value) =>
                         setLocal(() => respectHolidays = value),
                   ),
@@ -198,52 +227,62 @@ Future<void> showHrCreateRosterDialog(
                         ),
                     ],
                   ),
-                  AppTimeField(
-                    value: startTime,
-                    labelText: l10n.hrRosterDefaultStartTimeLabel,
-                    pickerButtonLabel: l10n.appTimePickerAction,
-                    invalidTimeMessage: l10n.appTimeInvalidMessage,
-                    onChanged: (AppTimeValue? value) {
-                      if (value != null) {
-                        setLocal(() => startTime = value);
-                      }
-                    },
+                  AppResponsiveFieldRow(
+                    gap: AppResponsiveFieldRowGap.form,
+                    children: <Widget>[
+                      AppTimeField(
+                        value: startTime,
+                        labelText: l10n.hrRosterDefaultStartTimeLabel,
+                        pickerButtonLabel: l10n.appTimePickerAction,
+                        invalidTimeMessage: l10n.appTimeInvalidMessage,
+                        enableSpeechToText: false,
+                        onChanged: (AppTimeValue? value) {
+                          if (value != null) {
+                            setLocal(() => startTime = value);
+                          }
+                        },
+                      ),
+                      AppTimeField(
+                        value: endTime,
+                        labelText: l10n.hrRosterDefaultEndTimeLabel,
+                        pickerButtonLabel: l10n.appTimePickerAction,
+                        invalidTimeMessage: l10n.appTimeInvalidMessage,
+                        enableSpeechToText: false,
+                        onChanged: (AppTimeValue? value) {
+                          if (value != null) {
+                            setLocal(() => endTime = value);
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                  AppTimeField(
-                    value: endTime,
-                    labelText: l10n.hrRosterDefaultEndTimeLabel,
-                    pickerButtonLabel: l10n.appTimePickerAction,
-                    invalidTimeMessage: l10n.appTimeInvalidMessage,
-                    onChanged: (AppTimeValue? value) {
-                      if (value != null) {
-                        setLocal(() => endTime = value);
-                      }
-                    },
-                  ),
-                  AppTextField(
-                    controller: holidaysController,
-                    labelText: l10n.hrRosterPublicHolidaysLabel,
-                    maxLines: 2,
-                  ),
+                  if (respectHolidays)
+                    AppTextField(
+                      controller: holidaysController,
+                      labelText: l10n.hrRosterPublicHolidaysLabel,
+                      maxLines: 2,
+                    ),
                 ],
               );
             },
           );
         },
     onSubmit: () {
-      if (periodStart == null || periodEnd == null) {
-        return Future<AppFailure?>.value(
-          AppFailure.validation(
-            detailMessage: l10n.hrFieldRequiredLabel(l10n.hrPeriodColumnLabel),
-          ),
-        );
-      }
-      if (!periodEnd!.isAfter(periodStart!)) {
-        return Future<AppFailure?>.value(
-          AppFailure.validation(
-            detailMessage: l10n.hrFieldRequiredLabel(l10n.hrPeriodColumnLabel),
-          ),
-        );
+      if (!isRecurring) {
+        if (periodStart == null || periodEnd == null) {
+          return Future<AppFailure?>.value(
+            AppFailure.validation(
+              detailMessage: l10n.hrFieldRequiredLabel(l10n.hrPeriodColumnLabel),
+            ),
+          );
+        }
+        if (!periodEnd!.isAfter(periodStart!)) {
+          return Future<AppFailure?>.value(
+            AppFailure.validation(
+              detailMessage: l10n.hrFieldRequiredLabel(l10n.hrPeriodColumnLabel),
+            ),
+          );
+        }
       }
       if (workingDays.isEmpty) {
         return Future<AppFailure?>.value(
@@ -255,18 +294,24 @@ Future<void> showHrCreateRosterDialog(
         );
       }
 
-      final List<String> holidays = holidaysController.text
-          .split(RegExp(r'[\s,;]+'))
-          .map((String part) => part.trim())
-          .where((String part) => part.isNotEmpty)
-          .toList(growable: false);
+      final List<String> holidays = respectHolidays
+          ? holidaysController.text
+                .split(RegExp(r'[\s,;]+'))
+                .map((String part) => part.trim())
+                .where((String part) => part.isNotEmpty)
+                .toList(growable: false)
+          : const <String>[];
+
+      final DateTime effectiveStart = periodStart ?? DateTime.now();
+      final DateTime effectiveEnd =
+          periodEnd ?? DateTime.now().add(const Duration(days: 7));
 
       final Map<String, Object?> payload = <String, Object?>{
         'tenant_id': tenantId,
         'name': nameController.text.trim(),
         'is_recurring': isRecurring,
-        'period_start': periodStart!.toUtc().toIso8601String(),
-        'period_end': periodEnd!.toUtc().toIso8601String(),
+        'period_start': effectiveStart.toUtc().toIso8601String(),
+        'period_end': effectiveEnd.toUtc().toIso8601String(),
         'status': status,
         'facility_id': facilityId,
         'department_id': departmentId,
@@ -293,4 +338,3 @@ Future<void> showHrCreateRosterDialog(
     showHrMutationSnackBar(context, null);
   }
 }
-

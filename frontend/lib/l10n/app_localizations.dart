@@ -38564,7 +38564,7 @@ abstract class AppLocalizations {
   /// Roster name field label.
   ///
   /// In en, this message translates to:
-  /// **'Name'**
+  /// **'Roster name'**
   String get hrRosterNameLabel;
 
   /// Whether a roster repeats.
@@ -38572,6 +38572,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recurring'**
   String get hrRosterRecurringLabel;
+
+  /// Explains the recurring roster template checkbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring templates have no fixed period; staff can be scheduled on an ongoing cycle.'**
+  String get hrRosterRecurringHelper;
+
+  /// Explains department scoping for roster staff assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Only staff in this department can be assigned to this roster.'**
+  String get hrRosterDepartmentHelper;
 
   /// Completed roster status label (published).
   ///
@@ -38584,6 +38596,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Draft'**
   String get hrRosterStatusDraft;
+
+  /// Status field label on create/edit roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get hrRosterStatusFieldLabel;
 
   /// Roster detail section for attached staff.
   ///
@@ -38608,6 +38626,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Respect public holidays'**
   String get hrRosterRespectHolidaysLabel;
+
+  /// Helper for the respect public holidays checkbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip generating shifts on public holidays listed below.'**
+  String get hrRosterRespectHolidaysHelper;
 
   /// Public holiday dates for a roster.
   ///
@@ -38801,10 +38825,10 @@ abstract class AppLocalizations {
   /// **'Preview'**
   String get hrRosterPrintScheduleSection;
 
-  /// Helper text encouraging informative roster names.
+  /// Placeholder example for the roster name field.
   ///
   /// In en, this message translates to:
-  /// **'Use a clear label, e.g. “ICU nights · Aug 2026” or “ED locum cover · Week 34”.'**
+  /// **'e.g. ICU nights · Aug 2026 or ED locum cover · Week 34'**
   String get hrRosterNameHelper;
 
   /// Count chip in assigned staff section header.
