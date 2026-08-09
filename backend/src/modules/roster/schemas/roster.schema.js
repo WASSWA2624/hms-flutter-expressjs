@@ -1,8 +1,8 @@
 /**
- * Nurse roster module validation schemas
+ * Roster module validation schemas
  *
- * @module modules/nurse-roster/schemas
- * @description Zod validation schemas for nurse roster endpoints.
+ * @module modules/roster/schemas
+ * @description Zod validation schemas for roster endpoints.
  * Per validation.mdc: Use Zod exclusively for all validation
  * Per module-creation.mdc: Define schemas for body, params, and query
  */
@@ -32,7 +32,7 @@ const constraintsSchema = z.object({
   shift_type: z.enum(['DAY', 'NIGHT', 'SWING', 'ON_CALL']).optional(),
 }).optional();
 
-const createNurseRosterSchema = z.object({
+const createRosterSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema,
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
@@ -52,7 +52,7 @@ const createNurseRosterSchema = z.object({
   path: ['period_end']
 });
 
-const updateNurseRosterSchema = z.object({
+const updateRosterSchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(255).optional(),
@@ -73,11 +73,11 @@ const updateNurseRosterSchema = z.object({
   path: ['period_end']
 });
 
-const publishNurseRosterSchema = z.object({
+const publishRosterSchema = z.object({
   notify_staff: z.boolean().default(true)
 });
 
-const generateNurseRosterSchema = z.object({
+const generateRosterSchema = z.object({
   period_start: isoDateSchema.optional(),
   period_end: isoDateSchema.optional(),
   constraints: constraintsSchema
@@ -93,7 +93,7 @@ const generateNurseRosterSchema = z.object({
   path: ['period_end']
 });
 
-const nurseRosterIdParamsSchema = z.object({
+const rosterIdParamsSchema = z.object({
   id: uuidOrFriendlyIdentifierSchema
 });
 
@@ -109,7 +109,7 @@ const attachRosterStaffSchema = z.object({
     .optional(),
 });
 
-const listNurseRostersQuerySchema = listQuerySchema.extend({
+const listRostersQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   department_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -119,12 +119,12 @@ const listNurseRostersQuerySchema = listQuerySchema.extend({
 });
 
 module.exports = {
-  createNurseRosterSchema,
-  updateNurseRosterSchema,
-  publishNurseRosterSchema,
-  generateNurseRosterSchema,
-  nurseRosterIdParamsSchema,
+  createRosterSchema,
+  updateRosterSchema,
+  publishRosterSchema,
+  generateRosterSchema,
+  rosterIdParamsSchema,
   rosterStaffParamsSchema,
   attachRosterStaffSchema,
-  listNurseRostersQuerySchema
+  listRostersQuerySchema
 };

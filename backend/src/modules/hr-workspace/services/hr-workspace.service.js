@@ -53,8 +53,8 @@ const WORKBENCH_PANELS = Object.freeze([
   {
     id: 'roster',
     label_key: 'hr.workbench.panels.roster',
-    default_resource: 'nurse-rosters',
-    resources: ['nurse-rosters', 'roster-day-offs'],
+    default_resource: 'rosters',
+    resources: ['rosters', 'roster-day-offs'],
     visible: true,
   },
   {
@@ -92,7 +92,7 @@ const RESOURCE_PANEL_MAP = Object.freeze(
 const QUEUE_DEFINITIONS = Object.freeze([
   { id: 'LEAVE_REQUESTS', label_key: 'hr.workbench.queues.LEAVE_REQUESTS', panel: 'staffing', resource: 'staff-leaves' },
   { id: 'SWAP_REQUESTS', label_key: 'hr.workbench.queues.SWAP_REQUESTS', panel: 'shifts', resource: 'shift-swap-requests' },
-  { id: 'ROSTER_DRAFTS', label_key: 'hr.workbench.queues.ROSTER_DRAFTS', panel: 'roster', resource: 'nurse-rosters' },
+  { id: 'ROSTER_DRAFTS', label_key: 'hr.workbench.queues.ROSTER_DRAFTS', panel: 'roster', resource: 'rosters' },
   { id: 'UNASSIGNED_SHIFTS', label_key: 'hr.workbench.queues.UNASSIGNED_SHIFTS', panel: 'shifts', resource: 'shifts' },
   { id: 'PAYROLL_DRAFTS', label_key: 'hr.workbench.queues.PAYROLL_DRAFTS', panel: 'payroll', resource: 'payroll-runs' },
   { id: 'OVERDUE_SHIFTS', label_key: 'hr.workbench.queues.OVERDUE_SHIFTS', panel: 'shifts', resource: 'shifts' },
@@ -104,7 +104,7 @@ const LEGACY_RESOURCE_CONFIG = Object.freeze({
   'staff-assignments': { model: 'staff_assignment', panel: 'staffing', resource: 'staff-assignments' },
   'staff-leaves': { model: 'staff_leave', panel: 'staffing', resource: 'staff-leaves' },
   'staff-availabilities': { model: 'staff_availability', panel: 'staffing', resource: 'staff-availabilities' },
-  'nurse-rosters': { model: 'nurse_roster', panel: 'roster', resource: 'nurse-rosters' },
+  'rosters': { model: 'roster', panel: 'roster', resource: 'rosters' },
   'roster-day-offs': { model: 'roster_day_off', panel: 'roster', resource: 'roster-day-offs' },
   shifts: { model: 'shift', panel: 'shifts', resource: 'shifts' },
   'shift-assignments': { model: 'shift_assignment', panel: 'shifts', resource: 'shift-assignments' },
@@ -120,7 +120,7 @@ const RESOURCE_STATUS_ENUMS = Object.freeze({
   'staff-profiles': ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING'],
   'staff-leaves': ['REQUESTED', 'APPROVED', 'REJECTED', 'CANCELLED'],
   'staff-availabilities': ['PREFERRED', 'AVAILABLE', 'UNAVAILABLE'],
-  'nurse-rosters': ['DRAFT', 'PUBLISHED'],
+  'rosters': ['DRAFT', 'PUBLISHED'],
   shifts: ['SCHEDULED', 'COMPLETED', 'CANCELLED'],
   'shift-swap-requests': ['SCHEDULED', 'COMPLETED', 'CANCELLED'],
   'shift-templates': ['ACTIVE', 'INACTIVE'],
@@ -190,7 +190,7 @@ const formatShiftOptionLabel = (entry) =>
     normalizeString(entry.shift_template?.name),
     entry.shift_type,
     formatShiftScheduleLabel(entry.start_time, entry.end_time),
-    normalizeString(entry.nurse_roster?.department?.name || entry.nurse_roster?.department?.short_name),
+    normalizeString(entry.roster?.department?.name || entry.roster?.department?.short_name),
     resolvePublicIdentifier(entry.human_friendly_id),
     entry.status,
   ]
@@ -395,7 +395,7 @@ const mapRoster = (item) => ({
   timeline_at: item.updated_at || item.created_at,
   target_path: buildWorkbenchPath({
     panel: 'roster',
-    resource: 'nurse-rosters',
+    resource: 'rosters',
     id: resolveDisplayId(item),
     action: 'view',
     rosterId: resolveDisplayId(item),
@@ -411,8 +411,8 @@ const mapShift = (item, queue = 'UNASSIGNED_SHIFTS') => ({
   shift_type: item.shift_type,
   facility_id: item.facility_id || null,
   facility_display_id: resolveDisplayId(item.facility || {}),
-  nurse_roster_id: item.nurse_roster_id || null,
-  nurse_roster_display_id: resolveDisplayId(item.nurse_roster || {}),
+  roster_id: item.roster_id || null,
+  roster_display_id: resolveDisplayId(item.roster || {}),
   shift_template_id: item.shift_template_id || null,
   shift_template_display_id: resolveDisplayId(item.shift_template || {}),
   assignment_count: Array.isArray(item.assignments) ? item.assignments.length : 0,
@@ -425,7 +425,7 @@ const mapShift = (item, queue = 'UNASSIGNED_SHIFTS') => ({
     id: resolveDisplayId(item),
     action: 'view',
     queue,
-    rosterId: resolveDisplayId(item.nurse_roster || {}),
+    rosterId: resolveDisplayId(item.roster || {}),
   }),
 });
 
@@ -507,7 +507,7 @@ const buildShiftSearchWhere = (search) => {
       { human_friendly_id: { contains: search, mode: 'insensitive' } },
       { shift_type: { contains: search, mode: 'insensitive' } },
       { status: { contains: search, mode: 'insensitive' } },
-      { nurse_roster: { human_friendly_id: { contains: search, mode: 'insensitive' } } },
+      { roster: { human_friendly_id: { contains: search, mode: 'insensitive' } } },
       { shift_template: { human_friendly_id: { contains: search, mode: 'insensitive' } } },
     ],
   };
@@ -531,7 +531,7 @@ const buildScope = async (filters = {}) => {
   });
   const rosterId = await resolveIdentifierForFilter({
     value: filters.roster_id,
-    model: 'nurse_roster',
+    model: 'roster',
     where: { deleted_at: null },
   });
   const payrollRunId = await resolveIdentifierForFilter({
@@ -761,7 +761,7 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20) => {
       timeline_at: item.updated_at || item.created_at,
       target_path: buildWorkbenchPath({
         panel: 'roster',
-        resource: 'nurse-rosters',
+        resource: 'rosters',
         id: resolveDisplayId(item),
         action: 'view',
         rosterId: resolveDisplayId(item),
@@ -861,7 +861,7 @@ const listQueueItems = async ({ queue, scope, skip, take, orderBy }) => {
       shift: {
         deleted_at: null,
         ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
-        ...(scope.rosterId ? { nurse_roster_id: scope.rosterId } : {}),
+        ...(scope.rosterId ? { roster_id: scope.rosterId } : {}),
       },
       ...buildSwapSearchWhere(scope.search),
     };
@@ -897,7 +897,7 @@ const listQueueItems = async ({ queue, scope, skip, take, orderBy }) => {
   if (queue === 'OVERDUE_SHIFTS') {
     const whereClause = {
       ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
-      ...(scope.rosterId ? { nurse_roster_id: scope.rosterId } : {}),
+      ...(scope.rosterId ? { roster_id: scope.rosterId } : {}),
       start_time: { lt: new Date() },
       status: scope.status ? { equals: scope.status } : { in: ['SCHEDULED'] },
       ...buildShiftSearchWhere(scope.search),
@@ -909,8 +909,8 @@ const listQueueItems = async ({ queue, scope, skip, take, orderBy }) => {
 
   const whereClause = {
     ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
-    ...(scope.departmentId ? { nurse_roster: { department_id: scope.departmentId } } : {}),
-    ...(scope.rosterId ? { nurse_roster_id: scope.rosterId } : {}),
+    ...(scope.departmentId ? { roster: { department_id: scope.departmentId } } : {}),
+    ...(scope.rosterId ? { roster_id: scope.rosterId } : {}),
     ...(scope.from || scope.to
       ? {
           start_time: {
@@ -1105,7 +1105,7 @@ const getReferenceData = async (filters = {}) => {
           is_active: true,
         },
       }),
-      prisma.nurse_roster.findMany({
+      prisma.roster.findMany({
         where: {
           deleted_at: null,
           ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
@@ -1166,7 +1166,7 @@ const getReferenceData = async (filters = {}) => {
           status: 'SCHEDULED',
           ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
           ...(scope.departmentId
-            ? { nurse_roster: { department_id: scope.departmentId } }
+            ? { roster: { department_id: scope.departmentId } }
             : {}),
         },
         orderBy: { start_time: 'desc' },
@@ -1186,7 +1186,7 @@ const getReferenceData = async (filters = {}) => {
               name: true,
             },
           },
-          nurse_roster: {
+          roster: {
             select: {
               id: true,
               human_friendly_id: true,
@@ -1369,9 +1369,9 @@ const getReferenceData = async (filters = {}) => {
           start_time: entry.start_time || null,
           end_time: entry.end_time || null,
           facility_id: entry.facility_id || null,
-          department_id: entry.nurse_roster?.department?.id || null,
+          department_id: entry.roster?.department?.id || null,
           department_name:
-            normalizeString(entry.nurse_roster?.department?.name || entry.nurse_roster?.department?.short_name) ||
+            normalizeString(entry.roster?.department?.name || entry.roster?.department?.short_name) ||
             null,
           shift_template_name: normalizeString(entry.shift_template?.name) || null,
         })
@@ -1631,11 +1631,11 @@ const generateRosterAssignments = async ({ rosterIdentifier, constraints, replac
     tenantId: result?.roster?.tenant_id || null,
     facilityId: result?.roster?.facility_id || null,
     panel: 'roster',
-    resource: 'nurse-rosters',
+    resource: 'rosters',
     displayId: result?.roster?.display_id || null,
     targetPath: buildWorkbenchPath({
       panel: 'roster',
-      resource: 'nurse-rosters',
+      resource: 'rosters',
       id: result?.roster?.display_id || null,
       rosterId: result?.roster?.display_id || null,
       action: 'view',
@@ -1668,7 +1668,7 @@ const publishRoster = async (rosterIdentifier, body = {}, userId = null, ipAddre
   }
 
   const roster = await resolveModelRecordByIdentifier({
-    model: 'nurse_roster',
+    model: 'roster',
     identifier: rosterIdentifier,
     where: { deleted_at: null },
     select: {
@@ -1682,10 +1682,10 @@ const publishRoster = async (rosterIdentifier, body = {}, userId = null, ipAddre
   });
 
   if (!roster?.id) {
-    throw new HttpError('errors.nurse_roster.not_found', 404);
+    throw new HttpError('errors.roster.not_found', 404);
   }
 
-  const updated = await prisma.nurse_roster.update({
+  const updated = await prisma.roster.update({
     where: { id: roster.id },
     data: { status: 'PUBLISHED', published_at: new Date() },
   });
@@ -1693,7 +1693,7 @@ const publishRoster = async (rosterIdentifier, body = {}, userId = null, ipAddre
   createAuditLog({
     user_id: userId,
     action: 'UPDATE',
-    entity: 'nurse_roster',
+    entity: 'roster',
     entity_id: roster.id,
     tenant_id: roster.tenant_id,
     diff: {
@@ -1716,11 +1716,11 @@ const publishRoster = async (rosterIdentifier, body = {}, userId = null, ipAddre
     tenantId: roster.tenant_id,
     facilityId: roster.facility_id || null,
     panel: 'roster',
-    resource: 'nurse-rosters',
+    resource: 'rosters',
     displayId: resolveDisplayId(updated),
     targetPath: buildWorkbenchPath({
       panel: 'roster',
-      resource: 'nurse-rosters',
+      resource: 'rosters',
       id: resolveDisplayId(updated),
       rosterId: resolveDisplayId(updated),
       action: 'view',
@@ -1759,7 +1759,7 @@ const overrideShiftAssignment = async (shiftIdentifier, payload = {}, userId = n
       id: true,
       tenant_id: true,
       facility_id: true,
-      nurse_roster: {
+      roster: {
         select: {
           id: true,
           human_friendly_id: true,
@@ -1845,7 +1845,7 @@ const overrideShiftAssignment = async (shiftIdentifier, payload = {}, userId = n
       resource: 'shifts',
       id: resolveDisplayId(assignment.shift || shiftWithContext || {}),
       action: 'view',
-      rosterId: resolveDisplayId(shiftWithContext?.nurse_roster || {}),
+      rosterId: resolveDisplayId(shiftWithContext?.roster || {}),
     }),
   }).catch(() => {});
 

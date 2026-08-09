@@ -330,7 +330,7 @@ enum HmsApiResource {
   handovers('handovers', HmsApiEndpointGroup.operations),
   custodySnapshots('custody-snapshots', HmsApiEndpointGroup.operations),
   closeoutPacks('closeout-packs', HmsApiEndpointGroup.operations),
-  nurseRosters('nurse-rosters', HmsApiEndpointGroup.operations),
+  rosters('rosters', HmsApiEndpointGroup.operations),
   shiftTemplates('shift-templates', HmsApiEndpointGroup.operations),
   rosterDayOffs('roster-day-offs', HmsApiEndpointGroup.operations),
   staffAvailabilities('staff-availabilities', HmsApiEndpointGroup.operations),

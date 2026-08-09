@@ -6,7 +6,7 @@ const { uuidOrFriendlyIdentifierSchema, listQuerySchema } = require('@lib/valida
 const dateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD');
 
 const createRosterDayOffSchema = z.object({
-  nurse_roster_id: uuidOrFriendlyIdentifierSchema,
+  roster_id: uuidOrFriendlyIdentifierSchema,
   staff_profile_id: uuidOrFriendlyIdentifierSchema,
   off_date: dateStringSchema,
   reason: z.string().max(255).optional().nullable()
@@ -20,7 +20,7 @@ const updateRosterDayOffSchema = z.object({
 const rosterDayOffIdParamsSchema = z.object({ id: uuidOrFriendlyIdentifierSchema });
 
 const listRosterDayOffsQuerySchema = listQuerySchema.extend({
-  nurse_roster_id: uuidOrFriendlyIdentifierSchema.optional(),
+  roster_id: uuidOrFriendlyIdentifierSchema.optional(),
   staff_profile_id: uuidOrFriendlyIdentifierSchema.optional(),
   off_date_from: dateStringSchema.optional(),
   off_date_to: dateStringSchema.optional()

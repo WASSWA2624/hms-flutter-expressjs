@@ -93,8 +93,8 @@ describe('hr-workspace Shifts billing-sections scan', () => {
     status: 'SCHEDULED',
     start_time: new Date('2026-07-02T08:00:00.000Z'),
     end_time: new Date('2026-07-02T17:00:00.000Z'),
-    nurse_roster_id: 'roster-uuid',
-    nurse_roster: { id: 'roster-uuid', human_friendly_id: 'RST-1001' },
+    roster_id: 'roster-uuid',
+    roster: { id: 'roster-uuid', human_friendly_id: 'RST-1001' },
     facility: { id: scopedUser.facility_id, human_friendly_id: 'FAC-1' },
     shift_template: null,
     assignments: [],
@@ -131,7 +131,7 @@ describe('hr-workspace Shifts billing-sections scan', () => {
     jest.clearAllMocks();
 
     prisma.user_role = { findMany: jest.fn().mockResolvedValue([]) };
-    prisma.nurse_roster = {
+    prisma.roster = {
       update: jest.fn().mockResolvedValue({
         ...rosterRecord,
         status: 'PUBLISHED',
@@ -188,7 +188,7 @@ describe('hr-workspace Shifts billing-sections scan', () => {
     });
     resolveRecordOrThrow.mockResolvedValue(shiftRecord);
     resolveModelRecordByIdentifier.mockImplementation(async ({ model }) => {
-      if (model === 'nurse_roster') return rosterRecord;
+      if (model === 'roster') return rosterRecord;
       if (model === 'shift_swap_request') return swapRecord;
       return null;
     });
@@ -250,7 +250,7 @@ describe('hr-workspace Shifts billing-sections scan', () => {
         published_roster: expect.objectContaining({ status: 'PUBLISHED' }),
       })
     );
-    expect(prisma.nurse_roster.update).toHaveBeenCalled();
+    expect(prisma.roster.update).toHaveBeenCalled();
     expectNoPatientBillingTouch();
   });
 
@@ -258,7 +258,7 @@ describe('hr-workspace Shifts billing-sections scan', () => {
     await hrWorkspaceService.publishRoster('RST-1001', {}, scopedUser.id, '127.0.0.1');
     await hrWorkspaceService.publishRoster('RST-1001', {}, scopedUser.id, '127.0.0.1');
 
-    expect(prisma.nurse_roster.update).toHaveBeenCalledTimes(2);
+    expect(prisma.roster.update).toHaveBeenCalledTimes(2);
     expectNoPatientBillingTouch();
   });
 

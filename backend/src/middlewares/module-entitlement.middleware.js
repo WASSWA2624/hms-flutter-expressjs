@@ -183,7 +183,7 @@ const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   handovers: 'hr-rosters',
   'custody-snapshots': 'hr-rosters',
   'closeout-packs': 'hr-rosters',
-  'nurse-rosters': 'hr-rosters',
+  'rosters': 'hr-rosters',
   'shift-templates': 'hr-rosters',
   'roster-day-offs': 'hr-rosters',
   'staff-availabilities': 'hr-rosters',

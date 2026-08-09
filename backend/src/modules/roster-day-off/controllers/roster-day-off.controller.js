@@ -7,9 +7,9 @@ const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT } = require('@config/constants');
 
 const list = asyncHandler(async (req, res) => {
-  const { nurse_roster_id, staff_profile_id, off_date_from, off_date_to, page = DEFAULT_PAGE, limit = DEFAULT_PAGE_LIMIT, sort_by, order = 'asc' } = req.query;
+  const { roster_id, staff_profile_id, off_date_from, off_date_to, page = DEFAULT_PAGE, limit = DEFAULT_PAGE_LIMIT, sort_by, order = 'asc' } = req.query;
   const result = await rosterDayOffService.list(
-    { nurse_roster_id, staff_profile_id, off_date_from, off_date_to },
+    { roster_id, staff_profile_id, off_date_from, off_date_to },
     parseInt(page),
     parseInt(limit),
     sort_by,

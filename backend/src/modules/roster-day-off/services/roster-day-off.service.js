@@ -27,11 +27,11 @@ const list = async (filters, page, limit, sortBy, order) => {
   const whereClause = {};
 
   const rosterId = await resolveIdentifierForFilter({
-    value: filters.nurse_roster_id,
-    model: 'nurse_roster',
+    value: filters.roster_id,
+    model: 'roster',
     where: { deleted_at: null }});
-  if (filters.nurse_roster_id && rosterId === null) return emptyResult(page, limit);
-  if (rosterId) whereClause.nurse_roster_id = rosterId;
+  if (filters.roster_id && rosterId === null) return emptyResult(page, limit);
+  if (rosterId) whereClause.roster_id = rosterId;
 
   const staffProfileId = await resolveIdentifierForFilter({
     value: filters.staff_profile_id,
@@ -64,10 +64,10 @@ const getById = async (id) => {
 const create = async (data, userId, ipAddress) => {
   const payload = {
     ...data,
-    nurse_roster_id: await resolveIdentifierForPayload({
-      value: data.nurse_roster_id,
-      model: 'nurse_roster',
-      field: 'nurse_roster_id',
+    roster_id: await resolveIdentifierForPayload({
+      value: data.roster_id,
+      model: 'roster',
+      field: 'roster_id',
       where: { deleted_at: null }}),
     staff_profile_id: await resolveIdentifierForPayload({
       value: data.staff_profile_id,

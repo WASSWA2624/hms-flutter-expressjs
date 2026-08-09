@@ -45,8 +45,8 @@ const seedOperationsPack = async (ctx, orgPack, accessPack) => {
   }
 
   const roster = await ctx.upsert(
-    'nurse_roster',
-    `${scenario.key}:nurse-roster:week`,
+    'roster',
+    `${scenario.key}:roster:week`,
     {
       tenant_id: facility.tenant_id,
       facility_id: facility.id,
@@ -60,7 +60,7 @@ const seedOperationsPack = async (ctx, orgPack, accessPack) => {
     {
       tenantCode: scenario.tenant_code,
       scenarioKey: scenario.scenario_key,
-      publicIdPrefix: 'NRS',
+      publicIdPrefix: 'RST',
     }
   );
 
@@ -70,7 +70,7 @@ const seedOperationsPack = async (ctx, orgPack, accessPack) => {
     {
       tenant_id: facility.tenant_id,
       facility_id: facility.id,
-      nurse_roster_id: roster.id,
+      roster_id: roster.id,
       shift_type: 'NIGHT',
       status: 'SCHEDULED',
       start_time: ctx.date(0, 18 * 60),

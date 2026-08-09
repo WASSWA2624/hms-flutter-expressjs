@@ -764,7 +764,7 @@ enum BreachStatus {
   REPORTED
 }
 
-enum NurseRosterStatus {
+enum RosterStatus {
   DRAFT
   PUBLISHED
 }
@@ -1036,7 +1036,7 @@ model tenant {
   staff_profiles                  staff_profile[]
   shifts                          shift[]
   shift_templates                 shift_template[]
-  nurse_rosters                   nurse_roster[]
+  rosters                   roster[]
   payroll_runs                    payroll_run[]
   assets                          asset[]
   licenses                        license[]
@@ -1155,7 +1155,7 @@ model facility {
   pharmacy_storage_rooms          pharmacy_storage_room[]
   pharmacy_storage_shelves        pharmacy_storage_shelf[]
   shifts                          shift[]
-  nurse_rosters                   nurse_roster[]
+  rosters                   roster[]
   shift_templates                 shift_template[]
   housekeeping_tasks              housekeeping_task[]
   housekeeping_schedules          housekeeping_schedule[]
@@ -1218,7 +1218,7 @@ model department {
   staff_positions   staff_position[]
   staff_profiles    staff_profile[]
   staff_assignments staff_assignment[]
-  nurse_rosters     nurse_roster[]
+  rosters           roster[]
   referrals_from    referral[]         @relation("referral_from_department")
   referrals_to      referral[]         @relation("referral_to_department")
   abac_policies     abac_policy[]
@@ -5263,7 +5263,7 @@ model shift {
   human_friendly_id String?     @db.VarChar(32)
   tenant_id         String      @db.VarChar(36)
   facility_id       String?     @db.VarChar(36)
-  nurse_roster_id   String?     @db.VarChar(36)
+  roster_id         String?     @db.VarChar(36)
   shift_template_id String?     @db.VarChar(36)
   shift_type        ShiftType
   status            ShiftStatus
@@ -5276,7 +5276,7 @@ model shift {
 
   tenant         tenant               @relation(fields: [tenant_id], references: [id])
   facility       facility?            @relation(fields: [facility_id], references: [id])
-  nurse_roster   nurse_roster?        @relation(fields: [nurse_roster_id], references: [id])
+  roster         roster?              @relation(fields: [roster_id], references: [id])
   shift_template shift_template?      @relation(fields: [shift_template_id], references: [id])
   assignments    shift_assignment[]
   swap_requests  shift_swap_request[]
@@ -5285,7 +5285,7 @@ model shift {
 
   @@index([tenant_id])
   @@index([facility_id])
-  @@index([nurse_roster_id])
+  @@index([roster_id])
   @@index([shift_template_id])
   @@index([shift_type])
   @@index([status])
@@ -5722,23 +5722,23 @@ model shift_swap_request {
   @@index([human_friendly_id])
 }
 
-model nurse_roster {
-  id                String            @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id String?           @db.VarChar(32)
-  tenant_id         String            @db.VarChar(36)
-  facility_id       String?           @db.VarChar(36)
-  department_id     String?           @db.VarChar(36)
-  name              String?           @db.VarChar(255)
-  is_recurring      Boolean           @default(false)
+model roster {
+  id                String       @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?      @db.VarChar(32)
+  tenant_id         String       @db.VarChar(36)
+  facility_id       String?      @db.VarChar(36)
+  department_id     String?      @db.VarChar(36)
+  name              String?      @db.VarChar(255)
+  is_recurring      Boolean      @default(false)
   period_start      DateTime
   period_end        DateTime
-  status            NurseRosterStatus @default(DRAFT)
+  status            RosterStatus @default(DRAFT)
   constraints       Json?
   published_at      DateTime?
-  created_at        DateTime          @default(now())
-  updated_at        DateTime          @updatedAt
+  created_at        DateTime     @default(now())
+  updated_at        DateTime     @updatedAt
   deleted_at        DateTime?
-  version           Int               @default(1)
+  version           Int          @default(1)
 
   tenant          tenant           @relation(fields: [tenant_id], references: [id])
   facility        facility?        @relation(fields: [facility_id], references: [id])
@@ -5759,7 +5759,7 @@ model nurse_roster {
 model roster_day_off {
   id                String    @id @default(uuid()) @db.VarChar(36)
   human_friendly_id String?   @db.VarChar(32)
-  nurse_roster_id   String    @db.VarChar(36)
+  roster_id         String    @db.VarChar(36)
   staff_profile_id  String    @db.VarChar(36)
   off_date          DateTime  @db.Date
   reason            String?   @db.VarChar(255)
@@ -5768,11 +5768,11 @@ model roster_day_off {
   deleted_at        DateTime?
   version           Int       @default(1)
 
-  nurse_roster  nurse_roster  @relation(fields: [nurse_roster_id], references: [id])
+  roster        roster        @relation(fields: [roster_id], references: [id])
   staff_profile staff_profile @relation(fields: [staff_profile_id], references: [id])
 
-  @@unique([nurse_roster_id, staff_profile_id, off_date])
-  @@index([nurse_roster_id])
+  @@unique([roster_id, staff_profile_id, off_date])
+  @@index([roster_id])
   @@index([staff_profile_id])
   @@index([off_date])
   @@index([deleted_at])

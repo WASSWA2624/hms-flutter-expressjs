@@ -134,7 +134,7 @@ const resolveRecordOrThrow = async ({ model, identifier, where = {}, errorKey })
 
 const resolveRosterOrThrow = async (rosterIdentifier) => {
   const rosterRecord = await resolveModelRecordByIdentifier({
-    model: 'nurse_roster',
+    model: 'roster',
     identifier: rosterIdentifier,
     where: { deleted_at: null },
     include: {
@@ -163,7 +163,7 @@ const resolveRosterOrThrow = async (rosterIdentifier) => {
   });
 
   if (!rosterRecord?.id) {
-    throw new HttpError('errors.nurse_roster.not_found', 404);
+    throw new HttpError('errors.roster.not_found', 404);
   }
 
   return rosterRecord;
@@ -173,7 +173,7 @@ const listRosterShifts = async (rosterId, periodStart, periodEnd) =>
   prisma.shift.findMany({
     where: {
       deleted_at: null,
-      nurse_roster_id: rosterId,
+      roster_id: rosterId,
       status: {
         not: 'CANCELLED',
       },
@@ -243,7 +243,7 @@ const listDayOffs = async (profileIds, rosterId) => {
   return prisma.roster_day_off.findMany({
     where: {
       deleted_at: null,
-      nurse_roster_id: rosterId,
+      roster_id: rosterId,
       staff_profile_id: {
         in: profileIds,
       },
@@ -459,7 +459,7 @@ const buildProfileState = ({ profiles, availability, leaves, dayOffs, existingAs
       shift_id: entry.shift_id,
       start_time: entry.shift.start_time,
       end_time: entry.shift.end_time,
-      roster_id: entry.shift.nurse_roster_id,
+      roster_id: entry.shift.roster_id,
       source: 'existing',
     });
   }
@@ -638,7 +638,7 @@ const generateRosterAssignments = async ({
   const roster = await resolveRosterOrThrow(normalizedRosterIdentifier);
 
   if (roster.status === 'PUBLISHED') {
-    throw new HttpError('errors.nurse_roster.cannot_generate_published', 400);
+    throw new HttpError('errors.roster.cannot_generate_published', 400);
   }
 
   const periodStart = normalizeDate(roster.period_start);
@@ -751,7 +751,7 @@ const generateRosterAssignments = async ({
         });
       }
 
-      await tx.nurse_roster.update({
+      await tx.roster.update({
         where: { id: roster.id },
         data: {
           status: 'DRAFT',
@@ -775,7 +775,7 @@ const generateRosterAssignments = async ({
   createAuditLog({
     user_id: userId,
     action: 'UPDATE',
-    entity: 'nurse_roster',
+    entity: 'roster',
     entity_id: roster.id,
     tenant_id: roster.tenant_id,
     diff: {

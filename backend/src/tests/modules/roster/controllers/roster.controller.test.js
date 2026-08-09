@@ -1,6 +1,6 @@
-﻿const subject = require('../../../../modules/nurse-roster/controllers/nurse-roster.controller');
+﻿const subject = require('../../../../modules/roster/controllers/roster.controller');
 
-describe('nurse-roster.controller contract', () => {
+describe('roster.controller contract', () => {
   it('exports controller handlers', () => {
     expect(subject).toBeDefined();
     expect(typeof subject).toBe('object');

@@ -1,4 +1,4 @@
-const nurseRosterRepository = require('@repositories/nurse-roster/nurse-roster.repository');
+const rosterRepository = require('@repositories/roster/roster.repository');
 const shiftRepository = require('@repositories/shift/shift.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
@@ -141,7 +141,7 @@ const materializeRosterShifts = async (roster) => {
       const shift = await shiftRepository.create({
         tenant_id: roster.tenant_id,
         facility_id: roster.facility_id || null,
-        nurse_roster_id: roster.id,
+        roster_id: roster.id,
         shift_type: constraints.shift_type,
         status: 'SCHEDULED',
         start_time: startTime,
@@ -248,7 +248,7 @@ const assertNoScheduleConflict = async ({
       shift: {
         deleted_at: null,
         ...(excludeRosterId
-          ? { NOT: { nurse_roster_id: excludeRosterId } }
+          ? { NOT: { roster_id: excludeRosterId } }
           : {}),
         start_time: { lt: periodEnd },
         end_time: { gt: periodStart },
@@ -262,14 +262,14 @@ const assertNoScheduleConflict = async ({
           human_friendly_id: true,
           start_time: true,
           end_time: true,
-          nurse_roster_id: true,
+          roster_id: true,
         },
       },
     },
   });
 
   if (overlapping.length) {
-    throw new HttpError('errors.nurse_roster.staff_schedule_conflict', 409, [
+    throw new HttpError('errors.roster.staff_schedule_conflict', 409, [
       {
         staff_profile_id: staffProfileId,
         conflicting_shift_id: overlapping[0].shift?.human_friendly_id || overlapping[0].shift_id,
@@ -278,7 +278,7 @@ const assertNoScheduleConflict = async ({
   }
 };
 
-const listNurseRosters = async (filters, page, limit, sortBy, order) => {
+const listRosters = async (filters, page, limit, sortBy, order) => {
   try {
     const skip = (page - 1) * limit;
     const orderBy = sortBy ? { [sortBy]: order } : { created_at: 'desc' };
@@ -313,7 +313,7 @@ const listNurseRosters = async (filters, page, limit, sortBy, order) => {
     }
 
     const [rosters, total] = await Promise.all([
-      nurseRosterRepository.findMany(whereClause, skip, limit, orderBy, {
+      rosterRepository.findMany(whereClause, skip, limit, orderBy, {
         shifts: {
           where: { deleted_at: null },
           select: {
@@ -325,7 +325,7 @@ const listNurseRosters = async (filters, page, limit, sortBy, order) => {
           },
         },
       }),
-      nurseRosterRepository.count(whereClause)]);
+      rosterRepository.count(whereClause)]);
 
     return {
       rosters,
@@ -336,13 +336,13 @@ const listNurseRosters = async (filters, page, limit, sortBy, order) => {
   }
 };
 
-const getNurseRosterById = async (id) => {
+const getRosterById = async (id) => {
   try {
     const resolvedId = await resolveEntityId({
-      model: 'nurse_roster',
+      model: 'roster',
       identifier: id,
       where: { deleted_at: null }});
-    const roster = await nurseRosterRepository.findById(resolvedId, {
+    const roster = await rosterRepository.findById(resolvedId, {
       facility: { select: { id: true, human_friendly_id: true, name: true } },
       department: { select: { id: true, human_friendly_id: true, name: true } },
       shifts: {
@@ -365,7 +365,7 @@ const getNurseRosterById = async (id) => {
         },
       },
     });
-    if (!roster) throw new HttpError('errors.nurse_roster.not_found', 404);
+    if (!roster) throw new HttpError('errors.roster.not_found', 404);
     const staff = await mapAttachedStaff(roster);
     const periodStartKey = toDateKey(roster.period_start);
     const periodEndKey = toDateKey(roster.period_end);
@@ -385,7 +385,7 @@ const getNurseRosterById = async (id) => {
   }
 };
 
-const createNurseRoster = async (data, userId, ipAddress) => {
+const createRoster = async (data, userId, ipAddress) => {
   try {
     const { materialize_shifts: materializeShifts = true, ...rest } = data;
     const periodStart = new Date(rest.period_start);
@@ -416,7 +416,7 @@ const createNurseRoster = async (data, userId, ipAddress) => {
 
     delete payload.materialize_shifts;
 
-    const roster = await nurseRosterRepository.create(payload);
+    const roster = await rosterRepository.create(payload);
     let shifts = [];
     if (materializeShifts !== false) {
       shifts = await materializeRosterShifts(roster);
@@ -425,7 +425,7 @@ const createNurseRoster = async (data, userId, ipAddress) => {
     createAuditLog({
       user_id: userId,
       action: 'CREATE',
-      entity: 'nurse_roster',
+      entity: 'roster',
       entity_id: roster.id,
       tenant_id: roster.tenant_id,
       diff: { after: roster, metadata: { shifts_created: shifts.length } },
@@ -441,14 +441,14 @@ const createNurseRoster = async (data, userId, ipAddress) => {
   }
 };
 
-const updateNurseRoster = async (id, data, userId, ipAddress) => {
+const updateRoster = async (id, data, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
-      model: 'nurse_roster',
+      model: 'roster',
       identifier: id,
       where: { deleted_at: null }});
-    const before = await nurseRosterRepository.findById(resolvedId);
-    if (!before) throw new HttpError('errors.nurse_roster.not_found', 404);
+    const before = await rosterRepository.findById(resolvedId);
+    if (!before) throw new HttpError('errors.roster.not_found', 404);
 
     const payload = { ...data };
     if (Object.prototype.hasOwnProperty.call(data, 'facility_id')) {
@@ -480,11 +480,11 @@ const updateNurseRoster = async (id, data, userId, ipAddress) => {
       payload.published_at = before.published_at || new Date();
     }
 
-    const roster = await nurseRosterRepository.update(before.id, payload);
+    const roster = await rosterRepository.update(before.id, payload);
     createAuditLog({
       user_id: userId,
       action: 'UPDATE',
-      entity: 'nurse_roster',
+      entity: 'roster',
       entity_id: roster.id,
       tenant_id: roster.tenant_id,
       diff: { before, after: roster },
@@ -496,20 +496,20 @@ const updateNurseRoster = async (id, data, userId, ipAddress) => {
   }
 };
 
-const deleteNurseRoster = async (id, userId, ipAddress) => {
+const deleteRoster = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
-      model: 'nurse_roster',
+      model: 'roster',
       identifier: id,
       where: { deleted_at: null }});
-    const before = await nurseRosterRepository.findById(resolvedId);
-    if (!before) throw new HttpError('errors.nurse_roster.not_found', 404);
+    const before = await rosterRepository.findById(resolvedId);
+    if (!before) throw new HttpError('errors.roster.not_found', 404);
 
-    await nurseRosterRepository.softDelete(before.id);
+    await rosterRepository.softDelete(before.id);
     createAuditLog({
       user_id: userId,
       action: 'DELETE',
-      entity: 'nurse_roster',
+      entity: 'roster',
       entity_id: before.id,
       tenant_id: before.tenant_id,
       diff: { before },
@@ -520,24 +520,24 @@ const deleteNurseRoster = async (id, userId, ipAddress) => {
   }
 };
 
-const publishNurseRoster = async (id, notifyStaff, userId, ipAddress) => {
+const publishRoster = async (id, notifyStaff, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
-      model: 'nurse_roster',
+      model: 'roster',
       identifier: id,
       where: { deleted_at: null }});
-    const before = await nurseRosterRepository.findById(resolvedId);
-    if (!before) throw new HttpError('errors.nurse_roster.not_found', 404);
-    if (before.status === 'PUBLISHED') throw new HttpError('errors.nurse_roster.already_published', 400);
+    const before = await rosterRepository.findById(resolvedId);
+    if (!before) throw new HttpError('errors.roster.not_found', 404);
+    if (before.status === 'PUBLISHED') throw new HttpError('errors.roster.already_published', 400);
 
-    const roster = await nurseRosterRepository.update(before.id, {
+    const roster = await rosterRepository.update(before.id, {
       status: 'PUBLISHED',
       published_at: new Date()});
 
     createAuditLog({
       user_id: userId,
       action: 'PUBLISH',
-      entity: 'nurse_roster',
+      entity: 'roster',
       entity_id: roster.id,
       tenant_id: roster.tenant_id,
       diff: { before, after: roster, metadata: { notifyStaff } },
@@ -550,15 +550,15 @@ const publishNurseRoster = async (id, notifyStaff, userId, ipAddress) => {
   }
 };
 
-const generateNurseRoster = async (id, data = {}, userId, ipAddress) => {
+const generateRoster = async (id, data = {}, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
-      model: 'nurse_roster',
+      model: 'roster',
       identifier: id,
       where: { deleted_at: null }});
-    const before = await nurseRosterRepository.findById(resolvedId);
-    if (!before) throw new HttpError('errors.nurse_roster.not_found', 404);
-    if (before.status === 'PUBLISHED') throw new HttpError('errors.nurse_roster.cannot_generate_published', 400);
+    const before = await rosterRepository.findById(resolvedId);
+    if (!before) throw new HttpError('errors.roster.not_found', 404);
+    if (before.status === 'PUBLISHED') throw new HttpError('errors.roster.cannot_generate_published', 400);
 
     const updateData = {
       status: 'DRAFT',
@@ -577,7 +577,7 @@ const generateNurseRoster = async (id, data = {}, userId, ipAddress) => {
       });
     }
 
-    const roster = await nurseRosterRepository.update(before.id, updateData);
+    const roster = await rosterRepository.update(before.id, updateData);
     const generation = await generateRosterAssignments({
       rosterIdentifier: roster.id,
       constraints: Object.prototype.hasOwnProperty.call(data, 'constraints') ? data.constraints : undefined,
@@ -589,7 +589,7 @@ const generateNurseRoster = async (id, data = {}, userId, ipAddress) => {
     createAuditLog({
       user_id: userId,
       action: 'GENERATE',
-      entity: 'nurse_roster',
+      entity: 'roster',
       entity_id: roster.id,
       tenant_id: roster.tenant_id,
       diff: {
@@ -616,11 +616,11 @@ const generateNurseRoster = async (id, data = {}, userId, ipAddress) => {
 const attachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress, options = {}) => {
   try {
     const resolvedId = await resolveEntityId({
-      model: 'nurse_roster',
+      model: 'roster',
       identifier: id,
       where: { deleted_at: null }});
-    const roster = await nurseRosterRepository.findById(resolvedId);
-    if (!roster) throw new HttpError('errors.nurse_roster.not_found', 404);
+    const roster = await rosterRepository.findById(resolvedId);
+    if (!roster) throw new HttpError('errors.roster.not_found', 404);
 
     const staffProfileId = await resolveIdentifierForPayload({
       value: staffProfileIdentifier,
@@ -630,7 +630,7 @@ const attachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress, 
 
     const constraints = normalizeConstraints(roster.constraints);
     if (constraints.attached_staff_ids.includes(staffProfileId)) {
-      throw new HttpError('errors.nurse_roster.duplicate_staff', 409, [
+      throw new HttpError('errors.roster.duplicate_staff', 409, [
         { staff_profile_id: staffProfileId },
       ]);
     }
@@ -660,14 +660,14 @@ const attachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress, 
       attached_staff_ids: [...constraints.attached_staff_ids, staffProfileId],
       attached_staff_meta: nextMeta,
     };
-    const updated = await nurseRosterRepository.update(roster.id, {
+    const updated = await rosterRepository.update(roster.id, {
       constraints: nextConstraints,
     });
 
     createAuditLog({
       user_id: userId,
       action: 'ATTACH_STAFF',
-      entity: 'nurse_roster',
+      entity: 'roster',
       entity_id: roster.id,
       tenant_id: roster.tenant_id,
       diff: {
@@ -680,7 +680,7 @@ const attachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress, 
       },
       ip_address: ipAddress}).catch(() => {});
 
-    return getNurseRosterById(roster.id);
+    return getRosterById(roster.id);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -690,10 +690,10 @@ const attachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress, 
 const detachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
-      model: 'nurse_roster',
+      model: 'roster',
       identifier: id,
       where: { deleted_at: null }});
-    const roster = await nurseRosterRepository.findById(resolvedId, {
+    const roster = await rosterRepository.findById(resolvedId, {
       shifts: {
         where: { deleted_at: null },
         include: {
@@ -703,7 +703,7 @@ const detachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress) 
         },
       },
     });
-    if (!roster) throw new HttpError('errors.nurse_roster.not_found', 404);
+    if (!roster) throw new HttpError('errors.roster.not_found', 404);
 
     const staffProfileId = await resolveIdentifierForPayload({
       value: staffProfileIdentifier,
@@ -728,7 +728,7 @@ const detachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress) 
       }
     }
 
-    const updated = await nurseRosterRepository.update(roster.id, {
+    const updated = await rosterRepository.update(roster.id, {
       constraints: {
         ...constraints,
         attached_staff_ids: nextAttached,
@@ -739,7 +739,7 @@ const detachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress) 
     createAuditLog({
       user_id: userId,
       action: 'DETACH_STAFF',
-      entity: 'nurse_roster',
+      entity: 'roster',
       entity_id: roster.id,
       tenant_id: roster.tenant_id,
       diff: {
@@ -749,7 +749,7 @@ const detachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress) 
       },
       ip_address: ipAddress}).catch(() => {});
 
-    return getNurseRosterById(roster.id);
+    return getRosterById(roster.id);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -757,13 +757,13 @@ const detachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress) 
 };
 
 module.exports = {
-  listNurseRosters,
-  getNurseRosterById,
-  createNurseRoster,
-  updateNurseRoster,
-  deleteNurseRoster,
-  publishNurseRoster,
-  generateNurseRoster,
+  listRosters,
+  getRosterById,
+  createRoster,
+  updateRoster,
+  deleteRoster,
+  publishRoster,
+  generateRoster,
   attachRosterStaff,
   detachRosterStaff,
   overlaps,

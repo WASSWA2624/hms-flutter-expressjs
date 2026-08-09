@@ -97,7 +97,7 @@ const createShiftAssignment = async (data, userId, ipAddress) => {
         id: true,
         start_time: true,
         end_time: true,
-        nurse_roster_id: true,
+        roster_id: true,
       },
     });
     if (!shift) throw new HttpError('errors.shift.not_found', 404);

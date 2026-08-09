@@ -1,6 +1,6 @@
-﻿const subject = require('../../../../modules/nurse-roster/repositories/nurse-roster.repository');
+﻿const subject = require('../../../../modules/roster/repositories/roster.repository');
 
-describe('nurse-roster.repository contract', () => {
+describe('roster.repository contract', () => {
   it('exports repository methods', () => {
     expect(subject).toBeDefined();
     expect(typeof subject).toBe('object');

@@ -439,7 +439,7 @@ final class HrRepositoryImpl implements HrRepository {
 
   @override
   Future<Result<Object?>> createRoster(Map<String, Object?> payload) {
-    return _postCollection(HmsApiResource.nurseRosters, payload);
+    return _postCollection(HmsApiResource.rosters, payload);
   }
 
   @override
@@ -448,7 +448,7 @@ final class HrRepositoryImpl implements HrRepository {
     Map<String, Object?> payload,
   ) {
     return _apiClient.put<Object?>(
-      ApiEndpoints.byId(HmsApiResource.nurseRosters, rosterId),
+      ApiEndpoints.byId(HmsApiResource.rosters, rosterId),
       data: _withoutEmpty(payload),
       decoder: passthroughResponseData,
     );
@@ -457,7 +457,7 @@ final class HrRepositoryImpl implements HrRepository {
   @override
   Future<Result<Map<String, Object?>>> getRoster(String rosterId) {
     return _apiClient.get<Map<String, Object?>>(
-      ApiEndpoints.byId(HmsApiResource.nurseRosters, rosterId),
+      ApiEndpoints.byId(HmsApiResource.rosters, rosterId),
       decoder: (Object? data) {
         final Object? payload = passthroughResponseData(data);
         if (payload is Map<String, Object?>) {
@@ -478,7 +478,7 @@ final class HrRepositoryImpl implements HrRepository {
     String? staffCategory,
   }) {
     return _apiClient.post<Map<String, Object?>>(
-      ApiEndpoints.nested(HmsApiResource.nurseRosters, rosterId, <String>[
+      ApiEndpoints.nested(HmsApiResource.rosters, rosterId, <String>[
         'staff',
       ]),
       data: _withoutEmpty(<String, Object?>{
@@ -504,7 +504,7 @@ final class HrRepositoryImpl implements HrRepository {
     required String staffProfileId,
   }) {
     return _apiClient.delete<Map<String, Object?>>(
-      ApiEndpoints.nested(HmsApiResource.nurseRosters, rosterId, <String>[
+      ApiEndpoints.nested(HmsApiResource.rosters, rosterId, <String>[
         'staff',
         staffProfileId,
       ]),

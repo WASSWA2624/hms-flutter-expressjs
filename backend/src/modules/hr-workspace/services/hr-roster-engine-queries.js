@@ -51,7 +51,7 @@ const listExistingAssignments = async (profileIds, periodStart, periodEnd) => {
           human_friendly_id: true,
           start_time: true,
           end_time: true,
-          nurse_roster_id: true,
+          roster_id: true,
         },
       },
     },

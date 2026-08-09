@@ -653,7 +653,7 @@ Map<String, String> homeHrQueryForTarget(HomeRouteTarget? target) {
   final String? queue = switch ((target.resource ?? '').toLowerCase()) {
     'staff-leaves' => 'LEAVE_REQUESTS',
     'shift-swap-requests' => 'SWAP_REQUESTS',
-    'nurse-rosters' => 'ROSTER_DRAFTS',
+    'rosters' => 'ROSTER_DRAFTS',
     'shifts' => 'UNASSIGNED_SHIFTS',
     'payroll-runs' => 'PAYROLL_DRAFTS',
     _ => null,

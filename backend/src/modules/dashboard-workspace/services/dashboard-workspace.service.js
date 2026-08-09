@@ -847,10 +847,10 @@ const activeQueueDefinitions = Object.freeze({
   hr_roster_drafts: {
     id: 'hr_roster_drafts',
     queue_key: 'hr_roster_drafts',
-    kind: 'nurse_roster',
+    kind: 'roster',
     module_slug: 'hr',
-    resource: 'nurse-rosters',
-    model: 'nurse_roster',
+    resource: 'rosters',
+    model: 'roster',
     time_field: 'updated_at',
     default_sort: 'updated_at',
     select: { id: true, human_friendly_id: true, status: true, updated_at: true, created_at: true },

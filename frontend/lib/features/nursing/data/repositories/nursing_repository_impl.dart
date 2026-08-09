@@ -109,7 +109,7 @@ final class NursingRepositoryImpl implements NursingRepository {
   @override
   Future<Result<List<NursingRosterAssignment>>> listCurrentRosters() {
     return _apiClient.get<List<NursingRosterAssignment>>(
-      ApiEndpoints.collection(HmsApiResource.nurseRosters),
+      ApiEndpoints.collection(HmsApiResource.rosters),
       queryParameters: const <String, Object?>{
         'page': 1,
         'limit': 8,

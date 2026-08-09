@@ -25,7 +25,7 @@ describe('hr-workspace.service contract', () => {
       create: jest.fn().mockResolvedValue({ id: 'unit-1' })};
     prisma.room = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.staff_profile = { findMany: jest.fn().mockResolvedValue([]) };
-    prisma.nurse_roster = { findMany: jest.fn().mockResolvedValue([]) };
+    prisma.roster = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.payroll_run = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.shift_template = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.shift = { findMany: jest.fn().mockResolvedValue([]) };
@@ -107,7 +107,7 @@ describe('hr-workspace.service contract', () => {
           id: 'template-uuid',
           human_friendly_id: 'SHT0001',
           name: 'Morning Ward'},
-        nurse_roster: {
+        roster: {
           id: 'roster-uuid',
           human_friendly_id: 'RST0001',
           department: {

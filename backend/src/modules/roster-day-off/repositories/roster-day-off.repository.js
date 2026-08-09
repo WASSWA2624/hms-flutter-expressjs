@@ -51,7 +51,7 @@ const create = async (data) => {
   try {
     return await prisma.roster_day_off.create({ data: { ...data, off_date: new Date(data.off_date) } });
   } catch (error) {
-    if (error.code === 'P2002') throw new HttpError('errors.database.unique_field', 409, [{ field: 'nurse_roster_id, staff_profile_id, off_date' }]);
+    if (error.code === 'P2002') throw new HttpError('errors.database.unique_field', 409, [{ field: 'roster_id, staff_profile_id, off_date' }]);
     if (error.code === 'P2003') throw new HttpError('errors.database.foreign_key_field', 400, [{ field: error.meta?.field_name || 'field' }]);
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }

@@ -259,7 +259,7 @@ apiV1Router.use('/day-closes', require('../modules/day-close/routes/day-close.ro
 apiV1Router.use('/handovers', require('../modules/handover/routes/handover.routes'));
 apiV1Router.use('/custody-snapshots', require('../modules/custody-snapshot/routes/custody-snapshot.routes'));
 apiV1Router.use('/closeout-packs', require('../modules/closeout-pack/routes/closeout-pack.routes'));
-apiV1Router.use('/nurse-rosters', require('../modules/nurse-roster/routes/nurse-roster.routes'));
+apiV1Router.use('/rosters', require('../modules/roster/routes/roster.routes'));
 apiV1Router.use('/shift-templates', require('../modules/shift-template/routes/shift-template.routes'));
 apiV1Router.use('/roster-day-offs', require('../modules/roster-day-off/routes/roster-day-off.routes'));
 apiV1Router.use('/staff-availabilities', require('../modules/staff-availability/routes/staff-availability.routes'));

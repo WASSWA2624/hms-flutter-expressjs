@@ -1,6 +1,6 @@
-﻿const subject = require('../../../../modules/nurse-roster/services/nurse-roster.service');
+﻿const subject = require('../../../../modules/roster/services/roster.service');
 
-describe('nurse-roster.service contract', () => {
+describe('roster.service contract', () => {
   it('exports service methods', () => {
     expect(subject).toBeDefined();
     expect(typeof subject).toBe('object');

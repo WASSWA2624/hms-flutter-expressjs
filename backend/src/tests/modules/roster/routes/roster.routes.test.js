@@ -1,6 +1,6 @@
-﻿const subject = require('../../../../modules/nurse-roster/routes/nurse-roster.routes');
+﻿const subject = require('../../../../modules/roster/routes/roster.routes');
 
-describe('nurse-roster.routes contract', () => {
+describe('roster.routes contract', () => {
   it('exports an express router with registered handlers', () => {
     expect(subject).toBeDefined();
     expect(typeof subject).toBe('function');

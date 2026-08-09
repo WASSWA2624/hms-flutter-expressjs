@@ -797,7 +797,7 @@ const seedVolumeExtendedPack = async (
   const rosters = [];
   for (let i = 1; i <= 24; i += 1) {
     const roster = await ctx.upsert(
-      'nurse_roster',
+      'roster',
       `${scenario.key}:volx:roster:${pad(i)}`,
       {
         tenant_id: facility.tenant_id,
@@ -808,10 +808,10 @@ const seedVolumeExtendedPack = async (
         status: i % 4 === 0 ? 'DRAFT' : 'PUBLISHED',
         published_at: i % 4 === 0 ? null : ctx.date(-(i * 7 + 8)),
       },
-      { ...seedOpts, publicIdPrefix: 'NRS' }
+      { ...seedOpts, publicIdPrefix: 'RST' }
     );
     rosters.push(roster);
-    bump('nurse_rosters');
+    bump('rosters');
   }
 
   const shifts = [];
@@ -824,7 +824,7 @@ const seedVolumeExtendedPack = async (
       {
         tenant_id: facility.tenant_id,
         facility_id: facility.id,
-        nurse_roster_id: roster?.id || null,
+        roster_id: roster?.id || null,
         shift_type: pick(SHIFT_TYPES, index),
         status: pick(SHIFT_STATUSES, index),
         start_time: ctx.date(dayOffset, (index % 2 === 0 ? 8 : 18) * 60),

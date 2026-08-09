@@ -511,8 +511,8 @@ final class HrWorkItemDto {
       shiftId: _string(json['shift_display_id']) ?? _string(json['shift_id']),
       shiftType: _string(json['shift_type']),
       rosterId:
-          _string(json['nurse_roster_display_id']) ??
-          _string(json['nurse_roster_id']) ??
+          _string(json['roster_display_id']) ??
+          _string(json['roster_id']) ??
           _string(json['display_id']),
       rosterName: _string(json['name']) ?? _string(json['roster_name']),
       payrollRunId: queue == HrQueue.payrollDrafts

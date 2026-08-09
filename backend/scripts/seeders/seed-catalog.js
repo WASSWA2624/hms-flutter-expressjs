@@ -392,7 +392,7 @@ const CURATED_MODELS = Object.freeze(new Set([
   'staff_profile',
   'shift',
   'shift_assignment',
-  'nurse_roster',
+  'roster',
   'housekeeping_task',
   'maintenance_request',
   'equipment_category',

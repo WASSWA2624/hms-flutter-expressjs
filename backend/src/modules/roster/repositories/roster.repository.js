@@ -1,8 +1,8 @@
 /**
- * Nurse roster repository
+ * Roster repository
  *
- * @module modules/nurse-roster/repositories
- * @description Data access layer for nurse roster operations.
+ * @module modules/roster/repositories
+ * @description Data access layer for roster operations.
  * Per module-creation.mdc: Only standard CRUD operations allowed in repositories.
  * Per prisma.mdc: All queries use soft delete filtering (deleted_at: null).
  */
@@ -12,7 +12,7 @@ const { HttpError } = require('@lib/errors');
 
 const findById = async (id, include = {}) => {
   try {
-    return await prisma.nurse_roster.findFirst({
+    return await prisma.roster.findFirst({
       where: {
         id,
         deleted_at: null
@@ -31,7 +31,7 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_a
       ...filters
     };
 
-    return await prisma.nurse_roster.findMany({
+    return await prisma.roster.findMany({
       where,
       skip,
       take,
@@ -50,7 +50,7 @@ const count = async (filters = {}) => {
       ...filters
     };
 
-    return await prisma.nurse_roster.count({ where });
+    return await prisma.roster.count({ where });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -58,7 +58,7 @@ const count = async (filters = {}) => {
 
 const create = async (data) => {
   try {
-    return await prisma.nurse_roster.create({
+    return await prisma.roster.create({
       data
     });
   } catch (error) {
@@ -76,13 +76,13 @@ const create = async (data) => {
 
 const update = async (id, data) => {
   try {
-    return await prisma.nurse_roster.update({
+    return await prisma.roster.update({
       where: { id },
       data
     });
   } catch (error) {
     if (error.code === 'P2025') {
-      throw new HttpError('errors.nurse_roster.not_found', 404);
+      throw new HttpError('errors.roster.not_found', 404);
     }
     if (error.code === 'P2002') {
       const target = error.meta?.target?.[0] || 'field';
@@ -98,7 +98,7 @@ const update = async (id, data) => {
 
 const softDelete = async (id) => {
   try {
-    return await prisma.nurse_roster.update({
+    return await prisma.roster.update({
       where: { id },
       data: {
         deleted_at: new Date()
@@ -106,7 +106,7 @@ const softDelete = async (id) => {
     });
   } catch (error) {
     if (error.code === 'P2025') {
-      throw new HttpError('errors.nurse_roster.not_found', 404);
+      throw new HttpError('errors.roster.not_found', 404);
     }
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }

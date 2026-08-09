@@ -178,7 +178,7 @@ const HMS_SEED_MODEL_ORDER = Object.freeze([
   'shift_swap_request',
   'payroll_run',
   'payroll_item',
-  'nurse_roster',
+  'roster',
   'shift_template',
   'roster_day_off',
   'staff_availability',

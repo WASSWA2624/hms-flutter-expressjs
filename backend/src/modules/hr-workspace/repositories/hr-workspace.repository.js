@@ -55,7 +55,7 @@ const countShiftSwaps = async (where = {}) =>
 
 const countRosters = async (where = {}) =>
   withDbErrorHandling(() =>
-    prisma.nurse_roster.count({
+    prisma.roster.count({
       where: {
         deleted_at: null,
         ...(where || {}),
@@ -181,7 +181,7 @@ const findManyShiftSwaps = async ({ where = {}, skip = 0, take = 20, orderBy = {
 
 const findManyRosters = async ({ where = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' } } = {}) =>
   withDbErrorHandling(() =>
-    prisma.nurse_roster.findMany({
+    prisma.roster.findMany({
       where: {
         deleted_at: null,
         ...(where || {}),
@@ -230,7 +230,7 @@ const findManyUnassignedShifts = async ({ where = {}, skip = 0, take = 20, order
         ...(where || {}),
       },
       include: {
-        nurse_roster: {
+        roster: {
           select: {
             id: true,
             human_friendly_id: true,
@@ -308,7 +308,7 @@ const findTimelineSwaps = async (where = {}, take = 10) =>
 
 const findTimelineRosters = async (where = {}, take = 10) =>
   withDbErrorHandling(() =>
-    prisma.nurse_roster.findMany({
+    prisma.roster.findMany({
       where: {
         deleted_at: null,
         ...(where || {}),

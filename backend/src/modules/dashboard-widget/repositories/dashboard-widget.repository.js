@@ -1885,7 +1885,7 @@ const getDashboardSummaryByPack = async ({
             period_end: { gte: todayStart }
           }
         }),
-        prisma.nurse_roster.count({ where: { ...rosterWhere, status: 'DRAFT' } })
+        prisma.roster.count({ where: { ...rosterWhere, status: 'DRAFT' } })
       ]);
       const availableStaff = Math.max(0, activeStaff - onLeaveToday);
       const filledShiftsToday = attendedToday;

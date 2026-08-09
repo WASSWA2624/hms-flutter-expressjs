@@ -34243,7 +34243,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/GenericMutationRequest'
-  /api/v1/nurse-rosters:
+  /api/v1/rosters:
     get:
       tags:
         - Nurse Rosters
@@ -34252,7 +34252,7 @@ paths:
         Operations for the Nurse Rosters route family.
 
         Offline policy: `revalidate`.
-      operationId: get_api_v1_nurse_rosters
+      operationId: get_api_v1_rosters
       security:
         - BearerAuth: []
       parameters:
@@ -34295,9 +34295,9 @@ paths:
           $ref: '#/components/responses/ValidationProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
-      x-route-family: nurse-rosters
+      x-route-family: rosters
       x-offline-policy: revalidate
-      x-route-source: src/modules/nurse-roster/routes/nurse-roster.routes.js
+      x-route-source: src/modules/roster/routes/roster.routes.js
     post:
       tags:
         - Nurse Rosters
@@ -34306,7 +34306,7 @@ paths:
         Operations for the Nurse Rosters route family.
 
         Offline policy: `no-store`.
-      operationId: post_api_v1_nurse_rosters
+      operationId: post_api_v1_rosters
       security:
         - BearerAuth: []
       parameters:
@@ -34338,16 +34338,16 @@ paths:
           $ref: '#/components/responses/ValidationProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
-      x-route-family: nurse-rosters
+      x-route-family: rosters
       x-offline-policy: no-store
-      x-route-source: src/modules/nurse-roster/routes/nurse-roster.routes.js
+      x-route-source: src/modules/roster/routes/roster.routes.js
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/GenericMutationRequest'
-  /api/v1/nurse-rosters/{id}:
+  /api/v1/rosters/{id}:
     get:
       tags:
         - Nurse Rosters
@@ -34356,7 +34356,7 @@ paths:
         Operations for the Nurse Rosters route family.
 
         Offline policy: `revalidate`.
-      operationId: get_api_v1_nurse_rosters_id
+      operationId: get_api_v1_rosters_id
       security:
         - BearerAuth: []
       parameters:
@@ -34399,9 +34399,9 @@ paths:
           $ref: '#/components/responses/ValidationProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
-      x-route-family: nurse-rosters
+      x-route-family: rosters
       x-offline-policy: revalidate
-      x-route-source: src/modules/nurse-roster/routes/nurse-roster.routes.js
+      x-route-source: src/modules/roster/routes/roster.routes.js
     put:
       tags:
         - Nurse Rosters
@@ -34410,7 +34410,7 @@ paths:
         Operations for the Nurse Rosters route family.
 
         Offline policy: `no-store`.
-      operationId: put_api_v1_nurse_rosters_id
+      operationId: put_api_v1_rosters_id
       security:
         - BearerAuth: []
       parameters:
@@ -34449,9 +34449,9 @@ paths:
           $ref: '#/components/responses/ValidationProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
-      x-route-family: nurse-rosters
+      x-route-family: rosters
       x-offline-policy: no-store
-      x-route-source: src/modules/nurse-roster/routes/nurse-roster.routes.js
+      x-route-source: src/modules/roster/routes/roster.routes.js
       requestBody:
         required: true
         content:
@@ -34466,7 +34466,7 @@ paths:
         Operations for the Nurse Rosters route family.
 
         Offline policy: `no-store`.
-      operationId: delete_api_v1_nurse_rosters_id
+      operationId: delete_api_v1_rosters_id
       security:
         - BearerAuth: []
       parameters:
@@ -34495,16 +34495,16 @@ paths:
           $ref: '#/components/responses/ValidationProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
-      x-route-family: nurse-rosters
+      x-route-family: rosters
       x-offline-policy: no-store
-      x-route-source: src/modules/nurse-roster/routes/nurse-roster.routes.js
+      x-route-source: src/modules/roster/routes/roster.routes.js
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/GenericMutationRequest'
-  /api/v1/nurse-rosters/{id}/publish:
+  /api/v1/rosters/{id}/publish:
     post:
       tags:
         - Nurse Rosters
@@ -34513,7 +34513,7 @@ paths:
         Operations for the Nurse Rosters route family.
 
         Offline policy: `no-store`.
-      operationId: post_api_v1_nurse_rosters_id_publish
+      operationId: post_api_v1_rosters_id_publish
       security:
         - BearerAuth: []
       parameters:
@@ -34553,16 +34553,16 @@ paths:
           $ref: '#/components/responses/ValidationProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
-      x-route-family: nurse-rosters
+      x-route-family: rosters
       x-offline-policy: no-store
-      x-route-source: src/modules/nurse-roster/routes/nurse-roster.routes.js
+      x-route-source: src/modules/roster/routes/roster.routes.js
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/GenericMutationRequest'
-  /api/v1/nurse-rosters/{id}/generate:
+  /api/v1/rosters/{id}/generate:
     post:
       tags:
         - Nurse Rosters
@@ -34571,7 +34571,7 @@ paths:
         Operations for the Nurse Rosters route family.
 
         Offline policy: `no-store`.
-      operationId: post_api_v1_nurse_rosters_id_generate
+      operationId: post_api_v1_rosters_id_generate
       security:
         - BearerAuth: []
       parameters:
@@ -34611,9 +34611,9 @@ paths:
           $ref: '#/components/responses/ValidationProblem'
         '500':
           $ref: '#/components/responses/InternalProblem'
-      x-route-family: nurse-rosters
+      x-route-family: rosters
       x-offline-policy: no-store
-      x-route-source: src/modules/nurse-roster/routes/nurse-roster.routes.js
+      x-route-source: src/modules/roster/routes/roster.routes.js
       requestBody:
         required: true
         content:
@@ -62588,9 +62588,9 @@ x-generated-from:
       module: notifications
       route_file: src/modules/notification/routes/notification.routes.js
       operations: 12
-    - path: /api/v1/nurse-rosters
-      module: nurse-rosters
-      route_file: src/modules/nurse-roster/routes/nurse-roster.routes.js
+    - path: /api/v1/rosters
+      module: rosters
+      route_file: src/modules/roster/routes/roster.routes.js
       operations: 7
     - path: /api/v1/nursing-notes
       module: nursing-notes

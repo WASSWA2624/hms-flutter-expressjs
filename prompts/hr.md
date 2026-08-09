@@ -64,7 +64,7 @@ Refactor the HR workspace so every worklist is a **primary `AppTabStrip` tab**â€
 - `frontend/lib/features/hr/presentation/widgets/hr_roster_dialogs.dart`
 - `frontend/lib/features/hr/presentation/widgets/hr_queue_switcher.dart`
 - `frontend/lib/features/hr/presentation/hr_access.dart`
-- `backend/src/modules/nurse-roster/`
+- `backend/src/modules/roster/`
 - Home metric routes under `frontend/lib/features/home/`
 - Tests under `frontend/test/features/hr/`
 
