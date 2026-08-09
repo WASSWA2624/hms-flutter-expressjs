@@ -7,6 +7,7 @@ import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_hour_grid.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_weekly_schedule_editor.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -60,6 +61,30 @@ String? _resolveRosterFacilityId(WidgetRef ref, HrWorkspaceState? state) {
   return facilities.first.value;
 }
 
+({List<String> workingDays, String? defaultStart, String? defaultEnd})
+_scheduleLegacyDefaults(HrWeeklyScheduleDraft schedule) {
+  final List<String> workingDays = <String>[];
+  String? defaultStart;
+  String? defaultEnd;
+  for (final int day in kHrWeekDayOrder) {
+    final List<HrScheduleSlotDraft> slots = schedule.days[day]!.filledSlots;
+    if (slots.isEmpty) {
+      continue;
+    }
+    final String? code = _kWeekdayCodes[day];
+    if (code != null) {
+      workingDays.add(code);
+    }
+    defaultStart ??= slots.first.start?.format24();
+    defaultEnd ??= slots.first.end?.format24();
+  }
+  return (
+    workingDays: workingDays,
+    defaultStart: defaultStart,
+    defaultEnd: defaultEnd,
+  );
+}
+
 Future<void> showHrCreateRosterDialog(
   BuildContext context,
   WidgetRef ref,
@@ -83,17 +108,16 @@ Future<void> showHrCreateRosterDialog(
     hrWorkspaceControllerProvider.notifier,
   );
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController holidaysController = TextEditingController();
+  final HrWeeklyScheduleDraft schedule = HrWeeklyScheduleDraft(
+    weekdayDefaults: true,
+  );
   DateTime? periodStart = DateTime.now();
   DateTime? periodEnd = DateTime.now().add(const Duration(days: 7));
   final String? facilityId = _resolveRosterFacilityId(ref, state);
   String departmentId = _kRosterAllDepartments;
   const String status = 'DRAFT';
-  bool isRecurring = false;
+  bool isRecurring = true;
   bool respectHolidays = true;
-  final Set<int> workingDays = Set<int>.from(kDefaultAvailabilityWeekdays);
-  AppTimeValue startTime = kDefaultAvailabilityStartTime;
-  AppTimeValue endTime = kDefaultAvailabilityEndTime;
 
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
@@ -102,7 +126,7 @@ Future<void> showHrCreateRosterDialog(
     submitLabel: l10n.hrShiftTemplateAction,
     cancelLabel: l10n.commonCloseActionLabel,
     submitIcon: Icons.save_outlined,
-    maxWidth: 720,
+    maxWidth: 980,
     buildFields:
         (
           BuildContext context,
@@ -177,6 +201,7 @@ Future<void> showHrCreateRosterDialog(
                     labelText: l10n.hrDepartmentLabel,
                     hintText: l10n.hrRosterDepartmentHelper,
                     allowClear: false,
+                    enableSpeechToText: false,
                     options: <AppSelectOption<String>>[
                       AppSelectOption<String>(
                         value: _kRosterAllDepartments,
@@ -194,65 +219,10 @@ Future<void> showHrCreateRosterDialog(
                       });
                     },
                   ),
-                  Text(
-                    l10n.hrRosterWorkingDaysLabel,
-                    style: Theme.of(context).textTheme.titleSmall,
+                  HrRosterHourGrid(
+                    schedule: schedule,
+                    onChanged: () => setLocal(() {}),
                   ),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: <Widget>[
-                      for (final int day in kHrWeekDayOrder)
-                        FilterChip(
-                          label: Text(hrDayLabel(l10n, day)),
-                          selected: workingDays.contains(day),
-                          onSelected: (bool selected) {
-                            setLocal(() {
-                              if (selected) {
-                                workingDays.add(day);
-                              } else {
-                                workingDays.remove(day);
-                              }
-                            });
-                          },
-                        ),
-                    ],
-                  ),
-                  AppResponsiveFieldRow(
-                    gap: AppResponsiveFieldRowGap.form,
-                    children: <Widget>[
-                      AppTimeField(
-                        value: startTime,
-                        labelText: l10n.hrRosterDefaultStartTimeLabel,
-                        pickerButtonLabel: l10n.appTimePickerAction,
-                        invalidTimeMessage: l10n.appTimeInvalidMessage,
-                        enableSpeechToText: false,
-                        onChanged: (AppTimeValue? value) {
-                          if (value != null) {
-                            setLocal(() => startTime = value);
-                          }
-                        },
-                      ),
-                      AppTimeField(
-                        value: endTime,
-                        labelText: l10n.hrRosterDefaultEndTimeLabel,
-                        pickerButtonLabel: l10n.appTimePickerAction,
-                        invalidTimeMessage: l10n.appTimeInvalidMessage,
-                        enableSpeechToText: false,
-                        onChanged: (AppTimeValue? value) {
-                          if (value != null) {
-                            setLocal(() => endTime = value);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  if (respectHolidays)
-                    AppTextField(
-                      controller: holidaysController,
-                      labelText: l10n.hrRosterPublicHolidaysLabel,
-                      maxLines: 2,
-                    ),
                 ],
               );
             },
@@ -275,23 +245,18 @@ Future<void> showHrCreateRosterDialog(
           );
         }
       }
-      if (workingDays.isEmpty) {
+
+      final String? scheduleError = schedule.validate(l10n);
+      if (scheduleError != null) {
         return Future<AppFailure?>.value(
-          AppFailure.validation(
-            detailMessage: l10n.hrFieldRequiredLabel(
-              l10n.hrRosterWorkingDaysLabel,
-            ),
-          ),
+          AppFailure.validation(detailMessage: scheduleError),
         );
       }
 
-      final List<String> holidays = respectHolidays
-          ? holidaysController.text
-                .split(RegExp(r'[\s,;]+'))
-                .map((String part) => part.trim())
-                .where((String part) => part.isNotEmpty)
-                .toList(growable: false)
-          : const <String>[];
+      final scheduleDefaults = _scheduleLegacyDefaults(schedule);
+      final List<String> workingDays = scheduleDefaults.workingDays;
+      final String? defaultStart = scheduleDefaults.defaultStart;
+      final String? defaultEnd = scheduleDefaults.defaultEnd;
 
       final DateTime effectiveStart = periodStart ?? DateTime.now();
       final DateTime effectiveEnd =
@@ -311,15 +276,11 @@ Future<void> showHrCreateRosterDialog(
         'materialize_shifts': true,
         'constraints': <String, Object?>{
           'respect_public_holidays': respectHolidays,
-          'public_holidays': holidays,
-          'working_days': workingDays
-              .map((int day) => _kWeekdayCodes[day])
-              .whereType<String>()
-              .toList(growable: false),
-          'default_start_time':
-              '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}',
-          'default_end_time':
-              '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}',
+          'public_holidays': <String>[],
+          'working_days': workingDays,
+          'default_start_time': defaultStart,
+          'default_end_time': defaultEnd,
+          'weekly_schedule_json': schedule.toTemplateWeeklySchedulePayload(),
           'attached_staff_ids': <String>[],
         },
       };
@@ -327,6 +288,8 @@ Future<void> showHrCreateRosterDialog(
     },
   );
 
+  schedule.dispose();
+  nameController.dispose();
   if (saved == true && context.mounted) {
     showHrMutationSnackBar(context, null);
   }

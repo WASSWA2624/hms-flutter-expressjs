@@ -38651,6 +38651,36 @@ abstract class AppLocalizations {
   /// **'Working days'**
   String get hrRosterWorkingDaysLabel;
 
+  /// Title above the visual week hour grid on create roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly hours'**
+  String get hrRosterWeekHoursTitle;
+
+  /// Hint under the roster week hour grid.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap or drag hours under each day. Use the day menu to copy hours to all days or following days.'**
+  String get hrRosterWeekHoursHint;
+
+  /// Copy one day’s hours to every weekday column.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to all'**
+  String get hrRosterCopyHoursToAllAction;
+
+  /// Copy one day’s hours to later weekday columns.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to following days'**
+  String get hrRosterCopyHoursToFollowingAction;
+
+  /// Clear painted hours for one weekday column.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear day'**
+  String get hrRosterClearDayHoursAction;
+
   /// Default shift start time for a flexible roster.
   ///
   /// In en, this message translates to:

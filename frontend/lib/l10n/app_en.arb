@@ -26931,6 +26931,26 @@
   "@hrRosterWorkingDaysLabel": {
     "description": "Which weekdays the roster covers."
   },
+  "hrRosterWeekHoursTitle": "Weekly hours",
+  "@hrRosterWeekHoursTitle": {
+    "description": "Title above the visual week hour grid on create roster."
+  },
+  "hrRosterWeekHoursHint": "Tap or drag hours under each day. Use the day menu to copy hours to all days or following days.",
+  "@hrRosterWeekHoursHint": {
+    "description": "Hint under the roster week hour grid."
+  },
+  "hrRosterCopyHoursToAllAction": "Copy to all",
+  "@hrRosterCopyHoursToAllAction": {
+    "description": "Copy one day’s hours to every weekday column."
+  },
+  "hrRosterCopyHoursToFollowingAction": "Copy to following days",
+  "@hrRosterCopyHoursToFollowingAction": {
+    "description": "Copy one day’s hours to later weekday columns."
+  },
+  "hrRosterClearDayHoursAction": "Clear day",
+  "@hrRosterClearDayHoursAction": {
+    "description": "Clear painted hours for one weekday column."
+  },
   "hrRosterDefaultStartTimeLabel": "Default start time",
   "@hrRosterDefaultStartTimeLabel": {
     "description": "Default shift start time for a flexible roster."

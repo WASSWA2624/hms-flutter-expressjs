@@ -20889,6 +20889,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterWorkingDaysLabel => 'Working days';
 
   @override
+  String get hrRosterWeekHoursTitle => 'Weekly hours';
+
+  @override
+  String get hrRosterWeekHoursHint =>
+      'Tap or drag hours under each day. Use the day menu to copy hours to all days or following days.';
+
+  @override
+  String get hrRosterCopyHoursToAllAction => 'Copy to all';
+
+  @override
+  String get hrRosterCopyHoursToFollowingAction => 'Copy to following days';
+
+  @override
+  String get hrRosterClearDayHoursAction => 'Clear day';
+
+  @override
   String get hrRosterDefaultStartTimeLabel => 'Default start time';
 
   @override
