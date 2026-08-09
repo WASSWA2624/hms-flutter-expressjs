@@ -267,7 +267,7 @@ HrDeskSection? hrFallbackDeskSection(AppAccessPolicy policy) {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Human resources tab | navigate | read ∩ `hr:read` |
-/// | Add staff (search trailing) | create | write ∩ `hr:write` |
+/// | Add staff / Users CRUD (ManageUsersPanel) | create/read/update/delete | write ∩ `hr:write` + access-admin canWrite |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Success snackbar / form validation | feedback | write ∩ |

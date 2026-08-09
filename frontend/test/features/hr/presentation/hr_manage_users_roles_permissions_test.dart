@@ -522,7 +522,7 @@ void main() {
       expect(find.text('Create staff'), findsNothing);
       expect(find.byType(HrAccessWorkspacePanel), findsNothing);
       // Falls back to an authorized section (staff directory).
-      expect(_tab('Human resources'), findsOneWidget);
+      expect(_tab('Staff members'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

@@ -732,7 +732,7 @@ SCREENS: list[dict] = [
             ),
         },
         "tabs": [
-            {"slug": "human-resources", "label": "Human resources", "section": "staff", "extra": "Staff directory; Add staff."},
+            {"slug": "human-resources", "label": "Staff members", "section": "staff", "extra": "Staff directory; Add staff."},
             {"slug": "leave-requests", "label": "Leave requests", "section": "leave", "extra": "Request/approve leave."},
             {
                 "slug": "shifts",

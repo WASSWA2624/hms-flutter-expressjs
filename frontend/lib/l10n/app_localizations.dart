@@ -38591,6 +38591,12 @@ abstract class AppLocalizations {
   /// **'Staff directory'**
   String get hrStaffDirectoryTitle;
 
+  /// Human resources workspace tab label for the staff directory section.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff members'**
+  String get hrStaffMembersSummaryLabel;
+
   /// Human resources workspace text for hrStaffLabel.
   ///
   /// In en, this message translates to:

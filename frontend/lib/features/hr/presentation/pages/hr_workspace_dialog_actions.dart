@@ -74,63 +74,31 @@ Future<void> applyHrQueueAndShow(
   await showHrWorkQueueDialog(context, ref, maximize: maximize);
 }
 
-/// Opens the staff directory dialog (shared by `/hr` and the workforce dashboard).
+/// Opens the Users CRUD dialog (identical to Facility setup Users /
+/// [ManageUsersPanel] / [showManageUsersDialog]).
 Future<void> showHrStaffDirectoryDialog(
   BuildContext context,
   WidgetRef ref, {
   String? statusFilter,
   bool maximize = false,
 }) async {
-  final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceState? state = readHrWorkspaceState(ref);
-  final TextEditingController searchController = TextEditingController(
-    text: state?.staffQuery.search ?? '',
-  );
-  final AppListTableColumnVisibilityController<HrStaffProfile>
-  columnController = AppListTableColumnVisibilityController<HrStaffProfile>();
-
-  try {
-    await showAppDialog<void>(
-      context: context,
-      builder: (BuildContext dialogContext) => AppDialog(
-        title: Text(l10n.hrStaffDirectoryTitle),
-        icon: const Icon(Icons.people_outline),
-        scrollable: true,
-        maxWidth: 980,
-        initialMaximized: maximize,
-        content: _HrStaffDirectoryDialogContent(
-          searchController: searchController,
-          columnVisibilityController: columnController,
-          statusFilter: statusFilter,
-          onStaffSelected: (HrStaffProfile staff) {
-            unawaited(_openStaffDetailFromDialog(context, ref, staff));
-          },
-        ),
-      ),
-    );
-  } finally {
-    searchController.dispose();
-    columnController.dispose();
-  }
+  // statusFilter / maximize are retained for call-site compatibility; Users
+  // CRUD owns its own filters and dialog chrome via ManageUsersPanel.
+  await showManageUsersDialog(context, ref);
 }
 
-Future<void> _openStaffDetailFromDialog(
+/// Opens the leave queue filtered to requests awaiting decision.
+Future<void> showHrPendingLeaveDialog(
   BuildContext context,
   WidgetRef ref,
-  HrStaffProfile staff,
 ) async {
-  final HrWorkspaceController controller = ref.read(
-    hrWorkspaceControllerProvider.notifier,
+  await applyHrQueueAndShow(
+    context,
+    ref,
+    HrQueue.leaveRequests,
+    maximize: true,
+    status: 'REQUESTED',
   );
-  final AppFailure? failure = await controller.selectStaff(staff);
-  if (!context.mounted) {
-    return;
-  }
-  if (failure != null) {
-    showHrMutationSnackBar(context, failure);
-    return;
-  }
-  await showHrStaffDetailDialog(context, ref);
 }
 
 /// Opens the selected staff detail dialog.
@@ -215,41 +183,4 @@ Future<void> showHrAttendedTodayDialog(
     from: from,
     to: to,
   );
-}
-
-class _HrStaffDirectoryDialogContent extends ConsumerWidget {
-  const _HrStaffDirectoryDialogContent({
-    required this.searchController,
-    required this.columnVisibilityController,
-    required this.onStaffSelected,
-    this.statusFilter,
-  });
-
-  final TextEditingController searchController;
-  final AppListTableColumnVisibilityController<HrStaffProfile>
-  columnVisibilityController;
-  final ValueChanged<HrStaffProfile> onStaffSelected;
-  final String? statusFilter;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final HrWorkspaceState? state = _hrStateFromAsync(
-      ref.watch(hrWorkspaceControllerProvider),
-    );
-    if (state == null) {
-      return const SizedBox.shrink();
-    }
-
-    return _HrStaffDirectory(
-      state: state,
-      searchController: searchController,
-      columnVisibilityController: columnVisibilityController,
-      onPageChanged: ref
-          .read(hrWorkspaceControllerProvider.notifier)
-          .changeStaffPage,
-      onStaffSelected: onStaffSelected,
-      onStaffNextAction: onStaffSelected,
-      statusFilter: statusFilter,
-    );
-  }
 }

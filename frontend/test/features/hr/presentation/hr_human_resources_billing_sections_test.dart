@@ -13,6 +13,10 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
+import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
+import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/domain/repositories/hr_repository.dart';
@@ -31,7 +35,19 @@ import '../../../helpers/section_layout_test_helpers.dart';
 
 class _MockHrRepository extends Mock implements HrRepository {}
 
+class _MockAccessAdminRepository extends Mock
+    implements AccessAdminRepository {}
+
 const String _tenantUuid = '550e8400-e29b-41d4-a716-446655440000';
+
+const AccessAdminItem _user = AccessAdminItem(
+  id: 'user-1',
+  resource: AccessAdminResource.users,
+  displayId: 'USR-1',
+  title: 'Ada User',
+  email: 'ada@example.com',
+  status: 'ACTIVE',
+);
 
 const HrStaffProfile _staff = HrStaffProfile(
   id: 'staff-1',
@@ -76,6 +92,32 @@ const HrStaffDetail _staffDetail = HrStaffDetail(
 
 Finder _searchAction(String label) => find.byTooltip(label);
 
+AccessAdminWorkspaceData _usersData({
+  bool canWrite = true,
+  List<AccessAdminItem> items = const <AccessAdminItem>[_user],
+}) {
+  return AccessAdminWorkspaceData(
+    permissions: AccessAdminWorkspacePermissions(
+      canRead: true,
+      canWrite: canWrite,
+    ),
+    lookups: const AccessAdminLookups(
+      userStatuses: <String>['ACTIVE', 'INACTIVE'],
+    ),
+    items: items,
+    page: AppPage<AccessAdminItem>(
+      items: items,
+      request: const AppPageRequest(pageSize: 25),
+      totalItemCount: items.length,
+    ),
+    query: const AccessAdminWorkspaceQuery(
+      resource: AccessAdminResource.users,
+      includeDeleted: true,
+      lean: true,
+    ),
+  );
+}
+
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
@@ -106,6 +148,7 @@ void _stubWorkspace(
   List<HrStaffProfile> staff = const <HrStaffProfile>[_staff],
   HrStaffDetail detail = _staffDetail,
   Result<HrWorkspaceOverview>? overviewOverride,
+  bool failStaffList = false,
 }) {
   when(() => repository.loadOverview()).thenAnswer(
     (_) async =>
@@ -115,13 +158,20 @@ void _stubWorkspace(
         ),
   );
   when(() => repository.listStaffProfiles(any())).thenAnswer(
-    (_) async => Result<AppPage<HrStaffProfile>>.success(
-      AppPage<HrStaffProfile>(
-        items: staff,
-        request: const AppPageRequest(),
-        totalItemCount: staff.length,
-      ),
-    ),
+    (_) async {
+      if (failStaffList) {
+        return const Result<AppPage<HrStaffProfile>>.failure(
+          AppFailure.network(),
+        );
+      }
+      return Result<AppPage<HrStaffProfile>>.success(
+        AppPage<HrStaffProfile>(
+          items: staff,
+          request: const AppPageRequest(),
+          totalItemCount: staff.length,
+        ),
+      );
+    },
   );
   when(
     () => repository.loadReferenceData(
@@ -165,18 +215,43 @@ void _stubWorkspace(
   );
 }
 
+void _stubUsersWorkspace(
+  _MockAccessAdminRepository repository, {
+  bool canWrite = true,
+  List<AccessAdminItem> items = const <AccessAdminItem>[_user],
+}) {
+  when(() => repository.getWorkspace(any())).thenAnswer(
+    (_) async => Result<AccessAdminWorkspaceData>.success(
+      _usersData(canWrite: canWrite, items: items),
+    ),
+  );
+}
+
 Future<void> _pumpStaffTab(
   WidgetTester tester, {
   required _MockHrRepository repository,
+  required _MockAccessAdminRepository accessRepository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   List<HrStaffProfile> staff = const <HrStaffProfile>[_staff],
   HrStaffDetail detail = _staffDetail,
+  bool usersCanWrite = true,
+  List<AccessAdminItem> users = const <AccessAdminItem>[_user],
+  String initialLocation = '/hr?section=staff',
+  Result<HrWorkspaceOverview>? overviewOverride,
+  bool failStaffList = false,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository, staff: staff, detail: detail);
+  _stubWorkspace(
+    repository,
+    staff: staff,
+    detail: detail,
+    overviewOverride: overviewOverride,
+    failStaffList: failStaffList,
+  );
+  _stubUsersWorkspace(accessRepository, canWrite: usersCanWrite, items: users);
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -184,7 +259,7 @@ Future<void> _pumpStaffTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/hr?section=staff',
+    initialLocation: initialLocation,
     routes: <RouteBase>[
       GoRoute(
         path: '/hr',
@@ -203,6 +278,7 @@ Future<void> _pumpStaffTab(
     ProviderScope(
       overrides: [
         hrRepositoryProvider.overrideWithValue(repository),
+        accessAdminRepositoryProvider.overrideWithValue(accessRepository),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
@@ -224,24 +300,22 @@ Future<void> _pumpStaffTab(
   await tester.pumpAndSettle();
 }
 
-Future<void> _openStaffDetail(WidgetTester tester) async {
-  await tester.tap(find.text('Ada Staff').first);
-  await tester.pumpAndSettle();
-}
-
 void main() {
   late _MockHrRepository repository;
+  late _MockAccessAdminRepository accessRepository;
 
   setUpAll(() {
     registerFallbackValue(const HrStaffQuery());
     registerFallbackValue(const HrWorkItemsQuery());
     registerFallbackValue(const HrAccessQuery());
     registerFallbackValue(const HrStaffProfile(id: 'fallback'));
+    registerFallbackValue(const AccessAdminWorkspaceQuery());
     registerFallbackValue(<String, Object?>{});
   });
 
   setUp(() {
     repository = _MockHrRepository();
+    accessRepository = _MockAccessAdminRepository();
   });
 
   group('HR Human resources financial inventory (AC1)', () {
@@ -329,6 +403,7 @@ void main() {
       await _pumpStaffTab(
         tester,
         repository: repository,
+        accessRepository: accessRepository,
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.hrRead,
@@ -339,7 +414,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Ada Staff'), findsWidgets);
+      expect(find.byType(ManageUsersPanel), findsOneWidget);
+      expect(find.text('Ada User'), findsWidgets);
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);
       expect(find.textContaining('Balance due'), findsNothing);
@@ -353,6 +429,7 @@ void main() {
       await _pumpStaffTab(
         tester,
         repository: repository,
+        accessRepository: accessRepository,
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.hrRead,
@@ -361,9 +438,8 @@ void main() {
             AppPermissions.rosterWrite,
           },
         ),
+        initialLocation: '/hr?section=staff&staff=STF-1',
       );
-
-      await _openStaffDetail(tester);
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
       expect(find.text('Compensation'), findsWidgets);
@@ -382,15 +458,18 @@ void main() {
       await _pumpStaffTab(
         tester,
         repository: repository,
+        accessRepository: accessRepository,
         accessPolicy: _policy(
           permissions: <AppPermission>{AppPermissions.hrRead},
         ),
+        usersCanWrite: false,
+        initialLocation: '/hr?section=staff&staff=STF-1',
       );
 
+      expect(find.byType(ManageUsersPanel), findsOneWidget);
+      expect(_searchAction('Create user'), findsNothing);
       expect(_searchAction('Add staff'), findsNothing);
       expect(find.textContaining('Receive payment'), findsNothing);
-
-      await _openStaffDetail(tester);
 
       expect(
         find.descendant(
@@ -412,12 +491,13 @@ void main() {
       expectFlatSections(tester);
     });
 
-    testWidgets('Add staff primary is present without Billing chrome', (
+    testWidgets('Create user primary is present without Billing chrome', (
       WidgetTester tester,
     ) async {
       await _pumpStaffTab(
         tester,
         repository: repository,
+        accessRepository: accessRepository,
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.hrRead,
@@ -426,7 +506,9 @@ void main() {
         ),
       );
 
-      expect(_searchAction('Add staff'), findsOneWidget);
+      expect(find.byType(ManageUsersPanel), findsOneWidget);
+      expect(_searchAction('Create user'), findsOneWidget);
+      expect(_searchAction('Add staff'), findsNothing);
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);
       expectFlatSections(tester);
@@ -438,6 +520,7 @@ void main() {
       await _pumpStaffTab(
         tester,
         repository: repository,
+        accessRepository: accessRepository,
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.hrRead,
@@ -445,9 +528,9 @@ void main() {
             AppPermissions.financialApprove,
           },
         ),
+        initialLocation: '/hr?section=staff&staff=STF-1',
       );
 
-      await _openStaffDetail(tester);
       await tester.tap(
         find.descendant(
           of: find.byType(AppQuickActions),
@@ -470,6 +553,7 @@ void main() {
       await _pumpStaffTab(
         tester,
         repository: repository,
+        accessRepository: accessRepository,
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.hrRead,
@@ -479,10 +563,11 @@ void main() {
           },
         ),
         physicalSize: const Size(1920, 1200),
+        initialLocation: '/hr?section=staff&staff=STF-1',
       );
 
+      expect(find.byType(ManageUsersPanel), findsOneWidget);
       expectFlatSections(tester);
-      await _openStaffDetail(tester);
       expect(find.text('Assignments'), findsWidgets);
       expect(find.text('Compensation'), findsWidgets);
       expectFlatSections(tester);
@@ -492,6 +577,7 @@ void main() {
       await _pumpStaffTab(
         tester,
         repository: repository,
+        accessRepository: accessRepository,
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.hrRead,
@@ -499,10 +585,10 @@ void main() {
           },
         ),
         physicalSize: const Size(390, 844),
+        initialLocation: '/hr?section=staff&staff=STF-1',
       );
       expectFlatSections(tester);
-
-      await _openStaffDetail(tester);
+      expect(find.byType(ManageUsersPanel), findsOneWidget);
       expectFlatSections(tester);
     });
 
@@ -512,6 +598,7 @@ void main() {
       await _pumpStaffTab(
         tester,
         repository: repository,
+        accessRepository: accessRepository,
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.hrRead,
@@ -519,8 +606,8 @@ void main() {
           },
         ),
         themeMode: ThemeMode.light,
+        initialLocation: '/hr?section=staff&staff=STF-1',
       );
-      await _openStaffDetail(tester);
       expectFlatSections(tester);
     });
 
@@ -530,6 +617,7 @@ void main() {
       await _pumpStaffTab(
         tester,
         repository: repository,
+        accessRepository: accessRepository,
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.hrRead,
@@ -537,8 +625,8 @@ void main() {
           },
         ),
         themeMode: ThemeMode.dark,
+        initialLocation: '/hr?section=staff&staff=STF-1',
       );
-      await _openStaffDetail(tester);
       expectFlatSections(tester);
     });
   });
@@ -550,12 +638,16 @@ void main() {
       await _pumpStaffTab(
         tester,
         repository: repository,
+        accessRepository: accessRepository,
         accessPolicy: _policy(
           permissions: <AppPermission>{AppPermissions.hrRead},
         ),
+        usersCanWrite: false,
+        users: const <AccessAdminItem>[],
         staff: const <HrStaffProfile>[],
       );
 
+      expect(find.byType(ManageUsersPanel), findsOneWidget);
       expect(find.textContaining('Receive payment'), findsNothing);
       expectFlatSections(tester);
     });
@@ -563,23 +655,18 @@ void main() {
     testWidgets('error/retry remains for authorized readers', (
       WidgetTester tester,
     ) async {
-      when(() => repository.loadOverview()).thenAnswer(
-        (_) async => const Result<HrWorkspaceOverview>.failure(
-          AppFailure.network(),
-        ),
-      );
-      when(() => repository.listStaffProfiles(any())).thenAnswer(
-        (_) async => const Result<AppPage<HrStaffProfile>>.failure(
-          AppFailure.network(),
-        ),
-      );
-
       await _pumpStaffTab(
         tester,
         repository: repository,
+        accessRepository: accessRepository,
         accessPolicy: _policy(
           permissions: <AppPermission>{AppPermissions.hrRead},
         ),
+        usersCanWrite: false,
+        overviewOverride: const Result<HrWorkspaceOverview>.failure(
+          AppFailure.network(),
+        ),
+        failStaffList: true,
       );
 
       expect(find.textContaining('Receive payment'), findsNothing);

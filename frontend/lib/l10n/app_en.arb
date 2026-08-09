@@ -26891,6 +26891,10 @@
   "@hrStaffDirectoryTitle": {
     "description": "Human resources workspace text for hrStaffDirectoryTitle."
   },
+  "hrStaffMembersSummaryLabel": "Staff members",
+  "@hrStaffMembersSummaryLabel": {
+    "description": "Human resources workspace tab label for the staff directory section."
+  },
   "hrStaffLabel": "Staff",
   "@hrStaffLabel": {
     "description": "Human resources workspace text for hrStaffLabel."

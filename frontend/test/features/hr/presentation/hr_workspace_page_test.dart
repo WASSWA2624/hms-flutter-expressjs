@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +13,10 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
+import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
+import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/domain/repositories/hr_repository.dart';
@@ -23,26 +29,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockHrRepository extends Mock implements HrRepository {}
 
+class _MockAccessAdminRepository extends Mock
+    implements AccessAdminRepository {}
+
 const String _tenantUuid = '550e8400-e29b-41d4-a716-446655440000';
 
-const HrStaffProfile _staffNeedsDepartment = HrStaffProfile(
-  id: 'staff-1',
-  displayId: 'STF-1',
-  staffNumber: 'EMP-1',
-  userFullName: 'Ada Needs Dept',
-  tenantId: _tenantUuid,
-  status: 'ACTIVE',
-);
-
-const HrStaffProfile _staffComplete = HrStaffProfile(
-  id: 'staff-2',
-  displayId: 'STF-2',
-  staffNumber: 'EMP-2',
-  userFullName: 'Ben Complete',
-  tenantId: _tenantUuid,
-  departmentId: 'dept-1',
-  departmentName: 'Emergency',
-  position: 'Nurse',
+const AccessAdminItem _user = AccessAdminItem(
+  id: 'user-1',
+  resource: AccessAdminResource.users,
+  displayId: 'USR-1',
+  title: 'Ada User',
+  email: 'ada@example.com',
   status: 'ACTIVE',
 );
 
@@ -66,6 +63,29 @@ Finder _tabToolbarRefresh() => find.descendant(
         (widget is AppTabToolbarPrimary && widget.label == 'Refresh'),
   ),
 );
+
+AccessAdminWorkspaceData _usersData({bool canWrite = true}) {
+  return AccessAdminWorkspaceData(
+    permissions: AccessAdminWorkspacePermissions(
+      canRead: true,
+      canWrite: canWrite,
+    ),
+    lookups: const AccessAdminLookups(
+      userStatuses: <String>['ACTIVE', 'INACTIVE'],
+    ),
+    items: const <AccessAdminItem>[_user],
+    page: const AppPage<AccessAdminItem>(
+      items: <AccessAdminItem>[_user],
+      request: AppPageRequest(pageSize: 25),
+      totalItemCount: 1,
+    ),
+    query: const AccessAdminWorkspaceQuery(
+      resource: AccessAdminResource.users,
+      includeDeleted: true,
+      lean: true,
+    ),
+  );
+}
 
 AppAccessPolicy _hrWritePolicy() {
   return AppAccessPolicy.fromSession(
@@ -113,11 +133,7 @@ AppAccessPolicy _hrReadOnlyPolicy() {
   );
 }
 
-void _stubWorkspace(
-  _MockHrRepository repository, {
-  List<HrStaffProfile> staff = const <HrStaffProfile>[_staffNeedsDepartment],
-  List<HrWorkItem> workItems = const <HrWorkItem>[_leaveItem],
-}) {
+void _stubHrWorkspace(_MockHrRepository repository) {
   when(() => repository.loadOverview()).thenAnswer(
     (_) async => const Result<HrWorkspaceOverview>.success(
       HrWorkspaceOverview(
@@ -126,11 +142,11 @@ void _stubWorkspace(
     ),
   );
   when(() => repository.listStaffProfiles(any())).thenAnswer(
-    (_) async => Result<AppPage<HrStaffProfile>>.success(
+    (_) async => const Result<AppPage<HrStaffProfile>>.success(
       AppPage<HrStaffProfile>(
-        items: staff,
-        request: const AppPageRequest(),
-        totalItemCount: staff.length,
+        items: <HrStaffProfile>[],
+        request: AppPageRequest(),
+        totalItemCount: 0,
       ),
     ),
   );
@@ -147,7 +163,7 @@ void _stubWorkspace(
   ) async {
     final HrWorkItemsQuery query =
         invocation.positionalArguments.single as HrWorkItemsQuery;
-    final List<HrWorkItem> items = workItems
+    final List<HrWorkItem> items = <HrWorkItem>[_leaveItem]
         .where((HrWorkItem item) => item.queue == query.queue)
         .toList(growable: false);
     return Result<AppPage<HrWorkItem>>.success(
@@ -157,13 +173,6 @@ void _stubWorkspace(
         totalItemCount: items.length,
       ),
     );
-  });
-  when(() => repository.loadStaffDetail(any())).thenAnswer((
-    Invocation invocation,
-  ) async {
-    final HrStaffProfile profile =
-        invocation.positionalArguments.single as HrStaffProfile;
-    return Result<HrStaffDetail>.success(HrStaffDetail(profile: profile));
   });
   when(() => repository.listAccessUsers(any())).thenAnswer(
     (_) async => const Result<AppPage<HrAccessUser>>.success(
@@ -191,16 +200,30 @@ void _stubWorkspace(
   );
 }
 
+void _stubUsersWorkspace(
+  _MockAccessAdminRepository repository, {
+  bool canWrite = true,
+}) {
+  when(() => repository.getWorkspace(any())).thenAnswer(
+    (_) async => Result<AccessAdminWorkspaceData>.success(
+      _usersData(canWrite: canWrite),
+    ),
+  );
+}
+
 Future<void> _pumpHrWorkspace(
   WidgetTester tester, {
   required _MockHrRepository repository,
+  required _MockAccessAdminRepository accessRepository,
   HrWorkspaceQuery? initialQuery,
   String initialLocation = '/hr',
   AppAccessPolicy? accessPolicy,
+  bool usersCanWrite = true,
   Size physicalSize = const Size(1440, 900),
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
+  _stubUsersWorkspace(accessRepository, canWrite: usersCanWrite);
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -228,6 +251,7 @@ Future<void> _pumpHrWorkspace(
     ProviderScope(
       overrides: [
         hrRepositoryProvider.overrideWithValue(repository),
+        accessAdminRepositoryProvider.overrideWithValue(accessRepository),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
@@ -275,33 +299,40 @@ Future<void> _selectTab(WidgetTester tester, String label) async {
 
 void main() {
   late _MockHrRepository repository;
+  late _MockAccessAdminRepository accessRepository;
 
   setUpAll(() {
     registerFallbackValue(const HrStaffQuery());
     registerFallbackValue(const HrWorkItemsQuery());
     registerFallbackValue(const HrAccessQuery());
     registerFallbackValue(const HrStaffProfile(id: 'fallback'));
+    registerFallbackValue(const AccessAdminWorkspaceQuery());
   });
 
   setUp(() {
     repository = _MockHrRepository();
+    accessRepository = _MockAccessAdminRepository();
   });
 
-  testWidgets('moves section actions to search bar and drops HR activity', (
+  testWidgets('Human resources hosts ManageUsersPanel Users CRUD', (
     WidgetTester tester,
   ) async {
-    _stubWorkspace(repository);
-    await _pumpHrWorkspace(tester, repository: repository);
+    _stubHrWorkspace(repository);
+    await _pumpHrWorkspace(
+      tester,
+      repository: repository,
+      accessRepository: accessRepository,
+    );
 
-    expect(_searchAction('Add staff'), findsOneWidget);
+    expect(find.byType(ManageUsersPanel), findsOneWidget);
+    expect(_searchAction('Create user'), findsOneWidget);
+    expect(find.text('Ada User'), findsOneWidget);
     expect(_tabToolbarRefresh(), findsNothing);
     expect(find.byTooltip('HR activity'), findsNothing);
-    expect(find.text('Request maintenance'), findsNothing);
-    expect(find.text('Report equipment fault'), findsNothing);
 
     await _selectTab(tester, 'Leave requests');
     expect(_searchAction('Request leave'), findsOneWidget);
-    expect(_searchAction('Run payroll'), findsNothing);
+    expect(find.byType(ManageUsersPanel), findsNothing);
 
     await _selectTab(tester, 'Swap requests');
     expect(_searchAction('Request leave'), findsNothing);
@@ -315,72 +346,33 @@ void main() {
 
     await _selectTab(tester, 'Payroll drafts');
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
-    expect(_searchAction('Run payroll'), findsNothing);
-
-    await _selectTab(tester, 'Manage users and roles');
-    expect(_searchAction('Manage users and roles'), findsNothing);
-    expect(find.byType(AppTabToolbarPrimary), findsNothing);
-    expect(find.text('Create staff'), findsOneWidget);
   });
 
-  testWidgets('queue deep-link prefers owning primary over conflicting section', (
+  testWidgets('read-only HR hides Create user on ManageUsersPanel', (
     WidgetTester tester,
   ) async {
-    _stubWorkspace(repository);
+    _stubHrWorkspace(repository);
     await _pumpHrWorkspace(
       tester,
       repository: repository,
-      initialQuery: const HrWorkspaceQuery(
-        section: 'shifts',
-        queue: HrQueue.swapRequests,
-      ),
-      initialLocation: '/hr?section=shifts&queue=SWAP_REQUESTS',
-    );
-
-    // Swap → Swap requests primary; Leave/Shifts trailing actions absent.
-    expect(_searchAction('Schedule templates'), findsNothing);
-    expect(_searchAction('Request leave'), findsNothing);
-  });
-
-  testWidgets('hides unauthorized primary and next-action controls', (
-    WidgetTester tester,
-  ) async {
-    _stubWorkspace(repository);
-    await _pumpHrWorkspace(
-      tester,
-      repository: repository,
+      accessRepository: accessRepository,
       accessPolicy: _hrReadOnlyPolicy(),
+      usersCanWrite: false,
     );
 
-    expect(_searchAction('Add staff'), findsNothing);
-    expect(find.text('Assign department'), findsNothing);
-
-    await _selectTab(tester, 'Leave requests');
-    expect(_searchAction('Request leave'), findsNothing);
-    expect(find.text('Approve leave'), findsNothing);
+    expect(find.byType(ManageUsersPanel), findsOneWidget);
+    expect(_searchAction('Create user'), findsNothing);
+    expect(find.text('Ada User'), findsOneWidget);
   });
 
-  testWidgets('staff next-action opens assign department without detail shell', (
+  testWidgets('leave next-action opens approve surface without Quick actions', (
     WidgetTester tester,
   ) async {
-    _stubWorkspace(repository);
-    await _pumpHrWorkspace(tester, repository: repository);
-
-    await tester.tap(find.text('Assign department'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Assign department'), findsWidgets);
-    expect(find.text('Staff actions'), findsNothing);
-    verify(() => repository.loadStaffDetail(any())).called(greaterThan(0));
-  });
-
-  testWidgets('work-queue next-action opens approve leave without detail shell', (
-    WidgetTester tester,
-  ) async {
-    _stubWorkspace(repository);
+    _stubHrWorkspace(repository);
     await _pumpHrWorkspace(
       tester,
       repository: repository,
+      accessRepository: accessRepository,
       initialQuery: const HrWorkspaceQuery(section: 'leave-requests'),
       initialLocation: '/hr?section=leave-requests',
     );
@@ -393,20 +385,21 @@ void main() {
     expect(find.text('Quick actions'), findsNothing);
   });
 
-  testWidgets('row select still opens staff detail for review profile path', (
-    WidgetTester tester,
-  ) async {
-    _stubWorkspace(
-      repository,
-      staff: const <HrStaffProfile>[_staffComplete],
+  test('Human resources tab embeds ManageUsersPanel Users CRUD', () {
+    final String source = File(
+      'lib/features/hr/presentation/pages/hr_workspace_page.dart',
+    ).readAsStringSync();
+    expect(
+      source.contains('HrDeskSection.staffDirectory => ManageUsersPanel('),
+      isTrue,
     );
-    await _pumpHrWorkspace(tester, repository: repository);
-
-    await tester.tap(find.text('Review profile'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Staff actions'), findsOneWidget);
-    expect(find.text('Assign department'), findsOneWidget);
-    expect(find.text('Run payroll'), findsOneWidget);
+    expect(source.contains('class _HrStaffDirectory'), isFalse);
+    expect(
+      RegExp(
+        r'onPressed: state\.isRefreshing\s*\?\s*null\s*:\s*\(\)\s*=>\s*'
+        r'showHrStaffOnboardingDialog\(context,\s*ref\)',
+      ).hasMatch(source),
+      isFalse,
+    );
   });
 }

@@ -20856,6 +20856,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrStaffDirectoryTitle => 'Staff directory';
 
   @override
+  String get hrStaffMembersSummaryLabel => 'Staff members';
+
+  @override
   String get hrStaffLabel => 'Staff';
 
   @override

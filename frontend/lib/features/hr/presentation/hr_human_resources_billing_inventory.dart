@@ -54,7 +54,7 @@ abstract final class HrHumanResourcesBillingInventory {
         ),
         HrHumanResourcesFinancialAtom(
           id: 'add_staff',
-          label: 'Add staff (search trailing + onboarding dialog)',
+          label: 'Add staff (ManageUsersPanel Users CRUD)',
           financialClass: HrHumanResourcesFinancialClass.notBilled,
           auditCode: 'NOT_BILLED',
         ),
