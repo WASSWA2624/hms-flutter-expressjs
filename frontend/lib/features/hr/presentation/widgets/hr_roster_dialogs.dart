@@ -26,6 +26,9 @@ const Map<int, String> _kWeekdayCodes = <int, String>{
   0: 'SUN',
 };
 
+/// Sentinel for “All departments” (any staff may be attached).
+const String _kRosterAllDepartments = '__all_departments__';
+
 String hrRosterStatusLabel(AppLocalizations l10n, String? status) {
   switch ((status ?? '').trim().toUpperCase()) {
     case 'PUBLISHED':
@@ -84,8 +87,8 @@ Future<void> showHrCreateRosterDialog(
   DateTime? periodStart = DateTime.now();
   DateTime? periodEnd = DateTime.now().add(const Duration(days: 7));
   final String? facilityId = _resolveRosterFacilityId(ref, state);
-  String? departmentId;
-  String status = 'DRAFT';
+  String departmentId = _kRosterAllDepartments;
+  const String status = 'DRAFT';
   bool isRecurring = false;
   bool respectHolidays = true;
   final Set<int> workingDays = Set<int>.from(kDefaultAvailabilityWeekdays);
@@ -120,12 +123,22 @@ Future<void> showHrCreateRosterDialog(
                       l10n.hrFieldRequiredLabel(l10n.hrRosterNameLabel),
                     ),
                   ),
-                  AppCheckboxField(
-                    title: l10n.hrRosterRecurringLabel,
-                    subtitle: l10n.hrRosterRecurringHelper,
-                    value: isRecurring,
-                    onChanged: (bool value) =>
-                        setLocal(() => isRecurring = value),
+                  AppResponsiveFieldRow(
+                    gap: AppResponsiveFieldRowGap.form,
+                    children: <Widget>[
+                      AppCheckboxField(
+                        title: l10n.hrRosterRecurringLabel,
+                        value: isRecurring,
+                        onChanged: (bool value) =>
+                            setLocal(() => isRecurring = value),
+                      ),
+                      AppCheckboxField(
+                        title: l10n.hrRosterRespectHolidaysLabel,
+                        value: respectHolidays,
+                        onChanged: (bool value) =>
+                            setLocal(() => respectHolidays = value),
+                      ),
+                    ],
                   ),
                   if (!isRecurring)
                     AppResponsiveFieldRow(
@@ -162,46 +175,24 @@ Future<void> showHrCreateRosterDialog(
                   AppSelectField<String>.searchable(
                     value: departmentId,
                     labelText: l10n.hrDepartmentLabel,
-                    helperText: l10n.hrRosterDepartmentHelper,
-                    options: hrSelectOptions(
-                      state?.referenceData.departments ?? const <HrOption>[],
-                    ),
-                    onChanged: (String? value) =>
-                        setLocal(() => departmentId = value),
-                  ),
-                  Text(
-                    l10n.hrRosterStatusFieldLabel,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  AppResponsiveFieldRow(
-                    gap: AppResponsiveFieldRowGap.form,
-                    children: <Widget>[
-                      AppCheckboxField(
-                        title: l10n.hrRosterStatusDraft,
-                        value: status == 'DRAFT',
-                        onChanged: (bool value) {
-                          if (value) {
-                            setLocal(() => status = 'DRAFT');
-                          }
-                        },
+                    hintText: l10n.hrRosterDepartmentHelper,
+                    allowClear: false,
+                    options: <AppSelectOption<String>>[
+                      AppSelectOption<String>(
+                        value: _kRosterAllDepartments,
+                        label: l10n.hrRosterAllDepartmentsLabel,
                       ),
-                      AppCheckboxField(
-                        title: l10n.hrRosterStatusCompleted,
-                        value: status == 'PUBLISHED',
-                        onChanged: (bool value) {
-                          if (value) {
-                            setLocal(() => status = 'PUBLISHED');
-                          }
-                        },
+                      ...hrSelectOptions(
+                        state?.referenceData.departments ?? const <HrOption>[],
                       ),
                     ],
-                  ),
-                  AppCheckboxField(
-                    title: l10n.hrRosterRespectHolidaysLabel,
-                    subtitle: l10n.hrRosterRespectHolidaysHelper,
-                    value: respectHolidays,
-                    onChanged: (bool value) =>
-                        setLocal(() => respectHolidays = value),
+                    onChanged: (String? value) {
+                      setLocal(() {
+                        departmentId = (value == null || value.isEmpty)
+                            ? _kRosterAllDepartments
+                            : value;
+                      });
+                    },
                   ),
                   Text(
                     l10n.hrRosterWorkingDaysLabel,
@@ -314,7 +305,9 @@ Future<void> showHrCreateRosterDialog(
         'period_end': effectiveEnd.toUtc().toIso8601String(),
         'status': status,
         'facility_id': facilityId,
-        'department_id': departmentId,
+        'department_id': departmentId == _kRosterAllDepartments
+            ? null
+            : departmentId,
         'materialize_shifts': true,
         'constraints': <String, Object?>{
           'respect_public_holidays': respectHolidays,

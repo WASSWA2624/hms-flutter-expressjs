@@ -26885,7 +26885,11 @@
   },
   "hrRosterDepartmentHelper": "Only staff in this department can be assigned to this roster.",
   "@hrRosterDepartmentHelper": {
-    "description": "Explains department scoping for roster staff assignment."
+    "description": "Placeholder for the roster department field."
+  },
+  "hrRosterAllDepartmentsLabel": "All departments",
+  "@hrRosterAllDepartmentsLabel": {
+    "description": "Department option meaning any staff can be assigned to the roster."
   },
   "hrRosterStatusCompleted": "Completed",
   "@hrRosterStatusCompleted": {

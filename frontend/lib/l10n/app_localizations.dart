@@ -38579,11 +38579,17 @@ abstract class AppLocalizations {
   /// **'Recurring templates have no fixed period; staff can be scheduled on an ongoing cycle.'**
   String get hrRosterRecurringHelper;
 
-  /// Explains department scoping for roster staff assignment.
+  /// Placeholder for the roster department field.
   ///
   /// In en, this message translates to:
   /// **'Only staff in this department can be assigned to this roster.'**
   String get hrRosterDepartmentHelper;
+
+  /// Department option meaning any staff can be assigned to the roster.
+  ///
+  /// In en, this message translates to:
+  /// **'All departments'**
+  String get hrRosterAllDepartmentsLabel;
 
   /// Completed roster status label (published).
   ///

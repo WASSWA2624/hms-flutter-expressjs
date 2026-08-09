@@ -20854,6 +20854,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Only staff in this department can be assigned to this roster.';
 
   @override
+  String get hrRosterAllDepartmentsLabel => 'All departments';
+
+  @override
   String get hrRosterStatusCompleted => 'Completed';
 
   @override
