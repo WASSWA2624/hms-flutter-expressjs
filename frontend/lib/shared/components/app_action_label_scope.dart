@@ -5,6 +5,7 @@ class AppActionLabelScope extends InheritedWidget {
     required this.showLabels,
     required this.forceIconOnly,
     this.plainChrome = false,
+    this.dense = false,
     required super.child,
     super.key,
   });
@@ -16,6 +17,9 @@ class AppActionLabelScope extends InheritedWidget {
   /// (section header actions).
   final bool plainChrome;
 
+  /// When true, [AppButton] descendants use dense padding/min height.
+  final bool dense;
+
   static AppActionLabelScope? maybeOf(BuildContext context) {
     // Use get (not dependOn) so descendants do not keep InheritedElement
     // dependents alive across shell/router rebuilds after session rehydrate.
@@ -26,6 +30,7 @@ class AppActionLabelScope extends InheritedWidget {
   bool updateShouldNotify(AppActionLabelScope oldWidget) {
     return showLabels != oldWidget.showLabels ||
         forceIconOnly != oldWidget.forceIconOnly ||
-        plainChrome != oldWidget.plainChrome;
+        plainChrome != oldWidget.plainChrome ||
+        dense != oldWidget.dense;
   }
 }

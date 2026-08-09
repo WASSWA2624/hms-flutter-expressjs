@@ -30,7 +30,8 @@ class AppButton extends StatelessWidget {
     this.labelWidget,
     this.borderRadius,
     super.key,
-  }) : assert(
+  }) : _isCloseButton = false,
+       assert(
          iconOnly || label.isNotEmpty,
          'Labeled buttons require a non-empty label.',
        );
@@ -53,7 +54,8 @@ class AppButton extends StatelessWidget {
     this.labelWidget,
     this.borderRadius,
     super.key,
-  }) : variant = AppButtonVariant.primary;
+  }) : variant = AppButtonVariant.primary,
+       _isCloseButton = false;
 
   const AppButton.secondary({
     required this.label,
@@ -73,10 +75,13 @@ class AppButton extends StatelessWidget {
     this.labelWidget,
     this.borderRadius,
     super.key,
-  }) : variant = AppButtonVariant.secondary;
+  }) : variant = AppButtonVariant.secondary,
+       _isCloseButton = false;
 
   /// Dialog dismiss control: bordered secondary chrome with a close icon.
   /// Prefer this for [AppDialog] footers labeled Close.
+  ///
+  /// Uses the error accent (same as dialog header close) unless [color] is set.
   const AppButton.close({
     required this.label,
     required this.onPressed,
@@ -95,7 +100,8 @@ class AppButton extends StatelessWidget {
     this.labelWidget,
     this.borderRadius,
     super.key,
-  }) : variant = AppButtonVariant.secondary;
+  }) : variant = AppButtonVariant.secondary,
+       _isCloseButton = true;
 
   const AppButton.tertiary({
     required this.label,
@@ -115,7 +121,8 @@ class AppButton extends StatelessWidget {
     this.labelWidget,
     this.borderRadius,
     super.key,
-  }) : variant = AppButtonVariant.tertiary;
+  }) : variant = AppButtonVariant.tertiary,
+       _isCloseButton = false;
 
   final String label;
   final VoidCallback? onPressed;
@@ -141,6 +148,8 @@ class AppButton extends StatelessWidget {
 
   /// Overrides the default xs corner radius. Use `0` for square actions.
   final double? borderRadius;
+
+  final bool _isCloseButton;
 
   IconData? get _resolvedIcon => leadingIcon ?? icon;
 
@@ -190,11 +199,12 @@ class AppButton extends StatelessWidget {
         : iconOnly ||
               (labelScope?.forceIconOnly == true && _resolvedIcon != null);
     final bool showLabel = !compactIconOnly;
+    final bool effectiveDense = dense || (labelScope?.dense ?? false);
 
     final bool canPress = enabled && !isLoading && onPressed != null;
     final Widget button = showLabel
-        ? _buildLabeledButton(context, canPress)
-        : _buildIconOnlyButton(context, canPress);
+        ? _buildLabeledButton(context, canPress, dense: effectiveDense)
+        : _buildIconOnlyButton(context, canPress, dense: effectiveDense);
     final Widget sizedButton = fullWidth
         ? SizedBox(width: double.infinity, child: button)
         : button;
@@ -216,7 +226,11 @@ class AppButton extends StatelessWidget {
     return Tooltip(message: resolvedTooltip, child: semanticButton);
   }
 
-  Widget _buildIconOnlyButton(BuildContext context, bool canPress) {
+  Widget _buildIconOnlyButton(
+    BuildContext context,
+    bool canPress, {
+    required bool dense,
+  }) {
     final ThemeData theme = Theme.of(context);
     final double iconSize = theme.appTokens.listIconSize;
     final Color foregroundColor = _foregroundColor(theme, variant);
@@ -224,7 +238,12 @@ class AppButton extends StatelessWidget {
     return TextButton(
       onPressed: canPress ? onPressed : null,
       autofocus: autofocus,
-      style: _buttonStyle(context, variant, iconOnly: true),
+      style: _buttonStyle(
+        context,
+        variant,
+        iconOnly: true,
+        dense: dense,
+      ),
       child: _ButtonGlyph(
         icon: _resolvedIcon,
         iconSize: iconSize,
@@ -235,14 +254,23 @@ class AppButton extends StatelessWidget {
     );
   }
 
-  Widget _buildLabeledButton(BuildContext context, bool canPress) {
+  Widget _buildLabeledButton(
+    BuildContext context,
+    bool canPress, {
+    required bool dense,
+  }) {
     final ThemeData theme = Theme.of(context);
     final Color foregroundColor = _foregroundColor(theme, variant);
 
     return TextButton(
       onPressed: canPress ? onPressed : null,
       autofocus: autofocus,
-      style: _buttonStyle(context, variant, iconOnly: false),
+      style: _buttonStyle(
+        context,
+        variant,
+        iconOnly: false,
+        dense: dense,
+      ),
       child: _ButtonContent(
         label: label,
         labelWidget: labelWidget,
@@ -258,6 +286,7 @@ class AppButton extends StatelessWidget {
     BuildContext context,
     AppButtonVariant variant, {
     required bool iconOnly,
+    required bool dense,
   }) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
@@ -374,7 +403,10 @@ class AppButton extends StatelessWidget {
           return theme.borders.side(color: colorScheme.primary.withValues(alpha: alpha), width: thinWidth,);
         }
         final double alpha = states.contains(WidgetState.disabled) ? 0.2 : 0.42;
-        return theme.borders.side(width: thinWidth);
+        return theme.borders.side(
+          color: colorScheme.outline.withValues(alpha: alpha),
+          width: thinWidth,
+        );
       }),
     );
   }
@@ -385,6 +417,9 @@ class AppButton extends StatelessWidget {
     }
 
     final ColorScheme colorScheme = theme.colorScheme;
+    if (_isCloseButton) {
+      return colorScheme.error;
+    }
     return switch (variant) {
       AppButtonVariant.primary => colorScheme.primary,
       AppButtonVariant.secondary => colorScheme.onSurfaceVariant,

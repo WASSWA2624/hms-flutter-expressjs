@@ -20,7 +20,7 @@ class AppDialog extends StatefulWidget {
     this.scrollable = false,
     this.pinActionsToBottom = false,
     this.stackActionsWhenCompact = true,
-    this.denseActions = false,
+    this.denseActions = true,
     this.showCloseButton = true,
     this.showMaximizeButton = true,
     this.resizable = true,
@@ -64,7 +64,8 @@ class AppDialog extends StatefulWidget {
   /// Set false to keep a horizontal action row on phones (e.g. Preview + Save).
   final bool stackActionsWhenCompact;
 
-  /// When true, footer uses tighter padding for a compact action bar.
+  /// When true (default), footer uses compact chrome padding and dense action
+  /// buttons. Prefer leaving this on for consistent dialog chrome.
   final bool denseActions;
   final bool showCloseButton;
   final bool showMaximizeButton;
@@ -644,9 +645,9 @@ class _DialogHeader extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final EdgeInsetsGeometry padding = EdgeInsetsDirectional.only(
-      start: compact ? theme.spacing.md : theme.spacing.lg,
-      top: compact ? theme.spacing.sm : theme.spacing.md,
-      bottom: compact ? theme.spacing.sm : theme.spacing.md,
+      start: compact ? theme.spacing.sm : theme.spacing.md,
+      top: theme.spacing.xs,
+      bottom: theme.spacing.xs,
       end: theme.spacing.xs,
     );
 
@@ -685,6 +686,7 @@ class _DialogHeader extends StatelessWidget {
                 // and semantics keep the accessible names.
                 showLabels: false,
                 forceIconOnly: true,
+                dense: true,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
@@ -707,11 +709,10 @@ class _DialogHeader extends StatelessWidget {
                         onPressed: onMaximizeToggle,
                       ),
                     if (showMaximizeButton && showCloseButton)
-                      SizedBox(width: theme.spacing.sm),
+                      SizedBox(width: theme.spacing.xs),
                     if (showCloseButton)
-                      AppButton(
+                      AppButton.close(
                         iconOnly: true,
-                        leadingIcon: Icons.close,
                         label: MaterialLocalizations.of(
                           context,
                         ).closeButtonTooltip,
@@ -721,7 +722,6 @@ class _DialogHeader extends StatelessWidget {
                         tooltip: MaterialLocalizations.of(
                           context,
                         ).closeButtonTooltip,
-                        color: colorScheme.error,
                         enabled: closeEnabled,
                         borderRadius: chromeBorderRadius,
                         onPressed: closeEnabled
@@ -809,7 +809,7 @@ class _DialogActions extends StatelessWidget {
     required this.actions,
     required this.compact,
     required this.stackWhenCompact,
-    this.dense = false,
+    this.dense = true,
   });
 
   final List<Widget> actions;
@@ -821,14 +821,13 @@ class _DialogActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final EdgeInsets padding = dense
-        ? EdgeInsets.symmetric(
-            horizontal: theme.spacing.sm,
-            vertical: theme.spacing.xs,
-          )
-        : EdgeInsets.all(
-            compact ? theme.spacing.md : theme.spacing.lg,
-          ).copyWith(top: theme.spacing.sm);
+    final bool showActionLabels =
+        AppBreakpoints.of(context).showsToolbarActionLabels;
+    // Compact chrome: keep footer height tight on every breakpoint.
+    final EdgeInsets padding = EdgeInsets.symmetric(
+      horizontal: compact ? theme.spacing.sm : (dense ? theme.spacing.sm : theme.spacing.md),
+      vertical: theme.spacing.xs,
+    );
 
     final Widget actionRow;
     // Two-action footers are authored [Close/dismiss, primary]. Reverse for
@@ -844,7 +843,7 @@ class _DialogActions extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           for (int i = 0; i < displayActions.length; i++) ...<Widget>[
-            if (i > 0) SizedBox(height: theme.spacing.sm),
+            if (i > 0) SizedBox(height: theme.spacing.xs),
             SizedBox(width: double.infinity, child: displayActions[i]),
           ],
         ],
@@ -863,7 +862,7 @@ class _DialogActions extends StatelessWidget {
               for (int i = 0; i < displayActions.length; i++)
                 Padding(
                   padding: EdgeInsetsDirectional.only(
-                    start: i == 0 ? 0 : (dense ? theme.spacing.xs : theme.spacing.sm),
+                    start: i == 0 ? 0 : theme.spacing.xs,
                   ),
                   child: displayActions[i],
                 ),
@@ -878,7 +877,14 @@ class _DialogActions extends StatelessWidget {
         color: colorScheme.surfaceContainerLow,
         border: theme.borders.only(top: true),
       ),
-      child: Padding(padding: padding, child: actionRow),
+      child: AppActionLabelScope(
+        // Large screens: icon + label. Small/medium: icon-only when an icon
+        // is present (labels remain for text-only actions).
+        showLabels: showActionLabels,
+        forceIconOnly: !showActionLabels,
+        dense: dense,
+        child: Padding(padding: padding, child: actionRow),
+      ),
     );
   }
 }
