@@ -103,7 +103,10 @@ const rosterStaffParamsSchema = z.object({
 });
 
 const attachRosterStaffSchema = z.object({
-  staff_profile_id: uuidOrFriendlyIdentifierSchema
+  staff_profile_id: uuidOrFriendlyIdentifierSchema,
+  staff_category: z
+    .enum(['FULL_TIME', 'PART_TIME', 'LOCUM', 'SPECIALIST', 'CONTRACT', 'OTHER'])
+    .optional(),
 });
 
 const listNurseRostersQuerySchema = listQuerySchema.extend({

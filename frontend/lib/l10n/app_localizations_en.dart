@@ -20830,6 +20830,85 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterSelectStaffLabel => 'Staff member';
 
   @override
+  String get hrRosterOverviewSectionTitle => 'Roster overview';
+
+  @override
+  String get hrRosterPreviewSectionTitle => 'Roster schedule';
+
+  @override
+  String get hrRosterRemoveSelectedStaffAction => 'Remove selected';
+
+  @override
+  String get hrRosterSelectAllStaffAction => 'Select all';
+
+  @override
+  String get hrRosterStaffCategoryLabel => 'Staff category';
+
+  @override
+  String get hrRosterStaffCategoryFullTime => 'Full-time';
+
+  @override
+  String get hrRosterStaffCategoryPartTime => 'Part-time';
+
+  @override
+  String get hrRosterStaffCategoryLocum => 'Locum';
+
+  @override
+  String get hrRosterStaffCategorySpecialist => 'Specialist';
+
+  @override
+  String get hrRosterStaffCategoryContract => 'Contract';
+
+  @override
+  String get hrRosterStaffCategoryOther => 'Other';
+
+  @override
+  String get hrRosterEditDialogTitle => 'Edit roster';
+
+  @override
+  String get hrRosterPrintDialogTitle => 'Print roster';
+
+  @override
+  String get hrRosterPrintOverviewSection => 'Overview';
+
+  @override
+  String get hrRosterPrintStaffSection => 'Assigned staff';
+
+  @override
+  String get hrRosterPrintScheduleSection => 'Schedule';
+
+  @override
+  String get hrRosterNameHelper =>
+      'Use a clear label, e.g. “ICU nights · Aug 2026” or “ED locum cover · Week 34”.';
+
+  @override
+  String hrRosterAssignedStaffCountChip(int count) {
+    return 'Staff: $count';
+  }
+
+  @override
+  String get hrRosterZoomInAction => 'Zoom in';
+
+  @override
+  String get hrRosterZoomOutAction => 'Zoom out';
+
+  @override
+  String get hrRosterDayOffLabel => 'Off / holiday';
+
+  @override
+  String get hrRosterAvailableLabel => 'Scheduled';
+
+  @override
+  String get hrRosterUnassignedDayLabel => 'Open';
+
+  @override
+  String get hrRosterPrintStaffTableAction => 'Print staff list';
+
+  @override
+  String get hrRosterNoSchedulePreviewLabel =>
+      'No schedule days in this period.';
+
+  @override
   String get hrRosterReportLabel => 'Roster report';
 
   @override

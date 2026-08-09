@@ -633,8 +633,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Publish roster'), findsNothing);
-      expect(find.text('Preview roster generation'), findsWidgets);
-      expect(find.text('Generate roster'), findsWidgets);
+      expect(find.text('Edit'), findsWidgets);
+      expect(find.text('Print'), findsWidgets);
+      expect(find.text('Assigned staff'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

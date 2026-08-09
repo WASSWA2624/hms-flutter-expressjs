@@ -78,6 +78,16 @@ const normalizeConstraints = (constraints = {}) => {
     attached_staff_ids: Array.isArray(source.attached_staff_ids)
       ? [...new Set(source.attached_staff_ids.map(String))]
       : [],
+    attached_staff_meta: Array.isArray(source.attached_staff_meta)
+      ? source.attached_staff_meta
+          .filter((entry) => entry && typeof entry === 'object' && entry.staff_profile_id)
+          .map((entry) => ({
+            staff_profile_id: String(entry.staff_profile_id),
+            staff_category: entry.staff_category
+              ? String(entry.staff_category).toUpperCase()
+              : null,
+          }))
+      : [],
     shift_type: source.shift_type || 'DAY',
   };
 };
@@ -149,6 +159,12 @@ const materializeRosterShifts = async (roster) => {
 const mapAttachedStaff = async (roster) => {
   const constraints = normalizeConstraints(roster.constraints);
   const attachedIds = new Set(constraints.attached_staff_ids);
+  const categoryByStaffId = new Map(
+    constraints.attached_staff_meta.map((entry) => [
+      entry.staff_profile_id,
+      entry.staff_category,
+    ])
+  );
   const assignmentStaff = new Map();
 
   const staffDisplayName = (profile = {}) => {
@@ -160,15 +176,26 @@ const mapAttachedStaff = async (roster) => {
     return profile.user?.email || profile.staff_number || null;
   };
 
+  const mapProfileFields = (profile = {}) => ({
+    staff_profile_id: profile.id,
+    display_id: profile.human_friendly_id || profile.id,
+    staff_number: profile.staff_number || null,
+    name: staffDisplayName(profile),
+    position: profile.position || null,
+    practitioner_type: profile.practitioner_type || null,
+    staff_category: categoryByStaffId.get(profile.id) || null,
+  });
+
   for (const shift of roster.shifts || []) {
     for (const assignment of shift.assignments || []) {
       if (!assignment?.staff_profile_id) continue;
       const profile = assignment.staff_profile || {};
+      const mapped = mapProfileFields({
+        ...profile,
+        id: assignment.staff_profile_id,
+      });
       assignmentStaff.set(assignment.staff_profile_id, {
-        staff_profile_id: assignment.staff_profile_id,
-        display_id: profile.human_friendly_id || assignment.staff_profile_id,
-        staff_number: profile.staff_number || null,
-        name: staffDisplayName(profile),
+        ...mapped,
         source: 'assignment',
         assignment_id: assignment.id,
         shift_id: shift.id,
@@ -197,10 +224,7 @@ const mapAttachedStaff = async (roster) => {
     });
     for (const profile of profiles) {
       assignmentStaff.set(profile.id, {
-        staff_profile_id: profile.id,
-        display_id: profile.human_friendly_id || profile.id,
-        staff_number: profile.staff_number || null,
-        name: staffDisplayName(profile),
+        ...mapProfileFields(profile),
         source: 'attached',
         assignment_id: null,
         shift_id: null,
@@ -319,6 +343,8 @@ const getNurseRosterById = async (id) => {
       identifier: id,
       where: { deleted_at: null }});
     const roster = await nurseRosterRepository.findById(resolvedId, {
+      facility: { select: { id: true, human_friendly_id: true, name: true } },
+      department: { select: { id: true, human_friendly_id: true, name: true } },
       shifts: {
         where: { deleted_at: null },
         include: {
@@ -341,8 +367,15 @@ const getNurseRosterById = async (id) => {
     });
     if (!roster) throw new HttpError('errors.nurse_roster.not_found', 404);
     const staff = await mapAttachedStaff(roster);
+    const periodStartKey = toDateKey(roster.period_start);
+    const periodEndKey = toDateKey(roster.period_end);
     return {
       ...roster,
+      period_label: periodStartKey && periodEndKey
+        ? `${periodStartKey} - ${periodEndKey}`
+        : null,
+      facility_name: roster.facility?.name || null,
+      department_name: roster.department?.name || null,
       staff,
       assignment_count: staff.length,
     };
@@ -580,7 +613,7 @@ const generateNurseRoster = async (id, data = {}, userId, ipAddress) => {
   }
 };
 
-const attachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress) => {
+const attachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress, options = {}) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'nurse_roster',
@@ -609,9 +642,23 @@ const attachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress) 
       excludeRosterId: roster.id,
     });
 
+    const staffCategory = options.staff_category
+      ? String(options.staff_category).toUpperCase()
+      : null;
+    const nextMeta = [
+      ...constraints.attached_staff_meta.filter(
+        (entry) => entry.staff_profile_id !== staffProfileId
+      ),
+      {
+        staff_profile_id: staffProfileId,
+        staff_category: staffCategory,
+      },
+    ];
+
     const nextConstraints = {
       ...constraints,
       attached_staff_ids: [...constraints.attached_staff_ids, staffProfileId],
+      attached_staff_meta: nextMeta,
     };
     const updated = await nurseRosterRepository.update(roster.id, {
       constraints: nextConstraints,
@@ -626,7 +673,10 @@ const attachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress) 
       diff: {
         before: roster,
         after: updated,
-        metadata: { staff_profile_id: staffProfileId },
+        metadata: {
+          staff_profile_id: staffProfileId,
+          staff_category: staffCategory,
+        },
       },
       ip_address: ipAddress}).catch(() => {});
 
@@ -663,6 +713,9 @@ const detachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress) 
 
     const constraints = normalizeConstraints(roster.constraints);
     const nextAttached = constraints.attached_staff_ids.filter((value) => value !== staffProfileId);
+    const nextMeta = constraints.attached_staff_meta.filter(
+      (entry) => entry.staff_profile_id !== staffProfileId
+    );
 
     for (const shift of roster.shifts || []) {
       for (const assignment of shift.assignments || []) {
@@ -679,6 +732,7 @@ const detachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress) 
       constraints: {
         ...constraints,
         attached_staff_ids: nextAttached,
+        attached_staff_meta: nextMeta,
       },
     });
 

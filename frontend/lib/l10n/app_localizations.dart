@@ -38543,6 +38543,156 @@ abstract class AppLocalizations {
   /// **'Staff member'**
   String get hrRosterSelectStaffLabel;
 
+  /// Collapsible overview section title on roster details.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster overview'**
+  String get hrRosterOverviewSectionTitle;
+
+  /// Collapsible real-roster preview section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster schedule'**
+  String get hrRosterPreviewSectionTitle;
+
+  /// Bulk-remove selected staff from a roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove selected'**
+  String get hrRosterRemoveSelectedStaffAction;
+
+  /// Select all assigned roster staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get hrRosterSelectAllStaffAction;
+
+  /// Employment/category when attaching staff to a roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff category'**
+  String get hrRosterStaffCategoryLabel;
+
+  /// Full-time staff category.
+  ///
+  /// In en, this message translates to:
+  /// **'Full-time'**
+  String get hrRosterStaffCategoryFullTime;
+
+  /// Part-time staff category.
+  ///
+  /// In en, this message translates to:
+  /// **'Part-time'**
+  String get hrRosterStaffCategoryPartTime;
+
+  /// Locum staff category.
+  ///
+  /// In en, this message translates to:
+  /// **'Locum'**
+  String get hrRosterStaffCategoryLocum;
+
+  /// Specialist staff category.
+  ///
+  /// In en, this message translates to:
+  /// **'Specialist'**
+  String get hrRosterStaffCategorySpecialist;
+
+  /// Contract staff category.
+  ///
+  /// In en, this message translates to:
+  /// **'Contract'**
+  String get hrRosterStaffCategoryContract;
+
+  /// Other staff category.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get hrRosterStaffCategoryOther;
+
+  /// Title for edit roster dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit roster'**
+  String get hrRosterEditDialogTitle;
+
+  /// Title for roster print section selection dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Print roster'**
+  String get hrRosterPrintDialogTitle;
+
+  /// Print option for roster overview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get hrRosterPrintOverviewSection;
+
+  /// Print option for assigned staff list.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned staff'**
+  String get hrRosterPrintStaffSection;
+
+  /// Print option for roster schedule grid.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get hrRosterPrintScheduleSection;
+
+  /// Helper text encouraging informative roster names.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a clear label, e.g. “ICU nights · Aug 2026” or “ED locum cover · Week 34”.'**
+  String get hrRosterNameHelper;
+
+  /// Count chip in assigned staff section header.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff: {count}'**
+  String hrRosterAssignedStaffCountChip(int count);
+
+  /// Zoom in on roster schedule preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get hrRosterZoomInAction;
+
+  /// Zoom out on roster schedule preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get hrRosterZoomOutAction;
+
+  /// Label for non-working or holiday day in roster preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Off / holiday'**
+  String get hrRosterDayOffLabel;
+
+  /// Label for scheduled working day in roster preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get hrRosterAvailableLabel;
+
+  /// Label for working day without assignments in preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get hrRosterUnassignedDayLabel;
+
+  /// Print action on the assigned staff table toolbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Print staff list'**
+  String get hrRosterPrintStaffTableAction;
+
+  /// Empty state for roster schedule preview.
+  ///
+  /// In en, this message translates to:
+  /// **'No schedule days in this period.'**
+  String get hrRosterNoSchedulePreviewLabel;
+
   /// Human resources workspace text for hrRosterReportLabel.
   ///
   /// In en, this message translates to:

@@ -1123,6 +1123,22 @@ final class HrWorkspaceController
     );
   }
 
+  Future<AppFailure?> updateRoster(
+    String rosterId,
+    Map<String, Object?> payload,
+  ) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.updateRoster(rosterId, payload),
+      refreshWorkItemsAfter: true,
+      refreshReferencesAfter: true,
+    );
+  }
+
   Future<Result<Map<String, Object?>>> getRoster(String rosterId) {
     return _repository.getRoster(rosterId);
   }
@@ -1130,9 +1146,14 @@ final class HrWorkspaceController
   Future<Result<Map<String, Object?>>> attachRosterStaff({
     required String rosterId,
     required String staffProfileId,
+    String? staffCategory,
   }) async {
     final Result<Map<String, Object?>> result = await _repository
-        .attachRosterStaff(rosterId: rosterId, staffProfileId: staffProfileId);
+        .attachRosterStaff(
+          rosterId: rosterId,
+          staffProfileId: staffProfileId,
+          staffCategory: staffCategory,
+        );
     result.when(
       success: (_) {
         unawaited(_refreshWorkItems(showLoading: false));

@@ -120,7 +120,8 @@ const attachRosterStaff = asyncHandler(async (req, res) => {
     id,
     req.body.staff_profile_id,
     userId,
-    ipAddress
+    ipAddress,
+    { staff_category: req.body.staff_category }
   );
 
   sendSuccess(res, 200, 'messages.nurse_roster.attach_staff.success', roster);

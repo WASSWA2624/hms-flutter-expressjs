@@ -26859,6 +26859,111 @@
   "@hrRosterSelectStaffLabel": {
     "description": "Staff picker when attaching to a roster."
   },
+  "hrRosterOverviewSectionTitle": "Roster overview",
+  "@hrRosterOverviewSectionTitle": {
+    "description": "Collapsible overview section title on roster details."
+  },
+  "hrRosterPreviewSectionTitle": "Roster schedule",
+  "@hrRosterPreviewSectionTitle": {
+    "description": "Collapsible real-roster preview section title."
+  },
+  "hrRosterRemoveSelectedStaffAction": "Remove selected",
+  "@hrRosterRemoveSelectedStaffAction": {
+    "description": "Bulk-remove selected staff from a roster."
+  },
+  "hrRosterSelectAllStaffAction": "Select all",
+  "@hrRosterSelectAllStaffAction": {
+    "description": "Select all assigned roster staff."
+  },
+  "hrRosterStaffCategoryLabel": "Staff category",
+  "@hrRosterStaffCategoryLabel": {
+    "description": "Employment/category when attaching staff to a roster."
+  },
+  "hrRosterStaffCategoryFullTime": "Full-time",
+  "@hrRosterStaffCategoryFullTime": {
+    "description": "Full-time staff category."
+  },
+  "hrRosterStaffCategoryPartTime": "Part-time",
+  "@hrRosterStaffCategoryPartTime": {
+    "description": "Part-time staff category."
+  },
+  "hrRosterStaffCategoryLocum": "Locum",
+  "@hrRosterStaffCategoryLocum": {
+    "description": "Locum staff category."
+  },
+  "hrRosterStaffCategorySpecialist": "Specialist",
+  "@hrRosterStaffCategorySpecialist": {
+    "description": "Specialist staff category."
+  },
+  "hrRosterStaffCategoryContract": "Contract",
+  "@hrRosterStaffCategoryContract": {
+    "description": "Contract staff category."
+  },
+  "hrRosterStaffCategoryOther": "Other",
+  "@hrRosterStaffCategoryOther": {
+    "description": "Other staff category."
+  },
+  "hrRosterEditDialogTitle": "Edit roster",
+  "@hrRosterEditDialogTitle": {
+    "description": "Title for edit roster dialog."
+  },
+  "hrRosterPrintDialogTitle": "Print roster",
+  "@hrRosterPrintDialogTitle": {
+    "description": "Title for roster print section selection dialog."
+  },
+  "hrRosterPrintOverviewSection": "Overview",
+  "@hrRosterPrintOverviewSection": {
+    "description": "Print option for roster overview."
+  },
+  "hrRosterPrintStaffSection": "Assigned staff",
+  "@hrRosterPrintStaffSection": {
+    "description": "Print option for assigned staff list."
+  },
+  "hrRosterPrintScheduleSection": "Schedule",
+  "@hrRosterPrintScheduleSection": {
+    "description": "Print option for roster schedule grid."
+  },
+  "hrRosterNameHelper": "Use a clear label, e.g. “ICU nights · Aug 2026” or “ED locum cover · Week 34”.",
+  "@hrRosterNameHelper": {
+    "description": "Helper text encouraging informative roster names."
+  },
+  "hrRosterAssignedStaffCountChip": "Staff: {count}",
+  "@hrRosterAssignedStaffCountChip": {
+    "description": "Count chip in assigned staff section header.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hrRosterZoomInAction": "Zoom in",
+  "@hrRosterZoomInAction": {
+    "description": "Zoom in on roster schedule preview."
+  },
+  "hrRosterZoomOutAction": "Zoom out",
+  "@hrRosterZoomOutAction": {
+    "description": "Zoom out on roster schedule preview."
+  },
+  "hrRosterDayOffLabel": "Off / holiday",
+  "@hrRosterDayOffLabel": {
+    "description": "Label for non-working or holiday day in roster preview."
+  },
+  "hrRosterAvailableLabel": "Scheduled",
+  "@hrRosterAvailableLabel": {
+    "description": "Label for scheduled working day in roster preview."
+  },
+  "hrRosterUnassignedDayLabel": "Open",
+  "@hrRosterUnassignedDayLabel": {
+    "description": "Label for working day without assignments in preview."
+  },
+  "hrRosterPrintStaffTableAction": "Print staff list",
+  "@hrRosterPrintStaffTableAction": {
+    "description": "Print action on the assigned staff table toolbar."
+  },
+  "hrRosterNoSchedulePreviewLabel": "No schedule days in this period.",
+  "@hrRosterNoSchedulePreviewLabel": {
+    "description": "Empty state for roster schedule preview."
+  },
   "hrRosterReportLabel": "Roster report",
   "@hrRosterReportLabel": {
     "description": "Human resources workspace text for hrRosterReportLabel."

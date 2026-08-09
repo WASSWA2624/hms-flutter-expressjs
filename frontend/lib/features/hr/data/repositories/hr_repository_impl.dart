@@ -443,6 +443,18 @@ final class HrRepositoryImpl implements HrRepository {
   }
 
   @override
+  Future<Result<Object?>> updateRoster(
+    String rosterId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<Object?>(
+      ApiEndpoints.byId(HmsApiResource.nurseRosters, rosterId),
+      data: _withoutEmpty(payload),
+      decoder: passthroughResponseData,
+    );
+  }
+
+  @override
   Future<Result<Map<String, Object?>>> getRoster(String rosterId) {
     return _apiClient.get<Map<String, Object?>>(
       ApiEndpoints.byId(HmsApiResource.nurseRosters, rosterId),
@@ -463,12 +475,16 @@ final class HrRepositoryImpl implements HrRepository {
   Future<Result<Map<String, Object?>>> attachRosterStaff({
     required String rosterId,
     required String staffProfileId,
+    String? staffCategory,
   }) {
     return _apiClient.post<Map<String, Object?>>(
       ApiEndpoints.nested(HmsApiResource.nurseRosters, rosterId, <String>[
         'staff',
       ]),
-      data: <String, Object?>{'staff_profile_id': staffProfileId},
+      data: _withoutEmpty(<String, Object?>{
+        'staff_profile_id': staffProfileId,
+        'staff_category': staffCategory,
+      }),
       decoder: (Object? data) {
         final Object? payload = passthroughResponseData(data);
         if (payload is Map<String, Object?>) {

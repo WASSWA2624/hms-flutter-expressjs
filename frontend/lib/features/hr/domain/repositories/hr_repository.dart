@@ -116,11 +116,17 @@ abstract interface class HrRepository {
 
   Future<Result<Object?>> createRoster(Map<String, Object?> payload);
 
+  Future<Result<Object?>> updateRoster(
+    String rosterId,
+    Map<String, Object?> payload,
+  );
+
   Future<Result<Map<String, Object?>>> getRoster(String rosterId);
 
   Future<Result<Map<String, Object?>>> attachRosterStaff({
     required String rosterId,
     required String staffProfileId,
+    String? staffCategory,
   });
 
   Future<Result<Map<String, Object?>>> detachRosterStaff({
