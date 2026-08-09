@@ -20893,7 +20893,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrRosterWeekHoursHint =>
-      'Tap or drag hours under each day. Use the day menu to copy hours to all days or following days.';
+      'Tap or drag hours across each day row. Use the day menu to copy hours to all days or following days.';
 
   @override
   String get hrRosterCopyHoursToAllAction => 'Copy to all';
@@ -20903,6 +20903,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrRosterClearDayHoursAction => 'Clear day';
+
+  @override
+  String get hrRosterClearAllHoursAction => 'Clear all';
+
+  @override
+  String get hrRosterDetailsSectionTitle => 'Roster details';
+
+  @override
+  String get hrRosterRespectWeekendsLabel => 'Respect weekends';
+
+  @override
+  String get hrRosterMonthDaysLabel => 'Days of the month';
+
+  @override
+  String get hrRosterMonthDaysHint =>
+      'Leave none selected to apply on every day of the month. Select specific dates (1–31) to limit coverage.';
+
+  @override
+  String get hrRosterMonthDaysSelectAllAction => 'Select all';
+
+  @override
+  String get hrRosterMonthDaysClearAction => 'Clear days';
 
   @override
   String get hrRosterDefaultStartTimeLabel => 'Default start time';

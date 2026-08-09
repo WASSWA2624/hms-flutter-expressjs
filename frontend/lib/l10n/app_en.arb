@@ -26935,7 +26935,7 @@
   "@hrRosterWeekHoursTitle": {
     "description": "Title above the visual week hour grid on create roster."
   },
-  "hrRosterWeekHoursHint": "Tap or drag hours under each day. Use the day menu to copy hours to all days or following days.",
+  "hrRosterWeekHoursHint": "Tap or drag hours across each day row. Use the day menu to copy hours to all days or following days.",
   "@hrRosterWeekHoursHint": {
     "description": "Hint under the roster week hour grid."
   },
@@ -26950,6 +26950,34 @@
   "hrRosterClearDayHoursAction": "Clear day",
   "@hrRosterClearDayHoursAction": {
     "description": "Clear painted hours for one weekday column."
+  },
+  "hrRosterClearAllHoursAction": "Clear all",
+  "@hrRosterClearAllHoursAction": {
+    "description": "Clear all painted weekly hours on create roster."
+  },
+  "hrRosterDetailsSectionTitle": "Roster details",
+  "@hrRosterDetailsSectionTitle": {
+    "description": "Collapsible section title for roster identity and options."
+  },
+  "hrRosterRespectWeekendsLabel": "Respect weekends",
+  "@hrRosterRespectWeekendsLabel": {
+    "description": "Exclude Saturday and Sunday when generating roster schedules."
+  },
+  "hrRosterMonthDaysLabel": "Days of the month",
+  "@hrRosterMonthDaysLabel": {
+    "description": "Section label for selecting which calendar days a roster applies to."
+  },
+  "hrRosterMonthDaysHint": "Leave none selected to apply on every day of the month. Select specific dates (1–31) to limit coverage.",
+  "@hrRosterMonthDaysHint": {
+    "description": "Hint for month-day selection on create roster."
+  },
+  "hrRosterMonthDaysSelectAllAction": "Select all",
+  "@hrRosterMonthDaysSelectAllAction": {
+    "description": "Select every day-of-month chip."
+  },
+  "hrRosterMonthDaysClearAction": "Clear days",
+  "@hrRosterMonthDaysClearAction": {
+    "description": "Clear day-of-month selection (apply every day)."
   },
   "hrRosterDefaultStartTimeLabel": "Default start time",
   "@hrRosterDefaultStartTimeLabel": {

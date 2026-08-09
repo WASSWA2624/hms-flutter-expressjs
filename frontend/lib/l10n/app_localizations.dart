@@ -38660,7 +38660,7 @@ abstract class AppLocalizations {
   /// Hint under the roster week hour grid.
   ///
   /// In en, this message translates to:
-  /// **'Tap or drag hours under each day. Use the day menu to copy hours to all days or following days.'**
+  /// **'Tap or drag hours across each day row. Use the day menu to copy hours to all days or following days.'**
   String get hrRosterWeekHoursHint;
 
   /// Copy one day’s hours to every weekday column.
@@ -38680,6 +38680,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear day'**
   String get hrRosterClearDayHoursAction;
+
+  /// Clear all painted weekly hours on create roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get hrRosterClearAllHoursAction;
+
+  /// Collapsible section title for roster identity and options.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster details'**
+  String get hrRosterDetailsSectionTitle;
+
+  /// Exclude Saturday and Sunday when generating roster schedules.
+  ///
+  /// In en, this message translates to:
+  /// **'Respect weekends'**
+  String get hrRosterRespectWeekendsLabel;
+
+  /// Section label for selecting which calendar days a roster applies to.
+  ///
+  /// In en, this message translates to:
+  /// **'Days of the month'**
+  String get hrRosterMonthDaysLabel;
+
+  /// Hint for month-day selection on create roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave none selected to apply on every day of the month. Select specific dates (1–31) to limit coverage.'**
+  String get hrRosterMonthDaysHint;
+
+  /// Select every day-of-month chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get hrRosterMonthDaysSelectAllAction;
+
+  /// Clear day-of-month selection (apply every day).
+  ///
+  /// In en, this message translates to:
+  /// **'Clear days'**
+  String get hrRosterMonthDaysClearAction;
 
   /// Default shift start time for a flexible roster.
   ///
