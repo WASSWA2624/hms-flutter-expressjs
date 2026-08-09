@@ -20,6 +20,7 @@ class AppDialog extends StatefulWidget {
     this.scrollable = false,
     this.pinActionsToBottom = false,
     this.stackActionsWhenCompact = true,
+    this.denseActions = false,
     this.showCloseButton = true,
     this.showMaximizeButton = true,
     this.resizable = true,
@@ -62,6 +63,9 @@ class AppDialog extends StatefulWidget {
   /// When true (default), compact/mobile footers stack actions full-width.
   /// Set false to keep a horizontal action row on phones (e.g. Preview + Save).
   final bool stackActionsWhenCompact;
+
+  /// When true, footer uses tighter padding for a compact action bar.
+  final bool denseActions;
   final bool showCloseButton;
   final bool showMaximizeButton;
   final bool resizable;
@@ -160,6 +164,7 @@ class _AppDialogState extends State<AppDialog> {
         fillHeight: fillShellHeight,
         compact: compact,
         stackActionsWhenCompact: widget.stackActionsWhenCompact,
+        denseActions: widget.denseActions,
         showCloseButton: widget.showCloseButton,
         showMaximizeButton: widget.showMaximizeButton && desktopInteractive,
         isMaximized: _isMaximized,
@@ -492,6 +497,7 @@ class _DialogBody extends StatelessWidget {
     required this.fillHeight,
     required this.compact,
     required this.stackActionsWhenCompact,
+    required this.denseActions,
     required this.showCloseButton,
     required this.showMaximizeButton,
     required this.isMaximized,
@@ -513,6 +519,7 @@ class _DialogBody extends StatelessWidget {
   final bool fillHeight;
   final bool compact;
   final bool stackActionsWhenCompact;
+  final bool denseActions;
   final bool showCloseButton;
   final bool showMaximizeButton;
   final bool isMaximized;
@@ -578,6 +585,7 @@ class _DialogBody extends StatelessWidget {
             actions: actions,
             compact: compact,
             stackWhenCompact: stackActionsWhenCompact,
+            dense: denseActions,
           ),
       ],
     );
@@ -801,19 +809,26 @@ class _DialogActions extends StatelessWidget {
     required this.actions,
     required this.compact,
     required this.stackWhenCompact,
+    this.dense = false,
   });
 
   final List<Widget> actions;
   final bool compact;
   final bool stackWhenCompact;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final EdgeInsets padding = EdgeInsets.all(
-      compact ? theme.spacing.md : theme.spacing.lg,
-    ).copyWith(top: theme.spacing.sm);
+    final EdgeInsets padding = dense
+        ? EdgeInsets.symmetric(
+            horizontal: theme.spacing.sm,
+            vertical: theme.spacing.xs,
+          )
+        : EdgeInsets.all(
+            compact ? theme.spacing.md : theme.spacing.lg,
+          ).copyWith(top: theme.spacing.sm);
 
     final Widget actionRow;
     // Two-action footers are authored [Close/dismiss, primary]. Reverse for
@@ -834,7 +849,9 @@ class _DialogActions extends StatelessWidget {
           ],
         ],
       );
-    } else if (displayActions.length <= 2) {
+    } else {
+      // Keep a single horizontal row on every breakpoint when stacking is off,
+      // including 3+ actions (scale down rather than wrap/stack).
       actionRow = Align(
         alignment: AlignmentDirectional.centerEnd,
         child: FittedBox(
@@ -846,21 +863,13 @@ class _DialogActions extends StatelessWidget {
               for (int i = 0; i < displayActions.length; i++)
                 Padding(
                   padding: EdgeInsetsDirectional.only(
-                    start: i == 0 ? 0 : theme.spacing.sm,
+                    start: i == 0 ? 0 : (dense ? theme.spacing.xs : theme.spacing.sm),
                   ),
                   child: displayActions[i],
                 ),
             ],
           ),
         ),
-      );
-    } else {
-      actionRow = OverflowBar(
-        alignment: MainAxisAlignment.end,
-        overflowAlignment: OverflowBarAlignment.end,
-        spacing: theme.spacing.sm,
-        overflowSpacing: theme.spacing.sm,
-        children: displayActions,
       );
     }
 

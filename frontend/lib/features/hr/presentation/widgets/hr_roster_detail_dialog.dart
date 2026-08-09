@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
@@ -731,11 +732,19 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
       ref.watch(appAccessPolicyProvider),
     );
 
-    return AppDialog(
+    final bool showActionLabels =
+        AppBreakpoints.of(context).showsToolbarActionLabels;
+
+    return AppActionLabelScope(
+      showLabels: showActionLabels,
+      forceIconOnly: !showActionLabels,
+      child: AppDialog(
       title: Text(l10n.hrRosterDetailDialogTitle),
       icon: const Icon(Icons.calendar_month_outlined),
       scrollable: true,
       maxWidth: 1100,
+      stackActionsWhenCompact: false,
+      denseActions: true,
       content: widget.isLoading && _roster == null
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -914,6 +923,7 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
               leadingIcon: Icons.edit_outlined,
               label: l10n.commonEditActionLabel,
               tooltip: l10n.commonEditActionLabel,
+              dense: true,
               enabled: isAllowed && !_busy && _roster != null,
               onPressed: !isAllowed || _busy || _roster == null
                   ? null
@@ -925,14 +935,18 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
           leadingIcon: Icons.print_outlined,
           label: l10n.commonPrintActionLabel,
           tooltip: l10n.commonPrintActionLabel,
+          dense: true,
           enabled: _roster != null && !_busy,
           onPressed: _roster == null || _busy ? null : _printRoster,
         ),
-        AppButton.secondary(
-          label: l10n.commonCancelActionLabel,
+        AppButton.close(
+          label: l10n.commonCloseActionLabel,
+          tooltip: l10n.commonCloseActionLabel,
+          dense: true,
           onPressed: () => Navigator.of(context).maybePop(),
         ),
       ],
+    ),
     );
   }
 
