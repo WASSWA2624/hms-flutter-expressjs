@@ -431,16 +431,27 @@ class _HrRosterCalendarPreviewState extends State<HrRosterCalendarPreview> {
     final DateTimeRange initial =
         _customRange ??
         DateTimeRange(start: _viewStart, end: _viewEnd);
-    final DateTimeRange? picked = await showDateRangePicker(
+    final DateTimeRange clampedInitial = DateTimeRange(
+      start: initial.start.isBefore(firstDate) ? firstDate : initial.start,
+      end: initial.end.isAfter(lastDate) ? lastDate : initial.end,
+    );
+    final AppLocalizations l10n = context.l10n;
+    final DateTimeRange? picked = await showAppDateRangeDialog(
       context: context,
       firstDate: firstDate,
       lastDate: lastDate,
-      initialDateRange: DateTimeRange(
-        start: initial.start.isBefore(firstDate) ? firstDate : initial.start,
-        end: initial.end.isAfter(lastDate) ? lastDate : initial.end,
-      ),
-      helpText: context.l10n.hrRosterPreviewPickRangeAction,
-      saveText: context.l10n.commonSaveActionLabel,
+      initialRange: clampedInitial,
+      title: l10n.hrRosterPreviewPickRangeAction,
+      extraPresets: <AppDateRangePreset>[
+        AppDateRangePreset(
+          id: 'roster_period',
+          label: l10n.hrRosterPreviewJumpToPeriodAction,
+          buildRange: () => DateTimeRange(
+            start: _periodStart,
+            end: _periodEnd,
+          ),
+        ),
+      ],
     );
     if (picked != null && mounted) {
       _applyCustomRange(picked);
@@ -1914,10 +1925,10 @@ class _RosterDayDetailsBody extends StatelessWidget {
     final MaterialLocalizations materials = MaterialLocalizations.of(context);
     final HrRosterPreviewColors colors =
         HrRosterPreviewColors(theme.colorScheme);
-    final String weekday = hrDayLabel(
-      l10n,
-      day.date.weekday == DateTime.sunday ? 0 : day.date.weekday,
-    );
+    final String workingWindow =
+        '${hrRosterFormatMinutes(day.dayStartMinutes)}–${hrRosterFormatMinutes(day.dayEndMinutes)}';
+    final bool hasShifts = day.shifts.isNotEmpty;
+    final String? note = day.label.trim().isEmpty ? null : day.label.trim();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1927,26 +1938,14 @@ class _RosterDayDetailsBody extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    weekday,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.xs / 2),
-                  Text(
-                    materials.formatFullDate(day.date),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: AppFontWeight.emphasis,
-                    ),
-                  ),
-                ],
+              child: Text(
+                materials.formatFullDate(day.date),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: AppFontWeight.emphasis,
+                ),
               ),
             ),
+            SizedBox(width: theme.spacing.sm),
             Container(
               padding: EdgeInsets.symmetric(
                 horizontal: theme.spacing.sm,
@@ -1969,85 +1968,146 @@ class _RosterDayDetailsBody extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: theme.spacing.md),
+        if (note != null) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          AppMutedText(note),
+        ],
         if (day.isWorkingDay) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
           _DetailsSection(
-            title: l10n.hrRosterDayWorkingHoursLabel,
-            child: Text(
-              '${hrRosterFormatMinutes(day.dayStartMinutes)}–${hrRosterFormatMinutes(day.dayEndMinutes)}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: AppFontWeight.emphasis,
-              ),
+            title: l10n.hrRosterDayCoverageLabel,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                _DetailFactRow(
+                  label: l10n.hrRosterDayWorkingHoursLabel,
+                  value: Text(
+                    workingWindow,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: AppFontWeight.emphasis,
+                    ),
+                  ),
+                ),
+                SizedBox(height: theme.spacing.sm),
+                if (!hasShifts)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Container(
+                        width: 10,
+                        height: 10,
+                        margin: const EdgeInsets.only(top: 4),
+                        decoration: BoxDecoration(
+                          color: colors.free,
+                          borderRadius: BorderRadius.circular(3),
+                          border: Border.all(
+                            color: theme.colorScheme.outline.withValues(
+                              alpha: 0.4,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: theme.spacing.sm),
+                      Expanded(
+                        child: Text(
+                          l10n.hrRosterDayFullyFreeLabel,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                else ...<Widget>[
+                  _DetailFactRow(
+                    label: l10n.hrRosterDayBusyHoursLabel,
+                    value: Wrap(
+                      spacing: theme.spacing.sm,
+                      runSpacing: theme.spacing.xs,
+                      alignment: WrapAlignment.end,
+                      children: <Widget>[
+                        for (final HrRosterMinuteRange range in day.busyRanges)
+                          _RangeChip(
+                            label: range.label,
+                            color: colors.busy,
+                            onColor: theme.colorScheme.onPrimary,
+                          ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: theme.spacing.sm),
+                  _DetailFactRow(
+                    label: l10n.hrRosterDayFreeHoursLabel,
+                    value: day.freeRanges.isEmpty
+                        ? Text(
+                            '—',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          )
+                        : Wrap(
+                            spacing: theme.spacing.sm,
+                            runSpacing: theme.spacing.xs,
+                            alignment: WrapAlignment.end,
+                            children: <Widget>[
+                              for (final HrRosterMinuteRange range
+                                  in day.freeRanges)
+                                _RangeChip(
+                                  label: range.label,
+                                  color: colors.free,
+                                  onColor: theme.colorScheme.onPrimaryContainer,
+                                ),
+                            ],
+                          ),
+                  ),
+                ],
+              ],
             ),
           ),
-          SizedBox(height: theme.spacing.md),
-          _DetailsSection(
-            title: l10n.hrRosterDayBusyHoursLabel,
-            accent: colors.busy,
-            child: day.busyRanges.isEmpty
-                ? Text(
-                    l10n.hrRosterDayNoShiftsLabel,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  )
-                : Wrap(
-                    spacing: theme.spacing.sm,
-                    runSpacing: theme.spacing.xs,
-                    children: <Widget>[
-                      for (final HrRosterMinuteRange range in day.busyRanges)
-                        _RangeChip(
-                          label: range.label,
-                          color: colors.busy,
-                          onColor: theme.colorScheme.onPrimary,
-                        ),
-                    ],
-                  ),
-          ),
-          SizedBox(height: theme.spacing.md),
-          _DetailsSection(
-            title: l10n.hrRosterDayFreeHoursLabel,
-            accent: colors.free,
-            child: day.freeRanges.isEmpty
-                ? Text(
-                    '—',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  )
-                : Wrap(
-                    spacing: theme.spacing.sm,
-                    runSpacing: theme.spacing.xs,
-                    children: <Widget>[
-                      for (final HrRosterMinuteRange range in day.freeRanges)
-                        _RangeChip(
-                          label: range.label,
-                          color: colors.free,
-                          onColor: theme.colorScheme.onPrimaryContainer,
-                        ),
-                    ],
-                  ),
-          ),
-          SizedBox(height: theme.spacing.md),
-        ],
-        _DetailsSection(
-          title: l10n.hrRosterDayShiftsLabel,
-          child: day.shifts.isEmpty
-              ? Text(
-                  l10n.hrRosterDayNoShiftsLabel,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                )
-              : Column(
-                  children: <Widget>[
-                    for (int i = 0; i < day.shifts.length; i++) ...<Widget>[
-                      if (i > 0) SizedBox(height: theme.spacing.sm),
-                      _ShiftTile(shift: day.shifts[i], colors: colors),
-                    ],
+          if (hasShifts) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            _DetailsSection(
+              title: l10n.hrRosterDayShiftsLabel,
+              child: Column(
+                children: <Widget>[
+                  for (int i = 0; i < day.shifts.length; i++) ...<Widget>[
+                    if (i > 0) SizedBox(height: theme.spacing.sm),
+                    _ShiftTile(shift: day.shifts[i], colors: colors),
                   ],
-                ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+}
+
+class _DetailFactRow extends StatelessWidget {
+  const _DetailFactRow({required this.label, required this.value});
+
+  final String label;
+  final Widget value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        SizedBox(
+          width: 120,
+          child: Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(child: value),
       ],
     );
   }
@@ -2128,12 +2188,10 @@ class _DetailsSection extends StatelessWidget {
   const _DetailsSection({
     required this.title,
     required this.child,
-    this.accent,
   });
 
   final String title;
   final Widget child;
-  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
@@ -2151,29 +2209,11 @@ class _DetailsSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                if (accent != null) ...<Widget>[
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: accent,
-                      borderRadius: BorderRadius.circular(3),
-                      border: Border.all(
-                        color: theme.colorScheme.outline.withValues(alpha: 0.4),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: theme.spacing.xs),
-                ],
-                Text(
-                  title,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+            Text(
+              title,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
             SizedBox(height: theme.spacing.sm),
             child,

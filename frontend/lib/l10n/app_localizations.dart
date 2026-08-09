@@ -2314,6 +2314,120 @@ abstract class AppLocalizations {
   /// **'Enter a valid date.'**
   String get appDateInvalidMessage;
 
+  /// Title for the shared date-range picker dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Select dates'**
+  String get appDateRangeDialogTitle;
+
+  /// Helper body for the shared date-range picker dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a preset or enter start and end dates. You can type year, month, and day directly.'**
+  String get appDateRangeDialogBody;
+
+  /// Start date field label in the shared date-range picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get appDateRangeStartLabel;
+
+  /// End date field label in the shared date-range picker.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get appDateRangeEndLabel;
+
+  /// Apply the selected date range.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get appDateRangeApplyAction;
+
+  /// Validation when start or end is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose both a start and end date.'**
+  String get appDateRangeRequiredMessage;
+
+  /// Validation when the range is inverted.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date must be on or before end date.'**
+  String get appDateRangeInvalidMessage;
+
+  /// Preset that selects today’s date.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get appDateRangePresetToday;
+
+  /// Preset that selects the current week (Mon–Sun).
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get appDateRangePresetThisWeek;
+
+  /// Preset that selects the current calendar month.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get appDateRangePresetThisMonth;
+
+  /// Preset that selects the last 7 days including today.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get appDateRangePresetLast7Days;
+
+  /// Preset that selects the last 30 days including today.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get appDateRangePresetLast30Days;
+
+  /// Sets the range to the full month of the selected start date.
+  ///
+  /// In en, this message translates to:
+  /// **'Use month'**
+  String get appDateRangeUseMonthAction;
+
+  /// Caption above the currently selected date range summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected range'**
+  String get appDateRangeSelectedLabel;
+
+  /// Opens the calendar for a single date in the range dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick date'**
+  String get appDateRangePickDateAction;
+
+  /// Section label above date-range preset chips.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick ranges'**
+  String get appDateRangePresetsLabel;
+
+  /// Section label above start/end date fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom dates'**
+  String get appDateRangeCustomLabel;
+
+  /// Tooltip for jumping the range back one year.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous year'**
+  String get appDateRangePreviousYearTooltip;
+
+  /// Tooltip for jumping the range forward one year.
+  ///
+  /// In en, this message translates to:
+  /// **'Next year'**
+  String get appDateRangeNextYearTooltip;
+
   /// Hint text showing the supported manual date entry format.
   ///
   /// In en, this message translates to:
@@ -38776,6 +38890,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No shifts on this day.'**
   String get hrRosterDayNoShiftsLabel;
+
+  /// Shown when a working day has no assigned shifts.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts — entire working window is free.'**
+  String get hrRosterDayFullyFreeLabel;
+
+  /// Section title for busy vs free coverage on a day.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage'**
+  String get hrRosterDayCoverageLabel;
 
   /// Legend heading under roster calendar preview.
   ///

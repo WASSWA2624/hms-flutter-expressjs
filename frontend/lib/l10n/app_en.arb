@@ -1539,6 +1539,82 @@
   "@appDateInvalidMessage": {
     "description": "Validation message for manually typed date fields."
   },
+  "appDateRangeDialogTitle": "Select dates",
+  "@appDateRangeDialogTitle": {
+    "description": "Title for the shared date-range picker dialog."
+  },
+  "appDateRangeDialogBody": "Choose a preset or enter start and end dates. You can type year, month, and day directly.",
+  "@appDateRangeDialogBody": {
+    "description": "Helper body for the shared date-range picker dialog."
+  },
+  "appDateRangeStartLabel": "Start date",
+  "@appDateRangeStartLabel": {
+    "description": "Start date field label in the shared date-range picker."
+  },
+  "appDateRangeEndLabel": "End date",
+  "@appDateRangeEndLabel": {
+    "description": "End date field label in the shared date-range picker."
+  },
+  "appDateRangeApplyAction": "Apply",
+  "@appDateRangeApplyAction": {
+    "description": "Apply the selected date range."
+  },
+  "appDateRangeRequiredMessage": "Choose both a start and end date.",
+  "@appDateRangeRequiredMessage": {
+    "description": "Validation when start or end is missing."
+  },
+  "appDateRangeInvalidMessage": "Start date must be on or before end date.",
+  "@appDateRangeInvalidMessage": {
+    "description": "Validation when the range is inverted."
+  },
+  "appDateRangePresetToday": "Today",
+  "@appDateRangePresetToday": {
+    "description": "Preset that selects today’s date."
+  },
+  "appDateRangePresetThisWeek": "This week",
+  "@appDateRangePresetThisWeek": {
+    "description": "Preset that selects the current week (Mon–Sun)."
+  },
+  "appDateRangePresetThisMonth": "This month",
+  "@appDateRangePresetThisMonth": {
+    "description": "Preset that selects the current calendar month."
+  },
+  "appDateRangePresetLast7Days": "Last 7 days",
+  "@appDateRangePresetLast7Days": {
+    "description": "Preset that selects the last 7 days including today."
+  },
+  "appDateRangePresetLast30Days": "Last 30 days",
+  "@appDateRangePresetLast30Days": {
+    "description": "Preset that selects the last 30 days including today."
+  },
+  "appDateRangeUseMonthAction": "Use month",
+  "@appDateRangeUseMonthAction": {
+    "description": "Sets the range to the full month of the selected start date."
+  },
+  "appDateRangeSelectedLabel": "Selected range",
+  "@appDateRangeSelectedLabel": {
+    "description": "Caption above the currently selected date range summary."
+  },
+  "appDateRangePickDateAction": "Pick date",
+  "@appDateRangePickDateAction": {
+    "description": "Opens the calendar for a single date in the range dialog."
+  },
+  "appDateRangePresetsLabel": "Quick ranges",
+  "@appDateRangePresetsLabel": {
+    "description": "Section label above date-range preset chips."
+  },
+  "appDateRangeCustomLabel": "Custom dates",
+  "@appDateRangeCustomLabel": {
+    "description": "Section label above start/end date fields."
+  },
+  "appDateRangePreviousYearTooltip": "Previous year",
+  "@appDateRangePreviousYearTooltip": {
+    "description": "Tooltip for jumping the range back one year."
+  },
+  "appDateRangeNextYearTooltip": "Next year",
+  "@appDateRangeNextYearTooltip": {
+    "description": "Tooltip for jumping the range forward one year."
+  },
   "appDateFormatHint": "DD/MM/YYYY",
   "@appDateFormatHint": {
     "description": "Hint text showing the supported manual date entry format."
@@ -27019,6 +27095,14 @@
   "hrRosterDayNoShiftsLabel": "No shifts on this day.",
   "@hrRosterDayNoShiftsLabel": {
     "description": "Empty shifts list on day details."
+  },
+  "hrRosterDayFullyFreeLabel": "No shifts — entire working window is free.",
+  "@hrRosterDayFullyFreeLabel": {
+    "description": "Shown when a working day has no assigned shifts."
+  },
+  "hrRosterDayCoverageLabel": "Coverage",
+  "@hrRosterDayCoverageLabel": {
+    "description": "Section title for busy vs free coverage on a day."
   },
   "hrRosterPreviewLegendTitle": "Legend",
   "@hrRosterPreviewLegendTitle": {

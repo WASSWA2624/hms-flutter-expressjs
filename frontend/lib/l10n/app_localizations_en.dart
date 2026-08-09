@@ -1174,6 +1174,65 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appDateInvalidMessage => 'Enter a valid date.';
 
   @override
+  String get appDateRangeDialogTitle => 'Select dates';
+
+  @override
+  String get appDateRangeDialogBody =>
+      'Choose a preset or enter start and end dates. You can type year, month, and day directly.';
+
+  @override
+  String get appDateRangeStartLabel => 'Start date';
+
+  @override
+  String get appDateRangeEndLabel => 'End date';
+
+  @override
+  String get appDateRangeApplyAction => 'Apply';
+
+  @override
+  String get appDateRangeRequiredMessage => 'Choose both a start and end date.';
+
+  @override
+  String get appDateRangeInvalidMessage =>
+      'Start date must be on or before end date.';
+
+  @override
+  String get appDateRangePresetToday => 'Today';
+
+  @override
+  String get appDateRangePresetThisWeek => 'This week';
+
+  @override
+  String get appDateRangePresetThisMonth => 'This month';
+
+  @override
+  String get appDateRangePresetLast7Days => 'Last 7 days';
+
+  @override
+  String get appDateRangePresetLast30Days => 'Last 30 days';
+
+  @override
+  String get appDateRangeUseMonthAction => 'Use month';
+
+  @override
+  String get appDateRangeSelectedLabel => 'Selected range';
+
+  @override
+  String get appDateRangePickDateAction => 'Pick date';
+
+  @override
+  String get appDateRangePresetsLabel => 'Quick ranges';
+
+  @override
+  String get appDateRangeCustomLabel => 'Custom dates';
+
+  @override
+  String get appDateRangePreviousYearTooltip => 'Previous year';
+
+  @override
+  String get appDateRangeNextYearTooltip => 'Next year';
+
+  @override
   String get appDateFormatHint => 'DD/MM/YYYY';
 
   @override
@@ -20949,6 +21008,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrRosterDayNoShiftsLabel => 'No shifts on this day.';
+
+  @override
+  String get hrRosterDayFullyFreeLabel =>
+      'No shifts — entire working window is free.';
+
+  @override
+  String get hrRosterDayCoverageLabel => 'Coverage';
 
   @override
   String get hrRosterPreviewLegendTitle => 'Legend';

@@ -822,7 +822,7 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                     padEmptyRows: false,
                     maxVisibleItems: visible.isEmpty ? 1 : visible.length,
                     enableExport: true,
-                    columnVisibilityStorageKey: 'hr_roster_assigned_staff_v1',
+                    columnVisibilityStorageKey: 'hr_roster_assigned_staff_v2',
                     columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
                     search: AppListTableSearch<_RosterStaffRow>(
                       controller: _staffSearchController,
@@ -1017,7 +1017,7 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
         id: 'select',
         label: l10n.hrRosterSelectAllStaffAction,
         alwaysVisible: true,
-        fixedWidth: 48,
+        fixedWidth: 44,
         headerBuilder: (BuildContext context) {
           return Center(
             child: Checkbox(
@@ -1049,33 +1049,47 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
         },
         cellBuilder: (BuildContext context, _RosterStaffRow row) {
           final bool selected = _selectedStaffIds.contains(row.staffProfileId);
-          return Checkbox(
-            value: selected,
-            onChanged: _busy
-                ? null
-                : (bool? value) {
-                    setState(() {
-                      if (value == true) {
-                        _selectedStaffIds.add(row.staffProfileId);
-                      } else {
-                        _selectedStaffIds.remove(row.staffProfileId);
-                      }
-                    });
-                  },
+          return Center(
+            child: Checkbox(
+              value: selected,
+              onChanged: _busy
+                  ? null
+                  : (bool? value) {
+                      setState(() {
+                        if (value == true) {
+                          _selectedStaffIds.add(row.staffProfileId);
+                        } else {
+                          _selectedStaffIds.remove(row.staffProfileId);
+                        }
+                      });
+                    },
+            ),
           );
         },
       ),
       AppListTableColumn<_RosterStaffRow>(
         id: 'name',
         label: l10n.hrRosterNameLabel,
+        preferredWidth: 168,
         sortComparator: (_RosterStaffRow left, _RosterStaffRow right) =>
             appListTableCompareText(left.title, right.title),
-        cellBuilder: (BuildContext context, _RosterStaffRow row) =>
-            Text(row.title),
+        cellBuilder: (BuildContext context, _RosterStaffRow row) {
+          final ThemeData theme = Theme.of(context);
+          return Text(
+            row.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface,
+              fontWeight: AppFontWeight.emphasis,
+            ),
+          );
+        },
       ),
       AppListTableColumn<_RosterStaffRow>(
         id: 'staff_number',
         label: l10n.hrStaffNumberLabel,
+        preferredWidth: 280,
         sortComparator: (_RosterStaffRow left, _RosterStaffRow right) =>
             appListTableCompareText(
               left.staffNumber ?? left.displayId,
@@ -1091,15 +1105,25 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
       AppListTableColumn<_RosterStaffRow>(
         id: 'position',
         label: l10n.hrPositionLabel,
+        fixedWidth: 168,
         sortComparator: (_RosterStaffRow left, _RosterStaffRow right) =>
             appListTableCompareText(left.position, right.position),
-        cellBuilder: (BuildContext context, _RosterStaffRow row) => Text(
-          (row.position ?? '').ifEmpty(context.l10n.profileUnknownValue),
-        ),
+        cellBuilder: (BuildContext context, _RosterStaffRow row) {
+          final ThemeData theme = Theme.of(context);
+          return Text(
+            (row.position ?? '').ifEmpty(context.l10n.profileUnknownValue),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
+          );
+        },
       ),
       AppListTableColumn<_RosterStaffRow>(
         id: 'practitioner_type',
         label: l10n.hrPractitionerTypeLabel,
+        fixedWidth: 128,
         sortComparator: (_RosterStaffRow left, _RosterStaffRow right) =>
             appListTableCompareText(
               left.practitionerType,
@@ -1114,37 +1138,47 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                     value,
                     fallback: value,
                   ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           );
         },
       ),
       AppListTableColumn<_RosterStaffRow>(
         id: 'category',
         label: l10n.hrRosterStaffCategoryLabel,
+        fixedWidth: 120,
         sortComparator: (_RosterStaffRow left, _RosterStaffRow right) =>
             appListTableCompareText(left.staffCategory, right.staffCategory),
         cellBuilder: (BuildContext context, _RosterStaffRow row) => Text(
           _staffCategoryLabel(context.l10n, row.staffCategory),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
       AppListTableColumn<_RosterStaffRow>(
         id: 'actions',
         label: l10n.patientsQuickActionsTitle,
         alwaysVisible: true,
+        fixedWidth: 120,
         cellBuilder: (BuildContext context, _RosterStaffRow row) {
-          return AppAccessActionGate(
-            requirement: HrShiftsAtomPermissions.write,
-            builder: (BuildContext context, bool isAllowed) {
-              return AppButton.tertiary(
-                leadingIcon: Icons.person_remove_outlined,
-                label: l10n.hrRosterRemoveStaffAction,
-                tooltip: l10n.hrRosterRemoveStaffAction,
-                color: Theme.of(context).colorScheme.error,
-                enabled: isAllowed && !_busy,
-                onPressed: !isAllowed || _busy
-                    ? null
-                    : () => _removeStaff(row.staffProfileId),
-              );
-            },
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: AppAccessActionGate(
+              requirement: HrShiftsAtomPermissions.write,
+              builder: (BuildContext context, bool isAllowed) {
+                return AppButton.tertiary(
+                  leadingIcon: Icons.person_remove_outlined,
+                  label: l10n.hrRosterRemoveStaffAction,
+                  tooltip: l10n.hrRosterRemoveStaffAction,
+                  dense: true,
+                  color: Theme.of(context).colorScheme.error,
+                  enabled: isAllowed && !_busy,
+                  onPressed: !isAllowed || _busy
+                      ? null
+                      : () => _removeStaff(row.staffProfileId),
+                );
+              },
+            ),
           );
         },
       ),
