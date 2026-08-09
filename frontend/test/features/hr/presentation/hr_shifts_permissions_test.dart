@@ -462,7 +462,7 @@ void main() {
         accessPolicy: reader,
       );
 
-      expect(_tab('Rosters'), findsOneWidget);
+      expect(_tab('Roster templates'), findsOneWidget);
       expect(_searchAction('Create roster template'), findsNothing);
       expect(find.text('Publish roster'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
@@ -486,7 +486,7 @@ void main() {
         accessPolicy: hrWriter,
       );
 
-      expect(_tab('Rosters'), findsOneWidget);
+      expect(_tab('Roster templates'), findsOneWidget);
       expect(_searchAction('Create roster template'), findsNothing);
       expect(find.text('Publish roster'), findsNothing);
       expect(find.text('Override shift'), findsNothing);
@@ -749,7 +749,7 @@ void main() {
         accessPolicy: noModule,
       );
 
-      expect(_tab('Rosters'), findsNothing);
+      expect(_tab('Roster templates'), findsNothing);
       expect(_searchAction('Create roster template'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -773,7 +773,7 @@ void main() {
       themeMode: ThemeMode.dark,
     );
 
-    expect(_tab('Rosters'), findsOneWidget);
+    expect(_tab('Roster templates'), findsOneWidget);
     // Compact widths hide toolbar labels; tooltip remains the stable atom.
     expect(find.byTooltip('Create roster template'), findsOneWidget);
     expect(find.textContaining('no access'), findsNothing);
@@ -804,7 +804,7 @@ void main() {
       themeMode: ThemeMode.light,
     );
 
-    expect(_tab('Rosters'), findsOneWidget);
+    expect(_tab('Roster templates'), findsOneWidget);
     expect(find.byTooltip('HR activity'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });
@@ -830,7 +830,7 @@ void main() {
         accessPolicy: writeOnly,
       );
 
-      expect(_tab('Rosters'), findsNothing);
+      expect(_tab('Roster templates'), findsNothing);
       expect(_searchAction('Create roster template'), findsNothing);
     },
   );

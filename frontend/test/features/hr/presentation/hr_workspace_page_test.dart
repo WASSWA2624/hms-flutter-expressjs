@@ -338,7 +338,7 @@ void main() {
     expect(_searchAction('Request leave'), findsNothing);
     expect(_searchAction('Create roster template'), findsNothing);
 
-    await _selectTab(tester, 'Rosters');
+    await _selectTab(tester, 'Roster templates');
     expect(_searchAction('Create roster template'), findsOneWidget);
 
     await _selectTab(tester, 'Unassigned shifts');

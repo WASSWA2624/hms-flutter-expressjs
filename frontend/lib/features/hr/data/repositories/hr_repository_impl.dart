@@ -455,6 +455,14 @@ final class HrRepositoryImpl implements HrRepository {
   }
 
   @override
+  Future<Result<Object?>> deleteRoster(String rosterId) {
+    return _apiClient.delete<Object?>(
+      ApiEndpoints.byId(HmsApiResource.rosters, rosterId),
+      decoder: (_) => null,
+    );
+  }
+
+  @override
   Future<Result<Map<String, Object?>>> getRoster(String rosterId) {
     return _apiClient.get<Map<String, Object?>>(
       ApiEndpoints.byId(HmsApiResource.rosters, rosterId),

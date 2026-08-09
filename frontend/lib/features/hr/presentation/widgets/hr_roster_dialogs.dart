@@ -10,6 +10,7 @@ import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_con
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_hour_grid.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_similarity_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_weekly_schedule_editor.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -540,7 +541,38 @@ Future<void> showHrCreateRosterDialog(
           'attached_staff_ids': <String>[],
         },
       };
-      return controller.createRoster(payload);
+
+      Future<AppFailure?> submit({required bool confirmSimilar}) async {
+        final Map<String, Object?> request = <String, Object?>{
+          ...payload,
+          if (confirmSimilar) 'confirm_similar': true,
+        };
+        final AppFailure? failure = await controller.createRoster(request);
+        if (failure == null || !context.mounted) {
+          return failure;
+        }
+        if (!isHrRosterSimilarityConflict(failure)) {
+          return failure;
+        }
+        final bool exact = isHrRosterExactNameConflict(failure);
+        final List<HrRosterSimilarityMatch> matches =
+            hrRosterSimilarityMatchesFromConflict(failure, l10n: l10n);
+        final bool proceed = await showHrRosterSimilarityDialog(
+          context: context,
+          proposedName: nameController.text.trim(),
+          matches: matches,
+          blockProceed: exact,
+        );
+        if (!proceed || !context.mounted) {
+          return failure;
+        }
+        if (exact) {
+          return failure;
+        }
+        return submit(confirmSimilar: true);
+      }
+
+      return submit(confirmSimilar: false);
     },
   );
 

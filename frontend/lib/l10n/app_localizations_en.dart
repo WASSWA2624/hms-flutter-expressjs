@@ -20638,7 +20638,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrLiveStatus => 'Live';
 
   @override
-  String get hrLoadingBody => 'Loading staff and rosters...';
+  String get hrLoadingBody => 'Loading staff and roster templates...';
 
   @override
   String get hrLoadingTitle => 'Loading HR workspace';
@@ -20795,7 +20795,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrQueuePayrollDrafts => 'Payroll drafts';
 
   @override
-  String get hrQueueRosterDrafts => 'Rosters';
+  String get hrQueueRosterDrafts => 'Roster templates';
 
   @override
   String get hrQueueSwapRequests => 'Swap requests';
@@ -20834,13 +20834,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRolePositionColumnLabel => 'Role / position';
 
   @override
-  String get hrRosterDraftsSummaryLabel => 'Rosters';
+  String get hrRosterDraftsSummaryLabel => 'Roster templates';
 
   @override
-  String get hrRosterDraftTitle => 'Roster';
+  String get hrRosterDraftTitle => 'Roster template';
 
   @override
-  String get hrRosterNameLabel => 'Roster name';
+  String get hrRosterNameLabel => 'Template name';
 
   @override
   String get hrRosterRecurringLabel => 'Recurring';
@@ -20851,7 +20851,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrRosterDepartmentHelper =>
-      'Only staff in this department can be assigned to this roster.';
+      'Only staff in this department can be assigned to this roster template.';
 
   @override
   String get hrRosterAllDepartmentsLabel => 'All departments';
@@ -20928,7 +20928,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterHourEndMinuteLabel => 'End';
 
   @override
-  String get hrRosterDetailsSectionTitle => 'Roster details';
+  String get hrRosterDetailsSectionTitle => 'Template details';
 
   @override
   String get hrRosterRespectWeekendsLabel => 'Respect weekends';
@@ -20960,31 +20960,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrCreateRosterDialogTitle => 'Create roster template';
 
   @override
-  String get hrRosterDetailDialogTitle => 'Roster details';
+  String get hrRosterSimilarityDialogTitle => 'Similar roster templates';
 
   @override
-  String get hrRosterNoStaffLabel => 'No staff assigned to this roster yet.';
+  String get hrRosterSimilarityExactBannerTitle => 'Exact match found';
+
+  @override
+  String get hrRosterSimilarityExactBannerMessage =>
+      'A roster template with this name already exists. Rename your template to continue.';
+
+  @override
+  String get hrRosterSimilarityNearBannerTitle => 'Similar templates found';
+
+  @override
+  String get hrRosterSimilarityNearBannerMessage =>
+      'Review similar roster templates before creating this one. You can still proceed if this template is intentional.';
+
+  @override
+  String get hrRosterSimilarityProceedAction => 'Create anyway';
+
+  @override
+  String get hrRosterDetailDialogTitle => 'Roster template details';
+
+  @override
+  String get hrRosterNoStaffLabel =>
+      'No staff assigned to this roster template yet.';
 
   @override
   String get hrRosterSelectStaffLabel => 'Staff member';
 
   @override
-  String get hrRosterOverviewSectionTitle => 'Roster overview';
+  String get hrRosterOverviewSectionTitle => 'Template overview';
 
   @override
-  String get hrRosterOverviewNameLabel => 'Roster name';
+  String get hrRosterOverviewNameLabel => 'Template name';
 
   @override
-  String get hrRosterOverviewIdLabel => 'Roster ID';
+  String get hrRosterOverviewIdLabel => 'Template ID';
 
   @override
-  String get hrRosterOverviewPeriodLabel => 'Roster period';
+  String get hrRosterOverviewPeriodLabel => 'Template period';
 
   @override
   String get hrRosterOverviewRecurringLabel => 'Recurring schedule';
 
   @override
-  String get hrRosterOverviewStatusLabel => 'Roster status';
+  String get hrRosterOverviewStatusLabel => 'Template status';
 
   @override
   String get hrRosterOverviewAssignedStaffLabel => 'Assigned staff';
@@ -20996,7 +21017,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterOverviewDepartmentLabel => 'Department';
 
   @override
-  String get hrRosterPreviewSectionTitle => 'Roster preview';
+  String get hrRosterPreviewSectionTitle => 'Template preview';
 
   @override
   String get hrRosterRemoveSelectedStaffAction => 'Remove selected';
@@ -21026,10 +21047,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterStaffCategoryOther => 'Other';
 
   @override
-  String get hrRosterEditDialogTitle => 'Edit roster';
+  String get hrRosterEditDialogTitle => 'Edit roster template';
 
   @override
-  String get hrRosterPrintDialogTitle => 'Print roster';
+  String get hrRosterDeleteConfirmTitle => 'Delete roster template';
+
+  @override
+  String get hrRosterDeleteConfirmMessage =>
+      'Delete this roster template? Assigned staff links and generated shifts may be affected.';
+
+  @override
+  String get hrRosterDeleteAction => 'Delete template';
+
+  @override
+  String get hrRosterPrintDialogTitle => 'Print roster template';
 
   @override
   String get hrRosterPrintOverviewSection => 'Overview';
@@ -21149,7 +21180,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterPreviewNighttimeLabel => 'Nighttime';
 
   @override
-  String get hrRosterPreviewJumpToPeriodAction => 'Roster period';
+  String get hrRosterPreviewJumpToPeriodAction => 'Template period';
 
   @override
   String get hrRosterPreviewMonthSummaryAction => 'Month summary';

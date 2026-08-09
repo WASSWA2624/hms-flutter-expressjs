@@ -8,6 +8,13 @@ const {
   resolveIdentifierForPayload,
   resolveEntityId} = require('@lib/billing/identifiers');
 const prisma = require('@prisma/client');
+const {
+  normalizeWeeklySchedule,
+} = require('@modules/shift-template/lib/weekly-schedule');
+const {
+  checkRosterDuplicates,
+  normalizeMonthDays,
+} = require('@lib/roster/roster-similarity');
 
 const WEEKDAY_TO_UTC_DAY = {
   SUN: 0,
@@ -18,6 +25,18 @@ const WEEKDAY_TO_UTC_DAY = {
   FRI: 5,
   SAT: 6,
 };
+
+const UTC_DAY_TO_WEEKDAY = {
+  0: 'SUN',
+  1: 'MON',
+  2: 'TUE',
+  3: 'WED',
+  4: 'THU',
+  5: 'FRI',
+  6: 'SAT',
+};
+
+const ROSTER_SIMILARITY_LOOKUP_LIMIT = 200;
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.ceil(total / limit);
@@ -62,19 +81,50 @@ const overlaps = (leftStart, leftEnd, rightStart, rightEnd) => {
   return aStart < bEnd && bStart < aEnd;
 };
 
+const stripSimilarityPayloadFields = (data = {}) => {
+  const {
+    confirm_similar: _confirmSimilar,
+    materialize_shifts: _materializeShifts,
+    ...payload
+  } = data;
+  return payload;
+};
+
 const normalizeConstraints = (constraints = {}) => {
   const source = constraints && typeof constraints === 'object' ? constraints : {};
+  const weeklySchedule = normalizeWeeklySchedule(source.weekly_schedule_json);
+  const monthDays = normalizeMonthDays(source.month_days);
+  const workingDays =
+    Array.isArray(source.working_days) && source.working_days.length
+      ? source.working_days.map((day) => String(day).toUpperCase())
+      : weeklySchedule.length
+        ? [
+            ...new Set(
+              weeklySchedule.map((day) => UTC_DAY_TO_WEEKDAY[day.day_of_week]).filter(Boolean)
+            ),
+          ]
+        : ['MON', 'TUE', 'WED', 'THU', 'FRI'];
+
+  let defaultStart = source.default_start_time || '08:00';
+  let defaultEnd = source.default_end_time || '17:00';
+  if (weeklySchedule.length) {
+    const firstSlot = weeklySchedule[0]?.time_slots?.[0];
+    if (firstSlot?.start_time) defaultStart = String(firstSlot.start_time).slice(0, 5);
+    if (firstSlot?.end_time) defaultEnd = String(firstSlot.end_time).slice(0, 5);
+  }
+
   return {
     ...source,
     respect_public_holidays: source.respect_public_holidays !== false,
+    respect_weekends: source.respect_weekends !== false,
     public_holidays: Array.isArray(source.public_holidays)
       ? source.public_holidays.map(String)
       : [],
-    working_days: Array.isArray(source.working_days) && source.working_days.length
-      ? source.working_days.map((day) => String(day).toUpperCase())
-      : ['MON', 'TUE', 'WED', 'THU', 'FRI'],
-    default_start_time: source.default_start_time || '08:00',
-    default_end_time: source.default_end_time || '17:00',
+    working_days: workingDays,
+    month_days: monthDays,
+    weekly_schedule_json: weeklySchedule,
+    default_start_time: defaultStart,
+    default_end_time: defaultEnd,
     attached_staff_ids: Array.isArray(source.attached_staff_ids)
       ? [...new Set(source.attached_staff_ids.map(String))]
       : [],
@@ -92,16 +142,41 @@ const normalizeConstraints = (constraints = {}) => {
   };
 };
 
-const materializeRosterShifts = async (roster) => {
-  const constraints = normalizeConstraints(roster.constraints);
-  const holidaySet = new Set(constraints.public_holidays);
+const slotsForUtcDay = (constraints, utcDay) => {
+  const weekly = Array.isArray(constraints.weekly_schedule_json)
+    ? constraints.weekly_schedule_json
+    : [];
+  const dayEntry = weekly.find((entry) => Number(entry.day_of_week) === utcDay);
+  if (dayEntry?.time_slots?.length) {
+    return dayEntry.time_slots
+      .map((slot) => ({
+        start_time: String(slot.start_time || '').slice(0, 5),
+        end_time: String(slot.end_time || '').slice(0, 5),
+      }))
+      .filter((slot) => slot.start_time && slot.end_time);
+  }
+
   const allowedDays = new Set(
-    constraints.working_days
+    (constraints.working_days || [])
       .map((day) => WEEKDAY_TO_UTC_DAY[day])
       .filter((day) => day !== undefined)
   );
-  const startParts = parseTimeParts(constraints.default_start_time, 8, 0);
-  const endParts = parseTimeParts(constraints.default_end_time, 17, 0);
+  if (!allowedDays.has(utcDay)) {
+    return [];
+  }
+  return [
+    {
+      start_time: constraints.default_start_time || '08:00',
+      end_time: constraints.default_end_time || '17:00',
+    },
+  ];
+};
+
+const materializeRosterShifts = async (roster) => {
+  const constraints = normalizeConstraints(roster.constraints);
+  const holidaySet = new Set(constraints.public_holidays);
+  const monthDaySet = new Set(constraints.month_days || []);
+  const restrictMonthDays = monthDaySet.size > 0;
 
   const cursor = new Date(roster.period_start);
   cursor.setUTCHours(0, 0, 0, 0);
@@ -111,49 +186,112 @@ const materializeRosterShifts = async (roster) => {
   const created = [];
   while (cursor <= end) {
     const dateKey = toDateKey(cursor);
+    const utcDay = cursor.getUTCDay();
+    const dayOfMonth = cursor.getUTCDate();
+    const isWeekend = utcDay === 0 || utcDay === 6;
     const isHoliday = holidaySet.has(dateKey);
-    const isWorkingDay = allowedDays.has(cursor.getUTCDay());
     const skipHoliday = constraints.respect_public_holidays && isHoliday;
+    const skipWeekend = constraints.respect_weekends && isWeekend;
+    const skipMonthDay = restrictMonthDays && !monthDaySet.has(dayOfMonth);
 
-    if (isWorkingDay && !skipHoliday && dateKey) {
-      const startTime = new Date(Date.UTC(
-        cursor.getUTCFullYear(),
-        cursor.getUTCMonth(),
-        cursor.getUTCDate(),
-        startParts.hour,
-        startParts.minute,
-        0,
-        0
-      ));
-      let endTime = new Date(Date.UTC(
-        cursor.getUTCFullYear(),
-        cursor.getUTCMonth(),
-        cursor.getUTCDate(),
-        endParts.hour,
-        endParts.minute,
-        0,
-        0
-      ));
-      if (endTime <= startTime) {
-        endTime = new Date(endTime.getTime() + 24 * 60 * 60 * 1000);
+    if (!skipHoliday && !skipWeekend && !skipMonthDay && dateKey) {
+      const slots = slotsForUtcDay(constraints, utcDay);
+      for (const slot of slots) {
+        const startParts = parseTimeParts(slot.start_time, 8, 0);
+        const endParts = parseTimeParts(slot.end_time, 17, 0);
+        const startTime = new Date(Date.UTC(
+          cursor.getUTCFullYear(),
+          cursor.getUTCMonth(),
+          cursor.getUTCDate(),
+          startParts.hour,
+          startParts.minute,
+          0,
+          0
+        ));
+        let endTime = new Date(Date.UTC(
+          cursor.getUTCFullYear(),
+          cursor.getUTCMonth(),
+          cursor.getUTCDate(),
+          endParts.hour,
+          endParts.minute,
+          0,
+          0
+        ));
+        if (endTime <= startTime) {
+          endTime = new Date(endTime.getTime() + 24 * 60 * 60 * 1000);
+        }
+
+        const shift = await shiftRepository.create({
+          tenant_id: roster.tenant_id,
+          facility_id: roster.facility_id || null,
+          roster_id: roster.id,
+          shift_type: constraints.shift_type,
+          status: 'SCHEDULED',
+          start_time: startTime,
+          end_time: endTime,
+        });
+        created.push(shift);
       }
-
-      const shift = await shiftRepository.create({
-        tenant_id: roster.tenant_id,
-        facility_id: roster.facility_id || null,
-        roster_id: roster.id,
-        shift_type: constraints.shift_type,
-        status: 'SCHEDULED',
-        start_time: startTime,
-        end_time: endTime,
-      });
-      created.push(shift);
     }
 
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
 
   return created;
+};
+
+const assertRosterUniqueness = async ({
+  data,
+  tenantId,
+  facilityId = null,
+  confirmSimilar = false,
+  excludeRosterId = null,
+}) => {
+  if (!tenantId) {
+    return null;
+  }
+
+  const existing = await rosterRepository.findMany(
+    { tenant_id: tenantId },
+    0,
+    ROSTER_SIMILARITY_LOOKUP_LIMIT,
+    { created_at: 'desc' }
+  );
+
+  const duplicateCheck = checkRosterDuplicates({
+    name: data.name,
+    facilityId,
+    departmentId: data.department_id,
+    isRecurring: Boolean(data.is_recurring),
+    periodStart: data.period_start,
+    periodEnd: data.period_end,
+    constraints: data.constraints || {},
+    existing,
+    excludeRosterId,
+  });
+
+  if (duplicateCheck.exactNameConflict) {
+    throw new HttpError('errors.roster.duplicate_name', 409, [
+      {
+        field: 'name',
+        matches: duplicateCheck.similarMatches
+          .filter((match) => match.exactNameConflict)
+          .slice(0, 5),
+      },
+    ]);
+  }
+
+  const reviewMatches = duplicateCheck.overridableMatches.slice(0, 5);
+  if (reviewMatches.length > 0 && !confirmSimilar) {
+    throw new HttpError('errors.roster.similar_exists', 409, [
+      {
+        field: 'name',
+        matches: reviewMatches,
+      },
+    ]);
+  }
+
+  return duplicateCheck;
 };
 
 const mapAttachedStaff = async (roster) => {
@@ -387,7 +525,9 @@ const getRosterById = async (id) => {
 
 const createRoster = async (data, userId, ipAddress) => {
   try {
-    const { materialize_shifts: materializeShifts = true, ...rest } = data;
+    const confirmSimilar = data?.confirm_similar === true;
+    const materializeShifts = data?.materialize_shifts !== false;
+    const rest = stripSimilarityPayloadFields(data);
     const periodStart = new Date(rest.period_start);
     const periodEnd = new Date(rest.period_end);
     const defaultName = `${toDateKey(periodStart) || 'roster'} – ${toDateKey(periodEnd) || ''}`.trim();
@@ -414,11 +554,16 @@ const createRoster = async (data, userId, ipAddress) => {
         where: { deleted_at: null },
         nullable: true})};
 
-    delete payload.materialize_shifts;
+    await assertRosterUniqueness({
+      data: payload,
+      tenantId: payload.tenant_id,
+      facilityId: payload.facility_id,
+      confirmSimilar,
+    });
 
     const roster = await rosterRepository.create(payload);
     let shifts = [];
-    if (materializeShifts !== false) {
+    if (materializeShifts) {
       shifts = await materializeRosterShifts(roster);
     }
 
@@ -443,6 +588,8 @@ const createRoster = async (data, userId, ipAddress) => {
 
 const updateRoster = async (id, data, userId, ipAddress) => {
   try {
+    const confirmSimilar = data?.confirm_similar === true;
+    const materializeShifts = data?.materialize_shifts === true;
     const resolvedId = await resolveEntityId({
       model: 'roster',
       identifier: id,
@@ -450,7 +597,7 @@ const updateRoster = async (id, data, userId, ipAddress) => {
     const before = await rosterRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.roster.not_found', 404);
 
-    const payload = { ...data };
+    const payload = stripSimilarityPayloadFields({ ...data });
     if (Object.prototype.hasOwnProperty.call(data, 'facility_id')) {
       payload.facility_id = await resolveIdentifierForPayload({
         value: data.facility_id,
@@ -480,16 +627,75 @@ const updateRoster = async (id, data, userId, ipAddress) => {
       payload.published_at = before.published_at || new Date();
     }
 
+    const nextName = Object.prototype.hasOwnProperty.call(payload, 'name')
+      ? payload.name
+      : before.name;
+    const nextFacilityId = Object.prototype.hasOwnProperty.call(payload, 'facility_id')
+      ? payload.facility_id
+      : before.facility_id;
+    const nextDepartmentId = Object.prototype.hasOwnProperty.call(payload, 'department_id')
+      ? payload.department_id
+      : before.department_id;
+    const nextIsRecurring = Object.prototype.hasOwnProperty.call(payload, 'is_recurring')
+      ? payload.is_recurring
+      : before.is_recurring;
+    const nextPeriodStart = Object.prototype.hasOwnProperty.call(payload, 'period_start')
+      ? payload.period_start
+      : before.period_start;
+    const nextPeriodEnd = Object.prototype.hasOwnProperty.call(payload, 'period_end')
+      ? payload.period_end
+      : before.period_end;
+    const nextConstraints = Object.prototype.hasOwnProperty.call(payload, 'constraints')
+      ? payload.constraints
+      : before.constraints;
+
+    await assertRosterUniqueness({
+      data: {
+        name: nextName,
+        department_id: nextDepartmentId,
+        is_recurring: nextIsRecurring,
+        period_start: nextPeriodStart,
+        period_end: nextPeriodEnd,
+        constraints: nextConstraints,
+      },
+      tenantId: before.tenant_id,
+      facilityId: nextFacilityId,
+      confirmSimilar,
+      excludeRosterId: before.id,
+    });
+
     const roster = await rosterRepository.update(before.id, payload);
+
+    let shiftsCreated = 0;
+    if (materializeShifts) {
+      // Soft-delete existing unassigned schedule slots for this roster before rebuild.
+      await prisma.shift.updateMany({
+        where: {
+          roster_id: roster.id,
+          deleted_at: null,
+          assignments: { none: { deleted_at: null } },
+        },
+        data: { deleted_at: new Date() },
+      });
+      const shifts = await materializeRosterShifts(roster);
+      shiftsCreated = shifts.length;
+    }
+
     createAuditLog({
       user_id: userId,
       action: 'UPDATE',
       entity: 'roster',
       entity_id: roster.id,
       tenant_id: roster.tenant_id,
-      diff: { before, after: roster },
+      diff: {
+        before,
+        after: roster,
+        metadata: materializeShifts ? { shifts_created: shiftsCreated } : undefined,
+      },
       ip_address: ipAddress}).catch(() => {});
-    return roster;
+    return materializeShifts
+      ? { ...roster, shifts_created: shiftsCreated }
+      : roster;
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);

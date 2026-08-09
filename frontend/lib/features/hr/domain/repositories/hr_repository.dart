@@ -121,6 +121,8 @@ abstract interface class HrRepository {
     Map<String, Object?> payload,
   );
 
+  Future<Result<Object?>> deleteRoster(String rosterId);
+
   Future<Result<Map<String, Object?>>> getRoster(String rosterId);
 
   Future<Result<Map<String, Object?>>> attachRosterStaff({

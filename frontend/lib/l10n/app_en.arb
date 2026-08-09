@@ -26596,7 +26596,7 @@
   "@hrLiveStatus": {
     "description": "Human resources workspace text for hrLiveStatus."
   },
-  "hrLoadingBody": "Loading staff and rosters...",
+  "hrLoadingBody": "Loading staff and roster templates...",
   "@hrLoadingBody": {
     "description": "Human resources workspace text for hrLoadingBody."
   },
@@ -26811,9 +26811,9 @@
   "@hrQueuePayrollDrafts": {
     "description": "Human resources workspace text for hrQueuePayrollDrafts."
   },
-  "hrQueueRosterDrafts": "Rosters",
+  "hrQueueRosterDrafts": "Roster templates",
   "@hrQueueRosterDrafts": {
-    "description": "Human resources workspace text for hrQueueRosterDrafts."
+    "description": "Primary HR tab / queue label for roster templates."
   },
   "hrQueueSwapRequests": "Swap requests",
   "@hrQueueSwapRequests": {
@@ -26863,61 +26863,61 @@
   "@hrRolePositionColumnLabel": {
     "description": "Human resources workspace text for hrRolePositionColumnLabel."
   },
-  "hrRosterDraftsSummaryLabel": "Rosters",
+  "hrRosterDraftsSummaryLabel": "Roster templates",
   "@hrRosterDraftsSummaryLabel": {
-    "description": "Human resources workspace text for hrRosterDraftsSummaryLabel."
+    "description": "Summary / metric label for roster templates."
   },
-  "hrRosterDraftTitle": "Roster",
+  "hrRosterDraftTitle": "Roster template",
   "@hrRosterDraftTitle": {
-    "description": "Human resources workspace text for hrRosterDraftTitle."
+    "description": "Card / list title fallback for a roster template."
   },
-  "hrRosterNameLabel": "Roster name",
+  "hrRosterNameLabel": "Template name",
   "@hrRosterNameLabel": {
-    "description": "Roster name field label."
+    "description": "Name field for a roster template."
   },
   "hrRosterRecurringLabel": "Recurring",
   "@hrRosterRecurringLabel": {
-    "description": "Whether a roster repeats."
+    "description": "Whether a roster template repeats."
   },
   "hrRosterRecurringHelper": "Recurring templates have no fixed period; staff can be scheduled on an ongoing cycle.",
   "@hrRosterRecurringHelper": {
     "description": "Explains the recurring roster template checkbox."
   },
-  "hrRosterDepartmentHelper": "Only staff in this department can be assigned to this roster.",
+  "hrRosterDepartmentHelper": "Only staff in this department can be assigned to this roster template.",
   "@hrRosterDepartmentHelper": {
-    "description": "Placeholder for the roster department field."
+    "description": "Helper for the roster template department field."
   },
   "hrRosterAllDepartmentsLabel": "All departments",
   "@hrRosterAllDepartmentsLabel": {
-    "description": "Department option meaning any staff can be assigned to the roster."
+    "description": "Department option meaning any staff can be assigned to the roster template."
   },
   "hrRosterStatusCompleted": "Completed",
   "@hrRosterStatusCompleted": {
-    "description": "Completed roster status label (published)."
+    "description": "Completed roster template status label (published)."
   },
   "hrRosterStatusDraft": "Draft",
   "@hrRosterStatusDraft": {
-    "description": "Draft roster status label."
+    "description": "Draft roster template status label."
   },
   "hrRosterStatusFieldLabel": "Status",
   "@hrRosterStatusFieldLabel": {
-    "description": "Status field label on create/edit roster."
+    "description": "Status field label on create/edit roster template."
   },
   "hrRosterAttachedStaffTitle": "Assigned staff",
   "@hrRosterAttachedStaffTitle": {
-    "description": "Roster detail section for attached staff."
+    "description": "Roster template detail section for attached staff."
   },
   "hrRosterAddStaffAction": "Add staff",
   "@hrRosterAddStaffAction": {
-    "description": "Add staff member to a roster."
+    "description": "Add staff member to a roster template."
   },
   "hrRosterRemoveStaffAction": "Remove",
   "@hrRosterRemoveStaffAction": {
-    "description": "Remove staff member from a roster."
+    "description": "Remove staff member from a roster template."
   },
   "hrRosterRespectHolidaysLabel": "Respect public holidays",
   "@hrRosterRespectHolidaysLabel": {
-    "description": "Skip public holidays when materializing roster shifts."
+    "description": "Skip public holidays when materializing roster template shifts."
   },
   "hrRosterRespectHolidaysHelper": "Skip generating shifts on public holidays listed below.",
   "@hrRosterRespectHolidaysHelper": {
@@ -26925,19 +26925,19 @@
   },
   "hrRosterPublicHolidaysLabel": "Public holidays (YYYY-MM-DD, comma-separated)",
   "@hrRosterPublicHolidaysLabel": {
-    "description": "Public holiday dates for a roster."
+    "description": "Public holiday dates for a roster template."
   },
   "hrRosterWorkingDaysLabel": "Working days",
   "@hrRosterWorkingDaysLabel": {
-    "description": "Which weekdays the roster covers."
+    "description": "Which weekdays the roster template covers."
   },
   "hrRosterWeekHoursTitle": "Weekly hours",
   "@hrRosterWeekHoursTitle": {
-    "description": "Title above the visual week hour grid on create roster."
+    "description": "Title above the visual week hour grid on create roster template."
   },
   "hrRosterWeekHoursHint": "Tap or drag hours across each day row. Use the day menu to copy hours to all days or following days.",
   "@hrRosterWeekHoursHint": {
-    "description": "Hint under the roster week hour grid."
+    "description": "Hint under the roster template week hour grid."
   },
   "hrRosterCopyHoursToAllAction": "Copy to all",
   "@hrRosterCopyHoursToAllAction": {
@@ -26984,9 +26984,9 @@
   "@hrRosterHourEndMinuteLabel": {
     "description": "End time within the selected hour."
   },
-  "hrRosterDetailsSectionTitle": "Roster details",
+  "hrRosterDetailsSectionTitle": "Template details",
   "@hrRosterDetailsSectionTitle": {
-    "description": "Collapsible section title for roster identity and options."
+    "description": "Collapsible section title for roster template identity and options."
   },
   "hrRosterRespectWeekendsLabel": "Respect weekends",
   "@hrRosterRespectWeekendsLabel": {
@@ -27024,41 +27024,65 @@
   "@hrCreateRosterDialogTitle": {
     "description": "Title for create roster template dialog."
   },
-  "hrRosterDetailDialogTitle": "Roster details",
-  "@hrRosterDetailDialogTitle": {
-    "description": "Title for roster details dialog."
+  "hrRosterSimilarityDialogTitle": "Similar roster templates",
+  "@hrRosterSimilarityDialogTitle": {
+    "description": "Title for roster template similarity review dialog."
   },
-  "hrRosterNoStaffLabel": "No staff assigned to this roster yet.",
+  "hrRosterSimilarityExactBannerTitle": "Exact match found",
+  "@hrRosterSimilarityExactBannerTitle": {
+    "description": "Banner title when an exact roster template name conflict exists."
+  },
+  "hrRosterSimilarityExactBannerMessage": "A roster template with this name already exists. Rename your template to continue.",
+  "@hrRosterSimilarityExactBannerMessage": {
+    "description": "Banner message for exact roster template name conflicts."
+  },
+  "hrRosterSimilarityNearBannerTitle": "Similar templates found",
+  "@hrRosterSimilarityNearBannerTitle": {
+    "description": "Banner title when near-duplicate roster templates are found."
+  },
+  "hrRosterSimilarityNearBannerMessage": "Review similar roster templates before creating this one. You can still proceed if this template is intentional.",
+  "@hrRosterSimilarityNearBannerMessage": {
+    "description": "Banner message for near-duplicate roster template matches."
+  },
+  "hrRosterSimilarityProceedAction": "Create anyway",
+  "@hrRosterSimilarityProceedAction": {
+    "description": "Confirm create after reviewing similar roster templates."
+  },
+  "hrRosterDetailDialogTitle": "Roster template details",
+  "@hrRosterDetailDialogTitle": {
+    "description": "Title for roster template details dialog."
+  },
+  "hrRosterNoStaffLabel": "No staff assigned to this roster template yet.",
   "@hrRosterNoStaffLabel": {
-    "description": "Empty state for roster staff list."
+    "description": "Empty state for roster template staff list."
   },
   "hrRosterSelectStaffLabel": "Staff member",
   "@hrRosterSelectStaffLabel": {
-    "description": "Staff picker when attaching to a roster."
+    "description": "Staff picker when attaching to a roster template."
   },
-  "hrRosterOverviewSectionTitle": "Roster overview",
+  "hrRosterOverviewSectionTitle": "Template overview",
   "@hrRosterOverviewSectionTitle": {
-    "description": "Collapsible overview section title on roster details."
+    "description": "Collapsible overview section title on roster template details."
   },
-  "hrRosterOverviewNameLabel": "Roster name",
+  "hrRosterOverviewNameLabel": "Template name",
   "@hrRosterOverviewNameLabel": {
-    "description": "Informative label for the roster display name in overview."
+    "description": "Informative label for the roster template display name in overview."
   },
-  "hrRosterOverviewIdLabel": "Roster ID",
+  "hrRosterOverviewIdLabel": "Template ID",
   "@hrRosterOverviewIdLabel": {
-    "description": "Informative label for the roster identifier in overview."
+    "description": "Informative label for the roster template identifier in overview."
   },
-  "hrRosterOverviewPeriodLabel": "Roster period",
+  "hrRosterOverviewPeriodLabel": "Template period",
   "@hrRosterOverviewPeriodLabel": {
-    "description": "Informative label for the roster date range in overview."
+    "description": "Informative label for the roster template date range in overview."
   },
   "hrRosterOverviewRecurringLabel": "Recurring schedule",
   "@hrRosterOverviewRecurringLabel": {
-    "description": "Informative label for whether the roster repeats."
+    "description": "Informative label for whether the roster template repeats."
   },
-  "hrRosterOverviewStatusLabel": "Roster status",
+  "hrRosterOverviewStatusLabel": "Template status",
   "@hrRosterOverviewStatusLabel": {
-    "description": "Informative label for roster lifecycle status in overview."
+    "description": "Informative label for roster template lifecycle status in overview."
   },
   "hrRosterOverviewAssignedStaffLabel": "Assigned staff",
   "@hrRosterOverviewAssignedStaffLabel": {
@@ -27066,15 +27090,15 @@
   },
   "hrRosterOverviewFacilityLabel": "Facility",
   "@hrRosterOverviewFacilityLabel": {
-    "description": "Informative label for facility name in roster overview."
+    "description": "Informative label for facility name in roster template overview."
   },
   "hrRosterOverviewDepartmentLabel": "Department",
   "@hrRosterOverviewDepartmentLabel": {
-    "description": "Informative label for department name in roster overview."
+    "description": "Informative label for department name in roster template overview."
   },
-  "hrRosterPreviewSectionTitle": "Roster preview",
+  "hrRosterPreviewSectionTitle": "Template preview",
   "@hrRosterPreviewSectionTitle": {
-    "description": "Collapsible roster calendar preview section title."
+    "description": "Collapsible roster template calendar preview section title."
   },
   "hrRosterRemoveSelectedStaffAction": "Remove selected",
   "@hrRosterRemoveSelectedStaffAction": {
@@ -27112,17 +27136,29 @@
   "@hrRosterStaffCategoryOther": {
     "description": "Other staff category."
   },
-  "hrRosterEditDialogTitle": "Edit roster",
+  "hrRosterEditDialogTitle": "Edit roster template",
   "@hrRosterEditDialogTitle": {
-    "description": "Title for edit roster dialog."
+    "description": "Title for edit roster template dialog."
   },
-  "hrRosterPrintDialogTitle": "Print roster",
+  "hrRosterDeleteConfirmTitle": "Delete roster template",
+  "@hrRosterDeleteConfirmTitle": {
+    "description": "Title for delete roster template confirmation."
+  },
+  "hrRosterDeleteConfirmMessage": "Delete this roster template? Assigned staff links and generated shifts may be affected.",
+  "@hrRosterDeleteConfirmMessage": {
+    "description": "Body for delete roster template confirmation."
+  },
+  "hrRosterDeleteAction": "Delete template",
+  "@hrRosterDeleteAction": {
+    "description": "Action to delete a roster template from detail dialog."
+  },
+  "hrRosterPrintDialogTitle": "Print roster template",
   "@hrRosterPrintDialogTitle": {
-    "description": "Title for roster print section selection dialog."
+    "description": "Title for roster template print section selection dialog."
   },
   "hrRosterPrintOverviewSection": "Overview",
   "@hrRosterPrintOverviewSection": {
-    "description": "Print option for roster overview."
+    "description": "Print option for roster template overview."
   },
   "hrRosterPrintStaffSection": "Assigned staff",
   "@hrRosterPrintStaffSection": {
@@ -27130,11 +27166,11 @@
   },
   "hrRosterPrintScheduleSection": "Preview",
   "@hrRosterPrintScheduleSection": {
-    "description": "Print option for roster calendar preview."
+    "description": "Print option for roster template calendar preview."
   },
   "hrRosterNameHelper": "e.g. ICU nights · Aug 2026 or ED locum cover · Week 34",
   "@hrRosterNameHelper": {
-    "description": "Placeholder example for the roster name field."
+    "description": "Placeholder example for the roster template name field."
   },
   "hrRosterAssignedStaffCountChip": "Staff: {count}",
   "@hrRosterAssignedStaffCountChip": {
@@ -27273,9 +27309,9 @@
   "@hrRosterPreviewNighttimeLabel": {
     "description": "Nighttime column header in roster day preview (e.g. 18:00–06:00)."
   },
-  "hrRosterPreviewJumpToPeriodAction": "Roster period",
+  "hrRosterPreviewJumpToPeriodAction": "Template period",
   "@hrRosterPreviewJumpToPeriodAction": {
-    "description": "Jump calendar focus back to the roster period start."
+    "description": "Jump calendar focus back to the roster template period start."
   },
   "hrRosterPreviewMonthSummaryAction": "Month summary",
   "@hrRosterPreviewMonthSummaryAction": {
@@ -28232,9 +28268,9 @@
   "@hrAssignedAtLabel": {
     "description": "Label for shift assignment timestamp."
   },
-  "hrRosterPeriodLabel": "Roster period",
+  "hrRosterPeriodLabel": "Template period",
   "@hrRosterPeriodLabel": {
-    "description": "Label for linked roster period."
+    "description": "Label for linked roster template period."
   },
   "hrRemoveShiftAssignmentAction": "Remove assignment",
   "@hrRemoveShiftAssignmentAction": {

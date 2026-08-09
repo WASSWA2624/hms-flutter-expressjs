@@ -13,6 +13,7 @@ import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.d
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_calendar_preview.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -402,6 +403,40 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
       _selectedStaffIds.clear();
     });
     showHrMutationSnackBar(context, failure);
+  }
+
+  Future<void> _deleteRoster() async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AppConfirmActionDialog(
+          title: l10n.hrRosterDeleteConfirmTitle,
+          body: l10n.hrRosterDeleteConfirmMessage,
+          submitLabel: l10n.hrRosterDeleteAction,
+          destructive: true,
+          submitLeadingIcon: Icons.delete_outline,
+          onConfirm: () async {
+            setState(() => _busy = true);
+            final AppFailure? failure = await ref
+                .read(hrWorkspaceControllerProvider.notifier)
+                .deleteRoster(_rosterId);
+            if (!mounted) {
+              return failure;
+            }
+            setState(() => _busy = false);
+            if (failure == null) {
+              showHrMutationSnackBar(context, null);
+              await Navigator.of(context).maybePop();
+            }
+            return failure;
+          },
+        );
+      },
+    );
+    if (confirmed == true && mounted && _busy) {
+      setState(() => _busy = false);
+    }
   }
 
   Future<void> _editRoster() async {
@@ -928,6 +963,22 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
               onPressed: !isAllowed || _busy || _roster == null
                   ? null
                   : _editRoster,
+            );
+          },
+        ),
+        AppAccessActionGate(
+          requirement: HrShiftsAtomPermissions.write,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppButton.secondary(
+              leadingIcon: Icons.delete_outline,
+              label: l10n.hrRosterDeleteAction,
+              tooltip: l10n.hrRosterDeleteAction,
+              dense: true,
+              color: Theme.of(context).colorScheme.error,
+              enabled: isAllowed && !_busy && _roster != null,
+              onPressed: !isAllowed || _busy || _roster == null
+                  ? null
+                  : _deleteRoster,
             );
           },
         ),

@@ -38168,7 +38168,7 @@ abstract class AppLocalizations {
   /// Human resources workspace text for hrLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading staff and rosters...'**
+  /// **'Loading staff and roster templates...'**
   String get hrLoadingBody;
 
   /// Human resources workspace text for hrLoadingTitle.
@@ -38471,10 +38471,10 @@ abstract class AppLocalizations {
   /// **'Payroll drafts'**
   String get hrQueuePayrollDrafts;
 
-  /// Human resources workspace text for hrQueueRosterDrafts.
+  /// Primary HR tab / queue label for roster templates.
   ///
   /// In en, this message translates to:
-  /// **'Rosters'**
+  /// **'Roster templates'**
   String get hrQueueRosterDrafts;
 
   /// Human resources workspace text for hrQueueSwapRequests.
@@ -38549,25 +38549,25 @@ abstract class AppLocalizations {
   /// **'Role / position'**
   String get hrRolePositionColumnLabel;
 
-  /// Human resources workspace text for hrRosterDraftsSummaryLabel.
+  /// Summary / metric label for roster templates.
   ///
   /// In en, this message translates to:
-  /// **'Rosters'**
+  /// **'Roster templates'**
   String get hrRosterDraftsSummaryLabel;
 
-  /// Human resources workspace text for hrRosterDraftTitle.
+  /// Card / list title fallback for a roster template.
   ///
   /// In en, this message translates to:
-  /// **'Roster'**
+  /// **'Roster template'**
   String get hrRosterDraftTitle;
 
-  /// Roster name field label.
+  /// Name field for a roster template.
   ///
   /// In en, this message translates to:
-  /// **'Roster name'**
+  /// **'Template name'**
   String get hrRosterNameLabel;
 
-  /// Whether a roster repeats.
+  /// Whether a roster template repeats.
   ///
   /// In en, this message translates to:
   /// **'Recurring'**
@@ -38579,55 +38579,55 @@ abstract class AppLocalizations {
   /// **'Recurring templates have no fixed period; staff can be scheduled on an ongoing cycle.'**
   String get hrRosterRecurringHelper;
 
-  /// Placeholder for the roster department field.
+  /// Helper for the roster template department field.
   ///
   /// In en, this message translates to:
-  /// **'Only staff in this department can be assigned to this roster.'**
+  /// **'Only staff in this department can be assigned to this roster template.'**
   String get hrRosterDepartmentHelper;
 
-  /// Department option meaning any staff can be assigned to the roster.
+  /// Department option meaning any staff can be assigned to the roster template.
   ///
   /// In en, this message translates to:
   /// **'All departments'**
   String get hrRosterAllDepartmentsLabel;
 
-  /// Completed roster status label (published).
+  /// Completed roster template status label (published).
   ///
   /// In en, this message translates to:
   /// **'Completed'**
   String get hrRosterStatusCompleted;
 
-  /// Draft roster status label.
+  /// Draft roster template status label.
   ///
   /// In en, this message translates to:
   /// **'Draft'**
   String get hrRosterStatusDraft;
 
-  /// Status field label on create/edit roster.
+  /// Status field label on create/edit roster template.
   ///
   /// In en, this message translates to:
   /// **'Status'**
   String get hrRosterStatusFieldLabel;
 
-  /// Roster detail section for attached staff.
+  /// Roster template detail section for attached staff.
   ///
   /// In en, this message translates to:
   /// **'Assigned staff'**
   String get hrRosterAttachedStaffTitle;
 
-  /// Add staff member to a roster.
+  /// Add staff member to a roster template.
   ///
   /// In en, this message translates to:
   /// **'Add staff'**
   String get hrRosterAddStaffAction;
 
-  /// Remove staff member from a roster.
+  /// Remove staff member from a roster template.
   ///
   /// In en, this message translates to:
   /// **'Remove'**
   String get hrRosterRemoveStaffAction;
 
-  /// Skip public holidays when materializing roster shifts.
+  /// Skip public holidays when materializing roster template shifts.
   ///
   /// In en, this message translates to:
   /// **'Respect public holidays'**
@@ -38639,25 +38639,25 @@ abstract class AppLocalizations {
   /// **'Skip generating shifts on public holidays listed below.'**
   String get hrRosterRespectHolidaysHelper;
 
-  /// Public holiday dates for a roster.
+  /// Public holiday dates for a roster template.
   ///
   /// In en, this message translates to:
   /// **'Public holidays (YYYY-MM-DD, comma-separated)'**
   String get hrRosterPublicHolidaysLabel;
 
-  /// Which weekdays the roster covers.
+  /// Which weekdays the roster template covers.
   ///
   /// In en, this message translates to:
   /// **'Working days'**
   String get hrRosterWorkingDaysLabel;
 
-  /// Title above the visual week hour grid on create roster.
+  /// Title above the visual week hour grid on create roster template.
   ///
   /// In en, this message translates to:
   /// **'Weekly hours'**
   String get hrRosterWeekHoursTitle;
 
-  /// Hint under the roster week hour grid.
+  /// Hint under the roster template week hour grid.
   ///
   /// In en, this message translates to:
   /// **'Tap or drag hours across each day row. Use the day menu to copy hours to all days or following days.'**
@@ -38723,10 +38723,10 @@ abstract class AppLocalizations {
   /// **'End'**
   String get hrRosterHourEndMinuteLabel;
 
-  /// Collapsible section title for roster identity and options.
+  /// Collapsible section title for roster template identity and options.
   ///
   /// In en, this message translates to:
-  /// **'Roster details'**
+  /// **'Template details'**
   String get hrRosterDetailsSectionTitle;
 
   /// Exclude Saturday and Sunday when generating roster schedules.
@@ -38783,58 +38783,94 @@ abstract class AppLocalizations {
   /// **'Create roster template'**
   String get hrCreateRosterDialogTitle;
 
-  /// Title for roster details dialog.
+  /// Title for roster template similarity review dialog.
   ///
   /// In en, this message translates to:
-  /// **'Roster details'**
+  /// **'Similar roster templates'**
+  String get hrRosterSimilarityDialogTitle;
+
+  /// Banner title when an exact roster template name conflict exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact match found'**
+  String get hrRosterSimilarityExactBannerTitle;
+
+  /// Banner message for exact roster template name conflicts.
+  ///
+  /// In en, this message translates to:
+  /// **'A roster template with this name already exists. Rename your template to continue.'**
+  String get hrRosterSimilarityExactBannerMessage;
+
+  /// Banner title when near-duplicate roster templates are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar templates found'**
+  String get hrRosterSimilarityNearBannerTitle;
+
+  /// Banner message for near-duplicate roster template matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Review similar roster templates before creating this one. You can still proceed if this template is intentional.'**
+  String get hrRosterSimilarityNearBannerMessage;
+
+  /// Confirm create after reviewing similar roster templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get hrRosterSimilarityProceedAction;
+
+  /// Title for roster template details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster template details'**
   String get hrRosterDetailDialogTitle;
 
-  /// Empty state for roster staff list.
+  /// Empty state for roster template staff list.
   ///
   /// In en, this message translates to:
-  /// **'No staff assigned to this roster yet.'**
+  /// **'No staff assigned to this roster template yet.'**
   String get hrRosterNoStaffLabel;
 
-  /// Staff picker when attaching to a roster.
+  /// Staff picker when attaching to a roster template.
   ///
   /// In en, this message translates to:
   /// **'Staff member'**
   String get hrRosterSelectStaffLabel;
 
-  /// Collapsible overview section title on roster details.
+  /// Collapsible overview section title on roster template details.
   ///
   /// In en, this message translates to:
-  /// **'Roster overview'**
+  /// **'Template overview'**
   String get hrRosterOverviewSectionTitle;
 
-  /// Informative label for the roster display name in overview.
+  /// Informative label for the roster template display name in overview.
   ///
   /// In en, this message translates to:
-  /// **'Roster name'**
+  /// **'Template name'**
   String get hrRosterOverviewNameLabel;
 
-  /// Informative label for the roster identifier in overview.
+  /// Informative label for the roster template identifier in overview.
   ///
   /// In en, this message translates to:
-  /// **'Roster ID'**
+  /// **'Template ID'**
   String get hrRosterOverviewIdLabel;
 
-  /// Informative label for the roster date range in overview.
+  /// Informative label for the roster template date range in overview.
   ///
   /// In en, this message translates to:
-  /// **'Roster period'**
+  /// **'Template period'**
   String get hrRosterOverviewPeriodLabel;
 
-  /// Informative label for whether the roster repeats.
+  /// Informative label for whether the roster template repeats.
   ///
   /// In en, this message translates to:
   /// **'Recurring schedule'**
   String get hrRosterOverviewRecurringLabel;
 
-  /// Informative label for roster lifecycle status in overview.
+  /// Informative label for roster template lifecycle status in overview.
   ///
   /// In en, this message translates to:
-  /// **'Roster status'**
+  /// **'Template status'**
   String get hrRosterOverviewStatusLabel;
 
   /// Informative label for staff assignment count in overview.
@@ -38843,22 +38879,22 @@ abstract class AppLocalizations {
   /// **'Assigned staff'**
   String get hrRosterOverviewAssignedStaffLabel;
 
-  /// Informative label for facility name in roster overview.
+  /// Informative label for facility name in roster template overview.
   ///
   /// In en, this message translates to:
   /// **'Facility'**
   String get hrRosterOverviewFacilityLabel;
 
-  /// Informative label for department name in roster overview.
+  /// Informative label for department name in roster template overview.
   ///
   /// In en, this message translates to:
   /// **'Department'**
   String get hrRosterOverviewDepartmentLabel;
 
-  /// Collapsible roster calendar preview section title.
+  /// Collapsible roster template calendar preview section title.
   ///
   /// In en, this message translates to:
-  /// **'Roster preview'**
+  /// **'Template preview'**
   String get hrRosterPreviewSectionTitle;
 
   /// Bulk-remove selected staff from a roster.
@@ -38915,19 +38951,37 @@ abstract class AppLocalizations {
   /// **'Other'**
   String get hrRosterStaffCategoryOther;
 
-  /// Title for edit roster dialog.
+  /// Title for edit roster template dialog.
   ///
   /// In en, this message translates to:
-  /// **'Edit roster'**
+  /// **'Edit roster template'**
   String get hrRosterEditDialogTitle;
 
-  /// Title for roster print section selection dialog.
+  /// Title for delete roster template confirmation.
   ///
   /// In en, this message translates to:
-  /// **'Print roster'**
+  /// **'Delete roster template'**
+  String get hrRosterDeleteConfirmTitle;
+
+  /// Body for delete roster template confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this roster template? Assigned staff links and generated shifts may be affected.'**
+  String get hrRosterDeleteConfirmMessage;
+
+  /// Action to delete a roster template from detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete template'**
+  String get hrRosterDeleteAction;
+
+  /// Title for roster template print section selection dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Print roster template'**
   String get hrRosterPrintDialogTitle;
 
-  /// Print option for roster overview.
+  /// Print option for roster template overview.
   ///
   /// In en, this message translates to:
   /// **'Overview'**
@@ -38939,13 +38993,13 @@ abstract class AppLocalizations {
   /// **'Assigned staff'**
   String get hrRosterPrintStaffSection;
 
-  /// Print option for roster calendar preview.
+  /// Print option for roster template calendar preview.
   ///
   /// In en, this message translates to:
   /// **'Preview'**
   String get hrRosterPrintScheduleSection;
 
-  /// Placeholder example for the roster name field.
+  /// Placeholder example for the roster template name field.
   ///
   /// In en, this message translates to:
   /// **'e.g. ICU nights · Aug 2026 or ED locum cover · Week 34'**
@@ -39149,10 +39203,10 @@ abstract class AppLocalizations {
   /// **'Nighttime'**
   String get hrRosterPreviewNighttimeLabel;
 
-  /// Jump calendar focus back to the roster period start.
+  /// Jump calendar focus back to the roster template period start.
   ///
   /// In en, this message translates to:
-  /// **'Roster period'**
+  /// **'Template period'**
   String get hrRosterPreviewJumpToPeriodAction;
 
   /// Open month-level roster preview details.

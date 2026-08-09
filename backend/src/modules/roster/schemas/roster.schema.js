@@ -16,6 +16,24 @@ const {
 
 const weekdaySchema = z.enum(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']);
 
+const timeSlotSchema = z.object({
+  start_time: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
+  end_time: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
+});
+
+const weeklyScheduleDaySchema = z.object({
+  day_of_week: z.number().int().min(0).max(6),
+  time_slots: z.array(timeSlotSchema).min(1),
+});
+
+const staffMetaSchema = z.object({
+  staff_profile_id: uuidOrFriendlyIdentifierSchema,
+  staff_category: z
+    .enum(['FULL_TIME', 'PART_TIME', 'LOCUM', 'SPECIALIST', 'CONTRACT', 'OTHER'])
+    .optional()
+    .nullable(),
+});
+
 const constraintsSchema = z.object({
   max_shifts_per_nurse: z.number().int().positive().optional(),
   max_shifts_per_week: z.number().int().positive().optional(),
@@ -24,13 +42,19 @@ const constraintsSchema = z.object({
   max_consecutive_working_days: z.number().int().positive().optional(),
   skill_matching: z.boolean().optional(),
   respect_public_holidays: z.boolean().optional(),
+  respect_weekends: z.boolean().optional(),
   public_holidays: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
   working_days: z.array(weekdaySchema).optional(),
+  month_days: z.array(z.number().int().min(1).max(31)).optional(),
   default_start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   default_end_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  weekly_schedule_json: z.array(weeklyScheduleDaySchema).optional(),
   attached_staff_ids: z.array(uuidOrFriendlyIdentifierSchema).optional(),
+  attached_staff_meta: z.array(staffMetaSchema).optional(),
   shift_type: z.enum(['DAY', 'NIGHT', 'SWING', 'ON_CALL']).optional(),
 }).optional();
+
+const optionalBooleanSchema = z.boolean().optional();
 
 const createRosterSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema,
@@ -43,6 +67,7 @@ const createRosterSchema = z.object({
   status: z.enum(['DRAFT', 'PUBLISHED']).default('DRAFT'),
   constraints: constraintsSchema,
   materialize_shifts: z.boolean().default(true),
+  confirm_similar: optionalBooleanSchema,
 }).refine((data) => {
   const start = new Date(data.period_start);
   const end = new Date(data.period_end);
@@ -60,7 +85,9 @@ const updateRosterSchema = z.object({
   period_start: isoDateSchema.optional(),
   period_end: isoDateSchema.optional(),
   status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
-  constraints: constraintsSchema
+  constraints: constraintsSchema,
+  materialize_shifts: z.boolean().optional(),
+  confirm_similar: optionalBooleanSchema,
 }).refine((data) => {
   if (data.period_start && data.period_end) {
     const start = new Date(data.period_start);
