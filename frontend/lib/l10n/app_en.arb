@@ -26992,7 +26992,7 @@
   "@hrRosterPreviewLegendTitle": {
     "description": "Legend heading under roster calendar preview."
   },
-  "hrRosterPreviewTapHint": "Tap a day for details · use Month summary / Week summary for period rollups",
+  "hrRosterPreviewTapHint": "Tap a day for details · use summary for period rollups",
   "@hrRosterPreviewTapHint": {
     "description": "Hint under roster calendar preview."
   },
@@ -27015,6 +27015,34 @@
   "hrRosterPreviewNextAction": "Next",
   "@hrRosterPreviewNextAction": {
     "description": "Navigate to next period in roster preview."
+  },
+  "hrRosterPreviewTodayAction": "Today",
+  "@hrRosterPreviewTodayAction": {
+    "description": "Jump roster preview focus to the roster period start."
+  },
+  "hrRosterPreviewPickPeriodAction": "Select date",
+  "@hrRosterPreviewPickPeriodAction": {
+    "description": "Manually pick a calendar preview date/period."
+  },
+  "hrRosterPreviewViewMenuLabel": "Calendar view",
+  "@hrRosterPreviewViewMenuLabel": {
+    "description": "Dropdown to switch day/week/month preview."
+  },
+  "hrRosterPreviewMaximizeAction": "Maximize preview",
+  "@hrRosterPreviewMaximizeAction": {
+    "description": "Open roster preview in a maximized dialog."
+  },
+  "hrRosterPreviewSummaryAction": "Period summary",
+  "@hrRosterPreviewSummaryAction": {
+    "description": "Open summary details for the current preview scope."
+  },
+  "hrRosterPreviewHideMiniAction": "Hide mini calendar",
+  "@hrRosterPreviewHideMiniAction": {
+    "description": "Hide the side mini-month picker."
+  },
+  "hrRosterPreviewShowMiniAction": "Show mini calendar",
+  "@hrRosterPreviewShowMiniAction": {
+    "description": "Show the side mini-month picker."
   },
   "hrRosterPreviewJumpToPeriodAction": "Roster period",
   "@hrRosterPreviewJumpToPeriodAction": {

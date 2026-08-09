@@ -38738,7 +38738,7 @@ abstract class AppLocalizations {
   /// Hint under roster calendar preview.
   ///
   /// In en, this message translates to:
-  /// **'Tap a day for details · use Month summary / Week summary for period rollups'**
+  /// **'Tap a day for details · use summary for period rollups'**
   String get hrRosterPreviewTapHint;
 
   /// Month view toggle on roster preview.
@@ -38770,6 +38770,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next'**
   String get hrRosterPreviewNextAction;
+
+  /// Jump roster preview focus to the roster period start.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get hrRosterPreviewTodayAction;
+
+  /// Manually pick a calendar preview date/period.
+  ///
+  /// In en, this message translates to:
+  /// **'Select date'**
+  String get hrRosterPreviewPickPeriodAction;
+
+  /// Dropdown to switch day/week/month preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar view'**
+  String get hrRosterPreviewViewMenuLabel;
+
+  /// Open roster preview in a maximized dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximize preview'**
+  String get hrRosterPreviewMaximizeAction;
+
+  /// Open summary details for the current preview scope.
+  ///
+  /// In en, this message translates to:
+  /// **'Period summary'**
+  String get hrRosterPreviewSummaryAction;
+
+  /// Hide the side mini-month picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide mini calendar'**
+  String get hrRosterPreviewHideMiniAction;
+
+  /// Show the side mini-month picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Show mini calendar'**
+  String get hrRosterPreviewShowMiniAction;
 
   /// Jump calendar focus back to the roster period start.
   ///

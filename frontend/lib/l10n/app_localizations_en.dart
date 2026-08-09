@@ -20931,7 +20931,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrRosterPreviewTapHint =>
-      'Tap a day for details · use Month summary / Week summary for period rollups';
+      'Tap a day for details · use summary for period rollups';
 
   @override
   String get hrRosterPreviewMonthView => 'Month';
@@ -20947,6 +20947,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrRosterPreviewNextAction => 'Next';
+
+  @override
+  String get hrRosterPreviewTodayAction => 'Today';
+
+  @override
+  String get hrRosterPreviewPickPeriodAction => 'Select date';
+
+  @override
+  String get hrRosterPreviewViewMenuLabel => 'Calendar view';
+
+  @override
+  String get hrRosterPreviewMaximizeAction => 'Maximize preview';
+
+  @override
+  String get hrRosterPreviewSummaryAction => 'Period summary';
+
+  @override
+  String get hrRosterPreviewHideMiniAction => 'Hide mini calendar';
+
+  @override
+  String get hrRosterPreviewShowMiniAction => 'Show mini calendar';
 
   @override
   String get hrRosterPreviewJumpToPeriodAction => 'Roster period';
