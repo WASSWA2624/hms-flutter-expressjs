@@ -267,12 +267,12 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
     );
   }
 
-  Future<void> _showDayDetails(_RosterDayPreview day) async {
+  Future<void> _showPeriodDetails(_RosterPeriodDetails details) async {
     final AppLocalizations l10n = context.l10n;
     await showAppDialog<void>(
       context: context,
       builder: (BuildContext context) {
-        return _RosterDayDetailsDialog(day: day, l10n: l10n);
+        return _RosterPeriodDetailsDialog(details: details, l10n: l10n);
       },
     );
   }
@@ -780,7 +780,7 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                         ? Text(l10n.hrRosterNoSchedulePreviewLabel)
                         : _RosterCalendarPreview(
                             days: _previewDays(),
-                            onDayTap: _showDayDetails,
+                            onShowDetails: _showPeriodDetails,
                           ),
                   ),
                   SizedBox(height: theme.spacing.md),
@@ -1326,50 +1326,459 @@ class _RosterDayPreview {
   }
 }
 
-class _RosterCalendarPreview extends StatelessWidget {
+enum _RosterPreviewMode { month, week, day }
+
+enum _RosterPeriodScope { day, week, month }
+
+class _RosterPeriodDetails {
+  const _RosterPeriodDetails({
+    required this.scope,
+    required this.days,
+    required this.focus,
+  });
+
+  final _RosterPeriodScope scope;
+  final List<_RosterDayPreview> days;
+  final DateTime focus;
+}
+
+class _RosterCalendarPreview extends StatefulWidget {
   const _RosterCalendarPreview({
     required this.days,
-    required this.onDayTap,
+    required this.onShowDetails,
   });
 
   final List<_RosterDayPreview> days;
+  final ValueChanged<_RosterPeriodDetails> onShowDetails;
+
+  @override
+  State<_RosterCalendarPreview> createState() => _RosterCalendarPreviewState();
+}
+
+class _RosterCalendarPreviewState extends State<_RosterCalendarPreview> {
+  _RosterPreviewMode _mode = _RosterPreviewMode.month;
+  late DateTime _focus;
+
+  @override
+  void initState() {
+    super.initState();
+    _focus = _dateOnly(widget.days.first.date);
+  }
+
+  @override
+  void didUpdateWidget(covariant _RosterCalendarPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.days.isEmpty && widget.days.isNotEmpty) {
+      _focus = _dateOnly(widget.days.first.date);
+    }
+  }
+
+  Map<String, _RosterDayPreview> get _byKey => <String, _RosterDayPreview>{
+    for (final _RosterDayPreview day in widget.days) day.label: day,
+  };
+
+  DateTime get _periodStart => _dateOnly(widget.days.first.date);
+  DateTime get _periodEnd => _dateOnly(widget.days.last.date);
+
+  void _shiftFocus(int months, int weeks, int days) {
+    setState(() {
+      if (months != 0) {
+        _focus = DateTime(_focus.year, _focus.month + months, 1);
+      } else if (weeks != 0) {
+        _focus = _focus.add(Duration(days: 7 * weeks));
+      } else {
+        _focus = _focus.add(Duration(days: days));
+      }
+    });
+  }
+
+  void _jumpToRosterPeriod() {
+    setState(() => _focus = _periodStart);
+  }
+
+  List<_RosterDayPreview> _daysInRange(DateTime start, DateTime end) {
+    return widget.days
+        .where(
+          (_RosterDayPreview day) =>
+              !day.date.isBefore(start) && !day.date.isAfter(end),
+        )
+        .toList(growable: false);
+  }
+
+  void _openDay(_RosterDayPreview day) {
+    setState(() {
+      _focus = _dateOnly(day.date);
+      _mode = _RosterPreviewMode.day;
+    });
+    widget.onShowDetails(
+      _RosterPeriodDetails(
+        scope: _RosterPeriodScope.day,
+        days: <_RosterDayPreview>[day],
+        focus: day.date,
+      ),
+    );
+  }
+
+  void _openWeekSummary() {
+    final DateTime weekStart = _weekStart(_focus);
+    final DateTime weekEnd = weekStart.add(const Duration(days: 6));
+    widget.onShowDetails(
+      _RosterPeriodDetails(
+        scope: _RosterPeriodScope.week,
+        days: _daysInRange(weekStart, weekEnd),
+        focus: _focus,
+      ),
+    );
+  }
+
+  void _openMonthSummary() {
+    final DateTime monthStart = DateTime(_focus.year, _focus.month, 1);
+    final DateTime monthEnd = DateTime(_focus.year, _focus.month + 1, 0);
+    widget.onShowDetails(
+      _RosterPeriodDetails(
+        scope: _RosterPeriodScope.month,
+        days: _daysInRange(monthStart, monthEnd),
+        focus: _focus,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final MaterialLocalizations materials = MaterialLocalizations.of(context);
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact = constraints.maxWidth < 560;
+        final double maxBoardHeight = compact ? 320 : 380;
+
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(theme.spacing.sm),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                _RosterPreviewToolbar(
+                  compact: compact,
+                  mode: _mode,
+                  title: _headerTitle(materials, l10n),
+                  subtitle: _headerSubtitle(l10n),
+                  onModeChanged: (_RosterPreviewMode mode) {
+                    setState(() => _mode = mode);
+                  },
+                  onPrevious: () {
+                    switch (_mode) {
+                      case _RosterPreviewMode.month:
+                        _shiftFocus(-1, 0, 0);
+                      case _RosterPreviewMode.week:
+                        _shiftFocus(0, -1, 0);
+                      case _RosterPreviewMode.day:
+                        _shiftFocus(0, 0, -1);
+                    }
+                  },
+                  onNext: () {
+                    switch (_mode) {
+                      case _RosterPreviewMode.month:
+                        _shiftFocus(1, 0, 0);
+                      case _RosterPreviewMode.week:
+                        _shiftFocus(0, 1, 0);
+                      case _RosterPreviewMode.day:
+                        _shiftFocus(0, 0, 1);
+                    }
+                  },
+                  onJumpToPeriod: _jumpToRosterPeriod,
+                  onMonthSummary: _openMonthSummary,
+                  onWeekSummary: _openWeekSummary,
+                ),
+                SizedBox(height: theme.spacing.sm),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: maxBoardHeight),
+                  child: SingleChildScrollView(
+                    child: switch (_mode) {
+                      _RosterPreviewMode.month => _RosterMonthBoard(
+                        focus: _focus,
+                        byKey: _byKey,
+                        periodStart: _periodStart,
+                        periodEnd: _periodEnd,
+                        compact: compact,
+                        onDayTap: _openDay,
+                      ),
+                      _RosterPreviewMode.week => _RosterWeekBoard(
+                        focus: _focus,
+                        byKey: _byKey,
+                        periodStart: _periodStart,
+                        periodEnd: _periodEnd,
+                        compact: compact,
+                        onDayTap: _openDay,
+                      ),
+                      _RosterPreviewMode.day => _RosterDayBoard(
+                        focus: _focus,
+                        day: _byKey[_dateKey(_focus)],
+                        inPeriod: !_focus.isBefore(_periodStart) &&
+                            !_focus.isAfter(_periodEnd),
+                        compact: compact,
+                      ),
+                    },
+                  ),
+                ),
+                SizedBox(height: theme.spacing.sm),
+                Text(
+                  l10n.hrRosterPreviewTapHint,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                SizedBox(height: theme.spacing.xs),
+                Wrap(
+                  spacing: theme.spacing.sm,
+                  runSpacing: theme.spacing.xs,
+                  children: <Widget>[
+                    _RosterLegendSwatch(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.8),
+                      label: l10n.hrRosterAvailableLabel,
+                    ),
+                    _RosterLegendSwatch(
+                      color: theme.colorScheme.tertiaryContainer,
+                      label: l10n.hrRosterFreeHoursLabel,
+                    ),
+                    _RosterLegendSwatch(
+                      color: theme.colorScheme.secondaryContainer,
+                      label: l10n.hrRosterPublicHolidayLabel,
+                    ),
+                    _RosterLegendSwatch(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      label: l10n.hrRosterDayOffLabel,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _headerTitle(MaterialLocalizations materials, AppLocalizations l10n) {
+    return switch (_mode) {
+      _RosterPreviewMode.month => materials.formatMonthYear(_focus),
+      _RosterPreviewMode.week => _weekRangeLabel(materials, _focus),
+      _RosterPreviewMode.day => materials.formatFullDate(_focus),
+    };
+  }
+
+  String _headerSubtitle(AppLocalizations l10n) {
+    return '${l10n.hrRosterPreviewSectionTitle}: ${_periodStart.labelYmd} – ${_periodEnd.labelYmd}';
+  }
+}
+
+class _RosterPreviewToolbar extends StatelessWidget {
+  const _RosterPreviewToolbar({
+    required this.compact,
+    required this.mode,
+    required this.title,
+    required this.subtitle,
+    required this.onModeChanged,
+    required this.onPrevious,
+    required this.onNext,
+    required this.onJumpToPeriod,
+    required this.onMonthSummary,
+    required this.onWeekSummary,
+  });
+
+  final bool compact;
+  final _RosterPreviewMode mode;
+  final String title;
+  final String subtitle;
+  final ValueChanged<_RosterPreviewMode> onModeChanged;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+  final VoidCallback onJumpToPeriod;
+  final VoidCallback onMonthSummary;
+  final VoidCallback onWeekSummary;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+
+    final Widget modeToggle = SegmentedButton<_RosterPreviewMode>(
+      segments: <ButtonSegment<_RosterPreviewMode>>[
+        ButtonSegment<_RosterPreviewMode>(
+          value: _RosterPreviewMode.month,
+          label: compact ? null : Text(l10n.hrRosterPreviewMonthView),
+          icon: const Icon(Icons.calendar_view_month_outlined, size: 18),
+          tooltip: l10n.hrRosterPreviewMonthView,
+        ),
+        ButtonSegment<_RosterPreviewMode>(
+          value: _RosterPreviewMode.week,
+          label: compact ? null : Text(l10n.hrRosterPreviewWeekView),
+          icon: const Icon(Icons.view_week_outlined, size: 18),
+          tooltip: l10n.hrRosterPreviewWeekView,
+        ),
+        ButtonSegment<_RosterPreviewMode>(
+          value: _RosterPreviewMode.day,
+          label: compact ? null : Text(l10n.hrRosterPreviewDayView),
+          icon: const Icon(Icons.view_day_outlined, size: 18),
+          tooltip: l10n.hrRosterPreviewDayView,
+        ),
+      ],
+      selected: <_RosterPreviewMode>{mode},
+      onSelectionChanged: (Set<_RosterPreviewMode> next) {
+        if (next.isNotEmpty) {
+          onModeChanged(next.first);
+        }
+      },
+      style: const ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
+
+    final Widget nav = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        IconButton(
+          tooltip: l10n.hrRosterPreviewPreviousAction,
+          visualDensity: VisualDensity.compact,
+          onPressed: onPrevious,
+          icon: const Icon(Icons.chevron_left),
+        ),
+        IconButton(
+          tooltip: l10n.hrRosterPreviewNextAction,
+          visualDensity: VisualDensity.compact,
+          onPressed: onNext,
+          icon: const Icon(Icons.chevron_right),
+        ),
+      ],
+    );
+
+    final Widget titleBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.2,
+          ),
+        ),
+        Text(
+          subtitle,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+
+    final List<Widget> actions = <Widget>[
+      AppButton.tertiary(
+        leadingIcon: Icons.event_available_outlined,
+        label: l10n.hrRosterPreviewJumpToPeriodAction,
+        tooltip: l10n.hrRosterPreviewJumpToPeriodAction,
+        onPressed: onJumpToPeriod,
+      ),
+      if (mode == _RosterPreviewMode.month)
+        AppButton.tertiary(
+          leadingIcon: Icons.summarize_outlined,
+          label: l10n.hrRosterPreviewMonthSummaryAction,
+          tooltip: l10n.hrRosterPreviewMonthSummaryAction,
+          onPressed: onMonthSummary,
+        ),
+      if (mode == _RosterPreviewMode.week)
+        AppButton.tertiary(
+          leadingIcon: Icons.summarize_outlined,
+          label: l10n.hrRosterPreviewWeekSummaryAction,
+          tooltip: l10n.hrRosterPreviewWeekSummaryAction,
+          onPressed: onWeekSummary,
+        ),
+    ];
+
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(child: titleBlock),
+              nav,
+            ],
+          ),
+          SizedBox(height: theme.spacing.xs),
+          modeToggle,
+          SizedBox(height: theme.spacing.xs),
+          Wrap(spacing: theme.spacing.xs, children: actions),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(child: titleBlock),
+            modeToggle,
+            SizedBox(width: theme.spacing.sm),
+            nav,
+          ],
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Wrap(spacing: theme.spacing.xs, runSpacing: theme.spacing.xs, children: actions),
+      ],
+    );
+  }
+}
+
+class _RosterMonthBoard extends StatelessWidget {
+  const _RosterMonthBoard({
+    required this.focus,
+    required this.byKey,
+    required this.periodStart,
+    required this.periodEnd,
+    required this.compact,
+    required this.onDayTap,
+  });
+
+  final DateTime focus;
+  final Map<String, _RosterDayPreview> byKey;
+  final DateTime periodStart;
+  final DateTime periodEnd;
+  final bool compact;
   final ValueChanged<_RosterDayPreview> onDayTap;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
-    final int leading = (days.first.date.weekday - DateTime.monday) % 7;
-    final int trailing = (DateTime.sunday - days.last.date.weekday) % 7;
-    final int cellCount = leading + days.length + trailing;
+    final DateTime first = DateTime(focus.year, focus.month, 1);
+    final DateTime last = DateTime(focus.year, focus.month + 1, 0);
+    final int leading = (first.weekday - DateTime.monday) % 7;
+    final int trailing = (DateTime.sunday - last.weekday) % 7;
+    final int cellCount = leading + last.day + trailing;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Text(
-          l10n.hrRosterPreviewTapHint,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: theme.spacing.sm),
         Row(
           children: <Widget>[
-            for (final int weekday in <int>[
-              DateTime.monday,
-              DateTime.tuesday,
-              DateTime.wednesday,
-              DateTime.thursday,
-              DateTime.friday,
-              DateTime.saturday,
-              DateTime.sunday,
-            ])
+            for (final int weekday in const <int>[1, 2, 3, 4, 5, 6, 7])
               Expanded(
                 child: Text(
-                  hrDayLabel(l10n, weekday == DateTime.sunday ? 0 : weekday)
-                      .substring(0, 3),
+                  hrDayLabel(l10n, weekday == 7 ? 0 : weekday).substring(0, 2),
                   textAlign: TextAlign.center,
-                  style: theme.textTheme.labelMedium,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
           ],
@@ -1381,113 +1790,430 @@ class _RosterCalendarPreview extends StatelessWidget {
           itemCount: cellCount,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
-            mainAxisSpacing: theme.spacing.xs,
-            crossAxisSpacing: theme.spacing.xs,
-            childAspectRatio: 0.85,
+            mainAxisSpacing: 4,
+            crossAxisSpacing: 4,
+            childAspectRatio: compact ? 0.95 : 1.05,
           ),
           itemBuilder: (BuildContext context, int index) {
-            if (index < leading || index >= leading + days.length) {
+            if (index < leading || index >= leading + last.day) {
               return const SizedBox.shrink();
             }
-            final _RosterDayPreview day = days[index - leading];
-            return _RosterCalendarDayCell(
+            final DateTime date = DateTime(
+              focus.year,
+              focus.month,
+              index - leading + 1,
+            );
+            final _RosterDayPreview? day = byKey[_dateKey(date)];
+            final bool inPeriod =
+                !date.isBefore(periodStart) && !date.isAfter(periodEnd);
+            return _RosterCompactDayCell(
+              date: date,
               day: day,
-              onTap: () => onDayTap(day),
+              inPeriod: inPeriod,
+              dense: true,
+              selected: _dateKey(date) == _dateKey(focus),
+              onTap: day == null ? null : () => onDayTap(day),
             );
           },
-        ),
-        SizedBox(height: theme.spacing.sm),
-        Text(l10n.hrRosterPreviewLegendTitle, style: theme.textTheme.labelLarge),
-        SizedBox(height: theme.spacing.xs),
-        Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.xs,
-          children: <Widget>[
-            _RosterLegendSwatch(
-              color: theme.colorScheme.primary.withValues(alpha: 0.75),
-              label: l10n.hrRosterAvailableLabel,
-            ),
-            _RosterLegendSwatch(
-              color: theme.colorScheme.tertiaryContainer,
-              label: l10n.hrRosterFreeHoursLabel,
-            ),
-            _RosterLegendSwatch(
-              color: theme.colorScheme.secondaryContainer,
-              label: l10n.hrRosterPublicHolidayLabel,
-            ),
-            _RosterLegendSwatch(
-              color: theme.colorScheme.surfaceContainerHighest,
-              label: l10n.hrRosterDayOffLabel,
-            ),
-          ],
         ),
       ],
     );
   }
 }
 
-class _RosterCalendarDayCell extends StatelessWidget {
-  const _RosterCalendarDayCell({
+class _RosterWeekBoard extends StatelessWidget {
+  const _RosterWeekBoard({
+    required this.focus,
+    required this.byKey,
+    required this.periodStart,
+    required this.periodEnd,
+    required this.compact,
+    required this.onDayTap,
+  });
+
+  final DateTime focus;
+  final Map<String, _RosterDayPreview> byKey;
+  final DateTime periodStart;
+  final DateTime periodEnd;
+  final bool compact;
+  final ValueChanged<_RosterDayPreview> onDayTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final DateTime start = _weekStart(focus);
+    final List<DateTime> dates = <DateTime>[
+      for (int i = 0; i < 7; i++) start.add(Duration(days: i)),
+    ];
+
+    if (compact) {
+      return Column(
+        children: <Widget>[
+          for (final DateTime date in dates) ...<Widget>[
+            _RosterWeekDayRow(
+              date: date,
+              day: byKey[_dateKey(date)],
+              inPeriod:
+                  !date.isBefore(periodStart) && !date.isAfter(periodEnd),
+              selected: _dateKey(date) == _dateKey(focus),
+              onTap: () {
+                final _RosterDayPreview? day = byKey[_dateKey(date)];
+                if (day != null) {
+                  onDayTap(day);
+                }
+              },
+            ),
+            SizedBox(height: theme.spacing.xs),
+          ],
+        ],
+      );
+    }
+
+    return SizedBox(
+      height: 210,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (final DateTime date in dates)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: _RosterCompactDayCell(
+                  date: date,
+                  day: byKey[_dateKey(date)],
+                  inPeriod:
+                      !date.isBefore(periodStart) && !date.isAfter(periodEnd),
+                  dense: false,
+                  showWeekday: true,
+                  selected: _dateKey(date) == _dateKey(focus),
+                  onTap: () {
+                    final _RosterDayPreview? day = byKey[_dateKey(date)];
+                    if (day != null) {
+                      onDayTap(day);
+                    }
+                  },
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RosterWeekDayRow extends StatelessWidget {
+  const _RosterWeekDayRow({
+    required this.date,
     required this.day,
+    required this.inPeriod,
+    required this.selected,
     required this.onTap,
   });
 
-  final _RosterDayPreview day;
+  final DateTime date;
+  final _RosterDayPreview? day;
+  final bool inPeriod;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colors = theme.colorScheme;
-    final Color background = switch (day.tone) {
-      _RosterDayTone.holiday => colors.secondaryContainer,
-      _RosterDayTone.off => colors.surfaceContainerHighest,
-      _RosterDayTone.free => colors.tertiaryContainer.withValues(alpha: 0.7),
-      _RosterDayTone.busy => colors.primaryContainer.withValues(alpha: 0.85),
-      _RosterDayTone.mixed => colors.surfaceContainerHigh,
-    };
+    final AppLocalizations l10n = context.l10n;
+    final _RosterDayPreview? preview = day;
+    final Color bg = _toneColor(theme, preview, inPeriod);
 
     return Material(
-      color: background,
+      color: bg,
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.all(theme.spacing.xs),
+        onTap: preview == null ? null : onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.sm,
+            vertical: theme.spacing.xs,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: selected
+                ? Border.all(color: theme.colorScheme.primary, width: 1.4)
+                : null,
+          ),
+          child: Row(
+            children: <Widget>[
+              SizedBox(
+                width: 72,
+                child: Text(
+                  '${hrDayLabel(l10n, date.weekday == 7 ? 0 : date.weekday).substring(0, 3)} ${date.day}',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: preview == null || !inPeriod
+                    ? Text(
+                        l10n.hrRosterPeriodOutsideLabel,
+                        style: theme.textTheme.labelSmall,
+                      )
+                    : preview.isWorkingDay
+                    ? SizedBox(height: 10, child: _RosterHourBar(day: preview))
+                    : Text(
+                        preview.statusLabel(l10n),
+                        style: theme.textTheme.labelSmall,
+                      ),
+              ),
+              if (preview != null && preview.shifts.isNotEmpty)
+                Text(
+                  '${preview.shifts.length}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RosterDayBoard extends StatelessWidget {
+  const _RosterDayBoard({
+    required this.focus,
+    required this.day,
+    required this.inPeriod,
+    required this.compact,
+  });
+
+  final DateTime focus;
+  final _RosterDayPreview? day;
+  final bool inPeriod;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+
+    if (!inPeriod || day == null) {
+      return Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Text(l10n.hrRosterPeriodOutsideLabel),
+      );
+    }
+
+    final _RosterDayPreview preview = day!;
+    final int start = preview.dayStartMinutes;
+    final int end = preview.dayEndMinutes;
+    final int span = (end - start).clamp(1, 24 * 60);
+    final double height = compact ? 220.0 : 260.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Chip(
+              visualDensity: VisualDensity.compact,
+              label: Text(preview.statusLabel(l10n)),
+            ),
+            const Spacer(),
+            Text(
+              '${_formatMinutes(start)}–${_formatMinutes(end)}',
+              style: theme.textTheme.labelMedium,
+            ),
+          ],
+        ),
+        SizedBox(height: theme.spacing.sm),
+        SizedBox(
+          height: height,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              SizedBox(
+                width: 44,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    for (int m = start; m <= end; m += _max(60, span ~/ 4))
+                      Text(
+                        _formatMinutes(m > end ? end : m),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              SizedBox(width: theme.spacing.xs),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Stack(
+                    children: <Widget>[
+                      Positioned.fill(
+                        child: ColoredBox(
+                          color: theme.colorScheme.tertiaryContainer.withValues(
+                            alpha: 0.55,
+                          ),
+                        ),
+                      ),
+                      for (final _RosterMinuteRange range in preview.busyRanges)
+                        Positioned(
+                          top: ((range.startMinutes - start) / span) * height,
+                          height:
+                              ((range.endMinutes - range.startMinutes) / span) *
+                              height,
+                          left: 0,
+                          right: 0,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.78,
+                              ),
+                              border: Border(
+                                left: BorderSide(
+                                  color: theme.colorScheme.onPrimary,
+                                  width: 3,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      for (final _RosterShiftWindow shift in preview.shifts)
+                        Positioned(
+                          top:
+                              ((shift.startMinutes.clamp(start, end) - start) /
+                                  span) *
+                              height +
+                              4,
+                          left: 10,
+                          right: 10,
+                          child: Text(
+                            shift.summary,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      if (!preview.isWorkingDay)
+                        Center(
+                          child: Text(
+                            preview.statusLabel(l10n),
+                            style: theme.textTheme.titleSmall,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RosterCompactDayCell extends StatelessWidget {
+  const _RosterCompactDayCell({
+    required this.date,
+    required this.day,
+    required this.inPeriod,
+    required this.dense,
+    required this.selected,
+    this.showWeekday = false,
+    this.onTap,
+  });
+
+  final DateTime date;
+  final _RosterDayPreview? day;
+  final bool inPeriod;
+  final bool dense;
+  final bool selected;
+  final bool showWeekday;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final Color bg = _toneColor(theme, day, inPeriod);
+    final bool enabled = day != null && onTap != null;
+
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(dense ? 8 : 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(dense ? 8 : 12),
+        onTap: enabled ? onTap : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: EdgeInsets.all(dense ? 4 : theme.spacing.xs),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(dense ? 8 : 12),
+            border: selected
+                ? Border.all(color: theme.colorScheme.primary, width: 1.5)
+                : Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.35)),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
+              if (showWeekday)
+                Text(
+                  hrDayLabel(
+                    l10n,
+                    date.weekday == DateTime.sunday ? 0 : date.weekday,
+                  ).substring(0, 3),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
               Row(
                 children: <Widget>[
                   Expanded(
                     child: Text(
-                      '${day.date.day}',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                      '${date.day}',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: inPeriod
+                            ? null
+                            : theme.colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.55,
+                              ),
                       ),
                     ),
                   ),
-                  if (day.isHoliday)
+                  if (day?.isHoliday == true)
                     Icon(
-                      Icons.celebration_outlined,
-                      size: 14,
-                      color: colors.onSecondaryContainer,
+                      Icons.circle,
+                      size: 7,
+                      color: theme.colorScheme.secondary,
                     ),
                 ],
               ),
-              SizedBox(height: theme.spacing.xs),
+              if (!dense) SizedBox(height: theme.spacing.xs),
               Expanded(
-                child: day.isWorkingDay
-                    ? _RosterHourBar(day: day)
+                child: !inPeriod || day == null
+                    ? const SizedBox.shrink()
+                    : day!.isWorkingDay
+                    ? Align(
+                        alignment: Alignment.bottomCenter,
+                        child: SizedBox(
+                          height: dense ? 8 : 14,
+                          child: _RosterHourBar(day: day!),
+                        ),
+                      )
                     : Align(
-                        alignment: Alignment.centerLeft,
+                        alignment: Alignment.bottomLeft,
                         child: Text(
-                          day.isHoliday
-                              ? context.l10n.hrRosterPublicHolidayLabel
-                              : context.l10n.hrRosterDayOffLabel,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                          day!.isHoliday ? 'H' : '—',
                           style: theme.textTheme.labelSmall,
                         ),
                       ),
@@ -1512,7 +2238,7 @@ class _RosterHourBar extends StatelessWidget {
     final List<_RosterMinuteRange> busy = day.busyRanges;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(999),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           return Stack(
@@ -1520,7 +2246,7 @@ class _RosterHourBar extends StatelessWidget {
               Positioned.fill(
                 child: ColoredBox(
                   color: theme.colorScheme.tertiaryContainer.withValues(
-                    alpha: 0.85,
+                    alpha: 0.9,
                   ),
                 ),
               ),
@@ -1535,7 +2261,7 @@ class _RosterHourBar extends StatelessWidget {
                   top: 0,
                   bottom: 0,
                   child: ColoredBox(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.8),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.85),
                   ),
                 ),
             ],
@@ -1559,8 +2285,8 @@ class _RosterLegendSwatch extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Container(
-          width: 14,
-          height: 14,
+          width: 12,
+          height: 12,
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(4),
@@ -1574,11 +2300,99 @@ class _RosterLegendSwatch extends StatelessWidget {
   }
 }
 
-class _RosterDayDetailsDialog extends StatelessWidget {
-  const _RosterDayDetailsDialog({
-    required this.day,
+class _RosterPeriodDetailsDialog extends StatelessWidget {
+  const _RosterPeriodDetailsDialog({
+    required this.details,
     required this.l10n,
   });
+
+  final _RosterPeriodDetails details;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final MaterialLocalizations materials = MaterialLocalizations.of(context);
+    final List<_RosterDayPreview> days = details.days;
+    final String title = switch (details.scope) {
+      _RosterPeriodScope.day => l10n.hrRosterDayDetailsTitle,
+      _RosterPeriodScope.week => l10n.hrRosterWeekDetailsTitle,
+      _RosterPeriodScope.month => l10n.hrRosterMonthDetailsTitle,
+    };
+    final String heading = switch (details.scope) {
+      _RosterPeriodScope.day when days.isNotEmpty =>
+        '${hrDayLabel(l10n, days.first.date.weekday == DateTime.sunday ? 0 : days.first.date.weekday)} · ${days.first.label}',
+      _RosterPeriodScope.week => _weekRangeLabel(materials, details.focus),
+      _RosterPeriodScope.month => materials.formatMonthYear(details.focus),
+      _ => materials.formatFullDate(details.focus),
+    };
+
+    final int working = days.where((_RosterDayPreview d) => d.isWorkingDay).length;
+    final int busy = days.where((_RosterDayPreview d) => d.shifts.isNotEmpty).length;
+    final int holidays = days.where((_RosterDayPreview d) => d.isHoliday).length;
+    final Set<String> staff = <String>{
+      for (final _RosterDayPreview day in days) ...day.staffNames,
+    };
+
+    return AppDialog(
+      title: Text(title),
+      icon: Icon(switch (details.scope) {
+        _RosterPeriodScope.day => Icons.event_note_outlined,
+        _RosterPeriodScope.week => Icons.view_week_outlined,
+        _RosterPeriodScope.month => Icons.calendar_month_outlined,
+      }),
+      content: days.isEmpty
+          ? Text(l10n.hrRosterPeriodNoDaysLabel)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(heading, style: theme.textTheme.titleMedium),
+                SizedBox(height: theme.spacing.sm),
+                if (details.scope != _RosterPeriodScope.day) ...<Widget>[
+                  Text('${l10n.hrRosterPeriodWorkingDaysLabel}: $working'),
+                  Text('${l10n.hrRosterPeriodBusyDaysLabel}: $busy'),
+                  Text('${l10n.hrRosterPeriodHolidayDaysLabel}: $holidays'),
+                  if (staff.isNotEmpty)
+                    Text(
+                      '${l10n.hrRosterAttachedStaffTitle}: ${staff.join(', ')}',
+                    ),
+                  SizedBox(height: theme.spacing.md),
+                  for (final _RosterDayPreview day in days)
+                    Padding(
+                      padding: EdgeInsets.only(bottom: theme.spacing.xs),
+                      child: Row(
+                        children: <Widget>[
+                          SizedBox(
+                            width: 88,
+                            child: Text(
+                              day.label,
+                              style: theme.textTheme.labelMedium,
+                            ),
+                          ),
+                          Expanded(child: Text(day.statusLabel(l10n))),
+                          if (day.shifts.isNotEmpty)
+                            Text('${day.shifts.length}'),
+                        ],
+                      ),
+                    ),
+                ] else ...<Widget>[
+                  _RosterDayDetailsBody(day: days.first, l10n: l10n),
+                ],
+              ],
+            ),
+      actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonCancelActionLabel,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ],
+    );
+  }
+}
+
+class _RosterDayDetailsBody extends StatelessWidget {
+  const _RosterDayDetailsBody({required this.day, required this.l10n});
 
   final _RosterDayPreview day;
   final AppLocalizations l10n;
@@ -1586,83 +2400,58 @@ class _RosterDayDetailsDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final String weekday = hrDayLabel(
-      l10n,
-      day.date.weekday == DateTime.sunday ? 0 : day.date.weekday,
-    );
-
-    return AppDialog(
-      title: Text(l10n.hrRosterDayDetailsTitle),
-      icon: Icon(
-        day.isHoliday
-            ? Icons.celebration_outlined
-            : Icons.event_note_outlined,
-      ),
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            '$weekday · ${day.label}',
-            style: theme.textTheme.titleMedium,
-          ),
-          SizedBox(height: theme.spacing.xs),
-          Text(day.statusLabel(l10n), style: theme.textTheme.bodyMedium),
-          if (day.isWorkingDay) ...<Widget>[
-            SizedBox(height: theme.spacing.md),
-            Text(
-              l10n.hrRosterDayWorkingHoursLabel,
-              style: theme.textTheme.labelLarge,
-            ),
-            Text(
-              '${_formatMinutes(day.dayStartMinutes)}–${_formatMinutes(day.dayEndMinutes)}',
-            ),
-            SizedBox(height: theme.spacing.md),
-            Text(
-              l10n.hrRosterDayBusyHoursLabel,
-              style: theme.textTheme.labelLarge,
-            ),
-            if (day.busyRanges.isEmpty)
-              Text(l10n.hrRosterDayNoShiftsLabel)
-            else
-              for (final _RosterMinuteRange range in day.busyRanges)
-                Text('• ${range.label}'),
-            SizedBox(height: theme.spacing.md),
-            Text(
-              l10n.hrRosterDayFreeHoursLabel,
-              style: theme.textTheme.labelLarge,
-            ),
-            if (day.freeRanges.isEmpty)
-              Text(l10n.hrRosterAvailableLabel)
-            else
-              for (final _RosterMinuteRange range in day.freeRanges)
-                Text('• ${range.label}'),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(day.statusLabel(l10n), style: theme.textTheme.bodyMedium),
+        if (day.isWorkingDay) ...<Widget>[
           SizedBox(height: theme.spacing.md),
-          Text(l10n.hrRosterDayShiftsLabel, style: theme.textTheme.labelLarge),
-          if (day.shifts.isEmpty)
+          Text(
+            l10n.hrRosterDayWorkingHoursLabel,
+            style: theme.textTheme.labelLarge,
+          ),
+          Text(
+            '${_formatMinutes(day.dayStartMinutes)}–${_formatMinutes(day.dayEndMinutes)}',
+          ),
+          SizedBox(height: theme.spacing.md),
+          Text(
+            l10n.hrRosterDayBusyHoursLabel,
+            style: theme.textTheme.labelLarge,
+          ),
+          if (day.busyRanges.isEmpty)
             Text(l10n.hrRosterDayNoShiftsLabel)
           else
-            for (final _RosterShiftWindow shift in day.shifts) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              Text(
-                '${_formatHm(shift.start)}–${_formatHm(shift.end)}'
-                '${shift.shiftType == null || shift.shiftType!.isEmpty ? '' : ' · ${hrShiftTypeLabel(l10n, shift.shiftType)}'}',
-                style: theme.textTheme.bodyMedium,
-              ),
-              if (shift.staffNames.isNotEmpty)
-                Text(
-                  shift.staffNames.join(', '),
-                  style: theme.textTheme.bodySmall,
-                ),
-            ],
+            for (final _RosterMinuteRange range in day.busyRanges)
+              Text('• ${range.label}'),
+          SizedBox(height: theme.spacing.md),
+          Text(
+            l10n.hrRosterDayFreeHoursLabel,
+            style: theme.textTheme.labelLarge,
+          ),
+          if (day.freeRanges.isEmpty)
+            Text(l10n.hrRosterAvailableLabel)
+          else
+            for (final _RosterMinuteRange range in day.freeRanges)
+              Text('• ${range.label}'),
         ],
-      ),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonCancelActionLabel,
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
+        SizedBox(height: theme.spacing.md),
+        Text(l10n.hrRosterDayShiftsLabel, style: theme.textTheme.labelLarge),
+        if (day.shifts.isEmpty)
+          Text(l10n.hrRosterDayNoShiftsLabel)
+        else
+          for (final _RosterShiftWindow shift in day.shifts) ...<Widget>[
+            SizedBox(height: theme.spacing.xs),
+            Text(
+              '${_formatHm(shift.start)}–${_formatHm(shift.end)}'
+              '${shift.shiftType == null || shift.shiftType!.isEmpty ? '' : ' · ${hrShiftTypeLabel(l10n, shift.shiftType)}'}',
+              style: theme.textTheme.bodyMedium,
+            ),
+            if (shift.staffNames.isNotEmpty)
+              Text(
+                shift.staffNames.join(', '),
+                style: theme.textTheme.bodySmall,
+              ),
+          ],
       ],
     );
   }
@@ -1809,6 +2598,41 @@ String _dateKey(DateTime value) {
   return '$y-$m-$d';
 }
 
+DateTime _dateOnly(DateTime value) {
+  final DateTime local = value.isUtc ? value.toLocal() : value;
+  return DateTime(local.year, local.month, local.day);
+}
+
+DateTime _weekStart(DateTime value) {
+  final DateTime day = _dateOnly(value);
+  return day.subtract(Duration(days: day.weekday - DateTime.monday));
+}
+
+String _weekRangeLabel(MaterialLocalizations materials, DateTime focus) {
+  final DateTime start = _weekStart(focus);
+  final DateTime end = start.add(const Duration(days: 6));
+  return '${materials.formatShortDate(start)} – ${materials.formatShortDate(end)}';
+}
+
+Color _toneColor(ThemeData theme, _RosterDayPreview? day, bool inPeriod) {
+  if (!inPeriod || day == null) {
+    return theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35);
+  }
+  return switch (day.tone) {
+    _RosterDayTone.holiday => theme.colorScheme.secondaryContainer,
+    _RosterDayTone.off => theme.colorScheme.surfaceContainerHighest,
+    _RosterDayTone.free => theme.colorScheme.tertiaryContainer.withValues(
+      alpha: 0.75,
+    ),
+    _RosterDayTone.busy => theme.colorScheme.primaryContainer.withValues(
+      alpha: 0.9,
+    ),
+    _RosterDayTone.mixed => theme.colorScheme.surfaceContainerHigh,
+  };
+}
+
+int _max(int a, int b) => a > b ? a : b;
+
 Map<String, Object?> _map(Object? value) {
   if (value is Map<String, Object?>) {
     return value;
@@ -1879,4 +2703,8 @@ List<_RosterMinuteRange> _mergeRanges(List<_RosterMinuteRange> input) {
 
 extension on String {
   String ifEmpty(String fallback) => trim().isEmpty ? fallback : this;
+}
+
+extension on DateTime {
+  String get labelYmd => _dateKey(this);
 }

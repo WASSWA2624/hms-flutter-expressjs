@@ -38738,8 +38738,98 @@ abstract class AppLocalizations {
   /// Hint under roster calendar preview.
   ///
   /// In en, this message translates to:
-  /// **'Tap a day for details'**
+  /// **'Tap a day for details · use Month summary / Week summary for period rollups'**
   String get hrRosterPreviewTapHint;
+
+  /// Month view toggle on roster preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get hrRosterPreviewMonthView;
+
+  /// Week view toggle on roster preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get hrRosterPreviewWeekView;
+
+  /// Day view toggle on roster preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get hrRosterPreviewDayView;
+
+  /// Navigate to previous period in roster preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get hrRosterPreviewPreviousAction;
+
+  /// Navigate to next period in roster preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get hrRosterPreviewNextAction;
+
+  /// Jump calendar focus back to the roster period start.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster period'**
+  String get hrRosterPreviewJumpToPeriodAction;
+
+  /// Open month-level roster preview details.
+  ///
+  /// In en, this message translates to:
+  /// **'Month summary'**
+  String get hrRosterPreviewMonthSummaryAction;
+
+  /// Open week-level roster preview details.
+  ///
+  /// In en, this message translates to:
+  /// **'Week summary'**
+  String get hrRosterPreviewWeekSummaryAction;
+
+  /// Dialog title for week-level roster preview details.
+  ///
+  /// In en, this message translates to:
+  /// **'Week details'**
+  String get hrRosterWeekDetailsTitle;
+
+  /// Dialog title for month-level roster preview details.
+  ///
+  /// In en, this message translates to:
+  /// **'Month details'**
+  String get hrRosterMonthDetailsTitle;
+
+  /// Count of working days in a roster preview period.
+  ///
+  /// In en, this message translates to:
+  /// **'Working days'**
+  String get hrRosterPeriodWorkingDaysLabel;
+
+  /// Count of days that have shifts in a roster preview period.
+  ///
+  /// In en, this message translates to:
+  /// **'Days with shifts'**
+  String get hrRosterPeriodBusyDaysLabel;
+
+  /// Count of public holidays in a roster preview period.
+  ///
+  /// In en, this message translates to:
+  /// **'Public holidays'**
+  String get hrRosterPeriodHolidayDaysLabel;
+
+  /// Label for calendar days outside the roster date range.
+  ///
+  /// In en, this message translates to:
+  /// **'Outside roster period'**
+  String get hrRosterPeriodOutsideLabel;
+
+  /// Empty state when a preview period has no roster days.
+  ///
+  /// In en, this message translates to:
+  /// **'No roster days in this period.'**
+  String get hrRosterPeriodNoDaysLabel;
 
   /// Human resources workspace text for hrRosterReportLabel.
   ///

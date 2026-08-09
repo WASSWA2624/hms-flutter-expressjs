@@ -20930,7 +20930,53 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterPreviewLegendTitle => 'Legend';
 
   @override
-  String get hrRosterPreviewTapHint => 'Tap a day for details';
+  String get hrRosterPreviewTapHint =>
+      'Tap a day for details · use Month summary / Week summary for period rollups';
+
+  @override
+  String get hrRosterPreviewMonthView => 'Month';
+
+  @override
+  String get hrRosterPreviewWeekView => 'Week';
+
+  @override
+  String get hrRosterPreviewDayView => 'Day';
+
+  @override
+  String get hrRosterPreviewPreviousAction => 'Previous';
+
+  @override
+  String get hrRosterPreviewNextAction => 'Next';
+
+  @override
+  String get hrRosterPreviewJumpToPeriodAction => 'Roster period';
+
+  @override
+  String get hrRosterPreviewMonthSummaryAction => 'Month summary';
+
+  @override
+  String get hrRosterPreviewWeekSummaryAction => 'Week summary';
+
+  @override
+  String get hrRosterWeekDetailsTitle => 'Week details';
+
+  @override
+  String get hrRosterMonthDetailsTitle => 'Month details';
+
+  @override
+  String get hrRosterPeriodWorkingDaysLabel => 'Working days';
+
+  @override
+  String get hrRosterPeriodBusyDaysLabel => 'Days with shifts';
+
+  @override
+  String get hrRosterPeriodHolidayDaysLabel => 'Public holidays';
+
+  @override
+  String get hrRosterPeriodOutsideLabel => 'Outside roster period';
+
+  @override
+  String get hrRosterPeriodNoDaysLabel => 'No roster days in this period.';
 
   @override
   String get hrRosterReportLabel => 'Roster report';

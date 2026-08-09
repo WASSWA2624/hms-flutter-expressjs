@@ -26992,9 +26992,69 @@
   "@hrRosterPreviewLegendTitle": {
     "description": "Legend heading under roster calendar preview."
   },
-  "hrRosterPreviewTapHint": "Tap a day for details",
+  "hrRosterPreviewTapHint": "Tap a day for details · use Month summary / Week summary for period rollups",
   "@hrRosterPreviewTapHint": {
     "description": "Hint under roster calendar preview."
+  },
+  "hrRosterPreviewMonthView": "Month",
+  "@hrRosterPreviewMonthView": {
+    "description": "Month view toggle on roster preview."
+  },
+  "hrRosterPreviewWeekView": "Week",
+  "@hrRosterPreviewWeekView": {
+    "description": "Week view toggle on roster preview."
+  },
+  "hrRosterPreviewDayView": "Day",
+  "@hrRosterPreviewDayView": {
+    "description": "Day view toggle on roster preview."
+  },
+  "hrRosterPreviewPreviousAction": "Previous",
+  "@hrRosterPreviewPreviousAction": {
+    "description": "Navigate to previous period in roster preview."
+  },
+  "hrRosterPreviewNextAction": "Next",
+  "@hrRosterPreviewNextAction": {
+    "description": "Navigate to next period in roster preview."
+  },
+  "hrRosterPreviewJumpToPeriodAction": "Roster period",
+  "@hrRosterPreviewJumpToPeriodAction": {
+    "description": "Jump calendar focus back to the roster period start."
+  },
+  "hrRosterPreviewMonthSummaryAction": "Month summary",
+  "@hrRosterPreviewMonthSummaryAction": {
+    "description": "Open month-level roster preview details."
+  },
+  "hrRosterPreviewWeekSummaryAction": "Week summary",
+  "@hrRosterPreviewWeekSummaryAction": {
+    "description": "Open week-level roster preview details."
+  },
+  "hrRosterWeekDetailsTitle": "Week details",
+  "@hrRosterWeekDetailsTitle": {
+    "description": "Dialog title for week-level roster preview details."
+  },
+  "hrRosterMonthDetailsTitle": "Month details",
+  "@hrRosterMonthDetailsTitle": {
+    "description": "Dialog title for month-level roster preview details."
+  },
+  "hrRosterPeriodWorkingDaysLabel": "Working days",
+  "@hrRosterPeriodWorkingDaysLabel": {
+    "description": "Count of working days in a roster preview period."
+  },
+  "hrRosterPeriodBusyDaysLabel": "Days with shifts",
+  "@hrRosterPeriodBusyDaysLabel": {
+    "description": "Count of days that have shifts in a roster preview period."
+  },
+  "hrRosterPeriodHolidayDaysLabel": "Public holidays",
+  "@hrRosterPeriodHolidayDaysLabel": {
+    "description": "Count of public holidays in a roster preview period."
+  },
+  "hrRosterPeriodOutsideLabel": "Outside roster period",
+  "@hrRosterPeriodOutsideLabel": {
+    "description": "Label for calendar days outside the roster date range."
+  },
+  "hrRosterPeriodNoDaysLabel": "No roster days in this period.",
+  "@hrRosterPeriodNoDaysLabel": {
+    "description": "Empty state when a preview period has no roster days."
   },
   "hrRosterReportLabel": "Roster report",
   "@hrRosterReportLabel": {
