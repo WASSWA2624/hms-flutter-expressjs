@@ -20902,6 +20902,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterCopyHoursToFollowingAction => 'Copy to following days';
 
   @override
+  String get hrRosterCopyHoursFromAction => 'Copy from';
+
+  @override
   String get hrRosterClearDayHoursAction => 'Clear day';
 
   @override

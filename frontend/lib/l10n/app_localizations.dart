@@ -38675,6 +38675,12 @@ abstract class AppLocalizations {
   /// **'Copy to following days'**
   String get hrRosterCopyHoursToFollowingAction;
 
+  /// Submenu label for copying hours from another weekday.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy from'**
+  String get hrRosterCopyHoursFromAction;
+
   /// Clear painted hours for one weekday column.
   ///
   /// In en, this message translates to:

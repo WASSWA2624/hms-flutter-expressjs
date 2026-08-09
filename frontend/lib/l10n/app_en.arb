@@ -26947,6 +26947,10 @@
   "@hrRosterCopyHoursToFollowingAction": {
     "description": "Copy one day’s hours to later weekday columns."
   },
+  "hrRosterCopyHoursFromAction": "Copy from",
+  "@hrRosterCopyHoursFromAction": {
+    "description": "Submenu label for copying hours from another weekday."
+  },
   "hrRosterClearDayHoursAction": "Clear day",
   "@hrRosterClearDayHoursAction": {
     "description": "Clear painted hours for one weekday column."

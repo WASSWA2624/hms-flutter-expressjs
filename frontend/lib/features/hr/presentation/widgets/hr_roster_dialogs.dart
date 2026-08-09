@@ -415,7 +415,12 @@ Future<void> showHrCreateRosterDialog(
                   AppCollapsibleSection(
                     title: l10n.hrRosterWeekHoursTitle,
                     titleIcon: Icons.view_week_outlined,
-                    contentPadding: EdgeInsets.all(theme.spacing.md),
+                    contentPadding: EdgeInsets.fromLTRB(
+                      theme.spacing.sm,
+                      theme.spacing.xs,
+                      theme.spacing.sm,
+                      theme.spacing.sm,
+                    ),
                     child: HrRosterHourGrid(
                       schedule: schedule,
                       respectWeekends: respectWeekends,

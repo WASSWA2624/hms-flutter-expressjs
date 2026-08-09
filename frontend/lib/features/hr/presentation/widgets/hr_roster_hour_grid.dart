@@ -5,12 +5,11 @@ import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_weekly_schedule_editor.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/components/components.dart';
 
 /// Visual week hour grid: days on the Y-axis, hours across the X-axis.
 ///
 /// Tap or drag hour cells to paint working time. Use each day menu to copy
-/// that day’s hours to all days or to following days.
+/// hours between days.
 class HrRosterHourGrid extends StatefulWidget {
   const HrRosterHourGrid({
     required this.schedule,
@@ -26,7 +25,7 @@ class HrRosterHourGrid extends StatefulWidget {
   /// When true, Saturday and Sunday cannot be painted and stay cleared.
   final bool respectWeekends;
 
-  /// When false, omits the title/hint (parent supplies section chrome).
+  /// When false, omits the standalone title (parent supplies section chrome).
   final bool showSectionChrome;
 
   @override
@@ -35,9 +34,9 @@ class HrRosterHourGrid extends StatefulWidget {
 
 class _HrRosterHourGridState extends State<HrRosterHourGrid> {
   static const int _hourCount = 24;
-  static const double _dayLabelWidth = 108;
-  static const double _cellWidth = 28;
-  static const double _cellHeight = 28;
+  static const double _dayLabelWidth = 112;
+  static const double _minCellWidth = 20;
+  static const double _cellHeight = 30;
 
   /// When non-null, drag paint is adding (`true`) or clearing (`false`).
   bool? _paintSelect;
@@ -176,6 +175,16 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
     widget.onChanged();
   }
 
+  void _copyFrom(int targetDay, int sourceDay) {
+    if (_dayLocked(targetDay) || sourceDay == targetDay) {
+      return;
+    }
+    final List<HrAvailabilitySlot> source = widget.schedule.days[sourceDay]!
+        .toEntitySlots();
+    widget.schedule.days[targetDay]!.replaceSlots(source);
+    widget.onChanged();
+  }
+
   void _clearDay(int day) {
     widget.schedule.days[day]!.replaceSlots(const <HrAvailabilitySlot>[]);
     widget.onChanged();
@@ -201,31 +210,45 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final AppLocalizations l10n = context.l10n;
-    final Map<int, Set<int>> hoursByDay = _hoursByDay();
-    final Color selectedFill = theme.colorScheme.primaryContainer;
-    final Color selectedBorder = theme.colorScheme.primary;
-    final Color idleFill = theme.colorScheme.surfaceContainerHighest.withValues(
-      alpha: 0.35,
+  Widget _buildGrid({
+    required ThemeData theme,
+    required AppLocalizations l10n,
+    required Map<int, Set<int>> hoursByDay,
+    required double cellWidth,
+  }) {
+    final ColorScheme scheme = theme.colorScheme;
+    final Color selectedFill = scheme.primary.withValues(alpha: 0.82);
+    final Color selectedEdge = scheme.primary;
+    final Color idleFill = scheme.surfaceContainerHighest.withValues(alpha: 0.42);
+    final Color idleEdge = scheme.outlineVariant.withValues(alpha: 0.55);
+    final Color lockedFill = scheme.surfaceContainerHighest.withValues(
+      alpha: 0.22,
     );
-    final Color lockedFill = theme.colorScheme.surfaceContainerHighest
-        .withValues(alpha: 0.18);
+    final Color lockedEdge = scheme.outlineVariant.withValues(alpha: 0.28);
     final bool hasAnyHours = hoursByDay.values.any(
       (Set<int> hours) => hours.isNotEmpty,
     );
 
-    final Widget grid = DecoratedBox(
+    return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.85)),
+        color: scheme.surface,
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: scheme.shadow.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.all(theme.spacing.sm),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          theme.spacing.sm,
+          theme.spacing.xs,
+          theme.spacing.sm,
+          theme.spacing.sm,
+        ),
         child: Listener(
           onPointerUp: (_) {
             _paintSelect = null;
@@ -236,7 +259,7 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
             _paintDay = null;
           },
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Row(
                 children: <Widget>[
@@ -245,6 +268,12 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
                     child: Align(
                       alignment: AlignmentDirectional.centerStart,
                       child: TextButton(
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: theme.spacing.xs,
+                          ),
+                        ),
                         onPressed: hasAnyHours ? _clearAll : null,
                         child: Text(l10n.hrRosterClearAllHoursAction),
                       ),
@@ -252,12 +281,13 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
                   ),
                   for (int hour = 0; hour < _hourCount; hour++)
                     SizedBox(
-                      width: _cellWidth,
+                      width: cellWidth,
                       child: Text(
                         hour.toString().padLeft(2, '0'),
                         textAlign: TextAlign.center,
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                          color: scheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
                           fontFeatures: const <FontFeature>[
                             FontFeature.tabularFigures(),
                           ],
@@ -269,34 +299,50 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
               SizedBox(height: theme.spacing.xs),
               for (final int day in kHrWeekDayOrder)
                 Padding(
-                  padding: EdgeInsets.only(bottom: theme.spacing.xs / 2),
+                  padding: const EdgeInsets.only(bottom: 3),
                   child: Row(
                     children: <Widget>[
                       SizedBox(
                         width: _dayLabelWidth,
                         child: _DayLabel(
+                          day: day,
                           label: hrDayLabel(l10n, day),
                           hasHours: hoursByDay[day]!.isNotEmpty,
                           locked: _dayLocked(day),
+                          hoursByDay: hoursByDay,
+                          dayLocked: _dayLocked,
+                          dayLabel: (int value) => hrDayLabel(l10n, value),
                           onCopyToAll: () => _copyToAll(day),
                           onCopyToFollowing: () => _copyToFollowing(day),
+                          onCopyFrom: (int sourceDay) =>
+                              _copyFrom(day, sourceDay),
                           onClear: () => _clearDay(day),
                           copyToAllLabel: l10n.hrRosterCopyHoursToAllAction,
                           copyToFollowingLabel:
                               l10n.hrRosterCopyHoursToFollowingAction,
+                          copyFromLabel: l10n.hrRosterCopyHoursFromAction,
                           clearLabel: l10n.hrRosterClearDayHoursAction,
                         ),
                       ),
                       for (int hour = 0; hour < _hourCount; hour++)
                         _HourCell(
                           selected: hoursByDay[day]!.contains(hour),
+                          selectedStart:
+                              hoursByDay[day]!.contains(hour) &&
+                              !hoursByDay[day]!.contains(hour - 1),
+                          selectedEnd:
+                              hoursByDay[day]!.contains(hour) &&
+                              !hoursByDay[day]!.contains(hour + 1),
                           locked: _dayLocked(day),
-                          width: _cellWidth,
+                          width: cellWidth,
                           height: _cellHeight,
                           selectedFill: selectedFill,
-                          selectedBorder: selectedBorder,
+                          selectedEdge: selectedEdge,
                           idleFill: idleFill,
+                          idleEdge: idleEdge,
                           lockedFill: lockedFill,
+                          lockedEdge: lockedEdge,
+                          onPrimary: scheme.onPrimary,
                           onTap: _dayLocked(day)
                               ? null
                               : () {
@@ -315,16 +361,49 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
         ),
       ),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final Map<int, Set<int>> hoursByDay = _hoursByDay();
+
+    final Widget grid = LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double maxWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final double rawCellWidth =
+            (maxWidth - _dayLabelWidth) / _hourCount;
+        final bool needsScroll = rawCellWidth < _minCellWidth;
+        final double cellWidth = needsScroll
+            ? _minCellWidth
+            : rawCellWidth;
+
+        final Widget body = _buildGrid(
+          theme: theme,
+          l10n: l10n,
+          hoursByDay: hoursByDay,
+          cellWidth: cellWidth,
+        );
+
+        if (!needsScroll) {
+          return body;
+        }
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: _dayLabelWidth + (_minCellWidth * _hourCount),
+            child: body,
+          ),
+        );
+      },
+    );
 
     if (!widget.showSectionChrome) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppMutedText(l10n.hrRosterWeekHoursHint),
-          SizedBox(height: theme.spacing.sm),
-          grid,
-        ],
-      );
+      return grid;
     }
 
     return Column(
@@ -336,8 +415,6 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
             fontWeight: AppFontWeight.emphasis,
           ),
         ),
-        SizedBox(height: theme.spacing.xs),
-        AppMutedText(l10n.hrRosterWeekHoursHint),
         SizedBox(height: theme.spacing.sm),
         grid,
       ],
@@ -347,25 +424,37 @@ class _HrRosterHourGridState extends State<HrRosterHourGrid> {
 
 class _DayLabel extends StatelessWidget {
   const _DayLabel({
+    required this.day,
     required this.label,
     required this.hasHours,
     required this.locked,
+    required this.hoursByDay,
+    required this.dayLocked,
+    required this.dayLabel,
     required this.onCopyToAll,
     required this.onCopyToFollowing,
+    required this.onCopyFrom,
     required this.onClear,
     required this.copyToAllLabel,
     required this.copyToFollowingLabel,
+    required this.copyFromLabel,
     required this.clearLabel,
   });
 
+  final int day;
   final String label;
   final bool hasHours;
   final bool locked;
+  final Map<int, Set<int>> hoursByDay;
+  final bool Function(int day) dayLocked;
+  final String Function(int day) dayLabel;
   final VoidCallback onCopyToAll;
   final VoidCallback onCopyToFollowing;
+  final ValueChanged<int> onCopyFrom;
   final VoidCallback onClear;
   final String copyToAllLabel;
   final String copyToFollowingLabel;
+  final String copyFromLabel;
   final String clearLabel;
 
   @override
@@ -393,13 +482,23 @@ class _DayLabel extends StatelessWidget {
           padding: EdgeInsets.zero,
           enabled: !locked,
           onSelected: (String value) {
-            switch (value) {
-              case 'all':
-                onCopyToAll();
-              case 'following':
-                onCopyToFollowing();
-              case 'clear':
-                onClear();
+            if (value == 'all') {
+              onCopyToAll();
+              return;
+            }
+            if (value == 'following') {
+              onCopyToFollowing();
+              return;
+            }
+            if (value == 'clear') {
+              onClear();
+              return;
+            }
+            if (value.startsWith('from:')) {
+              final int? source = int.tryParse(value.substring(5));
+              if (source != null) {
+                onCopyFrom(source);
+              }
             }
           },
           itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
@@ -413,6 +512,27 @@ class _DayLabel extends StatelessWidget {
               enabled: hasHours,
               child: Text(copyToFollowingLabel),
             ),
+            const PopupMenuDivider(),
+            PopupMenuItem<String>(
+              enabled: false,
+              height: 28,
+              child: Text(
+                copyFromLabel,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            for (final int sourceDay in kHrWeekDayOrder)
+              if (sourceDay != day)
+                PopupMenuItem<String>(
+                  value: 'from:$sourceDay',
+                  enabled:
+                      !dayLocked(day) &&
+                      (hoursByDay[sourceDay]?.isNotEmpty ?? false),
+                  child: Text(dayLabel(sourceDay)),
+                ),
             const PopupMenuDivider(),
             PopupMenuItem<String>(
               value: 'clear',
@@ -434,33 +554,47 @@ class _DayLabel extends StatelessWidget {
 class _HourCell extends StatelessWidget {
   const _HourCell({
     required this.selected,
+    required this.selectedStart,
+    required this.selectedEnd,
     required this.locked,
     required this.width,
     required this.height,
     required this.selectedFill,
-    required this.selectedBorder,
+    required this.selectedEdge,
     required this.idleFill,
+    required this.idleEdge,
     required this.lockedFill,
+    required this.lockedEdge,
+    required this.onPrimary,
     required this.onTap,
     required this.onDragEnter,
   });
 
   final bool selected;
+  final bool selectedStart;
+  final bool selectedEnd;
   final bool locked;
   final double width;
   final double height;
   final Color selectedFill;
-  final Color selectedBorder;
+  final Color selectedEdge;
   final Color idleFill;
+  final Color idleEdge;
   final Color lockedFill;
+  final Color lockedEdge;
+  final Color onPrimary;
   final VoidCallback? onTap;
   final VoidCallback? onDragEnter;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
+    final BorderRadius radius = BorderRadius.horizontal(
+      left: Radius.circular(selected && selectedStart ? 5 : 2),
+      right: Radius.circular(selected && selectedEnd ? 5 : 2),
+    );
+
     final Widget cell = Padding(
-      padding: const EdgeInsets.all(1),
+      padding: const EdgeInsets.symmetric(horizontal: 0.5, vertical: 1.5),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: locked
@@ -468,17 +602,41 @@ class _HourCell extends StatelessWidget {
               : selected
               ? selectedFill
               : idleFill,
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: radius,
           border: Border.all(
             color: locked
-                ? theme.colorScheme.outlineVariant.withValues(alpha: 0.5)
+                ? lockedEdge
                 : selected
-                ? selectedBorder
-                : theme.colorScheme.outlineVariant,
-            width: selected && !locked ? 1.2 : 0.6,
+                ? selectedEdge
+                : idleEdge,
+            width: selected && !locked ? 1 : 0.7,
           ),
+          boxShadow: selected && !locked
+              ? <BoxShadow>[
+                  BoxShadow(
+                    color: selectedEdge.withValues(alpha: 0.22),
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
         ),
-        child: SizedBox(height: height - 2, width: width - 2),
+        child: SizedBox(
+          height: height - 3,
+          width: width - 1,
+          child: selected && !locked
+              ? Align(
+                  child: Container(
+                    width: 4,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: onPrimary.withValues(alpha: 0.85),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                )
+              : null,
+        ),
       ),
     );
 
@@ -487,6 +645,7 @@ class _HourCell extends StatelessWidget {
     }
 
     return MouseRegion(
+      cursor: SystemMouseCursors.click,
       onEnter: (_) => onDragEnter?.call(),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
