@@ -440,8 +440,23 @@ final class HrRepositoryImpl implements HrRepository {
   }
 
   @override
-  Future<Result<Object?>> createRoster(Map<String, Object?> payload) {
-    return _postCollection(HmsApiResource.rosters, payload);
+  Future<Result<Map<String, Object?>>> createRoster(
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<Map<String, Object?>>(
+      ApiEndpoints.collection(HmsApiResource.rosters),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) {
+        final Object? payloadData = passthroughResponseData(data);
+        if (payloadData is Map<String, Object?>) {
+          return payloadData;
+        }
+        if (payloadData is Map) {
+          return Map<String, Object?>.from(payloadData);
+        }
+        return <String, Object?>{};
+      },
+    );
   }
 
   @override

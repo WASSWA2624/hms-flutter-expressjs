@@ -233,6 +233,29 @@ const sortQuerySchema = z.object({
 const listQuerySchema = paginationQuerySchema.merge(sortQuerySchema);
 
 /**
+ * List/search query string validation
+ *
+ * Search is truncated (not rejected) when over [maxLength] so pasting long or
+ * multi-line text into a search box never fails the whole list request.
+ */
+const DEFAULT_SEARCH_QUERY_MAX_LENGTH = 255;
+
+const searchQuerySchema = (maxLength = DEFAULT_SEARCH_QUERY_MAX_LENGTH) =>
+  z.preprocess((value) => {
+    if (value == null) {
+      return undefined;
+    }
+    if (typeof value !== 'string') {
+      return value;
+    }
+    const collapsed = value.replace(/\s+/g, ' ').trim();
+    if (!collapsed) {
+      return undefined;
+    }
+    return collapsed.length > maxLength ? collapsed.slice(0, maxLength) : collapsed;
+  }, z.string().max(maxLength).optional());
+
+/**
  * Locale validation
  * Validates locale format and supported locales
  */
@@ -278,6 +301,8 @@ module.exports = {
   nonEmptyStringSchema,
   optionalNonEmptyStringSchema,
   slugSchema,
+  searchQuerySchema,
+  DEFAULT_SEARCH_QUERY_MAX_LENGTH,
   
   // Type conversion validators
   booleanStringSchema,

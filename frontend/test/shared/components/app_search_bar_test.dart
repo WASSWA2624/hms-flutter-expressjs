@@ -5,6 +5,15 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'component_test_app.dart';
 
 void main() {
+  test('clampAppSearchQuery collapses whitespace and caps length', () {
+    expect(clampAppSearchQuery('  alpha\n\nbeta  '), 'alpha beta');
+    expect(
+      clampAppSearchQuery('x' * 300).length,
+      appSearchQueryMaxLength,
+    );
+    expect(clampAppSearchQuery('   \n\t  '), isEmpty);
+  });
+
   test('filter value counts scalar and multi-value criteria', () {
     const AppSearchBarFilterValue value = AppSearchBarFilterValue(
       field: 'patient',
@@ -383,4 +392,30 @@ void main() {
       expect(find.text('All').hitTestable(), findsOneWidget);
     },
   );
+
+  testWidgets('AppSearchBar truncates overlong pasted search text', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController controller = TextEditingController();
+    addTearDown(controller.dispose);
+
+    await pumpComponent(
+      tester,
+      AppSearchBar(
+        controller: controller,
+        semanticLabel: 'Search rows',
+        hintText: 'Search',
+      ),
+    );
+
+    final Finder field = find.byType(TextFormField);
+    expect(field, findsOneWidget);
+
+    final String longPaste = '${'word ' * 80}\n\nmore text';
+    await tester.enterText(field, longPaste);
+    await tester.pump();
+
+    expect(controller.text.contains('\n'), isFalse);
+    expect(controller.text.length, lessThanOrEqualTo(appSearchQueryMaxLength));
+  });
 }

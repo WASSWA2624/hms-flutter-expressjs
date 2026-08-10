@@ -656,7 +656,9 @@ void main() {
       );
 
       when(() => repository.createRoster(any())).thenAnswer(
-        (_) async => const Result<Object?>.success(null),
+        (_) async => const Result<Map<String, Object?>>.success(
+          <String, Object?>{'id': 'roster-1', 'name': 'Template', 'status': 'DRAFT'},
+        ),
       );
 
       await _openScheduleTemplates(

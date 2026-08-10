@@ -1,5 +1,8 @@
 const { z } = require('zod');
-const { uuidOrFriendlyIdentifierSchema } = require('@lib/validation/zod');
+const {
+  searchQuerySchema,
+  uuidOrFriendlyIdentifierSchema,
+} = require('@lib/validation/zod');
 
 const workspaceQuerySchema = z.object({
   tenantId: uuidOrFriendlyIdentifierSchema.optional(),
@@ -8,7 +11,7 @@ const workspaceQuerySchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   panel: z.string().trim().max(64).optional(),
   resource: z.string().trim().max(64).optional(),
-  search: z.string().trim().max(255).optional(),
+  search: searchQuerySchema(),
   status: z.string().trim().max(32).optional(),
   roleScope: z.enum(['tenant', 'facility', 'all']).optional(),
   role_scope: z.enum(['tenant', 'facility', 'all']).optional(),

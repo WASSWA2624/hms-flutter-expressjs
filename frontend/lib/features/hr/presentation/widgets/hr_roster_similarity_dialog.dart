@@ -32,8 +32,15 @@ bool isHrRosterSimilarityConflict(AppFailure? failure) {
   if (failure == null || failure.category != AppFailureCategory.conflict) {
     return false;
   }
+  if (failure is ConflictFailure && failure.conflictEntries.isNotEmpty) {
+    return true;
+  }
   final String code = failure.code.toLowerCase();
   if (code.contains('similar') || code.contains('duplicate_name')) {
+    return true;
+  }
+  final String messageKey = failure.messageKey.toLowerCase();
+  if (messageKey.contains('similar') || messageKey.contains('duplicate_name')) {
     return true;
   }
   final String detail = (failure.detailMessage ?? '').toLowerCase();

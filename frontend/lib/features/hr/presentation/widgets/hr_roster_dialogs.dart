@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
+import 'package:hosspi_hms/features/hr/domain/entities/hr_roster_similarity.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
@@ -275,15 +276,47 @@ String _resolveDepartmentOptionValue({
   return candidates.first;
 }
 
-Future<bool> showHrCreateRosterDialog(
+/// Result of a successful roster-template create.
+@immutable
+final class HrCreatedRosterTemplate {
+  const HrCreatedRosterTemplate({
+    required this.id,
+    this.name,
+    this.status,
+  });
+
+  final String id;
+  final String? name;
+  final String? status;
+}
+
+/// Opens the create-roster dialog.
+///
+/// Returns the created roster on success, or `null` when cancelled / failed.
+Future<HrCreatedRosterTemplate?> showHrCreateRosterDialog(
   BuildContext context,
   WidgetRef ref, {
   List<String> attachStaffProfileIds = const <String>[],
-}) {
-  return showHrRosterTemplateDialog(
+}) async {
+  final bool saved = await showHrRosterTemplateDialog(
     context,
     ref,
     attachStaffProfileIds: attachStaffProfileIds,
+  );
+  if (!saved) {
+    return null;
+  }
+  final ({String? id, String? name, String? status}) created = ref
+      .read(hrWorkspaceControllerProvider.notifier)
+      .takePendingCreatedRoster();
+  final String id = (created.id ?? '').trim();
+  if (id.isEmpty) {
+    return null;
+  }
+  return HrCreatedRosterTemplate(
+    id: id,
+    name: created.name,
+    status: created.status,
   );
 }
 
@@ -782,6 +815,64 @@ Future<bool> showHrRosterTemplateDialog(
       };
 
       Future<AppFailure?> submit({required bool confirmSimilar}) async {
+        if (!confirmSimilar) {
+          final List<HrWorkItem> existingDrafts =
+              (readHrWorkspaceState(ref)?.workItems.items ??
+                      const <HrWorkItem>[])
+                  .where((HrWorkItem item) => item.queue == HrQueue.rosterDrafts)
+                  .toList(growable: false);
+          final HrRosterNameDuplicateCheckResult nameCheck =
+              checkHrRosterNameDuplicates(
+                name: nameController.text.trim(),
+                existing: existingDrafts,
+                excludeRosterId: isEdit ? rosterId : null,
+              );
+          if (nameCheck.exactNameConflict ||
+              nameCheck.overridableMatches.isNotEmpty) {
+            final List<HrRosterSimilarityMatch> matches = nameCheck
+                .similarMatches
+                .take(5)
+                .map(
+                  (HrRosterNameSimilarityMatch match) =>
+                      HrRosterSimilarityMatch(
+                        id: match.item.rosterId ?? match.item.effectiveId,
+                        name:
+                            match.item.rosterName ??
+                            match.item.periodLabel ??
+                            match.item.effectiveId,
+                        displayId: match.item.displayId,
+                        periodLabel: match.item.periodLabel,
+                        overallScore: match.score,
+                        isExact: match.exactNameConflict,
+                        fields: <AppSimilarityFieldRow>[
+                          AppSimilarityFieldRow(
+                            key: 'name',
+                            label: l10n.hrRosterNameLabel,
+                            proposedValue: nameController.text.trim(),
+                            existingValue: match.item.rosterName,
+                            score: match.score,
+                          ),
+                        ],
+                      ),
+                )
+                .toList(growable: false);
+            final bool proceed = await showHrRosterSimilarityDialog(
+              context: context,
+              proposedName: nameController.text.trim(),
+              matches: matches,
+              blockProceed: nameCheck.exactNameConflict,
+              isEdit: isEdit,
+            );
+            if (!proceed || !context.mounted) {
+              return const AppFailure.cancelled();
+            }
+            if (nameCheck.exactNameConflict) {
+              return const AppFailure.cancelled();
+            }
+            return submit(confirmSimilar: true);
+          }
+        }
+
         final Map<String, Object?> request = <String, Object?>{
           ...payload,
           if (confirmSimilar) 'confirm_similar': true,
@@ -806,10 +897,10 @@ Future<bool> showHrRosterTemplateDialog(
           isEdit: isEdit,
         );
         if (!proceed || !context.mounted) {
-          return failure;
+          return const AppFailure.cancelled();
         }
         if (exact) {
-          return failure;
+          return const AppFailure.cancelled();
         }
         return submit(confirmSimilar: true);
       }
@@ -821,7 +912,10 @@ Future<bool> showHrRosterTemplateDialog(
   schedule.dispose();
   nameController.dispose();
   if (saved == true && context.mounted) {
-    showHrMutationSnackBar(context, null);
+    // Create path opens the detail dialog from the caller; snackbar only for edits.
+    if (isEdit) {
+      showHrMutationSnackBar(context, null);
+    }
   }
   return saved == true;
 }

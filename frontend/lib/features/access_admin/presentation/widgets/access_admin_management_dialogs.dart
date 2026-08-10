@@ -193,7 +193,7 @@ abstract class _ScopedAccessAdminListDialogState<
     final Result<AccessAdminWorkspaceData> result = await repository
         .getWorkspace(
           listQuery.copyWith(
-            search: searchController.text.trim(),
+            search: clampAppSearchQuery(searchController.text),
             pageRequest: pageRequest,
             skipLookups: canSkipLookups,
           ),

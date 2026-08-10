@@ -1533,6 +1533,76 @@ void main() {
       expect(horizontal.position.pixels, greaterThan(afterHorizontalDelta));
     },
   );
+
+  testWidgets(
+    'AppListTable pans horizontally when mouse-wheeling over the scrollbar',
+    (WidgetTester tester) async {
+      final List<AppListTableColumn<_RowItem>> wideColumns =
+          <AppListTableColumn<_RowItem>>[
+            const AppListTableColumn<_RowItem>(
+              label: 'Title',
+              fixedWidth: 420,
+              cellBuilder: _titleCell,
+            ),
+            const AppListTableColumn<_RowItem>(
+              label: 'Status',
+              fixedWidth: 420,
+              cellBuilder: _statusCell,
+            ),
+            const AppListTableColumn<_RowItem>(
+              label: 'Extra',
+              fixedWidth: 420,
+              cellBuilder: _titleCell,
+            ),
+          ];
+
+      await pumpComponent(
+        tester,
+        SizedBox(
+          height: 280,
+          width: 640,
+          child: AppListTable<_RowItem>(
+            items: items,
+            columns: wideColumns,
+            displayMode: AppListTableDisplayMode.table,
+            mobileItemBuilder: (BuildContext context, _RowItem item) {
+              return ListTile(title: Text(item.title));
+            },
+          ),
+        ),
+        size: const Size(720, 600),
+      );
+      await tester.pump();
+
+      final Finder horizontalBar = find.byWidgetPredicate((Widget widget) {
+        return widget is RawScrollbar &&
+            widget.scrollbarOrientation == ScrollbarOrientation.bottom;
+      });
+      expect(horizontalBar, findsOneWidget);
+
+      final ScrollableState horizontal = tester.state<ScrollableState>(
+        find.byWidgetPredicate(_isHorizontalScrollable).first,
+      );
+      expect(horizontal.position.maxScrollExtent, greaterThan(0));
+      expect(horizontal.position.pixels, 0);
+
+      final Rect barRect = tester.getRect(horizontalBar);
+      final Offset scrollbarPoint = Offset(
+        barRect.left + 48,
+        barRect.bottom - 4,
+      );
+
+      final TestPointer pointer = TestPointer(1, PointerDeviceKind.mouse);
+      await tester.sendEventToBinding(pointer.hover(scrollbarPoint));
+      await tester.pump();
+      await tester.sendEventToBinding(
+        pointer.scroll(const Offset(0, 100)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(horizontal.position.pixels, greaterThan(0));
+    },
+  );
 }
 
 const List<AppListTableColumn<_RowItem>> _columns =

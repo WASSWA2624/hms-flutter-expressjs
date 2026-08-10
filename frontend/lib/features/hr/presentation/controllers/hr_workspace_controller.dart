@@ -32,6 +32,9 @@ final class HrWorkspaceController
   final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
   final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
   bool _isSyncing = false;
+  String? _pendingCreatedRosterId;
+  String? _pendingCreatedRosterName;
+  String? _pendingCreatedRosterStatus;
 
   @override
   Future<Result<HrWorkspaceState>> build() async {
@@ -1232,11 +1235,62 @@ final class HrWorkspaceController
       return AppFailure.validation();
     }
     _emit(current.copyWith(isMutating: true, clearLastFailure: true));
-    return _finishGenericMutation(
-      await _repository.createRoster(payload),
-      refreshWorkItemsAfter: true,
-      refreshReferencesAfter: true,
+    final Result<Map<String, Object?>> result = await _repository.createRoster(
+      payload,
     );
+    return result.when(
+      success: (Map<String, Object?> roster) async {
+        final String rosterId =
+            (_extractApiRecordId(roster) ?? '').trim();
+        final String? rosterName = roster['name']?.toString().trim();
+        final String status =
+            (roster['status']?.toString().trim().isNotEmpty ?? false)
+            ? roster['status']!.toString().trim().toUpperCase()
+            : 'DRAFT';
+        _pendingCreatedRosterId = rosterId.isEmpty ? null : rosterId;
+        _pendingCreatedRosterName =
+            (rosterName == null || rosterName.isEmpty) ? null : rosterName;
+        _pendingCreatedRosterStatus = status;
+
+        final HrWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          // Clear any active work-item search so the new draft is visible and
+          // the search box stays in sync with the server query.
+          _emit(
+            latest.copyWith(
+              isMutating: false,
+              clearLastFailure: true,
+              workItemsQuery: latest.workItemsQuery.copyWith(
+                search: '',
+                pageRequest: latest.workItemsQuery.pageRequest.first(),
+              ),
+            ),
+          );
+        }
+        await _refreshWorkItems(showLoading: false);
+        unawaited(_refreshReferences());
+        unawaited(_refreshOverview());
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final HrWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isMutating: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
+  /// Consumes the roster created by the most recent [createRoster] call.
+  ({String? id, String? name, String? status}) takePendingCreatedRoster() {
+    final String? id = _pendingCreatedRosterId;
+    final String? name = _pendingCreatedRosterName;
+    final String? status = _pendingCreatedRosterStatus;
+    _pendingCreatedRosterId = null;
+    _pendingCreatedRosterName = null;
+    _pendingCreatedRosterStatus = null;
+    return (id: id, name: name, status: status);
   }
 
   Future<AppFailure?> updateRoster(

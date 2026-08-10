@@ -377,7 +377,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
                   enabled: !state.isRefreshing,
                   onPressed: state.isRefreshing
                       ? null
-                      : () => showHrCreateRosterDialog(context, ref),
+                      : () => unawaited(_createRosterTemplate()),
                 ),
               ]
             : const <AppSearchBarAction>[],
@@ -387,6 +387,21 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
       HrDeskSection.access =>
         const <AppSearchBarAction>[],
     };
+  }
+
+  Future<void> _createRosterTemplate() async {
+    final HrCreatedRosterTemplate? created =
+        await showHrCreateRosterDialog(context, ref);
+    if (created == null || !mounted) {
+      return;
+    }
+    await showHrRosterDetailByIdDialog(
+      context,
+      ref,
+      rosterId: created.id,
+      rosterName: created.name,
+      status: created.status ?? 'DRAFT',
+    );
   }
 
   Widget _buildTabBody(
@@ -1638,6 +1653,7 @@ bool _workItemSearchMatcher(
     item.shiftType,
     _apiLabel(context, item.shiftType),
     item.rosterId,
+    item.rosterName,
     item.payrollRunId,
     item.periodLabel,
     _workItemPeriod(context, item),

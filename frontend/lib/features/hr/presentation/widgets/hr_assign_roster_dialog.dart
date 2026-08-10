@@ -81,11 +81,13 @@ Future<bool> _createNewRosterForStaff(
   if (!context.mounted) {
     return false;
   }
-  final bool created = await showHrCreateRosterDialog(
-    context,
-    ref,
-    attachStaffProfileIds: <String>[staff.effectiveId],
-  );
+  final bool created =
+      (await showHrCreateRosterDialog(
+        context,
+        ref,
+        attachStaffProfileIds: <String>[staff.effectiveId],
+      )) !=
+      null;
   if (!created) {
     return false;
   }

@@ -3293,6 +3293,7 @@ class _DesktopListTable<T> extends StatefulWidget {
 class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   late final ScrollController _horizontalController;
   late final ScrollController _verticalController;
+  final GlobalKey _horizontalScrollShellKey = GlobalKey();
 
   double get _headingRowHeight {
     if (widget.dense) {
@@ -3604,19 +3605,25 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     required bool expandVertically,
   }) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final Widget scrollView = Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerSignal: _handleHorizontalPointerSignal,
-      child: ScrollConfiguration(
-        // Keep click-and-drag panning available with a mouse in addition to
-        // the scrollbar thumb and wheel / trackpad gestures.
-        behavior: const _TableDragScrollBehavior(),
-        child: SingleChildScrollView(
-          controller: _horizontalController,
-          scrollDirection: Axis.horizontal,
-          child: child,
-        ),
+    final Widget scrollView = ScrollConfiguration(
+      // Keep click-and-drag panning available with a mouse in addition to
+      // the scrollbar thumb and wheel / trackpad gestures.
+      behavior: const _TableDragScrollBehavior(),
+      child: SingleChildScrollView(
+        controller: _horizontalController,
+        scrollDirection: Axis.horizontal,
+        child: child,
       ),
+    );
+
+    final Widget gutter = Listener(
+      // Opaque so wheel events over the empty gutter / track still hit here
+      // instead of falling through to an ancestor vertical scroll view.
+      behavior: HitTestBehavior.opaque,
+      onPointerSignal: (PointerSignalEvent event) {
+        _handleHorizontalPointerSignal(event, forceHorizontal: true);
+      },
+      child: const SizedBox(height: _horizontalScrollbarGutter),
     );
 
     final Widget body = expandVertically
@@ -3624,7 +3631,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Expanded(child: scrollView),
-              const SizedBox(height: _horizontalScrollbarGutter),
+              gutter,
             ],
           )
         : Column(
@@ -3632,37 +3639,71 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               scrollView,
-              const SizedBox(height: _horizontalScrollbarGutter),
+              gutter,
             ],
           );
 
-    return RawScrollbar(
-      controller: _horizontalController,
-      thumbVisibility: true,
-      trackVisibility: true,
-      interactive: true,
-      thickness: _horizontalScrollbarThickness,
-      radius: const Radius.circular(6),
-      scrollbarOrientation: ScrollbarOrientation.bottom,
-      thumbColor: colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
-      trackColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.92),
-      trackBorderColor: colorScheme.outlineVariant.withValues(alpha: 0.85),
-      padding: EdgeInsets.zero,
-      notificationPredicate: (ScrollNotification notification) {
-        return notification.metrics.axis == Axis.horizontal;
+    // Outer listener covers the painted scrollbar thumb/track (which sits in
+    // the gutter) as well as the table body for Shift+wheel / trackpad dx.
+    return Listener(
+      key: _horizontalScrollShellKey,
+      behavior: HitTestBehavior.translucent,
+      onPointerSignal: (PointerSignalEvent event) {
+        _handleHorizontalPointerSignal(
+          event,
+          forceHorizontal: _isPointerOverHorizontalScrollbar(event),
+        );
       },
-      child: body,
+      child: RawScrollbar(
+        controller: _horizontalController,
+        thumbVisibility: true,
+        trackVisibility: true,
+        interactive: true,
+        thickness: _horizontalScrollbarThickness,
+        radius: const Radius.circular(6),
+        scrollbarOrientation: ScrollbarOrientation.bottom,
+        thumbColor: colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
+        trackColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.92),
+        trackBorderColor: colorScheme.outlineVariant.withValues(alpha: 0.85),
+        padding: EdgeInsets.zero,
+        notificationPredicate: (ScrollNotification notification) {
+          return notification.metrics.axis == Axis.horizontal;
+        },
+        child: body,
+      ),
     );
+  }
+
+  /// Whether [event] landed in the reserved bottom horizontal scrollbar gutter.
+  bool _isPointerOverHorizontalScrollbar(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent) {
+      return false;
+    }
+    final BuildContext? shellContext = _horizontalScrollShellKey.currentContext;
+    final RenderObject? renderObject = shellContext?.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) {
+      return false;
+    }
+    final Offset local = renderObject.globalToLocal(event.position);
+    if (!renderObject.size.contains(local)) {
+      return false;
+    }
+    return local.dy >= renderObject.size.height - _horizontalScrollbarGutter;
   }
 
   /// Translates pointer scroll into horizontal panning while preserving plain
   /// vertical wheel scrolling for the nested body.
   ///
   /// - Trackpad / mouse horizontal deltas pan left/right.
-  /// - Shift + vertical wheel also pans left/right (scroll direction maps to
-  ///   left/right), alongside click-and-drag panning.
-  /// - Unmodified vertical wheel is left for the nested vertical scroll view.
-  void _handleHorizontalPointerSignal(PointerSignalEvent event) {
+  /// - Shift + vertical wheel also pans left/right.
+  /// - Vertical wheel over the horizontal scrollbar gutter always pans
+  ///   left/right (no Shift required).
+  /// - Unmodified vertical wheel over the table body is left for the nested
+  ///   vertical scroll view.
+  void _handleHorizontalPointerSignal(
+    PointerSignalEvent event, {
+    bool forceHorizontal = false,
+  }) {
     if (event is! PointerScrollEvent) {
       return;
     }
@@ -3676,14 +3717,17 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     }
 
     final bool shiftPressed = HardwareKeyboard.instance.isShiftPressed;
+    final bool mapVerticalToHorizontal = forceHorizontal || shiftPressed;
     final double horizontalDelta =
-        event.scrollDelta.dx + (shiftPressed ? event.scrollDelta.dy : 0.0);
+        event.scrollDelta.dx +
+        (mapVerticalToHorizontal ? event.scrollDelta.dy : 0.0);
     if (horizontalDelta == 0) {
       return;
     }
 
     // Claim the signal when we intentionally pan horizontally so nested
-    // vertical scrollables do not also move (especially for Shift+wheel).
+    // vertical scrollables do not also move (especially for Shift+wheel or
+    // wheel-over-scrollbar).
     GestureBinding.instance.pointerSignalResolver.register(event, (
       PointerSignalEvent resolvedEvent,
     ) {
@@ -3696,9 +3740,13 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
 
       final ScrollPosition position = _horizontalController.position;
       final bool shift = HardwareKeyboard.instance.isShiftPressed;
+      final bool mapVertical =
+          forceHorizontal ||
+          shift ||
+          _isPointerOverHorizontalScrollbar(resolvedEvent);
       final double delta =
           resolvedEvent.scrollDelta.dx +
-          (shift ? resolvedEvent.scrollDelta.dy : 0.0);
+          (mapVertical ? resolvedEvent.scrollDelta.dy : 0.0);
       if (delta == 0) {
         return;
       }
@@ -3713,7 +3761,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
 
       // Diagonal trackpad gestures: keep vertical motion on the body when we
       // claimed the event only because of a non-zero horizontal delta.
-      if (!shift &&
+      if (!mapVertical &&
           resolvedEvent.scrollDelta.dy != 0 &&
           _verticalController.hasClients) {
         final ScrollPosition vertical = _verticalController.position;

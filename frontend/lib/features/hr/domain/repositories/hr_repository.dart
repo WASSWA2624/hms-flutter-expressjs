@@ -115,7 +115,7 @@ abstract interface class HrRepository {
 
   Future<Result<Object?>> deleteShiftTemplate(String templateId);
 
-  Future<Result<Object?>> createRoster(Map<String, Object?> payload);
+  Future<Result<Map<String, Object?>>> createRoster(Map<String, Object?> payload);
 
   Future<Result<Object?>> updateRoster(
     String rosterId,

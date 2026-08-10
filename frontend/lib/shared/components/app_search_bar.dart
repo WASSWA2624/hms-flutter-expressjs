@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -14,6 +15,24 @@ import 'package:hosspi_hms/shared/components/app_loading_indicator.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_speech_to_text.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
+
+/// Default maximum characters accepted by [AppSearchBar] / list search APIs.
+const int appSearchQueryMaxLength = 255;
+
+/// Normalizes and clamps a search query for list APIs.
+///
+/// Collapses whitespace (including newlines from pasted paragraphs) and caps
+/// length so overlong paste never trips backend `search` validation.
+String clampAppSearchQuery(
+  String value, {
+  int maxLength = appSearchQueryMaxLength,
+}) {
+  final String collapsed = value.replaceAll(RegExp(r'\s+'), ' ').trim();
+  if (collapsed.length <= maxLength) {
+    return collapsed;
+  }
+  return collapsed.substring(0, maxLength);
+}
 
 @immutable
 final class AppSearchBarFieldChoice {
@@ -282,6 +301,7 @@ class AppSearchBar extends StatefulWidget {
     this.maxTrailingActions,
     this.trailingActionsOverflowLabel = 'More actions',
     this.enableSpeechToText = true,
+    this.maxLength = appSearchQueryMaxLength,
     super.key,
   });
 
@@ -326,6 +346,9 @@ class AppSearchBar extends StatefulWidget {
   final int? maxTrailingActions;
   final String trailingActionsOverflowLabel;
   final bool enableSpeechToText;
+
+  /// Maximum characters kept in the search field (null disables the cap).
+  final int? maxLength;
 
   @override
   State<AppSearchBar> createState() => _AppSearchBarState();
@@ -436,6 +459,18 @@ class _AppSearchBarState extends State<AppSearchBar> {
                             focusNode: _focusNode,
                             autofocus: widget.autofocus,
                             textInputAction: TextInputAction.search,
+                            maxLines: 1,
+                            maxLength: widget.maxLength,
+                            maxLengthEnforcement: widget.maxLength == null
+                                ? MaxLengthEnforcement.none
+                                : MaxLengthEnforcement.enforced,
+                            inputFormatters: <TextInputFormatter>[
+                              // Keep search single-line when pasting paragraphs.
+                              FilteringTextInputFormatter.deny(
+                                RegExp(r'[\r\n]+'),
+                                replacementString: ' ',
+                              ),
+                            ],
                             onChanged: widget.onChanged,
                             onFieldSubmitted: widget.onSubmitted,
                             style: theme.textTheme.bodyLarge?.copyWith(
@@ -457,6 +492,8 @@ class _AppSearchBarState extends State<AppSearchBar> {
                               disabledBorder: InputBorder.none,
                               errorBorder: InputBorder.none,
                               focusedErrorBorder: InputBorder.none,
+                              // Hide the default "0/255" counter under the field.
+                              counterText: '',
                             ),
                           ),
                         ),
