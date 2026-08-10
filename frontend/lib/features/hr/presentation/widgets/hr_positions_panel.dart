@@ -199,14 +199,12 @@ class _HrPositionsPanelState extends ConsumerState<HrPositionsPanel> {
       if (recordState == _recordDeleted && !item.isDeleted) {
         return false;
       }
-      if (scope == _scopeFacility) {
-        final String facilityId = (_facilityId ?? '').trim();
-        if (facilityId.isEmpty ||
-            (item.facilityId ?? '').trim() != facilityId) {
+      if (scope == _scopeShared) {
+        if (!item.isShared) {
           return false;
         }
-      } else if (scope == _scopeShared) {
-        if ((item.facilityId ?? '').trim().isNotEmpty) {
+      } else if (scope == _scopeFacility) {
+        if (item.isShared) {
           return false;
         }
       }
@@ -227,6 +225,9 @@ class _HrPositionsPanelState extends ConsumerState<HrPositionsPanel> {
   }
 
   Future<void> _createOrEdit({HrStaffPosition? editing}) async {
+    if (editing != null && editing.isShared) {
+      return;
+    }
     final String? tenantId = _tenantId;
     final String? facilityId = _facilityId;
     if (tenantId == null ||
@@ -255,6 +256,9 @@ class _HrPositionsPanelState extends ConsumerState<HrPositionsPanel> {
   }
 
   Future<void> _softDelete(HrStaffPosition position) async {
+    if (position.isShared) {
+      return;
+    }
     final AppLocalizations l10n = context.l10n;
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
@@ -286,6 +290,9 @@ class _HrPositionsPanelState extends ConsumerState<HrPositionsPanel> {
   }
 
   Future<void> _restore(HrStaffPosition position) async {
+    if (position.isShared) {
+      return;
+    }
     final Result<HrStaffPosition> result = await ref
         .read(hrRepositoryProvider)
         .restoreStaffPosition(position.effectiveId);
@@ -307,6 +314,9 @@ class _HrPositionsPanelState extends ConsumerState<HrPositionsPanel> {
   }
 
   Future<void> _permanentDelete(HrStaffPosition position) async {
+    if (position.isShared) {
+      return;
+    }
     final AppLocalizations l10n = context.l10n;
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
@@ -350,7 +360,7 @@ class _HrPositionsPanelState extends ConsumerState<HrPositionsPanel> {
   }
 
   String _scopeLabel(AppLocalizations l10n, HrStaffPosition item) {
-    return (item.facilityId ?? '').trim().isEmpty
+    return item.isShared
         ? l10n.hrPositionScopeShared
         : l10n.hrPositionScopeFacility;
   }
@@ -377,6 +387,10 @@ class _HrPositionsPanelState extends ConsumerState<HrPositionsPanel> {
   }
 
   Widget _actionsCell(BuildContext context, HrStaffPosition item) {
+    if (item.isShared) {
+      return const Text('—');
+    }
+
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;

@@ -276,11 +276,18 @@ const createStaffPosition = async (data, userId, ipAddress) => {
   }
 };
 
+const assertFacilityScopedMutation = (position) => {
+  if (!position?.facility_id) {
+    throw new HttpError('errors.staff_position.shared_readonly', 403);
+  }
+};
+
 const updateStaffPosition = async (id, data, userId, ipAddress) => {
   try {
     const resolvedId = await resolveStaffPositionId(id);
     const before = await staffPositionRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.staff_position.not_found', 404);
+    assertFacilityScopedMutation(before);
 
     const confirmSimilar = data?.confirm_similar === true;
     const raw = stripSimilarityPayloadFields(data);
@@ -345,6 +352,7 @@ const deleteStaffPosition = async (id, userId, ipAddress) => {
     const resolvedId = await resolveStaffPositionId(id);
     const before = await staffPositionRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.staff_position.not_found', 404);
+    assertFacilityScopedMutation(before);
 
     await staffPositionRepository.softDelete(before.id);
     createAuditLog({
@@ -370,6 +378,7 @@ const restoreStaffPosition = async (id, userId, ipAddress) => {
       includeDeleted: true
     });
     if (!before) throw new HttpError('errors.staff_position.not_found', 404);
+    assertFacilityScopedMutation(before);
 
     const staffPosition = await staffPositionRepository.restore(before.id);
     createAuditLog({
@@ -398,6 +407,7 @@ const permanentDeleteStaffPosition = async (id, userId, ipAddress) => {
     if (!before) {
       return;
     }
+    assertFacilityScopedMutation(before);
 
     await staffPositionRepository.permanentDelete(before.id);
     createAuditLog({

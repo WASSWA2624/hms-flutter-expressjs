@@ -82,6 +82,7 @@ Future<void> showHrStaffPositionDetailDialog(
       final bool canWrite = HrHumanResourcesAtomPermissions.write.isAllowed(
         ref.read(appAccessPolicyProvider),
       );
+      final bool canMutate = canWrite && !position.isShared;
 
       return AppDialog(
         title: Text(l10n.hrPositionDetailTitle),
@@ -111,6 +112,13 @@ Future<void> showHrStaffPositionDetailDialog(
                   icon: Icons.notes_outlined,
                 ),
                 AppInfoTileData(
+                  label: l10n.hrPositionScopeLabel,
+                  value: position.isShared
+                      ? l10n.hrPositionScopeShared
+                      : l10n.hrPositionScopeFacility,
+                  icon: Icons.apartment_outlined,
+                ),
+                AppInfoTileData(
                   label: l10n.hrStatusLabel,
                   value: position.isDeleted
                       ? l10n.tenantFacilityStructureDeletedStatus
@@ -124,7 +132,7 @@ Future<void> showHrStaffPositionDetailDialog(
           ],
         ),
         actions: <Widget>[
-          if (canWrite && !position.isDeleted && onEdit != null)
+          if (canMutate && !position.isDeleted && onEdit != null)
             AppButton.secondary(
               label: l10n.commonEditActionLabel,
               leadingIcon: Icons.edit_outlined,
@@ -133,7 +141,7 @@ Future<void> showHrStaffPositionDetailDialog(
                 await onEdit(position);
               },
             ),
-          if (canWrite && !position.isDeleted && onSoftDelete != null)
+          if (canMutate && !position.isDeleted && onSoftDelete != null)
             AppButton.secondary(
               label: l10n.commonDeleteActionLabel,
               leadingIcon: Icons.delete_outline,
@@ -143,7 +151,7 @@ Future<void> showHrStaffPositionDetailDialog(
                 await onSoftDelete(position);
               },
             ),
-          if (canWrite && position.isDeleted && onRestore != null)
+          if (canMutate && position.isDeleted && onRestore != null)
             AppButton.secondary(
               label: l10n.tenantFacilityRestoreStructureAction,
               leadingIcon: Icons.restore_outlined,
@@ -152,7 +160,7 @@ Future<void> showHrStaffPositionDetailDialog(
                 await onRestore(position);
               },
             ),
-          if (canWrite && position.isDeleted && onPermanentDelete != null)
+          if (canMutate && position.isDeleted && onPermanentDelete != null)
             AppButton.secondary(
               label: l10n.tenantFacilityPermanentDeleteAction,
               leadingIcon: Icons.delete_forever_outlined,

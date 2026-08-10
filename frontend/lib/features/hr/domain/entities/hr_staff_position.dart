@@ -30,6 +30,9 @@ final class HrStaffPosition {
 
   bool get isDeleted => deletedAt != null;
 
+  /// Tenant-level catalog rows without a facility binding.
+  bool get isShared => (facilityId ?? '').trim().isEmpty;
+
   HrStaffPosition copyWith({
     String? id,
     String? displayId,

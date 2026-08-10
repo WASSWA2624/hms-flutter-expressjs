@@ -383,6 +383,7 @@
   "errors.staff_leave.half_day_period_required": "Select morning or afternoon for a half-day leave request",
   "errors.staff_leave.half_day_single_day_only": "Half-day leave must start and end on the same day",
   "errors.staff_position.not_found": "Staff position not found",
+  "errors.staff_position.shared_readonly": "Shared staff positions cannot be edited or deleted",
   "errors.staff_profile.not_found": "Staff profile not found",
   "errors.stock_adjustment.not_found": "Stock adjustment not found",
   "errors.stock_movement.not_found": "Stock movement not found",
