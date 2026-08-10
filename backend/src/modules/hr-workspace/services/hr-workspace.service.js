@@ -435,24 +435,59 @@ const mapShift = (item, queue = 'UNASSIGNED_SHIFTS') => ({
   }),
 });
 
-const mapPayroll = (item) => ({
-  id: resolveDisplayId(item),
-  queue: 'PAYROLL_DRAFTS',
-  display_id: resolveDisplayId(item),
-  backend_identifier: item.id,
-  status: item.status,
-  period_start: item.period_start,
-  period_end: item.period_end,
-  period_label: formatDateRangeLabel(item.period_start, item.period_end),
-  timeline_at: item.updated_at || item.created_at,
-  target_path: buildWorkbenchPath({
-    panel: 'payroll',
-    resource: 'payroll-runs',
+const mapPayroll = (item) => {
+  const preview = item.preview_json && typeof item.preview_json === 'object'
+    ? item.preview_json
+    : {};
+  const totals = preview.totals && typeof preview.totals === 'object'
+    ? preview.totals
+    : {};
+  const items = Array.isArray(item.items) ? item.items : [];
+  const itemCount = Number(
+    totals.staff_count ??
+      item._count?.items ??
+      items.length ??
+      0
+  );
+  let totalAmount = Number(totals.total_amount);
+  if (!Number.isFinite(totalAmount)) {
+    totalAmount = items.reduce(
+      (sum, entry) => sum + Number(entry?.amount || 0),
+      0
+    );
+  }
+  const currency =
+    normalizeString(totals.currency) ||
+    normalizeString(items.find((entry) => entry?.currency)?.currency) ||
+    null;
+
+  return {
     id: resolveDisplayId(item),
-    action: 'view',
-    payrollRunId: resolveDisplayId(item),
-  }),
-});
+    queue: 'PAYROLL_DRAFTS',
+    display_id: resolveDisplayId(item),
+    backend_identifier: item.id,
+    status: item.status,
+    period_start: item.period_start,
+    period_end: item.period_end,
+    period_label: formatDateRangeLabel(item.period_start, item.period_end),
+    start_date: item.period_start,
+    end_date: item.period_end,
+    staff_count: itemCount,
+    total_amount: Number.isFinite(totalAmount)
+      ? Number(totalAmount.toFixed(2))
+      : 0,
+    currency,
+    payment_lane: 'HR_TO_FINANCE',
+    timeline_at: item.updated_at || item.created_at,
+    target_path: buildWorkbenchPath({
+      panel: 'payroll',
+      resource: 'payroll-runs',
+      id: resolveDisplayId(item),
+      action: 'view',
+      payrollRunId: resolveDisplayId(item),
+    }),
+  };
+};
 
 const buildLeaveSearchWhere = (search) => {
   if (!hasText(search)) return {};
@@ -693,7 +728,7 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20) => {
       ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
       ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
     }),
-    repo.countPayrollRuns({ status: 'DRAFT' }),
+    repo.countPayrollRuns({ status: { in: ['DRAFT', 'PROCESSED'] } }),
     repo.countShifts({
       ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
       assignments: { none: { deleted_at: null } },
@@ -930,9 +965,31 @@ const listQueueItems = async ({ queue, scope, skip, take, orderBy }) => {
   }
 
   if (queue === 'PAYROLL_DRAFTS') {
+    const normalizedStatus = String(scope.status || '').trim().toUpperCase();
+    let statusClause;
+    if (!normalizedStatus || normalizedStatus === 'OUTSTANDING') {
+      statusClause = { in: ['DRAFT', 'PROCESSED'] };
+    } else if (normalizedStatus === 'PENDING' || normalizedStatus === 'PENDING_REVIEW') {
+      statusClause = 'DRAFT';
+    } else if (normalizedStatus === 'APPROVED') {
+      statusClause = 'PROCESSED';
+    } else {
+      statusClause = normalizedStatus;
+    }
+
     const whereClause = {
-      status: scope.status || 'DRAFT',
+      status: statusClause,
       ...(scope.payrollRunId ? { id: scope.payrollRunId } : {}),
+      ...(scope.from || scope.to
+        ? {
+            AND: [
+              ...(scope.from
+                ? [{ period_start: { gte: scope.from } }]
+                : []),
+              ...(scope.to ? [{ period_end: { lte: scope.to } }] : []),
+            ],
+          }
+        : {}),
       ...buildPayrollSearchWhere(scope.search),
     };
     const items = await repo.findManyPayrollRuns({ where: whereClause, skip, take, orderBy });
@@ -2515,6 +2572,12 @@ const processPayrollRun = async (payrollRunIdentifier, payload = {}, userId = nu
           replace_existing_items: replaceExisting,
           notes: normalizeString(payload.notes) || null,
           totals,
+          finance_notification: {
+            status: 'READY_FOR_FINANCE',
+            notified_at: new Date().toISOString(),
+            message:
+              'HR approved this pay run. Finance/Accounting can process payment.',
+          },
         },
       },
     });
@@ -2533,6 +2596,7 @@ const processPayrollRun = async (payrollRunIdentifier, payload = {}, userId = nu
         notes: normalizeString(payload.notes) || null,
         processed_items: proposedItems.length,
         totals,
+        finance_notification: 'READY_FOR_FINANCE',
       },
     },
     ip_address: ipAddress,
@@ -2563,10 +2627,125 @@ const processPayrollRun = async (payrollRunIdentifier, payload = {}, userId = nu
       status: 'PROCESSED',
       processed_items: proposedItems.length,
       totals,
+      finance_notification: 'READY_FOR_FINANCE',
     },
     items: proposedItems,
   };
 };
+
+const updatePayrollRunLifecycle = async (
+  payrollRunIdentifier,
+  nextStatus,
+  { userId = null, ipAddress = null, operation = null, notes = null } = {}
+) => {
+  const payrollRunRecord = await resolveModelRecordByIdentifier({
+    model: 'payroll_run',
+    identifier: payrollRunIdentifier,
+    where: { deleted_at: null },
+    select: {
+      id: true,
+      human_friendly_id: true,
+      tenant_id: true,
+      status: true,
+    },
+  });
+
+  if (!payrollRunRecord?.id) {
+    throw new HttpError('errors.payroll_run.not_found', 404);
+  }
+
+  const current = String(payrollRunRecord.status || '').toUpperCase();
+  const target = String(nextStatus || '').toUpperCase();
+
+  if (target === 'CANCELLED') {
+    if (!['DRAFT', 'PROCESSED'].includes(current)) {
+      throw new HttpError('errors.hr_workspace.payroll_cancel_invalid_status', 400);
+    }
+  } else if (target === 'PAID') {
+    if (current === 'PAID') {
+      throw new HttpError('errors.hr_workspace.payroll_already_paid', 400);
+    }
+    if (current !== 'PROCESSED') {
+      throw new HttpError('errors.hr_workspace.payroll_mark_paid_requires_processed', 400);
+    }
+  } else {
+    throw new HttpError('errors.validation.invalid_status', 400);
+  }
+
+  const resolvedOperation =
+    operation || (target === 'PAID' ? 'PAYROLL_MARK_PAID' : 'PAYROLL_CANCEL');
+
+  await prisma.payroll_run.update({
+    where: { id: payrollRunRecord.id },
+    data: {
+      status: target,
+      audit_trail_json: {
+        operation: resolvedOperation,
+        at: new Date().toISOString(),
+        by_user_id: userId || null,
+        notes: normalizeString(notes) || null,
+        previous_status: current,
+      },
+    },
+  });
+
+  createAuditLog({
+    user_id: userId,
+    action: 'UPDATE',
+    entity: 'payroll_run',
+    entity_id: payrollRunRecord.id,
+    tenant_id: payrollRunRecord.tenant_id,
+    diff: {
+      metadata: {
+        operation: resolvedOperation,
+        previous_status: current,
+        status: target,
+        notes: normalizeString(notes) || null,
+      },
+    },
+    ip_address: ipAddress,
+  }).catch(() => {});
+
+  publishHrWorkspaceUpdate({
+    action: target === 'PAID' ? 'PAID' : 'CANCEL',
+    actorUserId: userId || null,
+    tenantId: payrollRunRecord.tenant_id,
+    panel: 'payroll',
+    resource: 'payroll-runs',
+    displayId: resolveDisplayId(payrollRunRecord),
+    queue: 'PAYROLL_DRAFTS',
+    targetPath: buildWorkbenchPath({
+      panel: 'payroll',
+      resource: 'payroll-runs',
+      id: resolveDisplayId(payrollRunRecord),
+      payrollRunId: resolveDisplayId(payrollRunRecord),
+      action: 'view',
+    }),
+  }).catch(() => {});
+
+  return {
+    id: resolveDisplayId(payrollRunRecord),
+    display_id: resolveDisplayId(payrollRunRecord),
+    backend_identifier: payrollRunRecord.id,
+    status: target,
+  };
+};
+
+const cancelPayrollRun = async (payrollRunIdentifier, payload = {}, userId = null, ipAddress = null) =>
+  updatePayrollRunLifecycle(payrollRunIdentifier, 'CANCELLED', {
+    userId,
+    ipAddress,
+    operation: 'PAYROLL_CANCEL',
+    notes: payload.notes,
+  });
+
+const markPayrollRunPaid = async (payrollRunIdentifier, payload = {}, userId = null, ipAddress = null) =>
+  updatePayrollRunLifecycle(payrollRunIdentifier, 'PAID', {
+    userId,
+    ipAddress,
+    operation: 'PAYROLL_MARK_PAID',
+    notes: payload.notes,
+  });
 
 const resolveLegacyRouteIdentifier = async (resource, id) => {
   const config = LEGACY_RESOURCE_CONFIG[normalizeString(resource).toLowerCase()];
@@ -2947,6 +3126,8 @@ module.exports = {
   rejectLeave,
   previewPayrollRun,
   processPayrollRun,
+  cancelPayrollRun,
+  markPayrollRunPaid,
   offboardStaff,
   resolveLegacyRouteIdentifier,
 };

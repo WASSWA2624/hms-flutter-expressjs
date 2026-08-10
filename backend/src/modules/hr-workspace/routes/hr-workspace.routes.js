@@ -28,6 +28,7 @@ const {
   payrollPreviewQuerySchema,
   payrollProcessSchema,
   generateStaffNumberSchema,
+  payrollLifecycleSchema,
 } = require('@validations/hr-workspace/hr-workspace.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
@@ -161,6 +162,22 @@ router.post(
   authorize(PAYROLL_PROCESS_WRITE_SCOPES, 'permission'),
   authorize(PAYROLL_PROCESS_APPROVE_SCOPES, 'permission'),
   hrWorkspaceController.processPayrollRun
+);
+
+router.post(
+  '/payroll-runs/:payrollRunIdentifier/cancel',
+  validateRequest({ params: payrollRunIdentifierParamsSchema, body: payrollLifecycleSchema }),
+  authorize(PAYROLL_PROCESS_WRITE_SCOPES, 'permission'),
+  authorize(PAYROLL_PROCESS_APPROVE_SCOPES, 'permission'),
+  hrWorkspaceController.cancelPayrollRun
+);
+
+router.post(
+  '/payroll-runs/:payrollRunIdentifier/mark-paid',
+  validateRequest({ params: payrollRunIdentifierParamsSchema, body: payrollLifecycleSchema }),
+  authorize(PAYROLL_PROCESS_WRITE_SCOPES, 'permission'),
+  authorize(PAYROLL_PROCESS_APPROVE_SCOPES, 'permission'),
+  hrWorkspaceController.markPayrollRunPaid
 );
 
 router.get(

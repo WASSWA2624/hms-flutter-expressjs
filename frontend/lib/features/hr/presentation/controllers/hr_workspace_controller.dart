@@ -1476,6 +1476,38 @@ final class HrWorkspaceController
     );
   }
 
+  Future<AppFailure?> cancelPayrollRunById(
+    String payrollRunId, {
+    String? notes,
+  }) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.cancelPayrollRun(payrollRunId, notes: notes),
+      refreshOverviewAfter: true,
+      refreshWorkItemsAfter: true,
+    );
+  }
+
+  Future<AppFailure?> markPayrollRunPaidById(
+    String payrollRunId, {
+    String? notes,
+  }) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.markPayrollRunPaid(payrollRunId, notes: notes),
+      refreshOverviewAfter: true,
+      refreshWorkItemsAfter: true,
+    );
+  }
+
   Future<Result<String>> createPayrollRunDraft(
     Map<String, Object?> payload,
   ) async {

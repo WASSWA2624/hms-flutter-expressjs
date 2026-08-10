@@ -20862,16 +20862,95 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get hrPayrollDraftsSummaryLabel => 'Payroll drafts';
+  String get hrPayrollDraftsSummaryLabel => 'Pay & Compensation';
 
   @override
-  String get hrPayrollDraftTitle => 'Payroll draft';
+  String get hrPayrollDraftTitle => 'Pay period';
 
   @override
   String get hrPayrollReportLabel => 'Payroll summary';
 
   @override
-  String get hrPayrollRunDialogTitle => 'Run payroll';
+  String get hrPayrollRunDialogTitle => 'Pay run';
+
+  @override
+  String get hrPayCompensationSearchHint =>
+      'Search by period, run ID, or status';
+
+  @override
+  String get hrPayCompensationEmptyTitle => 'No pay runs';
+
+  @override
+  String get hrPayCompensationEmptyBody =>
+      'Generate a pay run to review salaries, extra shifts, consultations, and allowances before sending them to Finance.';
+
+  @override
+  String get hrPayCompensationGenerateAction => 'Generate payroll';
+
+  @override
+  String get hrPayCompensationGenerateTitle => 'Generate payroll';
+
+  @override
+  String get hrPayCompensationGenerateBody =>
+      'Create a draft pay run for the selected period. HR reviews and approves compensation here, then Finance processes payment.';
+
+  @override
+  String get hrPayCompensationStaffCountColumn => 'Staff';
+
+  @override
+  String get hrPayCompensationTotalColumn => 'Total';
+
+  @override
+  String get hrPayCompensationLaneColumn => 'Routing';
+
+  @override
+  String get hrPayCompensationLaneHrToFinance => 'HR → Finance';
+
+  @override
+  String get hrPayCompensationLaneFinanceDirect => 'Finance direct';
+
+  @override
+  String get hrPayCompensationStatusPending => 'Pending review';
+
+  @override
+  String get hrPayCompensationStatusApproved => 'Approved — Finance';
+
+  @override
+  String get hrPayCompensationStatusPaid => 'Paid';
+
+  @override
+  String get hrPayCompensationStatusCancelled => 'Cancelled';
+
+  @override
+  String get hrPayCompensationFilterOutstanding => 'Outstanding';
+
+  @override
+  String get hrPayCompensationReviewApproveAction => 'Review & approve';
+
+  @override
+  String get hrPayCompensationMarkPaidAction => 'Mark paid';
+
+  @override
+  String get hrPayCompensationCancelAction => 'Cancel pay run';
+
+  @override
+  String get hrPayCompensationCancelTitle => 'Cancel pay run';
+
+  @override
+  String hrPayCompensationCancelBody(String id) {
+    return 'Cancel pay run $id? It will no longer be sent to Finance.';
+  }
+
+  @override
+  String get hrPayCompensationMarkPaidTitle => 'Mark pay run as paid';
+
+  @override
+  String hrPayCompensationMarkPaidBody(String id) {
+    return 'Mark pay run $id as paid after Finance has completed payment?';
+  }
+
+  @override
+  String get hrPayCompensationApproveSendAction => 'Approve & notify Finance';
 
   @override
   String get hrPeriodColumnLabel => 'Period';
@@ -21101,7 +21180,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrQueueOverdueShifts => 'Overdue shifts';
 
   @override
-  String get hrQueuePayrollDrafts => 'Payroll drafts';
+  String get hrQueuePayrollDrafts => 'Pay & Compensation';
 
   @override
   String get hrQueueRosterDrafts => 'Roster templates';

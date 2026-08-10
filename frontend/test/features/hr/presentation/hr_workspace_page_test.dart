@@ -344,7 +344,7 @@ void main() {
     await _selectTab(tester, 'Unassigned shifts');
     expect(_searchAction('Create roster template'), findsNothing);
 
-    await _selectTab(tester, 'Payroll drafts');
+    await _selectTab(tester, 'Pay & Compensation');
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
   });
 

@@ -997,6 +997,10 @@ final class HrWorkItem {
     this.isRecurring = false,
     this.reason,
     this.rosterStaffIds = const <String>[],
+    this.staffCount = 0,
+    this.totalAmount = 0,
+    this.currency,
+    this.paymentLane,
   });
 
   final String id;
@@ -1024,6 +1028,11 @@ final class HrWorkItem {
   final bool isRecurring;
   final String? reason;
   final List<String> rosterStaffIds;
+  final int staffCount;
+  final num totalAmount;
+  final String? currency;
+  /// `HR_TO_FINANCE` or `FINANCE_DIRECT`.
+  final String? paymentLane;
 
   String get effectiveId => displayId ?? id;
 }

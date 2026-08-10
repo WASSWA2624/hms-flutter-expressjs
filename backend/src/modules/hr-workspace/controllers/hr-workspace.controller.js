@@ -93,6 +93,26 @@ const processPayrollRun = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.hr_workspace.payroll_process.success', data);
 });
 
+const cancelPayrollRun = asyncHandler(async (req, res) => {
+  const data = await hrWorkspaceService.cancelPayrollRun(
+    req.params.payrollRunIdentifier,
+    req.body,
+    req.user?.id,
+    req.ip
+  );
+  return sendSuccess(res, 200, 'messages.hr_workspace.payroll_cancel.success', data);
+});
+
+const markPayrollRunPaid = asyncHandler(async (req, res) => {
+  const data = await hrWorkspaceService.markPayrollRunPaid(
+    req.params.payrollRunIdentifier,
+    req.body,
+    req.user?.id,
+    req.ip
+  );
+  return sendSuccess(res, 200, 'messages.hr_workspace.payroll_mark_paid.success', data);
+});
+
 const resolveLegacyRoute = asyncHandler(async (req, res) => {
   const data = await hrWorkspaceService.resolveLegacyRouteIdentifier(req.params.resource, req.params.id);
   return sendSuccess(res, 200, 'messages.hr_workspace.resolve_legacy.success', data);
@@ -124,6 +144,8 @@ module.exports = {
   rejectLeave,
   previewPayrollRun,
   processPayrollRun,
+  cancelPayrollRun,
+  markPayrollRunPaid,
   offboardStaff,
   resolveLegacyRoute,
 };

@@ -433,14 +433,15 @@ abstract final class HrShiftsAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Payroll drafts tab | navigate | read ∩ `hr:read` |
-/// | Search trailing / tab-strip primary | — | _(none — Run payroll lives on staff detail)_ |
+/// | Search trailing / tab-strip primary | create | write ∩ — **Generate payroll** |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Success snackbar / form validation | feedback | process ∩ / read ∩ |
 /// | Row select → work-item detail | read | read ∩ |
-/// | Next action Process payroll | approve | source [hrPayrollRequirement] |
+/// | Next action Review & approve / Mark paid | approve | source [hrPayrollRequirement] |
 /// | Detail Preview payroll | read | preview ∩ `hr:read` |
-/// | Detail Process payroll | approve | source [hrPayrollRequirement] |
+/// | Detail Approve & notify Finance | approve | source [hrPayrollRequirement] |
+/// | Detail Mark paid / Cancel | approve | source [hrPayrollRequirement] |
 /// | Nested preview dialog | read | preview ∩ |
 /// | Nested process dialog | approve | source [hrPayrollRequirement] |
 /// | Nested cross-module write (matrix ∪) | approve | [nestedWriteMatrix] — UI uses source ∩ |

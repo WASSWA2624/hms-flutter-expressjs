@@ -224,6 +224,22 @@ const findManyPayrollRuns = async ({ where = {}, skip = 0, take = 20, orderBy = 
         deleted_at: null,
         ...(where || {}),
       },
+      include: {
+        _count: {
+          select: {
+            items: {
+              where: { deleted_at: null },
+            },
+          },
+        },
+        items: {
+          where: { deleted_at: null },
+          select: {
+            amount: true,
+            currency: true,
+          },
+        },
+      },
       skip,
       take,
       orderBy,

@@ -482,7 +482,7 @@ void main() {
         accessPolicy: reader,
       );
 
-      expect(find.text('Payroll drafts'), findsWidgets);
+      expect(find.text('Pay & Compensation'), findsWidgets);
       expect(find.text('run-1'), findsWidgets);
       expect(find.byType(AppTabToolbarPrimary), findsNothing);
       expect(find.text('Process payroll'), findsNothing);
@@ -680,7 +680,7 @@ void main() {
         accessPolicy: financialOnly,
       );
 
-      expect(_tab('Payroll drafts'), findsOneWidget);
+      expect(_tab('Pay & Compensation'), findsOneWidget);
       expect(find.text('Process payroll'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
@@ -880,7 +880,7 @@ void main() {
       themeMode: ThemeMode.light,
     );
 
-    expect(_tab('Payroll drafts'), findsOneWidget);
+    expect(_tab('Pay & Compensation'), findsOneWidget);
     expect(find.textContaining('run-1'), findsWidgets);
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
 

@@ -152,6 +152,10 @@ const payrollProcessSchema = z.object({
   notes: z.string().trim().max(255).optional().nullable(),
 });
 
+const payrollLifecycleSchema = z.object({
+  notes: z.string().trim().max(255).optional().nullable(),
+});
+
 const generateStaffNumberSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -194,6 +198,7 @@ module.exports = {
   leaveRejectSchema,
   payrollPreviewQuerySchema,
   payrollProcessSchema,
+  payrollLifecycleSchema,
   generateStaffNumberSchema,
   staffOffboardSchema,
 };

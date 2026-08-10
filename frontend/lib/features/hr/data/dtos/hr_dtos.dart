@@ -548,13 +548,23 @@ final class HrWorkItemDto {
           ? _string(json['display_id'])
           : null,
       periodLabel: _string(json['period_label']),
-      startAt: _date(json['start_date']) ?? _date(json['start_time']),
-      endAt: _date(json['end_date']) ?? _date(json['end_time']),
+      startAt:
+          _date(json['start_date']) ??
+          _date(json['period_start']) ??
+          _date(json['start_time']),
+      endAt:
+          _date(json['end_date']) ??
+          _date(json['period_end']) ??
+          _date(json['end_time']),
       timelineAt: _date(json['timeline_at']),
       assignmentCount: _int(json['assignment_count']) ?? 0,
       isRecurring: json['is_recurring'] == true,
       reason: _string(json['reason']),
       rosterStaffIds: _stringList(json['roster_staff_ids']),
+      staffCount: _int(json['staff_count']) ?? 0,
+      totalAmount: _number(json['total_amount']) ?? 0,
+      currency: _string(json['currency']),
+      paymentLane: _string(json['payment_lane']),
     );
   }
 }

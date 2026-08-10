@@ -38579,16 +38579,16 @@ abstract class AppLocalizations {
   /// **'{from}-{to} of {total}'**
   String hrPageLabel(int from, int to, int total);
 
-  /// Human resources workspace text for hrPayrollDraftsSummaryLabel.
+  /// HR desk tab for pay runs, allowances, and staff compensation batches.
   ///
   /// In en, this message translates to:
-  /// **'Payroll drafts'**
+  /// **'Pay & Compensation'**
   String get hrPayrollDraftsSummaryLabel;
 
-  /// Human resources workspace text for hrPayrollDraftTitle.
+  /// Primary column label for a pay & compensation run period.
   ///
   /// In en, this message translates to:
-  /// **'Payroll draft'**
+  /// **'Pay period'**
   String get hrPayrollDraftTitle;
 
   /// Human resources workspace text for hrPayrollReportLabel.
@@ -38597,11 +38597,155 @@ abstract class AppLocalizations {
   /// **'Payroll summary'**
   String get hrPayrollReportLabel;
 
-  /// Human resources workspace text for hrPayrollRunDialogTitle.
+  /// Column / dialog label for a payroll run identifier.
   ///
   /// In en, this message translates to:
-  /// **'Run payroll'**
+  /// **'Pay run'**
   String get hrPayrollRunDialogTitle;
+
+  /// Search hint on the Pay & Compensation desk tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by period, run ID, or status'**
+  String get hrPayCompensationSearchHint;
+
+  /// Empty state title for Pay & Compensation.
+  ///
+  /// In en, this message translates to:
+  /// **'No pay runs'**
+  String get hrPayCompensationEmptyTitle;
+
+  /// Empty state body for Pay & Compensation.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate a pay run to review salaries, extra shifts, consultations, and allowances before sending them to Finance.'**
+  String get hrPayCompensationEmptyBody;
+
+  /// Primary action to create a new pay run draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate payroll'**
+  String get hrPayCompensationGenerateAction;
+
+  /// Dialog title for creating a pay run.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate payroll'**
+  String get hrPayCompensationGenerateTitle;
+
+  /// Guidance text in the generate payroll dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a draft pay run for the selected period. HR reviews and approves compensation here, then Finance processes payment.'**
+  String get hrPayCompensationGenerateBody;
+
+  /// Table column for staff included in a pay run.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff'**
+  String get hrPayCompensationStaffCountColumn;
+
+  /// Table column for pay run total amount.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get hrPayCompensationTotalColumn;
+
+  /// Table column distinguishing HR vs Finance payment routing.
+  ///
+  /// In en, this message translates to:
+  /// **'Routing'**
+  String get hrPayCompensationLaneColumn;
+
+  /// Label for payments that must be approved in HR before Finance pays.
+  ///
+  /// In en, this message translates to:
+  /// **'HR → Finance'**
+  String get hrPayCompensationLaneHrToFinance;
+
+  /// Label for payments that skip HR and go straight to Finance.
+  ///
+  /// In en, this message translates to:
+  /// **'Finance direct'**
+  String get hrPayCompensationLaneFinanceDirect;
+
+  /// Friendly status for DRAFT pay runs awaiting HR review.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending review'**
+  String get hrPayCompensationStatusPending;
+
+  /// Friendly status for PROCESSED pay runs ready for Finance.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved — Finance'**
+  String get hrPayCompensationStatusApproved;
+
+  /// Friendly status for PAID pay runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get hrPayCompensationStatusPaid;
+
+  /// Friendly status for CANCELLED pay runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get hrPayCompensationStatusCancelled;
+
+  /// Filter for pending review and approved-but-unpaid pay runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding'**
+  String get hrPayCompensationFilterOutstanding;
+
+  /// Next action for draft pay runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Review & approve'**
+  String get hrPayCompensationReviewApproveAction;
+
+  /// Action after Finance has paid an approved run.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark paid'**
+  String get hrPayCompensationMarkPaidAction;
+
+  /// Cancel a draft or approved unpaid pay run.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel pay run'**
+  String get hrPayCompensationCancelAction;
+
+  /// Confirm dialog title for cancelling a pay run.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel pay run'**
+  String get hrPayCompensationCancelTitle;
+
+  /// Confirm dialog body for cancelling a pay run.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel pay run {id}? It will no longer be sent to Finance.'**
+  String hrPayCompensationCancelBody(String id);
+
+  /// Confirm dialog title for marking a pay run paid.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark pay run as paid'**
+  String get hrPayCompensationMarkPaidTitle;
+
+  /// Confirm dialog body for marking a pay run paid.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark pay run {id} as paid after Finance has completed payment?'**
+  String hrPayCompensationMarkPaidBody(String id);
+
+  /// Process action that approves HR compensation and flags Finance.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve & notify Finance'**
+  String get hrPayCompensationApproveSendAction;
 
   /// Human resources workspace text for hrPeriodColumnLabel.
   ///
@@ -39029,10 +39173,10 @@ abstract class AppLocalizations {
   /// **'Overdue shifts'**
   String get hrQueueOverdueShifts;
 
-  /// Human resources workspace text for hrQueuePayrollDrafts.
+  /// Queue label for the Pay & Compensation desk tab.
   ///
   /// In en, this message translates to:
-  /// **'Payroll drafts'**
+  /// **'Pay & Compensation'**
   String get hrQueuePayrollDrafts;
 
   /// Primary HR tab / queue label for roster templates.

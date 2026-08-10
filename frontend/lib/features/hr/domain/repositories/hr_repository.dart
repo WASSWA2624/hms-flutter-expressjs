@@ -84,6 +84,16 @@ abstract interface class HrRepository {
     String? notes,
   });
 
+  Future<Result<Object?>> cancelPayrollRun(
+    String payrollRunId, {
+    String? notes,
+  });
+
+  Future<Result<Object?>> markPayrollRunPaid(
+    String payrollRunId, {
+    String? notes,
+  });
+
   Future<Result<HrStaffAccessSummary>> loadStaffAccessSummary(
     String staffProfileId,
   );

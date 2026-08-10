@@ -235,7 +235,7 @@ void main() {
     repository = _MockHrRepository();
   });
 
-  group('HR Payroll drafts financial inventory (AC1)', () {
+  group('HR Pay & Compensation financial inventory (AC1)', () {
     test('every mounted atom is explicitly not billable with audit code', () {
       expect(hrPayrollDraftsTabHasNoBillableActions(), isTrue);
       expect(
@@ -338,7 +338,7 @@ void main() {
     });
   });
 
-  group('HR Payroll drafts billing bypass (AC2–AC4)', () {
+  group('HR Pay & Compensation billing bypass (AC2–AC4)', () {
     testWidgets('worklist has no patient payment/issue affordances', (
       WidgetTester tester,
     ) async {
@@ -354,7 +354,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Payroll drafts'), findsWidgets);
+      expect(find.text('Pay & Compensation'), findsWidgets);
       expect(find.text('run-1'), findsWidgets);
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);
@@ -510,7 +510,7 @@ void main() {
     });
   });
 
-  group('HR Payroll drafts section layout (AC5)', () {
+  group('HR Pay & Compensation section layout (AC5)', () {
     testWidgets('desktop: flat sections on list + detail', (
       WidgetTester tester,
     ) async {

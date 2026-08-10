@@ -26888,21 +26888,127 @@
       }
     }
   },
-  "hrPayrollDraftsSummaryLabel": "Payroll drafts",
+  "hrPayrollDraftsSummaryLabel": "Pay & Compensation",
   "@hrPayrollDraftsSummaryLabel": {
-    "description": "Human resources workspace text for hrPayrollDraftsSummaryLabel."
+    "description": "HR desk tab for pay runs, allowances, and staff compensation batches."
   },
-  "hrPayrollDraftTitle": "Payroll draft",
+  "hrPayrollDraftTitle": "Pay period",
   "@hrPayrollDraftTitle": {
-    "description": "Human resources workspace text for hrPayrollDraftTitle."
+    "description": "Primary column label for a pay & compensation run period."
   },
   "hrPayrollReportLabel": "Payroll summary",
   "@hrPayrollReportLabel": {
     "description": "Human resources workspace text for hrPayrollReportLabel."
   },
-  "hrPayrollRunDialogTitle": "Run payroll",
+  "hrPayrollRunDialogTitle": "Pay run",
   "@hrPayrollRunDialogTitle": {
-    "description": "Human resources workspace text for hrPayrollRunDialogTitle."
+    "description": "Column / dialog label for a payroll run identifier."
+  },
+  "hrPayCompensationSearchHint": "Search by period, run ID, or status",
+  "@hrPayCompensationSearchHint": {
+    "description": "Search hint on the Pay & Compensation desk tab."
+  },
+  "hrPayCompensationEmptyTitle": "No pay runs",
+  "@hrPayCompensationEmptyTitle": {
+    "description": "Empty state title for Pay & Compensation."
+  },
+  "hrPayCompensationEmptyBody": "Generate a pay run to review salaries, extra shifts, consultations, and allowances before sending them to Finance.",
+  "@hrPayCompensationEmptyBody": {
+    "description": "Empty state body for Pay & Compensation."
+  },
+  "hrPayCompensationGenerateAction": "Generate payroll",
+  "@hrPayCompensationGenerateAction": {
+    "description": "Primary action to create a new pay run draft."
+  },
+  "hrPayCompensationGenerateTitle": "Generate payroll",
+  "@hrPayCompensationGenerateTitle": {
+    "description": "Dialog title for creating a pay run."
+  },
+  "hrPayCompensationGenerateBody": "Create a draft pay run for the selected period. HR reviews and approves compensation here, then Finance processes payment.",
+  "@hrPayCompensationGenerateBody": {
+    "description": "Guidance text in the generate payroll dialog."
+  },
+  "hrPayCompensationStaffCountColumn": "Staff",
+  "@hrPayCompensationStaffCountColumn": {
+    "description": "Table column for staff included in a pay run."
+  },
+  "hrPayCompensationTotalColumn": "Total",
+  "@hrPayCompensationTotalColumn": {
+    "description": "Table column for pay run total amount."
+  },
+  "hrPayCompensationLaneColumn": "Routing",
+  "@hrPayCompensationLaneColumn": {
+    "description": "Table column distinguishing HR vs Finance payment routing."
+  },
+  "hrPayCompensationLaneHrToFinance": "HR → Finance",
+  "@hrPayCompensationLaneHrToFinance": {
+    "description": "Label for payments that must be approved in HR before Finance pays."
+  },
+  "hrPayCompensationLaneFinanceDirect": "Finance direct",
+  "@hrPayCompensationLaneFinanceDirect": {
+    "description": "Label for payments that skip HR and go straight to Finance."
+  },
+  "hrPayCompensationStatusPending": "Pending review",
+  "@hrPayCompensationStatusPending": {
+    "description": "Friendly status for DRAFT pay runs awaiting HR review."
+  },
+  "hrPayCompensationStatusApproved": "Approved — Finance",
+  "@hrPayCompensationStatusApproved": {
+    "description": "Friendly status for PROCESSED pay runs ready for Finance."
+  },
+  "hrPayCompensationStatusPaid": "Paid",
+  "@hrPayCompensationStatusPaid": {
+    "description": "Friendly status for PAID pay runs."
+  },
+  "hrPayCompensationStatusCancelled": "Cancelled",
+  "@hrPayCompensationStatusCancelled": {
+    "description": "Friendly status for CANCELLED pay runs."
+  },
+  "hrPayCompensationFilterOutstanding": "Outstanding",
+  "@hrPayCompensationFilterOutstanding": {
+    "description": "Filter for pending review and approved-but-unpaid pay runs."
+  },
+  "hrPayCompensationReviewApproveAction": "Review & approve",
+  "@hrPayCompensationReviewApproveAction": {
+    "description": "Next action for draft pay runs."
+  },
+  "hrPayCompensationMarkPaidAction": "Mark paid",
+  "@hrPayCompensationMarkPaidAction": {
+    "description": "Action after Finance has paid an approved run."
+  },
+  "hrPayCompensationCancelAction": "Cancel pay run",
+  "@hrPayCompensationCancelAction": {
+    "description": "Cancel a draft or approved unpaid pay run."
+  },
+  "hrPayCompensationCancelTitle": "Cancel pay run",
+  "@hrPayCompensationCancelTitle": {
+    "description": "Confirm dialog title for cancelling a pay run."
+  },
+  "hrPayCompensationCancelBody": "Cancel pay run {id}? It will no longer be sent to Finance.",
+  "@hrPayCompensationCancelBody": {
+    "description": "Confirm dialog body for cancelling a pay run.",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "hrPayCompensationMarkPaidTitle": "Mark pay run as paid",
+  "@hrPayCompensationMarkPaidTitle": {
+    "description": "Confirm dialog title for marking a pay run paid."
+  },
+  "hrPayCompensationMarkPaidBody": "Mark pay run {id} as paid after Finance has completed payment?",
+  "@hrPayCompensationMarkPaidBody": {
+    "description": "Confirm dialog body for marking a pay run paid.",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "hrPayCompensationApproveSendAction": "Approve & notify Finance",
+  "@hrPayCompensationApproveSendAction": {
+    "description": "Process action that approves HR compensation and flags Finance."
   },
   "hrPeriodColumnLabel": "Period",
   "@hrPeriodColumnLabel": {
@@ -27203,9 +27309,9 @@
   "@hrQueueOverdueShifts": {
     "description": "Human resources workspace text for hrQueueOverdueShifts."
   },
-  "hrQueuePayrollDrafts": "Payroll drafts",
+  "hrQueuePayrollDrafts": "Pay & Compensation",
   "@hrQueuePayrollDrafts": {
-    "description": "Human resources workspace text for hrQueuePayrollDrafts."
+    "description": "Queue label for the Pay & Compensation desk tab."
   },
   "hrQueueRosterDrafts": "Roster templates",
   "@hrQueueRosterDrafts": {

@@ -347,6 +347,28 @@ final class HrRepositoryImpl implements HrRepository {
   }
 
   @override
+  Future<Result<Object?>> cancelPayrollRun(
+    String payrollRunId, {
+    String? notes,
+  }) {
+    return _postHrAction(
+      <String>['payroll-runs', payrollRunId, 'cancel'],
+      <String, Object?>{'notes': notes},
+    );
+  }
+
+  @override
+  Future<Result<Object?>> markPayrollRunPaid(
+    String payrollRunId, {
+    String? notes,
+  }) {
+    return _postHrAction(
+      <String>['payroll-runs', payrollRunId, 'mark-paid'],
+      <String, Object?>{'notes': notes},
+    );
+  }
+
+  @override
   Future<Result<HrStaffAccessSummary>> loadStaffAccessSummary(
     String staffProfileId,
   ) {
