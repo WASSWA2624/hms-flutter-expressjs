@@ -27016,6 +27016,83 @@
   "@hrPositionNameAlreadyInUse": {
     "description": "Exact duplicate staff position name error."
   },
+  "hrPositionAssignedStaffSectionTitle": "Assigned staff",
+  "@hrPositionAssignedStaffSectionTitle": {
+    "description": "Collapsible section title for staff assigned to a position."
+  },
+  "hrPositionAssignedStaffCountChip": "Staff: {count}",
+  "@hrPositionAssignedStaffCountChip": {
+    "description": "Assigned staff count chip on position details.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hrPositionAssignedStaffSearchHint": "Search assigned staff",
+  "@hrPositionAssignedStaffSearchHint": {
+    "description": "Search hint for staff assigned to a position."
+  },
+  "hrPositionAssignedStaffEmptyTitle": "No staff assigned",
+  "@hrPositionAssignedStaffEmptyTitle": {
+    "description": "Empty state title when a position has no assigned staff."
+  },
+  "hrPositionAssignedStaffEmptyBody": "Assign staff in this facility to this position to see them listed here.",
+  "@hrPositionAssignedStaffEmptyBody": {
+    "description": "Empty state body when a position has no assigned staff."
+  },
+  "hrPositionAssignedStaffLoadErrorTitle": "Could not load assigned staff",
+  "@hrPositionAssignedStaffLoadErrorTitle": {
+    "description": "Error banner title when assigned staff fail to load."
+  },
+  "hrPositionAssignStaffAction": "Assign staff",
+  "@hrPositionAssignStaffAction": {
+    "description": "Action to assign staff members to a position."
+  },
+  "hrPositionAssignStaffDialogTitle": "Assign staff to position",
+  "@hrPositionAssignStaffDialogTitle": {
+    "description": "Dialog title for assigning staff to a position."
+  },
+  "hrPositionAssignStaffEmptyTitle": "No staff available",
+  "@hrPositionAssignStaffEmptyTitle": {
+    "description": "Empty state title when no staff can be assigned to a position."
+  },
+  "hrPositionAssignStaffEmptyBody": "All facility staff are already assigned to this position, or none are available to assign.",
+  "@hrPositionAssignStaffEmptyBody": {
+    "description": "Empty state body when no staff can be assigned to a position."
+  },
+  "hrPositionPrintDialogTitle": "Print position details",
+  "@hrPositionPrintDialogTitle": {
+    "description": "Print preview dialog title for a staff position."
+  },
+  "hrPositionPrintDocumentSubtitle": "Role / position details",
+  "@hrPositionPrintDocumentSubtitle": {
+    "description": "Printed document subtitle for position details."
+  },
+  "hrPositionPrintContentSection": "Sections to include",
+  "@hrPositionPrintContentSection": {
+    "description": "Print preview section picker title for position details."
+  },
+  "hrPositionPrintContentSectionHint": "Choose which position sections appear on the printout.",
+  "@hrPositionPrintContentSectionHint": {
+    "description": "Hint for position print section selection."
+  },
+  "hrPositionPrintDetailsSection": "Role / position details",
+  "@hrPositionPrintDetailsSection": {
+    "description": "Printable position overview section title."
+  },
+  "hrPositionPrintStaffSection": "Assigned staff",
+  "@hrPositionPrintStaffSection": {
+    "description": "Printable assigned staff section title."
+  },
+  "hrPositionPrintColumnsSection": "Staff columns to include",
+  "@hrPositionPrintColumnsSection": {
+    "description": "Print preview column picker title for assigned staff."
+  },
+  "hrPositionPrintColumnsSectionHint": "Choose which staff table columns appear on the printout.",
+  "@hrPositionPrintColumnsSectionHint": {
+    "description": "Hint for position print staff column selection."
+  },
   "hrDeletePositionTitle": "Delete position",
   "@hrDeletePositionTitle": {
     "description": "Confirm soft-delete title for a staff position."

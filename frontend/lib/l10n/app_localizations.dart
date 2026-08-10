@@ -38771,6 +38771,114 @@ abstract class AppLocalizations {
   /// **'This position name is already in use.'**
   String get hrPositionNameAlreadyInUse;
 
+  /// Collapsible section title for staff assigned to a position.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned staff'**
+  String get hrPositionAssignedStaffSectionTitle;
+
+  /// Assigned staff count chip on position details.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff: {count}'**
+  String hrPositionAssignedStaffCountChip(int count);
+
+  /// Search hint for staff assigned to a position.
+  ///
+  /// In en, this message translates to:
+  /// **'Search assigned staff'**
+  String get hrPositionAssignedStaffSearchHint;
+
+  /// Empty state title when a position has no assigned staff.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff assigned'**
+  String get hrPositionAssignedStaffEmptyTitle;
+
+  /// Empty state body when a position has no assigned staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign staff in this facility to this position to see them listed here.'**
+  String get hrPositionAssignedStaffEmptyBody;
+
+  /// Error banner title when assigned staff fail to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load assigned staff'**
+  String get hrPositionAssignedStaffLoadErrorTitle;
+
+  /// Action to assign staff members to a position.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign staff'**
+  String get hrPositionAssignStaffAction;
+
+  /// Dialog title for assigning staff to a position.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign staff to position'**
+  String get hrPositionAssignStaffDialogTitle;
+
+  /// Empty state title when no staff can be assigned to a position.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff available'**
+  String get hrPositionAssignStaffEmptyTitle;
+
+  /// Empty state body when no staff can be assigned to a position.
+  ///
+  /// In en, this message translates to:
+  /// **'All facility staff are already assigned to this position, or none are available to assign.'**
+  String get hrPositionAssignStaffEmptyBody;
+
+  /// Print preview dialog title for a staff position.
+  ///
+  /// In en, this message translates to:
+  /// **'Print position details'**
+  String get hrPositionPrintDialogTitle;
+
+  /// Printed document subtitle for position details.
+  ///
+  /// In en, this message translates to:
+  /// **'Role / position details'**
+  String get hrPositionPrintDocumentSubtitle;
+
+  /// Print preview section picker title for position details.
+  ///
+  /// In en, this message translates to:
+  /// **'Sections to include'**
+  String get hrPositionPrintContentSection;
+
+  /// Hint for position print section selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which position sections appear on the printout.'**
+  String get hrPositionPrintContentSectionHint;
+
+  /// Printable position overview section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Role / position details'**
+  String get hrPositionPrintDetailsSection;
+
+  /// Printable assigned staff section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned staff'**
+  String get hrPositionPrintStaffSection;
+
+  /// Print preview column picker title for assigned staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff columns to include'**
+  String get hrPositionPrintColumnsSection;
+
+  /// Hint for position print staff column selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which staff table columns appear on the printout.'**
+  String get hrPositionPrintColumnsSectionHint;
+
   /// Confirm soft-delete title for a staff position.
   ///
   /// In en, this message translates to:

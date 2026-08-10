@@ -21,6 +21,9 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
+export 'package:hosspi_hms/features/hr/presentation/widgets/hr_position_details_dialog.dart'
+    show showHrStaffPositionDetailDialog;
+
 /// Assign a catalog position to [staff] via the positions table.
 Future<void> showHrAssignPositionDialog(
   BuildContext context,
@@ -62,122 +65,6 @@ Future<HrStaffPosition?> showHrCreateStaffPositionDialog(
       existing: existing,
       editing: editing,
     ),
-  );
-}
-
-Future<void> showHrStaffPositionDetailDialog(
-  BuildContext context,
-  WidgetRef ref,
-  HrStaffPosition position, {
-  Future<void> Function(HrStaffPosition position)? onEdit,
-  Future<void> Function(HrStaffPosition position)? onSoftDelete,
-  Future<void> Function(HrStaffPosition position)? onRestore,
-  Future<void> Function(HrStaffPosition position)? onPermanentDelete,
-}) {
-  return showAppDialog<void>(
-    context: context,
-    builder: (BuildContext dialogContext) {
-      final AppLocalizations l10n = dialogContext.l10n;
-      final ColorScheme colors = Theme.of(dialogContext).colorScheme;
-      final bool canWrite = HrHumanResourcesAtomPermissions.write.isAllowed(
-        ref.read(appAccessPolicyProvider),
-      );
-      final bool canMutate = canWrite && !position.isShared;
-
-      return AppDialog(
-        title: Text(l10n.hrPositionDetailTitle),
-        icon: const Icon(Icons.work_outline),
-        scrollable: true,
-        maxWidth: 640,
-        content: AppFormSection(
-          children: <Widget>[
-            AppInfoTileGrid(
-              items: <AppInfoTileData>[
-                AppInfoTileData(
-                  label: l10n.hrPositionLabel,
-                  value: position.name,
-                  icon: Icons.badge_outlined,
-                ),
-                AppInfoTileData(
-                  label: l10n.hrPositionIdLabel,
-                  value: position.effectiveId,
-                  icon: Icons.tag_outlined,
-                  copyable: true,
-                ),
-                AppInfoTileData(
-                  label: l10n.hrPositionDescriptionLabel,
-                  value: (position.description ?? '').trim().isEmpty
-                      ? '—'
-                      : position.description!,
-                  icon: Icons.notes_outlined,
-                ),
-                AppInfoTileData(
-                  label: l10n.hrPositionScopeLabel,
-                  value: position.isShared
-                      ? l10n.hrPositionScopeShared
-                      : l10n.hrPositionScopeFacility,
-                  icon: Icons.apartment_outlined,
-                ),
-                AppInfoTileData(
-                  label: l10n.hrStatusLabel,
-                  value: position.isDeleted
-                      ? l10n.tenantFacilityStructureDeletedStatus
-                      : position.isActive
-                      ? l10n.hrPositionActiveStatus
-                      : l10n.hrPositionInactiveStatus,
-                  icon: Icons.info_outline,
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: <Widget>[
-          if (canMutate && !position.isDeleted && onEdit != null)
-            AppButton.secondary(
-              label: l10n.commonEditActionLabel,
-              leadingIcon: Icons.edit_outlined,
-              onPressed: () async {
-                Navigator.of(dialogContext).pop();
-                await onEdit(position);
-              },
-            ),
-          if (canMutate && !position.isDeleted && onSoftDelete != null)
-            AppButton.secondary(
-              label: l10n.commonDeleteActionLabel,
-              leadingIcon: Icons.delete_outline,
-              color: colors.error,
-              onPressed: () async {
-                Navigator.of(dialogContext).pop();
-                await onSoftDelete(position);
-              },
-            ),
-          if (canMutate && position.isDeleted && onRestore != null)
-            AppButton.secondary(
-              label: l10n.tenantFacilityRestoreStructureAction,
-              leadingIcon: Icons.restore_outlined,
-              onPressed: () async {
-                Navigator.of(dialogContext).pop();
-                await onRestore(position);
-              },
-            ),
-          if (canMutate && position.isDeleted && onPermanentDelete != null)
-            AppButton.secondary(
-              label: l10n.tenantFacilityPermanentDeleteAction,
-              leadingIcon: Icons.delete_forever_outlined,
-              color: colors.error,
-              onPressed: () async {
-                Navigator.of(dialogContext).pop();
-                await onPermanentDelete(position);
-              },
-            ),
-          AppButton.secondary(
-            label: l10n.commonCloseActionLabel,
-            leadingIcon: Icons.close,
-            onPressed: () => Navigator.of(dialogContext).pop(),
-          ),
-        ],
-      );
-    },
   );
 }
 

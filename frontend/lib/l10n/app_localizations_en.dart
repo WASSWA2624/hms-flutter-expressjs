@@ -20956,6 +20956,67 @@ class AppLocalizationsEn extends AppLocalizations {
       'This position name is already in use.';
 
   @override
+  String get hrPositionAssignedStaffSectionTitle => 'Assigned staff';
+
+  @override
+  String hrPositionAssignedStaffCountChip(int count) {
+    return 'Staff: $count';
+  }
+
+  @override
+  String get hrPositionAssignedStaffSearchHint => 'Search assigned staff';
+
+  @override
+  String get hrPositionAssignedStaffEmptyTitle => 'No staff assigned';
+
+  @override
+  String get hrPositionAssignedStaffEmptyBody =>
+      'Assign staff in this facility to this position to see them listed here.';
+
+  @override
+  String get hrPositionAssignedStaffLoadErrorTitle =>
+      'Could not load assigned staff';
+
+  @override
+  String get hrPositionAssignStaffAction => 'Assign staff';
+
+  @override
+  String get hrPositionAssignStaffDialogTitle => 'Assign staff to position';
+
+  @override
+  String get hrPositionAssignStaffEmptyTitle => 'No staff available';
+
+  @override
+  String get hrPositionAssignStaffEmptyBody =>
+      'All facility staff are already assigned to this position, or none are available to assign.';
+
+  @override
+  String get hrPositionPrintDialogTitle => 'Print position details';
+
+  @override
+  String get hrPositionPrintDocumentSubtitle => 'Role / position details';
+
+  @override
+  String get hrPositionPrintContentSection => 'Sections to include';
+
+  @override
+  String get hrPositionPrintContentSectionHint =>
+      'Choose which position sections appear on the printout.';
+
+  @override
+  String get hrPositionPrintDetailsSection => 'Role / position details';
+
+  @override
+  String get hrPositionPrintStaffSection => 'Assigned staff';
+
+  @override
+  String get hrPositionPrintColumnsSection => 'Staff columns to include';
+
+  @override
+  String get hrPositionPrintColumnsSectionHint =>
+      'Choose which staff table columns appear on the printout.';
+
+  @override
   String get hrDeletePositionTitle => 'Delete position';
 
   @override
