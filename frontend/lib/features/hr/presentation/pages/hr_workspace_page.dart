@@ -541,6 +541,34 @@ class _HrWorkQueueTable extends ConsumerStatefulWidget {
 class _HrWorkQueueTableState extends ConsumerState<_HrWorkQueueTable> {
   final Set<String> _selectedRosterKeys = <String>{};
   HrQueue? _selectionQueue;
+  Timer? _searchDebounce;
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleWorkItemsSearch(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) {
+        return;
+      }
+      final HrWorkspaceState? state = _hrStateFromAsync(
+        ref.read(hrWorkspaceControllerProvider),
+      );
+      if (state != null &&
+          state.workItemsQuery.search.trim() == value.trim()) {
+        return;
+      }
+      unawaited(
+        ref
+            .read(hrWorkspaceControllerProvider.notifier)
+            .applyWorkItemsSearch(value),
+      );
+    });
+  }
 
   String _rosterSelectionKey(HrWorkItem item) {
     return (item.rosterId ?? item.backendIdentifier ?? item.effectiveId).trim();
@@ -842,10 +870,18 @@ class _HrWorkQueueTableState extends ConsumerState<_HrWorkQueueTable> {
         semanticLabel: l10n.hrSearchLabel,
         hintText: l10n.hrSearchHint,
         clearLabel: l10n.hrClearFiltersAction,
-        matcher: (HrWorkItem item, String query) =>
-            _workItemSearchMatcher(context, item, query),
-        onSubmitted: controller.applyWorkItemsSearch,
-        onClear: () => controller.applyWorkItemsSearch(''),
+        // Paginated queues are filtered on the server. A client matcher would
+        // only search the current page and hide older matches (e.g. ROS0000001).
+        matcher: (HrWorkItem _, String __) => true,
+        onChanged: _scheduleWorkItemsSearch,
+        onSubmitted: (String value) {
+          _searchDebounce?.cancel();
+          unawaited(controller.applyWorkItemsSearch(value));
+        },
+        onClear: () {
+          _searchDebounce?.cancel();
+          unawaited(controller.applyWorkItemsSearch(''));
+        },
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
@@ -1625,47 +1661,6 @@ AppWorkspaceStatusTone _statusTone(String? status) {
 
 const String _hrWorkItemStatusFilterKey = 'status';
 const String _hrWorkItemQueueFilterKey = 'queue';
-
-bool _workItemSearchMatcher(
-  BuildContext context,
-  HrWorkItem item,
-  String query,
-) {
-  final String needle = query.trim().toLowerCase();
-  if (needle.isEmpty) {
-    return true;
-  }
-
-  return <String?>[
-    item.effectiveId,
-    item.displayId,
-    item.id,
-    item.backendIdentifier,
-    item.status,
-    _apiLabel(context, item.status),
-    item.staffName,
-    item.staffNumber,
-    item.staffPosition,
-    item.staffProfileId,
-    item.leaveType,
-    _apiLabel(context, item.leaveType),
-    item.shiftId,
-    item.shiftType,
-    _apiLabel(context, item.shiftType),
-    item.rosterId,
-    item.rosterName,
-    item.payrollRunId,
-    item.periodLabel,
-    _workItemPeriod(context, item),
-    _workItemTitle(context, item),
-    _workItemNextAction(context, item),
-    hrQueueLabel(context.l10n, item.queue),
-    item.reason,
-    item.assignmentCount.toString(),
-  ].whereType<String>().any(
-    (String value) => value.toLowerCase().contains(needle),
-  );
-}
 
 List<AppListTableColumn<HrWorkItem>> _workQueueColumns(
   BuildContext context,
