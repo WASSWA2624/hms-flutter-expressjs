@@ -329,6 +329,9 @@ abstract final class ValidationMessagePresenter {
       'new_password' => l10n.authNewPasswordLabel,
       'name' => l10n.tenantFacilityTenantNameLabel,
       'slug' => l10n.tenantFacilityTenantSlugLabel,
+      'last_working_day' => l10n.hrLastWorkingDayLabel,
+      'separation_type' => l10n.hrSeparationTypeLabel,
+      'reason' => l10n.hrSeparationNotesLabel,
       _ => AppDisplay.apiLabel(field),
     };
   }

@@ -100,7 +100,7 @@ class _HrOffboardingFormState extends State<_HrOffboardingForm> {
   Map<String, Object?> toPayload() {
     return <String, Object?>{
       'separation_type': _separationType,
-      'last_working_day': _lastWorkingDay?.toIso8601String(),
+      'last_working_day': _utcDatePayload(_lastWorkingDay),
       'reason': _notesController.text.trim().isEmpty
           ? null
           : _notesController.text.trim(),
@@ -206,4 +206,11 @@ class _HrOffboardingFormState extends State<_HrOffboardingForm> {
       ],
     );
   }
+}
+
+String? _utcDatePayload(DateTime? value) {
+  if (value == null) {
+    return null;
+  }
+  return DateTime(value.year, value.month, value.day).toUtc().toIso8601String();
 }
