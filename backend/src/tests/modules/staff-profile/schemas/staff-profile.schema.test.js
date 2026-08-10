@@ -32,12 +32,13 @@ describe('staff-profile.schema contract', () => {
           rate: 3000,
           currency: 'USD',
           effective_from: '2026-01-01',
-          metadata_json: { pay_frequency: 'MONTHLY' }},
+          metadata_json: { pay_frequency: 'MONTHLY', pay_zone: 'Zone A' }},
         {
           pay_type: 'PER_CONSULTATION',
           rate: 75,
           currency: 'USD',
-          effective_from: '2026-01-01'}]});
+          effective_from: '2026-01-01',
+          metadata_json: { pay_frequency: 'PER_SERVICE' }}]});
 
     expect(result.success).toBe(true);
   });

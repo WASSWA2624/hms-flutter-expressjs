@@ -913,6 +913,7 @@ final class HrStaffCompensation {
     this.effectiveFrom,
     this.effectiveTo,
     this.payFrequency,
+    this.payZone,
     this.deductions = const <HrPayrollDeduction>[],
   });
 
@@ -925,6 +926,7 @@ final class HrStaffCompensation {
   final DateTime? effectiveFrom;
   final DateTime? effectiveTo;
   final String? payFrequency;
+  final String? payZone;
   final List<HrPayrollDeduction> deductions;
 
   bool get isActive {

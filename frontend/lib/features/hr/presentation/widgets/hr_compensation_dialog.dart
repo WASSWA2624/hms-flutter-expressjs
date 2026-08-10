@@ -111,6 +111,7 @@ class _PayLineRow {
     required this.currency,
     required this.effectiveFrom,
     this.payFrequency = 'MONTHLY',
+    this.payZone,
     this.effectiveTo,
     this.deductions = const <HrPayrollDeduction>[],
   });
@@ -120,13 +121,16 @@ class _PayLineRow {
   final num rate;
   final String currency;
   final String payFrequency;
+  final String? payZone;
   final DateTime effectiveFrom;
   final DateTime? effectiveTo;
   final List<HrPayrollDeduction> deductions;
 
   Map<String, Object?> toPayload() {
+    final String? zone = payZone?.trim();
     final Map<String, Object?> metadata = <String, Object?>{
-      if (payType == 'PER_MONTH') 'pay_frequency': payFrequency,
+      'pay_frequency': payFrequency,
+      if (zone != null && zone.isNotEmpty) 'pay_zone': zone,
       if (deductions.isNotEmpty)
         'deductions': deductions
             .map(
@@ -145,7 +149,7 @@ class _PayLineRow {
       'currency': currency.trim().toUpperCase(),
       'effective_from': effectiveFrom.toIso8601String(),
       'effective_to': effectiveTo?.toIso8601String(),
-      if (metadata.isNotEmpty) 'metadata_json': metadata,
+      'metadata_json': metadata,
     };
   }
 }
@@ -217,7 +221,10 @@ class _HrPayAndCompensationDialogState
           payType: (item.payType ?? 'PER_MONTH').trim().toUpperCase(),
           rate: item.rate!,
           currency: item.currency ?? appDefaultCurrencyCode,
-          payFrequency: item.payFrequency ?? 'MONTHLY',
+          payFrequency:
+              item.payFrequency ??
+              hrDefaultPayFrequencyForType(item.payType ?? 'PER_MONTH'),
+          payZone: item.payZone,
           effectiveFrom: item.effectiveFrom!,
           effectiveTo: item.effectiveTo,
           deductions: item.deductions,
@@ -235,13 +242,25 @@ class _HrPayAndCompensationDialogState
 
   Future<void> _persist(List<_PayLineRow> next) async {
     setState(() => _saving = true);
+    _PayLineRow? consultation;
+    for (final _PayLineRow row in next) {
+      if (row.payType == 'PER_CONSULTATION') {
+        consultation = row;
+        break;
+      }
+    }
+    final Map<String, Object?> payload = <String, Object?>{
+      'compensations': next
+          .map((_PayLineRow row) => row.toPayload())
+          .toList(growable: false),
+      // Keep legacy consultation fee catalog fields aligned with the pay line
+      // so OPD billing and payroll both use the same rate.
+      'consultation_fee': consultation?.rate,
+      'consultation_currency': consultation?.currency,
+    };
     final AppFailure? failure = await ref
         .read(hrWorkspaceControllerProvider.notifier)
-        .updateSelectedStaffProfile(<String, Object?>{
-          'compensations': next
-              .map((_PayLineRow row) => row.toPayload())
-              .toList(growable: false),
-        });
+        .updateSelectedStaffProfile(payload);
     if (!mounted) {
       return;
     }
@@ -402,7 +421,8 @@ class _HrPayAndCompensationDialogState
             return typeLabel.contains(needle) ||
                 item.payType.toLowerCase().contains(needle) ||
                 item.currency.toLowerCase().contains(needle) ||
-                item.rate.toString().contains(needle);
+                item.rate.toString().contains(needle) ||
+                (item.payZone ?? '').toLowerCase().contains(needle);
           },
           showAdvancedFilterButton: true,
           advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
@@ -479,25 +499,18 @@ class _HrPayAndCompensationDialogState
             id: 'frequency',
             label: l10n.hrCompensationPayFrequencyLabel,
             cellBuilder: (_, _PayLineRow item) {
-              if (item.payType != 'PER_MONTH') {
-                return const Text('—');
-              }
-              return Text(switch (item.payFrequency) {
-                'BIWEEKLY' => l10n.hrCompensationFrequencyBiweeklyLabel,
-                'WEEKLY' => l10n.hrCompensationFrequencyWeeklyLabel,
-                _ => l10n.hrCompensationFrequencyMonthlyLabel,
-              });
+              return Text(hrCompensationPayFrequencyLabel(l10n, item.payFrequency));
             },
-            exportValue: (_PayLineRow item) {
-              if (item.payType != 'PER_MONTH') {
-                return '';
-              }
-              return switch (item.payFrequency) {
-                'BIWEEKLY' => l10n.hrCompensationFrequencyBiweeklyLabel,
-                'WEEKLY' => l10n.hrCompensationFrequencyWeeklyLabel,
-                _ => l10n.hrCompensationFrequencyMonthlyLabel,
-              };
-            },
+            exportValue: (_PayLineRow item) =>
+                hrCompensationPayFrequencyLabel(l10n, item.payFrequency),
+          ),
+          AppListTableColumn<_PayLineRow>(
+            id: 'pay_zone',
+            label: l10n.hrCompensationPayZoneLabel,
+            cellBuilder: (_, _PayLineRow item) => Text(
+              (item.payZone ?? '').trim().isEmpty ? '—' : item.payZone!.trim(),
+            ),
+            exportValue: (_PayLineRow item) => (item.payZone ?? '').trim(),
           ),
           AppListTableColumn<_PayLineRow>(
             id: 'effective_from',
@@ -628,6 +641,7 @@ class _HrPayLineFormDialogState extends State<_HrPayLineFormDialog> {
         rateController: TextEditingController(text: editing.rate.toString()),
         currency: editing.currency,
         payFrequency: editing.payFrequency,
+        payZone: editing.payZone,
         effectiveFrom: editing.effectiveFrom,
         effectiveTo: editing.effectiveTo,
         deductions: editing.deductions,
@@ -673,6 +687,7 @@ class _HrPayLineFormDialogState extends State<_HrPayLineFormDialog> {
         rate: rate,
         currency: _line.currency,
         payFrequency: _line.payFrequency,
+        payZone: _line.payZone,
         effectiveFrom: from,
         effectiveTo: _line.effectiveTo,
         deductions: _line.deductions,
@@ -690,10 +705,11 @@ class _HrPayLineFormDialogState extends State<_HrPayLineFormDialog> {
       icon: const Icon(Icons.price_change_outlined),
       scrollable: true,
       pinActionsToBottom: true,
-      maxWidth: 640,
+      maxWidth: 920,
       content: Form(
         key: _formKey,
         child: AppFormSection(
+          description: l10n.hrAddPayLineFormHint,
           children: <Widget>[
             HrCompensationLineEditor(
               line: _line,

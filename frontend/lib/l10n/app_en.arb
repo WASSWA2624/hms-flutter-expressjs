@@ -29016,6 +29016,22 @@
   "@hrCompensationFrequencyWeeklyLabel": {
     "description": "Weekly pay frequency option."
   },
+  "hrCompensationFrequencyPerServiceLabel": "Per service",
+  "@hrCompensationFrequencyPerServiceLabel": {
+    "description": "Per-service pay frequency option for fees and commissions."
+  },
+  "hrCompensationPayZoneLabel": "Pay zone",
+  "@hrCompensationPayZoneLabel": {
+    "description": "Optional geographic or scale pay zone for a pay line."
+  },
+  "hrCompensationPayZoneHelper": "Optional. Use when pay rates vary by zone or scale.",
+  "@hrCompensationPayZoneHelper": {
+    "description": "Helper text for the optional pay zone field."
+  },
+  "hrAddPayLineFormHint": "Set the rate first, then choose how and when it applies. Saved pay lines are used in payroll.",
+  "@hrAddPayLineFormHint": {
+    "description": "Short guidance under the add/edit pay line form title."
+  },
   "hrCompensationDailyRateLabel": "Daily rate",
   "@hrCompensationDailyRateLabel": {
     "description": "Daily compensation rate label."

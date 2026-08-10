@@ -41885,6 +41885,30 @@ abstract class AppLocalizations {
   /// **'Weekly'**
   String get hrCompensationFrequencyWeeklyLabel;
 
+  /// Per-service pay frequency option for fees and commissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Per service'**
+  String get hrCompensationFrequencyPerServiceLabel;
+
+  /// Optional geographic or scale pay zone for a pay line.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay zone'**
+  String get hrCompensationPayZoneLabel;
+
+  /// Helper text for the optional pay zone field.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Use when pay rates vary by zone or scale.'**
+  String get hrCompensationPayZoneHelper;
+
+  /// Short guidance under the add/edit pay line form title.
+  ///
+  /// In en, this message translates to:
+  /// **'Set the rate first, then choose how and when it applies. Saved pay lines are used in payroll.'**
+  String get hrAddPayLineFormHint;
+
   /// Daily compensation rate label.
   ///
   /// In en, this message translates to:

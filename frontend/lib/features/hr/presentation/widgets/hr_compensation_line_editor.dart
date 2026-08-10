@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -13,22 +15,31 @@ const List<String> kHrCompensationPayTypeCodes = <String>[
   'PER_PROCEDURE',
 ];
 
+const List<String> kHrCompensationPayFrequencyCodes = <String>[
+  'MONTHLY',
+  'BIWEEKLY',
+  'WEEKLY',
+  'PER_SERVICE',
+];
+
 class HrCompensationLineData {
   HrCompensationLineData({
     required this.payType,
     required this.rateController,
     this.currency = appDefaultCurrencyCode,
-    this.payFrequency = 'MONTHLY',
+    String? payFrequency,
+    this.payZone,
     this.effectiveFrom,
     this.effectiveTo,
     this.deductions = const <HrPayrollDeduction>[],
     this.removed = false,
-  });
+  }) : payFrequency = payFrequency ?? hrDefaultPayFrequencyForType(payType);
 
   String payType;
   final TextEditingController rateController;
   String currency;
   String payFrequency;
+  String? payZone;
   DateTime? effectiveFrom;
   DateTime? effectiveTo;
   List<HrPayrollDeduction> deductions;
@@ -39,8 +50,10 @@ class HrCompensationLineData {
     if (rate == null || removed) {
       return <String, Object?>{};
     }
+    final String? zone = payZone?.trim();
     final Map<String, Object?> metadata = <String, Object?>{
-      if (payType == 'PER_MONTH') 'pay_frequency': payFrequency,
+      'pay_frequency': payFrequency,
+      if (zone != null && zone.isNotEmpty) 'pay_zone': zone,
       if (deductions.isNotEmpty)
         'deductions': deductions
             .map(
@@ -59,7 +72,7 @@ class HrCompensationLineData {
       'currency': currency.trim().toUpperCase(),
       'effective_from': effectiveFrom?.toIso8601String(),
       'effective_to': effectiveTo?.toIso8601String(),
-      if (metadata.isNotEmpty) 'metadata_json': metadata,
+      'metadata_json': metadata,
     };
   }
 }
@@ -85,6 +98,106 @@ class HrCompensationLineEditor extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
+    final Widget rateField = AppCurrencyAmountField(
+      amountController: line.rateController,
+      currency: line.currency,
+      onCurrencyChanged: (String? value) {
+        line.currency = value ?? appDefaultCurrencyCode;
+        onChanged();
+      },
+      amountLabelText: l10n.hrCompensationBaseRateLabel,
+      currencyLabelText: l10n.hrCompensationCurrencyLabel,
+      currencySearchLabelText: l10n.appPhoneCountrySearchLabel,
+      isRequired: true,
+    );
+
+    final Widget payTypeField = AppSelectField<String>(
+      value: line.payType,
+      labelText: l10n.hrStaffOnboardingPayTypeLabel,
+      isRequired: true,
+      options: kHrCompensationPayTypeCodes
+          .where(
+            (String code) =>
+                code == line.payType || !usedPayTypes.contains(code),
+          )
+          .map(
+            (String code) => AppSelectOption<String>(
+              value: code,
+              label: l10n.hrReferenceCompensationPayTypeLabel(
+                code,
+                fallback: code,
+              ),
+            ),
+          )
+          .toList(growable: false),
+      onChanged: (String? value) {
+        if (value == null) {
+          return;
+        }
+        line.payType = value;
+        line.payFrequency = hrDefaultPayFrequencyForType(value);
+        onChanged();
+      },
+    );
+
+    final Widget frequencyField = AppSelectField<String>(
+      value: line.payFrequency,
+      labelText: l10n.hrCompensationPayFrequencyLabel,
+      options: kHrCompensationPayFrequencyCodes
+          .map(
+            (String code) => AppSelectOption<String>(
+              value: code,
+              label: hrCompensationPayFrequencyLabel(l10n, code),
+            ),
+          )
+          .toList(growable: false),
+      onChanged: (String? value) {
+        if (value != null) {
+          line.payFrequency = value;
+          onChanged();
+        }
+      },
+    );
+
+    final Widget fromField = AppDateField(
+      value: line.effectiveFrom,
+      labelText: l10n.hrEffectiveFromLabel,
+      isRequired: true,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      currentDate: DateTime.now(),
+      pickerButtonLabel: l10n.hrPickDateAction,
+      invalidDateMessage: l10n.appDateInvalidMessage,
+      onChanged: (DateTime? value) {
+        line.effectiveFrom = value;
+        onChanged();
+      },
+    );
+
+    final Widget toField = AppDateField(
+      value: line.effectiveTo,
+      labelText: l10n.hrEffectiveToLabel,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      currentDate: DateTime.now(),
+      pickerButtonLabel: l10n.hrPickDateAction,
+      invalidDateMessage: l10n.appDateInvalidMessage,
+      onChanged: (DateTime? value) {
+        line.effectiveTo = value;
+        onChanged();
+      },
+    );
+
+    final Widget zoneField = AppTextField(
+      initialValue: line.payZone,
+      labelText: l10n.hrCompensationPayZoneLabel,
+      helperText: l10n.hrCompensationPayZoneHelper,
+      onChanged: (String value) {
+        line.payZone = value;
+        onChanged();
+      },
+    );
+
     final Widget fields = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -108,94 +221,94 @@ class HrCompensationLineEditor extends StatelessWidget {
                 ),
             ],
           ),
-        AppSelectField<String>(
-          value: line.payType,
-          labelText: l10n.hrStaffOnboardingPayTypeLabel,
-          options: kHrCompensationPayTypeCodes
-              .where(
-                (String code) =>
-                    code == line.payType || !usedPayTypes.contains(code),
-              )
-              .map(
-                (String code) => AppSelectOption<String>(
-                  value: code,
-                  label: l10n.hrReferenceCompensationPayTypeLabel(
-                    code,
-                    fallback: code,
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final double width = constraints.hasBoundedWidth
+                ? constraints.maxWidth
+                : MediaQuery.sizeOf(context).width;
+            final double formGap = theme.spacing.md;
+            final double stackGap = theme.appTokens.formGapCompact;
+
+            // Large: Base rate | Pay type | Pay frequency
+            //        Effective from | Effective to
+            //        Pay zone
+            if (width >= 640) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(flex: 5, child: rateField),
+                      SizedBox(width: formGap),
+                      Expanded(flex: 4, child: payTypeField),
+                      SizedBox(width: formGap),
+                      Expanded(flex: 4, child: frequencyField),
+                    ],
                   ),
-                ),
-              )
-              .toList(growable: false),
-          onChanged: (String? value) {
-            if (value == null) {
-              return;
+                  SizedBox(height: stackGap),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(child: fromField),
+                      SizedBox(width: formGap),
+                      Expanded(child: toField),
+                    ],
+                  ),
+                  SizedBox(height: stackGap),
+                  zoneField,
+                ],
+              );
             }
-            line.payType = value;
-            onChanged();
-          },
-        ),
-        if (line.payType == 'PER_MONTH')
-          AppSelectField<String>(
-            value: line.payFrequency,
-            labelText: l10n.hrCompensationPayFrequencyLabel,
-            options: <AppSelectOption<String>>[
-              AppSelectOption<String>(
-                value: 'MONTHLY',
-                label: l10n.hrCompensationFrequencyMonthlyLabel,
-              ),
-              AppSelectOption<String>(
-                value: 'BIWEEKLY',
-                label: l10n.hrCompensationFrequencyBiweeklyLabel,
-              ),
-              AppSelectOption<String>(
-                value: 'WEEKLY',
-                label: l10n.hrCompensationFrequencyWeeklyLabel,
-              ),
-            ],
-            onChanged: (String? value) {
-              if (value != null) {
-                line.payFrequency = value;
-                onChanged();
-              }
-            },
-          ),
-        AppCurrencyAmountField(
-          amountController: line.rateController,
-          currency: line.currency,
-          onCurrencyChanged: (String? value) {
-            line.currency = value ?? appDefaultCurrencyCode;
-            onChanged();
-          },
-          amountLabelText: l10n.hrCompensationBaseRateLabel,
-          currencyLabelText: l10n.hrCompensationCurrencyLabel,
-          currencySearchLabelText: l10n.appPhoneCountrySearchLabel,
-          isRequired: true,
-        ),
-        AppDateField(
-          value: line.effectiveFrom,
-          labelText: l10n.hrEffectiveFromLabel,
-          isRequired: true,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: (DateTime? value) {
-            line.effectiveFrom = value;
-            onChanged();
-          },
-        ),
-        AppDateField(
-          value: line.effectiveTo,
-          labelText: l10n.hrEffectiveToLabel,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: (DateTime? value) {
-            line.effectiveTo = value;
-            onChanged();
+
+            // Medium: Base rate full width, then Pay type | Frequency,
+            //         Effective from | Effective to, then zone.
+            if (width >= AppBreakpoints.md) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  rateField,
+                  SizedBox(height: stackGap),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(child: payTypeField),
+                      SizedBox(width: formGap),
+                      Expanded(child: frequencyField),
+                    ],
+                  ),
+                  SizedBox(height: stackGap),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(child: fromField),
+                      SizedBox(width: formGap),
+                      Expanded(child: toField),
+                    ],
+                  ),
+                  SizedBox(height: stackGap),
+                  zoneField,
+                ],
+              );
+            }
+
+            // Narrow: stack everything.
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                rateField,
+                SizedBox(height: stackGap),
+                payTypeField,
+                SizedBox(height: stackGap),
+                frequencyField,
+                SizedBox(height: stackGap),
+                fromField,
+                SizedBox(height: stackGap),
+                toField,
+                SizedBox(height: stackGap),
+                zoneField,
+              ],
+            );
           },
         ),
       ],
@@ -239,4 +352,22 @@ String hrCompensationPayTypeFromApi(String? value) {
 
 String hrCompensationPayTypeLabel(AppLocalizations l10n, String payType) {
   return l10n.hrReferenceCompensationPayTypeLabel(payType, fallback: payType);
+}
+
+String hrDefaultPayFrequencyForType(String payType) {
+  return switch (payType.trim().toUpperCase()) {
+    'PER_CONSULTATION' || 'PER_PROCEDURE' => 'PER_SERVICE',
+    'PER_DAY' => 'WEEKLY',
+    'PER_HOUR' => 'WEEKLY',
+    _ => 'MONTHLY',
+  };
+}
+
+String hrCompensationPayFrequencyLabel(AppLocalizations l10n, String code) {
+  return switch (code.trim().toUpperCase()) {
+    'BIWEEKLY' => l10n.hrCompensationFrequencyBiweeklyLabel,
+    'WEEKLY' => l10n.hrCompensationFrequencyWeeklyLabel,
+    'PER_SERVICE' => l10n.hrCompensationFrequencyPerServiceLabel,
+    _ => l10n.hrCompensationFrequencyMonthlyLabel,
+  };
 }

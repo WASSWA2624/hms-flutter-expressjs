@@ -22665,6 +22665,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrCompensationFrequencyWeeklyLabel => 'Weekly';
 
   @override
+  String get hrCompensationFrequencyPerServiceLabel => 'Per service';
+
+  @override
+  String get hrCompensationPayZoneLabel => 'Pay zone';
+
+  @override
+  String get hrCompensationPayZoneHelper =>
+      'Optional. Use when pay rates vary by zone or scale.';
+
+  @override
+  String get hrAddPayLineFormHint =>
+      'Set the rate first, then choose how and when it applies. Saved pay lines are used in payroll.';
+
+  @override
   String get hrCompensationDailyRateLabel => 'Daily rate';
 
   @override

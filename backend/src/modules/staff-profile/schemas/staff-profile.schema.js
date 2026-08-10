@@ -33,7 +33,8 @@ const resourceIdentifierSchema = z.union([uuidSchema, friendlyIdSchema]);
 const decimalInputSchema = z.union([z.coerce.number().positive(), decimalStringSchema]);
 const compensationPayTypeSchema = z.enum(COMPENSATION_PAY_TYPES);
 const compensationMetadataSchema = z.object({
-  pay_frequency: z.enum(['MONTHLY', 'BIWEEKLY', 'WEEKLY']).optional(),
+  pay_frequency: z.enum(['MONTHLY', 'BIWEEKLY', 'WEEKLY', 'PER_SERVICE']).optional(),
+  pay_zone: z.string().trim().max(80).optional().nullable(),
   procedure_count: z.coerce.number().nonnegative().optional()}).passthrough();
 
 const compensationInputSchema = z.object({

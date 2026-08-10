@@ -253,6 +253,7 @@ final class HrStaffCompensationDto {
       effectiveFrom: _date(json['effective_from']),
       effectiveTo: _date(json['effective_to']),
       payFrequency: _string(metadata['pay_frequency']),
+      payZone: _string(metadata['pay_zone']),
       deductions: deductions,
     );
   }
