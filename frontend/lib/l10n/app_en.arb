@@ -26603,9 +26603,13 @@
   "@hrLeaveDaysLabel": {
     "description": "Human resources workspace text for hrLeaveDaysLabel."
   },
-  "hrLeaveDaysHelper": "Auto-calculates the end date from the start date.",
+  "hrLeaveDaysHelper": "Working days between start and end. Changing any of these three fields updates the others.",
   "@hrLeaveDaysHelper": {
     "description": "Human resources workspace text for hrLeaveDaysHelper."
+  },
+  "hrLeaveDaysRosterHelper": "Counted from this staff member's roster working days. Changing start, end, or days updates the others.",
+  "@hrLeaveDaysRosterHelper": {
+    "description": "Helper when leave days are calculated from the staff roster schedule."
   },
   "hrLeaveTypeLabel": "Leave type",
   "@hrLeaveTypeLabel": {
@@ -28404,9 +28408,52 @@
   "@hrModuleAccessSectionTitle": {
     "description": "Section title for module access list."
   },
+  "hrModuleAccessSectionSubtitle": "Entitlements from the facility subscription.",
+  "@hrModuleAccessSectionSubtitle": {
+    "description": "Subtitle under the subscribed modules section header."
+  },
+  "hrModuleAccessGrantedLabel": "Granted",
+  "@hrModuleAccessGrantedLabel": {
+    "description": "Status badge when a subscribed module is granted."
+  },
+  "hrModuleAccessNotGrantedLabel": "Not granted",
+  "@hrModuleAccessNotGrantedLabel": {
+    "description": "Status badge when a subscribed module is not granted."
+  },
+  "hrModuleAccessModulesCountChip": "Modules: {count}",
+  "@hrModuleAccessModulesCountChip": {
+    "description": "Labeled module count chip in the module access dialog.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hrModuleAccessGrantedSummaryLabel": "{count, plural, =0{None granted} =1{1 granted} other{{count} granted}}",
+  "@hrModuleAccessGrantedSummaryLabel": {
+    "description": "Summary of granted module entitlements.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hrModuleAccessPermissionsCountChip": "Permissions: {count}",
+  "@hrModuleAccessPermissionsCountChip": {
+    "description": "Labeled effective-permissions count chip in the module access dialog.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "hrEffectivePermissionsTitle": "Effective permissions",
   "@hrEffectivePermissionsTitle": {
     "description": "Section title for effective permissions preview."
+  },
+  "hrEffectivePermissionsSubtitle": "Permissions inherited from assigned roles.",
+  "@hrEffectivePermissionsSubtitle": {
+    "description": "Subtitle under the effective permissions section header."
   },
   "hrNoModuleAccessLabel": "No active module entitlements.",
   "@hrNoModuleAccessLabel": {

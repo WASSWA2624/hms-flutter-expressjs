@@ -1,6 +1,7 @@
 const staffLeaveRepository = require('@repositories/staff-leave/staff-leave.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const prisma = require('@prisma/client');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
@@ -105,19 +106,77 @@ const createStaffLeave = async (data, userId, ipAddress) => {
       payload.half_day_period = null;
     }
 
+    // Default status when omitted; HR may create as APPROVED.
+    if (!payload.status) {
+      payload.status = 'REQUESTED';
+    }
+
     const staffLeave = await staffLeaveRepository.create(payload);
+
+    let scheduleImpact = null;
+    if (staffLeave.status === 'APPROVED') {
+      scheduleImpact = await applyApprovedLeaveToSchedule(staffLeave);
+    }
+
     createAuditLog({
       user_id: userId,
       action: 'CREATE',
       entity: 'staff_leave',
       entity_id: staffLeave.id,
-      diff: { after: staffLeave },
+      diff: {
+        after: staffLeave,
+        metadata: scheduleImpact
+          ? { schedule_impact: scheduleImpact }
+          : undefined,
+      },
       ip_address: ipAddress}).catch(() => {});
-    return staffLeave;
+    return {
+      ...staffLeave,
+      ...(scheduleImpact ? { schedule_impact: scheduleImpact } : {}),
+    };
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
   }
+};
+
+/**
+ * Soft-deletes overlapping shift assignments so approved leave clears the
+ * staff roster/calendar and blocks future scheduling for those shifts.
+ */
+const applyApprovedLeaveToSchedule = async (leave) => {
+  const start = new Date(leave.start_date);
+  const end = new Date(leave.end_date);
+  // Inclusive end-of-day for date-only leave windows.
+  end.setUTCHours(23, 59, 59, 999);
+
+  const overlapping = await prisma.shift_assignment.findMany({
+    where: {
+      deleted_at: null,
+      staff_profile_id: leave.staff_profile_id,
+      shift: {
+        deleted_at: null,
+        start_time: { lte: end },
+        end_time: { gte: start },
+      },
+    },
+    select: { id: true },
+  });
+
+  if (!overlapping.length) {
+    return { assignments_cleared: 0 };
+  }
+
+  const now = new Date();
+  await prisma.shift_assignment.updateMany({
+    where: {
+      id: { in: overlapping.map((row) => row.id) },
+      deleted_at: null,
+    },
+    data: { deleted_at: now },
+  });
+
+  return { assignments_cleared: overlapping.length };
 };
 
 const createMyStaffLeave = async (data, userId, ipAddress) => {
@@ -200,4 +259,6 @@ module.exports = {
   createStaffLeave,
   createMyStaffLeave,
   updateStaffLeave,
-  deleteStaffLeave};
+  deleteStaffLeave,
+  applyApprovedLeaveToSchedule,
+};

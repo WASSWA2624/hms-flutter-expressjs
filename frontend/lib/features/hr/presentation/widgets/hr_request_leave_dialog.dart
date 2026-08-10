@@ -15,13 +15,17 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 /// Global entry point for requesting staff leave with full leave metadata.
+///
+/// Leave created from HR is auto-approved (no approval workflow).
 Future<void> showHrRequestLeaveDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
   // Shared by Human resources Staff actions and Leave requests strip primary
   // (both matrix ∩ `hr:write`).
-  if (!hrWriteRequirement.isAllowed(ref.read(appAccessPolicyProvider))) {
+  if (!HrHumanResourcesAtomPermissions.requestLeave.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
     return;
   }
 
@@ -31,26 +35,19 @@ Future<void> showHrRequestLeaveDialog(
   );
   await controller.ensureAssignmentReferenceData();
 
-  final HrReferenceData referenceData =
-      ref
-          .read(hrWorkspaceControllerProvider)
-          .asData
-          ?.value
-          .when(
-            success: (HrWorkspaceState state) => state.referenceData,
-            failure: (_) => const HrReferenceData(),
-          ) ??
-      const HrReferenceData();
-
-  final String? currentStaffId = ref
+  final HrWorkspaceState? workspace = ref
       .read(hrWorkspaceControllerProvider)
       .asData
       ?.value
       .when(
-        success: (HrWorkspaceState state) =>
-            state.selectedStaff?.profile.effectiveId,
+        success: (HrWorkspaceState state) => state,
         failure: (_) => null,
       );
+
+  final HrReferenceData referenceData =
+      workspace?.referenceData ?? const HrReferenceData();
+  final HrStaffDetail? selectedStaff = workspace?.selectedStaff;
+  final String? currentStaffId = selectedStaff?.profile.effectiveId;
 
   final GlobalKey<_HrRequestLeaveFieldsState> fieldsKey =
       GlobalKey<_HrRequestLeaveFieldsState>();
@@ -66,7 +63,7 @@ Future<void> showHrRequestLeaveDialog(
     submitLabel: l10n.hrRequestLeaveAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    maxWidth: 640,
+    maxWidth: 720,
     buildFields:
         (
           BuildContext context,
@@ -78,6 +75,8 @@ Future<void> showHrRequestLeaveDialog(
             key: fieldsKey,
             referenceData: referenceData,
             currentStaffId: currentStaffId,
+            shiftAssignments:
+                selectedStaff?.shiftAssignments ?? const <HrShiftAssignment>[],
           );
         },
     onSubmit: () {
@@ -103,11 +102,13 @@ class _HrRequestLeaveFields extends StatefulWidget {
   const _HrRequestLeaveFields({
     required this.referenceData,
     this.currentStaffId,
+    this.shiftAssignments = const <HrShiftAssignment>[],
     super.key,
   });
 
   final HrReferenceData referenceData;
   final String? currentStaffId;
+  final List<HrShiftAssignment> shiftAssignments;
 
   @override
   State<_HrRequestLeaveFields> createState() => _HrRequestLeaveFieldsState();
@@ -121,11 +122,18 @@ class _HrRequestLeaveFieldsState extends State<_HrRequestLeaveFields> {
   );
 
   String? _leaveType = 'ANNUAL';
-  String? _halfDayPeriod = 'MORNING';
   String? _coveringStaffId;
-  bool _isHalfDay = false;
   DateTime? _startDate = DateTime.now();
   DateTime? _endDate = DateTime.now();
+
+  /// Prevents recursive updates while syncing the three duration fields.
+  bool _syncing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncFromStartAndDays();
+  }
 
   @override
   void dispose() {
@@ -135,10 +143,59 @@ class _HrRequestLeaveFieldsState extends State<_HrRequestLeaveFields> {
     super.dispose();
   }
 
-  static int _inclusiveDays(DateTime start, DateTime end) {
-    final DateTime from = DateTime(start.year, start.month, start.day);
-    final DateTime to = DateTime(end.year, end.month, end.day);
-    return to.difference(from).inDays + 1;
+  Set<int> get _rosterWeekdays {
+    final Set<int> days = <int>{};
+    for (final HrShiftAssignment assignment in widget.shiftAssignments) {
+      final DateTime? start = assignment.startTime?.toLocal();
+      if (start == null) {
+        continue;
+      }
+      days.add(start.weekday);
+    }
+    return days;
+  }
+
+  bool _isWorkingDay(DateTime date) {
+    final DateTime day = DateTime(date.year, date.month, date.day);
+    final Set<int> rosterDays = _rosterWeekdays;
+    if (rosterDays.isNotEmpty) {
+      return rosterDays.contains(day.weekday);
+    }
+    // Fallback when no roster: Mon–Fri count as working days.
+    return day.weekday >= DateTime.monday && day.weekday <= DateTime.friday;
+  }
+
+  int _countWorkingDays(DateTime start, DateTime end) {
+    DateTime cursor = DateTime(start.year, start.month, start.day);
+    final DateTime last = DateTime(end.year, end.month, end.day);
+    if (last.isBefore(cursor)) {
+      return 0;
+    }
+    int count = 0;
+    while (!cursor.isAfter(last)) {
+      if (_isWorkingDay(cursor)) {
+        count += 1;
+      }
+      cursor = cursor.add(const Duration(days: 1));
+    }
+    return count;
+  }
+
+  DateTime _endAfterWorkingDays(DateTime start, int workingDays) {
+    final int target = workingDays < 1 ? 1 : workingDays;
+    DateTime cursor = DateTime(start.year, start.month, start.day);
+    int counted = 0;
+    // Safety bound: never walk more than ~2 years.
+    for (int i = 0; i < 800; i += 1) {
+      if (_isWorkingDay(cursor)) {
+        counted += 1;
+        if (counted >= target) {
+          return cursor;
+        }
+      }
+      cursor = cursor.add(const Duration(days: 1));
+    }
+    return cursor;
   }
 
   int get _days {
@@ -147,32 +204,41 @@ class _HrRequestLeaveFieldsState extends State<_HrRequestLeaveFields> {
   }
 
   void _setDaysText(int value) {
-    final String text = value.toString();
+    final String text = (value < 1 ? 1 : value).toString();
     if (_daysController.text != text) {
-      _daysController.text = text;
+      _daysController.value = TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: text.length),
+      );
     }
   }
 
+  void _syncFromStartAndDays() {
+    final DateTime? start = _startDate;
+    if (start == null) {
+      return;
+    }
+    _syncing = true;
+    _endDate = _endAfterWorkingDays(start, _days);
+    _syncing = false;
+  }
+
   void _onStartChanged(DateTime? value) {
+    if (_syncing) {
+      return;
+    }
     setState(() {
       _startDate = value;
       if (value != null) {
-        if (_isHalfDay) {
-          _endDate = DateTime(value.year, value.month, value.day);
-          _setDaysText(1);
-        } else {
-          _endDate = DateTime(
-            value.year,
-            value.month,
-            value.day,
-          ).add(Duration(days: _days - 1));
-        }
+        _syncing = true;
+        _endDate = _endAfterWorkingDays(value, _days);
+        _syncing = false;
       }
     });
   }
 
   void _onDaysChanged(String _) {
-    if (_isHalfDay) {
+    if (_syncing) {
       return;
     }
     final DateTime? start = _startDate;
@@ -180,36 +246,24 @@ class _HrRequestLeaveFieldsState extends State<_HrRequestLeaveFields> {
       return;
     }
     setState(() {
-      _endDate = DateTime(
-        start.year,
-        start.month,
-        start.day,
-      ).add(Duration(days: _days - 1));
+      _syncing = true;
+      _endDate = _endAfterWorkingDays(start, _days);
+      _syncing = false;
     });
   }
 
   void _onEndChanged(DateTime? value) {
+    if (_syncing) {
+      return;
+    }
     setState(() {
       _endDate = value;
       final DateTime? start = _startDate;
-      if (start != null && value != null && !_isHalfDay) {
-        final int days = _inclusiveDays(start, value);
+      if (start != null && value != null) {
+        _syncing = true;
+        final int days = _countWorkingDays(start, value);
         _setDaysText(days < 1 ? 1 : days);
-      }
-    });
-  }
-
-  void _onHalfDayChanged(bool? value) {
-    final bool isHalfDay = value == true;
-    setState(() {
-      _isHalfDay = isHalfDay;
-      if (isHalfDay) {
-        _setDaysText(1);
-        final DateTime? start = _startDate;
-        if (start != null) {
-          _endDate = DateTime(start.year, start.month, start.day);
-        }
-        _halfDayPeriod ??= 'MORNING';
+        _syncing = false;
       }
     });
   }
@@ -230,28 +284,37 @@ class _HrRequestLeaveFieldsState extends State<_HrRequestLeaveFields> {
         value: 'ANNUAL',
         label: l10n.hrReferenceLeaveTypeAnnual,
       ),
-    ];
-  }
-
-  List<AppSelectOption<String>> get _halfDayPeriodOptions {
-    final AppLocalizations l10n = context.l10n;
-    if (widget.referenceData.leaveHalfDayPeriods.isNotEmpty) {
-      return <AppSelectOption<String>>[
-        for (final HrOption option in widget.referenceData.leaveHalfDayPeriods)
-          AppSelectOption<String>(
-            value: option.value,
-            label: l10n.hrLocalizedOptionLabel(option),
-          ),
-      ];
-    }
-    return <AppSelectOption<String>>[
       AppSelectOption<String>(
-        value: 'MORNING',
-        label: l10n.hrReferenceLeaveHalfDayPeriodMorning,
+        value: 'SICK',
+        label: l10n.hrReferenceLeaveTypeSick,
       ),
       AppSelectOption<String>(
-        value: 'AFTERNOON',
-        label: l10n.hrReferenceLeaveHalfDayPeriodAfternoon,
+        value: 'MATERNITY',
+        label: l10n.hrReferenceLeaveTypeMaternity,
+      ),
+      AppSelectOption<String>(
+        value: 'PATERNITY',
+        label: l10n.hrReferenceLeaveTypePaternity,
+      ),
+      AppSelectOption<String>(
+        value: 'COMPASSIONATE',
+        label: l10n.hrReferenceLeaveTypeCompassionate,
+      ),
+      AppSelectOption<String>(
+        value: 'UNPAID',
+        label: l10n.hrReferenceLeaveTypeUnpaid,
+      ),
+      AppSelectOption<String>(
+        value: 'STUDY',
+        label: l10n.hrReferenceLeaveTypeStudy,
+      ),
+      AppSelectOption<String>(
+        value: 'EMERGENCY',
+        label: l10n.hrReferenceLeaveTypeEmergency,
+      ),
+      AppSelectOption<String>(
+        value: 'OTHER',
+        label: l10n.hrReferenceLeaveTypeOther,
       ),
     ];
   }
@@ -275,13 +338,10 @@ class _HrRequestLeaveFieldsState extends State<_HrRequestLeaveFields> {
     if (_endDate == null) {
       return l10n.hrFieldRequiredLabel(l10n.hrEndDateLabel);
     }
-    if (_isHalfDay) {
-      if ((_halfDayPeriod ?? '').trim().isEmpty) {
-        return l10n.hrFieldRequiredLabel(l10n.hrLeaveHalfDayPeriodLabel);
-      }
-      if (_inclusiveDays(_startDate!, _endDate!) != 1) {
-        return l10n.hrLeaveHalfDaySingleDayError;
-      }
+    if (_endDate!.isBefore(
+      DateTime(_startDate!.year, _startDate!.month, _startDate!.day),
+    )) {
+      return l10n.hrFieldRequiredLabel(l10n.hrEndDateLabel);
     }
     return null;
   }
@@ -291,8 +351,7 @@ class _HrRequestLeaveFieldsState extends State<_HrRequestLeaveFields> {
       'leave_type': _leaveType,
       'start_date': _datePayload(_startDate),
       'end_date': _datePayload(_endDate),
-      'is_half_day': _isHalfDay,
-      if (_isHalfDay) 'half_day_period': _halfDayPeriod,
+      'is_half_day': false,
       'reason': _reasonController.text.trim(),
       'handover_notes': _handoverController.text.trim(),
       if ((_coveringStaffId ?? '').trim().isNotEmpty)
@@ -303,6 +362,7 @@ class _HrRequestLeaveFieldsState extends State<_HrRequestLeaveFields> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final bool hasRoster = _rosterWeekdays.isNotEmpty;
 
     return AppFormSection(
       children: <Widget>[
@@ -313,54 +373,42 @@ class _HrRequestLeaveFieldsState extends State<_HrRequestLeaveFields> {
           options: _leaveTypeOptions,
           onChanged: (String? value) => setState(() => _leaveType = value),
         ),
-        AppDateField(
-          value: _startDate,
-          labelText: l10n.hrStartDateLabel,
-          isRequired: true,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: _onStartChanged,
-        ),
-        AppCheckboxField(
-          title: l10n.hrLeaveHalfDayLabel,
-          subtitle: l10n.hrLeaveHalfDayHelper,
-          value: _isHalfDay,
-          onChanged: _onHalfDayChanged,
-        ),
-        if (_isHalfDay)
-          AppSelectField<String>(
-            value: _halfDayPeriod,
-            labelText: l10n.hrLeaveHalfDayPeriodLabel,
+        AppResponsiveFieldRow.two(
+          gap: AppResponsiveFieldRowGap.form,
+          left: AppDateField(
+            value: _startDate,
+            labelText: l10n.hrStartDateLabel,
             isRequired: true,
-            options: _halfDayPeriodOptions,
-            onChanged: (String? value) =>
-                setState(() => _halfDayPeriod = value),
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2100),
+            currentDate: DateTime.now(),
+            pickerButtonLabel: l10n.hrPickDateAction,
+            invalidDateMessage: l10n.appDateInvalidMessage,
+            onChanged: _onStartChanged,
           ),
-        if (!_isHalfDay)
-          AppTextField(
-            controller: _daysController,
-            labelText: l10n.hrLeaveDaysLabel,
-            helperText: l10n.hrLeaveDaysHelper,
-            keyboardType: TextInputType.number,
-            inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.digitsOnly,
-            ],
-            onChanged: _onDaysChanged,
+          right: AppDateField(
+            value: _endDate,
+            labelText: l10n.hrEndDateLabel,
+            isRequired: true,
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2100),
+            currentDate: DateTime.now(),
+            pickerButtonLabel: l10n.hrPickDateAction,
+            invalidDateMessage: l10n.appDateInvalidMessage,
+            onChanged: _onEndChanged,
           ),
-        AppDateField(
-          value: _endDate,
-          labelText: l10n.hrEndDateLabel,
-          isRequired: true,
-          enabled: !_isHalfDay,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: _onEndChanged,
+        ),
+        AppTextField(
+          controller: _daysController,
+          labelText: l10n.hrLeaveDaysLabel,
+          helperText: hasRoster
+              ? l10n.hrLeaveDaysRosterHelper
+              : l10n.hrLeaveDaysHelper,
+          keyboardType: TextInputType.number,
+          inputFormatters: <TextInputFormatter>[
+            FilteringTextInputFormatter.digitsOnly,
+          ],
+          onChanged: _onDaysChanged,
         ),
         if (_coveringStaffOptions.isNotEmpty)
           AppSelectField<String>.searchable(

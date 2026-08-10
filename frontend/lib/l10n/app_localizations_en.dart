@@ -20648,7 +20648,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrLeaveDaysHelper =>
-      'Auto-calculates the end date from the start date.';
+      'Working days between start and end. Changing any of these three fields updates the others.';
+
+  @override
+  String get hrLeaveDaysRosterHelper =>
+      'Counted from this staff member\'s roster working days. Changing start, end, or days updates the others.';
 
   @override
   String get hrLeaveTypeLabel => 'Leave type';
@@ -22043,7 +22047,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrModuleAccessSectionTitle => 'Subscribed modules';
 
   @override
+  String get hrModuleAccessSectionSubtitle =>
+      'Entitlements from the facility subscription.';
+
+  @override
+  String get hrModuleAccessGrantedLabel => 'Granted';
+
+  @override
+  String get hrModuleAccessNotGrantedLabel => 'Not granted';
+
+  @override
+  String hrModuleAccessModulesCountChip(int count) {
+    return 'Modules: $count';
+  }
+
+  @override
+  String hrModuleAccessGrantedSummaryLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count granted',
+      one: '1 granted',
+      zero: 'None granted',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hrModuleAccessPermissionsCountChip(int count) {
+    return 'Permissions: $count';
+  }
+
+  @override
   String get hrEffectivePermissionsTitle => 'Effective permissions';
+
+  @override
+  String get hrEffectivePermissionsSubtitle =>
+      'Permissions inherited from assigned roles.';
 
   @override
   String get hrNoModuleAccessLabel => 'No active module entitlements.';

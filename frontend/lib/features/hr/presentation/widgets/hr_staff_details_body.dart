@@ -80,6 +80,12 @@ class HrStaffDetailsBody extends ConsumerWidget {
     );
     final List<HrRosterDayPreview> rosterDays = _rosterDayPreviews(
       detail.shiftAssignments,
+      approvedLeaves: detail.leaves
+          .where(
+            (HrStaffLeave leave) =>
+                (leave.status ?? '').toUpperCase() == 'APPROVED',
+          )
+          .toList(growable: false),
     );
     final HrStaffAccessSummary? summary = detail.accessSummary;
     final List<HrUserRole> roles = summary?.userRoles ?? const <HrUserRole>[];
@@ -185,7 +191,7 @@ class HrStaffDetailsBody extends ConsumerWidget {
       AppCollapsibleSection(
         title: l10n.hrStaffLeavesSectionTitle,
         titleIcon: Icons.event_busy_outlined,
-        initiallyExpanded: false,
+        initiallyExpanded: detail.leaves.isNotEmpty,
         headerActions: <Widget>[
           if (canWrite &&
               !profile.isSeparated &&
@@ -778,8 +784,9 @@ String? _primaryRosterId(List<HrShiftAssignment> assignments) {
 }
 
 List<HrRosterDayPreview> _rosterDayPreviews(
-  List<HrShiftAssignment> assignments,
-) {
+  List<HrShiftAssignment> assignments, {
+  List<HrStaffLeave> approvedLeaves = const <HrStaffLeave>[],
+}) {
   final DateTime now = DateTime.now();
   final DateTime from = DateTime(now.year, now.month);
   final DateTime to = DateTime(now.year, now.month + 1, 0);
@@ -819,18 +826,56 @@ List<HrRosterDayPreview> _rosterDayPreviews(
       rangeEnd = DateTime(dated.last.year, dated.last.month + 1, 0);
     }
   }
+  for (final HrStaffLeave leave in approvedLeaves) {
+    final DateTime? start = leave.startDate?.toLocal();
+    final DateTime? end = leave.endDate?.toLocal();
+    if (start == null) {
+      continue;
+    }
+    final DateTime leaveStart = DateTime(start.year, start.month, start.day);
+    final DateTime leaveEnd = end == null
+        ? leaveStart
+        : DateTime(end.year, end.month, end.day);
+    if (leaveStart.isBefore(rangeStart)) {
+      rangeStart = DateTime(leaveStart.year, leaveStart.month);
+    }
+    if (leaveEnd.isAfter(rangeEnd)) {
+      rangeEnd = DateTime(leaveEnd.year, leaveEnd.month + 1, 0);
+    }
+  }
+
+  bool isApprovedLeaveDay(DateTime day) {
+    final DateTime cursor = DateTime(day.year, day.month, day.day);
+    for (final HrStaffLeave leave in approvedLeaves) {
+      final DateTime? start = leave.startDate?.toLocal();
+      final DateTime? end = leave.endDate?.toLocal();
+      if (start == null) {
+        continue;
+      }
+      final DateTime leaveStart = DateTime(start.year, start.month, start.day);
+      final DateTime leaveEnd = end == null
+          ? leaveStart
+          : DateTime(end.year, end.month, end.day);
+      if (!cursor.isBefore(leaveStart) && !cursor.isAfter(leaveEnd)) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   final List<HrRosterDayPreview> days = <HrRosterDayPreview>[];
   DateTime cursor = rangeStart;
   while (!cursor.isAfter(rangeEnd)) {
     final String key = hrRosterDateKey(cursor);
-    final List<HrRosterShiftWindow> dayShifts =
-        List<HrRosterShiftWindow>.from(
-          byDay[key] ?? const <HrRosterShiftWindow>[],
-        )..sort(
-          (HrRosterShiftWindow a, HrRosterShiftWindow b) =>
-              a.start.compareTo(b.start),
-        );
+    final bool onLeave = isApprovedLeaveDay(cursor);
+    final List<HrRosterShiftWindow> dayShifts = onLeave
+        ? const <HrRosterShiftWindow>[]
+        : (List<HrRosterShiftWindow>.from(
+            byDay[key] ?? const <HrRosterShiftWindow>[],
+          )..sort(
+            (HrRosterShiftWindow a, HrRosterShiftWindow b) =>
+                a.start.compareTo(b.start),
+          ));
     final bool weekend =
         cursor.weekday == DateTime.saturday ||
         cursor.weekday == DateTime.sunday;
@@ -839,7 +884,8 @@ List<HrRosterDayPreview> _rosterDayPreviews(
         date: cursor,
         label: key,
         isHoliday: false,
-        isWorkingDay: dayShifts.isNotEmpty || !weekend,
+        isLeave: onLeave,
+        isWorkingDay: onLeave ? false : (dayShifts.isNotEmpty || !weekend),
         dayStartMinutes: 8 * 60,
         dayEndMinutes: 17 * 60,
         shifts: dayShifts,

@@ -38186,8 +38186,14 @@ abstract class AppLocalizations {
   /// Human resources workspace text for hrLeaveDaysHelper.
   ///
   /// In en, this message translates to:
-  /// **'Auto-calculates the end date from the start date.'**
+  /// **'Working days between start and end. Changing any of these three fields updates the others.'**
   String get hrLeaveDaysHelper;
+
+  /// Helper when leave days are calculated from the staff roster schedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Counted from this staff member\'s roster working days. Changing start, end, or days updates the others.'**
+  String get hrLeaveDaysRosterHelper;
 
   /// Human resources workspace text for hrLeaveTypeLabel.
   ///
@@ -40793,11 +40799,53 @@ abstract class AppLocalizations {
   /// **'Subscribed modules'**
   String get hrModuleAccessSectionTitle;
 
+  /// Subtitle under the subscribed modules section header.
+  ///
+  /// In en, this message translates to:
+  /// **'Entitlements from the facility subscription.'**
+  String get hrModuleAccessSectionSubtitle;
+
+  /// Status badge when a subscribed module is granted.
+  ///
+  /// In en, this message translates to:
+  /// **'Granted'**
+  String get hrModuleAccessGrantedLabel;
+
+  /// Status badge when a subscribed module is not granted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not granted'**
+  String get hrModuleAccessNotGrantedLabel;
+
+  /// Labeled module count chip in the module access dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Modules: {count}'**
+  String hrModuleAccessModulesCountChip(int count);
+
+  /// Summary of granted module entitlements.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{None granted} =1{1 granted} other{{count} granted}}'**
+  String hrModuleAccessGrantedSummaryLabel(int count);
+
+  /// Labeled effective-permissions count chip in the module access dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions: {count}'**
+  String hrModuleAccessPermissionsCountChip(int count);
+
   /// Section title for effective permissions preview.
   ///
   /// In en, this message translates to:
   /// **'Effective permissions'**
   String get hrEffectivePermissionsTitle;
+
+  /// Subtitle under the effective permissions section header.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions inherited from assigned roles.'**
+  String get hrEffectivePermissionsSubtitle;
 
   /// Empty state for module access.
   ///

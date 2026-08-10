@@ -2129,13 +2129,20 @@ const approveLeave = async (leaveIdentifier, payload = {}, userId = null, ipAddr
     data: { status: 'APPROVED' },
   });
 
+  const { applyApprovedLeaveToSchedule } = require('@services/staff-leave/staff-leave.service');
+  const scheduleImpact = await applyApprovedLeaveToSchedule(updated);
+
   createAuditLog({
     user_id: userId,
     action: 'UPDATE',
     entity: 'staff_leave',
     entity_id: leaveRecord.id,
     diff: {
-      metadata: { operation: 'LEAVE_APPROVE', reason: normalizeString(payload.reason) || null },
+      metadata: {
+        operation: 'LEAVE_APPROVE',
+        reason: normalizeString(payload.reason) || null,
+        schedule_impact: scheduleImpact,
+      },
     },
     ip_address: ipAddress,
   }).catch(() => {});

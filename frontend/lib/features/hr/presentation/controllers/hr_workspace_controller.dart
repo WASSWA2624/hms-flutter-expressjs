@@ -565,8 +565,9 @@ final class HrWorkspaceController
       (HrStaffDetail selected) =>
           _repository.createStaffLeave(<String, Object?>{
             'staff_profile_id': selected.profile.effectiveId,
-            'status': 'REQUESTED',
             ...payload,
+            // HR desk creates leave as already approved (no approval workflow).
+            'status': 'APPROVED',
           }),
       refreshOverviewAfter: true,
       refreshWorkItemsAfter: true,

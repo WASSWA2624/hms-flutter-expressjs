@@ -4,6 +4,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/app_permission_catalog_localizations.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
@@ -100,59 +101,252 @@ Future<void> showHrModuleAccessDialog(
       title: Text(l10n.hrModuleAccessDialogTitle),
       icon: const Icon(Icons.apps_outlined),
       scrollable: true,
-      maxWidth: 640,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
+      maxWidth: 980,
+      content: _HrModuleAccessDialogBody(access: access),
+    ),
+  );
+}
+
+class _HrModuleAccessDialogBody extends StatelessWidget {
+  const _HrModuleAccessDialogBody({required this.access});
+
+  final HrStaffAccessSummary? access;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final List<HrModuleAccess> modules =
+        access?.moduleAccess ?? const <HrModuleAccess>[];
+    final List<String> permissions =
+        access?.effectivePermissions ?? const <String>[];
+    final int grantedCount = modules
+        .where((HrModuleAccess module) => module.granted)
+        .length;
+    final List<AppPermissionAssignmentOption> permissionOptions = permissions
+        .map(
+          (String code) => AppPermissionAssignmentOption(
+            id: code,
+            code: code,
+            label: l10n.permissionCatalogLabelForCode(code),
+            description: code,
+          ),
+        )
+        .toList(growable: false);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (access != null && access!.hasLinkedUser) ...<Widget>[
+          AppInfoTileGrid(
+            emptyValue: l10n.profileUnknownValue,
+            items: <AppInfoTileData>[
+              AppInfoTileData(
+                label: l10n.hrLinkedUserLabel,
+                value:
+                    access!.linkedUserFullName ??
+                    access!.linkedUserEmail ??
+                    access!.linkedUserDisplayId,
+                icon: Icons.person_outline,
+              ),
+              AppInfoTileData(
+                label: l10n.hrModuleAccessSectionTitle,
+                value: l10n.hrModuleAccessGrantedSummaryLabel(grantedCount),
+                icon: Icons.extension_outlined,
+              ),
+              AppInfoTileData(
+                label: l10n.hrEffectivePermissionsTitle,
+                value: l10n.hrAccessPermissionCountLabel(permissions.length),
+                icon: Icons.verified_user_outlined,
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
+        ],
+        AppCollapsibleSection(
+          title: l10n.hrModuleAccessSectionTitle,
+          subtitle: l10n.hrModuleAccessSectionSubtitle,
+          titleIcon: Icons.extension_outlined,
+          headerActions: <Widget>[
+            _HrModuleAccessCountChip(
+              count: modules.length,
+              labeledCount: l10n.hrModuleAccessModulesCountChip(modules.length),
+            ),
+          ],
+          child: modules.isEmpty
+              ? AppStateView(
+                  title: l10n.hrNoModuleAccessLabel,
+                  body: l10n.hrModuleAccessSectionSubtitle,
+                  variant: AppStateViewVariant.empty,
+                )
+              : _HrModuleAccessGrid(modules: modules),
+        ),
+        SizedBox(height: theme.spacing.md),
+        AppCollapsibleSection(
+          title: l10n.hrEffectivePermissionsTitle,
+          subtitle: l10n.hrEffectivePermissionsSubtitle,
+          titleIcon: Icons.verified_user_outlined,
+          headerActions: <Widget>[
+            _HrModuleAccessCountChip(
+              count: permissions.length,
+              labeledCount: l10n.hrModuleAccessPermissionsCountChip(
+                permissions.length,
+              ),
+            ),
+          ],
+          child: AppPermissionGroupedView(
+            permissions: permissionOptions,
+            emptyMessage: l10n.profileUnknownValue,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HrModuleAccessGrid extends StatelessWidget {
+  const _HrModuleAccessGrid({required this.modules});
+
+  final List<HrModuleAccess> modules;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppResponsiveWrap(
+      maxColumns: 2,
+      minItemWidth: 280,
+      children: <Widget>[
+        for (final HrModuleAccess module in modules)
+          _HrModuleAccessCard(module: module),
+      ],
+    );
+  }
+}
+
+class _HrModuleAccessCard extends StatelessWidget {
+  const _HrModuleAccessCard({required this.module});
+
+  final HrModuleAccess module;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final bool granted = module.granted;
+    final String title = (module.label ?? module.slug).trim().isEmpty
+        ? module.slug
+        : (module.label ?? module.slug);
+    final AppWorkspaceStatusTone tone = granted
+        ? AppWorkspaceStatusTone.success
+        : AppWorkspaceStatusTone.neutral;
+    final Color iconBackground = granted
+        ? theme.statusColors.successContainer
+        : colors.surfaceContainerHighest;
+    final Color iconColor = granted
+        ? theme.statusColors.onSuccessContainer
+        : colors.onSurfaceVariant;
+
+    return AppContentPanel(
+      tone: tone,
+      density: AppContentPanelDensity.compact,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          AppCollapsibleSection(
-            title: l10n.hrModuleAccessSectionTitle,
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: iconBackground,
+              borderRadius: BorderRadius.circular(
+                context.responsiveRadius(theme.radius.md),
+              ),
+            ),
+            child: Icon(
+              granted ? Icons.check_circle_outline : Icons.lock_outline,
+              color: iconColor,
+              size: 22,
+            ),
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                if (access == null || access.moduleAccess.isEmpty)
-                  Text(l10n.hrNoModuleAccessLabel)
-                else
-                  for (final HrModuleAccess module in access.moduleAccess)
-                    ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(
-                        module.granted
-                            ? Icons.check_circle_outline
-                            : Icons.block,
-                        color: module.granted
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.error,
-                      ),
-                      title: Text(module.label ?? module.slug),
-                      subtitle: module.moduleGroup == null
-                          ? null
-                          : Text(module.moduleGroup!),
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: AppFontWeight.emphasis,
+                  ),
+                ),
+                if (module.slug.trim().isNotEmpty &&
+                    module.slug.trim().toLowerCase() !=
+                        title.trim().toLowerCase()) ...<Widget>[
+                  SizedBox(height: theme.spacing.xs),
+                  Text(
+                    module.slug,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
                     ),
+                  ),
+                ],
+                SizedBox(height: theme.spacing.sm),
+                AppStatusBadge(
+                  label: granted
+                      ? l10n.hrModuleAccessGrantedLabel
+                      : l10n.hrModuleAccessNotGrantedLabel,
+                  tone: granted
+                      ? AppWorkspaceStatusTone.success
+                      : AppWorkspaceStatusTone.warning,
+                  icon: granted
+                      ? Icons.check_circle_outline
+                      : Icons.block_outlined,
+                ),
               ],
             ),
           ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          AppCollapsibleSection(
-            title: l10n.hrEffectivePermissionsTitle,
-            child: access == null || access.effectivePermissions.isEmpty
-                ? Text(l10n.profileUnknownValue)
-                : Wrap(
-                    spacing: Theme.of(context).spacing.sm,
-                    runSpacing: Theme.of(context).spacing.sm,
-                    children: access.effectivePermissions
-                        .take(24)
-                        .map(
-                          (String permission) => Chip(label: Text(permission)),
-                        )
-                        .toList(growable: false),
-                  ),
-          ),
         ],
       ),
-    ),
-  );
+    );
+  }
+}
+
+class _HrModuleAccessCountChip extends StatelessWidget {
+  const _HrModuleAccessCountChip({
+    required this.count,
+    required this.labeledCount,
+  });
+
+  final int count;
+  final String labeledCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final AppActionLabelScope? labelScope = AppActionLabelScope.maybeOf(
+      context,
+    );
+    final bool showLabel =
+        labelScope?.forceIconOnly != true && (labelScope?.showLabels ?? true);
+
+    return GestureDetector(
+      onTap: () {},
+      behavior: HitTestBehavior.opaque,
+      child: Chip(
+        avatar: Icon(
+          Icons.format_list_numbered_outlined,
+          size: 16,
+          color: colorScheme.primary,
+        ),
+        label: Text(showLabel ? labeledCount : '$count'),
+        backgroundColor: colorScheme.primaryContainer,
+        visualDensity: VisualDensity.compact,
+        labelStyle: theme.textTheme.labelSmall,
+      ),
+    );
+  }
 }
 
 Future<void> showHrManageScheduleTemplatesDialog(

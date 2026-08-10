@@ -84,11 +84,13 @@ final class HrRosterDayPreview {
     required this.dayStartMinutes,
     required this.dayEndMinutes,
     required this.shifts,
+    this.isLeave = false,
   });
 
   final DateTime date;
   final String label;
   final bool isHoliday;
+  final bool isLeave;
   final bool isWorkingDay;
   final int dayStartMinutes;
   final int dayEndMinutes;
@@ -182,6 +184,9 @@ final class HrRosterDayPreview {
   }
 
   HrRosterDayTone get tone {
+    if (isLeave) {
+      return HrRosterDayTone.holiday;
+    }
     if (isHoliday) {
       return HrRosterDayTone.holiday;
     }
@@ -198,6 +203,9 @@ final class HrRosterDayPreview {
   }
 
   String statusLabel(AppLocalizations l10n) {
+    if (isLeave) {
+      return l10n.hrLeaveLabel;
+    }
     if (isHoliday) {
       return l10n.hrRosterPublicHolidayLabel;
     }
