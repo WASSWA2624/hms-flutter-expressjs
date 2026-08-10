@@ -176,5 +176,17 @@ void main() {
       isTrue,
       reason: 'Role-inherited permissions start collapsed',
     );
+    expect(
+      File('lib/shared/components/app_user_access_panel.dart')
+          .readAsStringSync()
+          .contains('permissionsInitiallyExpanded: false') ||
+          File(
+            'lib/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart',
+          ).readAsStringSync().contains(
+            'permissionsInitiallyExpanded: false',
+          ),
+      isTrue,
+      reason: 'Direct permissions start collapsed in user detail',
+    );
   });
 }

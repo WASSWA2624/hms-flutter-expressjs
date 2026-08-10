@@ -3,6 +3,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_permission_assignment_picker.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 
@@ -69,14 +70,10 @@ class _AppPermissionGroupedViewState extends State<AppPermissionGroupedView> {
     final Map<String, List<AppPermissionAssignmentOption>> grouped = _groupAll(
       widget.permissions,
     );
-    if (grouped.isEmpty) {
+    if (grouped.isEmpty || !widget.initiallyExpandAll) {
       return <String>{};
     }
-    if (widget.initiallyExpandAll || grouped.length <= 4) {
-      return grouped.keys.toSet();
-    }
-    final List<String> keys = grouped.keys.toList(growable: false)..sort();
-    return <String>{keys.first};
+    return grouped.keys.toSet();
   }
 
   Map<String, List<AppPermissionAssignmentOption>> _groupAll(
@@ -188,13 +185,16 @@ class _AppPermissionGroupedViewState extends State<AppPermissionGroupedView> {
                 return Column(
                   children: <Widget>[
                     for (final String groupKey in groupKeys)
-                      _PermissionGroupCard(
-                        groupKey: groupKey,
-                        permissions:
-                            grouped[groupKey] ??
-                            const <AppPermissionAssignmentOption>[],
-                        expanded: _expandedGroupKeys.contains(groupKey),
-                        onToggle: () => _toggleGroup(groupKey),
+                      Padding(
+                        padding: EdgeInsets.only(bottom: theme.spacing.sm),
+                        child: _PermissionGroupCard(
+                          groupKey: groupKey,
+                          permissions:
+                              grouped[groupKey] ??
+                              const <AppPermissionAssignmentOption>[],
+                          expanded: _expandedGroupKeys.contains(groupKey),
+                          onToggle: () => _toggleGroup(groupKey),
+                        ),
                       ),
                   ],
                 );
@@ -211,13 +211,16 @@ class _AppPermissionGroupedViewState extends State<AppPermissionGroupedView> {
                     child: Column(
                       children: <Widget>[
                         for (final String groupKey in leftKeys)
-                          _PermissionGroupCard(
-                            groupKey: groupKey,
-                            permissions:
-                                grouped[groupKey] ??
-                                const <AppPermissionAssignmentOption>[],
-                            expanded: _expandedGroupKeys.contains(groupKey),
-                            onToggle: () => _toggleGroup(groupKey),
+                          Padding(
+                            padding: EdgeInsets.only(bottom: theme.spacing.sm),
+                            child: _PermissionGroupCard(
+                              groupKey: groupKey,
+                              permissions:
+                                  grouped[groupKey] ??
+                                  const <AppPermissionAssignmentOption>[],
+                              expanded: _expandedGroupKeys.contains(groupKey),
+                              onToggle: () => _toggleGroup(groupKey),
+                            ),
                           ),
                       ],
                     ),
@@ -227,13 +230,16 @@ class _AppPermissionGroupedViewState extends State<AppPermissionGroupedView> {
                     child: Column(
                       children: <Widget>[
                         for (final String groupKey in rightKeys)
-                          _PermissionGroupCard(
-                            groupKey: groupKey,
-                            permissions:
-                                grouped[groupKey] ??
-                                const <AppPermissionAssignmentOption>[],
-                            expanded: _expandedGroupKeys.contains(groupKey),
-                            onToggle: () => _toggleGroup(groupKey),
+                          Padding(
+                            padding: EdgeInsets.only(bottom: theme.spacing.sm),
+                            child: _PermissionGroupCard(
+                              groupKey: groupKey,
+                              permissions:
+                                  grouped[groupKey] ??
+                                  const <AppPermissionAssignmentOption>[],
+                              expanded: _expandedGroupKeys.contains(groupKey),
+                              onToggle: () => _toggleGroup(groupKey),
+                            ),
                           ),
                       ],
                     ),
@@ -315,24 +321,19 @@ class _PermissionGroupCard extends StatelessWidget {
     final List<AppPermissionAssignmentOption> uniquePermissions =
         _uniquePermissions(permissions);
 
-    return Card(
-      margin: EdgeInsets.only(bottom: theme.spacing.sm),
-      clipBehavior: Clip.antiAlias,
+    return AppContentPanel(
+      density: AppContentPanelDensity.compact,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           InkWell(
             onTap: onToggle,
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: theme.spacing.md,
-                vertical: theme.spacing.sm,
-              ),
-              child: Row(
-                children: <Widget>[
+            borderRadius: BorderRadius.circular(theme.radius.sm),
+            child: Row(
+              children: <Widget>[
                   Container(
-                    width: 32,
-                    height: 32,
+                    width: 36,
+                    height: 36,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: colors.primaryContainer.withValues(alpha: 0.7),
@@ -340,7 +341,7 @@ class _PermissionGroupCard extends StatelessWidget {
                     ),
                     child: Icon(
                       Icons.folder_outlined,
-                      size: 18,
+                      size: 20,
                       color: colors.onPrimaryContainer,
                     ),
                   ),
@@ -349,7 +350,13 @@ class _PermissionGroupCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Text(groupLabel, style: theme.textTheme.titleSmall),
+                        Text(
+                          groupLabel,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: AppFontWeight.emphasis,
+                          ),
+                        ),
+                        SizedBox(height: theme.spacing.xs),
                         Text(
                           l10n.hrAccessPermissionCountLabel(
                             uniquePermissions.length,
@@ -365,34 +372,27 @@ class _PermissionGroupCard extends StatelessWidget {
                     expanded ? Icons.expand_less : Icons.expand_more,
                     color: colors.onSurfaceVariant,
                   ),
-                ],
-              ),
+              ],
             ),
           ),
-          if (expanded)
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                theme.spacing.md,
-                0,
-                theme.spacing.md,
-                theme.spacing.md,
-              ),
-              child: Wrap(
-                spacing: theme.spacing.sm,
-                runSpacing: theme.spacing.sm,
-                children: <Widget>[
-                  for (final AppPermissionAssignmentOption permission
-                      in uniquePermissions)
-                    _PermissionActionChip(
-                      permission: permission,
-                      label: _chipLabel(
-                        permission,
-                        permissions: uniquePermissions,
-                      ),
+          if (expanded) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            Wrap(
+              spacing: theme.spacing.xs,
+              runSpacing: theme.spacing.xs,
+              children: <Widget>[
+                for (final AppPermissionAssignmentOption permission
+                    in uniquePermissions)
+                  _PermissionActionChip(
+                    permission: permission,
+                    label: _chipLabel(
+                      permission,
+                      permissions: uniquePermissions,
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
+          ],
         ],
       ),
     );

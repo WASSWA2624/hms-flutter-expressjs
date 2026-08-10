@@ -3773,7 +3773,6 @@ class _AccessAdminUserDetailDialogState
         children: <Widget>[
           AppCollapsibleSection(
             title: l10n.accessAdminUserDetailProfileSectionTitle,
-            description: l10n.accessAdminUserDetailProfileSectionDescription,
             titleIcon: Icons.badge_outlined,
             child: _UserDetailAccountFields(item: item),
           ),
@@ -3784,6 +3783,8 @@ class _AccessAdminUserDetailDialogState
             effectivePermissions: _detail.effectivePermissions,
             canWrite: canMutate,
             isBusy: _saving,
+            permissionsInitiallyExpanded: false,
+            effectiveInitiallyExpanded: false,
             onAddRole: canMutate ? _addRole : null,
             onRemoveRole: canMutate ? _removeRole : null,
             onRemoveAllRoles: canMutate ? _removeAllRoles : null,
@@ -3913,7 +3914,6 @@ class _UserDetailAccountFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
 
     final String? displayName = _userDetailDisplayName(item);
     final String? email = item.email?.trim();
@@ -3932,191 +3932,63 @@ class _UserDetailAccountFields extends StatelessWidget {
               ? item.facilityName!.trim()
               : item.facilityId!.trim());
 
-    final List<Widget> contactFields = <Widget>[
-      if (displayName != null)
-        _UserDetailInfoTile(
-          icon: Icons.person_outline,
-          label: l10n.accessAdminColumnName,
-          value: displayName,
-        ),
-      if (displayId.isNotEmpty)
-        _UserDetailInfoTile(
-          icon: Icons.tag_outlined,
-          label: l10n.accessAdminColumnId,
-          value: displayId,
-          copyable: true,
-        ),
-      if (email != null && email.isNotEmpty)
-        _UserDetailInfoTile(
-          icon: Icons.mail_outline,
-          label: l10n.accessAdminEmailLabel,
-          value: email,
-        ),
-      if (phone != null && phone.isNotEmpty)
-        _UserDetailInfoTile(
-          icon: Icons.phone_outlined,
-          label: l10n.accessAdminPhoneLabel,
-          value: phone,
-        ),
-      if (status != null && status.isNotEmpty)
-        _UserDetailInfoTile(
-          icon: Icons.flag_outlined,
-          label: l10n.accessAdminStatusLabel,
-          value: status,
-        ),
-    ];
-    final List<Widget> assignmentFields = <Widget>[
-      if (position != null && position.isNotEmpty)
-        _UserDetailInfoTile(
-          icon: Icons.work_outline,
-          label: l10n.accessAdminPositionLabel,
-          value: position,
-        ),
-      if (tenant != null && tenant.isNotEmpty)
-        _UserDetailInfoTile(
-          icon: Icons.apartment_outlined,
-          label: l10n.settingsWorkspaceTenantLabel,
-          value: tenant,
-        ),
-      if (facility != null && facility.isNotEmpty)
-        _UserDetailInfoTile(
-          icon: Icons.local_hospital_outlined,
-          label: l10n.settingsWorkspaceFacilityLabel,
-          value: facility,
-        ),
-    ];
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool wide = constraints.maxWidth >= 560;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            _UserDetailFieldGrid(fields: contactFields, wide: wide),
-            if (contactFields.isNotEmpty && assignmentFields.isNotEmpty) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              Divider(
-                height: theme.spacing.md,
-                color: theme.borders.faint,
-              ),
-            ],
-            _UserDetailFieldGrid(fields: assignmentFields, wide: wide),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _UserDetailFieldGrid extends StatelessWidget {
-  const _UserDetailFieldGrid({required this.fields, required this.wide});
-
-  final List<Widget> fields;
-  final bool wide;
-
-  @override
-  Widget build(BuildContext context) {
-    if (fields.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    final ThemeData theme = Theme.of(context);
-    if (!wide) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: fields,
-      );
-    }
-
-    final List<Widget> rows = <Widget>[];
-    for (var index = 0; index < fields.length; index += 2) {
-      rows.add(
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(child: fields[index]),
-            if (index + 1 < fields.length) ...<Widget>[
-              SizedBox(width: theme.spacing.md),
-              Expanded(child: fields[index + 1]),
-            ] else
-              const Expanded(child: SizedBox.shrink()),
-          ],
-        ),
-      );
-      if (index + 2 < fields.length) {
-        rows.add(SizedBox(height: theme.spacing.sm));
-      }
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: rows,
-    );
-  }
-}
-
-class _UserDetailInfoTile extends StatelessWidget {
-  const _UserDetailInfoTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.copyable = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool copyable;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final AppLocalizations l10n = context.l10n;
-    final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: colorScheme.onSurfaceVariant,
-    );
-    final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontWeight: AppFontWeight.emphasis,
-      color: colorScheme.onSurface,
-    );
-
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.only(top: theme.spacing.xs / 2),
-            child: Icon(icon, size: 18, color: colorScheme.primary),
+    return AppInfoTileGrid(
+      emptyValue: l10n.profileUnknownValue,
+      maxColumns: 2,
+      minItemWidth: 200,
+      items: <AppInfoTileData>[
+        if (displayName != null)
+          AppInfoTileData(
+            label: l10n.accessAdminColumnName,
+            value: displayName,
+            icon: Icons.person_outline,
           ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: copyable
-                ? Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: theme.spacing.xs,
-                    runSpacing: theme.spacing.xs / 2,
-                    children: <Widget>[
-                      Text('$label:', style: labelStyle),
-                      AppCopyableIdentifier(
-                        value: value,
-                        tooltip: l10n.copyIdentifierAction,
-                        copiedMessage: l10n.identifierCopiedMessage,
-                        textStyle: valueStyle,
-                      ),
-                    ],
-                  )
-                : Text.rich(
-                    TextSpan(
-                      children: <InlineSpan>[
-                        TextSpan(text: '$label: ', style: labelStyle),
-                        TextSpan(text: value, style: valueStyle),
-                      ],
-                    ),
-                    softWrap: true,
-                  ),
+        if (displayId.isNotEmpty)
+          AppInfoTileData(
+            label: l10n.accessAdminColumnId,
+            value: displayId,
+            icon: Icons.tag_outlined,
+            copyable: true,
+            copyTooltip: l10n.copyIdentifierAction,
+            copiedMessage: l10n.identifierCopiedMessage,
           ),
-        ],
-      ),
+        if (email != null && email.isNotEmpty)
+          AppInfoTileData(
+            label: l10n.accessAdminEmailLabel,
+            value: email,
+            icon: Icons.mail_outline,
+          ),
+        if (phone != null && phone.isNotEmpty)
+          AppInfoTileData(
+            label: l10n.accessAdminPhoneLabel,
+            value: phone,
+            icon: Icons.phone_outlined,
+          ),
+        if (status != null && status.isNotEmpty)
+          AppInfoTileData(
+            label: l10n.accessAdminStatusLabel,
+            value: status,
+            icon: Icons.flag_outlined,
+          ),
+        if (position != null && position.isNotEmpty)
+          AppInfoTileData(
+            label: l10n.accessAdminPositionLabel,
+            value: position,
+            icon: Icons.work_outline,
+          ),
+        if (tenant != null && tenant.isNotEmpty)
+          AppInfoTileData(
+            label: l10n.settingsWorkspaceTenantLabel,
+            value: tenant,
+            icon: Icons.apartment_outlined,
+          ),
+        if (facility != null && facility.isNotEmpty)
+          AppInfoTileData(
+            label: l10n.settingsWorkspaceFacilityLabel,
+            value: facility,
+            icon: Icons.local_hospital_outlined,
+          ),
+      ],
     );
   }
 }

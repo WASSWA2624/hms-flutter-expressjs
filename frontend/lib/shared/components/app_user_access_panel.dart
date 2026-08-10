@@ -293,7 +293,6 @@ class AppUserAccessPanel extends StatelessWidget {
           ],
           child: AppPermissionGroupedView(
             permissions: effectiveOptions,
-            initiallyExpandAll: effectiveOptions.length <= 24,
             emptyMessage: l10n.accessAdminUserDetailNoPermissionsMessage,
           ),
         ),
@@ -503,46 +502,56 @@ class _DirectPermissionRow extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final String label = l10n.permissionCatalogLabelForCode(permission.name);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: theme.borders.all(),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
-        ),
-        child: Row(
-          children: <Widget>[
-            Icon(Icons.key_outlined, size: 18, color: colorScheme.secondary),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(label, style: theme.textTheme.labelLarge),
-                  if (label != permission.name)
-                    Text(
-                      permission.name,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                ],
-              ),
+    return AppContentPanel(
+      density: AppContentPanelDensity.compact,
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(theme.radius.sm),
             ),
-            if (canWrite && onRemove != null)
-              AppButton.tertiary(
-                leadingIcon: Icons.remove_circle_outline,
-                label: l10n.accessAdminUserAccessRemoveDirectPermissionAction,
-                color: colorScheme.error,
-                tooltip: l10n.accessAdminUserAccessRemoveDirectPermissionAction,
-                onPressed: isBusy ? null : onRemove,
-              ),
-          ],
-        ),
+            child: Icon(
+              Icons.key_outlined,
+              color: colorScheme.onSecondaryContainer,
+              size: 20,
+            ),
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  label,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: AppFontWeight.emphasis,
+                  ),
+                ),
+                if (label != permission.name) ...<Widget>[
+                  SizedBox(height: theme.spacing.xs),
+                  Text(
+                    permission.name,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (canWrite && onRemove != null)
+            AppButton.tertiary(
+              leadingIcon: Icons.remove_circle_outline,
+              label: l10n.accessAdminUserAccessRemoveDirectPermissionAction,
+              color: colorScheme.error,
+              tooltip: l10n.accessAdminUserAccessRemoveDirectPermissionAction,
+              onPressed: isBusy ? null : onRemove,
+            ),
+        ],
       ),
     );
   }

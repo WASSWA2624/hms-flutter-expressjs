@@ -1372,34 +1372,41 @@ class _HrAccessUserDetailContent extends StatelessWidget {
       children: <Widget>[
         AppCollapsibleSection(
           title: l10n.accessAdminUserDetailProfileSectionTitle,
-          description: l10n.accessAdminUserDetailProfileSectionDescription,
           titleIcon: Icons.badge_outlined,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              _HrAccessDetailRow(
-                label: l10n.hrEmailLabel,
-                value: detail.email ?? '—',
-              ),
-              if ((detail.phone ?? '').isNotEmpty)
-                _HrAccessDetailRow(
+          child: AppInfoTileGrid(
+            emptyValue: l10n.profileUnknownValue,
+            maxColumns: 2,
+            minItemWidth: 200,
+            items: <AppInfoTileData>[
+              if ((detail.email ?? '').trim().isNotEmpty)
+                AppInfoTileData(
+                  label: l10n.hrEmailLabel,
+                  value: detail.email,
+                  icon: Icons.mail_outline,
+                ),
+              if ((detail.phone ?? '').trim().isNotEmpty)
+                AppInfoTileData(
                   label: l10n.profilePhoneLabel,
-                  value: detail.phone!,
+                  value: detail.phone,
+                  icon: Icons.phone_outlined,
                 ),
-              if ((detail.positionTitle ?? '').isNotEmpty)
-                _HrAccessDetailRow(
+              if ((detail.positionTitle ?? '').trim().isNotEmpty)
+                AppInfoTileData(
                   label: l10n.hrAccessPositionTitleLabel,
-                  value: detail.positionTitle!,
+                  value: detail.positionTitle,
+                  icon: Icons.work_outline,
                 ),
-              if ((detail.status ?? '').isNotEmpty)
-                _HrAccessDetailRow(
+              if ((detail.status ?? '').trim().isNotEmpty)
+                AppInfoTileData(
                   label: l10n.hrStatusColumnLabel,
-                  value: detail.status!,
+                  value: detail.status,
+                  icon: Icons.flag_outlined,
                 ),
-              if ((detail.staffProfileId ?? '').isNotEmpty)
-                _HrAccessDetailRow(
+              if ((detail.staffProfileId ?? '').trim().isNotEmpty)
+                AppInfoTileData(
                   label: l10n.hrAccessLinkedStaffLabel,
-                  value: detail.staffProfileName ?? detail.staffProfileId!,
+                  value: detail.staffProfileName ?? detail.staffProfileId,
+                  icon: Icons.badge_outlined,
                 ),
             ],
           ),
@@ -1426,6 +1433,8 @@ class _HrAccessUserDetailContent extends StatelessWidget {
               .toList(growable: false),
           canWrite: canWrite,
           isBusy: isBusy,
+          permissionsInitiallyExpanded: false,
+          effectiveInitiallyExpanded: false,
           onAddRole: onAddRole,
           onRemoveRole: onRemoveRole,
           onAddDirectPermission: onAddDirectPermission,
