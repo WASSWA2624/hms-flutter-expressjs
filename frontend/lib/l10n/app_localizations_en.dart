@@ -22063,7 +22063,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrAddRoleFormHint =>
-      'Choose a role to grant. Optionally scope it to a facility.';
+      'Search and select one or more roles to assign. Facility is taken from the current workspace.';
 
   @override
   String get hrStaffRolesSearchHint => 'Search roles';
@@ -22896,7 +22896,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrSeparationTypeDeceasedLabel => 'Deceased';
 
   @override
-  String get hrSeparationTypeOtherLabel => 'Separation';
+  String get hrSeparationTypeOtherLabel => 'Other';
 
   @override
   String get hrLastWorkingDayLabel => 'Last working day';
@@ -25854,7 +25854,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminUserAccessAddRoleDialogDescription =>
-      'Select roles. Expand to review granted permissions.';
+      'Search and select one or more roles to assign. Facility is taken from the current user context.';
 
   @override
   String get accessAdminUserAccessNoAssignableRolesMessage =>

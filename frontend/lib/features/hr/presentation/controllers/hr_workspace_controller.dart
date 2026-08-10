@@ -1019,6 +1019,10 @@ final class HrWorkspaceController
       lastFailure ??= _failureOrNull(result);
     }
     unawaited(_refreshReferences());
+    final HrStaffDetail? selected = _currentState?.selectedStaff;
+    if (selected != null && lastFailure == null) {
+      unawaited(_refreshSelectedDetail(selected.profile));
+    }
     return lastFailure;
   }
 

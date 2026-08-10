@@ -40823,10 +40823,10 @@ abstract class AppLocalizations {
   /// **'Edit Role'**
   String get hrEditRoleDialogTitle;
 
-  /// Hint under the add/edit role form.
+  /// Hint under the add-role multi-select table when assigning roles to staff.
   ///
   /// In en, this message translates to:
-  /// **'Choose a role to grant. Optionally scope it to a facility.'**
+  /// **'Search and select one or more roles to assign. Facility is taken from the current workspace.'**
   String get hrAddRoleFormHint;
 
   /// Search hint for the staff roles table.
@@ -42305,10 +42305,10 @@ abstract class AppLocalizations {
   /// **'Deceased'**
   String get hrSeparationTypeDeceasedLabel;
 
-  /// Fallback separation type label.
+  /// Other / unspecified separation type.
   ///
   /// In en, this message translates to:
-  /// **'Separation'**
+  /// **'Other'**
   String get hrSeparationTypeOtherLabel;
 
   /// Label for last working day in offboarding.
@@ -47482,10 +47482,10 @@ abstract class AppLocalizations {
   /// **'Assign role'**
   String get accessAdminUserAccessAddRoleDialogTitle;
 
-  /// Description for the assign-role dialog.
+  /// Description for the multi-select role assignment table dialog.
   ///
   /// In en, this message translates to:
-  /// **'Select roles. Expand to review granted permissions.'**
+  /// **'Search and select one or more roles to assign. Facility is taken from the current user context.'**
   String get accessAdminUserAccessAddRoleDialogDescription;
 
   /// Empty state when every assignable role is already on the user.

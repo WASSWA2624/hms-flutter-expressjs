@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
@@ -15,10 +15,9 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-/// Staff-detail roles manager: table of assigned roles + nested add/edit form.
+/// Staff-detail roles manager: table of assigned roles + multi-select add table.
 Future<void> showHrAssignRoleDialog(
   BuildContext context,
   WidgetRef ref,
@@ -30,8 +29,8 @@ Future<void> showHrAssignRoleDialog(
     return;
   }
 
-  final String userId = (detail.profile.userId ?? detail.profile.userDisplayId ?? '')
-      .trim();
+  final String userId =
+      (detail.profile.userId ?? detail.profile.userDisplayId ?? '').trim();
   if (userId.isEmpty) {
     showHrMutationSnackBar(context, AppFailure.validation());
     return;
@@ -122,53 +121,73 @@ class _HrAssignRolesDialogState extends ConsumerState<_HrAssignRolesDialog> {
     );
   }
 
-  Future<void> _openRoleForm({HrUserRole? editing}) async {
+  Future<void> _openAddRoles() async {
     if (_busy) {
       return;
     }
+    final AppLocalizations l10n = context.l10n;
     final HrWorkspaceState? state = readHrWorkspaceState(ref);
     final List<HrOption> catalog =
         state?.referenceData.roles ?? const <HrOption>[];
-    final List<HrOption> facilities =
-        state?.referenceData.facilities ?? const <HrOption>[];
+    final Set<String> used = _usedRoleIds;
+    final List<AppRoleAssignmentOption> available = <AppRoleAssignmentOption>[
+      for (final HrOption option in catalog)
+        if (option.value.trim().isNotEmpty && !used.contains(option.value))
+          AppRoleAssignmentOption(
+            id: option.value,
+            label: l10n.hrLocalizedOptionLabel(option),
+            description: option.displayId,
+          ),
+    ];
 
-    final _HrRoleFormResult? result = await showAppDialog<_HrRoleFormResult>(
-      context: context,
-      builder: (BuildContext dialogContext) => _HrRoleFormDialog(
-        catalog: catalog,
-        facilities: facilities,
-        usedRoleIds: _usedRoleIds,
-        editing: editing,
-      ),
-    );
-    if (result == null || !mounted) {
+    if (available.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.accessAdminUserAccessNoAssignableRolesMessage),
+        ),
+      );
       return;
     }
 
-    setState(() => _busy = true);
-    final HrWorkspaceController controller = ref.read(
-      hrWorkspaceControllerProvider.notifier,
+    final Set<String>? selected = await showAppRoleSelectionTableDialog(
+      context: context,
+      roles: available,
+      title: l10n.hrAddRoleDialogTitle,
+      description: l10n.hrAddRoleFormHint,
+      searchHint: l10n.hrStaffRolesSearchHint,
+      confirmLabel: l10n.hrAddRoleAction,
+      emptyTitle: l10n.hrNoRolesLabel,
+      emptyBody: l10n.hrStaffRolesEmptyBody,
+      storageKey: 'hr.assign_roles.add.table',
     );
-    AppFailure? failure;
-    if (editing != null) {
-      final String previousRoleId = (editing.roleId ?? '').trim();
-      final String previousFacility = (editing.facilityId ?? '').trim();
-      final bool unchanged =
-          previousRoleId == result.roleId &&
-          previousFacility == (result.facilityId ?? '').trim();
-      if (!unchanged) {
-        failure = await controller.revokeUserRole(editing);
-        failure ??= await controller.assignUserRole(
-          roleId: result.roleId,
-          facilityId: result.facilityId,
-        );
-      }
-    } else {
-      failure = await controller.assignUserRole(
-        roleId: result.roleId,
-        facilityId: result.facilityId,
-      );
+    if (selected == null || selected.isEmpty || !mounted) {
+      return;
     }
+
+    final String userId =
+        (widget.detail.profile.userId ?? widget.detail.profile.userDisplayId ?? '')
+            .trim();
+    final String tenantId = (widget.detail.profile.tenantId ?? '').trim();
+    if (userId.isEmpty || tenantId.isEmpty) {
+      showHrMutationSnackBar(context, AppFailure.validation());
+      return;
+    }
+
+    final String? facilityId = ref
+        .read(sessionStateProvider)
+        .session
+        ?.user
+        ?.facilityId;
+
+    setState(() => _busy = true);
+    final AppFailure? failure = await ref
+        .read(hrWorkspaceControllerProvider.notifier)
+        .assignUserRolesBatch(
+          userId: userId,
+          tenantId: tenantId,
+          roleIds: selected.toList(growable: false),
+          facilityId: facilityId,
+        );
     if (!mounted) {
       return;
     }
@@ -337,7 +356,7 @@ class _HrAssignRolesDialogState extends ConsumerState<_HrAssignRolesDialog> {
                 label: l10n.hrAddRoleAction,
                 icon: Icons.add_outlined,
                 enabled: !_busy && !_loading,
-                onPressed: () => unawaited(_openRoleForm()),
+                onPressed: () => unawaited(_openAddRoles()),
               ),
           ],
         ),
@@ -387,39 +406,19 @@ class _HrAssignRolesDialogState extends ConsumerState<_HrAssignRolesDialog> {
             id: 'actions',
             label: l10n.hrPositionsActionsColumnLabel,
             alwaysVisible: true,
-            preferredWidth: 200,
+            preferredWidth: 140,
             cellBuilder: (BuildContext context, HrUserRole item) {
               if (!canWrite) {
                 return const SizedBox.shrink();
               }
-              final double gap = theme.spacing.xs;
-              return Wrap(
-                spacing: gap,
-                runSpacing: gap,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  AppButton.tertiary(
-                    leadingIcon: Icons.edit_outlined,
-                    label: l10n.commonEditActionLabel,
-                    tooltip: l10n.commonEditActionLabel,
-                    dense: true,
-                    enabled: !_busy,
-                    onPressed: _busy
-                        ? null
-                        : () => unawaited(_openRoleForm(editing: item)),
-                  ),
-                  AppButton.tertiary(
-                    leadingIcon: Icons.delete_outline,
-                    label: l10n.commonDeleteActionLabel,
-                    tooltip: l10n.commonDeleteActionLabel,
-                    dense: true,
-                    color: theme.colorScheme.error,
-                    enabled: !_busy,
-                    onPressed: _busy
-                        ? null
-                        : () => unawaited(_deleteRole(item)),
-                  ),
-                ],
+              return AppButton.tertiary(
+                leadingIcon: Icons.delete_outline,
+                label: l10n.commonDeleteActionLabel,
+                tooltip: l10n.commonDeleteActionLabel,
+                dense: true,
+                color: theme.colorScheme.error,
+                enabled: !_busy,
+                onPressed: _busy ? null : () => unawaited(_deleteRole(item)),
               );
             },
           ),
@@ -435,11 +434,14 @@ class _HrAssignRolesDialogState extends ConsumerState<_HrAssignRolesDialog> {
                 l10n.hrRoleFacilityAllLabel,
             trailing: canWrite
                 ? IconButton(
-                    tooltip: l10n.commonEditActionLabel,
+                    tooltip: l10n.commonDeleteActionLabel,
                     onPressed: _busy
                         ? null
-                        : () => unawaited(_openRoleForm(editing: item)),
-                    icon: const Icon(Icons.edit_outlined),
+                        : () => unawaited(_deleteRole(item)),
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: theme.colorScheme.error,
+                    ),
                   )
                 : null,
           );
@@ -450,162 +452,6 @@ class _HrAssignRolesDialogState extends ConsumerState<_HrAssignRolesDialog> {
           label: l10n.commonCloseActionLabel,
           leadingIcon: Icons.close,
           onPressed: _busy ? null : () => Navigator.of(context).maybePop(),
-        ),
-      ],
-    );
-  }
-}
-
-class _HrRoleFormResult {
-  const _HrRoleFormResult({required this.roleId, this.facilityId});
-
-  final String roleId;
-  final String? facilityId;
-}
-
-class _HrRoleFormDialog extends StatefulWidget {
-  const _HrRoleFormDialog({
-    required this.catalog,
-    required this.facilities,
-    required this.usedRoleIds,
-    this.editing,
-  });
-
-  final List<HrOption> catalog;
-  final List<HrOption> facilities;
-  final Set<String> usedRoleIds;
-  final HrUserRole? editing;
-
-  @override
-  State<_HrRoleFormDialog> createState() => _HrRoleFormDialogState();
-}
-
-class _HrRoleFormDialogState extends State<_HrRoleFormDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  String? _roleId;
-  String? _facilityId;
-
-  bool get _isEdit => widget.editing != null;
-
-  @override
-  void initState() {
-    super.initState();
-    final HrUserRole? editing = widget.editing;
-    if (editing != null) {
-      _roleId = editing.roleId;
-      _facilityId = editing.facilityId ?? editing.facilityDisplayId;
-    }
-  }
-
-  List<AppSelectOption<String>> _roleOptions(AppLocalizations l10n) {
-    return <AppSelectOption<String>>[
-      for (final HrOption option in widget.catalog)
-        if (option.value == _roleId ||
-            !widget.usedRoleIds.contains(option.value))
-          AppSelectOption<String>(
-            value: option.value,
-            label: l10n.hrLocalizedOptionLabel(option),
-          ),
-    ];
-  }
-
-  void _submit() {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    final String? roleId = _roleId?.trim();
-    if (roleId == null || roleId.isEmpty) {
-      return;
-    }
-    if (widget.usedRoleIds.contains(roleId) &&
-        widget.editing?.roleId != roleId) {
-      return;
-    }
-    Navigator.of(context).pop(
-      _HrRoleFormResult(
-        roleId: roleId,
-        facilityId: (_facilityId ?? '').trim().isEmpty ? null : _facilityId,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final List<AppSelectOption<String>> roleOptions = _roleOptions(l10n);
-
-    return AppDialog(
-      title: Text(
-        _isEdit ? l10n.hrEditRoleDialogTitle : l10n.hrAddRoleDialogTitle,
-      ),
-      icon: const Icon(Icons.admin_panel_settings_outlined),
-      scrollable: true,
-      pinActionsToBottom: true,
-      maxWidth: 640,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          description: l10n.hrAddRoleFormHint,
-          children: <Widget>[
-            LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final double width = constraints.hasBoundedWidth
-                    ? constraints.maxWidth
-                    : MediaQuery.sizeOf(context).width;
-                final double gap = theme.spacing.md;
-                final Widget roleField = AppSelectField<String>.searchable(
-                  value: _roleId,
-                  labelText: l10n.hrRolePositionColumnLabel,
-                  isRequired: true,
-                  options: roleOptions,
-                  validator: AppValidators.requiredValue(
-                    l10n.hrFieldRequiredLabel(l10n.hrRolePositionColumnLabel),
-                  ),
-                  onChanged: (String? value) => setState(() => _roleId = value),
-                );
-                final Widget facilityField = AppSelectField<String>.searchable(
-                  value: _facilityId,
-                  labelText: l10n.hrRosterOverviewFacilityLabel,
-                  options: hrSelectOptions(widget.facilities),
-                  onChanged: (String? value) =>
-                      setState(() => _facilityId = value),
-                );
-                if (width >= 560) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Expanded(child: roleField),
-                      SizedBox(width: gap),
-                      Expanded(child: facilityField),
-                    ],
-                  );
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    roleField,
-                    SizedBox(height: theme.appTokens.formGapCompact),
-                    facilityField,
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-      actions: <Widget>[
-        AppButton.primary(
-          label: _isEdit
-              ? l10n.commonSaveActionLabel
-              : l10n.hrAddRoleAction,
-          leadingIcon: _isEdit ? Icons.save_outlined : Icons.add,
-          onPressed: _submit,
-        ),
-        AppButton.secondary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: Icons.close,
-          onPressed: () => Navigator.of(context).maybePop(),
         ),
       ],
     );

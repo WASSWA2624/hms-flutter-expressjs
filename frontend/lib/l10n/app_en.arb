@@ -28424,9 +28424,9 @@
   "@hrEditRoleDialogTitle": {
     "description": "Nested dialog title for editing a role assignment."
   },
-  "hrAddRoleFormHint": "Choose a role to grant. Optionally scope it to a facility.",
+  "hrAddRoleFormHint": "Search and select one or more roles to assign. Facility is taken from the current workspace.",
   "@hrAddRoleFormHint": {
-    "description": "Hint under the add/edit role form."
+    "description": "Hint under the add-role multi-select table when assigning roles to staff."
   },
   "hrStaffRolesSearchHint": "Search roles",
   "@hrStaffRolesSearchHint": {
@@ -29312,9 +29312,9 @@
   "@hrSeparationTypeDeceasedLabel": {
     "description": "Deceased separation type."
   },
-  "hrSeparationTypeOtherLabel": "Separation",
+  "hrSeparationTypeOtherLabel": "Other",
   "@hrSeparationTypeOtherLabel": {
-    "description": "Fallback separation type label."
+    "description": "Other / unspecified separation type."
   },
   "hrLastWorkingDayLabel": "Last working day",
   "@hrLastWorkingDayLabel": {
@@ -33132,9 +33132,9 @@
   "@accessAdminUserAccessAddRoleDialogTitle": {
     "description": "Title for the dialog that assigns a role to a user."
   },
-  "accessAdminUserAccessAddRoleDialogDescription": "Select roles. Expand to review granted permissions.",
+  "accessAdminUserAccessAddRoleDialogDescription": "Search and select one or more roles to assign. Facility is taken from the current user context.",
   "@accessAdminUserAccessAddRoleDialogDescription": {
-    "description": "Description for the assign-role dialog."
+    "description": "Description for the multi-select role assignment table dialog."
   },
   "accessAdminUserAccessNoAssignableRolesMessage": "No additional roles are available to assign.",
   "@accessAdminUserAccessNoAssignableRolesMessage": {

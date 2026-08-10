@@ -5,7 +5,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
-import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -39,7 +38,7 @@ Future<void> showHrStaffOffboardingDialog(
     submitLabel: l10n.hrOffboardStaffAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.check_outlined,
-    maxWidth: 560,
+    maxWidth: 760,
     buildFields:
         (
           BuildContext context,
@@ -62,7 +61,7 @@ Future<void> showHrStaffOffboardingDialog(
     // Staff payroll draft path only — never patient Billing collect/issue.
     if (formKey.currentState?.scheduleFinalPayroll == true &&
         onOpenPayroll != null) {
-      onOpenPayroll!();
+      onOpenPayroll();
     }
   }
 }
@@ -118,80 +117,84 @@ class _HrOffboardingFormState extends State<_HrOffboardingForm> {
 
     return AppFormSection(
       children: <Widget>[
-        AppSelectField<String>(
-          value: _separationType,
-          labelText: l10n.hrSeparationTypeLabel,
-          options: <AppSelectOption<String>>[
-            AppSelectOption<String>(
-              value: 'RESIGNATION',
-              label: l10n.hrSeparationTypeResignationLabel,
-            ),
-            AppSelectOption<String>(
-              value: 'TERMINATION',
-              label: l10n.hrSeparationTypeTerminationLabel,
-            ),
-            AppSelectOption<String>(
-              value: 'RETIREMENT',
-              label: l10n.hrSeparationTypeRetirementLabel,
-            ),
-            AppSelectOption<String>(
-              value: 'CONTRACT_END',
-              label: l10n.hrSeparationTypeContractEndLabel,
-            ),
-            AppSelectOption<String>(
-              value: 'DECEASED',
-              label: l10n.hrSeparationTypeDeceasedLabel,
-            ),
-          ],
-          onChanged: (String? value) {
-            if (value != null) {
-              setState(() => _separationType = value);
-            }
-          },
-        ),
-        AppDateField(
-          value: _lastWorkingDay,
-          labelText: l10n.hrLastWorkingDayLabel,
-          isRequired: true,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: (DateTime? value) =>
-              setState(() => _lastWorkingDay = value),
+        AppResponsiveFieldRow.two(
+          gap: AppResponsiveFieldRowGap.form,
+          left: AppSelectField<String>(
+            value: _separationType,
+            labelText: l10n.hrSeparationTypeLabel,
+            options: <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: 'RESIGNATION',
+                label: l10n.hrSeparationTypeResignationLabel,
+              ),
+              AppSelectOption<String>(
+                value: 'TERMINATION',
+                label: l10n.hrSeparationTypeTerminationLabel,
+              ),
+              AppSelectOption<String>(
+                value: 'RETIREMENT',
+                label: l10n.hrSeparationTypeRetirementLabel,
+              ),
+              AppSelectOption<String>(
+                value: 'CONTRACT_END',
+                label: l10n.hrSeparationTypeContractEndLabel,
+              ),
+              AppSelectOption<String>(
+                value: 'DECEASED',
+                label: l10n.hrSeparationTypeDeceasedLabel,
+              ),
+              AppSelectOption<String>(
+                value: 'OTHER',
+                label: l10n.hrSeparationTypeOtherLabel,
+              ),
+            ],
+            onChanged: (String? value) {
+              if (value != null) {
+                setState(() => _separationType = value);
+              }
+            },
+          ),
+          right: AppDateField(
+            value: _lastWorkingDay,
+            labelText: l10n.hrLastWorkingDayLabel,
+            isRequired: true,
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2100),
+            currentDate: DateTime.now(),
+            pickerButtonLabel: l10n.hrPickDateAction,
+            invalidDateMessage: l10n.appDateInvalidMessage,
+            onChanged: (DateTime? value) =>
+                setState(() => _lastWorkingDay = value),
+          ),
         ),
         AppTextField(
           controller: _notesController,
           labelText: l10n.hrSeparationNotesLabel,
           maxLines: 3,
         ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l10n.hrOffboardEndAssignmentsLabel),
-          value: _endAssignments,
-          onChanged: (bool value) => setState(() => _endAssignments = value),
-        ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l10n.hrOffboardRevokeAccessLabel),
-          value: _revokeAccess,
-          onChanged: (bool value) => setState(() => _revokeAccess = value),
-        ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l10n.hrOffboardFinalPayrollLabel),
-          subtitle: _finalPayroll && widget.onOpenPayroll != null
-              ? TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    widget.onOpenPayroll!();
-                  },
-                  child: Text(l10n.hrRunPayrollAction),
-                )
-              : null,
-          value: _finalPayroll,
-          onChanged: (bool value) => setState(() => _finalPayroll = value),
+        AppResponsiveFieldRow(
+          breakpoint: 720,
+          children: <Widget>[
+            AppCheckboxField(
+              title: l10n.hrOffboardEndAssignmentsLabel,
+              value: _endAssignments,
+              contentPadding: EdgeInsets.zero,
+              onChanged: (bool value) =>
+                  setState(() => _endAssignments = value),
+            ),
+            AppCheckboxField(
+              title: l10n.hrOffboardRevokeAccessLabel,
+              value: _revokeAccess,
+              contentPadding: EdgeInsets.zero,
+              onChanged: (bool value) => setState(() => _revokeAccess = value),
+            ),
+            AppCheckboxField(
+              title: l10n.hrOffboardFinalPayrollLabel,
+              value: _finalPayroll,
+              contentPadding: EdgeInsets.zero,
+              onChanged: (bool value) => setState(() => _finalPayroll = value),
+            ),
+          ],
         ),
         SizedBox(height: theme.spacing.xs),
         Text(

@@ -186,6 +186,7 @@ String hrSeparationTypeLabel(AppLocalizations l10n, String? type) {
     'RETIREMENT' => l10n.hrSeparationTypeRetirementLabel,
     'CONTRACT_END' => l10n.hrSeparationTypeContractEndLabel,
     'DECEASED' => l10n.hrSeparationTypeDeceasedLabel,
+    'OTHER' => l10n.hrSeparationTypeOtherLabel,
     _ => type,
   };
 }

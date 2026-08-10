@@ -3393,85 +3393,25 @@ class _AccessAdminUserDetailDialogState
         .map(
           (AccessAdminLookupOption role) => AppRoleAssignmentOption(
             id: role.id,
-            label: role.label,
+            label: role.displayName?.trim().isNotEmpty == true
+                ? role.displayName!.trim()
+                : role.label,
             description: role.meta,
             permissionCount: role.permissionCount,
           ),
         )
         .toList(growable: false);
-    final Set<String> selectedRoleIds = <String>{};
 
-    Future<Set<String>> loadRolePermissions(String roleId) async {
-      final Result<List<AccessAdminRolePermissionAssignment>> result =
-          await widget.repository.listRolePermissions(roleId);
-      return result.when(
-        success: (List<AccessAdminRolePermissionAssignment> assignments) {
-          return assignments
-              .map(
-                (AccessAdminRolePermissionAssignment assignment) =>
-                    (assignment.permissionName ?? '').trim(),
-              )
-              .where((String name) => name.isNotEmpty)
-              .toSet();
-        },
-        failure: (_) => <String>{},
-      );
-    }
-
-    final Set<String>? confirmed = await showAppDialog<Set<String>>(
+    final Set<String>? confirmed = await showAppRoleSelectionTableDialog(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setDialogState) {
-            return AppDialog(
-              title: Text(l10n.accessAdminUserAccessAddRoleDialogTitle),
-              icon: const Icon(Icons.person_add_alt_1_outlined),
-              maxWidth: 720,
-              scrollable: true,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text(
-                    l10n.accessAdminUserAccessAddRoleDialogDescription,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  SizedBox(height: Theme.of(context).spacing.md),
-                  AppRoleAssignmentPicker(
-                    roles: roleOptions,
-                    selectedRoleIds: selectedRoleIds,
-                    loadRolePermissions: loadRolePermissions,
-                    // Let the dialog scroll; avoid a nested roles scroller.
-                    maxListHeight: null,
-                    onSelectionChanged: (Set<String> next) {
-                      setDialogState(() {
-                        selectedRoleIds
-                          ..clear()
-                          ..addAll(next);
-                      });
-                    },
-                  ),
-                ],
-              ),
-              actions: <Widget>[
-                AppButton.close(
-                  label: l10n.commonCancelActionLabel,
-                  leadingIcon: Icons.close,
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                ),
-                AppButton.primary(
-                  label: l10n.accessAdminUserAccessAddRoleAction,
-                  leadingIcon: Icons.check,
-                  onPressed: selectedRoleIds.isEmpty
-                      ? null
-                      : () => Navigator.of(
-                          dialogContext,
-                        ).pop(Set<String>.from(selectedRoleIds)),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      roles: roleOptions,
+      title: l10n.accessAdminUserAccessAddRoleDialogTitle,
+      description: l10n.accessAdminUserAccessAddRoleDialogDescription,
+      searchHint: l10n.hrStaffRolesSearchHint,
+      confirmLabel: l10n.accessAdminUserAccessAddRoleAction,
+      emptyTitle: l10n.hrNoRolesLabel,
+      emptyBody: l10n.accessAdminUserAccessNoAssignableRolesMessage,
+      storageKey: 'access_admin.user_access.add_roles.table',
     );
 
     if (confirmed == null || confirmed.isEmpty || !mounted) {

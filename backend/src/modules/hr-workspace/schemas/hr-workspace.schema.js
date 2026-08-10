@@ -164,6 +164,7 @@ const staffOffboardSchema = z.object({
     'RETIREMENT',
     'CONTRACT_END',
     'DECEASED',
+    'OTHER',
   ]),
   last_working_day: z.string().datetime(),
   reason: z.string().trim().max(500).optional().nullable(),

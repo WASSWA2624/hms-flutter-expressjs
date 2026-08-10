@@ -53,6 +53,7 @@ export 'app_report_section.dart';
 export 'app_report_section_picker.dart';
 export '../reporting/report_section_selection.dart';
 export 'app_role_assignment_picker.dart';
+export 'app_role_selection_table_dialog.dart';
 export 'app_search_bar.dart';
 export 'app_select_field.dart';
 export 'app_similarity.dart';
