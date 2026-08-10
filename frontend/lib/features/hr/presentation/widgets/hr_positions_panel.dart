@@ -607,9 +607,8 @@ class _HrPositionsPanelState extends ConsumerState<HrPositionsPanel> {
           id: 'id',
           label: l10n.hrPositionIdLabel,
           preferredWidth: 140,
-          cellBuilder: (_, HrStaffPosition item) => AppCopyableIdentifierCell(
-            title: item.effectiveId,
-            identifier: item.displayId,
+          cellBuilder: (_, HrStaffPosition item) => AppCopyableIdentifier(
+            value: item.effectiveId,
           ),
           sortComparator: (HrStaffPosition a, HrStaffPosition b) =>
               a.effectiveId.compareTo(b.effectiveId),
