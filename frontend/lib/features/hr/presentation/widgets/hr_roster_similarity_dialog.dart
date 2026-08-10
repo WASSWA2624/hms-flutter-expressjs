@@ -49,16 +49,22 @@ bool isHrRosterSimilarityConflict(AppFailure? failure) {
       detail.contains('confirm to create anyway');
 }
 
-bool isHrRosterExactNameConflict(AppFailure? failure) {
-  if (failure == null || failure.category != AppFailureCategory.conflict) {
-    return false;
+/// Blocks "create anyway" only when every compared parameter scores 100%.
+bool hrRosterIsFullExactMatch(HrRosterSimilarityMatch match) {
+  final List<AppSimilarityFieldRow> comparable = match.fields
+      .where(
+        (AppSimilarityFieldRow field) =>
+            field.key != 'display_id' && field.score != null,
+      )
+      .toList(growable: false);
+  if (comparable.length >= 2) {
+    return comparable.every((AppSimilarityFieldRow field) => field.score == 100);
   }
-  final String code = failure.code.toLowerCase();
-  if (code.contains('duplicate_name')) {
-    return true;
-  }
-  final String detail = (failure.detailMessage ?? '').toLowerCase();
-  return detail.contains('roster template with this name already exists');
+  return match.isExact && match.overallScore >= 100;
+}
+
+bool hrRosterShouldBlockProceed(List<HrRosterSimilarityMatch> matches) {
+  return matches.any(hrRosterIsFullExactMatch);
 }
 
 List<HrRosterSimilarityMatch> hrRosterSimilarityMatchesFromConflict(
@@ -78,10 +84,6 @@ List<HrRosterSimilarityMatch> hrRosterSimilarityMatchesFromConflict(
     }
     final String name = (entry['name'] ?? l10n.profileUnknownValue).toString();
     final int score = _asInt(entry['score']) ?? 0;
-    final bool exact =
-        entry['isExact'] == true ||
-        entry['exactNameConflict'] == true ||
-        score >= 100;
     final List<AppSimilarityFieldRow> fields = <AppSimilarityFieldRow>[];
     final Object? comparisons = entry['field_comparisons'];
     if (comparisons is List<Object?>) {
@@ -91,7 +93,7 @@ List<HrRosterSimilarityMatch> hrRosterSimilarityMatchesFromConflict(
         }
         final Map<String, Object?> row = Map<String, Object?>.from(raw);
         final String field = (row['field'] ?? '').toString();
-        if (field.isEmpty) {
+        if (field.isEmpty || field == 'display_id') {
           continue;
         }
         fields.add(
@@ -105,6 +107,20 @@ List<HrRosterSimilarityMatch> hrRosterSimilarityMatchesFromConflict(
         );
       }
     }
+    final bool fullExact =
+        entry['isFullExactDuplicate'] == true ||
+        (fields
+                .where((AppSimilarityFieldRow field) => field.score != null)
+                .length >=
+            2 &&
+            fields
+                .where((AppSimilarityFieldRow field) => field.score != null)
+                .every((AppSimilarityFieldRow field) => field.score == 100));
+    final bool exact =
+        fullExact ||
+        entry['isExact'] == true ||
+        entry['exactNameConflict'] == true ||
+        score >= 100;
     matches.add(
       HrRosterSimilarityMatch(
         id: id,
@@ -144,7 +160,7 @@ Future<bool> showHrRosterSimilarityDialog({
               title: match.name,
               subtitle: match.displayId,
               overallScore: match.overallScore,
-              isExact: match.isExact,
+              isExact: hrRosterIsFullExactMatch(match) || match.isExact,
               fields: match.fields,
             ),
       )

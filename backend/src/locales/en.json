@@ -240,7 +240,7 @@
   "errors.roster.already_published": "Roster has already been published",
   "errors.roster.cannot_generate_published": "Cannot generate a published roster",
   "errors.roster.duplicate_staff": "Staff member is already assigned to this roster",
-  "errors.roster.duplicate_name": "A roster template with this name already exists",
+  "errors.roster.duplicate_name": "An identical roster template already exists (all parameters match)",
   "errors.roster.similar_exists": "A similar roster template already exists. Confirm to create anyway.",
   "errors.roster.not_found": "Roster not found",
   "errors.roster.permanent_delete_requires_soft_delete": "Roster template must be soft-deleted before permanent delete",

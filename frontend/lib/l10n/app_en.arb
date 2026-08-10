@@ -27396,9 +27396,9 @@
   "@hrRosterSimilarityExactBannerTitle": {
     "description": "Banner title when an exact roster template name conflict exists."
   },
-  "hrRosterSimilarityExactBannerMessage": "A roster template with this name already exists. Rename your template to continue.",
+  "hrRosterSimilarityExactBannerMessage": "An identical roster template already exists (all compared parameters match). Change the name or schedule to continue.",
   "@hrRosterSimilarityExactBannerMessage": {
-    "description": "Banner message for exact roster template name conflicts."
+    "description": "Banner message when every roster similarity parameter is an exact match."
   },
   "hrRosterSimilarityNearBannerTitle": "Similar templates found",
   "@hrRosterSimilarityNearBannerTitle": {

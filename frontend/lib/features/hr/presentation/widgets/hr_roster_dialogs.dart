@@ -7,7 +7,6 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
-import 'package:hosspi_hms/features/hr/domain/entities/hr_roster_similarity.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
@@ -815,64 +814,6 @@ Future<bool> showHrRosterTemplateDialog(
       };
 
       Future<AppFailure?> submit({required bool confirmSimilar}) async {
-        if (!confirmSimilar) {
-          final List<HrWorkItem> existingDrafts =
-              (readHrWorkspaceState(ref)?.workItems.items ??
-                      const <HrWorkItem>[])
-                  .where((HrWorkItem item) => item.queue == HrQueue.rosterDrafts)
-                  .toList(growable: false);
-          final HrRosterNameDuplicateCheckResult nameCheck =
-              checkHrRosterNameDuplicates(
-                name: nameController.text.trim(),
-                existing: existingDrafts,
-                excludeRosterId: isEdit ? rosterId : null,
-              );
-          if (nameCheck.exactNameConflict ||
-              nameCheck.overridableMatches.isNotEmpty) {
-            final List<HrRosterSimilarityMatch> matches = nameCheck
-                .similarMatches
-                .take(5)
-                .map(
-                  (HrRosterNameSimilarityMatch match) =>
-                      HrRosterSimilarityMatch(
-                        id: match.item.rosterId ?? match.item.effectiveId,
-                        name:
-                            match.item.rosterName ??
-                            match.item.periodLabel ??
-                            match.item.effectiveId,
-                        displayId: match.item.displayId,
-                        periodLabel: match.item.periodLabel,
-                        overallScore: match.score,
-                        isExact: match.exactNameConflict,
-                        fields: <AppSimilarityFieldRow>[
-                          AppSimilarityFieldRow(
-                            key: 'name',
-                            label: l10n.hrRosterNameLabel,
-                            proposedValue: nameController.text.trim(),
-                            existingValue: match.item.rosterName,
-                            score: match.score,
-                          ),
-                        ],
-                      ),
-                )
-                .toList(growable: false);
-            final bool proceed = await showHrRosterSimilarityDialog(
-              context: context,
-              proposedName: nameController.text.trim(),
-              matches: matches,
-              blockProceed: nameCheck.exactNameConflict,
-              isEdit: isEdit,
-            );
-            if (!proceed || !context.mounted) {
-              return const AppFailure.cancelled();
-            }
-            if (nameCheck.exactNameConflict) {
-              return const AppFailure.cancelled();
-            }
-            return submit(confirmSimilar: true);
-          }
-        }
-
         final Map<String, Object?> request = <String, Object?>{
           ...payload,
           if (confirmSimilar) 'confirm_similar': true,
@@ -886,20 +827,20 @@ Future<bool> showHrRosterTemplateDialog(
         if (!isHrRosterSimilarityConflict(failure)) {
           return failure;
         }
-        final bool exact = isHrRosterExactNameConflict(failure);
         final List<HrRosterSimilarityMatch> matches =
             hrRosterSimilarityMatchesFromConflict(failure, l10n: l10n);
+        final bool blockProceed = hrRosterShouldBlockProceed(matches);
         final bool proceed = await showHrRosterSimilarityDialog(
           context: context,
           proposedName: nameController.text.trim(),
           matches: matches,
-          blockProceed: exact,
+          blockProceed: blockProceed,
           isEdit: isEdit,
         );
         if (!proceed || !context.mounted) {
           return const AppFailure.cancelled();
         }
-        if (exact) {
+        if (blockProceed) {
           return const AppFailure.cancelled();
         }
         return submit(confirmSimilar: true);

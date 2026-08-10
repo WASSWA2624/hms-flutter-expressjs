@@ -21247,7 +21247,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrRosterSimilarityExactBannerMessage =>
-      'A roster template with this name already exists. Rename your template to continue.';
+      'An identical roster template already exists (all compared parameters match). Change the name or schedule to continue.';
 
   @override
   String get hrRosterSimilarityNearBannerTitle => 'Similar templates found';

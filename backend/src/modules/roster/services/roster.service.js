@@ -284,13 +284,11 @@ const assertRosterUniqueness = async ({
     excludeRosterId,
   });
 
-  if (duplicateCheck.exactNameConflict) {
+  if (duplicateCheck.hasFullExactDuplicate) {
     throw new HttpError('errors.roster.duplicate_name', 409, [
       {
         field: 'name',
-        matches: duplicateCheck.similarMatches
-          .filter((match) => match.exactNameConflict)
-          .slice(0, 5),
+        matches: (duplicateCheck.blockingMatches || []).slice(0, 5),
       },
     ]);
   }

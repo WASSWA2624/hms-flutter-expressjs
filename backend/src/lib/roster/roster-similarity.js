@@ -161,6 +161,23 @@ const buildFieldComparison = ({
   status: comparisonStatus(score, { exact }),
 });
 
+/** True when every compared parameter scores 100 (identical template). */
+const isRosterFullExactDuplicate = (match = {}) => {
+  const scores = [
+    match.nameScore,
+    match.facilityScore,
+    match.departmentScore,
+    match.recurringScore,
+    match.periodScore,
+    match.monthDaysScore,
+    match.scheduleScore,
+  ].filter((score) => score != null);
+  if (scores.length < 2) {
+    return false;
+  }
+  return scores.every((score) => score === 100);
+};
+
 /**
  * @param {Object} params
  * @param {string} params.name
@@ -371,7 +388,7 @@ const checkRosterDuplicates = ({
       continue;
     }
 
-    matches.push({
+    const match = {
       ...snapshot,
       score,
       reasons: reasons.length ? reasons : ['name'],
@@ -385,17 +402,23 @@ const checkRosterDuplicates = ({
       monthDaysScore: daysScore,
       scheduleScore,
       field_comparisons: fieldComparisons,
-    });
+    };
+    match.isFullExactDuplicate = isRosterFullExactDuplicate(match);
+    matches.push(match);
   }
 
   matches.sort((left, right) => right.score - left.score);
 
+  const blockingMatches = matches.filter((match) => match.isFullExactDuplicate);
   return {
     exactNameConflict,
     hasExactConflict: exactNameConflict,
+    hasFullExactDuplicate: blockingMatches.length > 0,
     similarMatches: matches,
     nonExactSimilarMatches: matches.filter((match) => !match.isExact),
-    overridableMatches: matches.filter((match) => !match.exactNameConflict),
+    // Name-only exact matches remain overridable when other parameters differ.
+    overridableMatches: matches.filter((match) => !match.isFullExactDuplicate),
+    blockingMatches,
   };
 };
 
@@ -413,4 +436,5 @@ module.exports = {
   compositeSimilarityScore,
   checkRosterDuplicates,
   buildCandidateSnapshot,
+  isRosterFullExactDuplicate,
 };
