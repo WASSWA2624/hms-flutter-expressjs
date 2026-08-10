@@ -868,10 +868,10 @@ Future<HrRosterTemplateDialogResult> showHrRosterTemplateDialog(
               name: selected.name,
               fromExisting: true,
             );
-            if (context.mounted) {
-              Navigator.of(context).pop(false);
-            }
-            return const AppFailure.cancelled();
+            // Return success so the mutation dialog closes itself. Do not
+            // Navigator.pop with the outer page context — that can pop the
+            // HR route and leave a blank screen.
+            return null;
           case HrRosterSimilarityOutcome.proceed:
             return submit(confirmSimilar: true);
         }
