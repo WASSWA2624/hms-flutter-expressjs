@@ -1,5 +1,49 @@
-Under the HR screen, the **User Details** dialog for the default/demo staff members looks good. The sections, styling, parameter presentation, and **Staff Actions** buttons are all displayed as intended. The **User Details** and **Staff Actions** sections are expanded by default, while the other sections are collapsed.
+There is good progress. On the **HR Staff Details** dialog, we currently have an **Assign Position** button. This button should be used to assign a position to the selected staff member.
 
-However, when I open a custom user, such as **Testing**, the dialog looks significantly different. The **User Details** section has a different layout and styling, almost as if custom users have a separate interface. The same issue applies to the **Assigned Roles** section, which also does not match the demo users.
+### Assign Position Flow
 
-I want all users—both demo/default staff and users added to the system—to use the **same User Details dialog design and styling**. The custom users should look exactly like the demo staff members, including the same sections, layout, styling, parameter presentation, and default expanded/collapsed behavior. There should be no noticeable visual discrepancy between demo users and users created later.
+When **Assign Position** is clicked, open the **Assign Position** dialog. Replace the current position selector and “Add New Position” checkbox with the existing reusable **Priority Table Component**.
+
+The table should include:
+
+* Search bar
+* Filter button
+* Settings button
+* **Create Position** button
+
+When **Create Position** is clicked, open a dialog for creating a new position. The new position must be scoped to the **current facility**, since it is being created by HR.
+
+The create-position flow must also use the existing **comparison/duplicate-check flow** to detect similar or duplicate positions before saving.
+
+### Selecting and Assigning a Position
+
+Within the positions table:
+
+1. First column: Number.
+2. Second column: Selection control (only one position can be selected because a staff member is assigned one position at a time).
+3. At the bottom of the dialog, provide an **Assign Position** button.
+
+When clicked, the selected position should be assigned to the current staff member whose details are being edited.
+
+Therefore, the flow should support both:
+
+* Creating a new position with duplicate checking.
+* Selecting and assigning an existing position to a staff member.
+
+### HR Positions Tab
+
+The main **HR screen** should also have a dedicated **Positions** tab with complete functionality.
+
+The Positions screen should include the full positions table and support:
+
+* Create
+* Edit
+* Soft delete
+* Permanent delete
+* Restore
+* Close
+* View details
+
+Clicking a position should open its detailed page, while editing should open the appropriate edit flow and save the changes correctly.
+
+Overall, the **Positions module should be fully implemented end-to-end**, including the UI, backend operations, database operations, facility scoping, duplicate checking, assignment to staff, and all standard CRUD/restore functionality.
