@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
@@ -63,7 +64,7 @@ Future<void> showHrRequestLeaveDialog(
     submitLabel: l10n.hrRequestLeaveAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    maxWidth: 720,
+    maxWidth: 920,
     buildFields:
         (
           BuildContext context,
@@ -364,6 +365,41 @@ class _HrRequestLeaveFieldsState extends State<_HrRequestLeaveFields> {
     final AppLocalizations l10n = context.l10n;
     final bool hasRoster = _rosterWeekdays.isNotEmpty;
 
+    final Widget startDateField = AppDateField(
+      value: _startDate,
+      labelText: l10n.hrStartDateLabel,
+      isRequired: true,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      currentDate: DateTime.now(),
+      pickerButtonLabel: l10n.hrPickDateAction,
+      invalidDateMessage: l10n.appDateInvalidMessage,
+      onChanged: _onStartChanged,
+    );
+    final Widget endDateField = AppDateField(
+      value: _endDate,
+      labelText: l10n.hrEndDateLabel,
+      isRequired: true,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      currentDate: DateTime.now(),
+      pickerButtonLabel: l10n.hrPickDateAction,
+      invalidDateMessage: l10n.appDateInvalidMessage,
+      onChanged: _onEndChanged,
+    );
+    final Widget daysField = AppTextField(
+      controller: _daysController,
+      labelText: l10n.hrLeaveDaysLabel,
+      helperText: hasRoster
+          ? l10n.hrLeaveDaysRosterHelper
+          : l10n.hrLeaveDaysHelper,
+      keyboardType: TextInputType.number,
+      inputFormatters: <TextInputFormatter>[
+        FilteringTextInputFormatter.digitsOnly,
+      ],
+      onChanged: _onDaysChanged,
+    );
+
     return AppFormSection(
       children: <Widget>[
         AppSelectField<String>(
@@ -373,42 +409,60 @@ class _HrRequestLeaveFieldsState extends State<_HrRequestLeaveFields> {
           options: _leaveTypeOptions,
           onChanged: (String? value) => setState(() => _leaveType = value),
         ),
-        AppResponsiveFieldRow.two(
-          gap: AppResponsiveFieldRowGap.form,
-          left: AppDateField(
-            value: _startDate,
-            labelText: l10n.hrStartDateLabel,
-            isRequired: true,
-            firstDate: DateTime(2020),
-            lastDate: DateTime(2100),
-            currentDate: DateTime.now(),
-            pickerButtonLabel: l10n.hrPickDateAction,
-            invalidDateMessage: l10n.appDateInvalidMessage,
-            onChanged: _onStartChanged,
-          ),
-          right: AppDateField(
-            value: _endDate,
-            labelText: l10n.hrEndDateLabel,
-            isRequired: true,
-            firstDate: DateTime(2020),
-            lastDate: DateTime(2100),
-            currentDate: DateTime.now(),
-            pickerButtonLabel: l10n.hrPickDateAction,
-            invalidDateMessage: l10n.appDateInvalidMessage,
-            onChanged: _onEndChanged,
-          ),
-        ),
-        AppTextField(
-          controller: _daysController,
-          labelText: l10n.hrLeaveDaysLabel,
-          helperText: hasRoster
-              ? l10n.hrLeaveDaysRosterHelper
-              : l10n.hrLeaveDaysHelper,
-          keyboardType: TextInputType.number,
-          inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.digitsOnly,
-          ],
-          onChanged: _onDaysChanged,
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final ThemeData theme = Theme.of(context);
+            final double width = constraints.hasBoundedWidth
+                ? constraints.maxWidth
+                : MediaQuery.sizeOf(context).width;
+            final double formGap = theme.spacing.md;
+            final double stackGap = theme.appTokens.formGapCompact;
+
+            // Wide dialog / large screens: Start | End | Days on one row.
+            if (width >= 640) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(flex: 5, child: startDateField),
+                  SizedBox(width: formGap),
+                  Expanded(flex: 5, child: endDateField),
+                  SizedBox(width: formGap),
+                  Expanded(flex: 4, child: daysField),
+                ],
+              );
+            }
+
+            // Medium: Start | End, then Days full width.
+            if (width >= AppBreakpoints.sm) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(child: startDateField),
+                      SizedBox(width: formGap),
+                      Expanded(child: endDateField),
+                    ],
+                  ),
+                  SizedBox(height: stackGap),
+                  daysField,
+                ],
+              );
+            }
+
+            // Narrow phones: stack all three.
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                startDateField,
+                SizedBox(height: stackGap),
+                endDateField,
+                SizedBox(height: stackGap),
+                daysField,
+              ],
+            );
+          },
         ),
         if (_coveringStaffOptions.isNotEmpty)
           AppSelectField<String>.searchable(
