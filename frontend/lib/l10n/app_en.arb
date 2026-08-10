@@ -26709,6 +26709,10 @@
   "@hrCompensationCurrentEmptyBody": {
     "description": "Empty state when staff has no pay or compensation records."
   },
+  "hrCompensationPayLinesEmptyBody": "No pay lines yet. Use Add Pay Line to create one.",
+  "@hrCompensationPayLinesEmptyBody": {
+    "description": "Empty state when no editable pay lines are present."
+  },
   "hrCompensationPayLinesSectionTitle": "Pay lines",
   "@hrCompensationPayLinesSectionTitle": {
     "description": "Section title for editable compensation pay lines."
@@ -26716,10 +26720,6 @@
   "hrCompensationPayLinesSectionHint": "Add one or more pay lines. Save to apply changes.",
   "@hrCompensationPayLinesSectionHint": {
     "description": "Hint under the pay lines section in the compensation dialog."
-  },
-  "hrCompensationPayLinesEmptyBody": "No pay lines yet. Use Add Pay Line to create one.",
-  "@hrCompensationPayLinesEmptyBody": {
-    "description": "Empty state when no editable pay lines are present."
   },
   "hrCompensationSectionTitle": "Compensation",
   "@hrCompensationSectionTitle": {
@@ -29031,6 +29031,31 @@
   "hrCompensationAddPayLineAction": "Add Pay Line",
   "@hrCompensationAddPayLineAction": {
     "description": "Action to add another concurrent compensation line."
+  },
+  "hrAddPayLineDialogTitle": "Add Pay Line",
+  "@hrAddPayLineDialogTitle": {
+    "description": "Dialog title for creating a staff pay line."
+  },
+  "hrEditPayLineDialogTitle": "Edit Pay Line",
+  "@hrEditPayLineDialogTitle": {
+    "description": "Dialog title for editing a staff pay line."
+  },
+  "hrPayLinesSearchHint": "Search pay lines",
+  "@hrPayLinesSearchHint": {
+    "description": "Search hint for the pay and compensation table."
+  },
+  "hrDeletePayLineTitle": "Delete pay line?",
+  "@hrDeletePayLineTitle": {
+    "description": "Confirm dialog title when deleting a pay line."
+  },
+  "hrDeletePayLineBody": "Delete the {payType} pay line for this staff member?",
+  "@hrDeletePayLineBody": {
+    "description": "Confirm dialog body when deleting a pay line.",
+    "placeholders": {
+      "payType": {
+        "type": "String"
+      }
+    }
   },
   "hrCompensationRemovePayLineAction": "Remove pay line",
   "@hrCompensationRemovePayLineAction": {

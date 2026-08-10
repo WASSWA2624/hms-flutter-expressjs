@@ -38327,6 +38327,12 @@ abstract class AppLocalizations {
   /// **'No pay or compensation has been set for this staff member yet.'**
   String get hrCompensationCurrentEmptyBody;
 
+  /// Empty state when no editable pay lines are present.
+  ///
+  /// In en, this message translates to:
+  /// **'No pay lines yet. Use Add Pay Line to create one.'**
+  String get hrCompensationPayLinesEmptyBody;
+
   /// Section title for editable compensation pay lines.
   ///
   /// In en, this message translates to:
@@ -38338,12 +38344,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add one or more pay lines. Save to apply changes.'**
   String get hrCompensationPayLinesSectionHint;
-
-  /// Empty state when no editable pay lines are present.
-  ///
-  /// In en, this message translates to:
-  /// **'No pay lines yet. Use Add Pay Line to create one.'**
-  String get hrCompensationPayLinesEmptyBody;
 
   /// Human resources workspace text for hrCompensationSectionTitle.
   ///
@@ -41908,6 +41908,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add Pay Line'**
   String get hrCompensationAddPayLineAction;
+
+  /// Dialog title for creating a staff pay line.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Pay Line'**
+  String get hrAddPayLineDialogTitle;
+
+  /// Dialog title for editing a staff pay line.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Pay Line'**
+  String get hrEditPayLineDialogTitle;
+
+  /// Search hint for the pay and compensation table.
+  ///
+  /// In en, this message translates to:
+  /// **'Search pay lines'**
+  String get hrPayLinesSearchHint;
+
+  /// Confirm dialog title when deleting a pay line.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete pay line?'**
+  String get hrDeletePayLineTitle;
+
+  /// Confirm dialog body when deleting a pay line.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the {payType} pay line for this staff member?'**
+  String hrDeletePayLineBody(String payType);
 
   /// Action to remove or end a compensation line.
   ///
