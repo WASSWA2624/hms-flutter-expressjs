@@ -994,6 +994,7 @@ final class HrWorkItem {
     this.assignmentCount = 0,
     this.isRecurring = false,
     this.reason,
+    this.rosterStaffIds = const <String>[],
   });
 
   final String id;
@@ -1020,6 +1021,7 @@ final class HrWorkItem {
   final int assignmentCount;
   final bool isRecurring;
   final String? reason;
+  final List<String> rosterStaffIds;
 
   String get effectiveId => displayId ?? id;
 }

@@ -553,6 +553,7 @@ final class HrWorkItemDto {
       assignmentCount: _int(json['assignment_count']) ?? 0,
       isRecurring: json['is_recurring'] == true,
       reason: _string(json['reason']),
+      rosterStaffIds: _stringList(json['roster_staff_ids']),
     );
   }
 }
@@ -1137,6 +1138,16 @@ String? _string(Object? value) {
   }
   final String normalized = value.toString().trim();
   return normalized.isEmpty ? null : normalized;
+}
+
+List<String> _stringList(Object? value) {
+  if (value is! List) {
+    return const <String>[];
+  }
+  return value
+      .map((Object? entry) => _string(entry))
+      .whereType<String>()
+      .toList(growable: false);
 }
 
 String? _rosterPeriodLabel(HrJsonMap roster) {

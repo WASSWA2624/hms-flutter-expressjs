@@ -804,10 +804,18 @@ class _HrCopyRosterFromStaffDialogState
       _failure = null;
     });
 
-    final Result<AppPage<HrStaffProfile>> result = await ref
+    final Result<AppPage<HrStaffProfile>> staffResult = await ref
         .read(hrRepositoryProvider)
         .listStaffProfiles(
           const HrStaffQuery(
+            pageRequest: AppPageRequest(pageSize: AppPageRequest.maxPageSize),
+          ),
+        );
+    final Result<AppPage<HrWorkItem>> rosterResult = await ref
+        .read(hrRepositoryProvider)
+        .listWorkItems(
+          const HrWorkItemsQuery(
+            queue: HrQueue.rosterDrafts,
             pageRequest: AppPageRequest(pageSize: AppPageRequest.maxPageSize),
           ),
         );
@@ -816,7 +824,38 @@ class _HrCopyRosterFromStaffDialogState
       return;
     }
 
-    result.when(
+    final AppFailure? staffFailure = staffResult.when(
+      success: (_) => null,
+      failure: (AppFailure failure) => failure,
+    );
+    if (staffFailure != null) {
+      setState(() {
+        _failure = staffFailure;
+        _loading = false;
+      });
+      return;
+    }
+
+    final Set<String> staffIdsWithRoster = <String>{};
+    rosterResult.when(
+      success: (AppPage<HrWorkItem> page) {
+        for (final HrWorkItem item in page.items) {
+          final String status = (item.status ?? '').trim().toUpperCase();
+          if (status == 'DELETED') {
+            continue;
+          }
+          for (final String id in item.rosterStaffIds) {
+            final String trimmed = id.trim();
+            if (trimmed.isNotEmpty) {
+              staffIdsWithRoster.add(trimmed);
+            }
+          }
+        }
+      },
+      failure: (_) {},
+    );
+
+    staffResult.when(
       success: (AppPage<HrStaffProfile> page) {
         final String selfId = widget.staff.effectiveId;
         final String selfUuid = widget.staff.id;
@@ -829,19 +868,19 @@ class _HrCopyRosterFromStaffDialogState
           if (row.effectiveId == selfId || row.id == selfUuid) {
             return false;
           }
-          return true;
+          return _staffProfileMatchesIds(row, staffIdsWithRoster);
         }).toList(growable: false);
         setState(() {
           _candidates = candidates;
           _loading = false;
+          _failure = rosterResult.when(
+            success: (_) => null,
+            failure: (AppFailure failure) =>
+                candidates.isEmpty ? failure : null,
+          );
         });
       },
-      failure: (AppFailure failure) {
-        setState(() {
-          _failure = failure;
-          _loading = false;
-        });
-      },
+      failure: (_) {},
     );
   }
 
@@ -969,6 +1008,24 @@ class _HrCopyRosterFromStaffDialogState
     return best;
   }
 
+  bool _staffProfileMatchesIds(HrStaffProfile row, Set<String> ids) {
+    if (ids.isEmpty) {
+      return false;
+    }
+    for (final String? candidate in <String?>[
+      row.id,
+      row.effectiveId,
+      row.displayId,
+      row.staffNumber,
+    ]) {
+      final String value = (candidate ?? '').trim();
+      if (value.isNotEmpty && ids.contains(value)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   Future<void> _confirm() async {
     final String? rosterId = _selectedRosterId;
     if (rosterId == null || rosterId.isEmpty) {
@@ -1033,8 +1090,8 @@ class _HrCopyRosterFromStaffDialogState
                 ? null
                 : (HrStaffProfile row) => unawaited(_selectStaff(row)),
             emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-              title: l10n.hrNoStaffTitle,
-              body: l10n.hrNoStaffBody,
+              title: l10n.hrAssignRosterSourceStaffNoRosterTitle,
+              body: l10n.hrAssignRosterSourceStaffNoRosterBody,
             ),
             search: AppListTableSearch<HrStaffProfile>(
               controller: _searchController,

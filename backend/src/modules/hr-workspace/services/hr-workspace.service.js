@@ -396,6 +396,7 @@ const mapRoster = (item) => ({
       ? item.constraints.attached_staff_ids.length
       : collectRosterStaffIds(item).size
     : collectRosterStaffIds(item).size,
+  roster_staff_ids: [...collectRosterStaffIds(item)],
   constraints: item.constraints || null,
   timeline_at: item.updated_at || item.created_at,
   target_path: buildWorkbenchPath({
