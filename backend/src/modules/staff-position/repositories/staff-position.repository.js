@@ -3,28 +3,29 @@
  *
  * @module modules/staff-position/repositories
  * @description Data access layer for staff position operations.
- * Per module-creation.mdc: Only standard CRUD operations allowed in repositories.
- * Per prisma.mdc: All queries use soft delete filtering (deleted_at: null).
  */
 
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 
+const buildWhereClause = (filters = {}, { includeDeleted = false } = {}) => {
+  const where = { ...filters };
+  if (!includeDeleted) {
+    where.deleted_at = null;
+  }
+  return where;
+};
+
 /**
  * Find staff position by ID
- *
- * @param {string} id - Staff position ID
- * @param {Object} include - Relations to include
- * @returns {Promise<Object|null>} Staff position object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, { includeDeleted = false } = {}) => {
   try {
     return await prisma.staff_position.findFirst({
       where: {
         id,
-        deleted_at: null
-      },
-      include
+        ...(includeDeleted ? {} : { deleted_at: null })
+      }
     });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
@@ -33,27 +34,20 @@ const findById = async (id, include = {}) => {
 
 /**
  * Find many staff positions with pagination
- *
- * @param {Object} filters - Filter criteria
- * @param {number} skip - Number of records to skip
- * @param {number} take - Number of records to take
- * @param {Object} orderBy - Sort order
- * @param {Object} include - Relations to include
- * @returns {Promise<Array>} Array of staff positions
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (
+  filters = {},
+  skip = 0,
+  take = 20,
+  orderBy = { created_at: 'desc' },
+  { includeDeleted = false } = {}
+) => {
   try {
-    const where = {
-      deleted_at: null,
-      ...filters
-    };
-
     return await prisma.staff_position.findMany({
-      where,
+      where: buildWhereClause(filters, { includeDeleted }),
       skip,
       take,
-      orderBy,
-      include
+      orderBy
     });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
@@ -62,18 +56,12 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_a
 
 /**
  * Count staff positions with filters
- *
- * @param {Object} filters - Filter criteria
- * @returns {Promise<number>} Count of staff positions
  */
-const count = async (filters = {}) => {
+const count = async (filters = {}, { includeDeleted = false } = {}) => {
   try {
-    const where = {
-      deleted_at: null,
-      ...filters
-    };
-
-    return await prisma.staff_position.count({ where });
+    return await prisma.staff_position.count({
+      where: buildWhereClause(filters, { includeDeleted })
+    });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -81,9 +69,6 @@ const count = async (filters = {}) => {
 
 /**
  * Create new staff position
- *
- * @param {Object} data - Staff position data
- * @returns {Promise<Object>} Created staff position
  */
 const create = async (data) => {
   try {
@@ -105,10 +90,6 @@ const create = async (data) => {
 
 /**
  * Update staff position
- *
- * @param {string} id - Staff position ID
- * @param {Object} data - Update data
- * @returns {Promise<Object>} Updated staff position
  */
 const update = async (id, data) => {
   try {
@@ -134,10 +115,6 @@ const update = async (id, data) => {
 
 /**
  * Soft delete staff position
- * Per prisma.mdc: Only soft deletes allowed
- *
- * @param {string} id - Staff position ID
- * @returns {Promise<Object>} Deleted staff position
  */
 const softDelete = async (id) => {
   try {
@@ -155,11 +132,68 @@ const softDelete = async (id) => {
   }
 };
 
+/**
+ * Restore a soft-deleted staff position
+ */
+const restore = async (id) => {
+  try {
+    const existing = await prisma.staff_position.findFirst({
+      where: { id }
+    });
+    if (!existing) {
+      throw new HttpError('errors.staff_position.not_found', 404);
+    }
+    if (!existing.deleted_at) {
+      return existing;
+    }
+    return await prisma.staff_position.update({
+      where: { id },
+      data: { deleted_at: null }
+    });
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    if (error.code === 'P2025') {
+      throw new HttpError('errors.staff_position.not_found', 404);
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Permanently delete a soft-deleted staff position
+ */
+const permanentDelete = async (id) => {
+  try {
+    const existing = await prisma.staff_position.findUnique({
+      where: { id },
+      select: { id: true, deleted_at: true }
+    });
+    if (!existing) {
+      return;
+    }
+    if (!existing.deleted_at) {
+      throw new HttpError(
+        'errors.staff_position.permanent_delete_requires_soft_delete',
+        400
+      );
+    }
+    await prisma.staff_position.delete({ where: { id } });
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    if (error.code === 'P2025') {
+      return;
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   findById,
   findMany,
   count,
   create,
   update,
-  softDelete
+  softDelete,
+  restore,
+  permanentDelete
 };

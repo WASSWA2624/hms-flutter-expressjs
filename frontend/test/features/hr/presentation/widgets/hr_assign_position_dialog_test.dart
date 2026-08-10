@@ -6,12 +6,15 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/secure_session_storage.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/core/storage/secure/app_secure_storage.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
+import 'package:hosspi_hms/features/hr/domain/entities/hr_staff_position.dart';
 import 'package:hosspi_hms/features/hr/domain/repositories/hr_repository.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
@@ -44,23 +47,16 @@ AppAccessPolicy _hrWritePolicy() {
   );
 }
 
-const HrReferenceData _referenceData = HrReferenceData(
-  staffPositions: <HrOption>[
-    HrOption(value: 'Nurse', label: 'Nurse'),
-    HrOption(value: 'Doctor', label: 'Doctor'),
-  ],
-  departments: <HrOption>[HrOption(value: 'dept-er', label: 'Emergency')],
-  practitionerTypes: <HrOption>[
-    HrOption(value: 'MO', label: 'Medical Officer (MO)'),
-  ],
-  roles: <HrOption>[HrOption(value: 'role-nurse', label: 'Nurse')],
-);
-
 const HrStaffProfile _selectedStaff = HrStaffProfile(
   id: 'staff-1',
   displayId: 'STF0001',
   staffNumber: 'EMP-001',
 );
+
+const List<HrStaffPosition> _positions = <HrStaffPosition>[
+  HrStaffPosition(id: 'pos-1', displayId: 'SPO0001', name: 'Nurse'),
+  HrStaffPosition(id: 'pos-2', displayId: 'SPO0002', name: 'Doctor'),
+];
 
 void _stubWorkspaceBootstrap(_MockHrRepository repository) {
   when(() => repository.loadOverview()).thenAnswer(
@@ -81,7 +77,7 @@ void _stubWorkspaceBootstrap(_MockHrRepository repository) {
       departmentId: any(named: 'departmentId'),
     ),
   ).thenAnswer(
-    (_) async => const Result<HrReferenceData>.success(_referenceData),
+    (_) async => const Result<HrReferenceData>.success(HrReferenceData()),
   );
   when(() => repository.listWorkItems(any())).thenAnswer(
     (_) async => const Result<AppPage<HrWorkItem>>.success(
@@ -99,6 +95,14 @@ void _stubWorkspaceBootstrap(_MockHrRepository repository) {
   when(() => repository.loadStaffAccessSummary(any())).thenAnswer(
     (_) async =>
         const Result<HrStaffAccessSummary>.success(HrStaffAccessSummary()),
+  );
+  when(() => repository.listStaffPositions(any())).thenAnswer(
+    (_) async => const Result<AppPage<HrStaffPosition>>.success(
+      AppPage<HrStaffPosition>(
+        items: _positions,
+        request: AppPageRequest(pageSize: 100),
+      ),
+    ),
   );
 }
 
@@ -139,6 +143,25 @@ Future<void> _pumpAssignPositionDialog(
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
   _stubWorkspaceBootstrap(repository);
+  final _MemorySecureStorage storage = _MemorySecureStorage()
+    ..values[SecureStorageKeys.accessToken] = 'access-token';
+
+  final AuthSession session = AuthSession(
+    tokens: SessionTokens(accessToken: 'access-token'),
+    user: const AuthUserProfile(
+      roles: <String>['HR'],
+      tenantId: '550e8400-e29b-41d4-a716-446655440000',
+      facilityId: 'facility-1',
+    ),
+    permissions: <AppPermission>{
+      AppPermissions.hrRead,
+      AppPermissions.hrWrite,
+    },
+    moduleEntitlements: const <AppModuleEntitlement>[
+      AppModuleEntitlement(code: hrRostersModule, licenseStatus: 'ACTIVE'),
+    ],
+    isAuthorizationHydrated: true,
+  );
 
   await tester.pumpWidget(
     ProviderScope(
@@ -146,7 +169,10 @@ Future<void> _pumpAssignPositionDialog(
         hrRepositoryProvider.overrideWithValue(repository),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(
-          const SessionState.ready(),
+          SessionState.authenticated(session: session),
+        ),
+        secureSessionStorageProvider.overrideWithValue(
+          SecureAppSessionStorage(storage),
         ),
         appAccessPolicyProvider.overrideWithValue(_hrWritePolicy()),
       ],
@@ -158,10 +184,9 @@ Future<void> _pumpAssignPositionDialog(
     ),
   );
   await tester.pump();
-  await tester.pump();
+  await tester.pumpAndSettle();
   await tester.tap(find.text('Open assign position'));
   await tester.pump();
-  await tester.pump(const Duration(milliseconds: 500));
   await tester.pump(const Duration(milliseconds: 500));
 }
 
@@ -175,23 +200,45 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const HrStaffQuery());
     registerFallbackValue(const HrWorkItemsQuery());
+    registerFallbackValue(const HrStaffPositionQuery());
     registerFallbackValue(_selectedStaff);
   });
 
-  testWidgets('loads reference data and shows position options', (
+  testWidgets('shows positions table with create and assign actions', (
     WidgetTester tester,
   ) async {
     await _pumpAssignPositionDialog(tester, repository);
 
-    verify(
-      () => repository.loadReferenceData(
-        facilityId: any(named: 'facilityId'),
-        departmentId: any(named: 'departmentId'),
-      ),
-    ).called(greaterThanOrEqualTo(1));
-
-    expect(find.text('Assign position'), findsWidgets);
-    expect(find.textContaining('Position'), findsOneWidget);
+    verify(() => repository.listStaffPositions(any())).called(1);
+    expect(find.text('ASSIGN POSITION'), findsWidgets);
+    expect(find.byIcon(Icons.add_outlined), findsWidgets);
+    expect(find.text('Nurse'), findsWidgets);
+    expect(find.text('Doctor'), findsWidgets);
+    expect(find.byIcon(Icons.check_outlined), findsWidgets);
     expect(tester.takeException(), isNull);
   });
+}
+
+final class _MemorySecureStorage implements AppSecureStorage {
+  final Map<String, String> values = <String, String>{};
+
+  @override
+  Future<void> delete(String key) async {
+    values.remove(key);
+  }
+
+  @override
+  Future<void> deleteAll() async {
+    values.clear();
+  }
+
+  @override
+  Future<String?> read(String key) async {
+    return values[key];
+  }
+
+  @override
+  Future<void> write({required String key, required String value}) async {
+    values[key] = value;
+  }
 }

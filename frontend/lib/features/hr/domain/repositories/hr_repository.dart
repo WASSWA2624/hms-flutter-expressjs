@@ -1,5 +1,6 @@
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
+import 'package:hosspi_hms/features/hr/domain/entities/hr_staff_position.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 abstract interface class HrRepository {
@@ -207,4 +208,25 @@ abstract interface class HrRepository {
     required String userId,
     String? tenantId,
   });
+
+  Future<Result<AppPage<HrStaffPosition>>> listStaffPositions(
+    HrStaffPositionQuery query,
+  );
+
+  Future<Result<HrStaffPosition>> getStaffPosition(String positionId);
+
+  Future<Result<HrStaffPosition>> createStaffPosition(
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<HrStaffPosition>> updateStaffPosition(
+    String positionId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<void>> deleteStaffPosition(String positionId);
+
+  Future<Result<HrStaffPosition>> restoreStaffPosition(String positionId);
+
+  Future<Result<void>> permanentDeleteStaffPosition(String positionId);
 }

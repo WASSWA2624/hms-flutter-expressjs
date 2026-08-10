@@ -172,7 +172,8 @@ void main() {
     expect(find.text('Access'), findsNothing);
     expect(find.text('Change department'), findsOneWidget);
     expect(find.text('Assign department'), findsNothing);
-    expect(find.text('Assign position'), findsOneWidget);
+    expect(find.text('Change position'), findsOneWidget);
+    expect(find.text('Assign position'), findsNothing);
     expect(find.text('Add roster'), findsOneWidget);
     expect(find.text('Record availability'), findsNothing);
     expect(find.text('Assign shift'), findsNothing);

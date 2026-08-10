@@ -22,7 +22,8 @@ HrQueue? hrDefaultQueueForSection(HrDeskSection section) {
     HrDeskSection.shiftRoster => HrQueue.rosterDrafts,
     HrDeskSection.unassignedShifts => HrQueue.unassignedShifts,
     HrDeskSection.payroll => HrQueue.payrollDrafts,
-    HrDeskSection.staffDirectory || HrDeskSection.access => null,
+    HrDeskSection.staffDirectory || HrDeskSection.access ||
+    HrDeskSection.positions => null,
   };
 }
 

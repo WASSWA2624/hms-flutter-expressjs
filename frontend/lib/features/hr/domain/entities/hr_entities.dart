@@ -26,6 +26,7 @@ enum HrQueue {
 
 enum HrDeskSection {
   staffDirectory,
+  positions,
   shiftRoster,
   leaveRequests,
   swapRequests,
@@ -37,6 +38,7 @@ enum HrDeskSection {
   String get routeQueryValue {
     return switch (this) {
       HrDeskSection.staffDirectory => 'staff',
+      HrDeskSection.positions => 'positions',
       HrDeskSection.leaveRequests => 'leave-requests',
       HrDeskSection.swapRequests => 'swap-requests',
       HrDeskSection.shiftRoster => 'shift-roster',
@@ -53,6 +55,10 @@ enum HrDeskSection {
       case 'staff-directory':
       case 'directory':
         return HrDeskSection.staffDirectory;
+      case 'positions':
+      case 'staff-positions':
+      case 'position':
+        return HrDeskSection.positions;
       case 'leave':
       case 'leave-requests':
       case 'leaves':

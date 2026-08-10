@@ -207,6 +207,11 @@ bool staffHasAssignedDepartment(HrStaffDetail detail) {
   );
 }
 
+/// Whether the staff member already has a position title.
+bool staffHasAssignedPosition(HrStaffProfile profile) {
+  return (profile.position ?? '').trim().isNotEmpty;
+}
+
 /// Active department assignment used to pre-fill change-department mode.
 HrStaffAssignment? resolveCurrentDepartmentAssignment(HrStaffDetail detail) {
   final List<HrStaffAssignment> active = detail.assignments

@@ -20473,6 +20473,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAssignPositionDialogTitle => 'Assign position';
 
   @override
+  String get hrChangePositionAction => 'Change position';
+
+  @override
+  String get hrChangePositionDialogTitle => 'Change position';
+
+  @override
   String get hrAssignShiftAction => 'Assign shift';
 
   @override
@@ -20855,6 +20861,78 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrPositionLabel => 'Position';
+
+  @override
+  String get hrPositionsTabLabel => 'Positions';
+
+  @override
+  String get hrCreatePositionAction => 'Create Position';
+
+  @override
+  String get hrCreatePositionDialogTitle => 'Create position';
+
+  @override
+  String get hrEditPositionDialogTitle => 'Edit position';
+
+  @override
+  String get hrPositionDetailTitle => 'Position details';
+
+  @override
+  String get hrPositionIdLabel => 'Position ID';
+
+  @override
+  String get hrPositionDescriptionLabel => 'Description';
+
+  @override
+  String get hrPositionActiveStatus => 'Active';
+
+  @override
+  String get hrPositionInactiveStatus => 'Inactive';
+
+  @override
+  String get hrPositionsSearchHint => 'Search positions';
+
+  @override
+  String get hrSelectPositionColumnLabel => 'Select';
+
+  @override
+  String get hrPositionsActionsColumnLabel => 'Actions';
+
+  @override
+  String get hrPositionsIncludeDeletedFilter => 'Show deleted';
+
+  @override
+  String get hrPositionsActiveOnlyFilter => 'Hide deleted';
+
+  @override
+  String get hrPositionsLoadErrorTitle => 'Could not load positions';
+
+  @override
+  String get hrSimilarPositionDialogTitle => 'Similar positions found';
+
+  @override
+  String get hrSimilarPositionWarningTitle => 'Similar position names';
+
+  @override
+  String get hrSimilarPositionWarningBody =>
+      'Review similar positions before saving. Exact name matches cannot proceed.';
+
+  @override
+  String get hrPositionNameAlreadyInUse =>
+      'This position name is already in use.';
+
+  @override
+  String get hrDeletePositionTitle => 'Delete position';
+
+  @override
+  String hrDeletePositionBody(String name) {
+    return 'Soft-delete position \"$name\"?';
+  }
+
+  @override
+  String hrPermanentDeletePositionBody(String name) {
+    return 'Permanently delete position \"$name\"? This cannot be undone.';
+  }
 
   @override
   String get hrPractitionerTypeFilterLabel => 'Practitioner type';

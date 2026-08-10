@@ -1,4 +1,5 @@
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
+import 'package:hosspi_hms/features/hr/domain/entities/hr_staff_position.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 typedef HrJsonMap = Map<String, Object?>;
@@ -812,6 +813,58 @@ final class HrOptionDto {
           }.contains(entry.key))
             entry.key: entry.value,
       },
+    );
+  }
+}
+
+final class HrStaffPositionPageDto {
+  const HrStaffPositionPageDto({required this.page});
+
+  final AppPage<HrStaffPosition> page;
+
+  factory HrStaffPositionPageDto.fromResponse(
+    Object? responseData,
+    AppPageRequest request,
+  ) {
+    final HrJsonMap response = _expectMap(responseData);
+    final List<HrStaffPosition> items = _list(response['data'])
+        .map(HrStaffPositionDto.new)
+        .map((HrStaffPositionDto dto) => dto.toEntity())
+        .where((HrStaffPosition item) => item.id.isNotEmpty)
+        .toList(growable: false);
+
+    return HrStaffPositionPageDto(
+      page: AppPage<HrStaffPosition>(
+        items: items,
+        request: request,
+        totalItemCount: _int(_map(response['pagination'])['total']),
+      ),
+    );
+  }
+}
+
+final class HrStaffPositionDto {
+  const HrStaffPositionDto(this.json);
+
+  final HrJsonMap json;
+
+  factory HrStaffPositionDto.fromResponse(Object? responseData) {
+    final HrJsonMap response = _expectMap(responseData);
+    return HrStaffPositionDto(_map(response['data']));
+  }
+
+  HrStaffPosition toEntity() {
+    return HrStaffPosition(
+      id: _string(json['id']) ?? '',
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      tenantId: _string(json['tenant_id']),
+      facilityId: _string(json['facility_id']),
+      departmentId: _string(json['department_id']),
+      name: _string(json['name']) ?? '',
+      description: _string(json['description']),
+      isActive: json['is_active'] != false,
+      deletedAt: _date(json['deleted_at']),
     );
   }
 }

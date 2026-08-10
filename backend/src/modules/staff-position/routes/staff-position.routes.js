@@ -8,15 +8,63 @@ const {
   createStaffPositionSchema,
   updateStaffPositionSchema,
   staffPositionIdParamsSchema,
-  listStaffPositionsQuerySchema} = require('@validations/staff-position/staff-position.schema');
+  listStaffPositionsQuerySchema
+} = require('@validations/staff-position/staff-position.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
 const HR_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];
 
-router.get('/', validateRequest({ query: listStaffPositionsQuerySchema }), authenticate(), authorize(HR_READ_SCOPES, 'permission'), staffPositionController.listStaffPositions);
-router.get('/:id', validateRequest({ params: staffPositionIdParamsSchema }), authenticate(), authorize(HR_READ_SCOPES, 'permission'), staffPositionController.getStaffPositionById);
-router.post('/', validateRequest({ body: createStaffPositionSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), staffPositionController.createStaffPosition);
-router.put('/:id', validateRequest({ params: staffPositionIdParamsSchema, body: updateStaffPositionSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), staffPositionController.updateStaffPosition);
-router.delete('/:id', validateRequest({ params: staffPositionIdParamsSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), staffPositionController.deleteStaffPosition);
+router.get(
+  '/',
+  validateRequest({ query: listStaffPositionsQuerySchema }),
+  authenticate(),
+  authorize(HR_READ_SCOPES, 'permission'),
+  staffPositionController.listStaffPositions
+);
+router.get(
+  '/:id',
+  validateRequest({ params: staffPositionIdParamsSchema }),
+  authenticate(),
+  authorize(HR_READ_SCOPES, 'permission'),
+  staffPositionController.getStaffPositionById
+);
+router.post(
+  '/',
+  validateRequest({ body: createStaffPositionSchema }),
+  authenticate(),
+  authorize(HR_WRITE_SCOPES, 'permission'),
+  staffPositionController.createStaffPosition
+);
+router.put(
+  '/:id',
+  validateRequest({
+    params: staffPositionIdParamsSchema,
+    body: updateStaffPositionSchema
+  }),
+  authenticate(),
+  authorize(HR_WRITE_SCOPES, 'permission'),
+  staffPositionController.updateStaffPosition
+);
+router.post(
+  '/:id/restore',
+  validateRequest({ params: staffPositionIdParamsSchema }),
+  authenticate(),
+  authorize(HR_WRITE_SCOPES, 'permission'),
+  staffPositionController.restoreStaffPosition
+);
+router.delete(
+  '/:id/permanent',
+  validateRequest({ params: staffPositionIdParamsSchema }),
+  authenticate(),
+  authorize(HR_WRITE_SCOPES, 'permission'),
+  staffPositionController.permanentDeleteStaffPosition
+);
+router.delete(
+  '/:id',
+  validateRequest({ params: staffPositionIdParamsSchema }),
+  authenticate(),
+  authorize(HR_WRITE_SCOPES, 'permission'),
+  staffPositionController.deleteStaffPosition
+);
 
 module.exports = router;

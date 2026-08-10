@@ -211,7 +211,8 @@ AccessRequirement hrSectionRequirement(HrDeskSection section) {
     HrDeskSection.payroll => HrPayrollDraftsAtomPermissions.tab,
     HrDeskSection.shiftRoster ||
     HrDeskSection.unassignedShifts => HrShiftsAtomPermissions.tab,
-    HrDeskSection.staffDirectory => HrHumanResourcesAtomPermissions.tab,
+    HrDeskSection.staffDirectory ||
+    HrDeskSection.positions => HrHumanResourcesAtomPermissions.tab,
   };
 }
 

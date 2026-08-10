@@ -77,7 +77,9 @@ class HrStaffDetailActions extends ConsumerWidget {
         ),
         AppPermissionActionItem(
           requirement: HrHumanResourcesAtomPermissions.assignPosition,
-          label: l10n.hrAssignPositionAction,
+          label: staffHasAssignedPosition(profile)
+              ? l10n.hrChangePositionAction
+              : l10n.hrAssignPositionAction,
           icon: Icons.work_outline,
           enabled: enabled,
           onPressed: () => onAssignPosition(context, ref, profile),

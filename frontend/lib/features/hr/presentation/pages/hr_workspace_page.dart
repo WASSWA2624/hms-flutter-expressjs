@@ -34,6 +34,7 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.
         HrPayrollDraftsAtomPermissions,
         showHrMutationSnackBar,
         readHrWorkspaceState;
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_positions_panel.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_request_leave_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_detail_dialog.dart';
@@ -351,6 +352,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
     return switch (section) {
       HrDeskSection.staffDirectory => const <AppSearchBarAction>[],
+      HrDeskSection.positions => const <AppSearchBarAction>[],
       HrDeskSection.leaveRequests =>
         HrLeaveRequestsAtomPermissions.requestLeave.isAllowed(policy)
             ? <AppSearchBarAction>[
@@ -405,6 +407,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         onOpenDetail: (AccessAdminItem item) =>
             openHrStaffDetailForDirectoryUser(context, ref, item),
       ),
+      HrDeskSection.positions => const HrPositionsPanel(),
       HrDeskSection.leaveRequests ||
       HrDeskSection.swapRequests ||
       HrDeskSection.shiftRoster ||
@@ -1435,6 +1438,7 @@ HrWorkspaceState? _hrStateFromAsync(
 String _sectionLabel(AppLocalizations l10n, HrDeskSection section) {
   return switch (section) {
     HrDeskSection.staffDirectory => l10n.hrStaffMembersSummaryLabel,
+    HrDeskSection.positions => l10n.hrPositionsTabLabel,
     HrDeskSection.leaveRequests => l10n.hrLeaveRequestsSummaryLabel,
     HrDeskSection.swapRequests => l10n.hrQueueSwapRequests,
     HrDeskSection.shiftRoster => l10n.hrQueueRosterDrafts,
@@ -1447,6 +1451,7 @@ String _sectionLabel(AppLocalizations l10n, HrDeskSection section) {
 IconData _sectionIcon(HrDeskSection section) {
   return switch (section) {
     HrDeskSection.staffDirectory => Icons.people_outlined,
+    HrDeskSection.positions => Icons.work_outline,
     HrDeskSection.leaveRequests => Icons.event_busy_outlined,
     HrDeskSection.swapRequests => Icons.swap_horiz_outlined,
     HrDeskSection.shiftRoster => Icons.calendar_month_outlined,
@@ -1461,6 +1466,7 @@ int _sectionCount(HrWorkspaceState state, HrDeskSection section) {
   return switch (section) {
     HrDeskSection.staffDirectory =>
       state.staff.totalItemCount ?? state.staff.items.length,
+    HrDeskSection.positions => 0,
     HrDeskSection.leaveRequests => summary.leaveRequests,
     HrDeskSection.swapRequests => summary.swapRequests,
     HrDeskSection.shiftRoster => summary.draftRosters,
@@ -1477,6 +1483,7 @@ AppTabCountTone _sectionCountTone(HrDeskSection section) {
     HrDeskSection.leaveRequests ||
     HrDeskSection.swapRequests => AppTabCountTone.warning,
     HrDeskSection.staffDirectory ||
+    HrDeskSection.positions ||
     HrDeskSection.shiftRoster ||
     HrDeskSection.payroll ||
     HrDeskSection.access => AppTabCountTone.info,

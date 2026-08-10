@@ -26368,6 +26368,14 @@
   "@hrAssignPositionDialogTitle": {
     "description": "Human resources workspace text for hrAssignPositionDialogTitle."
   },
+  "hrChangePositionAction": "Change position",
+  "@hrChangePositionAction": {
+    "description": "Human resources workspace text for hrChangePositionAction."
+  },
+  "hrChangePositionDialogTitle": "Change position",
+  "@hrChangePositionDialogTitle": {
+    "description": "Human resources workspace text for hrChangePositionDialogTitle."
+  },
   "hrAssignShiftAction": "Assign shift",
   "@hrAssignShiftAction": {
     "description": "Human resources workspace text for hrAssignShiftAction."
@@ -26887,6 +26895,104 @@
   "hrPositionLabel": "Position",
   "@hrPositionLabel": {
     "description": "Human resources workspace text for hrPositionLabel."
+  },
+  "hrPositionsTabLabel": "Positions",
+  "@hrPositionsTabLabel": {
+    "description": "HR desk tab label for staff positions catalog."
+  },
+  "hrCreatePositionAction": "Create Position",
+  "@hrCreatePositionAction": {
+    "description": "Action to create a facility-scoped staff position."
+  },
+  "hrCreatePositionDialogTitle": "Create position",
+  "@hrCreatePositionDialogTitle": {
+    "description": "Dialog title for creating a staff position."
+  },
+  "hrEditPositionDialogTitle": "Edit position",
+  "@hrEditPositionDialogTitle": {
+    "description": "Dialog title for editing a staff position."
+  },
+  "hrPositionDetailTitle": "Position details",
+  "@hrPositionDetailTitle": {
+    "description": "Dialog title for staff position details."
+  },
+  "hrPositionIdLabel": "Position ID",
+  "@hrPositionIdLabel": {
+    "description": "Label for staff position identifier."
+  },
+  "hrPositionDescriptionLabel": "Description",
+  "@hrPositionDescriptionLabel": {
+    "description": "Label for staff position description."
+  },
+  "hrPositionActiveStatus": "Active",
+  "@hrPositionActiveStatus": {
+    "description": "Active status for a staff position."
+  },
+  "hrPositionInactiveStatus": "Inactive",
+  "@hrPositionInactiveStatus": {
+    "description": "Inactive status for a staff position."
+  },
+  "hrPositionsSearchHint": "Search positions",
+  "@hrPositionsSearchHint": {
+    "description": "Search hint for staff positions table."
+  },
+  "hrSelectPositionColumnLabel": "Select",
+  "@hrSelectPositionColumnLabel": {
+    "description": "Single-select column header in assign position table."
+  },
+  "hrPositionsActionsColumnLabel": "Actions",
+  "@hrPositionsActionsColumnLabel": {
+    "description": "Actions column header on HR positions table."
+  },
+  "hrPositionsIncludeDeletedFilter": "Show deleted",
+  "@hrPositionsIncludeDeletedFilter": {
+    "description": "Toggle to include soft-deleted staff positions."
+  },
+  "hrPositionsActiveOnlyFilter": "Hide deleted",
+  "@hrPositionsActiveOnlyFilter": {
+    "description": "Toggle to hide soft-deleted staff positions."
+  },
+  "hrPositionsLoadErrorTitle": "Could not load positions",
+  "@hrPositionsLoadErrorTitle": {
+    "description": "Error banner title when positions fail to load."
+  },
+  "hrSimilarPositionDialogTitle": "Similar positions found",
+  "@hrSimilarPositionDialogTitle": {
+    "description": "Title for staff position similarity review dialog."
+  },
+  "hrSimilarPositionWarningTitle": "Similar position names",
+  "@hrSimilarPositionWarningTitle": {
+    "description": "Banner title when similar staff positions exist."
+  },
+  "hrSimilarPositionWarningBody": "Review similar positions before saving. Exact name matches cannot proceed.",
+  "@hrSimilarPositionWarningBody": {
+    "description": "Banner body for staff position similarity review."
+  },
+  "hrPositionNameAlreadyInUse": "This position name is already in use.",
+  "@hrPositionNameAlreadyInUse": {
+    "description": "Exact duplicate staff position name error."
+  },
+  "hrDeletePositionTitle": "Delete position",
+  "@hrDeletePositionTitle": {
+    "description": "Confirm soft-delete title for a staff position."
+  },
+  "hrDeletePositionBody": "Soft-delete position \"{name}\"?",
+  "@hrDeletePositionBody": {
+    "description": "Confirm soft-delete body for a staff position.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "hrPermanentDeletePositionBody": "Permanently delete position \"{name}\"? This cannot be undone.",
+  "@hrPermanentDeletePositionBody": {
+    "description": "Confirm permanent delete body for a staff position.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "hrPractitionerTypeFilterLabel": "Practitioner type",
   "@hrPractitionerTypeFilterLabel": {

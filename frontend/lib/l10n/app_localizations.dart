@@ -37853,6 +37853,18 @@ abstract class AppLocalizations {
   /// **'Assign position'**
   String get hrAssignPositionDialogTitle;
 
+  /// Human resources workspace text for hrChangePositionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Change position'**
+  String get hrChangePositionAction;
+
+  /// Human resources workspace text for hrChangePositionDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change position'**
+  String get hrChangePositionDialogTitle;
+
   /// Human resources workspace text for hrAssignShiftAction.
   ///
   /// In en, this message translates to:
@@ -38578,6 +38590,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Position'**
   String get hrPositionLabel;
+
+  /// HR desk tab label for staff positions catalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Positions'**
+  String get hrPositionsTabLabel;
+
+  /// Action to create a facility-scoped staff position.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Position'**
+  String get hrCreatePositionAction;
+
+  /// Dialog title for creating a staff position.
+  ///
+  /// In en, this message translates to:
+  /// **'Create position'**
+  String get hrCreatePositionDialogTitle;
+
+  /// Dialog title for editing a staff position.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit position'**
+  String get hrEditPositionDialogTitle;
+
+  /// Dialog title for staff position details.
+  ///
+  /// In en, this message translates to:
+  /// **'Position details'**
+  String get hrPositionDetailTitle;
+
+  /// Label for staff position identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Position ID'**
+  String get hrPositionIdLabel;
+
+  /// Label for staff position description.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get hrPositionDescriptionLabel;
+
+  /// Active status for a staff position.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get hrPositionActiveStatus;
+
+  /// Inactive status for a staff position.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get hrPositionInactiveStatus;
+
+  /// Search hint for staff positions table.
+  ///
+  /// In en, this message translates to:
+  /// **'Search positions'**
+  String get hrPositionsSearchHint;
+
+  /// Single-select column header in assign position table.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get hrSelectPositionColumnLabel;
+
+  /// Actions column header on HR positions table.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get hrPositionsActionsColumnLabel;
+
+  /// Toggle to include soft-deleted staff positions.
+  ///
+  /// In en, this message translates to:
+  /// **'Show deleted'**
+  String get hrPositionsIncludeDeletedFilter;
+
+  /// Toggle to hide soft-deleted staff positions.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide deleted'**
+  String get hrPositionsActiveOnlyFilter;
+
+  /// Error banner title when positions fail to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load positions'**
+  String get hrPositionsLoadErrorTitle;
+
+  /// Title for staff position similarity review dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar positions found'**
+  String get hrSimilarPositionDialogTitle;
+
+  /// Banner title when similar staff positions exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar position names'**
+  String get hrSimilarPositionWarningTitle;
+
+  /// Banner body for staff position similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Review similar positions before saving. Exact name matches cannot proceed.'**
+  String get hrSimilarPositionWarningBody;
+
+  /// Exact duplicate staff position name error.
+  ///
+  /// In en, this message translates to:
+  /// **'This position name is already in use.'**
+  String get hrPositionNameAlreadyInUse;
+
+  /// Confirm soft-delete title for a staff position.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete position'**
+  String get hrDeletePositionTitle;
+
+  /// Confirm soft-delete body for a staff position.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft-delete position \"{name}\"?'**
+  String hrDeletePositionBody(String name);
+
+  /// Confirm permanent delete body for a staff position.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete position \"{name}\"? This cannot be undone.'**
+  String hrPermanentDeletePositionBody(String name);
 
   /// Human resources workspace text for hrPractitionerTypeFilterLabel.
   ///

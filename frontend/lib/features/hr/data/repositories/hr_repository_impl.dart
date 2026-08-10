@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/network/api_endpoints.dart';
 import 'package:hosspi_hms/core/network/network_providers.dart';
 import 'package:hosspi_hms/features/hr/data/dtos/hr_dtos.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
+import 'package:hosspi_hms/features/hr/domain/entities/hr_staff_position.dart';
 import 'package:hosspi_hms/features/hr/domain/repositories/hr_repository.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
@@ -934,6 +935,99 @@ final class HrRepositoryImpl implements HrRepository {
     }
 
     return Result<List<HrUserRole>>.success(all);
+  }
+
+  @override
+  Future<Result<AppPage<HrStaffPosition>>> listStaffPositions(
+    HrStaffPositionQuery query,
+  ) {
+    final AppPageRequest request = query.pageRequest;
+    return _apiClient.get<AppPage<HrStaffPosition>>(
+      ApiEndpoints.collection(HmsApiResource.staffPositions),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': request.pageIndex + 1,
+        'limit': request.pageSize,
+        'search': query.search,
+        'tenant_id': query.tenantId,
+        'facility_id': query.facilityId,
+        'department_id': query.departmentId,
+        'is_active': query.isActive == null
+            ? null
+            : (query.isActive! ? 'true' : 'false'),
+        'include_deleted': query.includeDeleted ? 'true' : null,
+        'sort_by': 'name',
+        'order': 'asc',
+      }),
+      decoder: (Object? data) =>
+          HrStaffPositionPageDto.fromResponse(data, request).page,
+    );
+  }
+
+  @override
+  Future<Result<HrStaffPosition>> getStaffPosition(String positionId) {
+    return _apiClient.get<HrStaffPosition>(
+      ApiEndpoints.byId(HmsApiResource.staffPositions, positionId),
+      decoder: (Object? data) =>
+          HrStaffPositionDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<HrStaffPosition>> createStaffPosition(
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<HrStaffPosition>(
+      ApiEndpoints.collection(HmsApiResource.staffPositions),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) =>
+          HrStaffPositionDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<HrStaffPosition>> updateStaffPosition(
+    String positionId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<HrStaffPosition>(
+      ApiEndpoints.byId(HmsApiResource.staffPositions, positionId),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) =>
+          HrStaffPositionDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<void>> deleteStaffPosition(String positionId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.staffPositions, positionId),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<HrStaffPosition>> restoreStaffPosition(String positionId) {
+    return _apiClient.post<HrStaffPosition>(
+      ApiEndpoints.nested(
+        HmsApiResource.staffPositions,
+        positionId,
+        const <String>['restore'],
+      ),
+      decoder: (Object? data) =>
+          HrStaffPositionDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<void>> permanentDeleteStaffPosition(String positionId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.nested(
+        HmsApiResource.staffPositions,
+        positionId,
+        const <String>['permanent'],
+      ),
+      decoder: (_) {},
+    );
   }
 
   Future<Result<List<HrUserRole>>> _fetchUserRolesPage({

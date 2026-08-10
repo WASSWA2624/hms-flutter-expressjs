@@ -89,6 +89,7 @@ void main() {
         HrDeskSection.values,
         containsAll(<HrDeskSection>[
           HrDeskSection.staffDirectory,
+          HrDeskSection.positions,
           HrDeskSection.shiftRoster,
           HrDeskSection.leaveRequests,
           HrDeskSection.swapRequests,
@@ -97,7 +98,8 @@ void main() {
           HrDeskSection.access,
         ]),
       );
-      expect(HrDeskSection.values.indexOf(HrDeskSection.shiftRoster), 1);
+      expect(HrDeskSection.values.indexOf(HrDeskSection.positions), 1);
+      expect(HrDeskSection.values.indexOf(HrDeskSection.shiftRoster), 2);
     });
 
     test('routeQueryValue matches canonical section params', () {
@@ -111,6 +113,7 @@ void main() {
       );
       expect(HrDeskSection.payroll.routeQueryValue, 'payroll');
       expect(HrDeskSection.access.routeQueryValue, 'access');
+      expect(HrDeskSection.positions.routeQueryValue, 'positions');
     });
 
     test('fromQuery resolves aliases', () {
@@ -126,6 +129,7 @@ void main() {
         HrDeskSection.unassignedShifts,
       );
       expect(HrDeskSection.fromQuery('roles'), HrDeskSection.access);
+      expect(HrDeskSection.fromQuery('positions'), HrDeskSection.positions);
       expect(HrDeskSection.fromQuery('unknown'), isNull);
     });
 
