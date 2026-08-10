@@ -846,6 +846,7 @@ Future<HrRosterTemplateDialogResult> showHrRosterTemplateDialog(
         if (!isHrRosterSimilarityConflict(failure)) {
           return failure;
         }
+        controller.clearLastFailure();
         final List<HrRosterSimilarityMatch> matches =
             hrRosterSimilarityMatchesFromConflict(failure, l10n: l10n);
         final HrRosterSimilarityDialogResult review =

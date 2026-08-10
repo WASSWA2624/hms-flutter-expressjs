@@ -286,6 +286,17 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     final AppFailure? lastFailure = state.lastFailure is AppFailure
         ? state.lastFailure! as AppFailure
         : null;
+    // Similarity conflicts are reviewed inside mutation dialogs — never as a
+    // page-level banner over the roster table.
+    final AppFailure? pageFailure =
+        lastFailure != null && _isHrDialogHandledConflict(lastFailure)
+        ? null
+        : lastFailure;
+    if (lastFailure != null && pageFailure == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(hrWorkspaceControllerProvider.notifier).clearLastFailure();
+      });
+    }
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -322,10 +333,15 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
               },
             ),
             SizedBox(height: theme.spacing.sm),
-            if (lastFailure != null) ...<Widget>[
+            if (pageFailure != null) ...<Widget>[
               AppFailureStateView(
-                failure: lastFailure,
-                onRetry: controller.refresh,
+                failure: pageFailure,
+                onRetry: () {
+                  ref
+                      .read(hrWorkspaceControllerProvider.notifier)
+                      .clearLastFailure();
+                  unawaited(controller.refresh());
+                },
               ),
               SizedBox(height: theme.spacing.md),
             ],
@@ -1674,6 +1690,23 @@ AppWorkspaceStatusTone _statusTone(String? status) {
 
 const String _hrWorkItemStatusFilterKey = 'status';
 const String _hrWorkItemQueueFilterKey = 'queue';
+
+bool _isHrDialogHandledConflict(AppFailure failure) {
+  if (failure.category != AppFailureCategory.conflict) {
+    return false;
+  }
+  if (failure is ConflictFailure && failure.conflictEntries.isNotEmpty) {
+    return true;
+  }
+  final String code = failure.code.toLowerCase();
+  if (code.contains('similar') || code.contains('duplicate_name')) {
+    return true;
+  }
+  final String detail = (failure.detailMessage ?? '').toLowerCase();
+  return detail.contains('confirm to create anyway') ||
+      detail.contains('similar roster') ||
+      detail.contains('roster template with this name');
+}
 
 List<AppListTableColumn<HrWorkItem>> _workQueueColumns(
   BuildContext context,

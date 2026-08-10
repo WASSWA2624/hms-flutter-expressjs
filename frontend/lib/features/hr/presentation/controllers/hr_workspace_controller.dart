@@ -1184,6 +1184,15 @@ final class HrWorkspaceController
     _emit(current.copyWith(clearOpenStaffDetailAfterOnboarding: true));
   }
 
+  /// Clears a page-level failure banner (e.g. after an inline dialog handles it).
+  void clearLastFailure() {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null || current.lastFailure == null) {
+      return;
+    }
+    _emit(current.copyWith(clearLastFailure: true));
+  }
+
   /// Updates the Positions tab badge from the catalog panel.
   void setPositionsTotalCount(int count) {
     final HrWorkspaceState? current = _currentState;
@@ -1275,7 +1284,13 @@ final class HrWorkspaceController
       failure: (AppFailure failure) {
         final HrWorkspaceState? latest = _currentState;
         if (latest != null) {
-          _emit(latest.copyWith(isMutating: false, lastFailure: failure));
+          // Similarity / duplicate review is handled by the create dialog.
+          // Do not leak it onto the workspace page banner.
+          if (_isDialogHandledConflict(failure)) {
+            _emit(latest.copyWith(isMutating: false, clearLastFailure: true));
+          } else {
+            _emit(latest.copyWith(isMutating: false, lastFailure: failure));
+          }
         }
         return failure;
       },
@@ -1903,11 +1918,33 @@ final class HrWorkspaceController
       failure: (AppFailure failure) {
         final HrWorkspaceState? latest = _currentState;
         if (latest != null) {
-          _emit(latest.copyWith(isMutating: false, lastFailure: failure));
+          if (_isDialogHandledConflict(failure)) {
+            _emit(latest.copyWith(isMutating: false, clearLastFailure: true));
+          } else {
+            _emit(latest.copyWith(isMutating: false, lastFailure: failure));
+          }
         }
         return failure;
       },
     );
+  }
+
+  /// Conflicts that dialogs review inline (similarity / duplicates).
+  bool _isDialogHandledConflict(AppFailure failure) {
+    if (failure.category != AppFailureCategory.conflict) {
+      return false;
+    }
+    if (failure is ConflictFailure && failure.conflictEntries.isNotEmpty) {
+      return true;
+    }
+    final String code = failure.code.toLowerCase();
+    if (code.contains('similar') || code.contains('duplicate_name')) {
+      return true;
+    }
+    final String detail = (failure.detailMessage ?? '').toLowerCase();
+    return detail.contains('confirm to create anyway') ||
+        detail.contains('similar roster') ||
+        detail.contains('roster template with this name');
   }
 
   Future<HrReferenceData> _loadReferenceDataOrEmpty() async {
