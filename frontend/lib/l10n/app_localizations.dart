@@ -40517,6 +40517,36 @@ abstract class AppLocalizations {
   /// **'Choose which staff details sections appear on the printout.'**
   String get hrStaffPrintContentSectionHint;
 
+  /// Title for staff print roster layout format radios.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster layout'**
+  String get hrStaffPrintRosterFormatTitle;
+
+  /// Hint for staff print roster layout format radios.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how roster shifts appear in the preview and printed document.'**
+  String get hrStaffPrintRosterFormatHint;
+
+  /// Staff print roster layout: month calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get hrStaffPrintRosterFormatCalendar;
+
+  /// Staff print roster layout: tabular shift list.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift list'**
+  String get hrStaffPrintRosterFormatList;
+
+  /// Staff print roster layout: weekly timeline strips.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly timeline'**
+  String get hrStaffPrintRosterFormatTimeline;
+
   /// Human resources workspace text for hrStaffDirectoryDescription.
   ///
   /// In en, this message translates to:

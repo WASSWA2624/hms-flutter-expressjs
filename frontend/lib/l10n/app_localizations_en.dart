@@ -21903,6 +21903,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose which staff details sections appear on the printout.';
 
   @override
+  String get hrStaffPrintRosterFormatTitle => 'Roster layout';
+
+  @override
+  String get hrStaffPrintRosterFormatHint =>
+      'Choose how roster shifts appear in the preview and printed document.';
+
+  @override
+  String get hrStaffPrintRosterFormatCalendar => 'Calendar';
+
+  @override
+  String get hrStaffPrintRosterFormatList => 'Shift list';
+
+  @override
+  String get hrStaffPrintRosterFormatTimeline => 'Weekly timeline';
+
+  @override
   String get hrStaffDirectoryDescription =>
       'Search staff by name, department, position, or status.';
 

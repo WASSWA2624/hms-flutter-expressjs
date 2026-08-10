@@ -28220,6 +28220,26 @@
   "@hrStaffPrintContentSectionHint": {
     "description": "Print preview section picker hint for staff details."
   },
+  "hrStaffPrintRosterFormatTitle": "Roster layout",
+  "@hrStaffPrintRosterFormatTitle": {
+    "description": "Title for staff print roster layout format radios."
+  },
+  "hrStaffPrintRosterFormatHint": "Choose how roster shifts appear in the preview and printed document.",
+  "@hrStaffPrintRosterFormatHint": {
+    "description": "Hint for staff print roster layout format radios."
+  },
+  "hrStaffPrintRosterFormatCalendar": "Calendar",
+  "@hrStaffPrintRosterFormatCalendar": {
+    "description": "Staff print roster layout: month calendar."
+  },
+  "hrStaffPrintRosterFormatList": "Shift list",
+  "@hrStaffPrintRosterFormatList": {
+    "description": "Staff print roster layout: tabular shift list."
+  },
+  "hrStaffPrintRosterFormatTimeline": "Weekly timeline",
+  "@hrStaffPrintRosterFormatTimeline": {
+    "description": "Staff print roster layout: weekly timeline strips."
+  },
   "hrStaffDirectoryDescription": "Search staff by name, department, position, or status.",
   "@hrStaffDirectoryDescription": {
     "description": "Human resources workspace text for hrStaffDirectoryDescription."

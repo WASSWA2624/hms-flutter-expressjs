@@ -4,6 +4,8 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_calendar_preview.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_print_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -21,6 +23,9 @@ enum HrStaffPrintSection {
   permissions,
 }
 
+/// How the Rosters section is rendered in staff print preview / printout.
+enum HrStaffRosterPrintFormat { calendar, list, timeline }
+
 final class HrStaffPrintOptionsController extends ChangeNotifier {
   HrStaffPrintOptionsController({
     Set<HrStaffPrintSection> initial = const <HrStaffPrintSection>{
@@ -32,14 +37,20 @@ final class HrStaffPrintOptionsController extends ChangeNotifier {
       HrStaffPrintSection.roles,
       HrStaffPrintSection.permissions,
     },
-  }) : _selected = Set<HrStaffPrintSection>.from(initial);
+    HrStaffRosterPrintFormat initialRosterFormat =
+        HrStaffRosterPrintFormat.calendar,
+  }) : _selected = Set<HrStaffPrintSection>.from(initial),
+       _rosterFormat = initialRosterFormat;
 
   final Set<HrStaffPrintSection> _selected;
+  HrStaffRosterPrintFormat _rosterFormat;
 
   Set<HrStaffPrintSection> get selectedSections =>
       Set<HrStaffPrintSection>.unmodifiable(_selected);
 
   Set<Object> get selectedIds => _selected.cast<Object>().toSet();
+
+  HrStaffRosterPrintFormat get rosterFormat => _rosterFormat;
 
   bool get canPrint => _selected.isNotEmpty;
 
@@ -54,6 +65,14 @@ final class HrStaffPrintOptionsController extends ChangeNotifier {
     _selected
       ..clear()
       ..addAll(next);
+    notifyListeners();
+  }
+
+  void setRosterFormat(HrStaffRosterPrintFormat format) {
+    if (_rosterFormat == format) {
+      return;
+    }
+    _rosterFormat = format;
     notifyListeners();
   }
 }
@@ -71,6 +90,9 @@ class HrStaffPrintOptionsSection extends StatelessWidget {
     return ListenableBuilder(
       listenable: controller,
       builder: (BuildContext context, Widget? _) {
+        final bool showRosterFormats = controller.selectedSections.contains(
+          HrStaffPrintSection.rosters,
+        );
         return AppFormSection(
           title: l10n.hrStaffPrintContentSection,
           density: AppFormSectionDensity.compact,
@@ -124,6 +146,43 @@ class HrStaffPrintOptionsSection extends StatelessWidget {
               selectedIds: controller.selectedIds,
               onSelectionChanged: controller.setSelection,
             ),
+            if (showRosterFormats) ...<Widget>[
+              SizedBox(height: theme.spacing.md),
+              Text(
+                l10n.hrStaffPrintRosterFormatHint,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              SizedBox(height: theme.spacing.xs),
+              AppRadioGroup<HrStaffRosterPrintFormat>(
+                labelText: l10n.hrStaffPrintRosterFormatTitle,
+                presentation: AppRadioGroupPresentation.borderless,
+                layout: AppRadioGroupLayout.wrap,
+                dense: true,
+                itemMinWidth: 140,
+                value: controller.rosterFormat,
+                options: <AppRadioOption<HrStaffRosterPrintFormat>>[
+                  AppRadioOption<HrStaffRosterPrintFormat>(
+                    value: HrStaffRosterPrintFormat.calendar,
+                    label: l10n.hrStaffPrintRosterFormatCalendar,
+                  ),
+                  AppRadioOption<HrStaffRosterPrintFormat>(
+                    value: HrStaffRosterPrintFormat.list,
+                    label: l10n.hrStaffPrintRosterFormatList,
+                  ),
+                  AppRadioOption<HrStaffRosterPrintFormat>(
+                    value: HrStaffRosterPrintFormat.timeline,
+                    label: l10n.hrStaffPrintRosterFormatTimeline,
+                  ),
+                ],
+                onChanged: (HrStaffRosterPrintFormat? value) {
+                  if (value != null) {
+                    controller.setRosterFormat(value);
+                  }
+                },
+              ),
+            ],
           ],
         );
       },
@@ -140,8 +199,12 @@ Future<void> showHrStaffPrintPreview({
   final HrStaffProfile profile = detail.profile;
   final HrStaffPrintOptionsController options = HrStaffPrintOptionsController();
 
-  String buildBodyHtml() =>
-      buildHrStaffPrintHtml(l10n, detail, options.selectedSections);
+  String buildBodyHtml() => buildHrStaffPrintHtml(
+    l10n,
+    detail,
+    options.selectedSections,
+    rosterFormat: options.rosterFormat,
+  );
 
   try {
     await PrintDocumentTemplates.registry(
@@ -164,8 +227,9 @@ Future<void> showHrStaffPrintPreview({
 String buildHrStaffPrintHtml(
   AppLocalizations l10n,
   HrStaffDetail detail,
-  Set<HrStaffPrintSection> sections,
-) {
+  Set<HrStaffPrintSection> sections, {
+  HrStaffRosterPrintFormat rosterFormat = HrStaffRosterPrintFormat.calendar,
+}) {
   final HrStaffProfile profile = detail.profile;
   final StringBuffer buffer = StringBuffer();
   buffer.writeln(
@@ -194,16 +258,8 @@ String buildHrStaffPrintHtml(
       l10n.hrDepartmentLabel,
       profile.departmentName ?? profile.departmentDisplayId ?? '—',
     );
-    _row(
-      buffer,
-      l10n.hrStatusLabel,
-      profile.status ?? '—',
-    );
-    _row(
-      buffer,
-      l10n.hrEmailLabel,
-      profile.userEmail ?? '—',
-    );
+    _row(buffer, l10n.hrStatusLabel, profile.status ?? '—');
+    _row(buffer, l10n.hrEmailLabel, profile.userEmail ?? '—');
     buffer.writeln(_tableEnd());
   }
 
@@ -213,7 +269,9 @@ String buildHrStaffPrintHtml(
         .where((HrStaffAssignment row) => row.isActive)
         .toList(growable: false);
     if (rows.isEmpty) {
-      buffer.writeln('<p style="color:#78909C;">${_esc(l10n.hrNoAssignmentsLabel)}</p>');
+      buffer.writeln(
+        '<p style="color:#78909C;">${_esc(l10n.hrNoAssignmentsLabel)}</p>',
+      );
     } else {
       buffer.writeln(_tableStart());
       for (final HrStaffAssignment assignment in rows) {
@@ -229,30 +287,21 @@ String buildHrStaffPrintHtml(
 
   if (sections.contains(HrStaffPrintSection.rosters)) {
     buffer.writeln(_sectionTitle(l10n.hrStaffRostersSectionTitle));
-    if (detail.shiftAssignments.isEmpty) {
-      buffer.writeln(
-        '<p style="color:#78909C;">${_esc(l10n.hrStaffRostersEmptyTitle)}</p>',
-      );
-    } else {
-      buffer.writeln(_tableStart());
-      for (final HrShiftAssignment shift in detail.shiftAssignments) {
-        final String when = shift.startTime == null
-            ? '—'
-            : AppFormatters.dateTime(shift.startTime!, const Locale('en'));
-        _row(
-          buffer,
-          shift.shiftName ?? shift.shiftType ?? shift.displayId ?? shift.id,
-          when,
-        );
-      }
-      buffer.writeln(_tableEnd());
-    }
+    buffer.writeln(
+      _buildStaffRostersHtml(
+        l10n,
+        detail.shiftAssignments,
+        format: rosterFormat,
+      ),
+    );
   }
 
   if (sections.contains(HrStaffPrintSection.leaves)) {
     buffer.writeln(_sectionTitle(l10n.hrStaffLeavesSectionTitle));
     if (detail.leaves.isEmpty) {
-      buffer.writeln('<p style="color:#78909C;">${_esc(l10n.hrNoLeaveLabel)}</p>');
+      buffer.writeln(
+        '<p style="color:#78909C;">${_esc(l10n.hrNoLeaveLabel)}</p>',
+      );
     } else {
       buffer.writeln(_tableStart());
       for (final HrStaffLeave leave in detail.leaves) {
@@ -307,7 +356,9 @@ String buildHrStaffPrintHtml(
     final List<HrUserRole> roles =
         detail.accessSummary?.userRoles ?? const <HrUserRole>[];
     if (roles.isEmpty) {
-      buffer.writeln('<p style="color:#78909C;">${_esc(l10n.hrNoRolesLabel)}</p>');
+      buffer.writeln(
+        '<p style="color:#78909C;">${_esc(l10n.hrNoRolesLabel)}</p>',
+      );
     } else {
       buffer.writeln(
         '<p>${roles.map((HrUserRole role) => _esc(role.roleName ?? role.roleId ?? '')).where((String v) => v.isNotEmpty).join(' · ')}</p>',
@@ -331,6 +382,204 @@ String buildHrStaffPrintHtml(
   }
 
   buffer.writeln('</div>');
+  return buffer.toString();
+}
+
+String _buildStaffRostersHtml(
+  AppLocalizations l10n,
+  List<HrShiftAssignment> assignments, {
+  required HrStaffRosterPrintFormat format,
+}) {
+  if (assignments.every(
+    (HrShiftAssignment row) => row.startTime == null || row.endTime == null,
+  )) {
+    return '<p style="color:#78909C;">${_esc(l10n.hrStaffRostersEmptyTitle)}</p>';
+  }
+
+  final List<HrRosterDayPreview> days = hrStaffRosterDayPreviews(assignments);
+  return switch (format) {
+    HrStaffRosterPrintFormat.calendar => hrRosterPrintScheduleHtml(
+      l10n,
+      days,
+      includeHeading: false,
+    ),
+    HrStaffRosterPrintFormat.list => _staffRosterListHtml(l10n, assignments),
+    HrStaffRosterPrintFormat.timeline => _staffRosterTimelineHtml(l10n, days),
+  };
+}
+
+/// Builds calendar day previews from staff shift assignments.
+List<HrRosterDayPreview> hrStaffRosterDayPreviews(
+  List<HrShiftAssignment> assignments,
+) {
+  final DateTime now = DateTime.now();
+  final DateTime from = DateTime(now.year, now.month);
+  final DateTime to = DateTime(now.year, now.month + 1, 0);
+  final Map<String, List<HrRosterShiftWindow>> byDay =
+      <String, List<HrRosterShiftWindow>>{};
+
+  for (final HrShiftAssignment assignment in assignments) {
+    final DateTime? start = assignment.startTime?.toLocal();
+    final DateTime? end = assignment.endTime?.toLocal();
+    if (start == null || end == null) {
+      continue;
+    }
+    final String key = hrRosterDateKey(start);
+    byDay
+        .putIfAbsent(key, () => <HrRosterShiftWindow>[])
+        .add(
+          HrRosterShiftWindow(
+            start: start,
+            end: end,
+            staffNames: const <String>[],
+            shiftType: assignment.shiftType,
+          ),
+        );
+  }
+
+  DateTime rangeStart = from;
+  DateTime rangeEnd = to;
+  if (byDay.isNotEmpty) {
+    final List<DateTime> dated = byDay.keys
+        .map(DateTime.parse)
+        .toList(growable: false)
+      ..sort();
+    if (dated.first.isBefore(rangeStart)) {
+      rangeStart = DateTime(dated.first.year, dated.first.month);
+    }
+    if (dated.last.isAfter(rangeEnd)) {
+      rangeEnd = DateTime(dated.last.year, dated.last.month + 1, 0);
+    }
+  }
+
+  final List<HrRosterDayPreview> days = <HrRosterDayPreview>[];
+  DateTime cursor = rangeStart;
+  while (!cursor.isAfter(rangeEnd)) {
+    final String key = hrRosterDateKey(cursor);
+    final List<HrRosterShiftWindow> dayShifts =
+        List<HrRosterShiftWindow>.from(
+          byDay[key] ?? const <HrRosterShiftWindow>[],
+        )..sort(
+          (HrRosterShiftWindow a, HrRosterShiftWindow b) =>
+              a.start.compareTo(b.start),
+        );
+    final bool weekend =
+        cursor.weekday == DateTime.saturday ||
+        cursor.weekday == DateTime.sunday;
+    days.add(
+      HrRosterDayPreview(
+        date: cursor,
+        label: key,
+        isHoliday: false,
+        isWorkingDay: dayShifts.isNotEmpty || !weekend,
+        dayStartMinutes: 8 * 60,
+        dayEndMinutes: 17 * 60,
+        shifts: dayShifts,
+      ),
+    );
+    cursor = cursor.add(const Duration(days: 1));
+  }
+  return days;
+}
+
+String _staffRosterListHtml(
+  AppLocalizations l10n,
+  List<HrShiftAssignment> assignments,
+) {
+  final List<HrShiftAssignment> rows =
+      assignments
+          .where(
+            (HrShiftAssignment row) =>
+                row.startTime != null && row.endTime != null,
+          )
+          .toList(growable: false)
+        ..sort((HrShiftAssignment a, HrShiftAssignment b) {
+          final DateTime aStart = a.startTime!;
+          final DateTime bStart = b.startTime!;
+          return aStart.compareTo(bStart);
+        });
+
+  if (rows.isEmpty) {
+    return '<p style="color:#78909C;">${_esc(l10n.hrStaffRostersEmptyTitle)}</p>';
+  }
+
+  final StringBuffer buffer = StringBuffer();
+  buffer.writeln(
+    '<table style="width:100%;border-collapse:collapse;font-size:11px;">'
+    '<thead><tr>'
+    '<th style="text-align:left;padding:6px;border-bottom:1px solid #CFD8DC;">${_esc(l10n.hrPeriodColumnLabel)}</th>'
+    '<th style="text-align:left;padding:6px;border-bottom:1px solid #CFD8DC;">${_esc(l10n.hrShiftTypeLabel)}</th>'
+    '<th style="text-align:left;padding:6px;border-bottom:1px solid #CFD8DC;">${_esc(l10n.hrStaffRostersSectionTitle)}</th>'
+    '<th style="text-align:left;padding:6px;border-bottom:1px solid #CFD8DC;">${_esc(l10n.hrStatusColumnLabel)}</th>'
+    '</tr></thead><tbody>',
+  );
+  for (final HrShiftAssignment shift in rows) {
+    final String when =
+        '${AppFormatters.dateTime(shift.startTime!, const Locale('en'))}'
+        ' – '
+        '${AppFormatters.dateTime(shift.endTime!, const Locale('en'))}';
+    buffer.writeln(
+      '<tr>'
+      '<td style="padding:6px;border-bottom:1px solid #ECEFF1;">${_esc(when)}</td>'
+      '<td style="padding:6px;border-bottom:1px solid #ECEFF1;">${_esc(shift.shiftType ?? '—')}</td>'
+      '<td style="padding:6px;border-bottom:1px solid #ECEFF1;">${_esc(shift.shiftName ?? shift.rosterId ?? shift.displayId ?? shift.id)}</td>'
+      '<td style="padding:6px;border-bottom:1px solid #ECEFF1;">${_esc(shift.shiftStatus ?? '—')}</td>'
+      '</tr>',
+    );
+  }
+  buffer.writeln('</tbody></table>');
+  return buffer.toString();
+}
+
+String _staffRosterTimelineHtml(
+  AppLocalizations l10n,
+  List<HrRosterDayPreview> days,
+) {
+  final List<HrRosterDayPreview> withShifts = days
+      .where((HrRosterDayPreview day) => day.shifts.isNotEmpty)
+      .toList(growable: false);
+  if (withShifts.isEmpty) {
+    return '<p style="color:#78909C;">${_esc(l10n.hrStaffRostersEmptyTitle)}</p>';
+  }
+
+  final StringBuffer buffer = StringBuffer();
+  buffer.writeln(
+    '<p style="margin:0 0 10px;color:#546E7A;font-size:11px;">'
+    '${_esc(l10n.hrStaffPrintRosterFormatTimeline)}'
+    '</p>',
+  );
+
+  DateTime? weekStart;
+  for (final HrRosterDayPreview day in withShifts) {
+    final DateTime monday = day.date.subtract(
+      Duration(days: day.date.weekday - DateTime.monday),
+    );
+    if (weekStart == null || monday != weekStart) {
+      weekStart = monday;
+      final DateTime sunday = monday.add(const Duration(days: 6));
+      buffer.writeln(
+        '<div style="font-weight:700;font-size:12px;margin:12px 0 6px;">'
+        '${_esc('${hrRosterDateKey(monday)} – ${hrRosterDateKey(sunday)}')}'
+        '</div>',
+      );
+    }
+
+    final String blocks = day.shifts
+        .map((HrRosterShiftWindow shift) {
+          return '<span style="display:inline-block;margin:2px 4px 2px 0;padding:4px 8px;border-radius:6px;background:#1565C0;color:#fff;font-size:10px;">'
+              '${_esc('${hrRosterFormatHm(shift.start)}–${hrRosterFormatHm(shift.end)}')}'
+              '${shift.shiftType == null || shift.shiftType!.trim().isEmpty ? '' : ' · ${_esc(shift.shiftType!)}'}'
+              '</span>';
+        })
+        .join();
+
+    buffer.writeln(
+      '<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid #ECEFF1;">'
+      '<div style="width:88px;flex-shrink:0;font-size:11px;font-weight:600;color:#37474F;">${_esc(day.label)}</div>'
+      '<div style="flex:1;">$blocks</div>'
+      '</div>',
+    );
+  }
   return buffer.toString();
 }
 

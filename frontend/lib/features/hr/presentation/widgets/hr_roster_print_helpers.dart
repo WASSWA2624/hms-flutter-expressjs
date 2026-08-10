@@ -116,16 +116,20 @@ String hrRosterEscapeHtml(String value) {
 /// Visual month-calendar HTML that mirrors the on-screen roster template preview.
 String hrRosterPrintScheduleHtml(
   AppLocalizations l10n,
-  List<HrRosterDayPreview> days,
-) {
+  List<HrRosterDayPreview> days, {
+  bool includeHeading = true,
+  bool includeDayDetails = true,
+}) {
   if (days.isEmpty) {
     return '<p>${hrRosterEscapeHtml(l10n.hrRosterNoSchedulePreviewLabel)}</p>';
   }
 
   final StringBuffer buffer = StringBuffer();
-  buffer.writeln(
-    '<h2>${hrRosterEscapeHtml(l10n.hrRosterPreviewSectionTitle)}</h2>',
-  );
+  if (includeHeading) {
+    buffer.writeln(
+      '<h2>${hrRosterEscapeHtml(l10n.hrRosterPreviewSectionTitle)}</h2>',
+    );
+  }
   buffer.writeln(_legendHtml(l10n));
 
   final Map<String, List<HrRosterDayPreview>> byMonth =
@@ -143,37 +147,41 @@ String hrRosterPrintScheduleHtml(
     buffer.writeln(_monthCalendarHtml(l10n, focus: focus, days: monthDays));
   }
 
-  buffer.writeln('<h3>${hrRosterEscapeHtml(l10n.hrRosterPrintDayDetailsHeading)}</h3>');
-  buffer.writeln(
-    '<table class="roster-day-details" style="width:100%;border-collapse:collapse;font-size:11px;">'
-    '<thead><tr>'
-    '<th style="text-align:left;padding:6px;border-bottom:1px solid #CFD8DC;">${hrRosterEscapeHtml(l10n.hrPeriodColumnLabel)}</th>'
-    '<th style="text-align:left;padding:6px;border-bottom:1px solid #CFD8DC;">${hrRosterEscapeHtml(l10n.hrStatusColumnLabel)}</th>'
-    '<th style="text-align:left;padding:6px;border-bottom:1px solid #CFD8DC;">${hrRosterEscapeHtml(l10n.hrRosterAttachedStaffTitle)}</th>'
-    '</tr></thead><tbody>',
-  );
-  for (final HrRosterDayPreview day in days) {
-    if (!day.isWorkingDay && day.shifts.isEmpty && !day.isHoliday) {
-      continue;
-    }
-    final String staff = day.staffNames.isEmpty
-        ? '—'
-        : day.staffNames.join(', ');
-    final String shifts = day.shifts.isEmpty
-        ? ''
-        : '<div style="color:#546E7A;margin-top:2px;">${hrRosterEscapeHtml(day.shifts.map((HrRosterShiftWindow shift) => shift.summary).join('; '))}</div>';
+  if (includeDayDetails) {
     buffer.writeln(
-      '<tr>'
-      '<td style="padding:6px;border-bottom:1px solid #ECEFF1;vertical-align:top;">${hrRosterEscapeHtml(day.label)}</td>'
-      '<td style="padding:6px;border-bottom:1px solid #ECEFF1;vertical-align:top;">'
-      '<span style="display:inline-block;padding:2px 8px;border-radius:999px;background:${_toneBackground(day.tone)};color:${_toneForeground(day.tone)};">${hrRosterEscapeHtml(day.statusLabel(l10n))}</span>'
-      '$shifts'
-      '</td>'
-      '<td style="padding:6px;border-bottom:1px solid #ECEFF1;vertical-align:top;">${hrRosterEscapeHtml(staff)}</td>'
-      '</tr>',
+      '<h3>${hrRosterEscapeHtml(l10n.hrRosterPrintDayDetailsHeading)}</h3>',
     );
+    buffer.writeln(
+      '<table class="roster-day-details" style="width:100%;border-collapse:collapse;font-size:11px;">'
+      '<thead><tr>'
+      '<th style="text-align:left;padding:6px;border-bottom:1px solid #CFD8DC;">${hrRosterEscapeHtml(l10n.hrPeriodColumnLabel)}</th>'
+      '<th style="text-align:left;padding:6px;border-bottom:1px solid #CFD8DC;">${hrRosterEscapeHtml(l10n.hrStatusColumnLabel)}</th>'
+      '<th style="text-align:left;padding:6px;border-bottom:1px solid #CFD8DC;">${hrRosterEscapeHtml(l10n.hrRosterAttachedStaffTitle)}</th>'
+      '</tr></thead><tbody>',
+    );
+    for (final HrRosterDayPreview day in days) {
+      if (!day.isWorkingDay && day.shifts.isEmpty && !day.isHoliday) {
+        continue;
+      }
+      final String staff = day.staffNames.isEmpty
+          ? '—'
+          : day.staffNames.join(', ');
+      final String shifts = day.shifts.isEmpty
+          ? ''
+          : '<div style="color:#546E7A;margin-top:2px;">${hrRosterEscapeHtml(day.shifts.map((HrRosterShiftWindow shift) => shift.summary).join('; '))}</div>';
+      buffer.writeln(
+        '<tr>'
+        '<td style="padding:6px;border-bottom:1px solid #ECEFF1;vertical-align:top;">${hrRosterEscapeHtml(day.label)}</td>'
+        '<td style="padding:6px;border-bottom:1px solid #ECEFF1;vertical-align:top;">'
+        '<span style="display:inline-block;padding:2px 8px;border-radius:999px;background:${_toneBackground(day.tone)};color:${_toneForeground(day.tone)};">${hrRosterEscapeHtml(day.statusLabel(l10n))}</span>'
+        '$shifts'
+        '</td>'
+        '<td style="padding:6px;border-bottom:1px solid #ECEFF1;vertical-align:top;">${hrRosterEscapeHtml(staff)}</td>'
+        '</tr>',
+      );
+    }
+    buffer.writeln('</tbody></table>');
   }
-  buffer.writeln('</tbody></table>');
   return buffer.toString();
 }
 
