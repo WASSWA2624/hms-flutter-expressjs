@@ -69,6 +69,19 @@ void main() {
     line.rateController.dispose();
   });
 
+  test('HrCompensationLineData parses thousand-separated amounts', () {
+    final HrCompensationLineData line = HrCompensationLineData(
+      payType: 'PER_CONSULTATION',
+      rateController: TextEditingController(text: '50,000'),
+      currency: 'UGX',
+      effectiveFrom: DateTime(2026, 8, 10),
+    );
+
+    final Map<String, Object?> payload = line.toPayload();
+    expect(payload['rate'], 50000);
+    line.rateController.dispose();
+  });
+
   test('used pay types are excluded from select options', () {
     final List<String> available = kHrCompensationPayTypeCodes
         .where(

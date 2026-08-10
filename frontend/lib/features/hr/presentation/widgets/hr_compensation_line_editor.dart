@@ -46,7 +46,9 @@ class HrCompensationLineData {
   bool removed;
 
   Map<String, Object?> toPayload() {
-    final num? rate = num.tryParse(rateController.text.trim());
+    final num? rate = num.tryParse(
+      normalizeCurrencyAmount(rateController.text),
+    );
     if (rate == null || removed) {
       return <String, Object?>{};
     }

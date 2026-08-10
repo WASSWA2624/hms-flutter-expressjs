@@ -668,10 +668,13 @@ class _HrPayLineFormDialogState extends State<_HrPayLineFormDialog> {
   }
 
   void _submit() {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    final FormState? form = _formKey.currentState;
+    if (form == null || !form.validate()) {
       return;
     }
-    final num? rate = num.tryParse(_line.rateController.text.trim());
+    final num? rate = num.tryParse(
+      normalizeCurrencyAmount(_line.rateController.text),
+    );
     final DateTime? from = _line.effectiveFrom;
     if (rate == null || from == null) {
       return;
