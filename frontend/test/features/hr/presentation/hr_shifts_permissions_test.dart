@@ -514,7 +514,7 @@ void main() {
       expect(_searchAction('Create roster template'), findsOneWidget);
       expect(find.text('Publish roster'), findsNothing);
       expect(find.text('Edit'), findsWidgets);
-      expect(find.text('Delete template'), findsWidgets);
+      expect(find.text('Delete'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -539,7 +539,7 @@ void main() {
       expect(_searchAction('Create roster template'), findsNothing);
       expect(find.text('Publish roster'), findsNothing);
       expect(find.text('Edit'), findsNothing);
-      expect(find.text('Delete template'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

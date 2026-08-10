@@ -313,6 +313,10 @@ abstract final class PrintDocumentTemplates {
     String? previewDialogTitle,
     String? previewDialogBody,
     String? fallbackText,
+    String Function()? bodyHtmlBuilder,
+    Widget? previewSectionsExtra,
+    Listenable? previewDocumentRevision,
+    bool Function()? isPrintEnabled,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.registry,
@@ -328,6 +332,10 @@ abstract final class PrintDocumentTemplates {
       previewDialogTitle: previewDialogTitle,
       previewDialogBody: previewDialogBody,
       fallbackText: fallbackText,
+      bodyHtmlBuilder: bodyHtmlBuilder,
+      previewSectionsExtra: previewSectionsExtra,
+      previewDocumentRevision: previewDocumentRevision,
+      isPrintEnabled: isPrintEnabled,
     );
   }
 

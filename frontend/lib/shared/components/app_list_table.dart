@@ -268,6 +268,16 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Updates column object references (builders) without changing visibility.
+  ///
+  /// Safe to call during [State.build]; does not [notifyListeners].
+  void refreshColumnBuilders({
+    required List<AppListTableColumn<T>> columns,
+    List<AppListTableColumn<T>>? columnChoices,
+  }) {
+    _availableColumns = _availableColumnsFor(columns, columnChoices);
+  }
+
   List<AppListTableColumn<T>> get visibleColumns {
     final List<AppListTableColumn<T>> columns = _availableColumns
         .where(
@@ -1441,6 +1451,12 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
 
   @override
   Widget build(BuildContext context) {
+    // Column keys are often unchanged across selection rebuilds, so
+    // didUpdateWidget skips sync. Refresh builders here without notifying.
+    widget.columnVisibilityController?.refreshColumnBuilders(
+      columns: widget.columns,
+      columnChoices: widget.columnChoices,
+    );
     final AppListTableSearch<T>? resolvedSearch = widget.search;
     if (resolvedSearch == null) {
       final ValueListenable<String>? searchListenable = widget.searchListenable;

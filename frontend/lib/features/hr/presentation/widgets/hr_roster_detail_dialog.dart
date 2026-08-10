@@ -12,6 +12,7 @@ import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_calendar_preview.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_dialogs.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -571,76 +572,110 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
 
   Future<void> _printRoster() async {
     final AppLocalizations l10n = context.l10n;
-    final Set<String> selected = <String>{'overview', 'staff', 'schedule'};
+    final HrRosterPrintOptionsController options =
+        HrRosterPrintOptionsController();
 
-    final Set<String>? chosen = await showAppDialog<Set<String>>(
-      context: context,
-      builder: (BuildContext context) {
-        return _HrRosterPrintSectionsDialog(initialSelection: selected);
-      },
-    );
-    if (chosen == null || chosen.isEmpty) {
-      return;
-    }
-    selected
-      ..clear()
-      ..addAll(chosen);
+    String buildBodyHtml() => _buildPrintHtml(l10n, options.selectedSections);
 
-    final String html = _buildPrintHtml(l10n, selected);
-    if (!mounted) {
-      return;
+    try {
+      if (!mounted) {
+        return;
+      }
+      await PrintDocumentTemplates.registry(
+        ref: ref,
+        context: context,
+        title: _informativeName(l10n),
+        subtitle: _rosterId,
+        bodyHtml: buildBodyHtml(),
+        bodyHtmlBuilder: buildBodyHtml,
+        previewDialogTitle: l10n.hrRosterPrintDialogTitle,
+        previewSectionsExtra: HrRosterPrintOptionsSection(controller: options),
+        previewDocumentRevision: options,
+        isPrintEnabled: () => options.canPrint,
+      );
+    } finally {
+      options.dispose();
     }
-    await PrintDocumentTemplates.registry(
-      ref: ref,
-      context: context,
-      title: _informativeName(l10n),
-      subtitle: _rosterId,
-      bodyHtml: html,
-      previewDialogTitle: l10n.hrRosterPrintDialogTitle,
-    );
   }
 
-  String _buildPrintHtml(AppLocalizations l10n, Set<String> sections) {
+  String _buildPrintHtml(
+    AppLocalizations l10n,
+    Set<HrRosterPrintSection> sections,
+  ) {
     final StringBuffer buffer = StringBuffer();
     final Map<String, Object?> roster = _roster ?? <String, Object?>{};
-    if (sections.contains('overview')) {
-      buffer.writeln('<h2>${l10n.hrRosterOverviewSectionTitle}</h2><ul>');
+    if (sections.contains(HrRosterPrintSection.overview)) {
       buffer.writeln(
-        '<li><strong>${l10n.hrRosterOverviewNameLabel}:</strong> ${_informativeName(l10n)}</li>',
+        '<h2>${hrRosterEscapeHtml(l10n.hrRosterOverviewSectionTitle)}</h2>',
       );
       buffer.writeln(
-        '<li><strong>${l10n.hrRosterOverviewIdLabel}:</strong> $_rosterId</li>',
+        '<table style="width:100%;border-collapse:collapse;margin:0 0 16px;font-size:12px;">'
+        '<tbody>',
       );
-      buffer.writeln(
-        '<li><strong>${l10n.hrRosterOverviewPeriodLabel}:</strong> ${roster['period_label'] ?? widget.item.periodLabel ?? ''}</li>',
-      );
-      buffer.writeln(
-        '<li><strong>${l10n.hrRosterOverviewStatusLabel}:</strong> ${_rosterStatusLabel(l10n, roster['status']?.toString())}</li>',
-      );
-      buffer.writeln('</ul>');
-    }
-    if (sections.contains('staff')) {
-      buffer.writeln('<h2>${l10n.hrRosterAttachedStaffTitle}</h2><table border="1" cellpadding="4" cellspacing="0"><thead><tr>');
-      buffer.writeln(
-        '<th>${l10n.hrRosterNameLabel}</th><th>${l10n.hrStaffNumberLabel}</th><th>${l10n.hrPositionLabel}</th><th>${l10n.hrRosterStaffCategoryLabel}</th></tr></thead><tbody>',
-      );
-      for (final _RosterStaffRow row in _staffRows) {
+      void row(String label, String value) {
         buffer.writeln(
-          '<tr><td>${row.title}</td><td>${row.staffNumber ?? row.displayId ?? ''}</td><td>${row.position ?? ''}</td><td>${_staffCategoryLabel(l10n, row.staffCategory)}</td></tr>',
+          '<tr>'
+          '<td style="padding:8px 10px;width:34%;color:#546E7A;border-bottom:1px solid #ECEFF1;">${hrRosterEscapeHtml(label)}</td>'
+          '<td style="padding:8px 10px;border-bottom:1px solid #ECEFF1;font-weight:600;">${hrRosterEscapeHtml(value)}</td>'
+          '</tr>',
         );
       }
+
+      row(l10n.hrRosterOverviewNameLabel, _informativeName(l10n));
+      row(l10n.hrRosterOverviewIdLabel, _rosterId);
+      row(
+        l10n.hrRosterOverviewPeriodLabel,
+        (roster['period_label'] ?? widget.item.periodLabel ?? '').toString(),
+      );
+      row(
+        l10n.hrRosterOverviewStatusLabel,
+        _rosterStatusLabel(l10n, roster['status']?.toString()),
+      );
+      row(
+        l10n.hrRosterRecurringLabel,
+        roster['is_recurring'] == true
+            ? l10n.commonYesLabel
+            : l10n.commonNoLabel,
+      );
+      row(
+        l10n.hrRosterAttachedStaffTitle,
+        _staffRows.length.toString(),
+      );
       buffer.writeln('</tbody></table>');
     }
-    if (sections.contains('schedule')) {
-      buffer.writeln('<h2>${l10n.hrRosterPreviewSectionTitle}</h2><ul>');
-      for (final HrRosterDayPreview day in _previewDays()) {
+    if (sections.contains(HrRosterPrintSection.schedule)) {
+      buffer.writeln(hrRosterPrintScheduleHtml(l10n, _previewDays()));
+    }
+    if (sections.contains(HrRosterPrintSection.staff)) {
+      buffer.writeln(
+        '<h2>${hrRosterEscapeHtml(l10n.hrRosterAttachedStaffTitle)}</h2>',
+      );
+      buffer.writeln(
+        '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+        '<thead><tr>'
+        '<th style="text-align:left;padding:8px;border-bottom:2px solid #CFD8DC;">${hrRosterEscapeHtml(l10n.hrRosterNameLabel)}</th>'
+        '<th style="text-align:left;padding:8px;border-bottom:2px solid #CFD8DC;">${hrRosterEscapeHtml(l10n.hrStaffNumberLabel)}</th>'
+        '<th style="text-align:left;padding:8px;border-bottom:2px solid #CFD8DC;">${hrRosterEscapeHtml(l10n.hrPositionLabel)}</th>'
+        '<th style="text-align:left;padding:8px;border-bottom:2px solid #CFD8DC;">${hrRosterEscapeHtml(l10n.hrRosterStaffCategoryLabel)}</th>'
+        '</tr></thead><tbody>',
+      );
+      if (_staffRows.isEmpty) {
         buffer.writeln(
-          '<li>${day.label}: ${day.statusLabel(l10n)}'
-          '${day.isHoliday ? ' (${l10n.hrRosterPublicHolidayLabel})' : ''}'
-          '${day.shifts.isEmpty ? '' : ' — ${day.shifts.map((HrRosterShiftWindow shift) => shift.summary).join('; ')}'}</li>',
+          '<tr><td colspan="4" style="padding:10px;color:#78909C;">${hrRosterEscapeHtml(l10n.hrRosterNoStaffLabel)}</td></tr>',
         );
+      } else {
+        for (final _RosterStaffRow row in _staffRows) {
+          buffer.writeln(
+            '<tr>'
+            '<td style="padding:8px;border-bottom:1px solid #ECEFF1;">${hrRosterEscapeHtml(row.title)}</td>'
+            '<td style="padding:8px;border-bottom:1px solid #ECEFF1;">${hrRosterEscapeHtml(row.staffNumber ?? row.displayId ?? '')}</td>'
+            '<td style="padding:8px;border-bottom:1px solid #ECEFF1;">${hrRosterEscapeHtml(row.position ?? '')}</td>'
+            '<td style="padding:8px;border-bottom:1px solid #ECEFF1;">${hrRosterEscapeHtml(_staffCategoryLabel(l10n, row.staffCategory))}</td>'
+            '</tr>',
+          );
+        }
       }
-      buffer.writeln('</ul>');
+      buffer.writeln('</tbody></table>');
     }
     return buffer.toString();
   }
@@ -815,10 +850,15 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                   AppCollapsibleSection(
                     title: l10n.hrRosterPreviewSectionTitle,
                     titleIcon: Icons.calendar_month_outlined,
-                    contentPadding: EdgeInsets.zero,
+                    contentPadding: EdgeInsets.only(bottom: theme.spacing.md),
                     child: _previewDays().isEmpty
                         ? Padding(
-                            padding: EdgeInsets.all(theme.spacing.md),
+                            padding: EdgeInsets.fromLTRB(
+                              theme.spacing.md,
+                              theme.spacing.md,
+                              theme.spacing.md,
+                              0,
+                            ),
                             child: Text(l10n.hrRosterNoSchedulePreviewLabel),
                           )
                         : HrRosterCalendarPreview(
@@ -1279,88 +1319,6 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
         },
       ),
     ];
-  }
-}
-
-class _HrRosterPrintSectionsDialog extends StatefulWidget {
-  const _HrRosterPrintSectionsDialog({required this.initialSelection});
-
-  final Set<String> initialSelection;
-
-  @override
-  State<_HrRosterPrintSectionsDialog> createState() =>
-      _HrRosterPrintSectionsDialogState();
-}
-
-class _HrRosterPrintSectionsDialogState
-    extends State<_HrRosterPrintSectionsDialog> {
-  late Set<String> _selected = Set<String>.from(widget.initialSelection);
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.hrRosterPrintDialogTitle),
-      icon: const Icon(Icons.print_outlined),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          CheckboxListTile(
-            value: _selected.contains('overview'),
-            onChanged: (bool? value) {
-              setState(() {
-                if (value == true) {
-                  _selected.add('overview');
-                } else {
-                  _selected.remove('overview');
-                }
-              });
-            },
-            title: Text(l10n.hrRosterPrintOverviewSection),
-          ),
-          CheckboxListTile(
-            value: _selected.contains('staff'),
-            onChanged: (bool? value) {
-              setState(() {
-                if (value == true) {
-                  _selected.add('staff');
-                } else {
-                  _selected.remove('staff');
-                }
-              });
-            },
-            title: Text(l10n.hrRosterPrintStaffSection),
-          ),
-          CheckboxListTile(
-            value: _selected.contains('schedule'),
-            onChanged: (bool? value) {
-              setState(() {
-                if (value == true) {
-                  _selected.add('schedule');
-                } else {
-                  _selected.remove('schedule');
-                }
-              });
-            },
-            title: Text(l10n.hrRosterPrintScheduleSection),
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonCancelActionLabel,
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        AppButton.primary(
-          label: l10n.commonPrintActionLabel,
-          leadingIcon: Icons.print_outlined,
-          enabled: _selected.isNotEmpty,
-          onPressed: _selected.isEmpty
-              ? null
-              : () => Navigator.of(context).maybePop(Set<String>.from(_selected)),
-        ),
-      ],
-    );
   }
 }
 

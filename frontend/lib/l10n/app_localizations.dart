@@ -39035,10 +39035,10 @@ abstract class AppLocalizations {
   /// **'Soft-delete this roster template? Staff using it will be inactivated for this template. You can restore it later, or permanently delete it from the Deleted filter.'**
   String get hrRosterDeleteConfirmMessage;
 
-  /// Action to soft-delete a roster template from detail dialog.
+  /// Action to soft-delete a roster template.
   ///
   /// In en, this message translates to:
-  /// **'Delete template'**
+  /// **'Delete'**
   String get hrRosterDeleteAction;
 
   /// Title for restore roster template confirmation.
@@ -39083,11 +39083,23 @@ abstract class AppLocalizations {
   /// **'Deleted'**
   String get hrRosterStatusDeleted;
 
-  /// Title for roster template print section selection dialog.
+  /// Title for roster template print preview dialog.
   ///
   /// In en, this message translates to:
   /// **'Print roster template'**
   String get hrRosterPrintDialogTitle;
+
+  /// Section title for roster content toggles in print preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster content'**
+  String get hrRosterPrintContentSection;
+
+  /// Hint under roster print content section toggles.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which parts of the roster template appear in the preview and printed document.'**
+  String get hrRosterPrintContentSectionHint;
 
   /// Print option for roster template overview.
   ///
@@ -39101,11 +39113,17 @@ abstract class AppLocalizations {
   /// **'Assigned staff'**
   String get hrRosterPrintStaffSection;
 
-  /// Print option for roster template calendar preview.
+  /// Print option for visual roster template calendar preview.
   ///
   /// In en, this message translates to:
-  /// **'Preview'**
+  /// **'Template preview'**
   String get hrRosterPrintScheduleSection;
+
+  /// Heading above the day-by-day roster print details table.
+  ///
+  /// In en, this message translates to:
+  /// **'Day details'**
+  String get hrRosterPrintDayDetailsHeading;
 
   /// Placeholder example for the roster template name field.
   ///

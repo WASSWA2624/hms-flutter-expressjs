@@ -2503,39 +2503,48 @@ AppListTableColumn<HrWorkItem> _workItemRosterSelectColumn(
   String keyOf(HrWorkItem item) =>
       (item.rosterId ?? item.backendIdentifier ?? item.effectiveId).trim();
 
-  final List<String> visibleKeys = <String>[
-    for (final HrWorkItem item in visibleItems)
+  List<String> keysFor(List<HrWorkItem> items) => <String>[
+    for (final HrWorkItem item in items)
       if (keyOf(item).isNotEmpty) keyOf(item),
   ];
-  final bool allSelected =
-      visibleKeys.isNotEmpty && visibleKeys.every(selectedKeys.contains);
-  final bool noneSelected = visibleKeys.every(
-    (String key) => !selectedKeys.contains(key),
-  );
 
   return AppListTableColumn<HrWorkItem>(
     id: 'select',
     label: l10n.hrRosterSelectAllAction,
     alwaysVisible: true,
-    fixedWidth: 44,
+    fixedWidth: 48,
     headerBuilder: (BuildContext context) {
+      // Resolve against the latest selection inside the builder so the header
+      // stays in sync when only the Set contents change.
+      final List<String> visibleKeys = keysFor(visibleItems);
+      final bool allSelected =
+          visibleKeys.isNotEmpty && visibleKeys.every(selectedKeys.contains);
+      final bool someSelected = visibleKeys.any(selectedKeys.contains);
+      final bool? checkboxValue = allSelected
+          ? true
+          : someSelected
+          ? null
+          : false;
+
       return Center(
         child: Checkbox(
+          key: ValueKey<String>(
+            'roster-select-all-${checkboxValue ?? 'partial'}-${selectedKeys.length}',
+          ),
           tristate: true,
           visualDensity: VisualDensity.compact,
-          value: allSelected
-              ? true
-              : noneSelected
-              ? false
-              : null,
+          value: checkboxValue,
+          semanticLabel: l10n.hrRosterSelectAllAction,
           onChanged: !enabled || visibleKeys.isEmpty
               ? null
-              : (bool? value) {
+              : (bool? _) {
+                  // Ignore Material's false→true→null cycle. From any non-all
+                  // state (none / indeterminate), select all; from all, clear.
                   final Set<String> next = Set<String>.from(selectedKeys);
-                  if (value == true) {
-                    next.addAll(visibleKeys);
-                  } else {
+                  if (allSelected) {
                     next.removeAll(visibleKeys);
+                  } else {
+                    next.addAll(visibleKeys);
                   }
                   onSelectionChanged(next);
                 },

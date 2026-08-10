@@ -27202,9 +27202,9 @@
   "@hrRosterDeleteConfirmMessage": {
     "description": "Body for soft-delete roster template confirmation."
   },
-  "hrRosterDeleteAction": "Delete template",
+  "hrRosterDeleteAction": "Delete",
   "@hrRosterDeleteAction": {
-    "description": "Action to soft-delete a roster template from detail dialog."
+    "description": "Action to soft-delete a roster template."
   },
   "hrRosterRestoreConfirmTitle": "Restore roster template",
   "@hrRosterRestoreConfirmTitle": {
@@ -27236,7 +27236,15 @@
   },
   "hrRosterPrintDialogTitle": "Print roster template",
   "@hrRosterPrintDialogTitle": {
-    "description": "Title for roster template print section selection dialog."
+    "description": "Title for roster template print preview dialog."
+  },
+  "hrRosterPrintContentSection": "Roster content",
+  "@hrRosterPrintContentSection": {
+    "description": "Section title for roster content toggles in print preview."
+  },
+  "hrRosterPrintContentSectionHint": "Choose which parts of the roster template appear in the preview and printed document.",
+  "@hrRosterPrintContentSectionHint": {
+    "description": "Hint under roster print content section toggles."
   },
   "hrRosterPrintOverviewSection": "Overview",
   "@hrRosterPrintOverviewSection": {
@@ -27246,9 +27254,13 @@
   "@hrRosterPrintStaffSection": {
     "description": "Print option for assigned staff list."
   },
-  "hrRosterPrintScheduleSection": "Preview",
+  "hrRosterPrintScheduleSection": "Template preview",
   "@hrRosterPrintScheduleSection": {
-    "description": "Print option for roster template calendar preview."
+    "description": "Print option for visual roster template calendar preview."
+  },
+  "hrRosterPrintDayDetailsHeading": "Day details",
+  "@hrRosterPrintDayDetailsHeading": {
+    "description": "Heading above the day-by-day roster print details table."
   },
   "hrRosterNameHelper": "e.g. ICU nights · Aug 2026 or ED locum cover · Week 34",
   "@hrRosterNameHelper": {

@@ -21097,7 +21097,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Soft-delete this roster template? Staff using it will be inactivated for this template. You can restore it later, or permanently delete it from the Deleted filter.';
 
   @override
-  String get hrRosterDeleteAction => 'Delete template';
+  String get hrRosterDeleteAction => 'Delete';
 
   @override
   String get hrRosterRestoreConfirmTitle => 'Restore roster template';
@@ -21127,13 +21127,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterPrintDialogTitle => 'Print roster template';
 
   @override
+  String get hrRosterPrintContentSection => 'Roster content';
+
+  @override
+  String get hrRosterPrintContentSectionHint =>
+      'Choose which parts of the roster template appear in the preview and printed document.';
+
+  @override
   String get hrRosterPrintOverviewSection => 'Overview';
 
   @override
   String get hrRosterPrintStaffSection => 'Assigned staff';
 
   @override
-  String get hrRosterPrintScheduleSection => 'Preview';
+  String get hrRosterPrintScheduleSection => 'Template preview';
+
+  @override
+  String get hrRosterPrintDayDetailsHeading => 'Day details';
 
   @override
   String get hrRosterNameHelper =>
