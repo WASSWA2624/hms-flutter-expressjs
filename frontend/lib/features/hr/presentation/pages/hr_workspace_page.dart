@@ -2428,12 +2428,9 @@ List<AppSearchBarFilterChoice> _payrollStatusFilterChoices(
   BuildContext context,
 ) {
   final AppLocalizations l10n = context.l10n;
+  // "Outstanding" is the filter group's all/clear option (no status param),
+  // not a separate choice — otherwise it appears twice in the select.
   return <AppSearchBarFilterChoice>[
-    AppSearchBarFilterChoice(
-      value: 'OUTSTANDING',
-      label: l10n.hrPayCompensationFilterOutstanding,
-      icon: Icons.pending_actions_outlined,
-    ),
     AppSearchBarFilterChoice(
       value: 'DRAFT',
       label: l10n.hrPayCompensationStatusPending,
