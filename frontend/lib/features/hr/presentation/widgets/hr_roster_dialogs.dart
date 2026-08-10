@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
@@ -37,6 +38,8 @@ String hrRosterStatusLabel(AppLocalizations l10n, String? status) {
       return l10n.hrRosterStatusCompleted;
     case 'DRAFT':
       return l10n.hrRosterStatusDraft;
+    case 'DELETED':
+      return l10n.hrRosterStatusDeleted;
     default:
       return (status ?? '').trim().isEmpty
           ? l10n.profileUnknownValue
@@ -202,6 +205,76 @@ List<Object?> _listConstraintValue(
   return const <Object?>[];
 }
 
+bool _asBool(Object? value, {required bool fallback}) {
+  if (value is bool) {
+    return value;
+  }
+  if (value is num) {
+    return value != 0;
+  }
+  final String normalized = (value ?? '').toString().trim().toLowerCase();
+  if (normalized == 'true' || normalized == '1' || normalized == 'yes') {
+    return true;
+  }
+  if (normalized == 'false' || normalized == '0' || normalized == 'no') {
+    return false;
+  }
+  return fallback;
+}
+
+String _rosterDisplayName(Map<String, Object?> roster) {
+  final String name = (roster['name'] ?? '').toString().trim();
+  if (name.isNotEmpty) {
+    return name;
+  }
+  final String periodLabel = (roster['period_label'] ?? '').toString().trim();
+  if (periodLabel.isNotEmpty) {
+    return periodLabel;
+  }
+  final String friendly =
+      (roster['human_friendly_id'] ?? roster['display_id'] ?? '')
+          .toString()
+          .trim();
+  return friendly;
+}
+
+String _resolveDepartmentOptionValue({
+  required Map<String, Object?> roster,
+  required List<HrOption> departments,
+}) {
+  final Map<String, Object?> nested = _rosterMap(roster['department']);
+  final List<String> candidates = <String>[
+    for (final Object? value in <Object?>[
+      nested['human_friendly_id'],
+      nested['display_id'],
+      nested['id'],
+      roster['department_display_id'],
+      roster['department_id'],
+    ])
+      if ((value?.toString().trim().isNotEmpty ?? false))
+        value!.toString().trim(),
+  ];
+  if (candidates.isEmpty) {
+    return _kRosterAllDepartments;
+  }
+
+  for (final String candidate in candidates) {
+    for (final HrOption option in departments) {
+      final String extraId = (option.extra['entity_id'] ?? option.extra['id'] ?? '')
+          .toString()
+          .trim();
+      if (option.value == candidate ||
+          (option.displayId?.trim() == candidate) ||
+          (extraId.isNotEmpty && extraId == candidate)) {
+        return option.value;
+      }
+    }
+  }
+
+  // Prefer public/friendly identifiers when options are not yet loaded.
+  return candidates.first;
+}
+
 Future<bool> showHrCreateRosterDialog(
   BuildContext context,
   WidgetRef ref,
@@ -214,12 +287,26 @@ Future<bool> showHrEditRosterDialog(
   WidgetRef ref, {
   required String rosterId,
   required Map<String, Object?> roster,
-}) {
+}) async {
+  final HrWorkspaceController controller = ref.read(
+    hrWorkspaceControllerProvider.notifier,
+  );
+  Map<String, Object?> existing = Map<String, Object?>.from(roster);
+  final Result<Map<String, Object?>> fresh = await controller.getRoster(rosterId);
+  fresh.when(
+    success: (Map<String, Object?> value) {
+      existing = <String, Object?>{...existing, ...value};
+    },
+    failure: (_) {},
+  );
+  if (!context.mounted) {
+    return false;
+  }
   return showHrRosterTemplateDialog(
     context,
     ref,
     rosterId: rosterId,
-    existingRoster: roster,
+    existingRoster: existing,
   );
 }
 
@@ -253,11 +340,23 @@ Future<bool> showHrRosterTemplateDialog(
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
   );
+  final List<HrOption> departments =
+      state?.referenceData.departments ?? const <HrOption>[];
   final TextEditingController nameController = TextEditingController(
-    text: (existing['name'] ?? '').toString(),
+    text: _rosterDisplayName(existing),
   );
   final HrWeeklyScheduleDraft schedule = isEdit
-      ? HrWeeklyScheduleDraft.fromTemplateExtra(existingConstraints)
+      ? () {
+          final HrWeeklyScheduleDraft hydrated =
+              HrWeeklyScheduleDraft.fromTemplateExtra(existingConstraints);
+          if (kHrWeekDayOrder.any(
+            (int day) => hydrated.days[day]!.filledSlots.isNotEmpty,
+          )) {
+            return hydrated;
+          }
+          // Legacy rows without schedule payload: start from weekday defaults.
+          return HrWeeklyScheduleDraft(weekdayDefaults: true);
+        }()
       : HrWeeklyScheduleDraft(weekdayDefaults: true);
   DateTime? periodStart =
       _parseRosterDate(existing['period_start']) ?? DateTime.now();
@@ -268,20 +367,27 @@ Future<bool> showHrRosterTemplateDialog(
       (existing['facility_id']?.toString().trim().isNotEmpty ?? false)
       ? existing['facility_id']!.toString().trim()
       : _resolveRosterFacilityId(ref, state);
-  final String existingDepartmentId =
-      (existing['department_id'] ?? '').toString().trim();
-  String departmentId = existingDepartmentId.isEmpty
-      ? _kRosterAllDepartments
-      : existingDepartmentId;
-  final String status = ((existing['status'] ?? 'DRAFT').toString().trim().isEmpty
+  String departmentId = isEdit
+      ? _resolveDepartmentOptionValue(
+          roster: existing,
+          departments: departments,
+        )
+      : _kRosterAllDepartments;
+  final String status =
+      ((existing['status'] ?? 'DRAFT').toString().trim().isEmpty
       ? 'DRAFT'
       : (existing['status'] ?? 'DRAFT').toString().trim().toUpperCase());
   bool isRecurring = isEdit
-      ? existing['is_recurring'] == true
+      ? _asBool(existing['is_recurring'], fallback: false)
       : true;
-  bool respectHolidays =
-      existingConstraints['respect_public_holidays'] != false;
-  bool respectWeekends = existingConstraints['respect_weekends'] != false;
+  bool respectHolidays = _asBool(
+    existingConstraints['respect_public_holidays'],
+    fallback: true,
+  );
+  bool respectWeekends = _asBool(
+    existingConstraints['respect_weekends'],
+    fallback: true,
+  );
   final Set<int> monthDays = isEdit
       ? _monthDaysFromConstraints(existingConstraints)
       : _allMonthDays(31);

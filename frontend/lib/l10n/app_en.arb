@@ -27154,15 +27154,43 @@
   },
   "hrRosterDeleteConfirmTitle": "Delete roster template",
   "@hrRosterDeleteConfirmTitle": {
-    "description": "Title for delete roster template confirmation."
+    "description": "Title for soft-delete roster template confirmation."
   },
-  "hrRosterDeleteConfirmMessage": "Delete this roster template? Assigned staff links and generated shifts may be affected.",
+  "hrRosterDeleteConfirmMessage": "Soft-delete this roster template? Staff using it will be inactivated for this template. You can restore it later, or permanently delete it from the Deleted filter.",
   "@hrRosterDeleteConfirmMessage": {
-    "description": "Body for delete roster template confirmation."
+    "description": "Body for soft-delete roster template confirmation."
   },
   "hrRosterDeleteAction": "Delete template",
   "@hrRosterDeleteAction": {
-    "description": "Action to delete a roster template from detail dialog."
+    "description": "Action to soft-delete a roster template from detail dialog."
+  },
+  "hrRosterRestoreConfirmTitle": "Restore roster template",
+  "@hrRosterRestoreConfirmTitle": {
+    "description": "Title for restore roster template confirmation."
+  },
+  "hrRosterRestoreConfirmMessage": "Restore this roster template and reactivate it for assigned staff?",
+  "@hrRosterRestoreConfirmMessage": {
+    "description": "Body for restore roster template confirmation."
+  },
+  "hrRosterRestoreAction": "Restore template",
+  "@hrRosterRestoreAction": {
+    "description": "Action to restore a soft-deleted roster template."
+  },
+  "hrRosterPermanentDeleteConfirmTitle": "Permanently delete roster template",
+  "@hrRosterPermanentDeleteConfirmTitle": {
+    "description": "Title for permanent delete roster template confirmation."
+  },
+  "hrRosterPermanentDeleteConfirmMessage": "Permanently delete this roster template and remove it from all assigned staff? This cannot be undone.",
+  "@hrRosterPermanentDeleteConfirmMessage": {
+    "description": "Body for permanent delete roster template confirmation."
+  },
+  "hrRosterPermanentDeleteAction": "Delete forever",
+  "@hrRosterPermanentDeleteAction": {
+    "description": "Action to permanently delete a soft-deleted roster template."
+  },
+  "hrRosterStatusDeleted": "Deleted",
+  "@hrRosterStatusDeleted": {
+    "description": "Soft-deleted roster template status label."
   },
   "hrRosterPrintDialogTitle": "Print roster template",
   "@hrRosterPrintDialogTitle": {

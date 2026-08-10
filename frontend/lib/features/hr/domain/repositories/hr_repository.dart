@@ -123,6 +123,10 @@ abstract interface class HrRepository {
 
   Future<Result<Object?>> deleteRoster(String rosterId);
 
+  Future<Result<Map<String, Object?>>> restoreRoster(String rosterId);
+
+  Future<Result<Object?>> permanentDeleteRoster(String rosterId);
+
   Future<Result<Map<String, Object?>>> getRoster(String rosterId);
 
   Future<Result<Map<String, Object?>>> attachRosterStaff({

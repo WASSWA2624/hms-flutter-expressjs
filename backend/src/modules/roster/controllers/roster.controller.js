@@ -53,10 +53,11 @@ const listRosters = asyncHandler(async (req, res) => {
 
 const getRosterById = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const userId = req.user?.id;
-  const ipAddress = req.ip;
+  const includeDeleted =
+    String(req.query?.include_deleted || '').toLowerCase() === 'true' ||
+    String(req.query?.include_deleted || '') === '1';
 
-  const roster = await rosterService.getRosterById(id, userId, ipAddress);
+  const roster = await rosterService.getRosterById(id, { includeDeleted });
 
   sendSuccess(res, 200, 'messages.roster.get.success', roster);
 });
@@ -86,6 +87,26 @@ const deleteRoster = asyncHandler(async (req, res) => {
   const ipAddress = req.ip;
 
   await rosterService.deleteRoster(id, userId, ipAddress);
+
+  sendNoContent(res);
+});
+
+const restoreRoster = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user?.id;
+  const ipAddress = req.ip;
+
+  const roster = await rosterService.restoreRoster(id, userId, ipAddress);
+
+  sendSuccess(res, 200, 'messages.roster.restore.success', roster);
+});
+
+const permanentDeleteRoster = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user?.id;
+  const ipAddress = req.ip;
+
+  await rosterService.permanentDeleteRoster(id, userId, ipAddress);
 
   sendNoContent(res);
 });
@@ -148,6 +169,8 @@ module.exports = {
   createRoster,
   updateRoster,
   deleteRoster,
+  restoreRoster,
+  permanentDeleteRoster,
   publishRoster,
   generateRoster,
   attachRosterStaff,

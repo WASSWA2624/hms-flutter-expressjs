@@ -37,6 +37,8 @@ String _rosterStatusLabel(AppLocalizations l10n, String? status) {
       return l10n.hrRosterStatusCompleted;
     case 'DRAFT':
       return l10n.hrRosterStatusDraft;
+    case 'DELETED':
+      return l10n.hrRosterStatusDeleted;
     default:
       return (status ?? '').trim().isEmpty
           ? l10n.profileUnknownValue
@@ -241,7 +243,9 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
             .trim();
     final String status = _rosterStatusLabel(
       l10n,
-      (roster['status'] ?? widget.item.status)?.toString(),
+      _isDeleted
+          ? 'DELETED'
+          : (roster['status'] ?? widget.item.status)?.toString(),
     );
     return <String?>[
       scope.isEmpty ? null : scope,
@@ -406,6 +410,19 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
     showHrMutationSnackBar(context, failure);
   }
 
+  bool get _isDeleted {
+    final Map<String, Object?> roster = _roster ?? <String, Object?>{};
+    if (roster['deleted_at'] != null) {
+      return true;
+    }
+    if (roster['is_deleted'] == true) {
+      return true;
+    }
+    final String status =
+        (roster['status'] ?? widget.item.status ?? '').toString().toUpperCase();
+    return status == 'DELETED';
+  }
+
   Future<void> _deleteRoster() async {
     final AppLocalizations l10n = context.l10n;
     final bool? confirmed = await showAppDialog<bool>(
@@ -422,6 +439,104 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
             final AppFailure? failure = await ref
                 .read(hrWorkspaceControllerProvider.notifier)
                 .deleteRoster(_rosterId);
+            if (!mounted) {
+              return failure;
+            }
+            setState(() => _busy = false);
+            if (failure == null) {
+              showHrMutationSnackBar(context, null);
+              await Navigator.of(context).maybePop();
+            }
+            return failure;
+          },
+        );
+      },
+    );
+    if (confirmed == true && mounted && _busy) {
+      setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _restoreRoster() async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AppConfirmActionDialog(
+          title: l10n.hrRosterRestoreConfirmTitle,
+          body: l10n.hrRosterRestoreConfirmMessage,
+          submitLabel: l10n.hrRosterRestoreAction,
+          submitLeadingIcon: Icons.restore_outlined,
+          onConfirm: () async {
+            setState(() => _busy = true);
+            final AppFailure? failure = await ref
+                .read(hrWorkspaceControllerProvider.notifier)
+                .restoreRoster(_rosterId);
+            if (!mounted) {
+              return failure;
+            }
+            setState(() => _busy = false);
+            if (failure == null) {
+              showHrMutationSnackBar(context, null);
+              await _reloadRoster();
+            }
+            return failure;
+          },
+        );
+      },
+    );
+    if (confirmed == true && mounted && _busy) {
+      setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _permanentDeleteRoster() async {
+    final AppLocalizations l10n = context.l10n;
+    final String confirmName = _informativeName(l10n);
+    final String? typed = await showAppDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AppTextInputActionDialog(
+          title: l10n.hrRosterPermanentDeleteConfirmTitle,
+          description: l10n.hrRosterPermanentDeleteConfirmMessage,
+          fieldLabel: l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(
+            confirmName,
+          ),
+          submitLabel: l10n.hrRosterPermanentDeleteAction,
+          cancelLabel: l10n.commonCancelActionLabel,
+          requiredMessage: l10n.validationRequired,
+          confirmExactValue: confirmName,
+          confirmMismatchMessage:
+              l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(confirmName),
+          destructive: true,
+          minLines: 1,
+          maxLines: 1,
+          icon: const Icon(Icons.delete_forever_outlined),
+        );
+      },
+    );
+    if (!mounted || typed == null) {
+      return;
+    }
+    if (typed.trim().toLowerCase() != confirmName.trim().toLowerCase()) {
+      return;
+    }
+
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AppConfirmActionDialog(
+          title: l10n.hrRosterPermanentDeleteConfirmTitle,
+          body: l10n.hrRosterPermanentDeleteConfirmMessage,
+          highlightedText: confirmName,
+          submitLabel: l10n.hrRosterPermanentDeleteAction,
+          destructive: true,
+          submitLeadingIcon: Icons.delete_forever_outlined,
+          onConfirm: () async {
+            setState(() => _busy = true);
+            final AppFailure? failure = await ref
+                .read(hrWorkspaceControllerProvider.notifier)
+                .permanentDeleteRoster(_rosterId);
             if (!mounted) {
               return failure;
             }
@@ -798,7 +913,7 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                         });
                       },
                       trailingActions: <AppSearchBarAction>[
-                        if (canWriteStaff)
+                        if (canWriteStaff && !_isDeleted)
                           AppSearchBarAction(
                             icon: Icons.person_remove_outlined,
                             label: l10n.hrRosterRemoveSelectedStaffAction,
@@ -809,7 +924,7 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
                                 ? null
                                 : _removeSelected,
                           ),
-                        if (canWriteStaff)
+                        if (canWriteStaff && !_isDeleted)
                           AppSearchBarAction(
                             icon: Icons.person_add_alt_1_outlined,
                             label: l10n.hrRosterAddStaffAction,
@@ -845,37 +960,71 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
               ],
             ),
       actions: <Widget>[
-        AppAccessActionGate(
-          requirement: HrShiftsAtomPermissions.write,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppButton.secondary(
-              leadingIcon: Icons.edit_outlined,
-              label: l10n.commonEditActionLabel,
-              tooltip: l10n.hrRosterEditDialogTitle,
-              dense: true,
-              enabled: isAllowed && !_busy && _roster != null,
-              onPressed: !isAllowed || _busy || _roster == null
-                  ? null
-                  : _editRoster,
-            );
-          },
-        ),
-        AppAccessActionGate(
-          requirement: HrShiftsAtomPermissions.write,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppButton.secondary(
-              leadingIcon: Icons.delete_outline,
-              label: l10n.hrRosterDeleteAction,
-              tooltip: l10n.hrRosterDeleteAction,
-              dense: true,
-              color: Theme.of(context).colorScheme.error,
-              enabled: isAllowed && !_busy && _roster != null,
-              onPressed: !isAllowed || _busy || _roster == null
-                  ? null
-                  : _deleteRoster,
-            );
-          },
-        ),
+        if (_isDeleted) ...<Widget>[
+          AppAccessActionGate(
+            requirement: HrShiftsAtomPermissions.write,
+            builder: (BuildContext context, bool isAllowed) {
+              return AppButton.secondary(
+                leadingIcon: Icons.restore_outlined,
+                label: l10n.hrRosterRestoreAction,
+                tooltip: l10n.hrRosterRestoreAction,
+                dense: true,
+                enabled: isAllowed && !_busy && _roster != null,
+                onPressed: !isAllowed || _busy || _roster == null
+                    ? null
+                    : _restoreRoster,
+              );
+            },
+          ),
+          AppAccessActionGate(
+            requirement: HrShiftsAtomPermissions.write,
+            builder: (BuildContext context, bool isAllowed) {
+              return AppButton.secondary(
+                leadingIcon: Icons.delete_forever_outlined,
+                label: l10n.hrRosterPermanentDeleteAction,
+                tooltip: l10n.hrRosterPermanentDeleteAction,
+                dense: true,
+                color: Theme.of(context).colorScheme.error,
+                enabled: isAllowed && !_busy && _roster != null,
+                onPressed: !isAllowed || _busy || _roster == null
+                    ? null
+                    : _permanentDeleteRoster,
+              );
+            },
+          ),
+        ] else ...<Widget>[
+          AppAccessActionGate(
+            requirement: HrShiftsAtomPermissions.write,
+            builder: (BuildContext context, bool isAllowed) {
+              return AppButton.secondary(
+                leadingIcon: Icons.edit_outlined,
+                label: l10n.commonEditActionLabel,
+                tooltip: l10n.hrRosterEditDialogTitle,
+                dense: true,
+                enabled: isAllowed && !_busy && _roster != null,
+                onPressed: !isAllowed || _busy || _roster == null
+                    ? null
+                    : _editRoster,
+              );
+            },
+          ),
+          AppAccessActionGate(
+            requirement: HrShiftsAtomPermissions.write,
+            builder: (BuildContext context, bool isAllowed) {
+              return AppButton.secondary(
+                leadingIcon: Icons.delete_outline,
+                label: l10n.hrRosterDeleteAction,
+                tooltip: l10n.hrRosterDeleteAction,
+                dense: true,
+                color: Theme.of(context).colorScheme.error,
+                enabled: isAllowed && !_busy && _roster != null,
+                onPressed: !isAllowed || _busy || _roster == null
+                    ? null
+                    : _deleteRoster,
+              );
+            },
+          ),
+        ],
         AppButton.secondary(
           leadingIcon: Icons.print_outlined,
           label: l10n.commonPrintActionLabel,
@@ -923,7 +1072,9 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
         label: l10n.hrRosterOverviewStatusLabel,
         value: _rosterStatusLabel(
           l10n,
-          (roster['status'] ?? widget.item.status)?.toString(),
+          _isDeleted
+              ? 'DELETED'
+              : (roster['status'] ?? widget.item.status)?.toString(),
         ),
       ),
       AppInfoSheetItem(

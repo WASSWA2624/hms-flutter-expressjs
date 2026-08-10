@@ -2310,6 +2310,7 @@ List<AppSearchBarFilterChoice> _workItemStatusFilterChoices(
       'REJECTED',
       'DRAFT',
       'PUBLISHED',
+      'DELETED',
       'COMPLETED',
       'PROCESSED',
       'PAID',

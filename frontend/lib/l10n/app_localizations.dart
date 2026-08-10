@@ -38975,23 +38975,65 @@ abstract class AppLocalizations {
   /// **'Edit roster template'**
   String get hrRosterEditDialogTitle;
 
-  /// Title for delete roster template confirmation.
+  /// Title for soft-delete roster template confirmation.
   ///
   /// In en, this message translates to:
   /// **'Delete roster template'**
   String get hrRosterDeleteConfirmTitle;
 
-  /// Body for delete roster template confirmation.
+  /// Body for soft-delete roster template confirmation.
   ///
   /// In en, this message translates to:
-  /// **'Delete this roster template? Assigned staff links and generated shifts may be affected.'**
+  /// **'Soft-delete this roster template? Staff using it will be inactivated for this template. You can restore it later, or permanently delete it from the Deleted filter.'**
   String get hrRosterDeleteConfirmMessage;
 
-  /// Action to delete a roster template from detail dialog.
+  /// Action to soft-delete a roster template from detail dialog.
   ///
   /// In en, this message translates to:
   /// **'Delete template'**
   String get hrRosterDeleteAction;
+
+  /// Title for restore roster template confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore roster template'**
+  String get hrRosterRestoreConfirmTitle;
+
+  /// Body for restore roster template confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore this roster template and reactivate it for assigned staff?'**
+  String get hrRosterRestoreConfirmMessage;
+
+  /// Action to restore a soft-deleted roster template.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore template'**
+  String get hrRosterRestoreAction;
+
+  /// Title for permanent delete roster template confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete roster template'**
+  String get hrRosterPermanentDeleteConfirmTitle;
+
+  /// Body for permanent delete roster template confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete this roster template and remove it from all assigned staff? This cannot be undone.'**
+  String get hrRosterPermanentDeleteConfirmMessage;
+
+  /// Action to permanently delete a soft-deleted roster template.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete forever'**
+  String get hrRosterPermanentDeleteAction;
+
+  /// Soft-deleted roster template status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get hrRosterStatusDeleted;
 
   /// Title for roster template print section selection dialog.
   ///

@@ -1152,6 +1152,32 @@ final class HrWorkspaceController
     );
   }
 
+  Future<AppFailure?> restoreRoster(String rosterId) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.restoreRoster(rosterId),
+      refreshWorkItemsAfter: true,
+      refreshReferencesAfter: true,
+    );
+  }
+
+  Future<AppFailure?> permanentDeleteRoster(String rosterId) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.permanentDeleteRoster(rosterId),
+      refreshWorkItemsAfter: true,
+      refreshReferencesAfter: true,
+    );
+  }
+
   Future<Result<Map<String, Object?>>> getRoster(String rosterId) {
     return _repository.getRoster(rosterId);
   }

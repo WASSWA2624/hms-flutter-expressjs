@@ -382,7 +382,8 @@ const mapRoster = (item) => ({
   name: item.name || null,
   roster_name: item.name || null,
   is_recurring: Boolean(item.is_recurring),
-  status: item.status,
+  status: item.deleted_at ? 'DELETED' : item.status,
+  deleted_at: item.deleted_at || null,
   facility_id: item.facility_id || null,
   facility_display_id: resolveDisplayId(item.facility || {}),
   department_id: item.department_id || null,
@@ -390,7 +391,11 @@ const mapRoster = (item) => ({
   period_start: item.period_start,
   period_end: item.period_end,
   period_label: formatDateRangeLabel(item.period_start, item.period_end),
-  assignment_count: collectRosterStaffIds(item).size,
+  assignment_count: item.deleted_at
+    ? Array.isArray(item.constraints?.attached_staff_ids)
+      ? item.constraints.attached_staff_ids.length
+      : collectRosterStaffIds(item).size
+    : collectRosterStaffIds(item).size,
   constraints: item.constraints || null,
   timeline_at: item.updated_at || item.created_at,
   target_path: buildWorkbenchPath({
@@ -871,8 +876,15 @@ const listQueueItems = async ({ queue, scope, skip, take, orderBy }) => {
   }
 
   if (queue === 'ROSTER_DRAFTS') {
+    const status = String(scope.status || '').trim().toUpperCase();
+    const deletedOnly = status === 'DELETED';
     const whereClause = {
-      ...(scope.status ? { status: scope.status } : {}),
+      ...(deletedOnly
+        ? { deleted_at: { not: null } }
+        : {
+            deleted_at: null,
+            ...(status ? { status } : {}),
+          }),
       ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
       ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
       ...(scope.rosterId ? { id: scope.rosterId } : {}),
@@ -1284,6 +1296,7 @@ const getReferenceData = async (filters = {}) => {
     departments: departments
       .map((entry) =>
         toOption(entry, normalizeString(entry.name || entry.short_name) || resolvePublicIdentifier(entry.human_friendly_id), {
+          entity_id: entry.id || null,
           facility_id: entry.facility_id || null,
         })
       )

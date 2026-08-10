@@ -463,9 +463,39 @@ final class HrRepositoryImpl implements HrRepository {
   }
 
   @override
+  Future<Result<Map<String, Object?>>> restoreRoster(String rosterId) {
+    return _apiClient.post<Map<String, Object?>>(
+      ApiEndpoints.nested(HmsApiResource.rosters, rosterId, const <String>[
+        'restore',
+      ]),
+      decoder: (Object? data) {
+        final Object? payload = passthroughResponseData(data);
+        if (payload is Map<String, Object?>) {
+          return payload;
+        }
+        if (payload is Map) {
+          return Map<String, Object?>.from(payload);
+        }
+        return <String, Object?>{};
+      },
+    );
+  }
+
+  @override
+  Future<Result<Object?>> permanentDeleteRoster(String rosterId) {
+    return _apiClient.delete<Object?>(
+      ApiEndpoints.nested(HmsApiResource.rosters, rosterId, const <String>[
+        'permanent',
+      ]),
+      decoder: (_) => null,
+    );
+  }
+
+  @override
   Future<Result<Map<String, Object?>>> getRoster(String rosterId) {
     return _apiClient.get<Map<String, Object?>>(
       ApiEndpoints.byId(HmsApiResource.rosters, rosterId),
+      queryParameters: const <String, Object?>{'include_deleted': true},
       decoder: (Object? data) {
         final Object? payload = passthroughResponseData(data);
         if (payload is Map<String, Object?>) {

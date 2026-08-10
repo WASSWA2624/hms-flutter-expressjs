@@ -22,6 +22,8 @@ router.get('/:id', validateRequest({ params: rosterIdParamsSchema }), authentica
 router.post('/', validateRequest({ body: createRosterSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), rosterController.createRoster);
 router.put('/:id', validateRequest({ params: rosterIdParamsSchema, body: updateRosterSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), rosterController.updateRoster);
 router.delete('/:id', validateRequest({ params: rosterIdParamsSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), rosterController.deleteRoster);
+router.post('/:id/restore', validateRequest({ params: rosterIdParamsSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), rosterController.restoreRoster);
+router.delete('/:id/permanent', validateRequest({ params: rosterIdParamsSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), rosterController.permanentDeleteRoster);
 router.post('/:id/publish', validateRequest({ params: rosterIdParamsSchema, body: publishRosterSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), rosterController.publishRoster);
 router.post('/:id/generate', validateRequest({ params: rosterIdParamsSchema, body: generateRosterSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), rosterController.generateRoster);
 router.post('/:id/staff', validateRequest({ params: rosterIdParamsSchema, body: attachRosterStaffSchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), rosterController.attachRosterStaff);

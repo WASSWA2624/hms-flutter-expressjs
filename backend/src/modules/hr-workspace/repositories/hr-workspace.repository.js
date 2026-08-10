@@ -54,14 +54,18 @@ const countShiftSwaps = async (where = {}) =>
   );
 
 const countRosters = async (where = {}) =>
-  withDbErrorHandling(() =>
-    prisma.roster.count({
+  withDbErrorHandling(() => {
+    const hasDeletedAtFilter = Object.prototype.hasOwnProperty.call(
+      where || {},
+      'deleted_at'
+    );
+    return prisma.roster.count({
       where: {
-        deleted_at: null,
+        ...(hasDeletedAtFilter ? {} : { deleted_at: null }),
         ...(where || {}),
       },
-    })
-  );
+    });
+  });
 
 const countPayrollRuns = async (where = {}) =>
   withDbErrorHandling(() =>
@@ -180,19 +184,28 @@ const findManyShiftSwaps = async ({ where = {}, skip = 0, take = 20, orderBy = {
   );
 
 const findManyRosters = async ({ where = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' } } = {}) =>
-  withDbErrorHandling(() =>
-    prisma.roster.findMany({
+  withDbErrorHandling(() => {
+    const hasDeletedAtFilter = Object.prototype.hasOwnProperty.call(
+      where || {},
+      'deleted_at'
+    );
+    const deletedOnly =
+      hasDeletedAtFilter &&
+      where.deleted_at &&
+      typeof where.deleted_at === 'object' &&
+      where.deleted_at.not != null;
+    return prisma.roster.findMany({
       where: {
-        deleted_at: null,
+        ...(hasDeletedAtFilter ? {} : { deleted_at: null }),
         ...(where || {}),
       },
       include: {
         shifts: {
-          where: { deleted_at: null },
+          where: deletedOnly ? {} : { deleted_at: null },
           select: {
             id: true,
             assignments: {
-              where: { deleted_at: null },
+              where: deletedOnly ? {} : { deleted_at: null },
               select: { staff_profile_id: true },
             },
           },
@@ -201,8 +214,8 @@ const findManyRosters = async ({ where = {}, skip = 0, take = 20, orderBy = { cr
       skip,
       take,
       orderBy,
-    })
-  );
+    });
+  });
 
 const findManyPayrollRuns = async ({ where = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' } } = {}) =>
   withDbErrorHandling(() =>

@@ -127,7 +127,7 @@ final class HrWeeklyScheduleDraft {
   void applyWeeklyScheduleJson(Object? raw) {
     final Map<int, List<HrAvailabilitySlot>> slotsByDay =
         <int, List<HrAvailabilitySlot>>{};
-    if (raw is List<Object?>) {
+    if (raw is List) {
       for (final Object? entry in raw) {
         if (entry is! Map) {
           continue;
@@ -159,15 +159,74 @@ final class HrWeeklyScheduleDraft {
   static HrWeeklyScheduleDraft fromTemplateExtra(Map<String, Object?> extra) {
     final HrWeeklyScheduleDraft draft = HrWeeklyScheduleDraft();
     final Object? weekly = extra['weekly_schedule_json'];
-    if (weekly != null) {
+    if (weekly is List && weekly.isNotEmpty) {
       draft.applyWeeklyScheduleJson(weekly);
-      return draft;
+      if (_scheduleHasFilledSlots(draft)) {
+        return draft;
+      }
     }
+
+    final Object? workingDaysRaw = extra['working_days'];
+    final String? start = extra['default_start_time']?.toString().trim();
+    final String? end = extra['default_end_time']?.toString().trim();
+    if (workingDaysRaw is List &&
+        workingDaysRaw.isNotEmpty &&
+        start != null &&
+        start.isNotEmpty &&
+        end != null &&
+        end.isNotEmpty) {
+      final Map<int, List<HrAvailabilitySlot>> slotsByDay =
+          <int, List<HrAvailabilitySlot>>{};
+      for (final Object? dayRaw in workingDaysRaw) {
+        final int? day = _weekdayCodeToDayOfWeek(dayRaw?.toString());
+        if (day == null) {
+          continue;
+        }
+        slotsByDay[day] = <HrAvailabilitySlot>[
+          HrAvailabilitySlot(startTime: start, endTime: end),
+        ];
+      }
+      if (slotsByDay.isNotEmpty) {
+        draft.applyEntitySlotsByDay(slotsByDay);
+        return draft;
+      }
+    }
+
     draft.applyLegacyDefaultTimes(
       extra['default_start_time']?.toString(),
       extra['default_end_time']?.toString(),
     );
     return draft;
+  }
+}
+
+bool _scheduleHasFilledSlots(HrWeeklyScheduleDraft draft) {
+  for (final int day in kHrWeekDayOrder) {
+    if (draft.days[day]!.filledSlots.isNotEmpty) {
+      return true;
+    }
+  }
+  return false;
+}
+
+int? _weekdayCodeToDayOfWeek(String? code) {
+  switch ((code ?? '').trim().toUpperCase()) {
+    case 'SUN':
+      return 0;
+    case 'MON':
+      return 1;
+    case 'TUE':
+      return 2;
+    case 'WED':
+      return 3;
+    case 'THU':
+      return 4;
+    case 'FRI':
+      return 5;
+    case 'SAT':
+      return 6;
+    default:
+      return int.tryParse((code ?? '').trim());
   }
 }
 
@@ -259,7 +318,7 @@ int? _parseDayOfWeek(Object? value) {
 }
 
 List<HrAvailabilitySlot> _parseTimeSlots(Object? raw) {
-  if (raw is! List<Object?>) {
+  if (raw is! List) {
     return const <HrAvailabilitySlot>[];
   }
   return <HrAvailabilitySlot>[

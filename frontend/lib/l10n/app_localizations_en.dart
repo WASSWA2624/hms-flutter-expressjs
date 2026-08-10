@@ -21064,10 +21064,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrRosterDeleteConfirmMessage =>
-      'Delete this roster template? Assigned staff links and generated shifts may be affected.';
+      'Soft-delete this roster template? Staff using it will be inactivated for this template. You can restore it later, or permanently delete it from the Deleted filter.';
 
   @override
   String get hrRosterDeleteAction => 'Delete template';
+
+  @override
+  String get hrRosterRestoreConfirmTitle => 'Restore roster template';
+
+  @override
+  String get hrRosterRestoreConfirmMessage =>
+      'Restore this roster template and reactivate it for assigned staff?';
+
+  @override
+  String get hrRosterRestoreAction => 'Restore template';
+
+  @override
+  String get hrRosterPermanentDeleteConfirmTitle =>
+      'Permanently delete roster template';
+
+  @override
+  String get hrRosterPermanentDeleteConfirmMessage =>
+      'Permanently delete this roster template and remove it from all assigned staff? This cannot be undone.';
+
+  @override
+  String get hrRosterPermanentDeleteAction => 'Delete forever';
+
+  @override
+  String get hrRosterStatusDeleted => 'Deleted';
 
   @override
   String get hrRosterPrintDialogTitle => 'Print roster template';

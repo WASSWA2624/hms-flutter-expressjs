@@ -32,6 +32,7 @@ const staffMetaSchema = z.object({
     .enum(['FULL_TIME', 'PART_TIME', 'LOCUM', 'SPECIALIST', 'CONTRACT', 'OTHER'])
     .optional()
     .nullable(),
+  inactive: z.boolean().optional(),
 });
 
 const constraintsSchema = z.object({
@@ -51,6 +52,7 @@ const constraintsSchema = z.object({
   weekly_schedule_json: z.array(weeklyScheduleDaySchema).optional(),
   attached_staff_ids: z.array(uuidOrFriendlyIdentifierSchema).optional(),
   attached_staff_meta: z.array(staffMetaSchema).optional(),
+  template_inactive: z.boolean().optional(),
   shift_type: z.enum(['DAY', 'NIGHT', 'SWING', 'ON_CALL']).optional(),
 }).optional();
 

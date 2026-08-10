@@ -136,9 +136,23 @@ const normalizeConstraints = (constraints = {}) => {
             staff_category: entry.staff_category
               ? String(entry.staff_category).toUpperCase()
               : null,
+            inactive: entry.inactive === true,
           }))
       : [],
+    template_inactive: source.template_inactive === true,
     shift_type: source.shift_type || 'DAY',
+  };
+};
+
+const setRosterTemplateInactive = (constraints = {}, inactive) => {
+  const normalized = normalizeConstraints(constraints);
+  return {
+    ...normalized,
+    template_inactive: inactive === true,
+    attached_staff_meta: normalized.attached_staff_meta.map((entry) => ({
+      ...entry,
+      inactive: inactive === true,
+    })),
   };
 };
 
@@ -474,26 +488,31 @@ const listRosters = async (filters, page, limit, sortBy, order) => {
   }
 };
 
-const getRosterById = async (id) => {
+const getRosterById = async (id, { includeDeleted = false } = {}) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'roster',
       identifier: id,
-      where: { deleted_at: null }});
-    const roster = await rosterRepository.findById(resolvedId, {
-      facility: { select: { id: true, human_friendly_id: true, name: true } },
-      department: { select: { id: true, human_friendly_id: true, name: true } },
-      shifts: {
-        where: { deleted_at: null },
-        include: {
-          assignments: {
-            where: { deleted_at: null },
-            include: {
-              staff_profile: {
-                include: {
-                  user: {
-                    include: {
-                      profile: true,
+      where: includeDeleted ? {} : { deleted_at: null },
+      includeDeleted,
+    });
+    const roster = await rosterRepository.findById(
+      resolvedId,
+      {
+        facility: { select: { id: true, human_friendly_id: true, name: true } },
+        department: { select: { id: true, human_friendly_id: true, name: true } },
+        shifts: {
+          where: includeDeleted ? {} : { deleted_at: null },
+          include: {
+            assignments: {
+              where: includeDeleted ? {} : { deleted_at: null },
+              include: {
+                staff_profile: {
+                  include: {
+                    user: {
+                      include: {
+                        profile: true,
+                      },
                     },
                   },
                 },
@@ -502,7 +521,8 @@ const getRosterById = async (id) => {
           },
         },
       },
-    });
+      { includeDeleted }
+    );
     if (!roster) throw new HttpError('errors.roster.not_found', 404);
     const staff = await mapAttachedStaff(roster);
     const periodStartKey = toDateKey(roster.period_start);
@@ -516,6 +536,7 @@ const getRosterById = async (id) => {
       department_name: roster.department?.name || null,
       staff,
       assignment_count: staff.length,
+      is_deleted: Boolean(roster.deleted_at),
     };
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -711,15 +732,109 @@ const deleteRoster = async (id, userId, ipAddress) => {
     const before = await rosterRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.roster.not_found', 404);
 
-    await rosterRepository.softDelete(before.id);
+    const inactiveConstraints = setRosterTemplateInactive(before.constraints, true);
+    const result = await rosterRepository.softDelete(before.id, {
+      constraints: inactiveConstraints,
+    });
     createAuditLog({
       user_id: userId,
       action: 'DELETE',
       entity: 'roster',
       entity_id: before.id,
       tenant_id: before.tenant_id,
-      diff: { before },
+      diff: {
+        before,
+        after: result.roster,
+        metadata: {
+          mode: 'soft',
+          inactivated_shifts: result.inactivated_shifts,
+          inactivated_assignments: result.inactivated_assignments,
+          inactivated_day_offs: result.inactivated_day_offs,
+        },
+      },
       ip_address: ipAddress}).catch(() => {});
+    return result.roster;
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const restoreRoster = async (id, userId, ipAddress) => {
+  try {
+    const resolvedId = await resolveEntityId({
+      model: 'roster',
+      identifier: id,
+      where: {},
+      includeDeleted: true,
+    });
+    const before = await rosterRepository.findById(resolvedId, {}, { includeDeleted: true });
+    if (!before || !before.deleted_at) {
+      throw new HttpError('errors.roster.not_found', 404);
+    }
+
+    const activeConstraints = setRosterTemplateInactive(before.constraints, false);
+    const result = await rosterRepository.restore(before.id, {
+      constraints: activeConstraints,
+    });
+    createAuditLog({
+      user_id: userId,
+      action: 'RESTORE',
+      entity: 'roster',
+      entity_id: before.id,
+      tenant_id: before.tenant_id,
+      diff: {
+        before,
+        after: result.roster,
+        metadata: {
+          restored_shifts: result.restored_shifts,
+          restored_assignments: result.restored_assignments,
+          restored_day_offs: result.restored_day_offs,
+        },
+      },
+      ip_address: ipAddress,
+    }).catch(() => {});
+
+    return getRosterById(before.id);
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const permanentDeleteRoster = async (id, userId, ipAddress) => {
+  try {
+    const resolvedId = await resolveEntityId({
+      model: 'roster',
+      identifier: id,
+      where: {},
+      includeDeleted: true,
+    });
+    const before = await rosterRepository.findById(resolvedId, {}, { includeDeleted: true });
+    if (!before) throw new HttpError('errors.roster.not_found', 404);
+    if (!before.deleted_at) {
+      throw new HttpError('errors.roster.permanent_delete_requires_soft_delete', 400);
+    }
+
+    const result = await rosterRepository.permanentDelete(before.id);
+    createAuditLog({
+      user_id: userId,
+      action: 'PERMANENT_DELETE',
+      entity: 'roster',
+      entity_id: before.id,
+      tenant_id: before.tenant_id,
+      diff: {
+        before,
+        metadata: {
+          removed_staff_ids: result.removed_staff_ids,
+          removed_shifts: result.removed_shifts,
+          removed_assignments: result.removed_assignments,
+          removed_day_offs: result.removed_day_offs,
+        },
+      },
+      ip_address: ipAddress,
+    }).catch(() => {});
+    return result;
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -968,6 +1083,8 @@ module.exports = {
   createRoster,
   updateRoster,
   deleteRoster,
+  restoreRoster,
+  permanentDeleteRoster,
   publishRoster,
   generateRoster,
   attachRosterStaff,
