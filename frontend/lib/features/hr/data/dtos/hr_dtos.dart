@@ -634,8 +634,10 @@ final class HrUserRoleDto {
       backendIdentifier:
           _string(json['backend_identifier']) ?? _string(json['id']),
       roleId:
-          _string(json['role_id']) ??
+          _string(json['role_display_id']) ??
           _string(role['display_id']) ??
+          _string(role['human_friendly_id']) ??
+          _string(json['role_id']) ??
           _string(role['id']),
       roleName: _string(json['role_name']) ?? _string(role['name']),
       facilityId: _string(json['facility_id']),
@@ -920,8 +922,10 @@ final class HrAccessUserDto {
       final String? roleName = _string(role['name']) ?? _string(entry['name']);
       final String? roleId =
           _string(role['display_id']) ??
-          _string(role['id']) ??
-          _string(entry['role_id']);
+          _string(role['human_friendly_id']) ??
+          _string(entry['role_display_id']) ??
+          _string(entry['role_id']) ??
+          _string(role['id']);
       if (roleName != null) {
         roleNames.add(roleName);
       }
