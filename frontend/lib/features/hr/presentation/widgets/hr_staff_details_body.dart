@@ -2,17 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_department_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_position_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assignment_detail_dialog.dart';
@@ -42,7 +43,6 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_dialogs.da
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_actions.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_offboarding_dialog.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -82,16 +82,27 @@ class HrStaffDetailsBody extends ConsumerWidget {
         .toList(growable: false);
     final String? primaryRosterId = _primaryRosterId(detail.shiftAssignments);
     final bool hasRoster = (primaryRosterId ?? '').trim().isNotEmpty;
+    final bool rosterEmpty = detail.shiftAssignments.every(
+      (HrShiftAssignment row) =>
+          row.startTime == null || row.endTime == null,
+    );
     final List<HrRosterDayPreview> rosterDays = _rosterDayPreviews(
       detail.shiftAssignments,
     );
+    final HrStaffAccessSummary? summary = detail.accessSummary;
+    final List<HrUserRole> roles = summary?.userRoles ?? const <HrUserRole>[];
+    final List<String> permissions =
+        summary?.effectivePermissions ?? const <String>[];
+
+    Future<void> addOrChangeRoster() => _onRosterHeaderAction(
+      context,
+      ref,
+      hasRoster: hasRoster,
+      rosterId: primaryRosterId,
+    );
 
     final List<Widget> sections = <Widget>[
-      _StaffProfileSection(
-        state: state,
-        detail: detail,
-        canWrite: canWrite,
-      ),
+      _StaffProfileBlock(state: state, detail: detail),
       HrStaffDetailActions(
         state: state,
         detail: detail,
@@ -130,35 +141,34 @@ class HrStaffDetailsBody extends ConsumerWidget {
       AppCollapsibleSection(
         title: l10n.hrStaffRostersSectionTitle,
         titleIcon: Icons.calendar_month_outlined,
-        description: l10n.hrStaffRostersSectionBody,
         initiallyExpanded: true,
         headerActions: <Widget>[
-          if (canRosterWrite && !profile.isSeparated && !state.isMutating)
-            AppButton.primary(
-              label: hasRoster
-                  ? l10n.hrChangeRosterAction
-                  : l10n.hrAddRosterAction,
-              leadingIcon: hasRoster
-                  ? Icons.edit_calendar_outlined
-                  : Icons.add_outlined,
-              onPressed: () => unawaited(
-                _onRosterHeaderAction(
-                  context,
-                  ref,
-                  hasRoster: hasRoster,
-                  rosterId: primaryRosterId,
-                ),
-              ),
+          if (canRosterWrite &&
+              !profile.isSeparated &&
+              !state.isMutating &&
+              hasRoster)
+            AppButton.secondary(
+              label: l10n.hrChangeRosterAction,
+              leadingIcon: Icons.edit_calendar_outlined,
+              onPressed: () => unawaited(addOrChangeRoster()),
             ),
         ],
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (rosterDays.every((HrRosterDayPreview day) => day.shifts.isEmpty))
+            if (rosterEmpty)
               AppStateView(
+                variant: AppStateViewVariant.empty,
                 title: l10n.hrStaffRostersEmptyTitle,
                 body: l10n.hrStaffRostersEmptyBody,
                 icon: Icons.event_available_outlined,
+                action: canRosterWrite && !profile.isSeparated && !state.isMutating
+                    ? AppButton.primary(
+                        label: l10n.hrAddRosterAction,
+                        leadingIcon: Icons.add_outlined,
+                        onPressed: () => unawaited(addOrChangeRoster()),
+                      )
+                    : null,
               )
             else
               HrRosterCalendarPreview(
@@ -210,11 +220,13 @@ class HrStaffDetailsBody extends ConsumerWidget {
       AppCollapsibleSection(
         title: l10n.hrStaffLeavesSectionTitle,
         titleIcon: Icons.event_busy_outlined,
-        description: l10n.hrStaffLeavesSectionBody,
         initiallyExpanded: true,
         headerActions: <Widget>[
-          if (canWrite && !profile.isSeparated && !state.isMutating)
-            AppButton.primary(
+          if (canWrite &&
+              !profile.isSeparated &&
+              !state.isMutating &&
+              detail.leaves.isNotEmpty)
+            AppButton.secondary(
               label: l10n.hrRequestLeaveAction,
               leadingIcon: Icons.event_busy_outlined,
               onPressed: () =>
@@ -223,9 +235,18 @@ class HrStaffDetailsBody extends ConsumerWidget {
         ],
         child: detail.leaves.isEmpty
             ? AppStateView(
+                variant: AppStateViewVariant.empty,
                 title: l10n.hrNoLeaveLabel,
                 body: l10n.hrStaffLeavesEmptyBody,
                 icon: Icons.event_available_outlined,
+                action: canWrite && !profile.isSeparated && !state.isMutating
+                    ? AppButton.primary(
+                        label: l10n.hrRequestLeaveAction,
+                        leadingIcon: Icons.event_busy_outlined,
+                        onPressed: () =>
+                            unawaited(showHrRequestLeaveDialog(context, ref)),
+                      )
+                    : null,
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -248,10 +269,11 @@ class HrStaffDetailsBody extends ConsumerWidget {
       AppCollapsibleSection(
         title: l10n.hrStaffPayrollSectionTitle,
         titleIcon: Icons.payments_outlined,
-        description: l10n.hrStaffPayrollSectionBody,
         initiallyExpanded: true,
         headerActions: <Widget>[
-          if (canWrite && !state.isMutating)
+          if (canWrite &&
+              !state.isMutating &&
+              activeCompensations.isNotEmpty) ...<Widget>[
             AppButton.secondary(
               label: l10n.hrCompensationAction,
               leadingIcon: Icons.price_change_outlined,
@@ -264,9 +286,6 @@ class HrStaffDetailsBody extends ConsumerWidget {
                 ),
               ),
             ),
-          if (canWrite &&
-              !state.isMutating &&
-              activeCompensations.isNotEmpty)
             AppButton.primary(
               label: l10n.hrRunPayrollAction,
               leadingIcon: Icons.payments_outlined,
@@ -274,24 +293,164 @@ class HrStaffDetailsBody extends ConsumerWidget {
                 showHrPayrollWizardDialog(context, ref, profile),
               ),
             ),
+          ],
         ],
-        child: _PayrollSummary(
-          profile: profile,
-          compensations: activeCompensations,
-        ),
+        child: activeCompensations.isEmpty && profile.consultationFee == null
+            ? AppStateView(
+                variant: AppStateViewVariant.empty,
+                title: l10n.hrNoCompensationLabel,
+                body: l10n.hrStaffPayrollEmptyBody,
+                icon: Icons.price_change_outlined,
+                action: canWrite && !state.isMutating
+                    ? AppButton.primary(
+                        label: l10n.hrCompensationAction,
+                        leadingIcon: Icons.price_change_outlined,
+                        onPressed: () => unawaited(
+                          showHrCompensationDialog(
+                            context,
+                            ref,
+                            profile,
+                            detail.compensations,
+                          ),
+                        ),
+                      )
+                    : null,
+              )
+            : _PayrollSummary(
+                profile: profile,
+                compensations: activeCompensations,
+              ),
+      ),
+      AppCollapsibleSection(
+        title: l10n.hrRolesSectionTitle,
+        titleIcon: Icons.badge_outlined,
+        initiallyExpanded: true,
+        headerActions: <Widget>[
+          AppButton.secondary(
+            label: l10n.hrManageRolesAction,
+            leadingIcon: Icons.manage_accounts_outlined,
+            onPressed: () => unawaited(
+              showManageRolesPermissionsDialog(
+                context,
+                ref,
+                panel: AccessAdminPanel.roles,
+              ),
+            ),
+          ),
+        ],
+        child: roles.isEmpty
+            ? AppStateView(
+                variant: AppStateViewVariant.empty,
+                title: l10n.hrNoRolesLabel,
+                body: l10n.hrStaffRolesEmptyBody,
+                icon: Icons.badge_outlined,
+                action: AppButton.primary(
+                  label: l10n.hrManageRolesAction,
+                  leadingIcon: Icons.manage_accounts_outlined,
+                  onPressed: () => unawaited(
+                    showManageRolesPermissionsDialog(
+                      context,
+                      ref,
+                      panel: AccessAdminPanel.roles,
+                    ),
+                  ),
+                ),
+              )
+            : Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  for (final HrUserRole role in roles)
+                    Chip(
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      label: Text(
+                        l10n.hrReferenceRoleLabel(
+                          role.roleName,
+                          fallback: role.roleName ?? role.roleId,
+                        ),
+                        style: theme.textTheme.labelMedium,
+                      ),
+                    ),
+                ],
+              ),
       ),
       AppCollapsibleSection(
         title: l10n.hrStaffPermissionsSectionTitle,
         titleIcon: Icons.shield_outlined,
-        description: l10n.hrStaffPermissionsSectionBody,
         initiallyExpanded: true,
-        child: _PermissionsReadonlySection(detail: detail),
+        headerActions: <Widget>[
+          AppButton.secondary(
+            label: l10n.hrManageUserPermissionsAction,
+            leadingIcon: Icons.lock_open_outlined,
+            onPressed: () => unawaited(_openUserPermissions(context, ref)),
+          ),
+        ],
+        child: permissions.isEmpty
+            ? AppStateView(
+                variant: AppStateViewVariant.empty,
+                title: l10n.hrStaffPermissionsEmptyTitle,
+                body: l10n.hrStaffPermissionsEmptyBody,
+                icon: Icons.shield_outlined,
+                action: AppButton.primary(
+                  label: l10n.hrManageUserPermissionsAction,
+                  leadingIcon: Icons.lock_open_outlined,
+                  onPressed: () =>
+                      unawaited(_openUserPermissions(context, ref)),
+                ),
+              )
+            : Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  for (final String permission in permissions.take(24))
+                    Chip(
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      label: Text(
+                        permission,
+                        style: theme.textTheme.labelSmall,
+                      ),
+                    ),
+                  if (permissions.length > 24)
+                    Chip(
+                      visualDensity: VisualDensity.compact,
+                      label: Text(
+                        l10n.hrStaffPermissionsMoreLabel(
+                          permissions.length - 24,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
       ),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: appCollapsibleSectionSpacing(context, sections),
+    );
+  }
+
+  Future<void> _openUserPermissions(BuildContext context, WidgetRef ref) async {
+    final HrStaffProfile profile = detail.profile;
+    final String userId =
+        (profile.userDisplayId ?? profile.userId ?? '').trim();
+    if (userId.isEmpty) {
+      await showManageUsersDialog(context, ref);
+      return;
+    }
+    await showHrAccessUserDetailDialog(
+      context,
+      ref,
+      HrAccessUser(
+        id: userId,
+        displayId: profile.userDisplayId,
+        email: profile.userEmail,
+        profileName: profile.displayName,
+        staffProfileId: profile.effectiveId,
+        staffProfileName: profile.displayName,
+      ),
     );
   }
 
@@ -328,16 +487,11 @@ class HrStaffDetailsBody extends ConsumerWidget {
   }
 }
 
-class _StaffProfileSection extends ConsumerWidget {
-  const _StaffProfileSection({
-    required this.state,
-    required this.detail,
-    required this.canWrite,
-  });
+class _StaffProfileBlock extends ConsumerWidget {
+  const _StaffProfileBlock({required this.state, required this.detail});
 
   final HrWorkspaceState state;
   final HrStaffDetail detail;
-  final bool canWrite;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -352,150 +506,128 @@ class _StaffProfileSection extends ConsumerWidget {
         .where((HrStaffAssignment row) => row.isActive)
         .toList(growable: false);
 
-    return AppCollapsibleSection(
-      title: l10n.hrStaffDetailsSectionTitle,
-      titleIcon: Icons.badge_outlined,
-      description: l10n.hrStaffDetailsSectionBody,
-      initiallyExpanded: true,
-      collapsible: false,
-      headerActions: <Widget>[
-        if (!profile.isSeparated && !state.isMutating && canWrite)
-          AppButton(
-            iconOnly: true,
-            leadingIcon: Icons.edit_outlined,
-            label: l10n.hrEditStaffAction,
-            semanticLabel: l10n.hrEditStaffAction,
-            tooltip: l10n.hrEditStaffAction,
-            onPressed: () => showHrStaffOnboardingDialog(
-              context,
-              ref,
-              staff: profile,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppPatientDetails(
+          semanticLabel: l10n.hrStaffDetailTitle,
+          patientName: profile.displayName,
+          patientNumber: profile.staffNumber ?? profile.effectiveId,
+          patientNumberLabel: l10n.hrStaffNumberLabel,
+          showAvatar: false,
+          persistExpandPreference: false,
+          initiallyExpanded: true,
+          compactSupportingText: hrJoinDisplay(<String?>[
+            profile.position,
+            l10n.hrReferencePractitionerTypeLabel(
+              profile.practitionerType,
+              fallback: profile.practitionerType,
             ),
-          ),
-      ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppPatientDetails(
-            semanticLabel: l10n.hrStaffDetailTitle,
-            patientName: profile.displayName,
-            patientNumber: profile.staffNumber ?? profile.effectiveId,
-            patientNumberLabel: l10n.hrStaffNumberLabel,
-            showAvatar: false,
-            persistExpandPreference: false,
-            initiallyExpanded: true,
-            compactSupportingText: hrJoinDisplay(<String?>[
-              profile.position,
-              l10n.hrReferencePractitionerTypeLabel(
+          ]),
+          status: profile.isSeparated
+              ? AppWorkspaceStatus(
+                  label: _apiLabel(context, profile.status),
+                  tone: AppWorkspaceStatusTone.error,
+                  icon: Icons.person_off_outlined,
+                )
+              : AppWorkspaceStatus(
+                  label: _apiLabel(context, profile.status),
+                  tone: AppWorkspaceStatusTone.success,
+                ),
+          expandedFields: <AppWorkspacePatientContextField>[
+            AppWorkspacePatientContextField(
+              label: l10n.hrPositionLabel,
+              value: profile.position ?? '',
+              icon: Icons.work_outline,
+            ),
+            AppWorkspacePatientContextField(
+              label: l10n.hrPractitionerTypeLabel,
+              value: l10n.hrReferencePractitionerTypeLabel(
                 profile.practitionerType,
                 fallback: profile.practitionerType,
               ),
-            ]),
-            status: profile.isSeparated
-                ? AppWorkspaceStatus(
-                    label: _apiLabel(context, profile.status),
-                    tone: AppWorkspaceStatusTone.error,
-                    icon: Icons.person_off_outlined,
-                  )
-                : AppWorkspaceStatus(
-                    label: _apiLabel(context, profile.status),
-                    tone: AppWorkspaceStatusTone.success,
-                  ),
-            expandedFields: <AppWorkspacePatientContextField>[
+              icon: Icons.medical_information_outlined,
+            ),
+            AppWorkspacePatientContextField(
+              label: l10n.hrDepartmentLabel,
+              value:
+                  profile.departmentName ?? profile.departmentDisplayId ?? '',
+              icon: Icons.apartment_outlined,
+            ),
+            AppWorkspacePatientContextField(
+              label: l10n.hrHireDateLabel,
+              value: profile.hireDate == null
+                  ? ''
+                  : AppFormatters.mediumDate(
+                      profile.hireDate!,
+                      Localizations.localeOf(context),
+                    ),
+              icon: Icons.calendar_today_outlined,
+            ),
+            if (hasLinkedUser) ...<AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(
-                label: l10n.hrPositionLabel,
-                value: profile.position ?? '',
-                icon: Icons.work_outline,
+                label: l10n.hrEmailLabel,
+                value: profile.userEmail ?? '',
+                icon: Icons.email_outlined,
               ),
               AppWorkspacePatientContextField(
-                label: l10n.hrPractitionerTypeLabel,
-                value: l10n.hrReferencePractitionerTypeLabel(
-                  profile.practitionerType,
-                  fallback: profile.practitionerType,
-                ),
-                icon: Icons.medical_information_outlined,
+                label: l10n.hrUserIdLabel,
+                value: profile.userDisplayId ?? profile.userId ?? '',
+                icon: Icons.badge_outlined,
+                copyable: true,
+              ),
+            ],
+            if (profile.isSeparated) ...<AppWorkspacePatientContextField>[
+              AppWorkspacePatientContextField(
+                label: l10n.hrSeparationTypeLabel,
+                value: hrSeparationTypeLabel(l10n, profile.separationType),
+                icon: Icons.person_off_outlined,
               ),
               AppWorkspacePatientContextField(
-                label: l10n.hrDepartmentLabel,
-                value:
-                    profile.departmentName ?? profile.departmentDisplayId ?? '',
-                icon: Icons.apartment_outlined,
-              ),
-              AppWorkspacePatientContextField(
-                label: l10n.hrHireDateLabel,
-                value: profile.hireDate == null
+                label: l10n.hrLastWorkingDayLabel,
+                value: profile.separationDate == null
                     ? ''
                     : AppFormatters.mediumDate(
-                        profile.hireDate!,
+                        profile.separationDate!,
                         Localizations.localeOf(context),
                       ),
-                icon: Icons.calendar_today_outlined,
+                icon: Icons.event_outlined,
               ),
-              if (hasLinkedUser) ...<AppWorkspacePatientContextField>[
-                AppWorkspacePatientContextField(
-                  label: l10n.hrEmailLabel,
-                  value: profile.userEmail ?? '',
-                  icon: Icons.email_outlined,
-                ),
-                AppWorkspacePatientContextField(
-                  label: l10n.hrUserIdLabel,
-                  value: profile.userDisplayId ?? profile.userId ?? '',
-                  icon: Icons.badge_outlined,
-                  copyable: true,
-                ),
-              ],
-              if (profile.isSeparated) ...<AppWorkspacePatientContextField>[
-                AppWorkspacePatientContextField(
-                  label: l10n.hrSeparationTypeLabel,
-                  value: hrSeparationTypeLabel(l10n, profile.separationType),
-                  icon: Icons.person_off_outlined,
-                ),
-                AppWorkspacePatientContextField(
-                  label: l10n.hrLastWorkingDayLabel,
-                  value: profile.separationDate == null
-                      ? ''
-                      : AppFormatters.mediumDate(
-                          profile.separationDate!,
-                          Localizations.localeOf(context),
-                        ),
-                  icon: Icons.event_outlined,
-                ),
-              ],
             ],
+          ],
+        ),
+        if (activeAssignments.isNotEmpty) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          Text(
+            l10n.hrAssignmentsSectionTitle,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: AppFontWeight.emphasis,
+            ),
           ),
-          if (activeAssignments.isNotEmpty) ...<Widget>[
-            SizedBox(height: theme.spacing.md),
-            Text(
-              l10n.hrAssignmentsSectionTitle,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: AppFontWeight.emphasis,
+          SizedBox(height: theme.spacing.sm),
+          for (final HrStaffAssignment assignment in activeAssignments)
+            Padding(
+              padding: EdgeInsets.only(bottom: theme.spacing.xs),
+              child: _CompactRecordTile(
+                title: hrAssignmentTitle(assignment, l10n),
+                subtitle: hrAssignmentSubtitle(context, assignment, l10n),
+                trailing: assignment.isPrimary
+                    ? AppStatusBadge(
+                        label: l10n.hrPrimaryAssignmentLabel,
+                        tone: AppWorkspaceStatusTone.info,
+                      )
+                    : null,
+                onTap: () => showHrAssignmentDetailDialog(
+                  context,
+                  ref,
+                  detail,
+                  assignment,
+                  isMutating: state.isMutating,
+                ),
               ),
             ),
-            SizedBox(height: theme.spacing.sm),
-            for (final HrStaffAssignment assignment in activeAssignments)
-              Padding(
-                padding: EdgeInsets.only(bottom: theme.spacing.xs),
-                child: _CompactRecordTile(
-                  title: hrAssignmentTitle(assignment, l10n),
-                  subtitle: hrAssignmentSubtitle(context, assignment, l10n),
-                  trailing: assignment.isPrimary
-                      ? AppStatusBadge(
-                          label: l10n.hrPrimaryAssignmentLabel,
-                          tone: AppWorkspaceStatusTone.info,
-                        )
-                      : null,
-                  onTap: () => showHrAssignmentDetailDialog(
-                    context,
-                    ref,
-                    detail,
-                    assignment,
-                    isMutating: state.isMutating,
-                  ),
-                ),
-              ),
-          ],
         ],
-      ),
+      ],
     );
   }
 }
@@ -547,32 +679,12 @@ class _PayrollSummary extends StatelessWidget {
       );
     }
 
-    if (metrics.isEmpty) {
-      return AppStateView(
-        title: l10n.hrNoCompensationLabel,
-        body: l10n.hrStaffPayrollEmptyBody,
-        icon: Icons.price_change_outlined,
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Wrap(
+      spacing: theme.spacing.sm,
+      runSpacing: theme.spacing.sm,
       children: <Widget>[
-        Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.sm,
-          children: <Widget>[
-            for (final _PayrollMetric metric in metrics)
-              _MetricChip(metric: metric),
-          ],
-        ),
-        SizedBox(height: theme.spacing.md),
-        Text(
-          l10n.hrStaffPayrollPaidHint,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
+        for (final _PayrollMetric metric in metrics)
+          _MetricChip(metric: metric),
       ],
     );
   }
@@ -642,168 +754,6 @@ class _MetricChip extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _PermissionsReadonlySection extends StatelessWidget {
-  const _PermissionsReadonlySection({required this.detail});
-
-  final HrStaffDetail detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final HrStaffAccessSummary? summary = detail.accessSummary;
-    final List<HrUserRole> roles = summary?.userRoles ?? const <HrUserRole>[];
-    final List<String> permissions =
-        summary?.effectivePermissions ?? const <String>[];
-    final List<HrModuleAccess> modules = (summary?.moduleAccess ??
-            const <HrModuleAccess>[])
-        .where((HrModuleAccess row) => row.granted)
-        .toList(growable: false);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(theme.radius.md),
-            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(theme.spacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Text(
-                  l10n.hrStaffPermissionsManageHint,
-                  style: theme.textTheme.bodyMedium,
-                ),
-                SizedBox(height: theme.spacing.sm),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: AppButton.secondary(
-                    label: l10n.hrManageAccessAction,
-                    leadingIcon: Icons.manage_accounts_outlined,
-                    onPressed: () {
-                      Navigator.of(context).maybePop();
-                      GoRouter.of(context).go(
-                        AppRoutes.hr.location(
-                          queryParameters: const <String, String>{
-                            'section': 'access',
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (roles.isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
-          Text(
-            l10n.hrRolesSectionTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: AppFontWeight.emphasis,
-            ),
-          ),
-          SizedBox(height: theme.spacing.xs),
-          Wrap(
-            spacing: theme.spacing.xs,
-            runSpacing: theme.spacing.xs,
-            children: <Widget>[
-              for (final HrUserRole role in roles)
-                Chip(
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  label: Text(
-                    l10n.hrReferenceRoleLabel(
-                      role.roleName,
-                      fallback: role.roleName ?? role.roleId,
-                    ),
-                    style: theme.textTheme.labelMedium,
-                  ),
-                ),
-            ],
-          ),
-        ],
-        if (modules.isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
-          Text(
-            l10n.hrModuleAccessSectionTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: AppFontWeight.emphasis,
-            ),
-          ),
-          SizedBox(height: theme.spacing.xs),
-          Wrap(
-            spacing: theme.spacing.xs,
-            runSpacing: theme.spacing.xs,
-            children: <Widget>[
-              for (final HrModuleAccess module in modules.take(12))
-                Chip(
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  avatar: Icon(
-                    Icons.check_circle_outline,
-                    size: 16,
-                    color: theme.colorScheme.primary,
-                  ),
-                  label: Text(
-                    module.label ?? module.slug,
-                    style: theme.textTheme.labelMedium,
-                  ),
-                ),
-            ],
-          ),
-        ],
-        if (permissions.isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
-          Text(
-            l10n.hrEffectivePermissionsTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: AppFontWeight.emphasis,
-            ),
-          ),
-          SizedBox(height: theme.spacing.xs),
-          Wrap(
-            spacing: theme.spacing.xs,
-            runSpacing: theme.spacing.xs,
-            children: <Widget>[
-              for (final String permission in permissions.take(18))
-                Chip(
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  label: Text(
-                    permission,
-                    style: theme.textTheme.labelSmall,
-                  ),
-                ),
-              if (permissions.length > 18)
-                Chip(
-                  visualDensity: VisualDensity.compact,
-                  label: Text(
-                    l10n.hrStaffPermissionsMoreLabel(permissions.length - 18),
-                  ),
-                ),
-            ],
-          ),
-        ],
-        if (roles.isEmpty && modules.isEmpty && permissions.isEmpty)
-          Padding(
-            padding: EdgeInsets.only(top: theme.spacing.md),
-            child: Text(
-              l10n.hrNoRolesLabel,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-      ],
     );
   }
 }
@@ -915,9 +865,6 @@ List<HrRosterDayPreview> _rosterDayPreviews(
     final DateTime? end = assignment.endTime?.toLocal();
     if (start == null || end == null) {
       continue;
-    }
-    if (start.isBefore(from) || start.isAfter(to.add(const Duration(days: 1)))) {
-      // Still include nearby shifts outside the month when present.
     }
     final String key = hrRosterDateKey(start);
     byDay

@@ -39821,6 +39821,54 @@ abstract class AppLocalizations {
   /// **'+{count} more'**
   String hrStaffPermissionsMoreLabel(int count);
 
+  /// Header action opening the roles management surface from staff details.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage roles'**
+  String get hrManageRolesAction;
+
+  /// Header action opening the linked user permissions surface from staff details.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage user permissions'**
+  String get hrManageUserPermissionsAction;
+
+  /// Empty body for the staff roles section.
+  ///
+  /// In en, this message translates to:
+  /// **'No roles assigned to this staff member yet.'**
+  String get hrStaffRolesEmptyBody;
+
+  /// Empty title for the staff permissions section.
+  ///
+  /// In en, this message translates to:
+  /// **'No permissions listed'**
+  String get hrStaffPermissionsEmptyTitle;
+
+  /// Empty body for the staff permissions section.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective permissions appear here when the linked user account has access grants.'**
+  String get hrStaffPermissionsEmptyBody;
+
+  /// Title for the staff details print preview dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Print staff details'**
+  String get hrStaffPrintDialogTitle;
+
+  /// Print preview section picker title for staff details.
+  ///
+  /// In en, this message translates to:
+  /// **'Sections to include'**
+  String get hrStaffPrintContentSection;
+
+  /// Print preview section picker hint for staff details.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which staff details sections appear on the printout.'**
+  String get hrStaffPrintContentSectionHint;
+
   /// Human resources workspace text for hrStaffDirectoryDescription.
   ///
   /// In en, this message translates to:

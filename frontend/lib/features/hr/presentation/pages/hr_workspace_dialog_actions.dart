@@ -110,25 +110,63 @@ Future<void> showHrStaffDetailDialog(
   final HrWorkspaceState? state = readHrWorkspaceState(ref);
   await showAppDialog<void>(
     context: context,
-    builder: (BuildContext dialogContext) => AppDialog(
-      title: Text(l10n.hrStaffDetailTitle),
-      icon: const Icon(Icons.badge_outlined),
-      scrollable: true,
-      maxWidth: 980,
-      content: Consumer(
+    builder: (BuildContext dialogContext) {
+      return Consumer(
         builder: (BuildContext context, WidgetRef dialogRef, _) {
           final HrWorkspaceState? dialogState =
               _hrStateFromAsync(
                 dialogRef.watch(hrWorkspaceControllerProvider),
               ) ??
               state;
-          if (dialogState == null) {
-            return const SizedBox.shrink();
-          }
-          return _HrStaffDetailPanel(state: dialogState);
+          final HrStaffDetail? detail = dialogState?.selectedStaff;
+          final AppAccessPolicy policy = dialogRef.watch(
+            appAccessPolicyProvider,
+          );
+          final bool canWrite =
+              HrHumanResourcesAtomPermissions.write.isAllowed(policy);
+          final bool canEdit =
+              canWrite &&
+              detail != null &&
+              !detail.profile.isSeparated &&
+              !(dialogState?.isMutating ?? false);
+
+          return AppDialog(
+            title: Text(l10n.hrStaffDetailTitle),
+            icon: const Icon(Icons.badge_outlined),
+            scrollable: true,
+            pinActionsToBottom: true,
+            maxWidth: 980,
+            actions: <Widget>[
+              if (canEdit)
+                AppButton.secondary(
+                  label: l10n.hrEditStaffAction,
+                  leadingIcon: Icons.edit_outlined,
+                  onPressed: () => showHrStaffOnboardingDialog(
+                    context,
+                    dialogRef,
+                    staff: detail.profile,
+                  ),
+                ),
+              if (detail != null)
+                AppButton.primary(
+                  label: l10n.commonPrintActionLabel,
+                  leadingIcon: Icons.print_outlined,
+                  onPressed: () => unawaited(
+                    showHrStaffPrintPreview(
+                      context: context,
+                      ref: dialogRef,
+                      detail: detail,
+                    ),
+                  ),
+                ),
+            ],
+            content: dialogState == null
+                ? const SizedBox.shrink()
+                : _HrStaffDetailPanel(state: dialogState),
+          );
         },
-      ),
-    ),
+      );
+    },
   );
 }
 

@@ -21522,6 +21522,33 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get hrManageRolesAction => 'Manage roles';
+
+  @override
+  String get hrManageUserPermissionsAction => 'Manage user permissions';
+
+  @override
+  String get hrStaffRolesEmptyBody =>
+      'No roles assigned to this staff member yet.';
+
+  @override
+  String get hrStaffPermissionsEmptyTitle => 'No permissions listed';
+
+  @override
+  String get hrStaffPermissionsEmptyBody =>
+      'Effective permissions appear here when the linked user account has access grants.';
+
+  @override
+  String get hrStaffPrintDialogTitle => 'Print staff details';
+
+  @override
+  String get hrStaffPrintContentSection => 'Sections to include';
+
+  @override
+  String get hrStaffPrintContentSectionHint =>
+      'Choose which staff details sections appear on the printout.';
+
+  @override
   String get hrStaffDirectoryDescription =>
       'Search staff by name, department, position, or status.';
 

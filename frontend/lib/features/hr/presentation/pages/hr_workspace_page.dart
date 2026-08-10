@@ -39,6 +39,8 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_detail_dia
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_details_body.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_print_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_workspace_form_fields.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';

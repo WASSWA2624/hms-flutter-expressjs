@@ -27741,6 +27741,38 @@
       }
     }
   },
+  "hrManageRolesAction": "Manage roles",
+  "@hrManageRolesAction": {
+    "description": "Header action opening the roles management surface from staff details."
+  },
+  "hrManageUserPermissionsAction": "Manage user permissions",
+  "@hrManageUserPermissionsAction": {
+    "description": "Header action opening the linked user permissions surface from staff details."
+  },
+  "hrStaffRolesEmptyBody": "No roles assigned to this staff member yet.",
+  "@hrStaffRolesEmptyBody": {
+    "description": "Empty body for the staff roles section."
+  },
+  "hrStaffPermissionsEmptyTitle": "No permissions listed",
+  "@hrStaffPermissionsEmptyTitle": {
+    "description": "Empty title for the staff permissions section."
+  },
+  "hrStaffPermissionsEmptyBody": "Effective permissions appear here when the linked user account has access grants.",
+  "@hrStaffPermissionsEmptyBody": {
+    "description": "Empty body for the staff permissions section."
+  },
+  "hrStaffPrintDialogTitle": "Print staff details",
+  "@hrStaffPrintDialogTitle": {
+    "description": "Title for the staff details print preview dialog."
+  },
+  "hrStaffPrintContentSection": "Sections to include",
+  "@hrStaffPrintContentSection": {
+    "description": "Print preview section picker title for staff details."
+  },
+  "hrStaffPrintContentSectionHint": "Choose which staff details sections appear on the printout.",
+  "@hrStaffPrintContentSectionHint": {
+    "description": "Print preview section picker hint for staff details."
+  },
   "hrStaffDirectoryDescription": "Search staff by name, department, position, or status.",
   "@hrStaffDirectoryDescription": {
     "description": "Human resources workspace text for hrStaffDirectoryDescription."
