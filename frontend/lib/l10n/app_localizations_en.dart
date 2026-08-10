@@ -8858,7 +8858,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorUnexpectedResponseTitle => 'Unexpected response';
 
   @override
-  String get errorUnexpectedResponseMessage => 'Try again later.';
+  String get errorUnexpectedResponseMessage =>
+      'The server returned an unexpected response. Check the details below or try again.';
 
   @override
   String get errorStorageTitle => 'Storage unavailable';

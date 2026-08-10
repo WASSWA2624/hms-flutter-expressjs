@@ -119,6 +119,9 @@ void main() {
           response: Response<Object?>(
             requestOptions: requestOptions,
             statusCode: 500,
+            data: <String, Object?>{
+              'detail': 'Database write failed while saving the catalog item.',
+            },
           ),
           type: DioExceptionType.badResponse,
         ),
@@ -127,6 +130,10 @@ void main() {
 
       expect(failure.category, AppFailureCategory.unexpectedResponse);
       expect(failure.statusCode, 500);
+      expect(
+        failure.detailMessage,
+        'Database write failed while saving the catalog item.',
+      );
     });
 
     test('maps rate limited responses to retryable network failures', () {

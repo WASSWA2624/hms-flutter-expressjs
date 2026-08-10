@@ -533,7 +533,7 @@ Future<_UserSimilarityPeers> _loadUserSimilarityPeers(
       final AppFailure? failure = result.when(
         success: (AccessAdminWorkspaceData data) =>
             data.state == 'tenant_context_required'
-            ? const AppFailure.unexpectedResponse()
+            ? AppFailure.unexpectedResponse()
             : null,
         failure: (AppFailure value) => value,
       );
@@ -1252,7 +1252,7 @@ Future<_RoleSimilarityPeers> _loadRoleSimilarityPeers(
       final AppFailure? failure = result.when(
         success: (AccessAdminWorkspaceData data) =>
             data.state == 'tenant_context_required'
-            ? const AppFailure.unexpectedResponse()
+            ? AppFailure.unexpectedResponse()
             : null,
         failure: (AppFailure value) => value,
       );

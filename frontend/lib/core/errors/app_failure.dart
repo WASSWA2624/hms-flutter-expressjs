@@ -67,8 +67,10 @@ sealed class AppFailure {
     Map<String, String> fieldMessages,
   }) = ValidationFailure;
 
-  const factory AppFailure.unexpectedResponse({int? statusCode}) =
-      UnexpectedResponseFailure;
+  factory AppFailure.unexpectedResponse({
+    int? statusCode,
+    String? detailMessage,
+  }) = UnexpectedResponseFailure;
 
   const factory AppFailure.storage({String code, bool isRetryable}) =
       StorageFailure;
@@ -339,12 +341,19 @@ final class ValidationFailure extends AppFailure {
 }
 
 final class UnexpectedResponseFailure extends AppFailure {
-  const UnexpectedResponseFailure({super.statusCode})
+  UnexpectedResponseFailure({super.statusCode, String? detailMessage})
     : super._(
         category: AppFailureCategory.unexpectedResponse,
         code: 'network.unexpected_response',
         messageKey: 'errors.unexpectedResponse',
         isRetryable: false,
+        detailMessage: () {
+          final String? trimmed = detailMessage?.trim();
+          if (trimmed == null || trimmed.isEmpty) {
+            return null;
+          }
+          return trimmed;
+        }(),
       );
 }
 

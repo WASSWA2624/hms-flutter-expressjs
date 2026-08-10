@@ -11278,7 +11278,7 @@
   "@errorUnexpectedResponseTitle": {
     "description": "Title for an unexpected API response failure."
   },
-  "errorUnexpectedResponseMessage": "Try again later.",
+  "errorUnexpectedResponseMessage": "The server returned an unexpected response. Check the details below or try again.",
   "@errorUnexpectedResponseMessage": {
     "description": "Safe user-facing message for an unexpected API response failure."
   },

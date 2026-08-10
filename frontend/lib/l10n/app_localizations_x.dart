@@ -28,7 +28,10 @@ extension AppFailureLocalizations on AppLocalizations {
       AppFailureCategory.notFound => errorNotFoundTitle,
       AppFailureCategory.conflict => errorConflictTitle,
       AppFailureCategory.validation => errorValidationTitle,
-      AppFailureCategory.unexpectedResponse => errorUnexpectedResponseTitle,
+      AppFailureCategory.unexpectedResponse =>
+        failure.statusCode == null
+            ? errorUnexpectedResponseTitle
+            : '$errorUnexpectedResponseTitle (${failure.statusCode})',
       AppFailureCategory.storage => errorStorageTitle,
       AppFailureCategory.unexpected => errorUnexpectedTitle,
     };

@@ -59,7 +59,9 @@ abstract final class ValidationMessagePresenter {
       AppFailureCategory.conflict => l10n.errorConflictMessage,
       AppFailureCategory.validation => l10n.errorValidationMessage,
       AppFailureCategory.unexpectedResponse =>
-        l10n.errorUnexpectedResponseMessage,
+        failure.statusCode == null
+            ? l10n.errorUnexpectedResponseMessage
+            : 'The server failed to process this request (HTTP ${failure.statusCode}).',
       AppFailureCategory.storage => l10n.errorStorageMessage,
       AppFailureCategory.unexpected => l10n.errorUnexpectedMessage,
     };

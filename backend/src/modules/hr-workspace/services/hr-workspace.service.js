@@ -2831,7 +2831,7 @@ const offboardStaff = async (staffProfileIdentifier, payload = {}, userId = null
       where: {
         deleted_at: null,
         staff_profile_id: staffRecord.id,
-        status: { in: ['PENDING', 'REQUESTED', 'DRAFT'] },
+        status: { in: ['REQUESTED'] },
       },
       data: { status: 'CANCELLED' },
     });

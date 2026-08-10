@@ -17,7 +17,7 @@ void main() {
         const AppFailure.forbidden(): l10n.errorForbiddenMessage,
         const AppFailure.notFound(): l10n.errorNotFoundMessage,
         AppFailure.validation(): l10n.errorValidationMessage,
-        const AppFailure.unexpectedResponse():
+        AppFailure.unexpectedResponse():
             l10n.errorUnexpectedResponseMessage,
         const AppFailure.storage(): l10n.errorStorageMessage,
         const AppFailure.unexpected(): l10n.errorUnexpectedMessage,
@@ -42,7 +42,18 @@ void main() {
     test('keeps factory constructors backed by concrete failure classes', () {
       expect(const AppFailure.network(), isA<NetworkFailure>());
       expect(AppFailure.validation(), isA<ValidationFailure>());
+      expect(AppFailure.unexpectedResponse(), isA<UnexpectedResponseFailure>());
       expect(const AppFailure.storage(), isA<StorageFailure>());
+    });
+
+    test('prefers unexpected response detail messages', () {
+      final failure = AppFailure.unexpectedResponse(
+        statusCode: 500,
+        detailMessage: 'Payroll draft could not be created.',
+      );
+
+      expect(l10n.failureTitle(failure), contains('500'));
+      expect(l10n.failureMessage(failure), 'Payroll draft could not be created.');
     });
   });
 }

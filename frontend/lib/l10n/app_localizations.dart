@@ -16213,7 +16213,7 @@ abstract class AppLocalizations {
   /// Safe user-facing message for an unexpected API response failure.
   ///
   /// In en, this message translates to:
-  /// **'Try again later.'**
+  /// **'The server returned an unexpected response. Check the details below or try again.'**
   String get errorUnexpectedResponseMessage;
 
   /// Title for a local storage failure.

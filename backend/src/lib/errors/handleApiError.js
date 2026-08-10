@@ -34,6 +34,34 @@ try {
  * @param {Error} error - Prisma error
  * @returns {Object} Decoded error with message and status code
  */
+const _prismaValidationHint = (rawMessage) => {
+  const text = String(rawMessage || '')
+    .replace(/\u001b\[[0-9;]*m/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!text) {
+    return null;
+  }
+
+  const argumentMatch = text.match(
+    /Invalid value for argument `([^`]+)`\.\s*Expected ([^.]+)\./i
+  );
+  if (argumentMatch) {
+    return `Invalid value for ${argumentMatch[1]}. Expected ${argumentMatch[2]}.`;
+  }
+
+  const unknownFieldMatch = text.match(
+    /Unknown (?:arg|field) `([^`]+)`/i
+  );
+  if (unknownFieldMatch) {
+    return `Unknown field "${unknownFieldMatch[1]}" in the request.`;
+  }
+
+  // Keep a short, readable slice of the Prisma validation message.
+  const compact = text.length > 240 ? `${text.slice(0, 237)}...` : text;
+  return compact;
+};
+
 const decodePrismaError = (error) => {
   if (!Prisma) return null;
   
@@ -93,13 +121,14 @@ const decodePrismaError = (error) => {
   
   // Prisma Client Validation Error
   if (error instanceof Prisma.PrismaClientValidationError) {
+    const hint = _prismaValidationHint(error.message);
     return {
-      message: 'errors.validation.invalid',
+      message: hint || 'errors.validation.invalid',
       statusCode: 400,
       errors: [{
-        field: 'validation',
-        message: 'errors.validation.invalid'
-      }]
+        field: 'request',
+        message: hint || 'errors.validation.invalid',
+      }],
     };
   }
   

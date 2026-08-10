@@ -25,7 +25,12 @@ final class NetworkFailureMapper {
     }
 
     if (error is FormatException || error is TypeError) {
-      return const AppFailure.unexpectedResponse();
+      final String detail = error is FormatException
+          ? (error.message.trim().isEmpty
+                ? error.toString()
+                : error.message.trim())
+          : error.toString();
+      return AppFailure.unexpectedResponse(detailMessage: detail);
     }
 
     return const AppFailure.unexpected();
@@ -52,16 +57,19 @@ final class NetworkFailureMapper {
 
   AppFailure _mapResponse(Response<dynamic>? response) {
     final statusCode = response?.statusCode;
+    final String? detail = _responseDetail(response?.data);
 
     if (statusCode == null) {
-      return const AppFailure.unexpectedResponse();
+      return AppFailure.unexpectedResponse(
+        detailMessage: detail ?? 'The server returned an empty error response.',
+      );
     }
 
     if (statusCode == 400 || statusCode == 422 || statusCode == 428) {
       return AppFailure.validation(
         statusCode: statusCode,
         validationFields: _validationFields(response?.data),
-        detailMessage: _responseDetail(response?.data),
+        detailMessage: detail,
         fieldMessages: _validationFieldMessages(response?.data),
       );
     }
@@ -71,7 +79,7 @@ final class NetworkFailureMapper {
         code: _conflictFailureCode(response?.data),
         statusCode: statusCode,
         validationFields: _validationFields(response?.data),
-        detailMessage: _responseDetail(response?.data),
+        detailMessage: detail,
         fieldMessages: _validationFieldMessages(response?.data),
         conflictEntries: _conflictEntries(response?.data),
       );
@@ -121,7 +129,10 @@ final class NetworkFailureMapper {
           statusCode: statusCode,
         );
       }
-      return AppFailure.forbidden(statusCode: statusCode);
+      return AppFailure.forbidden(
+        statusCode: statusCode,
+        detailMessage: detail,
+      );
     }
 
     if (statusCode == 404) {
@@ -137,10 +148,20 @@ final class NetworkFailureMapper {
     }
 
     if (statusCode >= 500) {
-      return AppFailure.unexpectedResponse(statusCode: statusCode);
+      return AppFailure.unexpectedResponse(
+        statusCode: statusCode,
+        detailMessage:
+            detail ??
+            'The server failed to process this request (HTTP $statusCode).',
+      );
     }
 
-    return AppFailure.unexpectedResponse(statusCode: statusCode);
+    return AppFailure.unexpectedResponse(
+      statusCode: statusCode,
+      detailMessage:
+          detail ??
+          'Unexpected HTTP $statusCode response from the server.',
+    );
   }
 
   AppFailure _mapUnknownDioException(DioException error) {
@@ -151,7 +172,17 @@ final class NetworkFailureMapper {
     }
 
     if (innerError is FormatException || innerError is TypeError) {
-      return const AppFailure.unexpectedResponse();
+      final String detail = innerError is FormatException
+          ? (innerError.message.trim().isEmpty
+                ? innerError.toString()
+                : innerError.message.trim())
+          : innerError.toString();
+      return AppFailure.unexpectedResponse(detailMessage: detail);
+    }
+
+    final String? message = error.message?.trim();
+    if (message != null && message.isNotEmpty) {
+      return AppFailure.unexpectedResponse(detailMessage: message);
     }
 
     return const AppFailure.unexpected();
@@ -222,6 +253,19 @@ final class NetworkFailureMapper {
       final Object? value = data[key];
       if (value is String && value.trim().isNotEmpty) {
         return value.trim();
+      }
+    }
+
+    final Object? errors = data['errors'];
+    if (errors is List<Object?>) {
+      for (final Object? entry in errors) {
+        if (entry is! Map<Object?, Object?>) {
+          continue;
+        }
+        final String? message = entry['message']?.toString().trim();
+        if (message != null && message.isNotEmpty) {
+          return message;
+        }
       }
     }
     return null;
