@@ -477,22 +477,39 @@ class _HrSelectRosterTemplateDialogState
       return;
     }
 
-    setState(() => _assigning = true);
-    final AppFailure? failure = await _assignStaffToRoster(
-      ref,
-      rosterId: selectedId,
-      staffProfileId: widget.staff.effectiveId,
-      currentRosterId: widget.currentRosterId,
-    );
-    if (!mounted) {
-      return;
+    setState(() {
+      _assigning = true;
+      _failure = null;
+    });
+    try {
+      final AppFailure? failure = await _assignStaffToRoster(
+        ref,
+        rosterId: selectedId,
+        staffProfileId: widget.staff.effectiveId,
+        currentRosterId: widget.currentRosterId,
+      );
+      if (!mounted) {
+        return;
+      }
+      if (failure != null) {
+        setState(() {
+          _assigning = false;
+          _failure = failure;
+        });
+        showHrMutationSnackBar(context, failure);
+        return;
+      }
+      Navigator.of(context).pop(true);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _assigning = false;
+        _failure = const AppFailure.unexpected();
+      });
+      showHrMutationSnackBar(context, _failure);
     }
-    setState(() => _assigning = false);
-    if (failure != null) {
-      showHrMutationSnackBar(context, failure);
-      return;
-    }
-    Navigator.of(context).pop(true);
   }
 
   @override
@@ -512,6 +529,21 @@ class _HrSelectRosterTemplateDialogState
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          if (_assigning)
+            Padding(
+              padding: EdgeInsets.only(bottom: Theme.of(context).spacing.md),
+              child: Row(
+                children: <Widget>[
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: Theme.of(context).spacing.sm),
+                  Expanded(child: Text(l10n.hrSavingStatus)),
+                ],
+              ),
+            ),
           if (_failure != null)
             Padding(
               padding: EdgeInsets.only(bottom: Theme.of(context).spacing.md),
@@ -523,7 +555,7 @@ class _HrSelectRosterTemplateDialogState
             ),
           AppListTable<HrWorkItem>(
             items: _items,
-            isLoading: _loading,
+            isLoading: _loading || _assigning,
             columnVisibilityController: _columnController,
             columnVisibilityStorageKey: 'hr.assign_roster.templates.v1',
             columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
@@ -707,6 +739,7 @@ class _HrSelectRosterTemplateDialogState
           leadingIcon: _isChange
               ? Icons.edit_calendar_outlined
               : Icons.person_add_alt_1_outlined,
+          isLoading: _assigning,
           onPressed: _assigning || (_selectedId ?? '').isEmpty
               ? null
               : () => unawaited(_confirm()),

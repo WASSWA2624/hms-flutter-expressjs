@@ -1098,10 +1098,15 @@ const attachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress, 
       where: { deleted_at: null }});
 
     const constraints = normalizeConstraints(roster.constraints);
-    if (constraints.attached_staff_ids.includes(staffProfileId)) {
-      throw new HttpError('errors.roster.duplicate_staff', 409, [
-        { staff_profile_id: staffProfileId },
-      ]);
+    const attachedResolved = await resolveStaffProfileIds(
+      constraints.attached_staff_ids
+    );
+    const alreadyAttached = attachedResolved.includes(staffProfileId);
+
+    if (alreadyAttached) {
+      // Idempotent: prior attach may have saved constraints without shifts.
+      await assignStaffToRosterShifts(roster, [staffProfileId]);
+      return getRosterById(roster.id);
     }
 
     await assertNoScheduleConflict({
@@ -1126,7 +1131,7 @@ const attachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress, 
 
     const nextConstraints = {
       ...constraints,
-      attached_staff_ids: [...constraints.attached_staff_ids, staffProfileId],
+      attached_staff_ids: [...attachedResolved, staffProfileId],
       attached_staff_meta: nextMeta,
     };
     const updated = await rosterRepository.update(roster.id, {
