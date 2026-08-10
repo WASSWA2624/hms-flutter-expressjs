@@ -395,6 +395,15 @@ void main() {
     );
     expect(source.contains('class _HrStaffDirectory'), isFalse);
     expect(
+      source.contains('ensureStaffProfileIdForUser'),
+      isTrue,
+      reason: 'Directory users always open Staff Details via a staff profile',
+    );
+    expect(
+      source.contains('showHrStaffDetailDialog'),
+      isTrue,
+    );
+    expect(
       RegExp(
         r'onPressed: state\.isRefreshing\s*\?\s*null\s*:\s*\(\)\s*=>\s*'
         r'showHrStaffOnboardingDialog\(context,\s*ref\)',

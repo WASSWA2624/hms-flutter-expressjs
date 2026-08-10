@@ -165,6 +165,7 @@ final class HrWorkspaceQuery {
 final class HrStaffQuery {
   const HrStaffQuery({
     this.search = '',
+    this.userId,
     this.departmentId,
     this.position,
     this.practitionerType,
@@ -172,6 +173,7 @@ final class HrStaffQuery {
   });
 
   final String search;
+  final String? userId;
   final String? departmentId;
   final String? position;
   final String? practitionerType;
@@ -179,16 +181,19 @@ final class HrStaffQuery {
 
   HrStaffQuery copyWith({
     String? search,
+    String? userId,
     String? departmentId,
     String? position,
     String? practitionerType,
     AppPageRequest? pageRequest,
+    bool clearUserId = false,
     bool clearDepartmentId = false,
     bool clearPosition = false,
     bool clearPractitionerType = false,
   }) {
     return HrStaffQuery(
       search: search ?? this.search,
+      userId: clearUserId ? null : userId ?? this.userId,
       departmentId: clearDepartmentId
           ? null
           : departmentId ?? this.departmentId,

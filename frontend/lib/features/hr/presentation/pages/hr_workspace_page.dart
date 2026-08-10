@@ -418,13 +418,30 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
           }
         },
         onOpenDetail: (AccessAdminItem item) async {
-          final String? staffProfileId = item.staffProfileId?.trim();
-          if (staffProfileId == null || staffProfileId.isEmpty) {
-            return false;
-          }
           final HrWorkspaceController hrController = ref.read(
             hrWorkspaceControllerProvider.notifier,
           );
+          final Result<String> staffIdResult = await hrController
+              .ensureStaffProfileIdForUser(
+                userId: item.mutationId,
+                tenantId: item.tenantId,
+                position: item.positionTitle,
+                existingStaffProfileId: item.staffProfileId,
+              );
+          if (!mounted) {
+            return true;
+          }
+          final String? staffProfileId = staffIdResult.when(
+            success: (String value) => value,
+            failure: (AppFailure failure) {
+              showHrMutationSnackBar(context, failure);
+              return null;
+            },
+          );
+          if (staffProfileId == null || staffProfileId.isEmpty) {
+            // Handled: never fall through to Access Admin User Details on HR.
+            return true;
+          }
           final AppFailure? failure = await hrController.selectStaffByDisplayId(
             staffProfileId,
           );
@@ -433,7 +450,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
           }
           if (failure != null) {
             showHrMutationSnackBar(context, failure);
-            return false;
+            return true;
           }
           await showHrStaffDetailDialog(context, ref);
           return true;

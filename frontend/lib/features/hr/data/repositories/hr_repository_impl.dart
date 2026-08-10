@@ -90,6 +90,7 @@ final class HrRepositoryImpl implements HrRepository {
         'page': request.pageIndex + 1,
         'limit': request.pageSize,
         'search': query.search,
+        'user_id': query.userId,
         'department_id': query.departmentId,
         'position': query.position,
         'practitioner_type': query.practitionerType,
