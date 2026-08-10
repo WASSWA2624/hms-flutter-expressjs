@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1386,6 +1387,152 @@ void main() {
       expect(find.text('Item 0'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'AppListTable reserves a visible horizontal scrollbar gutter above the '
+    'thumb so rows are not covered',
+    (WidgetTester tester) async {
+      final List<AppListTableColumn<_RowItem>> wideColumns =
+          <AppListTableColumn<_RowItem>>[
+            const AppListTableColumn<_RowItem>(
+              label: 'Title',
+              fixedWidth: 420,
+              cellBuilder: _titleCell,
+            ),
+            const AppListTableColumn<_RowItem>(
+              label: 'Status',
+              fixedWidth: 420,
+              cellBuilder: _statusCell,
+            ),
+            const AppListTableColumn<_RowItem>(
+              label: 'Extra',
+              fixedWidth: 420,
+              cellBuilder: _titleCell,
+            ),
+          ];
+
+      await pumpComponent(
+        tester,
+        SizedBox(
+          height: 280,
+          width: 640,
+          child: AppListTable<_RowItem>(
+            items: items,
+            columns: wideColumns,
+            displayMode: AppListTableDisplayMode.table,
+            mobileItemBuilder: (BuildContext context, _RowItem item) {
+              return ListTile(title: Text(item.title));
+            },
+          ),
+        ),
+        size: const Size(720, 600),
+      );
+      await tester.pump();
+
+      final RawScrollbar horizontalBar = tester.widget<RawScrollbar>(
+        find.byWidgetPredicate((Widget widget) {
+          return widget is RawScrollbar &&
+              widget.scrollbarOrientation == ScrollbarOrientation.bottom;
+        }),
+      );
+      expect(horizontalBar.thickness, 12);
+      expect(horizontalBar.trackVisibility, isTrue);
+      expect(horizontalBar.thumbVisibility, isTrue);
+
+      final ScrollableState horizontal = tester.state<ScrollableState>(
+        find.byWidgetPredicate(_isHorizontalScrollable).first,
+      );
+      expect(horizontal.position.maxScrollExtent, greaterThan(0));
+    },
+  );
+
+  testWidgets(
+    'AppListTable pans horizontally with Shift + mouse wheel and with '
+    'horizontal wheel deltas',
+    (WidgetTester tester) async {
+      final List<AppListTableColumn<_RowItem>> wideColumns =
+          <AppListTableColumn<_RowItem>>[
+            const AppListTableColumn<_RowItem>(
+              label: 'Title',
+              fixedWidth: 420,
+              cellBuilder: _titleCell,
+            ),
+            const AppListTableColumn<_RowItem>(
+              label: 'Status',
+              fixedWidth: 420,
+              cellBuilder: _statusCell,
+            ),
+            const AppListTableColumn<_RowItem>(
+              label: 'Extra',
+              fixedWidth: 420,
+              cellBuilder: _titleCell,
+            ),
+          ];
+
+      await pumpComponent(
+        tester,
+        SizedBox(
+          height: 280,
+          width: 640,
+          child: AppListTable<_RowItem>(
+            items: items,
+            columns: wideColumns,
+            displayMode: AppListTableDisplayMode.table,
+            mobileItemBuilder: (BuildContext context, _RowItem item) {
+              return ListTile(title: Text(item.title));
+            },
+          ),
+        ),
+        size: const Size(720, 600),
+      );
+      await tester.pump();
+
+      final Finder tableFinder = find.byType(AppListTableGrid);
+      expect(tableFinder, findsOneWidget);
+      // Use a point inside the visible viewport; the grid itself is wider than
+      // the viewport when columns overflow horizontally.
+      final Offset tablePoint = tester.getTopLeft(tableFinder) +
+          const Offset(48, 48);
+
+      final ScrollableState horizontal = tester.state<ScrollableState>(
+        find.byWidgetPredicate(_isHorizontalScrollable).first,
+      );
+      expect(horizontal.position.maxScrollExtent, greaterThan(0));
+      expect(horizontal.position.pixels, 0);
+
+      // Click-and-drag panning (mouse) should move the table horizontally.
+      await tester.dragFrom(tablePoint, const Offset(-160, 0));
+      await tester.pumpAndSettle();
+      expect(horizontal.position.pixels, greaterThan(0));
+      horizontal.position.jumpTo(0);
+      await tester.pump();
+
+      final TestPointer pointer = TestPointer(1, PointerDeviceKind.mouse);
+      await tester.sendEventToBinding(pointer.hover(tablePoint));
+      await tester.pump();
+      await tester.sendEventToBinding(
+        pointer.scroll(const Offset(120, 0)),
+      );
+      await tester.pumpAndSettle();
+      expect(horizontal.position.pixels, greaterThan(0));
+
+      final double afterHorizontalDelta = horizontal.position.pixels;
+      await tester.sendEventToBinding(
+        pointer.scroll(const Offset(0, 80)),
+      );
+      await tester.pumpAndSettle();
+      // Plain vertical wheel should not steal horizontal position.
+      expect(horizontal.position.pixels, afterHorizontalDelta);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendEventToBinding(
+        pointer.scroll(const Offset(0, 80)),
+      );
+      await tester.pumpAndSettle();
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      expect(horizontal.position.pixels, greaterThan(afterHorizontalDelta));
+    },
+  );
 }
 
 const List<AppListTableColumn<_RowItem>> _columns =
@@ -1456,4 +1603,10 @@ bool _isVerticalScrollable(Widget widget) {
   return widget is Scrollable &&
       (widget.axisDirection == AxisDirection.down ||
           widget.axisDirection == AxisDirection.up);
+}
+
+bool _isHorizontalScrollable(Widget widget) {
+  return widget is Scrollable &&
+      (widget.axisDirection == AxisDirection.left ||
+          widget.axisDirection == AxisDirection.right);
 }

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -52,6 +53,16 @@ const double _defaultColumnWidth = 168;
 const double _defaultCompactColumnWidth = 144;
 const double _columnResizeHandleWidth = 8;
 const double _infiniteScrollLoadExtent = 240;
+
+/// Thumb thickness for the pinned horizontal table scrollbar.
+///
+/// Slightly taller than the Material desktop default so the gutter is easy to
+/// grab, while staying compact enough not to steal much vertical space.
+const double _horizontalScrollbarThickness = 12;
+
+/// Layout space reserved under table rows for the horizontal scrollbar so the
+/// last row is never painted underneath the thumb/track.
+const double _horizontalScrollbarGutter = 16;
 
 /// Preferred first-page size for paged [AppListTable] callers (backend max).
 const int appListTablePreferredPageSize = AppPageRequest.maxPageSize;
@@ -3464,21 +3475,14 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
             ),
           );
 
-          final Widget horizontalTable = Scrollbar(
-            controller: _horizontalController,
-            thumbVisibility: true,
-            notificationPredicate: (ScrollNotification notification) {
-              return notification.metrics.axis == Axis.horizontal;
-            },
-            child: SingleChildScrollView(
-              controller: _horizontalController,
-              scrollDirection: Axis.horizontal,
+          final Widget horizontalTable = _wrapHorizontalScroll(
+            context: context,
+            expandVertically: false,
+            child: SizedBox(
               // Explicit width: the horizontal scroll view provides unbounded
               // width, under which the stretched row Column cannot size itself.
-              child: SizedBox(
-                width: math.max(widget.minWidth, _rowContentWidth),
-                child: table,
-              ),
+              width: math.max(widget.minWidth, _rowContentWidth),
+              child: table,
             ),
           );
 
@@ -3510,10 +3514,15 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     required double bodyHeight,
   }) {
     final ThemeData theme = Theme.of(context);
+    // Rows fill the viewport above the reserved horizontal scrollbar gutter.
+    final double scrollViewportHeight = math.max(
+      0.0,
+      bodyHeight - _horizontalScrollbarGutter,
+    );
     final int itemCount = widget.items.length;
     final int minRowCount = widget.padEmptyRows
         ? _rowCountToFillHeight(
-            availableHeight: bodyHeight,
+            availableHeight: scrollViewportHeight,
             headingHeight: _headingRowHeight,
             rowMinHeight: _rowMinHeight,
             itemCount: itemCount,
@@ -3523,20 +3532,15 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     final int lastRowIndex = itemCount + spacerCount - 1;
 
     // Horizontal scroll is the outer axis so its scrollbar stays pinned to
-    // the bottom of the visible table viewport.
-    return Scrollbar(
-      controller: _horizontalController,
-      thumbVisibility: true,
-      scrollbarOrientation: ScrollbarOrientation.bottom,
-      notificationPredicate: (ScrollNotification notification) {
-        return notification.metrics.axis == Axis.horizontal;
-      },
-      child: SingleChildScrollView(
-        controller: _horizontalController,
-        scrollDirection: Axis.horizontal,
+    // the bottom of the visible table viewport, in a dedicated gutter below
+    // the rows.
+    return SizedBox(
+      height: bodyHeight,
+      child: _wrapHorizontalScroll(
+        context: context,
+        expandVertically: true,
         child: SizedBox(
           width: tableWidth,
-          height: bodyHeight,
           child: AppListTableGrid(
             horizontalMargin: _horizontalMargin,
             columnSpacing: _columnSpacing,
@@ -3590,6 +3594,139 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         ),
       ),
     );
+  }
+
+  /// Horizontal scroller with a pinned, clearly visible scrollbar gutter and
+  /// mouse-wheel / trackpad support for left/right panning.
+  Widget _wrapHorizontalScroll({
+    required BuildContext context,
+    required Widget child,
+    required bool expandVertically,
+  }) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final Widget scrollView = Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerSignal: _handleHorizontalPointerSignal,
+      child: ScrollConfiguration(
+        // Keep click-and-drag panning available with a mouse in addition to
+        // the scrollbar thumb and wheel / trackpad gestures.
+        behavior: const _TableDragScrollBehavior(),
+        child: SingleChildScrollView(
+          controller: _horizontalController,
+          scrollDirection: Axis.horizontal,
+          child: child,
+        ),
+      ),
+    );
+
+    final Widget body = expandVertically
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Expanded(child: scrollView),
+              const SizedBox(height: _horizontalScrollbarGutter),
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              scrollView,
+              const SizedBox(height: _horizontalScrollbarGutter),
+            ],
+          );
+
+    return RawScrollbar(
+      controller: _horizontalController,
+      thumbVisibility: true,
+      trackVisibility: true,
+      interactive: true,
+      thickness: _horizontalScrollbarThickness,
+      radius: const Radius.circular(6),
+      scrollbarOrientation: ScrollbarOrientation.bottom,
+      thumbColor: colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
+      trackColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.92),
+      trackBorderColor: colorScheme.outlineVariant.withValues(alpha: 0.85),
+      padding: EdgeInsets.zero,
+      notificationPredicate: (ScrollNotification notification) {
+        return notification.metrics.axis == Axis.horizontal;
+      },
+      child: body,
+    );
+  }
+
+  /// Translates pointer scroll into horizontal panning while preserving plain
+  /// vertical wheel scrolling for the nested body.
+  ///
+  /// - Trackpad / mouse horizontal deltas pan left/right.
+  /// - Shift + vertical wheel also pans left/right (scroll direction maps to
+  ///   left/right), alongside click-and-drag panning.
+  /// - Unmodified vertical wheel is left for the nested vertical scroll view.
+  void _handleHorizontalPointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent) {
+      return;
+    }
+    if (!_horizontalController.hasClients) {
+      return;
+    }
+
+    final ScrollPosition horizontal = _horizontalController.position;
+    if (horizontal.maxScrollExtent <= horizontal.minScrollExtent) {
+      return;
+    }
+
+    final bool shiftPressed = HardwareKeyboard.instance.isShiftPressed;
+    final double horizontalDelta =
+        event.scrollDelta.dx + (shiftPressed ? event.scrollDelta.dy : 0.0);
+    if (horizontalDelta == 0) {
+      return;
+    }
+
+    // Claim the signal when we intentionally pan horizontally so nested
+    // vertical scrollables do not also move (especially for Shift+wheel).
+    GestureBinding.instance.pointerSignalResolver.register(event, (
+      PointerSignalEvent resolvedEvent,
+    ) {
+      if (resolvedEvent is! PointerScrollEvent) {
+        return;
+      }
+      if (!_horizontalController.hasClients) {
+        return;
+      }
+
+      final ScrollPosition position = _horizontalController.position;
+      final bool shift = HardwareKeyboard.instance.isShiftPressed;
+      final double delta =
+          resolvedEvent.scrollDelta.dx +
+          (shift ? resolvedEvent.scrollDelta.dy : 0.0);
+      if (delta == 0) {
+        return;
+      }
+
+      final double next = (position.pixels + delta).clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      );
+      if (next != position.pixels) {
+        position.jumpTo(next);
+      }
+
+      // Diagonal trackpad gestures: keep vertical motion on the body when we
+      // claimed the event only because of a non-zero horizontal delta.
+      if (!shift &&
+          resolvedEvent.scrollDelta.dy != 0 &&
+          _verticalController.hasClients) {
+        final ScrollPosition vertical = _verticalController.position;
+        final double verticalNext =
+            (vertical.pixels + resolvedEvent.scrollDelta.dy).clamp(
+              vertical.minScrollExtent,
+              vertical.maxScrollExtent,
+            );
+        if (verticalNext != vertical.pixels) {
+          vertical.jumpTo(verticalNext);
+        }
+      }
+    });
   }
 
   Widget _buildHeaderRow(BuildContext context) {
@@ -3873,6 +4010,22 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     return _rowNumberStyle;
   }
 
+}
+
+/// Enables mouse click-and-drag panning on table scroll views (in addition to
+/// touch / trackpad), matching desktop spreadsheet-style interaction.
+class _TableDragScrollBehavior extends MaterialScrollBehavior {
+  const _TableDragScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => <PointerDeviceKind>{
+    PointerDeviceKind.touch,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.invertedStylus,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+    PointerDeviceKind.unknown,
+  };
 }
 
 /// Constrains cell content to the column width so text wraps and the row can
