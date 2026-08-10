@@ -243,9 +243,15 @@ class HrStaffDetailsBody extends ConsumerWidget {
         initiallyExpanded: false,
         headerActions: <Widget>[
           if (!state.isMutating) ...<Widget>[
-            if (canWrite && activeCompensations.isNotEmpty)
+            if (canWrite)
               AppButton.secondary(
-                label: l10n.hrCompensationAction,
+                label: hrPayAndCompensationActionLabel(
+                  l10n,
+                  hasExisting: staffHasPayOrCompensation(
+                    profile,
+                    detail.compensations,
+                  ),
+                ),
                 leadingIcon: Icons.price_change_outlined,
                 onPressed: () => unawaited(
                   showHrCompensationDialog(
@@ -256,7 +262,9 @@ class HrStaffDetailsBody extends ConsumerWidget {
                   ),
                 ),
               ),
-            if (canPayroll)
+            if (canPayroll &&
+                (activeCompensations.isNotEmpty ||
+                    profile.consultationFee != null))
               AppButton.primary(
                 label: l10n.hrManagePayrollAction,
                 leadingIcon: Icons.account_balance_wallet_outlined,
@@ -279,26 +287,18 @@ class HrStaffDetailsBody extends ConsumerWidget {
                 icon: Icons.price_change_outlined,
                 action: canWrite && !state.isMutating
                     ? AppButton.primary(
-                        label: canPayroll
-                            ? l10n.hrManagePayrollAction
-                            : l10n.hrCompensationAction,
-                        leadingIcon: canPayroll
-                            ? Icons.account_balance_wallet_outlined
-                            : Icons.price_change_outlined,
+                        label: hrPayAndCompensationActionLabel(
+                          l10n,
+                          hasExisting: false,
+                        ),
+                        leadingIcon: Icons.price_change_outlined,
                         onPressed: () => unawaited(
-                          canPayroll
-                              ? showHrStaffPayrollManagementDialog(
-                                  context,
-                                  ref,
-                                  profile,
-                                  detail.compensations,
-                                )
-                              : showHrCompensationDialog(
-                                  context,
-                                  ref,
-                                  profile,
-                                  detail.compensations,
-                                ),
+                          showHrCompensationDialog(
+                            context,
+                            ref,
+                            profile,
+                            detail.compensations,
+                          ),
                         ),
                       )
                     : null,

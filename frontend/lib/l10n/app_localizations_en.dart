@@ -20710,10 +20710,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRoomLabel => 'Room';
 
   @override
-  String get hrCompensationAction => 'Compensation';
+  String get hrCompensationAction => 'Pay & Compensation';
 
   @override
-  String get hrCompensationDialogTitle => 'Update compensation';
+  String get hrAddPayAndCompensationAction => 'Add Pay & Compensation';
+
+  @override
+  String get hrUpdatePayAndCompensationAction => 'Update Pay & Compensation';
+
+  @override
+  String get hrCompensationDialogTitle => 'Pay & Compensation';
+
+  @override
+  String get hrCompensationCurrentSectionTitle => 'Current pay & compensation';
+
+  @override
+  String get hrCompensationCurrentEmptyBody =>
+      'No pay or compensation has been set for this staff member yet.';
+
+  @override
+  String get hrCompensationPayLinesSectionTitle => 'Pay lines';
+
+  @override
+  String get hrCompensationPayLinesSectionHint =>
+      'Add one or more pay lines. Save to apply changes.';
+
+  @override
+  String get hrCompensationPayLinesEmptyBody =>
+      'No pay lines yet. Use Add Pay Line to create one.';
 
   @override
   String get hrCompensationSectionTitle => 'Compensation';
@@ -22608,7 +22632,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAvailabilityEditDayAction => 'Edit day';
 
   @override
-  String get hrCompensationActionTooltip => 'Define or update pay structure';
+  String get hrCompensationActionTooltip =>
+      'Add or update pay and compensation';
 
   @override
   String get hrRunPayrollActionTooltip =>
@@ -22649,7 +22674,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrCompensationAddNewRateAction => 'Add new rate';
 
   @override
-  String get hrCompensationAddPayLineAction => 'Add pay line';
+  String get hrCompensationAddPayLineAction => 'Add Pay Line';
 
   @override
   String get hrCompensationRemovePayLineAction => 'Remove pay line';

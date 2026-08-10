@@ -38294,14 +38294,56 @@ abstract class AppLocalizations {
   /// Human resources workspace text for hrCompensationAction.
   ///
   /// In en, this message translates to:
-  /// **'Compensation'**
+  /// **'Pay & Compensation'**
   String get hrCompensationAction;
+
+  /// Action to add pay and compensation when staff has none.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Pay & Compensation'**
+  String get hrAddPayAndCompensationAction;
+
+  /// Action to update existing pay and compensation.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Pay & Compensation'**
+  String get hrUpdatePayAndCompensationAction;
 
   /// Human resources workspace text for hrCompensationDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Update compensation'**
+  /// **'Pay & Compensation'**
   String get hrCompensationDialogTitle;
+
+  /// Section title showing existing pay and compensation details.
+  ///
+  /// In en, this message translates to:
+  /// **'Current pay & compensation'**
+  String get hrCompensationCurrentSectionTitle;
+
+  /// Empty state when staff has no pay or compensation records.
+  ///
+  /// In en, this message translates to:
+  /// **'No pay or compensation has been set for this staff member yet.'**
+  String get hrCompensationCurrentEmptyBody;
+
+  /// Section title for editable compensation pay lines.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay lines'**
+  String get hrCompensationPayLinesSectionTitle;
+
+  /// Hint under the pay lines section in the compensation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Add one or more pay lines. Save to apply changes.'**
+  String get hrCompensationPayLinesSectionHint;
+
+  /// Empty state when no editable pay lines are present.
+  ///
+  /// In en, this message translates to:
+  /// **'No pay lines yet. Use Add Pay Line to create one.'**
+  String get hrCompensationPayLinesEmptyBody;
 
   /// Human resources workspace text for hrCompensationSectionTitle.
   ///
@@ -41786,7 +41828,7 @@ abstract class AppLocalizations {
   /// Tooltip for compensation action.
   ///
   /// In en, this message translates to:
-  /// **'Define or update pay structure'**
+  /// **'Add or update pay and compensation'**
   String get hrCompensationActionTooltip;
 
   /// Tooltip for run payroll action.
@@ -41864,7 +41906,7 @@ abstract class AppLocalizations {
   /// Action to add another concurrent compensation line.
   ///
   /// In en, this message translates to:
-  /// **'Add pay line'**
+  /// **'Add Pay Line'**
   String get hrCompensationAddPayLineAction;
 
   /// Action to remove or end a compensation line.

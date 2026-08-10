@@ -26685,13 +26685,41 @@
   "@hrRoomLabel": {
     "description": "Human resources workspace text for hrRoomLabel."
   },
-  "hrCompensationAction": "Compensation",
+  "hrCompensationAction": "Pay & Compensation",
   "@hrCompensationAction": {
     "description": "Human resources workspace text for hrCompensationAction."
   },
-  "hrCompensationDialogTitle": "Update compensation",
+  "hrAddPayAndCompensationAction": "Add Pay & Compensation",
+  "@hrAddPayAndCompensationAction": {
+    "description": "Action to add pay and compensation when staff has none."
+  },
+  "hrUpdatePayAndCompensationAction": "Update Pay & Compensation",
+  "@hrUpdatePayAndCompensationAction": {
+    "description": "Action to update existing pay and compensation."
+  },
+  "hrCompensationDialogTitle": "Pay & Compensation",
   "@hrCompensationDialogTitle": {
     "description": "Human resources workspace text for hrCompensationDialogTitle."
+  },
+  "hrCompensationCurrentSectionTitle": "Current pay & compensation",
+  "@hrCompensationCurrentSectionTitle": {
+    "description": "Section title showing existing pay and compensation details."
+  },
+  "hrCompensationCurrentEmptyBody": "No pay or compensation has been set for this staff member yet.",
+  "@hrCompensationCurrentEmptyBody": {
+    "description": "Empty state when staff has no pay or compensation records."
+  },
+  "hrCompensationPayLinesSectionTitle": "Pay lines",
+  "@hrCompensationPayLinesSectionTitle": {
+    "description": "Section title for editable compensation pay lines."
+  },
+  "hrCompensationPayLinesSectionHint": "Add one or more pay lines. Save to apply changes.",
+  "@hrCompensationPayLinesSectionHint": {
+    "description": "Hint under the pay lines section in the compensation dialog."
+  },
+  "hrCompensationPayLinesEmptyBody": "No pay lines yet. Use Add Pay Line to create one.",
+  "@hrCompensationPayLinesEmptyBody": {
+    "description": "Empty state when no editable pay lines are present."
   },
   "hrCompensationSectionTitle": "Compensation",
   "@hrCompensationSectionTitle": {
@@ -28948,7 +28976,7 @@
   "@hrAvailabilityEditDayAction": {
     "description": "Action to edit availability for a day."
   },
-  "hrCompensationActionTooltip": "Define or update pay structure",
+  "hrCompensationActionTooltip": "Add or update pay and compensation",
   "@hrCompensationActionTooltip": {
     "description": "Tooltip for compensation action."
   },
@@ -29000,7 +29028,7 @@
   "@hrCompensationAddNewRateAction": {
     "description": "Action to add a new compensation rate."
   },
-  "hrCompensationAddPayLineAction": "Add pay line",
+  "hrCompensationAddPayLineAction": "Add Pay Line",
   "@hrCompensationAddPayLineAction": {
     "description": "Action to add another concurrent compensation line."
   },

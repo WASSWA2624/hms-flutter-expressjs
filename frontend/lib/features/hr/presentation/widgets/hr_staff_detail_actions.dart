@@ -103,7 +103,13 @@ class HrStaffDetailActions extends ConsumerWidget {
       ],
       AppPermissionActionItem(
         requirement: HrHumanResourcesAtomPermissions.compensation,
-        label: l10n.hrCompensationAction,
+        label: hrPayAndCompensationActionLabel(
+          l10n,
+          hasExisting: staffHasPayOrCompensation(
+            profile,
+            detail.compensations,
+          ),
+        ),
         icon: Icons.price_change_outlined,
         enabled: enabled,
         tooltip: l10n.hrCompensationActionTooltip,

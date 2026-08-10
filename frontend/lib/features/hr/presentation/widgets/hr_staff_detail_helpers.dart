@@ -212,6 +212,27 @@ bool staffHasAssignedPosition(HrStaffProfile profile) {
   return (profile.position ?? '').trim().isNotEmpty;
 }
 
+/// Whether the staff member already has pay or compensation settings.
+bool staffHasPayOrCompensation(
+  HrStaffProfile profile,
+  List<HrStaffCompensation> compensations,
+) {
+  if (profile.consultationFee != null) {
+    return true;
+  }
+  return compensations.any((HrStaffCompensation row) => row.isActive);
+}
+
+/// Label for the staff-detail Pay & Compensation action.
+String hrPayAndCompensationActionLabel(
+  AppLocalizations l10n, {
+  required bool hasExisting,
+}) {
+  return hasExisting
+      ? l10n.hrUpdatePayAndCompensationAction
+      : l10n.hrAddPayAndCompensationAction;
+}
+
 /// Active department assignment used to pre-fill change-department mode.
 HrStaffAssignment? resolveCurrentDepartmentAssignment(HrStaffDetail detail) {
   final List<HrStaffAssignment> active = detail.assignments

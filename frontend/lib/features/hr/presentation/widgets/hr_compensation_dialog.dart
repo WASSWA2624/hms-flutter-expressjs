@@ -5,7 +5,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
-import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_compensation_line_editor.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
@@ -35,15 +34,20 @@ Future<void> showHrCompensationDialog(
   );
   final GlobalKey<_HrCompensationFormState> fieldsKey =
       GlobalKey<_HrCompensationFormState>();
+  final bool hasExisting = staffHasPayOrCompensation(staff, history);
+  final String actionLabel = hrPayAndCompensationActionLabel(
+    l10n,
+    hasExisting: hasExisting,
+  );
 
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
     title: Text(l10n.hrCompensationDialogTitle),
     icon: const Icon(Icons.price_change_outlined),
-    submitLabel: l10n.hrCompensationAction,
+    submitLabel: actionLabel,
     cancelLabel: l10n.commonCancelActionLabel,
-    submitIcon: Icons.save_outlined,
-    maxWidth: 720,
+    submitIcon: hasExisting ? Icons.save_outlined : Icons.add,
+    maxWidth: 760,
     buildFields:
         (
           BuildContext context,
@@ -145,20 +149,18 @@ class _HrCompensationForm extends ConsumerStatefulWidget {
       _HrCompensationFormState();
 }
 
-class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+class _HrCompensationFormState extends ConsumerState<_HrCompensationForm> {
   final List<HrCompensationLineData> _lines = <HrCompensationLineData>[];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     _hydrateLines();
     final String? focus = widget.focusPayType?.trim().toUpperCase();
     if (focus != null && focus.isNotEmpty) {
       final bool hasLine = _lines.any(
-        (HrCompensationLineData line) => line.payType == focus,
+        (HrCompensationLineData line) =>
+            !line.removed && line.payType == focus,
       );
       if (!hasLine) {
         _addLine(defaultPayType: focus);
@@ -170,10 +172,6 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
     final List<HrStaffCompensation> active = widget.history
         .where((HrStaffCompensation row) => row.isActive)
         .toList(growable: false);
-    if (active.isEmpty) {
-      _addLine();
-      return;
-    }
     for (final HrStaffCompensation row in active) {
       _lines.add(
         HrCompensationLineData(
@@ -191,44 +189,33 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
     }
   }
 
-  void _focusPayStructure({String? payType}) {
-    final String? focus = payType?.trim().toUpperCase();
-    if (focus != null && focus.isNotEmpty) {
-      final bool hasLine = _lines.any(
-        (HrCompensationLineData line) => !line.removed && line.payType == focus,
-      );
-      if (!hasLine) {
-        _addLine(defaultPayType: focus);
-      }
-    }
-    _tabController.index = 0;
-    setState(() {});
-  }
-
   void _addLine({String? defaultPayType}) {
-    final Set<String> used = _lines
-        .where((HrCompensationLineData line) => !line.removed)
-        .map((HrCompensationLineData line) => line.payType)
-        .toSet();
+    final Set<String> used = _usedPayTypes;
     final String payType =
         defaultPayType ??
         kHrCompensationPayTypeCodes.firstWhere(
           (String code) => !used.contains(code),
           orElse: () => kHrCompensationPayTypeCodes.first,
         );
-    _lines.add(
-      HrCompensationLineData(
-        payType: payType,
-        rateController: TextEditingController(),
-        effectiveFrom: DateTime.now(),
-      ),
-    );
+    setState(() {
+      _lines.add(
+        HrCompensationLineData(
+          payType: payType,
+          rateController: TextEditingController(),
+          effectiveFrom: DateTime.now(),
+        ),
+      );
+    });
   }
 
   Set<String> get _usedPayTypes => _lines
       .where((HrCompensationLineData line) => !line.removed)
       .map((HrCompensationLineData line) => line.payType)
       .toSet();
+
+  List<HrCompensationLineData> get _visibleLines => _lines
+      .where((HrCompensationLineData line) => !line.removed)
+      .toList(growable: false);
 
   Map<String, Object?> toPayload() {
     final List<Map<String, Object?>> compensations = _lines
@@ -241,148 +228,181 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
 
   @override
   void dispose() {
-    _tabController.dispose();
     for (final HrCompensationLineData line in _lines) {
       line.rateController.dispose();
     }
     super.dispose();
   }
 
-  Map<String, List<HrStaffCompensation>> _groupedHistory() {
-    final Map<String, List<HrStaffCompensation>> grouped =
-        <String, List<HrStaffCompensation>>{};
-    for (final HrStaffCompensation row in widget.history) {
-      final String key = (row.payType ?? 'UNKNOWN').toUpperCase();
-      grouped.putIfAbsent(key, () => <HrStaffCompensation>[]).add(row);
-    }
-    return grouped;
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final List<HrStaffCompensation> records = widget.history;
+    final bool canAddMore =
+        _usedPayTypes.length < kHrCompensationPayTypeCodes.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppCollapsibleSection(
+          title: l10n.hrCompensationCurrentSectionTitle,
+          titleIcon: Icons.info_outline,
+          child: records.isEmpty && widget.staff.consultationFee == null
+              ? Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    theme.spacing.md,
+                    theme.spacing.md,
+                    theme.spacing.md,
+                    0,
+                  ),
+                  child: Text(l10n.hrCompensationCurrentEmptyBody),
+                )
+              : Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    theme.spacing.md,
+                    theme.spacing.sm,
+                    theme.spacing.md,
+                    theme.spacing.sm,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      if (widget.staff.consultationFee != null) ...<Widget>[
+                        AppInfoSheetGrid(
+                          emptyValue: l10n.profileUnknownValue,
+                          spacing: theme.spacing.lg,
+                          runSpacing: theme.spacing.sm,
+                          layout: AppInfoSheetLayout.inline,
+                          items: <AppInfoSheetItem>[
+                            AppInfoSheetItem(
+                              label: l10n.hrConsultationFeeLabel,
+                              value: hrJoinDisplay(<String?>[
+                                widget.staff.consultationFee?.toString(),
+                                widget.staff.consultationCurrency,
+                              ]),
+                            ),
+                          ],
+                        ),
+                        if (records.isNotEmpty)
+                          SizedBox(height: theme.spacing.md),
+                      ],
+                      for (int index = 0; index < records.length; index++) ...<
+                        Widget
+                      >[
+                        if (index > 0) SizedBox(height: theme.spacing.md),
+                        _CompensationRecordOverview(
+                          compensation: records[index],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+        ),
+        SizedBox(height: theme.spacing.lg),
+        AppFormSection(
+          title: l10n.hrCompensationPayLinesSectionTitle,
+          description: l10n.hrCompensationPayLinesSectionHint,
+          children: <Widget>[
+            if (_visibleLines.isEmpty)
+              Padding(
+                padding: EdgeInsets.only(bottom: theme.spacing.sm),
+                child: Text(l10n.hrCompensationPayLinesEmptyBody),
+              ),
+            for (final HrCompensationLineData line in _visibleLines)
+              HrCompensationLineEditor(
+                line: line,
+                usedPayTypes: _usedPayTypes,
+                onChanged: () => setState(() {}),
+                onRemove: () {
+                  setState(() {
+                    line.removed = true;
+                  });
+                },
+              ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: AppButton.secondary(
+                label: l10n.hrCompensationAddPayLineAction,
+                leadingIcon: Icons.add,
+                onPressed: canAddMore ? () => _addLine() : null,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
+}
+
+class _CompensationRecordOverview extends StatelessWidget {
+  const _CompensationRecordOverview({required this.compensation});
+
+  final HrStaffCompensation compensation;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final Map<String, List<HrStaffCompensation>> groupedHistory =
-        _groupedHistory();
-    // Responsive tab body height: fills available space on large screens while
-    // staying compact enough to avoid overflow on mobile/tablet. The enclosing
-    // dialog is scrollable, so this height is a target rather than a hard limit.
-    final double tabBodyHeight = (MediaQuery.sizeOf(context).height * 0.6)
-        .clamp(260.0, 460.0);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        TabBar(
-          controller: _tabController,
-          tabs: <Widget>[
-            Tab(text: l10n.hrCompensationPayStructureTabLabel),
-            Tab(text: l10n.hrCompensationHistoryTabLabel),
-          ],
-        ),
-        SizedBox(
-          height: tabBodyHeight,
-          child: TabBarView(
-            controller: _tabController,
+    return AppContentPanel(
+      density: AppContentPanelDensity.compact,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
             children: <Widget>[
-              SingleChildScrollView(
-                primary: false,
-                padding: EdgeInsets.only(top: theme.spacing.md),
-                child: AppFormSection(
-                  title: l10n.hrStaffOnboardingCompensationSectionTitle,
-                  description: l10n.hrStaffOnboardingCompensationEditHint,
-                  children: <Widget>[
-                    for (final HrCompensationLineData line in _lines)
-                      if (!line.removed)
-                        HrCompensationLineEditor(
-                          line: line,
-                          usedPayTypes: _usedPayTypes,
-                          onChanged: () => setState(() {}),
-                          onRemove: () {
-                            setState(() {
-                              line.removed = true;
-                              if (_lines.every(
-                                (HrCompensationLineData row) => row.removed,
-                              )) {
-                                _addLine();
-                              }
-                            });
-                          },
-                        ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: AppButton.secondary(
-                        label: l10n.hrCompensationAddPayLineAction,
-                        leadingIcon: Icons.add,
-                        onPressed:
-                            _usedPayTypes.length >=
-                                kHrCompensationPayTypeCodes.length
-                            ? null
-                            : () => setState(() => _addLine()),
-                      ),
-                    ),
-                  ],
+              Expanded(
+                child: Text(
+                  hrCompensationRowTitle(context, compensation),
+                  style: theme.textTheme.titleSmall,
                 ),
               ),
-              ListView.builder(
-                primary: false,
-                padding: EdgeInsets.only(top: theme.spacing.md),
-                itemCount: groupedHistory.entries.length,
-                itemBuilder: (BuildContext context, int index) {
-                  final MapEntry<String, List<HrStaffCompensation>> entry =
-                      groupedHistory.entries.elementAt(index);
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Padding(
-                        padding: EdgeInsets.only(
-                          top: theme.spacing.sm,
-                          bottom: theme.spacing.xs,
-                        ),
-                        child: Text(
-                          hrCompensationPayTypeLabel(l10n, entry.key),
-                          style: theme.textTheme.titleSmall,
-                        ),
-                      ),
-                      for (final HrStaffCompensation item in entry.value)
-                        ListTile(
-                          title: Text(hrCompensationRowTitle(context, item)),
-                          subtitle: Text(
-                            hrDateRange(
-                              context,
-                              item.effectiveFrom,
-                              item.effectiveTo,
-                            ),
-                          ),
-                          trailing: AppWorkspaceStatusBadge(
-                            status: AppWorkspaceStatus(
-                              label: item.isActive
-                                  ? l10n.hrCompensationActiveStatusLabel
-                                  : l10n.hrCompensationEndedStatusLabel,
-                              tone: item.isActive
-                                  ? AppWorkspaceStatusTone.success
-                                  : AppWorkspaceStatusTone.neutral,
-                            ),
-                          ),
-                          onTap: () => showHrCompensationDetailDialog(
-                            context,
-                            item,
-                            onEdit: () {
-                              if (!mounted) {
-                                return;
-                              }
-                              _focusPayStructure(payType: item.payType);
-                            },
-                          ),
-                        ),
-                    ],
-                  );
-                },
+              AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(
+                  label: compensation.isActive
+                      ? l10n.hrCompensationActiveStatusLabel
+                      : l10n.hrCompensationEndedStatusLabel,
+                  tone: compensation.isActive
+                      ? AppWorkspaceStatusTone.success
+                      : AppWorkspaceStatusTone.neutral,
+                ),
               ),
             ],
           ),
-        ),
-      ],
+          SizedBox(height: theme.spacing.sm),
+          AppInfoSheetGrid(
+            emptyValue: l10n.profileUnknownValue,
+            spacing: theme.spacing.lg,
+            runSpacing: theme.spacing.sm,
+            layout: AppInfoSheetLayout.inline,
+            items: <AppInfoSheetItem>[
+              AppInfoSheetItem(
+                label: l10n.hrStaffOnboardingPayTypeLabel,
+                value: l10n.hrReferenceCompensationPayTypeLabel(
+                  compensation.payType ?? '',
+                  fallback: compensation.payType,
+                ),
+              ),
+              AppInfoSheetItem(
+                label: l10n.hrCompensationBaseRateLabel,
+                value: hrJoinDisplay(<String?>[
+                  compensation.rate?.toString(),
+                  compensation.currency,
+                ]),
+              ),
+              AppInfoSheetItem(
+                label: l10n.hrPeriodColumnLabel,
+                value: hrDateRange(
+                  context,
+                  compensation.effectiveFrom,
+                  compensation.effectiveTo,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
