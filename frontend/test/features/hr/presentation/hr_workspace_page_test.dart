@@ -395,13 +395,9 @@ void main() {
     );
     expect(source.contains('class _HrStaffDirectory'), isFalse);
     expect(
-      source.contains('ensureStaffProfileIdForUser'),
+      source.contains('openHrStaffDetailForDirectoryUser'),
       isTrue,
       reason: 'Directory users always open Staff Details via a staff profile',
-    );
-    expect(
-      source.contains('showHrStaffDetailDialog'),
-      isTrue,
     );
     expect(
       RegExp(

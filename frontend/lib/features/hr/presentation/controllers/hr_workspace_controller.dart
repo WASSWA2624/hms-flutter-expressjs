@@ -253,6 +253,25 @@ final class HrWorkspaceController
     return selectStaff(HrStaffProfile(id: target, displayId: target));
   }
 
+  /// Ensures a staff profile for a directory user, then loads Staff Details.
+  Future<AppFailure?> openStaffDetailForDirectoryUser({
+    required String userId,
+    String? tenantId,
+    String? position,
+    String? existingStaffProfileId,
+  }) async {
+    final Result<String> staffIdResult = await ensureStaffProfileIdForUser(
+      userId: userId,
+      tenantId: tenantId,
+      position: position,
+      existingStaffProfileId: existingStaffProfileId,
+    );
+    return staffIdResult.when(
+      success: selectStaffByDisplayId,
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
   /// Ensures an HR staff profile exists for [userId], creating one when needed.
   ///
   /// Returns the staff profile identifier on success so Human resources can
@@ -273,19 +292,11 @@ final class HrWorkspaceController
       return Result<String>.failure(AppFailure.validation());
     }
 
-    final Result<AppPage<HrStaffProfile>> existing = await _repository
-        .listStaffProfiles(
-          HrStaffQuery(
-            userId: resolvedUserId,
-            pageRequest: const AppPageRequest(pageSize: 1),
-          ),
-        );
-    if (existing case ResultSuccess<AppPage<HrStaffProfile>>(
-      value: final AppPage<HrStaffProfile> page,
-    )) {
-      if (page.items.isNotEmpty) {
-        return Result<String>.success(page.items.first.effectiveId);
-      }
+    final String? existingId = await _findStaffProfileIdByUserId(
+      resolvedUserId,
+    );
+    if (existingId != null) {
+      return Result<String>.success(existingId);
     }
 
     final String? resolvedTenantId = tenantId?.trim();
@@ -309,12 +320,7 @@ final class HrWorkspaceController
     )) {
       final HrWorkspaceState? latest = _currentState;
       if (latest != null) {
-        _emit(
-          latest.copyWith(
-            staff: _replaceStaff(latest.staff, profile),
-            selectedStaff: HrStaffDetail(profile: profile),
-          ),
-        );
+        _emit(latest.copyWith(staff: _replaceStaff(latest.staff, profile)));
       }
       return Result<String>.success(profile.effectiveId);
     }
@@ -325,21 +331,26 @@ final class HrWorkspaceController
     );
 
     // Concurrent create: re-resolve by user id.
-    final Result<AppPage<HrStaffProfile>> retry = await _repository
+    final String? retryId = await _findStaffProfileIdByUserId(resolvedUserId);
+    if (retryId != null) {
+      return Result<String>.success(retryId);
+    }
+    return Result<String>.failure(createFailure);
+  }
+
+  Future<String?> _findStaffProfileIdByUserId(String userId) async {
+    final Result<AppPage<HrStaffProfile>> result = await _repository
         .listStaffProfiles(
           HrStaffQuery(
-            userId: resolvedUserId,
+            userId: userId,
             pageRequest: const AppPageRequest(pageSize: 1),
           ),
         );
-    if (retry case ResultSuccess<AppPage<HrStaffProfile>>(
-      value: final AppPage<HrStaffProfile> page,
-    )) {
-      if (page.items.isNotEmpty) {
-        return Result<String>.success(page.items.first.effectiveId);
-      }
-    }
-    return Result<String>.failure(createFailure);
+    return result.when(
+      success: (AppPage<HrStaffProfile> page) =>
+          page.items.isEmpty ? null : page.items.first.effectiveId,
+      failure: (_) => null,
+    );
   }
 
   Future<AppFailure?> applyQueue(HrQueue queue) async {

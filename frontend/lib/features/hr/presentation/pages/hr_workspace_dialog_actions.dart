@@ -101,6 +101,56 @@ Future<void> showHrPendingLeaveDialog(
   );
 }
 
+/// Selects a staff profile by id and opens Staff Details when successful.
+Future<void> openHrStaffDetailById(
+  BuildContext context,
+  WidgetRef ref,
+  String staffProfileId,
+) async {
+  final AppFailure? failure = await ref
+      .read(hrWorkspaceControllerProvider.notifier)
+      .selectStaffByDisplayId(staffProfileId);
+  if (!context.mounted) {
+    return;
+  }
+  if (failure != null) {
+    showHrMutationSnackBar(context, failure);
+    return;
+  }
+  if (readHrWorkspaceState(ref)?.selectedStaff == null) {
+    return;
+  }
+  await showHrStaffDetailDialog(context, ref);
+}
+
+/// Opens the canonical Staff Details dialog for an HR directory user.
+///
+/// Always returns `true` so [ManageUsersPanel] does not fall through to Access
+/// Admin User Details.
+Future<bool> openHrStaffDetailForDirectoryUser(
+  BuildContext context,
+  WidgetRef ref,
+  AccessAdminItem item,
+) async {
+  final AppFailure? failure = await ref
+      .read(hrWorkspaceControllerProvider.notifier)
+      .openStaffDetailForDirectoryUser(
+        userId: item.mutationId,
+        tenantId: item.tenantId,
+        position: item.positionTitle,
+        existingStaffProfileId: item.staffProfileId,
+      );
+  if (!context.mounted) {
+    return true;
+  }
+  if (failure != null) {
+    showHrMutationSnackBar(context, failure);
+    return true;
+  }
+  await showHrStaffDetailDialog(context, ref);
+  return true;
+}
+
 /// Opens the selected staff detail dialog.
 Future<void> showHrStaffDetailDialog(
   BuildContext context,

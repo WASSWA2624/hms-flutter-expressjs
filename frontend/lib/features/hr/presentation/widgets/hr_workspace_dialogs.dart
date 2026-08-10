@@ -1,6 +1,8 @@
 export '../pages/hr_workspace_page.dart'
     show
         applyHrQueueAndShow,
+        openHrStaffDetailById,
+        openHrStaffDetailForDirectoryUser,
         showHrAttendedTodayDialog,
         showHrOnLeaveTodayDialog,
         showHrStaffDetailDialog,
