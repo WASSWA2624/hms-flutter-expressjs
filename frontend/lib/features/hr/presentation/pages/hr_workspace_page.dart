@@ -952,7 +952,7 @@ class _HrWorkQueueTableState extends ConsumerState<_HrWorkQueueTable> {
       failure: (AppFailure value) => value,
     );
     if (failure != null || roster == null) {
-      showHrMutationSnackBar(context, failure ?? AppFailure.unexpected());
+      showHrMutationSnackBar(context, failure ?? const AppFailure.unexpected());
       return;
     }
     final bool saved = await showHrEditRosterDialog(

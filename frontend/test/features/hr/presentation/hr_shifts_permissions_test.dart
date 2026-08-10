@@ -495,7 +495,7 @@ void main() {
   );
 
   testWidgets(
-    'roster:write ∩: Create roster template mounts; Publish absent without publish',
+    'roster:write ∩: Create roster template mounts; Edit/Delete actions visible',
     (WidgetTester tester) async {
       final AppAccessPolicy rosterWriter = _policy(
         permissions: <AppPermission>{
@@ -508,16 +508,19 @@ void main() {
         tester,
         repository: repository,
         accessPolicy: rosterWriter,
+        workItems: const <HrWorkItem>[_rosterDraft],
       );
 
       expect(_searchAction('Create roster template'), findsOneWidget);
       expect(find.text('Publish roster'), findsNothing);
+      expect(find.text('Edit'), findsWidgets);
+      expect(find.text('Delete template'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    '∪ allowance: roster:publish alone shows Publish next-action',
+    'roster:publish alone does not show list Edit/Delete or Publish',
     (WidgetTester tester) async {
       final AppAccessPolicy publisher = _policy(
         permissions: <AppPermission>{
@@ -534,7 +537,9 @@ void main() {
       );
 
       expect(_searchAction('Create roster template'), findsNothing);
-      expect(find.text('Publish roster'), findsWidgets);
+      expect(find.text('Publish roster'), findsNothing);
+      expect(find.text('Edit'), findsNothing);
+      expect(find.text('Delete template'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -661,73 +666,49 @@ void main() {
       );
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-      expect(find.text('Working days'), findsWidgets);
+      expect(find.text('Template details'), findsWidgets);
       expect(find.text('Recurring'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'authorized Publish next-action opens publish dialog and syncs after save',
+    'authorized Edit action opens edit dialog for roster writers',
     (WidgetTester tester) async {
-      final AppAccessPolicy publisher = _policy(
+      final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
           AppPermissions.hrRead,
-          AppPermissions.rosterPublish,
+          AppPermissions.rosterWrite,
         },
+      );
+
+      when(() => repository.getRoster(any())).thenAnswer(
+        (_) async => const Result<Map<String, Object?>>.success(
+          <String, Object?>{
+            'name': 'Week 12',
+            'status': 'DRAFT',
+            'is_recurring': false,
+            'human_friendly_id': 'RST-1001',
+            'staff': <Object?>[],
+          },
+        ),
       );
 
       await _pumpShiftsTab(
         tester,
         repository: repository,
-        accessPolicy: publisher,
+        accessPolicy: writer,
+        workItems: const <HrWorkItem>[_rosterDraft],
       );
 
-      clearInteractions(repository);
-      when(() => repository.listWorkItems(any())).thenAnswer((
-        Invocation invocation,
-      ) async {
-        final HrWorkItemsQuery query =
-            invocation.positionalArguments.single as HrWorkItemsQuery;
-        return Result<AppPage<HrWorkItem>>.success(
-          AppPage<HrWorkItem>(
-            items: const <HrWorkItem>[_rosterDraft],
-            request: query.pageRequest,
-            totalItemCount: 1,
-          ),
-        );
-      });
-      when(
-        () => repository.publishRoster(
-          any(),
-          notifyStaff: any(named: 'notifyStaff'),
-          allowPartialPublish: any(named: 'allowPartialPublish'),
-          publishNote: any(named: 'publishNote'),
-        ),
-      ).thenAnswer(
-        (_) async => const Result<Object?>.success(<String, Object?>{}),
-      );
-
-      await tester.tap(find.text('Publish roster').first);
+      await tester.tap(find.text('Edit').first);
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(find.textContaining('EDIT ROSTER TEMPLATE'), findsWidgets);
+      expect(find.text('Template details'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
-
-      final Finder publishSubmit = find.text('Publish roster');
-      expect(publishSubmit, findsWidgets);
-      await tester.tap(publishSubmit.last);
-      await tester.pumpAndSettle();
-
-      verify(
-        () => repository.publishRoster(
-          any(),
-          notifyStaff: any(named: 'notifyStaff'),
-          allowPartialPublish: any(named: 'allowPartialPublish'),
-          publishNote: any(named: 'publishNote'),
-        ),
-      ).called(1);
-      verify(() => repository.listWorkItems(any())).called(greaterThan(0));
+      verify(() => repository.getRoster(any())).called(greaterThan(0));
     },
   );
 
