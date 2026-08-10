@@ -81,19 +81,34 @@ Future<bool> _createNewRosterForStaff(
   if (!context.mounted) {
     return false;
   }
-  final bool created =
-      (await showHrCreateRosterDialog(
-        context,
-        ref,
-        attachStaffProfileIds: <String>[staff.effectiveId],
-      )) !=
-      null;
-  if (!created) {
+  final HrCreatedRosterTemplate? created = await showHrCreateRosterDialog(
+    context,
+    ref,
+    attachStaffProfileIds: <String>[staff.effectiveId],
+  );
+  if (created == null) {
     return false;
   }
 
+  if (created.fromExisting) {
+    final Result<Map<String, Object?>> attach = await ref
+        .read(hrWorkspaceControllerProvider.notifier)
+        .attachRosterStaff(
+          rosterId: created.id,
+          staffProfileId: staff.effectiveId,
+        );
+    final AppFailure? attachFailure = attach.when(
+      success: (_) => null,
+      failure: (AppFailure failure) => failure,
+    );
+    if (attachFailure != null && context.mounted) {
+      showHrMutationSnackBar(context, attachFailure);
+      return false;
+    }
+  }
+
   final String previousRosterId = (currentRosterId ?? '').trim();
-  if (previousRosterId.isEmpty) {
+  if (previousRosterId.isEmpty || previousRosterId == created.id) {
     return true;
   }
 

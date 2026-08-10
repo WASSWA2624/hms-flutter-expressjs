@@ -617,13 +617,26 @@ class _HrWorkQueueTableState extends ConsumerState<_HrWorkQueueTable> {
       showHrMutationSnackBar(context, failure ?? const AppFailure.unexpected());
       return;
     }
-    final bool saved = await showHrEditRosterDialog(
+    final HrRosterTemplateDialogResult editResult = await showHrEditRosterDialog(
       context,
       ref,
       rosterId: rosterId,
       roster: roster,
     );
-    if (saved && mounted) {
+    if (!mounted) {
+      return;
+    }
+    if (editResult.usedExisting != null) {
+      await showHrRosterDetailByIdDialog(
+        context,
+        ref,
+        rosterId: editResult.usedExisting!.id,
+        rosterName: editResult.usedExisting!.name,
+        status: editResult.usedExisting!.status,
+      );
+      return;
+    }
+    if (editResult.saved) {
       unawaited(controller.refresh());
     }
   }
@@ -872,7 +885,7 @@ class _HrWorkQueueTableState extends ConsumerState<_HrWorkQueueTable> {
         clearLabel: l10n.hrClearFiltersAction,
         // Paginated queues are filtered on the server. A client matcher would
         // only search the current page and hide older matches (e.g. ROS0000001).
-        matcher: (HrWorkItem _, String __) => true,
+        matcher: (HrWorkItem _, String _) => true,
         onChanged: _scheduleWorkItemsSearch,
         onSubmitted: (String value) {
           _searchDebounce?.cancel();

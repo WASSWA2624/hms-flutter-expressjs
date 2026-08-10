@@ -580,13 +580,27 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
 
   Future<void> _editRoster() async {
     final Map<String, Object?> roster = _roster ?? <String, Object?>{};
-    final bool saved = await showHrEditRosterDialog(
+    final HrRosterTemplateDialogResult editResult = await showHrEditRosterDialog(
       context,
       ref,
       rosterId: _rosterId,
       roster: roster,
     );
-    if (!mounted || !saved) {
+    if (!mounted) {
+      return;
+    }
+    if (editResult.usedExisting != null) {
+      Navigator.of(context).pop();
+      await showHrRosterDetailByIdDialog(
+        context,
+        ref,
+        rosterId: editResult.usedExisting!.id,
+        rosterName: editResult.usedExisting!.name,
+        status: editResult.usedExisting!.status,
+      );
+      return;
+    }
+    if (!editResult.saved) {
       return;
     }
     await _reloadRoster();

@@ -66,7 +66,37 @@ final class AppSimilarityMatch<T> {
   final String? subtitle;
   final int overallScore;
   final bool isExact;
+  /// Scored field rows used for proposed-vs-existing comparison.
   final List<AppSimilarityFieldRow> fields;
+
+  /// Whether any compared field includes a similarity score.
+  bool get hasScoredFields =>
+      fields.any((AppSimilarityFieldRow field) => field.score != null);
+
+  /// True when every scored parameter is 100% (identical record).
+  ///
+  /// When no field scores are present, falls back to [isExact] with a
+  /// 100% overall score so legacy callers keep working.
+  bool get isFullParameterExact {
+    final List<AppSimilarityFieldRow> scored = fields
+        .where((AppSimilarityFieldRow field) => field.score != null)
+        .toList(growable: false);
+    if (scored.isEmpty) {
+      return isExact && overallScore >= 100;
+    }
+    return scored.every((AppSimilarityFieldRow field) => field.score == 100);
+  }
+}
+
+/// Whether "proceed / create anyway" should be blocked for [matches].
+///
+/// Blocks only when at least one match is a full-parameter exact duplicate.
+bool appSimilarityShouldBlockProceed<T>(List<AppSimilarityMatch<T>> matches) {
+  return matches.any((AppSimilarityMatch<T> match) => match.isFullParameterExact);
+}
+
+bool appSimilarityHasScoredFields<T>(List<AppSimilarityMatch<T>> matches) {
+  return matches.any((AppSimilarityMatch<T> match) => match.hasScoredFields);
 }
 
 enum AppSimilarityReviewAction {
@@ -168,7 +198,9 @@ class AppSimilarityMatchCard<T> extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final AppStatusColors statusColors = theme.statusColors;
-    final bool exact = match.isExact;
+    final bool exact = match.hasScoredFields
+        ? match.isFullParameterExact
+        : match.isExact;
     final Color accent = exact ? statusColors.error : statusColors.warning;
     final Color container = exact
         ? statusColors.errorContainer
@@ -275,6 +307,8 @@ Future<AppSimilarityReviewResult<T>> showAppSimilarityReviewDialog<T>(
   required List<AppSimilarityProposedField> proposedFields,
   required List<AppSimilarityMatch<T>> matches,
   required int overallScore,
+  /// When match cards include field scores, proceed is blocked only if every
+  /// scored parameter is 100% on a match. Otherwise falls back to this flag.
   bool blockProceed = false,
   bool enableRetry = true,
   bool proposedReadOnly = false,
@@ -443,8 +477,14 @@ class _AppSimilarityReviewDialogState<T>
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final bool hasMatches = widget.matches.isNotEmpty;
-    final bool canProceed = !widget.blockProceed;
-    final bool isExact = widget.blockProceed;
+    // Prefer field-score semantics app-wide: Create anyway stays available
+    // unless every compared parameter on a match is 100%.
+    final bool effectiveBlockProceed =
+        appSimilarityHasScoredFields(widget.matches)
+        ? appSimilarityShouldBlockProceed(widget.matches)
+        : widget.blockProceed;
+    final bool canProceed = !effectiveBlockProceed;
+    final bool isExact = effectiveBlockProceed;
     final IconData resolvedIcon =
         widget.dialogIcon ??
         (isExact

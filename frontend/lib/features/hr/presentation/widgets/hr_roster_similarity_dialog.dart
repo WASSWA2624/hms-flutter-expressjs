@@ -28,6 +28,28 @@ final class HrRosterSimilarityMatch {
   final List<AppSimilarityFieldRow> fields;
 }
 
+enum HrRosterSimilarityOutcome { cancel, proceed, useExisting }
+
+@immutable
+final class HrRosterSimilarityDialogResult {
+  const HrRosterSimilarityDialogResult._({
+    required this.outcome,
+    this.selected,
+  });
+
+  const HrRosterSimilarityDialogResult.cancel()
+    : this._(outcome: HrRosterSimilarityOutcome.cancel);
+
+  const HrRosterSimilarityDialogResult.proceed()
+    : this._(outcome: HrRosterSimilarityOutcome.proceed);
+
+  const HrRosterSimilarityDialogResult.useExisting(HrRosterSimilarityMatch match)
+    : this._(outcome: HrRosterSimilarityOutcome.useExisting, selected: match);
+
+  final HrRosterSimilarityOutcome outcome;
+  final HrRosterSimilarityMatch? selected;
+}
+
 bool isHrRosterSimilarityConflict(AppFailure? failure) {
   if (failure == null || failure.category != AppFailureCategory.conflict) {
     return false;
@@ -144,11 +166,10 @@ List<HrRosterSimilarityMatch> hrRosterSimilarityMatchesFromConflict(
   return matches;
 }
 
-Future<bool> showHrRosterSimilarityDialog({
+Future<HrRosterSimilarityDialogResult> showHrRosterSimilarityDialog({
   required BuildContext context,
   required String proposedName,
   required List<HrRosterSimilarityMatch> matches,
-  required bool blockProceed,
   bool isEdit = false,
 }) async {
   final AppLocalizations l10n = context.l10n;
@@ -160,7 +181,7 @@ Future<bool> showHrRosterSimilarityDialog({
               title: match.name,
               subtitle: match.displayId,
               overallScore: match.overallScore,
-              isExact: hrRosterIsFullExactMatch(match) || match.isExact,
+              isExact: hrRosterIsFullExactMatch(match),
               fields: match.fields,
             ),
       )
@@ -169,6 +190,7 @@ Future<bool> showHrRosterSimilarityDialog({
   final int overallScore = appMatches.isEmpty
       ? 0
       : appMatches.first.overallScore;
+  final bool blockProceed = appSimilarityShouldBlockProceed(appMatches);
 
   final AppSimilarityReviewResult<HrRosterSimilarityMatch> result =
       await showAppSimilarityReviewDialog<HrRosterSimilarityMatch>(
@@ -205,11 +227,15 @@ Future<bool> showHrRosterSimilarityDialog({
       );
 
   return switch (result.action) {
-    AppSimilarityReviewAction.proceed => true,
-    AppSimilarityReviewAction.useExisting ||
+    AppSimilarityReviewAction.proceed =>
+      const HrRosterSimilarityDialogResult.proceed(),
+    AppSimilarityReviewAction.useExisting => result.selected == null
+        ? const HrRosterSimilarityDialogResult.cancel()
+        : HrRosterSimilarityDialogResult.useExisting(result.selected!),
     AppSimilarityReviewAction.replaceExisting ||
     AppSimilarityReviewAction.retry ||
-    AppSimilarityReviewAction.cancel => false,
+    AppSimilarityReviewAction.cancel =>
+      const HrRosterSimilarityDialogResult.cancel(),
   };
 }
 

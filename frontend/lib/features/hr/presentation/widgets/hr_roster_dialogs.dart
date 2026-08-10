@@ -275,34 +275,52 @@ String _resolveDepartmentOptionValue({
   return candidates.first;
 }
 
-/// Result of a successful roster-template create.
+/// Result of a successful roster-template create or "use existing".
 @immutable
 final class HrCreatedRosterTemplate {
   const HrCreatedRosterTemplate({
     required this.id,
     this.name,
     this.status,
+    this.fromExisting = false,
   });
 
   final String id;
   final String? name;
   final String? status;
+  final bool fromExisting;
+}
+
+@immutable
+final class HrRosterTemplateDialogResult {
+  const HrRosterTemplateDialogResult({
+    this.saved = false,
+    this.usedExisting,
+  });
+
+  final bool saved;
+  final HrCreatedRosterTemplate? usedExisting;
+
+  bool get openedExisting => usedExisting != null;
 }
 
 /// Opens the create-roster dialog.
 ///
-/// Returns the created roster on success, or `null` when cancelled / failed.
+/// Returns the created or selected-existing roster, or `null` when cancelled.
 Future<HrCreatedRosterTemplate?> showHrCreateRosterDialog(
   BuildContext context,
   WidgetRef ref, {
   List<String> attachStaffProfileIds = const <String>[],
 }) async {
-  final bool saved = await showHrRosterTemplateDialog(
+  final HrRosterTemplateDialogResult result = await showHrRosterTemplateDialog(
     context,
     ref,
     attachStaffProfileIds: attachStaffProfileIds,
   );
-  if (!saved) {
+  if (result.usedExisting != null) {
+    return result.usedExisting;
+  }
+  if (!result.saved) {
     return null;
   }
   final ({String? id, String? name, String? status}) created = ref
@@ -319,7 +337,7 @@ Future<HrCreatedRosterTemplate?> showHrCreateRosterDialog(
   );
 }
 
-Future<bool> showHrEditRosterDialog(
+Future<HrRosterTemplateDialogResult> showHrEditRosterDialog(
   BuildContext context,
   WidgetRef ref, {
   required String rosterId,
@@ -337,7 +355,7 @@ Future<bool> showHrEditRosterDialog(
     failure: (_) {},
   );
   if (!context.mounted) {
-    return false;
+    return const HrRosterTemplateDialogResult();
   }
   return showHrRosterTemplateDialog(
     context,
@@ -347,7 +365,7 @@ Future<bool> showHrEditRosterDialog(
   );
 }
 
-Future<bool> showHrRosterTemplateDialog(
+Future<HrRosterTemplateDialogResult> showHrRosterTemplateDialog(
   BuildContext context,
   WidgetRef ref, {
   String? rosterId,
@@ -371,7 +389,7 @@ Future<bool> showHrRosterTemplateDialog(
       context,
       AppFailure.validation(detailMessage: l10n.hrFieldRequiredLabel('Tenant')),
     );
-    return false;
+    return const HrRosterTemplateDialogResult();
   }
 
   final HrWorkspaceState? state = readHrWorkspaceState(ref);
@@ -448,6 +466,7 @@ Future<bool> showHrRosterTemplateDialog(
     }
   }
 
+  HrCreatedRosterTemplate? usedExisting;
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
     title: Text(
@@ -829,21 +848,33 @@ Future<bool> showHrRosterTemplateDialog(
         }
         final List<HrRosterSimilarityMatch> matches =
             hrRosterSimilarityMatchesFromConflict(failure, l10n: l10n);
-        final bool blockProceed = hrRosterShouldBlockProceed(matches);
-        final bool proceed = await showHrRosterSimilarityDialog(
-          context: context,
-          proposedName: nameController.text.trim(),
-          matches: matches,
-          blockProceed: blockProceed,
-          isEdit: isEdit,
-        );
-        if (!proceed || !context.mounted) {
-          return const AppFailure.cancelled();
+        final HrRosterSimilarityDialogResult review =
+            await showHrRosterSimilarityDialog(
+              context: context,
+              proposedName: nameController.text.trim(),
+              matches: matches,
+              isEdit: isEdit,
+            );
+        switch (review.outcome) {
+          case HrRosterSimilarityOutcome.cancel:
+            return const AppFailure.cancelled();
+          case HrRosterSimilarityOutcome.useExisting:
+            final HrRosterSimilarityMatch? selected = review.selected;
+            if (selected == null) {
+              return const AppFailure.cancelled();
+            }
+            usedExisting = HrCreatedRosterTemplate(
+              id: selected.id,
+              name: selected.name,
+              fromExisting: true,
+            );
+            if (context.mounted) {
+              Navigator.of(context).pop(false);
+            }
+            return const AppFailure.cancelled();
+          case HrRosterSimilarityOutcome.proceed:
+            return submit(confirmSimilar: true);
         }
-        if (blockProceed) {
-          return const AppFailure.cancelled();
-        }
-        return submit(confirmSimilar: true);
       }
 
       return submit(confirmSimilar: false);
@@ -852,13 +883,16 @@ Future<bool> showHrRosterTemplateDialog(
 
   schedule.dispose();
   nameController.dispose();
+  if (usedExisting != null) {
+    return HrRosterTemplateDialogResult(usedExisting: usedExisting);
+  }
   if (saved == true && context.mounted) {
     // Create path opens the detail dialog from the caller; snackbar only for edits.
     if (isEdit) {
       showHrMutationSnackBar(context, null);
     }
   }
-  return saved == true;
+  return HrRosterTemplateDialogResult(saved: saved == true);
 }
 
 class _HrMonthDayChip extends StatelessWidget {

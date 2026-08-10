@@ -39311,10 +39311,10 @@ abstract class AppLocalizations {
   /// **'Exact match found'**
   String get hrRosterSimilarityExactBannerTitle;
 
-  /// Banner message for exact roster template name conflicts.
+  /// Banner message when every roster similarity parameter is an exact match.
   ///
   /// In en, this message translates to:
-  /// **'A roster template with this name already exists. Rename your template to continue.'**
+  /// **'An identical roster template already exists (all compared parameters match). Change the name or schedule to continue.'**
   String get hrRosterSimilarityExactBannerMessage;
 
   /// Banner title when near-duplicate roster templates are found.
