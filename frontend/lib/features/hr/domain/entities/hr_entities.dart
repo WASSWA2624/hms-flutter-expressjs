@@ -917,9 +917,12 @@ final class HrShiftAssignment {
     this.shiftName,
     this.shiftType,
     this.shiftStatus,
+    this.rosterId,
     this.rosterPeriodLabel,
     this.staffProfileId,
     this.assignedAt,
+    this.startTime,
+    this.endTime,
   });
 
   final String id;
@@ -928,9 +931,12 @@ final class HrShiftAssignment {
   final String? shiftName;
   final String? shiftType;
   final String? shiftStatus;
+  final String? rosterId;
   final String? rosterPeriodLabel;
   final String? staffProfileId;
   final DateTime? assignedAt;
+  final DateTime? startTime;
+  final DateTime? endTime;
 }
 
 @immutable

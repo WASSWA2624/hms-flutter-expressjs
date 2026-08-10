@@ -1032,7 +1032,7 @@ final class HrRepositoryImpl implements HrRepository {
           ApiEndpoints.collection(HmsApiResource.shiftAssignments),
           queryParameters: <String, Object?>{
             'staff_profile_id': staffProfileId,
-            'limit': 20,
+            'limit': 100,
           },
           decoder: (Object? data) =>
               HrShiftAssignmentPageDto.fromResponse(data).items,

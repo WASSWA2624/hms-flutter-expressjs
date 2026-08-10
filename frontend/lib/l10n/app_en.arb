@@ -27656,9 +27656,90 @@
   "@hrStaffColumnLabel": {
     "description": "Human resources workspace text for hrStaffColumnLabel."
   },
-  "hrStaffDetailTitle": "Staff detail",
+  "hrStaffDetailTitle": "Staff details",
   "@hrStaffDetailTitle": {
-    "description": "Human resources workspace text for hrStaffDetailTitle."
+    "description": "Human resources staff details dialog title."
+  },
+  "hrStaffDetailsSectionTitle": "Staff details",
+  "@hrStaffDetailsSectionTitle": {
+    "description": "Top section title in the HR staff details dialog."
+  },
+  "hrStaffDetailsSectionBody": "Identity, employment, and active assignments for this staff member.",
+  "@hrStaffDetailsSectionBody": {
+    "description": "Top section body in the HR staff details dialog."
+  },
+  "hrStaffRostersSectionTitle": "Rosters",
+  "@hrStaffRostersSectionTitle": {
+    "description": "Rosters section title in the HR staff details dialog."
+  },
+  "hrStaffRostersSectionBody": "Assigned shifts for this staff member. Add or change their roster from here.",
+  "@hrStaffRostersSectionBody": {
+    "description": "Rosters section body in the HR staff details dialog."
+  },
+  "hrStaffRostersEmptyTitle": "No shifts on roster",
+  "@hrStaffRostersEmptyTitle": {
+    "description": "Empty title when a staff member has no roster shifts."
+  },
+  "hrStaffRostersEmptyBody": "Add a roster to schedule this staff member, or assign them to an existing roster.",
+  "@hrStaffRostersEmptyBody": {
+    "description": "Empty body when a staff member has no roster shifts."
+  },
+  "hrAddRosterAction": "Add roster",
+  "@hrAddRosterAction": {
+    "description": "Header action when staff has no roster yet."
+  },
+  "hrChangeRosterAction": "Change roster",
+  "@hrChangeRosterAction": {
+    "description": "Header action when staff already has a roster."
+  },
+  "hrStaffLeavesSectionTitle": "Leaves",
+  "@hrStaffLeavesSectionTitle": {
+    "description": "Leaves section title in the HR staff details dialog."
+  },
+  "hrStaffLeavesSectionBody": "Leave requests for this staff member and their approval status.",
+  "@hrStaffLeavesSectionBody": {
+    "description": "Leaves section body in the HR staff details dialog."
+  },
+  "hrStaffLeavesEmptyBody": "No leave requests yet. Request leave to send it to the Leave requests queue.",
+  "@hrStaffLeavesEmptyBody": {
+    "description": "Empty body for staff leave section."
+  },
+  "hrStaffPayrollSectionTitle": "Payroll",
+  "@hrStaffPayrollSectionTitle": {
+    "description": "Payroll section title in the HR staff details dialog."
+  },
+  "hrStaffPayrollSectionBody": "Salary, fees, and compensation lines used when running payroll.",
+  "@hrStaffPayrollSectionBody": {
+    "description": "Payroll section body in the HR staff details dialog."
+  },
+  "hrStaffPayrollEmptyBody": "Add compensation to set salary or fee rates before running payroll.",
+  "@hrStaffPayrollEmptyBody": {
+    "description": "Empty body for staff payroll section."
+  },
+  "hrStaffPayrollPaidHint": "Paid and unpaid totals are tracked on Payroll drafts after a run is processed.",
+  "@hrStaffPayrollPaidHint": {
+    "description": "Hint under staff payroll metrics about paid/unpaid tracking."
+  },
+  "hrStaffPermissionsSectionTitle": "Permissions",
+  "@hrStaffPermissionsSectionTitle": {
+    "description": "Permissions section title in the HR staff details dialog."
+  },
+  "hrStaffPermissionsSectionBody": "Read-only view of roles and effective access for this linked user.",
+  "@hrStaffPermissionsSectionBody": {
+    "description": "Permissions section body in the HR staff details dialog."
+  },
+  "hrStaffPermissionsManageHint": "To grant, revoke, or fine-tune permissions, open Manage users and roles.",
+  "@hrStaffPermissionsManageHint": {
+    "description": "Guidance pointing HR to the Access tab for permission edits."
+  },
+  "hrStaffPermissionsMoreLabel": "+{count} more",
+  "@hrStaffPermissionsMoreLabel": {
+    "description": "Chip label when effective permissions are truncated.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "hrStaffDirectoryDescription": "Search staff by name, department, position, or status.",
   "@hrStaffDirectoryDescription": {

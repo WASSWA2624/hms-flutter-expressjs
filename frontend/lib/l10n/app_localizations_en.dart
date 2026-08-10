@@ -21450,7 +21450,76 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrStaffColumnLabel => 'Staff';
 
   @override
-  String get hrStaffDetailTitle => 'Staff detail';
+  String get hrStaffDetailTitle => 'Staff details';
+
+  @override
+  String get hrStaffDetailsSectionTitle => 'Staff details';
+
+  @override
+  String get hrStaffDetailsSectionBody =>
+      'Identity, employment, and active assignments for this staff member.';
+
+  @override
+  String get hrStaffRostersSectionTitle => 'Rosters';
+
+  @override
+  String get hrStaffRostersSectionBody =>
+      'Assigned shifts for this staff member. Add or change their roster from here.';
+
+  @override
+  String get hrStaffRostersEmptyTitle => 'No shifts on roster';
+
+  @override
+  String get hrStaffRostersEmptyBody =>
+      'Add a roster to schedule this staff member, or assign them to an existing roster.';
+
+  @override
+  String get hrAddRosterAction => 'Add roster';
+
+  @override
+  String get hrChangeRosterAction => 'Change roster';
+
+  @override
+  String get hrStaffLeavesSectionTitle => 'Leaves';
+
+  @override
+  String get hrStaffLeavesSectionBody =>
+      'Leave requests for this staff member and their approval status.';
+
+  @override
+  String get hrStaffLeavesEmptyBody =>
+      'No leave requests yet. Request leave to send it to the Leave requests queue.';
+
+  @override
+  String get hrStaffPayrollSectionTitle => 'Payroll';
+
+  @override
+  String get hrStaffPayrollSectionBody =>
+      'Salary, fees, and compensation lines used when running payroll.';
+
+  @override
+  String get hrStaffPayrollEmptyBody =>
+      'Add compensation to set salary or fee rates before running payroll.';
+
+  @override
+  String get hrStaffPayrollPaidHint =>
+      'Paid and unpaid totals are tracked on Payroll drafts after a run is processed.';
+
+  @override
+  String get hrStaffPermissionsSectionTitle => 'Permissions';
+
+  @override
+  String get hrStaffPermissionsSectionBody =>
+      'Read-only view of roles and effective access for this linked user.';
+
+  @override
+  String get hrStaffPermissionsManageHint =>
+      'To grant, revoke, or fine-tune permissions, open Manage users and roles.';
+
+  @override
+  String hrStaffPermissionsMoreLabel(int count) {
+    return '+$count more';
+  }
 
   @override
   String get hrStaffDirectoryDescription =>

@@ -440,16 +440,19 @@ final class HrShiftAssignmentDto {
           '',
       displayId:
           _string(json['display_id']) ?? _string(json['human_friendly_id']),
-      shiftId: _string(json['shift_id']),
+      shiftId: _string(json['shift_id']) ?? _string(shift['id']),
       shiftName:
           _string(shift['name']) ??
           _string(shift['shift_type']) ??
           _string(shift['human_friendly_id']),
       shiftType: _string(shift['shift_type']),
       shiftStatus: _string(shift['status']),
+      rosterId: _string(shift['roster_id']) ?? _string(json['roster_id']),
       rosterPeriodLabel: _string(shift['roster_period_label']),
       staffProfileId: _string(json['staff_profile_id']),
       assignedAt: _date(json['assigned_at']),
+      startTime: _date(shift['start_time']),
+      endTime: _date(shift['end_time']),
     );
   }
 }

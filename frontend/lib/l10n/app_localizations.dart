@@ -39701,11 +39701,125 @@ abstract class AppLocalizations {
   /// **'Staff'**
   String get hrStaffColumnLabel;
 
-  /// Human resources workspace text for hrStaffDetailTitle.
+  /// Human resources staff details dialog title.
   ///
   /// In en, this message translates to:
-  /// **'Staff detail'**
+  /// **'Staff details'**
   String get hrStaffDetailTitle;
+
+  /// Top section title in the HR staff details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff details'**
+  String get hrStaffDetailsSectionTitle;
+
+  /// Top section body in the HR staff details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity, employment, and active assignments for this staff member.'**
+  String get hrStaffDetailsSectionBody;
+
+  /// Rosters section title in the HR staff details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Rosters'**
+  String get hrStaffRostersSectionTitle;
+
+  /// Rosters section body in the HR staff details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned shifts for this staff member. Add or change their roster from here.'**
+  String get hrStaffRostersSectionBody;
+
+  /// Empty title when a staff member has no roster shifts.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts on roster'**
+  String get hrStaffRostersEmptyTitle;
+
+  /// Empty body when a staff member has no roster shifts.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a roster to schedule this staff member, or assign them to an existing roster.'**
+  String get hrStaffRostersEmptyBody;
+
+  /// Header action when staff has no roster yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Add roster'**
+  String get hrAddRosterAction;
+
+  /// Header action when staff already has a roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Change roster'**
+  String get hrChangeRosterAction;
+
+  /// Leaves section title in the HR staff details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaves'**
+  String get hrStaffLeavesSectionTitle;
+
+  /// Leaves section body in the HR staff details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave requests for this staff member and their approval status.'**
+  String get hrStaffLeavesSectionBody;
+
+  /// Empty body for staff leave section.
+  ///
+  /// In en, this message translates to:
+  /// **'No leave requests yet. Request leave to send it to the Leave requests queue.'**
+  String get hrStaffLeavesEmptyBody;
+
+  /// Payroll section title in the HR staff details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll'**
+  String get hrStaffPayrollSectionTitle;
+
+  /// Payroll section body in the HR staff details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Salary, fees, and compensation lines used when running payroll.'**
+  String get hrStaffPayrollSectionBody;
+
+  /// Empty body for staff payroll section.
+  ///
+  /// In en, this message translates to:
+  /// **'Add compensation to set salary or fee rates before running payroll.'**
+  String get hrStaffPayrollEmptyBody;
+
+  /// Hint under staff payroll metrics about paid/unpaid tracking.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid and unpaid totals are tracked on Payroll drafts after a run is processed.'**
+  String get hrStaffPayrollPaidHint;
+
+  /// Permissions section title in the HR staff details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get hrStaffPermissionsSectionTitle;
+
+  /// Permissions section body in the HR staff details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only view of roles and effective access for this linked user.'**
+  String get hrStaffPermissionsSectionBody;
+
+  /// Guidance pointing HR to the Access tab for permission edits.
+  ///
+  /// In en, this message translates to:
+  /// **'To grant, revoke, or fine-tune permissions, open Manage users and roles.'**
+  String get hrStaffPermissionsManageHint;
+
+  /// Chip label when effective permissions are truncated.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String hrStaffPermissionsMoreLabel(int count);
 
   /// Human resources workspace text for hrStaffDirectoryDescription.
   ///

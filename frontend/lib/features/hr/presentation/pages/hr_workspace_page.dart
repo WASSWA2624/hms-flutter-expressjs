@@ -12,17 +12,13 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_department_dialog.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_position_dialog.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assignment_detail_dialog.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_availability_calendar.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_compensation_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart'
     hide
         hrReadRequirement,
@@ -37,18 +33,12 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.
         HrPayrollDraftsAtomPermissions,
         showHrMutationSnackBar,
         readHrWorkspaceState;
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_leave_detail_dialog.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_payroll_wizard_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_record_availability_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_request_leave_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_detail_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_dialogs.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_shift_detail_dialog.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_actions.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_offboarding_dialog.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_details_body.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_workspace_form_fields.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -425,6 +415,27 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             unawaited(_onUsersMutated(mutated));
           }
         },
+        onOpenDetail: (AccessAdminItem item) async {
+          final String? staffProfileId = item.staffProfileId?.trim();
+          if (staffProfileId == null || staffProfileId.isEmpty) {
+            return false;
+          }
+          final HrWorkspaceController hrController = ref.read(
+            hrWorkspaceControllerProvider.notifier,
+          );
+          final AppFailure? failure = await hrController.selectStaffByDisplayId(
+            staffProfileId,
+          );
+          if (!mounted) {
+            return true;
+          }
+          if (failure != null) {
+            showHrMutationSnackBar(context, failure);
+            return false;
+          }
+          await showHrStaffDetailDialog(context, ref);
+          return true;
+        },
       ),
       HrDeskSection.leaveRequests ||
       HrDeskSection.swapRequests ||
@@ -488,372 +499,11 @@ class _HrStaffDetailBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final HrStaffProfile profile = detail.profile;
-    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    final bool canWrite = HrHumanResourcesAtomPermissions.write.isAllowed(
-      policy,
-    );
-    final bool canRosterWrite =
-        HrHumanResourcesAtomPermissions.nestedRosterWrite.isAllowed(policy);
-    final bool hasLinkedUser =
-        (profile.userEmail ?? profile.userDisplayId ?? profile.userId ?? '')
-            .trim()
-            .isNotEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        AppPatientDetails(
-          semanticLabel: l10n.hrStaffDetailTitle,
-          patientName: profile.displayName,
-          patientNumber: profile.staffNumber ?? profile.effectiveId,
-          patientNumberLabel: l10n.hrStaffNumberLabel,
-          showAvatar: false,
-          persistExpandPreference: false,
-          initiallyExpanded: false,
-          actions: profile.isSeparated || state.isMutating || !canWrite
-              ? const <Widget>[]
-              : <Widget>[
-                  AppButton(
-                    iconOnly: true,
-                    leadingIcon: Icons.edit_outlined,
-                    label: l10n.hrEditStaffAction,
-                    semanticLabel: l10n.hrEditStaffAction,
-                    tooltip: l10n.hrEditStaffAction,
-                    onPressed: () => showHrStaffOnboardingDialog(
-                      context,
-                      ref,
-                      staff: profile,
-                    ),
-                  ),
-                ],
-          compactSupportingText: hrJoinDisplay(<String?>[
-            profile.position,
-            l10n.hrReferencePractitionerTypeLabel(
-              profile.practitionerType,
-              fallback: profile.practitionerType,
-            ),
-          ]),
-          status: profile.isSeparated
-              ? AppWorkspaceStatus(
-                  label: _apiLabel(context, profile.status),
-                  tone: AppWorkspaceStatusTone.error,
-                  icon: Icons.person_off_outlined,
-                )
-              : null,
-          expandedFields: <AppWorkspacePatientContextField>[
-            AppWorkspacePatientContextField(
-              label: l10n.hrPositionLabel,
-              value: profile.position ?? '',
-              icon: Icons.work_outline,
-            ),
-            AppWorkspacePatientContextField(
-              label: l10n.hrPractitionerTypeLabel,
-              value: l10n.hrReferencePractitionerTypeLabel(
-                profile.practitionerType,
-                fallback: profile.practitionerType,
-              ),
-              icon: Icons.medical_information_outlined,
-            ),
-            AppWorkspacePatientContextField(
-              label: l10n.hrDepartmentLabel,
-              value:
-                  profile.departmentName ?? profile.departmentDisplayId ?? '',
-              icon: Icons.apartment_outlined,
-            ),
-            AppWorkspacePatientContextField(
-              label: l10n.hrHireDateLabel,
-              value: profile.hireDate == null
-                  ? ''
-                  : AppFormatters.mediumDate(
-                      profile.hireDate!,
-                      Localizations.localeOf(context),
-                    ),
-              icon: Icons.calendar_today_outlined,
-            ),
-            AppWorkspacePatientContextField(
-              label: l10n.hrStatusLabel,
-              value: _apiLabel(context, profile.status),
-              icon: Icons.radio_button_checked,
-            ),
-            AppWorkspacePatientContextField(
-              label: l10n.hrConsultationFeeLabel,
-              value: profile.consultationFee == null
-                  ? ''
-                  : '${profile.consultationFee}'
-                        '${profile.consultationCurrency != null ? ' ${profile.consultationCurrency}' : ''}',
-              icon: Icons.payments_outlined,
-            ),
-            if (hasLinkedUser) ...<AppWorkspacePatientContextField>[
-              AppWorkspacePatientContextField(
-                label: l10n.hrEmailLabel,
-                value: profile.userEmail ?? '',
-                icon: Icons.email_outlined,
-              ),
-              AppWorkspacePatientContextField(
-                label: l10n.hrUserIdLabel,
-                value: profile.userDisplayId ?? profile.userId ?? '',
-                icon: Icons.badge_outlined,
-                copyable: true,
-              ),
-            ],
-            if (profile.isSeparated) ...<AppWorkspacePatientContextField>[
-              AppWorkspacePatientContextField(
-                label: l10n.hrSeparationTypeLabel,
-                value: hrSeparationTypeLabel(l10n, profile.separationType),
-                icon: Icons.person_off_outlined,
-              ),
-              AppWorkspacePatientContextField(
-                label: l10n.hrLastWorkingDayLabel,
-                value: profile.separationDate == null
-                    ? ''
-                    : AppFormatters.mediumDate(
-                        profile.separationDate!,
-                        Localizations.localeOf(context),
-                      ),
-                icon: Icons.event_outlined,
-              ),
-              AppWorkspacePatientContextField(
-                label: l10n.hrSeparationNotesLabel,
-                value: profile.separationNotes ?? '',
-                icon: Icons.notes_outlined,
-              ),
-            ],
-            AppWorkspacePatientContextField(
-              label: l10n.hrUpdatedAtLabel,
-              value: profile.updatedAt == null
-                  ? ''
-                  : AppFormatters.dateTime(
-                      profile.updatedAt!,
-                      Localizations.localeOf(context),
-                    ),
-              icon: Icons.update_outlined,
-            ),
-          ],
-        ),
-        if (detail.accessSummary != null &&
-            detail.accessSummary!.userRoles.isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
-          _SmallRecordSection(
-            title: l10n.hrRolesSectionTitle,
-            icon: Icons.admin_panel_settings_outlined,
-            emptyText: l10n.hrNoRolesLabel,
-            rows: <_RecordLine>[
-              for (final HrUserRole role in detail.accessSummary!.userRoles)
-                _RecordLine(
-                  title: l10n.hrReferenceRoleLabel(
-                    role.roleName,
-                    fallback: role.roleName ?? role.roleId,
-                  ),
-                  subtitle: hrJoinDisplay(<String?>[
-                    role.facilityName,
-                    role.facilityDisplayId,
-                  ]),
-                  trailing: canWrite && !state.isMutating
-                      ? l10n.hrRevokeRoleAction
-                      : null,
-                  onTrailingTap: !canWrite || state.isMutating
-                      ? null
-                      : () async {
-                          final HrWorkspaceController controller = ref.read(
-                            hrWorkspaceControllerProvider.notifier,
-                          );
-                          final AppFailure? failure = await controller
-                              .revokeUserRole(role);
-                          if (context.mounted) {
-                            showHrMutationSnackBar(context, failure);
-                          }
-                        },
-                ),
-            ],
-          ),
-        ],
-        SizedBox(height: theme.spacing.md),
-        HrStaffDetailActions(
-          state: state,
-          detail: detail,
-          onAssignDepartment: showHrAssignDepartmentDialog,
-          onAssignPosition: showHrAssignPositionDialog,
-          onRecordAvailability: showHrRecordAvailabilityDialog,
-          onAssignShift: _showShiftAssignmentDialog,
-          onSwapShift: _showShiftSwapDialog,
-          onRequestLeave: (BuildContext context, WidgetRef ref) =>
-              showHrRequestLeaveDialog(context, ref),
-          onCompensation:
-              (BuildContext context, WidgetRef ref, HrStaffProfile staff) =>
-                  showHrCompensationDialog(
-                    context,
-                    ref,
-                    staff,
-                    detail.compensations,
-                  ),
-          onRunPayroll:
-              (BuildContext context, WidgetRef ref, HrStaffProfile staff) =>
-                  showHrPayrollWizardDialog(context, ref, staff),
-          onAssignRole: showHrAssignRoleDialog,
-          onModuleAccess: (BuildContext context, HrStaffDetail staffDetail) {
-            showHrModuleAccessDialog(context, ref, staffDetail.accessSummary);
-          },
-          onOffboardStaff:
-              (BuildContext context, WidgetRef ref, HrStaffDetail d) =>
-                  showHrStaffOffboardingDialog(
-                    context,
-                    ref,
-                    d,
-                    onOpenPayroll: () =>
-                        showHrPayrollWizardDialog(context, ref, d.profile),
-                  ),
-        ),
-        SizedBox(height: theme.spacing.md),
-        _SmallRecordSection(
-          title: l10n.hrAssignmentsSectionTitle,
-          icon: Icons.account_tree_outlined,
-          emptyText: l10n.hrNoAssignmentsLabel,
-          rows: <_RecordLine>[
-            for (final HrStaffAssignment assignment in detail.assignments)
-              _RecordLine(
-                title: hrAssignmentTitle(assignment, l10n),
-                subtitle: hrAssignmentSubtitle(context, assignment, l10n),
-                badges: <AppWorkspaceStatus>[
-                  if (assignment.isPrimary) hrPrimaryAssignmentBadge(l10n),
-                  hrAssignmentStatusBadge(assignment, l10n),
-                ],
-                trailing:
-                    canWrite &&
-                        assignment.isActive &&
-                        !state.isMutating &&
-                        !profile.isSeparated
-                    ? l10n.hrEndAssignmentAction
-                    : null,
-                showChevron: true,
-                onTap: () => showHrAssignmentDetailDialog(
-                  context,
-                  ref,
-                  detail,
-                  assignment,
-                  isMutating: state.isMutating,
-                ),
-                onTrailingTap:
-                    canWrite &&
-                        assignment.isActive &&
-                        !state.isMutating &&
-                        !profile.isSeparated
-                    ? () => showHrEndAssignmentDialog(context, ref, assignment)
-                    : null,
-              ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.md),
-        _SmallRecordSection(
-          title: l10n.hrLeaveSectionTitle,
-          icon: Icons.event_busy_outlined,
-          emptyText: l10n.hrNoLeaveLabel,
-          rows: <_RecordLine>[
-            for (final HrStaffLeave leave in detail.leaves)
-              _RecordLine(
-                title: _leaveSummaryTitle(context, leave),
-                subtitle: _leaveSummarySubtitle(context, leave),
-                showChevron: true,
-                onTap: () => showHrLeaveDetailDialog(context, leave),
-              ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.md),
-        AppCollapsibleSection(
-          title: l10n.hrAvailabilitySectionTitle,
-          titleIcon: Icons.schedule_outlined,
-          child: HrAvailabilityCalendar(
-            availabilities: detail.availabilities,
-            leaves: detail.leaves,
-            onDayTap: (int day) {
-              HrStaffAvailability? availability;
-              for (final HrStaffAvailability item in detail.availabilities) {
-                if (item.dayOfWeek == day) {
-                  availability = item;
-                  break;
-                }
-              }
-              showHrAvailabilityDaySheet(
-                context,
-                dayOfWeek: day,
-                availability: availability,
-                onEdit: canRosterWrite
-                    ? () => showHrRecordAvailabilityDialog(context, ref)
-                    : null,
-                onAddSlot: canRosterWrite
-                    ? () => showHrRecordAvailabilityDialog(context, ref)
-                    : null,
-              );
-            },
-          ),
-        ),
-        SizedBox(height: theme.spacing.md),
-        _SmallRecordSection(
-          title: l10n.hrShiftsSectionTitle,
-          icon: Icons.calendar_view_week_outlined,
-          emptyText: l10n.hrNoShiftsLabel,
-          rows: <_RecordLine>[
-            for (final HrShiftAssignment assignment in detail.shiftAssignments)
-              _RecordLine(
-                title: hrShiftAssignmentTitle(
-                  assignment,
-                  state.referenceData,
-                  l10n,
-                ),
-                subtitle: hrShiftAssignmentSubtitle(context, assignment, l10n),
-                showChevron: true,
-                onTap: () => showHrShiftDetailDialog(
-                  context,
-                  assignment,
-                  state.referenceData,
-                  actionsEnabled:
-                      canRosterWrite &&
-                      !profile.isSeparated &&
-                      !state.isMutating,
-                  onSwap: canRosterWrite
-                      ? () => _showShiftSwapDialog(context, ref)
-                      : null,
-                ),
-              ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.md),
-        _SmallRecordSection(
-          title: l10n.hrCompensationSectionTitle,
-          icon: Icons.price_change_outlined,
-          emptyText: l10n.hrNoCompensationLabel,
-          rows: <_RecordLine>[
-            for (final HrStaffCompensation compensation
-                in detail.compensations.where(
-                  (HrStaffCompensation row) => row.isActive,
-                ))
-              _RecordLine(
-                title: hrCompensationRowTitle(context, compensation),
-                subtitle: hrDateRange(
-                  context,
-                  compensation.effectiveFrom,
-                  compensation.effectiveTo,
-                ),
-                showChevron: true,
-                onTap: () => showHrCompensationDetailDialog(
-                  context,
-                  compensation,
-                  onEdit: canWrite
-                      ? () => showHrCompensationDialog(
-                          context,
-                          ref,
-                          profile,
-                          detail.compensations,
-                          focusPayType: compensation.payType,
-                        )
-                      : null,
-                ),
-              ),
-          ],
-        ),
-      ],
+    return HrStaffDetailsBody(
+      state: state,
+      detail: detail,
+      onAssignShift: _showShiftAssignmentDialog,
+      onSwapShift: _showShiftSwapDialog,
     );
   }
 }
@@ -1340,128 +990,6 @@ class _HrWorkQueueTableState extends ConsumerState<_HrWorkQueueTable> {
           showAvatar: false,
         );
       },
-    );
-  }
-}
-
-class _SmallRecordSection extends StatelessWidget {
-  const _SmallRecordSection({
-    required this.title,
-    required this.icon,
-    required this.emptyText,
-    required this.rows,
-  });
-
-  final String title;
-  final IconData icon;
-  final String emptyText;
-  final List<_RecordLine> rows;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCollapsibleSection(
-      title: title,
-      titleIcon: icon,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: rows.isEmpty
-            ? <Widget>[Text(emptyText)]
-            : <Widget>[
-                for (final _RecordLine row in rows) _RecordLineTile(line: row),
-              ],
-      ),
-    );
-  }
-}
-
-@immutable
-final class _RecordLine {
-  const _RecordLine({
-    required this.title,
-    this.subtitle,
-    this.trailing,
-    this.onTrailingTap,
-    this.onTap,
-    this.badges = const <AppWorkspaceStatus>[],
-    this.showChevron = false,
-  });
-
-  final String title;
-  final String? subtitle;
-  final String? trailing;
-  final VoidCallback? onTrailingTap;
-  final VoidCallback? onTap;
-  final List<AppWorkspaceStatus> badges;
-  final bool showChevron;
-}
-
-class _RecordLineTile extends StatelessWidget {
-  const _RecordLineTile({required this.line});
-
-  final _RecordLine line;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final Widget content = Padding(
-      padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                AppListItemText(
-                  title: line.title,
-                  subtitle: line.subtitle,
-                  titleStyle: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: AppFontWeight.emphasis,
-                  ),
-                ),
-                if (line.badges.isNotEmpty) ...<Widget>[
-                  SizedBox(height: theme.spacing.xs),
-                  Wrap(
-                    spacing: theme.spacing.sm,
-                    runSpacing: theme.spacing.xs,
-                    children: <Widget>[
-                      for (final AppWorkspaceStatus badge in line.badges)
-                        AppWorkspaceStatusBadge(status: badge),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-          if ((line.trailing ?? '').trim().isNotEmpty) ...<Widget>[
-            SizedBox(width: theme.spacing.sm),
-            if (line.onTrailingTap != null)
-              AppButton.secondary(
-                label: line.trailing!,
-                onPressed: line.onTrailingTap,
-              )
-            else
-              Flexible(child: Text(line.trailing!)),
-          ],
-          if (line.showChevron) ...<Widget>[
-            SizedBox(width: theme.spacing.xs),
-            Icon(
-              Icons.chevron_right,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ],
-      ),
-    );
-
-    if (line.onTap == null) {
-      return content;
-    }
-
-    return InkWell(
-      onTap: line.onTap,
-      borderRadius: BorderRadius.circular(theme.radius.sm),
-      child: content,
     );
   }
 }
@@ -2192,36 +1720,6 @@ AppWorkspaceStatusTone _statusTone(String? status) {
     'INACTIVE' => AppWorkspaceStatusTone.error,
     _ => AppWorkspaceStatusTone.neutral,
   };
-}
-
-String _leaveSummaryTitle(BuildContext context, HrStaffLeave leave) {
-  final AppLocalizations l10n = context.l10n;
-  final String leaveType = _apiLabel(
-    context,
-    leave.leaveType,
-  ).ifEmpty(l10n.hrLeaveLabel);
-  final String status = _apiLabel(context, leave.status);
-  if (status.isEmpty) {
-    return leaveType;
-  }
-  return '$leaveType · $status';
-}
-
-String _leaveSummarySubtitle(BuildContext context, HrStaffLeave leave) {
-  final AppLocalizations l10n = context.l10n;
-  final List<String> parts = <String>[
-    hrDateRange(context, leave.startDate, leave.endDate),
-    if (leave.isHalfDay)
-      l10n.hrLeaveHalfDaySummary(
-        _apiLabel(
-          context,
-          leave.halfDayPeriod,
-        ).ifEmpty(l10n.hrLeaveHalfDayLabel),
-      ),
-    if ((leave.coveringStaffName ?? '').trim().isNotEmpty)
-      l10n.hrCoveringStaffSummary(leave.coveringStaffName!),
-  ].where((String part) => part.trim().isNotEmpty).toList(growable: false);
-  return parts.join(' · ');
 }
 
 const String _hrWorkItemStatusFilterKey = 'status';

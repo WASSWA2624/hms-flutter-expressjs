@@ -89,6 +89,28 @@ Future<void> showHrRosterDetailDialog(
   );
 }
 
+/// Opens roster detail by roster id (e.g. from staff detail).
+Future<void> showHrRosterDetailByIdDialog(
+  BuildContext context,
+  WidgetRef ref, {
+  required String rosterId,
+  String? rosterName,
+  String? status,
+}) {
+  return showHrRosterDetailDialog(
+    context,
+    ref,
+    HrWorkItem(
+      id: rosterId,
+      queue: HrQueue.rosterDrafts,
+      displayId: rosterId,
+      rosterId: rosterId,
+      rosterName: rosterName,
+      status: status,
+    ),
+  );
+}
+
 @immutable
 final class _RosterStaffRow {
   const _RosterStaffRow({

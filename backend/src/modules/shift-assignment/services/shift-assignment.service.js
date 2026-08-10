@@ -51,7 +51,17 @@ const listShiftAssignments = async (filters, page, limit, sortBy, order) => {
     }
 
     const [shiftAssignments, total] = await Promise.all([
-      shiftAssignmentRepository.findMany(whereClause, skip, limit, orderBy),
+      shiftAssignmentRepository.findMany(whereClause, skip, limit, orderBy, {
+        shift: {
+          select: {
+            id: true,
+            human_friendly_id: true,
+            roster_id: true,
+            shift_type: true,
+            status: true,
+            start_time: true,
+            end_time: true,
+            name: true}}}),
       shiftAssignmentRepository.count(whereClause)]);
 
     return {

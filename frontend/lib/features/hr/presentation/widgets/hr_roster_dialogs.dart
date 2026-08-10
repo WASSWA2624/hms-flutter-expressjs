@@ -277,9 +277,14 @@ String _resolveDepartmentOptionValue({
 
 Future<bool> showHrCreateRosterDialog(
   BuildContext context,
-  WidgetRef ref,
-) {
-  return showHrRosterTemplateDialog(context, ref);
+  WidgetRef ref, {
+  List<String> attachStaffProfileIds = const <String>[],
+}) {
+  return showHrRosterTemplateDialog(
+    context,
+    ref,
+    attachStaffProfileIds: attachStaffProfileIds,
+  );
 }
 
 Future<bool> showHrEditRosterDialog(
@@ -315,6 +320,7 @@ Future<bool> showHrRosterTemplateDialog(
   WidgetRef ref, {
   String? rosterId,
   Map<String, Object?>? existingRoster,
+  List<String> attachStaffProfileIds = const <String>[],
 }) async {
   final AppLocalizations l10n = context.l10n;
   final bool isEdit = rosterId != null && rosterId.trim().isNotEmpty;
@@ -753,7 +759,10 @@ Future<bool> showHrRosterTemplateDialog(
         'weekly_schedule_json': schedule.toTemplateWeeklySchedulePayload(),
         'attached_staff_ids': isEdit
             ? preservedAttachedStaffIds
-            : const <String>[],
+            : attachStaffProfileIds
+                .map((String id) => id.trim())
+                .where((String id) => id.isNotEmpty)
+                .toList(growable: false),
         if (isEdit) 'attached_staff_meta': preservedAttachedStaffMeta,
       };
 

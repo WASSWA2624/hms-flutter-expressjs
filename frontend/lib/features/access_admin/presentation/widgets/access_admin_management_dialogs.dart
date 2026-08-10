@@ -331,6 +331,7 @@ class ManageUsersPanel extends ConsumerStatefulWidget {
     this.showCreateAction = true,
     this.reloadListenable,
     this.onMutated,
+    this.onOpenDetail,
     super.key,
   });
 
@@ -338,6 +339,9 @@ class ManageUsersPanel extends ConsumerStatefulWidget {
   final bool showCreateAction;
   final Listenable? reloadListenable;
   final ValueChanged<bool>? onMutated;
+
+  /// When set and returns `true`, skips the Access Admin user-details dialog.
+  final Future<bool> Function(AccessAdminItem item)? onOpenDetail;
 
   @override
   ConsumerState<ManageUsersPanel> createState() => _ManageUsersPanelState();
@@ -641,6 +645,15 @@ class _ManageUsersPanelState
   }) async {
     if (!mounted) {
       return;
+    }
+
+    final Future<bool> Function(AccessAdminItem item)? customOpen =
+        widget.onOpenDetail;
+    if (customOpen != null) {
+      final bool handled = await customOpen(item);
+      if (handled || !mounted) {
+        return;
+      }
     }
 
     var coverOpen = false;
