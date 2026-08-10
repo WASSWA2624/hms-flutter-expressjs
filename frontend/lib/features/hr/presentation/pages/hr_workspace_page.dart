@@ -35,6 +35,8 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.
         showHrMutationSnackBar,
         readHrWorkspaceState;
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_generate_payroll_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_payroll_detail_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_payroll_labels.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_positions_panel.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_request_leave_dialog.dart';
@@ -856,6 +858,10 @@ class _HrWorkQueueTableState extends ConsumerState<_HrWorkQueueTable> {
         unawaited(showHrRosterDetailDialog(context, ref, item));
         return;
       }
+      if (item.queue == HrQueue.payrollDrafts) {
+        unawaited(showHrPayrollDetailDialog(context, ref, item));
+        return;
+      }
       _showWorkItemDialog(context, ref, item);
     }
 
@@ -890,10 +896,10 @@ class _HrWorkQueueTableState extends ConsumerState<_HrWorkQueueTable> {
       isLoading: state.isRefreshingWorkItems,
       columnVisibilityController: widget.columnVisibilityController,
       columnVisibilityStorageKey: queue == HrQueue.payrollDrafts
-          ? 'hr_work_queue_payrollDrafts_v3'
+          ? 'hr_work_queue_payrollDrafts_v4'
           : 'hr_work_queue_${queue.name}_v2',
       columnWidthStorageKey: queue == HrQueue.payrollDrafts
-          ? 'hr_work_queue_cw_payrollDrafts_v3'
+          ? 'hr_work_queue_cw_payrollDrafts_v4'
           : 'hr_work_queue_cw_${queue.name}_v2',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
@@ -1003,6 +1009,9 @@ class _HrWorkQueueTableState extends ConsumerState<_HrWorkQueueTable> {
         context,
         queue,
         onNextAction: onNextAction,
+        visiblePayrollItems: queue == HrQueue.payrollDrafts
+            ? visibleItems
+            : null,
         selectedRosterKeys: isRosterQueue ? _selectedRosterKeys : null,
         visibleRosterItems: isRosterQueue ? visibleItems : null,
         onRosterSelectionChanged: isRosterQueue
@@ -1036,6 +1045,8 @@ class _HrWorkQueueTableState extends ConsumerState<_HrWorkQueueTable> {
             AppListTableMobileMeta(
               label: item.queue == HrQueue.rosterDrafts
                   ? hrRosterStatusLabel(context.l10n, item.status)
+                  : item.queue == HrQueue.payrollDrafts
+                  ? hrPayrollStatusLabel(context.l10n, item.status)
                   : _apiLabel(context, item.status),
             ),
             if (item.queue != HrQueue.rosterDrafts)
@@ -1224,7 +1235,7 @@ class _WorkItemActions extends ConsumerWidget {
             AppInfoTileData(
               label: l10n.hrStatusColumnLabel,
               value: item.queue == HrQueue.payrollDrafts
-                  ? _payrollStatusLabel(context, item.status)
+                  ? hrPayrollStatusLabel(l10n, item.status)
                   : _apiLabel(context, item.status),
               icon: Icons.radio_button_checked,
             ),
@@ -1240,13 +1251,19 @@ class _WorkItemActions extends ConsumerWidget {
                 icon: Icons.groups_outlined,
               ),
               AppInfoTileData(
-                label: l10n.hrPayCompensationTotalColumn,
-                value: _payrollTotalLabel(item),
+                label: hrPayrollTotalColumnLabel(
+                  l10n,
+                  currencyCode: item.currency,
+                ),
+                value: hrPayrollAmountLabel(
+                  item.totalAmount,
+                  Localizations.localeOf(context),
+                ),
                 icon: Icons.payments_outlined,
               ),
               AppInfoTileData(
                 label: l10n.hrPayCompensationLaneColumn,
-                value: _payrollLaneLabel(l10n, item.paymentLane),
+                value: hrPayrollLaneLabel(l10n, item.paymentLane),
                 icon: Icons.route_outlined,
               ),
             ],
@@ -1374,7 +1391,7 @@ class _WorkItemActions extends ConsumerWidget {
           enabled: enabled,
           onPressed: () => showHrPreviewPayrollDialog(context, ref, item),
         ),
-        if (_payrollStatusIs(item, 'DRAFT'))
+        if (hrPayrollIsPendingReview(item))
           AppPermissionActionItem(
             requirement: HrPayrollDraftsAtomPermissions.process,
             label: l10n.hrPayCompensationApproveSendAction,
@@ -1383,7 +1400,7 @@ class _WorkItemActions extends ConsumerWidget {
             onPressed: () =>
                 _showProcessPayrollDialog(context, controller, item),
           ),
-        if (_payrollStatusIs(item, 'PROCESSED'))
+        if (hrPayrollIsApproved(item))
           AppPermissionActionItem(
             requirement: HrPayrollDraftsAtomPermissions.process,
             label: l10n.hrPayCompensationMarkPaidAction,
@@ -1398,8 +1415,7 @@ class _WorkItemActions extends ConsumerWidget {
                   controller.markPayrollRunPaidById(item.effectiveId),
             ),
           ),
-        if (_payrollStatusIs(item, 'DRAFT') ||
-            _payrollStatusIs(item, 'PROCESSED'))
+        if (hrPayrollIsPendingReview(item) || hrPayrollIsApproved(item))
           AppPermissionActionItem(
             requirement: HrPayrollDraftsAtomPermissions.process,
             label: l10n.hrPayCompensationCancelAction,
@@ -1417,10 +1433,6 @@ class _WorkItemActions extends ConsumerWidget {
       ],
     };
   }
-}
-
-bool _payrollStatusIs(HrWorkItem item, String status) {
-  return (item.status ?? '').trim().toUpperCase() == status;
 }
 
 Future<void> _confirmPayrollLifecycle(
@@ -1725,12 +1737,7 @@ String _workItemNextAction(BuildContext context, HrWorkItem item) {
 }
 
 String _payrollNextActionLabel(AppLocalizations l10n, HrWorkItem item) {
-  final String status = (item.status ?? '').trim().toUpperCase();
-  return switch (status) {
-    'PROCESSED' => l10n.hrPayCompensationMarkPaidAction,
-    'PAID' || 'CANCELLED' => l10n.hrPreviewPayrollAction,
-    _ => l10n.hrPayCompensationReviewApproveAction,
-  };
+  return hrPayrollNextActionLabel(l10n, item);
 }
 
 String _workItemPeriod(BuildContext context, HrWorkItem item) {
@@ -1815,6 +1822,7 @@ List<AppListTableColumn<HrWorkItem>> _workQueueColumns(
   BuildContext context,
   HrQueue queue, {
   required void Function(HrWorkItem item) onNextAction,
+  List<HrWorkItem>? visiblePayrollItems,
   Set<String>? selectedRosterKeys,
   ValueChanged<Set<String>>? onRosterSelectionChanged,
   List<HrWorkItem>? visibleRosterItems,
@@ -1862,7 +1870,12 @@ List<AppListTableColumn<HrWorkItem>> _workQueueColumns(
       _workItemPayrollColumn(l10n, context),
       _workItemPayrollRunColumn(l10n),
       _workItemPayrollStaffCountColumn(l10n),
-      _workItemPayrollTotalColumn(l10n),
+      _workItemPayrollTotalColumn(
+        l10n,
+        currencyCode: hrPayrollCurrencyFromItems(
+          visiblePayrollItems ?? const <HrWorkItem>[],
+        ),
+      ),
       _workItemPayrollLaneColumn(l10n),
     ],
   };
@@ -2287,10 +2300,7 @@ AppListTableColumn<HrWorkItem> _workItemPayrollRunColumn(
     sortComparator: (HrWorkItem left, HrWorkItem right) =>
         appListTableCompareText(left.payrollRunId, right.payrollRunId),
     cellBuilder: (BuildContext context, HrWorkItem item) {
-      return AppCopyableIdentifierCell(
-        title: item.payrollRunId ?? item.displayId ?? item.effectiveId,
-        identifier: item.effectiveId,
-      );
+      return Text(hrPayrollRunId(item));
     },
   );
 }
@@ -2310,15 +2320,21 @@ AppListTableColumn<HrWorkItem> _workItemPayrollStaffCountColumn(
 }
 
 AppListTableColumn<HrWorkItem> _workItemPayrollTotalColumn(
-  AppLocalizations l10n,
-) {
+  AppLocalizations l10n, {
+  String? currencyCode,
+}) {
   return AppListTableColumn<HrWorkItem>(
     id: 'total_amount',
-    label: l10n.hrPayCompensationTotalColumn,
+    label: hrPayrollTotalColumnLabel(l10n, currencyCode: currencyCode),
     sortComparator: (HrWorkItem left, HrWorkItem right) =>
         left.totalAmount.compareTo(right.totalAmount),
     cellBuilder: (BuildContext context, HrWorkItem item) {
-      return Text(_payrollTotalLabel(item));
+      return Text(
+        hrPayrollAmountLabel(
+          item.totalAmount,
+          Localizations.localeOf(context),
+        ),
+      );
     },
   );
 }
@@ -2332,46 +2348,16 @@ AppListTableColumn<HrWorkItem> _workItemPayrollLaneColumn(
     sortComparator: (HrWorkItem left, HrWorkItem right) =>
         appListTableCompareText(left.paymentLane, right.paymentLane),
     cellBuilder: (BuildContext context, HrWorkItem item) {
-      return Text(_payrollLaneLabel(context.l10n, item.paymentLane));
+      return Text(hrPayrollLaneLabel(context.l10n, item.paymentLane));
     },
   );
-}
-
-String _payrollTotalLabel(HrWorkItem item) {
-  final String currency = (item.currency ?? '').trim();
-  final String amount = item.totalAmount == 0
-      ? '—'
-      : item.totalAmount.toString();
-  if (currency.isEmpty || amount == '—') {
-    return amount;
-  }
-  return '$amount $currency';
-}
-
-String _payrollLaneLabel(AppLocalizations l10n, String? lane) {
-  final String normalized = (lane ?? '').trim().toUpperCase();
-  if (normalized == 'FINANCE_DIRECT') {
-    return l10n.hrPayCompensationLaneFinanceDirect;
-  }
-  return l10n.hrPayCompensationLaneHrToFinance;
-}
-
-String _payrollStatusLabel(BuildContext context, String? status) {
-  final AppLocalizations l10n = context.l10n;
-  return switch ((status ?? '').trim().toUpperCase()) {
-    'DRAFT' || 'PENDING' || 'PENDING_REVIEW' =>
-      l10n.hrPayCompensationStatusPending,
-    'PROCESSED' || 'APPROVED' => l10n.hrPayCompensationStatusApproved,
-    'PAID' => l10n.hrPayCompensationStatusPaid,
-    'CANCELLED' => l10n.hrPayCompensationStatusCancelled,
-    _ => _apiLabel(context, status),
-  };
 }
 
 AppListTableColumn<HrWorkItem> _workItemStatusColumn(AppLocalizations l10n) {
   return AppListTableColumn<HrWorkItem>(
     id: 'status',
     label: l10n.hrStatusColumnLabel,
+    alwaysVisible: true,
     sortComparator: (HrWorkItem left, HrWorkItem right) =>
         appListTableCompareText(left.status, right.status),
     cellBuilder: (BuildContext context, HrWorkItem item) {
@@ -2384,7 +2370,7 @@ AppListTableColumn<HrWorkItem> _workItemStatusColumn(AppLocalizations l10n) {
       if (item.queue == HrQueue.payrollDrafts) {
         return _StatusBadge(
           status: item.status,
-          labelOverride: _payrollStatusLabel(context, item.status),
+          labelOverride: hrPayrollStatusLabel(context.l10n, item.status),
         );
       }
       return _StatusBadge(status: item.status);
@@ -2412,6 +2398,7 @@ AppListTableColumn<HrWorkItem> _workItemNextActionColumn(
       };
       return AppAccessActionGate(
         requirement: requirement,
+        hideWhenDenied: false,
         builder: (BuildContext context, bool isAllowed) {
           return AppButton.tertiary(
             label: _workItemNextAction(context, item),

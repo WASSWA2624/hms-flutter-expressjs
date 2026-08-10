@@ -439,10 +439,10 @@ abstract final class HrShiftsAtomPermissions {
 /// | Success snackbar / form validation | feedback | process ∩ / read ∩ |
 /// | Row select → work-item detail | read | read ∩ |
 /// | Next action Review & approve / Mark paid | approve | source [hrPayrollRequirement] |
-/// | Detail Preview payroll | read | preview ∩ `hr:read` |
+/// | Detail Overview / Compensation breakdown | read | detail ∩ `hr:read` |
 /// | Detail Approve & notify Finance | approve | source [hrPayrollRequirement] |
 /// | Detail Mark paid / Cancel | approve | source [hrPayrollRequirement] |
-/// | Nested preview dialog | read | preview ∩ |
+/// | Detail Print payroll | read | preview ∩ `hr:read` |
 /// | Nested process dialog | approve | source [hrPayrollRequirement] |
 /// | Nested cross-module write (matrix ∪) | approve | [nestedWriteMatrix] — UI uses source ∩ |
 /// | Route entry (deep link) | navigate | catalog ∩ `hr:read` (AppRoutes ∪ noted) |

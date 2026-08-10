@@ -26936,6 +26936,35 @@
   "@hrPayCompensationTotalColumn": {
     "description": "Table column for pay run total amount."
   },
+  "hrPayCompensationTotalColumnWithCurrency": "Total ({currency})",
+  "@hrPayCompensationTotalColumnWithCurrency": {
+    "description": "Pay run total column label with currency code in brackets.",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "hrPayrollDetailDialogTitle": "Payroll details",
+  "@hrPayrollDetailDialogTitle": {
+    "description": "Title for the payroll run details dialog."
+  },
+  "hrPayrollOverviewSectionTitle": "Overview",
+  "@hrPayrollOverviewSectionTitle": {
+    "description": "Collapsible overview section in payroll details."
+  },
+  "hrPayrollBreakdownSectionTitle": "Compensation breakdown",
+  "@hrPayrollBreakdownSectionTitle": {
+    "description": "Collapsible staff compensation breakdown in payroll details."
+  },
+  "hrPayrollBreakdownEmptyBody": "No compensation lines are available for this pay run yet.",
+  "@hrPayrollBreakdownEmptyBody": {
+    "description": "Empty state when a pay run has no preview lines."
+  },
+  "hrPayrollPrintDialogTitle": "Print payroll",
+  "@hrPayrollPrintDialogTitle": {
+    "description": "Title for the payroll print preview dialog."
+  },
   "hrPayCompensationLaneColumn": "Routing",
   "@hrPayCompensationLaneColumn": {
     "description": "Table column distinguishing HR vs Finance payment routing."

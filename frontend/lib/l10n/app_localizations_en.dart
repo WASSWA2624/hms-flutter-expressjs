@@ -20901,6 +20901,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrPayCompensationTotalColumn => 'Total';
 
   @override
+  String hrPayCompensationTotalColumnWithCurrency(String currency) {
+    return 'Total ($currency)';
+  }
+
+  @override
+  String get hrPayrollDetailDialogTitle => 'Payroll details';
+
+  @override
+  String get hrPayrollOverviewSectionTitle => 'Overview';
+
+  @override
+  String get hrPayrollBreakdownSectionTitle => 'Compensation breakdown';
+
+  @override
+  String get hrPayrollBreakdownEmptyBody =>
+      'No compensation lines are available for this pay run yet.';
+
+  @override
+  String get hrPayrollPrintDialogTitle => 'Print payroll';
+
+  @override
   String get hrPayCompensationLaneColumn => 'Routing';
 
   @override

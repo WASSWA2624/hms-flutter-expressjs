@@ -365,7 +365,7 @@ void main() {
     });
 
     testWidgets(
-      'detail: Process/Preview present; no patient Billing controls; flat',
+      'detail: Approve/Print present; no patient Billing controls; flat',
       (WidgetTester tester) async {
         await _pumpPayrollTab(
           tester,
@@ -382,8 +382,9 @@ void main() {
         await tester.tap(find.text('run-1').first);
         await tester.pumpAndSettle();
 
-        expect(find.text('Preview payroll'), findsOneWidget);
-        expect(find.text('Process payroll'), findsWidgets);
+        expect(find.text('PAYROLL DETAILS'), findsOneWidget);
+        expect(find.text('Approve & notify Finance'), findsWidgets);
+        expect(find.text('Print'), findsOneWidget);
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Issue invoice'), findsNothing);
         expect(find.textContaining('Refund'), findsNothing);
@@ -402,13 +403,14 @@ void main() {
         ),
       );
 
-      expect(find.text('Process payroll'), findsNothing);
+      expect(find.text('Approve & notify Finance'), findsNothing);
 
       await tester.tap(find.text('run-1').first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Preview payroll'), findsOneWidget);
-      expect(find.text('Process payroll'), findsNothing);
+      expect(find.text('PAYROLL DETAILS'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(find.text('Approve & notify Finance'), findsNothing);
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);
       expectFlatSections(tester);
@@ -429,11 +431,11 @@ void main() {
           ),
         );
 
-        // Next-action opens process dialog without the detail Quick actions shell.
-        expect(find.text('Process payroll'), findsOneWidget);
-        await tester.tap(find.text('Process payroll'));
+        // Next-action opens approve dialog without the detail Quick actions shell.
+        expect(find.text('Review & approve'), findsOneWidget);
+        await tester.tap(find.text('Review & approve'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Process payroll').last);
+        await tester.tap(find.text('Approve & notify Finance').last);
         await tester.pumpAndSettle();
 
         verify(
@@ -466,13 +468,12 @@ void main() {
 
       await tester.tap(find.text('run-1').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Preview payroll'));
-      await tester.pumpAndSettle();
 
-      expect(find.textContaining('1200'), findsWidgets);
+      expect(find.text('Compensation breakdown'), findsOneWidget);
+      expect(find.textContaining('1,200'), findsWidgets);
       expect(find.textContaining('Balance due'), findsNothing);
       expect(find.textContaining('Receive payment'), findsNothing);
-      verify(() => repository.previewPayrollRun(any())).called(1);
+      verify(() => repository.previewPayrollRun(any())).called(greaterThanOrEqualTo(1));
       expectFlatSections(tester);
     });
 
@@ -492,10 +493,10 @@ void main() {
       );
 
       for (int i = 0; i < 2; i++) {
-        expect(find.text('Process payroll'), findsOneWidget);
-        await tester.tap(find.text('Process payroll'));
+        expect(find.text('Review & approve'), findsOneWidget);
+        await tester.tap(find.text('Review & approve'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Process payroll').last);
+        await tester.tap(find.text('Approve & notify Finance').last);
         await tester.pumpAndSettle();
       }
 
@@ -598,7 +599,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Process payroll'));
+      await tester.tap(find.text('Review & approve'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
     });

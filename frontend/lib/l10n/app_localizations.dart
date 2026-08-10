@@ -38651,6 +38651,42 @@ abstract class AppLocalizations {
   /// **'Total'**
   String get hrPayCompensationTotalColumn;
 
+  /// Pay run total column label with currency code in brackets.
+  ///
+  /// In en, this message translates to:
+  /// **'Total ({currency})'**
+  String hrPayCompensationTotalColumnWithCurrency(String currency);
+
+  /// Title for the payroll run details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll details'**
+  String get hrPayrollDetailDialogTitle;
+
+  /// Collapsible overview section in payroll details.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get hrPayrollOverviewSectionTitle;
+
+  /// Collapsible staff compensation breakdown in payroll details.
+  ///
+  /// In en, this message translates to:
+  /// **'Compensation breakdown'**
+  String get hrPayrollBreakdownSectionTitle;
+
+  /// Empty state when a pay run has no preview lines.
+  ///
+  /// In en, this message translates to:
+  /// **'No compensation lines are available for this pay run yet.'**
+  String get hrPayrollBreakdownEmptyBody;
+
+  /// Title for the payroll print preview dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Print payroll'**
+  String get hrPayrollPrintDialogTitle;
+
   /// Table column distinguishing HR vs Finance payment routing.
   ///
   /// In en, this message translates to:

@@ -470,7 +470,7 @@ void main() {
   });
 
   testWidgets(
-    'read-only: list + Preview present; Process / next-action absent',
+    'read-only: list + detail present; approve actions gated',
     (WidgetTester tester) async {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.hrRead},
@@ -485,20 +485,25 @@ void main() {
       expect(find.text('Pay & Compensation'), findsWidgets);
       expect(find.text('run-1'), findsWidgets);
       expect(find.byType(AppTabToolbarPrimary), findsNothing);
-      expect(find.text('Process payroll'), findsNothing);
+      expect(find.text('Approve & notify Finance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+      // Next action label stays visible when denied so operators know the step.
+      expect(find.text('Review & approve'), findsOneWidget);
 
       await tester.tap(find.text('run-1').first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Preview payroll'), findsOneWidget);
-      expect(find.text('Process payroll'), findsNothing);
+      expect(find.text('PAYROLL DETAILS'), findsOneWidget);
+      expect(find.text('Overview'), findsOneWidget);
+      expect(find.text('Compensation breakdown'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(find.text('Approve & notify Finance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'hr:write without financial:approve: Preview present, Process absent (∩ denial)',
+    'hr:write without financial:approve: detail present, approve gated (∩ denial)',
     (WidgetTester tester) async {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
@@ -513,18 +518,19 @@ void main() {
         accessPolicy: writer,
       );
 
-      expect(find.text('Process payroll'), findsNothing);
+      expect(find.text('Approve & notify Finance'), findsNothing);
 
       await tester.tap(find.text('run-1').first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Preview payroll'), findsOneWidget);
-      expect(find.text('Process payroll'), findsNothing);
+      expect(find.text('PAYROLL DETAILS'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(find.text('Approve & notify Finance'), findsNothing);
     },
   );
 
   testWidgets(
-    'full ∩: Process next-action opens dialog without Quick actions shell',
+    'full ∩: Review & approve next-action opens dialog without Quick actions shell',
     (WidgetTester tester) async {
       final AppAccessPolicy full = _policy(
         permissions: <AppPermission>{
@@ -540,11 +546,11 @@ void main() {
         accessPolicy: full,
       );
 
-      expect(find.text('Process payroll'), findsOneWidget);
-      await tester.tap(find.text('Process payroll'));
+      expect(find.text('Review & approve'), findsOneWidget);
+      await tester.tap(find.text('Review & approve'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Process payroll'), findsWidgets);
+      expect(find.text('Approve & notify Finance'), findsWidgets);
       expect(find.text('Quick actions'), findsNothing);
 
       await tester.tap(find.text('Close'));
@@ -553,8 +559,10 @@ void main() {
       await tester.tap(find.text('run-1').first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Preview payroll'), findsOneWidget);
-      expect(find.text('Process payroll'), findsWidgets);
+      expect(find.text('PAYROLL DETAILS'), findsOneWidget);
+      expect(find.text('Approve & notify Finance'), findsWidgets);
+      expect(find.text('Print'), findsOneWidget);
+      expect(find.text('Quick actions'), findsNothing);
     },
   );
 
@@ -575,10 +583,10 @@ void main() {
         accessPolicy: full,
       );
 
-      await tester.tap(find.text('Process payroll'));
+      await tester.tap(find.text('Review & approve'));
       await tester.pumpAndSettle();
 
-      final Finder submit = find.text('Process payroll');
+      final Finder submit = find.text('Approve & notify Finance');
       expect(submit, findsWidgets);
       await tester.tap(submit.last);
       await tester.pumpAndSettle();
@@ -609,8 +617,8 @@ void main() {
       workItems: const <HrWorkItem>[],
     );
 
-    expect(find.text('No queue items'), findsOneWidget);
-    expect(find.text('Process payroll'), findsNothing);
+    expect(find.text('No pay runs'), findsOneWidget);
+    expect(find.text('Approve & notify Finance'), findsNothing);
   });
 
   testWidgets('mobile + dark: read chrome present, process gated', (
@@ -630,7 +638,7 @@ void main() {
 
     expect(find.textContaining('run-1'), findsWidgets);
     expect(find.textContaining('2026-07'), findsWidgets);
-    expect(find.text('Process payroll'), findsNothing);
+    expect(find.text('Approve & notify Finance'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });
 
@@ -653,7 +661,7 @@ void main() {
       themeMode: ThemeMode.light,
     );
 
-    expect(find.text('Process payroll'), findsOneWidget);
+    expect(find.text('Review & approve'), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
   });
 
@@ -681,14 +689,15 @@ void main() {
       );
 
       expect(_tab('Pay & Compensation'), findsOneWidget);
-      expect(find.text('Process payroll'), findsNothing);
+      expect(find.text('Approve & notify Finance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
       await tester.tap(find.text('run-1').first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Preview payroll'), findsOneWidget);
-      expect(find.text('Process payroll'), findsNothing);
+      expect(find.text('PAYROLL DETAILS'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(find.text('Approve & notify Finance'), findsNothing);
     },
   );
 
@@ -716,7 +725,7 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsNothing);
-      expect(find.text('Process payroll'), findsNothing);
+      expect(find.text('Approve & notify Finance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -743,13 +752,13 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsNothing);
-      expect(find.text('Process payroll'), findsNothing);
+      expect(find.text('Approve & notify Finance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'authorized Preview opens nested dialog; Process dialog shows fields',
+    'authorized detail embeds breakdown; Approve dialog shows fields',
     (WidgetTester tester) async {
       final AppAccessPolicy full = _policy(
         permissions: <AppPermission>{
@@ -768,16 +777,12 @@ void main() {
       await tester.tap(find.text('run-1').first);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Preview payroll'));
-      await tester.pumpAndSettle();
-
+      expect(find.text('PAYROLL DETAILS'), findsOneWidget);
+      expect(find.text('Compensation breakdown'), findsOneWidget);
       expect(find.textContaining('Casey Payroll'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.close).last);
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Process payroll').last);
+      await tester.tap(find.text('Approve & notify Finance'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Notes'), findsWidgets);
@@ -888,8 +893,10 @@ void main() {
     await tester.tap(find.textContaining('run-1').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Preview payroll'), findsOneWidget);
-    expect(find.text('Process payroll'), findsOneWidget);
+    expect(find.text('PAYROLL DETAILS'), findsOneWidget);
+    // Compact dialog footers are icon-only; tooltips keep the action names.
+    expect(find.byTooltip('Approve & notify Finance'), findsWidgets);
+    expect(find.byTooltip('Print'), findsWidgets);
     expect(find.textContaining('no access'), findsNothing);
   });
 
@@ -909,7 +916,7 @@ void main() {
     );
 
     expect(find.textContaining('run-1'), findsWidgets);
-    expect(find.text('Process payroll'), findsNothing);
+    expect(find.text('Approve & notify Finance'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });
 }

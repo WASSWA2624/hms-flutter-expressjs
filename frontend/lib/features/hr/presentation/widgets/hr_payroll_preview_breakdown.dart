@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_payroll_labels.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -20,9 +21,16 @@ class HrPayrollPreviewBreakdown extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final Locale locale = Localizations.localeOf(context);
     final HrPayrollPreviewCalculation? calculation = item.calculation;
     final List<HrPayrollCalculationComponent> components =
         calculation?.components ?? const <HrPayrollCalculationComponent>[];
+    final String currency = (item.currency ?? '').trim().toUpperCase();
+    final String amountLabel = hrPayrollAmountLabel(
+      item.amount,
+      locale,
+      treatZeroAsEmpty: false,
+    );
 
     return Card(
       margin: EdgeInsets.only(bottom: theme.spacing.sm),
@@ -33,7 +41,7 @@ class HrPayrollPreviewBreakdown extends StatelessWidget {
         subtitle: Text(
           hrJoinDisplay(<String?>[
             l10n.hrGrossPayLabel,
-            '${item.amount} ${item.currency ?? ''}',
+            currency.isEmpty ? amountLabel : '$amountLabel ($currency)',
           ]),
         ),
         children: <Widget>[
@@ -56,9 +64,17 @@ class HrPayrollPreviewBreakdown extends StatelessWidget {
                   l10n.hrPayrollComponentBreakdownLabel(
                     component.quantity.toString(),
                     component.unit ?? '',
-                    component.rate.toString(),
+                    hrPayrollAmountLabel(
+                      component.rate,
+                      locale,
+                      treatZeroAsEmpty: false,
+                    ),
                     component.currency ?? item.currency ?? '',
-                    component.amount.toString(),
+                    hrPayrollAmountLabel(
+                      component.amount,
+                      locale,
+                      treatZeroAsEmpty: false,
+                    ),
                   ),
                 ),
               ),
