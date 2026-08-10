@@ -20908,6 +20908,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrPositionsLoadErrorTitle => 'Could not load positions';
 
   @override
+  String get hrNoPositionsTitle => 'No positions found';
+
+  @override
+  String get hrNoPositionsBody =>
+      'No staff positions match the current filters.';
+
+  @override
+  String get hrPositionScopeLabel => 'Scope';
+
+  @override
+  String get hrPositionScopeFacility => 'This facility';
+
+  @override
+  String get hrPositionScopeShared => 'Shared';
+
+  @override
+  String get hrPositionRecordStateLabel => 'Record';
+
+  @override
+  String get hrPositionRecordCurrent => 'Current';
+
+  @override
+  String get hrPositionRecordDeleted => 'Deleted';
+
+  @override
+  String get hrPositionRecordAll => 'All records';
+
+  @override
+  String get hrPositionNameFilterLabel => 'Name contains';
+
+  @override
+  String get hrPositionDescriptionFilterLabel => 'Description contains';
+
+  @override
   String get hrSimilarPositionDialogTitle => 'Similar positions found';
 
   @override

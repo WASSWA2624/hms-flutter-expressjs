@@ -38681,6 +38681,72 @@ abstract class AppLocalizations {
   /// **'Could not load positions'**
   String get hrPositionsLoadErrorTitle;
 
+  /// Empty state title for the HR positions table.
+  ///
+  /// In en, this message translates to:
+  /// **'No positions found'**
+  String get hrNoPositionsTitle;
+
+  /// Empty state body for the HR positions table.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff positions match the current filters.'**
+  String get hrNoPositionsBody;
+
+  /// Filter label for staff position facility scope.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope'**
+  String get hrPositionScopeLabel;
+
+  /// Filter choice for facility-scoped staff positions.
+  ///
+  /// In en, this message translates to:
+  /// **'This facility'**
+  String get hrPositionScopeFacility;
+
+  /// Filter choice for tenant-shared staff positions.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared'**
+  String get hrPositionScopeShared;
+
+  /// Filter label for current vs deleted staff positions.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get hrPositionRecordStateLabel;
+
+  /// Filter choice for non-deleted staff positions.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get hrPositionRecordCurrent;
+
+  /// Filter choice for soft-deleted staff positions.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get hrPositionRecordDeleted;
+
+  /// Filter choice for current and deleted staff positions.
+  ///
+  /// In en, this message translates to:
+  /// **'All records'**
+  String get hrPositionRecordAll;
+
+  /// Advanced filter label for staff position name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name contains'**
+  String get hrPositionNameFilterLabel;
+
+  /// Advanced filter label for staff position description.
+  ///
+  /// In en, this message translates to:
+  /// **'Description contains'**
+  String get hrPositionDescriptionFilterLabel;
+
   /// Title for staff position similarity review dialog.
   ///
   /// In en, this message translates to:

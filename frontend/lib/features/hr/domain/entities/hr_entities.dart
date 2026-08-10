@@ -1041,6 +1041,7 @@ final class HrWorkspaceState {
     this.isRefreshingWorkItems = false,
     this.isMutating = false,
     this.openStaffDetailAfterOnboarding = false,
+    this.positionsTotalCount = 0,
   });
 
   final HrWorkspaceOverview overview;
@@ -1057,6 +1058,7 @@ final class HrWorkspaceState {
   final bool isRefreshingWorkItems;
   final bool isMutating;
   final bool openStaffDetailAfterOnboarding;
+  final int positionsTotalCount;
 
   int get workloadCount => overview.summary.workloadCount;
 
@@ -1075,6 +1077,7 @@ final class HrWorkspaceState {
     bool? isRefreshingWorkItems,
     bool? isMutating,
     bool? openStaffDetailAfterOnboarding,
+    int? positionsTotalCount,
     bool clearSelectedStaff = false,
     bool clearLastFailure = false,
     bool clearOpenStaffDetailAfterOnboarding = false,
@@ -1100,6 +1103,7 @@ final class HrWorkspaceState {
           ? false
           : openStaffDetailAfterOnboarding ??
                 this.openStaffDetailAfterOnboarding,
+      positionsTotalCount: positionsTotalCount ?? this.positionsTotalCount,
     );
   }
 }

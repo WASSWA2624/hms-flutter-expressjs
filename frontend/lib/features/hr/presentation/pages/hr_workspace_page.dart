@@ -1466,7 +1466,7 @@ int _sectionCount(HrWorkspaceState state, HrDeskSection section) {
   return switch (section) {
     HrDeskSection.staffDirectory =>
       state.staff.totalItemCount ?? state.staff.items.length,
-    HrDeskSection.positions => 0,
+    HrDeskSection.positions => state.positionsTotalCount,
     HrDeskSection.leaveRequests => summary.leaveRequests,
     HrDeskSection.swapRequests => summary.swapRequests,
     HrDeskSection.shiftRoster => summary.draftRosters,

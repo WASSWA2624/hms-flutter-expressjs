@@ -14,6 +14,7 @@ import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
+import 'package:hosspi_hms/features/hr/domain/entities/hr_staff_position.dart';
 import 'package:hosspi_hms/features/hr/domain/repositories/hr_repository.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
@@ -1180,6 +1181,21 @@ final class HrWorkspaceController
     _emit(current.copyWith(clearOpenStaffDetailAfterOnboarding: true));
   }
 
+  /// Updates the Positions tab badge from the catalog panel.
+  void setPositionsTotalCount(int count) {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null || current.positionsTotalCount == count) {
+      return;
+    }
+    _emit(current.copyWith(positionsTotalCount: count < 0 ? 0 : count));
+  }
+
+  /// Reloads the unfiltered (current) positions total for the tab badge.
+  Future<void> refreshPositionsTotalCount() async {
+    final int count = await _loadPositionsTotalCount();
+    setPositionsTotalCount(count);
+  }
+
   Future<AppFailure?> endAssignment(
     HrStaffAssignment assignment, {
     DateTime? endDate,
@@ -1478,6 +1494,7 @@ final class HrWorkspaceController
     final AppPage<HrWorkItem> workItems = await _loadWorkItemsOrEmpty(
       workItemsQuery,
     );
+    final int positionsTotalCount = await _loadPositionsTotalCount();
 
     return Result<HrWorkspaceState>.success(
       HrWorkspaceState(
@@ -1487,6 +1504,7 @@ final class HrWorkspaceController
         workItemsQuery: workItemsQuery,
         workItems: workItems,
         referenceData: referenceData,
+        positionsTotalCount: positionsTotalCount,
       ),
     );
   }
@@ -1552,6 +1570,7 @@ final class HrWorkspaceController
 
       if (refreshOverview) {
         overviewFailure = await _refreshOverview();
+        unawaited(refreshPositionsTotalCount());
       }
       if (refreshStaff) {
         staffFailure = await _refreshStaff(showLoading: showLoading);
@@ -1865,6 +1884,35 @@ final class HrWorkspaceController
         request: query.pageRequest,
         totalItemCount: 0,
       ),
+    );
+  }
+
+  Future<int> _loadPositionsTotalCount() async {
+    final String? tenantId = ref
+        .read(sessionStateProvider)
+        .session
+        ?.user
+        ?.tenantId;
+    if (tenantId == null || tenantId.trim().isEmpty) {
+      return 0;
+    }
+    final String? facilityId = ref
+        .read(sessionStateProvider)
+        .session
+        ?.user
+        ?.facilityId;
+    final Result<AppPage<HrStaffPosition>> result = await _repository
+        .listStaffPositions(
+          HrStaffPositionQuery(
+            tenantId: tenantId,
+            facilityId: facilityId,
+            pageRequest: const AppPageRequest(pageSize: 1),
+          ),
+        );
+    return result.when(
+      success: (AppPage<HrStaffPosition> page) =>
+          page.totalItemCount ?? page.items.length,
+      failure: (_) => 0,
     );
   }
 

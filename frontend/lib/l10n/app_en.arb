@@ -26956,6 +26956,50 @@
   "@hrPositionsLoadErrorTitle": {
     "description": "Error banner title when positions fail to load."
   },
+  "hrNoPositionsTitle": "No positions found",
+  "@hrNoPositionsTitle": {
+    "description": "Empty state title for the HR positions table."
+  },
+  "hrNoPositionsBody": "No staff positions match the current filters.",
+  "@hrNoPositionsBody": {
+    "description": "Empty state body for the HR positions table."
+  },
+  "hrPositionScopeLabel": "Scope",
+  "@hrPositionScopeLabel": {
+    "description": "Filter label for staff position facility scope."
+  },
+  "hrPositionScopeFacility": "This facility",
+  "@hrPositionScopeFacility": {
+    "description": "Filter choice for facility-scoped staff positions."
+  },
+  "hrPositionScopeShared": "Shared",
+  "@hrPositionScopeShared": {
+    "description": "Filter choice for tenant-shared staff positions."
+  },
+  "hrPositionRecordStateLabel": "Record",
+  "@hrPositionRecordStateLabel": {
+    "description": "Filter label for current vs deleted staff positions."
+  },
+  "hrPositionRecordCurrent": "Current",
+  "@hrPositionRecordCurrent": {
+    "description": "Filter choice for non-deleted staff positions."
+  },
+  "hrPositionRecordDeleted": "Deleted",
+  "@hrPositionRecordDeleted": {
+    "description": "Filter choice for soft-deleted staff positions."
+  },
+  "hrPositionRecordAll": "All records",
+  "@hrPositionRecordAll": {
+    "description": "Filter choice for current and deleted staff positions."
+  },
+  "hrPositionNameFilterLabel": "Name contains",
+  "@hrPositionNameFilterLabel": {
+    "description": "Advanced filter label for staff position name."
+  },
+  "hrPositionDescriptionFilterLabel": "Description contains",
+  "@hrPositionDescriptionFilterLabel": {
+    "description": "Advanced filter label for staff position description."
+  },
   "hrSimilarPositionDialogTitle": "Similar positions found",
   "@hrSimilarPositionDialogTitle": {
     "description": "Title for staff position similarity review dialog."
