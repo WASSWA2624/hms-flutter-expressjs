@@ -27152,6 +27152,48 @@
   "@hrRosterEditDialogTitle": {
     "description": "Title for edit roster template dialog."
   },
+  "hrRosterDeleteSelectedAction": "Delete selected",
+  "@hrRosterDeleteSelectedAction": {
+    "description": "Bulk soft-delete selected roster templates from the list toolbar."
+  },
+  "hrRosterDeleteSelectedConfirmTitle": "Delete selected roster templates",
+  "@hrRosterDeleteSelectedConfirmTitle": {
+    "description": "Confirmation title for bulk soft-delete of roster templates."
+  },
+  "hrRosterDeleteSelectedConfirmMessage": "Soft-delete {count} selected roster template(s)? Staff using them will be inactivated for those templates.",
+  "@hrRosterDeleteSelectedConfirmMessage": {
+    "description": "Confirmation body for bulk soft-delete of roster templates.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hrRosterPermanentDeleteSelectedAction": "Delete forever selected",
+  "@hrRosterPermanentDeleteSelectedAction": {
+    "description": "Bulk permanent-delete selected soft-deleted roster templates."
+  },
+  "hrRosterPermanentDeleteSelectedConfirmTitle": "Permanently delete selected templates",
+  "@hrRosterPermanentDeleteSelectedConfirmTitle": {
+    "description": "Confirmation title for bulk permanent delete of roster templates."
+  },
+  "hrRosterPermanentDeleteSelectedConfirmMessage": "Permanently delete {count} selected roster template(s) and remove them from assigned staff? This cannot be undone.",
+  "@hrRosterPermanentDeleteSelectedConfirmMessage": {
+    "description": "Confirmation body for bulk permanent delete of roster templates.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hrRosterSelectAllAction": "Select all",
+  "@hrRosterSelectAllAction": {
+    "description": "Accessibility / header label for roster template select-all checkbox."
+  },
+  "hrRosterActionsColumnLabel": "Actions",
+  "@hrRosterActionsColumnLabel": {
+    "description": "Actions column header on roster templates table."
+  },
   "hrRosterDeleteConfirmTitle": "Delete roster template",
   "@hrRosterDeleteConfirmTitle": {
     "description": "Title for soft-delete roster template confirmation."

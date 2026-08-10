@@ -496,7 +496,7 @@ void main() {
 
         expect(find.text('Create roster template'), findsWidgets);
         expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-        expect(find.text('Working days'), findsWidgets);
+        expect(find.text('Template details'), findsWidgets);
         expect(find.text('Recurring'), findsWidgets);
         _expectNoPatientBillingAffordances();
         expectFlatSections(tester);
@@ -522,23 +522,37 @@ void main() {
     );
 
     testWidgets(
-      'authorized Publish next-action stays roster ops (no Billing post path)',
+      'authorized Edit action stays roster ops (no Billing post path)',
       (WidgetTester tester) async {
+        when(() => repository.getRoster(any())).thenAnswer(
+          (_) async => const Result<Map<String, Object?>>.success(
+            <String, Object?>{
+              'name': 'Week 12',
+              'status': 'DRAFT',
+              'is_recurring': false,
+              'human_friendly_id': 'RST-1001',
+              'staff': <Object?>[],
+            },
+          ),
+        );
+
         await _pumpShiftsTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
             permissions: <AppPermission>{
               AppPermissions.hrRead,
-              AppPermissions.rosterPublish,
+              AppPermissions.rosterWrite,
             },
           ),
+          workItems: const <HrWorkItem>[_rosterDraft],
         );
 
-        await tester.tap(find.text('Publish roster').first);
+        await tester.tap(find.text('Edit').first);
         await tester.pumpAndSettle();
 
-        expect(find.text('Publish roster'), findsWidgets);
+        expect(find.textContaining('EDIT ROSTER TEMPLATE'), findsWidgets);
+        expect(find.text('Template details'), findsWidgets);
         _expectNoPatientBillingAffordances();
         expectFlatSections(tester);
       },

@@ -38975,6 +38975,54 @@ abstract class AppLocalizations {
   /// **'Edit roster template'**
   String get hrRosterEditDialogTitle;
 
+  /// Bulk soft-delete selected roster templates from the list toolbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected'**
+  String get hrRosterDeleteSelectedAction;
+
+  /// Confirmation title for bulk soft-delete of roster templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected roster templates'**
+  String get hrRosterDeleteSelectedConfirmTitle;
+
+  /// Confirmation body for bulk soft-delete of roster templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft-delete {count} selected roster template(s)? Staff using them will be inactivated for those templates.'**
+  String hrRosterDeleteSelectedConfirmMessage(int count);
+
+  /// Bulk permanent-delete selected soft-deleted roster templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete forever selected'**
+  String get hrRosterPermanentDeleteSelectedAction;
+
+  /// Confirmation title for bulk permanent delete of roster templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete selected templates'**
+  String get hrRosterPermanentDeleteSelectedConfirmTitle;
+
+  /// Confirmation body for bulk permanent delete of roster templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete {count} selected roster template(s) and remove them from assigned staff? This cannot be undone.'**
+  String hrRosterPermanentDeleteSelectedConfirmMessage(int count);
+
+  /// Accessibility / header label for roster template select-all checkbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get hrRosterSelectAllAction;
+
+  /// Actions column header on roster templates table.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get hrRosterActionsColumnLabel;
+
   /// Title for soft-delete roster template confirmation.
   ///
   /// In en, this message translates to:

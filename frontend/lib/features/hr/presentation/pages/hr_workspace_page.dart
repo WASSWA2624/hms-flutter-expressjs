@@ -881,7 +881,7 @@ class _HrWorkQueuePanel extends ConsumerWidget {
   }
 }
 
-class _HrWorkQueueTable extends ConsumerWidget {
+class _HrWorkQueueTable extends ConsumerStatefulWidget {
   const _HrWorkQueueTable({
     required this.searchController,
     required this.columnVisibilityController,
@@ -901,7 +901,237 @@ class _HrWorkQueueTable extends ConsumerWidget {
   final ValueChanged<HrQueue>? onQueueChanged;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_HrWorkQueueTable> createState() => _HrWorkQueueTableState();
+}
+
+class _HrWorkQueueTableState extends ConsumerState<_HrWorkQueueTable> {
+  final Set<String> _selectedRosterKeys = <String>{};
+  HrQueue? _selectionQueue;
+
+  String _rosterSelectionKey(HrWorkItem item) {
+    return (item.rosterId ?? item.backendIdentifier ?? item.effectiveId).trim();
+  }
+
+  void _syncSelectionForQueue(HrQueue queue, List<HrWorkItem> items) {
+    if (_selectionQueue != queue) {
+      _selectionQueue = queue;
+      _selectedRosterKeys.clear();
+      return;
+    }
+    if (queue != HrQueue.rosterDrafts || _selectedRosterKeys.isEmpty) {
+      return;
+    }
+    final Set<String> visibleKeys = <String>{
+      for (final HrWorkItem item in items) _rosterSelectionKey(item),
+    }..removeWhere((String key) => key.isEmpty);
+    _selectedRosterKeys.removeWhere(
+      (String key) => !visibleKeys.contains(key),
+    );
+  }
+
+  Future<void> _editRosterTemplate(HrWorkItem item) async {
+    final String rosterId = _rosterSelectionKey(item);
+    if (rosterId.isEmpty) {
+      return;
+    }
+    final HrWorkspaceController controller = ref.read(
+      hrWorkspaceControllerProvider.notifier,
+    );
+    final Result<Map<String, Object?>> result = await controller.getRoster(
+      rosterId,
+    );
+    if (!mounted) {
+      return;
+    }
+    final Map<String, Object?>? roster = result.when(
+      success: (Map<String, Object?> value) => value,
+      failure: (_) => null,
+    );
+    final AppFailure? failure = result.when(
+      success: (_) => null,
+      failure: (AppFailure value) => value,
+    );
+    if (failure != null || roster == null) {
+      showHrMutationSnackBar(context, failure ?? AppFailure.unexpected());
+      return;
+    }
+    final bool saved = await showHrEditRosterDialog(
+      context,
+      ref,
+      rosterId: rosterId,
+      roster: roster,
+    );
+    if (saved && mounted) {
+      unawaited(controller.refresh());
+    }
+  }
+
+  Future<void> _softDeleteRosterTemplate(HrWorkItem item) async {
+    final AppLocalizations l10n = context.l10n;
+    final String rosterId = _rosterSelectionKey(item);
+    if (rosterId.isEmpty) {
+      return;
+    }
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AppConfirmActionDialog(
+          title: l10n.hrRosterDeleteConfirmTitle,
+          body: l10n.hrRosterDeleteConfirmMessage,
+          submitLabel: l10n.hrRosterDeleteAction,
+          destructive: true,
+          submitLeadingIcon: Icons.delete_outline,
+          onConfirm: () async {
+            final AppFailure? failure = await ref
+                .read(hrWorkspaceControllerProvider.notifier)
+                .deleteRoster(rosterId);
+            return failure;
+          },
+        );
+      },
+    );
+    if (confirmed == true && mounted) {
+      setState(() => _selectedRosterKeys.remove(rosterId));
+      showHrMutationSnackBar(context, null);
+    }
+  }
+
+  Future<void> _restoreRosterTemplate(HrWorkItem item) async {
+    final AppLocalizations l10n = context.l10n;
+    final String rosterId = _rosterSelectionKey(item);
+    if (rosterId.isEmpty) {
+      return;
+    }
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AppConfirmActionDialog(
+          title: l10n.hrRosterRestoreConfirmTitle,
+          body: l10n.hrRosterRestoreConfirmMessage,
+          submitLabel: l10n.hrRosterRestoreAction,
+          submitLeadingIcon: Icons.restore_outlined,
+          onConfirm: () async {
+            return ref
+                .read(hrWorkspaceControllerProvider.notifier)
+                .restoreRoster(rosterId);
+          },
+        );
+      },
+    );
+    if (confirmed == true && mounted) {
+      setState(() => _selectedRosterKeys.remove(rosterId));
+      showHrMutationSnackBar(context, null);
+    }
+  }
+
+  Future<void> _permanentDeleteRosterTemplate(HrWorkItem item) async {
+    final AppLocalizations l10n = context.l10n;
+    final String rosterId = _rosterSelectionKey(item);
+    if (rosterId.isEmpty) {
+      return;
+    }
+    final String confirmName =
+        (item.rosterName ?? item.periodLabel ?? item.effectiveId).trim();
+    final String? typed = await showAppDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AppTextInputActionDialog(
+          title: l10n.hrRosterPermanentDeleteConfirmTitle,
+          description: l10n.hrRosterPermanentDeleteConfirmMessage,
+          fieldLabel: l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(
+            confirmName,
+          ),
+          submitLabel: l10n.hrRosterPermanentDeleteAction,
+          cancelLabel: l10n.commonCancelActionLabel,
+          requiredMessage: l10n.validationRequired,
+          confirmExactValue: confirmName,
+          confirmMismatchMessage:
+              l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(confirmName),
+          destructive: true,
+          minLines: 1,
+          maxLines: 1,
+          icon: const Icon(Icons.delete_forever_outlined),
+        );
+      },
+    );
+    if (!mounted || typed == null) {
+      return;
+    }
+    if (typed.trim().toLowerCase() != confirmName.trim().toLowerCase()) {
+      return;
+    }
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AppConfirmActionDialog(
+          title: l10n.hrRosterPermanentDeleteConfirmTitle,
+          body: l10n.hrRosterPermanentDeleteConfirmMessage,
+          highlightedText: confirmName,
+          submitLabel: l10n.hrRosterPermanentDeleteAction,
+          destructive: true,
+          submitLeadingIcon: Icons.delete_forever_outlined,
+          onConfirm: () async {
+            return ref
+                .read(hrWorkspaceControllerProvider.notifier)
+                .permanentDeleteRoster(rosterId);
+          },
+        );
+      },
+    );
+    if (confirmed == true && mounted) {
+      setState(() => _selectedRosterKeys.remove(rosterId));
+      showHrMutationSnackBar(context, null);
+    }
+  }
+
+  Future<void> _bulkDeleteSelected({required bool permanent}) async {
+    final AppLocalizations l10n = context.l10n;
+    final List<String> ids = _selectedRosterKeys.toList(growable: false);
+    if (ids.isEmpty) {
+      return;
+    }
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AppConfirmActionDialog(
+          title: permanent
+              ? l10n.hrRosterPermanentDeleteSelectedConfirmTitle
+              : l10n.hrRosterDeleteSelectedConfirmTitle,
+          body: permanent
+              ? l10n.hrRosterPermanentDeleteSelectedConfirmMessage(ids.length)
+              : l10n.hrRosterDeleteSelectedConfirmMessage(ids.length),
+          submitLabel: permanent
+              ? l10n.hrRosterPermanentDeleteSelectedAction
+              : l10n.hrRosterDeleteSelectedAction,
+          destructive: true,
+          submitLeadingIcon: permanent
+              ? Icons.delete_forever_outlined
+              : Icons.delete_outline,
+          onConfirm: () async {
+            final HrWorkspaceController controller = ref.read(
+              hrWorkspaceControllerProvider.notifier,
+            );
+            for (final String id in ids) {
+              final AppFailure? failure = permanent
+                  ? await controller.permanentDeleteRoster(id)
+                  : await controller.deleteRoster(id);
+              if (failure != null) {
+                return failure;
+              }
+            }
+            return null;
+          },
+        );
+      },
+    );
+    if (confirmed == true && mounted) {
+      setState(() => _selectedRosterKeys.clear());
+      showHrMutationSnackBar(context, null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final HrWorkspaceState? state = _hrStateFromAsync(
       ref.watch(hrWorkspaceControllerProvider),
@@ -915,11 +1145,21 @@ class _HrWorkQueueTable extends ConsumerWidget {
     );
     final HrQueue queue = state.workItemsQuery.queue;
     final HrQueue defaultQueue =
-        hrDefaultQueueForSection(section ?? HrDeskSection.leaveRequests) ??
+        hrDefaultQueueForSection(widget.section ?? HrDeskSection.leaveRequests) ??
         HrQueue.leaveRequests;
-    final List<HrQueue> queueChoices = hrQueuesForSection(section, queue);
+    final List<HrQueue> queueChoices = hrQueuesForSection(widget.section, queue);
     final bool showQueueFacet =
-        section != HrDeskSection.payroll && queueChoices.length > 1;
+        widget.section != HrDeskSection.payroll && queueChoices.length > 1;
+    final List<HrWorkItem> visibleItems = state.workItems.items;
+    _syncSelectionForQueue(queue, visibleItems);
+
+    final bool isRosterQueue = queue == HrQueue.rosterDrafts;
+    final bool deletedFilter =
+        (state.workItemsQuery.status ?? '').trim().toUpperCase() == 'DELETED';
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canWriteRosters = HrShiftsAtomPermissions.write.isAllowed(
+      accessPolicy,
+    );
 
     void onRowSelected(HrWorkItem item) {
       if (item.queue == HrQueue.rosterDrafts) {
@@ -928,19 +1168,43 @@ class _HrWorkQueueTable extends ConsumerWidget {
       }
       _showWorkItemDialog(context, ref, item);
     }
+
     void onNextAction(HrWorkItem item) =>
         unawaited(_handleWorkItemNextAction(context, ref, item));
+
+    final List<AppSearchBarAction> trailingActions = <AppSearchBarAction>[
+      if (isRosterQueue &&
+          canWriteRosters &&
+          _selectedRosterKeys.isNotEmpty)
+        AppSearchBarAction(
+          icon: deletedFilter
+              ? Icons.delete_forever_outlined
+              : Icons.delete_outline,
+          label: deletedFilter
+              ? l10n.hrRosterPermanentDeleteSelectedAction
+              : l10n.hrRosterDeleteSelectedAction,
+          tooltip: deletedFilter
+              ? l10n.hrRosterPermanentDeleteSelectedAction
+              : l10n.hrRosterDeleteSelectedAction,
+          destructive: true,
+          enabled: !state.isRefreshingWorkItems && !state.isMutating,
+          onPressed: state.isRefreshingWorkItems || state.isMutating
+              ? null
+              : () => unawaited(_bulkDeleteSelected(permanent: deletedFilter)),
+        ),
+      ...widget.searchTrailingActions,
+    ];
 
     return AppListTable<HrWorkItem>(
       page: state.workItems,
       isLoading: state.isRefreshingWorkItems,
-      columnVisibilityController: columnVisibilityController,
-      columnVisibilityStorageKey: 'hr_work_queue_${queue.name}',
-      columnWidthStorageKey: 'hr_work_queue_cw_${queue.name}',
+      columnVisibilityController: widget.columnVisibilityController,
+      columnVisibilityStorageKey: 'hr_work_queue_${queue.name}_v2',
+      columnWidthStorageKey: 'hr_work_queue_cw_${queue.name}_v2',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
       search: AppListTableSearch<HrWorkItem>(
-        controller: searchController,
+        controller: widget.searchController,
         semanticLabel: l10n.hrSearchLabel,
         hintText: l10n.hrSearchHint,
         clearLabel: l10n.hrClearFiltersAction,
@@ -991,7 +1255,7 @@ class _HrWorkQueueTable extends ConsumerWidget {
             value.option(_hrWorkItemQueueFilterKey),
           );
           final HrQueue nextQueue = parsed != null &&
-                  hrQueueAllowedOnSection(section, parsed)
+                  hrQueueAllowedOnSection(widget.section, parsed)
               ? parsed
               : (showQueueFacet ? defaultQueue : queue);
           unawaited(
@@ -1002,11 +1266,10 @@ class _HrWorkQueueTable extends ConsumerWidget {
               to: state.workItemsQuery.to,
             ),
           );
-          onQueueChanged?.call(nextQueue);
+          widget.onQueueChanged?.call(nextQueue);
         },
-        // Filters → Settings → Export → section action (Request leave /
-        // Create roster). Payroll and Access have no trailing action.
-        trailingActions: searchTrailingActions,
+        // Filters → Settings → Export → Delete selected → Create roster.
+        trailingActions: trailingActions,
       ),
       itemKeyBuilder: (HrWorkItem item) => ValueKey<String>(item.id),
       onRowSelected: onRowSelected,
@@ -1019,24 +1282,60 @@ class _HrWorkQueueTable extends ConsumerWidget {
           page.totalItemCount ?? page.lastItemNumber,
         );
       },
-      onPageChanged: onPageChanged,
+      onPageChanged: widget.onPageChanged,
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.hrNoQueueItemsTitle,
         body: l10n.hrNoQueueItemsBody,
       ),
-      columns: _workQueueColumns(context, queue, onNextAction: onNextAction),
+      columns: _workQueueColumns(
+        context,
+        queue,
+        onNextAction: onNextAction,
+        selectedRosterKeys: isRosterQueue ? _selectedRosterKeys : null,
+        visibleRosterItems: isRosterQueue ? visibleItems : null,
+        onRosterSelectionChanged: isRosterQueue
+            ? (Set<String> next) => setState(() {
+                _selectedRosterKeys
+                  ..clear()
+                  ..addAll(next);
+              })
+            : null,
+        onEditRoster: isRosterQueue
+            ? (HrWorkItem item) => unawaited(_editRosterTemplate(item))
+            : null,
+        onDeleteRoster: isRosterQueue
+            ? (HrWorkItem item) => unawaited(_softDeleteRosterTemplate(item))
+            : null,
+        onRestoreRoster: isRosterQueue
+            ? (HrWorkItem item) => unawaited(_restoreRosterTemplate(item))
+            : null,
+        onPermanentDeleteRoster: isRosterQueue
+            ? (HrWorkItem item) =>
+                  unawaited(_permanentDeleteRosterTemplate(item))
+            : null,
+        canWriteRosters: canWriteRosters,
+        isMutating: state.isMutating,
+      ),
       columnChoices: _workQueueColumnChoices(context, queue),
       mobileItemBuilder: (BuildContext context, HrWorkItem item) {
         return AppListTableMobileItem(
           title: _workItemTitle(context, item),
           meta: <AppListTableMobileMeta>[
             AppListTableMobileMeta(
-              label: _apiLabel(context, item.status),
+              label: item.queue == HrQueue.rosterDrafts
+                  ? hrRosterStatusLabel(context.l10n, item.status)
+                  : _apiLabel(context, item.status),
             ),
-            AppListTableMobileMeta(
-              label: _workItemPeriod(context, item),
-              icon: Icons.date_range_outlined,
-            ),
+            if (item.queue != HrQueue.rosterDrafts)
+              AppListTableMobileMeta(
+                label: _workItemPeriod(context, item),
+                icon: Icons.date_range_outlined,
+              ),
+            if (item.queue == HrQueue.rosterDrafts)
+              AppListTableMobileMeta(
+                label: '${context.l10n.hrAssignmentsSectionTitle}: ${item.assignmentCount}',
+                icon: Icons.groups_outlined,
+              ),
           ],
           showAvatar: false,
         );
@@ -1972,6 +2271,15 @@ List<AppListTableColumn<HrWorkItem>> _workQueueColumns(
   BuildContext context,
   HrQueue queue, {
   required void Function(HrWorkItem item) onNextAction,
+  Set<String>? selectedRosterKeys,
+  ValueChanged<Set<String>>? onRosterSelectionChanged,
+  List<HrWorkItem>? visibleRosterItems,
+  ValueChanged<HrWorkItem>? onEditRoster,
+  ValueChanged<HrWorkItem>? onDeleteRoster,
+  ValueChanged<HrWorkItem>? onRestoreRoster,
+  ValueChanged<HrWorkItem>? onPermanentDeleteRoster,
+  bool canWriteRosters = false,
+  bool isMutating = false,
 }) {
   final AppLocalizations l10n = context.l10n;
   final List<AppListTableColumn<HrWorkItem>> dataColumns = switch (queue) {
@@ -1986,9 +2294,18 @@ List<AppListTableColumn<HrWorkItem>> _workQueueColumns(
       _workItemPeriodColumn(l10n, context),
     ],
     HrQueue.rosterDrafts => <AppListTableColumn<HrWorkItem>>[
+      if (selectedRosterKeys != null &&
+          onRosterSelectionChanged != null &&
+          visibleRosterItems != null)
+        _workItemRosterSelectColumn(
+          l10n,
+          visibleItems: visibleRosterItems,
+          selectedKeys: selectedRosterKeys,
+          onSelectionChanged: onRosterSelectionChanged,
+          enabled: canWriteRosters && !isMutating,
+        ),
       _workItemRosterColumn(l10n, context),
       _workItemAssignmentsColumn(l10n),
-      _workItemPeriodColumn(l10n, context),
       _workItemRecurringColumn(l10n),
     ],
     HrQueue.unassignedShifts ||
@@ -2003,6 +2320,22 @@ List<AppListTableColumn<HrWorkItem>> _workQueueColumns(
       _workItemPeriodColumn(l10n, context),
     ],
   };
+
+  if (queue == HrQueue.rosterDrafts) {
+    return <AppListTableColumn<HrWorkItem>>[
+      ...dataColumns,
+      _workItemStatusColumn(l10n),
+      _workItemRosterActionsColumn(
+        l10n,
+        canWrite: canWriteRosters,
+        isMutating: isMutating,
+        onEdit: onEditRoster,
+        onDelete: onDeleteRoster,
+        onRestore: onRestoreRoster,
+        onPermanentDelete: onPermanentDeleteRoster,
+      ),
+    ];
+  }
 
   return <AppListTableColumn<HrWorkItem>>[
     ...dataColumns,
@@ -2155,6 +2488,162 @@ AppListTableColumn<HrWorkItem> _workItemShiftIdColumn(AppLocalizations l10n) {
             ? item.shiftId!
             : context.l10n.profileUnknownValue,
         identifier: item.effectiveId,
+      );
+    },
+  );
+}
+
+AppListTableColumn<HrWorkItem> _workItemRosterSelectColumn(
+  AppLocalizations l10n, {
+  required List<HrWorkItem> visibleItems,
+  required Set<String> selectedKeys,
+  required ValueChanged<Set<String>> onSelectionChanged,
+  required bool enabled,
+}) {
+  String keyOf(HrWorkItem item) =>
+      (item.rosterId ?? item.backendIdentifier ?? item.effectiveId).trim();
+
+  final List<String> visibleKeys = <String>[
+    for (final HrWorkItem item in visibleItems)
+      if (keyOf(item).isNotEmpty) keyOf(item),
+  ];
+  final bool allSelected =
+      visibleKeys.isNotEmpty && visibleKeys.every(selectedKeys.contains);
+  final bool noneSelected = visibleKeys.every(
+    (String key) => !selectedKeys.contains(key),
+  );
+
+  return AppListTableColumn<HrWorkItem>(
+    id: 'select',
+    label: l10n.hrRosterSelectAllAction,
+    alwaysVisible: true,
+    fixedWidth: 44,
+    headerBuilder: (BuildContext context) {
+      return Center(
+        child: Checkbox(
+          tristate: true,
+          visualDensity: VisualDensity.compact,
+          value: allSelected
+              ? true
+              : noneSelected
+              ? false
+              : null,
+          onChanged: !enabled || visibleKeys.isEmpty
+              ? null
+              : (bool? value) {
+                  final Set<String> next = Set<String>.from(selectedKeys);
+                  if (value == true) {
+                    next.addAll(visibleKeys);
+                  } else {
+                    next.removeAll(visibleKeys);
+                  }
+                  onSelectionChanged(next);
+                },
+        ),
+      );
+    },
+    cellBuilder: (BuildContext context, HrWorkItem item) {
+      final String key = keyOf(item);
+      final bool selected = key.isNotEmpty && selectedKeys.contains(key);
+      return Center(
+        child: Checkbox(
+          visualDensity: VisualDensity.compact,
+          value: selected,
+          onChanged: !enabled || key.isEmpty
+              ? null
+              : (bool? value) {
+                  final Set<String> next = Set<String>.from(selectedKeys);
+                  if (value == true) {
+                    next.add(key);
+                  } else {
+                    next.remove(key);
+                  }
+                  onSelectionChanged(next);
+                },
+        ),
+      );
+    },
+  );
+}
+
+AppListTableColumn<HrWorkItem> _workItemRosterActionsColumn(
+  AppLocalizations l10n, {
+  required bool canWrite,
+  required bool isMutating,
+  ValueChanged<HrWorkItem>? onEdit,
+  ValueChanged<HrWorkItem>? onDelete,
+  ValueChanged<HrWorkItem>? onRestore,
+  ValueChanged<HrWorkItem>? onPermanentDelete,
+}) {
+  return AppListTableColumn<HrWorkItem>(
+    id: 'actions',
+    label: l10n.hrRosterActionsColumnLabel,
+    alwaysVisible: true,
+    preferredWidth: 220,
+    cellBuilder: (BuildContext context, HrWorkItem item) {
+      final ThemeData theme = Theme.of(context);
+      final bool deleted =
+          (item.status ?? '').trim().toUpperCase() == 'DELETED';
+      final bool enabled = canWrite && !isMutating;
+      if (!canWrite) {
+        return const SizedBox.shrink();
+      }
+      final double gap = theme.spacing.xs;
+
+      if (deleted) {
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            AppButton.tertiary(
+              leadingIcon: Icons.restore_outlined,
+              label: l10n.hrRosterRestoreAction,
+              tooltip: l10n.hrRosterRestoreAction,
+              dense: true,
+              enabled: enabled,
+              onPressed: enabled && onRestore != null
+                  ? () => onRestore(item)
+                  : null,
+            ),
+            AppButton.tertiary(
+              leadingIcon: Icons.delete_forever_outlined,
+              label: l10n.hrRosterPermanentDeleteAction,
+              tooltip: l10n.hrRosterPermanentDeleteAction,
+              dense: true,
+              color: theme.colorScheme.error,
+              enabled: enabled,
+              onPressed: enabled && onPermanentDelete != null
+                  ? () => onPermanentDelete(item)
+                  : null,
+            ),
+          ],
+        );
+      }
+
+      return Wrap(
+        spacing: gap,
+        runSpacing: gap,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: <Widget>[
+          AppButton.tertiary(
+            leadingIcon: Icons.edit_outlined,
+            label: l10n.commonEditActionLabel,
+            tooltip: l10n.hrRosterEditDialogTitle,
+            dense: true,
+            enabled: enabled,
+            onPressed: enabled && onEdit != null ? () => onEdit(item) : null,
+          ),
+          AppButton.tertiary(
+            leadingIcon: Icons.delete_outline,
+            label: l10n.hrRosterDeleteAction,
+            tooltip: l10n.hrRosterDeleteAction,
+            dense: true,
+            color: theme.colorScheme.error,
+            enabled: enabled,
+            onPressed: enabled && onDelete != null ? () => onDelete(item) : null,
+          ),
+        ],
       );
     },
   );

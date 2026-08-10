@@ -21060,6 +21060,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRosterEditDialogTitle => 'Edit roster template';
 
   @override
+  String get hrRosterDeleteSelectedAction => 'Delete selected';
+
+  @override
+  String get hrRosterDeleteSelectedConfirmTitle =>
+      'Delete selected roster templates';
+
+  @override
+  String hrRosterDeleteSelectedConfirmMessage(int count) {
+    return 'Soft-delete $count selected roster template(s)? Staff using them will be inactivated for those templates.';
+  }
+
+  @override
+  String get hrRosterPermanentDeleteSelectedAction => 'Delete forever selected';
+
+  @override
+  String get hrRosterPermanentDeleteSelectedConfirmTitle =>
+      'Permanently delete selected templates';
+
+  @override
+  String hrRosterPermanentDeleteSelectedConfirmMessage(int count) {
+    return 'Permanently delete $count selected roster template(s) and remove them from assigned staff? This cannot be undone.';
+  }
+
+  @override
+  String get hrRosterSelectAllAction => 'Select all';
+
+  @override
+  String get hrRosterActionsColumnLabel => 'Actions';
+
+  @override
   String get hrRosterDeleteConfirmTitle => 'Delete roster template';
 
   @override
