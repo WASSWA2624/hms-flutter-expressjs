@@ -276,11 +276,9 @@ HrDeskSection? hrFallbackDeskSection(AppAccessPolicy policy) {
 /// | Next action Review profile | navigate | read ∩ |
 /// | Detail Edit staff | update | write ∩ |
 /// | Staff actions (assign/leave/comp/role/offboard) | create/update/delete | write ∩ |
-/// | Staff actions Record availability / Assign / Swap shift | update | roster write ∪ |
-/// | Staff actions Run payroll | approve | source payroll ∩ |
+/// | Staff actions Add/Change/Update roster | update | roster write ∪ |
+/// | Staff actions Manage payroll | approve | source payroll ∩ |
 /// | Nested Revoke role / End assignment / Edit rate | delete/update | write ∩ |
-/// | Nested calendar Edit/Add slot | update | roster write ∪ |
-/// | Nested shift Swap | update | roster write ∪ |
 /// | Nested cross-module write ∪ | — | roster publish \| approve via shifts |
 /// | Route entry | navigate | catalog ∩ `hr:read` (AppRoutes ∪ noted) |
 ///
@@ -317,9 +315,6 @@ abstract final class HrHumanResourcesAtomPermissions {
   static const AccessRequirement offboard = hrWriteRequirement;
   static const AccessRequirement revokeRole = hrWriteRequirement;
   static const AccessRequirement endAssignment = hrWriteRequirement;
-  static const AccessRequirement recordAvailability = hrRosterWriteRequirement;
-  static const AccessRequirement assignShift = hrRosterWriteRequirement;
-  static const AccessRequirement swapShift = hrRosterWriteRequirement;
   static const AccessRequirement runPayroll = hrPayrollRequirement;
   static const AccessRequirement nestedWrite = hrWriteRequirement;
   static const AccessRequirement nestedRosterWrite = hrRosterWriteRequirement;

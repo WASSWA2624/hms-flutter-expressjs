@@ -39755,6 +39755,180 @@ abstract class AppLocalizations {
   /// **'Change roster'**
   String get hrChangeRosterAction;
 
+  /// Staff action when the staff roster period has expired.
+  ///
+  /// In en, this message translates to:
+  /// **'Update roster'**
+  String get hrUpdateRosterAction;
+
+  /// Staff action that opens the payroll management dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage payroll'**
+  String get hrManagePayrollAction;
+
+  /// Tooltip for the Manage payroll staff action.
+  ///
+  /// In en, this message translates to:
+  /// **'Set salary, deductions, and approve payments'**
+  String get hrManagePayrollActionTooltip;
+
+  /// Title for the staff payroll management dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage payroll'**
+  String get hrManagePayrollDialogTitle;
+
+  /// Salary tab label in payroll management.
+  ///
+  /// In en, this message translates to:
+  /// **'Salary'**
+  String get hrPayrollSalaryTabLabel;
+
+  /// Salary tab helper text in payroll management.
+  ///
+  /// In en, this message translates to:
+  /// **'Set salary and fee types used when calculating pay.'**
+  String get hrPayrollSalaryTabBody;
+
+  /// Opens compensation editor from payroll management.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit salary types'**
+  String get hrPayrollEditSalaryAction;
+
+  /// Deductions tab label in payroll management.
+  ///
+  /// In en, this message translates to:
+  /// **'Deductions'**
+  String get hrPayrollDeductionsTabLabel;
+
+  /// Deductions tab helper text in payroll management.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure taxes and other deductions applied with salary.'**
+  String get hrPayrollDeductionsTabBody;
+
+  /// Validation when deductions are saved without compensation.
+  ///
+  /// In en, this message translates to:
+  /// **'Set at least one salary type before saving deductions.'**
+  String get hrPayrollDeductionsRequireSalaryMessage;
+
+  /// Deduction type field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Deduction type'**
+  String get hrPayrollDeductionTypeLabel;
+
+  /// Tax deduction type option.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax (PAYE)'**
+  String get hrPayrollDeductionTaxLabel;
+
+  /// NSSF deduction type option.
+  ///
+  /// In en, this message translates to:
+  /// **'NSSF'**
+  String get hrPayrollDeductionNssfLabel;
+
+  /// NHIF deduction type option.
+  ///
+  /// In en, this message translates to:
+  /// **'NHIF'**
+  String get hrPayrollDeductionNhifLabel;
+
+  /// Loan deduction type option.
+  ///
+  /// In en, this message translates to:
+  /// **'Loan'**
+  String get hrPayrollDeductionLoanLabel;
+
+  /// Other deduction type option.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get hrPayrollDeductionOtherLabel;
+
+  /// Optional display label for a deduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get hrPayrollDeductionLabelField;
+
+  /// Whether deduction is fixed or percent.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount type'**
+  String get hrPayrollDeductionModeLabel;
+
+  /// Fixed deduction mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixed amount'**
+  String get hrPayrollDeductionModeFixedLabel;
+
+  /// Percent deduction mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Percent of gross'**
+  String get hrPayrollDeductionModePercentLabel;
+
+  /// Deduction amount or percent value.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get hrPayrollDeductionValueLabel;
+
+  /// Adds a deduction row.
+  ///
+  /// In en, this message translates to:
+  /// **'Add deduction'**
+  String get hrPayrollAddDeductionAction;
+
+  /// Removes a deduction row.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove deduction'**
+  String get hrPayrollRemoveDeductionAction;
+
+  /// Persists payroll deductions on the staff profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Save deductions'**
+  String get hrPayrollSaveDeductionsAction;
+
+  /// Payments tab label in payroll management.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments'**
+  String get hrPayrollPaymentsTabLabel;
+
+  /// Payments tab helper text in payroll management.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview pay for a period, then approve and send to accounts or bank.'**
+  String get hrPayrollPaymentsTabBody;
+
+  /// Optional reference for remittance notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank / accounts reference'**
+  String get hrPayrollBankReferenceLabel;
+
+  /// Hint for bank/accounts reference field.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional note for accounts or bank transfer'**
+  String get hrPayrollBankReferenceHint;
+
+  /// Approves payroll and sends it for payment processing.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve & send'**
+  String get hrPayrollApproveSendAction;
+
   /// Leaves section title in the HR staff details dialog.
   ///
   /// In en, this message translates to:

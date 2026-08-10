@@ -220,6 +220,23 @@ final class HrStaffCompensationDto {
 
   HrStaffCompensation toEntity() {
     final HrJsonMap metadata = _map(json['metadata_json']);
+    final List<HrJsonMap> rawDeductions = _list(metadata['deductions']);
+    final List<HrPayrollDeduction> deductions = <HrPayrollDeduction>[];
+    for (final HrJsonMap row in rawDeductions) {
+      final String code = (_string(row['code']) ?? '').trim();
+      final num? value = _number(row['value']);
+      if (code.isEmpty || value == null) {
+        continue;
+      }
+      deductions.add(
+        HrPayrollDeduction(
+          code: code.toUpperCase(),
+          label: _string(row['label']),
+          mode: (_string(row['mode']) ?? 'FIXED').toUpperCase(),
+          value: value,
+        ),
+      );
+    }
     return HrStaffCompensation(
       id:
           _string(json['display_id']) ??
@@ -235,6 +252,7 @@ final class HrStaffCompensationDto {
       effectiveFrom: _date(json['effective_from']),
       effectiveTo: _date(json['effective_to']),
       payFrequency: _string(metadata['pay_frequency']),
+      deductions: deductions,
     );
   }
 }

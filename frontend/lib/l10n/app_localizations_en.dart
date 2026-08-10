@@ -21480,6 +21480,99 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrChangeRosterAction => 'Change roster';
 
   @override
+  String get hrUpdateRosterAction => 'Update roster';
+
+  @override
+  String get hrManagePayrollAction => 'Manage payroll';
+
+  @override
+  String get hrManagePayrollActionTooltip =>
+      'Set salary, deductions, and approve payments';
+
+  @override
+  String get hrManagePayrollDialogTitle => 'Manage payroll';
+
+  @override
+  String get hrPayrollSalaryTabLabel => 'Salary';
+
+  @override
+  String get hrPayrollSalaryTabBody =>
+      'Set salary and fee types used when calculating pay.';
+
+  @override
+  String get hrPayrollEditSalaryAction => 'Edit salary types';
+
+  @override
+  String get hrPayrollDeductionsTabLabel => 'Deductions';
+
+  @override
+  String get hrPayrollDeductionsTabBody =>
+      'Configure taxes and other deductions applied with salary.';
+
+  @override
+  String get hrPayrollDeductionsRequireSalaryMessage =>
+      'Set at least one salary type before saving deductions.';
+
+  @override
+  String get hrPayrollDeductionTypeLabel => 'Deduction type';
+
+  @override
+  String get hrPayrollDeductionTaxLabel => 'Tax (PAYE)';
+
+  @override
+  String get hrPayrollDeductionNssfLabel => 'NSSF';
+
+  @override
+  String get hrPayrollDeductionNhifLabel => 'NHIF';
+
+  @override
+  String get hrPayrollDeductionLoanLabel => 'Loan';
+
+  @override
+  String get hrPayrollDeductionOtherLabel => 'Other';
+
+  @override
+  String get hrPayrollDeductionLabelField => 'Label';
+
+  @override
+  String get hrPayrollDeductionModeLabel => 'Amount type';
+
+  @override
+  String get hrPayrollDeductionModeFixedLabel => 'Fixed amount';
+
+  @override
+  String get hrPayrollDeductionModePercentLabel => 'Percent of gross';
+
+  @override
+  String get hrPayrollDeductionValueLabel => 'Value';
+
+  @override
+  String get hrPayrollAddDeductionAction => 'Add deduction';
+
+  @override
+  String get hrPayrollRemoveDeductionAction => 'Remove deduction';
+
+  @override
+  String get hrPayrollSaveDeductionsAction => 'Save deductions';
+
+  @override
+  String get hrPayrollPaymentsTabLabel => 'Payments';
+
+  @override
+  String get hrPayrollPaymentsTabBody =>
+      'Preview pay for a period, then approve and send to accounts or bank.';
+
+  @override
+  String get hrPayrollBankReferenceLabel => 'Bank / accounts reference';
+
+  @override
+  String get hrPayrollBankReferenceHint =>
+      'Optional note for accounts or bank transfer';
+
+  @override
+  String get hrPayrollApproveSendAction => 'Approve & send';
+
+  @override
   String get hrStaffLeavesSectionTitle => 'Leaves';
 
   @override

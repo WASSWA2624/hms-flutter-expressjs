@@ -68,8 +68,13 @@ HrWorkspaceState _workspaceState() {
   );
 }
 
-HrStaffDetail _staffDetail() {
-  return const HrStaffDetail(profile: _profile);
+HrStaffDetail _staffDetail({
+  List<HrShiftAssignment> shiftAssignments = const <HrShiftAssignment>[],
+}) {
+  return HrStaffDetail(
+    profile: _profile,
+    shiftAssignments: shiftAssignments,
+  );
 }
 
 Future<void> _pumpHrDetailWidgets(
@@ -139,7 +144,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('HrStaffDetailActions uses single section without group titles', (
+  testWidgets('HrStaffDetailActions uses roster and payroll actions', (
     WidgetTester tester,
   ) async {
     await _pumpHrDetailWidgets(
@@ -150,12 +155,10 @@ void main() {
         detail: _staffDetail(),
         onAssignDepartment: (_, _) {},
         onAssignPosition: (_, _, _) {},
-        onRecordAvailability: (_, _) {},
-        onAssignShift: (_, _) {},
-        onSwapShift: (_, _) {},
+        onRoster: (_, _) {},
         onRequestLeave: (_, _) {},
         onCompensation: (_, _, _) {},
-        onRunPayroll: (_, _, _) {},
+        onManagePayroll: (_, _, _) {},
         onAssignRole: (_, _, _) {},
         onModuleAccess: (_, _) {},
         onOffboardStaff: (_, _, _) {},
@@ -169,15 +172,84 @@ void main() {
     expect(find.text('Access'), findsNothing);
     expect(find.text('Assign department'), findsOneWidget);
     expect(find.text('Assign position'), findsOneWidget);
-    expect(find.text('Record availability'), findsOneWidget);
-    expect(find.text('Assign shift'), findsOneWidget);
-    expect(find.text('Swap shift'), findsOneWidget);
+    expect(find.text('Add roster'), findsOneWidget);
+    expect(find.text('Record availability'), findsNothing);
+    expect(find.text('Assign shift'), findsNothing);
+    expect(find.text('Swap shift'), findsNothing);
     expect(find.text('Request leave'), findsOneWidget);
     expect(find.text('Compensation'), findsOneWidget);
-    expect(find.text('Run payroll'), findsOneWidget);
+    expect(find.text('Manage payroll'), findsOneWidget);
+    expect(find.text('Run payroll'), findsNothing);
     expect(find.text('End employment'), findsOneWidget);
     expect(find.text('Assign role'), findsOneWidget);
     expect(find.text('View module access'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('HrStaffDetailActions shows Change roster when roster exists', (
+    WidgetTester tester,
+  ) async {
+    await _pumpHrDetailWidgets(
+      tester,
+      viewport: const Size(800, 600),
+      child: HrStaffDetailActions(
+        state: _workspaceState(),
+        detail: _staffDetail(
+          shiftAssignments: <HrShiftAssignment>[
+            HrShiftAssignment(
+              id: 'sa-1',
+              rosterId: 'roster-1',
+              startTime: DateTime.now().add(const Duration(days: 1)),
+              endTime: DateTime.now().add(const Duration(days: 1, hours: 8)),
+            ),
+          ],
+        ),
+        onAssignDepartment: (_, _) {},
+        onAssignPosition: (_, _, _) {},
+        onRoster: (_, _) {},
+        onRequestLeave: (_, _) {},
+        onCompensation: (_, _, _) {},
+        onManagePayroll: (_, _, _) {},
+        onAssignRole: (_, _, _) {},
+        onModuleAccess: (_, _) {},
+      ),
+    );
+
+    expect(find.text('Change roster'), findsOneWidget);
+    expect(find.text('Add roster'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('HrStaffDetailActions shows Update roster when roster expired', (
+    WidgetTester tester,
+  ) async {
+    await _pumpHrDetailWidgets(
+      tester,
+      viewport: const Size(800, 600),
+      child: HrStaffDetailActions(
+        state: _workspaceState(),
+        detail: _staffDetail(
+          shiftAssignments: <HrShiftAssignment>[
+            HrShiftAssignment(
+              id: 'sa-1',
+              rosterId: 'roster-1',
+              startTime: DateTime.now().subtract(const Duration(days: 10)),
+              endTime: DateTime.now().subtract(const Duration(days: 9)),
+            ),
+          ],
+        ),
+        onAssignDepartment: (_, _) {},
+        onAssignPosition: (_, _, _) {},
+        onRoster: (_, _) {},
+        onRequestLeave: (_, _) {},
+        onCompensation: (_, _, _) {},
+        onManagePayroll: (_, _, _) {},
+        onAssignRole: (_, _, _) {},
+        onModuleAccess: (_, _) {},
+      ),
+    );
+
+    expect(find.text('Update roster'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -192,12 +264,10 @@ void main() {
         detail: _staffDetail(),
         onAssignDepartment: (_, _) {},
         onAssignPosition: (_, _, _) {},
-        onRecordAvailability: (_, _) {},
-        onAssignShift: (_, _) {},
-        onSwapShift: (_, _) {},
+        onRoster: (_, _) {},
         onRequestLeave: (_, _) {},
         onCompensation: (_, _, _) {},
-        onRunPayroll: (_, _, _) {},
+        onManagePayroll: (_, _, _) {},
         onAssignRole: (_, _, _) {},
         onModuleAccess: (_, _) {},
         onOffboardStaff: (_, _, _) {},

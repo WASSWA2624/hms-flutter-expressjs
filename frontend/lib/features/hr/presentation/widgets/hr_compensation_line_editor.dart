@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -20,6 +21,7 @@ class HrCompensationLineData {
     this.payFrequency = 'MONTHLY',
     this.effectiveFrom,
     this.effectiveTo,
+    this.deductions = const <HrPayrollDeduction>[],
     this.removed = false,
   });
 
@@ -29,6 +31,7 @@ class HrCompensationLineData {
   String payFrequency;
   DateTime? effectiveFrom;
   DateTime? effectiveTo;
+  List<HrPayrollDeduction> deductions;
   bool removed;
 
   Map<String, Object?> toPayload() {
@@ -36,14 +39,27 @@ class HrCompensationLineData {
     if (rate == null || removed) {
       return <String, Object?>{};
     }
+    final Map<String, Object?> metadata = <String, Object?>{
+      if (payType == 'PER_MONTH') 'pay_frequency': payFrequency,
+      if (deductions.isNotEmpty)
+        'deductions': deductions
+            .map(
+              (HrPayrollDeduction row) => <String, Object?>{
+                'code': row.code,
+                if ((row.label ?? '').trim().isNotEmpty) 'label': row.label,
+                'mode': row.mode,
+                'value': row.value,
+              },
+            )
+            .toList(growable: false),
+    };
     return <String, Object?>{
       'pay_type': payType,
       'rate': rate,
       'currency': currency.trim().toUpperCase(),
       'effective_from': effectiveFrom?.toIso8601String(),
       'effective_to': effectiveTo?.toIso8601String(),
-      if (payType == 'PER_MONTH')
-        'metadata_json': <String, Object?>{'pay_frequency': payFrequency},
+      if (metadata.isNotEmpty) 'metadata_json': metadata,
     };
   }
 }

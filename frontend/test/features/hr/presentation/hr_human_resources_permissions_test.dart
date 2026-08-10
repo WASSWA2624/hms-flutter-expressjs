@@ -357,7 +357,7 @@ void main() {
       );
       expect(
         identical(
-          HrHumanResourcesAtomPermissions.recordAvailability,
+          HrHumanResourcesAtomPermissions.nestedRosterWrite,
           hrRosterWriteRequirement,
         ),
         isTrue,
@@ -439,17 +439,9 @@ void main() {
           reason: 'plan caps should keep roster:write on PRO',
         );
         expect(
-          HrHumanResourcesAtomPermissions.recordAvailability.isAllowed(
+          HrHumanResourcesAtomPermissions.nestedRosterWrite.isAllowed(
             rosterWriter,
           ),
-          isTrue,
-        );
-        expect(
-          HrHumanResourcesAtomPermissions.assignShift.isAllowed(rosterWriter),
-          isTrue,
-        );
-        expect(
-          HrHumanResourcesAtomPermissions.swapShift.isAllowed(rosterWriter),
           isTrue,
         );
         expect(
@@ -543,7 +535,7 @@ void main() {
   );
 
   testWidgets(
-    'full write ∩: Create user, Staff actions, Run payroll via staff deep-link',
+    'full write ∩: Create user, Staff actions, Manage payroll via staff deep-link',
     (WidgetTester tester) async {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
@@ -580,16 +572,16 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(AppQuickActions),
-          matching: find.text('Run payroll'),
+          matching: find.text('Manage payroll'),
         ),
         findsOneWidget,
       );
-      expect(find.byTooltip('Edit staff'), findsOneWidget);
+      expect(find.text('Edit staff'), findsOneWidget);
     },
   );
 
   testWidgets(
-    '∩ denial: hr:write without financial:approve hides Run payroll in detail',
+    '∩ denial: hr:write without financial:approve hides Manage payroll in detail',
     (WidgetTester tester) async {
       final AppAccessPolicy writerNoFinance = _policy(
         permissions: <AppPermission>{
@@ -619,12 +611,19 @@ void main() {
         ),
         findsOneWidget,
       );
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Manage payroll'),
+        ),
+        findsNothing,
+      );
       expect(find.text('Run payroll'), findsNothing);
     },
   );
 
   testWidgets(
-    '∪ roster:write shows Record availability without Create user',
+    '∪ roster:write shows Add roster without Create user',
     (WidgetTester tester) async {
       final AppAccessPolicy rosterWriter = _policy(
         permissions: <AppPermission>{
@@ -648,7 +647,8 @@ void main() {
       expect(_searchAction('Add staff'), findsNothing);
 
       expect(find.text('Staff actions'), findsOneWidget);
-      expect(find.text('Record availability'), findsOneWidget);
+      expect(find.text('Add roster'), findsOneWidget);
+      expect(find.text('Record availability'), findsNothing);
       expect(
         find.descendant(
           of: find.byType(AppQuickActions),
@@ -656,6 +656,7 @@ void main() {
         ),
         findsNothing,
       );
+      expect(find.text('Manage payroll'), findsNothing);
       expect(find.text('Run payroll'), findsNothing);
       expect(find.byTooltip('Edit staff'), findsNothing);
     },

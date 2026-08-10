@@ -27692,6 +27692,122 @@
   "@hrChangeRosterAction": {
     "description": "Header action when staff already has a roster."
   },
+  "hrUpdateRosterAction": "Update roster",
+  "@hrUpdateRosterAction": {
+    "description": "Staff action when the staff roster period has expired."
+  },
+  "hrManagePayrollAction": "Manage payroll",
+  "@hrManagePayrollAction": {
+    "description": "Staff action that opens the payroll management dialog."
+  },
+  "hrManagePayrollActionTooltip": "Set salary, deductions, and approve payments",
+  "@hrManagePayrollActionTooltip": {
+    "description": "Tooltip for the Manage payroll staff action."
+  },
+  "hrManagePayrollDialogTitle": "Manage payroll",
+  "@hrManagePayrollDialogTitle": {
+    "description": "Title for the staff payroll management dialog."
+  },
+  "hrPayrollSalaryTabLabel": "Salary",
+  "@hrPayrollSalaryTabLabel": {
+    "description": "Salary tab label in payroll management."
+  },
+  "hrPayrollSalaryTabBody": "Set salary and fee types used when calculating pay.",
+  "@hrPayrollSalaryTabBody": {
+    "description": "Salary tab helper text in payroll management."
+  },
+  "hrPayrollEditSalaryAction": "Edit salary types",
+  "@hrPayrollEditSalaryAction": {
+    "description": "Opens compensation editor from payroll management."
+  },
+  "hrPayrollDeductionsTabLabel": "Deductions",
+  "@hrPayrollDeductionsTabLabel": {
+    "description": "Deductions tab label in payroll management."
+  },
+  "hrPayrollDeductionsTabBody": "Configure taxes and other deductions applied with salary.",
+  "@hrPayrollDeductionsTabBody": {
+    "description": "Deductions tab helper text in payroll management."
+  },
+  "hrPayrollDeductionsRequireSalaryMessage": "Set at least one salary type before saving deductions.",
+  "@hrPayrollDeductionsRequireSalaryMessage": {
+    "description": "Validation when deductions are saved without compensation."
+  },
+  "hrPayrollDeductionTypeLabel": "Deduction type",
+  "@hrPayrollDeductionTypeLabel": {
+    "description": "Deduction type field label."
+  },
+  "hrPayrollDeductionTaxLabel": "Tax (PAYE)",
+  "@hrPayrollDeductionTaxLabel": {
+    "description": "Tax deduction type option."
+  },
+  "hrPayrollDeductionNssfLabel": "NSSF",
+  "@hrPayrollDeductionNssfLabel": {
+    "description": "NSSF deduction type option."
+  },
+  "hrPayrollDeductionNhifLabel": "NHIF",
+  "@hrPayrollDeductionNhifLabel": {
+    "description": "NHIF deduction type option."
+  },
+  "hrPayrollDeductionLoanLabel": "Loan",
+  "@hrPayrollDeductionLoanLabel": {
+    "description": "Loan deduction type option."
+  },
+  "hrPayrollDeductionOtherLabel": "Other",
+  "@hrPayrollDeductionOtherLabel": {
+    "description": "Other deduction type option."
+  },
+  "hrPayrollDeductionLabelField": "Label",
+  "@hrPayrollDeductionLabelField": {
+    "description": "Optional display label for a deduction."
+  },
+  "hrPayrollDeductionModeLabel": "Amount type",
+  "@hrPayrollDeductionModeLabel": {
+    "description": "Whether deduction is fixed or percent."
+  },
+  "hrPayrollDeductionModeFixedLabel": "Fixed amount",
+  "@hrPayrollDeductionModeFixedLabel": {
+    "description": "Fixed deduction mode."
+  },
+  "hrPayrollDeductionModePercentLabel": "Percent of gross",
+  "@hrPayrollDeductionModePercentLabel": {
+    "description": "Percent deduction mode."
+  },
+  "hrPayrollDeductionValueLabel": "Value",
+  "@hrPayrollDeductionValueLabel": {
+    "description": "Deduction amount or percent value."
+  },
+  "hrPayrollAddDeductionAction": "Add deduction",
+  "@hrPayrollAddDeductionAction": {
+    "description": "Adds a deduction row."
+  },
+  "hrPayrollRemoveDeductionAction": "Remove deduction",
+  "@hrPayrollRemoveDeductionAction": {
+    "description": "Removes a deduction row."
+  },
+  "hrPayrollSaveDeductionsAction": "Save deductions",
+  "@hrPayrollSaveDeductionsAction": {
+    "description": "Persists payroll deductions on the staff profile."
+  },
+  "hrPayrollPaymentsTabLabel": "Payments",
+  "@hrPayrollPaymentsTabLabel": {
+    "description": "Payments tab label in payroll management."
+  },
+  "hrPayrollPaymentsTabBody": "Preview pay for a period, then approve and send to accounts or bank.",
+  "@hrPayrollPaymentsTabBody": {
+    "description": "Payments tab helper text in payroll management."
+  },
+  "hrPayrollBankReferenceLabel": "Bank / accounts reference",
+  "@hrPayrollBankReferenceLabel": {
+    "description": "Optional reference for remittance notes."
+  },
+  "hrPayrollBankReferenceHint": "Optional note for accounts or bank transfer",
+  "@hrPayrollBankReferenceHint": {
+    "description": "Hint for bank/accounts reference field."
+  },
+  "hrPayrollApproveSendAction": "Approve & send",
+  "@hrPayrollApproveSendAction": {
+    "description": "Approves payroll and sends it for payment processing."
+  },
   "hrStaffLeavesSectionTitle": "Leaves",
   "@hrStaffLeavesSectionTitle": {
     "description": "Leaves section title in the HR staff details dialog."

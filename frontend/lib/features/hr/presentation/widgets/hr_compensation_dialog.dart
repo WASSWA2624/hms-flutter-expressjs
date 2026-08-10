@@ -185,6 +185,7 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
           payFrequency: row.payFrequency ?? 'MONTHLY',
           effectiveFrom: row.effectiveFrom ?? DateTime.now(),
           effectiveTo: row.effectiveTo,
+          deductions: row.deductions,
         ),
       );
     }

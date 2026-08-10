@@ -504,8 +504,6 @@ class _HrStaffDetailBody extends ConsumerWidget {
     return HrStaffDetailsBody(
       state: state,
       detail: detail,
-      onAssignShift: _showShiftAssignmentDialog,
-      onSwapShift: _showShiftSwapDialog,
     );
   }
 }
@@ -1060,93 +1058,6 @@ class _StatusBadge extends StatelessWidget {
 }
 
 
-
-Future<void> _showShiftAssignmentDialog(
-  BuildContext context,
-  WidgetRef ref,
-) async {
-  if (!HrHumanResourcesAtomPermissions.assignShift.isAllowed(
-    ref.read(appAccessPolicyProvider),
-  )) {
-    return;
-  }
-
-  final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceState? state = readHrWorkspaceState(ref);
-  final HrWorkspaceController controller = ref.read(
-    hrWorkspaceControllerProvider.notifier,
-  );
-  final GlobalKey<HrShiftAssignmentFieldsState> fieldsKey =
-      GlobalKey<HrShiftAssignmentFieldsState>();
-  final bool? saved = await showAppWorkspaceMutationDialog(
-    context: context,
-    title: Text(l10n.hrAssignShiftDialogTitle),
-    icon: const Icon(Icons.calendar_view_week_outlined),
-    submitLabel: l10n.hrAssignShiftAction,
-    cancelLabel: l10n.commonCancelActionLabel,
-    submitIcon: Icons.save_outlined,
-    buildFields:
-        (
-          BuildContext context,
-          GlobalKey<FormState> formKey,
-          bool _, [
-          AppFailure? failure,
-        ]) {
-          return HrShiftAssignmentFields(
-            key: fieldsKey,
-            referenceData: state?.referenceData ?? const HrReferenceData(),
-          );
-        },
-    onSubmit: () => controller.createShiftAssignment(
-      fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
-    ),
-  );
-  if (saved == true && context.mounted) {
-    showHrMutationSnackBar(context, null);
-  }
-}
-
-Future<void> _showShiftSwapDialog(BuildContext context, WidgetRef ref) async {
-  if (!HrHumanResourcesAtomPermissions.swapShift.isAllowed(
-    ref.read(appAccessPolicyProvider),
-  )) {
-    return;
-  }
-
-  final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceState? state = readHrWorkspaceState(ref);
-  final HrWorkspaceController controller = ref.read(
-    hrWorkspaceControllerProvider.notifier,
-  );
-  final GlobalKey<HrShiftSwapFieldsState> fieldsKey =
-      GlobalKey<HrShiftSwapFieldsState>();
-  final bool? saved = await showAppWorkspaceMutationDialog(
-    context: context,
-    title: Text(l10n.hrSwapShiftDialogTitle),
-    icon: const Icon(Icons.swap_horiz_outlined),
-    submitLabel: l10n.hrSwapShiftAction,
-    cancelLabel: l10n.commonCancelActionLabel,
-    submitIcon: Icons.save_outlined,
-    buildFields:
-        (
-          BuildContext context,
-          GlobalKey<FormState> formKey,
-          bool _, [
-          AppFailure? failure,
-        ]) {
-          return HrShiftSwapFields(
-            key: fieldsKey,
-            referenceData: state?.referenceData ?? const HrReferenceData(),
-          );
-        },
-    onSubmit: () => controller.createShiftSwapRequest(
-      fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
-    ),
-  );
-  if (saved == true && context.mounted) {
-    showHrMutationSnackBar(context, null);
-  }
-}
 
 Future<void> _showWorkItemDialog(
   BuildContext context,

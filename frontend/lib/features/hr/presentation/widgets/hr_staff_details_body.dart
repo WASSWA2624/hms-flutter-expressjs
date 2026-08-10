@@ -6,7 +6,6 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
-import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
@@ -17,7 +16,6 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.da
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_department_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_position_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assignment_detail_dialog.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_availability_calendar.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_compensation_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart'
     hide
@@ -34,8 +32,6 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.
         showHrMutationSnackBar,
         readHrWorkspaceState;
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_leave_detail_dialog.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_payroll_wizard_dialog.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_record_availability_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_request_leave_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_calendar_preview.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_detail_dialog.dart';
@@ -43,28 +39,22 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_dialogs.da
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_actions.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_offboarding_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_payroll_management_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
-
-typedef HrStaffShiftAction =
-    Future<void> Function(BuildContext context, WidgetRef ref);
 
 /// Comprehensive Staff details body for the HR staff dialog.
 class HrStaffDetailsBody extends ConsumerWidget {
   const HrStaffDetailsBody({
     required this.state,
     required this.detail,
-    required this.onAssignShift,
-    required this.onSwapShift,
     super.key,
   });
 
   final HrWorkspaceState state;
   final HrStaffDetail detail;
-  final HrStaffShiftAction onAssignShift;
-  final HrStaffShiftAction onSwapShift;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -76,12 +66,17 @@ class HrStaffDetailsBody extends ConsumerWidget {
     );
     final bool canRosterWrite =
         HrHumanResourcesAtomPermissions.nestedRosterWrite.isAllowed(policy);
+    final bool canPayroll =
+        HrHumanResourcesAtomPermissions.runPayroll.isAllowed(policy);
     final HrStaffProfile profile = detail.profile;
     final List<HrStaffCompensation> activeCompensations = detail.compensations
         .where((HrStaffCompensation row) => row.isActive)
         .toList(growable: false);
+    final HrStaffRosterActionKind rosterKind = resolveStaffRosterActionKind(
+      detail.shiftAssignments,
+    );
+    final bool hasRoster = rosterKind != HrStaffRosterActionKind.add;
     final String? primaryRosterId = _primaryRosterId(detail.shiftAssignments);
-    final bool hasRoster = (primaryRosterId ?? '').trim().isNotEmpty;
     final bool rosterEmpty = detail.shiftAssignments.every(
       (HrShiftAssignment row) =>
           row.startTime == null || row.endTime == null,
@@ -108,9 +103,8 @@ class HrStaffDetailsBody extends ConsumerWidget {
         detail: detail,
         onAssignDepartment: showHrAssignDepartmentDialog,
         onAssignPosition: showHrAssignPositionDialog,
-        onRecordAvailability: showHrRecordAvailabilityDialog,
-        onAssignShift: onAssignShift,
-        onSwapShift: onSwapShift,
+        onRoster: (BuildContext context, WidgetRef ref) =>
+            unawaited(addOrChangeRoster()),
         onRequestLeave: (BuildContext context, WidgetRef ref) =>
             showHrRequestLeaveDialog(context, ref),
         onCompensation:
@@ -121,9 +115,14 @@ class HrStaffDetailsBody extends ConsumerWidget {
                   staff,
                   detail.compensations,
                 ),
-        onRunPayroll:
-            (BuildContext context, WidgetRef ref, HrStaffProfile staff) =>
-                showHrPayrollWizardDialog(context, ref, staff),
+        onManagePayroll:
+            (BuildContext context, WidgetRef ref, HrStaffDetail staffDetail) =>
+                showHrStaffPayrollManagementDialog(
+                  context,
+                  ref,
+                  staffDetail.profile,
+                  staffDetail.compensations,
+                ),
         onAssignRole: showHrAssignRoleDialog,
         onModuleAccess: (BuildContext context, HrStaffDetail staffDetail) {
           showHrModuleAccessDialog(context, ref, staffDetail.accessSummary);
@@ -134,21 +133,25 @@ class HrStaffDetailsBody extends ConsumerWidget {
                   context,
                   ref,
                   d,
-                  onOpenPayroll: () =>
-                      showHrPayrollWizardDialog(context, ref, d.profile),
+                  onOpenPayroll: () => showHrStaffPayrollManagementDialog(
+                    context,
+                    ref,
+                    d.profile,
+                    d.compensations,
+                  ),
                 ),
       ),
       AppCollapsibleSection(
         title: l10n.hrStaffRostersSectionTitle,
         titleIcon: Icons.calendar_month_outlined,
-        initiallyExpanded: true,
+        initiallyExpanded: false,
         headerActions: <Widget>[
           if (canRosterWrite &&
               !profile.isSeparated &&
               !state.isMutating &&
               hasRoster)
             AppButton.secondary(
-              label: l10n.hrChangeRosterAction,
+              label: hrStaffRosterActionLabel(l10n, rosterKind),
               leadingIcon: Icons.edit_calendar_outlined,
               onPressed: () => unawaited(addOrChangeRoster()),
             ),
@@ -164,7 +167,7 @@ class HrStaffDetailsBody extends ConsumerWidget {
                 icon: Icons.event_available_outlined,
                 action: canRosterWrite && !profile.isSeparated && !state.isMutating
                     ? AppButton.primary(
-                        label: l10n.hrAddRosterAction,
+                        label: hrStaffRosterActionLabel(l10n, rosterKind),
                         leadingIcon: Icons.add_outlined,
                         onPressed: () => unawaited(addOrChangeRoster()),
                       )
@@ -179,48 +182,13 @@ class HrStaffDetailsBody extends ConsumerWidget {
                   );
                 },
               ),
-            if (detail.availabilities.isNotEmpty) ...<Widget>[
-              SizedBox(height: theme.spacing.md),
-              Text(
-                l10n.hrAvailabilitySectionTitle,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: AppFontWeight.emphasis,
-                ),
-              ),
-              SizedBox(height: theme.spacing.sm),
-              HrAvailabilityCalendar(
-                availabilities: detail.availabilities,
-                leaves: detail.leaves,
-                onDayTap: (int day) {
-                  HrStaffAvailability? availability;
-                  for (final HrStaffAvailability item
-                      in detail.availabilities) {
-                    if (item.dayOfWeek == day) {
-                      availability = item;
-                      break;
-                    }
-                  }
-                  showHrAvailabilityDaySheet(
-                    context,
-                    dayOfWeek: day,
-                    availability: availability,
-                    onEdit: canRosterWrite
-                        ? () => showHrRecordAvailabilityDialog(context, ref)
-                        : null,
-                    onAddSlot: canRosterWrite
-                        ? () => showHrRecordAvailabilityDialog(context, ref)
-                        : null,
-                  );
-                },
-              ),
-            ],
           ],
         ),
       ),
       AppCollapsibleSection(
         title: l10n.hrStaffLeavesSectionTitle,
         titleIcon: Icons.event_busy_outlined,
-        initiallyExpanded: true,
+        initiallyExpanded: false,
         headerActions: <Widget>[
           if (canWrite &&
               !profile.isSeparated &&
@@ -269,30 +237,35 @@ class HrStaffDetailsBody extends ConsumerWidget {
       AppCollapsibleSection(
         title: l10n.hrStaffPayrollSectionTitle,
         titleIcon: Icons.payments_outlined,
-        initiallyExpanded: true,
+        initiallyExpanded: false,
         headerActions: <Widget>[
-          if (canWrite &&
-              !state.isMutating &&
-              activeCompensations.isNotEmpty) ...<Widget>[
-            AppButton.secondary(
-              label: l10n.hrCompensationAction,
-              leadingIcon: Icons.price_change_outlined,
-              onPressed: () => unawaited(
-                showHrCompensationDialog(
-                  context,
-                  ref,
-                  profile,
-                  detail.compensations,
+          if (!state.isMutating) ...<Widget>[
+            if (canWrite && activeCompensations.isNotEmpty)
+              AppButton.secondary(
+                label: l10n.hrCompensationAction,
+                leadingIcon: Icons.price_change_outlined,
+                onPressed: () => unawaited(
+                  showHrCompensationDialog(
+                    context,
+                    ref,
+                    profile,
+                    detail.compensations,
+                  ),
                 ),
               ),
-            ),
-            AppButton.primary(
-              label: l10n.hrRunPayrollAction,
-              leadingIcon: Icons.payments_outlined,
-              onPressed: () => unawaited(
-                showHrPayrollWizardDialog(context, ref, profile),
+            if (canPayroll)
+              AppButton.primary(
+                label: l10n.hrManagePayrollAction,
+                leadingIcon: Icons.account_balance_wallet_outlined,
+                onPressed: () => unawaited(
+                  showHrStaffPayrollManagementDialog(
+                    context,
+                    ref,
+                    profile,
+                    detail.compensations,
+                  ),
+                ),
               ),
-            ),
           ],
         ],
         child: activeCompensations.isEmpty && profile.consultationFee == null
@@ -303,15 +276,26 @@ class HrStaffDetailsBody extends ConsumerWidget {
                 icon: Icons.price_change_outlined,
                 action: canWrite && !state.isMutating
                     ? AppButton.primary(
-                        label: l10n.hrCompensationAction,
-                        leadingIcon: Icons.price_change_outlined,
+                        label: canPayroll
+                            ? l10n.hrManagePayrollAction
+                            : l10n.hrCompensationAction,
+                        leadingIcon: canPayroll
+                            ? Icons.account_balance_wallet_outlined
+                            : Icons.price_change_outlined,
                         onPressed: () => unawaited(
-                          showHrCompensationDialog(
-                            context,
-                            ref,
-                            profile,
-                            detail.compensations,
-                          ),
+                          canPayroll
+                              ? showHrStaffPayrollManagementDialog(
+                                  context,
+                                  ref,
+                                  profile,
+                                  detail.compensations,
+                                )
+                              : showHrCompensationDialog(
+                                  context,
+                                  ref,
+                                  profile,
+                                  detail.compensations,
+                                ),
                         ),
                       )
                     : null,
@@ -324,7 +308,7 @@ class HrStaffDetailsBody extends ConsumerWidget {
       AppCollapsibleSection(
         title: l10n.hrRolesSectionTitle,
         titleIcon: Icons.badge_outlined,
-        initiallyExpanded: true,
+        initiallyExpanded: false,
         headerActions: <Widget>[
           AppButton.secondary(
             label: l10n.hrManageRolesAction,
@@ -333,7 +317,6 @@ class HrStaffDetailsBody extends ConsumerWidget {
               showManageRolesPermissionsDialog(
                 context,
                 ref,
-                panel: AccessAdminPanel.roles,
               ),
             ),
           ),
@@ -351,7 +334,6 @@ class HrStaffDetailsBody extends ConsumerWidget {
                     showManageRolesPermissionsDialog(
                       context,
                       ref,
-                      panel: AccessAdminPanel.roles,
                     ),
                   ),
                 ),
@@ -378,7 +360,7 @@ class HrStaffDetailsBody extends ConsumerWidget {
       AppCollapsibleSection(
         title: l10n.hrStaffPermissionsSectionTitle,
         titleIcon: Icons.shield_outlined,
-        initiallyExpanded: true,
+        initiallyExpanded: false,
         headerActions: <Widget>[
           AppButton.secondary(
             label: l10n.hrManageUserPermissionsAction,

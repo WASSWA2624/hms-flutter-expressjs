@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -28,12 +29,10 @@ class HrStaffDetailActions extends ConsumerWidget {
     required this.detail,
     required this.onAssignDepartment,
     required this.onAssignPosition,
-    required this.onRecordAvailability,
-    required this.onAssignShift,
-    required this.onSwapShift,
+    required this.onRoster,
     required this.onRequestLeave,
     required this.onCompensation,
-    required this.onRunPayroll,
+    required this.onManagePayroll,
     required this.onAssignRole,
     required this.onModuleAccess,
     this.onOffboardStaff,
@@ -44,12 +43,10 @@ class HrStaffDetailActions extends ConsumerWidget {
   final HrStaffDetail detail;
   final HrStaffDetailActionCallback onAssignDepartment;
   final HrStaffDetailProfileActionCallback onAssignPosition;
-  final HrStaffDetailActionCallback onRecordAvailability;
-  final HrStaffDetailActionCallback onAssignShift;
-  final HrStaffDetailActionCallback onSwapShift;
+  final HrStaffDetailActionCallback onRoster;
   final HrStaffDetailActionCallback onRequestLeave;
   final HrStaffDetailProfileActionCallback onCompensation;
-  final HrStaffDetailProfileActionCallback onRunPayroll;
+  final HrStaffDetailAccessActionCallback onManagePayroll;
   final HrStaffDetailAccessActionCallback onAssignRole;
   final HrStaffDetailModuleAccessCallback onModuleAccess;
   final HrStaffDetailOffboardCallback? onOffboardStaff;
@@ -60,13 +57,12 @@ class HrStaffDetailActions extends ConsumerWidget {
     final HrStaffProfile profile = detail.profile;
     final bool separated = profile.isSeparated;
     final bool enabled = !state.isMutating && !separated;
-    final bool hasCompensation = <HrStaffCompensation>[
-      ...detail.compensations,
-      ...profile.compensations,
-    ].any((HrStaffCompensation row) => row.isActive);
     final bool hasLinkedUser = (profile.userId ?? profile.userDisplayId ?? '')
         .trim()
         .isNotEmpty;
+    final HrStaffRosterActionKind rosterKind = resolveStaffRosterActionKind(
+      detail.shiftAssignments,
+    );
 
     final List<AppPermissionActionItem> actions = <AppPermissionActionItem>[
       if (!separated) ...<AppPermissionActionItem>[
@@ -85,25 +81,13 @@ class HrStaffDetailActions extends ConsumerWidget {
           onPressed: () => onAssignPosition(context, ref, profile),
         ),
         AppPermissionActionItem(
-          requirement: HrHumanResourcesAtomPermissions.recordAvailability,
-          label: l10n.hrRecordAvailabilityAction,
-          icon: Icons.schedule_outlined,
+          requirement: HrHumanResourcesAtomPermissions.nestedRosterWrite,
+          label: hrStaffRosterActionLabel(l10n, rosterKind),
+          icon: rosterKind == HrStaffRosterActionKind.add
+              ? Icons.add_outlined
+              : Icons.edit_calendar_outlined,
           enabled: enabled,
-          onPressed: () => onRecordAvailability(context, ref),
-        ),
-        AppPermissionActionItem(
-          requirement: HrHumanResourcesAtomPermissions.assignShift,
-          label: l10n.hrAssignShiftAction,
-          icon: Icons.calendar_view_week_outlined,
-          enabled: enabled,
-          onPressed: () => onAssignShift(context, ref),
-        ),
-        AppPermissionActionItem(
-          requirement: HrHumanResourcesAtomPermissions.swapShift,
-          label: l10n.hrSwapShiftAction,
-          icon: Icons.swap_horiz_outlined,
-          enabled: enabled,
-          onPressed: () => onSwapShift(context, ref),
+          onPressed: () => onRoster(context, ref),
         ),
         AppPermissionActionItem(
           requirement: HrHumanResourcesAtomPermissions.requestLeave,
@@ -123,13 +107,11 @@ class HrStaffDetailActions extends ConsumerWidget {
       ),
       AppPermissionActionItem(
         requirement: HrHumanResourcesAtomPermissions.runPayroll,
-        label: l10n.hrRunPayrollAction,
-        icon: Icons.payments_outlined,
-        enabled: enabled && hasCompensation,
-        tooltip: hasCompensation
-            ? l10n.hrRunPayrollActionTooltip
-            : l10n.hrPayrollMissingCompensationTooltip,
-        onPressed: () => onRunPayroll(context, ref, profile),
+        label: l10n.hrManagePayrollAction,
+        icon: Icons.account_balance_wallet_outlined,
+        enabled: enabled,
+        tooltip: l10n.hrManagePayrollActionTooltip,
+        onPressed: () => onManagePayroll(context, ref, detail),
       ),
       if (!separated && hasLinkedUser) ...<AppPermissionActionItem>[
         AppPermissionActionItem(

@@ -189,3 +189,37 @@ String hrSeparationTypeLabel(AppLocalizations l10n, String? type) {
     _ => type,
   };
 }
+
+/// Roster action shown on staff details / staff actions.
+enum HrStaffRosterActionKind { add, change, update }
+
+HrStaffRosterActionKind resolveStaffRosterActionKind(
+  List<HrShiftAssignment> assignments,
+) {
+  final bool hasRoster = assignments.any(
+    (HrShiftAssignment row) => (row.rosterId ?? '').trim().isNotEmpty,
+  );
+  if (!hasRoster) {
+    return HrStaffRosterActionKind.add;
+  }
+  final DateTime now = DateTime.now();
+  final List<DateTime> ends = assignments
+      .map((HrShiftAssignment row) => row.endTime)
+      .whereType<DateTime>()
+      .toList(growable: false);
+  if (ends.isNotEmpty && ends.every((DateTime end) => end.isBefore(now))) {
+    return HrStaffRosterActionKind.update;
+  }
+  return HrStaffRosterActionKind.change;
+}
+
+String hrStaffRosterActionLabel(
+  AppLocalizations l10n,
+  HrStaffRosterActionKind kind,
+) {
+  return switch (kind) {
+    HrStaffRosterActionKind.add => l10n.hrAddRosterAction,
+    HrStaffRosterActionKind.change => l10n.hrChangeRosterAction,
+    HrStaffRosterActionKind.update => l10n.hrUpdateRosterAction,
+  };
+}

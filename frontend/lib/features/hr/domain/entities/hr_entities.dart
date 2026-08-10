@@ -876,6 +876,21 @@ final class HrAvailabilitySlot {
 }
 
 @immutable
+final class HrPayrollDeduction {
+  const HrPayrollDeduction({
+    required this.code,
+    required this.mode,
+    required this.value,
+    this.label,
+  });
+
+  final String code;
+  final String? label;
+  final String mode;
+  final num value;
+}
+
+@immutable
 final class HrStaffCompensation {
   const HrStaffCompensation({
     required this.id,
@@ -887,6 +902,7 @@ final class HrStaffCompensation {
     this.effectiveFrom,
     this.effectiveTo,
     this.payFrequency,
+    this.deductions = const <HrPayrollDeduction>[],
   });
 
   final String id;
@@ -898,6 +914,7 @@ final class HrStaffCompensation {
   final DateTime? effectiveFrom;
   final DateTime? effectiveTo;
   final String? payFrequency;
+  final List<HrPayrollDeduction> deductions;
 
   bool get isActive {
     final DateTime now = DateTime.now();

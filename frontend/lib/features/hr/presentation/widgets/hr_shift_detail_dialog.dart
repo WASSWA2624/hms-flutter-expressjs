@@ -10,7 +10,6 @@ Future<void> showHrShiftDetailDialog(
   BuildContext context,
   HrShiftAssignment assignment,
   HrReferenceData referenceData, {
-  VoidCallback? onSwap,
   VoidCallback? onRemove,
   bool actionsEnabled = true,
 }) async {
@@ -54,15 +53,6 @@ Future<void> showHrShiftDetailDialog(
         ],
       ),
       actions: <Widget>[
-        if (actionsEnabled && onSwap != null)
-          AppButton.secondary(
-            label: l10n.hrSwapShiftAction,
-            leadingIcon: Icons.swap_horiz_outlined,
-            onPressed: () {
-              Navigator.of(context).pop();
-              onSwap();
-            },
-          ),
         if (actionsEnabled && onRemove != null)
           AppButton.secondary(
             label: l10n.hrRemoveShiftAssignmentAction,
