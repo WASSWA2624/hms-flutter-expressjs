@@ -110,6 +110,11 @@ describe('permissions config', () => {
     expect(ROLE_PERMISSIONS[ROLES.BILLING]).not.toContain(
       PERMISSIONS.PRICING_PHARMACY_WRITE
     );
+    // patients:read omitted — no Patients registry; patient:read for embeds.
+    expect(ROLE_PERMISSIONS[ROLES.BILLING]).not.toContain(
+      PERMISSIONS.PATIENTS_READ
+    );
+    expect(ROLE_PERMISSIONS[ROLES.BILLING]).toContain(PERMISSIONS.PATIENT_READ);
     expect(ROLE_PERMISSIONS[ROLES.ACCOUNTANT]).toEqual(
       expect.arrayContaining([
         PERMISSIONS.BILLING_READ,
@@ -119,6 +124,9 @@ describe('permissions config', () => {
     );
     expect(ROLE_PERMISSIONS[ROLES.ACCOUNTANT]).not.toContain(
       PERMISSIONS.LAST_OFFICE_WRITE
+    );
+    expect(ROLE_PERMISSIONS[ROLES.ACCOUNTANT]).not.toContain(
+      PERMISSIONS.PATIENTS_READ
     );
   });
 

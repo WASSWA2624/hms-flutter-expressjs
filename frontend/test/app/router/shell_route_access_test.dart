@@ -192,7 +192,8 @@ void main() {
       final policy = policyForRole('BILLING');
 
       expect(canAccess(AppRoutes.home, policy), isTrue);
-      expect(canAccess(AppRoutes.patients, policy), isTrue);
+      // patients:read omitted — no Patients registry shell entry.
+      expect(canAccess(AppRoutes.patients, policy), isFalse);
       expect(canAccess(AppRoutes.billing, policy), isTrue);
       expect(canAccess(AppRoutes.claims, policy), isTrue);
       expect(canAccess(AppRoutes.communications, policy), isTrue);

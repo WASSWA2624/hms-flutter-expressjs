@@ -331,6 +331,7 @@ const BASE_ROLE_PERMISSIONS = {
     PERMISSIONS.LAST_OFFICE_WRITE,
     PERMISSIONS.REPORTS_READ,
   ],
+  // patients:read omitted — no Patients registry; patient:read for Billing embeds.
   [ROLES.BILLING]: [
     PERMISSIONS.BILLING_READ,
     PERMISSIONS.BILLING_WRITE,
@@ -346,9 +347,9 @@ const BASE_ROLE_PERMISSIONS = {
     PERMISSIONS.REPORTS_READ,
     PERMISSIONS.PROFILE_READ,
     PERMISSIONS.PATIENT_READ,
-    PERMISSIONS.PATIENTS_READ,
   ],
   // Pharmacy counter billing — invoices + pharmacy price lists (no facility pricing).
+  // patients:read omitted — no Patients registry; patient:read for Billing embeds.
   [ROLES.PHARMACY_BILLING]: [
     PERMISSIONS.BILLING_READ,
     PERMISSIONS.BILLING_WRITE,
@@ -363,7 +364,6 @@ const BASE_ROLE_PERMISSIONS = {
     PERMISSIONS.REPORTS_READ,
     PERMISSIONS.PROFILE_READ,
     PERMISSIONS.PATIENT_READ,
-    PERMISSIONS.PATIENTS_READ,
   ],
   [ROLES.OPERATIONS]: [
     PERMISSIONS.OPERATIONS_READ,
@@ -671,6 +671,7 @@ const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.COMMUNICATIONS_READ,
   ],
   // Accountant — facility finance without front-desk last-office actions.
+  // patients:read omitted — no Patients registry; patient:read for Billing embeds.
   [ROLES.ACCOUNTANT]: [
     PERMISSIONS.BILLING_READ,
     PERMISSIONS.BILLING_WRITE,
@@ -682,7 +683,6 @@ const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.REPORTS_READ,
     PERMISSIONS.PROFILE_READ,
     PERMISSIONS.PATIENT_READ,
-    PERMISSIONS.PATIENTS_READ,
     PERMISSIONS.COMMUNICATIONS_READ,
     PERMISSIONS.COMMUNICATIONS_WRITE,
   ],

@@ -897,11 +897,9 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'process_refund',
       'close_shift',
     ],
-    // Hubs are reached via shell navigation / quick actions — not a second
-    // review strip on the dashboard.
+    // Focused shell: billing/claims/reports/settings (not patients registry).
     shortcutIds: <String>[
       'billing',
-      'patients',
       'claims',
       'reports',
       'settings',

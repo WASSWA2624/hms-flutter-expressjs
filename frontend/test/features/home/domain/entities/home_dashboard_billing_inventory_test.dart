@@ -83,6 +83,18 @@ void main() {
       );
     });
 
+    test('open patient balances routes to Billing pending queue', () {
+      final HomeDashboardBillingAtom atom =
+          HomeDashboardBillingInventory.quickActions['review_open_patient_balances']!;
+      expect(atom.billingRoute.path, AppRoutes.billing.path);
+      expect(atom.routeQuery, <String, String>{'queue': 'pendingPayment'});
+      expect(atom.requiredPermissions, contains(AppPermissions.billingRead));
+      expect(
+        homeActionLibrary['review_open_patient_balances']!.route.path,
+        AppRoutes.billing.path,
+      );
+    });
+
     test('billing worklist items route to Billing queues (read-only)', () {
       for (final MapEntry<String, HomeDashboardBillingAtom> entry
           in HomeDashboardBillingInventory.worklistItems.entries) {

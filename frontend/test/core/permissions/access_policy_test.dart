@@ -134,6 +134,48 @@ void main() {
       },
     );
 
+    test(
+      'grants billing patient read without patients registry entry',
+      () {
+        final session = AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['BILLING'],
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+          ),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'reporting-analytics',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'patient-registry',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'insurance-claims',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+
+        final policy = AppAccessPolicy.fromSession(session);
+
+        expect(policy.grants(AppPermissions.billingRead), isTrue);
+        expect(policy.grants(AppPermissions.patientRead), isTrue);
+        expect(policy.grants(AppPermissions.patientsRead), isFalse);
+        // Billing pack omits patients:read — no Patients registry shell entry.
+        expect(AppRoutes.patients.accessRequirement.isAllowed(policy), isFalse);
+        expect(AppRoutes.billing.accessRequirement.isAllowed(policy), isTrue);
+        expect(AppRoutes.claims.accessRequirement.isAllowed(policy), isTrue);
+      },
+    );
+
     test('reporting-analytics is always active regardless of entitlements', () {
       final AppAccessPolicy policy = AppAccessPolicy.fromSession(
         AuthSession(

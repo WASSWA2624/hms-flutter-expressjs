@@ -72,6 +72,18 @@ void main() {
       }
     });
 
+    test('billing dashboard omits patients registry shortcut', () {
+      final profile = homeProfileForRole(AppRole.billing);
+
+      expect(profile.shortcutIds, isNot(contains('patients')));
+      expect(profile.shortcutIds, <String>[
+        'billing',
+        'claims',
+        'reports',
+        'settings',
+      ]);
+    });
+
     test('pharmacist dashboard shows pharmacy order and stock metrics', () {
       final profile = homeProfileForRole(AppRole.pharmacist);
 
