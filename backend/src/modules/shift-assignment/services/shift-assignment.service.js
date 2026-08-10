@@ -6,6 +6,8 @@ const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
   resolveEntityId} = require('@lib/billing/identifiers');
+const {
+  requireStaffProfileForUser} = require('@lib/staff/require-staff-profile-for-user');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.ceil(total / limit);
@@ -58,6 +60,59 @@ const listShiftAssignments = async (filters, page, limit, sortBy, order) => {
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Own shift assignments for the authenticated staff user, filtered by shift window.
+ */
+const listMyShiftAssignments = async (userId, filters, page, limit) => {
+  try {
+    const profile = await requireStaffProfileForUser(userId);
+    const skip = (page - 1) * limit;
+    const whereClause = {
+      deleted_at: null,
+      staff_profile_id: profile.id,
+      shift: {
+        deleted_at: null}};
+
+    if (filters.start_from || filters.start_to) {
+      whereClause.shift.start_time = {};
+      if (filters.start_from) {
+        whereClause.shift.start_time.gte = new Date(filters.start_from);
+      }
+      if (filters.start_to) {
+        whereClause.shift.start_time.lte = new Date(filters.start_to);
+      }
+    }
+
+    const [shiftAssignments, total] = await Promise.all([
+      prisma.shift_assignment.findMany({
+        where: whereClause,
+        skip,
+        take: limit,
+        orderBy: { assigned_at: 'asc' },
+        include: {
+          shift: {
+            select: {
+              id: true,
+              human_friendly_id: true,
+              roster_id: true,
+              shift_type: true,
+              status: true,
+              start_time: true,
+              end_time: true,
+              facility_id: true}}}}),
+      prisma.shift_assignment.count({ where: whereClause })]);
+
+    return {
+      shiftAssignments,
+      pagination: buildPagination(page, limit, total),
+      staff_profile: profile};
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [
+      { originalError: error.message }]);
   }
 };
 
@@ -221,6 +276,7 @@ const deleteShiftAssignment = async (id, userId, ipAddress) => {
 
 module.exports = {
   listShiftAssignments,
+  listMyShiftAssignments,
   getShiftAssignmentById,
   createShiftAssignment,
   updateShiftAssignment,

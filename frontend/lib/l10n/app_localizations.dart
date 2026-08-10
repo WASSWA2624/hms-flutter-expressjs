@@ -12349,6 +12349,192 @@ abstract class AppLocalizations {
   /// **'Profile and sign-in controls stay with the user account.'**
   String get settingsAccountSectionBody;
 
+  /// Settings accordion title for staff self-service leave requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaves'**
+  String get settingsLeavesSectionTitle;
+
+  /// Settings accordion body for staff self-service leave requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Request time off and review the status of your leave requests.'**
+  String get settingsLeavesSectionBody;
+
+  /// Settings accordion title for staff self-service roster calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Rosters'**
+  String get settingsRostersSectionTitle;
+
+  /// Settings accordion body for staff self-service roster calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'View the shifts assigned to you across a selected period.'**
+  String get settingsRostersSectionBody;
+
+  /// Snackbar after a successful self-service leave request.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave requested. It will appear as pending until HR reviews it.'**
+  String get settingsLeaveRequestSuccessMessage;
+
+  /// Loading title for settings leaves list.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading leaves'**
+  String get settingsLeavesLoadingTitle;
+
+  /// Loading body for settings leaves list.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching your leave requests.'**
+  String get settingsLeavesLoadingBody;
+
+  /// Empty title when the signed-in user has no leave rows.
+  ///
+  /// In en, this message translates to:
+  /// **'No leave requests'**
+  String get settingsLeavesEmptyTitle;
+
+  /// Empty body when the signed-in user has no leave rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Request leave to submit time off for HR review.'**
+  String get settingsLeavesEmptyBody;
+
+  /// Error title when self-service leaves fail to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaves unavailable'**
+  String get settingsLeavesUnavailableTitle;
+
+  /// Loading title for settings roster calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading roster'**
+  String get settingsRostersLoadingTitle;
+
+  /// Loading body for settings roster calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching your assigned shifts.'**
+  String get settingsRostersLoadingBody;
+
+  /// Empty title when there are no shift assignments in range.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts in this period'**
+  String get settingsRostersEmptyTitle;
+
+  /// Empty body when there are no shift assignments in range.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another period, or check back after HR publishes your roster.'**
+  String get settingsRostersEmptyBody;
+
+  /// Error title when self-service roster fails to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster unavailable'**
+  String get settingsRostersUnavailableTitle;
+
+  /// Empty/error title when the user has no linked staff profile.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff profile'**
+  String get settingsStaffProfileMissingTitle;
+
+  /// Empty/error body when the user has no linked staff profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask HR to link your account to a staff profile before using leaves or rosters.'**
+  String get settingsStaffProfileMissingBody;
+
+  /// Header showing the selected roster date range.
+  ///
+  /// In en, this message translates to:
+  /// **'Current period: {range}'**
+  String settingsRostersPeriodHeader(String range);
+
+  /// Roster period preset for today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get settingsRosterPeriodToday;
+
+  /// Roster period preset for tomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get settingsRosterPeriodTomorrow;
+
+  /// Roster period preset for the current week.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get settingsRosterPeriodThisWeek;
+
+  /// Roster period preset for the current month.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get settingsRosterPeriodThisMonth;
+
+  /// Roster period preset for the previous month.
+  ///
+  /// In en, this message translates to:
+  /// **'Last month'**
+  String get settingsRosterPeriodLastMonth;
+
+  /// Roster period preset for the next month.
+  ///
+  /// In en, this message translates to:
+  /// **'Next month'**
+  String get settingsRosterPeriodNextMonth;
+
+  /// Roster period preset covering the next three months.
+  ///
+  /// In en, this message translates to:
+  /// **'Next 3 months'**
+  String get settingsRosterPeriodNextThreeMonths;
+
+  /// Roster period preset that opens custom date pickers.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom range'**
+  String get settingsRosterPeriodCustom;
+
+  /// Leave status filter chip for all statuses.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get settingsLeaveStatusAll;
+
+  /// Leave status chip for REQUESTED (shown as Pending to staff).
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get settingsLeaveStatusRequested;
+
+  /// Leave status chip for APPROVED.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get settingsLeaveStatusApproved;
+
+  /// Leave status chip for REJECTED.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get settingsLeaveStatusRejected;
+
+  /// Leave status chip for CANCELLED.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get settingsLeaveStatusCancelled;
+
   /// Settings action title for opening the user profile.
   ///
   /// In en, this message translates to:

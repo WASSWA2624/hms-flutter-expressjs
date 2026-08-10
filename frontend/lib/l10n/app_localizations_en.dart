@@ -6593,6 +6593,107 @@ class AppLocalizationsEn extends AppLocalizations {
       'Profile and sign-in controls stay with the user account.';
 
   @override
+  String get settingsLeavesSectionTitle => 'Leaves';
+
+  @override
+  String get settingsLeavesSectionBody =>
+      'Request time off and review the status of your leave requests.';
+
+  @override
+  String get settingsRostersSectionTitle => 'Rosters';
+
+  @override
+  String get settingsRostersSectionBody =>
+      'View the shifts assigned to you across a selected period.';
+
+  @override
+  String get settingsLeaveRequestSuccessMessage =>
+      'Leave requested. It will appear as pending until HR reviews it.';
+
+  @override
+  String get settingsLeavesLoadingTitle => 'Loading leaves';
+
+  @override
+  String get settingsLeavesLoadingBody => 'Fetching your leave requests.';
+
+  @override
+  String get settingsLeavesEmptyTitle => 'No leave requests';
+
+  @override
+  String get settingsLeavesEmptyBody =>
+      'Request leave to submit time off for HR review.';
+
+  @override
+  String get settingsLeavesUnavailableTitle => 'Leaves unavailable';
+
+  @override
+  String get settingsRostersLoadingTitle => 'Loading roster';
+
+  @override
+  String get settingsRostersLoadingBody => 'Fetching your assigned shifts.';
+
+  @override
+  String get settingsRostersEmptyTitle => 'No shifts in this period';
+
+  @override
+  String get settingsRostersEmptyBody =>
+      'Try another period, or check back after HR publishes your roster.';
+
+  @override
+  String get settingsRostersUnavailableTitle => 'Roster unavailable';
+
+  @override
+  String get settingsStaffProfileMissingTitle => 'No staff profile';
+
+  @override
+  String get settingsStaffProfileMissingBody =>
+      'Ask HR to link your account to a staff profile before using leaves or rosters.';
+
+  @override
+  String settingsRostersPeriodHeader(String range) {
+    return 'Current period: $range';
+  }
+
+  @override
+  String get settingsRosterPeriodToday => 'Today';
+
+  @override
+  String get settingsRosterPeriodTomorrow => 'Tomorrow';
+
+  @override
+  String get settingsRosterPeriodThisWeek => 'This week';
+
+  @override
+  String get settingsRosterPeriodThisMonth => 'This month';
+
+  @override
+  String get settingsRosterPeriodLastMonth => 'Last month';
+
+  @override
+  String get settingsRosterPeriodNextMonth => 'Next month';
+
+  @override
+  String get settingsRosterPeriodNextThreeMonths => 'Next 3 months';
+
+  @override
+  String get settingsRosterPeriodCustom => 'Custom range';
+
+  @override
+  String get settingsLeaveStatusAll => 'All';
+
+  @override
+  String get settingsLeaveStatusRequested => 'Pending';
+
+  @override
+  String get settingsLeaveStatusApproved => 'Approved';
+
+  @override
+  String get settingsLeaveStatusRejected => 'Rejected';
+
+  @override
+  String get settingsLeaveStatusCancelled => 'Cancelled';
+
+  @override
   String get settingsProfileActionTitle => 'Profile';
 
   @override

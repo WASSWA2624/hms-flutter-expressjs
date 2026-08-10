@@ -553,6 +553,29 @@ const isTenantSubscriptionBillingFlowPath = (reqPath = '') => {
   return segments[1] === 'upgrade-context' || segments[1] === 'payment-requests';
 };
 
+/**
+ * Staff Settings self-service (`/settings?tab=leaves|rosters`) uses
+ * `/staff-leaves/me` and `/shift-assignments/me` with `profile:read` only.
+ * Those resources otherwise map to commercial `hr-rosters`; exempt the `/me`
+ * surface so tenants without HR still reach own leave/roster data. Desk CRUD
+ * on the same resources remains entitlement-gated.
+ */
+const isStaffSelfServicePath = (reqPath = '') => {
+  const segments = String(reqPath || '')
+    .replace(/^\/+/, '')
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => segment.toLowerCase());
+
+  if (segments.length < 2 || segments[1] !== 'me') {
+    return false;
+  }
+
+  return (
+    segments[0] === 'staff-leaves' || segments[0] === 'shift-assignments'
+  );
+};
+
 const enforceModuleEntitlement = () => async (req, res, next) => {
   try {
     const moduleSlug = resolveModuleSlugFromPath(req.path);
@@ -564,6 +587,11 @@ const enforceModuleEntitlement = () => async (req, res, next) => {
       .toLowerCase();
 
     if (await isPlatformInfrastructureSlug(moduleSlug, rawSegment)) {
+      return next();
+    }
+
+    // Own leave/roster self-service — authz still enforced on the route.
+    if (isStaffSelfServicePath(req.path)) {
       return next();
     }
 
@@ -666,4 +694,5 @@ module.exports = {
   loadPlatformInfrastructureSegments,
   clearModuleEntitlementCaches,
   isTenantSubscriptionBillingFlowPath,
+  isStaffSelfServicePath,
 };

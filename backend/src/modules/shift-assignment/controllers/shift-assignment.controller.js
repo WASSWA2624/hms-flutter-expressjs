@@ -121,8 +121,36 @@ const deleteShiftAssignment = asyncHandler(async (req, res) => {
   sendNoContent(res);
 });
 
+/**
+ * List the authenticated user's own shift assignments.
+ * GET /api/v1/shift-assignments/me
+ */
+const listMyShiftAssignments = asyncHandler(async (req, res) => {
+  const {
+    start_from,
+    start_to,
+    page = DEFAULT_PAGE,
+    limit = DEFAULT_PAGE_LIMIT
+  } = req.query;
+
+  const result = await shiftAssignmentService.listMyShiftAssignments(
+    req.user?.id,
+    { start_from, start_to },
+    parseInt(page, 10),
+    parseInt(limit, 10)
+  );
+
+  sendPaginated(
+    res,
+    'messages.shift_assignment.list.success',
+    result.shiftAssignments,
+    result.pagination
+  );
+});
+
 module.exports = {
   listShiftAssignments,
+  listMyShiftAssignments,
   getShiftAssignmentById,
   createShiftAssignment,
   updateShiftAssignment,

@@ -468,6 +468,62 @@ describe('module entitlement middleware', () => {
     expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
   });
 
+  test.each([
+    ['/staff-leaves/me'],
+    ['/shift-assignments/me']])(
+    'allows staff self-service %s without hr-rosters entitlement',
+    async (path) => {
+      const {
+        enforceModuleEntitlement,
+        isStaffSelfServicePath} = loadMiddleware();
+      expect(isStaffSelfServicePath(path)).toBe(true);
+
+      const req = {
+        path,
+        user: { tenant_id: 'tenant-no-hr', roles: ['NURSE'] }};
+
+      moduleRepository.count.mockResolvedValue(1);
+      moduleSubscriptionRepository.count.mockResolvedValue(0);
+
+      const error = await invokeMiddleware(enforceModuleEntitlement(), req);
+
+      expect(error).toBeUndefined();
+      expect(moduleRepository.count).not.toHaveBeenCalled();
+      expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each([
+    ['/staff-leaves'],
+    ['/staff-leaves/leave-1'],
+    ['/shift-assignments'],
+    ['/shift-assignments/asg-1']])(
+    'still requires hr-rosters for desk path %s',
+    async (path) => {
+      const {
+        enforceModuleEntitlement,
+        isStaffSelfServicePath} = loadMiddleware();
+      expect(isStaffSelfServicePath(path)).toBe(false);
+
+      const req = {
+        path,
+        user: { tenant_id: 'tenant-no-hr', roles: ['NURSE'] }};
+
+      moduleRepository.count.mockResolvedValue(1);
+      moduleSubscriptionRepository.count.mockResolvedValue(0);
+      prismaMock.module.findFirst.mockResolvedValue({
+        id: 'mod-hr',
+        slug: 'hr-rosters',
+        minimum_plan_tier_code: 'PRO'});
+
+      const error = await invokeMiddleware(enforceModuleEntitlement(), req);
+
+      expect(error).toBeDefined();
+      expect(error.messageKey).toBe('errors.auth.module_not_entitled');
+      expect(error.statusCode).toBe(403);
+    }
+  );
+
   test('still blocks subscription workspace admin routes for tenant admins', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {

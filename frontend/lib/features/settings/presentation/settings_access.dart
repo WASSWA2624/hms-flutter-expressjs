@@ -135,6 +135,88 @@ const AccessRequirement settingsAccountDeleteRequirement =
     settingsFacilityAdminRequirement;
 
 // ---------------------------------------------------------------------------
+// Leaves (`/settings?tab=leaves`) — staff self-service
+// ---------------------------------------------------------------------------
+
+/// Leaves tab (`/settings?tab=leaves`) atom → permission map.
+///
+/// Own leave list + request via `/staff-leaves/me`. Gated like Account with
+/// [profileReadRequirement] for tab / list / request (create does **not**
+/// require `hr:write`). Matrix create/delete ∩ `facility:admin` are
+/// documented but **not mounted** beyond the self-service request path.
+/// Profile rights are core/platform; subscription stripping does not apply.
+///
+/// | Atom | Intent | Gate |
+/// | --- | --- | --- |
+/// | Tab strip / section chrome | read | `profile:read` ∩ ([tab] / [listChrome]) |
+/// | My leave list | read | `profile:read` ∩ ([list] / [read]) |
+/// | Status filter chips | read chrome | `profile:read` ∩ ([filters]) |
+/// | Request leave (toolbar + dialog) | create (own) | `profile:read` ∩ ([request] / [create]) |
+/// | Loading / empty / error / retry | read chrome | ([loading] / [empty] / [retry]) |
+/// | Success / validation snackbars | visible feedback | after authorized request |
+/// | Nested cross-module panels | nested | _(n/a)_ |
+abstract final class SettingsLeavesAtomPermissions {
+  static const AccessRequirement tab = profileReadRequirement;
+  static const AccessRequirement read = profileReadRequirement;
+  static const AccessRequirement list = profileReadRequirement;
+  static const AccessRequirement listChrome = profileReadRequirement;
+  static const AccessRequirement filters = profileReadRequirement;
+  static const AccessRequirement loading = profileReadRequirement;
+  static const AccessRequirement empty = profileReadRequirement;
+  static const AccessRequirement retry = profileReadRequirement;
+  static const AccessRequirement request = profileReadRequirement;
+  static const AccessRequirement create = profileReadRequirement;
+  static const AccessRequirement update = profileReadRequirement;
+  static const AccessRequirement success = profileReadRequirement;
+  static const AccessRequirement validation = profileReadRequirement;
+  static const AccessRequirement delete = settingsFacilityAdminRequirement;
+  static const AccessRequirement nestedRead = profileReadRequirement;
+  static const AccessRequirement nestedWrite = profileReadRequirement;
+  static const AccessRequirement routeEntry =
+      RouteAccessCatalog.authenticatedCore;
+}
+
+// ---------------------------------------------------------------------------
+// Rosters (`/settings?tab=rosters`) — staff self-service
+// ---------------------------------------------------------------------------
+
+/// Rosters tab (`/settings?tab=rosters`) atom → permission map.
+///
+/// Own shift assignments via `/shift-assignments/me`. Gated like Account with
+/// [profileReadRequirement] for tab / list / period filters. Does **not**
+/// require `hr:write`. Create/delete ∩ `facility:admin` are documented but
+/// **not mounted** (read-only calendar). Profile rights are core/platform;
+/// subscription stripping does not apply.
+///
+/// | Atom | Intent | Gate |
+/// | --- | --- | --- |
+/// | Tab strip / section chrome | read | `profile:read` ∩ ([tab] / [listChrome]) |
+/// | My roster calendar | read | `profile:read` ∩ ([list] / [read]) |
+/// | Period presets / custom range | read chrome | `profile:read` ∩ ([filters]) |
+/// | Loading / empty / error / retry | read chrome | ([loading] / [empty] / [retry]) |
+/// | Create / delete affordances | create/delete | ∩ facility:admin — **not mounted** |
+/// | Nested cross-module panels | nested | _(n/a)_ |
+abstract final class SettingsRostersAtomPermissions {
+  static const AccessRequirement tab = profileReadRequirement;
+  static const AccessRequirement read = profileReadRequirement;
+  static const AccessRequirement list = profileReadRequirement;
+  static const AccessRequirement listChrome = profileReadRequirement;
+  static const AccessRequirement filters = profileReadRequirement;
+  static const AccessRequirement loading = profileReadRequirement;
+  static const AccessRequirement empty = profileReadRequirement;
+  static const AccessRequirement retry = profileReadRequirement;
+  static const AccessRequirement success = profileReadRequirement;
+  static const AccessRequirement validation = profileReadRequirement;
+  static const AccessRequirement create = settingsFacilityAdminRequirement;
+  static const AccessRequirement update = profileReadRequirement;
+  static const AccessRequirement delete = settingsFacilityAdminRequirement;
+  static const AccessRequirement nestedRead = profileReadRequirement;
+  static const AccessRequirement nestedWrite = profileReadRequirement;
+  static const AccessRequirement routeEntry =
+      RouteAccessCatalog.authenticatedCore;
+}
+
+// ---------------------------------------------------------------------------
 // Accessibility (`/settings?tab=accessibility`)
 // ---------------------------------------------------------------------------
 

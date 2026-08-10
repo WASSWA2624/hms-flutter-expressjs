@@ -8,10 +8,20 @@ const {
   createShiftAssignmentSchema,
   updateShiftAssignmentSchema,
   shiftAssignmentIdParamsSchema,
-  listShiftAssignmentsQuerySchema} = require('@validations/shift-assignment/shift-assignment.schema');
+  listShiftAssignmentsQuerySchema,
+  listMyShiftAssignmentsQuerySchema} = require('@validations/shift-assignment/shift-assignment.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
 const HR_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];
+const PROFILE_READ_SCOPES = [PERMISSIONS.PROFILE_READ];
+
+router.get(
+  '/me',
+  validateRequest({ query: listMyShiftAssignmentsQuerySchema }),
+  authenticate(),
+  authorize(PROFILE_READ_SCOPES, 'permission'),
+  shiftAssignmentController.listMyShiftAssignments
+);
 
 router.get('/', validateRequest({ query: listShiftAssignmentsQuerySchema }), authenticate(), authorize(HR_READ_SCOPES, 'permission'), shiftAssignmentController.listShiftAssignments);
 router.get('/:id', validateRequest({ params: shiftAssignmentIdParamsSchema }), authenticate(), authorize(HR_READ_SCOPES, 'permission'), shiftAssignmentController.getShiftAssignmentById);

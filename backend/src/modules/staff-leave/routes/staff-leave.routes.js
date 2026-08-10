@@ -6,12 +6,30 @@ const { authenticate, authorize } = require('@middlewares/auth.middleware');
 const { PERMISSIONS } = require('@config/permissions');
 const {
   createStaffLeaveSchema,
+  createMyStaffLeaveSchema,
   updateStaffLeaveSchema,
   staffLeaveIdParamsSchema,
-  listStaffLeavesQuerySchema} = require('@validations/staff-leave/staff-leave.schema');
+  listStaffLeavesQuerySchema,
+  listMyStaffLeavesQuerySchema} = require('@validations/staff-leave/staff-leave.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
 const HR_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];
+const PROFILE_READ_SCOPES = [PERMISSIONS.PROFILE_READ];
+
+router.get(
+  '/me',
+  validateRequest({ query: listMyStaffLeavesQuerySchema }),
+  authenticate(),
+  authorize(PROFILE_READ_SCOPES, 'permission'),
+  staffLeaveController.listMyStaffLeaves
+);
+router.post(
+  '/me',
+  validateRequest({ body: createMyStaffLeaveSchema }),
+  authenticate(),
+  authorize(PROFILE_READ_SCOPES, 'permission'),
+  staffLeaveController.createMyStaffLeave
+);
 
 router.get('/', validateRequest({ query: listStaffLeavesQuerySchema }), authenticate(), authorize(HR_READ_SCOPES, 'permission'), staffLeaveController.listStaffLeaves);
 router.get('/:id', validateRequest({ params: staffLeaveIdParamsSchema }), authenticate(), authorize(HR_READ_SCOPES, 'permission'), staffLeaveController.getStaffLeaveById);

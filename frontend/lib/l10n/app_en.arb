@@ -8420,6 +8420,135 @@
   "@settingsAccountSectionBody": {
     "description": "Settings section body for account and security entry points."
   },
+  "settingsLeavesSectionTitle": "Leaves",
+  "@settingsLeavesSectionTitle": {
+    "description": "Settings accordion title for staff self-service leave requests."
+  },
+  "settingsLeavesSectionBody": "Request time off and review the status of your leave requests.",
+  "@settingsLeavesSectionBody": {
+    "description": "Settings accordion body for staff self-service leave requests."
+  },
+  "settingsRostersSectionTitle": "Rosters",
+  "@settingsRostersSectionTitle": {
+    "description": "Settings accordion title for staff self-service roster calendar."
+  },
+  "settingsRostersSectionBody": "View the shifts assigned to you across a selected period.",
+  "@settingsRostersSectionBody": {
+    "description": "Settings accordion body for staff self-service roster calendar."
+  },
+  "settingsLeaveRequestSuccessMessage": "Leave requested. It will appear as pending until HR reviews it.",
+  "@settingsLeaveRequestSuccessMessage": {
+    "description": "Snackbar after a successful self-service leave request."
+  },
+  "settingsLeavesLoadingTitle": "Loading leaves",
+  "@settingsLeavesLoadingTitle": {
+    "description": "Loading title for settings leaves list."
+  },
+  "settingsLeavesLoadingBody": "Fetching your leave requests.",
+  "@settingsLeavesLoadingBody": {
+    "description": "Loading body for settings leaves list."
+  },
+  "settingsLeavesEmptyTitle": "No leave requests",
+  "@settingsLeavesEmptyTitle": {
+    "description": "Empty title when the signed-in user has no leave rows."
+  },
+  "settingsLeavesEmptyBody": "Request leave to submit time off for HR review.",
+  "@settingsLeavesEmptyBody": {
+    "description": "Empty body when the signed-in user has no leave rows."
+  },
+  "settingsLeavesUnavailableTitle": "Leaves unavailable",
+  "@settingsLeavesUnavailableTitle": {
+    "description": "Error title when self-service leaves fail to load."
+  },
+  "settingsRostersLoadingTitle": "Loading roster",
+  "@settingsRostersLoadingTitle": {
+    "description": "Loading title for settings roster calendar."
+  },
+  "settingsRostersLoadingBody": "Fetching your assigned shifts.",
+  "@settingsRostersLoadingBody": {
+    "description": "Loading body for settings roster calendar."
+  },
+  "settingsRostersEmptyTitle": "No shifts in this period",
+  "@settingsRostersEmptyTitle": {
+    "description": "Empty title when there are no shift assignments in range."
+  },
+  "settingsRostersEmptyBody": "Try another period, or check back after HR publishes your roster.",
+  "@settingsRostersEmptyBody": {
+    "description": "Empty body when there are no shift assignments in range."
+  },
+  "settingsRostersUnavailableTitle": "Roster unavailable",
+  "@settingsRostersUnavailableTitle": {
+    "description": "Error title when self-service roster fails to load."
+  },
+  "settingsStaffProfileMissingTitle": "No staff profile",
+  "@settingsStaffProfileMissingTitle": {
+    "description": "Empty/error title when the user has no linked staff profile."
+  },
+  "settingsStaffProfileMissingBody": "Ask HR to link your account to a staff profile before using leaves or rosters.",
+  "@settingsStaffProfileMissingBody": {
+    "description": "Empty/error body when the user has no linked staff profile."
+  },
+  "settingsRostersPeriodHeader": "Current period: {range}",
+  "@settingsRostersPeriodHeader": {
+    "description": "Header showing the selected roster date range.",
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsRosterPeriodToday": "Today",
+  "@settingsRosterPeriodToday": {
+    "description": "Roster period preset for today."
+  },
+  "settingsRosterPeriodTomorrow": "Tomorrow",
+  "@settingsRosterPeriodTomorrow": {
+    "description": "Roster period preset for tomorrow."
+  },
+  "settingsRosterPeriodThisWeek": "This week",
+  "@settingsRosterPeriodThisWeek": {
+    "description": "Roster period preset for the current week."
+  },
+  "settingsRosterPeriodThisMonth": "This month",
+  "@settingsRosterPeriodThisMonth": {
+    "description": "Roster period preset for the current month."
+  },
+  "settingsRosterPeriodLastMonth": "Last month",
+  "@settingsRosterPeriodLastMonth": {
+    "description": "Roster period preset for the previous month."
+  },
+  "settingsRosterPeriodNextMonth": "Next month",
+  "@settingsRosterPeriodNextMonth": {
+    "description": "Roster period preset for the next month."
+  },
+  "settingsRosterPeriodNextThreeMonths": "Next 3 months",
+  "@settingsRosterPeriodNextThreeMonths": {
+    "description": "Roster period preset covering the next three months."
+  },
+  "settingsRosterPeriodCustom": "Custom range",
+  "@settingsRosterPeriodCustom": {
+    "description": "Roster period preset that opens custom date pickers."
+  },
+  "settingsLeaveStatusAll": "All",
+  "@settingsLeaveStatusAll": {
+    "description": "Leave status filter chip for all statuses."
+  },
+  "settingsLeaveStatusRequested": "Pending",
+  "@settingsLeaveStatusRequested": {
+    "description": "Leave status chip for REQUESTED (shown as Pending to staff)."
+  },
+  "settingsLeaveStatusApproved": "Approved",
+  "@settingsLeaveStatusApproved": {
+    "description": "Leave status chip for APPROVED."
+  },
+  "settingsLeaveStatusRejected": "Rejected",
+  "@settingsLeaveStatusRejected": {
+    "description": "Leave status chip for REJECTED."
+  },
+  "settingsLeaveStatusCancelled": "Cancelled",
+  "@settingsLeaveStatusCancelled": {
+    "description": "Leave status chip for CANCELLED."
+  },
   "settingsProfileActionTitle": "Profile",
   "@settingsProfileActionTitle": {
     "description": "Settings action title for opening the user profile."

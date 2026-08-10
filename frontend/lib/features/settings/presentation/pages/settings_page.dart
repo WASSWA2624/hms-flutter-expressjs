@@ -11,7 +11,9 @@ import 'package:hosspi_hms/features/settings/presentation/widgets/settings_acces
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_account_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_administration_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_configuration_section.dart';
+import 'package:hosspi_hms/features/settings/presentation/widgets/settings_leaves_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_preferences_section.dart';
+import 'package:hosspi_hms/features/settings/presentation/widgets/settings_rosters_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_workspace_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -124,6 +126,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         SettingsPreferencesAtomPermissions.tab.isAllowed(accessPolicy);
     final bool showAccount =
         SettingsAccountAtomPermissions.tab.isAllowed(accessPolicy);
+    final bool showLeaves =
+        SettingsLeavesAtomPermissions.tab.isAllowed(accessPolicy);
+    final bool showRosters =
+        SettingsRostersAtomPermissions.tab.isAllowed(accessPolicy);
     final bool showAccessibility =
         SettingsAccessibilityAtomPermissions.tab.isAllowed(accessPolicy);
     final bool showAdministration = settingsAdministrationSectionVisible(
@@ -161,6 +167,24 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             initialPanel: widget.initialQuery.panel,
             onPanelChanged: _onAccountPanelChanged,
           ),
+        ),
+      if (showLeaves)
+        _AccordionEntry(
+          id: 'leaves',
+          icon: Icons.event_busy_outlined,
+          title: l10n.settingsLeavesSectionTitle,
+          body: l10n.settingsLeavesSectionBody,
+          wrapInSection: false,
+          builder: (_) => const SettingsLeavesSection(),
+        ),
+      if (showRosters)
+        _AccordionEntry(
+          id: 'rosters',
+          icon: Icons.calendar_month_outlined,
+          title: l10n.settingsRostersSectionTitle,
+          body: l10n.settingsRostersSectionBody,
+          wrapInSection: false,
+          builder: (_) => const SettingsRostersSection(),
         ),
       if (showAdministration)
         _AccordionEntry(

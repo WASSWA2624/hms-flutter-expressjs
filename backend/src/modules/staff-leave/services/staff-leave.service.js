@@ -5,6 +5,8 @@ const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
   resolveEntityId} = require('@lib/billing/identifiers');
+const {
+  requireStaffProfileForUser} = require('@lib/staff/require-staff-profile-for-user');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.ceil(total / limit);
@@ -48,6 +50,19 @@ const listStaffLeaves = async (filters, page, limit, sortBy, order) => {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
   }
+};
+
+const listMyStaffLeaves = async (userId, filters, page, limit, sortBy, order) => {
+  const profile = await requireStaffProfileForUser(userId);
+  return listStaffLeaves(
+    {
+      ...filters,
+      staff_profile_id: profile.id},
+    page,
+    limit,
+    sortBy,
+    order
+  );
 };
 
 const getStaffLeaveById = async (id) => {
@@ -103,6 +118,18 @@ const createStaffLeave = async (data, userId, ipAddress) => {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
   }
+};
+
+const createMyStaffLeave = async (data, userId, ipAddress) => {
+  const profile = await requireStaffProfileForUser(userId);
+  return createStaffLeave(
+    {
+      ...data,
+      staff_profile_id: profile.id,
+      status: 'REQUESTED'},
+    userId,
+    ipAddress
+  );
 };
 
 const updateStaffLeave = async (id, data, userId, ipAddress) => {
@@ -168,7 +195,9 @@ const deleteStaffLeave = async (id, userId, ipAddress) => {
 
 module.exports = {
   listStaffLeaves,
+  listMyStaffLeaves,
   getStaffLeaveById,
   createStaffLeave,
+  createMyStaffLeave,
   updateStaffLeave,
   deleteStaffLeave};

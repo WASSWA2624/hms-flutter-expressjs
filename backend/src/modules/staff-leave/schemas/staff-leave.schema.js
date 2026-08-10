@@ -138,11 +138,32 @@ const listStaffLeavesQuerySchema = listQuerySchema.extend({
   status: leaveStatusEnum.optional(),
   leave_type: leaveTypeEnum.optional()});
 
+/**
+ * Self-service create leave (staff profile inferred from auth user).
+ * Status is always forced to REQUESTED server-side.
+ */
+const createMyStaffLeaveSchema = z
+  .object({
+    leave_type: leaveTypeEnum,
+    start_date: z.coerce.date(),
+    end_date: z.coerce.date(),
+    is_half_day: z.boolean().optional().default(false),
+    half_day_period: leaveHalfDayPeriodEnum.optional().nullable(),
+    reason: z.string().trim().optional().nullable(),
+    handover_notes: z.string().trim().optional().nullable()})
+  .superRefine(leaveDurationRefinement);
+
+const listMyStaffLeavesQuerySchema = listQuerySchema.extend({
+  status: leaveStatusEnum.optional(),
+  leave_type: leaveTypeEnum.optional()});
+
 module.exports = {
   createStaffLeaveSchema,
+  createMyStaffLeaveSchema,
   updateStaffLeaveSchema,
   staffLeaveIdParamsSchema,
   listStaffLeavesQuerySchema,
+  listMyStaffLeavesQuerySchema,
   leaveStatusEnum,
   leaveTypeEnum,
   leaveHalfDayPeriodEnum};

@@ -86,6 +86,46 @@ const createStaffLeave = asyncHandler(async (req, res) => {
 });
 
 /**
+ * List the authenticated user's own leave requests.
+ * GET /api/v1/staff-leaves/me
+ */
+const listMyStaffLeaves = asyncHandler(async (req, res) => {
+  const {
+    status,
+    leave_type,
+    page = DEFAULT_PAGE,
+    limit = DEFAULT_PAGE_LIMIT,
+    sort_by,
+    order = 'desc'
+  } = req.query;
+
+  const result = await staffLeaveService.listMyStaffLeaves(
+    req.user?.id,
+    { status, leave_type },
+    parseInt(page, 10),
+    parseInt(limit, 10),
+    sort_by,
+    order
+  );
+
+  sendPaginated(res, 'messages.staff_leave.list.success', result.staffLeaves, result.pagination);
+});
+
+/**
+ * Create a leave request for the authenticated user's staff profile.
+ * POST /api/v1/staff-leaves/me
+ */
+const createMyStaffLeave = asyncHandler(async (req, res) => {
+  const staffLeave = await staffLeaveService.createMyStaffLeave(
+    req.body,
+    req.user?.id,
+    req.ip
+  );
+
+  sendSuccess(res, 201, 'messages.staff_leave.create.success', staffLeave);
+});
+
+/**
  * Update staff leave
  * PUT /api/v1/staff-leaves/:id
  *
@@ -121,8 +161,10 @@ const deleteStaffLeave = asyncHandler(async (req, res) => {
 
 module.exports = {
   listStaffLeaves,
+  listMyStaffLeaves,
   getStaffLeaveById,
   createStaffLeave,
+  createMyStaffLeave,
   updateStaffLeave,
   deleteStaffLeave
 };

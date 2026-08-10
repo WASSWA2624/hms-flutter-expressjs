@@ -60,9 +60,15 @@ const listShiftAssignmentsQuerySchema = listQuerySchema.extend({
   assigned_at_to: z.string().datetime().optional()
 });
 
+const listMyShiftAssignmentsQuerySchema = listQuerySchema.extend({
+  start_from: z.coerce.date().optional(),
+  start_to: z.coerce.date().optional()
+});
+
 module.exports = {
   createShiftAssignmentSchema,
   updateShiftAssignmentSchema,
   shiftAssignmentIdParamsSchema,
-  listShiftAssignmentsQuerySchema
+  listShiftAssignmentsQuerySchema,
+  listMyShiftAssignmentsQuerySchema
 };
