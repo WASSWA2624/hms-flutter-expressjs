@@ -3771,8 +3771,6 @@ class _AccessAdminUserDetailDialogState
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _UserDetailSummaryCard(item: item),
-          SizedBox(height: theme.spacing.md),
           AppCollapsibleSection(
             title: l10n.accessAdminUserDetailProfileSectionTitle,
             description: l10n.accessAdminUserDetailProfileSectionDescription,
@@ -3892,154 +3890,19 @@ Set<String> _resolveDirectPermissionOptionIds({
   return resolved;
 }
 
-class _UserDetailSummaryCard extends StatelessWidget {
-  const _UserDetailSummaryCard({required this.item});
-
-  final AccessAdminItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final _UserDetailIdentity identity = _resolveUserDetailIdentity(item);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(theme.radius.md),
-        border: theme.borders.all(),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: colorScheme.primaryContainer,
-              foregroundColor: colorScheme.onPrimaryContainer,
-              child: Text(
-                _userInitials(identity.primary),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: AppFontWeight.emphasis,
-                ),
-              ),
-            ),
-            SizedBox(width: theme.spacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    identity.primary,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: AppFontWeight.emphasis,
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.sm),
-                  Wrap(
-                    spacing: theme.spacing.sm,
-                    runSpacing: theme.spacing.xs,
-                    children: <Widget>[
-                      _AccessAdminDetailMetaChip(
-                        icon: Icons.tag_outlined,
-                        label: l10n.accessAdminColumnId,
-                        value: item.effectiveDisplayId,
-                        copyable: true,
-                      ),
-                      if (item.isDemo)
-                        Chip(
-                          avatar: Icon(
-                            Icons.science_outlined,
-                            size: 16,
-                            color: colorScheme.tertiary,
-                          ),
-                          label: Text(l10n.accessAdminPanelDemo),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      _AccessAdminDetailMetaChip(
-                        icon: Icons.groups_outlined,
-                        label: l10n.accessAdminAssignedRolesLabel,
-                        value: '${item.roleCount}',
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            if (item.status != null) ...<Widget>[
-              SizedBox(width: theme.spacing.sm),
-              _UserDetailStatusChip(status: item.status!),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _userInitials(String value) {
-    final List<String> parts = value
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((String part) => part.isNotEmpty)
-        .toList(growable: false);
-    if (parts.isEmpty) {
-      return '?';
+String? _userDetailDisplayName(AccessAdminItem item) {
+  for (final String? candidate in <String?>[
+    item.displayName,
+    item.profileName,
+    item.name,
+    item.title,
+  ]) {
+    final String value = (candidate ?? '').trim();
+    if (value.isNotEmpty) {
+      return value;
     }
-    if (parts.length == 1) {
-      final String token = parts.first;
-      if (token.contains('@')) {
-        final String local = token.split('@').first;
-        return local
-            .substring(0, local.length < 2 ? 1 : 2)
-            .toUpperCase();
-      }
-      return token.substring(0, token.length < 2 ? 1 : 2).toUpperCase();
-    }
-    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
   }
-}
-
-@immutable
-final class _UserDetailIdentity {
-  const _UserDetailIdentity({required this.primary});
-
-  final String primary;
-}
-
-bool _sameUserDetailValue(String? left, String? right) {
-  final String a = (left ?? '').trim();
-  final String b = (right ?? '').trim();
-  if (a.isEmpty || b.isEmpty) {
-    return false;
-  }
-  return a.toLowerCase() == b.toLowerCase();
-}
-
-_UserDetailIdentity _resolveUserDetailIdentity(AccessAdminItem item) {
-  final String email = (item.email ?? '').trim();
-  final String displayName =
-      (item.displayName ?? item.profileName ?? item.name ?? '').trim();
-  final String position = (item.positionTitle ?? '').trim();
-  final String title = item.title.trim();
-
-  bool matchesEmail(String value) => _sameUserDetailValue(value, email);
-
-  final String primary;
-  if (displayName.isNotEmpty && !matchesEmail(displayName)) {
-    primary = displayName;
-  } else if (title.isNotEmpty && !matchesEmail(title)) {
-    primary = title;
-  } else if (position.isNotEmpty && !matchesEmail(position)) {
-    primary = position;
-  } else if (email.isNotEmpty) {
-    primary = email;
-  } else {
-    primary = title.isNotEmpty ? title : '?';
-  }
-
-  return _UserDetailIdentity(primary: primary);
+  return null;
 }
 
 class _UserDetailAccountFields extends StatelessWidget {
@@ -4051,11 +3914,13 @@ class _UserDetailAccountFields extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final String primary = _resolveUserDetailIdentity(item).primary;
 
+    final String? displayName = _userDetailDisplayName(item);
     final String? email = item.email?.trim();
     final String? phone = item.phone?.trim();
     final String? position = item.positionTitle?.trim();
+    final String? status = item.status?.trim();
+    final String displayId = item.effectiveDisplayId.trim();
     final String? tenant = item.tenantId == null
         ? null
         : (item.tenantName?.trim().isNotEmpty == true
@@ -4067,13 +3932,21 @@ class _UserDetailAccountFields extends StatelessWidget {
               ? item.facilityName!.trim()
               : item.facilityId!.trim());
 
-    // Account owns contact/assignment. Omit values already used as the
-    // summary primary so the dialog never repeats the same fact twice.
-    // User ID lives on the summary details card (copyable).
     final List<Widget> contactFields = <Widget>[
-      if (email != null &&
-          email.isNotEmpty &&
-          !_sameUserDetailValue(email, primary))
+      if (displayName != null)
+        _UserDetailInfoTile(
+          icon: Icons.person_outline,
+          label: l10n.accessAdminColumnName,
+          value: displayName,
+        ),
+      if (displayId.isNotEmpty)
+        _UserDetailInfoTile(
+          icon: Icons.tag_outlined,
+          label: l10n.accessAdminColumnId,
+          value: displayId,
+          copyable: true,
+        ),
+      if (email != null && email.isNotEmpty)
         _UserDetailInfoTile(
           icon: Icons.mail_outline,
           label: l10n.accessAdminEmailLabel,
@@ -4085,11 +3958,15 @@ class _UserDetailAccountFields extends StatelessWidget {
           label: l10n.accessAdminPhoneLabel,
           value: phone,
         ),
+      if (status != null && status.isNotEmpty)
+        _UserDetailInfoTile(
+          icon: Icons.flag_outlined,
+          label: l10n.accessAdminStatusLabel,
+          value: status,
+        ),
     ];
     final List<Widget> assignmentFields = <Widget>[
-      if (position != null &&
-          position.isNotEmpty &&
-          !_sameUserDetailValue(position, primary))
+      if (position != null && position.isNotEmpty)
         _UserDetailInfoTile(
           icon: Icons.work_outline,
           label: l10n.accessAdminPositionLabel,
@@ -4173,58 +4050,6 @@ class _UserDetailFieldGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: rows,
     );
-  }
-}
-
-class _UserDetailStatusChip extends StatelessWidget {
-  const _UserDetailStatusChip({required this.status});
-
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final AppWorkspaceStatusTone tone = _statusTone(status);
-    final Color foreground = _toneColor(colorScheme, tone);
-    final IconData icon = switch (status) {
-      'ACTIVE' => Icons.check_circle_outline,
-      'INACTIVE' => Icons.pause_circle_outline,
-      'SUSPENDED' => Icons.block_outlined,
-      'PENDING' => Icons.hourglass_top_outlined,
-      _ => Icons.info_outline,
-    };
-
-    return Chip(
-      avatar: Icon(icon, size: 16, color: foreground),
-      label: Text(status),
-      backgroundColor: foreground.withValues(alpha: 0.12),
-      side: theme.borders.side(color: foreground.withValues(alpha: 0.24)),
-      labelStyle: theme.textTheme.labelMedium?.copyWith(
-        color: foreground,
-        fontWeight: AppFontWeight.emphasis,
-      ),
-      visualDensity: VisualDensity.compact,
-    );
-  }
-
-  AppWorkspaceStatusTone _statusTone(String value) {
-    return switch (value) {
-      'ACTIVE' => AppWorkspaceStatusTone.success,
-      'SUSPENDED' => AppWorkspaceStatusTone.error,
-      'PENDING' => AppWorkspaceStatusTone.warning,
-      _ => AppWorkspaceStatusTone.neutral,
-    };
-  }
-
-  Color _toneColor(ColorScheme colors, AppWorkspaceStatusTone tone) {
-    return switch (tone) {
-      AppWorkspaceStatusTone.success => colors.primary,
-      AppWorkspaceStatusTone.warning => colors.tertiary,
-      AppWorkspaceStatusTone.error => colors.error,
-      AppWorkspaceStatusTone.info => colors.secondary,
-      AppWorkspaceStatusTone.neutral => colors.onSurfaceVariant,
-    };
   }
 }
 

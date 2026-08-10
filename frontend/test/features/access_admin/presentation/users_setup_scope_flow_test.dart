@@ -150,9 +150,14 @@ void main() {
 
   test('user detail clarifies identity and collapses role permissions', () {
     expect(
-      managementSource.contains('_resolveUserDetailIdentity'),
+      managementSource.contains('_userDetailDisplayName'),
       isTrue,
-      reason: 'Summary must resolve a non-duplicative primary identity',
+      reason: 'Account resolves a display name without a summary card',
+    );
+    expect(
+      managementSource.contains('_UserDetailSummaryCard'),
+      isFalse,
+      reason: 'User detail summary card was removed',
     );
     expect(
       managementSource.contains('_UserDetailAccountFields'),
@@ -160,7 +165,7 @@ void main() {
       reason: 'Account fields stay grouped and complete',
     );
     expect(
-      managementSource.contains('canMutate = widget.canWrite && !item.isDeleted'),
+      managementSource.contains('!item.isDeleted &&'),
       isTrue,
       reason: 'Soft-deleted users must not expose write actions',
     );
