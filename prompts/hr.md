@@ -1,74 +1,18 @@
-# Flatten HR Desk Tabs (Entity-Per-Primary)
+### Refined version
 
-Refactor the HR workspace so every worklist is a **primary `AppTabStrip` tab**—no nested queue switcher—while preserving staff, leave, swap, roster, unassigned, payroll, and access behavior, permissions, and deep-links unless this prompt requires a change.
+On the HR screen, under **Staff Details**, there is an **Assign Department** action button. When clicked, it should open the **Assign Department** dialog.
 
-## Context
+Please update the dialog as follows:
 
-**Current behavior (feedback after first flatten)**
+* On large screens, place the **Department** and **Unit** select fields on the same row.
+* Place the **Start Date** and **End Date** fields on the same row as well, to make the assignment process more compact and user-friendly.
+* If the staff member already has a department assigned, change the action button from **Assign Department** to **Change Department**.
+* When **Change Department** is selected, open the same dialog in change mode with the staff member’s current department, unit, and assignment details pre-filled.
+* The **Start Date** should default to the current date.
+* The **End Date** should be optional. If it is left blank, the assignment should remain active indefinitely until the department is changed or the assignment is ended.
+* If an **End Date** is specified, the staff member’s department assignment and related access should automatically become inactive on that date, and access to that department should be revoked accordingly.
+* When changing departments, the system should properly terminate the previous department assignment and create the new assignment based on the selected dates.
 
-- Nested Shifts queue strip removed.
-- Four visible primaries (Human resources, Leave, Shifts, Payroll) felt **insufficient**—swap / roster / unassigned were buried in Filters.
-- Manage users and roles remains a fifth/seventh primary when entitled.
+Overall, the department assignment should behave like a **time-bound staff-to-department relationship**, with automatic access activation and deactivation based on the assignment dates.
 
-**Intended behavior**
-
-- One tab level only. No nested queue strip.
-- **Entity-per-primary** flat strip (order):
-  1. Human resources / Staff members (`staff`) — Users CRUD  
-  2. Rosters (`shift-roster` / `roster` aliases) — roster CRUD + staff assignment  
-  3. Leave requests (`leave-requests`)  
-  4. Swap requests (`swap-requests`)  
-  5. Unassigned shifts (`unassigned-shifts`; overdue deep-links here)  
-  6. Payroll drafts (`payroll`)  
-  7. Manage users and roles (`access`)  
-- Each worklist tab loads exactly one queue. Desk Filters stay **status-only** (no queue facet). Dialog “Work queues” may still offer all queues in Filters.
-- Trailing actions: Create user / Request leave / **Create roster** (Rosters only).
-
-**Definitions**
-
-- *Primary tab:* One `AppTabItem` in the HR `AppTabStrip` (`HrDeskSection`).
-- *Nested tabs:* Any second tab row that switches `HrQueue`. Forbidden.
-
-## Requirements
-
-1. **No nested queue chrome** on the desk or dialog strip.
-2. **Seven primaries** as listed; do not re-merge swap/unassigned into Leave/Shifts via Filters.
-3. **Defaults & deep-links:** Tab select loads that section’s queue; `?queue=` wins over conflicting `?section=`; URL keeps `section` + `queue`. Home metric routes include both.
-4. **Counts:** Leave / swap / roster / unassigned(+overdue) / payroll badges are section-scoped. Unauthorized tabs absent.
-5. **States & sync:** Load/empty/error/success; soft-refresh; theme tokens; responsive (overflow “More” OK on narrow).
-6. **Tests:** Entity map, deep-links, permission/billing suites; nested switcher absent; authorized chrome remains.
-7. **Rosters:** Name, ID, assigned staff count, period, recurring flag, draft/completed status; flexible days/hours with public-holiday awareness; detail dialog add/remove staff with duplicate/conflict guards.
-
-## Constraints
-
-- Reuse `HrWorkspacePage`, controller, work-item table, dialogs, shared kit. No parallel HR shell.
-- Follow `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`, `prompts/.cursor/prompt.mdc`, `frontend/.cursor/layouts.mdc`.
-- Out of scope: payroll math, access RBAC redesign, Reports, production seeding.
-
-## Acceptance Criteria
-
-| # | Criterion | Maps to |
-| --- | --- | --- |
-| A1 | Strip shows Staff, Rosters, Leave, Swap, Unassigned, Payroll (+ access when entitled); no nested queue row. | R1, R2 |
-| A2 | Each worklist tab loads its own queue; Filters do not switch desk queues. | R2, R3 |
-| A3 | `?section=` / `?queue=` and Home links land on the owning primary. | R3 |
-| A4 | Badges/actions permission-gated; unauthorized chrome absent. | R4 |
-| A5 | Themes/viewports usable; lists refresh after mutations. | R5 |
-| A6 | Updated HR tests pass. | R6 |
-| A7 | Create roster + roster detail staff add/remove with conflict guards. | R7 |
-
-## Relevant Files
-
-- `frontend/lib/features/hr/domain/entities/hr_entities.dart`
-- `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart`
-- `frontend/lib/features/hr/presentation/widgets/hr_roster_dialogs.dart`
-- `frontend/lib/features/hr/presentation/widgets/hr_queue_switcher.dart`
-- `frontend/lib/features/hr/presentation/hr_access.dart`
-- `backend/src/modules/roster/`
-- Home metric routes under `frontend/lib/features/home/`
-- Tests under `frontend/test/features/hr/`
-
-## Verification
-
-- Unit/widget: seven-section map with Rosters after Staff; queue→section; no nested strip.
-- Manual: `/hr` shows Rosters next to Staff members; Create roster; detail staff assign; light/dark + narrow overflow.
+Do not make any major changes to the staff details UI layout
