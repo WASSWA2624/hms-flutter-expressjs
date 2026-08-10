@@ -228,7 +228,9 @@ final class AccessAdminItemDto {
       title: _titleForResource(),
       resourceUuid:
           _nullableString(json['resource_uuid']) ??
-          (resource == AccessAdminResource.roles
+          (resource == AccessAdminResource.roles ||
+                  resource == AccessAdminResource.users ||
+                  resource == AccessAdminResource.demoUsers
               ? _uuidFallback(json)
               : null),
       name: _nullableString(json['name']),

@@ -9,6 +9,20 @@
 
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
+const { runWithoutTenantGuard } = require('../../../prisma/tenant-guard');
+
+/**
+ * Tenant-guard findFirst/findUnique inject `deleted_at: null` unless the caller
+ * already mentions `deleted_at`. Soft-deleted lookups must either mention it or
+ * bypass the guard — otherwise restore never sees the row.
+ */
+const userWhereById = (id, { includeDeleted = false } = {}) =>
+  includeDeleted
+    ? {
+        id,
+        OR: [{ deleted_at: null }, { deleted_at: { not: null } }],
+      }
+    : { id, deleted_at: null };
 
 const USER_DETAIL_INCLUDE = Object.freeze({
   tenant: {
@@ -184,9 +198,7 @@ const buildWhereClause = (filters = {}, { includeDeleted = false } = {}) => {
 const findById = async (id, include = {}, { includeDeleted = false } = {}) => {
   try {
     return await prisma.user.findFirst({
-      where: {
-        id,
-        ...(includeDeleted ? {} : { deleted_at: null })},
+      where: userWhereById(id, { includeDeleted }),
       include
     });
   } catch (error) {
@@ -441,59 +453,82 @@ const softDelete = async (id) => {
 
 /**
  * Restore a soft-deleted user and user_permissions soft-deleted with the same timestamp.
+ * Also clears soft-delete on linked staff_profile rows (HR offboarding).
  *
  * @param {string} id - User ID
  * @returns {Promise<Object>} Restored user
  */
 const restore = async (id) => {
   try {
-    const existing = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        tenant_id: true,
-        facility_id: true,
-        deleted_at: true}});
+    // Soft-deleted rows are invisible to tenant-guard find/update unless we
+    // bypass (guard forces deleted_at: null on those operations).
+    return await runWithoutTenantGuard(async () => {
+      const existing = await prisma.user.findFirst({
+        where: userWhereById(id, { includeDeleted: true }),
+        select: {
+          id: true,
+          tenant_id: true,
+          facility_id: true,
+          deleted_at: true,
+        },
+      });
 
-    if (!existing || !existing.deleted_at) {
-      throw Object.assign(new Error('Record not found'), { code: 'P2025' });
-    }
-
-    const tenant = await prisma.tenant.findFirst({
-      where: { id: existing.tenant_id, deleted_at: null },
-      select: { id: true }});
-    if (!tenant) {
-      throw new HttpError('errors.user.restore_requires_active_tenant', 409);
-    }
-
-    if (existing.facility_id) {
-      const facility = await prisma.facility.findFirst({
-        where: { id: existing.facility_id, deleted_at: null },
-        select: { id: true }});
-      if (!facility) {
-        throw new HttpError('errors.user.restore_requires_active_facility', 409);
+      if (!existing || !existing.deleted_at) {
+        throw Object.assign(new Error('Record not found'), { code: 'P2025' });
       }
-    }
 
-    return await prisma.$transaction(async (tx) => {
-      await tx.user_permission.updateMany({
-        where: {
-          user_id: id,
-          deleted_at: existing.deleted_at},
-        data: {
-          deleted_at: null}});
+      const tenant = await prisma.tenant.findFirst({
+        where: { id: existing.tenant_id, deleted_at: null },
+        select: { id: true },
+      });
+      if (!tenant) {
+        throw new HttpError('errors.user.restore_requires_active_tenant', 409);
+      }
 
-      return await tx.user.update({
-        where: { id },
-        data: { deleted_at: null },
-        include: resolveInclude()});
+      if (existing.facility_id) {
+        const facility = await prisma.facility.findFirst({
+          where: { id: existing.facility_id, deleted_at: null },
+          select: { id: true },
+        });
+        if (!facility) {
+          throw new HttpError('errors.user.restore_requires_active_facility', 409);
+        }
+      }
+
+      return await prisma.$transaction(async (tx) => {
+        await tx.user_permission.updateMany({
+          where: {
+            user_id: id,
+            deleted_at: existing.deleted_at,
+          },
+          data: {
+            deleted_at: null,
+          },
+        });
+
+        await tx.staff_profile.updateMany({
+          where: {
+            user_id: id,
+            deleted_at: { not: null },
+          },
+          data: { deleted_at: null },
+        });
+
+        return await tx.user.update({
+          where: { id },
+          data: { deleted_at: null },
+          include: resolveInclude(),
+        });
+      });
     });
   } catch (error) {
     if (error instanceof HttpError) throw error;
     if (error.code === 'P2025') {
       throw new HttpError('errors.user.not_found', 404);
     }
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message },
+    ]);
   }
 };
 

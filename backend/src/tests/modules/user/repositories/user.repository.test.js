@@ -10,6 +10,10 @@ const userRepository = require('@repositories/user/user.repository');
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 
+jest.mock('../../../../prisma/tenant-guard', () => ({
+  runWithoutTenantGuard: jest.fn(async (callback) => callback()),
+}));
+
 // Mock Prisma client
 jest.mock('@prisma/client', () => {
   const prismaMock = {
@@ -25,6 +29,12 @@ jest.mock('@prisma/client', () => {
       findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn()},
+    tenant: {
+      findFirst: jest.fn()},
+    facility: {
+      findFirst: jest.fn()},
+    staff_profile: {
       updateMany: jest.fn()}};
 
   return prismaMock;
@@ -483,6 +493,92 @@ describe('User Repository', () => {
       await expect(userRepository.softDelete(userId)).rejects.toMatchObject({
         messageKey: 'errors.database.unexpected',
         statusCode: 500
+      });
+    });
+  });
+
+  describe('restore', () => {
+    const userId = '550e8400-e29b-41d4-a716-446655440000';
+    const tenantId = '550e8400-e29b-41d4-a716-446655440001';
+    const facilityId = '550e8400-e29b-41d4-a716-446655440002';
+    const deletedAt = new Date('2026-08-01T00:00:00.000Z');
+    const existing = {
+      id: userId,
+      tenant_id: tenantId,
+      facility_id: facilityId,
+      deleted_at: deletedAt,
+    };
+    const restoredUser = {
+      id: userId,
+      tenant_id: tenantId,
+      facility_id: facilityId,
+      deleted_at: null,
+    };
+
+    it('should restore a soft-deleted user, matching permissions, and staff profile', async () => {
+      prisma.user.findFirst.mockResolvedValue(existing);
+      prisma.tenant.findFirst.mockResolvedValue({ id: tenantId });
+      prisma.facility.findFirst.mockResolvedValue({ id: facilityId });
+      prisma.user_permission.updateMany.mockResolvedValue({ count: 1 });
+      prisma.staff_profile.updateMany.mockResolvedValue({ count: 1 });
+      prisma.user.update.mockResolvedValue(restoredUser);
+
+      const result = await userRepository.restore(userId);
+
+      expect(result).toEqual(restoredUser);
+      expect(prisma.user.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: userId,
+          OR: [{ deleted_at: null }, { deleted_at: { not: null } }],
+        },
+        select: {
+          id: true,
+          tenant_id: true,
+          facility_id: true,
+          deleted_at: true,
+        },
+      });
+      expect(prisma.user_permission.updateMany).toHaveBeenCalledWith({
+        where: {
+          user_id: userId,
+          deleted_at: deletedAt,
+        },
+        data: { deleted_at: null },
+      });
+      expect(prisma.staff_profile.updateMany).toHaveBeenCalledWith({
+        where: {
+          user_id: userId,
+          deleted_at: { not: null },
+        },
+        data: { deleted_at: null },
+      });
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: userId },
+          data: { deleted_at: null },
+        })
+      );
+    });
+
+    it('should throw not_found when the user is missing or not soft-deleted', async () => {
+      prisma.user.findFirst.mockResolvedValue({
+        ...existing,
+        deleted_at: null,
+      });
+
+      await expect(userRepository.restore(userId)).rejects.toMatchObject({
+        messageKey: 'errors.user.not_found',
+        statusCode: 404,
+      });
+    });
+
+    it('should throw when the tenant is inactive', async () => {
+      prisma.user.findFirst.mockResolvedValue(existing);
+      prisma.tenant.findFirst.mockResolvedValue(null);
+
+      await expect(userRepository.restore(userId)).rejects.toMatchObject({
+        messageKey: 'errors.user.restore_requires_active_tenant',
+        statusCode: 409,
       });
     });
   });

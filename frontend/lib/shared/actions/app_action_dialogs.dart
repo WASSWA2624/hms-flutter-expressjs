@@ -6,6 +6,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace_feedback.dart';
 
 /// Shared confirmation dialog for module actions that either return a boolean
 /// confirmation or run an async action before closing.
@@ -85,7 +86,6 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _noteController;
   bool _isSaving = false;
-  AppFailure? _failure;
 
   @override
   void initState() {
@@ -105,11 +105,6 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
     final ColorScheme colorScheme = theme.colorScheme;
     final AppLocalizations l10n = context.l10n;
     final List<Widget> children = <Widget>[
-      if (_failure != null)
-        AppFormInformationBanner.failure(
-          context: context,
-          failure: _failure!,
-        ),
       ...widget.leadingContent,
       if (widget.destructive)
         _DestructiveConfirmationBody(
@@ -148,6 +143,7 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
       initialMaximized: widget.initialMaximized,
       scrollable: widget.scrollable,
       pinActionsToBottom: widget.pinActionsToBottom,
+      showMaximizeButton: false,
       closeEnabled: !_isSaving,
       content: widget._hasNoteField
           ? AppFormShell(
@@ -209,7 +205,6 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
 
     setState(() {
       _isSaving = true;
-      _failure = null;
     });
     final AppFailure? failure = onConfirmWithNote != null
         ? await onConfirmWithNote(_noteController.text.trim())
@@ -225,8 +220,9 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
       Navigator.of(context).pop(widget.failurePopValue);
       return;
     }
+    // Prefer snackbars over inline failure panels — confirm shells stay compact.
+    showAppFailureSnackBar(context, failure);
     setState(() {
-      _failure = failure;
       _isSaving = false;
     });
   }
