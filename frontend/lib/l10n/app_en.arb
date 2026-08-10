@@ -28400,13 +28400,62 @@
   "@hrCreateUserDialogTitle": {
     "description": "Dialog title for creating a user account from HR."
   },
-  "hrAssignRoleAction": "Assign role",
+  "hrAssignRoleAction": "Assign Role",
   "@hrAssignRoleAction": {
     "description": "Action to assign a role to a linked user."
   },
-  "hrAssignRoleDialogTitle": "Assign role",
+  "hrChangeRolesAction": "Change Roles",
+  "@hrChangeRolesAction": {
+    "description": "Staff detail action when the member already has roles."
+  },
+  "hrAssignRoleDialogTitle": "Roles",
   "@hrAssignRoleDialogTitle": {
-    "description": "Dialog title for assigning a role."
+    "description": "Dialog title for staff role assignments."
+  },
+  "hrAddRoleAction": "Add Role",
+  "@hrAddRoleAction": {
+    "description": "Toolbar action to add a role assignment."
+  },
+  "hrAddRoleDialogTitle": "Add Role",
+  "@hrAddRoleDialogTitle": {
+    "description": "Nested dialog title for assigning a role."
+  },
+  "hrEditRoleDialogTitle": "Edit Role",
+  "@hrEditRoleDialogTitle": {
+    "description": "Nested dialog title for editing a role assignment."
+  },
+  "hrAddRoleFormHint": "Choose a role to grant. Optionally scope it to a facility.",
+  "@hrAddRoleFormHint": {
+    "description": "Hint under the add/edit role form."
+  },
+  "hrStaffRolesSearchHint": "Search roles",
+  "@hrStaffRolesSearchHint": {
+    "description": "Search hint for the staff roles table."
+  },
+  "hrRoleIdColumnLabel": "Role ID",
+  "@hrRoleIdColumnLabel": {
+    "description": "Column label for role identifier."
+  },
+  "hrRoleFacilityAllLabel": "All facilities",
+  "@hrRoleFacilityAllLabel": {
+    "description": "Shown when a role assignment is not facility-scoped."
+  },
+  "hrRemoveStaffRoleTitle": "Remove role?",
+  "@hrRemoveStaffRoleTitle": {
+    "description": "Confirm dialog title when removing a staff role."
+  },
+  "hrRemoveStaffRoleBody": "Remove the {role} role from this staff member?",
+  "@hrRemoveStaffRoleBody": {
+    "description": "Confirm dialog body when removing a staff role.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "hrAssignRoleActionTooltip": "Assign or change roles for this staff member",
+  "@hrAssignRoleActionTooltip": {
+    "description": "Tooltip for the assign/change roles staff action."
   },
   "hrRevokeRoleAction": "Revoke role",
   "@hrRevokeRoleAction": {

@@ -126,9 +126,13 @@ class HrStaffDetailActions extends ConsumerWidget {
       if (!separated && hasLinkedUser) ...<AppPermissionActionItem>[
         AppPermissionActionItem(
           requirement: HrHumanResourcesAtomPermissions.assignRole,
-          label: l10n.hrAssignRoleAction,
+          label: hrAssignRolesActionLabel(
+            l10n,
+            hasExisting: staffHasAssignedRoles(detail),
+          ),
           icon: Icons.admin_panel_settings_outlined,
           enabled: enabled,
+          tooltip: l10n.hrAssignRoleActionTooltip,
           onPressed: () => onAssignRole(context, ref, detail),
         ),
         AppPermissionActionItem(

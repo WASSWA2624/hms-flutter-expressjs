@@ -22044,10 +22044,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrCreateUserDialogTitle => 'Create user account';
 
   @override
-  String get hrAssignRoleAction => 'Assign role';
+  String get hrAssignRoleAction => 'Assign Role';
 
   @override
-  String get hrAssignRoleDialogTitle => 'Assign role';
+  String get hrChangeRolesAction => 'Change Roles';
+
+  @override
+  String get hrAssignRoleDialogTitle => 'Roles';
+
+  @override
+  String get hrAddRoleAction => 'Add Role';
+
+  @override
+  String get hrAddRoleDialogTitle => 'Add Role';
+
+  @override
+  String get hrEditRoleDialogTitle => 'Edit Role';
+
+  @override
+  String get hrAddRoleFormHint =>
+      'Choose a role to grant. Optionally scope it to a facility.';
+
+  @override
+  String get hrStaffRolesSearchHint => 'Search roles';
+
+  @override
+  String get hrRoleIdColumnLabel => 'Role ID';
+
+  @override
+  String get hrRoleFacilityAllLabel => 'All facilities';
+
+  @override
+  String get hrRemoveStaffRoleTitle => 'Remove role?';
+
+  @override
+  String hrRemoveStaffRoleBody(String role) {
+    return 'Remove the $role role from this staff member?';
+  }
+
+  @override
+  String get hrAssignRoleActionTooltip =>
+      'Assign or change roles for this staff member';
 
   @override
   String get hrRevokeRoleAction => 'Revoke role';

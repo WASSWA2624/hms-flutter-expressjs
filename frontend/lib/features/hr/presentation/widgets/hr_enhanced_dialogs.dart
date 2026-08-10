@@ -20,74 +20,9 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
+export 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_role_dialog.dart'
+    show showHrAssignRoleDialog;
 export '../hr_presentation_helpers.dart';
-
-Future<void> showHrAssignRoleDialog(
-  BuildContext context,
-  WidgetRef ref,
-  HrStaffDetail detail,
-) async {
-  if (!HrHumanResourcesAtomPermissions.assignRole.isAllowed(
-    ref.read(appAccessPolicyProvider),
-  )) {
-    return;
-  }
-
-  final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceState? state = readHrWorkspaceState(ref);
-  final HrWorkspaceController controller = ref.read(
-    hrWorkspaceControllerProvider.notifier,
-  );
-  String? roleId;
-  String? facilityId;
-
-  final bool? saved = await showAppWorkspaceMutationDialog(
-    context: context,
-    title: Text(l10n.hrAssignRoleDialogTitle),
-    icon: const Icon(Icons.admin_panel_settings_outlined),
-    submitLabel: l10n.hrAssignRoleAction,
-    cancelLabel: l10n.commonCancelActionLabel,
-    submitIcon: Icons.save_outlined,
-    buildFields:
-        (
-          BuildContext context,
-          GlobalKey<FormState> formKey,
-          bool _, [
-          AppFailure? failure,
-        ]) {
-          return AppFormSection(
-            children: <Widget>[
-              AppSelectField<String>.searchable(
-                value: roleId,
-                labelText: l10n.hrRolePositionColumnLabel,
-                isRequired: true,
-                options: hrLocalizedSelectOptions(
-                  l10n,
-                  state?.referenceData.roles ?? const [],
-                ),
-                validator: AppValidators.requiredValue(
-                  l10n.hrFieldRequiredLabel(l10n.hrRolePositionColumnLabel),
-                ),
-                onChanged: (String? value) => roleId = value,
-              ),
-              AppSelectField<String>.searchable(
-                value: facilityId,
-                labelText: l10n.hrDepartmentLabel,
-                options: hrSelectOptions(
-                  state?.referenceData.facilities ?? const [],
-                ),
-                onChanged: (String? value) => facilityId = value,
-              ),
-            ],
-          );
-        },
-    onSubmit: () =>
-        controller.assignUserRole(roleId: roleId ?? '', facilityId: facilityId),
-  );
-  if (saved == true && context.mounted) {
-    showHrMutationSnackBar(context, null);
-  }
-}
 
 Future<void> showHrModuleAccessDialog(
   BuildContext context,

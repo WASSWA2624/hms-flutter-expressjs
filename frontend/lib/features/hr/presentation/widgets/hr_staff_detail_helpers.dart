@@ -233,6 +233,21 @@ String hrPayAndCompensationActionLabel(
       : l10n.hrAddPayAndCompensationAction;
 }
 
+/// Whether the staff member already has one or more assigned roles.
+bool staffHasAssignedRoles(HrStaffDetail detail) {
+  return (detail.accessSummary?.userRoles ?? const <HrUserRole>[]).isNotEmpty;
+}
+
+/// Label for the staff-detail Assign / Change Roles action.
+String hrAssignRolesActionLabel(
+  AppLocalizations l10n, {
+  required bool hasExisting,
+}) {
+  return hasExisting
+      ? l10n.hrChangeRolesAction
+      : l10n.hrAssignRoleAction;
+}
+
 /// Active department assignment used to pre-fill change-department mode.
 HrStaffAssignment? resolveCurrentDepartmentAssignment(HrStaffDetail detail) {
   final List<HrStaffAssignment> active = detail.assignments

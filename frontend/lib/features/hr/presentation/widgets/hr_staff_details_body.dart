@@ -313,16 +313,21 @@ class HrStaffDetailsBody extends ConsumerWidget {
         titleIcon: Icons.badge_outlined,
         initiallyExpanded: false,
         headerActions: <Widget>[
-          AppButton.secondary(
-            label: l10n.hrManageRolesAction,
-            leadingIcon: Icons.manage_accounts_outlined,
-            onPressed: () => unawaited(
-              showManageRolesPermissionsDialog(
-                context,
-                ref,
+          if (canWrite &&
+              !profile.isSeparated &&
+              (profile.userId ?? profile.userDisplayId ?? '')
+                  .trim()
+                  .isNotEmpty)
+            AppButton.secondary(
+              label: hrAssignRolesActionLabel(
+                l10n,
+                hasExisting: roles.isNotEmpty,
+              ),
+              leadingIcon: Icons.admin_panel_settings_outlined,
+              onPressed: () => unawaited(
+                showHrAssignRoleDialog(context, ref, detail),
               ),
             ),
-          ),
         ],
         child: roles.isEmpty
             ? AppStateView(
@@ -330,33 +335,45 @@ class HrStaffDetailsBody extends ConsumerWidget {
                 title: l10n.hrNoRolesLabel,
                 body: l10n.hrStaffRolesEmptyBody,
                 icon: Icons.badge_outlined,
-                action: AppButton.primary(
-                  label: l10n.hrManageRolesAction,
-                  leadingIcon: Icons.manage_accounts_outlined,
-                  onPressed: () => unawaited(
-                    showManageRolesPermissionsDialog(
-                      context,
-                      ref,
-                    ),
-                  ),
-                ),
-              )
-            : Wrap(
-                spacing: theme.spacing.xs,
-                runSpacing: theme.spacing.xs,
-                children: <Widget>[
-                  for (final HrUserRole role in roles)
-                    Chip(
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      label: Text(
-                        l10n.hrReferenceRoleLabel(
-                          role.roleName,
-                          fallback: role.roleName ?? role.roleId,
+                action: canWrite &&
+                        !profile.isSeparated &&
+                        (profile.userId ?? profile.userDisplayId ?? '')
+                            .trim()
+                            .isNotEmpty
+                    ? AppButton.primary(
+                        label: hrAssignRolesActionLabel(
+                          l10n,
+                          hasExisting: false,
                         ),
-                        style: theme.textTheme.labelMedium,
+                        leadingIcon: Icons.admin_panel_settings_outlined,
+                        onPressed: () => unawaited(
+                          showHrAssignRoleDialog(context, ref, detail),
+                        ),
+                      )
+                    : null,
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  for (final HrUserRole role in roles) ...<Widget>[
+                    _CompactRecordTile(
+                      title: l10n.hrReferenceRoleLabel(
+                        role.roleName,
+                        fallback: role.roleName ?? role.roleId,
+                      ),
+                      subtitle: (role.facilityName ??
+                                  role.facilityDisplayId ??
+                                  '')
+                              .trim()
+                              .isEmpty
+                          ? l10n.hrRoleFacilityAllLabel
+                          : (role.facilityName ?? role.facilityDisplayId)!,
+                      onTap: () => unawaited(
+                        showHrAssignRoleDialog(context, ref, detail),
                       ),
                     ),
+                    SizedBox(height: theme.spacing.sm),
+                  ],
                 ],
               ),
       ),

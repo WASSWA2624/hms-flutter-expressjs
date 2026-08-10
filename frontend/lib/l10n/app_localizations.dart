@@ -40790,14 +40790,80 @@ abstract class AppLocalizations {
   /// Action to assign a role to a linked user.
   ///
   /// In en, this message translates to:
-  /// **'Assign role'**
+  /// **'Assign Role'**
   String get hrAssignRoleAction;
 
-  /// Dialog title for assigning a role.
+  /// Staff detail action when the member already has roles.
   ///
   /// In en, this message translates to:
-  /// **'Assign role'**
+  /// **'Change Roles'**
+  String get hrChangeRolesAction;
+
+  /// Dialog title for staff role assignments.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles'**
   String get hrAssignRoleDialogTitle;
+
+  /// Toolbar action to add a role assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Role'**
+  String get hrAddRoleAction;
+
+  /// Nested dialog title for assigning a role.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Role'**
+  String get hrAddRoleDialogTitle;
+
+  /// Nested dialog title for editing a role assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Role'**
+  String get hrEditRoleDialogTitle;
+
+  /// Hint under the add/edit role form.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a role to grant. Optionally scope it to a facility.'**
+  String get hrAddRoleFormHint;
+
+  /// Search hint for the staff roles table.
+  ///
+  /// In en, this message translates to:
+  /// **'Search roles'**
+  String get hrStaffRolesSearchHint;
+
+  /// Column label for role identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Role ID'**
+  String get hrRoleIdColumnLabel;
+
+  /// Shown when a role assignment is not facility-scoped.
+  ///
+  /// In en, this message translates to:
+  /// **'All facilities'**
+  String get hrRoleFacilityAllLabel;
+
+  /// Confirm dialog title when removing a staff role.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove role?'**
+  String get hrRemoveStaffRoleTitle;
+
+  /// Confirm dialog body when removing a staff role.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the {role} role from this staff member?'**
+  String hrRemoveStaffRoleBody(String role);
+
+  /// Tooltip for the assign/change roles staff action.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign or change roles for this staff member'**
+  String get hrAssignRoleActionTooltip;
 
   /// Action to revoke a role from a linked user.
   ///
