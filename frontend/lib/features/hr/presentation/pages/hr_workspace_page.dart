@@ -42,6 +42,7 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_payroll_wizard_di
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_record_availability_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_request_leave_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_detail_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_shift_detail_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_actions.dart';

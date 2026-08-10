@@ -126,6 +126,7 @@ Future<bool> showHrRosterSimilarityDialog({
   required String proposedName,
   required List<HrRosterSimilarityMatch> matches,
   required bool blockProceed,
+  bool isEdit = false,
 }) async {
   final AppLocalizations l10n = context.l10n;
   final List<AppSimilarityMatch<HrRosterSimilarityMatch>> appMatches = matches
@@ -155,7 +156,9 @@ Future<bool> showHrRosterSimilarityDialog({
             : l10n.hrRosterSimilarityNearBannerTitle,
         bannerMessage: blockProceed
             ? l10n.hrRosterSimilarityExactBannerMessage
-            : l10n.hrRosterSimilarityNearBannerMessage,
+            : (isEdit
+                  ? l10n.hrRosterSimilarityNearBannerEditMessage
+                  : l10n.hrRosterSimilarityNearBannerMessage),
         bannerVariant: blockProceed
             ? AppFormInformationVariant.error
             : AppFormInformationVariant.warning,
@@ -172,7 +175,9 @@ Future<bool> showHrRosterSimilarityDialog({
         blockProceed: blockProceed,
         enableRetry: false,
         proposedReadOnly: true,
-        proceedLabel: l10n.hrRosterSimilarityProceedAction,
+        proceedLabel: isEdit
+            ? l10n.hrRosterSimilaritySaveAnywayAction
+            : l10n.hrRosterSimilarityProceedAction,
         dialogIcon: Icons.edit_calendar_outlined,
       );
 

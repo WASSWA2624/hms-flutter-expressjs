@@ -27042,11 +27042,23 @@
   },
   "hrRosterSimilarityNearBannerMessage": "Review similar roster templates before creating this one. You can still proceed if this template is intentional.",
   "@hrRosterSimilarityNearBannerMessage": {
-    "description": "Banner message for near-duplicate roster template matches."
+    "description": "Banner message for near-duplicate roster template matches on create."
+  },
+  "hrRosterSimilarityNearBannerEditMessage": "Review similar roster templates before saving. You can still proceed if this template is intentional.",
+  "@hrRosterSimilarityNearBannerEditMessage": {
+    "description": "Banner message for near-duplicate roster template matches on edit."
   },
   "hrRosterSimilarityProceedAction": "Create anyway",
   "@hrRosterSimilarityProceedAction": {
     "description": "Confirm create after reviewing similar roster templates."
+  },
+  "hrRosterSimilaritySaveAnywayAction": "Save anyway",
+  "@hrRosterSimilaritySaveAnywayAction": {
+    "description": "Confirm update after reviewing similar roster templates."
+  },
+  "hrSaveRosterTemplateAction": "Save roster template",
+  "@hrSaveRosterTemplateAction": {
+    "description": "Primary submit action on edit roster template dialog."
   },
   "hrRosterDetailDialogTitle": "Roster template details",
   "@hrRosterDetailDialogTitle": {

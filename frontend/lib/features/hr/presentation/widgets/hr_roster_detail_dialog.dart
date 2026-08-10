@@ -11,6 +11,7 @@ import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_con
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_calendar_preview.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -440,124 +441,17 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
   }
 
   Future<void> _editRoster() async {
-    final AppLocalizations l10n = context.l10n;
     final Map<String, Object?> roster = _roster ?? <String, Object?>{};
-    final TextEditingController nameController = TextEditingController(
-      text: (roster['name'] ?? '').toString(),
+    final bool saved = await showHrEditRosterDialog(
+      context,
+      ref,
+      rosterId: _rosterId,
+      roster: roster,
     );
-    DateTime? periodStart = _parseDate(roster['period_start']) ?? widget.item.startAt;
-    DateTime? periodEnd = _parseDate(roster['period_end']) ?? widget.item.endAt;
-    String status = (roster['status'] ?? 'DRAFT').toString();
-    bool isRecurring = roster['is_recurring'] == true;
-
-    final bool? saved = await showAppWorkspaceMutationDialog(
-      context: context,
-      title: Text(l10n.hrRosterEditDialogTitle),
-      icon: const Icon(Icons.edit_outlined),
-      submitLabel: l10n.commonEditActionLabel,
-      cancelLabel: l10n.commonCancelActionLabel,
-      submitIcon: Icons.save_outlined,
-      maxWidth: 720,
-      buildFields:
-          (
-            BuildContext context,
-            GlobalKey<FormState> formKey,
-            bool _, [
-            AppFailure? failure,
-          ]) {
-            return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setLocal) {
-                return AppFormSection(
-                  children: <Widget>[
-                    AppTextField(
-                      controller: nameController,
-                      labelText: l10n.hrRosterNameLabel,
-                      helperText: l10n.hrRosterNameHelper,
-                      isRequired: true,
-                      validator: AppValidators.requiredText(
-                        l10n.hrFieldRequiredLabel(l10n.hrRosterNameLabel),
-                      ),
-                    ),
-                    AppDateField(
-                      value: periodStart,
-                      labelText: l10n.hrStartDateLabel,
-                      isRequired: true,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2100),
-                      currentDate: DateTime.now(),
-                      pickerButtonLabel: l10n.hrPickDateAction,
-                      invalidDateMessage: l10n.appDateInvalidMessage,
-                      onChanged: (DateTime? value) =>
-                          setLocal(() => periodStart = value),
-                    ),
-                    AppDateField(
-                      value: periodEnd,
-                      labelText: l10n.hrEndDateLabel,
-                      isRequired: true,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2100),
-                      currentDate: DateTime.now(),
-                      pickerButtonLabel: l10n.hrPickDateAction,
-                      invalidDateMessage: l10n.appDateInvalidMessage,
-                      onChanged: (DateTime? value) =>
-                          setLocal(() => periodEnd = value),
-                    ),
-                    AppSelectField<String>(
-                      value: status,
-                      labelText: l10n.hrStatusColumnLabel,
-                      options: <AppSelectOption<String>>[
-                        AppSelectOption<String>(
-                          value: 'DRAFT',
-                          label: l10n.hrRosterStatusDraft,
-                        ),
-                        AppSelectOption<String>(
-                          value: 'PUBLISHED',
-                          label: l10n.hrRosterStatusCompleted,
-                        ),
-                      ],
-                      onChanged: (String? value) {
-                        if (value != null) {
-                          setLocal(() => status = value);
-                        }
-                      },
-                    ),
-                    AppSwitchField(
-                      value: isRecurring,
-                      title: l10n.hrRosterRecurringLabel,
-                      onChanged: (bool value) =>
-                          setLocal(() => isRecurring = value),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-      onSubmit: () async {
-        if (periodStart == null ||
-            periodEnd == null ||
-            !periodEnd!.isAfter(periodStart!)) {
-          return AppFailure.validation(
-            detailMessage: l10n.hrFieldRequiredLabel(l10n.hrPeriodColumnLabel),
-          );
-        }
-        final AppFailure? failure = await ref
-            .read(hrWorkspaceControllerProvider.notifier)
-            .updateRoster(_rosterId, <String, Object?>{
-              'name': nameController.text.trim(),
-              'period_start': periodStart!.toUtc().toIso8601String(),
-              'period_end': periodEnd!.toUtc().toIso8601String(),
-              'status': status,
-              'is_recurring': isRecurring,
-            });
-        if (failure == null) {
-          await _reloadRoster();
-        }
-        return failure;
-      },
-    );
-    if (saved == true && mounted) {
-      showHrMutationSnackBar(context, null);
+    if (!mounted || !saved) {
+      return;
     }
+    await _reloadRoster();
   }
 
   Future<void> _printRoster() async {
@@ -957,7 +851,7 @@ class _HrRosterDetailShellState extends ConsumerState<_HrRosterDetailShell> {
             return AppButton.secondary(
               leadingIcon: Icons.edit_outlined,
               label: l10n.commonEditActionLabel,
-              tooltip: l10n.commonEditActionLabel,
+              tooltip: l10n.hrRosterEditDialogTitle,
               dense: true,
               enabled: isAllowed && !_busy && _roster != null,
               onPressed: !isAllowed || _busy || _roster == null

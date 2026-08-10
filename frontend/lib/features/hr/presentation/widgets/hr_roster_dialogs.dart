@@ -18,8 +18,6 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-export 'hr_roster_detail_dialog.dart' show showHrRosterDetailDialog;
-
 const Map<int, String> _kWeekdayCodes = <int, String>{
   1: 'MON',
   2: 'TUE',
@@ -155,47 +153,168 @@ List<int> _monthDaysForPayload({
   return valid.toList()..sort();
 }
 
-Future<void> showHrCreateRosterDialog(
+Map<String, Object?> _rosterMap(Object? value) {
+  if (value is Map<String, Object?>) {
+    return value;
+  }
+  if (value is Map) {
+    return Map<String, Object?>.from(value);
+  }
+  return <String, Object?>{};
+}
+
+DateTime? _parseRosterDate(Object? value) {
+  if (value is DateTime) {
+    return value;
+  }
+  final String raw = (value ?? '').toString().trim();
+  if (raw.isEmpty) {
+    return null;
+  }
+  return DateTime.tryParse(raw);
+}
+
+Set<int> _monthDaysFromConstraints(Map<String, Object?> constraints) {
+  final Object? raw = constraints['month_days'];
+  if (raw is! List || raw.isEmpty) {
+    return _allMonthDays(31);
+  }
+  final Set<int> days = <int>{};
+  for (final Object? entry in raw) {
+    final int? day = entry is int
+        ? entry
+        : int.tryParse(entry?.toString() ?? '');
+    if (day != null && day >= 1 && day <= 31) {
+      days.add(day);
+    }
+  }
+  return days.isEmpty ? _allMonthDays(31) : days;
+}
+
+List<Object?> _listConstraintValue(
+  Map<String, Object?> constraints,
+  String key,
+) {
+  final Object? raw = constraints[key];
+  if (raw is List) {
+    return List<Object?>.from(raw);
+  }
+  return const <Object?>[];
+}
+
+Future<bool> showHrCreateRosterDialog(
   BuildContext context,
   WidgetRef ref,
-) async {
+) {
+  return showHrRosterTemplateDialog(context, ref);
+}
+
+Future<bool> showHrEditRosterDialog(
+  BuildContext context,
+  WidgetRef ref, {
+  required String rosterId,
+  required Map<String, Object?> roster,
+}) {
+  return showHrRosterTemplateDialog(
+    context,
+    ref,
+    rosterId: rosterId,
+    existingRoster: roster,
+  );
+}
+
+Future<bool> showHrRosterTemplateDialog(
+  BuildContext context,
+  WidgetRef ref, {
+  String? rosterId,
+  Map<String, Object?>? existingRoster,
+}) async {
   final AppLocalizations l10n = context.l10n;
+  final bool isEdit = rosterId != null && rosterId.trim().isNotEmpty;
+  final Map<String, Object?> existing = existingRoster ?? <String, Object?>{};
+  final Map<String, Object?> existingConstraints = _rosterMap(
+    existing['constraints'],
+  );
+
   String? tenantId = resolveHrAccessTenantId(ref);
   final String? policyTenant = ref.read(appAccessPolicyProvider).tenantId;
   if (!isHrAccessTenantUuid(tenantId) && isHrAccessTenantUuid(policyTenant)) {
     tenantId = policyTenant;
   }
-  if (!isHrAccessTenantUuid(tenantId)) {
+  if (!isEdit && !isHrAccessTenantUuid(tenantId)) {
     showHrMutationSnackBar(
       context,
       AppFailure.validation(detailMessage: l10n.hrFieldRequiredLabel('Tenant')),
     );
-    return;
+    return false;
   }
 
   final HrWorkspaceState? state = readHrWorkspaceState(ref);
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
   );
-  final TextEditingController nameController = TextEditingController();
-  final HrWeeklyScheduleDraft schedule = HrWeeklyScheduleDraft(
-    weekdayDefaults: true,
+  final TextEditingController nameController = TextEditingController(
+    text: (existing['name'] ?? '').toString(),
   );
-  DateTime? periodStart = DateTime.now();
-  DateTime? periodEnd = DateTime.now().add(const Duration(days: 7));
-  final String? facilityId = _resolveRosterFacilityId(ref, state);
-  String departmentId = _kRosterAllDepartments;
-  const String status = 'DRAFT';
-  bool isRecurring = true;
-  bool respectHolidays = true;
-  bool respectWeekends = true;
-  final Set<int> monthDays = _allMonthDays(31);
+  final HrWeeklyScheduleDraft schedule = isEdit
+      ? HrWeeklyScheduleDraft.fromTemplateExtra(existingConstraints)
+      : HrWeeklyScheduleDraft(weekdayDefaults: true);
+  DateTime? periodStart =
+      _parseRosterDate(existing['period_start']) ?? DateTime.now();
+  DateTime? periodEnd =
+      _parseRosterDate(existing['period_end']) ??
+      DateTime.now().add(const Duration(days: 7));
+  final String? facilityId =
+      (existing['facility_id']?.toString().trim().isNotEmpty ?? false)
+      ? existing['facility_id']!.toString().trim()
+      : _resolveRosterFacilityId(ref, state);
+  final String existingDepartmentId =
+      (existing['department_id'] ?? '').toString().trim();
+  String departmentId = existingDepartmentId.isEmpty
+      ? _kRosterAllDepartments
+      : existingDepartmentId;
+  final String status = ((existing['status'] ?? 'DRAFT').toString().trim().isEmpty
+      ? 'DRAFT'
+      : (existing['status'] ?? 'DRAFT').toString().trim().toUpperCase());
+  bool isRecurring = isEdit
+      ? existing['is_recurring'] == true
+      : true;
+  bool respectHolidays =
+      existingConstraints['respect_public_holidays'] != false;
+  bool respectWeekends = existingConstraints['respect_weekends'] != false;
+  final Set<int> monthDays = isEdit
+      ? _monthDaysFromConstraints(existingConstraints)
+      : _allMonthDays(31);
+  final List<Object?> preservedPublicHolidays = _listConstraintValue(
+    existingConstraints,
+    'public_holidays',
+  );
+  final List<Object?> preservedAttachedStaffIds = _listConstraintValue(
+    existingConstraints,
+    'attached_staff_ids',
+  );
+  final List<Object?> preservedAttachedStaffMeta = _listConstraintValue(
+    existingConstraints,
+    'attached_staff_meta',
+  );
+
+  if (isEdit && respectWeekends) {
+    for (final int day in <int>[0, 6]) {
+      schedule.days[day]!.replaceSlots(const <HrAvailabilitySlot>[]);
+    }
+  }
 
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
-    title: Text(l10n.hrCreateRosterDialogTitle),
-    icon: const Icon(Icons.edit_calendar_outlined),
-    submitLabel: l10n.hrShiftTemplateAction,
+    title: Text(
+      isEdit ? l10n.hrRosterEditDialogTitle : l10n.hrCreateRosterDialogTitle,
+    ),
+    icon: Icon(
+      isEdit ? Icons.edit_outlined : Icons.edit_calendar_outlined,
+    ),
+    submitLabel: isEdit
+        ? l10n.hrSaveRosterTemplateAction
+        : l10n.hrShiftTemplateAction,
     cancelLabel: l10n.commonCloseActionLabel,
     submitIcon: Icons.save_outlined,
     maxWidth: 1040,
@@ -517,29 +636,34 @@ Future<void> showHrCreateRosterDialog(
       final DateTime effectiveEnd =
           periodEnd ?? DateTime.now().add(const Duration(days: 7));
 
+      final Map<String, Object?> constraints = <String, Object?>{
+        'respect_public_holidays': respectHolidays,
+        'respect_weekends': respectWeekends,
+        'public_holidays': preservedPublicHolidays,
+        'month_days': monthDayList,
+        'working_days': workingDays,
+        'default_start_time': defaultStart,
+        'default_end_time': defaultEnd,
+        'weekly_schedule_json': schedule.toTemplateWeeklySchedulePayload(),
+        'attached_staff_ids': isEdit
+            ? preservedAttachedStaffIds
+            : const <String>[],
+        if (isEdit) 'attached_staff_meta': preservedAttachedStaffMeta,
+      };
+
       final Map<String, Object?> payload = <String, Object?>{
-        'tenant_id': tenantId,
+        if (!isEdit) 'tenant_id': tenantId,
         'name': nameController.text.trim(),
         'is_recurring': isRecurring,
         'period_start': effectiveStart.toUtc().toIso8601String(),
         'period_end': effectiveEnd.toUtc().toIso8601String(),
-        'status': status,
+        if (!isEdit) 'status': status,
         'facility_id': facilityId,
         'department_id': departmentId == _kRosterAllDepartments
             ? null
             : departmentId,
         'materialize_shifts': true,
-        'constraints': <String, Object?>{
-          'respect_public_holidays': respectHolidays,
-          'respect_weekends': respectWeekends,
-          'public_holidays': <String>[],
-          'month_days': monthDayList,
-          'working_days': workingDays,
-          'default_start_time': defaultStart,
-          'default_end_time': defaultEnd,
-          'weekly_schedule_json': schedule.toTemplateWeeklySchedulePayload(),
-          'attached_staff_ids': <String>[],
-        },
+        'constraints': constraints,
       };
 
       Future<AppFailure?> submit({required bool confirmSimilar}) async {
@@ -547,7 +671,9 @@ Future<void> showHrCreateRosterDialog(
           ...payload,
           if (confirmSimilar) 'confirm_similar': true,
         };
-        final AppFailure? failure = await controller.createRoster(request);
+        final AppFailure? failure = isEdit
+            ? await controller.updateRoster(rosterId, request)
+            : await controller.createRoster(request);
         if (failure == null || !context.mounted) {
           return failure;
         }
@@ -562,6 +688,7 @@ Future<void> showHrCreateRosterDialog(
           proposedName: nameController.text.trim(),
           matches: matches,
           blockProceed: exact,
+          isEdit: isEdit,
         );
         if (!proceed || !context.mounted) {
           return failure;
@@ -581,6 +708,7 @@ Future<void> showHrCreateRosterDialog(
   if (saved == true && context.mounted) {
     showHrMutationSnackBar(context, null);
   }
+  return saved == true;
 }
 
 class _HrMonthDayChip extends StatelessWidget {

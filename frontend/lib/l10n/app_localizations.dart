@@ -38807,17 +38807,35 @@ abstract class AppLocalizations {
   /// **'Similar templates found'**
   String get hrRosterSimilarityNearBannerTitle;
 
-  /// Banner message for near-duplicate roster template matches.
+  /// Banner message for near-duplicate roster template matches on create.
   ///
   /// In en, this message translates to:
   /// **'Review similar roster templates before creating this one. You can still proceed if this template is intentional.'**
   String get hrRosterSimilarityNearBannerMessage;
+
+  /// Banner message for near-duplicate roster template matches on edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Review similar roster templates before saving. You can still proceed if this template is intentional.'**
+  String get hrRosterSimilarityNearBannerEditMessage;
 
   /// Confirm create after reviewing similar roster templates.
   ///
   /// In en, this message translates to:
   /// **'Create anyway'**
   String get hrRosterSimilarityProceedAction;
+
+  /// Confirm update after reviewing similar roster templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get hrRosterSimilaritySaveAnywayAction;
+
+  /// Primary submit action on edit roster template dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Save roster template'**
+  String get hrSaveRosterTemplateAction;
 
   /// Title for roster template details dialog.
   ///
@@ -40829,10 +40847,10 @@ abstract class AppLocalizations {
   /// **'Assigned at'**
   String get hrAssignedAtLabel;
 
-  /// Label for linked roster period.
+  /// Label for linked roster template period.
   ///
   /// In en, this message translates to:
-  /// **'Roster period'**
+  /// **'Template period'**
   String get hrRosterPeriodLabel;
 
   /// Action to remove a shift assignment.

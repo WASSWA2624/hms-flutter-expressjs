@@ -20977,7 +20977,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Review similar roster templates before creating this one. You can still proceed if this template is intentional.';
 
   @override
+  String get hrRosterSimilarityNearBannerEditMessage =>
+      'Review similar roster templates before saving. You can still proceed if this template is intentional.';
+
+  @override
   String get hrRosterSimilarityProceedAction => 'Create anyway';
+
+  @override
+  String get hrRosterSimilaritySaveAnywayAction => 'Save anyway';
+
+  @override
+  String get hrSaveRosterTemplateAction => 'Save roster template';
 
   @override
   String get hrRosterDetailDialogTitle => 'Roster template details';
@@ -22062,7 +22072,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAssignedAtLabel => 'Assigned at';
 
   @override
-  String get hrRosterPeriodLabel => 'Roster period';
+  String get hrRosterPeriodLabel => 'Template period';
 
   @override
   String get hrRemoveShiftAssignmentAction => 'Remove assignment';
