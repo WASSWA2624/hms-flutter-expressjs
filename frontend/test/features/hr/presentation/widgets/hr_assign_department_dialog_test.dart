@@ -48,6 +48,12 @@ AppAccessPolicy _hrWritePolicy() {
 const HrReferenceData _referenceData = HrReferenceData(
   departments: <HrOption>[
     HrOption(value: 'dept-er', label: 'Emergency'),
+    HrOption(
+      value: 'DEP-TEST',
+      label: 'Testing',
+      displayId: 'DEP-TEST',
+      extra: <String, Object?>{'entity_id': 'uuid-testing-dept'},
+    ),
     HrOption(value: 'dept-lab', label: 'Laboratory'),
   ],
   units: <HrOption>[
@@ -55,6 +61,11 @@ const HrReferenceData _referenceData = HrReferenceData(
       value: 'unit-er-1',
       label: 'ER Triage',
       extra: <String, Object?>{'department_id': 'dept-er'},
+    ),
+    HrOption(
+      value: 'unit-test-1',
+      label: 'Testing Unit',
+      extra: <String, Object?>{'department_id': 'uuid-testing-dept'},
     ),
   ],
   rooms: <HrOption>[
@@ -266,4 +277,43 @@ void main() {
     expect(find.text('ER Room 1'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'change mode maps UUID department_id to reference option without duplicate',
+    (WidgetTester tester) async {
+      const HrStaffProfile staff = HrStaffProfile(
+        id: 'staff-3',
+        displayId: 'STF0003',
+        departmentId: 'uuid-testing-dept',
+        departmentDisplayId: 'DEP-TEST',
+        departmentName: 'Testing',
+      );
+      const HrStaffDetail detail = HrStaffDetail(
+        profile: staff,
+        assignments: <HrStaffAssignment>[
+          HrStaffAssignment(
+            id: 'asg-2',
+            departmentId: 'uuid-testing-dept',
+            departmentDisplayId: 'DEP-TEST',
+            departmentName: 'Testing',
+            isActive: true,
+            isPrimary: true,
+          ),
+        ],
+      );
+
+      await _pumpAssignDepartmentDialog(
+        tester,
+        repository,
+        staff: staff,
+        detail: detail,
+      );
+
+      expect(find.text('Change department'), findsWidgets);
+      // Prefill resolved to the catalog option value, not a UUID orphan.
+      expect(find.text('Testing'), findsWidgets);
+      expect(find.text('uuid-testing-dept'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

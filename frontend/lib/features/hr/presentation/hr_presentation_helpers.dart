@@ -26,6 +26,63 @@ List<AppSelectOption<String>> hrSelectOptions(List<HrOption> options) {
   ];
 }
 
+/// Maps a stored UUID or display id onto the matching [HrOption.value].
+///
+/// Reference-data options typically use the human-friendly id as [HrOption.value]
+/// and stash the UUID in `extra['entity_id']`. Callers that prefill from raw
+/// `department_id` / `unit_id` UUIDs should resolve through this helper so the
+/// select field does not orphan-inject a duplicate labeled option.
+String? resolveHrOptionValue({
+  required List<HrOption> options,
+  required Iterable<String?> candidates,
+}) {
+  final List<String> needles = <String>[
+    for (final String? candidate in candidates)
+      if ((candidate ?? '').trim().isNotEmpty) candidate!.trim(),
+  ];
+  if (needles.isEmpty) {
+    return null;
+  }
+
+  for (final String needle in needles) {
+    for (final HrOption option in options) {
+      final String extraId =
+          (option.extra['entity_id'] ?? option.extra['id'] ?? '')
+              .toString()
+              .trim();
+      if (option.value == needle ||
+          (option.displayId?.trim() == needle) ||
+          (extraId.isNotEmpty && extraId == needle)) {
+        return option.value;
+      }
+    }
+  }
+  return null;
+}
+
+/// Entity UUID for a department option value (friendly id or UUID).
+String? hrOptionEntityId(List<HrOption> options, String? optionValue) {
+  final String selected = optionValue?.trim() ?? '';
+  if (selected.isEmpty) {
+    return null;
+  }
+  for (final HrOption option in options) {
+    final String extraId =
+        (option.extra['entity_id'] ?? option.extra['id'] ?? '')
+            .toString()
+            .trim();
+    if (option.value == selected ||
+        (option.displayId?.trim() == selected) ||
+        (extraId.isNotEmpty && extraId == selected)) {
+      if (extraId.isNotEmpty) {
+        return extraId;
+      }
+      return option.value;
+    }
+  }
+  return selected;
+}
+
 List<AppSelectOption<String>> hrLocalizedSelectOptions(
   AppLocalizations l10n,
   List<HrOption> options,

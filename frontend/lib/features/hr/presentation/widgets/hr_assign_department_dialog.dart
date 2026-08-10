@@ -124,16 +124,44 @@ class _HrAssignDepartmentFieldsState extends State<_HrAssignDepartmentFields> {
     if (widget.isChange && detail != null) {
       final HrStaffAssignment? current =
           resolveCurrentDepartmentAssignment(detail);
-      _departmentId =
+      final String? rawDepartmentId =
           (current?.departmentId ?? detail.profile.departmentId)?.trim();
+      final String? departmentDisplayId =
+          (current?.departmentDisplayId ?? detail.profile.departmentDisplayId)
+              ?.trim();
+      _departmentId =
+          resolveHrOptionValue(
+            options: widget.referenceData.departments,
+            candidates: <String?>[departmentDisplayId, rawDepartmentId],
+          ) ??
+          (departmentDisplayId?.isNotEmpty == true
+              ? departmentDisplayId
+              : rawDepartmentId);
       if (_departmentId != null && _departmentId!.isEmpty) {
         _departmentId = null;
       }
-      _unitId = current?.unitId?.trim();
+
+      final String? rawUnitId = current?.unitId?.trim();
+      final String? unitDisplayId = current?.unitDisplayId?.trim();
+      _unitId =
+          resolveHrOptionValue(
+            options: widget.referenceData.units,
+            candidates: <String?>[unitDisplayId, rawUnitId],
+          ) ??
+          (unitDisplayId?.isNotEmpty == true ? unitDisplayId : rawUnitId);
       if (_unitId != null && _unitId!.isEmpty) {
         _unitId = null;
       }
-      _roomIds = resolveCurrentAssignmentRoomIds(detail);
+
+      final Set<String> rawRoomIds = resolveCurrentAssignmentRoomIds(detail);
+      _roomIds = <String>{
+        for (final String roomId in rawRoomIds)
+          resolveHrOptionValue(
+                options: widget.referenceData.rooms,
+                candidates: <String?>[roomId],
+              ) ??
+              roomId,
+      };
     } else {
       _departmentId = null;
       _unitId = null;
@@ -160,11 +188,17 @@ class _HrAssignDepartmentFieldsState extends State<_HrAssignDepartmentFields> {
     });
   }
 
-  List<HrOption> get _scopedUnits =>
-      _scopedOptions(widget.referenceData.units, departmentId: _departmentId);
+  List<HrOption> get _scopedUnits => _scopedOptions(
+    widget.referenceData.units,
+    departmentId: _departmentId,
+    departments: widget.referenceData.departments,
+  );
 
-  List<HrOption> get _scopedRooms =>
-      _scopedOptions(widget.referenceData.rooms, departmentId: _departmentId);
+  List<HrOption> get _scopedRooms => _scopedOptions(
+    widget.referenceData.rooms,
+    departmentId: _departmentId,
+    departments: widget.referenceData.departments,
+  );
 
   List<AppSelectOption<String>> _departmentOptions() {
     final List<AppSelectOption<String>> options = hrSelectOptions(
@@ -337,13 +371,26 @@ class _HrRoomMultiSelectHeader extends StatelessWidget {
   }
 }
 
-List<HrOption> _scopedOptions(List<HrOption> options, {String? departmentId}) {
+List<HrOption> _scopedOptions(
+  List<HrOption> options, {
+  String? departmentId,
+  List<HrOption> departments = const <HrOption>[],
+}) {
   final String selectedDepartment = departmentId?.trim() ?? '';
+  if (selectedDepartment.isEmpty) {
+    return options;
+  }
+  final String? entityId = hrOptionEntityId(departments, selectedDepartment);
+  final Set<String> matchIds = <String>{
+    selectedDepartment,
+    if (entityId != null && entityId.isNotEmpty) entityId,
+  };
   return <HrOption>[
     for (final HrOption option in options)
-      if (selectedDepartment.isEmpty ||
-          (option.extra['department_id']?.toString().trim() ?? '').isEmpty ||
-          option.extra['department_id'] == selectedDepartment)
+      if ((option.extra['department_id']?.toString().trim() ?? '').isEmpty ||
+          matchIds.contains(
+            option.extra['department_id']?.toString().trim() ?? '',
+          ))
         option,
   ];
 }
