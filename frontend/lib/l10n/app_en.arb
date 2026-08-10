@@ -26693,9 +26693,9 @@
   "@hrAddPayAndCompensationAction": {
     "description": "Action to add pay and compensation when staff has none."
   },
-  "hrUpdatePayAndCompensationAction": "Update Pay & Compensation",
+  "hrUpdatePayAndCompensationAction": "Change Pay & Compensation",
   "@hrUpdatePayAndCompensationAction": {
-    "description": "Action to update existing pay and compensation."
+    "description": "Action to change existing pay and compensation."
   },
   "hrCompensationDialogTitle": "Pay & Compensation",
   "@hrCompensationDialogTitle": {
@@ -28976,7 +28976,7 @@
   "@hrAvailabilityEditDayAction": {
     "description": "Action to edit availability for a day."
   },
-  "hrCompensationActionTooltip": "Add or update pay and compensation",
+  "hrCompensationActionTooltip": "Add or change pay and compensation",
   "@hrCompensationActionTooltip": {
     "description": "Tooltip for compensation action."
   },

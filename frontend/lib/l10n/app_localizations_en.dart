@@ -20716,7 +20716,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAddPayAndCompensationAction => 'Add Pay & Compensation';
 
   @override
-  String get hrUpdatePayAndCompensationAction => 'Update Pay & Compensation';
+  String get hrUpdatePayAndCompensationAction => 'Change Pay & Compensation';
 
   @override
   String get hrCompensationDialogTitle => 'Pay & Compensation';
@@ -22633,7 +22633,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrCompensationActionTooltip =>
-      'Add or update pay and compensation';
+      'Add or change pay and compensation';
 
   @override
   String get hrRunPayrollActionTooltip =>

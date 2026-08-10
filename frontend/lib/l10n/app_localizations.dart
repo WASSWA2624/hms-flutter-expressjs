@@ -38303,10 +38303,10 @@ abstract class AppLocalizations {
   /// **'Add Pay & Compensation'**
   String get hrAddPayAndCompensationAction;
 
-  /// Action to update existing pay and compensation.
+  /// Action to change existing pay and compensation.
   ///
   /// In en, this message translates to:
-  /// **'Update Pay & Compensation'**
+  /// **'Change Pay & Compensation'**
   String get hrUpdatePayAndCompensationAction;
 
   /// Human resources workspace text for hrCompensationDialogTitle.
@@ -41828,7 +41828,7 @@ abstract class AppLocalizations {
   /// Tooltip for compensation action.
   ///
   /// In en, this message translates to:
-  /// **'Add or update pay and compensation'**
+  /// **'Add or change pay and compensation'**
   String get hrCompensationActionTooltip;
 
   /// Tooltip for run payroll action.
