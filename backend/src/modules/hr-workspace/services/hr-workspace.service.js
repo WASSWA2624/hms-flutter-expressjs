@@ -455,65 +455,98 @@ const mapPayroll = (item) => ({
 
 const buildLeaveSearchWhere = (search) => {
   if (!hasText(search)) return {};
+  const term = String(search).trim();
+  const status = term.toUpperCase();
   return {
     OR: [
-      { human_friendly_id: { contains: search, mode: 'insensitive' } },
-      { reason: { contains: search, mode: 'insensitive' } },
-      { status: { contains: search, mode: 'insensitive' } },
-      { staff_profile: { human_friendly_id: { contains: search, mode: 'insensitive' } } },
-      { staff_profile: { staff_number: { contains: search, mode: 'insensitive' } } },
-      { staff_profile: { user: { profile: { first_name: { contains: search, mode: 'insensitive' } } } } },
-      { staff_profile: { user: { profile: { last_name: { contains: search, mode: 'insensitive' } } } } },
-      { staff_profile: { user: { email: { contains: search, mode: 'insensitive' } } } },
+      { human_friendly_id: { contains: term } },
+      { reason: { contains: term } },
+      ...(
+        ['REQUESTED', 'APPROVED', 'REJECTED', 'CANCELLED'].includes(status)
+          ? [{ status }]
+          : []
+      ),
+      { staff_profile: { human_friendly_id: { contains: term } } },
+      { staff_profile: { staff_number: { contains: term } } },
+      { staff_profile: { user: { profile: { first_name: { contains: term } } } } },
+      { staff_profile: { user: { profile: { last_name: { contains: term } } } } },
+      { staff_profile: { user: { email: { contains: term } } } },
     ],
   };
 };
 
 const buildSwapSearchWhere = (search) => {
   if (!hasText(search)) return {};
+  const term = String(search).trim();
+  const status = term.toUpperCase();
   return {
     OR: [
-      { human_friendly_id: { contains: search, mode: 'insensitive' } },
-      { status: { contains: search, mode: 'insensitive' } },
-      { shift: { human_friendly_id: { contains: search, mode: 'insensitive' } } },
-      { requester: { human_friendly_id: { contains: search, mode: 'insensitive' } } },
-      { requester: { staff_number: { contains: search, mode: 'insensitive' } } },
-      { target: { human_friendly_id: { contains: search, mode: 'insensitive' } } },
-      { target: { staff_number: { contains: search, mode: 'insensitive' } } },
+      { human_friendly_id: { contains: term } },
+      ...(
+        ['SCHEDULED', 'COMPLETED', 'CANCELLED'].includes(status)
+          ? [{ status }]
+          : []
+      ),
+      { shift: { human_friendly_id: { contains: term } } },
+      { requester: { human_friendly_id: { contains: term } } },
+      { requester: { staff_number: { contains: term } } },
+      { target: { human_friendly_id: { contains: term } } },
+      { target: { staff_number: { contains: term } } },
     ],
   };
 };
 
 const buildRosterSearchWhere = (search) => {
   if (!hasText(search)) return {};
+  // MySQL Prisma does not support `mode: 'insensitive'`; collation handles case.
+  // `status` is a RosterStatus enum — use equality, not `contains`.
+  const term = String(search).trim();
+  const status = term.toUpperCase();
   return {
     OR: [
-      { human_friendly_id: { contains: search, mode: 'insensitive' } },
-      { name: { contains: search, mode: 'insensitive' } },
-      { status: { contains: search, mode: 'insensitive' } },
+      { human_friendly_id: { contains: term } },
+      { name: { contains: term } },
+      ...(['DRAFT', 'PUBLISHED'].includes(status) ? [{ status }] : []),
     ],
   };
 };
 
 const buildPayrollSearchWhere = (search) => {
   if (!hasText(search)) return {};
+  const term = String(search).trim();
+  const status = term.toUpperCase();
   return {
     OR: [
-      { human_friendly_id: { contains: search, mode: 'insensitive' } },
-      { status: { contains: search, mode: 'insensitive' } },
+      { human_friendly_id: { contains: term } },
+      ...(
+        ['DRAFT', 'PROCESSED', 'PAID', 'CANCELLED'].includes(status)
+          ? [{ status }]
+          : []
+      ),
     ],
   };
 };
 
 const buildShiftSearchWhere = (search) => {
   if (!hasText(search)) return {};
+  const term = String(search).trim();
+  const status = term.toUpperCase();
+  const shiftType = term.toUpperCase().replace(/[\s-]+/g, '_');
   return {
     OR: [
-      { human_friendly_id: { contains: search, mode: 'insensitive' } },
-      { shift_type: { contains: search, mode: 'insensitive' } },
-      { status: { contains: search, mode: 'insensitive' } },
-      { roster: { human_friendly_id: { contains: search, mode: 'insensitive' } } },
-      { shift_template: { human_friendly_id: { contains: search, mode: 'insensitive' } } },
+      { human_friendly_id: { contains: term } },
+      ...(
+        ['DAY', 'NIGHT', 'SWING', 'ON_CALL'].includes(shiftType)
+          ? [{ shift_type: shiftType }]
+          : []
+      ),
+      ...(
+        ['SCHEDULED', 'COMPLETED', 'CANCELLED'].includes(status)
+          ? [{ status }]
+          : []
+      ),
+      { roster: { human_friendly_id: { contains: term } } },
+      { shift_template: { human_friendly_id: { contains: term } } },
     ],
   };
 };
