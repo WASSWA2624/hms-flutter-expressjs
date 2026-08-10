@@ -736,6 +736,15 @@ final class TheaterWorkspaceController
         (left.displayId != null && left.displayId == right.displayId);
   }
 
+  /// Clears a page-level failure banner (e.g. after an inline dialog handles it).
+  void clearLastFailure() {
+    final TheaterWorkspaceState? current = _currentState;
+    if (current == null || current.lastFailure == null) {
+      return;
+    }
+    _emit(current.copyWith(clearLastFailure: true));
+  }
+
   TheaterWorkspaceState? get _currentState {
     if (!ref.mounted) {
       return null;

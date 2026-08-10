@@ -939,6 +939,15 @@ final class CommunicationsWorkspaceController
     }
   }
 
+  /// Clears a page-level failure banner (e.g. after an inline dialog handles it).
+  void clearLastFailure() {
+    final CommunicationsWorkspaceState? current = _currentState;
+    if (current == null || current.lastFailure == null) {
+      return;
+    }
+    _emit(current.copyWith(clearLastFailure: true));
+  }
+
   CommunicationsWorkspaceState? get _currentState {
     final Result<CommunicationsWorkspaceState>? currentResult =
         state.asData?.value;

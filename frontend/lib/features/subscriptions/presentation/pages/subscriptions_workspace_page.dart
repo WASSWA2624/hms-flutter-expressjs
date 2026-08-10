@@ -238,8 +238,15 @@ class _SubscriptionsWorkspaceContentState
     final controller = ref.read(
       subscriptionsWorkspaceControllerProvider.notifier,
     );
+    // Mutation dialogs/snackbars already surface actionable errors. Do not park
+    // a page-level failure banner between the tabs and table.
     final Object? failure = state.lastFailure;
     final AppFailure? lastFailure = failure is AppFailure ? failure : null;
+    if (lastFailure != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.clearLastFailure();
+      });
+    }
     final ThemeData theme = Theme.of(context);
 
     if (visiblePanels.isEmpty) {
@@ -316,13 +323,6 @@ class _SubscriptionsWorkspaceContentState
             if (canShowCurrentPanel) ...<Widget>[
               if (queueChips.isNotEmpty) ...<Widget>[
                 _SubscriptionsQueueChipBar(chips: queueChips),
-                SizedBox(height: theme.spacing.md),
-              ],
-              if (lastFailure != null) ...<Widget>[
-                AppFailureStateView(
-                  failure: lastFailure,
-                  onRetry: controller.refresh,
-                ),
                 SizedBox(height: theme.spacing.md),
               ],
               if (isOverview)

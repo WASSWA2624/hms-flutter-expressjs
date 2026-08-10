@@ -506,6 +506,15 @@ final class ReportsWorkspaceController
     return items.firstOrNull;
   }
 
+  /// Clears a page-level failure banner (e.g. after an inline dialog handles it).
+  void clearLastFailure() {
+    final ReportsWorkspaceState? current = _currentState;
+    if (current == null || current.lastFailure == null) {
+      return;
+    }
+    _emit(current.copyWith(clearLastFailure: true));
+  }
+
   ReportsWorkspaceState? get _currentState {
     final Result<ReportsWorkspaceState>? currentResult = state.asData?.value;
     return switch (currentResult) {

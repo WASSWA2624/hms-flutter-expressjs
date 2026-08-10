@@ -217,6 +217,13 @@ class _AccessAdminWorkspaceContentState
     final AppFailure? lastFailure = state.lastFailure is AppFailure
         ? state.lastFailure! as AppFailure
         : null;
+    // Mutation dialogs/snackbars already surface actionable errors. Do not park
+    // a page-level failure banner between the tabs and table.
+    if (lastFailure != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.clearLastFailure();
+      });
+    }
     final ThemeData theme = Theme.of(context);
     final bool canReadDirectory = canReadAccessAdminDirectory(policy);
     final bool canReadRoles = canReadAccessAdminRoles(policy);
@@ -252,13 +259,6 @@ class _AccessAdminWorkspaceContentState
               ),
             ),
             SizedBox(height: theme.spacing.sm),
-            if (lastFailure != null) ...<Widget>[
-              AppFailureStateView(
-                failure: lastFailure,
-                onRetry: controller.refresh,
-              ),
-              SizedBox(height: theme.spacing.md),
-            ],
             if (hideFilteredPanelWorklist)
               const SizedBox.shrink()
             else if (state.isTenantContextRequired &&

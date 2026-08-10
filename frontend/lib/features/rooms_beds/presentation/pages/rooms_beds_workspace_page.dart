@@ -235,7 +235,14 @@ class _RoomsBedsWorkspaceContentState
     final List<RoomsBedsSection> visibleSections = roomsBedsAllowedSections(
       accessPolicy,
     );
+    // Mutation dialogs/snackbars already surface actionable errors. Do not park
+    // a page-level failure banner between the tabs and table.
     final AppFailure? lastFailure = state.lastFailure as AppFailure?;
+    if (lastFailure != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.clearLastFailure();
+      });
+    }
 
     if (visibleSections.isEmpty) {
       return const SizedBox.shrink();
@@ -314,13 +321,6 @@ class _RoomsBedsWorkspaceContentState
               },
             ),
             SizedBox(height: theme.spacing.sm),
-            if (lastFailure != null) ...<Widget>[
-              AppFailureStateView(
-                failure: lastFailure,
-                onRetry: controller.refresh,
-              ),
-              SizedBox(height: theme.spacing.md),
-            ],
             if (canViewRoomsBedsSection(accessPolicy, _section))
               AppListTable<BedBoardItem>(
                 page: sectionPage,

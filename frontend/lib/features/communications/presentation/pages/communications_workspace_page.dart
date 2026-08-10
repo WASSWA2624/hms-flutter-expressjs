@@ -355,7 +355,14 @@ class _CommunicationsWorkspaceContentState
         });
       }
     }
+    // Mutation dialogs/snackbars already surface actionable errors. Do not park
+    // a page-level failure banner between the tabs and table.
     final Object? lastFailure = state.lastFailure;
+    if (lastFailure is AppFailure) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.clearLastFailure();
+      });
+    }
     _scheduleDeepLinkDialog(state);
 
     return AppWorkspace(
@@ -390,13 +397,6 @@ class _CommunicationsWorkspaceContentState
             secondaryActions: _buildSecondaryActions(l10n, state, policy),
           ),
           SizedBox(height: Theme.of(context).spacing.sm),
-          if (lastFailure is AppFailure) ...<Widget>[
-            AppFailureStateView(
-              failure: lastFailure,
-              onRetry: controller.refresh,
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-          ],
           if (canShowCurrentPanel)
             Expanded(
               child: _CommunicationsListPanel(

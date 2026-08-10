@@ -792,6 +792,15 @@ final class RoomsBedsWorkspaceController
         .firstOrNull;
   }
 
+  /// Clears a page-level failure banner (e.g. after an inline dialog handles it).
+  void clearLastFailure() {
+    final RoomsBedsWorkspaceState? current = _currentState;
+    if (current == null || current.lastFailure == null) {
+      return;
+    }
+    _emit(current.copyWith(clearLastFailure: true));
+  }
+
   RoomsBedsWorkspaceState? get _currentState {
     final Result<RoomsBedsWorkspaceState>? currentResult = state.asData?.value;
     return switch (currentResult) {

@@ -159,9 +159,16 @@ class _ReportsWorkspaceContentState
       reportsWorkspaceControllerProvider.notifier,
     );
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    // Mutation dialogs/snackbars already surface actionable errors. Do not park
+    // a page-level failure banner between the tabs and content.
     final AppFailure? lastFailure = state.lastFailure is AppFailure
         ? state.lastFailure! as AppFailure
         : null;
+    if (lastFailure != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.clearLastFailure();
+      });
+    }
     final bool canReadCatalog = canReadReportsCatalog(policy);
     final List<ReportsWorkspacePanel> allowedPanels = reportsAllowedPanels(
       policy,
@@ -191,13 +198,6 @@ class _ReportsWorkspaceContentState
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          if (lastFailure != null) ...<Widget>[
-            AppFailureStateView(
-              failure: lastFailure,
-              onRetry: controller.refresh,
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-          ],
           if (allowedPanels.isNotEmpty &&
               allowedPanels.contains(state.query.panel))
             _ReportsPrimaryPanel(

@@ -335,7 +335,14 @@ class _OperationsWorkspaceContentState
         ? _section
         : visibleSections.first;
     final bool canMutate = capabilities.canMutate;
+    // Mutation dialogs/snackbars already surface actionable errors. Do not park
+    // a page-level failure banner between the tabs and table.
     final AppFailure? lastFailure = state.lastFailure;
+    if (lastFailure != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.clearLastFailure();
+      });
+    }
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -373,13 +380,6 @@ class _OperationsWorkspaceContentState
               ),
             ),
             SizedBox(height: theme.spacing.sm),
-            if (lastFailure != null) ...<Widget>[
-              AppFailureStateView(
-                failure: lastFailure,
-                onRetry: controller.refresh,
-              ),
-              SizedBox(height: theme.spacing.md),
-            ],
             if (canShowCurrentSection)
               if (activeSection == OperationsDeskSection.assets)
                 _OperationsAssetsPanel(

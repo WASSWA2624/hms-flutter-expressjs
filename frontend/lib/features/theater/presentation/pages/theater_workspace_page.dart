@@ -311,7 +311,14 @@ class _TheaterWorkspaceContentState
     final List<TheaterSection> visibleSections = theaterAllowedBoardSections(
       accessPolicy,
     );
+    // Mutation dialogs/snackbars already surface actionable errors. Do not park
+    // a page-level failure banner between the tabs and table.
     final AppFailure? lastFailure = state.lastFailure;
+    if (lastFailure != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.clearLastFailure();
+      });
+    }
 
     if (visibleSections.isEmpty) {
       return const SizedBox.shrink();
@@ -371,13 +378,6 @@ class _TheaterWorkspaceContentState
               },
             ),
             SizedBox(height: theme.spacing.sm),
-            if (lastFailure != null && !_section.isFollowUps) ...<Widget>[
-              AppFailureStateView(
-                failure: lastFailure,
-                onRetry: controller.refresh,
-              ),
-              SizedBox(height: theme.spacing.md),
-            ],
             if (_section.isFollowUps)
               const FollowUpWorklistPanel(
                 scope: FollowUpWorklistScope(encounterType: 'THEATRE'),

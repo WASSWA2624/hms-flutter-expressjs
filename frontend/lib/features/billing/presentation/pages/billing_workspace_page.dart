@@ -271,9 +271,16 @@ class _BillingWorkspaceContentState
     final BillingWorkspaceController controller = ref.read(
       billingWorkspaceControllerProvider.notifier,
     );
+    // Mutation dialogs/snackbars already surface actionable errors. Do not park
+    // a page-level failure banner between the tabs and table.
     final AppFailure? lastFailure = state.lastFailure is AppFailure
         ? state.lastFailure! as AppFailure
         : null;
+    if (lastFailure != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.clearLastFailure();
+      });
+    }
     final ThemeData theme = Theme.of(context);
 
     return ResponsivePage(
@@ -307,13 +314,6 @@ class _BillingWorkspaceContentState
             SizedBox(height: theme.spacing.sm),
             const BillingFinancialAnalyticsPanel(),
             SizedBox(height: theme.spacing.md),
-            if (lastFailure != null) ...<Widget>[
-              AppFailureStateView(
-                failure: lastFailure,
-                onRetry: controller.refresh,
-              ),
-              SizedBox(height: theme.spacing.md),
-            ],
             _BillingQueuePanel(
               state: state,
               accessPolicy: accessPolicy,

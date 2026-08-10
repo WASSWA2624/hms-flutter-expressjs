@@ -619,6 +619,15 @@ final class OperationsWorkspaceController
         (left.displayId != null && left.displayId == right.displayId);
   }
 
+  /// Clears a page-level failure banner (e.g. after an inline dialog handles it).
+  void clearLastFailure() {
+    final OperationsWorkspaceState? current = _currentState;
+    if (current == null || current.lastFailure == null) {
+      return;
+    }
+    _emit(current.copyWith(clearLastFailure: true));
+  }
+
   OperationsWorkspaceState? get _currentState {
     final Result<OperationsWorkspaceState>? currentResult = state.asData?.value;
     return switch (currentResult) {

@@ -755,6 +755,15 @@ final class SubscriptionsWorkspaceController
     return selected;
   }
 
+  /// Clears a page-level failure banner (e.g. after an inline dialog handles it).
+  void clearLastFailure() {
+    final SubscriptionsWorkspaceState? current = _currentState;
+    if (current == null || current.lastFailure == null) {
+      return;
+    }
+    _emit(current.copyWith(clearLastFailure: true));
+  }
+
   SubscriptionsWorkspaceState? get _currentState {
     final Result<SubscriptionsWorkspaceState>? currentResult =
         state.asData?.value;

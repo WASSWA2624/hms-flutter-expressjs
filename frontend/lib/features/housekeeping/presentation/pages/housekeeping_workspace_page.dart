@@ -163,9 +163,16 @@ class _HousekeepingWorkspaceContentState
     final controller = ref.read(
       housekeepingWorkspaceControllerProvider.notifier,
     );
+    // Mutation dialogs/snackbars already surface actionable errors. Do not park
+    // a page-level failure banner between the tabs and table.
     final AppFailure? lastFailure = state.lastFailure is AppFailure
         ? state.lastFailure! as AppFailure
         : null;
+    if (lastFailure != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.clearLastFailure();
+      });
+    }
     final HousekeepingSection activeSection = canShowCurrentSection
         ? _section
         : visibleSections.first;
@@ -216,13 +223,6 @@ class _HousekeepingWorkspaceContentState
               ),
             ),
             SizedBox(height: theme.spacing.sm),
-            if (lastFailure != null) ...<Widget>[
-              AppFailureStateView(
-                failure: lastFailure,
-                onRetry: controller.refresh,
-              ),
-              SizedBox(height: theme.spacing.md),
-            ],
             if (canShowCurrentSection)
               _HousekeepingWorklistPanel(
                 state: state,

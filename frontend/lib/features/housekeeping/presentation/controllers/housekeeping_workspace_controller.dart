@@ -544,6 +544,15 @@ final class HousekeepingWorkspaceController
     );
   }
 
+  /// Clears a page-level failure banner (e.g. after an inline dialog handles it).
+  void clearLastFailure() {
+    final HousekeepingWorkspaceState? current = _currentState;
+    if (current == null || current.lastFailure == null) {
+      return;
+    }
+    _emit(current.copyWith(clearLastFailure: true));
+  }
+
   HousekeepingWorkspaceState? get _currentState {
     final Result<HousekeepingWorkspaceState>? currentResult =
         state.asData?.value;

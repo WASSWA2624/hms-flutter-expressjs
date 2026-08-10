@@ -405,6 +405,13 @@ class _RadiologyWorkspaceContentState
         RadiologyFollowUpsAtomPermissions.billingHold.isAllowed(accessPolicy),
     };
     final AppFailure? lastFailure = state.lastFailure;
+    // Mutation dialogs/snackbars already surface actionable errors. Do not park
+    // a page-level failure banner between the tabs and table.
+    if (lastFailure != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.clearLastFailure();
+      });
+    }
 
     if (effectiveSection != _section && allowedSections.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -460,15 +467,7 @@ class _RadiologyWorkspaceContentState
                 title: l10n.radiologyNoOrdersTitle,
                 body: l10n.radiologyNoOrdersBody,
                 icon: Icons.inbox_outlined,
-              )
-            else if (lastFailure != null &&
-                !effectiveSection.isFollowUps) ...<Widget>[
-              AppFailureStateView(
-                failure: lastFailure,
-                onRetry: controller.refresh,
               ),
-              SizedBox(height: theme.spacing.md),
-            ],
             if (allowedSections.isNotEmpty && effectiveSection.isFollowUps)
               const FollowUpWorklistPanel(
                 scope: FollowUpWorklistScope(),
