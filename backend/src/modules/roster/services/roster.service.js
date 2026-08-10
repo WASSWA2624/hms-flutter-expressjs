@@ -254,6 +254,138 @@ const materializeRosterShifts = async (roster) => {
   return created;
 };
 
+const resolveStaffProfileIds = async (identifiers = []) => {
+  const resolved = [];
+  for (const identifier of identifiers) {
+    if (identifier == null || String(identifier).trim() === '') {
+      continue;
+    }
+    const id = await resolveIdentifierForPayload({
+      value: identifier,
+      model: 'staff_profile',
+      field: 'staff_profile_id',
+      where: { deleted_at: null },
+      nullable: true,
+    });
+    if (id) {
+      resolved.push(id);
+    }
+  }
+  return [...new Set(resolved)];
+};
+
+const resolveAttachedStaffConstraints = async (constraints = {}) => {
+  const normalized = normalizeConstraints(constraints);
+  const attachedIds = await resolveStaffProfileIds(normalized.attached_staff_ids);
+  const idSet = new Set(attachedIds);
+  const meta = [];
+  for (const entry of normalized.attached_staff_meta) {
+    const resolvedId = await resolveIdentifierForPayload({
+      value: entry.staff_profile_id,
+      model: 'staff_profile',
+      field: 'staff_profile_id',
+      where: { deleted_at: null },
+      nullable: true,
+    });
+    if (!resolvedId || !idSet.has(resolvedId)) {
+      continue;
+    }
+    meta.push({
+      ...entry,
+      staff_profile_id: resolvedId,
+    });
+  }
+  return {
+    ...normalized,
+    attached_staff_ids: attachedIds,
+    attached_staff_meta: meta,
+  };
+};
+
+const loadActiveRosterShifts = async (rosterId) => {
+  return prisma.shift.findMany({
+    where: {
+      roster_id: rosterId,
+      deleted_at: null,
+    },
+    select: {
+      id: true,
+      start_time: true,
+      end_time: true,
+    },
+    orderBy: { start_time: 'asc' },
+  });
+};
+
+/**
+ * Ensures roster shifts exist, then assigns each staff member to every active
+ * shift so staff-detail Rosters reflects the attachment immediately.
+ */
+const assignStaffToRosterShifts = async (roster, staffProfileIds, shifts = null) => {
+  const ids = [...new Set((staffProfileIds || []).filter(Boolean).map(String))];
+  if (!ids.length) {
+    return { assignments_created: 0, shifts: shifts || [] };
+  }
+
+  let rosterShifts = Array.isArray(shifts) ? shifts : null;
+  if (!rosterShifts || rosterShifts.length === 0) {
+    rosterShifts = await loadActiveRosterShifts(roster.id);
+  }
+  if (!rosterShifts.length) {
+    rosterShifts = await materializeRosterShifts(roster);
+  }
+  if (!rosterShifts.length) {
+    return { assignments_created: 0, shifts: rosterShifts };
+  }
+
+  for (const staffProfileId of ids) {
+    await assertNoScheduleConflict({
+      staffProfileId,
+      periodStart: roster.period_start,
+      periodEnd: roster.period_end,
+      excludeRosterId: roster.id,
+    });
+  }
+
+  const shiftIds = rosterShifts.map((shift) => shift.id);
+  const existing = await prisma.shift_assignment.findMany({
+    where: {
+      deleted_at: null,
+      staff_profile_id: { in: ids },
+      shift_id: { in: shiftIds },
+    },
+    select: {
+      shift_id: true,
+      staff_profile_id: true,
+    },
+  });
+  const existingKeys = new Set(
+    existing.map((row) => `${row.staff_profile_id}:${row.shift_id}`)
+  );
+
+  const now = new Date();
+  const rows = [];
+  for (const staffProfileId of ids) {
+    for (const shift of rosterShifts) {
+      const key = `${staffProfileId}:${shift.id}`;
+      if (existingKeys.has(key)) {
+        continue;
+      }
+      rows.push({
+        shift_id: shift.id,
+        staff_profile_id: staffProfileId,
+        assigned_at: now,
+      });
+    }
+  }
+
+  if (rows.length) {
+    await prisma.shift_assignment.createMany({ data: rows });
+  }
+
+  return { assignments_created: rows.length, shifts: rosterShifts };
+};
+
 const assertRosterUniqueness = async ({
   data,
   tenantId,
@@ -554,7 +686,7 @@ const createRoster = async (data, userId, ipAddress) => {
       ...rest,
       name: (rest.name && String(rest.name).trim()) || defaultName,
       is_recurring: Boolean(rest.is_recurring),
-      constraints: normalizeConstraints(rest.constraints),
+      constraints: await resolveAttachedStaffConstraints(rest.constraints),
       tenant_id: await resolveIdentifierForPayload({
         value: data.tenant_id,
         model: 'tenant',
@@ -582,8 +714,19 @@ const createRoster = async (data, userId, ipAddress) => {
 
     const roster = await rosterRepository.create(payload);
     let shifts = [];
+    let assignmentsCreated = 0;
     if (materializeShifts) {
       shifts = await materializeRosterShifts(roster);
+    }
+    const attachedIds = normalizeConstraints(roster.constraints).attached_staff_ids;
+    if (attachedIds.length) {
+      const assignmentResult = await assignStaffToRosterShifts(
+        roster,
+        attachedIds,
+        shifts
+      );
+      shifts = assignmentResult.shifts;
+      assignmentsCreated = assignmentResult.assignments_created;
     }
 
     createAuditLog({
@@ -592,12 +735,19 @@ const createRoster = async (data, userId, ipAddress) => {
       entity: 'roster',
       entity_id: roster.id,
       tenant_id: roster.tenant_id,
-      diff: { after: roster, metadata: { shifts_created: shifts.length } },
+      diff: {
+        after: roster,
+        metadata: {
+          shifts_created: shifts.length,
+          assignments_created: assignmentsCreated,
+        },
+      },
       ip_address: ipAddress}).catch(() => {});
     return {
       ...roster,
       shifts_created: shifts.length,
-      assignment_count: normalizeConstraints(roster.constraints).attached_staff_ids.length,
+      assignment_count: attachedIds.length,
+      assignments_created: assignmentsCreated,
     };
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -983,6 +1133,11 @@ const attachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress, 
       constraints: nextConstraints,
     });
 
+    const assignmentResult = await assignStaffToRosterShifts(
+      updated,
+      [staffProfileId]
+    );
+
     createAuditLog({
       user_id: userId,
       action: 'ATTACH_STAFF',
@@ -995,6 +1150,7 @@ const attachRosterStaff = async (id, staffProfileIdentifier, userId, ipAddress, 
         metadata: {
           staff_profile_id: staffProfileId,
           staff_category: staffCategory,
+          assignments_created: assignmentResult.assignments_created,
         },
       },
       ip_address: ipAddress}).catch(() => {});

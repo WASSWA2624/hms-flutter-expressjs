@@ -1279,6 +1279,10 @@ final class HrWorkspaceController
         await _refreshWorkItems(showLoading: false);
         unawaited(_refreshReferences());
         unawaited(_refreshOverview());
+        final HrStaffProfile? selected = _currentState?.selectedStaff?.profile;
+        if (selected != null) {
+          unawaited(_refreshSelectedDetail(selected));
+        }
         return null;
       },
       failure: (AppFailure failure) {
@@ -1381,6 +1385,10 @@ final class HrWorkspaceController
     result.when(
       success: (_) {
         unawaited(_refreshWorkItems(showLoading: false));
+        final HrStaffProfile? selected = _currentState?.selectedStaff?.profile;
+        if (selected != null) {
+          unawaited(_refreshSelectedDetail(selected));
+        }
       },
       failure: (_) {},
     );
@@ -1396,6 +1404,10 @@ final class HrWorkspaceController
     result.when(
       success: (_) {
         unawaited(_refreshWorkItems(showLoading: false));
+        final HrStaffProfile? selected = _currentState?.selectedStaff?.profile;
+        if (selected != null) {
+          unawaited(_refreshSelectedDetail(selected));
+        }
       },
       failure: (_) {},
     );

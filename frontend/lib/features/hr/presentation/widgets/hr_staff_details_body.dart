@@ -141,7 +141,7 @@ class HrStaffDetailsBody extends ConsumerWidget {
       AppCollapsibleSection(
         title: l10n.hrStaffRostersSectionTitle,
         titleIcon: Icons.calendar_month_outlined,
-        initiallyExpanded: false,
+        initiallyExpanded: hasRoster,
         headerActions: <Widget>[
           if (canRosterWrite &&
               !profile.isSeparated &&
