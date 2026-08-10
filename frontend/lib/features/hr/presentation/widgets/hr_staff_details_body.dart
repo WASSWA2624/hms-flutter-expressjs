@@ -9,13 +9,12 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
-import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_department_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_position_dialog.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assignment_detail_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_roster_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_compensation_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart'
     hide
@@ -34,8 +33,6 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_leave_detail_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_request_leave_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_calendar_preview.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_detail_dialog.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_actions.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_offboarding_dialog.dart';
@@ -97,7 +94,7 @@ class HrStaffDetailsBody extends ConsumerWidget {
     );
 
     final List<Widget> sections = <Widget>[
-      _StaffProfileBlock(state: state, detail: detail),
+      _StaffProfileBlock(detail: detail),
       HrStaffDetailActions(
         state: state,
         detail: detail,
@@ -442,26 +439,14 @@ class HrStaffDetailsBody extends ConsumerWidget {
     required bool hasRoster,
     required String? rosterId,
   }) async {
-    if (hasRoster && (rosterId ?? '').trim().isNotEmpty) {
-      await showHrRosterDetailByIdDialog(
-        context,
-        ref,
-        rosterId: rosterId!.trim(),
-      );
-      if (context.mounted) {
-        await ref
-            .read(hrWorkspaceControllerProvider.notifier)
-            .selectStaff(detail.profile);
-      }
-      return;
-    }
-
-    final bool created = await showHrCreateRosterDialog(
+    final bool saved = await showHrAssignRosterDialog(
       context,
       ref,
-      attachStaffProfileIds: <String>[detail.profile.effectiveId],
+      staff: detail.profile,
+      currentRosterId: hasRoster ? rosterId : null,
     );
-    if (created && context.mounted) {
+    if (saved && context.mounted) {
+      showHrMutationSnackBar(context, null);
       await ref
           .read(hrWorkspaceControllerProvider.notifier)
           .selectStaff(detail.profile);
@@ -470,28 +455,20 @@ class HrStaffDetailsBody extends ConsumerWidget {
 }
 
 class _StaffProfileBlock extends ConsumerWidget {
-  const _StaffProfileBlock({required this.state, required this.detail});
+  const _StaffProfileBlock({required this.detail});
 
-  final HrWorkspaceState state;
   final HrStaffDetail detail;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final HrStaffProfile profile = detail.profile;
     final bool hasLinkedUser =
         (profile.userEmail ?? profile.userDisplayId ?? profile.userId ?? '')
             .trim()
             .isNotEmpty;
-    final List<HrStaffAssignment> activeAssignments = detail.assignments
-        .where((HrStaffAssignment row) => row.isActive)
-        .toList(growable: false);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        AppPatientDetails(
+    return AppPatientDetails(
           semanticLabel: l10n.hrStaffDetailTitle,
           patientName: profile.displayName,
           patientNumber: profile.staffNumber ?? profile.effectiveId,
@@ -577,40 +554,7 @@ class _StaffProfileBlock extends ConsumerWidget {
               ),
             ],
           ],
-        ),
-        if (activeAssignments.isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
-          Text(
-            l10n.hrAssignmentsSectionTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: AppFontWeight.emphasis,
-            ),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          for (final HrStaffAssignment assignment in activeAssignments)
-            Padding(
-              padding: EdgeInsets.only(bottom: theme.spacing.xs),
-              child: _CompactRecordTile(
-                title: hrAssignmentTitle(assignment, l10n),
-                subtitle: hrAssignmentSubtitle(context, assignment, l10n),
-                trailing: assignment.isPrimary
-                    ? AppStatusBadge(
-                        label: l10n.hrPrimaryAssignmentLabel,
-                        tone: AppWorkspaceStatusTone.info,
-                      )
-                    : null,
-                onTap: () => showHrAssignmentDetailDialog(
-                  context,
-                  ref,
-                  detail,
-                  assignment,
-                  isMutating: state.isMutating,
-                ),
-              ),
-            ),
-        ],
-      ],
-    );
+        );
   }
 }
 

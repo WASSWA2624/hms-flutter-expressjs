@@ -284,7 +284,8 @@ String hrStaffRosterActionLabel(
 ) {
   return switch (kind) {
     HrStaffRosterActionKind.add => l10n.hrAddRosterAction,
-    HrStaffRosterActionKind.change => l10n.hrChangeRosterAction,
-    HrStaffRosterActionKind.update => l10n.hrUpdateRosterAction,
+    // Past-period "update" and active "change" both replace the assigned roster.
+    HrStaffRosterActionKind.change ||
+    HrStaffRosterActionKind.update => l10n.hrChangeRosterAction,
   };
 }

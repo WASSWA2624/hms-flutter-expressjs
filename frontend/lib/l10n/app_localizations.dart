@@ -40091,6 +40091,150 @@ abstract class AppLocalizations {
   /// **'Update roster'**
   String get hrUpdateRosterAction;
 
+  /// Dialog title when choosing how to add a roster to a staff member.
+  ///
+  /// In en, this message translates to:
+  /// **'Add roster'**
+  String get hrAddRosterDialogTitle;
+
+  /// Dialog title when choosing how to change a staff member's roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Change roster'**
+  String get hrChangeRosterDialogTitle;
+
+  /// Hint text for add-roster method selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how you want to assign a roster to this staff member.'**
+  String get hrAddRosterMethodHint;
+
+  /// Hint text for change-roster method selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how you want to replace this staff member\'s current roster.'**
+  String get hrChangeRosterMethodHint;
+
+  /// Option to assign an existing roster template to staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Use an existing template'**
+  String get hrAssignRosterUseTemplateAction;
+
+  /// Hint for using an existing roster template.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a roster template already configured for this facility.'**
+  String get hrAssignRosterUseTemplateHint;
+
+  /// Option to create a new roster for staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a new roster'**
+  String get hrAssignRosterCreateNewAction;
+
+  /// Hint for creating a new roster for staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Build a new roster template and assign it to this staff member.'**
+  String get hrAssignRosterCreateNewHint;
+
+  /// Option to copy a roster assignment from another staff member.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy from another staff member'**
+  String get hrAssignRosterCopyFromStaffAction;
+
+  /// Hint for copying a roster from another staff member.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a staff member who already has a roster and use that same roster.'**
+  String get hrAssignRosterCopyFromStaffHint;
+
+  /// Dialog title for selecting a roster template to add.
+  ///
+  /// In en, this message translates to:
+  /// **'Select roster template'**
+  String get hrAddRosterSelectTemplateTitle;
+
+  /// Dialog title for selecting a roster template to change to.
+  ///
+  /// In en, this message translates to:
+  /// **'Change roster template'**
+  String get hrChangeRosterSelectTemplateTitle;
+
+  /// Dialog title for copying a roster from another staff member.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy roster from staff'**
+  String get hrAddRosterCopyFromStaffTitle;
+
+  /// Dialog title for changing roster by copying from another staff member.
+  ///
+  /// In en, this message translates to:
+  /// **'Change roster from staff'**
+  String get hrChangeRosterCopyFromStaffTitle;
+
+  /// Confirm action when adding a selected roster to staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Add roster'**
+  String get hrAddRosterConfirmAction;
+
+  /// Confirm action when changing a staff member's roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Change roster'**
+  String get hrChangeRosterConfirmAction;
+
+  /// Search hint for roster template picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Search roster templates'**
+  String get hrAssignRosterTemplatesSearchHint;
+
+  /// Empty state title when no roster templates are available.
+  ///
+  /// In en, this message translates to:
+  /// **'No roster templates'**
+  String get hrAssignRosterTemplatesEmptyTitle;
+
+  /// Empty state body when no roster templates are available.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a roster template first, or choose another method.'**
+  String get hrAssignRosterTemplatesEmptyBody;
+
+  /// Error title when roster templates fail to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load roster templates'**
+  String get hrAssignRosterTemplatesLoadErrorTitle;
+
+  /// Error title when copying a roster from staff fails to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load staff roster'**
+  String get hrAssignRosterCopyLoadErrorTitle;
+
+  /// Banner title showing the roster chosen from another staff member.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected roster'**
+  String get hrAssignRosterSelectedRosterTitle;
+
+  /// Title when the selected source staff has no roster.
+  ///
+  /// In en, this message translates to:
+  /// **'No roster on selected staff'**
+  String get hrAssignRosterSourceStaffNoRosterTitle;
+
+  /// Body when the selected source staff has no roster.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a different staff member who already has a roster assigned.'**
+  String get hrAssignRosterSourceStaffNoRosterBody;
+
   /// Staff action that opens the payroll management dialog.
   ///
   /// In en, this message translates to:

@@ -21662,6 +21662,88 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrUpdateRosterAction => 'Update roster';
 
   @override
+  String get hrAddRosterDialogTitle => 'Add roster';
+
+  @override
+  String get hrChangeRosterDialogTitle => 'Change roster';
+
+  @override
+  String get hrAddRosterMethodHint =>
+      'Choose how you want to assign a roster to this staff member.';
+
+  @override
+  String get hrChangeRosterMethodHint =>
+      'Choose how you want to replace this staff member\'s current roster.';
+
+  @override
+  String get hrAssignRosterUseTemplateAction => 'Use an existing template';
+
+  @override
+  String get hrAssignRosterUseTemplateHint =>
+      'Select a roster template already configured for this facility.';
+
+  @override
+  String get hrAssignRosterCreateNewAction => 'Create a new roster';
+
+  @override
+  String get hrAssignRosterCreateNewHint =>
+      'Build a new roster template and assign it to this staff member.';
+
+  @override
+  String get hrAssignRosterCopyFromStaffAction =>
+      'Copy from another staff member';
+
+  @override
+  String get hrAssignRosterCopyFromStaffHint =>
+      'Find a staff member who already has a roster and use that same roster.';
+
+  @override
+  String get hrAddRosterSelectTemplateTitle => 'Select roster template';
+
+  @override
+  String get hrChangeRosterSelectTemplateTitle => 'Change roster template';
+
+  @override
+  String get hrAddRosterCopyFromStaffTitle => 'Copy roster from staff';
+
+  @override
+  String get hrChangeRosterCopyFromStaffTitle => 'Change roster from staff';
+
+  @override
+  String get hrAddRosterConfirmAction => 'Add roster';
+
+  @override
+  String get hrChangeRosterConfirmAction => 'Change roster';
+
+  @override
+  String get hrAssignRosterTemplatesSearchHint => 'Search roster templates';
+
+  @override
+  String get hrAssignRosterTemplatesEmptyTitle => 'No roster templates';
+
+  @override
+  String get hrAssignRosterTemplatesEmptyBody =>
+      'Create a roster template first, or choose another method.';
+
+  @override
+  String get hrAssignRosterTemplatesLoadErrorTitle =>
+      'Could not load roster templates';
+
+  @override
+  String get hrAssignRosterCopyLoadErrorTitle => 'Could not load staff roster';
+
+  @override
+  String get hrAssignRosterSelectedRosterTitle => 'Selected roster';
+
+  @override
+  String get hrAssignRosterSourceStaffNoRosterTitle =>
+      'No roster on selected staff';
+
+  @override
+  String get hrAssignRosterSourceStaffNoRosterBody =>
+      'Choose a different staff member who already has a roster assigned.';
+
+  @override
   String get hrManagePayrollAction => 'Manage payroll';
 
   @override

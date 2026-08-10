@@ -27931,6 +27931,102 @@
   "@hrUpdateRosterAction": {
     "description": "Staff action when the staff roster period has expired."
   },
+  "hrAddRosterDialogTitle": "Add roster",
+  "@hrAddRosterDialogTitle": {
+    "description": "Dialog title when choosing how to add a roster to a staff member."
+  },
+  "hrChangeRosterDialogTitle": "Change roster",
+  "@hrChangeRosterDialogTitle": {
+    "description": "Dialog title when choosing how to change a staff member's roster."
+  },
+  "hrAddRosterMethodHint": "Choose how you want to assign a roster to this staff member.",
+  "@hrAddRosterMethodHint": {
+    "description": "Hint text for add-roster method selection."
+  },
+  "hrChangeRosterMethodHint": "Choose how you want to replace this staff member's current roster.",
+  "@hrChangeRosterMethodHint": {
+    "description": "Hint text for change-roster method selection."
+  },
+  "hrAssignRosterUseTemplateAction": "Use an existing template",
+  "@hrAssignRosterUseTemplateAction": {
+    "description": "Option to assign an existing roster template to staff."
+  },
+  "hrAssignRosterUseTemplateHint": "Select a roster template already configured for this facility.",
+  "@hrAssignRosterUseTemplateHint": {
+    "description": "Hint for using an existing roster template."
+  },
+  "hrAssignRosterCreateNewAction": "Create a new roster",
+  "@hrAssignRosterCreateNewAction": {
+    "description": "Option to create a new roster for staff."
+  },
+  "hrAssignRosterCreateNewHint": "Build a new roster template and assign it to this staff member.",
+  "@hrAssignRosterCreateNewHint": {
+    "description": "Hint for creating a new roster for staff."
+  },
+  "hrAssignRosterCopyFromStaffAction": "Copy from another staff member",
+  "@hrAssignRosterCopyFromStaffAction": {
+    "description": "Option to copy a roster assignment from another staff member."
+  },
+  "hrAssignRosterCopyFromStaffHint": "Find a staff member who already has a roster and use that same roster.",
+  "@hrAssignRosterCopyFromStaffHint": {
+    "description": "Hint for copying a roster from another staff member."
+  },
+  "hrAddRosterSelectTemplateTitle": "Select roster template",
+  "@hrAddRosterSelectTemplateTitle": {
+    "description": "Dialog title for selecting a roster template to add."
+  },
+  "hrChangeRosterSelectTemplateTitle": "Change roster template",
+  "@hrChangeRosterSelectTemplateTitle": {
+    "description": "Dialog title for selecting a roster template to change to."
+  },
+  "hrAddRosterCopyFromStaffTitle": "Copy roster from staff",
+  "@hrAddRosterCopyFromStaffTitle": {
+    "description": "Dialog title for copying a roster from another staff member."
+  },
+  "hrChangeRosterCopyFromStaffTitle": "Change roster from staff",
+  "@hrChangeRosterCopyFromStaffTitle": {
+    "description": "Dialog title for changing roster by copying from another staff member."
+  },
+  "hrAddRosterConfirmAction": "Add roster",
+  "@hrAddRosterConfirmAction": {
+    "description": "Confirm action when adding a selected roster to staff."
+  },
+  "hrChangeRosterConfirmAction": "Change roster",
+  "@hrChangeRosterConfirmAction": {
+    "description": "Confirm action when changing a staff member's roster."
+  },
+  "hrAssignRosterTemplatesSearchHint": "Search roster templates",
+  "@hrAssignRosterTemplatesSearchHint": {
+    "description": "Search hint for roster template picker."
+  },
+  "hrAssignRosterTemplatesEmptyTitle": "No roster templates",
+  "@hrAssignRosterTemplatesEmptyTitle": {
+    "description": "Empty state title when no roster templates are available."
+  },
+  "hrAssignRosterTemplatesEmptyBody": "Create a roster template first, or choose another method.",
+  "@hrAssignRosterTemplatesEmptyBody": {
+    "description": "Empty state body when no roster templates are available."
+  },
+  "hrAssignRosterTemplatesLoadErrorTitle": "Could not load roster templates",
+  "@hrAssignRosterTemplatesLoadErrorTitle": {
+    "description": "Error title when roster templates fail to load."
+  },
+  "hrAssignRosterCopyLoadErrorTitle": "Could not load staff roster",
+  "@hrAssignRosterCopyLoadErrorTitle": {
+    "description": "Error title when copying a roster from staff fails to load."
+  },
+  "hrAssignRosterSelectedRosterTitle": "Selected roster",
+  "@hrAssignRosterSelectedRosterTitle": {
+    "description": "Banner title showing the roster chosen from another staff member."
+  },
+  "hrAssignRosterSourceStaffNoRosterTitle": "No roster on selected staff",
+  "@hrAssignRosterSourceStaffNoRosterTitle": {
+    "description": "Title when the selected source staff has no roster."
+  },
+  "hrAssignRosterSourceStaffNoRosterBody": "Choose a different staff member who already has a roster assigned.",
+  "@hrAssignRosterSourceStaffNoRosterBody": {
+    "description": "Body when the selected source staff has no roster."
+  },
   "hrManagePayrollAction": "Manage payroll",
   "@hrManagePayrollAction": {
     "description": "Staff action that opens the payroll management dialog."
