@@ -7,11 +7,13 @@
 const prisma = require('@prisma/client');
 const {
   resolvePrimaryDepartmentId,
+  endActiveStaffAssignments,
   syncStaffProfilePrimaryDepartment} = require('@lib/hr/staff-department-sync');
 
 jest.mock('@prisma/client', () => ({
   staff_assignment: {
-    findFirst: jest.fn()},
+    findFirst: jest.fn(),
+    updateMany: jest.fn()},
   staff_profile: {
     findFirst: jest.fn(),
     update: jest.fn()}}));
@@ -26,6 +28,30 @@ describe('staff-department-sync', () => {
       department_id: 'dept-1'});
 
     await expect(resolvePrimaryDepartmentId('profile-1')).resolves.toBe('dept-1');
+  });
+
+  it('endActiveStaffAssignments closes open assignments at the given end date', async () => {
+    const endDate = new Date('2026-08-10T00:00:00.000Z');
+    prisma.staff_assignment.updateMany.mockResolvedValue({ count: 2 });
+
+    await expect(
+      endActiveStaffAssignments('profile-1', endDate)
+    ).resolves.toEqual({ count: 2 });
+
+    expect(prisma.staff_assignment.updateMany).toHaveBeenCalledWith({
+      where: {
+        staff_profile_id: 'profile-1',
+        deleted_at: null,
+        department_id: { not: null },
+        OR: [{ end_date: null }, { end_date: { gt: endDate } }]},
+      data: { end_date: endDate }});
+  });
+
+  it('endActiveStaffAssignments skips invalid dates', async () => {
+    await expect(
+      endActiveStaffAssignments('profile-1', 'not-a-date')
+    ).resolves.toEqual({ count: 0 });
+    expect(prisma.staff_assignment.updateMany).not.toHaveBeenCalled();
   });
 
   it('syncStaffProfilePrimaryDepartment updates profile when assignment exists', async () => {

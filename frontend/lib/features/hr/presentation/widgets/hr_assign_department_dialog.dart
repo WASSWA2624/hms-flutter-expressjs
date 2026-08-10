@@ -8,11 +8,14 @@ import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_con
 import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+
+const double _kAssignDepartmentTwoColumnBreakpoint = 560;
 
 /// Global entry point for assigning a staff member to facility structure.
 Future<void> showHrAssignDepartmentDialog(
@@ -31,16 +34,20 @@ Future<void> showHrAssignDepartmentDialog(
   );
   await controller.ensureAssignmentReferenceData();
 
-  final HrReferenceData referenceData =
+  final HrWorkspaceState? workspace =
       ref
           .read(hrWorkspaceControllerProvider)
           .asData
           ?.value
           .when(
-            success: (HrWorkspaceState state) => state.referenceData,
-            failure: (_) => const HrReferenceData(),
-          ) ??
-      const HrReferenceData();
+            success: (HrWorkspaceState state) => state,
+            failure: (_) => null,
+          );
+  final HrReferenceData referenceData =
+      workspace?.referenceData ?? const HrReferenceData();
+  final HrStaffDetail? selectedStaff = workspace?.selectedStaff;
+  final bool isChange =
+      selectedStaff != null && staffHasAssignedDepartment(selectedStaff);
 
   final GlobalKey<_HrAssignDepartmentFieldsState> fieldsKey =
       GlobalKey<_HrAssignDepartmentFieldsState>();
@@ -51,9 +58,15 @@ Future<void> showHrAssignDepartmentDialog(
 
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
-    title: Text(l10n.hrAssignDepartmentDialogTitle),
+    title: Text(
+      isChange
+          ? l10n.hrChangeDepartmentDialogTitle
+          : l10n.hrAssignDepartmentDialogTitle,
+    ),
     icon: const Icon(Icons.account_tree_outlined),
-    submitLabel: l10n.hrAssignDepartmentAction,
+    submitLabel: isChange
+        ? l10n.hrChangeDepartmentAction
+        : l10n.hrAssignDepartmentAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
     buildFields:
@@ -66,6 +79,8 @@ Future<void> showHrAssignDepartmentDialog(
           return _HrAssignDepartmentFields(
             key: fieldsKey,
             referenceData: referenceData,
+            selectedStaff: selectedStaff,
+            isChange: isChange,
           );
         },
     onSubmit: () => controller.createAssignment(
@@ -79,9 +94,16 @@ Future<void> showHrAssignDepartmentDialog(
 }
 
 class _HrAssignDepartmentFields extends StatefulWidget {
-  const _HrAssignDepartmentFields({required this.referenceData, super.key});
+  const _HrAssignDepartmentFields({
+    required this.referenceData,
+    required this.selectedStaff,
+    required this.isChange,
+    super.key,
+  });
 
   final HrReferenceData referenceData;
+  final HrStaffDetail? selectedStaff;
+  final bool isChange;
 
   @override
   State<_HrAssignDepartmentFields> createState() =>
@@ -89,11 +111,35 @@ class _HrAssignDepartmentFields extends StatefulWidget {
 }
 
 class _HrAssignDepartmentFieldsState extends State<_HrAssignDepartmentFields> {
-  String? _departmentId;
-  String? _unitId;
-  final Set<String> _roomIds = <String>{};
+  late String? _departmentId;
+  late String? _unitId;
+  late final Set<String> _roomIds;
   DateTime? _startDate = DateTime.now();
   DateTime? _endDate;
+
+  @override
+  void initState() {
+    super.initState();
+    final HrStaffDetail? detail = widget.selectedStaff;
+    if (widget.isChange && detail != null) {
+      final HrStaffAssignment? current =
+          resolveCurrentDepartmentAssignment(detail);
+      _departmentId =
+          (current?.departmentId ?? detail.profile.departmentId)?.trim();
+      if (_departmentId != null && _departmentId!.isEmpty) {
+        _departmentId = null;
+      }
+      _unitId = current?.unitId?.trim();
+      if (_unitId != null && _unitId!.isEmpty) {
+        _unitId = null;
+      }
+      _roomIds = resolveCurrentAssignmentRoomIds(detail);
+    } else {
+      _departmentId = null;
+      _unitId = null;
+      _roomIds = <String>{};
+    }
+  }
 
   Map<String, Object?> toPayload() {
     final List<String> roomIds = _roomIds.toList(growable: false);
@@ -120,6 +166,70 @@ class _HrAssignDepartmentFieldsState extends State<_HrAssignDepartmentFields> {
   List<HrOption> get _scopedRooms =>
       _scopedOptions(widget.referenceData.rooms, departmentId: _departmentId);
 
+  List<AppSelectOption<String>> _departmentOptions() {
+    final List<AppSelectOption<String>> options = hrSelectOptions(
+      widget.referenceData.departments,
+    );
+    final String? currentId = _departmentId;
+    if (currentId == null || currentId.isEmpty) {
+      return options;
+    }
+    if (options.any((AppSelectOption<String> o) => o.value == currentId)) {
+      return options;
+    }
+    final HrStaffDetail? detail = widget.selectedStaff;
+    final HrStaffAssignment? current = detail == null
+        ? null
+        : resolveCurrentDepartmentAssignment(detail);
+    final String label =
+        (current?.departmentName ??
+                current?.departmentDisplayId ??
+                detail?.profile.departmentName ??
+                detail?.profile.departmentDisplayId ??
+                currentId)
+            .trim();
+    return <AppSelectOption<String>>[
+      ...options,
+      AppSelectOption<String>(
+        value: currentId,
+        label: label.isEmpty ? currentId : label,
+      ),
+    ];
+  }
+
+  List<AppSelectOption<String>> _unitOptions() {
+    final List<AppSelectOption<String>> options = hrSelectOptions(_scopedUnits);
+    final String? currentId = _unitId;
+    if (currentId == null || currentId.isEmpty) {
+      return options;
+    }
+    if (options.any((AppSelectOption<String> o) => o.value == currentId)) {
+      return options;
+    }
+    final HrStaffDetail? detail = widget.selectedStaff;
+    final HrStaffAssignment? current = detail == null
+        ? null
+        : resolveCurrentDepartmentAssignment(detail);
+    final String label =
+        (current?.unitName ?? current?.unitDisplayId ?? currentId).trim();
+    return <AppSelectOption<String>>[
+      ...options,
+      AppSelectOption<String>(
+        value: currentId,
+        label: label.isEmpty ? currentId : label,
+      ),
+    ];
+  }
+
+  Widget _responsivePair({required Widget left, required Widget right}) {
+    return AppResponsiveFieldRow.two(
+      left: left,
+      right: right,
+      breakpoint: _kAssignDepartmentTwoColumnBreakpoint,
+      gap: AppResponsiveFieldRowGap.form,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -127,21 +237,23 @@ class _HrAssignDepartmentFieldsState extends State<_HrAssignDepartmentFields> {
 
     return AppFormSection(
       children: <Widget>[
-        AppSelectField<String>.searchable(
-          value: _departmentId,
-          labelText: l10n.hrDepartmentLabel,
-          isRequired: true,
-          options: hrSelectOptions(widget.referenceData.departments),
-          validator: AppValidators.requiredValue(
-            l10n.hrFieldRequiredLabel(l10n.hrDepartmentLabel),
+        _responsivePair(
+          left: AppSelectField<String>.searchable(
+            value: _departmentId,
+            labelText: l10n.hrDepartmentLabel,
+            isRequired: true,
+            options: _departmentOptions(),
+            validator: AppValidators.requiredValue(
+              l10n.hrFieldRequiredLabel(l10n.hrDepartmentLabel),
+            ),
+            onChanged: _onDepartmentChanged,
           ),
-          onChanged: _onDepartmentChanged,
-        ),
-        AppSelectField<String>.searchable(
-          value: _unitId,
-          labelText: l10n.hrUnitLabel,
-          options: hrSelectOptions(_scopedUnits),
-          onChanged: (String? value) => setState(() => _unitId = value),
+          right: AppSelectField<String>.searchable(
+            value: _unitId,
+            labelText: l10n.hrUnitLabel,
+            options: _unitOptions(),
+            onChanged: (String? value) => setState(() => _unitId = value),
+          ),
         ),
         if (_departmentId != null && _scopedRooms.isNotEmpty) ...<Widget>[
           Text(l10n.hrRoomsLabel, style: theme.textTheme.titleSmall),
@@ -173,26 +285,28 @@ class _HrAssignDepartmentFieldsState extends State<_HrAssignDepartmentFields> {
               },
             ),
         ],
-        AppDateField(
-          value: _startDate,
-          labelText: l10n.hrStartDateLabel,
-          isRequired: true,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: (DateTime? value) => setState(() => _startDate = value),
-        ),
-        AppDateField(
-          value: _endDate,
-          labelText: l10n.hrEndDateLabel,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: (DateTime? value) => setState(() => _endDate = value),
+        _responsivePair(
+          left: AppDateField(
+            value: _startDate,
+            labelText: l10n.hrStartDateLabel,
+            isRequired: true,
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2100),
+            currentDate: DateTime.now(),
+            pickerButtonLabel: l10n.hrPickDateAction,
+            invalidDateMessage: l10n.appDateInvalidMessage,
+            onChanged: (DateTime? value) => setState(() => _startDate = value),
+          ),
+          right: AppDateField(
+            value: _endDate,
+            labelText: l10n.hrEndDateLabel,
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2100),
+            currentDate: DateTime.now(),
+            pickerButtonLabel: l10n.hrPickDateAction,
+            invalidDateMessage: l10n.appDateInvalidMessage,
+            onChanged: (DateTime? value) => setState(() => _endDate = value),
+          ),
         ),
       ],
     );

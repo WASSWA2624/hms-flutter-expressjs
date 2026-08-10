@@ -170,7 +170,8 @@ void main() {
     expect(find.text('Scheduling'), findsNothing);
     expect(find.text('Payroll'), findsNothing);
     expect(find.text('Access'), findsNothing);
-    expect(find.text('Assign department'), findsOneWidget);
+    expect(find.text('Change department'), findsOneWidget);
+    expect(find.text('Assign department'), findsNothing);
     expect(find.text('Assign position'), findsOneWidget);
     expect(find.text('Add roster'), findsOneWidget);
     expect(find.text('Record availability'), findsNothing);
@@ -276,8 +277,42 @@ void main() {
 
     expect(find.byType(Wrap), findsOneWidget);
     expect(find.textContaining('...'), findsNothing);
-    expect(find.text('Assign department'), findsOneWidget);
+    expect(find.text('Change department'), findsOneWidget);
     expect(find.text('View module access'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'HrStaffDetailActions shows Assign department when none assigned',
+    (WidgetTester tester) async {
+      await _pumpHrDetailWidgets(
+        tester,
+        viewport: const Size(800, 600),
+        child: HrStaffDetailActions(
+          state: _workspaceState(),
+          detail: const HrStaffDetail(
+            profile: HrStaffProfile(
+              id: 'staff-new',
+              displayId: 'STF-NEW',
+              staffNumber: 'EMP-NEW',
+              userId: 'user-new',
+              userDisplayId: 'USR-NEW',
+            ),
+          ),
+          onAssignDepartment: (_, _) {},
+          onAssignPosition: (_, _, _) {},
+          onRoster: (_, _) {},
+          onRequestLeave: (_, _) {},
+          onCompensation: (_, _, _) {},
+          onManagePayroll: (_, _, _) {},
+          onAssignRole: (_, _, _) {},
+          onModuleAccess: (_, _) {},
+        ),
+      );
+
+      expect(find.text('Assign department'), findsOneWidget);
+      expect(find.text('Change department'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

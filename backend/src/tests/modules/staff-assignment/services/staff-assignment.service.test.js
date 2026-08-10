@@ -9,7 +9,9 @@
 const staffAssignmentService = require('@services/staff-assignment/staff-assignment.service');
 const staffAssignmentRepository = require('@repositories/staff-assignment/staff-assignment.repository');
 const { createAuditLog } = require('@lib/audit');
-const { syncStaffProfilePrimaryDepartment } = require('@lib/hr/staff-department-sync');
+const {
+  endActiveStaffAssignments,
+  syncStaffProfilePrimaryDepartment} = require('@lib/hr/staff-department-sync');
 const { HttpError } = require('@lib/errors');
 
 // Mock dependencies
@@ -25,6 +27,7 @@ describe('Staff Assignment Service', () => {
     jest.clearAllMocks();
     createAuditLog.mockResolvedValue({});
     syncStaffProfilePrimaryDepartment.mockResolvedValue(null);
+    endActiveStaffAssignments.mockResolvedValue({ count: 0 });
   });
 
   describe('listStaffAssignments', () => {
@@ -86,8 +89,33 @@ describe('Staff Assignment Service', () => {
       const result = await staffAssignmentService.createStaffAssignment(mockData, mockUserId, mockIpAddress);
 
       expect(result).toEqual(expect.objectContaining({ id: '456' }));
+      expect(endActiveStaffAssignments).toHaveBeenCalledWith(
+        mockData.staff_profile_id,
+        expect.any(Date)
+      );
       expect(syncStaffProfilePrimaryDepartment).toHaveBeenCalledWith(mockData.staff_profile_id);
       expect(createAuditLog).toHaveBeenCalled();
+    });
+
+    it('should end previous active assignments when changing department', async () => {
+      const startDate = new Date('2026-08-10T00:00:00.000Z');
+      const mockData = {
+        staff_profile_id: '550e8400-e29b-41d4-a716-446655440000',
+        department_id: '550e8400-e29b-41d4-a716-446655440099',
+        start_date: startDate
+      };
+      const mockAssignment = { id: '789', ...mockData };
+      staffAssignmentRepository.create.mockResolvedValue(mockAssignment);
+      staffAssignmentRepository.findById.mockResolvedValue(mockAssignment);
+      endActiveStaffAssignments.mockResolvedValue({ count: 1 });
+
+      await staffAssignmentService.createStaffAssignment(mockData, mockUserId, mockIpAddress);
+
+      expect(endActiveStaffAssignments).toHaveBeenCalledWith(
+        mockData.staff_profile_id,
+        startDate
+      );
+      expect(staffAssignmentRepository.create).toHaveBeenCalled();
     });
 
     it('should not fail if audit log fails', async () => {

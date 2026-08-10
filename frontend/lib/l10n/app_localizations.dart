@@ -37817,6 +37817,18 @@ abstract class AppLocalizations {
   /// **'Assign department'**
   String get hrAssignDepartmentDialogTitle;
 
+  /// Staff action label when the staff member already has a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Change department'**
+  String get hrChangeDepartmentAction;
+
+  /// Dialog title when updating an existing staff department assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Change department'**
+  String get hrChangeDepartmentDialogTitle;
+
   /// Human resources workspace text for hrAssignmentLabel.
   ///
   /// In en, this message translates to:

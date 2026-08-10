@@ -6,11 +6,11 @@
 
 const prisma = require('@prisma/client');
 
-const activeAssignmentWhere = (staffProfileId) => ({
+const activeAssignmentWhere = (staffProfileId, asOf = new Date()) => ({
   staff_profile_id: staffProfileId,
   deleted_at: null,
   department_id: { not: null },
-  OR: [{ end_date: null }, { end_date: { gt: new Date() } }],
+  OR: [{ end_date: null }, { end_date: { gt: asOf } }],
 });
 
 const resolvePrimaryDepartmentId = async (staffProfileId) => {
@@ -20,6 +20,26 @@ const resolvePrimaryDepartmentId = async (staffProfileId) => {
     select: { department_id: true },
   });
   return assignment?.department_id || null;
+};
+
+/**
+ * Ends open/active department assignments so a new time-bound assignment can
+ * take over. Uses exclusive end-date semantics (`end_date > now` = active).
+ *
+ * @param {string} staffProfileId
+ * @param {Date|string} endDate - Usually the new assignment start date
+ * @returns {Promise<{ count: number }>}
+ */
+const endActiveStaffAssignments = async (staffProfileId, endDate) => {
+  const resolvedEnd = endDate instanceof Date ? endDate : new Date(endDate);
+  if (Number.isNaN(resolvedEnd.getTime())) {
+    return { count: 0 };
+  }
+
+  return prisma.staff_assignment.updateMany({
+    where: activeAssignmentWhere(staffProfileId, resolvedEnd),
+    data: { end_date: resolvedEnd },
+  });
 };
 
 /**
@@ -94,5 +114,6 @@ const syncStaffProfilePrimaryDepartment = async (staffProfileId) => {
 
 module.exports = {
   resolvePrimaryDepartmentId,
+  endActiveStaffAssignments,
   syncStaffProfilePrimaryDepartment,
 };

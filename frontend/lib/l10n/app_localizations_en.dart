@@ -20455,6 +20455,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAssignDepartmentDialogTitle => 'Assign department';
 
   @override
+  String get hrChangeDepartmentAction => 'Change department';
+
+  @override
+  String get hrChangeDepartmentDialogTitle => 'Change department';
+
+  @override
   String get hrAssignmentLabel => 'Assignment';
 
   @override

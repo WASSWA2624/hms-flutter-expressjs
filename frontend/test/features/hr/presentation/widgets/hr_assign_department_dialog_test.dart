@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_department_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -76,16 +77,44 @@ const HrStaffProfile _selectedStaff = HrStaffProfile(
   staffNumber: 'EMP-001',
 );
 
-void _stubWorkspaceBootstrap(_MockHrRepository repository) {
+const HrStaffProfile _assignedStaff = HrStaffProfile(
+  id: 'staff-2',
+  displayId: 'STF0002',
+  staffNumber: 'EMP-002',
+  departmentId: 'dept-er',
+  departmentName: 'Emergency',
+);
+
+const HrStaffDetail _assignedDetail = HrStaffDetail(
+  profile: _assignedStaff,
+  assignments: <HrStaffAssignment>[
+    HrStaffAssignment(
+      id: 'asg-1',
+      departmentId: 'dept-er',
+      departmentName: 'Emergency',
+      unitId: 'unit-er-1',
+      unitName: 'ER Triage',
+      roomId: 'room-er-1',
+      isActive: true,
+      isPrimary: true,
+    ),
+  ],
+);
+
+void _stubWorkspaceBootstrap(
+  _MockHrRepository repository, {
+  HrStaffProfile staff = _selectedStaff,
+  HrStaffDetail? detail,
+}) {
   when(() => repository.loadOverview()).thenAnswer(
     (_) async =>
         const Result<HrWorkspaceOverview>.success(HrWorkspaceOverview()),
   );
   when(() => repository.listStaffProfiles(any())).thenAnswer(
-    (_) async => const Result<AppPage<HrStaffProfile>>.success(
+    (_) async => Result<AppPage<HrStaffProfile>>.success(
       AppPage<HrStaffProfile>(
-        items: <HrStaffProfile>[_selectedStaff],
-        request: AppPageRequest(),
+        items: <HrStaffProfile>[staff],
+        request: const AppPageRequest(),
       ),
     ),
   );
@@ -106,8 +135,8 @@ void _stubWorkspaceBootstrap(_MockHrRepository repository) {
     ),
   );
   when(() => repository.loadStaffDetail(any())).thenAnswer(
-    (_) async => const Result<HrStaffDetail>.success(
-      HrStaffDetail(profile: _selectedStaff),
+    (_) async => Result<HrStaffDetail>.success(
+      detail ?? HrStaffDetail(profile: staff),
     ),
   );
   when(() => repository.loadStaffAccessSummary(any())).thenAnswer(
@@ -120,7 +149,9 @@ void _stubWorkspaceBootstrap(_MockHrRepository repository) {
 }
 
 class _AssignDepartmentLauncher extends ConsumerStatefulWidget {
-  const _AssignDepartmentLauncher();
+  const _AssignDepartmentLauncher({required this.staff});
+
+  final HrStaffProfile staff;
 
   @override
   ConsumerState<_AssignDepartmentLauncher> createState() =>
@@ -136,7 +167,7 @@ class _AssignDepartmentLauncherState
       await ref.read(hrWorkspaceControllerProvider.future);
       await ref
           .read(hrWorkspaceControllerProvider.notifier)
-          .selectStaff(_selectedStaff);
+          .selectStaff(widget.staff);
     });
   }
 
@@ -151,11 +182,21 @@ class _AssignDepartmentLauncherState
 
 Future<void> _pumpAssignDepartmentDialog(
   WidgetTester tester,
-  _MockHrRepository repository,
-) async {
+  _MockHrRepository repository, {
+  HrStaffProfile staff = _selectedStaff,
+  HrStaffDetail? detail,
+  Size viewport = const Size(900, 800),
+}) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspaceBootstrap(repository);
+  _stubWorkspaceBootstrap(repository, staff: staff, detail: detail);
+
+  tester.view.physicalSize = viewport;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(() {
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
 
   await tester.pumpWidget(
     ProviderScope(
@@ -167,10 +208,10 @@ Future<void> _pumpAssignDepartmentDialog(
         ),
         appAccessPolicyProvider.overrideWithValue(_hrWritePolicy()),
       ],
-      child: const MaterialApp(
+      child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: _AssignDepartmentLauncher()),
+        home: Scaffold(body: _AssignDepartmentLauncher(staff: staff)),
       ),
     ),
   );
@@ -195,7 +236,7 @@ void main() {
     registerFallbackValue(_selectedStaff);
   });
 
-  testWidgets('shows assign department form fields', (
+  testWidgets('shows assign department form fields in two-column rows', (
     WidgetTester tester,
   ) async {
     await _pumpAssignDepartmentDialog(tester, repository);
@@ -205,6 +246,24 @@ void main() {
     expect(find.textContaining('Unit'), findsOneWidget);
     expect(find.textContaining('Start date'), findsOneWidget);
     expect(find.textContaining('End date'), findsOneWidget);
+    expect(find.byType(AppResponsiveFieldRow), findsNWidgets(2));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('opens in change mode with current assignment pre-filled', (
+    WidgetTester tester,
+  ) async {
+    await _pumpAssignDepartmentDialog(
+      tester,
+      repository,
+      staff: _assignedStaff,
+      detail: _assignedDetail,
+    );
+
+    expect(find.text('Change department'), findsWidgets);
+    expect(find.text('Emergency'), findsWidgets);
+    expect(find.text('ER Triage'), findsWidgets);
+    expect(find.text('ER Room 1'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

@@ -26344,6 +26344,14 @@
   "@hrAssignDepartmentDialogTitle": {
     "description": "Human resources workspace text for hrAssignDepartmentDialogTitle."
   },
+  "hrChangeDepartmentAction": "Change department",
+  "@hrChangeDepartmentAction": {
+    "description": "Staff action label when the staff member already has a department."
+  },
+  "hrChangeDepartmentDialogTitle": "Change department",
+  "@hrChangeDepartmentDialogTitle": {
+    "description": "Dialog title when updating an existing staff department assignment."
+  },
   "hrAssignmentLabel": "Assignment",
   "@hrAssignmentLabel": {
     "description": "Human resources workspace text for hrAssignmentLabel."

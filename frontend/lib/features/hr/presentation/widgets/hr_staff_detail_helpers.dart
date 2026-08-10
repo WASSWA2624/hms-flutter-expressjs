@@ -190,6 +190,66 @@ String hrSeparationTypeLabel(AppLocalizations l10n, String? type) {
   };
 }
 
+/// Whether the staff member already has a department assignment.
+bool staffHasAssignedDepartment(HrStaffDetail detail) {
+  final HrStaffProfile profile = detail.profile;
+  if ((profile.departmentId ?? '').trim().isNotEmpty) {
+    return true;
+  }
+  if ((profile.departmentName ?? profile.departmentDisplayId ?? '')
+      .trim()
+      .isNotEmpty) {
+    return true;
+  }
+  return detail.assignments.any(
+    (HrStaffAssignment row) =>
+        row.isActive && (row.departmentId ?? '').trim().isNotEmpty,
+  );
+}
+
+/// Active department assignment used to pre-fill change-department mode.
+HrStaffAssignment? resolveCurrentDepartmentAssignment(HrStaffDetail detail) {
+  final List<HrStaffAssignment> active = detail.assignments
+      .where(
+        (HrStaffAssignment row) =>
+            row.isActive && (row.departmentId ?? '').trim().isNotEmpty,
+      )
+      .toList(growable: false);
+  if (active.isEmpty) {
+    return null;
+  }
+  for (final HrStaffAssignment row in active) {
+    if (row.isPrimary) {
+      return row;
+    }
+  }
+  active.sort((HrStaffAssignment left, HrStaffAssignment right) {
+    final DateTime leftStart = left.startDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final DateTime rightStart = right.startDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return rightStart.compareTo(leftStart);
+  });
+  return active.first;
+}
+
+/// Room ids tied to the staff member's current department assignment set.
+Set<String> resolveCurrentAssignmentRoomIds(HrStaffDetail detail) {
+  final HrStaffAssignment? current = resolveCurrentDepartmentAssignment(detail);
+  final String departmentId = (current?.departmentId ??
+          detail.profile.departmentId ??
+          '')
+      .trim();
+  if (departmentId.isEmpty) {
+    return <String>{};
+  }
+  return <String>{
+    for (final HrStaffAssignment row in detail.assignments)
+      if (row.isActive &&
+          (row.departmentId ?? '').trim() == departmentId &&
+          (row.roomId ?? '').trim().isNotEmpty)
+        row.roomId!.trim(),
+  };
+}
+
 /// Roster action shown on staff details / staff actions.
 enum HrStaffRosterActionKind { add, change, update }
 

@@ -565,7 +565,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(AppQuickActions),
-          matching: find.text('Assign department'),
+          matching: find.text('Change department'),
         ),
         findsOneWidget,
       );
@@ -607,7 +607,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(AppQuickActions),
-          matching: find.text('Assign department'),
+          matching: find.text('Change department'),
         ),
         findsOneWidget,
       );

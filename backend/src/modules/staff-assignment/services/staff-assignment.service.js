@@ -1,7 +1,9 @@
 const staffAssignmentRepository = require('@repositories/staff-assignment/staff-assignment.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
-const { syncStaffProfilePrimaryDepartment } = require('@lib/hr/staff-department-sync');
+const {
+  endActiveStaffAssignments,
+  syncStaffProfilePrimaryDepartment} = require('@lib/hr/staff-department-sync');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
@@ -190,6 +192,14 @@ const getStaffAssignmentById = async (id) => {
   }
 };
 
+const resolveAssignmentStartDate = (value) => {
+  if (value == null || value === '') {
+    return new Date();
+  }
+  const parsed = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+};
+
 const createStaffAssignment = async (data, userId, ipAddress) => {
   try {
     const roomIds = Array.isArray(data.room_ids)
@@ -199,6 +209,14 @@ const createStaffAssignment = async (data, userId, ipAddress) => {
     delete baseData.room_ids;
 
     const resolvedBase = await resolveCreatePayload(baseData);
+    const startDate = resolveAssignmentStartDate(resolvedBase.start_date);
+    resolvedBase.start_date = startDate;
+
+    // Time-bound department relationship: close any still-active prior
+    // assignments at the new start date before creating the replacement.
+    if (resolvedBase.staff_profile_id && resolvedBase.department_id) {
+      await endActiveStaffAssignments(resolvedBase.staff_profile_id, startDate);
+    }
 
     if (roomIds.length > 0) {
       const assignments = [];

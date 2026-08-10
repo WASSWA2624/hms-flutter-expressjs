@@ -68,7 +68,9 @@ class HrStaffDetailActions extends ConsumerWidget {
       if (!separated) ...<AppPermissionActionItem>[
         AppPermissionActionItem(
           requirement: HrHumanResourcesAtomPermissions.assignDepartment,
-          label: l10n.hrAssignDepartmentAction,
+          label: staffHasAssignedDepartment(detail)
+              ? l10n.hrChangeDepartmentAction
+              : l10n.hrAssignDepartmentAction,
           icon: Icons.account_tree_outlined,
           enabled: enabled,
           onPressed: () => onAssignDepartment(context, ref),
