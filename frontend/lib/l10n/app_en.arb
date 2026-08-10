@@ -2234,9 +2234,61 @@
   "@billingOverdue": {
     "description": "Label for overdue invoices queue."
   },
-  "billingNeedsIssue": "Needs issue",
+  "billingNeedsIssue": "Ready to issue",
   "@billingNeedsIssue": {
-    "description": "Label for needs-issue queue filter."
+    "description": "Label for draft invoices waiting to be issued."
+  },
+  "billingStatusCancelledOption": "Cancelled",
+  "@billingStatusCancelledOption": {
+    "description": "Cancelled invoice status filter option."
+  },
+  "billingStatusPendingApprovalOption": "Pending approval",
+  "@billingStatusPendingApprovalOption": {
+    "description": "Pending financial approval status label."
+  },
+  "billingStatusApprovedOption": "Approved",
+  "@billingStatusApprovedOption": {
+    "description": "Approved financial approval status label."
+  },
+  "billingStatusRejectedOption": "Rejected",
+  "@billingStatusRejectedOption": {
+    "description": "Rejected claim or approval status label."
+  },
+  "billingStatusClaimSubmittedOption": "Claim submitted",
+  "@billingStatusClaimSubmittedOption": {
+    "description": "Submitted insurance claim status label."
+  },
+  "billingStatusAuthPendingOption": "Authorization pending",
+  "@billingStatusAuthPendingOption": {
+    "description": "Pending pre-authorization status label."
+  },
+  "billingStatusAuthDeniedOption": "Authorization denied",
+  "@billingStatusAuthDeniedOption": {
+    "description": "Denied pre-authorization status label."
+  },
+  "billingPatientFilterLabel": "Patient name or ID",
+  "@billingPatientFilterLabel": {
+    "description": "Advanced filter for patient name or patient ID."
+  },
+  "billingSourceOpd": "OPD",
+  "@billingSourceOpd": {
+    "description": "OPD charge source filter option."
+  },
+  "billingSourceEmergency": "Emergency",
+  "@billingSourceEmergency": {
+    "description": "Emergency charge source filter option."
+  },
+  "billingSourceInpatient": "Inpatient",
+  "@billingSourceInpatient": {
+    "description": "Inpatient charge source filter option."
+  },
+  "billingSourceTheatre": "Theatre",
+  "@billingSourceTheatre": {
+    "description": "Theatre charge source filter option."
+  },
+  "billingSourceClinical": "Clinical",
+  "@billingSourceClinical": {
+    "description": "Clinical charge source filter option."
   },
   "billingApprovalRequired": "Approval required",
   "@billingApprovalRequired": {
@@ -2345,6 +2397,26 @@
   "billingEmptyBody": "No invoices or billing actions in this queue.",
   "@billingEmptyBody": {
     "description": "Empty state body for billing worklist."
+  },
+  "billingEmptyReadyToIssueBody": "No draft invoices waiting to be issued.",
+  "@billingEmptyReadyToIssueBody": {
+    "description": "Empty state for the Ready to issue billing tab."
+  },
+  "billingEmptyAwaitingPaymentBody": "No issued or partially paid invoices awaiting payment.",
+  "@billingEmptyAwaitingPaymentBody": {
+    "description": "Empty state for the Awaiting payment billing tab."
+  },
+  "billingEmptyClaimsPendingBody": "No insurance claims or authorizations waiting on a payer response.",
+  "@billingEmptyClaimsPendingBody": {
+    "description": "Empty state for the Claims pending billing tab."
+  },
+  "billingEmptyApprovalRequiredBody": "No refunds, voids, or adjustments waiting for approval.",
+  "@billingEmptyApprovalRequiredBody": {
+    "description": "Empty state for the Approval required billing tab."
+  },
+  "billingEmptyOverdueBody": "No overdue patient invoices in this queue.",
+  "@billingEmptyOverdueBody": {
+    "description": "Empty state for the Overdue billing tab."
   },
   "billingPatientColumn": "Patient",
   "@billingPatientColumn": {

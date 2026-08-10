@@ -129,6 +129,134 @@ String billingPatientName(BuildContext context, BillingWorkItem item) {
   return name.isEmpty ? context.l10n.billingUnknownPatient : name;
 }
 
+/// Billing-oriented status for worklist rows (not accounts clearance).
+String billingWorkItemStatusLabel(BuildContext context, BillingWorkItem item) {
+  final AppLocalizations l10n = context.l10n;
+  final String status = (item.status ?? '').trim().toUpperCase();
+  final String billingStatus = (item.billingStatus ?? '').trim().toUpperCase();
+
+  if (item.isApproval) {
+    return switch (status) {
+      'PENDING' => l10n.billingStatusPendingApprovalOption,
+      'APPROVED' => l10n.billingStatusApprovedOption,
+      'REJECTED' || 'DENIED' => l10n.billingStatusRejectedOption,
+      _ => billingApiLabel(context, item.status),
+    };
+  }
+  if (item.isClaim) {
+    return switch (status) {
+      'SUBMITTED' => l10n.billingStatusClaimSubmittedOption,
+      'REJECTED' => l10n.billingStatusRejectedOption,
+      'APPROVED' || 'PAID' || 'SETTLED' => l10n.billingStatusApprovedOption,
+      _ => billingApiLabel(context, item.status),
+    };
+  }
+  if (item.isPreAuthorization) {
+    return switch (status) {
+      'PENDING' => l10n.billingStatusAuthPendingOption,
+      'DENIED' => l10n.billingStatusAuthDeniedOption,
+      'APPROVED' || 'PARTIAL' => l10n.billingStatusApprovedOption,
+      _ => billingApiLabel(context, item.status),
+    };
+  }
+
+  if (billingStatus == 'CANCELLED' || status == 'CANCELLED') {
+    return l10n.billingStatusCancelledOption;
+  }
+  if (billingStatus == 'DRAFT') {
+    return l10n.billingStatusDraft;
+  }
+  if (status == 'OVERDUE' && item.balanceDue > 0) {
+    return l10n.billingOverdue;
+  }
+  if (billingStatus == 'PAID' || item.balanceDue <= 0) {
+    return l10n.billingStatusPaid;
+  }
+  if (billingStatus == 'PARTIAL' || item.paidAmount > 0) {
+    return l10n.billingStatusPartialOption;
+  }
+  if (billingStatus == 'ISSUED' || item.balanceDue > 0) {
+    return l10n.billingAwaitingPayment;
+  }
+  return billingApiLabel(context, item.billingStatus ?? item.status);
+}
+
+AppWorkspaceStatusTone billingWorkItemStatusTone(BillingWorkItem item) {
+  final String status = (item.status ?? '').trim().toUpperCase();
+  final String billingStatus = (item.billingStatus ?? '').trim().toUpperCase();
+
+  if (item.isApproval) {
+    return switch (status) {
+      'PENDING' => AppWorkspaceStatusTone.warning,
+      'APPROVED' => AppWorkspaceStatusTone.success,
+      'REJECTED' || 'DENIED' => AppWorkspaceStatusTone.error,
+      _ => AppWorkspaceStatusTone.neutral,
+    };
+  }
+  if (item.isClaim || item.isPreAuthorization) {
+    return switch (status) {
+      'PENDING' || 'SUBMITTED' => AppWorkspaceStatusTone.warning,
+      'DENIED' || 'REJECTED' => AppWorkspaceStatusTone.error,
+      'APPROVED' || 'PAID' || 'SETTLED' || 'PARTIAL' =>
+        AppWorkspaceStatusTone.success,
+      _ => AppWorkspaceStatusTone.info,
+    };
+  }
+  if (billingStatus == 'CANCELLED' || status == 'CANCELLED') {
+    return AppWorkspaceStatusTone.neutral;
+  }
+  if (billingStatus == 'DRAFT') {
+    return AppWorkspaceStatusTone.neutral;
+  }
+  if (status == 'OVERDUE' && item.balanceDue > 0) {
+    return AppWorkspaceStatusTone.error;
+  }
+  if (billingStatus == 'PAID' || item.balanceDue <= 0) {
+    return AppWorkspaceStatusTone.success;
+  }
+  if (billingStatus == 'PARTIAL' || item.paidAmount > 0) {
+    return AppWorkspaceStatusTone.info;
+  }
+  return AppWorkspaceStatusTone.warning;
+}
+
+IconData billingWorkItemStatusIcon(BillingWorkItem item) {
+  final String status = (item.status ?? '').trim().toUpperCase();
+  final String billingStatus = (item.billingStatus ?? '').trim().toUpperCase();
+
+  if (item.isApproval) {
+    return switch (status) {
+      'PENDING' => Icons.rule_outlined,
+      'APPROVED' => Icons.verified_outlined,
+      'REJECTED' || 'DENIED' => Icons.cancel_outlined,
+      _ => Icons.info_outline,
+    };
+  }
+  if (item.isClaim || item.isPreAuthorization) {
+    return switch (status) {
+      'PENDING' || 'SUBMITTED' => Icons.health_and_safety_outlined,
+      'DENIED' || 'REJECTED' => Icons.cancel_outlined,
+      _ => Icons.verified_outlined,
+    };
+  }
+  if (billingStatus == 'CANCELLED' || status == 'CANCELLED') {
+    return Icons.block_outlined;
+  }
+  if (billingStatus == 'DRAFT') {
+    return Icons.edit_note_outlined;
+  }
+  if (status == 'OVERDUE' && item.balanceDue > 0) {
+    return Icons.warning_amber_outlined;
+  }
+  if (billingStatus == 'PAID' || item.balanceDue <= 0) {
+    return Icons.verified_outlined;
+  }
+  if (billingStatus == 'PARTIAL' || item.paidAmount > 0) {
+    return Icons.pie_chart_outline;
+  }
+  return Icons.payments_outlined;
+}
+
 String billingDetailTitle(BuildContext context, BillingWorkItem item) {
   final AppLocalizations l10n = context.l10n;
   if (item.isInvoice) {

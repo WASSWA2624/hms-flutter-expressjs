@@ -634,8 +634,8 @@ String decodeBillingRecordId(Object? responseData) {
 String _queueDefaultLabel(BillingQueueType queue) {
   return switch (queue) {
     BillingQueueType.all => 'All billing work items',
-    BillingQueueType.needsIssue => 'Needs issue',
-    BillingQueueType.pendingPayment => 'Pending payment',
+    BillingQueueType.needsIssue => 'Ready to issue',
+    BillingQueueType.pendingPayment => 'Awaiting payment',
     BillingQueueType.claimsPending => 'Claims pending',
     BillingQueueType.approvalRequired => 'Approval required',
     BillingQueueType.overdue => 'Overdue',

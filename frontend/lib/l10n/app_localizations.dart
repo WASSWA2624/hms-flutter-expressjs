@@ -3316,11 +3316,89 @@ abstract class AppLocalizations {
   /// **'Overdue'**
   String get billingOverdue;
 
-  /// Label for needs-issue queue filter.
+  /// Label for draft invoices waiting to be issued.
   ///
   /// In en, this message translates to:
-  /// **'Needs issue'**
+  /// **'Ready to issue'**
   String get billingNeedsIssue;
+
+  /// Cancelled invoice status filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get billingStatusCancelledOption;
+
+  /// Pending financial approval status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending approval'**
+  String get billingStatusPendingApprovalOption;
+
+  /// Approved financial approval status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get billingStatusApprovedOption;
+
+  /// Rejected claim or approval status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get billingStatusRejectedOption;
+
+  /// Submitted insurance claim status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim submitted'**
+  String get billingStatusClaimSubmittedOption;
+
+  /// Pending pre-authorization status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization pending'**
+  String get billingStatusAuthPendingOption;
+
+  /// Denied pre-authorization status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization denied'**
+  String get billingStatusAuthDeniedOption;
+
+  /// Advanced filter for patient name or patient ID.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient name or ID'**
+  String get billingPatientFilterLabel;
+
+  /// OPD charge source filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD'**
+  String get billingSourceOpd;
+
+  /// Emergency charge source filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency'**
+  String get billingSourceEmergency;
+
+  /// Inpatient charge source filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Inpatient'**
+  String get billingSourceInpatient;
+
+  /// Theatre charge source filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Theatre'**
+  String get billingSourceTheatre;
+
+  /// Clinical charge source filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical'**
+  String get billingSourceClinical;
 
   /// Label for approval-required queue filter.
   ///
@@ -3483,6 +3561,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No invoices or billing actions in this queue.'**
   String get billingEmptyBody;
+
+  /// Empty state for the Ready to issue billing tab.
+  ///
+  /// In en, this message translates to:
+  /// **'No draft invoices waiting to be issued.'**
+  String get billingEmptyReadyToIssueBody;
+
+  /// Empty state for the Awaiting payment billing tab.
+  ///
+  /// In en, this message translates to:
+  /// **'No issued or partially paid invoices awaiting payment.'**
+  String get billingEmptyAwaitingPaymentBody;
+
+  /// Empty state for the Claims pending billing tab.
+  ///
+  /// In en, this message translates to:
+  /// **'No insurance claims or authorizations waiting on a payer response.'**
+  String get billingEmptyClaimsPendingBody;
+
+  /// Empty state for the Approval required billing tab.
+  ///
+  /// In en, this message translates to:
+  /// **'No refunds, voids, or adjustments waiting for approval.'**
+  String get billingEmptyApprovalRequiredBody;
+
+  /// Empty state for the Overdue billing tab.
+  ///
+  /// In en, this message translates to:
+  /// **'No overdue patient invoices in this queue.'**
+  String get billingEmptyOverdueBody;
 
   /// Patient column label in billing table.
   ///

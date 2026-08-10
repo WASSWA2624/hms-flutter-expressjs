@@ -575,17 +575,20 @@ final class BillingWorkItem {
   String get _normalizedStatus => (status ?? '').trim().toUpperCase();
 
   BillingClearanceState get clearanceState {
+    if (isApproval) {
+      return _normalizedStatus == 'PENDING'
+          ? BillingClearanceState.pendingAuthorization
+          : BillingClearanceState.cleared;
+    }
     if (kind == BillingWorkItemKind.claim ||
         kind == BillingWorkItemKind.preAuthorization) {
       return BillingClearanceState.pendingAuthorization;
     }
-    if (payments.any((BillingPayment payment) {
-      return (payment.method ?? '').trim().toUpperCase() == 'INSURANCE';
-    })) {
-      return BillingClearanceState.insured;
-    }
     if (_normalizedBillingStatus == 'DRAFT') {
       return BillingClearanceState.deferred;
+    }
+    if (_normalizedStatus == 'OVERDUE' && balanceDue > 0) {
+      return BillingClearanceState.overdue;
     }
     if (_normalizedBillingStatus == 'PAID' || balanceDue <= 0) {
       return BillingClearanceState.cleared;
@@ -593,8 +596,10 @@ final class BillingWorkItem {
     if (_normalizedBillingStatus == 'PARTIAL' || paidAmount > 0) {
       return BillingClearanceState.partiallyPaid;
     }
-    if (_normalizedStatus == 'OVERDUE' && balanceDue > 0) {
-      return BillingClearanceState.overdue;
+    if (payments.any((BillingPayment payment) {
+      return (payment.method ?? '').trim().toUpperCase() == 'INSURANCE';
+    })) {
+      return BillingClearanceState.insured;
     }
     if (balanceDue > 0 && !_isCancelled) {
       return BillingClearanceState.awaitingPayment;

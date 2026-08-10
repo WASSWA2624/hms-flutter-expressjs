@@ -149,7 +149,7 @@ bool billingWorkItemMatchesSearch(
     item.encounterDisplayId,
     item.encounterId,
     billingInvoiceSourceLabel(context, item),
-    billingClearanceLabel(context, item.clearanceState),
+    billingWorkItemStatusLabel(context, item),
     billingMoney(context, item.balanceDue, item.currency),
     billingMoney(context, item.paidAmount, item.currency),
     billingDateTime(context, item.timelineAt),
@@ -385,15 +385,15 @@ AppListTableColumn<BillingWorkItem> billingStatusColumn(AppLocalizations l10n) {
     label: l10n.billingStatusColumn,
     sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
         appListTableCompareText(
-          left.clearanceState.name,
-          right.clearanceState.name,
+          left.billingStatus ?? left.status,
+          right.billingStatus ?? right.status,
         ),
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return AppWorkspaceStatusBadge(
         status: AppWorkspaceStatus(
-          label: billingClearanceLabel(context, item.clearanceState),
-          tone: billingClearanceTone(item.clearanceState),
-          icon: billingClearanceIcon(item.clearanceState),
+          label: billingWorkItemStatusLabel(context, item),
+          tone: billingWorkItemStatusTone(item),
+          icon: billingWorkItemStatusIcon(item),
         ),
       );
     },

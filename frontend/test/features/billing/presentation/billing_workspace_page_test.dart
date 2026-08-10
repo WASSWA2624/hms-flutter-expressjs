@@ -325,7 +325,7 @@ Future<_Harness> _pumpBillingWorkspace(
 String billingQueueTabLabel(BillingQueueType queue) {
   return switch (queue) {
     BillingQueueType.all => 'All billing work items',
-    BillingQueueType.needsIssue => 'Needs issue',
+    BillingQueueType.needsIssue => 'Ready to issue',
     BillingQueueType.pendingPayment => 'Awaiting payment',
     BillingQueueType.claimsPending => 'Claims pending',
     BillingQueueType.approvalRequired => 'Approval required',
@@ -430,7 +430,7 @@ void main() {
     expect(find.text('Ada Draft'), findsNothing);
     _expectStableCloseSearchActions(tester);
 
-    await _selectQueueTab(tester, 'Needs issue');
+    await _selectQueueTab(tester, 'Ready to issue');
 
     expect(harness.router.state.uri.queryParameters['queue'], 'needs-issue');
     expect(find.text('Ada Draft'), findsOneWidget);
@@ -867,7 +867,7 @@ void main() {
       findsNothing,
     );
 
-    await _selectQueueTab(tester, 'Needs issue');
+    await _selectQueueTab(tester, 'Ready to issue');
 
     expect(
       find.descendant(

@@ -16,7 +16,6 @@ import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_invoice_print_helpers.dart';
 import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_controller.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_detail_widgets.dart';
-import 'package:hosspi_hms/features/billing/presentation/widgets/billing_financial_analytics_panel.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_form_dialogs.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_ledger_dialog.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_receive_payment_dialog.dart';
@@ -311,8 +310,6 @@ class _BillingWorkspaceContentState
                 }
               },
             ),
-            SizedBox(height: theme.spacing.sm),
-            const BillingFinancialAnalyticsPanel(),
             SizedBox(height: theme.spacing.md),
             _BillingQueuePanel(
               state: state,
@@ -424,7 +421,7 @@ class _BillingQueuePanel extends ConsumerWidget {
       emptyBuilder: (BuildContext context) {
         return AppWorkspaceStatePanel.empty(
           title: l10n.billingEmptyTitle,
-          body: l10n.billingEmptyBody,
+          body: _billingEmptyBodyForQueue(l10n, activeQueue),
         );
       },
       columns: billingColumnsForQueue(
@@ -453,8 +450,8 @@ class _BillingQueuePanel extends ConsumerWidget {
           caption: item.effectiveDisplayId,
           meta: <AppListTableMobileMeta>[
             AppListTableMobileMeta(
-              label: billingClearanceLabel(context, item.clearanceState),
-              icon: billingClearanceIcon(item.clearanceState),
+              label: billingWorkItemStatusLabel(context, item),
+              icon: billingWorkItemStatusIcon(item),
             ),
             AppListTableMobileMeta(
               label: billingMoney(context, item.balanceDue, item.currency),
@@ -1139,6 +1136,19 @@ const String _billingFilterPatientId = 'patient_id';
 const String _billingFilterInvoiceNumber = 'invoice_number';
 const String _billingFilterEncounterId = 'encounter_id';
 
+String _billingEmptyBodyForQueue(
+  AppLocalizations l10n,
+  BillingQueueType queue,
+) {
+  return switch (queue) {
+    BillingQueueType.needsIssue => l10n.billingEmptyReadyToIssueBody,
+    BillingQueueType.pendingPayment => l10n.billingEmptyAwaitingPaymentBody,
+    BillingQueueType.claimsPending => l10n.billingEmptyClaimsPendingBody,
+    BillingQueueType.approvalRequired => l10n.billingEmptyApprovalRequiredBody,
+    BillingQueueType.overdue => l10n.billingEmptyOverdueBody,
+    BillingQueueType.all => l10n.billingEmptyBody,
+  };
+}
 AppSearchBarFilterValue _billingFilterValue(BillingWorkspaceQuery query) {
   if (!query.hasActiveFilters) {
     return AppSearchBarFilterValue.empty;
@@ -1186,7 +1196,7 @@ List<AppSearchBarTextFilter> _billingTextFilters(AppLocalizations l10n) {
   return <AppSearchBarTextFilter>[
     AppSearchBarTextFilter(
       key: _billingFilterPatientId,
-      label: l10n.billingPatientIdColumn,
+      label: l10n.billingPatientFilterLabel,
       icon: Icons.badge_outlined,
       textInputAction: TextInputAction.next,
     ),
@@ -1229,6 +1239,21 @@ List<AppSearchBarFilterChoice> _billingSourceFilterChoices(
   final AppLocalizations l10n = context.l10n;
   return <AppSearchBarFilterChoice>[
     AppSearchBarFilterChoice(
+      value: 'OPD',
+      label: l10n.billingSourceOpd,
+      icon: Icons.local_hospital_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: 'Emergency',
+      label: l10n.billingSourceEmergency,
+      icon: Icons.emergency_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: 'Inpatient',
+      label: l10n.billingSourceInpatient,
+      icon: Icons.bed_outlined,
+    ),
+    AppSearchBarFilterChoice(
       value: 'Laboratory',
       label: l10n.billingSourceLaboratory,
       icon: Icons.science_outlined,
@@ -1242,6 +1267,16 @@ List<AppSearchBarFilterChoice> _billingSourceFilterChoices(
       value: 'Pharmacy',
       label: l10n.billingSourcePharmacy,
       icon: Icons.medication_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: 'Theatre',
+      label: l10n.billingSourceTheatre,
+      icon: Icons.airline_seat_flat_angled_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: 'Clinical',
+      label: l10n.billingSourceClinical,
+      icon: Icons.medical_services_outlined,
     ),
   ];
 }
@@ -1259,7 +1294,7 @@ List<AppSearchBarFilterChoice> _billingStatusFilterChoices(
     AppSearchBarFilterChoice(
       value: 'ISSUED',
       label: l10n.billingStatusIssuedOption,
-      icon: Icons.payments_outlined,
+      icon: Icons.receipt_long_outlined,
     ),
     AppSearchBarFilterChoice(
       value: 'PARTIAL',
@@ -1275,6 +1310,11 @@ List<AppSearchBarFilterChoice> _billingStatusFilterChoices(
       value: 'OVERDUE',
       label: l10n.billingStatusOverdueOption,
       icon: Icons.warning_amber_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: 'CANCELLED',
+      label: l10n.billingStatusCancelledOption,
+      icon: Icons.block_outlined,
     ),
   ];
 }

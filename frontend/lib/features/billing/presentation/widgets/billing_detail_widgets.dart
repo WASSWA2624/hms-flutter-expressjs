@@ -150,10 +150,10 @@ class BillingDetailBody extends ConsumerWidget {
     final List<AppWorkspacePatientContextField> fields =
         <AppWorkspacePatientContextField>[
           AppWorkspacePatientContextField(
-            label: l10n.billingPaymentStatusLabel,
-            value: billingClearanceLabel(context, item.clearanceState),
-            icon: billingClearanceIcon(item.clearanceState),
-            tone: billingClearanceTone(item.clearanceState),
+            label: l10n.billingStatusColumn,
+            value: billingWorkItemStatusLabel(context, item),
+            icon: billingWorkItemStatusIcon(item),
+            tone: billingWorkItemStatusTone(item),
           ),
         ];
 

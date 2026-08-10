@@ -67,7 +67,7 @@ List<PrintFormMetadataItem> _invoiceSubtitleItems(
   final List<PrintFormMetadataItem> items = <PrintFormMetadataItem>[
     PrintFormMetadataItem(
       label: l10n.billingPaymentStatusLabel,
-      value: billingClearanceLabel(context, item.clearanceState),
+      value: billingWorkItemStatusLabel(context, item),
     ),
     PrintFormMetadataItem(
       label: l10n.billingInvoiceStatusLabel,

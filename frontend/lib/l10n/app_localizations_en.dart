@@ -1729,7 +1729,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingOverdue => 'Overdue';
 
   @override
-  String get billingNeedsIssue => 'Needs issue';
+  String get billingNeedsIssue => 'Ready to issue';
+
+  @override
+  String get billingStatusCancelledOption => 'Cancelled';
+
+  @override
+  String get billingStatusPendingApprovalOption => 'Pending approval';
+
+  @override
+  String get billingStatusApprovedOption => 'Approved';
+
+  @override
+  String get billingStatusRejectedOption => 'Rejected';
+
+  @override
+  String get billingStatusClaimSubmittedOption => 'Claim submitted';
+
+  @override
+  String get billingStatusAuthPendingOption => 'Authorization pending';
+
+  @override
+  String get billingStatusAuthDeniedOption => 'Authorization denied';
+
+  @override
+  String get billingPatientFilterLabel => 'Patient name or ID';
+
+  @override
+  String get billingSourceOpd => 'OPD';
+
+  @override
+  String get billingSourceEmergency => 'Emergency';
+
+  @override
+  String get billingSourceInpatient => 'Inpatient';
+
+  @override
+  String get billingSourceTheatre => 'Theatre';
+
+  @override
+  String get billingSourceClinical => 'Clinical';
 
   @override
   String get billingApprovalRequired => 'Approval required';
@@ -1813,6 +1852,26 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get billingEmptyBody =>
       'No invoices or billing actions in this queue.';
+
+  @override
+  String get billingEmptyReadyToIssueBody =>
+      'No draft invoices waiting to be issued.';
+
+  @override
+  String get billingEmptyAwaitingPaymentBody =>
+      'No issued or partially paid invoices awaiting payment.';
+
+  @override
+  String get billingEmptyClaimsPendingBody =>
+      'No insurance claims or authorizations waiting on a payer response.';
+
+  @override
+  String get billingEmptyApprovalRequiredBody =>
+      'No refunds, voids, or adjustments waiting for approval.';
+
+  @override
+  String get billingEmptyOverdueBody =>
+      'No overdue patient invoices in this queue.';
 
   @override
   String get billingPatientColumn => 'Patient';

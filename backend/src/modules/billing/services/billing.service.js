@@ -434,7 +434,10 @@ const buildInvoiceWhere = async (scope, filters = {}) => {
     where.human_friendly_id = { contains: invoiceNumber.toUpperCase() };
   }
 
-  if (billingStatus) {
+  if (billingStatus === 'OVERDUE') {
+    where.status = 'OVERDUE';
+    where.billing_status = { not: 'CANCELLED' };
+  } else if (billingStatus) {
     where.billing_status = billingStatus;
   }
 
@@ -659,8 +662,8 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20, user = {}) => {
       refunds_today_total: toMoneyString(refundsToday?._sum?.amount || 0),
     },
     queues: [
-      { queue: QUEUE_TYPES.NEEDS_ISSUE, label: 'Needs issue', count: needsIssue },
-      { queue: QUEUE_TYPES.PENDING_PAYMENT, label: 'Pending payment', count: pendingPayment },
+      { queue: QUEUE_TYPES.NEEDS_ISSUE, label: 'Ready to issue', count: needsIssue },
+      { queue: QUEUE_TYPES.PENDING_PAYMENT, label: 'Awaiting payment', count: pendingPayment },
       { queue: QUEUE_TYPES.CLAIMS_PENDING, label: 'Claims pending', count: claimPendingCount + preAuthPendingCount },
       { queue: QUEUE_TYPES.APPROVAL_REQUIRED, label: 'Approval required', count: approvalPending },
       { queue: QUEUE_TYPES.OVERDUE, label: 'Overdue', count: overdue },
@@ -684,9 +687,13 @@ const getWorkItems = async (filters = {}, page = 1, limit = 20, user = {}) => {
   // updates remain visible instead of vanishing once they leave open queues.
   const skip = (page - 1) * limit;
   const invoiceWhere = await buildInvoiceWhere(scope, filters);
+  const explicitBillingStatus = clean(filters.billing_status).toUpperCase();
   const where = {
     ...invoiceWhere,
-    billing_status: { not: 'CANCELLED' },
+    // Keep cancelled invoices out unless the caller filtered to them explicitly.
+    ...(explicitBillingStatus
+      ? {}
+      : { billing_status: { not: 'CANCELLED' } }),
   };
   const [items, total] = await Promise.all([
     billingRepository.findManyInvoices(where, skip, limit, { issued_at: 'desc' }, INVOICE_INCLUDE),

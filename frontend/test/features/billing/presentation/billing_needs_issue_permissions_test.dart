@@ -215,7 +215,7 @@ void main() {
       );
 
       expect(find.text('Ada Draft'), findsOneWidget);
-      expect(find.text('Needs issue'), findsWidgets);
+      expect(find.text('Ready to issue'), findsWidgets);
       expect(find.text('Close shift'), findsNothing);
       expect(find.text('Close day'), findsNothing);
       expect(find.byTooltip('Issue'), findsNothing);
@@ -400,7 +400,7 @@ void main() {
         isTrue,
       );
       expect(
-        strip.tabs.any((AppTabItem tab) => tab.label.contains('Needs issue')),
+        strip.tabs.any((AppTabItem tab) => tab.label.contains('Ready to issue')),
         isTrue,
       );
       expect(find.byTooltip('Issue'), findsNothing);
