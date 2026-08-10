@@ -400,6 +400,13 @@ void main() {
       reason: 'Directory users always open Staff Details via a staff profile',
     );
     expect(
+      File(
+        'lib/features/hr/presentation/pages/hr_workspace_dialog_actions.dart',
+      ).readAsStringSync().contains('accessAdminDeleteUserAction'),
+      isTrue,
+      reason: 'Staff Details footer includes Delete user like Access Admin',
+    );
+    expect(
       RegExp(
         r'onPressed: state\.isRefreshing\s*\?\s*null\s*:\s*\(\)\s*=>\s*'
         r'showHrStaffOnboardingDialog\(context,\s*ref\)',

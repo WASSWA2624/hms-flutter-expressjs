@@ -34,6 +34,56 @@ Future<bool?> showManageUsersDialog(BuildContext context, WidgetRef ref) {
   );
 }
 
+/// Whether [user] may be soft-deleted under Access Admin / HR Users CRUD rules.
+bool canSoftDeleteAccessAdminUser(
+  AccessAdminItem user, {
+  required AppAccessPolicy policy,
+}) {
+  if (user.isDeleted || !canMutateAccessAdminDemoAccount(user)) {
+    return false;
+  }
+  if (!canWriteAccessAdmin(policy)) {
+    return false;
+  }
+  if (policy.canManagePlatformAdmins()) {
+    return true;
+  }
+  return !user.isSystemCritical;
+}
+
+/// Confirms and soft-deletes an Access Admin user. Returns `true` when deleted.
+Future<bool> confirmSoftDeleteAccessAdminUser(
+  BuildContext context, {
+  required AccessAdminRepository repository,
+  required AccessAdminItem user,
+}) async {
+  if (!context.mounted) {
+    return false;
+  }
+  final AppLocalizations l10n = context.l10n;
+  final bool? confirmed = await showAppDialog<bool>(
+    context: context,
+    builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+      title: l10n.tenantFacilitySoftDeleteUserTitle,
+      body: l10n.tenantFacilitySoftDeleteUserBody(user.title),
+      highlightedText: user.title,
+      submitLabel: l10n.tenantFacilityDeleteConfirmAction,
+      destructive: true,
+      icon: const Icon(Icons.delete_outline),
+      onConfirm: () async {
+        final Result<void> result = await repository.deleteUser(
+          user.mutationId,
+        );
+        return result.when(
+          success: (_) => null,
+          failure: (AppFailure failure) => failure,
+        );
+      },
+    ),
+  );
+  return confirmed == true;
+}
+
 Future<bool?> showManageRolesPermissionsDialog(
   BuildContext context,
   WidgetRef ref, {
@@ -376,13 +426,10 @@ class _ManageUsersPanelState
   }
 
   bool _canDeleteUser(AccessAdminItem user) {
-    if (!_canMutateUser(user)) {
-      return false;
-    }
-    if (_canManageProtectedUsers) {
-      return true;
-    }
-    return !user.isSystemCritical;
+    return canSoftDeleteAccessAdminUser(
+      user,
+      policy: ref.read(appAccessPolicyProvider),
+    );
   }
 
   @override
@@ -566,28 +613,12 @@ class _ManageUsersPanelState
     if (!_canDeleteUser(user)) {
       return;
     }
-    final AppLocalizations l10n = context.l10n;
-    final bool? confirmed = await showAppDialog<bool>(
-      context: context,
-      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
-        title: l10n.tenantFacilitySoftDeleteUserTitle,
-        body: l10n.tenantFacilitySoftDeleteUserBody(user.title),
-        highlightedText: user.title,
-        submitLabel: l10n.tenantFacilityDeleteConfirmAction,
-        destructive: true,
-        icon: const Icon(Icons.delete_outline),
-        onConfirm: () async {
-          final Result<void> result = await repository.deleteUser(
-            user.mutationId,
-          );
-          return result.when(
-            success: (_) => null,
-            failure: (AppFailure failure) => failure,
-          );
-        },
-      ),
+    final bool deleted = await confirmSoftDeleteAccessAdminUser(
+      context,
+      repository: repository,
+      user: user,
     );
-    if (confirmed == true && mounted) {
+    if (deleted && mounted) {
       mutated = true;
       setState(() {
         items = <AccessAdminItem>[
@@ -651,7 +682,15 @@ class _ManageUsersPanelState
         widget.onOpenDetail;
     if (customOpen != null) {
       final bool handled = await customOpen(item);
-      if (handled || !mounted) {
+      if (handled) {
+        if (mounted) {
+          // Keep the directory list fresh after Staff Details mutations
+          // (for example soft-delete from the detail footer).
+          unawaited(reload(resetPage: false, silent: true));
+        }
+        return;
+      }
+      if (!mounted) {
         return;
       }
     }

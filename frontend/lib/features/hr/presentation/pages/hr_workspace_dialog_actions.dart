@@ -147,15 +147,16 @@ Future<bool> openHrStaffDetailForDirectoryUser(
     showHrMutationSnackBar(context, failure);
     return true;
   }
-  await showHrStaffDetailDialog(context, ref);
+  await showHrStaffDetailDialog(context, ref, directoryUser: item);
   return true;
 }
 
 /// Opens the selected staff detail dialog.
 Future<void> showHrStaffDetailDialog(
   BuildContext context,
-  WidgetRef ref,
-) async {
+  WidgetRef ref, {
+  AccessAdminItem? directoryUser,
+}) async {
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceState? state = readHrWorkspaceState(ref);
   await showAppDialog<void>(
@@ -172,13 +173,19 @@ Future<void> showHrStaffDetailDialog(
           final AppAccessPolicy policy = dialogRef.watch(
             appAccessPolicyProvider,
           );
+          final ColorScheme colorScheme = Theme.of(context).colorScheme;
+          final bool isMutating = dialogState?.isMutating ?? false;
           final bool canWrite =
               HrHumanResourcesAtomPermissions.write.isAllowed(policy);
           final bool canEdit =
               canWrite &&
               detail != null &&
               !detail.profile.isSeparated &&
-              !(dialogState?.isMutating ?? false);
+              !isMutating;
+          final bool canDelete =
+              directoryUser != null &&
+              !isMutating &&
+              canSoftDeleteAccessAdminUser(directoryUser, policy: policy);
 
           return AppDialog(
             title: Text(l10n.hrStaffDetailTitle),
@@ -196,6 +203,28 @@ Future<void> showHrStaffDetailDialog(
                     dialogRef,
                     staff: detail.profile,
                   ),
+                ),
+              if (canDelete)
+                AppButton.secondary(
+                  label: l10n.accessAdminDeleteUserAction,
+                  leadingIcon: Icons.delete_outline,
+                  color: colorScheme.error,
+                  onPressed: () async {
+                    final bool deleted = await confirmSoftDeleteAccessAdminUser(
+                      context,
+                      repository: dialogRef.read(
+                        accessAdminRepositoryProvider,
+                      ),
+                      user: directoryUser,
+                    );
+                    if (!deleted || !context.mounted) {
+                      return;
+                    }
+                    Navigator.of(context).pop();
+                    await dialogRef
+                        .read(hrWorkspaceControllerProvider.notifier)
+                        .refresh();
+                  },
                 ),
               if (detail != null)
                 AppButton.primary(
