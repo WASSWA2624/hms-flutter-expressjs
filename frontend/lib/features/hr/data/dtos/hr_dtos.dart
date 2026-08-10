@@ -461,13 +461,19 @@ final class HrShiftAssignmentDto {
           _string(json['display_id']) ?? _string(json['human_friendly_id']),
       shiftId: _string(json['shift_id']) ?? _string(shift['id']),
       shiftName:
+          _string(_map(shift['roster'])['name']) ??
           _string(shift['name']) ??
           _string(shift['shift_type']) ??
           _string(shift['human_friendly_id']),
       shiftType: _string(shift['shift_type']),
       shiftStatus: _string(shift['status']),
-      rosterId: _string(shift['roster_id']) ?? _string(json['roster_id']),
-      rosterPeriodLabel: _string(shift['roster_period_label']),
+      rosterId:
+          _string(shift['roster_id']) ??
+          _string(_map(shift['roster'])['id']) ??
+          _string(json['roster_id']),
+      rosterPeriodLabel:
+          _string(shift['roster_period_label']) ??
+          _rosterPeriodLabel(_map(shift['roster'])),
       staffProfileId: _string(json['staff_profile_id']),
       assignedAt: _date(json['assigned_at']),
       startTime: _date(shift['start_time']),
@@ -1131,6 +1137,25 @@ String? _string(Object? value) {
   }
   final String normalized = value.toString().trim();
   return normalized.isEmpty ? null : normalized;
+}
+
+String? _rosterPeriodLabel(HrJsonMap roster) {
+  final DateTime? start = _date(roster['period_start']);
+  final DateTime? end = _date(roster['period_end']);
+  if (start == null && end == null) {
+    return null;
+  }
+  String format(DateTime value) {
+    final DateTime local = value.toLocal();
+    final String month = local.month.toString().padLeft(2, '0');
+    final String day = local.day.toString().padLeft(2, '0');
+    return '${local.year}-$month-$day';
+  }
+
+  if (start != null && end != null) {
+    return '${format(start)} - ${format(end)}';
+  }
+  return format(start ?? end!);
 }
 
 DateTime? _date(Object? value) {

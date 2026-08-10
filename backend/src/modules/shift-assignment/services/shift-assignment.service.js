@@ -61,7 +61,18 @@ const listShiftAssignments = async (filters, page, limit, sortBy, order) => {
             status: true,
             start_time: true,
             end_time: true,
-            name: true}}}),
+            roster: {
+              select: {
+                id: true,
+                human_friendly_id: true,
+                name: true,
+                period_start: true,
+                period_end: true,
+              },
+            },
+          },
+        },
+      }),
       shiftAssignmentRepository.count(whereClause)]);
 
     return {
