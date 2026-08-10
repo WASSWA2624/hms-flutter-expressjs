@@ -22725,6 +22725,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrLeaveDetailDialogTitle => 'Leave details';
 
   @override
+  String get hrLeaveOverviewSectionTitle => 'Leave overview';
+
+  @override
+  String get hrLeavePreviewSectionTitle => 'Leave calendar';
+
+  @override
+  String get hrLeavePreviewEmptyBody =>
+      'No leave dates are available to show on the calendar.';
+
+  @override
+  String get hrLeaveIdLabel => 'Leave ID';
+
+  @override
   String get hrLeaveCoveringStaffLabel => 'Covering staff';
 
   @override
@@ -22732,6 +22745,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrLeaveReasonLabel => 'Reason';
+
+  @override
+  String get hrLeavePeriodDaysLabel => 'Leave days';
+
+  @override
+  String get hrLeavePrintListHeading => 'Leave records';
+
+  @override
+  String get hrLeavePrintCalendarHeading => 'Leave calendar';
 
   @override
   String get hrShiftDetailDialogTitle => 'Shift details';

@@ -4,6 +4,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_leave_detail_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_calendar_preview.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_roster_print_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
@@ -303,18 +304,48 @@ String buildHrStaffPrintHtml(
         '<p style="color:#78909C;">${_esc(l10n.hrNoLeaveLabel)}</p>',
       );
     } else {
+      buffer.writeln(
+        '<h3 style="margin:0 0 8px;font-size:13px;">${_esc(l10n.hrLeavePrintListHeading)}</h3>',
+      );
       buffer.writeln(_tableStart());
       for (final HrStaffLeave leave in detail.leaves) {
-        _row(
-          buffer,
-          l10n.hrReferenceLeaveTypeLabel(
-            leave.leaveType,
-            fallback: leave.leaveType ?? l10n.hrLeaveLabel,
-          ),
-          '${leave.status ?? '—'} · ${leave.startDate?.toIso8601String().substring(0, 10) ?? '—'}',
+        final String typeLabel = l10n.hrReferenceLeaveTypeLabel(
+          leave.leaveType,
+          fallback: leave.leaveType ?? l10n.hrLeaveLabel,
         );
+        final String status = _leaveStatusLabel(l10n, leave.status);
+        final String period = _leavePeriodLabel(leave);
+        _row(buffer, typeLabel, '$status · $period');
+        if ((leave.reason ?? '').trim().isNotEmpty) {
+          _row(buffer, l10n.hrLeaveReasonLabel, leave.reason!.trim());
+        }
+        if ((leave.coveringStaffName ?? leave.coveringStaffProfileId ?? '')
+            .trim()
+            .isNotEmpty) {
+          _row(
+            buffer,
+            l10n.hrLeaveCoveringStaffLabel,
+            (leave.coveringStaffName ?? leave.coveringStaffProfileId)!.trim(),
+          );
+        }
       }
       buffer.writeln(_tableEnd());
+
+      final List<HrRosterDayPreview> leaveDays = hrLeaveCalendarDayPreviews(
+        detail.leaves,
+      );
+      if (leaveDays.isNotEmpty) {
+        buffer.writeln(
+          '<h3 style="margin:16px 0 8px;font-size:13px;">${_esc(l10n.hrLeavePrintCalendarHeading)}</h3>',
+        );
+        buffer.writeln(
+          hrRosterPrintScheduleHtml(
+            l10n,
+            leaveDays,
+            includeHeading: false,
+          ),
+        );
+      }
     }
   }
 
@@ -598,6 +629,35 @@ void _row(StringBuffer buffer, String label, String value) {
     '<td style="padding:8px 10px;border-bottom:1px solid #ECEFF1;font-weight:600;">${_esc(value)}</td>'
     '</tr>',
   );
+}
+
+String _leaveStatusLabel(AppLocalizations l10n, String? status) {
+  final String normalized = (status ?? '').trim().toUpperCase();
+  if (normalized.isEmpty) {
+    return '—';
+  }
+  return switch (normalized) {
+    'APPROVED' => l10n.settingsLeaveStatusApproved,
+    'REQUESTED' => l10n.settingsLeaveStatusRequested,
+    'REJECTED' => l10n.settingsLeaveStatusRejected,
+    'CANCELLED' => l10n.settingsLeaveStatusCancelled,
+    _ => status!.trim(),
+  };
+}
+
+String _leavePeriodLabel(HrStaffLeave leave) {
+  final String? start = leave.startDate?.toIso8601String().substring(0, 10);
+  final String? end = leave.endDate?.toIso8601String().substring(0, 10);
+  if (start == null && end == null) {
+    return '—';
+  }
+  if (start == null) {
+    return end!;
+  }
+  if (end == null || end == start) {
+    return start;
+  }
+  return '$start – $end';
 }
 
 String _esc(String value) {

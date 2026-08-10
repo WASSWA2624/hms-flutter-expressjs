@@ -41993,6 +41993,30 @@ abstract class AppLocalizations {
   /// **'Leave details'**
   String get hrLeaveDetailDialogTitle;
 
+  /// Collapsible section title for leave overview details.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave overview'**
+  String get hrLeaveOverviewSectionTitle;
+
+  /// Collapsible section title for leave calendar preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave calendar'**
+  String get hrLeavePreviewSectionTitle;
+
+  /// Empty state when leave has no dates for calendar preview.
+  ///
+  /// In en, this message translates to:
+  /// **'No leave dates are available to show on the calendar.'**
+  String get hrLeavePreviewEmptyBody;
+
+  /// Label for leave record identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave ID'**
+  String get hrLeaveIdLabel;
+
   /// Label for covering staff on leave.
   ///
   /// In en, this message translates to:
@@ -42010,6 +42034,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reason'**
   String get hrLeaveReasonLabel;
+
+  /// Stat chip label for leave day count in period details.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave days'**
+  String get hrLeavePeriodDaysLabel;
+
+  /// Heading above leave list in staff printout.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave records'**
+  String get hrLeavePrintListHeading;
+
+  /// Heading above leave calendar in staff printout.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave calendar'**
+  String get hrLeavePrintCalendarHeading;
 
   /// Dialog title for shift assignment detail.
   ///

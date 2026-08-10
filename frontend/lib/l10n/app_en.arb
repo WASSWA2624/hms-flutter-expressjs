@@ -29094,6 +29094,22 @@
   "@hrLeaveDetailDialogTitle": {
     "description": "Dialog title for leave detail view."
   },
+  "hrLeaveOverviewSectionTitle": "Leave overview",
+  "@hrLeaveOverviewSectionTitle": {
+    "description": "Collapsible section title for leave overview details."
+  },
+  "hrLeavePreviewSectionTitle": "Leave calendar",
+  "@hrLeavePreviewSectionTitle": {
+    "description": "Collapsible section title for leave calendar preview."
+  },
+  "hrLeavePreviewEmptyBody": "No leave dates are available to show on the calendar.",
+  "@hrLeavePreviewEmptyBody": {
+    "description": "Empty state when leave has no dates for calendar preview."
+  },
+  "hrLeaveIdLabel": "Leave ID",
+  "@hrLeaveIdLabel": {
+    "description": "Label for leave record identifier."
+  },
   "hrLeaveCoveringStaffLabel": "Covering staff",
   "@hrLeaveCoveringStaffLabel": {
     "description": "Label for covering staff on leave."
@@ -29105,6 +29121,18 @@
   "hrLeaveReasonLabel": "Reason",
   "@hrLeaveReasonLabel": {
     "description": "Label for leave reason."
+  },
+  "hrLeavePeriodDaysLabel": "Leave days",
+  "@hrLeavePeriodDaysLabel": {
+    "description": "Stat chip label for leave day count in period details."
+  },
+  "hrLeavePrintListHeading": "Leave records",
+  "@hrLeavePrintListHeading": {
+    "description": "Heading above leave list in staff printout."
+  },
+  "hrLeavePrintCalendarHeading": "Leave calendar",
+  "@hrLeavePrintCalendarHeading": {
+    "description": "Heading above leave calendar in staff printout."
   },
   "hrShiftDetailDialogTitle": "Shift details",
   "@hrShiftDetailDialogTitle": {

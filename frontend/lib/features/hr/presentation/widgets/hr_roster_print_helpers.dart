@@ -160,7 +160,10 @@ String hrRosterPrintScheduleHtml(
       '</tr></thead><tbody>',
     );
     for (final HrRosterDayPreview day in days) {
-      if (!day.isWorkingDay && day.shifts.isEmpty && !day.isHoliday) {
+      if (!day.isWorkingDay &&
+          day.shifts.isEmpty &&
+          !day.isHoliday &&
+          !day.isLeave) {
         continue;
       }
       final String staff = day.staffNames.isEmpty
@@ -190,6 +193,7 @@ String _legendHtml(AppLocalizations l10n) {
     (l10n.hrRosterAvailableLabel, '#1565C0', '#FFFFFF'),
     (l10n.hrRosterFreeHoursLabel, '#BBDEFB', '#0D47A1'),
     (l10n.hrRosterPublicHolidayLabel, '#2E7D32', '#FFFFFF'),
+    (l10n.hrLeaveLabel, '#2E7D32', '#FFFFFF'),
     (l10n.hrRosterDayOffLabel, '#ECEFF1', '#455A64'),
   ];
   final StringBuffer buffer = StringBuffer(
@@ -256,9 +260,19 @@ String _monthCalendarHtml(
       final HrRosterDayTone tone = day?.tone ?? HrRosterDayTone.off;
       final String bg = _toneBackground(tone);
       final String fg = _toneForeground(tone);
-      final String detail = day == null || day.shifts.isEmpty
-          ? ''
-          : '<div style="font-size:9px;line-height:1.2;margin-top:4px;opacity:0.95;">${hrRosterEscapeHtml(_shortShiftSummary(day))}</div>';
+      final String detail;
+      if (day?.isLeave == true) {
+        detail =
+            '<div style="font-size:9px;line-height:1.2;margin-top:4px;opacity:0.95;">${hrRosterEscapeHtml(l10n.hrLeaveLabel)}</div>';
+      } else if (day?.isHoliday == true) {
+        detail =
+            '<div style="font-size:9px;line-height:1.2;margin-top:4px;opacity:0.95;">${hrRosterEscapeHtml(l10n.hrRosterPublicHolidayLabel)}</div>';
+      } else if (day == null || day.shifts.isEmpty) {
+        detail = '';
+      } else {
+        detail =
+            '<div style="font-size:9px;line-height:1.2;margin-top:4px;opacity:0.95;">${hrRosterEscapeHtml(_shortShiftSummary(day))}</div>';
+      }
       buffer.write(
         '<td style="height:54px;vertical-align:top;padding:6px;border-radius:8px;background:$bg;color:$fg;border:1px solid rgba(0,0,0,0.06);">'
         '<div style="font-weight:700;font-size:12px;">$dayNumber</div>'

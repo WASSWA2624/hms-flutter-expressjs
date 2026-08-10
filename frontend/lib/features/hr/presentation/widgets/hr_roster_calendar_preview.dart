@@ -982,7 +982,7 @@ class _MiniMonthPicker extends StatelessWidget {
                           shape: BoxShape.circle,
                           color: selected
                               ? colors.busy
-                              : day?.isHoliday == true
+                              : day?.isHoliday == true || day?.isLeave == true
                               ? colors.holiday
                               : inHighlight
                               ? colors.free
@@ -993,7 +993,7 @@ class _MiniMonthPicker extends StatelessWidget {
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: selected
                                 ? theme.colorScheme.onPrimary
-                                : day?.isHoliday == true
+                                : day?.isHoliday == true || day?.isLeave == true
                                 ? colors.onHoliday
                                 : inPeriod
                                 ? null
@@ -1150,7 +1150,7 @@ class _MonthGrid extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            if (day?.isHoliday == true)
+                            if (day?.isLeave == true || day?.isHoliday == true)
                               Positioned(
                                 left: 3,
                                 right: 3,
@@ -1166,7 +1166,9 @@ class _MonthGrid extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(999),
                                   ),
                                   child: Text(
-                                    l10n.hrRosterPublicHolidayLabel,
+                                    day!.isLeave
+                                        ? l10n.hrLeaveLabel
+                                        : l10n.hrRosterPublicHolidayLabel,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.labelSmall?.copyWith(
@@ -1319,7 +1321,7 @@ class _TimeGrid extends StatelessWidget {
                     builder: (BuildContext context) {
                       final HrRosterDayPreview? day =
                           byKey[hrRosterDateKey(date)];
-                      if (day?.isHoliday != true) {
+                      if (day?.isLeave != true && day?.isHoliday != true) {
                         return const SizedBox(height: 16);
                       }
                       return Container(
@@ -1331,7 +1333,9 @@ class _TimeGrid extends StatelessWidget {
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          l10n.hrRosterPublicHolidayLabel,
+                          day!.isLeave
+                              ? l10n.hrLeaveLabel
+                              : l10n.hrRosterPublicHolidayLabel,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.labelSmall?.copyWith(
@@ -1459,7 +1463,7 @@ class _DayDualColumnGrid extends StatelessWidget {
             ),
           ],
         ),
-        if (preview?.isHoliday == true) ...<Widget>[
+        if (preview?.isLeave == true || preview?.isHoliday == true) ...<Widget>[
           SizedBox(height: theme.spacing.xs),
           Container(
             height: 18,
@@ -1469,7 +1473,9 @@ class _DayDualColumnGrid extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
-              l10n.hrRosterPublicHolidayLabel,
+              preview!.isLeave
+                  ? l10n.hrLeaveLabel
+                  : l10n.hrRosterPublicHolidayLabel,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onTertiary,
               ),
@@ -1847,6 +1853,7 @@ class _CompactLegend extends StatelessWidget {
         swatch(colors.busy, l10n.hrRosterAvailableLabel),
         swatch(colors.free, l10n.hrRosterFreeHoursLabel),
         swatch(colors.holiday, l10n.hrRosterPublicHolidayLabel),
+        swatch(colors.holiday, l10n.hrLeaveLabel),
         swatch(colors.off, l10n.hrRosterDayOffLabel),
       ],
     );
@@ -2140,6 +2147,8 @@ class _RosterPeriodDetailsBody extends StatelessWidget {
         days.where((HrRosterDayPreview d) => d.shifts.isNotEmpty).length;
     final int holidays =
         days.where((HrRosterDayPreview d) => d.isHoliday).length;
+    final int leaveDays =
+        days.where((HrRosterDayPreview d) => d.isLeave).length;
     final String heading = switch (details.scope) {
       HrRosterPeriodScope.week =>
         hrRosterWeekRangeLabel(materials, details.focus),
@@ -2180,6 +2189,13 @@ class _RosterPeriodDetailsBody extends StatelessWidget {
               color: colors.holiday,
               onColor: colors.onHoliday,
             ),
+            if (leaveDays > 0)
+              _StatChip(
+                label: l10n.hrLeavePeriodDaysLabel,
+                value: '$leaveDays',
+                color: colors.holiday,
+                onColor: colors.onHoliday,
+              ),
           ],
         ),
         SizedBox(height: theme.spacing.lg),
