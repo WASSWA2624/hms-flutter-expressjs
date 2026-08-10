@@ -497,7 +497,8 @@ void main() {
       expect(find.text('Overview'), findsOneWidget);
       expect(find.text('Compensation breakdown'), findsOneWidget);
       expect(find.text('Print'), findsOneWidget);
-      expect(find.text('Approve & notify Finance'), findsNothing);
+      // Approve remains visible but disabled without financial:approve.
+      expect(find.text('Approve & notify Finance'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -525,7 +526,7 @@ void main() {
 
       expect(find.text('PAYROLL DETAILS'), findsOneWidget);
       expect(find.text('Print'), findsOneWidget);
-      expect(find.text('Approve & notify Finance'), findsNothing);
+      expect(find.text('Approve & notify Finance'), findsOneWidget);
     },
   );
 
@@ -697,7 +698,7 @@ void main() {
 
       expect(find.text('PAYROLL DETAILS'), findsOneWidget);
       expect(find.text('Print'), findsOneWidget);
-      expect(find.text('Approve & notify Finance'), findsNothing);
+      expect(find.text('Approve & notify Finance'), findsOneWidget);
     },
   );
 

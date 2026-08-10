@@ -115,3 +115,97 @@ String hrPayrollEscapeHtml(String value) {
       .replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;');
 }
+
+/// Prefer live preview totals, but keep the work-item snapshot when preview is empty.
+num hrPayrollResolvedTotal(HrWorkItem item, HrPayrollPreview? preview) {
+  final num previewTotal = preview?.totalAmount ?? 0;
+  if (previewTotal != 0) {
+    return previewTotal;
+  }
+  if (item.totalAmount != 0) {
+    return item.totalAmount;
+  }
+  return previewTotal;
+}
+
+int hrPayrollResolvedStaffCount(HrWorkItem item, HrPayrollPreview? preview) {
+  final int previewCount = preview?.staffCount ?? 0;
+  if (previewCount > 0) {
+    return previewCount;
+  }
+  if (item.staffCount > 0) {
+    return item.staffCount;
+  }
+  final int itemLines = preview?.items.length ?? 0;
+  if (itemLines > 0) {
+    return itemLines;
+  }
+  return previewCount;
+}
+
+/// Flattens payroll preview staff lines into printable/table component rows.
+List<HrPayrollBreakdownRow> hrPayrollBreakdownRows({
+  required HrPayrollPreview? preview,
+  required String paymentPath,
+}) {
+  final List<HrPayrollPreviewItem> items =
+      preview?.items ?? const <HrPayrollPreviewItem>[];
+  final List<HrPayrollBreakdownRow> rows = <HrPayrollBreakdownRow>[];
+  for (final HrPayrollPreviewItem item in items) {
+    final String staff =
+        (item.staffName ?? item.staffNumber ?? item.staffProfileDisplayId ?? '')
+            .trim();
+    final List<HrPayrollCalculationComponent> components =
+        item.calculation?.components ?? const <HrPayrollCalculationComponent>[];
+    if (components.isEmpty) {
+      rows.add(
+        HrPayrollBreakdownRow(
+          staffName: staff,
+          payType: null,
+          amount: item.amount,
+          currency: item.currency,
+          paymentPath: paymentPath,
+        ),
+      );
+      continue;
+    }
+    for (final HrPayrollCalculationComponent component in components) {
+      rows.add(
+        HrPayrollBreakdownRow(
+          staffName: staff,
+          payType: component.payType,
+          quantity: component.quantity,
+          unit: component.unit,
+          rate: component.rate,
+          amount: component.amount,
+          currency: component.currency ?? item.currency,
+          paymentPath: paymentPath,
+        ),
+      );
+    }
+  }
+  return rows;
+}
+
+@immutable
+final class HrPayrollBreakdownRow {
+  const HrPayrollBreakdownRow({
+    required this.staffName,
+    required this.paymentPath,
+    this.payType,
+    this.quantity = 0,
+    this.unit,
+    this.rate = 0,
+    this.amount = 0,
+    this.currency,
+  });
+
+  final String staffName;
+  final String? payType;
+  final num quantity;
+  final String? unit;
+  final num rate;
+  final num amount;
+  final String? currency;
+  final String paymentPath;
+}

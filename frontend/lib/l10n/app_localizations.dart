@@ -38681,11 +38681,47 @@ abstract class AppLocalizations {
   /// **'No compensation lines are available for this pay run yet.'**
   String get hrPayrollBreakdownEmptyBody;
 
+  /// Compensation breakdown column for pay type / reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay type'**
+  String get hrPayrollPayTypeColumn;
+
+  /// Compensation breakdown column for quantity and unit.
+  ///
+  /// In en, this message translates to:
+  /// **'Basis'**
+  String get hrPayrollBasisColumn;
+
+  /// Compensation breakdown column for unit rate.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate'**
+  String get hrPayrollRateColumn;
+
+  /// Compensation breakdown column for line amount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get hrPayrollAmountToPayColumn;
+
+  /// Compensation breakdown column for payout routing / method.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment path'**
+  String get hrPayrollPaymentPathColumn;
+
   /// Title for the payroll print preview dialog.
   ///
   /// In en, this message translates to:
   /// **'Print payroll'**
   String get hrPayrollPrintDialogTitle;
+
+  /// Search hint for payroll compensation breakdown table.
+  ///
+  /// In en, this message translates to:
+  /// **'Search staff or pay type'**
+  String get hrPayrollBreakdownSearchHint;
 
   /// Table column distinguishing HR vs Finance payment routing.
   ///

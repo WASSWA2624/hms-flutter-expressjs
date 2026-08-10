@@ -2465,6 +2465,30 @@ const buildPayrollProposedItems = async (payrollRunRecord, filters = {}) => {
   return { proposedItems, totals };
 };
 
+const mapStoredPayrollItemToProposed = (item) => {
+  const calculation =
+    item?.calculation_json && typeof item.calculation_json === 'object'
+      ? item.calculation_json
+      : {};
+  const profile = item?.staff_profile || {};
+  const user = profile.user || {};
+  const person = user.profile || {};
+  return {
+    staff_profile_id: item.staff_profile_id || profile.id || null,
+    staff_profile_display_id: resolveDisplayId(profile),
+    staff_number: profile.staff_number || null,
+    staff_name:
+      normalizeString(`${person.first_name || ''} ${person.last_name || ''}`) ||
+      user.email ||
+      null,
+    assignment_count: Number(calculation.assignment_count || 0) || 0,
+    total_hours: Number(calculation.total_hours || 0) || 0,
+    amount: Number(item.amount || 0) || 0,
+    currency: normalizeString(item.currency) || 'USD',
+    calculation,
+  };
+};
+
 const previewPayrollRun = async (payrollRunIdentifier, filters = {}) => {
   const payrollRunRecord = await resolveModelRecordByIdentifier({
     model: 'payroll_run',
@@ -2477,12 +2501,78 @@ const previewPayrollRun = async (payrollRunIdentifier, filters = {}) => {
       status: true,
       period_start: true,
       period_end: true,
+      preview_json: true,
     },
   });
 
   if (!payrollRunRecord?.id) throw new HttpError('errors.payroll_run.not_found', 404);
 
-  const { proposedItems, totals } = await buildPayrollProposedItems(payrollRunRecord, filters);
+  let { proposedItems, totals } = await buildPayrollProposedItems(payrollRunRecord, filters);
+
+  // Live recalculation can return empty when no current compensations match the
+  // period. Prefer stored preview / payroll_item rows so detail and print still
+  // show the amounts already associated with this pay run.
+  if (!Array.isArray(proposedItems) || proposedItems.length === 0) {
+    const storedPreview =
+      payrollRunRecord.preview_json && typeof payrollRunRecord.preview_json === 'object'
+        ? payrollRunRecord.preview_json
+        : {};
+    const storedItems = Array.isArray(storedPreview.proposed_items)
+      ? storedPreview.proposed_items
+      : [];
+    if (storedItems.length > 0) {
+      proposedItems = storedItems;
+      totals =
+        storedPreview.totals && typeof storedPreview.totals === 'object'
+          ? storedPreview.totals
+          : totals;
+    } else {
+      const persistedItems = await prisma.payroll_item.findMany({
+        where: {
+          deleted_at: null,
+          payroll_run_id: payrollRunRecord.id,
+        },
+        include: {
+          staff_profile: {
+            select: {
+              id: true,
+              human_friendly_id: true,
+              staff_number: true,
+              user: {
+                select: {
+                  email: true,
+                  profile: {
+                    select: { first_name: true, last_name: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+      if (persistedItems.length > 0) {
+        proposedItems = persistedItems.map(mapStoredPayrollItemToProposed);
+        totals = proposedItems.reduce(
+          (acc, item) => {
+            acc.total_amount += Number(item.amount || 0);
+            acc.total_hours += Number(item.total_hours || 0);
+            acc.staff_count += 1;
+            if (!acc.currency && item.currency) acc.currency = item.currency;
+            return acc;
+          },
+          {
+            total_amount: 0,
+            total_hours: 0,
+            staff_count: 0,
+            currency: proposedItems[0]?.currency || 'USD',
+          }
+        );
+        totals.total_amount = Number(Number(totals.total_amount || 0).toFixed(2));
+        totals.total_hours = Number(Number(totals.total_hours || 0).toFixed(2));
+      }
+    }
+  }
+
   const preview = {
     run_summary: {
       id: resolveDisplayId(payrollRunRecord),

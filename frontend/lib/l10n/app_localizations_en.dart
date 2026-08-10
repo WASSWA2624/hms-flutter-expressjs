@@ -20919,7 +20919,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'No compensation lines are available for this pay run yet.';
 
   @override
+  String get hrPayrollPayTypeColumn => 'Pay type';
+
+  @override
+  String get hrPayrollBasisColumn => 'Basis';
+
+  @override
+  String get hrPayrollRateColumn => 'Rate';
+
+  @override
+  String get hrPayrollAmountToPayColumn => 'Amount';
+
+  @override
+  String get hrPayrollPaymentPathColumn => 'Payment path';
+
+  @override
   String get hrPayrollPrintDialogTitle => 'Print payroll';
+
+  @override
+  String get hrPayrollBreakdownSearchHint => 'Search staff or pay type';
 
   @override
   String get hrPayCompensationLaneColumn => 'Routing';

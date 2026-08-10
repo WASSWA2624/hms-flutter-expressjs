@@ -26961,9 +26961,33 @@
   "@hrPayrollBreakdownEmptyBody": {
     "description": "Empty state when a pay run has no preview lines."
   },
+  "hrPayrollPayTypeColumn": "Pay type",
+  "@hrPayrollPayTypeColumn": {
+    "description": "Compensation breakdown column for pay type / reason."
+  },
+  "hrPayrollBasisColumn": "Basis",
+  "@hrPayrollBasisColumn": {
+    "description": "Compensation breakdown column for quantity and unit."
+  },
+  "hrPayrollRateColumn": "Rate",
+  "@hrPayrollRateColumn": {
+    "description": "Compensation breakdown column for unit rate."
+  },
+  "hrPayrollAmountToPayColumn": "Amount",
+  "@hrPayrollAmountToPayColumn": {
+    "description": "Compensation breakdown column for line amount."
+  },
+  "hrPayrollPaymentPathColumn": "Payment path",
+  "@hrPayrollPaymentPathColumn": {
+    "description": "Compensation breakdown column for payout routing / method."
+  },
   "hrPayrollPrintDialogTitle": "Print payroll",
   "@hrPayrollPrintDialogTitle": {
     "description": "Title for the payroll print preview dialog."
+  },
+  "hrPayrollBreakdownSearchHint": "Search staff or pay type",
+  "@hrPayrollBreakdownSearchHint": {
+    "description": "Search hint for payroll compensation breakdown table."
   },
   "hrPayCompensationLaneColumn": "Routing",
   "@hrPayCompensationLaneColumn": {

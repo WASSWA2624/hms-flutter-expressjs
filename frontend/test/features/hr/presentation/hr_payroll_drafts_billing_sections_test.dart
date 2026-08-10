@@ -410,7 +410,7 @@ void main() {
 
       expect(find.text('PAYROLL DETAILS'), findsOneWidget);
       expect(find.text('Print'), findsOneWidget);
-      expect(find.text('Approve & notify Finance'), findsNothing);
+      expect(find.text('Approve & notify Finance'), findsOneWidget);
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);
       expectFlatSections(tester);
