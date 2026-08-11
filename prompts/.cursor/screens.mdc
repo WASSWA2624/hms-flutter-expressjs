@@ -1,0 +1,62 @@
+---
+description: Workspace screens keep flows in-desk; shell owns module switches; reuse shared UI
+alwaysApply: true
+---
+
+# App Screens (workspaces)
+
+Conventions for every feature `*WorkspacePage` under the app shell. A **screen / workspace** is one shell route (Reception, OPD, Billing, IPD, etc.)—not a dialog, tab, or nested panel.
+
+## Shell navigation (module switch)
+
+1. Change modules through shell destinations (sidebar / drawer), user-menu targets (Settings, Communications, etc.), Home KPI routes, and other **explicit handoff** actions—via `context.go` / `AppRoutes.*.location(...)`.
+2. Do not add nested `GoRoute` feature pages under a workspace for multi-step operator flows.
+3. In-desk scope (tab, section, panel, filters, selected record): update the **same** path with `syncWorkspaceLocation` (query only). Do not `go` to another module to change tabs or filters.
+
+## In-workspace flows (default)
+
+1. Keep create, edit, detail, check-in, orders, disposition, filters, and similar desk work on the **current** workspace as dialogs, sheets, nested panels, or tabs—not as a hop to another feature page.
+2. Prefer `showAppDialog` / `showAppWorkspaceMutationDialog` and existing shared action packs (`shared/opd_actions/`, patient / billing helpers) over new pages. Follow [dialogs.mdc](dialogs.mdc), [tabs.mdc](tabs.mdc), [forms.mdc](forms.mdc), and [tables.mdc](tables.mdc).
+3. After mutations, refresh workspace / controller state in place so the operator finishes the task without leaving the desk.
+4. Deep links may open a tab, section, or dialog on arrival (`initialQuery`, `section`, `flowId`, etc.) without leaving the workspace.
+
+## Allowed cross-workspace handoffs
+
+Use `context.go` (or rare `context.push` then return) only when **ownership** lives on another module. Treat these as handoffs, not as normal flow steps:
+
+1. **Canonical ledger / cashier** — settle, adjust, refund, “Open billing” → Billing. Do not fork a second cashier inside another module.
+2. **Canonical facility admin** — manage beds / rooms → Rooms & beds.
+3. **Care continuity** — optional post-admit continue, or open Nursing / ICU / Theater / related case with a deep-link query. Confirm dialogs may cancel with no route change.
+4. **Hub shortcuts** — Home metrics, Settings admin links, Reports dataset open, Rooms → Housekeeping / Operations, and similar entry jumps.
+
+Do **not** hand off mid-form or mid-wizard when the remaining steps belong on the current desk.
+
+## Shell layout and reuse
+
+1. Use `AppWorkspace` **or** the standardized `ResponsivePage` + `AppTabStrip` / `AppListTable` desk shell (enforced by `workspace_ui_pattern_test.dart`).
+2. Reuse shared components under `frontend/lib/shared/` and existing feature dialogs. Do not fork patient, billing, OPD, tab, table, dialog, or form chrome per module when a shared path exists or can be extended.
+3. Respect RBAC/ABAC: omit unauthorized tabs, actions, and routes; do not show disabled “no access” placeholders for routine unauthorized scopes. Receptionist-focused users keep OPD / Emergency work on Reception per `shell_route_access.dart`.
+
+## States and responsiveness
+
+1. Cover loading, empty, error, and success for workspace data, tab switches, and in-desk mutations; do not leave silent stale content after a failed load or handoff.
+2. Stay usable on mobile, tablet, and desktop; support light and dark themes via theme tokens.
+3. Keep primary actions reachable; avoid clipped chrome and inaccessible overflow on small viewports.
+
+## Implementation constraints
+
+- Build on shell routes in `app_router.dart` / `AppRoutes` and in-desk sync via `workspace_location_sync.dart`. Do not invent a parallel navigator for feature flows.
+- Prefer extending workspace controllers and dialogs over new pages.
+- Cross-cutting tab, table, dialog, form, and print behavior belongs in the linked rules above; this file owns workspace boundaries, in-desk vs handoff navigation, and shell layout reuse.
+
+## Relevant files
+
+- `frontend/lib/app/router/app_router.dart` (`_AppShell`, shell destinations)
+- `frontend/lib/app/router/app_routes.dart`
+- `frontend/lib/app/router/shell_route_access.dart`
+- `frontend/lib/shared/layout/responsive_shell_scaffold.dart`
+- `frontend/lib/shared/layout/app_workspace.dart`
+- `frontend/lib/shared/layout/app_workspace_mutation_dialog.dart`
+- `frontend/lib/shared/routing/workspace_location_sync.dart`
+- `frontend/test/shared/layout/workspace_ui_pattern_test.dart`
+- Feature `*_workspace_page.dart` under `frontend/lib/features/`
