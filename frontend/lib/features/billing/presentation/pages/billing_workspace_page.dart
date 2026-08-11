@@ -569,79 +569,8 @@ class _BillingQueuePanel extends ConsumerWidget {
       },
     );
 
-    if (activeQueue != BillingQueueType.pendingPayment) {
-      return table;
-    }
-
-    final ThemeData theme = Theme.of(context);
-    final Color danger = theme.statusColors.danger;
-    final int overdueCount = state.overview.summary.overdue;
-    final bool overdueSelected = state.query.overdueOnly;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: Padding(
-            padding: EdgeInsets.only(bottom: theme.spacing.sm),
-            child: FilterChip(
-              key: const ValueKey<String>('billing-collect-overdue-chip'),
-              selected: overdueSelected,
-              showCheckmark: false,
-              avatar: Icon(
-                Icons.warning_amber_outlined,
-                size: 18,
-                color: danger,
-              ),
-              label: Text(
-                overdueCount > 0
-                    ? '${l10n.billingOverdue} ($overdueCount)'
-                    : l10n.billingOverdue,
-                style: TextStyle(color: danger),
-              ),
-              selectedColor: danger.withValues(alpha: 0.16),
-              side: BorderSide(color: danger.withValues(alpha: 0.45)),
-              onSelected: (bool selected) {
-                unawaited(
-                  _toggleCollectOverdueFilter(
-                    context,
-                    ref,
-                    state: state,
-                    selected: selected,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        table,
-      ],
-    );
+    return table;
   }
-}
-
-Future<void> _toggleCollectOverdueFilter(
-  BuildContext context,
-  WidgetRef ref, {
-  required BillingWorkspaceState state,
-  required bool selected,
-}) async {
-  final BillingWorkspaceQuery next = state.query.copyWith(
-    queue: BillingQueueType.pendingPayment,
-    overdueOnly: selected,
-  );
-  await ref.read(billingWorkspaceControllerProvider.notifier).applyFilters(next);
-  if (!context.mounted) {
-    return;
-  }
-  final Map<String, String> params = <String, String>{'section': 'collect'};
-  if (selected) {
-    params['overdue'] = 'yes';
-  }
-  GoRouter.of(context).replace<void>(
-    AppRoutes.billing.location(queryParameters: params),
-  );
 }
 
 Future<void> _runBillingNextAction(

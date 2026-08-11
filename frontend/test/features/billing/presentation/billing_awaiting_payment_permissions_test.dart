@@ -736,9 +736,9 @@ void main() {
   );
 
   testWidgets(
-    'Collect due Overdue chip uses danger count; no Overdue tab',
+    'Collect due has no Overdue tab or danger filter chip',
     (WidgetTester tester) async {
-      final GoRouter router = await _pumpAwaitingPaymentTab(
+      await _pumpAwaitingPaymentTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -758,8 +758,11 @@ void main() {
       );
 
       expect(find.text('Collect due'), findsWidgets);
-      expect(find.text('Overdue (3)'), findsOneWidget);
-      expect(find.byKey(const ValueKey<String>('billing-collect-overdue-chip')), findsOneWidget);
+      expect(find.text('Overdue (3)'), findsNothing);
+      expect(
+        find.byKey(const ValueKey<String>('billing-collect-overdue-chip')),
+        findsNothing,
+      );
       final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
       expect(
         strip.tabs.any((AppTabItem tab) => tab.label == 'Overdue'),
@@ -769,11 +772,6 @@ void main() {
         strip.tabs.any((AppTabItem tab) => tab.label == 'Collect due'),
         isTrue,
       );
-
-      await tester.tap(find.byKey(const ValueKey<String>('billing-collect-overdue-chip')));
-      await tester.pumpAndSettle();
-      expect(router.state.uri.queryParameters['section'], 'collect');
-      expect(router.state.uri.queryParameters['overdue'], 'yes');
     },
   );
 
