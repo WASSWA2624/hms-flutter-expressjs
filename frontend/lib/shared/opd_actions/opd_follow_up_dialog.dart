@@ -128,7 +128,6 @@ class _FollowUpDialogState extends ConsumerState<FollowUpDialog> {
           flow: currentFlow,
           detail: currentDetail,
           showTitle: false,
-          showJourneyStepper: false,
         ),
         AppFormSection(
           title: l10n.receptionFollowUpContactSectionTitle,

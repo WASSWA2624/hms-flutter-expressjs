@@ -68,7 +68,6 @@ void main() {
     expect(find.text('Next · Pay consultation'), findsOneWidget);
     expect(find.text('Close'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
-    expect(find.byType(AppWorkflowStepper), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byType(LinearProgressIndicator), findsNothing);
   });
@@ -425,7 +424,6 @@ void main() {
       expect(find.text('Blood Pressure'), findsNothing);
       expect(find.text('CBC'), findsNothing);
       expect(find.textContaining('80/50'), findsNothing);
-      expect(find.byType(AppWorkflowStepper), findsNothing);
       expect(find.text('Close'), findsOneWidget);
     },
   );
@@ -680,7 +678,10 @@ Future<void> _pumpDialog(
         supportedLocales: AppLocalizations.supportedLocales,
         builder: (BuildContext context, Widget? child) {
           return MediaQuery(
-            data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+            data: MediaQuery.of(context).copyWith(
+              textScaler: textScaler,
+              size: const Size(1280, 900),
+            ),
             child: child!,
           );
         },

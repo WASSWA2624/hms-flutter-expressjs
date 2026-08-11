@@ -1,0 +1,57 @@
+---
+description: Shared Print action labels, preview-first flow, and section/column options
+alwaysApply: true
+---
+
+# App Printing
+
+Conventions for every Print entry point (list-table toolbars, dialogs, detail panes, reports, and workflow actions). Prefer the shared print preview and document templates; do not invent parallel preview shells or silent print-to-device shortcuts.
+
+## Labels and placement
+
+1. **Generic action label only:** Use exactly `Print` (via existing l10n such as `commonPrintActionLabel` / feature `*PrintAction` keys that resolve to `Print`).
+   - Prefer: `Print`.
+   - Avoid: `Print patient details`, `Print invoice`, `Print this report`, or other content-specific labels on the trigger.
+2. Put document identity (patient name, invoice number, report kind) in the preview body, subtitle, or generated document—not on the Print button.
+3. Place Print on the surface that owns the content being printed (that table, dialog, detail, or report). Do not orphan a Print control that prints a different context than the UI implies.
+4. On list tables, Print follows Export in the fixed trailing order defined in [tables.mdc](tables.mdc). Elsewhere, keep Print with the other primary document actions for that surface.
+
+## Preview before print
+
+1. **Always open a print preview before sending to the printer.** Do not call the platform print path directly from a bare Print button.
+2. Reuse the shared preview:
+   - Prefer `showAppPrintPreviewDialog` for simple document prints.
+   - Prefer `AppPrintPreviewWorkspace` + `AppPrintPreviewPanel` + `AppPrintPreviewToolbar` when the surface already embeds a full preview (for example OPD summary).
+   - Prefer `PrintDocumentTemplates` for named clinical/billing/ops documents so layout chrome stays consistent.
+3. Set `showPreview: false` on template helpers only when the caller already embeds the shared preview panel/workspace (never to skip preview entirely).
+4. Preview dialog title stays generic (`Print preview` / existing `printPreviewTitle`); body copy may briefly instruct review-then-print.
+
+## Preview options (what prints)
+
+The preview must let the user shape the document before Print commits:
+
+1. **Sections / items:** Expose selectable report sections (and facility branding sections when applicable) so the user can include or exclude blocks.
+2. **Columns / fields:** When printing tabular or multi-field content, allow choosing which columns or fields appear—aligned with what the table or export path can represent ([tables.mdc](tables.mdc)).
+3. **Live preview:** Changing sections, columns, branding, zoom, or page focus must update the preview document before print.
+4. **Preview chrome:** Support split / sections-only / preview-only pane modes, zoom, fit page, and page navigation via the shared toolbar—do not rebuild ad-hoc zoom or page controls.
+5. Disable the final Print footer action when the current selection cannot produce a useful document (for example no content sections selected); do not print an empty shell silently.
+
+## Implementation constraints
+
+- Build on `frontend/lib/shared/printing/` (`showAppPrintPreviewDialog`, `AppPrintPreviewWorkspace`, `AppPrintPreviewPanel`, `PrintDocumentTemplates`, facility sections, form templates).
+- Follow [dialogs.mdc](dialogs.mdc) for any print options hosted inside `AppDialog` (generic titles, flat layout, footer actions).
+- Respect RBAC/ABAC: omit Print when unauthorized; do not show disabled “no access” placeholders for routine unauthorized actions.
+- Keep loading, empty, error, and success feedback explicit for preview build and print.
+- Stay responsive on mobile, tablet, and desktop; support light and dark themes via theme tokens.
+- Do not fork one-off print-preview dialogs or bypass preview when a shared path exists or can be extended.
+
+## Relevant files
+
+- `frontend/lib/shared/printing/printing.dart`
+- `frontend/lib/shared/printing/app_print_preview.dart`
+- `frontend/lib/shared/printing/app_print_html_preview.dart`
+- `frontend/lib/shared/printing/print_form_template.dart`
+- `frontend/lib/shared/printing/print_facility_sections.dart`
+- `frontend/lib/shared/printing/templates/print_document_templates.dart`
+- Feature `*_print_options*.dart` / print dialog call sites under `frontend/lib/features/` and `frontend/lib/shared/`
+)

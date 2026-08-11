@@ -18,6 +18,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_appointment_actions_dialog.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -65,10 +66,7 @@ void main() {
     );
     expect(find.text('Close'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
-    expect(find.byType(AppWorkflowStepper), findsOneWidget);
-    expect(find.text('Current step'), findsOneWidget);
-    expect(find.text('Next action'), findsOneWidget);
-    expect(find.byIcon(Icons.help_outline), findsNothing);
+    expect(find.byType(OpdWorkflowContextPanel), findsOneWidget);
     expect(find.byIcon(AppActionIcons.appointment), findsOneWidget);
     expect(find.byIcon(AppActionIcons.queue), findsNothing);
     expect(find.byIcon(AppActionIcons.reschedule), findsWidgets);
@@ -294,7 +292,10 @@ Future<void> _pumpMountedDialog(
         supportedLocales: AppLocalizations.supportedLocales,
         builder: (BuildContext context, Widget? child) {
           return MediaQuery(
-            data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+            data: MediaQuery.of(context).copyWith(
+              textScaler: textScaler,
+              size: const Size(1280, 900),
+            ),
             child: child!,
           );
         },
@@ -329,6 +330,12 @@ Future<void> _pumpOpenedDialog(
         theme: AppTheme.light,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(size: const Size(1280, 900)),
+            child: child!,
+          );
+        },
         home: Scaffold(
           body: Builder(
             builder: (BuildContext context) {

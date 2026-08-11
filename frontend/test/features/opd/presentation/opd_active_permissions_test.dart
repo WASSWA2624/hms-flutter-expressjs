@@ -815,7 +815,6 @@ void main() {
 
         expect(find.text('FLOW ACTIONS'), findsOneWidget);
         expect(find.textContaining('Record vitals'), findsWidgets);
-        expect(find.byType(AppWorkflowStepper), findsNothing);
         expect(find.text('Correct stage'), findsNothing);
         expect(find.text('Print summary'), findsOneWidget);
       },

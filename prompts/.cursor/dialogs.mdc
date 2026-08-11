@@ -1,4 +1,75 @@
 ---
+description: Shared AppDialog titles, layout, selection tables, and section conventions
 alwaysApply: true
 ---
 
+# App Dialogs
+
+Conventions for every surface built with `AppDialog` / `showAppDialog` (and call-site wrappers). Prefer extending shared dialog, table, and section components; do not invent parallel chrome.
+
+## Titles
+
+1. **Generic titles only:** Dialog titles name the *action or surface type*, not the concrete record identity.
+   - Prefer: `Patient details`, `Role selection`, `Receive payment`, `Advanced filters`.
+   - Avoid: patient names, staff names, account numbers, order ids, or other instance-specific strings in the title.
+2. Put identity (name, MRN, code) in the body, a subtitle, or a dedicated field—not the dialog title.
+3. Reuse existing l10n title keys when they already express the surface; do not invent one-off titled variants per record.
+4. Titles are uppercased by shared dialog chrome (`toDialogTitleUppercase`); pass the natural-case label and let the shell normalize it.
+
+## Layout and nesting
+
+1. Keep the dialog body **flat**: one primary content flow, not stacked dialogs, nested scroll shells, or deep widget trees that feel like dialogs-inside-dialogs.
+2. Prefer progressive disclosure with `AppCollapsibleSection` over nesting another dialog or a second table inside a cell.
+3. **Do not nest** `AppCollapsibleSection` inside another `AppCollapsibleSection`. Sibling sections in a single scroll column are fine.
+4. Prefer reusable shared controls from `frontend/lib/shared/components/` (and shared forms) over one-off layout widgets.
+
+## Sections
+
+1. Group related fields or blocks with `AppCollapsibleSection`.
+2. Place section-scoped actions in `headerActions` (short labels such as `Add`, `Edit`, `Save`, `Clear`).
+3. Collapse defaults on for titled panels unless the body must stay visible (`collapsible: false`).
+4. Keep section headers scannable: one title, optional short subtitle/description, no dense prose in the header.
+
+## Selection lists (tables in dialogs)
+
+When the dialog’s job is to browse or pick from a list (patients, roles, items, etc.):
+
+1. Render the list with `AppListTable` (plus `AppSearchBar` when search is needed)—not ad-hoc `ListView` / checkbox stacks—unless an existing shared picker already covers the case.
+2. Follow [tables.mdc](tables.mdc) for toolbar order, Filters / Settings / Export / Print labels, and column rules when those controls apply.
+3. Include columns needed to choose confidently; keep cells short (no body prose).
+4. **Selection mode must match intent:**
+   - **Single-select:** one active row (radio-style or exclusive checkbox); no header “select all”.
+   - **Multi-select:** per-row checkboxes plus a header checkbox that selects all visible/filtered rows or clears all.
+5. **No indeterminate header checkbox:** the header control is only checked (all selected) or unchecked (none / partial treated as unchecked for display). Toggling when unchecked selects all; toggling when checked clears all. Do not use `tristate` / null value for partial selection.
+6. After confirm, return the selected id(s) (or domain objects) via the dialog result; do not leave selection only in ephemeral UI state the caller cannot read.
+
+## Footer and chrome
+
+1. Use `AppDialog` footer `actions` for primary/secondary outcomes (`Save`, `Confirm`, `Cancel`, `Close`). Right-align; keep labels short and generic.
+2. On large screens, footer actions show icon + label when the shared action scope allows; on small screens prefer icon-only when space is tight (same pattern as list-table toolbars).
+3. Header restore/maximize and close stay icon-only.
+4. Pin footer actions when the body scrolls (`pinActionsToBottom: true`) for long forms and selection tables.
+5. Respect RBAC/ABAC: omit actions the user cannot perform; do not show disabled “no access” placeholders for routine unauthorized actions.
+
+## States and responsiveness
+
+1. Cover loading, empty, error, validation, and success feedback inside the dialog body or via existing shared feedback—not silent no-ops.
+2. Stay usable on mobile, tablet, and desktop; support light and dark themes via theme tokens.
+3. Avoid clipped content, nested overflow traps, and inaccessible primary actions.
+
+## Implementation constraints
+
+- Build on `AppDialog`, `showAppDialog`, `AppCollapsibleSection`, `AppListTable`, `AppSearchBar`, and existing dialog/button primitives.
+- Do not fork one-off dialog shells, section chrome, or selection-table patterns per feature when a shared component exists or can be extended.
+- Cross-cutting table toolbar/export/print behavior belongs in [tables.mdc](tables.mdc); this file owns dialog chrome, titles, nesting, sections, and in-dialog selection.
+
+## Relevant files
+
+- `frontend/lib/shared/components/app_dialog.dart`
+- `frontend/lib/shared/layout/app_dialog_insets.dart`
+- `frontend/lib/core/utils/app_dialog_title.dart`
+- `frontend/lib/shared/components/app_collapsible_section.dart`
+- `frontend/lib/shared/components/app_list_table.dart`
+- `frontend/lib/shared/components/app_search_bar.dart`
+- `frontend/lib/shared/components/app_role_selection_table_dialog.dart` (multi-select table dialog reference; header checkbox must follow the no-indeterminate rule above when touched)
+- Feature `*_dialog.dart` call sites under `frontend/lib/features/` and `frontend/lib/shared/`

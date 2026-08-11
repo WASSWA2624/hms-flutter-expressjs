@@ -15,7 +15,6 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_follow_up_action_dialog.dart';
-import 'package:hosspi_hms/shared/components/app_workflow_stepper.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -71,7 +70,6 @@ void main() {
     );
 
     expect(find.text('Patient Example'), findsOneWidget);
-    expect(find.byType(AppWorkflowStepper), findsNothing);
     expect(find.byType(AppPhoneField), findsOneWidget);
     expect(find.byType(AppEmailField), findsOneWidget);
     expect(find.text('patient@example.com'), findsOneWidget);

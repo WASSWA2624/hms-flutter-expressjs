@@ -110,7 +110,6 @@ void main() {
     expect(find.text('CHANGE DOCTOR'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
     expect(find.byType(AppPatientDetails), findsOneWidget);
-    expect(find.byType(AppWorkflowStepper), findsNothing);
     expect(find.textContaining('Paid'), findsNothing);
     expect(find.textContaining('UGX'), findsNothing);
   });

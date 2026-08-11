@@ -229,7 +229,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             flow: flow,
             detail: detail,
             showTitle: false,
-            showJourneyStepper: false,
             initiallyExpanded: true,
           ),
           if (isBusy)
@@ -1481,7 +1480,6 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
               flow: flow,
               detail: _currentDetail,
               showTitle: false,
-              showJourneyStepper: false,
               showPayment: false,
             ),
             _ProviderSelectField(

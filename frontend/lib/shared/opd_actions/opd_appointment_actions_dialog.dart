@@ -119,8 +119,6 @@ class _OpdAppointmentActionsDialogState
       appointment: widget.appointment,
       linkedFlow: linkedFlow,
     );
-    final String nextAction =
-        opdAppointmentPrimaryActionLabel(l10n, primaryAction) ?? '';
 
     return AppDialog(
       title: Text(l10n.opdAppointmentActionsTitle),
@@ -144,7 +142,7 @@ class _OpdAppointmentActionsDialogState
                 linkedFlow?.displayCode ??
                 linkedFlow?.stage ??
                 widget.appointment.status,
-            nextStep: nextAction,
+            initiallyExpanded: true,
             expandedFields: <AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(
                 label: l10n.opdProviderColumnLabel,

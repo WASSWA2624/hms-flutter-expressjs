@@ -1,0 +1,78 @@
+---
+description: Shared form layout, context fields, dependent values, similarity, and feedback
+alwaysApply: true
+---
+
+# App Forms
+
+Conventions for every create/edit/filter/mutation surface built with `AppFormShell`, shared field widgets, and dialog/page form bodies (including forms opened from workspace actions and forms nested in pages). Prefer extending shared form primitives; do not invent parallel field chrome or one-off layouts.
+
+## Field reuse and uniformity
+
+1. **Reuse existing fields only:** Prefer shared controls from `frontend/lib/shared/components/` and `frontend/lib/shared/forms/` (`AppTextField`, `AppSelectField`, `AppDateField`, `AppTimeField`, `AppPhoneField`, `AppEmailField`, `AppGenderField`, currency/amount fields, checkboxes, switches, radios, validators, etc.).
+2. Do not invent a new field widget, label style, or validation pattern when an existing shared field already covers the type.
+3. Keep labels, placeholders, errors, density, and empty/null treatment consistent with neighboring forms in the same domain.
+
+## Hide known context
+
+1. **Never show fields the user already knows from session or parent context:** tenant, facility, logged-in actor, and other scoped identifiers that are already fixed for the surface must stay out of the UI.
+2. Still bind those values in submit payloads from auth/tenant/facility context (or the parent record)—do not ask the user to re-enter them.
+3. Prefer progressive disclosure for rare advanced options; keep the default form focused on what the user must decide.
+
+## Layout and density
+
+1. Wrap form bodies in `AppFormShell` (with `AppFormSection` when grouping helps). Use `AppResponsiveFieldRow` / `AppResponsiveFieldRow.two` so fields **stack on small screens** and sit **in rows on large screens**.
+2. Arrange fields in a clear entry order: identifying / primary facts first, then dependent details, then notes and secondary options.
+3. Keep related values adjacent (e.g. date-from beside date-to; amount beside currency; paired name fields on one row when space allows).
+4. On large screens, compact short inputs (small numbers, codes, short selects) onto the same row when readability stays clear—do not pack so tightly that labels, errors, or touch targets collide.
+5. Prefer compact density for dense operational dialogs; keep spacing readable. Avoid large empty gaps and avoid nested scroll traps inside the form body.
+6. For dialog-hosted forms, follow [dialogs.mdc](dialogs.mdc) (generic titles, flat body, pinned footer actions via `buildAppDialogFormActions` / workspace mutation helpers).
+
+## Dependent fields and intelligent reset
+
+1. Disable (or hide) fields that cannot be answered until a parent value is set.
+2. When a parent value changes, **reset dependent child values** that are no longer valid (e.g. changing tenant clears facility; changing facility clears ward/room; changing patient clears encounter-specific picks).
+3. Do not leave stale dependent selections visible or submittable after a parent change.
+4. Prefer cascading lookups that load options from the current parent selection rather than showing an unfiltered global list.
+
+## Similarity and duplicate-aware CRUD
+
+1. On create (and update when identity can collide), run the existing **context-aware similarity check** before committing when duplicates are harmful for that domain.
+2. Reuse `AppSimilarity*` review surfaces (`frontend/lib/shared/components/app_similarity.dart`) and domain similarity helpers—do not build a one-off “maybe duplicate?” dialog.
+3. Similarity must be **comprehensive for the record type**: compare all meaningful identifying fields for that context, not a single name/code alone.
+4. Soft-cancel / dismiss of similarity review must keep the form open without treating dismissal as a hard validation failure (same pattern as workspace mutation dialogs).
+5. Block proceed only when the shared exact-duplicate rules say so; otherwise allow proceed / use-existing outcomes already modeled by the similarity API.
+
+## Submit, sync, and alerts
+
+1. Validate with shared validators / `validateAndSaveAppForm` before submit; show field errors and form-level banners (`AppFormInformationBanner`) rather than silent failure.
+2. After successful mutations, synchronize affected lists, detail panes, and workflow state so the UI reflects the new record.
+3. For money and other high-impact actions (payments, allocations, status changes), update the relevant account/workflow state and surface clear success/error feedback so operators know what changed.
+4. Cover loading, empty option lists, validation, conflict, cancelled similarity, and success states explicitly.
+
+## Authorization and responsiveness
+
+1. Respect RBAC/ABAC: omit fields and submit actions the user cannot use; do not show disabled “no access” placeholders for routine unauthorized actions.
+2. Stay usable on mobile, tablet, and desktop; support light and dark themes via theme tokens.
+3. Keep primary actions reachable; avoid clipped content and inaccessible footers on small viewports.
+
+## Implementation constraints
+
+- Build on `AppFormShell`, `AppFormSection`, `AppResponsiveFieldRow`, `app_validators`, shared field widgets, and (when dialog-hosted) `showAppWorkspaceMutationDialog` / `buildAppDialogFormActions`.
+- Do not fork one-off form shells, field rows, or similarity review flows per feature when a shared path exists or can be extended.
+- Dialog chrome and titles belong in [dialogs.mdc](dialogs.mdc); table filter forms also follow [tables.mdc](tables.mdc) for Advanced filters layout.
+
+## Relevant files
+
+- `frontend/lib/shared/forms/forms.dart`
+- `frontend/lib/shared/forms/app_form_shell.dart`
+- `frontend/lib/shared/forms/app_form_section.dart`
+- `frontend/lib/shared/forms/app_responsive_field_row.dart`
+- `frontend/lib/shared/forms/app_validators.dart`
+- `frontend/lib/shared/components/app_text_field.dart`
+- `frontend/lib/shared/components/app_select_field.dart`
+- `frontend/lib/shared/components/app_date_field.dart`
+- `frontend/lib/shared/components/app_form_information_banner.dart`
+- `frontend/lib/shared/components/app_similarity.dart`
+- `frontend/lib/shared/layout/app_workspace_mutation_dialog.dart`
+- Feature `*_dialog.dart` / form call sites under `frontend/lib/features/` and `frontend/lib/shared/`

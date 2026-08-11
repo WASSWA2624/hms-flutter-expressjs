@@ -151,7 +151,6 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
       OpdActionContextPanel(
         flow: widget.flow,
         showTitle: false,
-        showJourneyStepper: false,
         initiallyExpanded: true,
       ),
       if (!_editingVitals) _triagePrioritySection(context, enabled),

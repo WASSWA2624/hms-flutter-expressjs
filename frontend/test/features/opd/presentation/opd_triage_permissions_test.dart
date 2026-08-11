@@ -848,7 +848,6 @@ void main() {
           ),
           findsOneWidget,
         );
-        expect(find.byType(AppWorkflowStepper), findsNothing);
         expect(
           find.descendant(
             of: find.byType(AppQuickActions),

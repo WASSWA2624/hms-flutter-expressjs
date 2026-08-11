@@ -88,6 +88,7 @@ class QueueActionsDialog extends ConsumerWidget {
             patientNumber: entry.patientIdentifier ?? '',
             currentStep: opdStageDisplayLabel(l10n, entry.status),
             currentStepCode: entry.status,
+            initiallyExpanded: true,
             expandedFields: <AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(
                 label: l10n.opdProviderColumnLabel,

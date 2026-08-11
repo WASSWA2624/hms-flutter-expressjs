@@ -897,35 +897,16 @@ class _ClearanceChecklist extends ConsumerWidget {
     if (items.isEmpty) {
       return const SizedBox.shrink();
     }
-    final int firstPendingIndex = items.indexWhere(
-      (DischargeClearanceItem item) =>
-          item.state == DischargeClearanceState.pending,
-    );
 
     return AppCollapsibleSection(
       title: l10n.dischargeChecklistTitle,
       description: l10n.dischargeChecklistBody,
-      child: AppWorkflowStepper(
-        semanticLabel: l10n.dischargeClearanceProgressTitle,
-        showDescriptions: false,
-        steps: <AppWorkflowStepItem>[
-          for (var index = 0; index < items.length; index += 1)
-            AppWorkflowStepItem(
-              id: items[index].code.name,
-              label: dischargeClearanceLabel(context, items[index].code),
-              icon: dischargeClearanceIcon(items[index].code),
-              helpText: items[index].reference,
-              state: switch (items[index].state) {
-                DischargeClearanceState.complete =>
-                  AppWorkflowStepState.completed,
-                DischargeClearanceState.unavailable =>
-                  AppWorkflowStepState.unavailable,
-                DischargeClearanceState.pending =>
-                  index == firstPendingIndex
-                      ? AppWorkflowStepState.current
-                      : AppWorkflowStepState.upcoming,
-              },
-            ),
+      child: AppResponsiveWrap(
+        maxColumns: 2,
+        minItemWidth: 220,
+        children: <Widget>[
+          for (final DischargeClearanceItem item in items)
+            DischargeClearanceTile(item: item),
         ],
       ),
     );

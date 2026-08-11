@@ -17,6 +17,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_queue_actions_dialog.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -57,10 +58,7 @@ void main() {
     expect(find.text('Start consultation'), findsNothing);
     expect(find.text('Close'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
-    expect(find.byType(AppWorkflowStepper), findsOneWidget);
-    expect(find.text('Current step'), findsOneWidget);
-    expect(find.text('Next action'), findsNothing);
-    expect(find.byIcon(Icons.help_outline), findsNothing);
+    expect(find.byType(OpdWorkflowContextPanel), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byType(LinearProgressIndicator), findsNothing);
   });
@@ -265,7 +263,10 @@ Future<void> _pumpDialog(
         supportedLocales: AppLocalizations.supportedLocales,
         builder: (BuildContext context, Widget? child) {
           return MediaQuery(
-            data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+            data: MediaQuery.of(context).copyWith(
+              textScaler: textScaler,
+              size: const Size(1280, 900),
+            ),
             child: child!,
           );
         },
