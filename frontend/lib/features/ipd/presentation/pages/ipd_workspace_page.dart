@@ -36,6 +36,7 @@ import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/ipd_actions/ipd_actions.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class IpdWorkspacePage extends ConsumerStatefulWidget {
   const IpdWorkspacePage({this.initialQuery, super.key});
@@ -279,7 +280,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
         if (sectionValue.isNotEmpty) 'section': sectionValue,
       },
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   static String _sectionToQueryValue(IpdWorkspaceSection section) {

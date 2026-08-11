@@ -40,6 +40,7 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 part '../widgets/patient_detail_dialog_body.dart';
 
@@ -294,7 +295,7 @@ class _PatientRegistryContentState
     final String location = AppRoutes.patients.location(
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   Future<void> _handleTabChanged(PatientRegistrySection section) async {

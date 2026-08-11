@@ -22,6 +22,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class MortuaryWorkspacePage extends ConsumerWidget {
   const MortuaryWorkspacePage({this.initialQuery, super.key});
@@ -219,7 +220,7 @@ class _MortuaryWorkspaceContentState
         if (queue != null && queue.isNotEmpty) 'queue': queue,
       },
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   @override

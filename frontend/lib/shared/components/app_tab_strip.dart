@@ -77,7 +77,6 @@ class AppTabStrip extends StatelessWidget {
       tabs: tabs,
       selectedId: selectedId,
       onTabTapped: onTabTapped,
-      variant: variant,
     );
 
     // Hairline sits behind the tab row so the selected primary underline paints
@@ -136,7 +135,6 @@ class _AppTabOverflowRow extends StatelessWidget {
     required this.tabs,
     required this.selectedId,
     required this.onTabTapped,
-    required this.variant,
   });
 
   static const double _moreButtonWidth = 48;
@@ -145,7 +143,6 @@ class _AppTabOverflowRow extends StatelessWidget {
   final List<AppTabItem> tabs;
   final String? selectedId;
   final ValueChanged<String> onTabTapped;
-  final AppTabStripVariant variant;
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +160,6 @@ class _AppTabOverflowRow extends StatelessWidget {
           theme: theme,
           textDirection: Directionality.of(context),
           textScaler: MediaQuery.textScalerOf(context),
-          nested: variant == AppTabStripVariant.nested,
         );
 
         return Row(
@@ -188,7 +184,6 @@ class _AppTabOverflowRow extends StatelessWidget {
                       isSelected:
                           selectedId ==
                           tabs[partition.visibleIndices[visiblePos]].id,
-                      variant: variant,
                       onTap: () => onTabTapped(
                         tabs[partition.visibleIndices[visiblePos]].id,
                       ),
@@ -309,7 +304,6 @@ _TabPartition _partitionTabs({
   required ThemeData theme,
   required TextDirection textDirection,
   required TextScaler textScaler,
-  bool nested = false,
 }) {
   if (tabs.isEmpty) {
     return const _TabPartition(
@@ -326,7 +320,6 @@ _TabPartition _partitionTabs({
         theme: theme,
         textDirection: textDirection,
         textScaler: textScaler,
-        nested: nested,
       ),
   ];
   final double totalWidth =
@@ -396,19 +389,20 @@ double _estimateTabWidth({
   required ThemeData theme,
   required TextDirection textDirection,
   required TextScaler textScaler,
-  bool nested = false,
 }) {
-  final double horizontalPad = nested ? theme.spacing.xs : theme.spacing.sm;
+  // Density matches the Reporting underline chrome for both variants.
+  final double horizontalPad = theme.spacing.xs;
   double width = horizontalPad * 2;
   if (tab.icon != null) {
-    width += (nested ? 18.0 : 20.0) + theme.spacing.xs;
+    width += 18.0 + theme.spacing.xs;
   }
 
   final TextPainter labelPainter = TextPainter(
     text: TextSpan(
       text: tab.label.trim(),
-      style: (nested ? theme.textTheme.labelMedium : theme.textTheme.labelLarge)
-          ?.copyWith(fontWeight: AppFontWeight.emphasis),
+      style: theme.textTheme.labelMedium?.copyWith(
+        fontWeight: AppFontWeight.emphasis,
+      ),
     ),
     maxLines: 1,
     textDirection: textDirection,
@@ -690,7 +684,6 @@ class _AppTabChip extends StatefulWidget {
     required this.isSelected,
     required this.onTap,
     required this.countTone,
-    required this.variant,
     this.icon,
     this.count,
     this.tooltip,
@@ -702,7 +695,6 @@ class _AppTabChip extends StatefulWidget {
   final AppTabCountTone countTone;
   final bool isSelected;
   final VoidCallback onTap;
-  final AppTabStripVariant variant;
   final String? tooltip;
 
   @override
@@ -720,7 +712,8 @@ class _AppTabChipState extends State<_AppTabChip> {
     final String semanticsLabel = widget.count == null
         ? fullLabel
         : '$fullLabel (${widget.count})';
-    final bool nested = widget.variant == AppTabStripVariant.nested;
+    // Match Reporting / Analytics nested chrome for every variant: primary
+    // underline + muted inactive labels (no filled / pill selected chrome).
     final Color foregroundColor = widget.isSelected
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
@@ -728,20 +721,8 @@ class _AppTabChipState extends State<_AppTabChip> {
         ? AppFontWeight.strong
         : AppFontWeight.emphasis;
     final Color hoverFill = _isHovered
-        ? colorScheme.onSurface.withValues(alpha: nested ? 0.04 : 0.06)
+        ? colorScheme.onSurface.withValues(alpha: 0.04)
         : Colors.transparent;
-    final double iconSize = nested ? 18 : 20;
-    final TextStyle? labelStyle =
-        (nested ? theme.textTheme.labelMedium : theme.textTheme.labelLarge)
-            ?.copyWith(
-              color: foregroundColor,
-              fontWeight: fontWeight,
-              letterSpacing: !nested && widget.isSelected ? 0.1 : null,
-            );
-    final EdgeInsetsGeometry padding = EdgeInsets.symmetric(
-      horizontal: nested ? theme.spacing.xs : theme.spacing.sm,
-      vertical: theme.spacing.xs,
-    );
 
     final Widget chip = Semantics(
       button: true,
@@ -755,12 +736,8 @@ class _AppTabChipState extends State<_AppTabChip> {
           color: Colors.transparent,
           child: InkWell(
             onTap: widget.onTap,
-            splashColor: colorScheme.primary.withValues(
-              alpha: nested ? 0.08 : 0.10,
-            ),
-            highlightColor: colorScheme.primary.withValues(
-              alpha: nested ? 0.04 : 0.06,
-            ),
+            splashColor: colorScheme.primary.withValues(alpha: 0.08),
+            highlightColor: colorScheme.primary.withValues(alpha: 0.04),
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: hoverFill,
@@ -777,23 +754,25 @@ class _AppTabChipState extends State<_AppTabChip> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 40),
                 child: Padding(
-                  padding: padding,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: theme.spacing.xs,
+                    vertical: theme.spacing.xs,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       if (widget.icon != null) ...<Widget>[
-                        Icon(
-                          widget.icon,
-                          size: iconSize,
-                          color: foregroundColor,
-                        ),
+                        Icon(widget.icon, size: 18, color: foregroundColor),
                         SizedBox(width: theme.spacing.xs),
                       ],
                       Text(
                         fullLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: labelStyle,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: foregroundColor,
+                          fontWeight: fontWeight,
+                        ),
                       ),
                       if (widget.count != null)
                         _TabCountBadge(

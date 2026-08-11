@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -24,6 +23,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class BiomedicalWorkspacePage extends ConsumerWidget {
   const BiomedicalWorkspacePage({this.initialQuery, super.key});
@@ -171,7 +171,7 @@ class _BiomedicalWorkspaceContentState
         if (panel != BiomedicalPanels.registry) 'panel': panel,
       },
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   @override

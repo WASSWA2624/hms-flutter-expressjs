@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -22,6 +21,7 @@ import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_suppo
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_to_post_panel.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 /// Accounts desk shell (`/accounts`).
 ///
@@ -191,7 +191,8 @@ class _AccountsWorkspaceContentState
             section == AccountsDeskSection.books)) {
       params['id'] = id;
     }
-    GoRouter.of(context).replace<void>(
+    syncWorkspaceLocation(
+      context,
       AppRoutes.accounts.location(queryParameters: params),
     );
   }

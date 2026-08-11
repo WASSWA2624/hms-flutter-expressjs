@@ -24,6 +24,7 @@ import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
 import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 part '../widgets/theater_workspace_widgets.dart';
 
@@ -232,7 +233,7 @@ class _TheaterWorkspaceContentState
     final String location = AppRoutes.theater.location(
       queryParameters: <String, String>{if (tab != 'all') 'section': tab},
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   void _applyTabFilter(TheaterSection section) {

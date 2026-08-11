@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -25,6 +24,7 @@ import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 const String _physiotherapyFollowUpsWorklistTabId = 'followUpsWorklist';
 
@@ -136,7 +136,7 @@ class _PhysiotherapyWorkspacePageState
     final String location = AppRoutes.physiotherapy.location(
       queryParameters: params,
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   void _onTabChanged(PhysiotherapyQueueScope scope) {

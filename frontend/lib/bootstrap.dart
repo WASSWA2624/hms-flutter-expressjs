@@ -21,8 +21,8 @@ Future<void> bootstrap({
   registerWorkflowDialogOpeners();
   final String initialLocation = _platformInitialLocation();
 
-  runApp(ProviderScope(key: UniqueKey(), child: const StartupLoadingApp()));
-
+  // Single runApp only: a prior MaterialApp (startup splash) then
+  // MaterialApp.router desyncs Flutter web's browser URL from GoRouter.
   try {
     final startupResult = await startupInitializer.initialize(config: config);
 

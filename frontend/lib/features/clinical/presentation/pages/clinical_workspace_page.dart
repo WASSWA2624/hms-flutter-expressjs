@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -34,6 +33,7 @@ import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_registry.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class ClinicalWorkspacePage extends ConsumerWidget {
   const ClinicalWorkspacePage({this.initialQuery, super.key});
@@ -223,7 +223,7 @@ class _ClinicalWorkspaceContentState
     final String location = AppRoutes.clinical.location(
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   @override

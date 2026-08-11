@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -40,6 +39,7 @@ import 'package:hosspi_hms/shared/lab_catalog/lab_catalog.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 import 'package:hosspi_hms/shared/radiology_catalog/radiology_catalog_dialogs.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 part 'radiology_workspace_page.configurations.dart';
 part 'radiology_workspace_page.detail_cells.dart';
@@ -239,7 +239,7 @@ class _RadiologyWorkspaceContentState
     final String location = AppRoutes.radiology.location(
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   static String _sectionToQueryValue(RadiologyDeskSection section) {

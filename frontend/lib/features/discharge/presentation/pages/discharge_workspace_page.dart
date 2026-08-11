@@ -30,6 +30,7 @@ import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class DischargeWorkspacePage extends ConsumerStatefulWidget {
   const DischargeWorkspacePage({super.key, this.initialQuery});
@@ -187,7 +188,7 @@ class _DischargeWorkspaceContentState
     final String location = AppRoutes.discharge.location(
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   static String _sectionToQueryValue(DischargeDeskSection section) {

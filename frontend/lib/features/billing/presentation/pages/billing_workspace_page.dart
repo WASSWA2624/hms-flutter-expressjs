@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -40,6 +39,7 @@ import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class BillingWorkspacePage extends ConsumerWidget {
   const BillingWorkspacePage({super.key, this.initialQuery});
@@ -279,7 +279,7 @@ class _BillingWorkspaceContentState
       params['overdue'] = 'yes';
     }
     final String location = AppRoutes.billing.location(queryParameters: params);
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   void _updateUrlForPriceBook() {
@@ -287,7 +287,7 @@ class _BillingWorkspaceContentState
     final String location = AppRoutes.billing.location(
       queryParameters: const <String, String>{'section': 'prices'},
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   void _selectQueue(BillingQueueType queue) {
@@ -1323,7 +1323,7 @@ Future<void> _openToIssueQueue(BuildContext context, WidgetRef ref) async {
   final String location = AppRoutes.billing.location(
     queryParameters: const <String, String>{'section': 'issue'},
   );
-  GoRouter.of(context).replace<void>(location);
+  syncWorkspaceLocation(context, location);
   await ref
       .read(billingWorkspaceControllerProvider.notifier)
       .applyQueue(BillingQueueType.needsIssue);

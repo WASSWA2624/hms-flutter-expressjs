@@ -24,6 +24,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
 import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class IcuWorkspacePage extends ConsumerStatefulWidget {
   const IcuWorkspacePage({super.key, this.initialQuery});
@@ -209,7 +210,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
     final String location = AppRoutes.icu.location(
       queryParameters: <String, String>{if (tab != 'active') 'section': tab},
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   String _sectionLabel(AppLocalizations l10n, IcuWorkspaceSection section) {

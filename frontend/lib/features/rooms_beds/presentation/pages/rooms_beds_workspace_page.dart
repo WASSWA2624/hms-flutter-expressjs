@@ -23,6 +23,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class RoomsBedsWorkspacePage extends ConsumerStatefulWidget {
   const RoomsBedsWorkspacePage({this.initialQuery, super.key});
@@ -206,7 +207,7 @@ class _RoomsBedsWorkspaceContentState
     final String location = AppRoutes.roomsBeds.location(
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   void _handleTabChanged(RoomsBedsSection section) {

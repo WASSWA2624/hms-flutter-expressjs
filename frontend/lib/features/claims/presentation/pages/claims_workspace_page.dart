@@ -25,6 +25,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class ClaimsWorkspacePage extends ConsumerWidget {
   const ClaimsWorkspacePage({this.initialQuery, super.key});
@@ -213,7 +214,7 @@ class _ClaimsWorkspaceContentState
     final String location = AppRoutes.claims.location(
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   static ClaimsQueueFilter _defaultFilterForSection(ClaimsDeskSection section) {

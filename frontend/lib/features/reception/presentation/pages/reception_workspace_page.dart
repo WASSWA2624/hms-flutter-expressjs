@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -31,6 +30,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 /// High-volume front-desk workspace composing Patient Registry + OPD.
 ///
@@ -231,19 +231,11 @@ class _ReceptionWorkspaceContentState
     final String location = AppRoutes.reception.location(
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
-    context.go(location);
+    syncWorkspaceLocation(context, location);
   }
 
   void _replaceUrlForSection(ReceptionDeskSection section) {
-    if (!mounted) {
-      return;
-    }
-    final String tab = receptionDeskSectionToQueryValue(section);
-    GoRouter.of(context).replace<void>(
-      AppRoutes.reception.location(
-        queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
-      ),
-    );
+    _updateUrlForSection(section);
   }
 
   OpdFlowSummary? _findFlow(String id) {
@@ -283,11 +275,9 @@ class _ReceptionWorkspaceContentState
           return;
         }
         final String tab = receptionDeskSectionToQueryValue(_section);
-        GoRouter.of(context).replace<void>(
-          AppRoutes.reception.location(
+        syncWorkspaceLocation(context, AppRoutes.reception.location(
             queryParameters: <String, String>{'section': tab},
-          ),
-        );
+          ),);
       });
     }
 

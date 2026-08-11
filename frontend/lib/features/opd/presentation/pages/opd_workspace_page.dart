@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -25,6 +24,7 @@ import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class OpdWorkspacePage extends ConsumerWidget {
   const OpdWorkspacePage({this.initialQuery, super.key});
@@ -227,7 +227,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     final String location = AppRoutes.opd.location(
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   void _setTablePage(AppPageRequest request) {

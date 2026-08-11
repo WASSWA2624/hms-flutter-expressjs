@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -54,6 +53,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/management/platform_admin_list_config.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class TenantFacilitySetupPage extends ConsumerWidget {
   const TenantFacilitySetupPage({super.key, this.initialQuery});
@@ -553,7 +553,7 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
     final String location = AppRoutes.tenantFacilitySetup.location(
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   void _syncUrlToCurrentSection() {

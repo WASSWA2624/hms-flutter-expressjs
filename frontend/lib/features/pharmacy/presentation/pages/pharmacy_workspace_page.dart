@@ -41,6 +41,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class PharmacyWorkspacePage extends ConsumerWidget {
   const PharmacyWorkspacePage({this.initialQuery, super.key});
@@ -388,7 +389,7 @@ class _PharmacyWorkspaceContentState
     final String location = AppRoutes.pharmacy.location(
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
-    GoRouter.of(context).replace<void>(location);
+    syncWorkspaceLocation(context, location);
   }
 
   static String _sectionToQueryValue(PharmacyDeskSection section) {

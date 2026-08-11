@@ -1,0 +1,76 @@
+---
+description: Shared list-table toolbar, dialogs, columns, and export/print conventions
+alwaysApply: true
+---
+
+# App List Tables
+
+Conventions for every page and dialog that shows a data table via `AppListTable` / `AppSearchBar` (and call-site wrappers). Prefer extending those shared surfaces; do not invent parallel table chrome.
+
+## Toolbar anatomy
+
+1. **Search (when needed):** Place an `AppSearchBar` above the table. Keep built-in speech-to-text (microphone) on the search field enabled unless the surface explicitly disables it.
+2. **Trailing action order (fixed):** After the search field / mic chrome, actions must appear in this order only:
+   1. **Filters**
+   2. **Settings**
+   3. **Export**
+   4. **Print** (only when printing is allowed for that table)
+   5. Context-specific actions (Create, Assign, etc.)
+3. **Labels:** Use exactly `Filters`, `Settings`, `Export`, and `Print`. Do not rename these shared actions per feature.
+4. **Responsive chrome:** On large screens, toolbar and dialog footer actions show icon + label. On small screens, show icon-only unless there is enough space for labels. Dialog header restore/maximize and header close stay icon-only.
+
+## Filters
+
+1. Filters must be comprehensive for the table’s domain: every meaningful field the user can use to narrow rows (including dates/times and related lookup values), not only the currently visible columns.
+2. The Filters control opens the **Advanced filters** dialog:
+   - Title: `Advanced filters` with a leading filter icon.
+   - Body: reuse shared form controls from `frontend/lib/shared/components/` (and shared forms). Do not invent one-off filter widgets.
+   - Arrange filter inputs in a **two-column** responsive grid, grouped by meaning.
+   - Footer actions (right-aligned): **Clear filters** → **Apply filters** → **Close**.
+3. Clearing filters resets draft filter state; Apply commits and closes; Close dismisses without applying pending edits (unless an existing shared dialog API already commits on reset—preserve that shared behavior).
+
+## Settings (column visibility)
+
+1. Settings opens the table column dialog:
+   - Title: `Table Settings` with a leading settings icon.
+   - Body: checkbox list of **all** available columns for that table.
+   - Footer actions (right-aligned): **Reset columns** → **Apply columns** → **Close**.
+2. **Default visible columns:** prefer **5** columns unless the feature has a justified exception (always-visible keys, regulatory minimums, or an explicit default column set).
+3. **Reset columns** restores the table’s default visible set (not “all columns” and not an empty set).
+4. Settings must expose every column the table can show; do not hide optional columns from the dialog.
+
+## Export
+
+1. Export opens the shared export dialog and writes an **Excel** file.
+2. Dialog sections:
+   - **Columns to export:** comprehensive—every exportable field for the row model, not only currently visible columns. Include a section reset that restores the default export column selection.
+   - **Filters:** same comprehensive filter set as the table where practical; arrange inputs in two columns; place **Clear filters** in the filters section header (near the section chevron / collapse control).
+3. Footer actions only: **Close** (or Cancel) and **Export**.
+4. Reuse shared date/text/select filter components; do not duplicate filter UI outside the shared export path.
+
+## Print
+
+1. When Print is present, place it immediately after Export.
+2. Print opens a print-preview surface with enough options to choose sections, items, and columns to include. Keep preview options aligned with what the table/export can represent.
+
+## Cell and layout rules
+
+1. **No body prose in cells:** cells hold short labels, codes, counts, dates, statuses, and compact chips—not paragraphs or multi-sentence descriptions. Put long text in detail panes, dialogs, or progressive disclosure.
+2. **No duplicate columns:** do not show the same fact twice (e.g. raw id beside an identical display id, or the same timestamp in two formats) unless one column is clearly a distinct derived value users need side by side.
+3. **Avoid nesting:** do not nest tables, expanders, or stacked multi-line blocks inside cells unless the domain truly requires it and a flat column cannot express the data.
+4. **Uniformity:** column alignment, density, status treatment, empty values, and truncation/wrapping must stay consistent across the table and across similar desks.
+
+## Implementation constraints
+
+- Build on `AppListTable`, `AppListTableSearch`, `AppSearchBar`, `AppListTableExportDialog`, and existing dialog/button primitives.
+- Respect RBAC/ABAC: hide Export, Print, and other actions the user cannot perform; do not show disabled “no access” placeholders for routine unauthorized actions.
+- Keep loading, empty, error, and success feedback explicit for search, filter apply, export, and print.
+- Stay responsive on mobile, tablet, and desktop; support light and dark themes via theme tokens.
+
+## Relevant files
+
+- `frontend/lib/shared/components/app_list_table.dart`
+- `frontend/lib/shared/components/app_list_table_export.dart`
+- `frontend/lib/shared/components/app_search_bar.dart`
+- `frontend/lib/shared/components/app_dialog.dart`
+- Feature `*_table_support.dart` / workspace table call sites under `frontend/lib/features/`
