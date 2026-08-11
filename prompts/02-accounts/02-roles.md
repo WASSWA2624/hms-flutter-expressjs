@@ -2,7 +2,7 @@
 
 ## Context
 
-Define which **roles** receive Accounts workspace rights (`accounts:read`, `accounts:write`, and where appropriate `financial:approve`) for `/accounts` ∩ `facility-accounts`. Source of truth: root `accounts.md` §9 plus product rule: **all accountants and admins have Accounts rights; HR roles do not.** Pair with `01-permissions.md` for catalog keys and gates.
+Define which **roles** receive Accounts workspace rights (`accounts:read`, `accounts:write`, and where appropriate `financial:approve`) for `/accounts` ∩ `facility-accounts`. Source of truth: root `accounts.md` §9, §§17–19, plus product rule: **all accountants and admins have Accounts rights; HR roles do not.** Pair with `01-permissions.md` for catalog keys and gates.
 
 ## Requirements
 
@@ -25,6 +25,7 @@ Define which **roles** receive Accounts workspace rights (`accounts:read`, `acco
    | Other non-admin packs | no (default) | no (default) | Unless separately assigned |
 
 10. After role-map changes, verify demo accountant can enter `/accounts` and HR demo users cannot, when `facility-accounts` is entitled.
+11. Role pack labels, Access admin role UI, and seeded demo copy must not surface raw UUIDs for roles or users — use role keys, display names, and `human_friendly_id` (`accounts.md` §19).
 
 ## Constraints
 

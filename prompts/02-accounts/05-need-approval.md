@@ -2,7 +2,7 @@
 
 ## Context
 
-Implement the **Need approval** desk section (`?section=approvals`) on `/accounts` per `accounts.md`. This queue lists journal posts, voids, reversals, and period close awaiting approval. Source of truth: root `accounts.md` §§2–8, 9–11.
+Implement the **Need approval** desk section (`?section=approvals`) on `/accounts` per `accounts.md`. This queue lists journal posts, voids, reversals, and period close awaiting approval. Source of truth: root `accounts.md` §§2–8, 9–11, 17–19.
 
 ## Requirements
 
@@ -14,17 +14,20 @@ Implement the **Need approval** desk section (`?section=approvals`) on `/account
 6. Show empty copy *No pending approvals.* when empty; show loading, error, and success (snackbar) states.
 7. Row Next is **Approve** when the user has `accounts:write` ∩ `financial:approve`; omit when unauthorized. Happy path: Next → Approve modal → save → snackbar → refresh. Do not require Detail first.
 8. **Reject** is available only inside Detail (not as row Next). Omit Reject when unauthorized.
-9. Row click opens shared Detail (approval kind) with capable secondary actions.
-10. Gate tab with (`accounts:read` ∪ `accounts:write`) ∩ `facility-accounts`. Omit unauthorized Approve / Reject; no disabled “no access” chrome.
-11. Keep count tone **warning**. Enable realtime + light poll while active.
-12. After approve / reject mutations, remove or update rows and synchronize strip counts.
+9. Row click opens shared Detail (approval kind) with capable secondary actions including **Print** when authorized.
+10. **Print** opens shared print preview with approval-packet section options and a well-laid-out printout (`accounts.md` §17); never print silently.
+11. Gate tab with (`accounts:read` ∪ `accounts:write`) ∩ `facility-accounts`. Omit unauthorized Approve / Reject; no disabled “no access” chrome.
+12. Keep count tone **warning**. Enable realtime + light poll while active.
+13. After approve / reject mutations, remove or update rows and synchronize strip counts.
+14. Never display raw UUIDs — use journal numbers, period labels, request labels (`accounts.md` §19).
 
 ## Constraints
 
 - Do not put Approve / Reject as trailing strip actions.
 - Do not put Journal, Post all, Open period, Close period, or Add on this tab.
 - Do not require Detail before Approve.
-- Reuse Accounts workspace page, controller, approval access requirement, Detail shell, and Approve / Reject dialogs.
+- Do not skip print preview for Print.
+- Reuse Accounts workspace page, controller, approval access requirement, Detail shell, Approve / Reject dialogs, and `AppPrintPreviewWorkspace`.
 - No unrelated refactoring outside this section’s surface.
 
 ## Acceptance Criteria
@@ -37,18 +40,21 @@ Implement the **Need approval** desk section (`?section=approvals`) on `/account
 - [ ] AC6: Reject appears only in Detail and only when `accounts:write` ∩ `financial:approve`. (R8, R10)
 - [ ] AC7: Without approve permission, Approve / Reject are absent (not disabled); tab may still be readable. (R7, R10)
 - [ ] AC8: Row click opens shared Detail for the approval request. (R9)
-- [ ] AC9: Layout remains usable on mobile, tablet, and desktop in light and dark themes. (R3)
+- [ ] AC9: Print opens preview with section toggles; printout is branded and well laid out; no silent print. (R10)
+- [ ] AC10: No raw UUIDs appear in Need approval UI, Detail, or print. (R14)
+- [ ] AC11: Layout remains usable on mobile, tablet, and desktop in light and dark themes. (R3)
 
 ## Verification
 
 - Permissions tests: Approve / Reject absent without `financial:approve` ∩ `accounts:write`; present when both apply.
-- Flow tests: Approve from Next; Reject from Detail; list membership updates.
-- Manual check: empty/loading/error, optional Type/By/Reason/Period columns, viewports, themes.
-- Confirm no trailing actions on this tab.
+- Flow tests: Approve from Next; Reject from Detail; list membership updates; Print → preview.
+- Manual check: empty/loading/error, optional Type/By/Reason/Period columns, print layout, viewports, themes.
+- Confirm no trailing actions on this tab; confirm no UUID strings in UI/print.
 
 ## Relevant Files
 
-- `accounts.md`
+- `accounts.md` (§§17–19)
+- `frontend/lib/shared/printing/app_print_preview.dart`
 - `frontend/lib/features/accounts/presentation/pages/accounts_workspace_page.dart`
 - `frontend/lib/features/accounts/presentation/accounts_access.dart`
 - `frontend/lib/features/accounts/presentation/controllers/accounts_workspace_controller.dart`

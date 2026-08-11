@@ -2,7 +2,7 @@
 
 ## Context
 
-Implement the **Patient ledgers** desk section (`?section=ledgers`) on `/accounts` per `accounts.md`. This is the patient money browse — invoiced, paid, and outstanding balances. It is not an invoice queue and not facility GL. Charge and collect stay on Billing; Pay deep-links to Billing Collect due. Source of truth: root `accounts.md` §§2–8, 9–11.
+Implement the **Patient ledgers** desk section (`?section=ledgers`) on `/accounts` per `accounts.md`. This is the patient money browse — invoiced, paid, and outstanding balances. It is not an invoice queue and not facility GL. Charge and collect stay on Billing; Pay deep-links to Billing Collect due. Source of truth: root `accounts.md` §§2–8, 9–11, 17–19.
 
 ## Requirements
 
@@ -16,16 +16,19 @@ Implement the **Patient ledgers** desk section (`?section=ledgers`) on `/account
 8. **Pay** deep-links to `/billing?section=collect&action=pay&patientId=` — do not open a collect UI inside Accounts.
 9. Row click and Next **Ledger** open the shared **Patient ledger** dialog (summary Invoiced · Paid · Balance + entry list). Same dialog as Detail → Ledger.
 10. Inside Patient ledger, show **Pay** when balance and billing write apply; do not offer Charge (Charge stays on Billing Open work).
-11. Deep link `?section=ledgers&patientId=` opens the patient ledger dialog after load.
-12. Gate tab with (`accounts:read` ∪ `accounts:write`) ∩ `facility-accounts`. Patient ledgers read requires `accounts:read`. Omit unauthorized Pay / Ledger; no disabled “no access” chrome.
-13. Keep count as patients with balance. Enable realtime + light poll while active.
+11. Patient ledger **Print** opens shared print preview with patient-ledger section options and a well-laid-out printout (`accounts.md` §17); never print silently.
+12. Deep link `?section=ledgers&patientId=` opens the patient ledger dialog after load (prefer patient friendly id / MRN).
+13. Gate tab with (`accounts:read` ∪ `accounts:write`) ∩ `facility-accounts`. Patient ledgers read requires `accounts:read`. Omit unauthorized Pay / Ledger; no disabled “no access” chrome.
+14. Keep count as patients with balance. Enable realtime + light poll while active.
+15. Never display raw UUIDs — use patient name/MRN and invoice-friendly refs (`accounts.md` §19).
 
 ## Constraints
 
 - Do not host Collect due, Charge, invoices, or claims UI on this tab.
 - Do not put Journal / Post all / Open period / Close period / Add as trailing on this tab.
 - Do not confuse Patient ledgers with General ledger.
-- Reuse Accounts workspace page, `accounts_ledgers_panel`, shared Patient ledger dialog, and access gates.
+- Do not skip print preview for Patient ledger Print.
+- Reuse Accounts workspace page, `accounts_ledgers_panel`, shared Patient ledger dialog, access gates, and `AppPrintPreviewWorkspace`.
 - No unrelated refactoring outside this section’s surface.
 
 ## Acceptance Criteria
@@ -36,20 +39,23 @@ Implement the **Patient ledgers** desk section (`?section=ledgers`) on `/account
 - [ ] AC4: Empty state shows *No patients match.*; loading and error states are visible. (R6)
 - [ ] AC5: Balance → authorized **Pay** navigates to Billing Collect due; unauthorized Pay is absent. (R7, R8, R12)
 - [ ] AC6: Row click / Next **Ledger** opens the shared Patient ledger dialog. (R9)
-- [ ] AC7: Patient ledger may show Pay when balance + billing write; Charge is absent. (R10, R12)
-- [ ] AC8: `patientId` deep link opens the patient ledger dialog. (R11)
-- [ ] AC9: Layout remains usable on mobile, tablet, and desktop in light and dark themes. (R3)
+- [ ] AC7: Patient ledger may show Pay when balance + billing write; Charge is absent. (R10, R13)
+- [ ] AC8: `patientId` deep link opens the patient ledger dialog. (R12)
+- [ ] AC9: Patient ledger Print opens preview with section toggles; printout is branded and well laid out; no silent print. (R11)
+- [ ] AC10: No raw UUIDs appear in Patient ledgers UI, dialog, or print. (R15)
+- [ ] AC11: Layout remains usable on mobile, tablet, and desktop in light and dark themes. (R3)
 
 ## Verification
 
 - Permissions tests: tab requires accounts access; Pay absent without billing write ∩ `billing-payments`; Ledger present with `accounts:read`.
-- Flow tests: Pay deep-link target; Ledger dialog; `patientId` deep link.
-- Manual check: empty/loading/error, clearance filter, viewports, themes.
-- Confirm no Charge / Collect due UI inside Accounts.
+- Flow tests: Pay deep-link target; Ledger dialog; Print → preview; `patientId` deep link.
+- Manual check: empty/loading/error, clearance filter, print layout, viewports, themes.
+- Confirm no Charge / Collect due UI inside Accounts; confirm no UUID strings.
 
 ## Relevant Files
 
-- `accounts.md`
+- `accounts.md` (§§17–19)
+- `frontend/lib/shared/printing/app_print_preview.dart`
 - `billing.md` (Pay target only)
 - `frontend/lib/features/accounts/presentation/pages/accounts_workspace_page.dart`
 - `frontend/lib/features/accounts/presentation/accounts_access.dart`

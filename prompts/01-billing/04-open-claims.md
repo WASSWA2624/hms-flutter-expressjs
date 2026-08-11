@@ -2,7 +2,7 @@
 
 ## Context
 
-Implement the **Open claims** desk section (`?section=claims`) on `/billing` per `billing.md`. This queue lists insurance claims and pre-authorizations awaiting action. It requires the `insurance-claims` module in addition to billing access. Source of truth: root `billing.md` §§2–8, 9–11.
+Implement the **Open claims** desk section (`?section=claims`) on `/billing` per `billing.md`. This queue lists insurance claims and pre-authorizations awaiting action. It requires the `insurance-claims` module in addition to billing access. Source of truth: root `billing.md` §§2–8, 9–11, 17–19.
 
 ## Requirements
 
@@ -15,16 +15,20 @@ Implement the **Open claims** desk section (`?section=claims`) on `/billing` per
 7. Show empty copy *No open claims.* when empty; show loading, error, and success (snackbar) states.
 8. Row Next is **Submit**, **Settle**, or **Auth** by row kind when authorized; omit when unauthorized. Happy path: Next → matching modal → save → snackbar → refresh. Do not require Detail first.
 9. Claim mutations require `billing:write` ∩ `insurance-claims`. Omit unauthorized Next / Detail claim actions; no disabled “no access” chrome.
-10. Row click opens shared Detail (claim / pre-auth kind) with capable secondary actions.
-11. Keep count tone **warning**. Enable realtime + light poll while active.
-12. After claim mutations, synchronize list membership and strip counts.
+10. Row click opens shared Detail (claim / pre-auth kind) with capable secondary actions including **Print** when authorized.
+11. **Print** opens shared print preview with claim/pre-auth section options and a well-laid-out printout (`billing.md` §17); never print silently.
+12. Claim create/update-style settles that mutate identifiable claim fields run similarity review when near-duplicate open claims exist (`billing.md` §18).
+13. Keep count tone **warning**. Enable realtime + light poll while active.
+14. After claim mutations, synchronize list membership and strip counts.
+15. Never display raw UUIDs — use invoice numbers, patient name/MRN, claim/scheme codes (`billing.md` §19).
 
 ## Constraints
 
 - Do not show Open claims without `insurance-claims`.
 - Do not add trailing Charge / Pay / Close / Issue all on this tab.
 - Do not reimplement a separate Claims workspace tab inside Billing beyond this section.
-- Reuse Billing workspace page, controller, claims access requirements, Detail shell, and claim form dialogs.
+- Do not skip print preview or similarity on claim create/update paths.
+- Reuse Billing workspace page, controller, claims access requirements, Detail shell, claim form dialogs, `AppPrintPreviewWorkspace`, and `AppSimilarity*` patterns.
 - No unrelated refactoring outside this section’s surface.
 
 ## Acceptance Criteria
@@ -37,18 +41,23 @@ Implement the **Open claims** desk section (`?section=claims`) on `/billing` per
 - [ ] AC6: Authorized Next Submit / Settle / Auth completes in one modal → save → snackbar → refresh without Detail. (R8, R12)
 - [ ] AC7: Unauthorized claim actions are absent (not disabled). (R9)
 - [ ] AC8: Row click opens shared Detail for claim / pre-auth. (R10)
-- [ ] AC9: Layout remains usable on mobile, tablet, and desktop in light and dark themes. (R4)
+- [ ] AC9: Print opens preview with section toggles; printout is branded and well laid out; no silent print. (R11)
+- [ ] AC10: Claim create/update paths run similarity review when matches exist. (R12)
+- [ ] AC11: No raw UUIDs appear in Open claims UI, Detail, or print. (R15)
+- [ ] AC12: Layout remains usable on mobile, tablet, and desktop in light and dark themes. (R4)
 
 ## Verification
 
 - Permissions tests: tab absent without `insurance-claims`; present with billing read + insurance module; mutations absent without write ∩ insurance.
-- Flow tests: Submit, Settle, and Auth happy paths refresh the queue.
-- Manual check: empty/loading/error, optional columns via settings, viewports, themes.
-- Confirm no trailing actions on this tab.
+- Flow tests: Submit, Settle, and Auth happy paths refresh the queue; Print → preview.
+- Manual check: empty/loading/error, optional columns via settings, print layout, viewports, themes.
+- Confirm no trailing actions on this tab; confirm no UUID strings in UI/print.
 
 ## Relevant Files
 
-- `billing.md`
+- `billing.md` (§§17–19)
+- `frontend/lib/shared/printing/app_print_preview.dart`
+- `frontend/lib/shared/components/app_similarity.dart`
 - `frontend/lib/features/billing/presentation/pages/billing_workspace_page.dart`
 - `frontend/lib/features/billing/presentation/billing_access.dart`
 - `frontend/lib/features/billing/presentation/controllers/billing_workspace_controller.dart`

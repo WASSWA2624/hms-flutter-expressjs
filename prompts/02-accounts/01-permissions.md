@@ -2,7 +2,7 @@
 
 ## Context
 
-Define and wire **Accounts** RBAC/ABAC for the `/accounts` workspace (`facility-accounts` module) per `accounts.md` §9 and Prompt Definition Standards. Backend remains authoritative. Unauthorized UI, data, routes, and actions must not render. This prompt covers permission catalog keys, module entitlement, access gates, and UI omission rules — not individual tab chrome (see `03`–`09`).
+Define and wire **Accounts** RBAC/ABAC for the `/accounts` workspace (`facility-accounts` module) per `accounts.md` §9, §§17–19 (identifiers), and Prompt Definition Standards. Backend remains authoritative. Unauthorized UI, data, routes, and actions must not render. This prompt covers permission catalog keys, module entitlement, access gates, and UI omission rules — not individual tab chrome (see `03`–`09`).
 
 ## Requirements
 
@@ -20,6 +20,7 @@ Define and wire **Accounts** RBAC/ABAC for the `/accounts` workspace (`facility-
     - `accounts:write` — create/post journals, reverse/void/send, open/close periods, and mutate chart of accounts.
 11. Cover loading, empty, error, success, and validation states on gated surfaces; after permission-sensitive mutations, synchronize workspace state.
 12. Keep Billing and Reporting permissions separate: Accounts must not grant `billing:*` by implication except where Pay explicitly reuses billing write ∩ `billing-payments`.
+13. Permission catalog metadata, Access admin pickers, and any Accounts-gated chrome must never display raw UUIDs for permissions, modules, or roles — use stable keys / display names (`accounts.md` §19).
 
 ## Constraints
 
