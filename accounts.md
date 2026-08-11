@@ -21,11 +21,11 @@ Source of truth for the **Accounts** workspace. Mirror **Human resources** (`/hr
 
 ## UX principles (non-negotiable)
 
-1. **Short labels** — tab and button text is 1–2 words; tooltips carry the longer explanation.
+1. **Informative short labels** — tab labels use **up to 2 words** so the strip stays scannable but clear. Tooltips carry a full descriptive sentence. Row Next / trailing buttons stay 1–2 words with tooltips.
 2. **No duplicate surfaces** — each capability has one home. Do not repeat the same trailing action on every tab. Do not add a second tab that only restates another queue.
 3. **Short flows** — happy path is **row Next action → one modal → save**. Detail dialog is for review + secondary actions, not a required stop.
 4. **Progressive disclosure** — tables stay lean (≤5 default columns). Extra columns via Table settings. Extra actions inside the detail dialog.
-5. **Adaptability** — fewer tabs, shared table contract, shared detail shell, shared ledger dialogs. New posting sources (e.g. Billing handoff) plug into Work/Journals without new screens. Analytics stays on Reporting.
+5. **Adaptability** — fewer tabs, shared table contract, shared detail shell, shared ledger dialogs. New posting sources (e.g. Billing handoff) plug into Open work / To post without new screens. Analytics stays on Reporting.
 
 ---
 
@@ -36,7 +36,7 @@ AppAccessGate
 └── AsyncStateScaffold ("Accounts")
     └── ResponsivePage (dataHeavy, scrollable: false)
         └── Column
-            ├── AppTabStrip  (short label + count)
+            ├── AppTabStrip  (≤2-word label + count; tooltip on hover/focus)
             └── Expanded → one table / panel
 ```
 
@@ -44,8 +44,8 @@ Rules:
 
 1. No app-bar trailing actions.
 2. First viewport = strip + one body. No KPI cards above the table.
-3. Count tones: Work = info · Journals/Approvals/Books = warning · Books overdue/open-period risk uses danger badge on the **Overdue** / **Open** filter chip, not a separate tab.
-4. Fallback tab when unauthorized: **Work**.
+3. Count tones: Open work = info · To post / Need approval / Close books = warning · Close books overdue/open-period risk uses danger badge on the **Overdue** / **Open** filter chip, not a separate tab.
+4. Fallback tab when unauthorized: **Open work**.
 5. Snackbars for mutations; no sticky banner between strip and table.
 6. Realtime + light poll on the active section.
 
@@ -57,19 +57,19 @@ Rules:
 
 ---
 
-## 2. Tabs (short labels)
+## 2. Tabs (≤2-word labels + tooltips)
 
 `AccountsDeskSection` · URL `/accounts?section=<slug>` (alias `?tab=`).
 
 | # | Label | Tooltip | Enum | `?section=` | Body | Count |
 |---|---|---|---|---|---|---|
-| 1 | **Work** | Open accounting work across queues | `work` | `work` | Work queue | Open work |
-| 2 | **Journals** | Drafts ready to post | `journals` | `journals` | Work queue | Drafts |
-| 3 | **Approvals** | Post, void, reverse, close | `approvals` | `approvals` | Work queue | Pending |
-| 4 | **GL** | General ledger by account | `gl` | `gl` | Account table | With activity |
-| 5 | **Ledgers** | Patient balances | `ledgers` | `ledgers` | Patient table | With balance |
-| 6 | **Chart** | Chart of accounts | `chart` | `chart` | CRUD table | Active |
-| 7 | **Books** | Periods & close | `books` | `books` | Period table | Open periods |
+| 1 | **Open work** | All accounting items that still need action across journals, approvals, and period tasks | `work` | `work` | Work queue | Open work |
+| 2 | **To post** | Draft journal entries ready to post to the books | `journals` | `journals` | Work queue | Drafts |
+| 3 | **Need approval** | Journal posts, voids, reversals, and period close awaiting approval | `approvals` | `approvals` | Work queue | Pending |
+| 4 | **General ledger** | Facility account balances and activity by GL account | `gl` | `gl` | Account table | With activity |
+| 5 | **Patient ledgers** | Patient invoiced, paid, and outstanding balances | `ledgers` | `ledgers` | Patient table | With balance |
+| 6 | **Account chart** | Chart of accounts codes, types, and status | `chart` | `chart` | CRUD table | Active |
+| 7 | **Close books** | Fiscal periods: open, review checklist, and close | `books` | `books` | Period table | Open periods |
 
 **Aliases (compat):** `all` / `inbox` → work · `journal-entries` / `unposted` / `ready-to-post` → journals · `approval-required` → approvals · `general-ledger` / `ledger` → gl · `patient-ledgers` → ledgers · `chart-of-accounts` / `coa` → chart · `periods` / `period-close` / `close` → books · `analytics` → deep-link Reporting & analytics.
 
@@ -77,27 +77,27 @@ Rules:
 
 | Removed | Why | Where it lives now |
 |---|---|---|
-| **Inbox** label | Sounds like email; vague for a books desk | Renamed **Work** (same cross-queue list) |
+| **Inbox** label | Sounds like email; vague for a books desk | Renamed **Open work** (same cross-queue list) |
 | **Analytics** tab | Period totals belong with reporting | **Reporting & analytics** |
-| **Ledger** label alone | Collided with patient Ledgers | Renamed **GL** (facility account browse) |
-| **Postings** tab | Same rows as Work/Journals with source filter | **Work** + Source filter (Billing handoff, Manual, Payroll, …) |
-| **Trial balance** tab | Snapshot of GL | **GL** export · **Books** close checklist · Reporting |
+| One-word **GL** / **Ledgers** / **Chart** / **Books** | Too terse on the strip | **General ledger** · **Patient ledgers** · **Account chart** · **Close books** |
+| **Postings** tab | Same rows as Open work / To post with source filter | **Open work** + Source filter (Billing handoff, Manual, Payroll, …) |
+| **Trial balance** tab | Snapshot of General ledger | **General ledger** export · **Close books** checklist · Reporting |
 | Patient / invoice cashier tabs | Cashier domain | **Billing** (`billing.md`) |
-| Close period on every tab | Duplicate chrome | **Books** only |
-| New journal on many tabs | Duplicate entry points | **Work** only (**Journal**) |
+| Close period on every tab | Duplicate chrome | **Close books** only |
+| New journal on many tabs | Duplicate entry points | **Open work** only (**Journal**) |
 | Post trailing on many tabs | Duplicate of row Post | Row **Post** / detail **Post** only |
-| Long tab names | Slow scanning | 1-word labels above |
+| Labels longer than 2 words | Slow scanning | Cap at 2 words; put the rest in the tooltip |
 
 ---
 
 ## 3. Shared work-queue contract
 
-Used by **Work · Journals · Approvals**.
+Used by **Open work · To post · Need approval**.
 
 | Control | Spec |
 |---|---|
 | **Search** | ~350ms debounce. Hint: *Account, journal, reference…* |
-| **Filters** | Shared sheet. Groups: Account · Journal · Source · Status · Period · Posted date. **Books**-related age only on Books. **Ledgers** uses patient filters (separate table contract below). |
+| **Filters** | Shared sheet. Groups: Account · Journal · Source · Status · Period · Posted date. **Close books**-related age only on Close books. **Patient ledgers** uses patient filters (separate table contract below). |
 | **Status choices** | Only statuses that exist on that tab (no global dump). |
 | **Table settings** | Persist `accounts_<section>_v1` |
 | **Export** | Current filtered rows |
@@ -109,24 +109,24 @@ Used by **Work · Journals · Approvals**.
 
 | ID | Header | Default on |
 |---|---|---|
-| `account` | Account | GL, Chart; optional on queues |
-| `patient` | Patient | Ledgers |
-| `journal` | Journal | Work, Journals, Approvals |
-| `source` | Source | Work (optional elsewhere) |
-| `period` | Period | Journals, Approvals, Books |
-| `amount` | Amount | Work, Journals, Approvals |
-| `status` | Status | all queues, Chart, Books |
-| `type` | Type | Approvals (request type); Chart (account type) |
-| `balance` | Balance | GL, Ledgers |
-| `invoiced` | Invoiced | Ledgers |
-| `paid` | Paid | Ledgers |
-| `next` | Next | queues / Ledgers when user can act |
+| `account` | Account | General ledger, Account chart; optional on queues |
+| `patient` | Patient | Patient ledgers |
+| `journal` | Journal | Open work, To post, Need approval |
+| `source` | Source | Open work (optional elsewhere) |
+| `period` | Period | To post, Need approval, Close books |
+| `amount` | Amount | Open work, To post, Need approval |
+| `status` | Status | all queues, Account chart, Close books |
+| `type` | Type | Need approval (request type); Account chart (account type) |
+| `balance` | Balance | General ledger, Patient ledgers |
+| `invoiced` | Invoiced | Patient ledgers |
+| `paid` | Paid | Patient ledgers |
+| `next` | Next | queues / Patient ledgers when user can act |
 
 ---
 
 ## 4. Tab specs
 
-### 4.1 Work (`work`)
+### 4.1 Open work (`work`)
 
 Cross-queue list for “what needs me next.” Includes Billing handoffs as a **source**, not a separate desk. Not an email inbox.
 
@@ -138,7 +138,7 @@ Cross-queue list for “what needs me next.” Includes Billing handoffs as a **
 | **Next priority** | Approve → Post → Reverse → Void → Close → Open GL · Open patient ledger |
 | **Row click** | Detail |
 
-### 4.2 Journals (`journals`)
+### 4.2 To post (`journals`)
 
 Draft / unposted journals only.
 
@@ -150,7 +150,7 @@ Draft / unposted journals only.
 | **Next** | **Post** |
 | **Row click** | Detail (secondary: Reverse, Void, Send, GL, Print) |
 
-### 4.3 Approvals (`approvals`)
+### 4.3 Need approval (`approvals`)
 
 | | |
 |---|---|
@@ -161,7 +161,7 @@ Draft / unposted journals only.
 | **Next** | **Approve** (Reject only in Detail) |
 | **Row click** | Detail |
 
-### 4.4 GL (`gl`)
+### 4.4 General ledger (`gl`)
 
 Facility general ledger by account — not a second journal queue, not patient money.
 
@@ -170,11 +170,11 @@ Facility general ledger by account — not a second journal queue, not patient m
 | **Columns** | Account · Debit · Credit · Balance · Next |
 | **Optional** | Type · Period · Updated |
 | **Empty** | *No accounts match.* |
-| **Trailing** | none (Journal lives on Work; Post on Journals/row) |
+| **Trailing** | none (Journal lives on Open work; Post on To post/row) |
 | **Next** | Activity → **GL** · else omit |
 | **Row click** | **Account ledger** dialog (same widget as Detail → GL) |
 
-### 4.5 Ledgers (`ledgers`)
+### 4.5 Patient ledgers (`ledgers`)
 
 Patient money browse — moved from Billing. Not a second invoice queue and not facility GL.
 
@@ -184,11 +184,11 @@ Patient money browse — moved from Billing. Not a second invoice queue and not 
 | **Optional** | Clearance · Updated |
 | **Empty** | *No patients match.* |
 | **Trailing** | none (Charge / Pay stay on Billing) |
-| **Next** | Balance → **Pay** (deep-link Billing Collect) · else → **Ledger** |
+| **Next** | Balance → **Pay** (deep-link Billing Collect due) · else → **Ledger** |
 | **Deep link** | `?section=ledgers&patientId=` → open patient ledger dialog |
 | **Row click** | **Patient ledger** dialog (same widget as Detail → Ledger) |
 
-### 4.6 Chart (`chart`)
+### 4.6 Account chart (`chart`)
 
 | | |
 |---|---|
@@ -198,7 +198,7 @@ Patient money browse — moved from Billing. Not a second invoice queue and not 
 | **Trailing** | **Add** |
 | **Row** | Edit / Deactivate · click opens edit dialog |
 
-### 4.7 Books (`books`)
+### 4.7 Close books (`books`)
 
 Fiscal periods and close — not a journal reprint.
 
@@ -219,11 +219,11 @@ Fiscal periods and close — not a journal reprint.
 
 | Button | Label | Owner tab only | Opens |
 |---|---|---|---|
-| Journal | *Journal* | Work | Journal create modal |
-| Post all | *Post all* | Journals | Confirm → bulk post |
-| Open period | *Open period* | Books | Open period modal |
-| Close period | *Close period* | Books | Close period modal |
-| Add | *Add* | Chart | Account create |
+| Journal | *Journal* | Open work | Journal create modal |
+| Post all | *Post all* | To post | Confirm → bulk post |
+| Open period | *Open period* | Close books | Open period modal |
+| Close period | *Close period* | Close books | Close period modal |
+| Add | *Add* | Account chart | Account create |
 
 No other trailing buttons. Do not re-add Post / Journal / Close on multiple tabs. Do not add Reports / Analytics trailing here.
 
@@ -233,17 +233,17 @@ No other trailing buttons. Do not re-add Post / Journal / Close on multiple tabs
 
 | Label | Tooltip | Opens |
 |---|---|---|
-| **Post** | Post journal | Post modal |
-| **Approve** | Approve request | Approve modal |
-| **Reverse** | Request reversal | Reverse modal |
-| **Void** | Request void | Void modal |
-| **Close** | Close period | Close period modal |
-| **Open** | Open period | Open period modal |
-| **Send** | Send journal / export | Send modal |
-| **GL** | Open account ledger | Account ledger dialog |
-| **Ledger** | Open patient ledger | Patient ledger dialog |
-| **Pay** | Receive payment | Navigate `/billing?section=collect&action=pay&patientId=` |
-| **Books** | Open period detail | Books detail |
+| **Post** | Post this draft journal to the books | Post modal |
+| **Approve** | Approve this pending accounting request | Approve modal |
+| **Reverse** | Request a reversal of this posting | Reverse modal |
+| **Void** | Request to void this journal | Void modal |
+| **Close** | Close this fiscal period | Close period modal |
+| **Open** | Open a new fiscal period | Open period modal |
+| **Send** | Send or export this journal | Send modal |
+| **GL** | Open the facility account ledger | Account ledger dialog |
+| **Ledger** | Open the patient money ledger | Patient ledger dialog |
+| **Pay** | Receive payment in Billing Collect due | Navigate `/billing?section=collect&action=pay&patientId=` |
+| **Books** | Open period detail and close checklist | Books detail |
 
 One Next button per row. Everything else waits in Detail.
 
@@ -255,14 +255,14 @@ One Next button per row. Everything else waits in Detail.
 
 | Intent | Flow |
 |---|---|
-| Post draft | Journals → **Post** → notes (optional) → save |
-| Approve | Approvals → **Approve** → save |
-| Open account activity | GL → row or **GL** |
-| Open patient ledger | Ledgers → row or **Ledger** |
-| Take payment from balance | Ledgers → **Pay** → Billing Collect pay modal |
-| Manual journal | Work → **Journal** → save → lands on Journals |
-| Close books | Books → **Close** → notes → submit for approval |
-| Billing handoff | Work (Source=Billing) → **Post** or **Approve** |
+| Post draft | To post → **Post** → notes (optional) → save |
+| Approve | Need approval → **Approve** → save |
+| Open account activity | General ledger → row or **GL** |
+| Open patient ledger | Patient ledgers → row or **Ledger** |
+| Take payment from balance | Patient ledgers → **Pay** → Billing Collect due pay modal |
+| Manual journal | Open work → **Journal** → save → lands on To post |
+| Close books | Close books → **Close** → notes → submit for approval |
+| Billing handoff | Open work (Source=Billing) → **Post** or **Approve** |
 
 ### Detail path (only when needed)
 
@@ -276,11 +276,12 @@ Do **not** require Detail before Post / Approve / Close.
 - Close period on every tab
 - Post trailing button + Post next action + Post in detail all competing on the same viewport
 - Modal that only opens another modal before the user can finish
-- Separate Postings tab that reprints Work/Journals
-- Separate Trial balance tab that reprints GL
+- Separate Postings tab that reprints Open work / To post
+- Separate Trial balance tab that reprints General ledger
 - Analytics tab inside Accounts
-- Patient invoice / Collect / Claims / Prices tabs inside Accounts
+- Patient invoice / Collect due / Open claims / Price book tabs inside Accounts
 - Absorbing Billing cashier flows into Accounts (Pay is a deep-link only)
+- Tab labels longer than 2 words (put detail in the tooltip)
 
 ---
 
@@ -316,15 +317,15 @@ Label / dates · Notes. Primary: **Open**.
 
 ### 8.6 Account ledger (GL)
 
-Summary (Debit · Credit · Balance) + entry list. Actions: **Journal** only when user can create — do not add Post here (Post stays on Journals).
+Summary (Debit · Credit · Balance) + entry list. Actions: **Journal** only when user can create — do not add Post here (Post stays on To post).
 
 ### 8.7 Patient ledger
 
-Summary (Invoiced · Paid · Balance) + entry list. Actions: **Pay** (if balance) deep-links to Billing — not Charge (Charge stays on Billing Work).
+Summary (Invoiced · Paid · Balance) + entry list. Actions: **Pay** (if balance) deep-links to Billing — not Charge (Charge stays on Billing Open work).
 
 ### 8.8 Journal create
 
-Date · Period · Source · balanced lines (Account · Debit · Credit · Memo) · Notes. Primary: **Save**. Creates draft → Journals tab.
+Date · Period · Source · balanced lines (Account · Debit · Credit · Memo) · Notes. Primary: **Save**. Creates draft → To post tab.
 
 ### 8.9 Chart Add/Edit
 
@@ -332,7 +333,7 @@ Code · Name · Type · Parent · Currency · Effective · Active. Primary: **Sa
 
 ### 8.10 Books detail
 
-Period header · status · close checklist · link to unposted Journals filter.
+Period header · status · close checklist · link to unposted To post filter.
 
 ---
 
@@ -343,8 +344,8 @@ Period header · status · close checklist · link to unposted Journals filter.
 | Route | `accounts:read` ∪ `accounts:write` ∩ `facility-accounts` |
 | Write (Journal/Post/Reverse/Void/Send/Open/Close) | `accounts:write` |
 | Approve / Reject | `accounts:write` ∩ `financial:approve` |
-| Chart write | accounts/admin write |
-| Ledgers read | `accounts:read` (patient ledger browse) |
+| Account chart write | accounts/admin write |
+| Patient ledgers read | `accounts:read` (patient ledger browse) |
 | Pay deep-link | Billing gates (`billing:write` ∩ `billing-payments`); omit if unauthorized |
 
 Hide unauthorized tabs and actions. Do not render disabled “no access” controls.
@@ -359,12 +360,12 @@ Hide unauthorized tabs and actions. Do not render disabled “no access” contr
 | `queue` | Legacy queue → mapped section |
 | `search` | Prefill search |
 | `id` | Open Detail after load |
-| `accountId` | Open Account ledger or GL filter |
-| `patientId` | Open Patient ledger or Ledgers filter |
-| `periodId` | Open Books detail or Books filter |
+| `accountId` | Open Account ledger or General ledger filter |
+| `patientId` | Open Patient ledger or Patient ledgers filter |
+| `periodId` | Open Books detail or Close books filter |
 | `source` | Prefill Source filter (e.g. `billing`) |
-| `action=post` | Open Post on Journals |
-| `action=close` | Open Close on Books |
+| `action=post` | Open Post on To post |
+| `action=close` | Open Close on Close books |
 
 URL write: `/accounts?section=<slug>`.
 
@@ -413,17 +414,18 @@ widgets/
   accounts_workspace_table_support.dart
 ```
 
-No `accounts_postings_panel` tab. Billing handoffs stay in Work/Journals with Source filter.  
+No `accounts_postings_panel` tab. Billing handoffs stay in Open work / To post with Source filter.  
 No `accounts_financial_analytics_panel`. Analytics → Reporting.  
-No cashier Collect/Issue widgets here — those stay in Billing.
+No cashier Collect due / To issue widgets here — those stay in Billing.
 
 ---
 
 ## 14. Acceptance
 
-- [ ] Seven tabs with short labels: Work · Journals · Approvals · GL · Ledgers · Chart · Books
+- [ ] Seven tabs with ≤2-word labels: Open work · To post · Need approval · General ledger · Patient ledgers · Account chart · Close books
+- [ ] Every tab has a descriptive tooltip (full sentence)
 - [ ] No Inbox label; no Analytics tab; no Postings tab; no Trial balance tab; no Billing cashier tabs
-- [ ] Patient Ledgers live here (not under Billing)
+- [ ] Patient ledgers live here (not under Billing)
 - [ ] Trailing actions have a single owner tab (§5)
 - [ ] Happy paths complete from Next → one modal → save
 - [ ] Detail is optional for Post / Approve / Close
@@ -431,7 +433,7 @@ No cashier Collect/Issue widgets here — those stay in Billing.
 - [ ] Default columns ≤5; filters status lists are tab-scoped
 - [ ] Unauthorized tabs/actions absent
 - [ ] Chrome and mutate/refresh flow match `/hr` and `/billing`
-- [ ] Billing remains a sibling screen; no GL/Ledgers tabs inside Billing
+- [ ] Billing remains a sibling screen; no General ledger / Patient ledgers tabs inside Billing
 
 ---
 
@@ -454,9 +456,9 @@ Do not place Billing or Reporting tabs inside Accounts. Optional future handoff:
 | HR / Billing | Accounts |
 |---|---|
 | Human resources / Billing | Accounts |
-| Staff members / Billing Ledgers (removed) | **Ledgers** (patients) · **GL** (facility) |
-| Positions / Prices | Chart |
-| Work queues | Work / Journals / Approvals |
+| Staff members / Billing Ledgers (removed) | **Patient ledgers** · **General ledger** |
+| Positions / Price book | Account chart |
+| Work queues | Open work / To post / Need approval |
 | Staff detail / Invoice detail | Detail + GL / Patient ledger |
-| Trailing create on one tab | Journal on Work; Add on Chart; Open/Close on Books |
-| Collect / Close shift (Billing) | Not in Accounts — Books close is period close only; Pay deep-links Billing |
+| Trailing create on one tab | Journal on Open work; Add on Account chart; Open/Close on Close books |
+| Collect due / Close shift (Billing) | Not in Accounts — Close books is period close only; Pay deep-links Billing |

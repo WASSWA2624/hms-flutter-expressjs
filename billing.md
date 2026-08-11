@@ -21,11 +21,11 @@ Source of truth for the **Billing** workspace. Mirror **Human resources** (`/hr`
 
 ## UX principles (non-negotiable)
 
-1. **Short labels** — tab and button text is 1–2 words; tooltips carry the longer explanation.
+1. **Informative short labels** — tab labels use **up to 2 words** so the strip stays scannable but clear. Tooltips carry a full descriptive sentence. Row Next / trailing buttons stay 1–2 words with tooltips.
 2. **No duplicate surfaces** — each capability has one home. Do not repeat the same trailing action on every tab. Do not add a second tab that only restates another queue.
 3. **Short flows** — happy path is **row Next action → one modal → save**. Detail dialog is for review + secondary actions, not a required stop.
 4. **Progressive disclosure** — tables stay lean (≤5 default columns). Extra columns via Table settings. Extra actions inside the detail dialog.
-5. **Adaptability** — fewer tabs, shared table contract, shared detail shell. New charge sources plug into Work/Issue without new screens. Ledger browse lives on Accounts; analytics on Reporting.
+5. **Adaptability** — fewer tabs, shared table contract, shared detail shell. New charge sources plug into Open work / To issue without new screens. Ledger browse lives on Accounts; analytics on Reporting.
 
 ---
 
@@ -36,7 +36,7 @@ AppAccessGate
 └── AsyncStateScaffold ("Billing")
     └── ResponsivePage (dataHeavy, scrollable: false)
         └── Column
-            ├── AppTabStrip  (short label + count)
+            ├── AppTabStrip  (≤2-word label + count; tooltip on hover/focus)
             └── Expanded → one table / panel
 ```
 
@@ -44,8 +44,8 @@ Rules:
 
 1. No app-bar trailing actions.
 2. First viewport = strip + one body. No KPI cards above the table.
-3. Count tones: Work = info · Issue/Collect/Claims/Approvals = warning · Collect overdue subset uses danger badge on the **Overdue** filter chip, not a separate tab.
-4. Fallback tab when unauthorized: **Work**.
+3. Count tones: Open work = info · To issue / Collect due / Open claims / Need approval = warning · Collect due overdue subset uses danger badge on the **Overdue** filter chip, not a separate tab.
+4. Fallback tab when unauthorized: **Open work**.
 5. Snackbars for mutations; no sticky banner between strip and table.
 6. Realtime + light poll on the active section.
 
@@ -57,18 +57,18 @@ Rules:
 
 ---
 
-## 2. Tabs (short labels)
+## 2. Tabs (≤2-word labels + tooltips)
 
 `BillingDeskSection` · URL `/billing?section=<slug>` (alias `?tab=`).
 
 | # | Label | Tooltip | Enum | `?section=` | Body | Count |
 |---|---|---|---|---|---|---|
-| 1 | **Work** | Open billing work across queues | `work` | `work` | Work queue | Open work |
-| 2 | **Issue** | Drafts ready to issue | `issue` | `issue` | Work queue | Drafts |
-| 3 | **Collect** | Balances due (incl. overdue) | `collect` | `collect` | Work queue | Open balances |
-| 4 | **Claims** | Claims & pre-auth | `claims` | `claims` | Work queue | Open claims |
-| 5 | **Approvals** | Refunds, voids, adjustments | `approvals` | `approvals` | Work queue | Pending |
-| 6 | **Prices** | Price book | `prices` | `prices` | CRUD table | Active |
+| 1 | **Open work** | All billing items that still need action across issue, collect, claims, and approvals | `work` | `work` | Work queue | Open work |
+| 2 | **To issue** | Draft invoices ready to issue to the patient or payer | `issue` | `issue` | Work queue | Drafts |
+| 3 | **Collect due** | Open balances due for payment, including overdue | `collect` | `collect` | Work queue | Open balances |
+| 4 | **Open claims** | Insurance claims and pre-authorizations awaiting action | `claims` | `claims` | Work queue | Open claims |
+| 5 | **Need approval** | Refunds, voids, and adjustments awaiting approval | `approvals` | `approvals` | Work queue | Pending |
+| 6 | **Price book** | Service and item prices used when charging | `prices` | `prices` | CRUD table | Active |
 
 **Aliases (compat):** `all` / `inbox` → work · `needs-issue` / `ready-to-issue` → issue · `awaiting-payment` / `pending-payment` / `overdue` → collect · `claims-pending` → claims · `approval-required` → approvals · `price-book` → prices · `patient-ledgers` / `ledgers` → deep-link `/accounts?section=ledgers` · `analytics` → deep-link Reporting & analytics.
 
@@ -76,26 +76,26 @@ Rules:
 
 | Removed | Why | Where it lives now |
 |---|---|---|
-| **Inbox** label | Sounds like email; vague for a cashier desk | Renamed **Work** (same cross-queue list) |
-| **Ledgers** tab | Patient money browse is books domain | **Accounts** → **Ledgers** (`accounts.md`) |
+| **Inbox** label | Sounds like email; vague for a cashier desk | Renamed **Open work** (same cross-queue list) |
+| **Ledgers** tab | Patient money browse is books domain | **Accounts** → **Patient ledgers** (`accounts.md`) |
 | **Analytics** tab | Period totals belong with reporting | **Reporting & analytics** |
-| **Payments** tab | Duplicated Collect + invoice payment history | Payments list inside **invoice detail**; refund/reconcile from there or Collect next action |
-| **Overdue** tab | Same rows as Collect with age | **Collect** + Overdue status/age filter (danger chip) |
-| Close shift/day on every tab | Duplicate chrome | **Collect** only |
-| Quick charge on many tabs | Duplicate entry points | **Work** only |
+| **Payments** tab | Duplicated Collect due + invoice payment history | Payments list inside **invoice detail**; refund/reconcile from there or Collect due next action |
+| **Overdue** tab | Same rows as Collect due with age | **Collect due** + Overdue status/age filter (danger chip) |
+| Close shift/day on every tab | Duplicate chrome | **Collect due** only |
+| Quick charge on many tabs | Duplicate entry points | **Open work** only |
 | Receive payment trailing on many tabs | Duplicate of row Pay | Row **Pay** / detail **Pay** only |
-| Long tab names | Slow scanning | 1-word labels above |
+| Labels longer than 2 words | Slow scanning | Cap at 2 words; put the rest in the tooltip |
 
 ---
 
 ## 3. Shared work-queue contract
 
-Used by **Work · Issue · Collect · Claims · Approvals**.
+Used by **Open work · To issue · Collect due · Open claims · Need approval**.
 
 | Control | Spec |
 |---|---|
 | **Search** | ~350ms debounce. Hint: *Patient, invoice, encounter…* |
-| **Filters** | Shared sheet. Groups: Patient · Invoice · Encounter · Source · Status · Issued date. **Collect** adds **Overdue** (Yes/No) and Age. |
+| **Filters** | Shared sheet. Groups: Patient · Invoice · Encounter · Source · Status · Issued date. **Collect due** adds **Overdue** (Yes/No) and Age. |
 | **Status choices** | Only statuses that exist on that tab (no global dump). |
 | **Table settings** | Persist `billing_<section>_v1` |
 | **Export** | Current filtered rows |
@@ -108,20 +108,20 @@ Used by **Work · Issue · Collect · Claims · Approvals**.
 | ID | Header | Default on |
 |---|---|---|
 | `patient` | Patient | all queues |
-| `invoice` | Invoice | Work, Issue, Collect, Claims, Approvals |
-| `encounter` | Encounter | Issue, Claims (optional elsewhere) |
+| `invoice` | Invoice | Open work, To issue, Collect due, Open claims, Need approval |
+| `encounter` | Encounter | To issue, Open claims (optional elsewhere) |
 | `source` | Source | optional |
-| `due` | Due | Work, Collect, Approvals |
+| `due` | Due | Open work, Collect due, Need approval |
 | `status` | Status | all queues |
-| `age` | Age | Collect (optional) |
-| `type` | Type | Approvals (request type) |
+| `age` | Age | Collect due (optional) |
+| `type` | Type | Need approval (request type) |
 | `next` | Next | all queues when user can act |
 
 ---
 
 ## 4. Tab specs
 
-### 4.1 Work (`work`)
+### 4.1 Open work (`work`)
 
 Cross-queue list for “what needs me next” (issue, pay, claim, approve, …). Not an email inbox.
 
@@ -133,7 +133,7 @@ Cross-queue list for “what needs me next” (issue, pay, claim, approve, …).
 | **Next priority** | Approve → Issue → Pay → Submit claim → Settle claim → Auth → Refund → Adjust → Void → Send |
 | **Row click** | Detail |
 
-### 4.2 Issue (`issue`)
+### 4.2 To issue (`issue`)
 
 Drafts only.
 
@@ -145,7 +145,7 @@ Drafts only.
 | **Next** | **Issue** |
 | **Row click** | Detail (secondary: Adjust, Void, Send, Ledger → Accounts, Print) |
 
-### 4.3 Collect (`collect`)
+### 4.3 Collect due (`collect`)
 
 Open balances. Overdue is a **filter**, not a tab.
 
@@ -159,7 +159,7 @@ Open balances. Overdue is a **filter**, not a tab.
 | **Deep link** | `?section=collect&action=pay&id=` → open Pay modal |
 | **Row click** | Detail (secondary: Refund, Adjust, Void, Send, Ledger → Accounts, Print) |
 
-### 4.4 Claims (`claims`)
+### 4.4 Open claims (`claims`)
 
 | | |
 |---|---|
@@ -171,7 +171,7 @@ Open balances. Overdue is a **filter**, not a tab.
 | **Next** | **Submit** · **Settle** · **Auth** (by row kind) |
 | **Row click** | Detail |
 
-### 4.5 Approvals (`approvals`)
+### 4.5 Need approval (`approvals`)
 
 | | |
 |---|---|
@@ -182,7 +182,7 @@ Open balances. Overdue is a **filter**, not a tab.
 | **Next** | **Approve** (Reject only in Detail) |
 | **Row click** | Detail |
 
-### 4.6 Prices (`prices`)
+### 4.6 Price book (`prices`)
 
 | | |
 |---|---|
@@ -198,11 +198,11 @@ Open balances. Overdue is a **filter**, not a tab.
 
 | Button | Label | Owner tab only | Opens |
 |---|---|---|---|
-| Charge | *Charge* | Work | Charge modal |
-| Issue all | *Issue all* | Issue | Confirm → bulk issue |
-| Close shift | *Close shift* | Collect | Close shift modal |
-| Close day | *Close day* | Collect | Close day modal |
-| Add | *Add* | Prices | Price create |
+| Charge | *Charge* | Open work | Charge modal |
+| Issue all | *Issue all* | To issue | Confirm → bulk issue |
+| Close shift | *Close shift* | Collect due | Close shift modal |
+| Close day | *Close day* | Collect due | Close day modal |
+| Add | *Add* | Price book | Price create |
 
 No other trailing buttons. Do not re-add Pay / Charge / Close on multiple tabs. Do not add Reports / Analytics trailing here.
 
@@ -212,17 +212,17 @@ No other trailing buttons. Do not re-add Pay / Charge / Close on multiple tabs. 
 
 | Label | Tooltip | Opens |
 |---|---|---|
-| **Issue** | Issue invoice | Issue modal |
-| **Pay** | Receive payment | Pay modal |
-| **Refund** | Request refund | Refund modal |
-| **Adjust** | Request adjustment | Adjust modal |
-| **Void** | Request void | Void modal |
-| **Send** | Send invoice | Send modal |
-| **Approve** | Approve request | Approve modal |
-| **Submit** | Submit claim | Submit modal |
-| **Settle** | Record insurer response | Settle modal |
-| **Auth** | Approve authorization | Auth modal |
-| **Ledger** | Open patient ledger | Navigate `/accounts?section=ledgers&patientId=` |
+| **Issue** | Issue this draft invoice | Issue modal |
+| **Pay** | Receive payment toward the balance due | Pay modal |
+| **Refund** | Request a refund on this invoice | Refund modal |
+| **Adjust** | Request an amount adjustment | Adjust modal |
+| **Void** | Request to void this invoice | Void modal |
+| **Send** | Send the invoice to the patient or payer | Send modal |
+| **Approve** | Approve this pending request | Approve modal |
+| **Submit** | Submit this claim to the insurer | Submit modal |
+| **Settle** | Record the insurer’s claim response | Settle modal |
+| **Auth** | Approve this pre-authorization | Auth modal |
+| **Ledger** | Open the patient ledger in Accounts | Navigate `/accounts?section=ledgers&patientId=` |
 
 One Next button per row. Everything else waits in Detail.
 
@@ -234,12 +234,12 @@ One Next button per row. Everything else waits in Detail.
 
 | Intent | Flow |
 |---|---|
-| Issue draft | Issue tab → **Issue** → notes (optional) → save |
-| Take payment | Collect → **Pay** → amount/method → save |
-| Approve | Approvals → **Approve** → save |
-| Submit claim | Claims → **Submit** → save |
-| Open patient ledger | Detail / Next **Ledger** → **Accounts** Ledgers |
-| Walk-in charge | Work → **Charge** → save → lands on Issue |
+| Issue draft | To issue → **Issue** → notes (optional) → save |
+| Take payment | Collect due → **Pay** → amount/method → save |
+| Approve | Need approval → **Approve** → save |
+| Submit claim | Open claims → **Submit** → save |
+| Open patient ledger | Detail / Next **Ledger** → Accounts **Patient ledgers** |
+| Walk-in charge | Open work → **Charge** → save → lands on To issue |
 
 ### Detail path (only when needed)
 
@@ -254,8 +254,9 @@ Do **not** require Detail before Pay / Issue / Approve / Submit.
 - Pay trailing button + Pay next action + Pay in detail all competing on the same viewport
 - Modal that only opens another modal before the user can finish
 - Separate Payments tab that reprints invoice payment lines
-- Separate Overdue tab that reprints Collect rows
+- Separate Overdue tab that reprints Collect due rows
 - Ledgers or Analytics tabs inside Billing
+- Tab labels longer than 2 words (put detail in the tooltip)
 
 ---
 
@@ -291,7 +292,7 @@ Shift: Expected · Actual · Notes · Submit for approval. Day: Notes · Submit 
 
 ### 8.6 Charge
 
-Patient · Item · Qty · Price (book-resolved) · Mode · Notes. Primary: **Charge**. Creates draft → Issue tab.
+Patient · Item · Qty · Price (book-resolved) · Mode · Notes. Primary: **Charge**. Creates draft → To issue tab.
 
 ### 8.7 Price Add/Edit
 
@@ -308,11 +309,11 @@ One confirm: *Charges settled. Clear this encounter?* Primary: **Clear**.
 | Layer | Gate |
 |---|---|
 | Route | `billing:read` ∪ `billing:write` ∩ `billing-payments` |
-| Claims tab | + `insurance-claims` |
+| Open claims tab | + `insurance-claims` |
 | Write (Issue/Pay/Refund/Adjust/Void/Send/Close/Charge) | `billing:write` |
 | Approve / Reject | `billing:write` ∩ `financial:approve` |
 | Claim mutations | `billing:write` ∩ `insurance-claims` |
-| Prices write | pricing/admin write |
+| Price book write | pricing/admin write |
 | Ledger link | Accounts route gates (`accounts:read` ∩ `facility-accounts`); omit if unauthorized |
 
 Hide unauthorized tabs and actions. Do not render disabled “no access” controls.
@@ -328,7 +329,7 @@ Hide unauthorized tabs and actions. Do not render disabled “no access” contr
 | `search` | Prefill search |
 | `id` | Open Detail after load |
 | `patientId` | Prefer navigate `/accounts?section=ledgers&patientId=` (compat redirect) |
-| `action=pay` | Open Pay on Collect |
+| `action=pay` | Open Pay on Collect due |
 
 URL write: `/billing?section=<slug>`.
 
@@ -378,12 +379,13 @@ No `billing_ledgers_panel` or `billing_financial_analytics_panel`. Ledger → Ac
 
 ## 14. Acceptance
 
-- [ ] Six tabs with short labels: Work · Issue · Collect · Claims · Approvals · Prices
+- [ ] Six tabs with ≤2-word labels: Open work · To issue · Collect due · Open claims · Need approval · Price book
+- [ ] Every tab has a descriptive tooltip (full sentence)
 - [ ] No Inbox label; no Ledgers tab; no Analytics tab; no Payments tab; no Overdue tab
 - [ ] Trailing actions have a single owner tab (§5)
 - [ ] Happy paths complete from Next → one modal → save
 - [ ] Detail is optional for Pay / Issue / Approve / Submit
-- [ ] Ledger action deep-links to Accounts Ledgers
+- [ ] Ledger action deep-links to Accounts Patient ledgers
 - [ ] Default columns ≤5; filters status lists are tab-scoped
 - [ ] Unauthorized tabs/actions absent
 - [ ] Chrome and mutate/refresh flow match `/hr`
@@ -408,8 +410,8 @@ Do not place Accounts or Reporting tabs inside Billing. Optional future handoff:
 | HR | Billing |
 |---|---|
 | Human resources | Billing |
-| Staff members | *(patient Ledgers → Accounts)* |
-| Positions | Prices |
-| Work queues | Work / Issue / Collect / Claims / Approvals |
+| Staff members | *(patient ledgers → Accounts)* |
+| Positions | Price book |
+| Work queues | Open work / To issue / Collect due / Open claims / Need approval |
 | Staff detail | Detail (+ Ledger → Accounts) |
-| Trailing create on one tab | Charge on Work; Add on Prices; Close on Collect |
+| Trailing create on one tab | Charge on Open work; Add on Price book; Close on Collect due |
