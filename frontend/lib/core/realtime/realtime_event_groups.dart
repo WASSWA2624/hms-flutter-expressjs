@@ -101,6 +101,10 @@ abstract final class RealtimeEventGroups {
 
   static const Set<String> hr = <String>{RealtimeEvents.hrWorkspaceUpdated};
 
+  static const Set<String> accounts = <String>{
+    RealtimeEvents.accountsWorkspaceUpdated,
+  };
+
   static const Set<String> housekeeping = <String>{
     ...operations,
     ...admissions,
@@ -229,6 +233,12 @@ abstract final class RealtimeEventGroups {
     ...diagnostics,
     ...pharmacy,
     ...admissions,
+  };
+
+  /// Accounts desk — dedicated accounts events plus billing workspace fan-in.
+  static const Set<String> accountsWorkspace = <String>{
+    ...accounts,
+    ...billingWorkspace,
   };
 
   static const Set<String> claims = <String>{...billing, ...admissions};

@@ -24,6 +24,10 @@ const FEATURE_FLAGS = Object.freeze({
     process.env.FEATURE_BILLING_WORKSPACE_V1,
     defaultWorkspaceFlag(false)
   ),
+  accounts_workspace_v1: parseFlag(
+    process.env.FEATURE_ACCOUNTS_WORKSPACE_V1,
+    defaultWorkspaceFlag(false)
+  ),
   pharmacy_workspace_v1: parseFlag(process.env.PHARMACY_WORKSPACE_V1, false),
   communications_workspace_v1: parseFlag(
     process.env.FEATURE_COMMUNICATIONS_WORKSPACE_V1,

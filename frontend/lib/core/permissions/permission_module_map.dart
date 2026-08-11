@@ -9,6 +9,7 @@ abstract final class PermissionModuleMap {
   static const Map<String, String> domainToModule = <String, String>{
     'billing': 'billing-payments',
     'financial': 'billing-payments',
+    'accounts': 'facility-accounts',
     'claims': 'insurance-claims',
     'patient': 'patient-registry',
     'patients': 'patient-registry',

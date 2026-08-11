@@ -552,62 +552,7 @@ class _BillingQueuePanel extends ConsumerWidget {
       },
     );
 
-    if (activeQueue != BillingQueueType.pendingPayment) {
-      return table;
-    }
-
-    final ThemeData theme = Theme.of(context);
-    final int overdueCount = state.overview.summary.overdue;
-    final bool overdueSelected = state.query.overdueOnly;
-    final Color danger = workspaceStatusToneAccentColor(
-      theme,
-      AppWorkspaceStatusTone.error,
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: Padding(
-            padding: EdgeInsets.only(bottom: theme.spacing.sm),
-            child: FilterChip(
-              selected: overdueSelected,
-              showCheckmark: false,
-              avatar: Icon(
-                Icons.warning_amber_outlined,
-                size: 18,
-                color: danger,
-              ),
-              label: Text(
-                overdueCount > 0
-                    ? '${l10n.billingOverdue} ($overdueCount)'
-                    : l10n.billingOverdue,
-                style: TextStyle(color: danger),
-              ),
-              selectedColor: danger.withValues(alpha: 0.16),
-              side: BorderSide(color: danger.withValues(alpha: 0.45)),
-              onSelected: (bool selected) {
-                final BillingWorkspaceQuery next = state.query.copyWith(
-                  overdueOnly: selected,
-                  billingStatus: selected ? '' : state.query.billingStatus,
-                  pageRequest: state.query.pageRequest.first(),
-                );
-                unawaited(controller.applyFilters(next));
-                final Map<String, String> params = <String, String>{
-                  'section': 'collect',
-                  if (selected) 'overdue': 'yes',
-                };
-                GoRouter.of(context).replace<void>(
-                  AppRoutes.billing.location(queryParameters: params),
-                );
-              },
-            ),
-          ),
-        ),
-        table,
-      ],
-    );
+    return table;
   }
 }
 

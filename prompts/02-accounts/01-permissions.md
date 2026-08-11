@@ -2,7 +2,7 @@
 
 ## Context
 
-Define and wire **Accounts** RBAC/ABAC for the `/accounts` workspace (`facility-accounts` module) per `accounts.md` §9 and Prompt Definition Standards. Backend remains authoritative. Unauthorized UI, data, routes, and actions must not render. This prompt covers permission catalog keys, module entitlement, access gates, and UI omission rules — not individual tab chrome (see `01`–`07`).
+Define and wire **Accounts** RBAC/ABAC for the `/accounts` workspace (`facility-accounts` module) per `accounts.md` §9 and Prompt Definition Standards. Backend remains authoritative. Unauthorized UI, data, routes, and actions must not render. This prompt covers permission catalog keys, module entitlement, access gates, and UI omission rules — not individual tab chrome (see `03`–`09`).
 
 ## Requirements
 
@@ -50,7 +50,7 @@ Define and wire **Accounts** RBAC/ABAC for the `/accounts` workspace (`facility-
 ## Relevant Files
 
 - `accounts.md` (§9)
-- `prompts/accounts/09-roles.md`
+- `prompts/02-accounts/02-roles.md`
 - `backend/src/config/permissions.js`
 - `backend/src/config/permission-catalog-metadata.js`
 - `backend/src/lib/authorization/permission-module-map.js`

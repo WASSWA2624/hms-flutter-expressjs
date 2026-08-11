@@ -23,6 +23,8 @@ const BASIC = Object.freeze([
   'pharmacy:write',
   'billing:read',
   'billing:write',
+  'accounts:read',
+  'accounts:write',
   'pricing:pharmacy_read',
   'pricing:pharmacy_write',
   'pricing:facility_read',

@@ -19,6 +19,14 @@ void main() {
         PermissionModuleMap.moduleForPermissionCode('billing:read'),
         'billing-payments',
       );
+      expect(
+        PermissionModuleMap.moduleForPermissionCode('accounts:read'),
+        'facility-accounts',
+      );
+      expect(
+        PermissionModuleMap.moduleForPermissionCode('accounts:write'),
+        'facility-accounts',
+      );
     });
 
     test('leaves core and platform permissions unmapped', () {

@@ -57,6 +57,7 @@ abstract final class RealtimeEvents {
   static const String pharmacyOrderCanceled = 'pharmacy.order_canceled';
 
   static const String hrWorkspaceUpdated = 'hr.workspace_updated';
+  static const String accountsWorkspaceUpdated = 'accounts.workspace_updated';
 
   static const String inventoryStockUpdated = 'inventory.stock_updated';
   static const String inventoryLowStock = 'inventory.low_stock';

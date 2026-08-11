@@ -73,6 +73,13 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     minimum_plan_tier_code: 'BASIC',
   },
   {
+    code: 'facility_accounts',
+    slug: 'facility-accounts',
+    name: 'Facility Accounts and Ledgers',
+    module_group: 13,
+    minimum_plan_tier_code: 'BASIC',
+  },
+  {
     code: 'insurance_claims',
     slug: 'insurance-claims',
     name: 'Insurance and Claims',

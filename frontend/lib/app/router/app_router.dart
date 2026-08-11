@@ -27,6 +27,9 @@ import 'package:hosspi_hms/features/auth/presentation/pages/verify_email_page.da
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_shell_layout.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/pages/billing_workspace_page.dart';
+import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
+import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
+import 'package:hosspi_hms/features/accounts/presentation/pages/accounts_workspace_page.dart';
 import 'package:hosspi_hms/features/biomedical/domain/entities/biomedical_entities.dart';
 import 'package:hosspi_hms/features/biomedical/presentation/pages/biomedical_workspace_page.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
@@ -155,6 +158,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: AppRoutes.billing.name,
             builder: (_, GoRouterState state) => BillingWorkspacePage(
               initialQuery: BillingWorkspaceQuery.fromUri(state.uri),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.accounts.path,
+            name: AppRoutes.accounts.name,
+            builder: (_, GoRouterState state) => AccountsWorkspacePage(
+              initialQuery: AccountsWorkspaceQuery.fromUri(state.uri),
             ),
           ),
           GoRoute(
@@ -473,6 +483,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
   AppLocalizations l10n, {
   required AppAccessPolicy accessPolicy,
   int? billingWorkloadCount,
+  int? accountsWorkloadCount,
   int? claimsWorkloadCount,
   int? subscriptionsWorkloadCount,
   int? receptionPatientCount,
@@ -498,11 +509,11 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
 }) {
   // Navigation groups follow primary hospital workflows:
   // - Overview: landing dashboard
-  // - Patient intake: register → outpatient visit → emergency triage
-  // - Inpatient care: admit → bed capacity → ICU → ward nursing
+  // - Patient intake: register â†’ outpatient visit â†’ emergency triage
+  // - Inpatient care: admit â†’ bed capacity â†’ ICU â†’ ward nursing
   // - Clinical care: documentation, rehab, surgery, discharge planning
   // - Diagnostics & pharmacy: investigations and medication dispensing
-  // - Billing & revenue: charges → insurance claims → subscription plans
+  // - Billing & revenue: charges â†’ insurance claims â†’ subscription plans
   // - Facility services: non-clinical hospital operations
   // - Administration: people, comms, integrations, reporting, configuration
   final String overviewGroup = l10n.navigationGroupOverviewLabel;
@@ -702,6 +713,17 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       ),
     ),
     _ShellDestinationRoute(
+      route: AppRoutes.accounts,
+      destination: ResponsiveShellDestination(
+        label: AccountsCopy.workspaceTitle,
+        shortLabel: AccountsCopy.workspaceTitle,
+        groupLabel: billingRevenueGroup,
+        icon: AppRouteIcons.accounts,
+        selectedIcon: AppRouteIcons.accountsSelected,
+        badgeCount: accountsWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
       route: AppRoutes.claims,
       destination: ResponsiveShellDestination(
         label: l10n.navigationClaimsLabel,
@@ -853,6 +875,7 @@ class _AppShell extends ConsumerWidget {
               l10n,
               accessPolicy: accessPolicy,
               billingWorkloadCount: badges.billingWorkloadCount,
+              accountsWorkloadCount: badges.accountsWorkloadCount,
               claimsWorkloadCount: badges.claimsWorkloadCount,
               subscriptionsWorkloadCount: badges.subscriptionsWorkloadCount,
               receptionPatientCount: badges.receptionPatientCount,

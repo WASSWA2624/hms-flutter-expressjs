@@ -172,6 +172,11 @@ abstract final class AppRoutes {
     ...adminShellRoles,
     AppRole.billing,
   ];
+  /// Accounts desk — admins + billing until ACCOUNTANT role lands (09-roles).
+  static const List<AppRole> accountsWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.billing,
+  ];
   static const List<AppRole> operationsWorkspaceRoles = <AppRole>[
     ...adminShellRoles,
     AppRole.operations,
@@ -269,6 +274,17 @@ abstract final class AppRoutes {
     ],
     requiredAnyRoles: billingWorkspaceRoles,
     requiredActiveModules: <String>['billing-payments'],
+  );
+  static const AppRouteData accounts = AppRouteData(
+    name: 'accounts',
+    path: '/accounts',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.accountsRead,
+      AppPermissions.accountsWrite,
+    ],
+    requiredAnyRoles: accountsWorkspaceRoles,
+    requiredActiveModules: <String>['facility-accounts'],
   );
   static const AppRouteData claims = AppRouteData(
     name: 'claims',
@@ -624,6 +640,7 @@ abstract final class AppRoutes {
     home,
     patients,
     billing,
+    accounts,
     claims,
     subscriptions,
     opd,
@@ -665,6 +682,7 @@ abstract final class AppRoutes {
     home,
     patients,
     billing,
+    accounts,
     claims,
     subscriptions,
     opd,
@@ -761,6 +779,7 @@ abstract final class AppRoutes {
     home,
     patients,
     billing,
+    accounts,
     claims,
     communications,
     reports,

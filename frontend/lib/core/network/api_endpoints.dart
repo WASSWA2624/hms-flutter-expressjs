@@ -217,6 +217,8 @@ enum HmsApiResource {
   payments('payments', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
   refunds('refunds', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
   billing('billing', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
+  accounts('accounts', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
+  chartAccounts('chart-accounts', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
   pricingRules('pricing-rules', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
   priceBookEntries(
     'price-book-entries',

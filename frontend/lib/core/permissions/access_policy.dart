@@ -73,6 +73,8 @@ abstract final class AppPermissions {
   static const pharmacyWrite = AppPermission('pharmacy:write');
   static const billingRead = AppPermission('billing:read');
   static const billingWrite = AppPermission('billing:write');
+  static const accountsRead = AppPermission('accounts:read');
+  static const accountsWrite = AppPermission('accounts:write');
   static const pricingPharmacyRead = AppPermission('pricing:pharmacy_read');
   static const pricingPharmacyWrite = AppPermission('pricing:pharmacy_write');
   static const pricingFacilityRead = AppPermission('pricing:facility_read');
@@ -162,6 +164,8 @@ abstract final class AppPermissions {
     pharmacyWrite,
     billingRead,
     billingWrite,
+    accountsRead,
+    accountsWrite,
     pricingPharmacyRead,
     pricingPharmacyWrite,
     pricingFacilityRead,
@@ -944,6 +948,30 @@ final class AppAccessPolicy {
       };
 
   static Iterable<AppPermission> _permissionsForRoleCode(String value) {
+    final String normalized = value.trim().toUpperCase().replaceAll(
+      RegExp(r'[\s-]+'),
+      '_',
+    );
+    // Accountant pack is distinct from BILLING (includes accounts:*; no
+    // last-office). Keep ACCOUNTANT → AppRole.billing for shell focus only.
+    if (normalized == 'ACCOUNTANT') {
+      return const <AppPermission>[
+        AppPermissions.accountsRead,
+        AppPermissions.accountsWrite,
+        AppPermissions.billingRead,
+        AppPermissions.billingWrite,
+        AppPermissions.pricingFacilityRead,
+        AppPermissions.pricingFacilityWrite,
+        AppPermissions.claimsRead,
+        AppPermissions.financialApprove,
+        AppPermissions.evidenceExport,
+        AppPermissions.reportsRead,
+        AppPermissions.profileRead,
+        AppPermissions.patientRead,
+        AppPermissions.communicationsRead,
+        AppPermissions.communicationsWrite,
+      ];
+    }
     final AppRole? knownRole = _normalizeRole(value);
     if (knownRole != null) {
       return _permissionsForRole(knownRole);

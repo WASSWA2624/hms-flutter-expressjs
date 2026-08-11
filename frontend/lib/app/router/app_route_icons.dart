@@ -9,6 +9,8 @@ abstract final class AppRouteIcons {
   static const IconData receptionSelected = Icons.support_agent;
   static const IconData billing = Icons.point_of_sale_outlined;
   static const IconData billingSelected = Icons.point_of_sale;
+  static const IconData accounts = Icons.account_balance_outlined;
+  static const IconData accountsSelected = Icons.account_balance;
   static const IconData claims = Icons.policy_outlined;
   static const IconData claimsSelected = Icons.policy;
   static const IconData subscriptions = Icons.workspace_premium_outlined;

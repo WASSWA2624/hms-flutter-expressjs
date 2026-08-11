@@ -28,6 +28,7 @@ const DOMAIN_TO_MODULE = Object.freeze({
   pharmacy: 'pharmacy-dispensing',
   billing: 'billing-payments',
   financial: 'billing-payments',
+  accounts: 'facility-accounts',
   claims: 'insurance-claims',
   operations: 'facilities-maintenance',
   housekeeping: 'facilities-maintenance',

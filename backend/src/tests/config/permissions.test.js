@@ -117,6 +117,8 @@ describe('permissions config', () => {
     expect(ROLE_PERMISSIONS[ROLES.BILLING]).toContain(PERMISSIONS.PATIENT_READ);
     expect(ROLE_PERMISSIONS[ROLES.ACCOUNTANT]).toEqual(
       expect.arrayContaining([
+        PERMISSIONS.ACCOUNTS_READ,
+        PERMISSIONS.ACCOUNTS_WRITE,
         PERMISSIONS.BILLING_READ,
         PERMISSIONS.FINANCIAL_APPROVE,
         PERMISSIONS.PRICING_FACILITY_READ,
@@ -147,10 +149,65 @@ describe('permissions config', () => {
 
   it('exposes atomic domain:action permission keys only', () => {
     const values = Object.values(PERMISSIONS);
-    expect(values).toHaveLength(83);
+    expect(values).toHaveLength(85);
     for (const value of values) {
       expect(value).toMatch(/^[a-z0-9_]+:[a-z0-9_]+$/);
       expect(value.split(':')).toHaveLength(2);
     }
+  });
+
+  it('includes accounts:read and accounts:write in the catalog and admin access', () => {
+    expect(PERMISSIONS.ACCOUNTS_READ).toBe('accounts:read');
+    expect(PERMISSIONS.ACCOUNTS_WRITE).toBe('accounts:write');
+    expect(ROLE_PERMISSIONS[ROLES.PLATFORM_OWNER]).toEqual(
+      expect.arrayContaining([
+        PERMISSIONS.ACCOUNTS_READ,
+        PERMISSIONS.ACCOUNTS_WRITE,
+      ])
+    );
+    expect(ROLE_PERMISSIONS[ROLES.PLATFORM_ADMIN]).toEqual(
+      expect.arrayContaining([
+        PERMISSIONS.ACCOUNTS_READ,
+        PERMISSIONS.ACCOUNTS_WRITE,
+      ])
+    );
+    expect(ROLE_PERMISSIONS[ROLES.TENANT_ADMIN]).toEqual(
+      expect.arrayContaining([
+        PERMISSIONS.ACCOUNTS_READ,
+        PERMISSIONS.ACCOUNTS_WRITE,
+      ])
+    );
+    expect(ROLE_PERMISSIONS[ROLES.FACILITY_ADMIN]).toEqual(
+      expect.arrayContaining([
+        PERMISSIONS.ACCOUNTS_READ,
+        PERMISSIONS.ACCOUNTS_WRITE,
+      ])
+    );
+    expect(ROLE_PERMISSIONS[ROLES.ACCOUNTANT]).toEqual(
+      expect.arrayContaining([
+        PERMISSIONS.ACCOUNTS_READ,
+        PERMISSIONS.ACCOUNTS_WRITE,
+      ])
+    );
+    expect(ROLE_PERMISSIONS[ROLES.HR]).not.toContain(PERMISSIONS.ACCOUNTS_READ);
+    expect(ROLE_PERMISSIONS[ROLES.HR]).not.toContain(PERMISSIONS.ACCOUNTS_WRITE);
+    expect(ROLE_PERMISSIONS[ROLES.HR_STAFF]).not.toContain(
+      PERMISSIONS.ACCOUNTS_READ
+    );
+    expect(ROLE_PERMISSIONS[ROLES.HR_STAFF]).not.toContain(
+      PERMISSIONS.ACCOUNTS_WRITE
+    );
+    expect(ROLE_PERMISSIONS[ROLES.BILLING]).not.toContain(
+      PERMISSIONS.ACCOUNTS_READ
+    );
+    expect(ROLE_PERMISSIONS[ROLES.BILLING]).not.toContain(
+      PERMISSIONS.ACCOUNTS_WRITE
+    );
+    expect(ROLE_PERMISSIONS[ROLES.PHARMACY_BILLING]).not.toContain(
+      PERMISSIONS.ACCOUNTS_READ
+    );
+    expect(ROLE_PERMISSIONS[ROLES.PHARMACY_BILLING]).not.toContain(
+      PERMISSIONS.ACCOUNTS_WRITE
+    );
   });
 });

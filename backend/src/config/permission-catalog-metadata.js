@@ -24,6 +24,7 @@ const DOMAIN_LABELS = Object.freeze({
   radiology: 'Radiology',
   pharmacy: 'Pharmacy',
   billing: 'Billing',
+  accounts: 'Accounts',
   pricing: 'Pricing',
   claims: 'Claims',
   operations: 'Operations',
@@ -89,6 +90,16 @@ const PERMISSION_OVERRIDES = Object.freeze({
   'financial:approve': {
     displayName: 'Financial — Approve',
     description: 'Approve financial transactions, adjustments, and billing exceptions.',
+  },
+  'accounts:read': {
+    displayName: 'Accounts — Read',
+    description:
+      'Open Accounts workspace and read books data (queues, GL, patient ledgers, chart, periods).',
+  },
+  'accounts:write': {
+    displayName: 'Accounts — Write',
+    description:
+      'Create/post journals, reverse/void/send, open/close periods, and mutate chart of accounts.',
   },
   'pricing:pharmacy_read': {
     displayName: 'Pricing — Pharmacy Read',
@@ -349,7 +360,8 @@ const ROLE_OVERRIDES = Object.freeze({
   },
   ACCOUNTANT: {
     displayName: 'Accountant',
-    description: 'Finance staff managing ledgers, reconciliation, and reporting.',
+    description:
+      'Finance staff managing the Accounts books desk (journals, GL, patient ledgers, chart, period close), reconciliation, and reporting.',
   },
   OPERATIONS: {
     displayName: 'Operations',

@@ -563,6 +563,14 @@ enum PriceBookCatalogType {
   SERVICE
 }
 
+enum ChartAccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
 enum PatientInsuranceEnrollmentStatus {
   ACTIVE
   EXPIRED
@@ -1047,6 +1055,7 @@ model tenant {
   billing_approvals               billing_approval[]
   pricing_rules                   pricing_rule[]
   price_book_entries              price_book_entry[]
+  chart_accounts                  chart_account[]
   billable_charge_events          billable_charge_event[]
   insurance_companies             insurance_company[]
   coverage_plans                  coverage_plan[]
@@ -1130,6 +1139,7 @@ model facility {
   payments                        payment[]
   billing_approvals               billing_approval[]
   price_book_entries              price_book_entry[]
+  chart_accounts                  chart_account[]
   billable_charge_events          billable_charge_event[]
   patient_insurance_enrollments   patient_insurance_enrollment[]
   insurer_integrations            insurer_integration[]
@@ -4842,6 +4852,41 @@ model price_book_entry {
   @@index([deleted_at])
   @@index([human_friendly_id])
   @@index([tenant_id, facility_id, catalog_type, catalog_item_id, payment_mode, billing_entity], map: "price_book_entry_lookup_idx")
+}
+
+model chart_account {
+  id                String           @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?          @db.VarChar(32)
+  tenant_id         String           @db.VarChar(36)
+  facility_id       String?          @db.VarChar(36)
+  code              String           @db.VarChar(64)
+  name              String           @db.VarChar(255)
+  account_type      ChartAccountType
+  parent_id         String?          @db.VarChar(36)
+  currency          String           @db.VarChar(10)
+  effective_from    DateTime?
+  is_active         Boolean          @default(true)
+  notes             String?          @db.VarChar(255)
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
+  deleted_at        DateTime?
+  version           Int              @default(1)
+
+  tenant   tenant         @relation(fields: [tenant_id], references: [id])
+  facility facility?      @relation(fields: [facility_id], references: [id])
+  parent   chart_account? @relation("ChartAccountParent", fields: [parent_id], references: [id])
+  children chart_account[] @relation("ChartAccountParent")
+
+  @@unique([tenant_id, facility_id, code])
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([code])
+  @@index([account_type])
+  @@index([parent_id])
+  @@index([is_active])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+  @@index([effective_from])
 }
 
 model patient_insurance_enrollment {

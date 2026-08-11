@@ -6,6 +6,8 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/workspace/workspace_prefetch_ready_provider.dart';
+import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
+import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_workspace_controller.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_controller.dart';
 import 'package:hosspi_hms/features/biomedical/domain/entities/biomedical_entities.dart';
@@ -70,6 +72,7 @@ final class ShellBadgeCounts {
     this.radiologyWorkloadCount,
     this.pharmacyWorkloadCount,
     this.billingWorkloadCount,
+    this.accountsWorkloadCount,
     this.claimsWorkloadCount,
     this.subscriptionsWorkloadCount,
     this.operationsWorkloadCount,
@@ -98,6 +101,7 @@ final class ShellBadgeCounts {
   final int? radiologyWorkloadCount;
   final int? pharmacyWorkloadCount;
   final int? billingWorkloadCount;
+  final int? accountsWorkloadCount;
   final int? claimsWorkloadCount;
   final int? subscriptionsWorkloadCount;
   final int? operationsWorkloadCount;
@@ -127,6 +131,7 @@ final class ShellBadgeCounts {
             radiologyWorkloadCount == other.radiologyWorkloadCount &&
             pharmacyWorkloadCount == other.pharmacyWorkloadCount &&
             billingWorkloadCount == other.billingWorkloadCount &&
+            accountsWorkloadCount == other.accountsWorkloadCount &&
             claimsWorkloadCount == other.claimsWorkloadCount &&
             subscriptionsWorkloadCount == other.subscriptionsWorkloadCount &&
             operationsWorkloadCount == other.operationsWorkloadCount &&
@@ -155,6 +160,7 @@ final class ShellBadgeCounts {
     radiologyWorkloadCount,
     pharmacyWorkloadCount,
     billingWorkloadCount,
+    accountsWorkloadCount,
     claimsWorkloadCount,
     subscriptionsWorkloadCount,
     operationsWorkloadCount,
@@ -242,6 +248,7 @@ final shellBadgeCountsProvider = Provider<ShellBadgeCounts>((ref) {
   final bool canRadiology = canAccess(AppRoutes.radiology);
   final bool canPharmacy = canAccess(AppRoutes.pharmacy);
   final bool canBilling = canAccess(AppRoutes.billing);
+  final bool canAccounts = canAccess(AppRoutes.accounts);
   final bool canClaims = canAccess(AppRoutes.claims);
   final bool canSubscriptions = canAccess(AppRoutes.subscriptions);
   final bool canOperations = canAccess(AppRoutes.operations);
@@ -397,6 +404,16 @@ final shellBadgeCountsProvider = Provider<ShellBadgeCounts>((ref) {
         ? ref.watch(
             billingWorkspaceControllerProvider.select(
               (v) => _selectBadge<BillingWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
+        : null,
+    accountsWorkloadCount: canAccounts
+        ? ref.watch(
+            accountsWorkspaceControllerProvider.select(
+              (v) => _selectBadge<AccountsWorkspaceState>(
                 v,
                 (s) => _positiveOrNull(s.workloadCount),
               ),

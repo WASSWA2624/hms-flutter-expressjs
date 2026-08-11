@@ -18,6 +18,12 @@ describe('permission-module-map', () => {
     expect(moduleForPermissionName(PERMISSIONS.BILLING_READ)).toBe(
       'billing-payments'
     );
+    expect(moduleForPermissionName(PERMISSIONS.ACCOUNTS_READ)).toBe(
+      'facility-accounts'
+    );
+    expect(moduleForPermissionName(PERMISSIONS.ACCOUNTS_WRITE)).toBe(
+      'facility-accounts'
+    );
     expect(moduleForPermissionName(PERMISSIONS.PROFILE_READ)).toBeNull();
     expect(moduleForPermissionName(PERMISSIONS.TENANT_ADMIN)).toBeNull();
   });

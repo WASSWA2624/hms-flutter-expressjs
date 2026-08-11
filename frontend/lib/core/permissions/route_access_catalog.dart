@@ -249,6 +249,22 @@ abstract final class RouteAccessCatalog {
     requirement: billingEntry,
   );
 
+  /// Route entry — (`accounts:read` ∪ `accounts:write`) ∩ `facility-accounts`
+  /// (accounts.md §9).
+  static const AccessRequirement accountsEntry = AccessRequirement(
+    anyPermissions: <AppPermission>[
+      AppPermissions.accountsRead,
+      AppPermissions.accountsWrite,
+    ],
+    activeModules: <String>['facility-accounts'],
+  );
+  static const RouteAccessAtom accounts = RouteAccessAtom(
+    routeName: 'accounts',
+    path: '/accounts',
+    entryPermission: AppPermissions.accountsRead,
+    requirement: accountsEntry,
+  );
+
   static const AccessRequirement claimsEntry = AccessRequirement(
     allPermissions: <AppPermission>[AppPermissions.claimsRead],
     activeModules: <String>['insurance-claims'],
@@ -433,6 +449,7 @@ abstract final class RouteAccessCatalog {
     radiology,
     pharmacy,
     billing,
+    accounts,
     claims,
     subscriptions,
     operations,

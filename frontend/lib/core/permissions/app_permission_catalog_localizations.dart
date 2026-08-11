@@ -43,6 +43,8 @@ extension AppPermissionCatalogLocalizations on AppLocalizations {
       'pharmacy:write' => permissionCatalogPharmacyWrite,
       'billing:read' => permissionCatalogBillingRead,
       'billing:write' => permissionCatalogBillingWrite,
+      'accounts:read' => 'Accounts — Read',
+      'accounts:write' => 'Accounts — Write',
       'pricing:pharmacy_read' => 'Pricing — Pharmacy Read',
       'pricing:pharmacy_write' => 'Pricing — Pharmacy Write',
       'pricing:facility_read' => 'Pricing — Facility Read',
@@ -158,6 +160,10 @@ String? _permissionDescriptionOverride(String code) {
       'Highest platform authority. Manage super/platform administrators and owner-only controls.',
     'financial:approve' =>
       'Approve financial transactions, adjustments, and billing exceptions.',
+    'accounts:read' =>
+      'Open Accounts workspace and read books data (queues, GL, patient ledgers, chart, periods).',
+    'accounts:write' =>
+      'Create/post journals, reverse/void/send, open/close periods, and mutate chart of accounts.',
     'pricing:pharmacy_read' =>
       'View pharmacy retail / OTC sell prices on the drug catalog.',
     'pricing:pharmacy_write' =>

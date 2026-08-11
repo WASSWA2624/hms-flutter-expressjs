@@ -735,7 +735,7 @@ void main() {
   );
 
   testWidgets(
-    'Collect due shows Overdue filter chip with danger count; no Overdue tab',
+    'Collect due has no Overdue tab or Overdue filter chip',
     (WidgetTester tester) async {
       await _pumpAwaitingPaymentTab(
         tester,
@@ -757,8 +757,8 @@ void main() {
       );
 
       expect(find.text('Collect due'), findsWidgets);
-      expect(find.byType(FilterChip), findsOneWidget);
-      expect(find.text('Overdue (3)'), findsOneWidget);
+      expect(find.byType(FilterChip), findsNothing);
+      expect(find.text('Overdue (3)'), findsNothing);
       final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
       expect(
         strip.tabs.any((AppTabItem tab) => tab.label == 'Overdue'),

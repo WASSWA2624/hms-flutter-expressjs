@@ -64,6 +64,7 @@ describe('plan-module-matrix', () => {
         'encounters-vitals',
         'pharmacy-dispensing',
         'billing-payments',
+        'facility-accounts',
         'notifications-communications',
         'inpatient-bed-management',
         'subscription-controls'])

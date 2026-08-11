@@ -19,6 +19,7 @@ abstract final class CommercialModuleTiers {
     'encounters-vitals': 'BASIC',
     'pharmacy-dispensing': 'BASIC',
     'billing-payments': 'BASIC',
+    'facility-accounts': 'BASIC',
     'inpatient-bed-management': 'BASIC',
     'notifications-communications': 'BASIC',
     'subscription-controls': 'BASIC',

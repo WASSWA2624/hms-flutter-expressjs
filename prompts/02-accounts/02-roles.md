@@ -2,7 +2,7 @@
 
 ## Context
 
-Define which **roles** receive Accounts workspace rights (`accounts:read`, `accounts:write`, and where appropriate `financial:approve`) for `/accounts` ∩ `facility-accounts`. Source of truth: root `accounts.md` §9 plus product rule: **all accountants and admins have Accounts rights; HR roles do not.** Pair with `08-permissions.md` for catalog keys and gates.
+Define which **roles** receive Accounts workspace rights (`accounts:read`, `accounts:write`, and where appropriate `financial:approve`) for `/accounts` ∩ `facility-accounts`. Source of truth: root `accounts.md` §9 plus product rule: **all accountants and admins have Accounts rights; HR roles do not.** Pair with `01-permissions.md` for catalog keys and gates.
 
 ## Requirements
 
@@ -55,7 +55,7 @@ Define which **roles** receive Accounts workspace rights (`accounts:read`, `acco
 ## Relevant Files
 
 - `accounts.md` (§9)
-- `prompts/accounts/08-permissions.md`
+- `prompts/02-accounts/01-permissions.md`
 - `backend/src/config/roles.js`
 - `backend/src/config/permissions.js`
 - `backend/src/config/permission-catalog-metadata.js`

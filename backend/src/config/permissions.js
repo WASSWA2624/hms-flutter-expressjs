@@ -40,6 +40,8 @@ const PERMISSIONS = Object.freeze({
   PHARMACY_WRITE: 'pharmacy:write',
   BILLING_READ: 'billing:read',
   BILLING_WRITE: 'billing:write',
+  ACCOUNTS_READ: 'accounts:read',
+  ACCOUNTS_WRITE: 'accounts:write',
   PRICING_PHARMACY_READ: 'pricing:pharmacy_read',
   PRICING_PHARMACY_WRITE: 'pricing:pharmacy_write',
   PRICING_FACILITY_READ: 'pricing:facility_read',
@@ -151,6 +153,8 @@ const ADMIN_ACCESS = Object.freeze([
   PERMISSIONS.PHARMACY_WRITE,
   PERMISSIONS.BILLING_READ,
   PERMISSIONS.BILLING_WRITE,
+  PERMISSIONS.ACCOUNTS_READ,
+  PERMISSIONS.ACCOUNTS_WRITE,
   PERMISSIONS.PRICING_PHARMACY_READ,
   PERMISSIONS.PRICING_PHARMACY_WRITE,
   PERMISSIONS.PRICING_FACILITY_READ,
@@ -670,9 +674,11 @@ const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.PROFILE_READ,
     PERMISSIONS.COMMUNICATIONS_READ,
   ],
-  // Accountant — facility finance without front-desk last-office actions.
+  // Accountant — facility books desk + billing embeds; no last-office cashier.
   // patients:read omitted — no Patients registry; patient:read for Billing embeds.
   [ROLES.ACCOUNTANT]: [
+    PERMISSIONS.ACCOUNTS_READ,
+    PERMISSIONS.ACCOUNTS_WRITE,
     PERMISSIONS.BILLING_READ,
     PERMISSIONS.BILLING_WRITE,
     PERMISSIONS.PRICING_FACILITY_READ,

@@ -34,6 +34,7 @@ const List<AppModuleEntitlement> _allModules = <AppModuleEntitlement>[
   AppModuleEntitlement(code: 'theatre-anesthesia', licenseStatus: 'ACTIVE'),
   AppModuleEntitlement(code: 'reporting-analytics', licenseStatus: 'ACTIVE'),
   AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+  AppModuleEntitlement(code: 'facility-accounts', licenseStatus: 'ACTIVE'),
   AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'ACTIVE'),
   AppModuleEntitlement(code: 'mortuary', licenseStatus: 'ACTIVE'),
   AppModuleEntitlement(code: 'subscription-controls', licenseStatus: 'ACTIVE'),
@@ -90,6 +91,10 @@ void main() {
         RouteAccessCatalog.billingEntry,
       );
       expect(
+        AppRoutes.accounts.accessRequirement,
+        RouteAccessCatalog.accountsEntry,
+      );
+      expect(
         AppRoutes.claims.accessRequirement,
         RouteAccessCatalog.claimsEntry,
       );
@@ -104,6 +109,39 @@ void main() {
       expect(canAccessShellRoute(AppRoutes.billing, billingOnly), isTrue);
       expect(canAccessShellRoute(AppRoutes.opd, billingOnly), isFalse);
       expect(canAccessShellRoute(AppRoutes.claims, billingOnly), isFalse);
+      expect(canAccessShellRoute(AppRoutes.accounts, billingOnly), isFalse);
+    });
+
+    test('accounts:read alone opens Accounts and not Billing', () {
+      final AppAccessPolicy accountsOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.accountsRead},
+      );
+      expect(canAccessShellRoute(AppRoutes.accounts, accountsOnly), isTrue);
+      expect(canAccessShellRoute(AppRoutes.billing, accountsOnly), isFalse);
+    });
+
+    test('hr:read alone does not open Accounts', () {
+      final AppAccessPolicy hrOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.hrRead},
+      );
+      expect(canAccessShellRoute(AppRoutes.hr, hrOnly), isTrue);
+      expect(canAccessShellRoute(AppRoutes.accounts, hrOnly), isFalse);
+    });
+
+    test('facility-accounts missing strips Accounts even with keys', () {
+      final AppAccessPolicy noModule = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.accountsRead,
+          AppPermissions.accountsWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'billing-payments',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(canAccessShellRoute(AppRoutes.accounts, noModule), isFalse);
     });
 
     test('operations:read alone does not open OPD', () {

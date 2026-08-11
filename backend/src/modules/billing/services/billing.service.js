@@ -131,6 +131,17 @@ const assertEnabled = () => {
   if (isEnabled()) return;
   throw new HttpError('errors.billing.workspace_not_enabled', 404);
 };
+const assertLedgerReadable = (user = {}) => {
+  if (isEnabled()) return;
+  if (
+    isFeatureEnabled('accounts_workspace_v1') &&
+    (hasPermission(user, PERMISSIONS.ACCOUNTS_READ) ||
+      hasPermission(user, PERMISSIONS.ACCOUNTS_WRITE))
+  ) {
+    return;
+  }
+  throw new HttpError('errors.billing.workspace_not_enabled', 404);
+};
 const normalizeQueue = (value) => {
   const key = clean(value).toUpperCase();
   return Object.values(QUEUE_TYPES).includes(key) ? key : null;
@@ -714,6 +725,12 @@ const getWorkItems = async (filters = {}, page = 1, limit = 20, user = {}) => {
 
 const assertOwnership = async (patient, user) => {
   if (hasPermission(user, PERMISSIONS.BILLING_READ)) return;
+  if (
+    hasPermission(user, PERMISSIONS.ACCOUNTS_READ) ||
+    hasPermission(user, PERMISSIONS.ACCOUNTS_WRITE)
+  ) {
+    return;
+  }
   if (!hasPermission(user, PERMISSIONS.PATIENT_READ)) throw new HttpError('errors.auth.insufficient_permissions', 403);
   const requester = await billingRepository.findUserById(clean(user.id));
   if (!requester) throw new HttpError('errors.auth.insufficient_permissions', 403);
@@ -732,7 +749,7 @@ const assertOwnership = async (patient, user) => {
 };
 
 const getPatientLedger = async (patientIdentifier, filters = {}, page = 1, limit = 20, user = {}) => {
-  assertEnabled();
+  assertLedgerReadable(user);
   const scope = await resolveScope({}, user);
   const patient = await resolveScopedByIdentifier({
     model: 'patient',

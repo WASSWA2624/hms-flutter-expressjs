@@ -39,7 +39,7 @@ Seed on install; see `permissions.mdc` for semantics.
 - **Have Accounts rights:** `accountant`, `super_admin` / platform admins, `tenant_admin`, `facility_admin` (via admin access packs).
 - **Do not have Accounts rights by default:** `hr_staff` (and HR role packs), billing-only packs, and other non-admin clinical/ops packs unless Access admin assigns `accounts:*` on a custom role.
 - Subscription module `facility-accounts` remains a second gate; role keys alone do not open `/accounts` when the module is not entitled.
-- See `prompts/accounts/09-roles.md`.
+- See `prompts/02-accounts/02-roles.md`.
 
 ## Administration
 
@@ -51,4 +51,4 @@ Seed on install; see `permissions.mdc` for semantics.
 ## Related Rules
 
 - `modules.mdc`, `permissions.mdc`, `subscriptions.mdc`
-- `prompts/accounts/09-roles.md`, `prompts/accounts/08-permissions.md`
+- `prompts/02-accounts/02-roles.md`, `prompts/02-accounts/01-permissions.md`
