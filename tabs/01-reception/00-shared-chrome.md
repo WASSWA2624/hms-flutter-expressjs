@@ -1,0 +1,95 @@
+# Reception — shared / cross-tab chrome
+
+## Shell entry
+
+- Route: `AppRoutes.reception` under app `ShellRoute`
+- Workspace gate: `receptionWorkspaceRequirement` — ∪ `patient:read` | `last_office:read` + modules `patient-registry`, `scheduling-queue` (+ role pack)
+- Catalog entry: `RouteAccessCatalog.receptionEntry`
+- If no desk tabs are allowed: `AppFailureStateView` forbidden (no disabled placeholders)
+
+## Page chrome
+
+- `AsyncStateScaffold<OpdWorkspaceState>` over `opdWorkspaceControllerProvider`
+  - Loading: `receptionLoadingTitle` / `receptionLoadingBody`
+  - Retry refreshes OPD reception data + payment-gate + follow-ups when those tabs are readable
+  - `keepPreviousDataDuringRefresh: true`
+- Body: `ResponsivePage` + `AppTabStrip` + `AppListTable<_ReceptionDeskRow>`
+- In-desk URL: `syncWorkspaceLocation` with `?section=<query>`
+- Deep-link query (`ReceptionWorkspaceQuery`): `section`, `search`, `patientId`, `flowId`, `action`
+  - `action=register|register_patient|new_patient` → Register patient
+  - `action=schedule|book|book_appointment` → Schedule appointment
+  - `action=route|route_patient|walk_in|walk-in|start` → walk-in encounter (**reused** `showOpdEncounterDialog`)
+  - `flowId=` → opens Flow Actions when Active visits row-select allowed
+  - One-shot `action` cleared from URL after open (`_replaceUrlForSection`)
+
+## Tab strip (all visible sections)
+
+- Component: `AppTabStrip` / `AppTabItem` (standard variant)
+- Tabs omitted when unauthorized (`receptionDeskSectionRequirement(section)`) — not disabled
+- Every visible tab shows `count` with `AppTabCountTone.warning`
+- Icons per section (leading): event / queue / priority / pending / phone / payments
+
+## Table toolbar (shared pattern)
+
+Order on search bar (comment in page): **Filters → Settings → Export → Schedule → Register**
+
+| Control | Label / key | Notes |
+| --- | --- | --- |
+| Search | section hint (`receptionSearchHint` / payment / follow-ups variants) | mic via `AppSearchBar` default |
+| Clear | `receptionClearFiltersAction` | |
+| Filters | `receptionFiltersLabel` → title `commonAdvancedFiltersTitle` | **omitted** on Follow-ups |
+| Settings | `commonTableSettingsActionLabel` → `commonTableSettingsTitle` | Apply `receptionApplyColumnsAction`, Reset `receptionResetColumnsAction`, Close `commonCloseActionLabel` |
+| Export | default `Export` via `AppListTable.enableExport` | always on (no Reception `canExport` gate) |
+| Print (table) | — | **absent** on list toolbar |
+| Schedule | `receptionScheduleAppointmentAction` | omitted when ∩ `patient:write` denied |
+| Register | `receptionRegisterPatientAction` | omitted when ∩ `patient:write` denied |
+
+Column visibility storage: `reception_${section.name}` / widths `reception_cw_${section.name}`.
+
+## Shared strip actions → dialogs
+
+### Schedule appointment — Reception-owned shell
+
+- Entry: `openReceptionScheduleAppointment` (`reception_patient_actions.dart`)
+- Dialog title: `patientsAppointmentDialogTitle`
+- Nested tabs: Existing patient / New patient / Visitor (`receptionScheduleExistingPatientTab`, `receptionScheduleNewPatientTab`, `receptionScheduleVisitorTab`)
+- Existing → embedded patient picker → **reused** `PatientAppointmentQuickDialog` (`allowClinicalActions: false`, `allowVitalsActions: false`)
+- New → **reused** `RegisterNewPatientForm` + similarity / use-existing
+- Visitor → Reception-owned `ReceptionVisitorAppointmentDialog` (name, phone, organization, host, date/time, duration, reason)
+- Success: `opdSavedMessage` snackbar + workspace refresh
+- Gate: strip schedule/register ∩ `patient:write`
+
+### Register patient — **reused**
+
+- `showRegisterNewPatientDialog` (patients) → on create success `patientsSavedMessage` → `openReceptionPatientEditor` → **reused** `showPatientDetailDialog` (`allowBillingNavigation: false`)
+
+## Shared row hubs (owner notes)
+
+| Surface | Owner | File |
+| --- | --- | --- |
+| Appointment Actions | Reception wrapper → **reused** `OpdAppointmentActionsDialog` | `reception_appointment_actions_dialog.dart` |
+| Queue Actions | Reception wrapper → **reused** `QueueActionsDialog` | `reception_queue_actions_dialog.dart` |
+| Flow Actions | **reused** `showFlowActionsDialog` | `opd_flow_actions_dialog.dart` |
+| Follow-up detail | Reception-owned | `reception_follow_up_detail_dialog.dart` |
+| Payment-gate detail | Reception-owned (+ billing tiles) | `reception_payment_gate_detail_dialog.dart` |
+| Encounter / check-in | **reused** `showOpdEncounterDialog` | `opd_actions` |
+| Reschedule appointment | **reused** `showOpdRescheduleAppointmentDialog` | |
+| Cancel appointment | **reused** `showOpdCancelAppointmentDialog` | |
+| Print OPD summary | **reused** `showPrintOpdSummaryDialog` → `PrintDocumentTemplates.clinicalSummary` | from Flow Actions only |
+
+## Flow Actions from Reception (flags)
+
+Opened with:
+
+- `allowBillingActions: false`
+- `allowVitalsActions: false`
+- `allowClinicalActions: false`
+
+Still reachable when stage/permission allows (front-desk gates): Assign/Change doctor, Follow up, Print summary (`opdPrintSummaryAction`), Correct stage / other front-desk stage actions per hub. Clinical / vitals / billing panels stripped.
+
+## Feedback patterns (cross-tab)
+
+- Success snackbars: `opdSavedMessage`, `patientsSavedMessage`
+- Failures: `showAppFailureSnackBar` / form banners
+- Empty: section-specific `AppStateView` empty titles/bodies
+- Payment-gate / Follow-ups controller hard failure (no prior data): error `AppStateView` + `commonRetryActionLabel`
