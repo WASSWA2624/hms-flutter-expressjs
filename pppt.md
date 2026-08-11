@@ -1,4 +1,4 @@
-
+For each of these screens, create a similar/tailored files using 01-reception.md as the basis. number them accordingly and put them in a root folder called tabs-lister: /patients, /opd, /ipd, /icu, /nursing, /clinical, /theater, /discharge, /lab, /radiology, /pharmacy, /billing, /accounts, /claims, /subscriptions, /hr, /reports, /settings, and /admin/setup.
 
 implement @01-reception.md and store results in @tabs 
 
