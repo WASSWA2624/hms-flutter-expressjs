@@ -548,9 +548,8 @@ AppListTableColumn<BillingWorkItem> billingApprovalByColumn(
         ),
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(
-        item.requestedByDisplayId?.trim().isNotEmpty == true
-            ? item.requestedByDisplayId!
-            : l10n.billingNotRecorded,
+        billingPublicLabel(item.requestedByDisplayId) ??
+            l10n.billingNotRecorded,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );

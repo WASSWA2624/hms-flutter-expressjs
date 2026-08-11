@@ -265,12 +265,15 @@ class BillingDetailBody extends ConsumerWidget {
         ),
         AppWorkspacePatientContextField(
           label: l10n.billingRequesterLabel,
-          value: item.requestedByDisplayId ?? l10n.billingNotRecorded,
+          value: billingPublicLabel(item.requestedByDisplayId) ??
+              l10n.billingNotRecorded,
           icon: Icons.person_outline,
         ),
         AppWorkspacePatientContextField(
           label: l10n.billingLinkedInvoiceLabel,
-          value: item.targetDisplayId ?? item.invoiceDisplayId ?? '',
+          value: billingPublicLabel(item.targetDisplayId) ??
+              billingPublicLabel(item.invoiceDisplayId) ??
+              l10n.billingNotRecorded,
           icon: Icons.receipt_long_outlined,
         ),
       ]);
@@ -732,7 +735,7 @@ class _NonInvoiceDetailSection extends StatelessWidget {
             _DetailRow(
               title: l10n.billingRequesterLabel,
               subtitle: billingJoinDisplay(<String?>[
-                item.requestedByDisplayId,
+                billingPublicLabel(item.requestedByDisplayId),
                 billingDateTime(context, item.requestedAt),
               ]),
               trailing: billingApiLabel(context, item.status),
@@ -743,10 +746,12 @@ class _NonInvoiceDetailSection extends StatelessWidget {
               subtitle: billingDateTime(context, item.submittedAt),
               trailing: billingApiLabel(context, item.status),
             ),
-          if (item.invoiceDisplayId != null)
+          if (item.invoiceDisplayId != null || item.targetDisplayId != null)
             _DetailRow(
               title: l10n.billingLinkedInvoiceLabel,
-              subtitle: item.invoiceDisplayId!,
+              subtitle: billingPublicLabel(item.targetDisplayId) ??
+                  billingPublicLabel(item.invoiceDisplayId) ??
+                  l10n.billingNotRecorded,
               trailing: billingMoney(context, item.amount, item.currency),
             ),
         ],

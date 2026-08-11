@@ -169,6 +169,60 @@ int appListTableCompareNumber(num? left, num? right) {
   return left.compareTo(right);
 }
 
+/// Compares heterogeneous sort keys (`num`, `DateTime`, `bool`, or text).
+int appListTableCompareSortValues(Object? left, Object? right) {
+  if (left == null && right == null) {
+    return 0;
+  }
+  if (left == null) {
+    return 1;
+  }
+  if (right == null) {
+    return -1;
+  }
+  if (left is num && right is num) {
+    return left.compareTo(right);
+  }
+  if (left is DateTime && right is DateTime) {
+    return left.compareTo(right);
+  }
+  if (left is bool && right is bool) {
+    return left == right ? 0 : (left ? 1 : -1);
+  }
+  return appListTableCompareText('$left', '$right');
+}
+
+bool appListTableColumnIsActionChrome(String columnKey) {
+  final String normalized = columnKey.trim().toLowerCase();
+  return normalized == 'actions' ||
+      normalized == 'action' ||
+      normalized == 'next' ||
+      normalized == 'next_action';
+}
+
+/// Resolves the value used when a column has no explicit [sortComparator].
+///
+/// Prefers [AppListTableColumn.exportValue]; otherwise extracts plain text from
+/// [AppListTableColumn.cellBuilder] when [context] is available.
+Object? appListTableResolveSortKey<T>({
+  required AppListTableColumn<T> column,
+  required T item,
+  BuildContext? context,
+}) {
+  final AppListTableExportValue<T>? exportValue = column.exportValue;
+  if (exportValue != null) {
+    return exportValue(item);
+  }
+  if (context == null) {
+    return null;
+  }
+  try {
+    return appListTablePlainTextFromWidget(column.cellBuilder(context, item));
+  } catch (_) {
+    return null;
+  }
+}
+
 String appListTableColumnVisibilityStorageKey<T>(
   List<AppListTableColumn<T>> columns,
   List<AppListTableColumn<T>>? columnChoices,
@@ -616,6 +670,7 @@ class AppListTableColumn<T> {
     this.numeric = false,
     this.alwaysVisible = false,
     this.tooltip,
+    this.sortable,
     this.sortComparator,
     this.headerBuilder,
     this.preferredWidth,
@@ -630,6 +685,14 @@ class AppListTableColumn<T> {
   final bool numeric;
   final bool alwaysVisible;
   final String? tooltip;
+
+  /// Whether the column header offers sort.
+  ///
+  /// When null, defaults to true except action chrome columns (`actions`,
+  /// `action`, `next`, `next_action`). Set false to opt out, or true to force
+  /// sort even on action keys when a [sortComparator] / export value exists.
+  final bool? sortable;
+
   final AppListTableSortComparator<T>? sortComparator;
   final AppListTableHeaderBuilder<T>? headerBuilder;
 
@@ -642,6 +705,7 @@ class AppListTableColumn<T> {
   /// Plain cell value used by Excel export (not the widget [cellBuilder]).
   ///
   /// When null, export falls back to plain text extracted from [cellBuilder].
+  /// Also used as the default sort key when [sortComparator] is null.
   final AppListTableExportValue<T>? exportValue;
 
   /// Whether this column appears in Excel export.
@@ -652,7 +716,12 @@ class AppListTableColumn<T> {
 
   String get key => id ?? label;
 
-  bool get isSortable => sortComparator != null;
+  bool get isSortable {
+    if (sortable != null) {
+      return sortable!;
+    }
+    return !appListTableColumnIsActionChrome(key);
+  }
 
   bool get includesInExport {
     if (exportable != null) {
@@ -2204,8 +2273,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       _availableColumns,
       sortColumnKey,
     );
-    final AppListTableSortComparator<T>? comparator = column?.sortComparator;
-    if (comparator == null) {
+    if (column == null || !column.isSortable) {
       return sourceItems;
     }
 
@@ -2220,10 +2288,37 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     }
 
     final List<T> sortedItems = List<T>.of(sourceItems);
-    sortedItems.sort((T left, T right) {
-      final int result = comparator(left, right);
-      return _sortAscending ? result : -result;
-    });
+    final AppListTableSortComparator<T>? comparator = column.sortComparator;
+    if (comparator != null) {
+      sortedItems.sort((T left, T right) {
+        final int result = comparator(left, right);
+        return _sortAscending ? result : -result;
+      });
+    } else {
+      final List<Object?> sortKeys = <Object?>[
+        for (final T item in sortedItems)
+          appListTableResolveSortKey<T>(
+            column: column,
+            item: item,
+            context: context,
+          ),
+      ];
+      final List<int> indices = List<int>.generate(
+        sortedItems.length,
+        (int index) => index,
+      );
+      indices.sort((int leftIndex, int rightIndex) {
+        final int result = appListTableCompareSortValues(
+          sortKeys[leftIndex],
+          sortKeys[rightIndex],
+        );
+        return _sortAscending ? result : -result;
+      });
+      for (int index = 0; index < indices.length; index += 1) {
+        sortedItems[index] = sourceItems[indices[index]];
+      }
+    }
+
     _cachedSortSource = sourceItems;
     _cachedSortColumnKey = sortColumnKey;
     _cachedSortAscending = _sortAscending;
@@ -2498,8 +2593,10 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       }
     }
 
+    // Keep source order until the user sorts, unless a column opts into an
+    // explicit comparator (legacy auto-sort) or [initialSortColumnKey] is set.
     for (final AppListTableColumn<T> column in _visibleColumns) {
-      if (column.isSortable) {
+      if (column.isSortable && column.sortComparator != null) {
         _sortColumnKey = column.key;
         _sortAscending = widget.initialSortAscending;
         return;

@@ -1667,5 +1667,26 @@ void main() {
       );
       expect(BillingQueueType.claimsPending.sectionQueryValue, 'claims');
     });
+
+    test('fromUri maps Need approval aliases approval-required/tab=approvals', () {
+      expect(
+        BillingWorkspaceQuery.fromUri(Uri.parse('/billing?section=approvals'))
+            .queue,
+        BillingQueueType.approvalRequired,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=approval-required'),
+        ).queue,
+        BillingQueueType.approvalRequired,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?tab=approvals'),
+        ).queue,
+        BillingQueueType.approvalRequired,
+      );
+      expect(BillingQueueType.approvalRequired.sectionQueryValue, 'approvals');
+    });
   });
 }

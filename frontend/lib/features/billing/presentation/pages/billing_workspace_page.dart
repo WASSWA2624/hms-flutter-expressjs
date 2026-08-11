@@ -13,6 +13,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_approval_print_helpers.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_claim_print_helpers.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_invoice_print_helpers.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_receipt_print_helpers.dart';
@@ -830,8 +831,8 @@ class _BillingLiveDetailDialogState
             ? () => showBillingLedgerDialog(context, ref, item: item)
             : null,
       ),
-      // Inventory: invoice Print/Download; claim/pre-auth Print statement —
-      // omit when unauthorized (no disabled stubs).
+      // Inventory: invoice Print/Download; claim/pre-auth statement;
+      // approval packet — omit when unauthorized (no disabled stubs).
       actions: <Widget>[
         if (canDocument && item.isInvoice) ...<Widget>[
           AppReportActionButton.print(
@@ -855,6 +856,16 @@ class _BillingLiveDetailDialogState
             label: l10n.billingPrintClaimAction,
             tooltip: l10n.billingPrintClaimTooltip,
             onPressed: () => printBillingClaimOrPreAuth(
+              ref: ref,
+              context: context,
+              item: item,
+            ),
+          ),
+        if (canDocument && item.isApproval)
+          AppReportActionButton.print(
+            label: l10n.billingPrintApprovalAction,
+            tooltip: l10n.billingPrintApprovalTooltip,
+            onPressed: () => printBillingApprovalPacket(
               ref: ref,
               context: context,
               item: item,

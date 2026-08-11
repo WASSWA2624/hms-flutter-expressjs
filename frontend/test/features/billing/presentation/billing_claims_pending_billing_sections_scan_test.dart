@@ -404,9 +404,9 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Scan Claim Patient'), findsOneWidget);
-        expect(find.byTooltip('Record insurer response'), findsWidgets);
+        expect(find.byTooltip('Record the insurer response'), findsWidgets);
 
-        await tester.tap(find.byTooltip('Record insurer response').first);
+        await tester.tap(find.byTooltip('Record the insurer response').first);
         await tester.pumpAndSettle();
 
         final Finder submit = find.widgetWithText(
@@ -442,7 +442,7 @@ void main() {
         );
 
         expect(find.text('Scan Claim Patient'), findsOneWidget);
-        expect(find.byTooltip('Record insurer response'), findsNothing);
+        expect(find.byTooltip('Record the insurer response'), findsNothing);
         verifyNever(() => repository.reconcileClaim(any(), any()));
       },
     );
@@ -492,7 +492,7 @@ void main() {
           accessPolicy: _writerPolicy(),
         );
 
-        await tester.tap(find.byTooltip('Record insurer response').first);
+        await tester.tap(find.byTooltip('Record the insurer response').first);
         await tester.pumpAndSettle();
 
         expect(find.byType(AppDialog), findsWidgets);

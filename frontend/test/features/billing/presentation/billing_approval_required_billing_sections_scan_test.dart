@@ -472,7 +472,7 @@ void main() {
     );
 
     testWidgets(
-      'approval detail does not mount invoice print/download (NOT_REQUIRED)',
+      'approval detail mounts Print packet; omits invoice print/download',
       (WidgetTester tester) async {
         await _pumpApprovalTab(
           tester,
@@ -484,7 +484,8 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Approve'), findsWidgets);
-        expect(find.textContaining('Print'), findsNothing);
+        expect(find.text('Print packet'), findsOneWidget);
+        expect(find.text('Print invoice'), findsNothing);
         expect(find.textContaining('Download'), findsNothing);
       },
     );

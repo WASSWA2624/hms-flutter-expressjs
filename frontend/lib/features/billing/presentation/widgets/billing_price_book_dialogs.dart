@@ -2,15 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/billing/data/repositories/billing_price_book_repository_impl.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_price_book_entry.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_price_book_similarity.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_price_book_similarity_dialog.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
@@ -21,55 +26,94 @@ final billingPriceBookRevisionProvider = StateProvider<int>((Ref ref) => 0);
 /// Active price count shown on the Price book desk tab.
 final billingPriceBookActiveCountProvider = StateProvider<int?>((Ref ref) => null);
 
-Future<bool> showBillingPriceBookEntryDialog({
+/// Result of Add / Edit price dialog (saved, cancelled, or select existing).
+enum BillingPriceBookDialogOutcome { cancelled, saved, openExisting }
+
+final class BillingPriceBookDialogResult {
+  const BillingPriceBookDialogResult._({
+    required this.outcome,
+    this.existing,
+  });
+
+  const BillingPriceBookDialogResult.cancelled()
+    : this._(outcome: BillingPriceBookDialogOutcome.cancelled);
+
+  const BillingPriceBookDialogResult.saved()
+    : this._(outcome: BillingPriceBookDialogOutcome.saved);
+
+  const BillingPriceBookDialogResult.openExisting(this.existing)
+    : outcome = BillingPriceBookDialogOutcome.openExisting;
+
+  final BillingPriceBookDialogOutcome outcome;
+  final BillingPriceBookEntry? existing;
+
+  bool get saved => outcome == BillingPriceBookDialogOutcome.saved;
+}
+
+Future<BillingPriceBookDialogResult> showBillingPriceBookEntryDialog({
   required BuildContext context,
   required WidgetRef ref,
   BillingPriceBookEntry? editing,
 }) async {
   if (!canWriteBillingPriceBook(ref.read(appAccessPolicyProvider))) {
-    return false;
+    return const BillingPriceBookDialogResult.cancelled();
   }
   final AppLocalizations l10n = context.l10n;
-  final bool? saved = await showAppWorkspaceActionDialog<bool>(
-    context: context,
-    title: Text(
-      editing == null
-          ? l10n.billingPriceBookAddTitle
-          : l10n.billingPriceBookEditTitle,
-    ),
-    content: _BillingPriceBookEntryDialog(
-      editing: editing,
-      onSubmit: (Map<String, Object?> payload) async {
-        final repo = ref.read(billingPriceBookRepositoryProvider);
-        if (editing == null) {
-          final result = await repo.createEntry(payload);
-          return result.when(
-            success: (_) async => null,
-            failure: (AppFailure failure) async => failure,
-          );
-        }
-        final result = await repo.updateEntry(editing.id, payload);
-        return result.when(
-          success: (_) async => null,
-          failure: (AppFailure failure) async => failure,
-        );
-      },
-    ),
-  );
-  if (saved == true) {
+  final BillingPriceBookDialogResult? result =
+      await showAppWorkspaceActionDialog<BillingPriceBookDialogResult>(
+        context: context,
+        title: Text(
+          editing == null
+              ? l10n.billingPriceBookAddTitle
+              : l10n.billingPriceBookEditTitle,
+        ),
+        content: _BillingPriceBookEntryDialog(
+          editing: editing,
+          onSubmit: (Map<String, Object?> payload) async {
+            final repo = ref.read(billingPriceBookRepositoryProvider);
+            if (editing == null) {
+              final createResult = await repo.createEntry(payload);
+              return createResult.when(
+                success: (_) async => null,
+                failure: (AppFailure failure) async => failure,
+              );
+            }
+            final updateResult = await repo.updateEntry(editing.id, payload);
+            return updateResult.when(
+              success: (_) async => null,
+              failure: (AppFailure failure) async => failure,
+            );
+          },
+          onOverwrite: (BillingPriceBookEntry target, Map<String, Object?> payload) async {
+            final repo = ref.read(billingPriceBookRepositoryProvider);
+            final updateResult = await repo.updateEntry(target.id, payload);
+            return updateResult.when(
+              success: (_) async => null,
+              failure: (AppFailure failure) async => failure,
+            );
+          },
+        ),
+      );
+  if (result?.saved == true) {
     ref.read<StateController<int>>(billingPriceBookRevisionProvider.notifier).state++;
   }
-  return saved == true;
+  return result ?? const BillingPriceBookDialogResult.cancelled();
 }
 
 class _BillingPriceBookEntryDialog extends ConsumerStatefulWidget {
   const _BillingPriceBookEntryDialog({
     required this.onSubmit,
+    required this.onOverwrite,
     this.editing,
   });
 
   final BillingPriceBookEntry? editing;
   final Future<AppFailure?> Function(Map<String, Object?> payload) onSubmit;
+  final Future<AppFailure?> Function(
+    BillingPriceBookEntry target,
+    Map<String, Object?> payload,
+  )
+  onOverwrite;
 
   @override
   ConsumerState<_BillingPriceBookEntryDialog> createState() =>
@@ -257,7 +301,9 @@ class _BillingPriceBookEntryDialogState
           submitLabel: l10n.commonSaveActionLabel,
           submitIcon: Icons.menu_book_outlined,
           isSubmitting: _isSubmitting,
-          onCancel: () => Navigator.of(context).pop(false),
+          onCancel: () => Navigator.of(context).pop(
+            const BillingPriceBookDialogResult.cancelled(),
+          ),
           onSubmit: _submit,
         ),
       ],
@@ -302,18 +348,97 @@ class _BillingPriceBookEntryDialogState
       'effective_from': _effectiveFrom?.toUtc().toIso8601String(),
       'is_active': _isActive,
     };
-    final AppFailure? failure = await widget.onSubmit(payload);
+
+    final BillingPriceBookSimilarityDraft draft = BillingPriceBookSimilarityDraft(
+      catalogItemId: _itemController.text.trim(),
+      paymentMode: _paymentMode,
+      coveragePlanId: _schemeController.text.trim().isEmpty
+          ? null
+          : _schemeController.text.trim(),
+      effectiveFrom: _effectiveFrom,
+      isActive: _isActive,
+    );
+
+    final bool shouldSubmit = await _reviewSimilarity(draft);
+    if (!shouldSubmit || !mounted) {
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
+    // Overwrite target set by similarity review (create path only).
+    final BillingPriceBookEntry? overwriteTarget = _overwriteTarget;
+    _overwriteTarget = null;
+    final AppFailure? failure = overwriteTarget == null
+        ? await widget.onSubmit(payload)
+        : await widget.onOverwrite(overwriteTarget, payload);
     if (!mounted) {
       return;
     }
     if (failure == null) {
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(const BillingPriceBookDialogResult.saved());
       return;
     }
     setState(() {
       _failure = failure;
       _isSubmitting = false;
     });
+  }
+
+  BillingPriceBookEntry? _overwriteTarget;
+
+  Future<bool> _reviewSimilarity(BillingPriceBookSimilarityDraft draft) async {
+    final Result<AppPage<BillingPriceBookEntry>> listed = await ref
+        .read(billingPriceBookRepositoryProvider)
+        .listEntries(
+          BillingPriceBookQuery(search: draft.catalogItemId),
+          tenantId: ref.read(sessionStateProvider).session?.user?.tenantId,
+          facilityId: ref.read(sessionStateProvider).session?.user?.facilityId,
+        );
+    if (!mounted) {
+      return false;
+    }
+    final List<BillingPriceBookEntry> candidates = listed.when(
+      success: (AppPage<BillingPriceBookEntry> page) => page.items,
+      failure: (_) => const <BillingPriceBookEntry>[],
+    );
+    final BillingPriceBookSimilarityResult check =
+        checkBillingPriceBookSimilarity(
+          draft: draft,
+          candidates: candidates,
+          excludeEntryId: widget.editing?.id,
+        );
+    if (!check.hasMatches) {
+      return true;
+    }
+
+    final BillingPriceBookSimilarityDialogResult result =
+        await showBillingPriceBookSimilarityDialog(
+          context,
+          draft: draft,
+          check: check,
+          isCreate: widget.editing == null,
+        );
+    if (!mounted) {
+      return false;
+    }
+    switch (result.action) {
+      case BillingPriceBookSimilarityAction.cancel:
+        return false;
+      case BillingPriceBookSimilarityAction.proceed:
+        return true;
+      case BillingPriceBookSimilarityAction.useExisting:
+        final BillingPriceBookEntry? existing = result.selectedEntry;
+        if (existing == null) {
+          return false;
+        }
+        Navigator.of(context).pop(
+          BillingPriceBookDialogResult.openExisting(existing),
+        );
+        return false;
+      case BillingPriceBookSimilarityAction.overwrite:
+        _overwriteTarget = result.selectedEntry;
+        return _overwriteTarget != null;
+    }
   }
 }
 
@@ -333,6 +458,35 @@ String billingPriceBookCatalogLabel(AppLocalizations l10n, String catalogType) {
     'DRUG' => l10n.billingPriceBookCatalogDrug,
     _ => l10n.billingPriceBookCatalogService,
   };
+}
+
+/// Human-readable item cell — catalog label · public item code (never UUID).
+String billingPriceBookItemDisplayLabel(
+  AppLocalizations l10n,
+  BillingPriceBookEntry entry,
+) {
+  final String catalog = billingPriceBookCatalogLabel(l10n, entry.catalogType);
+  final String? item = billingPublicLabel(entry.catalogItemId);
+  if (item == null || item.isEmpty) {
+    return catalog;
+  }
+  return '$catalog · $item';
+}
+
+/// Scheme label for tables / similarity — never raw plan UUID.
+String billingPriceBookSchemeDisplayLabel(
+  AppLocalizations l10n,
+  BillingPriceBookEntry entry,
+) {
+  final String? name = billingPublicLabel(entry.coveragePlanName);
+  if (name != null && name.isNotEmpty) {
+    return name;
+  }
+  final String? planId = billingPublicLabel(entry.coveragePlanId);
+  if (planId != null && planId.isNotEmpty) {
+    return planId;
+  }
+  return l10n.billingNotRecorded;
 }
 
 String billingPriceBookMoney(

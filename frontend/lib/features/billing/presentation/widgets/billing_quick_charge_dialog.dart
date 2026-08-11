@@ -1,14 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/currency/effective_default_currency_provider.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/features/billing/data/repositories/billing_price_book_repository_impl.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
+import 'package:hosspi_hms/features/billing/domain/entities/billing_price_book_entry.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_price_book_dialogs.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_support.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_patient_actions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
 /// Opens the Open work Charge dialog (Patient · Item · Qty · Price · Mode · Notes).
@@ -40,15 +48,97 @@ class _BillingQuickChargeDialogState
   final TextEditingController _notesController = TextEditingController();
   Patient? _patient;
   String _paymentMode = 'SELF_PAY';
+  String? _resolvedPriceBookEntryId;
+  int? _watchedRevision;
+  Timer? _resolveDebounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _itemController.addListener(_schedulePriceResolve);
+  }
 
   @override
   void dispose() {
+    _resolveDebounce?.cancel();
+    _itemController.removeListener(_schedulePriceResolve);
     _patientController.dispose();
     _itemController.dispose();
     _qtyController.dispose();
     _priceController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  void _schedulePriceResolve() {
+    _resolveDebounce?.cancel();
+    _resolveDebounce = Timer(const Duration(milliseconds: 350), () {
+      unawaited(_resolvePriceFromBook());
+    });
+  }
+
+  Future<void> _resolvePriceFromBook() async {
+    final String item = _itemController.text.trim();
+    if (item.isEmpty) {
+      _resolvedPriceBookEntryId = null;
+      return;
+    }
+    final String? tenantId = ref
+        .read(sessionStateProvider)
+        .session
+        ?.user
+        ?.tenantId;
+    final String? facilityId = ref
+        .read(sessionStateProvider)
+        .session
+        ?.user
+        ?.facilityId;
+    final Result<AppPage<BillingPriceBookEntry>> result = await ref
+        .read(billingPriceBookRepositoryProvider)
+        .listEntries(
+          BillingPriceBookQuery(
+            search: item,
+            paymentMode: _paymentMode,
+            isActive: true,
+          ),
+          tenantId: tenantId,
+          facilityId: facilityId,
+        );
+    if (!mounted) {
+      return;
+    }
+    final List<BillingPriceBookEntry> items = result.when(
+      success: (AppPage<BillingPriceBookEntry> page) => page.items,
+      failure: (_) => const <BillingPriceBookEntry>[],
+    );
+    final String needle = item.toLowerCase();
+    BillingPriceBookEntry? match;
+    for (final BillingPriceBookEntry entry in items) {
+      if (entry.paymentMode.toUpperCase() != _paymentMode.toUpperCase()) {
+        continue;
+      }
+      if (!entry.isActive) {
+        continue;
+      }
+      final String catalogItem = entry.catalogItemId.trim().toLowerCase();
+      final String label = billingPriceBookItemDisplayLabel(
+        context.l10n,
+        entry,
+      ).toLowerCase();
+      if (catalogItem == needle ||
+          label.contains(needle) ||
+          (catalogItem.isNotEmpty && needle.contains(catalogItem))) {
+        match = entry;
+        break;
+      }
+    }
+    if (match == null) {
+      return;
+    }
+    setState(() {
+      _resolvedPriceBookEntryId = match!.id;
+      _priceController.text = match.unitPrice.toString();
+    });
   }
 
   Future<void> _pickPatient() async {
@@ -89,6 +179,7 @@ class _BillingQuickChargeDialogState
         paymentMode: _paymentMode,
         currency: ref.read(effectiveDefaultCurrencyProvider),
         notes: billingEmptyToNull(_notesController.text),
+        priceBookEntryId: _resolvedPriceBookEntryId,
         patientDisplayName: patient.effectiveDisplayName.trim().isEmpty
             ? null
             : patient.effectiveDisplayName.trim(),
@@ -102,6 +193,13 @@ class _BillingQuickChargeDialogState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final String currency = ref.watch(effectiveDefaultCurrencyProvider);
+    final int revision = ref.watch(billingPriceBookRevisionProvider);
+    if (_watchedRevision != revision) {
+      _watchedRevision = revision;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_resolvePriceFromBook());
+      });
+    }
 
     return AppDialog(
       title: Text(l10n.billingChargeAction),
@@ -178,6 +276,7 @@ class _BillingQuickChargeDialogState
             onChanged: (String? value) {
               if (value != null) {
                 setState(() => _paymentMode = value);
+                unawaited(_resolvePriceFromBook());
               }
             },
           ),

@@ -500,6 +500,77 @@ void main() {
     );
   });
 
+  testWidgets('AppListTable sorts columns without an explicit comparator', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 360,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: const <AppListTableColumn<_RowItem>>[
+            AppListTableColumn<_RowItem>(
+              label: 'Title',
+              cellBuilder: _titleCell,
+              exportValue: _titleExport,
+            ),
+            AppListTableColumn<_RowItem>(
+              label: 'Status',
+              cellBuilder: _statusCell,
+              exportValue: _statusExport,
+            ),
+          ],
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    expect(find.byIcon(Icons.swap_vert), findsWidgets);
+
+    await tester.tap(find.text('Title'));
+    await tester.pump();
+
+    expect(
+      tester.getTopLeft(find.text('Alpha')).dy,
+      lessThan(tester.getTopLeft(find.text('Beta')).dy),
+    );
+
+    await tester.tap(find.text('Title'));
+    await tester.pump();
+
+    expect(
+      tester.getTopLeft(find.text('Beta')).dy,
+      lessThan(tester.getTopLeft(find.text('Alpha')).dy),
+    );
+  });
+
+  test('AppListTableColumn is sortable by default except action chrome', () {
+    const AppListTableColumn<_RowItem> dataColumn = AppListTableColumn<_RowItem>(
+      label: 'Title',
+      cellBuilder: _titleCell,
+    );
+    const AppListTableColumn<_RowItem> nextColumn = AppListTableColumn<_RowItem>(
+      id: 'next',
+      label: 'Next',
+      cellBuilder: _titleCell,
+    );
+    const AppListTableColumn<_RowItem> forcedNext =
+        AppListTableColumn<_RowItem>(
+          id: 'next',
+          label: 'Next',
+          sortable: true,
+          cellBuilder: _titleCell,
+        );
+
+    expect(dataColumn.isSortable, isTrue);
+    expect(nextColumn.isSortable, isFalse);
+    expect(forcedNext.isSortable, isTrue);
+  });
+
   testWidgets('AppListTable places column settings inside the search bar', (
     WidgetTester tester,
   ) async {
@@ -1656,6 +1727,10 @@ int _compareStatus(_RowItem left, _RowItem right) {
 Widget _titleCell(BuildContext context, _RowItem item) {
   return Text(item.title);
 }
+
+Object? _titleExport(_RowItem item) => item.title;
+
+Object? _statusExport(_RowItem item) => item.status;
 
 Widget _statusCell(BuildContext context, _RowItem item) {
   return AppStatusText(label: item.status, icon: Icons.check_circle_outline);

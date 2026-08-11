@@ -106,7 +106,7 @@ abstract final class BillingApprovalRequiredFinancialInventory {
     repositoryMethod: 'getPatientLedger',
   );
 
-  /// Print/download mount only for invoice kinds — absent on approval rows.
+  /// Print/download invoice mounts only for invoice kinds.
   static const BillingApprovalRequiredFinancialAtom printInvoice =
       BillingApprovalRequiredFinancialAtom(
     id: 'print_invoice',
@@ -114,6 +114,15 @@ abstract final class BillingApprovalRequiredFinancialInventory {
     actionClass: BillingApprovalRequiredActionClass.notBillable,
     requirement: BillingApprovalRequiredAtomPermissions.document,
     auditNote: 'NOT_REQUIRED on approval work items — control not mounted',
+  );
+
+  static const BillingApprovalRequiredFinancialAtom printApproval =
+      BillingApprovalRequiredFinancialAtom(
+    id: 'print_approval_packet',
+    label: 'Print approval packet',
+    actionClass: BillingApprovalRequiredActionClass.notBillable,
+    requirement: BillingApprovalRequiredAtomPermissions.document,
+    auditNote: 'Approval packet preview — never silent print',
   );
 
   static const BillingApprovalRequiredFinancialAtom downloadInvoice =
@@ -161,6 +170,7 @@ abstract final class BillingApprovalRequiredFinancialInventory {
     reject,
     viewLedger,
     printInvoice,
+    printApproval,
     downloadInvoice,
     claimsPendingTab,
     emptyState,

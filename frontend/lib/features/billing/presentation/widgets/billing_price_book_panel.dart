@@ -12,7 +12,9 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/billing/data/repositories/billing_price_book_repository_impl.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_price_book_entry.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_price_book_print_helpers.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_price_book_dialogs.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -197,17 +199,41 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
   }
 
   Future<void> _openCreateOrEdit({BillingPriceBookEntry? editing}) async {
-    final bool saved = await showBillingPriceBookEntryDialog(
-      context: context,
-      ref: ref,
-      editing: editing,
-    );
-    if (saved && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.billingActionSaved)),
-      );
-      await _reload();
+    BillingPriceBookEntry? current = editing;
+    while (mounted) {
+      final BillingPriceBookDialogResult result =
+          await showBillingPriceBookEntryDialog(
+            context: context,
+            ref: ref,
+            editing: current,
+          );
+      if (!context.mounted) {
+        return;
+      }
+      switch (result.outcome) {
+        case BillingPriceBookDialogOutcome.cancelled:
+          return;
+        case BillingPriceBookDialogOutcome.saved:
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.l10n.billingActionSaved)),
+          );
+          await _reload();
+          return;
+        case BillingPriceBookDialogOutcome.openExisting:
+          current = result.existing;
+          if (current == null) {
+            return;
+          }
+      }
     }
+  }
+
+  Future<void> _printList() async {
+    await printBillingPriceBookList(
+      ref: ref,
+      context: context,
+      entries: _page.items,
+    );
   }
 
   Future<void> _deactivate(BillingPriceBookEntry entry) async {
@@ -216,8 +242,10 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
       context: context,
       builder: (BuildContext dialogContext) => AppConfirmActionDialog(
         title: l10n.billingPriceBookDeactivateTitle,
-        body: l10n.billingPriceBookDeactivateBody(entry.itemLabel),
-        highlightedText: entry.itemLabel,
+        body: l10n.billingPriceBookDeactivateBody(
+          billingPriceBookItemDisplayLabel(l10n, entry),
+        ),
+        highlightedText: billingPriceBookItemDisplayLabel(l10n, entry),
         submitLabel: l10n.billingPriceBookDeactivateAction,
         destructive: true,
         icon: const Icon(Icons.pause_circle_outline),
@@ -315,10 +343,17 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
           if (needle.isEmpty) {
             return true;
           }
-          return item.itemLabel.toLowerCase().contains(needle) ||
-              item.effectiveId.toLowerCase().contains(needle) ||
-              item.schemeLabel.toLowerCase().contains(needle) ||
-              item.paymentMode.toLowerCase().contains(needle);
+          return billingPriceBookItemDisplayLabel(l10n, item)
+                  .toLowerCase()
+                  .contains(needle) ||
+              billingPriceBookSchemeDisplayLabel(l10n, item)
+                  .toLowerCase()
+                  .contains(needle) ||
+              item.paymentMode.toLowerCase().contains(needle) ||
+              (billingPublicLabel(item.displayId)?.toLowerCase().contains(
+                    needle,
+                  ) ??
+                  false);
         },
         onSubmitted: (_) => unawaited(_reload()),
         onClear: () {
@@ -427,6 +462,11 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
           unawaited(_reload());
         },
         trailingActions: <AppSearchBarAction>[
+          AppSearchBarAction(
+            label: l10n.billingPriceBookPrintAction,
+            icon: Icons.print_outlined,
+            onPressed: () => unawaited(_printList()),
+          ),
           if (canWrite)
             AppSearchBarAction(
               label: l10n.commonAddActionLabel,
@@ -442,13 +482,16 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
           alwaysVisible: true,
           preferredWidth: 220,
           cellBuilder: (_, BillingPriceBookEntry item) => Text(
-            item.itemLabel,
+            billingPriceBookItemDisplayLabel(l10n, item),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
           sortComparator: (BillingPriceBookEntry a, BillingPriceBookEntry b) =>
-              a.itemLabel.compareTo(b.itemLabel),
-          exportValue: (BillingPriceBookEntry item) => item.itemLabel,
+              billingPriceBookItemDisplayLabel(l10n, a).compareTo(
+                billingPriceBookItemDisplayLabel(l10n, b),
+              ),
+          exportValue: (BillingPriceBookEntry item) =>
+              billingPriceBookItemDisplayLabel(l10n, item),
         ),
         AppListTableColumn<BillingPriceBookEntry>(
           id: 'mode',
@@ -511,11 +554,12 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
           alwaysVisible: true,
           preferredWidth: 220,
           cellBuilder: (_, BillingPriceBookEntry item) => Text(
-            item.itemLabel,
+            billingPriceBookItemDisplayLabel(l10n, item),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          exportValue: (BillingPriceBookEntry item) => item.itemLabel,
+          exportValue: (BillingPriceBookEntry item) =>
+              billingPriceBookItemDisplayLabel(l10n, item),
         ),
         AppListTableColumn<BillingPriceBookEntry>(
           id: 'mode',
@@ -578,10 +622,10 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
           label: l10n.billingPriceBookSchemeColumn,
           preferredWidth: 160,
           cellBuilder: (_, BillingPriceBookEntry item) {
-            final String scheme = item.schemeLabel;
-            return Text(scheme.isEmpty ? '—' : scheme);
+            return Text(billingPriceBookSchemeDisplayLabel(l10n, item));
           },
-          exportValue: (BillingPriceBookEntry item) => item.schemeLabel,
+          exportValue: (BillingPriceBookEntry item) =>
+              billingPriceBookSchemeDisplayLabel(l10n, item),
         ),
         AppListTableColumn<BillingPriceBookEntry>(
           id: 'effective',
@@ -604,7 +648,7 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
       ],
       mobileItemBuilder: (BuildContext context, BillingPriceBookEntry item) {
         return AppListTableMobileItem(
-          title: item.itemLabel,
+          title: billingPriceBookItemDisplayLabel(l10n, item),
           caption: billingPriceBookMoney(context, item.unitPrice, item.currency),
           meta: <AppListTableMobileMeta>[
             AppListTableMobileMeta(

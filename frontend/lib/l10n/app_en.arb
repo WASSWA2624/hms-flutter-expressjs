@@ -2767,6 +2767,91 @@
       }
     }
   },
+  "billingPriceBookExactDialogTitle": "Matching price found",
+  "@billingPriceBookExactDialogTitle": {
+    "description": "Title when an exact active price-book row already exists."
+  },
+  "billingPriceBookSimilarDialogTitle": "Similar prices found",
+  "@billingPriceBookSimilarDialogTitle": {
+    "description": "Title when near-duplicate price-book rows exist."
+  },
+  "billingPriceBookNoSimilarDialogTitle": "No similar prices",
+  "@billingPriceBookNoSimilarDialogTitle": {
+    "description": "Title when price-book similarity finds no matches."
+  },
+  "billingPriceBookExactBannerTitle": "Exact active price match",
+  "@billingPriceBookExactBannerTitle": {
+    "description": "Banner title for exact price-book conflict."
+  },
+  "billingPriceBookSimilarBannerTitle": "Review similar prices",
+  "@billingPriceBookSimilarBannerTitle": {
+    "description": "Banner title for near price-book matches."
+  },
+  "billingPriceBookNoSimilarBannerTitle": "Ready to save",
+  "@billingPriceBookNoSimilarBannerTitle": {
+    "description": "Banner title when no similar prices exist."
+  },
+  "billingPriceBookExactDialogBody": "An active price already matches Item · Mode · Scheme · Effective. Select the existing row instead of creating another.",
+  "@billingPriceBookExactDialogBody": {
+    "description": "Body for exact price-book create conflict."
+  },
+  "billingPriceBookSimilarDialogBody": "Similar price-book rows exist. Select existing, overwrite, or continue saving.",
+  "@billingPriceBookSimilarDialogBody": {
+    "description": "Body for near price-book matches."
+  },
+  "billingPriceBookNoSimilarDialogBody": "No similar prices were found. You can continue.",
+  "@billingPriceBookNoSimilarDialogBody": {
+    "description": "Body when price-book similarity is empty."
+  },
+  "billingPriceBookProceedSaveAction": "Save anyway",
+  "@billingPriceBookProceedSaveAction": {
+    "description": "Continue create/update despite near matches."
+  },
+  "billingPriceBookContinueSaveAction": "Continue",
+  "@billingPriceBookContinueSaveAction": {
+    "description": "Continue save when no similarity matches."
+  },
+  "billingPriceBookUseExistingAction": "Select existing",
+  "@billingPriceBookUseExistingAction": {
+    "description": "Open the existing price-book row instead of creating."
+  },
+  "billingPriceBookOverwriteAction": "Overwrite",
+  "@billingPriceBookOverwriteAction": {
+    "description": "Overwrite an existing near-match price-book row."
+  },
+  "billingPriceBookPrintAction": "Print",
+  "@billingPriceBookPrintAction": {
+    "description": "Print filtered price list from Price book search chrome."
+  },
+  "billingPriceBookPrintTitle": "Price list",
+  "@billingPriceBookPrintTitle": {
+    "description": "Document title for printed price-book lists."
+  },
+  "billingPriceBookPrintOptionsSectionLabel": "Price list sections",
+  "@billingPriceBookPrintOptionsSectionLabel": {
+    "description": "Section picker title for price-list print preview."
+  },
+  "billingPriceBookPrintSectionSummary": "Summary",
+  "@billingPriceBookPrintSectionSummary": {
+    "description": "Print section toggle for price-list summary."
+  },
+  "billingPriceBookPrintSectionRows": "Prices",
+  "@billingPriceBookPrintSectionRows": {
+    "description": "Print section toggle for price rows table."
+  },
+  "billingPriceBookPrintFooter": "Generated from the billing price book.",
+  "@billingPriceBookPrintFooter": {
+    "description": "Footer note on printed price lists."
+  },
+  "billingPriceBookPrintRowCount": "{count} prices",
+  "@billingPriceBookPrintRowCount": {
+    "description": "Row count subtitle for price-list print.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "billingApproveActionTooltip": "Approve this pending request",
   "@billingApproveActionTooltip": {
     "description": "Tooltip for the Approve next action on Need approval rows."
@@ -3146,6 +3231,30 @@
   "billingPrintSectionStatusDecision": "Status / decision",
   "@billingPrintSectionStatusDecision": {
     "description": "Print section toggle for claim or pre-auth status."
+  },
+  "billingPrintApprovalAction": "Print packet",
+  "@billingPrintApprovalAction": {
+    "description": "Action label to print an approval packet from Need approval Detail."
+  },
+  "billingPrintApprovalTooltip": "Print approval request packet",
+  "@billingPrintApprovalTooltip": {
+    "description": "Tooltip for Print packet on Need approval Detail."
+  },
+  "billingApprovalPrintOptionsSectionLabel": "Approval sections",
+  "@billingApprovalPrintOptionsSectionLabel": {
+    "description": "Section picker title for approval packet print preview options."
+  },
+  "billingPrintSectionRequestFields": "Request details",
+  "@billingPrintSectionRequestFields": {
+    "description": "Print section toggle for approval type, requester, and insurer fields."
+  },
+  "billingApprovalPacketTitle": "Approval packet",
+  "@billingApprovalPacketTitle": {
+    "description": "Document title for printed billing approval packets."
+  },
+  "billingApprovalPacketFooter": "Generated from the billing approval queue.",
+  "@billingApprovalPacketFooter": {
+    "description": "Footer note on printed billing approval packets."
   },
   "billingInvoiceReportFooter": "This invoice was generated by the HMS billing workspace.",
   "@billingInvoiceReportFooter": {

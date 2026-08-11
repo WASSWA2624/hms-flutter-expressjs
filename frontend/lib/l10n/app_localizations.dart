@@ -4108,6 +4108,126 @@ abstract class AppLocalizations {
   /// **'Deactivate {item}? Charge will stop resolving this tariff.'**
   String billingPriceBookDeactivateBody(String item);
 
+  /// Title when an exact active price-book row already exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching price found'**
+  String get billingPriceBookExactDialogTitle;
+
+  /// Title when near-duplicate price-book rows exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar prices found'**
+  String get billingPriceBookSimilarDialogTitle;
+
+  /// Title when price-book similarity finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar prices'**
+  String get billingPriceBookNoSimilarDialogTitle;
+
+  /// Banner title for exact price-book conflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact active price match'**
+  String get billingPriceBookExactBannerTitle;
+
+  /// Banner title for near price-book matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Review similar prices'**
+  String get billingPriceBookSimilarBannerTitle;
+
+  /// Banner title when no similar prices exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to save'**
+  String get billingPriceBookNoSimilarBannerTitle;
+
+  /// Body for exact price-book create conflict.
+  ///
+  /// In en, this message translates to:
+  /// **'An active price already matches Item · Mode · Scheme · Effective. Select the existing row instead of creating another.'**
+  String get billingPriceBookExactDialogBody;
+
+  /// Body for near price-book matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar price-book rows exist. Select existing, overwrite, or continue saving.'**
+  String get billingPriceBookSimilarDialogBody;
+
+  /// Body when price-book similarity is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar prices were found. You can continue.'**
+  String get billingPriceBookNoSimilarDialogBody;
+
+  /// Continue create/update despite near matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get billingPriceBookProceedSaveAction;
+
+  /// Continue save when no similarity matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get billingPriceBookContinueSaveAction;
+
+  /// Open the existing price-book row instead of creating.
+  ///
+  /// In en, this message translates to:
+  /// **'Select existing'**
+  String get billingPriceBookUseExistingAction;
+
+  /// Overwrite an existing near-match price-book row.
+  ///
+  /// In en, this message translates to:
+  /// **'Overwrite'**
+  String get billingPriceBookOverwriteAction;
+
+  /// Print filtered price list from Price book search chrome.
+  ///
+  /// In en, this message translates to:
+  /// **'Print'**
+  String get billingPriceBookPrintAction;
+
+  /// Document title for printed price-book lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Price list'**
+  String get billingPriceBookPrintTitle;
+
+  /// Section picker title for price-list print preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Price list sections'**
+  String get billingPriceBookPrintOptionsSectionLabel;
+
+  /// Print section toggle for price-list summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get billingPriceBookPrintSectionSummary;
+
+  /// Print section toggle for price rows table.
+  ///
+  /// In en, this message translates to:
+  /// **'Prices'**
+  String get billingPriceBookPrintSectionRows;
+
+  /// Footer note on printed price lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated from the billing price book.'**
+  String get billingPriceBookPrintFooter;
+
+  /// Row count subtitle for price-list print.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} prices'**
+  String billingPriceBookPrintRowCount(int count);
+
   /// Tooltip for the Approve next action on Need approval rows.
   ///
   /// In en, this message translates to:
@@ -4677,6 +4797,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Status / decision'**
   String get billingPrintSectionStatusDecision;
+
+  /// Action label to print an approval packet from Need approval Detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Print packet'**
+  String get billingPrintApprovalAction;
+
+  /// Tooltip for Print packet on Need approval Detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Print approval request packet'**
+  String get billingPrintApprovalTooltip;
+
+  /// Section picker title for approval packet print preview options.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval sections'**
+  String get billingApprovalPrintOptionsSectionLabel;
+
+  /// Print section toggle for approval type, requester, and insurer fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Request details'**
+  String get billingPrintSectionRequestFields;
+
+  /// Document title for printed billing approval packets.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval packet'**
+  String get billingApprovalPacketTitle;
+
+  /// Footer note on printed billing approval packets.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated from the billing approval queue.'**
+  String get billingApprovalPacketFooter;
 
   /// Footer note on printed billing invoices.
   ///

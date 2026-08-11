@@ -116,12 +116,13 @@ void _stubRepository(
   );
 }
 
-Future<void> _pumpApprovalTab(
+Future<GoRouter> _pumpApprovalTab(
   WidgetTester tester, {
   required _MockBillingRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
+  String initialLocation = '/billing?section=approvals',
   List<BillingWorkItem> items = const <BillingWorkItem>[_approvalItem],
   BillingSummary summary = _summary,
   Result<BillingWorkspaceOverview>? workspaceOverride,
@@ -141,7 +142,7 @@ Future<void> _pumpApprovalTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/billing?section=approvals',
+    initialLocation: initialLocation,
     routes: <RouteBase>[
       GoRoute(
         path: '/billing',
@@ -179,6 +180,7 @@ Future<void> _pumpApprovalTab(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+  return router;
 }
 
 void main() {
@@ -241,6 +243,7 @@ void main() {
       expect(find.text('Approve'), findsNothing);
       expect(find.text('Reject'), findsNothing);
       expect(find.text('Print invoice'), findsNothing);
+      expect(find.text('Print packet'), findsOneWidget);
       expect(find.byTooltip('Download invoice PDF'), findsNothing);
     },
   );
@@ -364,8 +367,9 @@ void main() {
       expect(find.text('Approve'), findsWidgets);
       expect(find.text('Reject'), findsWidgets);
       expect(find.text('View ledger'), findsOneWidget);
-      // Approval items are not invoices — document actions must not mount.
+      // Approval items are not invoices — invoice document actions must not mount.
       expect(find.text('Print invoice'), findsNothing);
+      expect(find.text('Print packet'), findsOneWidget);
       expect(find.byTooltip('Download invoice PDF'), findsNothing);
       expect(find.text('Finalize financial clearance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
@@ -708,6 +712,62 @@ void main() {
       expect(find.text('Open claims'), findsNothing);
       expect(find.byTooltip('Approve this pending request'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'section=approvals and approval-required alias write section=approvals',
+    (WidgetTester tester) async {
+      for (final String location in <String>[
+        '/billing?section=approvals',
+        '/billing?section=approval-required',
+        '/billing?tab=approvals',
+        '/billing?queue=approval-required',
+      ]) {
+        final GoRouter router = await _pumpApprovalTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+              AppPermissions.financialApprove,
+            },
+          ),
+          initialLocation: location,
+        );
+
+        expect(find.text('Dana Approval'), findsOneWidget);
+        expect(find.text('Need approval'), findsWidgets);
+        expect(find.text('Close shift'), findsNothing);
+        expect(find.text('Charge'), findsNothing);
+        expect(router.state.uri.queryParameters['section'], 'approvals');
+      }
+    },
+  );
+
+  testWidgets(
+    'Need approval tooltip and warning count tone are present',
+    (WidgetTester tester) async {
+      await _pumpApprovalTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        ),
+      );
+
+      expect(
+        find.byTooltip(
+          'Refunds, voids, and adjustments awaiting approval',
+        ),
+        findsWidgets,
+      );
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      final AppTabItem approvals = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.label.contains('Need approval'),
+      );
+      expect(approvals.countTone, AppTabCountTone.warning);
     },
   );
 }

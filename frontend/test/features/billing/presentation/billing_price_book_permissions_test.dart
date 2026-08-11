@@ -86,7 +86,7 @@ void _stubPrices(_MockPriceBookRepository repository) {
   );
 }
 
-Future<void> _pumpPriceBook(
+Future<GoRouter> _pumpPriceBook(
   WidgetTester tester, {
   required AppAccessPolicy accessPolicy,
   String location = '/billing?section=prices',
@@ -143,6 +143,7 @@ Future<void> _pumpPriceBook(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+  return router;
 }
 
 void main() {
@@ -166,12 +167,13 @@ void main() {
     expect(find.byType(BillingPriceBookPanel), findsOneWidget);
     expect(find.text('No prices match.'), findsOneWidget);
     expect(find.byTooltip('Add'), findsNothing);
+    expect(find.text('Print'), findsOneWidget);
   });
 
   testWidgets('Price book alias price-book selects section=prices body', (
     WidgetTester tester,
   ) async {
-    await _pumpPriceBook(
+    final GoRouter router = await _pumpPriceBook(
       tester,
       location: '/billing?section=price-book',
       accessPolicy: _policyFor(
@@ -184,6 +186,22 @@ void main() {
 
     expect(find.byType(BillingPriceBookPanel), findsOneWidget);
     expect(find.byTooltip('Add'), findsOneWidget);
+    expect(router.state.uri.queryParameters['section'], 'prices');
+  });
+
+  testWidgets('tab=prices alias writes section=prices', (
+    WidgetTester tester,
+  ) async {
+    final GoRouter router = await _pumpPriceBook(
+      tester,
+      location: '/billing?tab=prices',
+      accessPolicy: _policyFor(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      ),
+    );
+
+    expect(find.byType(BillingPriceBookPanel), findsOneWidget);
+    expect(router.state.uri.queryParameters['section'], 'prices');
   });
 
   testWidgets('Cashier Close shift/day absent on Price book', (
@@ -203,5 +221,22 @@ void main() {
     expect(find.byTooltip('Close shift'), findsNothing);
     expect(find.byTooltip('Close day'), findsNothing);
     expect(find.byTooltip('Charge'), findsNothing);
+    expect(find.byTooltip('Issue all'), findsNothing);
+  });
+
+  testWidgets('Price book tooltip present for authorized readers', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPriceBook(
+      tester,
+      accessPolicy: _policyFor(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      ),
+    );
+
+    expect(
+      find.byTooltip('Service and item prices used when charging'),
+      findsWidgets,
+    );
   });
 }

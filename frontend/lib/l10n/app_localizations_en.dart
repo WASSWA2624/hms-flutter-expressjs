@@ -2144,6 +2144,72 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get billingPriceBookExactDialogTitle => 'Matching price found';
+
+  @override
+  String get billingPriceBookSimilarDialogTitle => 'Similar prices found';
+
+  @override
+  String get billingPriceBookNoSimilarDialogTitle => 'No similar prices';
+
+  @override
+  String get billingPriceBookExactBannerTitle => 'Exact active price match';
+
+  @override
+  String get billingPriceBookSimilarBannerTitle => 'Review similar prices';
+
+  @override
+  String get billingPriceBookNoSimilarBannerTitle => 'Ready to save';
+
+  @override
+  String get billingPriceBookExactDialogBody =>
+      'An active price already matches Item · Mode · Scheme · Effective. Select the existing row instead of creating another.';
+
+  @override
+  String get billingPriceBookSimilarDialogBody =>
+      'Similar price-book rows exist. Select existing, overwrite, or continue saving.';
+
+  @override
+  String get billingPriceBookNoSimilarDialogBody =>
+      'No similar prices were found. You can continue.';
+
+  @override
+  String get billingPriceBookProceedSaveAction => 'Save anyway';
+
+  @override
+  String get billingPriceBookContinueSaveAction => 'Continue';
+
+  @override
+  String get billingPriceBookUseExistingAction => 'Select existing';
+
+  @override
+  String get billingPriceBookOverwriteAction => 'Overwrite';
+
+  @override
+  String get billingPriceBookPrintAction => 'Print';
+
+  @override
+  String get billingPriceBookPrintTitle => 'Price list';
+
+  @override
+  String get billingPriceBookPrintOptionsSectionLabel => 'Price list sections';
+
+  @override
+  String get billingPriceBookPrintSectionSummary => 'Summary';
+
+  @override
+  String get billingPriceBookPrintSectionRows => 'Prices';
+
+  @override
+  String get billingPriceBookPrintFooter =>
+      'Generated from the billing price book.';
+
+  @override
+  String billingPriceBookPrintRowCount(int count) {
+    return '$count prices';
+  }
+
+  @override
   String get billingApproveActionTooltip => 'Approve this pending request';
 
   @override
@@ -2433,6 +2499,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get billingPrintSectionStatusDecision => 'Status / decision';
+
+  @override
+  String get billingPrintApprovalAction => 'Print packet';
+
+  @override
+  String get billingPrintApprovalTooltip => 'Print approval request packet';
+
+  @override
+  String get billingApprovalPrintOptionsSectionLabel => 'Approval sections';
+
+  @override
+  String get billingPrintSectionRequestFields => 'Request details';
+
+  @override
+  String get billingApprovalPacketTitle => 'Approval packet';
+
+  @override
+  String get billingApprovalPacketFooter =>
+      'Generated from the billing approval queue.';
 
   @override
   String get billingInvoiceReportFooter =>
