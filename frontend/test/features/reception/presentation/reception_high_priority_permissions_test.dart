@@ -127,6 +127,21 @@ AppAccessPolicy _writerPolicy() {
   );
 }
 
+AppAccessPolicy _exporterWriterPolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.patientRead,
+      AppPermissions.patientWrite,
+      AppPermissions.evidenceExport,
+    },
+    roles: const <String>['RECEPTIONIST'],
+    modules: const <AppModuleEntitlement>[
+      AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'patient-registry', licenseStatus: 'ACTIVE'),
+    ],
+  );
+}
+
 AppAccessPolicy _readerWithEmergencyPolicy() {
   return _policy(
     permissions: <AppPermission>{
@@ -601,6 +616,8 @@ void main() {
         expect(find.text('Nora Normal'), findsNothing);
         expect(find.text('Register patient'), findsNothing);
         expect(find.text('Schedule appointment'), findsNothing);
+        expect(find.text('Export'), findsNothing);
+        expect(find.text('Print'), findsNothing);
         expect(find.byType(AppTabToolbarPrimary), findsNothing);
         expect(find.text('Emergency'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
@@ -622,6 +639,65 @@ void main() {
       expect(find.text('Victor VIP'), findsOneWidget);
       expect(find.text('Next action'), findsWidgets);
     });
+
+    testWidgets('export/print omitted without evidence:export; present with it', (
+      WidgetTester tester,
+    ) async {
+      await _pumpHighPriorityTab(
+        tester,
+        repository: repository,
+        accessPolicy: _writerPolicy(),
+      );
+      expect(find.text('Export'), findsNothing);
+      expect(find.text('Print'), findsNothing);
+
+      await _pumpHighPriorityTab(
+        tester,
+        repository: repository,
+        accessPolicy: _exporterWriterPolicy(),
+      );
+      expect(find.text('Export'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('Schedule appointment'), findsOneWidget);
+    });
+
+    testWidgets(
+      'defaults five data columns; warning tone; only prioritized rows',
+      (WidgetTester tester) async {
+        await _pumpHighPriorityTab(
+          tester,
+          repository: repository,
+          accessPolicy: _exporterWriterPolicy(),
+        );
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem highPriority = strip.tabs.firstWhere(
+          (AppTabItem item) => item.id == 'highPriority',
+        );
+        expect(highPriority.count, 1);
+        expect(highPriority.countTone, AppTabCountTone.warning);
+
+        expect(find.text('Victor VIP'), findsOneWidget);
+        expect(find.text('Nora Normal'), findsNothing);
+        expect(find.text('Patient name'), findsWidgets);
+        expect(find.text('Phone'), findsWidgets);
+        expect(find.text('Queued at'), findsWidgets);
+        expect(find.text('Current step'), findsWidgets);
+        expect(find.text('Doctor'), findsWidgets);
+        expect(find.text('Next action'), findsWidgets);
+
+        await tester.tap(find.byTooltip('Settings'));
+        await tester.pumpAndSettle();
+        expect(find.text('TABLE SETTINGS'), findsOneWidget);
+        expect(find.text('Queue ID'), findsOneWidget);
+        expect(find.text('Payment status'), findsOneWidget);
+        expect(find.text('Reason'), findsOneWidget);
+      },
+    );
 
     testWidgets(
       '∪ allowance: last_office:read enters workspace; High priority collapsed',

@@ -115,6 +115,7 @@ Future<bool?> showFlowActionsDialog({
   bool allowVitalsActions = true,
   bool allowClinicalActions = true,
   String? omitNextActionKey,
+  String? printActionLabel,
 }) {
   return showAppDialog<bool>(
     context: context,
@@ -125,6 +126,7 @@ Future<bool?> showFlowActionsDialog({
       allowVitalsActions: allowVitalsActions,
       allowClinicalActions: allowClinicalActions,
       omitNextActionKey: omitNextActionKey,
+      printActionLabel: printActionLabel,
     ),
   );
 }
@@ -136,6 +138,7 @@ class FlowActionsDialog extends ConsumerStatefulWidget {
     this.allowVitalsActions = true,
     this.allowClinicalActions = true,
     this.omitNextActionKey,
+    this.printActionLabel,
     super.key,
   });
 
@@ -146,12 +149,15 @@ class FlowActionsDialog extends ConsumerStatefulWidget {
   final bool allowVitalsActions;
 
   /// When false (Reception), clinician write actions and the clinical-services
-  /// panel are omitted while Follow up and Print summary remain.
+  /// panel are omitted while Follow up and Print remain.
   final bool allowClinicalActions;
 
   /// When set, omits the matching stage next-action from Quick Actions so the
   /// worklist next-action column remains the sole primary for that goal.
   final String? omitNextActionKey;
+
+  /// Override for the Print trigger label (Reception uses generic `Print`).
+  final String? printActionLabel;
 
   @override
   ConsumerState<FlowActionsDialog> createState() => _FlowActionsDialogState();
@@ -551,7 +557,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           'admission_handoff': admissionHandoffAction,
           'print': () => AppPermissionActionItem(
             requirement: opdFrontDeskActionRequirement,
-            label: l10n.opdPrintSummaryAction,
+            label: widget.printActionLabel ?? l10n.opdPrintSummaryAction,
             icon: AppActionIcons.print,
             fullWidth: true,
             hideWhenDenied: true,

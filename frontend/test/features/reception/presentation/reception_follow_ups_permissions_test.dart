@@ -125,6 +125,33 @@ AppAccessPolicy _writerPolicy() {
   );
 }
 
+AppAccessPolicy _exporterWriterPolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.patientRead,
+      AppPermissions.patientWrite,
+      AppPermissions.evidenceExport,
+    },
+    roles: const <String>['RECEPTIONIST'],
+    modules: const <AppModuleEntitlement>[
+      AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'patient-registry', licenseStatus: 'ACTIVE'),
+    ],
+  );
+}
+
+final ReceptionFollowUpEntry _followUpCompleted = ReceptionFollowUpEntry(
+  id: 'fu-rx-2',
+  encounterId: 'enc-2',
+  patientId: 'pat-2',
+  patientIdentifier: 'PAT-FU-RX2',
+  patientDisplayName: 'Completed Follow Patient',
+  patientPhone: '+256700000002',
+  scheduledAt: DateTime.utc(2026, 7, 30, 11, 0),
+  notes: 'Already called back',
+  status: 'COMPLETED',
+);
+
 void _stubOpd(_MockOpdRepository repository, {bool failLists = false}) {
   when(() => repository.listAppointments(any())).thenAnswer((invocation) async {
     if (failLists) {
@@ -254,12 +281,14 @@ Future<GoRouter> _pumpFollowUpsTab(
   List<ReceptionFollowUpEntry>? followUps,
   bool failFollowUps = false,
   bool failOpdLists = false,
+  int? totalCount,
 }) async {
   _stubOpd(opdRepository, failLists: failOpdLists);
   _stubFollowUps(
     followUpRepository,
     entries: followUps ?? <ReceptionFollowUpEntry>[_followUp],
     failList: failFollowUps,
+    totalCount: totalCount,
   );
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -599,6 +628,8 @@ void main() {
         expect(find.text('Follow Up Patient'), findsOneWidget);
         expect(find.text('Register patient'), findsNothing);
         expect(find.text('Schedule appointment'), findsNothing);
+        expect(find.text('Export'), findsNothing);
+        expect(find.text('Print'), findsNothing);
         expect(find.byType(AppTabToolbarPrimary), findsNothing);
         expect(find.text('Mark completed'), findsNothing);
         expect(find.text('Reschedule follow-up'), findsNothing);
@@ -630,6 +661,96 @@ void main() {
       expect(find.text('Close'), findsNothing);
     });
 
+    testWidgets('export/print omitted without evidence:export; present with it', (
+      WidgetTester tester,
+    ) async {
+      await _pumpFollowUpsTab(
+        tester,
+        opdRepository: opdRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _writerPolicy(),
+      );
+      expect(find.text('Export'), findsNothing);
+      expect(find.text('Print'), findsNothing);
+
+      await _pumpFollowUpsTab(
+        tester,
+        opdRepository: opdRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _exporterWriterPolicy(),
+      );
+      expect(find.text('Export'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('Schedule appointment'), findsOneWidget);
+    });
+
+    testWidgets(
+      'defaults five data columns; info tone; filters sync rows + badge',
+      (WidgetTester tester) async {
+        await _pumpFollowUpsTab(
+          tester,
+          opdRepository: opdRepository,
+          followUpRepository: followUpRepository,
+          accessPolicy: _exporterWriterPolicy(),
+          followUps: <ReceptionFollowUpEntry>[_followUp, _followUpCompleted],
+          totalCount: 2,
+        );
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem followUps = strip.tabs.firstWhere(
+          (AppTabItem item) => item.id == 'followUps',
+        );
+        // Non-urgent callback worklist — info (not warning) unless justified.
+        expect(followUps.countTone, AppTabCountTone.info);
+        expect(followUps.count, 2);
+
+        expect(find.text('Patient name'), findsWidgets);
+        expect(find.text('Phone'), findsWidgets);
+        expect(find.text('Follow-up date'), findsWidgets);
+        expect(find.text('Follow-up time'), findsWidgets);
+        expect(find.text('Patient ID'), findsWidgets);
+        expect(find.text('Follow Up Patient'), findsOneWidget);
+        expect(find.text('Completed Follow Patient'), findsOneWidget);
+
+        await tester.tap(find.byTooltip('Settings'));
+        await tester.pumpAndSettle();
+        expect(find.text('TABLE SETTINGS'), findsOneWidget);
+        expect(find.text('Status'), findsWidgets);
+        expect(find.text('Notes'), findsWidgets);
+        await tester.tap(find.text('Close').last);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byTooltip('Filters'));
+        await tester.pumpAndSettle();
+        expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+        expect(find.text('Follow-up date'), findsWidgets);
+        expect(find.text('Scheduled'), findsWidgets);
+        expect(find.text('Completed'), findsWidgets);
+
+        await tester.tap(find.text('Completed').last);
+        await tester.pump();
+        await tester.tap(find.text('Apply filters'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Completed Follow Patient'), findsOneWidget);
+        expect(find.text('Follow Up Patient'), findsNothing);
+
+        final AppTabStrip filteredStrip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem filtered = filteredStrip.tabs.firstWhere(
+          (AppTabItem item) => item.id == 'followUps',
+        );
+        expect(filtered.count, 1);
+      },
+    );
+
     testWidgets(
       '∪ allowance: clinical:read shows Follow-ups; write absent',
       (WidgetTester tester) async {
@@ -647,6 +768,7 @@ void main() {
         expect(find.text('Follow Up Patient'), findsOneWidget);
         expect(find.text('Register patient'), findsNothing);
         expect(find.text('Schedule appointment'), findsNothing);
+        expect(find.byTooltip('Filters'), findsOneWidget);
 
         await tester.tap(find.text('Follow Up Patient'));
         await tester.pumpAndSettle();
@@ -728,8 +850,17 @@ void main() {
       await tester.tap(find.text('Follow Up Patient'));
       await tester.pumpAndSettle();
 
+      expect(find.byType(ReceptionFollowUpDetailDialog), findsOneWidget);
       expect(find.text('Mark completed'), findsNothing);
-      expect(find.text('Close'), findsOneWidget);
+      expect(find.text('Reschedule follow-up'), findsNothing);
+      // Compact dialog footers may icon-only the Close control (no visible text).
+      expect(
+        find.descendant(
+          of: find.byType(ReceptionFollowUpDetailDialog),
+          matching: find.bySemanticsLabel('Close'),
+        ),
+        findsWidgets,
+      );
     });
 
     testWidgets('desktop dark theme: writer mutations still mount', (

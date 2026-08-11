@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -1048,6 +1049,10 @@ class AppListTable<T> extends StatefulWidget {
     this.exportSuccessMessage,
     this.exportFailureMessage,
     this.exportInvalidDateMessage,
+    this.enablePrint = false,
+    this.canPrint = true,
+    this.onPrint,
+    this.printLabel,
     this.enableColumnResize = true,
     this.tableHorizontalMargin,
     this.toolbarContentGap,
@@ -1143,6 +1148,19 @@ class AppListTable<T> extends StatefulWidget {
   final String? exportSuccessMessage;
   final String? exportFailureMessage;
   final String? exportInvalidDateMessage;
+
+  /// When true, shows a Print action immediately after Export in the toolbar.
+  /// Callers must supply [onPrint] (preview-first path). Default false.
+  final bool enablePrint;
+
+  /// When false, hides Print even if [enablePrint] is true (permission gate).
+  final bool canPrint;
+
+  /// Opens the feature print-preview path. Required when [enablePrint] is true.
+  final Future<void> Function()? onPrint;
+
+  /// Defaults to `Print` when null.
+  final String? printLabel;
   final bool enableColumnResize;
   final double? tableHorizontalMargin;
 
@@ -2362,7 +2380,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 
   List<AppSearchBarAction> _searchActions() {
-    // Filters (in AppSearchBar) → Settings → Export → caller trailing actions.
+    // Filters (in AppSearchBar) → Settings → Export → Print → caller trailing.
     final List<AppSearchBarAction> actions = <AppSearchBarAction>[];
     if (_availableColumns.length > 1) {
       actions.add(
@@ -2382,6 +2400,18 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           label: _exportLabel,
           tooltip: _exportLabel,
           onPressed: _openExportDialog,
+        ),
+      );
+    }
+    if (widget.enablePrint && widget.canPrint && widget.onPrint != null) {
+      actions.add(
+        AppSearchBarAction(
+          icon: AppActionIcons.print,
+          label: _printLabel,
+          tooltip: _printLabel,
+          onPressed: () {
+            unawaited(widget.onPrint!.call());
+          },
         ),
       );
     }
@@ -2478,6 +2508,8 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 
   String get _exportLabel => widget.exportLabel ?? 'Export';
+
+  String get _printLabel => widget.printLabel ?? 'Print';
 
   List<AppListTableColumn<T>> get _availableColumns {
     return _availableColumnsFor(widget.columns, widget.columnChoices);

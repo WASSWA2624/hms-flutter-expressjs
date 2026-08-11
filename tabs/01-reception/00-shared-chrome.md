@@ -29,7 +29,7 @@
 - Every visible tab shows authoritative `count`:
   - Sibling model: dedicated unfiltered scope totals (Follow-ups / Payment gate prefer controller `totalCount`)
   - Active tab with search/advanced filters: filtered membership total for that query
-- Count tones (`AppTabCountTone`): `warning` for Desk queue + High priority; `info` for Appointments, Active visits, Follow-ups, Payment gate
+- Count tones (`AppTabCountTone`): `warning` for Desk queue, High priority, Active visits (in-facility turnaround pressure), and Payment gate (outstanding clearance pressure); `info` for Appointments and Follow-ups
 - Icons per section (leading): event / queue / priority / pending / phone / payments
 
 ## Table toolbar (shared pattern)
@@ -40,7 +40,7 @@ Order on search bar: **Filters → Settings → Export → Print → Schedule �
 | --- | --- | --- |
 | Search | section hint (`receptionSearchHint` / payment / follow-ups variants) | mic via `AppSearchBar` default |
 | Clear | `receptionClearFiltersAction` | |
-| Filters | `commonFiltersActionLabel` → title `commonAdvancedFiltersTitle` | all tabs including Follow-ups; date filter on all tabs including Payment gate |
+| Filters | `commonFiltersActionLabel` → title `commonAdvancedFiltersTitle` | all tabs including Follow-ups; date filter on all tabs (Payment gate uses `billingIssuedDateFilterLabel`) |
 | Settings | `commonTableSettingsActionLabel` → `commonTableSettingsTitle` | Apply `receptionApplyColumnsAction`, Reset `receptionResetColumnsAction`, Close `commonCloseActionLabel` |
 | Export | `Export` via `AppListTable.enableExport` + `canExport` | gated by `receptionDeskExportRequirement` (∩ `evidence:export`); omitted when denied |
 | Print (table) | `commonPrintActionLabel` → `Print` | `AppListTable.enablePrint` + `canPrint`; opens `printReceptionDeskList` → `PrintDocumentTemplates.registry` preview-first |

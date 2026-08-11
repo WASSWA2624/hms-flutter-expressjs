@@ -267,6 +267,8 @@ AppAccessPolicy _policy({
             AppPermissions.patientWrite,
             AppPermissions.lastOfficeRead,
             AppPermissions.billingRead,
+            AppPermissions.reportsRead,
+            AppPermissions.evidenceExport,
           },
       moduleEntitlements: <AppModuleEntitlement>[
         if (patientRegistry)
@@ -646,6 +648,8 @@ void main() {
     expect(find.text('Ada Appointment'), findsOneWidget);
     expect(find.text('Schedule appointment'), findsOneWidget);
     expect(find.text('Register patient'), findsOneWidget);
+    expect(find.text('Export'), findsOneWidget);
+    expect(find.text('Print'), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
     expect(find.text('Patient registry'), findsNothing);
     expect(find.text('Full registry'), findsNothing);
@@ -850,6 +854,131 @@ void main() {
     );
   }
 
+  testWidgets('omits Export and Print when export gate denies', (
+    WidgetTester tester,
+  ) async {
+    await _pumpWorkspace(
+      tester,
+      repository: repository,
+      policy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.patientRead,
+          AppPermissions.patientWrite,
+          AppPermissions.billingRead,
+        },
+      ),
+      initialLocation: '/reception?section=appointments',
+    );
+
+    expect(find.text('Ada Appointment'), findsOneWidget);
+    expect(find.text('Export'), findsNothing);
+    expect(find.text('Print'), findsNothing);
+    expect(find.text('Schedule appointment'), findsOneWidget);
+    expect(find.text('Register patient'), findsOneWidget);
+  });
+
+  testWidgets('toolbar order is Filters Settings Export Print then context', (
+    WidgetTester tester,
+  ) async {
+    await _pumpWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/reception?section=appointments',
+    );
+
+    final Finder searchBar = find.byType(AppSearchBar);
+    expect(searchBar, findsOneWidget);
+
+    final List<String> labels = tester
+        .widgetList<Text>(
+          find.descendant(of: searchBar, matching: find.byType(Text)),
+        )
+        .map((Text text) => text.data ?? '')
+        .where((String label) => label.isNotEmpty)
+        .toList(growable: false);
+
+    final int filters = labels.indexOf('Filters');
+    final int settings = labels.indexOf('Settings');
+    final int export = labels.indexOf('Export');
+    final int print = labels.indexOf('Print');
+    final int schedule = labels.indexOf('Schedule appointment');
+    final int register = labels.indexOf('Register patient');
+
+    expect(filters, greaterThanOrEqualTo(0));
+    expect(settings, greaterThan(filters));
+    expect(export, greaterThan(settings));
+    expect(print, greaterThan(export));
+    expect(schedule, greaterThan(print));
+    expect(register, greaterThan(schedule));
+  });
+
+  testWidgets('tab counts use scope totals and urgency tones', (
+    WidgetTester tester,
+  ) async {
+    await _pumpWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/reception?section=appointments',
+    );
+
+    final AppTabStrip strip = tester.widget<AppTabStrip>(
+      find.byType(AppTabStrip),
+    );
+    AppTabItem tab(String id) =>
+        strip.tabs.firstWhere((AppTabItem item) => item.id == id);
+
+    expect(tab('appointments').count, 3);
+    expect(tab('appointments').countTone, AppTabCountTone.info);
+    expect(tab('queue').count, 3);
+    expect(tab('queue').countTone, AppTabCountTone.warning);
+    expect(tab('highPriority').count, 1);
+    expect(tab('highPriority').countTone, AppTabCountTone.warning);
+    expect(tab('activeVisits').count, 4);
+    expect(tab('activeVisits').countTone, AppTabCountTone.warning);
+    expect(tab('paymentGate').count, 2);
+    expect(tab('paymentGate').countTone, AppTabCountTone.warning);
+  });
+
+  testWidgets('active tab count reflects search filter total', (
+    WidgetTester tester,
+  ) async {
+    await _pumpWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/reception?section=appointments',
+    );
+
+    AppTabItem appointmentsTab() {
+      final AppTabStrip strip = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      return strip.tabs.firstWhere(
+        (AppTabItem item) => item.id == 'appointments',
+      );
+    }
+
+    expect(appointmentsTab().count, 3);
+
+    final Finder searchField = find.descendant(
+      of: find.byType(AppSearchBar),
+      matching: find.byType(EditableText),
+    );
+    await tester.enterText(searchField, 'Confirmed appointment reason');
+    await tester.pump();
+
+    expect(find.text('Connie Confirmed'), findsOneWidget);
+    expect(appointmentsTab().count, 1);
+
+    final AppTabStrip strip = tester.widget<AppTabStrip>(
+      find.byType(AppTabStrip),
+    );
+    final AppTabItem queue = strip.tabs.firstWhere(
+      (AppTabItem item) => item.id == 'queue',
+    );
+    // Sibling badges keep dedicated unfiltered scope totals.
+    expect(queue.count, 3);
+  });
+
   testWidgets('unauthorized tabs and actions are absent', (
     WidgetTester tester,
   ) async {
@@ -909,12 +1038,7 @@ void main() {
       expect(find.text('Confirmed'), findsWidgets);
       expect(find.text('Scheduled'), findsWidgets);
 
-      final Finder statusFilter = find.widgetWithText(
-        CheckboxListTile,
-        'Confirmed',
-      );
-      expect(statusFilter, findsOneWidget);
-      await tester.tap(statusFilter);
+      await tester.tap(find.text('Confirmed').last);
       await tester.pump();
       await tester.tap(find.text('Apply filters'));
       await tester.pump();
@@ -966,7 +1090,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('TABLE SETTINGS'), findsOneWidget);
     expect(find.text('Appointment ID'), findsOneWidget);
-    expect(find.text('Doctor'), findsOneWidget);
+    expect(find.text('Doctor'), findsWidgets); // default column + settings row
+    expect(find.text('Phone'), findsWidgets);
     expect(find.text('Reason'), findsOneWidget);
     expect(find.text('Queued at'), findsNothing);
     expect(find.text('Payment status'), findsNothing);
@@ -1023,12 +1148,7 @@ void main() {
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
       expect(find.text('Lab pending'), findsWidgets);
-      final Finder currentStepFilter = find.widgetWithText(
-        CheckboxListTile,
-        'Lab pending',
-      );
-      expect(currentStepFilter, findsOneWidget);
-      await tester.tap(currentStepFilter);
+      await tester.tap(find.text('Lab pending').last);
       await tester.pump();
       await tester.tap(find.text('Apply filters'));
       await tester.pump();
@@ -1122,11 +1242,8 @@ void main() {
       await tester.pump();
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
-      final Finder currentStepFilter = find.widgetWithText(
-        CheckboxListTile,
-        'Consultation In Progress',
-      );
-      await tester.tap(currentStepFilter);
+      expect(find.text('Consultation In Progress'), findsWidgets);
+      await tester.tap(find.text('Consultation In Progress').last);
       await tester.pump();
       await tester.tap(find.text('Apply filters'));
       await tester.pump();
@@ -1195,11 +1312,8 @@ void main() {
       await tester.pump();
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
-      final Finder sourceFilter = find.widgetWithText(
-        CheckboxListTile,
-        'Pharmacy',
-      );
-      await tester.tap(sourceFilter);
+      expect(find.text('Pharmacy'), findsWidgets);
+      await tester.tap(find.text('Pharmacy').last);
       await tester.pump();
       await tester.tap(find.text('Apply filters'));
       await tester.pump();

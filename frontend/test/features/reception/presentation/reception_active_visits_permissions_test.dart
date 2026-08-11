@@ -141,6 +141,24 @@ AppAccessPolicy _writerPolicy() {
   );
 }
 
+AppAccessPolicy _exporterWriterPolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.patientRead,
+      AppPermissions.patientWrite,
+      AppPermissions.billingRead,
+      AppPermissions.billingWrite,
+      AppPermissions.evidenceExport,
+    },
+    roles: const <String>['RECEPTIONIST'],
+    modules: const <AppModuleEntitlement>[
+      AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'patient-registry', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+    ],
+  );
+}
+
 void _stubWorkspace(
   _MockOpdRepository repository, {
   List<OpdFlowSummary>? flows,
@@ -604,6 +622,8 @@ void main() {
         expect(find.text('Alex Active'), findsOneWidget);
         expect(find.text('Register patient'), findsNothing);
         expect(find.text('Schedule appointment'), findsNothing);
+        expect(find.text('Export'), findsNothing);
+        expect(find.text('Print'), findsNothing);
         expect(find.byType(AppTabToolbarPrimary), findsNothing);
         expect(find.byType(WorkflowActionButton), findsNothing);
         expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
@@ -628,6 +648,106 @@ void main() {
       expect(find.byType(WorkflowActionButton), findsNothing);
       expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
     });
+
+    testWidgets('export/print omitted without evidence:export; present with it', (
+      WidgetTester tester,
+    ) async {
+      await _pumpActiveVisitsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _writerPolicy(),
+      );
+      expect(find.text('Export'), findsNothing);
+      expect(find.text('Print'), findsNothing);
+
+      await _pumpActiveVisitsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _exporterWriterPolicy(),
+      );
+      expect(find.text('Export'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('Schedule appointment'), findsOneWidget);
+    });
+
+    testWidgets(
+      'defaults five data columns; warning tone for turnaround pressure',
+      (WidgetTester tester) async {
+        await _pumpActiveVisitsTab(
+          tester,
+          repository: repository,
+          accessPolicy: _exporterWriterPolicy(),
+        );
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem active = strip.tabs.firstWhere(
+          (AppTabItem item) => item.id == 'activeVisits',
+        );
+        // Product-justified warning: same-day in-facility turnaround pressure.
+        expect(active.countTone, AppTabCountTone.warning);
+        expect(active.count, greaterThanOrEqualTo(1));
+
+        expect(find.text('Patient name'), findsWidgets);
+        expect(find.text('Phone'), findsWidgets);
+        expect(find.text('Started'), findsWidgets);
+        expect(find.text('Current step'), findsWidgets);
+        expect(find.text('Doctor'), findsWidgets);
+        expect(find.text('Next action'), findsWidgets);
+
+        await tester.tap(find.byTooltip('Settings'));
+        await tester.pumpAndSettle();
+        expect(find.text('TABLE SETTINGS'), findsOneWidget);
+        expect(find.text('Assigned doctor'), findsOneWidget);
+        expect(find.text('Chief complaint'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Flow Actions from Reception: Print label; clinical/vitals/billing stripped',
+      (WidgetTester tester) async {
+        await _pumpActiveVisitsTab(
+          tester,
+          repository: repository,
+          accessPolicy: _exporterWriterPolicy(),
+        );
+
+        await tester.tap(find.text('Alex Active'));
+        await tester.pumpAndSettle();
+        expect(find.byType(FlowActionsDialog), findsOneWidget);
+
+        final Finder hub = find.byType(FlowActionsDialog);
+        expect(
+          find.descendant(of: hub, matching: find.text('Print')),
+          findsWidgets,
+        );
+        expect(
+          find.descendant(of: hub, matching: find.text('Print summary')),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: hub, matching: find.text('Pay consultation')),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: hub,
+            matching: find.text('Manage consultation billing'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: hub,
+            matching: find.widgetWithText(AppButton, 'Record vitals'),
+          ),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets(
       '∪ allowance: clinical:read alone shows Active visits list',

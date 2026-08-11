@@ -124,6 +124,7 @@ final class ReceptionPaymentGateEntry {
     required this.invoices,
     required this.services,
     required this.outstandingByCurrency,
+    this.issuedAt,
   });
 
   final String id;
@@ -135,6 +136,9 @@ final class ReceptionPaymentGateEntry {
   final List<BillingWorkItem> invoices;
   final Set<String> services;
   final Map<String, num> outstandingByCurrency;
+
+  /// Latest invoice `timelineAt` for desk date filtering (issued / outstanding-as-of).
+  final DateTime? issuedAt;
 
   int get invoiceCount => invoices.length;
 
@@ -246,6 +250,16 @@ List<ReceptionPaymentGateEntry> aggregateReceptionPaymentGateEntries(
         ifAbsent: () => invoice.balanceDue,
       );
     }
+    DateTime? issuedAt;
+    for (final BillingWorkItem invoice in invoices) {
+      final DateTime? at = invoice.timelineAt;
+      if (at == null) {
+        continue;
+      }
+      if (issuedAt == null || at.isAfter(issuedAt)) {
+        issuedAt = at;
+      }
+    }
     entries.add(
       ReceptionPaymentGateEntry(
         id: group.key,
@@ -260,6 +274,7 @@ List<ReceptionPaymentGateEntry> aggregateReceptionPaymentGateEntries(
         invoices: List<BillingWorkItem>.unmodifiable(invoices),
         services: Set<String>.unmodifiable(services),
         outstandingByCurrency: Map<String, num>.unmodifiable(totals),
+        issuedAt: issuedAt,
       ),
     );
   }

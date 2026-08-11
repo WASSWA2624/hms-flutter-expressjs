@@ -103,6 +103,21 @@ AppAccessPolicy _writerPolicy() {
   );
 }
 
+AppAccessPolicy _exporterWriterPolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.patientRead,
+      AppPermissions.patientWrite,
+      AppPermissions.evidenceExport,
+    },
+    roles: const <String>['RECEPTIONIST'],
+    modules: const <AppModuleEntitlement>[
+      AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'patient-registry', licenseStatus: 'ACTIVE'),
+    ],
+  );
+}
+
 void _stubWorkspace(
   _MockOpdRepository repository, {
   List<OpdAppointment> appointments = const <OpdAppointment>[_appointment],
@@ -534,6 +549,8 @@ void main() {
         expect(find.text('Ada Appointment'), findsOneWidget);
         expect(find.text('Register patient'), findsNothing);
         expect(find.text('Schedule appointment'), findsNothing);
+        expect(find.text('Export'), findsNothing);
+        expect(find.text('Print'), findsNothing);
         expect(find.byType(AppTabToolbarPrimary), findsNothing);
         expect(find.text('Next action'), findsNothing);
         expect(find.text('Start OPD encounter'), findsNothing);
@@ -556,6 +573,62 @@ void main() {
       expect(find.text('Next action'), findsWidgets);
       expect(find.text('Start OPD encounter'), findsWidgets);
       expect(find.text('Ada Appointment'), findsOneWidget);
+    });
+
+    testWidgets('export/print omitted without evidence:export; present with it', (
+      WidgetTester tester,
+    ) async {
+      await _pumpAppointmentsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _writerPolicy(),
+      );
+      expect(find.text('Export'), findsNothing);
+      expect(find.text('Print'), findsNothing);
+
+      await _pumpAppointmentsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _exporterWriterPolicy(),
+      );
+      expect(find.text('Export'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('Schedule appointment'), findsOneWidget);
+    });
+
+    testWidgets('defaults five data columns; count tone is info', (
+      WidgetTester tester,
+    ) async {
+      await _pumpAppointmentsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _exporterWriterPolicy(),
+      );
+
+      final AppTabStrip strip = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      final AppTabItem appointments = strip.tabs.firstWhere(
+        (AppTabItem item) => item.id == 'appointments',
+      );
+      expect(appointments.count, 1);
+      expect(appointments.countTone, AppTabCountTone.info);
+
+      expect(find.text('Patient name'), findsWidgets);
+      expect(find.text('Phone'), findsWidgets);
+      expect(find.text('Scheduled'), findsWidgets);
+      expect(find.text('Current step'), findsWidgets);
+      expect(find.text('Doctor'), findsWidgets);
+      expect(find.text('Next action'), findsWidgets);
+
+      await tester.tap(find.byTooltip('Settings'));
+      await tester.pumpAndSettle();
+      expect(find.text('TABLE SETTINGS'), findsOneWidget);
+      expect(find.text('Appointment ID'), findsOneWidget);
+      expect(find.text('Reason'), findsOneWidget);
+      expect(find.text('Facility'), findsWidgets);
     });
 
     testWidgets(

@@ -16,6 +16,7 @@ BillingWorkItem _invoice({
   num paid = 0,
   num balance = 100,
   String currency = 'UGX',
+  DateTime? timelineAt,
 }) {
   return BillingWorkItem(
     id: id,
@@ -30,6 +31,7 @@ BillingWorkItem _invoice({
     status: status,
     billingStatus: billingStatus,
     currency: currency,
+    timelineAt: timelineAt,
     items: <BillingInvoiceItem>[
       BillingInvoiceItem(
         id: 'line-$id',
@@ -93,6 +95,23 @@ void main() {
           ]).single;
 
       expect(entry.outstandingByCurrency, <String, num>{'UGX': 100, 'USD': 5});
+    });
+
+    test('issuedAt uses the latest invoice timelineAt', () {
+      final ReceptionPaymentGateEntry entry =
+          aggregateReceptionPaymentGateEntries(<BillingWorkItem>[
+            _invoice(
+              id: 'older',
+              timelineAt: DateTime.utc(2026, 6, 1),
+            ),
+            _invoice(
+              id: 'newer',
+              source: 'RADIOLOGY',
+              timelineAt: DateTime.utc(2026, 7, 15),
+            ),
+          ]).single;
+
+      expect(entry.issuedAt, DateTime.utc(2026, 7, 15));
     });
 
     test('excludes resolved, unknown, non-OPD, and unlinked invoices', () {

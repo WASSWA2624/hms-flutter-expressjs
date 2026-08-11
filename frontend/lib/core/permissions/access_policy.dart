@@ -1135,6 +1135,7 @@ final class AppAccessPolicy {
         AppPermissions.lastOfficeRead,
         AppPermissions.lastOfficeWrite,
         AppPermissions.reportsRead,
+        AppPermissions.evidenceExport,
       ],
       // patients:read omitted — no Patients registry; patient:read for Billing embeds.
       AppRole.billing => const <AppPermission>[

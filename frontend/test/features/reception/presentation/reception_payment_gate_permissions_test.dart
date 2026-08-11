@@ -41,21 +41,29 @@ BillingWorkItem _invoice({
   String source = 'LABORATORY',
   String description = 'Complete blood count',
   String patientName = 'Penny Payment',
+  String patientId = 'patient-payment',
+  String patientDisplayId = 'PAT-PAY',
+  String encounterId = 'encounter-payment',
+  String encounterDisplayId = 'ENC-PAYMENT',
   num balance = 40000,
+  DateTime? timelineAt,
+  String status = 'SENT',
+  String billingStatus = 'ISSUED',
 }) {
   return BillingWorkItem(
     id: id,
     displayId: displayId,
     kind: BillingWorkItemKind.invoice,
-    patientId: 'patient-payment',
-    patientDisplayId: 'PAT-PAY',
+    patientId: patientId,
+    patientDisplayId: patientDisplayId,
     patientDisplayName: patientName,
-    encounterId: 'encounter-payment',
-    encounterDisplayId: 'ENC-PAYMENT',
+    encounterId: encounterId,
+    encounterDisplayId: encounterDisplayId,
     sourceModule: source,
-    status: 'SENT',
-    billingStatus: 'ISSUED',
+    status: status,
+    billingStatus: billingStatus,
     currency: 'UGX',
+    timelineAt: timelineAt,
     items: <BillingInvoiceItem>[
       BillingInvoiceItem(
         id: 'line-$id',
@@ -138,6 +146,24 @@ AppAccessPolicy _deskWriterPolicy() {
       AppPermissions.patientWrite,
       AppPermissions.billingRead,
       AppPermissions.billingWrite,
+    },
+    roles: const <String>['RECEPTIONIST'],
+    modules: const <AppModuleEntitlement>[
+      AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'patient-registry', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+    ],
+  );
+}
+
+AppAccessPolicy _exporterWriterPolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.patientRead,
+      AppPermissions.patientWrite,
+      AppPermissions.billingRead,
+      AppPermissions.billingWrite,
+      AppPermissions.evidenceExport,
     },
     roles: const <String>['RECEPTIONIST'],
     modules: const <AppModuleEntitlement>[
@@ -597,6 +623,8 @@ void main() {
         expect(find.text('Penny Payment'), findsOneWidget);
         expect(find.text('Register patient'), findsNothing);
         expect(find.text('Schedule appointment'), findsNothing);
+        expect(find.text('Export'), findsNothing);
+        expect(find.text('Print'), findsNothing);
         expect(find.byType(AppTabToolbarPrimary), findsNothing);
         expect(find.text('Receive payment'), findsNothing);
         expect(find.text('Delete'), findsNothing);
@@ -622,6 +650,111 @@ void main() {
         expect(find.text('Billing guidance'), findsWidgets);
         expect(find.text('Receive payment'), findsNothing);
         expect(find.byType(WorkflowActionButton), findsNothing);
+      },
+    );
+
+    testWidgets('export/print omitted without evidence:export; present with it', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPaymentGateTab(
+        tester,
+        opdRepository: opdRepository,
+        billingRepository: billingRepository,
+        accessPolicy: _deskWriterPolicy(),
+      );
+      expect(find.text('Export'), findsNothing);
+      expect(find.text('Print'), findsNothing);
+
+      await _pumpPaymentGateTab(
+        tester,
+        opdRepository: opdRepository,
+        billingRepository: billingRepository,
+        accessPolicy: _exporterWriterPolicy(),
+      );
+      expect(find.text('Export'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('Schedule appointment'), findsOneWidget);
+    });
+
+    testWidgets(
+      'defaults five columns; warning tone for clearance; issued date filter',
+      (WidgetTester tester) async {
+        await _pumpPaymentGateTab(
+          tester,
+          opdRepository: opdRepository,
+          billingRepository: billingRepository,
+          accessPolicy: _exporterWriterPolicy(),
+          invoices: <BillingWorkItem>[
+            _invoice(
+              timelineAt: DateTime.utc(2026, 7, 10),
+            ),
+            _invoice(
+              id: 'invoice-overdue',
+              displayId: 'INV-OVER',
+              patientName: 'Owen Overdue',
+              patientId: 'patient-overdue',
+              patientDisplayId: 'PAT-OVER',
+              encounterId: 'encounter-overdue',
+              encounterDisplayId: 'ENC-OVER',
+              status: 'OVERDUE',
+              billingStatus: 'OVERDUE',
+              timelineAt: DateTime.utc(2026, 6, 1),
+            ),
+          ],
+        );
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem paymentGate = strip.tabs.firstWhere(
+          (AppTabItem item) => item.id == 'paymentGate',
+        );
+        // Product-justified warning: outstanding clearance / payment pressure.
+        expect(paymentGate.countTone, AppTabCountTone.warning);
+        expect(paymentGate.count, 2);
+
+        expect(find.text('Patient name'), findsWidgets);
+        expect(find.text('Encounter'), findsWidgets);
+        expect(find.text('Current step'), findsWidgets);
+        expect(find.text('Due'), findsWidgets);
+        expect(find.text('Billing guidance'), findsWidgets);
+        expect(find.text('Penny Payment'), findsOneWidget);
+        expect(find.text('Owen Overdue'), findsOneWidget);
+
+        await tester.tap(find.byTooltip('Settings'));
+        await tester.pumpAndSettle();
+        expect(find.text('TABLE SETTINGS'), findsOneWidget);
+        expect(find.text('Source'), findsWidgets);
+        expect(find.text('Invoice'), findsWidgets);
+        await tester.tap(find.text('Close').last);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byTooltip('Filters'));
+        await tester.pumpAndSettle();
+        expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+        expect(find.text('Issued date'), findsWidgets);
+        expect(find.text('Overdue'), findsWidgets);
+        expect(find.text('Awaiting payment'), findsWidgets);
+
+        await tester.tap(find.text('Overdue').last);
+        await tester.pump();
+        await tester.tap(find.text('Apply filters'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Owen Overdue'), findsOneWidget);
+        expect(find.text('Penny Payment'), findsNothing);
+
+        final AppTabStrip filteredStrip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem filtered = filteredStrip.tabs.firstWhere(
+          (AppTabItem item) => item.id == 'paymentGate',
+        );
+        expect(filtered.count, 1);
       },
     );
 
@@ -748,6 +881,8 @@ void main() {
         expect(find.text('Edit'), findsNothing);
         expect(find.text('Delete'), findsNothing);
         expect(find.byType(WorkflowActionButton), findsNothing);
+        expect(find.text('BILLING GUIDANCE'), findsOneWidget);
+        expect(find.text('Close'), findsOneWidget);
       },
     );
 

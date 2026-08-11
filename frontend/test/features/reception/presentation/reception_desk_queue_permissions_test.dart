@@ -26,6 +26,7 @@ import 'package:hosspi_hms/features/reception/presentation/widgets/reception_que
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_board_next_action.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_queue_actions_dialog.dart';
 import 'package:mocktail/mocktail.dart';
@@ -94,6 +95,21 @@ AppAccessPolicy _writerPolicy() {
     permissions: <AppPermission>{
       AppPermissions.patientRead,
       AppPermissions.patientWrite,
+    },
+    roles: const <String>['RECEPTIONIST'],
+    modules: const <AppModuleEntitlement>[
+      AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'patient-registry', licenseStatus: 'ACTIVE'),
+    ],
+  );
+}
+
+AppAccessPolicy _exporterWriterPolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.patientRead,
+      AppPermissions.patientWrite,
+      AppPermissions.evidenceExport,
     },
     roles: const <String>['RECEPTIONIST'],
     modules: const <AppModuleEntitlement>[
@@ -538,6 +554,8 @@ void main() {
         expect(find.text('Next action'), findsWidgets);
         expect(find.text('Register patient'), findsNothing);
         expect(find.text('Schedule appointment'), findsNothing);
+        expect(find.text('Export'), findsNothing);
+        expect(find.text('Print'), findsNothing);
         expect(find.byType(AppTabToolbarPrimary), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
       },
@@ -558,6 +576,65 @@ void main() {
       expect(find.text('Next action'), findsWidgets);
       expect(find.text('Quinn Queue'), findsOneWidget);
     });
+
+    testWidgets('export/print omitted without evidence:export; present with it', (
+      WidgetTester tester,
+    ) async {
+      await _pumpDeskQueueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _writerPolicy(),
+      );
+      expect(find.text('Export'), findsNothing);
+      expect(find.text('Print'), findsNothing);
+
+      await _pumpDeskQueueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _exporterWriterPolicy(),
+      );
+      expect(find.text('Export'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('Schedule appointment'), findsOneWidget);
+    });
+
+    testWidgets(
+      'defaults five data columns; warning tone; next-action is guidance only',
+      (WidgetTester tester) async {
+        await _pumpDeskQueueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _exporterWriterPolicy(),
+        );
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem queue = strip.tabs.firstWhere(
+          (AppTabItem item) => item.id == 'queue',
+        );
+        expect(queue.count, 1);
+        expect(queue.countTone, AppTabCountTone.warning);
+
+        expect(find.text('Patient name'), findsWidgets);
+        expect(find.text('Phone'), findsWidgets);
+        expect(find.text('Queued at'), findsWidgets);
+        expect(find.text('Current step'), findsWidgets);
+        expect(find.text('Doctor'), findsWidgets);
+        expect(find.text('Next action'), findsWidgets);
+        // Desk queue next-action is read-only text, not a mutation button.
+        expect(find.byType(OpdBoardNextActionCell), findsNothing);
+
+        await tester.tap(find.byTooltip('Settings'));
+        await tester.pumpAndSettle();
+        expect(find.text('TABLE SETTINGS'), findsOneWidget);
+        expect(find.text('Queue ID'), findsOneWidget);
+        expect(find.text('Payment status'), findsOneWidget);
+        expect(find.text('Reason'), findsOneWidget);
+      },
+    );
 
     testWidgets(
       '∪ allowance: last_office:read enters workspace; Desk queue tab collapsed',

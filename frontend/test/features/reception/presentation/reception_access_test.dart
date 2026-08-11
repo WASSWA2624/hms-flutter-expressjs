@@ -541,4 +541,42 @@ void main() {
       expect(next!.queueEntries.items, isEmpty);
     });
   });
+
+  group('Reception desk export / print gate', () {
+    test('allows export when evidence:export is granted', () {
+      expect(
+        canExportReceptionDesk(
+          _policyFor(roles: <String>['RECEPTIONIST']),
+        ),
+        isTrue,
+      );
+      expect(
+        canPrintReceptionDesk(
+          _policyFor(roles: <String>['RECEPTIONIST']),
+        ),
+        isTrue,
+      );
+    });
+
+    test('denies export without evidence:export', () {
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['CUSTOM'],
+          ),
+          permissions: <AppPermission>{
+            AppPermissions.patientRead,
+            AppPermissions.patientWrite,
+            AppPermissions.reportsRead,
+          },
+          moduleEntitlements: _activeShellModules,
+        ),
+      );
+      expect(canExportReceptionDesk(policy), isFalse);
+      expect(canPrintReceptionDesk(policy), isFalse);
+    });
+  });
 }

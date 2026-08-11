@@ -4,8 +4,9 @@
 
 - Label: `receptionSectionPaymentGate`
 - Icon: `Icons.payments_outlined`
-- Count source: `paymentGate.entries.length` (loaded payment-gate list)
-- Count tone: `AppTabCountTone.warning`
+- Count source: `ReceptionPaymentGateState.totalCount` (server/aggregate total; falls back to loaded `entries.length`). When this tab is active and clearance/next-action/provider/source/gender/date/search narrow the list, badge uses the filtered membership total
+- Sibling tabs: dedicated unfiltered scope totals (shared chrome sibling model)
+- Count tone: `AppTabCountTone.warning` — product-justified outstanding clearance / payment pressure (documented in Payment gate permission tests)
 - Deep-link `section`: `payment-gate` (aliases `payment`, `pending_balance_amount`, `pending-payments`)
 - Tab gate: `ReceptionPaymentGateAtomPermissions.tab` = ∪ `billing:read` + module `billing-payments`
 - **Omitted when unauthorized** (controller not watched)
@@ -13,37 +14,43 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
+Order: **Filters → Settings → Export → Print → Schedule → Register**
+
 - Search hint: `receptionPaymentGateSearchHint`
-- Filters / Settings / Export: present
-- Print (toolbar): **absent**
+- Filters / Settings: shared labels
+- Export: gated by `ReceptionPaymentGateAtomPermissions.export` / `receptionDeskExportRequirement` (∩ `evidence:export`); omitted when denied
+- Print (toolbar): `commonPrintActionLabel` → preview-first `printReceptionDeskList` / `PrintDocumentTemplates.registry`; omitted without export/print gate
 - Schedule / Register: ∩ `patient:write` (desk strip reuse)
-- **Date filter: intentionally omitted** (`enableDateFilter: false`) — payment gate still exposes arrival-date label helper unused for toolbar date
+- Date filter: **enabled** — `billingIssuedDateFilterLabel` on entry `issuedAt` (latest invoice `timelineAt`)
 - Collect / Receive payment: **not mounted** (Billing owns cashier)
 
 ## 3. Table
 
 - Row model: `_ReceptionDeskRow.paymentGate(ReceptionPaymentGateEntry)`
 - Row select → read-only billing guidance detail
-- Default columns:
+- Default columns (prefer **5** data columns; next-action is read-only guidance):
   1. Patient
   2. Encounter (`billingEncounterLabel`) — subtitle services
   3. Current step / clearance (`receptionCurrentStepLabel` + `billingClearanceLabel`)
-  4. Next action guidance (`opdNextActionFilterLabel`) — if `receptionPaymentGateShowsNextActionColumn` (read-only)
-  5. Amount due (`billingAmountDueColumn`)
-- Column choices:
+  4. Amount due (`billingAmountDueColumn`)
+  5. Next action guidance (`opdNextActionFilterLabel` / Billing guidance) — if `receptionPaymentGateShowsNextActionColumn`
+- Column choices (Settings):
   - Patient ID, Gender (`patientsGenderColumnLabel`), DOB (`patientsDobColumnLabel`), Source (`billingSourceColumn`), Invoice (`billingInvoiceColumn`)
+- Reset restores the defaults (+ next-action when readable)
 
 ## 4. Advanced filters / search fields
 
-- Groups: Status (`billingStatusFilterLabel` / clearance), Next action, Provider, Source (`billingSourceFilterLabel`), Gender (`patientsGenderFilterLabel`)
+Same filter model as the table and active tab count:
+
+- Groups: Status / clearance (`billingStatusFilterLabel`), Next action, Provider (when values exist on rows), Source (`billingSourceFilterLabel`), Gender (`patientsGenderFilterLabel`)
 - Search fields: patient, record, staff, reason, status, **service**, **invoice**
-- No date filter control on toolbar
+- Date range on issued-at (`billingIssuedDateFilterLabel`)
 
 ## 5. Primary / secondary / row actions
 
 - Strip: Schedule, Register only
 - Row: open read-only detail (Close)
-- No Collect / Receive payment button
+- No Collect / Receive payment button (even with `billing:write`)
 
 ## 6. Dialogs from this tab
 
@@ -56,6 +63,7 @@
 
 - Detail is terminal for mutations: patient/encounter context panel + invoice cards (`BillingWorkItem` via billing widgets) + Close
 - No nested collect / adjust / refund dialogs
+- No Billing workspace handoff button required for compliance
 - Schedule/Register nest same as other tabs
 
 ## 8. Forms (summary)
@@ -65,19 +73,22 @@
 
 ## 9. Print / labels / preview
 
-- **Absent** on this tab and its detail dialog
+- Table Print: present when authorized; preview before device print; options aligned to exportable guidance/invoice summary fields
+- Detail dialog: no print / collect surface
 
 ## 10. Loading / empty / error / success
 
 - Empty: `receptionPaymentGateEmptyTitle` / `receptionPaymentGateEmptyBody`
 - Controller failure with no data: error `AppStateView` + Retry on payment-gate controller
 - Success snackbars only for Schedule/Register strip paths
+- After strip mutations: refresh table + all visible tab counts
 
 ## 11. RBAC / ABAC
 
 | Atom | Gate |
 | --- | --- |
 | Tab / chrome / filters / detail / next-action label / close | `billing:read` + `billing-payments` |
+| Export / Print | ∩ `evidence:export` |
 | Register / Schedule | ∩ `patient:write` |
 | Collect / Receive payment | ∩ `billing:write` documented — **not mounted** |
 | Hard delete | not mounted |

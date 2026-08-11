@@ -22,22 +22,28 @@ final receptionPaymentGateControllerProvider =
 final class ReceptionPaymentGateState {
   const ReceptionPaymentGateState({
     this.entries = const <ReceptionPaymentGateEntry>[],
+    this.totalCount = 0,
     this.isRefreshing = false,
     this.lastFailure,
   });
 
   final List<ReceptionPaymentGateEntry> entries;
+
+  /// Authoritative Payment-gate total (loaded aggregate length; all pages).
+  final int totalCount;
   final bool isRefreshing;
   final AppFailure? lastFailure;
 
   ReceptionPaymentGateState copyWith({
     List<ReceptionPaymentGateEntry>? entries,
+    int? totalCount,
     bool? isRefreshing,
     AppFailure? lastFailure,
     bool clearLastFailure = false,
   }) {
     return ReceptionPaymentGateState(
       entries: entries ?? this.entries,
+      totalCount: totalCount ?? this.totalCount,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       lastFailure: clearLastFailure ? null : lastFailure ?? this.lastFailure,
     );
@@ -125,9 +131,12 @@ final class ReceptionPaymentGateController
       invoices.add(invoice);
     }
 
+    final List<ReceptionPaymentGateEntry> entries =
+        aggregateReceptionPaymentGateEntries(invoices);
     _emit(
       current.copyWith(
-        entries: aggregateReceptionPaymentGateEntries(invoices),
+        entries: entries,
+        totalCount: entries.length,
         isRefreshing: false,
         clearLastFailure: true,
       ),
@@ -162,9 +171,12 @@ final class ReceptionPaymentGateController
         }
         request = request.next();
       }
+      final List<ReceptionPaymentGateEntry> entries =
+          aggregateReceptionPaymentGateEntries(invoices);
       return Result<ReceptionPaymentGateState>.success(
         ReceptionPaymentGateState(
-          entries: aggregateReceptionPaymentGateEntries(invoices),
+          entries: entries,
+          totalCount: entries.length,
         ),
       );
     } finally {

@@ -111,6 +111,26 @@ const AccessRequirement receptionHighPriorityEmergencyNestedReadRequirement =
       activeModules: <String>['scheduling-queue'],
     );
 
+/// Front-desk list Export / Print (worklist Excel + preview print).
+///
+/// Uses ∩ `evidence:export` (same atom as Biomedical / reports evidence export).
+/// Receptionist role packs include `evidence:export` for desk worklists.
+const AccessRequirement receptionDeskExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — Print uses the same desk export gate.
+const AccessRequirement receptionDeskPrintRequirement =
+    receptionDeskExportRequirement;
+
+bool canExportReceptionDesk(AppAccessPolicy policy) {
+  return receptionDeskExportRequirement.isAllowed(policy);
+}
+
+bool canPrintReceptionDesk(AppAccessPolicy policy) {
+  return receptionDeskPrintRequirement.isAllowed(policy);
+}
+
 AccessRequirement receptionDeskSectionRequirement(
   ReceptionDeskSection section,
 ) {
@@ -269,6 +289,8 @@ abstract final class ReceptionAppointmentsAtomPermissions {
   static const AccessRequirement search = receptionSchedulingReadRequirement;
   static const AccessRequirement filters = receptionSchedulingReadRequirement;
   static const AccessRequirement settings = receptionSchedulingReadRequirement;
+  static const AccessRequirement export = receptionDeskExportRequirement;
+  static const AccessRequirement print = receptionDeskPrintRequirement;
   static const AccessRequirement empty = receptionSchedulingReadRequirement;
   static const AccessRequirement loading = receptionSchedulingReadRequirement;
   static const AccessRequirement retry = receptionSchedulingReadRequirement;
@@ -348,6 +370,8 @@ abstract final class ReceptionDeskQueueAtomPermissions {
   static const AccessRequirement search = receptionSchedulingReadRequirement;
   static const AccessRequirement filters = receptionSchedulingReadRequirement;
   static const AccessRequirement settings = receptionSchedulingReadRequirement;
+  static const AccessRequirement export = receptionDeskExportRequirement;
+  static const AccessRequirement print = receptionDeskPrintRequirement;
   static const AccessRequirement empty = receptionSchedulingReadRequirement;
   static const AccessRequirement loading = receptionSchedulingReadRequirement;
   static const AccessRequirement retry = receptionSchedulingReadRequirement;
@@ -431,6 +455,8 @@ abstract final class ReceptionActiveVisitsAtomPermissions {
   static const AccessRequirement search = receptionActiveVisitsRequirement;
   static const AccessRequirement filters = receptionActiveVisitsRequirement;
   static const AccessRequirement settings = receptionActiveVisitsRequirement;
+  static const AccessRequirement export = receptionDeskExportRequirement;
+  static const AccessRequirement print = receptionDeskPrintRequirement;
   static const AccessRequirement empty = receptionActiveVisitsRequirement;
   static const AccessRequirement loading = receptionActiveVisitsRequirement;
   static const AccessRequirement retry = receptionActiveVisitsRequirement;
@@ -515,6 +541,8 @@ abstract final class ReceptionFollowUpsAtomPermissions {
   static const AccessRequirement search = receptionFollowUpsRequirement;
   static const AccessRequirement filters = receptionFollowUpsRequirement;
   static const AccessRequirement settings = receptionFollowUpsRequirement;
+  static const AccessRequirement export = receptionDeskExportRequirement;
+  static const AccessRequirement print = receptionDeskPrintRequirement;
   static const AccessRequirement empty = receptionFollowUpsRequirement;
   static const AccessRequirement loading = receptionFollowUpsRequirement;
   static const AccessRequirement retry = receptionFollowUpsRequirement;
@@ -585,6 +613,8 @@ abstract final class ReceptionHighPriorityAtomPermissions {
   static const AccessRequirement search = receptionSchedulingReadRequirement;
   static const AccessRequirement filters = receptionSchedulingReadRequirement;
   static const AccessRequirement settings = receptionSchedulingReadRequirement;
+  static const AccessRequirement export = receptionDeskExportRequirement;
+  static const AccessRequirement print = receptionDeskPrintRequirement;
   static const AccessRequirement empty = receptionSchedulingReadRequirement;
   static const AccessRequirement loading = receptionSchedulingReadRequirement;
   static const AccessRequirement retry = receptionSchedulingReadRequirement;
@@ -662,6 +692,8 @@ abstract final class ReceptionPaymentGateAtomPermissions {
   static const AccessRequirement search = receptionPaymentGateRequirement;
   static const AccessRequirement filters = receptionPaymentGateRequirement;
   static const AccessRequirement settings = receptionPaymentGateRequirement;
+  static const AccessRequirement export = receptionDeskExportRequirement;
+  static const AccessRequirement print = receptionDeskPrintRequirement;
   static const AccessRequirement empty = receptionPaymentGateRequirement;
   static const AccessRequirement loading = receptionPaymentGateRequirement;
   static const AccessRequirement retry = receptionPaymentGateRequirement;
