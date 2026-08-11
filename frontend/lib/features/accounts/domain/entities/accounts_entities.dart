@@ -939,12 +939,15 @@ final class AccountsFiscalPeriod {
   final bool isOverdue;
 
   String get effectiveLabel {
-    final String display = (displayId ?? '').trim();
-    if (display.isNotEmpty) {
+    final String? display = _accountsPublicDisplayId(displayId);
+    if (display != null) {
       return display;
     }
-    final String name = label.trim();
-    return name.isEmpty ? id : name;
+    final String? name = _accountsPublicDisplayId(label);
+    if (name != null) {
+      return name;
+    }
+    return '—';
   }
 
   String get _normalizedStatus => status.trim().toUpperCase();
@@ -965,7 +968,16 @@ final class AccountsFiscalPeriod {
   bool get canApproveClose =>
       isPendingApproval && (pendingApprovalId ?? '').trim().isNotEmpty;
 
-  String get byLabel => (closedBy ?? openedBy ?? '').trim();
+  String get byLabel {
+    final String? closed = _accountsPublicDisplayId(closedBy);
+    if (closed != null) {
+      return closed;
+    }
+    return _accountsPublicDisplayId(openedBy) ?? '';
+  }
+
+  String get publicFacilityLabel =>
+      _accountsPublicDisplayId(facilityLabel) ?? '';
 }
 
 final RegExp _accountsUuidPattern = RegExp(

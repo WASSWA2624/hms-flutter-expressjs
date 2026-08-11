@@ -18,6 +18,8 @@ import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_w
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_books_table_support.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_form_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_period_dialogs.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_period_similarity.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_period_similarity_dialog.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -228,6 +230,12 @@ class _AccountsBooksPanelState extends ConsumerState<AccountsBooksPanel> {
     if (draft == null || !mounted) {
       return;
     }
+
+    final bool shouldOpen = await _reviewOpenPeriodSimilarity(draft);
+    if (!shouldOpen || !mounted) {
+      return;
+    }
+
     setState(() => _mutating = true);
     final Result<AccountsMutationResult> result = await ref
         .read(accountsRepositoryProvider)
@@ -248,6 +256,64 @@ class _AccountsBooksPanelState extends ConsumerState<AccountsBooksPanel> {
         );
       },
     );
+  }
+
+  Future<bool> _reviewOpenPeriodSimilarity(
+    AccountsOpenPeriodDraft draft,
+  ) async {
+    final Result<AppPage<AccountsFiscalPeriod>> listed = await ref
+        .read(accountsRepositoryProvider)
+        .listPeriods(
+          const AccountsPeriodQuery(),
+          facilityId: _facilityId,
+        );
+    if (!mounted) {
+      return false;
+    }
+    final List<AccountsFiscalPeriod> candidates = listed.when(
+      success: (AppPage<AccountsFiscalPeriod> page) => page.items,
+      failure: (_) => _page.items,
+    );
+    final AccountsPeriodSimilarityResult check =
+        checkAccountsPeriodSimilarity(
+          draft: AccountsPeriodSimilarityDraft(
+            label: draft.label,
+            startDate: draft.startDate,
+            endDate: draft.endDate,
+            facilityLabel: '',
+          ),
+          candidates: candidates,
+        );
+    if (!check.hasMatches) {
+      return true;
+    }
+
+    final AccountsPeriodSimilarityDialogResult result =
+        await showAccountsPeriodSimilarityDialog(
+          context,
+          draft: AccountsPeriodSimilarityDraft(
+            label: draft.label,
+            startDate: draft.startDate,
+            endDate: draft.endDate,
+          ),
+          check: check,
+        );
+    if (!mounted) {
+      return false;
+    }
+    switch (result.action) {
+      case AccountsPeriodSimilarityAction.cancel:
+        return false;
+      case AccountsPeriodSimilarityAction.proceed:
+        return !check.hasExactConflict && !check.hasOverlapConflict;
+      case AccountsPeriodSimilarityAction.selectExisting:
+        final AccountsFiscalPeriod? existing = result.selected;
+        if (existing == null) {
+          return false;
+        }
+        await _openDetail(existing);
+        return false;
+    }
   }
 
   Future<void> _closePeriod(AccountsFiscalPeriod? period) async {
@@ -430,9 +496,9 @@ class _AccountsBooksPanelState extends ConsumerState<AccountsBooksPanel> {
           }
           return <String>[
             item.effectiveLabel,
-            item.label,
+            accountsPublicLabel(item.label) ?? '',
             item.status,
-            item.facilityLabel ?? '',
+            item.publicFacilityLabel,
             item.byLabel,
           ].any((String value) => value.toLowerCase().contains(needle));
         },
@@ -654,11 +720,11 @@ class _AccountsBooksPanelState extends ConsumerState<AccountsBooksPanel> {
         label: AccountsStrings.facilityColumn,
         preferredWidth: 160,
         cellBuilder: (_, AccountsFiscalPeriod item) => Text(
-          (item.facilityLabel ?? '').trim().isEmpty
+          item.publicFacilityLabel.isEmpty
               ? AccountsStrings.unknownValue
-              : item.facilityLabel!,
+              : item.publicFacilityLabel,
         ),
-        exportValue: (AccountsFiscalPeriod item) => item.facilityLabel ?? '',
+        exportValue: (AccountsFiscalPeriod item) => item.publicFacilityLabel,
       ),
       AppListTableColumn<AccountsFiscalPeriod>(
         id: accountsBooksByColumnId,

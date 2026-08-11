@@ -127,6 +127,35 @@ abstract final class AccountsStrings {
   static const String detailTitlePeriod = 'Period';
   static const String periodLabelRequired = 'Label is required.';
   static const String periodDatesRequired = 'Start and end dates are required.';
+  static const String periodDatesField = 'Dates';
+  static const String periodTrialSnapshotLabel = 'Trial snapshot';
+  static const String periodTrialSnapshotValue = 'Available in books detail';
+  static const String periodPrintAction = 'Print';
+
+  static const String periodExactDialogTitle = 'Exact or overlapping period';
+  static const String periodSimilarDialogTitle = 'Similar periods';
+  static const String periodNoSimilarDialogTitle = 'No similar periods';
+  static const String periodExactBannerTitle = 'Exact match';
+  static const String periodSimilarBannerTitle = 'Near match';
+  static const String periodNoSimilarBannerTitle = 'No matches';
+  static const String periodExactDialogBody =
+      'An identical period already exists. Select the existing period or cancel.';
+  static const String periodOverlapDialogBody =
+      'This date range overlaps an open period. Select the existing period or cancel.';
+  static const String periodSimilarDialogBody =
+      'Review near-duplicate periods before opening another.';
+  static const String periodNoSimilarDialogBody =
+      'No similar periods found. You can continue.';
+  static const String periodSelectExisting = 'Select existing';
+  static const String periodContinueOpen = 'Continue open';
+
+  static const String booksPrintOptionsSection = 'Print sections';
+  static const String booksPrintSectionHeader = 'Header / facility';
+  static const String booksPrintSectionPeriod = 'Period';
+  static const String booksPrintSectionChecklist = 'Close checklist';
+  static const String booksPrintSectionNotes = 'Notes';
+  static const String booksPrintSectionFooter = 'Footer / signature';
+  static const String booksPrintFooter = 'Accounts period print';
 
   static const String approvalTypeJournalPost = 'Journal post';
   static const String approvalTypeVoid = 'Void';

@@ -253,6 +253,65 @@ void main() {
     expect(find.byType(AccountsBooksPanel), findsOneWidget);
   });
 
+  testWidgets('Deep link action=close opens Close period modal', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBooks(
+      tester,
+      location: '/accounts?section=books&action=close&id=period-1',
+      accessPolicy: _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.accountsRead,
+          AppPermissions.accountsWrite,
+        },
+      ),
+    );
+
+    expect(find.text(AccountsStrings.closePeriodDialogTitle), findsOneWidget);
+    expect(find.text(AccountsStrings.periodChecklistTitle), findsOneWidget);
+  });
+
+  testWidgets('Row click opens Books detail with Print; no UUID', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBooks(
+      tester,
+      accessPolicy: _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.accountsRead,
+          AppPermissions.accountsWrite,
+        },
+      ),
+    );
+
+    await tester.tap(find.text('FY2026-Q1').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text(AccountsStrings.detailTitlePeriod), findsOneWidget);
+    expect(find.text(AccountsStrings.periodPrintAction), findsOneWidget);
+    expect(find.text('period-1'), findsNothing);
+    expect(find.textContaining('550e8400'), findsNothing);
+  });
+
+  testWidgets('Journal / Post all / Add trailing absent on Close books', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBooks(
+      tester,
+      accessPolicy: _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.accountsRead,
+          AppPermissions.accountsWrite,
+        },
+      ),
+    );
+
+    expect(find.byTooltip(AccountsStrings.journalAction), findsNothing);
+    expect(find.byTooltip(AccountsStrings.postAllAction), findsNothing);
+    expect(find.byTooltip('Add'), findsNothing);
+  });
+
   testWidgets('Empty periods show No periods match.', (
     WidgetTester tester,
   ) async {

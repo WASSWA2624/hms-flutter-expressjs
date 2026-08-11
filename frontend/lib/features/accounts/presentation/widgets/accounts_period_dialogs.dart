@@ -1,7 +1,11 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_books_print_helpers.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_form_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -52,7 +56,7 @@ Future<void> showAccountsBooksDetailDialog(
   );
 }
 
-class _AccountsBooksDetailDialog extends StatelessWidget {
+class _AccountsBooksDetailDialog extends ConsumerWidget {
   const _AccountsBooksDetailDialog({
     required this.period,
     this.onViewUnposted,
@@ -66,7 +70,7 @@ class _AccountsBooksDetailDialog extends StatelessWidget {
   final VoidCallback? onApprove;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final String statusLabel = accountsPeriodStatusLabel(period);
     final AppWorkspaceStatusTone tone = period.isOverdue || period.isPendingApproval
@@ -109,6 +113,21 @@ class _AccountsBooksDetailDialog extends StatelessWidget {
           Text(
             '${AccountsStrings.periodPendingApprovalsLabel}: ${period.pendingApprovalsCount}',
           ),
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            '${AccountsStrings.periodTrialSnapshotLabel}: ${AccountsStrings.periodTrialSnapshotValue}',
+          ),
+          if ((period.notes ?? '').trim().isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            Text(
+              AccountsStrings.notesLabel,
+              style: theme.textTheme.titleSmall,
+            ),
+            SizedBox(height: theme.spacing.xs),
+            Text(
+              accountsPublicLabel(period.notes) ?? AccountsStrings.notRecorded,
+            ),
+          ],
           if (onViewUnposted != null) ...<Widget>[
             SizedBox(height: theme.spacing.md),
             Align(
@@ -129,6 +148,17 @@ class _AccountsBooksDetailDialog extends StatelessWidget {
         AppButton.tertiary(
           label: context.l10n.commonCancelActionLabel,
           onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        AppButton.secondary(
+          label: AccountsStrings.periodPrintAction,
+          icon: Icons.print_outlined,
+          onPressed: () => unawaited(
+            printAccountsBooksPacket(
+              ref: ref,
+              context: context,
+              period: period,
+            ),
+          ),
         ),
         if (onApprove != null)
           AppButton.secondary(
