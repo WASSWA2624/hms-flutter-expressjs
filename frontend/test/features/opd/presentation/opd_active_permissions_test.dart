@@ -51,6 +51,16 @@ const OpdFlowSummary _paymentFlow = OpdFlowSummary(
   stage: 'WAITING_CONSULTATION_PAYMENT',
 );
 
+const OpdFlowSummary _activeFlowOther = OpdFlowSummary(
+  id: 'encounter-active-2',
+  publicId: 'ENC-ACTIVE-2',
+  patientDisplayName: 'Other Active',
+  patientIdentifier: 'PAT-ACT-2',
+  encounterType: 'OPD',
+  status: 'OPEN',
+  stage: 'WAITING_VITALS',
+);
+
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement>? modules,
@@ -206,7 +216,10 @@ void _stubWorkspace(
   });
   when(() => repository.getOpdSummaryCounts()).thenAnswer(
     (_) async => Result<OpdFlowAggregateCounts>.success(
-      OpdFlowAggregateCounts(activeOpd: flows.length),
+      OpdFlowAggregateCounts(
+        allOpdPatients: flows.isEmpty ? 0 : flows.length,
+        activeOpd: flows.length,
+      ),
     ),
   );
   when(
@@ -661,6 +674,7 @@ void main() {
       expect(find.byType(AppTabStrip), findsNothing);
       expect(find.text('Start OPD encounter'), findsNothing);
       expect(find.text('Alex Active'), findsNothing);
+      expect(find.text('Access denied'), findsOneWidget);
     });
 
     testWidgets('pay next-action absent without billing:write', (
@@ -814,9 +828,9 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('FLOW ACTIONS'), findsOneWidget);
-        expect(find.textContaining('Record vitals'), findsWidgets);
+        expect(find.text('Next · Record vitals'), findsNothing);
         expect(find.text('Correct stage'), findsNothing);
-        expect(find.text('Print summary'), findsOneWidget);
+        expect(find.text('Print'), findsWidgets);
       },
     );
 
@@ -849,5 +863,159 @@ void main() {
       expect(router.state.uri.queryParameters['section'], 'active');
       expect(find.text('Alex Active'), findsOneWidget);
     });
+
+    testWidgets(
+      'integration: section=encounters alias selects Active',
+      (WidgetTester tester) async {
+        await _pumpActiveTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+          initialLocation: '/opd?section=encounters',
+        );
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        expect(
+          strip.tabs.any((AppTabItem item) => item.id == 'active'),
+          isTrue,
+        );
+        expect(find.text('Alex Active'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Export/Print omit without evidence:export; present when granted',
+      (WidgetTester tester) async {
+        await _pumpActiveTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+
+        await _pumpActiveTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+              AppPermissions.evidenceExport,
+            },
+            roles: const <String>['PLATFORM_ADMIN'],
+          ),
+        );
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
+        expect(find.byTooltip('Filters'), findsOneWidget);
+        expect(find.byTooltip('Settings'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'defaults five data columns; Active count tone is warning; Settings lists choices',
+      (WidgetTester tester) async {
+        await _pumpActiveTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem active = strip.tabs.firstWhere(
+          (AppTabItem item) => item.id == 'active',
+        );
+        expect(active.count, 1);
+        expect(active.countTone, AppTabCountTone.warning);
+
+        expect(find.text('Patient name'), findsWidgets);
+        expect(find.text('Doctor'), findsWidgets);
+        expect(find.text('Visit type'), findsWidgets);
+        expect(find.text('Status'), findsWidgets);
+        expect(find.text('Next action'), findsWidgets);
+        expect(find.text('Arrival mode'), findsNothing);
+        expect(find.text('OPD encounter'), findsNothing);
+        expect(find.text('Wait time'), findsNothing);
+
+        await tester.tap(find.byTooltip('Settings'));
+        await tester.pumpAndSettle();
+        expect(find.text('TABLE SETTINGS'), findsOneWidget);
+        expect(find.text('OPD encounter'), findsWidgets);
+        expect(find.text('Wait time'), findsWidgets);
+        expect(find.text('Arrival time'), findsWidgets);
+        expect(find.text('Arrival mode'), findsWidgets);
+        expect(find.text('Close'), findsOneWidget);
+        await tester.tap(find.text('Close'));
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'Advanced filters footer is Clear filters → Apply filters → Close',
+      (WidgetTester tester) async {
+        await _pumpActiveTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+        );
+
+        await tester.tap(find.byTooltip('Filters'));
+        await tester.pumpAndSettle();
+        expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+        expect(find.text('Clear filters'), findsOneWidget);
+        expect(find.text('Apply filters'), findsOneWidget);
+        expect(find.text('Close'), findsOneWidget);
+        await tester.tap(find.text('Close'));
+        await tester.pumpAndSettle();
+        expect(find.text('ADVANCED FILTERS'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'active Active badge uses filtered total; All sibling stays scope total',
+      (WidgetTester tester) async {
+        await _pumpActiveTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+          flows: const <OpdFlowSummary>[_activeFlow, _activeFlowOther],
+        );
+
+        final AppTabStrip initial = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        expect(
+          initial.tabs.firstWhere((AppTabItem t) => t.id == 'active').count,
+          2,
+        );
+        expect(
+          initial.tabs.firstWhere((AppTabItem t) => t.id == 'all').count,
+          2,
+        );
+
+        await tester.enterText(find.byType(TextField).first, 'Other Active');
+        await tester.pumpAndSettle();
+
+        final AppTabStrip filtered = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        expect(
+          filtered.tabs.firstWhere((AppTabItem t) => t.id == 'active').count,
+          1,
+        );
+        expect(
+          filtered.tabs.firstWhere((AppTabItem t) => t.id == 'all').count,
+          2,
+        );
+        expect(find.text('Other Active'), findsWidgets);
+        expect(find.text('Alex Active'), findsNothing);
+      },
+    );
   });
 }

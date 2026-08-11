@@ -6,7 +6,8 @@
 - Catalog / shell entry: `RouteAccessCatalog.opdEntry` — ∩ `opd:read` + `scheduling-queue`
 - Board chrome read: `opdWorkspaceReadRequirement` — ∪ `patient:read` \| `clinical:read` + module
 - Prompt route ∪ also documents billing/operations/emergency read — catalog keeps unique `opd:read`
-- If no board tabs allowed: body returns `SizedBox.shrink()` (no forbidden placeholder on page)
+- Page wraps `AppAccessGate` → forbidden `AppStateScaffold` when board read denied
+- If no board tabs allowed: body returns forbidden `AppStateView` (not `SizedBox.shrink()`)
 
 ## Page chrome
 
@@ -23,40 +24,45 @@
 
 - Component: `AppTabStrip` / `AppTabItem`
 - Tabs omitted when unauthorized (`opdBoardTabRequirement`) — not disabled
-- Counts:
-  - All → client `allItems.length`
-  - Arrivals / Queue / Triage / Active → `state.arrivalCount` / `queueCount` / `triageQueueCount` / `summaryCounts.activeOpd` (fallback `activeFlowCount`)
+- Counts (sibling model — dedicated unfiltered scope totals):
+  - All → `summaryCounts.allOpdPatients` (fallback combined `_tableItems` length)
+  - Arrivals → `appointments.totalItemCount` (fallback `arrivalCount`)
+  - Queue → `queueEntries.totalItemCount` (fallback `queueCount`)
+  - Triage → `triageQueue.totalItemCount` (fallback `triageQueueCount`)
+  - Active → `summaryCounts.activeOpd` (fallback `activeFlowCount`)
   - Follow-ups → `followUpTabCountProvider(OPD)`
+  - **Active tab** with search or advanced filters: filtered membership length for that tab only
 - Count tones: `warning` for Arrivals, Queue, Triage, Active; `info` for All and Follow-ups
 - Icons: dashboard / event / queue / monitor_heart / medical_services / event_repeat
 - No strip primary/secondary actions (Start OPD lives on search bar)
 
 ## Table toolbar (board tabs; not Follow-ups)
 
-Order on search bar: **Filters → Settings → Export → Start OPD** (no table Print)
+Order on search bar: **Filters → Settings → Export → Print → Start OPD**
 
 | Control | Label / key | Notes |
 | --- | --- | --- |
 | Search | `opdSearchHint` / `opdSearchLabel` | field-scoped via `searchFields` |
 | Clear | `opdClearFiltersAction` | |
-| Filters | `commonFiltersActionLabel` → `commonAdvancedFiltersTitle` | Apply `opdApplyFiltersAction`; Clear `opdClearFiltersAction` |
-| Settings | `commonTableSettings*` | storage `opd_${section.name}` |
-| Export | `commonTableExportActionLabel` | date via item `time` |
-| Print (table) | **absent** | |
+| Filters | `commonFiltersActionLabel` → `commonAdvancedFiltersTitle` | Apply `opdApplyFiltersAction`; Clear `opdClearFiltersAction`; Close `commonCloseActionLabel` |
+| Settings | `commonTableSettings*` | storage `opd_${section.name}`; Close `commonCloseActionLabel` |
+| Export | `commonTableExportActionLabel` | date via item `time`; gated by `opdWorkspaceExportRequirement` (∩ `evidence:export`); omitted when denied |
+| Print (table) | `commonPrintActionLabel` → `Print` | `enablePrint` + `canPrint`; opens `printOpdWorkspaceList` → `PrintDocumentTemplates.registry` preview-first |
 | Start OPD | `opdStartWalkInAction` / tooltip `opdStartEncounterTooltip` | omitted on Follow-ups; omitted without `opdStartEncounterRequirementForSection` |
 
-Date filter: **enabled** — label `opdArrivalDateFilterLabel`; From/To `opdDateFromLabel` / `opdDateToLabel`.
+Date filter: **enabled** — label `opdArrivalDateFilterLabel`; From/To `opdDateFromLabel` / `opdDateToLabel`.  
+Default visible columns prefer **5** data columns.
 
 ## Shared row hubs (owner notes)
 
 | Surface | Owner | File |
 | --- | --- | --- |
-| Flow Actions | **reused** shared | `showFlowActionsDialog` |
+| Flow Actions | **reused** shared | `showFlowActionsDialog` (`printActionLabel: commonPrintActionLabel`) |
 | Appointment Actions | **reused** | `showOpdAppointmentActionsDialog` (`omitPrimaryAction: true` from table) |
 | Queue Actions | **reused** | `showQueueActionsDialog` (`OpdQueueAtomPermissions.write`) |
 | Start / walk-in encounter | **reused** | `openOpdWorkspaceEncounterFlow` / encounter dialog |
 | Board next-action runners | **reused** | `runOpdBoardNextAction` / `opd_board_next_action.dart` |
-| Print OPD summary | **reused** | `showPrintOpdSummaryDialog` → clinical summary template (from Flow Actions) |
+| Print OPD summary | **reused** | `showPrintOpdSummaryDialog` → clinical summary template (from Flow Actions; trigger `Print`) |
 | Follow-up detail | **reused** Reception dialog | `showReceptionFollowUpDetailDialog` via `FollowUpWorklistPanel` |
 
 ## Feedback patterns (cross-tab)
@@ -65,3 +71,4 @@ Date filter: **enabled** — label `opdArrivalDateFilterLabel`; From/To `opdDate
 - Empty board: `opdNoFlowsTitle` / `opdNoFlowsBody`
 - Follow-ups empty: `receptionFollowUpsEmptyTitle` / `receptionFollowUpsEmptyBody`
 - Loading / retry: scaffold
+- Forbidden: `routeForbiddenTitle` / `routeForbiddenBody` when board read denied or no tabs

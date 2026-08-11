@@ -4,7 +4,7 @@
 
 - Label: `opdSectionArrivalsLabel`
 - Icon: `Icons.event_outlined`
-- Count source: `state.arrivalCount`
+- Count source: `appointments.totalItemCount` (fallback `arrivalCount`); filtered when active + narrowed
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `arrivals` (alias `appointments`)
 - Tab gate: `OpdArrivalsAtomPermissions.tab`
@@ -13,21 +13,24 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Same board toolbar: **Filters → Settings → Export → Start OPD**
+Same board toolbar: **Filters → Settings → Export → Print → Start OPD**
 
+- Filters: `commonFiltersActionLabel` + date `opdArrivalDateFilterLabel` + Close `commonCloseActionLabel`
 - Start OPD omitted without `OpdArrivalsAtomPermissions.startEncounter`
-- Table Print: **absent**
+- Export/Print gated by ∩ `evidence:export`
 
 ## 3. Table
 
 - Row model: arrival-category `_OpdTableItem` (appointments / check-in)
 - Row select → Appointment Actions (`omitPrimaryAction: true`)
-- Default columns: Patient, Visit type, Arrival time, Status, Next action (when front-desk/start gates allow column)
-- Column choices: Arrival mode, Provider, Waiting time, Encounter, Category
+- Default columns (5): Patient name, Visit type, Arrival time, Status, Next action (Next action **omitted when unauthorized** via `opdBoardShowsNextActionColumn`)
+- Column choices: Arrival mode, Doctor (provider), Wait time, OPD encounter, Category
+- Mobile: arrival mode, waiting time, status; optional next-action trailing
 
 ## 4. Advanced filters / search fields
 
-Same shared OPD filter groups / search fields / arrival date filter as board.
+Same shared OPD filter groups / search fields / arrival date filter as board.  
+Footer: Clear filters → Apply filters → Close.
 
 ## 5. Primary / secondary / row actions
 
@@ -53,18 +56,20 @@ Appointment schedule fields; encounter arrival/provider form; cancel reason.
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
+- Table Print: `commonPrintActionLabel` → preview-first `printOpdWorkspaceList`
 - Print summary only if a path reaches Flow Actions (not primary on Arrivals)
 
 ## 10. Loading / empty / error / success
 
-Shared board empty/success/loading.
+Shared board empty/success/loading. Forbidden: `routeForbiddenTitle` when board read denied.
 
 ## 11. RBAC / ABAC
 
 | Atom | Gate |
 | --- | --- |
 | Tab / chrome / row select | board read ∪ |
+| Export / Print | ∩ `evidence:export` |
 | Start OPD | encounter source |
 | Check-in / Continue / hub writes | `opdFrontDeskActionRequirement` |
 | Nested billing/admission | _(n/a)_ on arrival stages |
+| Route entry | catalog ∩ `opd:read` |

@@ -557,7 +557,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           'admission_handoff': admissionHandoffAction,
           'print': () => AppPermissionActionItem(
             requirement: opdFrontDeskActionRequirement,
-            label: widget.printActionLabel ?? l10n.opdPrintSummaryAction,
+            label: widget.printActionLabel ?? l10n.commonPrintActionLabel,
             icon: AppActionIcons.print,
             fullWidth: true,
             hideWhenDenied: true,

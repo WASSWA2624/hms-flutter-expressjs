@@ -54,6 +54,17 @@ const OpdFlowSummary _assignDoctorFlow = OpdFlowSummary(
   triageLevel: 'LEVEL_4',
 );
 
+const OpdFlowSummary _triageFlowOther = OpdFlowSummary(
+  id: 'encounter-triage-2',
+  publicId: 'ENC-TRIAGE-2',
+  patientDisplayName: 'Other Triage',
+  patientIdentifier: 'PAT-TRI-2',
+  encounterType: 'OPD',
+  status: 'OPEN',
+  stage: 'WAITING_VITALS',
+  triageLevel: 'LEVEL_4',
+);
+
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement>? modules,
@@ -209,7 +220,10 @@ void _stubWorkspace(
   });
   when(() => repository.getOpdSummaryCounts()).thenAnswer(
     (_) async => Result<OpdFlowAggregateCounts>.success(
-      OpdFlowAggregateCounts(activeOpd: triageFlows.length),
+      OpdFlowAggregateCounts(
+        allOpdPatients: triageFlows.isEmpty ? 0 : triageFlows.length,
+        activeOpd: triageFlows.length,
+      ),
     ),
   );
   when(
@@ -692,6 +706,7 @@ void main() {
       expect(find.byType(AppTabStrip), findsNothing);
       expect(find.text('Start OPD encounter'), findsNothing);
       expect(find.text('Triage Patient'), findsNothing);
+      expect(find.text('Access denied'), findsOneWidget);
     });
 
     testWidgets('assign-doctor next-action present for reception writer', (
@@ -844,9 +859,9 @@ void main() {
         expect(
           find.descendant(
             of: find.byType(AppQuickActions),
-            matching: find.textContaining('Record vitals'),
+            matching: find.text('Next · Record vitals'),
           ),
-          findsOneWidget,
+          findsNothing,
         );
         expect(
           find.descendant(
@@ -858,7 +873,7 @@ void main() {
         expect(
           find.descendant(
             of: find.byType(AppQuickActions),
-            matching: find.text('Print summary'),
+            matching: find.text('Print'),
           ),
           findsOneWidget,
         );
@@ -917,6 +932,139 @@ void main() {
           findsNothing,
         );
         expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Export/Print omit without evidence:export; present when granted',
+      (WidgetTester tester) async {
+        await _pumpTriageTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+
+        await _pumpTriageTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+              AppPermissions.evidenceExport,
+            },
+            roles: const <String>['PLATFORM_ADMIN'],
+          ),
+        );
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
+        expect(find.byTooltip('Filters'), findsOneWidget);
+        expect(find.byTooltip('Settings'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'defaults five data columns; Triage count tone is warning; Settings lists choices',
+      (WidgetTester tester) async {
+        await _pumpTriageTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem triage = strip.tabs.firstWhere(
+          (AppTabItem item) => item.id == 'triage',
+        );
+        expect(triage.count, 1);
+        expect(triage.countTone, AppTabCountTone.warning);
+
+        expect(find.text('Patient name'), findsWidgets);
+        expect(find.text('Wait time'), findsWidgets);
+        expect(find.text('Doctor'), findsWidgets);
+        expect(find.text('Status'), findsWidgets);
+        expect(find.text('Next action'), findsWidgets);
+        expect(find.text('Visit type'), findsNothing);
+        expect(find.text('Arrival mode'), findsNothing);
+        expect(find.text('OPD encounter'), findsNothing);
+
+        await tester.tap(find.byTooltip('Settings'));
+        await tester.pumpAndSettle();
+        expect(find.text('TABLE SETTINGS'), findsOneWidget);
+        expect(find.text('Visit type'), findsWidgets);
+        expect(find.text('Arrival mode'), findsWidgets);
+        expect(find.text('Arrival time'), findsWidgets);
+        expect(find.text('OPD encounter'), findsWidgets);
+        expect(find.text('Close'), findsOneWidget);
+        await tester.tap(find.text('Close'));
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'Advanced filters footer is Clear filters → Apply filters → Close',
+      (WidgetTester tester) async {
+        await _pumpTriageTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+        );
+
+        await tester.tap(find.byTooltip('Filters'));
+        await tester.pumpAndSettle();
+        expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+        expect(find.text('Clear filters'), findsOneWidget);
+        expect(find.text('Apply filters'), findsOneWidget);
+        expect(find.text('Close'), findsOneWidget);
+        await tester.tap(find.text('Close'));
+        await tester.pumpAndSettle();
+        expect(find.text('ADVANCED FILTERS'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'active Triage badge uses filtered total; All sibling stays scope total',
+      (WidgetTester tester) async {
+        await _pumpTriageTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+          triageFlows: const <OpdFlowSummary>[_triageFlow, _triageFlowOther],
+        );
+
+        final AppTabStrip initial = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        expect(
+          initial.tabs.firstWhere((AppTabItem t) => t.id == 'triage').count,
+          2,
+        );
+        expect(
+          initial.tabs.firstWhere((AppTabItem t) => t.id == 'all').count,
+          2,
+        );
+
+        await tester.enterText(find.byType(TextField).first, 'Other Triage');
+        await tester.pumpAndSettle();
+
+        final AppTabStrip filtered = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        expect(
+          filtered.tabs.firstWhere((AppTabItem t) => t.id == 'triage').count,
+          1,
+        );
+        expect(
+          filtered.tabs.firstWhere((AppTabItem t) => t.id == 'all').count,
+          2,
+        );
+        expect(find.text('Other Triage'), findsWidgets);
+        expect(find.text('Triage Patient'), findsNothing);
       },
     );
   });

@@ -4,7 +4,7 @@
 
 - Label: `opdSectionQueueLabel`
 - Icon: `Icons.queue_outlined`
-- Count source: `state.queueCount`
+- Count source: `queueEntries.totalItemCount` (fallback `queueCount`); filtered when active + narrowed
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `queue` (aliases `desk-queue`, `desk_queue`)
 - Tab gate: `OpdQueueAtomPermissions.tab`
@@ -12,18 +12,24 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-**Filters → Settings → Export → Start OPD**; table Print **absent**.
+Order: **Filters → Settings → Export → Print → Start OPD**
+
+- Filters: `commonFiltersActionLabel` + date `opdArrivalDateFilterLabel` + Close `commonCloseActionLabel`
+- Start OPD omitted without `OpdQueueAtomPermissions.startEncounter`
+- Export/Print gated by ∩ `evidence:export`
 
 ## 3. Table
 
 - Row model: queue-category `_OpdTableItem`
 - Row select → Queue Actions (`actionRequirement: OpdQueueAtomPermissions.write`) — **sole hub entry**
-- Default columns coded as Patient, Provider, Waiting time, Status, Next action — but `opdBoardShowsNextActionColumn` is **false** for Queue → Next action column **not mounted** (4 data columns shown)
-- Column choices: Visit type, Arrival time, Arrival mode, Encounter
+- Default columns (5): Patient name, Doctor (provider), Wait time, Status, Visit type
+- Next action column **not mounted** (`opdBoardShowsNextActionColumn` is false for Queue — row select is the sole hub entry)
+- Column choices: Arrival time, Arrival mode, OPD encounter
+- Mobile: arrival mode, waiting time, status; no next-action trailing
 
 ## 4. Advanced filters / search fields
 
-Shared OPD filters + arrival date.
+Shared OPD filters + arrival date. Footer: Clear filters → Apply filters → Close.
 
 ## 5. Primary / secondary / row actions
 
@@ -54,19 +60,21 @@ Prioritize optional reason; queue status; provider select; encounter form from S
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
+- Table Print: `commonPrintActionLabel` → preview-first `printOpdWorkspaceList`
 - No Flow Actions print path from queue hub
 
 ## 10. Loading / empty / error / success
 
-Shared board feedback; success `opdSavedMessage` after hub mutations.
+Shared board feedback; success `opdSavedMessage` after hub mutations. Forbidden: `routeForbiddenTitle` when board read denied.
 
 ## 11. RBAC / ABAC
 
 | Atom | Gate |
 | --- | --- |
 | Tab / chrome / row select | board read ∪ |
+| Export / Print | ∩ `evidence:export` |
 | Start OPD | encounter source |
 | Prioritize / Move / Assign doctor | front-desk write |
 | Next-action column | absent (inventory) |
 | Nested billing/admission | _(n/a)_ |
+| Route entry | catalog ∩ `opd:read` |

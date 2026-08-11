@@ -4,7 +4,7 @@
 
 - Label: `opdSectionTriageLabel`
 - Icon: `Icons.monitor_heart_outlined`
-- Count source: `state.triageQueueCount`
+- Count source: `triageQueue.totalItemCount` (fallback `triageQueueCount`); filtered when active + narrowed
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `triage`
 - Tab gate: `OpdTriageAtomPermissions.tab`
@@ -12,26 +12,30 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-**Filters → Settings → Export → Start OPD**; table Print **absent**.
+Order: **Filters → Settings → Export → Print → Start OPD**
 
-- Triage scope filter group present in shared advanced filters (`opdTriageScopeFilterLabel`: waiting/urgent/emergency/routine/service-only)
+- Filters: `commonFiltersActionLabel` + date `opdArrivalDateFilterLabel` + Close `commonCloseActionLabel`
+- Triage scope filter group present (`opdTriageScopeFilterLabel`: waiting/urgent/emergency/routine/service-only)
+- Start OPD omitted without `OpdTriageAtomPermissions.startEncounter`
+- Export/Print gated by ∩ `evidence:export`
 
 ## 3. Table
 
 - Row model: triage-category `_OpdTableItem`
 - Row select → Flow Actions
-- Default columns: Patient, Waiting time, Provider, Status, Next action (when authorized)
-- Column choices: Visit type, Arrival mode, Arrival time, Encounter
+- Default columns (5): Patient name, Wait time, Doctor (provider), Status, Next action (Next action **omitted when unauthorized** via `opdBoardShowsNextActionColumn`)
+- Column choices: Visit type, Arrival mode, Arrival time, OPD encounter
 - Status badge uses triage tone for triage category
+- Mobile: arrival mode, waiting time, status; optional next-action trailing
 
 ## 4. Advanced filters / search fields
 
-Shared OPD groups including triage scope + arrival date.
+Shared OPD filters including triage scope + arrival date. Footer: Clear filters → Apply filters → Close.
 
 ## 5. Primary / secondary / row actions
 
-- Start OPD when encounter gate allows
-- Next action: Record vitals / Assign doctor / Correct stage (source gates)
+- Start OPD (search bar) when encounter gate allows
+- Next action: Record vitals / Assign doctor / Correct stage (source gates) when authorized
 - Row → Flow Actions
 
 ## 6. Dialogs from this tab
@@ -52,19 +56,21 @@ Vitals fields; provider assignment; stage correction; encounter start form.
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
-- Flow Actions may expose print summary when stage allows
+- Table Print: `commonPrintActionLabel` → preview-first `printOpdWorkspaceList`
+- Flow Actions Print: `commonPrintActionLabel` + shared preview when stage allows
 
 ## 10. Loading / empty / error / success
 
-Shared board feedback.
+Shared board feedback; success after hub/vitals mutations. Forbidden: `routeForbiddenTitle` when board read denied.
 
 ## 11. RBAC / ABAC
 
 | Atom | Gate |
 | --- | --- |
 | Tab / chrome / row select | board read ∪ |
+| Export / Print | ∩ `evidence:export` |
 | Start OPD | encounter source |
 | Vitals next-action | `opdVitalsActionRequirement` |
 | Assign doctor / Correct stage | `opdReceptionActionRequirement` |
 | Nested billing/admission | _(n/a)_ on triage |
+| Route entry | catalog ∩ `opd:read` |

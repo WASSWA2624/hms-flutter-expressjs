@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/features/reception/presentation/controllers/reception_follow_up_controller.dart';
@@ -16,6 +17,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
 /// Scoped Follow-ups worklist for clinical workspaces.
 ///
@@ -24,6 +26,10 @@ import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 ///
 /// Defaults use Reception front-desk gates. Clinical hosts should pass
 /// clinical follow-up read/write requirements instead.
+///
+/// When [onNarrowedCountChanged] is set, the host receives `null` for the
+/// unfiltered scope total and the visible membership length when search or
+/// advanced filters narrow the list (tabs.mdc active-badge rule).
 class FollowUpWorklistPanel extends ConsumerStatefulWidget {
   const FollowUpWorklistPanel({
     required this.scope,
@@ -36,6 +42,7 @@ class FollowUpWorklistPanel extends ConsumerStatefulWidget {
     this.advancedFilterTitle,
     this.advancedFilterApplyLabel,
     this.advancedFilterResetLabel,
+    this.advancedFilterCloseLabel,
     this.enableDateFilter = false,
     this.dateFilterLabel,
     this.dateFromLabel,
@@ -43,6 +50,13 @@ class FollowUpWorklistPanel extends ConsumerStatefulWidget {
     this.textFilters = const <AppSearchBarTextFilter>[],
     this.filterGroups = const <AppSearchBarFilterGroup>[],
     this.onSettingsPressed,
+    this.canExport = true,
+    this.enableExport = true,
+    this.enablePrint = false,
+    this.canPrint = true,
+    this.printLabel,
+    this.onPrint,
+    this.onNarrowedCountChanged,
     super.key,
   });
 
@@ -56,6 +70,7 @@ class FollowUpWorklistPanel extends ConsumerStatefulWidget {
   final String? advancedFilterTitle;
   final String? advancedFilterApplyLabel;
   final String? advancedFilterResetLabel;
+  final String? advancedFilterCloseLabel;
   final bool enableDateFilter;
   final String? dateFilterLabel;
   final String? dateFromLabel;
@@ -63,6 +78,13 @@ class FollowUpWorklistPanel extends ConsumerStatefulWidget {
   final List<AppSearchBarTextFilter> textFilters;
   final List<AppSearchBarFilterGroup> filterGroups;
   final Future<void> Function()? onSettingsPressed;
+  final bool canExport;
+  final bool enableExport;
+  final bool enablePrint;
+  final bool canPrint;
+  final String? printLabel;
+  final Future<void> Function(List<ReceptionFollowUpEntry> entries)? onPrint;
+  final ValueChanged<int?>? onNarrowedCountChanged;
 
   @override
   ConsumerState<FollowUpWorklistPanel> createState() =>
@@ -72,11 +94,45 @@ class FollowUpWorklistPanel extends ConsumerStatefulWidget {
 class _FollowUpWorklistPanelState extends ConsumerState<FollowUpWorklistPanel> {
   final TextEditingController _searchController = TextEditingController();
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
+  int? _lastReportedCount;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _searchController
+      ..removeListener(_onSearchChanged)
+      ..dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(() {});
+  }
+
+  void _reportNarrowedCount({
+    required int visibleCount,
+    required bool narrowed,
+  }) {
+    final ValueChanged<int?>? callback = widget.onNarrowedCountChanged;
+    if (callback == null) {
+      return;
+    }
+    final int? next = narrowed ? visibleCount : null;
+    if (next == _lastReportedCount) {
+      return;
+    }
+    _lastReportedCount = next;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      callback(next);
+    });
   }
 
   @override
@@ -98,6 +154,7 @@ class _FollowUpWorklistPanelState extends ConsumerState<FollowUpWorklistPanel> {
           advancedFilterTitle: widget.advancedFilterTitle,
           advancedFilterApplyLabel: widget.advancedFilterApplyLabel,
           advancedFilterResetLabel: widget.advancedFilterResetLabel,
+          advancedFilterCloseLabel: widget.advancedFilterCloseLabel,
           enableDateFilter: widget.enableDateFilter,
           dateFilterLabel: widget.dateFilterLabel,
           dateFromLabel: widget.dateFromLabel,
@@ -105,10 +162,17 @@ class _FollowUpWorklistPanelState extends ConsumerState<FollowUpWorklistPanel> {
           textFilters: widget.textFilters,
           filterGroups: widget.filterGroups,
           onSettingsPressed: widget.onSettingsPressed,
+          canExport: widget.canExport,
+          enableExport: widget.enableExport,
+          enablePrint: widget.enablePrint,
+          canPrint: widget.canPrint,
+          printLabel: widget.printLabel,
+          onPrint: widget.onPrint,
           filterValue: _filterValue,
           onFilterChanged: (AppSearchBarFilterValue value) {
             setState(() => _filterValue = value);
           },
+          onVisibleCountResolved: _reportNarrowedCount,
         );
       },
     );
@@ -123,12 +187,14 @@ class _FollowUpWorklistBody extends ConsumerWidget {
     required this.writeRequirement,
     required this.filterValue,
     required this.onFilterChanged,
+    required this.onVisibleCountResolved,
     this.createAction,
     this.showAdvancedFilterButton = false,
     this.advancedFilterButtonLabel,
     this.advancedFilterTitle,
     this.advancedFilterApplyLabel,
     this.advancedFilterResetLabel,
+    this.advancedFilterCloseLabel,
     this.enableDateFilter = false,
     this.dateFilterLabel,
     this.dateFromLabel,
@@ -136,6 +202,12 @@ class _FollowUpWorklistBody extends ConsumerWidget {
     this.textFilters = const <AppSearchBarTextFilter>[],
     this.filterGroups = const <AppSearchBarFilterGroup>[],
     this.onSettingsPressed,
+    this.canExport = true,
+    this.enableExport = true,
+    this.enablePrint = false,
+    this.canPrint = true,
+    this.printLabel,
+    this.onPrint,
   });
 
   final FollowUpWorklistScope scope;
@@ -144,12 +216,15 @@ class _FollowUpWorklistBody extends ConsumerWidget {
   final AccessRequirement writeRequirement;
   final AppSearchBarFilterValue filterValue;
   final ValueChanged<AppSearchBarFilterValue> onFilterChanged;
+  final void Function({required int visibleCount, required bool narrowed})
+  onVisibleCountResolved;
   final AppSearchBarAction? createAction;
   final bool showAdvancedFilterButton;
   final String? advancedFilterButtonLabel;
   final String? advancedFilterTitle;
   final String? advancedFilterApplyLabel;
   final String? advancedFilterResetLabel;
+  final String? advancedFilterCloseLabel;
   final bool enableDateFilter;
   final String? dateFilterLabel;
   final String? dateFromLabel;
@@ -157,6 +232,12 @@ class _FollowUpWorklistBody extends ConsumerWidget {
   final List<AppSearchBarTextFilter> textFilters;
   final List<AppSearchBarFilterGroup> filterGroups;
   final Future<void> Function()? onSettingsPressed;
+  final bool canExport;
+  final bool enableExport;
+  final bool enablePrint;
+  final bool canPrint;
+  final String? printLabel;
+  final Future<void> Function(List<ReceptionFollowUpEntry> entries)? onPrint;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -190,186 +271,110 @@ class _FollowUpWorklistBody extends ConsumerWidget {
             ),
           ),
           success: (ReceptionFollowUpState state) {
-            final List<ReceptionFollowUpEntry> entries = _filterFollowUpEntries(
-              state.entries,
-              filterValue,
+            final List<ReceptionFollowUpEntry> advancedFiltered =
+                _filterFollowUpEntries(state.entries, filterValue);
+            final String query = searchController.text.trim();
+            final List<ReceptionFollowUpEntry> visibleEntries = query.isEmpty
+                ? advancedFiltered
+                : advancedFiltered
+                      .where(
+                        (ReceptionFollowUpEntry entry) =>
+                            _matchesFollowUpSearch(entry, query),
+                      )
+                      .toList(growable: false);
+            final bool narrowed =
+                filterValue.isActive || query.isNotEmpty;
+            onVisibleCountResolved(
+              visibleCount: visibleEntries.length,
+              narrowed: narrowed,
             );
+
+            final List<AppListTableColumn<ReceptionFollowUpEntry>> columns =
+                _followUpDefaultColumns(l10n, locale);
+            final List<AppListTableColumn<ReceptionFollowUpEntry>> choices =
+                _followUpColumnChoices(l10n);
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 SizedBox(height: theme.spacing.sm),
                 AppListTable<ReceptionFollowUpEntry>(
-                    items: entries,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    columnVisibilityStorageKey: '${storageKeyPrefix}_cols',
-                    columnWidthStorageKey: '${storageKeyPrefix}_cw',
-                    columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-                    columnVisibilityTitle: l10n.commonTableSettingsTitle,
-                    columnVisibilityApplyLabel:
-                        l10n.receptionApplyColumnsAction,
-                    columnVisibilityResetLabel:
-                        l10n.receptionResetColumnsAction,
-                    columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
-                    onSettingsPressed: onSettingsPressed,
-                    itemKeyBuilder: (ReceptionFollowUpEntry entry) =>
-                        ValueKey<String>(entry.id),
-                    onRowSelected: (ReceptionFollowUpEntry entry) {
-                      unawaited(
-                        _openDetail(context, ref, entry, writeRequirement),
-                      );
-                    },
-                    emptyBuilder: (_) => AppStateView(
-                      title: l10n.receptionFollowUpsEmptyTitle,
-                      body: l10n.receptionFollowUpsEmptyBody,
-                      variant: AppStateViewVariant.empty,
-                    ),
-                    mobileItemBuilder:
-                        (BuildContext context, ReceptionFollowUpEntry entry) {
-                          return _FollowUpMobileRow(
-                            entry: entry,
-                            locale: locale,
-                          );
-                        },
-                    search: AppListTableSearch<ReceptionFollowUpEntry>(
-                      controller: searchController,
-                      semanticLabel: l10n.receptionFollowUpsSearchHint,
-                      hintText: l10n.receptionFollowUpsSearchHint,
-                      clearLabel: l10n.receptionClearFiltersAction,
-                      showAdvancedFilterButton: showAdvancedFilterButton,
-                      advancedFilterButtonLabel: advancedFilterButtonLabel,
-                      advancedFilterTitle: advancedFilterTitle,
-                      advancedFilterApplyLabel: advancedFilterApplyLabel,
-                      advancedFilterResetLabel: advancedFilterResetLabel,
-                      enableDateFilter: enableDateFilter,
-                      dateFilterLabel: dateFilterLabel,
-                      dateFromLabel: dateFromLabel,
-                      dateToLabel: dateToLabel,
-                      textFilters: textFilters,
-                      filterGroups: filterGroups,
-                      filterValue: filterValue,
-                      onFilterChanged: onFilterChanged,
-                      hasActiveFilters:
-                          filterValue.isActive &&
-                          (filterValue.dateFrom != null ||
-                              filterValue.dateTo != null ||
-                              filterValue.texts.values.any(
-                                (String? value) =>
-                                    value?.trim().isNotEmpty == true,
-                              ) ||
-                              filterValue.options.values.any(
-                                (String? value) =>
-                                    value?.trim().isNotEmpty == true,
-                              )),
-                      trailingActions: <AppSearchBarAction>[
-                        ?createAction,
-                      ],
-                      matcher: (ReceptionFollowUpEntry entry, String query) {
-                        final String q = query.trim().toLowerCase();
-                        if (q.isEmpty) {
-                          return true;
-                        }
-                        return <String?>[
-                          entry.patientDisplayName,
-                          entry.patientIdentifier,
-                          entry.patientPhone,
-                          entry.patientEmail,
-                          entry.notes,
-                          entry.status,
-                        ].any(
-                          (String? value) =>
-                              value?.toLowerCase().contains(q) ?? false,
+                  items: advancedFiltered,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  columnVisibilityStorageKey: '${storageKeyPrefix}_cols',
+                  columnWidthStorageKey: '${storageKeyPrefix}_cw',
+                  columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+                  columnVisibilityTitle: l10n.commonTableSettingsTitle,
+                  columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+                  columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+                  columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+                  onSettingsPressed: onSettingsPressed,
+                  enableExport: enableExport,
+                  canExport: canExport,
+                  enablePrint: enablePrint && onPrint != null,
+                  canPrint: canPrint,
+                  printLabel: printLabel ?? l10n.commonPrintActionLabel,
+                  onPrint: onPrint == null
+                      ? null
+                      : () => onPrint!(visibleEntries),
+                  itemKeyBuilder: (ReceptionFollowUpEntry entry) =>
+                      ValueKey<String>(entry.id),
+                  onRowSelected: (ReceptionFollowUpEntry entry) {
+                    unawaited(
+                      _openDetail(context, ref, entry, writeRequirement),
+                    );
+                  },
+                  emptyBuilder: (_) => AppStateView(
+                    title: l10n.receptionFollowUpsEmptyTitle,
+                    body: l10n.receptionFollowUpsEmptyBody,
+                    variant: AppStateViewVariant.empty,
+                  ),
+                  mobileItemBuilder:
+                      (BuildContext context, ReceptionFollowUpEntry entry) {
+                        return _FollowUpMobileRow(
+                          entry: entry,
+                          locale: locale,
                         );
                       },
-                    ),
-                    columns: <AppListTableColumn<ReceptionFollowUpEntry>>[
-                      AppListTableColumn<ReceptionFollowUpEntry>(
-                        id: 'patient',
-                        label: l10n.opdPatientNameLabel,
-                        alwaysVisible: true,
-                        cellBuilder:
-                            (
-                              BuildContext context,
-                              ReceptionFollowUpEntry entry,
-                            ) {
-                              return AppListItemText(
-                                title:
-                                    entry
-                                            .patientDisplayName
-                                            ?.trim()
-                                            .isNotEmpty ==
-                                        true
-                                    ? entry.patientDisplayName!.trim()
-                                    : l10n.profileUnknownValue,
-                                subtitle: entry.patientIdentifier,
-                              );
-                            },
-                      ),
-                      AppListTableColumn<ReceptionFollowUpEntry>(
-                        id: 'phone',
-                        label: l10n.patientsPhoneLabel,
-                        cellBuilder:
-                            (
-                              BuildContext context,
-                              ReceptionFollowUpEntry entry,
-                            ) {
-                              return Text(
-                                entry.patientPhone?.trim().isNotEmpty == true
-                                    ? entry.patientPhone!.trim()
-                                    : l10n.profileUnknownValue,
-                              );
-                            },
-                      ),
-                      AppListTableColumn<ReceptionFollowUpEntry>(
-                        id: 'email',
-                        label: l10n.patientsEmailLabel,
-                        cellBuilder:
-                            (
-                              BuildContext context,
-                              ReceptionFollowUpEntry entry,
-                            ) {
-                              return Text(
-                                entry.patientEmail?.trim().isNotEmpty == true
-                                    ? entry.patientEmail!.trim()
-                                    : l10n.profileUnknownValue,
-                              );
-                            },
-                      ),
-                      AppListTableColumn<ReceptionFollowUpEntry>(
-                        id: 'date',
-                        label: l10n.opdFollowUpDateLabel,
-                        cellBuilder:
-                            (
-                              BuildContext context,
-                              ReceptionFollowUpEntry entry,
-                            ) {
-                              return Text(
-                                AppFormatters.shortDate(
-                                  entry.scheduledAt.toLocal(),
-                                  locale,
-                                ),
-                              );
-                            },
-                      ),
-                      AppListTableColumn<ReceptionFollowUpEntry>(
-                        id: 'time',
-                        label: l10n.opdFollowUpTimeLabel,
-                        cellBuilder:
-                            (
-                              BuildContext context,
-                              ReceptionFollowUpEntry entry,
-                            ) {
-                              return Text(
-                                AppFormatters.time(
-                                  entry.scheduledAt.toLocal(),
-                                  locale,
-                                ),
-                              );
-                            },
-                      ),
-                    ],
+                  search: AppListTableSearch<ReceptionFollowUpEntry>(
+                    controller: searchController,
+                    semanticLabel: l10n.receptionFollowUpsSearchHint,
+                    hintText: l10n.receptionFollowUpsSearchHint,
+                    clearLabel: l10n.receptionClearFiltersAction,
+                    showAdvancedFilterButton: showAdvancedFilterButton,
+                    advancedFilterButtonLabel: advancedFilterButtonLabel,
+                    advancedFilterTitle: advancedFilterTitle,
+                    advancedFilterApplyLabel: advancedFilterApplyLabel,
+                    advancedFilterResetLabel: advancedFilterResetLabel,
+                    advancedFilterCloseLabel: advancedFilterCloseLabel,
+                    enableDateFilter: enableDateFilter,
+                    dateFilterLabel: dateFilterLabel,
+                    dateFromLabel: dateFromLabel,
+                    dateToLabel: dateToLabel,
+                    textFilters: textFilters,
+                    filterGroups: filterGroups,
+                    filterValue: filterValue,
+                    onFilterChanged: onFilterChanged,
+                    hasActiveFilters:
+                        filterValue.isActive &&
+                        (filterValue.dateFrom != null ||
+                            filterValue.dateTo != null ||
+                            filterValue.texts.values.any(
+                              (String? value) =>
+                                  value?.trim().isNotEmpty == true,
+                            ) ||
+                            filterValue.options.values.any(
+                              (String? value) =>
+                                  value?.trim().isNotEmpty == true,
+                            )),
+                    trailingActions: <AppSearchBarAction>[?createAction],
+                    matcher: _matchesFollowUpSearch,
                   ),
+                  columns: columns,
+                  columnChoices: choices,
+                ),
               ],
             );
           },
@@ -393,6 +398,132 @@ class _FollowUpWorklistBody extends ConsumerWidget {
       await refreshScopedFollowUps(ref, scope);
     }
   }
+}
+
+bool _matchesFollowUpSearch(ReceptionFollowUpEntry entry, String query) {
+  final String q = query.trim().toLowerCase();
+  if (q.isEmpty) {
+    return true;
+  }
+  return <String?>[
+    entry.patientDisplayName,
+    entry.patientIdentifier,
+    entry.patientPhone,
+    entry.patientEmail,
+    entry.notes,
+    entry.status,
+  ].any((String? value) => value?.toLowerCase().contains(q) ?? false);
+}
+
+List<AppListTableColumn<ReceptionFollowUpEntry>> _followUpDefaultColumns(
+  AppLocalizations l10n,
+  Locale locale,
+) {
+  return <AppListTableColumn<ReceptionFollowUpEntry>>[
+    AppListTableColumn<ReceptionFollowUpEntry>(
+      id: 'patient',
+      label: l10n.opdPatientNameLabel,
+      alwaysVisible: true,
+      exportValue: (ReceptionFollowUpEntry entry) =>
+          entry.patientDisplayName?.trim().isNotEmpty == true
+          ? entry.patientDisplayName!.trim()
+          : l10n.profileUnknownValue,
+      cellBuilder: (BuildContext context, ReceptionFollowUpEntry entry) {
+        return AppListItemText(
+          title: entry.patientDisplayName?.trim().isNotEmpty == true
+              ? entry.patientDisplayName!.trim()
+              : l10n.profileUnknownValue,
+          subtitle: entry.patientIdentifier,
+        );
+      },
+    ),
+    AppListTableColumn<ReceptionFollowUpEntry>(
+      id: 'phone',
+      label: l10n.patientsPhoneIdentifierColumnLabel,
+      exportValue: (ReceptionFollowUpEntry entry) =>
+          entry.patientPhone?.trim() ?? '',
+      cellBuilder: (BuildContext context, ReceptionFollowUpEntry entry) {
+        return Text(
+          entry.patientPhone?.trim().isNotEmpty == true
+              ? entry.patientPhone!.trim()
+              : l10n.profileUnknownValue,
+        );
+      },
+    ),
+    AppListTableColumn<ReceptionFollowUpEntry>(
+      id: 'status',
+      label: l10n.receptionStatusLabel,
+      exportValue: (ReceptionFollowUpEntry entry) =>
+          opdStageDisplayLabel(l10n, entry.status),
+      cellBuilder: (BuildContext context, ReceptionFollowUpEntry entry) {
+        return Text(opdStageDisplayLabel(l10n, entry.status));
+      },
+    ),
+    AppListTableColumn<ReceptionFollowUpEntry>(
+      id: 'date',
+      label: l10n.opdFollowUpDateLabel,
+      exportValue: (ReceptionFollowUpEntry entry) =>
+          AppFormatters.shortDate(entry.scheduledAt.toLocal(), locale),
+      cellBuilder: (BuildContext context, ReceptionFollowUpEntry entry) {
+        return Text(
+          AppFormatters.shortDate(entry.scheduledAt.toLocal(), locale),
+        );
+      },
+    ),
+    AppListTableColumn<ReceptionFollowUpEntry>(
+      id: 'time',
+      label: l10n.opdFollowUpTimeLabel,
+      exportValue: (ReceptionFollowUpEntry entry) =>
+          AppFormatters.time(entry.scheduledAt.toLocal(), locale),
+      cellBuilder: (BuildContext context, ReceptionFollowUpEntry entry) {
+        return Text(AppFormatters.time(entry.scheduledAt.toLocal(), locale));
+      },
+    ),
+  ];
+}
+
+List<AppListTableColumn<ReceptionFollowUpEntry>> _followUpColumnChoices(
+  AppLocalizations l10n,
+) {
+  return <AppListTableColumn<ReceptionFollowUpEntry>>[
+    AppListTableColumn<ReceptionFollowUpEntry>(
+      id: 'patient_id',
+      label: l10n.opdPatientIdLabel,
+      exportValue: (ReceptionFollowUpEntry entry) => entry.patientIdentifier,
+      cellBuilder: (BuildContext context, ReceptionFollowUpEntry entry) {
+        return Text(
+          entry.patientIdentifier.trim().isNotEmpty
+              ? entry.patientIdentifier.trim()
+              : l10n.profileUnknownValue,
+        );
+      },
+    ),
+    AppListTableColumn<ReceptionFollowUpEntry>(
+      id: 'email',
+      label: l10n.patientsEmailLabel,
+      exportValue: (ReceptionFollowUpEntry entry) =>
+          entry.patientEmail?.trim() ?? '',
+      cellBuilder: (BuildContext context, ReceptionFollowUpEntry entry) {
+        return Text(
+          entry.patientEmail?.trim().isNotEmpty == true
+              ? entry.patientEmail!.trim()
+              : l10n.profileUnknownValue,
+        );
+      },
+    ),
+    AppListTableColumn<ReceptionFollowUpEntry>(
+      id: 'notes',
+      label: l10n.opdNotesLabel,
+      exportValue: (ReceptionFollowUpEntry entry) => entry.notes?.trim() ?? '',
+      cellBuilder: (BuildContext context, ReceptionFollowUpEntry entry) {
+        return Text(
+          entry.notes?.trim().isNotEmpty == true
+              ? entry.notes!.trim()
+              : l10n.profileUnknownValue,
+        );
+      },
+    ),
+  ];
 }
 
 List<ReceptionFollowUpEntry> _filterFollowUpEntries(
@@ -477,6 +608,10 @@ class _FollowUpMobileRow extends StatelessWidget {
       meta: <AppListTableMobileMeta>[
         if (phone != null && phone.isNotEmpty)
           AppListTableMobileMeta(label: phone, icon: Icons.phone_outlined),
+        AppListTableMobileMeta(
+          label: AppDisplay.apiLabel(entry.status),
+          icon: Icons.flag_outlined,
+        ),
         AppListTableMobileMeta(
           label: AppFormatters.shortDate(local, locale),
           icon: AppActionIcons.calendar,

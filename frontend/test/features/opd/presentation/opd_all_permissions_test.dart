@@ -238,7 +238,7 @@ void _stubWorkspace(
   });
   when(() => repository.getOpdSummaryCounts()).thenAnswer(
     (_) async => const Result<OpdFlowAggregateCounts>.success(
-      OpdFlowAggregateCounts(activeOpd: 1),
+      OpdFlowAggregateCounts(allOpdPatients: 4, activeOpd: 1),
     ),
   );
   when(
@@ -754,6 +754,7 @@ void main() {
       expect(find.byType(AppTabStrip), findsNothing);
       expect(find.text('Start OPD encounter'), findsNothing);
       expect(find.text('All Active Patient'), findsNothing);
+      expect(find.text('Access denied'), findsOneWidget);
     });
 
     testWidgets('pay next-action absent without billing:write', (
@@ -1005,5 +1006,164 @@ void main() {
       expect(router.state.uri.queryParameters['section'], 'all');
       expect(find.textContaining('All worklist'), findsOneWidget);
     });
+
+    testWidgets(
+      'Export/Print omit without evidence:export; present when granted',
+      (WidgetTester tester) async {
+        await _pumpAllTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+
+        await _pumpAllTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+              AppPermissions.evidenceExport,
+            },
+            roles: const <String>['PLATFORM_ADMIN'],
+          ),
+        );
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
+        expect(find.byTooltip('Filters'), findsOneWidget);
+        expect(find.byTooltip('Settings'), findsOneWidget);
+
+        await tester.tap(find.byTooltip('Filters'));
+        await tester.pumpAndSettle();
+        expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+        expect(find.text('Close'), findsOneWidget);
+        await tester.tap(find.text('Close'));
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets('All badge uses summary allOpdPatients when unfiltered', (
+      WidgetTester tester,
+    ) async {
+      await _pumpAllTab(
+        tester,
+        repository: repository,
+        accessPolicy: _readerPolicy(),
+      );
+
+      final AppTabStrip strip = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      expect(
+        strip.tabs.firstWhere((AppTabItem t) => t.id == 'all').count,
+        4,
+      );
+    });
+
+    testWidgets(
+      'defaults five data columns; All count tone is info; Settings lists choices',
+      (WidgetTester tester) async {
+        await _pumpAllTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem all = strip.tabs.firstWhere(
+          (AppTabItem item) => item.id == 'all',
+        );
+        expect(all.count, 4);
+        expect(all.countTone, AppTabCountTone.info);
+
+        expect(find.text('Patient name'), findsWidgets);
+        expect(find.text('Category'), findsWidgets);
+        expect(find.text('Doctor'), findsWidgets);
+        expect(find.text('Status'), findsWidgets);
+        expect(find.text('Next action'), findsWidgets);
+        // Optional columns stay off the default five.
+        expect(find.text('Arrival mode'), findsNothing);
+        expect(find.text('Visit type'), findsNothing);
+        expect(find.text('OPD encounter'), findsNothing);
+
+        await tester.tap(find.byTooltip('Settings'));
+        await tester.pumpAndSettle();
+        expect(find.text('TABLE SETTINGS'), findsOneWidget);
+        expect(find.text('Arrival mode'), findsWidgets);
+        expect(find.text('Visit type'), findsWidgets);
+        expect(find.text('Wait time'), findsWidgets);
+        expect(find.text('Arrival time'), findsWidgets);
+        expect(find.text('OPD encounter'), findsWidgets);
+        expect(find.text('Close'), findsOneWidget);
+        await tester.tap(find.text('Close'));
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'Advanced filters footer is Clear filters → Apply filters → Close',
+      (WidgetTester tester) async {
+        await _pumpAllTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+        );
+
+        await tester.tap(find.byTooltip('Filters'));
+        await tester.pumpAndSettle();
+        expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+        expect(find.text('Clear filters'), findsOneWidget);
+        expect(find.text('Apply filters'), findsOneWidget);
+        expect(find.text('Close'), findsOneWidget);
+        await tester.tap(find.text('Close'));
+        await tester.pumpAndSettle();
+        expect(find.text('ADVANCED FILTERS'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'active All badge uses filtered total; Arrivals sibling stays scope total',
+      (WidgetTester tester) async {
+        await _pumpAllTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+        );
+
+        final AppTabStrip initial = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        expect(
+          initial.tabs.firstWhere((AppTabItem t) => t.id == 'all').count,
+          4,
+        );
+        expect(
+          initial.tabs.firstWhere((AppTabItem t) => t.id == 'arrivals').count,
+          1,
+        );
+
+        await tester.enterText(find.byType(TextField).first, 'All Active');
+        await tester.pumpAndSettle();
+
+        final AppTabStrip filtered = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        expect(
+          filtered.tabs.firstWhere((AppTabItem t) => t.id == 'all').count,
+          1,
+        );
+        expect(
+          filtered.tabs.firstWhere((AppTabItem t) => t.id == 'arrivals').count,
+          1,
+        );
+        expect(find.text('All Active Patient'), findsOneWidget);
+        expect(find.text('All Arrival Patient'), findsNothing);
+      },
+    );
   });
 }

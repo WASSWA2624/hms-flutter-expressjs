@@ -43,6 +43,16 @@ const OpdQueueEntry _queueEntry = OpdQueueEntry(
   providerDisplayName: 'Dr Queue',
 );
 
+const OpdQueueEntry _queueEntryOther = OpdQueueEntry(
+  id: 'queue-opd-other',
+  publicId: 'QUE-OPD-OTHER',
+  patientDisplayName: 'Other Queue',
+  patientIdentifier: 'PAT-QUE-2',
+  status: 'WAITING',
+  providerUserId: 'USR-DOC-2',
+  providerDisplayName: 'Dr Other',
+);
+
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement>? modules,
@@ -199,8 +209,11 @@ void _stubWorkspace(
     );
   });
   when(() => repository.getOpdSummaryCounts()).thenAnswer(
-    (_) async => const Result<OpdFlowAggregateCounts>.success(
-      OpdFlowAggregateCounts(activeOpd: 0),
+    (_) async => Result<OpdFlowAggregateCounts>.success(
+      OpdFlowAggregateCounts(
+        allOpdPatients: queueEntries.isEmpty ? 0 : queueEntries.length,
+        activeOpd: 0,
+      ),
     ),
   );
   when(
@@ -666,6 +679,7 @@ void main() {
       expect(find.byType(AppTabStrip), findsNothing);
       expect(find.text('Start OPD encounter'), findsNothing);
       expect(find.text('Queue Patient'), findsNothing);
+      expect(find.text('Access denied'), findsOneWidget);
     });
 
     testWidgets('authorized empty state remains observable', (
@@ -1025,6 +1039,139 @@ void main() {
         expect(find.text('Admission'), findsNothing);
         expect(find.textContaining('Admit'), findsNothing);
         expect(find.text('Prioritize'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Export/Print omit without evidence:export; present when granted',
+      (WidgetTester tester) async {
+        await _pumpQueueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+
+        await _pumpQueueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+              AppPermissions.evidenceExport,
+            },
+            roles: const <String>['PLATFORM_ADMIN'],
+          ),
+        );
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
+        expect(find.byTooltip('Filters'), findsOneWidget);
+        expect(find.byTooltip('Settings'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'defaults five data columns; Queue count tone is warning; Settings lists choices',
+      (WidgetTester tester) async {
+        await _pumpQueueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem queue = strip.tabs.firstWhere(
+          (AppTabItem item) => item.id == 'queue',
+        );
+        expect(queue.count, 1);
+        expect(queue.countTone, AppTabCountTone.warning);
+
+        expect(find.text('Patient name'), findsWidgets);
+        expect(find.text('Doctor'), findsWidgets);
+        expect(find.text('Wait time'), findsWidgets);
+        expect(find.text('Status'), findsWidgets);
+        expect(find.text('Visit type'), findsWidgets);
+        // Next action intentionally absent on Queue (row select is sole hub).
+        expect(find.text('Next action'), findsNothing);
+        expect(find.text('Arrival mode'), findsNothing);
+        expect(find.text('OPD encounter'), findsNothing);
+
+        await tester.tap(find.byTooltip('Settings'));
+        await tester.pumpAndSettle();
+        expect(find.text('TABLE SETTINGS'), findsOneWidget);
+        expect(find.text('Arrival time'), findsWidgets);
+        expect(find.text('Arrival mode'), findsWidgets);
+        expect(find.text('OPD encounter'), findsWidgets);
+        expect(find.text('Close'), findsOneWidget);
+        await tester.tap(find.text('Close'));
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'Advanced filters footer is Clear filters → Apply filters → Close',
+      (WidgetTester tester) async {
+        await _pumpQueueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+        );
+
+        await tester.tap(find.byTooltip('Filters'));
+        await tester.pumpAndSettle();
+        expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+        expect(find.text('Clear filters'), findsOneWidget);
+        expect(find.text('Apply filters'), findsOneWidget);
+        expect(find.text('Close'), findsOneWidget);
+        await tester.tap(find.text('Close'));
+        await tester.pumpAndSettle();
+        expect(find.text('ADVANCED FILTERS'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'active Queue badge uses filtered total; All sibling stays scope total',
+      (WidgetTester tester) async {
+        await _pumpQueueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+          queueEntries: const <OpdQueueEntry>[_queueEntry, _queueEntryOther],
+        );
+
+        final AppTabStrip initial = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        expect(
+          initial.tabs.firstWhere((AppTabItem t) => t.id == 'queue').count,
+          2,
+        );
+        expect(
+          initial.tabs.firstWhere((AppTabItem t) => t.id == 'all').count,
+          2,
+        );
+
+        await tester.enterText(find.byType(TextField).first, 'Other Queue');
+        await tester.pumpAndSettle();
+
+        final AppTabStrip filtered = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        expect(
+          filtered.tabs.firstWhere((AppTabItem t) => t.id == 'queue').count,
+          1,
+        );
+        expect(
+          filtered.tabs.firstWhere((AppTabItem t) => t.id == 'all').count,
+          2,
+        );
+        expect(find.text('Other Queue'), findsWidgets);
+        expect(find.text('Queue Patient'), findsNothing);
       },
     );
   });

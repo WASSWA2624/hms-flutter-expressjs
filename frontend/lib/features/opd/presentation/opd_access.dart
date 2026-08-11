@@ -82,6 +82,25 @@ const AccessRequirement opdFollowUpsRequirement = opdWorkspaceReadRequirement;
 const AccessRequirement opdFollowUpsWriteRequirement =
     opdClinicalWriteRequirement;
 
+/// OPD board list Export / Print (worklist Excel + preview print).
+///
+/// Uses ∩ `evidence:export` (same atom as Reception / Patients export gate).
+const AccessRequirement opdWorkspaceExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — Print uses the same desk export gate.
+const AccessRequirement opdWorkspacePrintRequirement =
+    opdWorkspaceExportRequirement;
+
+bool canExportOpdWorkspace(AppAccessPolicy policy) {
+  return opdWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintOpdWorkspace(AppAccessPolicy policy) {
+  return opdWorkspacePrintRequirement.isAllowed(policy);
+}
+
 /// Payment stage — source [opdBillingActionRequirement]
 /// (∩ `billing:write` + `billing-payments`).
 const AccessRequirement opdPaymentWriteRequirement = opdBillingActionRequirement;
@@ -322,6 +341,7 @@ bool opdBoardShowsNextActionColumn(
 /// | Active tab / count badge | navigate | read ∪ ([tab]) |
 /// | Start OPD encounter (search bar) | create | source encounter ([startEncounter]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | clinical write / form |
 /// | Row select → Flow Actions | read | ([rowSelect] / [detail]) |
@@ -340,6 +360,8 @@ abstract final class OpdActiveAtomPermissions {
   static const AccessRequirement search = opdWorkspaceReadRequirement;
   static const AccessRequirement filters = opdWorkspaceReadRequirement;
   static const AccessRequirement settings = opdWorkspaceReadRequirement;
+  static const AccessRequirement export = opdWorkspaceExportRequirement;
+  static const AccessRequirement print = opdWorkspacePrintRequirement;
   static const AccessRequirement empty = opdWorkspaceReadRequirement;
   static const AccessRequirement loading = opdWorkspaceReadRequirement;
   static const AccessRequirement retry = opdWorkspaceReadRequirement;
@@ -415,6 +437,7 @@ abstract final class OpdActiveAtomPermissions {
 /// | All worklist tab / count badge | navigate | read ∪ ([tab]) |
 /// | Start OPD encounter (search bar) | create | source encounter ([startEncounter]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | clinical write / form |
 /// | Row select → Flow / Appointment / Queue Actions | read | ([rowSelect] / [detail]) |
@@ -434,6 +457,8 @@ abstract final class OpdAllAtomPermissions {
   static const AccessRequirement search = opdWorkspaceReadRequirement;
   static const AccessRequirement filters = opdWorkspaceReadRequirement;
   static const AccessRequirement settings = opdWorkspaceReadRequirement;
+  static const AccessRequirement export = opdWorkspaceExportRequirement;
+  static const AccessRequirement print = opdWorkspacePrintRequirement;
   static const AccessRequirement empty = opdWorkspaceReadRequirement;
   static const AccessRequirement loading = opdWorkspaceReadRequirement;
   static const AccessRequirement retry = opdWorkspaceReadRequirement;
@@ -512,6 +537,7 @@ abstract final class OpdAllAtomPermissions {
 /// | Arrivals tab / count badge | navigate | read ∪ ([tab]) |
 /// | Start OPD encounter (search bar) | create | source encounter ([startEncounter]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | clinical write / form |
 /// | Row select → Appointment Actions | read | ([rowSelect] / [detail]) |
@@ -527,6 +553,8 @@ abstract final class OpdArrivalsAtomPermissions {
   static const AccessRequirement search = opdWorkspaceReadRequirement;
   static const AccessRequirement filters = opdWorkspaceReadRequirement;
   static const AccessRequirement settings = opdWorkspaceReadRequirement;
+  static const AccessRequirement export = opdWorkspaceExportRequirement;
+  static const AccessRequirement print = opdWorkspacePrintRequirement;
   static const AccessRequirement empty = opdWorkspaceReadRequirement;
   static const AccessRequirement loading = opdWorkspaceReadRequirement;
   static const AccessRequirement retry = opdWorkspaceReadRequirement;
@@ -587,6 +615,7 @@ abstract final class OpdArrivalsAtomPermissions {
 /// | Queue tab / count badge | navigate | read ∪ ([tab]) |
 /// | Start OPD encounter (search bar) | create | source encounter ([startEncounter]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | clinical write / form |
 /// | Row select → Queue Actions | read | ([rowSelect] / [detail]) |
@@ -601,6 +630,8 @@ abstract final class OpdQueueAtomPermissions {
   static const AccessRequirement search = opdWorkspaceReadRequirement;
   static const AccessRequirement filters = opdWorkspaceReadRequirement;
   static const AccessRequirement settings = opdWorkspaceReadRequirement;
+  static const AccessRequirement export = opdWorkspaceExportRequirement;
+  static const AccessRequirement print = opdWorkspacePrintRequirement;
   static const AccessRequirement empty = opdWorkspaceReadRequirement;
   static const AccessRequirement loading = opdWorkspaceReadRequirement;
   static const AccessRequirement retry = opdWorkspaceReadRequirement;
@@ -661,6 +692,7 @@ abstract final class OpdQueueAtomPermissions {
 /// | Triage tab / count badge | navigate | read ∪ ([tab]) |
 /// | Start OPD encounter (search bar) | create | source encounter ([startEncounter]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Triage scope filter (waiting/urgent/…) | read chrome | ([filters]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | clinical write / form |
@@ -677,6 +709,8 @@ abstract final class OpdTriageAtomPermissions {
   static const AccessRequirement search = opdWorkspaceReadRequirement;
   static const AccessRequirement filters = opdWorkspaceReadRequirement;
   static const AccessRequirement settings = opdWorkspaceReadRequirement;
+  static const AccessRequirement export = opdWorkspaceExportRequirement;
+  static const AccessRequirement print = opdWorkspacePrintRequirement;
   static const AccessRequirement empty = opdWorkspaceReadRequirement;
   static const AccessRequirement loading = opdWorkspaceReadRequirement;
   static const AccessRequirement retry = opdWorkspaceReadRequirement;
@@ -733,7 +767,8 @@ abstract final class OpdTriageAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Follow-ups tab / count badge | navigate | read ∪ ([tab]) |
-/// | Search / Clear / Settings / columns | read chrome | ([listChrome]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
 /// | Row select → Follow-up details | read | ([detail]) |
@@ -749,7 +784,10 @@ abstract final class OpdFollowUpsAtomPermissions {
   static const AccessRequirement tab = opdFollowUpsRequirement;
   static const AccessRequirement listChrome = opdFollowUpsRequirement;
   static const AccessRequirement search = opdFollowUpsRequirement;
+  static const AccessRequirement filters = opdFollowUpsRequirement;
   static const AccessRequirement settings = opdFollowUpsRequirement;
+  static const AccessRequirement export = opdWorkspaceExportRequirement;
+  static const AccessRequirement print = opdWorkspacePrintRequirement;
   static const AccessRequirement empty = opdFollowUpsRequirement;
   static const AccessRequirement loading = opdFollowUpsRequirement;
   static const AccessRequirement retry = opdFollowUpsRequirement;

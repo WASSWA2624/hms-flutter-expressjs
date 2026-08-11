@@ -4,7 +4,7 @@
 
 - Label: `opdSectionActiveLabel`
 - Icon: `Icons.medical_services_outlined`
-- Count source: `state.summaryCounts.activeOpd` (fallback `state.activeFlowCount`)
+- Count source: `summaryCounts.activeOpd` (fallback `activeFlowCount`); filtered when active + narrowed
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `active` (aliases `active_flow`, `encounters`, `flows`)
 - Tab gate: `OpdActiveAtomPermissions.tab`
@@ -12,23 +12,29 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-**Filters → Settings → Export → Start OPD**; table Print **absent**.
+Order: **Filters → Settings → Export → Print → Start OPD**
+
+- Filters: `commonFiltersActionLabel` + date `opdArrivalDateFilterLabel` + Close `commonCloseActionLabel`
+- Start OPD omitted without `OpdActiveAtomPermissions.startEncounter`
+- Export/Print gated by ∩ `evidence:export`
 
 ## 3. Table
 
 - Row model: active-flow-category `_OpdTableItem`
 - Row select → Flow Actions (`OpdActiveAtomPermissions.rowSelect`)
-- Default columns: Patient, Provider, Visit type, Status, Next action (when any next-action gate allows)
-- Column choices: Encounter, Waiting time, Arrival time, Arrival mode
+- Default columns (5): Patient name, Doctor (provider), Visit type, Status, Next action (Next action **omitted when unauthorized** via `opdBoardShowsNextActionColumn`)
+- Column choices: OPD encounter, Wait time, Arrival time, Arrival mode
+- Mobile: arrival mode, waiting time, status; optional next-action trailing
 
 ## 4. Advanced filters / search fields
 
-Shared OPD filters; `panel=` deep links often seed status subsets (payment, vitals, doctor, lab, imaging, pharmacy, disposition, admission).
+Shared OPD filters + arrival date. `panel=` deep links often seed status subsets (payment, vitals, doctor, lab, imaging, pharmacy, disposition, admission).  
+Footer: Clear filters → Apply filters → Close.
 
 ## 5. Primary / secondary / row actions
 
 - Start OPD (search bar) when allowed
-- Next actions: vitals, pay consultation, assign doctor, doctor review, disposition, admission handoff, correct stage, department handoff
+- Next actions: vitals, pay consultation, assign doctor, doctor review, disposition, admission handoff, correct stage, department handoff (source gates)
 - Row → Flow Actions
 
 ## 6. Dialogs from this tab
@@ -41,7 +47,7 @@ Shared OPD filters; `panel=` deep links often seed status subsets (payment, vita
 
 ## 7. Nested / follow-on
 
-Full clinical/billing/admission chain from Flow Actions when source gates allow (payment, vitals, disposition, admission handoff, print summary, referrals, etc.).
+Full clinical/billing/admission chain from Flow Actions when source gates allow (payment, vitals, disposition, admission handoff, print, referrals, etc.).
 
 ## 8. Forms (summary)
 
@@ -49,19 +55,21 @@ Vitals, consultation payment, disposition, admission handoff, doctor assignment,
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
-- Flow Actions → `showPrintOpdSummaryDialog` (clinical summary)
+- Table Print: `commonPrintActionLabel` → preview-first `printOpdWorkspaceList`
+- Flow Actions → `commonPrintActionLabel` + shared clinical summary preview
 
 ## 10. Loading / empty / error / success
 
-Shared board feedback; `opdSavedMessage` after mutations.
+Shared board feedback; `opdSavedMessage` after mutations. Forbidden: `routeForbiddenTitle` when board read denied.
 
 ## 11. RBAC / ABAC
 
 | Atom | Gate |
 | --- | --- |
 | Tab / chrome / row select | board read ∪ |
+| Export / Print | ∩ `evidence:export` |
 | Start OPD | encounter source |
 | Next-action kinds | vitals / billing / reception / doctor / admission source gates (`OpdActiveAtomPermissions.*`) |
 | `panel=` deep link | `opdFocusedPanelRequirement` |
+| Nested billing / admission | source gates when stage allows |
 | Route entry | catalog ∩ `opd:read` |

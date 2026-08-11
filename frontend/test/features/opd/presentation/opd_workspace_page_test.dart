@@ -132,7 +132,7 @@ void _stubWorkspace(_MockOpdRepository repository) {
   );
   when(() => repository.getOpdSummaryCounts()).thenAnswer(
     (_) async => const Result<OpdFlowAggregateCounts>.success(
-      OpdFlowAggregateCounts(activeOpd: 1),
+      OpdFlowAggregateCounts(allOpdPatients: 4, activeOpd: 1),
     ),
   );
   when(
@@ -370,6 +370,42 @@ void main() {
 
     expect(find.text('Ann Arrival'), findsOneWidget);
   });
+
+  testWidgets(
+    'active All badge uses filtered total; sibling Arrivals stays scope total',
+    (WidgetTester tester) async {
+      await _pumpOpdWorkspace(tester, repository: repository);
+
+      final AppTabStrip initial = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      expect(
+        initial.tabs.firstWhere((AppTabItem t) => t.id == 'all').count,
+        4,
+      );
+      expect(
+        initial.tabs.firstWhere((AppTabItem t) => t.id == 'arrivals').count,
+        1,
+      );
+
+      await tester.enterText(find.byType(TextField).first, 'Alex');
+      await tester.pumpAndSettle();
+
+      final AppTabStrip filtered = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      expect(
+        filtered.tabs.firstWhere((AppTabItem t) => t.id == 'all').count,
+        1,
+      );
+      expect(
+        filtered.tabs.firstWhere((AppTabItem t) => t.id == 'arrivals').count,
+        1,
+      );
+      expect(find.text('Alex Active'), findsOneWidget);
+      expect(find.text('Ann Arrival'), findsNothing);
+    },
+  );
 
   testWidgets('mobile layout renders list rows with next-action trailing', (
     WidgetTester tester,

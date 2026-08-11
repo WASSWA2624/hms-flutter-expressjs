@@ -15,6 +15,8 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/opd/presentation/opd_access.dart';
+import 'package:hosspi_hms/features/opd/presentation/widgets/opd_workspace_print_helpers.dart';
+import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -24,6 +26,7 @@ import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class OpdWorkspacePage extends ConsumerWidget {
@@ -38,18 +41,26 @@ class OpdWorkspacePage extends ConsumerWidget {
       opdWorkspaceControllerProvider,
     );
 
-    return AsyncStateScaffold<OpdWorkspaceState>(
-      value: state,
-      loadingTitle: l10n.opdLoadingTitle,
-      loadingBody: l10n.opdLoadingBody,
-      maxWidth: PageMaxWidth.dataHeavy,
-      centerVertically: false,
-      onRetry: () {
-        ref.read(opdWorkspaceControllerProvider.notifier).refresh();
-      },
-      dataBuilder: (BuildContext context, OpdWorkspaceState data) {
-        return _OpdWorkspaceContent(state: data, initialQuery: initialQuery);
-      },
+    return AppAccessGate(
+      requirement: opdWorkspaceReadRequirement,
+      deniedBuilder: (_, _) => AppStateScaffold(
+        variant: AppStateViewVariant.forbidden,
+        title: l10n.routeForbiddenTitle,
+        body: l10n.routeForbiddenBody,
+      ),
+      child: AsyncStateScaffold<OpdWorkspaceState>(
+        value: state,
+        loadingTitle: l10n.opdLoadingTitle,
+        loadingBody: l10n.opdLoadingBody,
+        maxWidth: PageMaxWidth.dataHeavy,
+        centerVertically: false,
+        onRetry: () {
+          ref.read(opdWorkspaceControllerProvider.notifier).refresh();
+        },
+        dataBuilder: (BuildContext context, OpdWorkspaceState data) {
+          return _OpdWorkspaceContent(state: data, initialQuery: initialQuery);
+        },
+      ),
     );
   }
 }
@@ -75,6 +86,9 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       ValueNotifier<AppPageRequest>(const AppPageRequest(pageSize: 12));
   late OpdWorkspaceSection _section;
   String? _appliedRouteSignature;
+  /// When Follow-ups is active and search/filters narrow the list, badge uses
+  /// this membership length; `null` means use [followUpTabCountProvider].
+  int? _followUpsNarrowedCount;
 
   @override
   void initState() {
@@ -116,7 +130,11 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       accessPolicy,
     );
     if (visibleSections.isEmpty) {
-      return const SizedBox.shrink();
+      return AppStateView(
+        title: l10n.routeForbiddenTitle,
+        body: l10n.routeForbiddenBody,
+        variant: AppStateViewVariant.forbidden,
+      );
     }
     if (!visibleSections.contains(_section)) {
       final OpdWorkspaceSection fallback =
@@ -137,43 +155,53 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       maxWidth: PageMaxWidth.dataHeavy,
       child: SizedBox(
         width: double.infinity,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            AppTabStrip(
-              tabs: <AppTabItem>[
-                for (final OpdWorkspaceSection section in visibleSections)
-                  AppTabItem(
-                    id: section.name,
-                    icon: _opdSectionIcon(section),
-                    label: _opdSectionLabel(l10n, section),
-                    count: section == OpdWorkspaceSection.followUps
-                        ? ref.watch(
-                            followUpTabCountProvider(
-                              const FollowUpWorklistScope(
-                                encounterType: 'OPD',
+        child: ValueListenableBuilder<_OpdTableFilter>(
+          valueListenable: _filterNotifier,
+          builder: (BuildContext context, _OpdTableFilter filter, _) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                AppTabStrip(
+                  tabs: <AppTabItem>[
+                    for (final OpdWorkspaceSection section in visibleSections)
+                      AppTabItem(
+                        id: section.name,
+                        icon: _opdSectionIcon(section),
+                        label: _opdSectionLabel(l10n, section),
+                        count: section == OpdWorkspaceSection.followUps
+                            ? (_section == OpdWorkspaceSection.followUps &&
+                                      _followUpsNarrowedCount != null
+                                  ? _followUpsNarrowedCount
+                                  : ref.watch(
+                                      followUpTabCountProvider(
+                                        const FollowUpWorklistScope(
+                                          encounterType: 'OPD',
+                                        ),
+                                      ),
+                                    ))
+                            : _opdSectionCount(
+                                state,
+                                section,
+                                allItems,
+                                activeSection: _section,
+                                filter: filter,
                               ),
-                            ),
-                          )
-                        : _opdSectionCount(state, section, allItems),
-                    countTone: _opdSectionCountTone(section),
-                  ),
-              ],
-              selectedId: _section.name,
-              onTabTapped: (String tabId) {
-                for (final OpdWorkspaceSection section in visibleSections) {
-                  if (section.name == tabId) {
-                    _handleTabChanged(section);
-                    break;
-                  }
-                }
-              },
-            ),
-            SizedBox(height: theme.spacing.sm),
-            ValueListenableBuilder<_OpdTableFilter>(
-              valueListenable: _filterNotifier,
-              builder: (BuildContext context, _OpdTableFilter filter, _) {
-                return ValueListenableBuilder<AppPageRequest>(
+                        countTone: _opdSectionCountTone(section),
+                      ),
+                  ],
+                  selectedId: _section.name,
+                  onTabTapped: (String tabId) {
+                    for (final OpdWorkspaceSection section
+                        in visibleSections) {
+                      if (section.name == tabId) {
+                        _handleTabChanged(section);
+                        break;
+                      }
+                    }
+                  },
+                ),
+                SizedBox(height: theme.spacing.sm),
+                ValueListenableBuilder<AppPageRequest>(
                   valueListenable: _tablePageNotifier,
                   builder:
                       (
@@ -190,12 +218,21 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
                           pageRequest: tablePageRequest,
                           onPageChanged: _setTablePage,
                           onFilterChanged: _setFilter,
+                          onFollowUpsNarrowedCountChanged:
+                              (int? narrowedCount) {
+                                if (_followUpsNarrowedCount == narrowedCount) {
+                                  return;
+                                }
+                                setState(() {
+                                  _followUpsNarrowedCount = narrowedCount;
+                                });
+                              },
                         );
                       },
-                );
-              },
-            ),
-          ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -213,7 +250,10 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     if (section == _section) {
       return;
     }
-    setState(() => _section = section);
+    setState(() {
+      _section = section;
+      _followUpsNarrowedCount = null;
+    });
     _updateUrlForSection(section);
     _setFilter(const _OpdTableFilter());
     _searchController.clear();
@@ -344,6 +384,7 @@ class _OpdWorkspaceBody extends StatefulWidget {
     required this.pageRequest,
     required this.onPageChanged,
     required this.onFilterChanged,
+    this.onFollowUpsNarrowedCountChanged,
   });
 
   final OpdWorkspaceState state;
@@ -355,6 +396,7 @@ class _OpdWorkspaceBody extends StatefulWidget {
   final AppPageRequest pageRequest;
   final ValueChanged<AppPageRequest> onPageChanged;
   final ValueChanged<_OpdTableFilter> onFilterChanged;
+  final ValueChanged<int?>? onFollowUpsNarrowedCountChanged;
 
   @override
   State<_OpdWorkspaceBody> createState() => _OpdWorkspaceBodyState();
@@ -375,11 +417,54 @@ class _OpdWorkspaceBodyState extends State<_OpdWorkspaceBody> {
   @override
   Widget build(BuildContext context) {
     if (widget.section == OpdWorkspaceSection.followUps) {
-      return const FollowUpWorklistPanel(
-        scope: FollowUpWorklistScope(encounterType: 'OPD'),
-        storageKeyPrefix: 'opd_follow_ups',
-        readRequirement: OpdFollowUpsAtomPermissions.tab,
-        writeRequirement: OpdFollowUpsAtomPermissions.write,
+      return Consumer(
+        builder: (BuildContext context, WidgetRef ref, Widget? _) {
+          final AppLocalizations l10n = context.l10n;
+          final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+          return FollowUpWorklistPanel(
+            scope: const FollowUpWorklistScope(encounterType: 'OPD'),
+            storageKeyPrefix: 'opd_follow_ups',
+            readRequirement: OpdFollowUpsAtomPermissions.tab,
+            writeRequirement: OpdFollowUpsAtomPermissions.write,
+            showAdvancedFilterButton: true,
+            advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+            advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+            advancedFilterResetLabel: l10n.opdClearFiltersAction,
+            advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+            enableDateFilter: true,
+            dateFilterLabel: l10n.opdArrivalDateFilterLabel,
+            dateFromLabel: l10n.opdDateFromLabel,
+            dateToLabel: l10n.opdDateToLabel,
+            filterGroups: <AppSearchBarFilterGroup>[
+              AppSearchBarFilterGroup(
+                key: 'follow_up_status',
+                label: l10n.receptionStatusLabel,
+                choices: <AppSearchBarFilterChoice>[
+                  AppSearchBarFilterChoice(
+                    value: 'pending',
+                    label: l10n.patientsActiveWorkStatusAppointmentScheduled,
+                  ),
+                  AppSearchBarFilterChoice(
+                    value: 'completed',
+                    label: l10n.opdCompletedFlowSummaryLabel,
+                  ),
+                ],
+              ),
+            ],
+            canExport: canExportOpdWorkspace(policy),
+            enablePrint: true,
+            canPrint: canPrintOpdWorkspace(policy),
+            printLabel: l10n.commonPrintActionLabel,
+            onPrint: (entries) => _printOpdFollowUpsList(
+              context,
+              ref,
+              entries: entries,
+              l10n: l10n,
+            ),
+            onNarrowedCountChanged: widget.onFollowUpsNarrowedCountChanged,
+          );
+        },
       );
     }
     final List<_OpdTableItem> allItems = _getAllItems(context);
@@ -2009,21 +2094,51 @@ String _opdSectionLabel(AppLocalizations l10n, OpdWorkspaceSection section) {
   };
 }
 
+/// Sibling-count model: dedicated unfiltered scope totals from workspace
+/// summary / page totals. Active tab with search/advanced filters uses the
+/// filtered membership length for that tab only.
 int? _opdSectionCount(
+  OpdWorkspaceState state,
+  OpdWorkspaceSection section,
+  List<_OpdTableItem> allItems, {
+  required OpdWorkspaceSection activeSection,
+  required _OpdTableFilter filter,
+}) {
+  if (section == OpdWorkspaceSection.followUps) {
+    return null;
+  }
+  final int scopeTotal = _opdSectionScopeTotal(state, section, allItems);
+  if (section != activeSection || !filter.isActive) {
+    return scopeTotal;
+  }
+  final String? sectionCategory = _opdSectionCategory(section);
+  final Iterable<_OpdTableItem> sectionItems = sectionCategory == null
+      ? allItems
+      : allItems.where((_OpdTableItem item) => item.category == sectionCategory);
+  return sectionItems.where(filter.matches).length;
+}
+
+int _opdSectionScopeTotal(
   OpdWorkspaceState state,
   OpdWorkspaceSection section,
   List<_OpdTableItem> allItems,
 ) {
   return switch (section) {
-    OpdWorkspaceSection.all => allItems.length,
-    OpdWorkspaceSection.arrivals => state.arrivalCount,
-    OpdWorkspaceSection.queue => state.queueCount,
-    OpdWorkspaceSection.triage => state.triageQueueCount,
+    OpdWorkspaceSection.all =>
+      state.summaryCounts.allOpdPatients > 0
+          ? state.summaryCounts.allOpdPatients
+          : allItems.length,
+    OpdWorkspaceSection.arrivals =>
+      state.appointments.totalItemCount ?? state.arrivalCount,
+    OpdWorkspaceSection.queue =>
+      state.queueEntries.totalItemCount ?? state.queueCount,
+    OpdWorkspaceSection.triage =>
+      state.triageQueue.totalItemCount ?? state.triageQueueCount,
     OpdWorkspaceSection.active =>
       state.summaryCounts.activeOpd > 0
           ? state.summaryCounts.activeOpd
           : state.activeFlowCount,
-    OpdWorkspaceSection.followUps => null,
+    OpdWorkspaceSection.followUps => 0,
   };
 }
 
@@ -2066,7 +2181,9 @@ List<_OpdTableColumnId> _opdDefaultColumnsForSection(
       _OpdTableColumnId.provider,
       _OpdTableColumnId.waitingTime,
       _OpdTableColumnId.status,
-      _OpdTableColumnId.nextAction,
+      // Next action is intentionally not mounted on Queue (`opdBoardShowsNextActionColumn`);
+      // Visit type fills the fifth default slot (tables.mdc prefer-5).
+      _OpdTableColumnId.visitType,
     ],
     OpdWorkspaceSection.triage => const <_OpdTableColumnId>[
       _OpdTableColumnId.patient,
@@ -2302,6 +2419,7 @@ class _OpdMainTable extends ConsumerWidget {
         columnWidthStorageKey: 'opd_cw_${section.name}',
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
         columnVisibilityTitle: l10n.commonTableSettingsTitle,
+        columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
         exportLabel: l10n.commonTableExportActionLabel,
         exportDialogTitle: l10n.commonTableExportDialogTitle,
         exportCancelLabel: l10n.commonCancelActionLabel,
@@ -2311,6 +2429,18 @@ class _OpdMainTable extends ConsumerWidget {
         exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
         exportSuccessMessage: l10n.commonTableExportSuccessMessage,
         exportFailureMessage: l10n.commonTableExportFailureMessage,
+        canExport: canExportOpdWorkspace(policy),
+        enablePrint: true,
+        canPrint: canPrintOpdWorkspace(policy),
+        printLabel: l10n.commonPrintActionLabel,
+        onPrint: () => _printOpdWorkspaceList(
+          context,
+          ref,
+          section: section,
+          page: page,
+          showNextAction: showNextAction,
+          l10n: l10n,
+        ),
         exportConfig: AppListTableExportConfig<_OpdTableItem>(
           fileNameStem: 'opd_${section.name}',
           dateOf: (_OpdTableItem item) => item.time,
@@ -2373,6 +2503,7 @@ class _OpdMainTable extends ConsumerWidget {
           advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.opdClearFiltersAction,
+          advancedFilterCloseLabel: l10n.commonCloseActionLabel,
           searchFields: _opdTableSearchFields(context),
           searchFieldLabel: l10n.opdSearchFieldFilterLabel,
           allFieldsLabel: l10n.opdAllFieldsFilterLabel,
@@ -2429,7 +2560,7 @@ class _OpdMainTable extends ConsumerWidget {
     );
   }
 
-  /// Start OPD CTA lives after Export in the search bar (not the tab toolbar).
+  /// Start OPD CTA lives after Print in the search bar (not the tab toolbar).
   List<AppSearchBarAction> _startEncounterSearchActions(
     BuildContext context,
     WidgetRef ref, {
@@ -2457,6 +2588,92 @@ class _OpdMainTable extends ConsumerWidget {
   }
 }
 
+Future<void> _printOpdFollowUpsList(
+  BuildContext context,
+  WidgetRef ref, {
+  required List<ReceptionFollowUpEntry> entries,
+  required AppLocalizations l10n,
+}) async {
+  final Locale locale = Localizations.localeOf(context);
+  final List<OpdWorkspacePrintColumn> printColumns =
+      <OpdWorkspacePrintColumn>[
+        OpdWorkspacePrintColumn(id: 'patient', label: l10n.opdPatientNameLabel),
+        OpdWorkspacePrintColumn(
+          id: 'phone',
+          label: l10n.patientsPhoneIdentifierColumnLabel,
+        ),
+        OpdWorkspacePrintColumn(id: 'status', label: l10n.receptionStatusLabel),
+        OpdWorkspacePrintColumn(id: 'date', label: l10n.opdFollowUpDateLabel),
+        OpdWorkspacePrintColumn(id: 'time', label: l10n.opdFollowUpTimeLabel),
+        OpdWorkspacePrintColumn(id: 'patient_id', label: l10n.opdPatientIdLabel),
+        OpdWorkspacePrintColumn(id: 'email', label: l10n.patientsEmailLabel),
+        OpdWorkspacePrintColumn(id: 'notes', label: l10n.opdNotesLabel),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final ReceptionFollowUpEntry entry in entries)
+      <String, String>{
+        'patient': entry.patientDisplayName?.trim().isNotEmpty == true
+            ? entry.patientDisplayName!.trim()
+            : l10n.profileUnknownValue,
+        'phone': entry.patientPhone?.trim() ?? '',
+        'status': opdStageDisplayLabel(l10n, entry.status),
+        'date': AppFormatters.shortDate(entry.scheduledAt.toLocal(), locale),
+        'time': AppFormatters.time(entry.scheduledAt.toLocal(), locale),
+        'patient_id': entry.patientIdentifier,
+        'email': entry.patientEmail?.trim() ?? '',
+        'notes': entry.notes?.trim() ?? '',
+      },
+  ];
+  await printOpdWorkspaceList(
+    ref: ref,
+    context: context,
+    title: l10n.receptionSectionFollowUps,
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.receptionFollowUpsEmptyTitle,
+  );
+}
+
+Future<void> _printOpdWorkspaceList(
+  BuildContext context,
+  WidgetRef ref, {
+  required OpdWorkspaceSection section,
+  required AppPage<_OpdTableItem> page,
+  required bool showNextAction,
+  required AppLocalizations l10n,
+}) async {
+  final List<_OpdTableColumnId> columnIds = <_OpdTableColumnId>[
+    ..._opdDefaultColumnsForSection(section),
+    ..._opdColumnChoicesForSection(section),
+  ].where(
+    (_OpdTableColumnId column) =>
+        showNextAction || column != _OpdTableColumnId.nextAction,
+  ).toList(growable: false);
+  final List<OpdWorkspacePrintColumn> printColumns = <OpdWorkspacePrintColumn>[
+    for (final _OpdTableColumnId column in columnIds)
+      OpdWorkspacePrintColumn(
+        id: _opdTableColumnStorageId(column),
+        label: _opdTableColumnLabel(context, column),
+      ),
+  ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final _OpdTableItem item in page.items)
+      <String, String>{
+        for (final _OpdTableColumnId column in columnIds)
+          _opdTableColumnStorageId(column):
+              _opdExportCellValue(context, column, item),
+      },
+  ];
+  await printOpdWorkspaceList(
+    ref: ref,
+    context: context,
+    title: _opdSectionLabel(l10n, section),
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.opdNoFlowsTitle,
+  );
+}
+
 Future<void> _openOpdTableItemActions(
   BuildContext context,
   _OpdTableItem item, {
@@ -2467,6 +2684,9 @@ Future<void> _openOpdTableItemActions(
     final bool? changed = await showFlowActionsDialog(
       context: context,
       flow: flow,
+      printActionLabel: context.l10n.commonPrintActionLabel,
+      // Stage next-action already lives on the board row — omit from hub.
+      omitNextActionKey: resolveOpdFlowNextActionKey(flow),
     );
     if (changed == true && context.mounted) {
       ScaffoldMessenger.of(
