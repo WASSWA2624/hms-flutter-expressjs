@@ -1,8 +1,5 @@
 ---
-description: Defines standards for clear, executable implementation prompts.
-globs:
-  - "prompts/**/*.md"
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Prompt Definition Standards
@@ -11,7 +8,7 @@ Prompts must define observable behavior without requiring scope or implementatio
 
 ## Required Structure
 
-- Prompts must use `.md`, stay under 1001 words, and begin with an H1 and objective.
+- Prompts must use `.md`.
 - Prompts must include `Context`, `Requirements`, `Constraints`, `Acceptance Criteria`, and `Relevant Files`.
 - Requirements must be numbered, and acceptance criteria must be observable.
 
