@@ -43,6 +43,13 @@ When the dialog’s job is to browse or pick from a list (patients, roles, items
 5. **No indeterminate header checkbox:** the header control is only checked (all selected) or unchecked (none / partial treated as unchecked for display). Toggling when unchecked selects all; toggling when checked clears all. Do not use `tristate` / null value for partial selection.
 6. After confirm, return the selected id(s) (or domain objects) via the dialog result; do not leave selection only in ephemeral UI state the caller cannot read.
 
+## Size and maximize
+
+1. **Maximize by default:** Open dialogs with `initialMaximized: true` (the `AppDialog` / `showAppWorkspaceMutationDialog` default) so forms, selection tables, and long bodies stay fully visible without clipped content or cramped scroll regions.
+2. Do not override to `initialMaximized: false` for ordinary create/edit, detail, filter, picker, or multi-section surfaces.
+3. Opt out only for intentionally compact confirmations or short single-field prompts where a full maximized shell would be excessive—and keep that exception rare and justified.
+4. Users may still restore/maximize via header chrome; the default open state must remain maximized for full content visibility.
+
 ## Footer and chrome
 
 1. Use `AppDialog` footer `actions` for primary/secondary outcomes (`Save`, `Confirm`, `Cancel`, `Close`). Right-align; keep labels short and generic.
@@ -60,8 +67,9 @@ When the dialog’s job is to browse or pick from a list (patients, roles, items
 ## Implementation constraints
 
 - Build on `AppDialog`, `showAppDialog`, `AppCollapsibleSection`, `AppListTable`, `AppSearchBar`, and existing dialog/button primitives.
+- Keep `initialMaximized: true` unless a compact-prompt exception above applies.
 - Do not fork one-off dialog shells, section chrome, or selection-table patterns per feature when a shared component exists or can be extended.
-- Cross-cutting table toolbar/export/print behavior belongs in [tables.mdc](tables.mdc); this file owns dialog chrome, titles, nesting, sections, and in-dialog selection.
+- Cross-cutting table toolbar/export/print behavior belongs in [tables.mdc](tables.mdc); this file owns dialog chrome, titles, nesting, sections, size/maximize defaults, and in-dialog selection.
 
 ## Relevant files
 

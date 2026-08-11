@@ -1,0 +1,64 @@
+---
+description: Shared AppTabStrip counts, tab–table–filter sync, and workspace tab conventions
+alwaysApply: true
+---
+
+# App Tabs
+
+Conventions for every workspace or section surface that switches content with `AppTabStrip` / `AppTabItem` (and call-site wrappers). Prefer extending that shared strip; do not invent parallel tab chrome or ad-hoc count badges.
+
+## Strip and labels
+
+1. Render section / scope tabs with `AppTabStrip` and `AppTabItem`—not raw `TabBar`, chip rows, or one-off underline strips—unless an existing shared nested pattern already covers the case.
+2. Keep tab labels short and generic (scope or section name). Put identity and detail in the table / body, not on the tab.
+3. Use `AppTabStripVariant.nested` only for subordinate category tabs under a desk section; use `standard` for primary workspace section tabs.
+4. Optional leading icons and tooltips are fine when they aid scanning; do not replace the label with icon-only tabs on desktop.
+5. Respect RBAC/ABAC: omit tabs the user cannot access; do not show disabled “no access” placeholders for routine unauthorized scopes.
+
+## Counts (every tab)
+
+1. **Show counts on every countable tab**, selected or not. Inactive tabs must still display their badge so operators can see workload without clicking each tab.
+2. **Count = authoritative total for that tab’s scope**, not the number of rows currently painted in the table.
+   - Prefer server / query `totalItemCount` (or domain count fields loaded with the workspace payload).
+   - Do **not** use `items.length`, visible-page size, or client-truncated row lists when a total is available (e.g. table page shows 100 rows but the matching dataset has 300 → badge shows **300**).
+3. When advanced filters or search narrow the dataset, the **active tab’s count must reflect the filtered total** for that same query—not the unfiltered global total and not the visible page length.
+4. Sibling (inactive) tab counts must stay consistent with how that workspace defines scope: either each tab’s own scope total under the **same shared filter/search context**, or each tab’s dedicated scope total from the workspace summary—whichever the feature already models. Do not mix “filtered page length” on one tab with “raw DB total” on another.
+5. Omit `count` only when the tab has no countable list (e.g. a board/map with no row total) or the total is still loading and no stale value should flash. Prefer an explicit `0` when empty is a meaningful workload signal for that desk.
+6. Use `AppTabCountTone` for urgency (`info` default; `warning` / `danger` for queues that need attention). Do not invent custom badge colors outside the shared tones.
+
+## Tab ↔ table ↔ filters sync
+
+Tabs, the list table, and Filters / Advanced filters are one synchronized query surface:
+
+1. **Selecting a tab** updates the table’s scope/query and loads rows for that tab. Do not leave the previous tab’s rows visible under a new label.
+2. **Filters and search** apply to the table for the **current tab**. The Advanced filters dialog ([tables.mdc](tables.mdc)) must edit the **same filter model** the table and tab counts use—not a parallel draft that never reaches the query.
+3. Opening Advanced filters must show values that match the filters currently applied to the active tab/table (including dates, lookups, and status fields already in the query).
+4. **Apply filters** commits into that shared model, refreshes table data, and refreshes affected tab counts. **Clear filters** resets the shared model the same way. **Close** without apply must not leave the dialog and the live query out of sync on the next open (draft vs committed behavior follows the shared filters dialog API in [tables.mdc](tables.mdc)).
+5. After mutations that change membership of a scope (create, status change, assign, close, etc.), refresh the table and **all visible tab counts** that can change—not only the active tab.
+6. URL / deep-link scope (when the workspace uses query params) must stay aligned with the selected tab and the filters restored into the table/search bar.
+
+## Toolbar under the strip
+
+1. When the strip hosts actions, use `primaryAction` / `secondaryActions` on `AppTabStrip` rather than a one-off button row above or beside custom tabs.
+2. Table-level Filters / Settings / Export / Print stay on the table toolbar in the order defined in [tables.mdc](tables.mdc)—do not duplicate those controls as tab-strip actions unless the feature already has a justified shared pattern.
+
+## States and responsiveness
+
+1. Cover loading, empty, error, and success for tab switches and filter apply; do not leave a silent stale table when a tab or filter request fails.
+2. Keep the strip usable on mobile, tablet, and desktop (overflow / more menu via the shared strip). Support light and dark themes via theme tokens.
+3. Avoid clipped badges, inaccessible overflow tabs, and mismatched counts after resize or theme change.
+
+## Implementation constraints
+
+- Build on `AppTabStrip`, `AppTabItem`, `AppTabCountTone`, and `AppTabStripVariant`.
+- Pair tabs with `AppListTable` / `AppSearchBar` per [tables.mdc](tables.mdc); filter dialogs follow [dialogs.mdc](dialogs.mdc) for titles and chrome.
+- Do not fork one-off tab bars, count chips, or per-feature filter state that drifts from the table query.
+- Prefer extending workspace controllers / summary count fields so inactive tabs can show totals without fetching every tab’s full row page.
+
+## Relevant files
+
+- `frontend/lib/shared/components/app_tab_strip.dart`
+- `frontend/lib/shared/components/app_list_table.dart`
+- `frontend/lib/shared/components/app_search_bar.dart`
+- `frontend/test/shared/components/app_tab_strip_test.dart`
+- Feature workspace pages and `*_scope_navigation.dart` / tab helpers under `frontend/lib/features/`
