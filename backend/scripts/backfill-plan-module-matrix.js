@@ -59,6 +59,9 @@ const {
   modulesForPlanTier,
 } = require('../src/lib/subscriptions/plan-module-matrix');
 const {
+  PLAN_PERMISSION_CAPS,
+} = require('../src/lib/subscriptions/subscription-permission-caps');
+const {
   clearModuleEntitlementCaches,
 } = require('../src/middlewares/module-entitlement.middleware');
 
@@ -339,11 +342,26 @@ async function rewritePlanAllowlists(modulesBySlug) {
     }
 
     const included = [...merged];
+    const tierCode = String(plan.tier_code || '')
+      .trim()
+      .toUpperCase();
+    // Keep CUSTOM explicit caps when present; refresh shipped tiers from code so
+    // new domains (e.g. accounts:*) appear without a full reseed.
+    const shippedCaps = PLAN_PERMISSION_CAPS[tierCode];
+    const previousCaps = Array.isArray(extension.allowed_permissions)
+      ? extension.allowed_permissions
+      : [];
+    const nextAllowedPermissions =
+      tierCode === 'CUSTOM' && previousCaps.length > 0
+        ? previousCaps
+        : shippedCaps || previousCaps;
+
     await prisma.subscription_plan.update({
       where: { id: plan.id },
       data: {
         extension_json: {
           ...extension,
+          allowed_permissions: nextAllowedPermissions,
           allowed_modules: {
             ...allowedModules,
             included,
