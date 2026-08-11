@@ -310,3 +310,34 @@ String? billingEmptyToNull(String value) {
   final String normalized = value.trim();
   return normalized.isEmpty ? null : normalized;
 }
+
+final RegExp _billingUuidPattern = RegExp(
+  r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+);
+
+/// True when [value] looks like a raw UUID / internal PK.
+bool billingLooksLikeUuid(String? value) {
+  final String normalized = value?.trim() ?? '';
+  return normalized.isNotEmpty && _billingUuidPattern.hasMatch(normalized);
+}
+
+/// Presentation label that never surfaces raw UUIDs (billing.md §19).
+String? billingPublicLabel(String? value) {
+  final String normalized = value?.trim() ?? '';
+  if (normalized.isEmpty || billingLooksLikeUuid(normalized)) {
+    return null;
+  }
+  return normalized;
+}
+
+/// Invoice / work-item friendly id for tables, dialogs, and print.
+String billingWorkItemPublicId(BuildContext context, BillingWorkItem item) {
+  return billingPublicLabel(item.displayId) ??
+      billingPublicLabel(item.invoiceDisplayId) ??
+      context.l10n.billingInvoiceLabel;
+}
+
+/// Patient MRN / friendly id for tables and dialogs — never raw patient UUID.
+String? billingPatientPublicNumber(BillingWorkItem item) {
+  return billingPublicLabel(item.patientDisplayId);
+}

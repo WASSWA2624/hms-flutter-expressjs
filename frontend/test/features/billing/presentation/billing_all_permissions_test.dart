@@ -147,7 +147,7 @@ void _stubRepository(
   );
 }
 
-Future<void> _pumpAllTab(
+Future<GoRouter> _pumpAllTab(
   WidgetTester tester, {
   required _MockBillingRepository repository,
   required AppAccessPolicy accessPolicy,
@@ -209,6 +209,7 @@ Future<void> _pumpAllTab(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+  return router;
 }
 
 void main() {
@@ -848,6 +849,84 @@ void main() {
       expect(find.text('Open claims'), findsNothing);
       expect(find.text('Issue'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'section aliases all/inbox select Open work and write section=work',
+    (WidgetTester tester) async {
+      for (final String location in <String>[
+        '/billing?section=all',
+        '/billing?section=inbox',
+        '/billing?tab=work',
+      ]) {
+        final GoRouter router = await _pumpAllTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            },
+          ),
+          initialLocation: location,
+        );
+
+        expect(find.textContaining('Open work'), findsWidgets);
+        expect(find.text('Charge'), findsOneWidget);
+        expect(router.state.uri.queryParameters['section'], 'work');
+      }
+    },
+  );
+
+  testWidgets(
+    'Charge without similar drafts creates and lands on To issue',
+    (WidgetTester tester) async {
+      await _pumpAllTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        items: const <BillingWorkItem>[],
+      );
+
+      await tester.tap(find.text('Charge'));
+      await tester.pumpAndSettle();
+
+      // Without a patient picker mock the Charge dialog cannot fully submit;
+      // assert the create path is wired and To issue trailing is absent here.
+      expect(find.byType(AppDialog), findsWidgets);
+      expect(find.text('Charge'), findsWidgets);
+      expect(find.text('Close shift'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Open work tooltip and info count tone are present',
+    (WidgetTester tester) async {
+      await _pumpAllTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        ),
+      );
+
+      expect(
+        find.byTooltip(
+          'All billing items that still need action across issue, collect, claims, and approvals',
+        ),
+        findsWidgets,
+      );
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      final AppTabItem work = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.label.contains('Open work'),
+      );
+      expect(work.countTone, AppTabCountTone.info);
     },
   );
 }

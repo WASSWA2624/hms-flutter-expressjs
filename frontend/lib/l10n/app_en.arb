@@ -2274,6 +2274,74 @@
   "@billingChargeItemHint": {
     "description": "Hint for the Charge dialog item field."
   },
+  "billingChargeSimilarDialogTitle": "Similar charges found",
+  "@billingChargeSimilarDialogTitle": {
+    "description": "Title when Charge similarity finds near-duplicate drafts."
+  },
+  "billingChargeExactDialogTitle": "Matching draft found",
+  "@billingChargeExactDialogTitle": {
+    "description": "Title when Charge similarity finds an exact open draft."
+  },
+  "billingChargeNoSimilarDialogTitle": "No similar charges",
+  "@billingChargeNoSimilarDialogTitle": {
+    "description": "Title when Charge similarity finds no near duplicates."
+  },
+  "billingChargeSimilarBannerTitle": "Review similar open drafts",
+  "@billingChargeSimilarBannerTitle": {
+    "description": "Banner title for near-duplicate Charge matches."
+  },
+  "billingChargeExactBannerTitle": "Exact open draft match",
+  "@billingChargeExactBannerTitle": {
+    "description": "Banner title for exact Charge draft matches."
+  },
+  "billingChargeNoSimilarBannerTitle": "No similar charges found",
+  "@billingChargeNoSimilarBannerTitle": {
+    "description": "Banner title when Charge similarity is clear."
+  },
+  "billingChargeSimilarDialogBody": "Similar open drafts or recent charges exist. Review before creating another.",
+  "@billingChargeSimilarDialogBody": {
+    "description": "Banner body for near-duplicate Charge matches."
+  },
+  "billingChargeExactDialogBody": "An open draft already matches this charge. Open the existing draft instead of creating another.",
+  "@billingChargeExactDialogBody": {
+    "description": "Banner body for exact Charge draft matches."
+  },
+  "billingChargeNoSimilarDialogBody": "No similar open drafts were found for this charge.",
+  "@billingChargeNoSimilarDialogBody": {
+    "description": "Banner body when Charge similarity finds nothing."
+  },
+  "billingChargeProceedCreateAction": "Create anyway",
+  "@billingChargeProceedCreateAction": {
+    "description": "Proceed with Charge create after similarity review."
+  },
+  "billingChargeContinueCreateAction": "Create charge",
+  "@billingChargeContinueCreateAction": {
+    "description": "Continue Charge create when no similarity matches."
+  },
+  "billingChargeUseExistingAction": "Open existing draft",
+  "@billingChargeUseExistingAction": {
+    "description": "Select an existing draft instead of creating a Charge."
+  },
+  "billingChargeAmountLabel": "Amount",
+  "@billingChargeAmountLabel": {
+    "description": "Amount field label in Charge similarity review."
+  },
+  "billingPrintOptionsSectionLabel": "Invoice sections",
+  "@billingPrintOptionsSectionLabel": {
+    "description": "Section picker heading for billing invoice print preview."
+  },
+  "billingPrintSectionInvoiceSummary": "Invoice summary",
+  "@billingPrintSectionInvoiceSummary": {
+    "description": "Toggle for invoice summary on print preview."
+  },
+  "billingPrintSectionInsurance": "Insurance / shares",
+  "@billingPrintSectionInsurance": {
+    "description": "Toggle for insurance shares on invoice print preview."
+  },
+  "billingPrintSectionFooter": "Footer / signature",
+  "@billingPrintSectionFooter": {
+    "description": "Toggle for footer and signature on invoice print preview."
+  },
   "billingAwaitingPayment": "Awaiting payment",
   "@billingAwaitingPayment": {
     "description": "Label for invoices awaiting payment."
@@ -2397,6 +2465,62 @@
   "billingIssueAllConfirmBody": "Issue every draft invoice on this page to the patient or payer.",
   "@billingIssueAllConfirmBody": {
     "description": "Confirm dialog body for Issue all on To issue."
+  },
+  "billingAdjustSimilarDialogTitle": "Similar adjustments found",
+  "@billingAdjustSimilarDialogTitle": {
+    "description": "Title when Adjust similarity finds near-duplicate pending requests."
+  },
+  "billingAdjustExactDialogTitle": "Matching adjustment found",
+  "@billingAdjustExactDialogTitle": {
+    "description": "Title when Adjust similarity finds an exact pending request."
+  },
+  "billingAdjustNoSimilarDialogTitle": "No similar adjustments",
+  "@billingAdjustNoSimilarDialogTitle": {
+    "description": "Title when Adjust similarity finds no near duplicates."
+  },
+  "billingAdjustSimilarBannerTitle": "Review similar pending adjustments",
+  "@billingAdjustSimilarBannerTitle": {
+    "description": "Banner title for near-duplicate Adjust matches."
+  },
+  "billingAdjustExactBannerTitle": "Exact pending adjustment match",
+  "@billingAdjustExactBannerTitle": {
+    "description": "Banner title for exact Adjust matches."
+  },
+  "billingAdjustNoSimilarBannerTitle": "No similar adjustments found",
+  "@billingAdjustNoSimilarBannerTitle": {
+    "description": "Banner title when Adjust similarity is clear."
+  },
+  "billingAdjustSimilarDialogBody": "Similar pending adjustments exist for this invoice. Review before submitting another.",
+  "@billingAdjustSimilarDialogBody": {
+    "description": "Banner body for near-duplicate Adjust matches."
+  },
+  "billingAdjustExactDialogBody": "A pending adjustment already matches this request. Use the existing request instead of creating another.",
+  "@billingAdjustExactDialogBody": {
+    "description": "Banner body for exact Adjust matches."
+  },
+  "billingAdjustNoSimilarDialogBody": "No similar pending adjustments were found for this invoice.",
+  "@billingAdjustNoSimilarDialogBody": {
+    "description": "Banner body when Adjust similarity finds nothing."
+  },
+  "billingAdjustProceedCreateAction": "Submit anyway",
+  "@billingAdjustProceedCreateAction": {
+    "description": "Proceed with Adjust create after similarity review."
+  },
+  "billingAdjustContinueCreateAction": "Submit adjustment",
+  "@billingAdjustContinueCreateAction": {
+    "description": "Continue Adjust create when no similarity matches."
+  },
+  "billingAdjustUseExistingAction": "Use existing",
+  "@billingAdjustUseExistingAction": {
+    "description": "Select an existing pending adjustment instead of creating one."
+  },
+  "billingAdjustTypeLabel": "Type",
+  "@billingAdjustTypeLabel": {
+    "description": "Type field label in Adjust similarity review."
+  },
+  "billingAdjustExistingSelectedSnackbar": "Using the existing pending adjustment.",
+  "@billingAdjustExistingSelectedSnackbar": {
+    "description": "Snackbar after selecting an existing pending adjustment."
   },
   "billingStatusCancelledOption": "Cancelled",
   "@billingStatusCancelledOption": {
@@ -3003,6 +3127,26 @@
   "@billingPrintInvoiceTooltip": {
     "description": "Tooltip for invoice print action."
   },
+  "billingPrintClaimAction": "Print statement",
+  "@billingPrintClaimAction": {
+    "description": "Action label to print a claim or pre-auth statement from Billing Detail."
+  },
+  "billingPrintClaimTooltip": "Print claim or pre-authorization statement",
+  "@billingPrintClaimTooltip": {
+    "description": "Tooltip for Print statement on Open claims Detail."
+  },
+  "billingClaimPrintOptionsSectionLabel": "Claim sections",
+  "@billingClaimPrintOptionsSectionLabel": {
+    "description": "Section picker title for claim / pre-auth print preview options."
+  },
+  "billingPrintSectionClaimFields": "Claim / insurer",
+  "@billingPrintSectionClaimFields": {
+    "description": "Print section toggle for insurer, scheme, and shares."
+  },
+  "billingPrintSectionStatusDecision": "Status / decision",
+  "@billingPrintSectionStatusDecision": {
+    "description": "Print section toggle for claim or pre-auth status."
+  },
   "billingInvoiceReportFooter": "This invoice was generated by the HMS billing workspace.",
   "@billingInvoiceReportFooter": {
     "description": "Footer note on printed billing invoices."
@@ -3194,6 +3338,66 @@
   "billingGenerateReceiptLabel": "Generate receipt after payment",
   "@billingGenerateReceiptLabel": {
     "description": "Checkbox label to generate a receipt after recording a payment."
+  },
+  "billingReceiptTitle": "Payment receipt",
+  "@billingReceiptTitle": {
+    "description": "Title for payment receipt print preview."
+  },
+  "billingReceiptPrintOptionsSectionLabel": "Receipt sections",
+  "@billingReceiptPrintOptionsSectionLabel": {
+    "description": "Section picker heading for payment receipt print preview."
+  },
+  "billingRefundSimilarDialogTitle": "Similar refunds found",
+  "@billingRefundSimilarDialogTitle": {
+    "description": "Title when Refund similarity finds near-duplicate pending requests."
+  },
+  "billingRefundExactDialogTitle": "Matching refund found",
+  "@billingRefundExactDialogTitle": {
+    "description": "Title when Refund similarity finds an exact pending request."
+  },
+  "billingRefundNoSimilarDialogTitle": "No similar refunds",
+  "@billingRefundNoSimilarDialogTitle": {
+    "description": "Title when Refund similarity finds no near duplicates."
+  },
+  "billingRefundSimilarBannerTitle": "Review similar refunds",
+  "@billingRefundSimilarBannerTitle": {
+    "description": "Banner title for near-duplicate Refund matches."
+  },
+  "billingRefundExactBannerTitle": "Exact refund match",
+  "@billingRefundExactBannerTitle": {
+    "description": "Banner title for exact Refund matches."
+  },
+  "billingRefundNoSimilarBannerTitle": "No similar refunds found",
+  "@billingRefundNoSimilarBannerTitle": {
+    "description": "Banner title when Refund similarity is clear."
+  },
+  "billingRefundSimilarDialogBody": "Similar refund activity exists for this payment. Review before submitting another.",
+  "@billingRefundSimilarDialogBody": {
+    "description": "Banner body for near-duplicate Refund matches."
+  },
+  "billingRefundExactDialogBody": "A refund already matches this request. Use the existing refund instead of creating another.",
+  "@billingRefundExactDialogBody": {
+    "description": "Banner body for exact Refund matches."
+  },
+  "billingRefundNoSimilarDialogBody": "No similar refunds were found for this payment.",
+  "@billingRefundNoSimilarDialogBody": {
+    "description": "Banner body when Refund similarity finds nothing."
+  },
+  "billingRefundProceedCreateAction": "Submit anyway",
+  "@billingRefundProceedCreateAction": {
+    "description": "Proceed with Refund create after similarity review."
+  },
+  "billingRefundContinueCreateAction": "Submit refund",
+  "@billingRefundContinueCreateAction": {
+    "description": "Continue Refund create when no similarity matches."
+  },
+  "billingRefundUseExistingAction": "Use existing",
+  "@billingRefundUseExistingAction": {
+    "description": "Select an existing refund instead of creating one."
+  },
+  "billingRefundExistingSelectedSnackbar": "Using the existing refund.",
+  "@billingRefundExistingSelectedSnackbar": {
+    "description": "Snackbar after selecting an existing refund."
   },
   "billingPaymentLabel": "Payment",
   "@billingPaymentLabel": {

@@ -183,10 +183,9 @@ bool billingWorkItemMatchesSearch(
 
   return <String?>[
     billingPatientName(context, item),
-    item.effectivePatientNumber,
-    item.effectiveDisplayId,
-    item.encounterDisplayId,
-    item.encounterId,
+    billingPatientPublicNumber(item),
+    billingWorkItemPublicId(context, item),
+    billingPublicLabel(item.encounterDisplayId),
     billingInvoiceSourceLabel(context, item),
     billingWorkItemStatusLabel(context, item),
     billingMoney(context, item.balanceDue, item.currency),
@@ -348,7 +347,7 @@ AppListTableColumn<BillingWorkItem> billingPatientColumn(
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return AppListItemText(
         title: billingPatientName(context, item),
-        subtitle: item.effectivePatientNumber ?? l10n.profileUnknownValue,
+        subtitle: billingPatientPublicNumber(item) ?? l10n.profileUnknownValue,
       );
     },
   );
@@ -362,12 +361,16 @@ AppListTableColumn<BillingWorkItem> billingInvoiceColumn(
     label: l10n.billingInvoiceColumn,
     sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
         appListTableCompareText(
-          left.effectiveDisplayId,
-          right.effectiveDisplayId,
+          billingPublicLabel(left.displayId) ??
+              billingPublicLabel(left.invoiceDisplayId) ??
+              left.id,
+          billingPublicLabel(right.displayId) ??
+              billingPublicLabel(right.invoiceDisplayId) ??
+              right.id,
         ),
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(
-        item.effectiveDisplayId,
+        billingWorkItemPublicId(context, item),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );
@@ -383,12 +386,13 @@ AppListTableColumn<BillingWorkItem> billingEncounterColumn(
     label: l10n.billingEncounterLabel,
     sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
         appListTableCompareText(
-          left.encounterDisplayId ?? left.encounterId,
-          right.encounterDisplayId ?? right.encounterId,
+          billingPublicLabel(left.encounterDisplayId),
+          billingPublicLabel(right.encounterDisplayId),
         ),
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(
-        item.encounterDisplayId ?? item.encounterId ?? l10n.profileUnknownValue,
+        billingPublicLabel(item.encounterDisplayId) ??
+            l10n.profileUnknownValue,
       );
     },
   );

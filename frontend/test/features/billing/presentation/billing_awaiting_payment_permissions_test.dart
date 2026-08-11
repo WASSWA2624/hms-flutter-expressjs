@@ -122,7 +122,7 @@ void _stubRepository(
   );
 }
 
-Future<void> _pumpAwaitingPaymentTab(
+Future<GoRouter> _pumpAwaitingPaymentTab(
   WidgetTester tester, {
   required _MockBillingRepository repository,
   required AppAccessPolicy accessPolicy,
@@ -131,7 +131,7 @@ Future<void> _pumpAwaitingPaymentTab(
   List<BillingWorkItem> items = const <BillingWorkItem>[_pendingInvoice],
   BillingSummary summary = _summary,
   Result<BillingWorkspaceOverview>? workspaceOverride,
-  String initialLocation = '/billing?queue=awaiting-payment',
+  String initialLocation = '/billing?section=collect',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -186,6 +186,7 @@ Future<void> _pumpAwaitingPaymentTab(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+  return router;
 }
 
 void main() {
@@ -735,9 +736,9 @@ void main() {
   );
 
   testWidgets(
-    'Collect due has no Overdue tab or Overdue filter chip',
+    'Collect due Overdue chip uses danger count; no Overdue tab',
     (WidgetTester tester) async {
-      await _pumpAwaitingPaymentTab(
+      final GoRouter router = await _pumpAwaitingPaymentTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -757,8 +758,8 @@ void main() {
       );
 
       expect(find.text('Collect due'), findsWidgets);
-      expect(find.byType(FilterChip), findsNothing);
-      expect(find.text('Overdue (3)'), findsNothing);
+      expect(find.text('Overdue (3)'), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('billing-collect-overdue-chip')), findsOneWidget);
       final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
       expect(
         strip.tabs.any((AppTabItem tab) => tab.label == 'Overdue'),
@@ -768,6 +769,11 @@ void main() {
         strip.tabs.any((AppTabItem tab) => tab.label == 'Collect due'),
         isTrue,
       );
+
+      await tester.tap(find.byKey(const ValueKey<String>('billing-collect-overdue-chip')));
+      await tester.pumpAndSettle();
+      expect(router.state.uri.queryParameters['section'], 'collect');
+      expect(router.state.uri.queryParameters['overdue'], 'yes');
     },
   );
 
@@ -838,7 +844,7 @@ void main() {
           },
         ),
         initialLocation:
-            '/billing?queue=awaiting-payment&invoice=INV-PAY&action=pay',
+            '/billing?section=collect&id=INV-PAY&action=pay',
       );
 
       expect(find.byType(AppDialog), findsWidgets);
@@ -856,11 +862,129 @@ void main() {
           permissions: <AppPermission>{AppPermissions.billingRead},
         ),
         initialLocation:
-            '/billing?queue=awaiting-payment&invoice=INV-PAY&action=pay',
+            '/billing?section=collect&id=INV-PAY&action=pay',
       );
 
       expect(find.text('Ben Payment'), findsOneWidget);
       expect(find.widgetWithText(FilledButton, 'Pay'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'section aliases awaiting-payment/overdue select Collect due and write section=collect',
+    (WidgetTester tester) async {
+      for (final String location in <String>[
+        '/billing?section=awaiting-payment',
+        '/billing?section=pending-payment',
+        '/billing?tab=collect',
+      ]) {
+        final GoRouter router = await _pumpAwaitingPaymentTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            },
+          ),
+          initialLocation: location,
+        );
+
+        expect(find.textContaining('Collect due'), findsWidgets);
+        expect(find.text('Close shift'), findsOneWidget);
+        expect(find.text('Charge'), findsNothing);
+        expect(router.state.uri.queryParameters['section'], 'collect');
+      }
+
+      final GoRouter overdueRouter = await _pumpAwaitingPaymentTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        initialLocation: '/billing?section=overdue',
+      );
+      expect(find.textContaining('Collect due'), findsWidgets);
+      expect(overdueRouter.state.uri.queryParameters['section'], 'collect');
+      expect(overdueRouter.state.uri.queryParameters['overdue'], 'yes');
+    },
+  );
+
+  testWidgets(
+    'Collect due tooltip and warning count tone are present',
+    (WidgetTester tester) async {
+      await _pumpAwaitingPaymentTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        ),
+      );
+
+      expect(
+        find.byTooltip(
+          'Open balances due for payment, including overdue',
+        ),
+        findsWidgets,
+      );
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      final AppTabItem collect = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.label.contains('Collect due'),
+      );
+      expect(collect.countTone, AppTabCountTone.warning);
+    },
+  );
+
+  testWidgets(
+    'authorized Detail exposes Refund / Adjust / Void / Send / Ledger / Print',
+    (WidgetTester tester) async {
+      await _pumpAwaitingPaymentTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        items: const <BillingWorkItem>[
+          BillingWorkItem(
+            id: 'inv-pay',
+            displayId: 'INV-PAY',
+            kind: BillingWorkItemKind.invoice,
+            tenantId: 'tenant-1',
+            patientDisplayName: 'Ben Payment',
+            patientDisplayId: 'PT-PAY',
+            billingStatus: 'ISSUED',
+            amount: 500,
+            financials: BillingFinancials(balanceDue: 500),
+            payments: <BillingPayment>[
+              BillingPayment(
+                id: 'pay-1',
+                displayId: 'PAY-1',
+                status: 'COMPLETED',
+                method: 'CASH',
+                amount: 100,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      await tester.tap(find.text('Ben Payment'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pay'), findsWidgets);
+      expect(find.text('Refund'), findsWidgets);
+      expect(find.text('Adjust'), findsWidgets);
+      expect(find.text('Void'), findsWidgets);
+      expect(find.text('Send'), findsWidgets);
+      expect(find.text('View ledger'), findsOneWidget);
+      expect(find.text('Print invoice'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

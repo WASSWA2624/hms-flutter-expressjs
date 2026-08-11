@@ -162,7 +162,7 @@ void _stubRepository(
   );
 }
 
-Future<void> _pumpClaimsPendingTab(
+Future<GoRouter> _pumpClaimsPendingTab(
   WidgetTester tester, {
   required _MockBillingRepository repository,
   required AppAccessPolicy accessPolicy,
@@ -226,6 +226,7 @@ Future<void> _pumpClaimsPendingTab(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+  return router;
 }
 
 void main() {
@@ -308,6 +309,7 @@ void main() {
       expect(find.text('Record insurer response'), findsNothing);
       expect(find.text('View ledger'), findsOneWidget);
       expect(find.text('Print invoice'), findsNothing);
+      expect(find.text('Print statement'), findsOneWidget);
       expect(find.byTooltip('Download invoice PDF'), findsNothing);
     },
   );
@@ -380,6 +382,7 @@ void main() {
       expect(find.text('Submit claim'), findsWidgets);
       expect(find.text('View ledger'), findsOneWidget);
       expect(find.text('Print invoice'), findsNothing);
+      expect(find.text('Print statement'), findsOneWidget);
       expect(find.text('Finalize financial clearance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -864,21 +867,55 @@ void main() {
   testWidgets(
     'section=claims and claims-pending alias keep authorized Submit (integration)',
     (WidgetTester tester) async {
+      for (final String location in <String>[
+        '/billing?section=claims',
+        '/billing?section=claims-pending',
+        '/billing?tab=claims',
+        '/billing?queue=claims-pending',
+      ]) {
+        final GoRouter router = await _pumpClaimsPendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            },
+          ),
+          initialLocation: location,
+        );
+
+        expect(find.text('Cara Claim'), findsOneWidget);
+        expect(find.byTooltip('Submit this claim to the insurer'), findsWidgets);
+        expect(find.text('Close shift'), findsNothing);
+        expect(find.text('Charge'), findsNothing);
+        expect(router.state.uri.queryParameters['section'], 'claims');
+      }
+    },
+  );
+
+  testWidgets(
+    'Open claims tooltip and warning count tone are present',
+    (WidgetTester tester) async {
       await _pumpClaimsPendingTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
-          permissions: <AppPermission>{
-            AppPermissions.billingRead,
-            AppPermissions.billingWrite,
-          },
+          permissions: <AppPermission>{AppPermissions.billingRead},
         ),
-        initialLocation: '/billing?queue=claims-pending',
       );
 
-      expect(find.text('Cara Claim'), findsOneWidget);
-      expect(find.byTooltip('Submit this claim to the insurer'), findsWidgets);
-      expect(find.text('Close shift'), findsNothing);
+      expect(
+        find.byTooltip(
+          'Insurance claims and pre-authorizations awaiting action',
+        ),
+        findsWidgets,
+      );
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      final AppTabItem claims = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.label.contains('Open claims'),
+      );
+      expect(claims.countTone, AppTabCountTone.warning);
     },
   );
 

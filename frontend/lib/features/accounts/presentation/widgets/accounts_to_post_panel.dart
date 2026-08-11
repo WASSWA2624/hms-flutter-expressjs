@@ -150,8 +150,6 @@ class _AccountsToPostPanelState extends ConsumerState<AccountsToPostPanel> {
     return AppListTable<AccountsWorkItem>(
       page: state.workItems,
       isLoading: state.isRefreshing,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
       columnVisibilityController: _columnVisibilityController,
       columnVisibilityStorageKey: accountsTableSettingsKey(section),
       columnWidthStorageKey: '${accountsTableSettingsKey(section)}_cw',

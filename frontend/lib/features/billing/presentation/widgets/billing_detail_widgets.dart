@@ -76,7 +76,7 @@ class BillingDetailBody extends ConsumerWidget {
       children: <Widget>[
         AppPatientDetails(
           patientName: billingPatientName(context, item),
-          patientNumber: item.effectivePatientNumber ?? '',
+          patientNumber: billingPatientPublicNumber(item) ?? '',
           patientNumberLabel: l10n.billingPatientIdColumn,
           ageLabel: item.patientDateOfBirth == null
               ? null
@@ -158,8 +158,8 @@ class BillingDetailBody extends ConsumerWidget {
         ];
 
     if (item.isInvoice) {
-      final String? encounterId = item.encounterDisplayId ?? item.encounterId;
-      if (encounterId != null && encounterId.isNotEmpty) {
+      final String? encounterId = billingPublicLabel(item.encounterDisplayId);
+      if (encounterId != null) {
         fields.add(
           AppWorkspacePatientContextField(
             label: l10n.billingEncounterLabel,
@@ -184,7 +184,7 @@ class BillingDetailBody extends ConsumerWidget {
     return <AppWorkspacePatientContextField>[
       AppWorkspacePatientContextField(
         label: l10n.billingInvoiceLabel,
-        value: item.effectiveDisplayId,
+        value: billingWorkItemPublicId(context, item),
         icon: Icons.receipt_long_outlined,
         copyable: true,
         copyTooltip: l10n.copyIdentifierAction,
@@ -222,7 +222,7 @@ class BillingDetailBody extends ConsumerWidget {
             label: item.isInvoice
                 ? l10n.billingInvoiceLabel
                 : l10n.billingStatusColumn,
-            value: item.effectiveDisplayId,
+            value: billingWorkItemPublicId(context, item),
             icon: Icons.receipt_long_outlined,
             copyable: true,
             copyTooltip: l10n.copyIdentifierAction,
@@ -235,11 +235,12 @@ class BillingDetailBody extends ConsumerWidget {
           ),
         ];
 
-    if ((item.encounterDisplayId ?? item.encounterId)?.isNotEmpty ?? false) {
+    final String? encounterLabel = billingPublicLabel(item.encounterDisplayId);
+    if (encounterLabel != null) {
       fields.add(
         AppWorkspacePatientContextField(
           label: l10n.billingEncounterLabel,
-          value: item.encounterDisplayId ?? item.encounterId ?? '',
+          value: encounterLabel,
           icon: Icons.local_hospital_outlined,
         ),
       );
@@ -656,12 +657,13 @@ class _PaymentsSection extends StatelessWidget {
           for (final BillingPayment payment in item.payments)
             _DetailRow(
               title: billingJoinDisplay(<String?>[
-                payment.effectiveDisplayId,
+                billingPublicLabel(payment.displayId) ??
+                    l10n.billingPaymentLabel,
                 billingApiLabel(context, payment.method),
               ]),
               subtitle: billingJoinDisplay(<String?>[
                 billingApiLabel(context, payment.status),
-                payment.transactionRef,
+                billingPublicLabel(payment.transactionRef),
                 billingDateTime(context, payment.paidAt),
               ]),
               trailing: billingMoney(context, payment.amount, item.currency),
@@ -693,7 +695,8 @@ class _AdjustmentsSection extends StatelessWidget {
         children: <Widget>[
           for (final BillingAdjustment adjustment in item.adjustments)
             _DetailRow(
-              title: adjustment.displayId ?? l10n.billingUnknownValue,
+              title: billingPublicLabel(adjustment.displayId) ??
+                  l10n.billingAdjustmentsTitle,
               subtitle: billingJoinDisplay(<String?>[
                 billingApiLabel(context, adjustment.status),
                 adjustment.reason,

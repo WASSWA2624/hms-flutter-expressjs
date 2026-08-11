@@ -143,6 +143,11 @@ abstract final class PrintDocumentTemplates {
     String? previewDialogTitle,
     String? previewDialogBody,
     String? fallbackText,
+    String Function()? bodyHtmlBuilder,
+    String? Function()? subtitleBuilder,
+    Widget? previewSectionsExtra,
+    Listenable? previewDocumentRevision,
+    bool Function()? isPrintEnabled,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.invoice,
@@ -159,6 +164,11 @@ abstract final class PrintDocumentTemplates {
       previewDialogTitle: previewDialogTitle,
       previewDialogBody: previewDialogBody,
       fallbackText: fallbackText,
+      bodyHtmlBuilder: bodyHtmlBuilder,
+      subtitleBuilder: subtitleBuilder,
+      previewSectionsExtra: previewSectionsExtra,
+      previewDocumentRevision: previewDocumentRevision,
+      isPrintEnabled: isPrintEnabled,
     );
   }
 
@@ -242,18 +252,25 @@ abstract final class PrintDocumentTemplates {
     PrintFormPatientContext? patientContext,
     required PrintFormContextReference claimReference,
     required String bodyHtml,
+    String? subtitle,
     String? footerNote,
     bool includeSignatures = true,
     bool showPreview = true,
     String? previewDialogTitle,
     String? previewDialogBody,
     String? fallbackText,
+    String Function()? bodyHtmlBuilder,
+    String? Function()? subtitleBuilder,
+    Widget? previewSectionsExtra,
+    Listenable? previewDocumentRevision,
+    bool Function()? isPrintEnabled,
   }) {
     return _print(
       kind: PrintDocumentTemplateKind.claimStatement,
       ref: ref,
       context: context,
       title: title,
+      subtitle: subtitle,
       bodyHtml: bodyHtml,
       patientContext: patientContext,
       contextReference: claimReference,
@@ -263,6 +280,11 @@ abstract final class PrintDocumentTemplates {
       previewDialogTitle: previewDialogTitle,
       previewDialogBody: previewDialogBody,
       fallbackText: fallbackText,
+      bodyHtmlBuilder: bodyHtmlBuilder,
+      subtitleBuilder: subtitleBuilder,
+      previewSectionsExtra: previewSectionsExtra,
+      previewDocumentRevision: previewDocumentRevision,
+      isPrintEnabled: isPrintEnabled,
     );
   }
 
@@ -487,6 +509,7 @@ abstract final class PrintDocumentTemplates {
     String? fallbackText,
     PrintFormBrandingOptions brandingOptions = PrintFormBrandingOptions.all,
     String Function()? bodyHtmlBuilder,
+    String? Function()? subtitleBuilder,
     Widget? previewSectionsExtra,
     Listenable? previewDocumentRevision,
     bool Function()? isPrintEnabled,
@@ -499,13 +522,14 @@ abstract final class PrintDocumentTemplates {
         footerNote ?? 'Generated from ${displayName(kind).toLowerCase()}.';
 
     String? resolvedBodyHtml() => bodyHtmlBuilder?.call() ?? bodyHtml;
+    String? resolvedSubtitle() => subtitleBuilder?.call() ?? subtitle;
 
     Future<void> doPrint() {
       return printFormTemplateDocument(
         ref: ref,
         context: context,
         title: title,
-        subtitle: subtitle,
+        subtitle: resolvedSubtitle(),
         bodyHtml: resolvedBodyHtml(),
         pages: pages,
         metadata: metadata,
@@ -549,7 +573,7 @@ abstract final class PrintDocumentTemplates {
         ref: ref,
         context: context,
         title: title,
-        subtitle: subtitle,
+        subtitle: resolvedSubtitle(),
         bodyHtml: resolvedBodyHtml(),
         pages: pages,
         metadata: metadata,
@@ -580,7 +604,7 @@ abstract final class PrintDocumentTemplates {
           ref: ref,
           context: context,
           title: title,
-          subtitle: subtitle,
+          subtitle: resolvedSubtitle(),
           bodyHtml: resolvedBodyHtml(),
           pages: pages,
           metadata: metadata,

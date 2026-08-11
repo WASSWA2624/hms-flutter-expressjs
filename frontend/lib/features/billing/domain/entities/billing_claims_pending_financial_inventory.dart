@@ -142,6 +142,15 @@ abstract final class BillingClaimsPendingFinancialInventory {
     auditNote: 'Invoice documents only — never mounts for claim/pre-auth rows',
   );
 
+  static const BillingClaimsPendingFinancialAtom printClaim =
+      BillingClaimsPendingFinancialAtom(
+    id: 'print_claim',
+    label: 'Print statement',
+    actionClass: BillingClaimsPendingActionClass.notBillable,
+    requirement: BillingClaimsPendingAtomPermissions.document,
+    auditNote: 'Claim / pre-auth statement preview — never silent print',
+  );
+
   static const BillingClaimsPendingFinancialAtom downloadInvoice =
       BillingClaimsPendingFinancialAtom(
     id: 'download_invoice',
@@ -182,6 +191,7 @@ abstract final class BillingClaimsPendingFinancialInventory {
     preAuthDeny,
     viewLedger,
     printInvoice,
+    printClaim,
     downloadInvoice,
     emptyState,
     errorRetry,

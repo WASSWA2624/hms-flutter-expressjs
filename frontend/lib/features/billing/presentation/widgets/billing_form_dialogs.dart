@@ -65,6 +65,7 @@ class _BillingRefundFormState extends State<BillingRefundForm> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return AppDialog(
       title: widget.dialogTitle,
       icon: widget.dialogIcon,
@@ -74,14 +75,15 @@ class _BillingRefundFormState extends State<BillingRefundForm> {
         children: <Widget>[
           AppSelectField<String>(
             value: _paymentId,
-            labelText: context.l10n.billingPaymentLabel,
+            labelText: l10n.billingPaymentLabel,
             options: <AppSelectOption<String>>[
               for (final BillingPayment payment in widget.item.payments)
                 if (payment.isRefundable)
                   AppSelectOption<String>(
                     value: payment.id,
                     label: billingJoinDisplay(<String?>[
-                      payment.effectiveDisplayId,
+                      billingPublicLabel(payment.displayId) ??
+                          l10n.billingPaymentLabel,
                       billingMoney(
                         context,
                         payment.amount,

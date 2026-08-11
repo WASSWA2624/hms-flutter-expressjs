@@ -469,7 +469,7 @@ abstract final class BillingNeedsIssueAtomPermissions {
 /// | Detail claim / pre-auth actions | create / update | claims write |
 /// | Nested claim submit / reconcile / pre-auth dialogs | create / update | claims write |
 /// | View ledger | read | nested claims read ∩ ([nestedRead]) |
-/// | Print / Download | export / read | document read ∩ (invoices only) |
+/// | Print / Download | export / read | document read ∩ (invoice PDF; claim/pre-auth statement) |
 /// | Approve nested (other kinds) | approve | write ∩ financial:approve |
 /// | Route entry (deep link) | navigate | read ∪ write |
 abstract final class BillingClaimsPendingAtomPermissions {

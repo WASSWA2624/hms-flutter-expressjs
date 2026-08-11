@@ -3376,6 +3376,108 @@ abstract class AppLocalizations {
   /// **'Service or item description'**
   String get billingChargeItemHint;
 
+  /// Title when Charge similarity finds near-duplicate drafts.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar charges found'**
+  String get billingChargeSimilarDialogTitle;
+
+  /// Title when Charge similarity finds an exact open draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching draft found'**
+  String get billingChargeExactDialogTitle;
+
+  /// Title when Charge similarity finds no near duplicates.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar charges'**
+  String get billingChargeNoSimilarDialogTitle;
+
+  /// Banner title for near-duplicate Charge matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Review similar open drafts'**
+  String get billingChargeSimilarBannerTitle;
+
+  /// Banner title for exact Charge draft matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact open draft match'**
+  String get billingChargeExactBannerTitle;
+
+  /// Banner title when Charge similarity is clear.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar charges found'**
+  String get billingChargeNoSimilarBannerTitle;
+
+  /// Banner body for near-duplicate Charge matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar open drafts or recent charges exist. Review before creating another.'**
+  String get billingChargeSimilarDialogBody;
+
+  /// Banner body for exact Charge draft matches.
+  ///
+  /// In en, this message translates to:
+  /// **'An open draft already matches this charge. Open the existing draft instead of creating another.'**
+  String get billingChargeExactDialogBody;
+
+  /// Banner body when Charge similarity finds nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar open drafts were found for this charge.'**
+  String get billingChargeNoSimilarDialogBody;
+
+  /// Proceed with Charge create after similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get billingChargeProceedCreateAction;
+
+  /// Continue Charge create when no similarity matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Create charge'**
+  String get billingChargeContinueCreateAction;
+
+  /// Select an existing draft instead of creating a Charge.
+  ///
+  /// In en, this message translates to:
+  /// **'Open existing draft'**
+  String get billingChargeUseExistingAction;
+
+  /// Amount field label in Charge similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get billingChargeAmountLabel;
+
+  /// Section picker heading for billing invoice print preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice sections'**
+  String get billingPrintOptionsSectionLabel;
+
+  /// Toggle for invoice summary on print preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice summary'**
+  String get billingPrintSectionInvoiceSummary;
+
+  /// Toggle for insurance shares on invoice print preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance / shares'**
+  String get billingPrintSectionInsurance;
+
+  /// Toggle for footer and signature on invoice print preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Footer / signature'**
+  String get billingPrintSectionFooter;
+
   /// Label for invoices awaiting payment.
   ///
   /// In en, this message translates to:
@@ -3561,6 +3663,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Issue every draft invoice on this page to the patient or payer.'**
   String get billingIssueAllConfirmBody;
+
+  /// Title when Adjust similarity finds near-duplicate pending requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar adjustments found'**
+  String get billingAdjustSimilarDialogTitle;
+
+  /// Title when Adjust similarity finds an exact pending request.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching adjustment found'**
+  String get billingAdjustExactDialogTitle;
+
+  /// Title when Adjust similarity finds no near duplicates.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar adjustments'**
+  String get billingAdjustNoSimilarDialogTitle;
+
+  /// Banner title for near-duplicate Adjust matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Review similar pending adjustments'**
+  String get billingAdjustSimilarBannerTitle;
+
+  /// Banner title for exact Adjust matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact pending adjustment match'**
+  String get billingAdjustExactBannerTitle;
+
+  /// Banner title when Adjust similarity is clear.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar adjustments found'**
+  String get billingAdjustNoSimilarBannerTitle;
+
+  /// Banner body for near-duplicate Adjust matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar pending adjustments exist for this invoice. Review before submitting another.'**
+  String get billingAdjustSimilarDialogBody;
+
+  /// Banner body for exact Adjust matches.
+  ///
+  /// In en, this message translates to:
+  /// **'A pending adjustment already matches this request. Use the existing request instead of creating another.'**
+  String get billingAdjustExactDialogBody;
+
+  /// Banner body when Adjust similarity finds nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar pending adjustments were found for this invoice.'**
+  String get billingAdjustNoSimilarDialogBody;
+
+  /// Proceed with Adjust create after similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit anyway'**
+  String get billingAdjustProceedCreateAction;
+
+  /// Continue Adjust create when no similarity matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit adjustment'**
+  String get billingAdjustContinueCreateAction;
+
+  /// Select an existing pending adjustment instead of creating one.
+  ///
+  /// In en, this message translates to:
+  /// **'Use existing'**
+  String get billingAdjustUseExistingAction;
+
+  /// Type field label in Adjust similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get billingAdjustTypeLabel;
+
+  /// Snackbar after selecting an existing pending adjustment.
+  ///
+  /// In en, this message translates to:
+  /// **'Using the existing pending adjustment.'**
+  String get billingAdjustExistingSelectedSnackbar;
 
   /// Cancelled invoice status filter option.
   ///
@@ -4462,6 +4648,36 @@ abstract class AppLocalizations {
   /// **'Print invoice with line items and payments'**
   String get billingPrintInvoiceTooltip;
 
+  /// Action label to print a claim or pre-auth statement from Billing Detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Print statement'**
+  String get billingPrintClaimAction;
+
+  /// Tooltip for Print statement on Open claims Detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Print claim or pre-authorization statement'**
+  String get billingPrintClaimTooltip;
+
+  /// Section picker title for claim / pre-auth print preview options.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim sections'**
+  String get billingClaimPrintOptionsSectionLabel;
+
+  /// Print section toggle for insurer, scheme, and shares.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim / insurer'**
+  String get billingPrintSectionClaimFields;
+
+  /// Print section toggle for claim or pre-auth status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status / decision'**
+  String get billingPrintSectionStatusDecision;
+
   /// Footer note on printed billing invoices.
   ///
   /// In en, this message translates to:
@@ -4749,6 +4965,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Generate receipt after payment'**
   String get billingGenerateReceiptLabel;
+
+  /// Title for payment receipt print preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment receipt'**
+  String get billingReceiptTitle;
+
+  /// Section picker heading for payment receipt print preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt sections'**
+  String get billingReceiptPrintOptionsSectionLabel;
+
+  /// Title when Refund similarity finds near-duplicate pending requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar refunds found'**
+  String get billingRefundSimilarDialogTitle;
+
+  /// Title when Refund similarity finds an exact pending request.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching refund found'**
+  String get billingRefundExactDialogTitle;
+
+  /// Title when Refund similarity finds no near duplicates.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar refunds'**
+  String get billingRefundNoSimilarDialogTitle;
+
+  /// Banner title for near-duplicate Refund matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Review similar refunds'**
+  String get billingRefundSimilarBannerTitle;
+
+  /// Banner title for exact Refund matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact refund match'**
+  String get billingRefundExactBannerTitle;
+
+  /// Banner title when Refund similarity is clear.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar refunds found'**
+  String get billingRefundNoSimilarBannerTitle;
+
+  /// Banner body for near-duplicate Refund matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar refund activity exists for this payment. Review before submitting another.'**
+  String get billingRefundSimilarDialogBody;
+
+  /// Banner body for exact Refund matches.
+  ///
+  /// In en, this message translates to:
+  /// **'A refund already matches this request. Use the existing refund instead of creating another.'**
+  String get billingRefundExactDialogBody;
+
+  /// Banner body when Refund similarity finds nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar refunds were found for this payment.'**
+  String get billingRefundNoSimilarDialogBody;
+
+  /// Proceed with Refund create after similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit anyway'**
+  String get billingRefundProceedCreateAction;
+
+  /// Continue Refund create when no similarity matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit refund'**
+  String get billingRefundContinueCreateAction;
+
+  /// Select an existing refund instead of creating one.
+  ///
+  /// In en, this message translates to:
+  /// **'Use existing'**
+  String get billingRefundUseExistingAction;
+
+  /// Snackbar after selecting an existing refund.
+  ///
+  /// In en, this message translates to:
+  /// **'Using the existing refund.'**
+  String get billingRefundExistingSelectedSnackbar;
 
   /// Label for the payment selector in the refund form.
   ///

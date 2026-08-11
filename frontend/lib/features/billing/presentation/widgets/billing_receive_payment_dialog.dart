@@ -122,7 +122,7 @@ class _BillingReceivePaymentDialogState
             records: <AppReportSummaryItem>[
               AppReportSummaryItem(
                 label: context.l10n.billingInvoiceLabel,
-                value: widget.item.effectiveDisplayId,
+                value: billingWorkItemPublicId(context, widget.item),
                 icon: Icons.receipt_long_outlined,
               ),
               AppReportSummaryItem(

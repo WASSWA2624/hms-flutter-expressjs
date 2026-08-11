@@ -219,8 +219,6 @@ class _AccountsLedgersPanelState extends ConsumerState<AccountsLedgersPanel> {
     return AppListTable<AccountsPatientBalance>(
       page: _page,
       isLoading: _loading,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
       columnVisibilityController: _columnController,
       columnVisibilityStorageKey: accountsLedgersTableSettingsKey,
       columnWidthStorageKey: '${accountsLedgersTableSettingsKey}_cw',

@@ -13,8 +13,14 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_claim_print_helpers.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_invoice_print_helpers.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_receipt_print_helpers.dart';
 import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_controller.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_adjustment_similarity.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_adjustment_similarity_dialog.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_charge_similarity.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_charge_similarity_dialog.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_detail_widgets.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_form_dialogs.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_ledger_dialog.dart';
@@ -22,8 +28,11 @@ import 'package:hosspi_hms/features/billing/presentation/widgets/billing_price_b
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_price_book_panel.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_quick_charge_dialog.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_receive_payment_dialog.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_refund_similarity.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_refund_similarity_dialog.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_support.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_workspace_table_support.dart';
+import 'package:hosspi_hms/features/billing/data/repositories/billing_repository_impl.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -92,7 +101,7 @@ class _BillingWorkspaceContentState
     _tableColumnController =
         AppListTableColumnVisibilityController<BillingWorkItem>();
     _searchController.addListener(_onSearchChanged);
-    _scheduleRouteQuery(widget.initialQuery);
+    _scheduleRouteQuery(widget.initialQuery ?? widget.state.query);
     _refreshOnMount();
   }
 
@@ -106,7 +115,7 @@ class _BillingWorkspaceContentState
   }
 
   void _scheduleRouteQuery(BillingWorkspaceQuery? query) {
-    if (query == null || !query.hasRouteTargeting) {
+    if (query == null) {
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -126,6 +135,9 @@ class _BillingWorkspaceContentState
     if (query.priceBook) {
       if (!_priceBook) {
         setState(() => _priceBook = true);
+      }
+      if (mounted) {
+        _updateUrlForPriceBook();
       }
       return;
     }
@@ -161,8 +173,9 @@ class _BillingWorkspaceContentState
       await _autoOpenPaymentDialog(query);
     }
 
-    if (mounted && query.queue != BillingQueueType.all) {
-      _updateUrlForQueue(query.queue, query: query);
+    // Always write the canonical desk slug (aliases → work / collect / …).
+    if (mounted) {
+      _updateUrlForQueue(_section, query: query);
     }
   }
 
@@ -537,7 +550,7 @@ class _BillingQueuePanel extends ConsumerWidget {
       mobileItemBuilder: (BuildContext context, BillingWorkItem item) {
         return AppListTableMobileItem(
           title: billingPatientName(context, item),
-          caption: item.effectiveDisplayId,
+          caption: billingWorkItemPublicId(context, item),
           meta: <AppListTableMobileMeta>[
             AppListTableMobileMeta(
               label: billingWorkItemStatusLabel(context, item),
@@ -552,8 +565,79 @@ class _BillingQueuePanel extends ConsumerWidget {
       },
     );
 
-    return table;
+    if (activeQueue != BillingQueueType.pendingPayment) {
+      return table;
+    }
+
+    final ThemeData theme = Theme.of(context);
+    final Color danger = theme.statusColors.danger;
+    final int overdueCount = state.overview.summary.overdue;
+    final bool overdueSelected = state.query.overdueOnly;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Padding(
+            padding: EdgeInsets.only(bottom: theme.spacing.sm),
+            child: FilterChip(
+              key: const ValueKey<String>('billing-collect-overdue-chip'),
+              selected: overdueSelected,
+              showCheckmark: false,
+              avatar: Icon(
+                Icons.warning_amber_outlined,
+                size: 18,
+                color: danger,
+              ),
+              label: Text(
+                overdueCount > 0
+                    ? '${l10n.billingOverdue} ($overdueCount)'
+                    : l10n.billingOverdue,
+                style: TextStyle(color: danger),
+              ),
+              selectedColor: danger.withValues(alpha: 0.16),
+              side: BorderSide(color: danger.withValues(alpha: 0.45)),
+              onSelected: (bool selected) {
+                unawaited(
+                  _toggleCollectOverdueFilter(
+                    context,
+                    ref,
+                    state: state,
+                    selected: selected,
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        table,
+      ],
+    );
   }
+}
+
+Future<void> _toggleCollectOverdueFilter(
+  BuildContext context,
+  WidgetRef ref, {
+  required BillingWorkspaceState state,
+  required bool selected,
+}) async {
+  final BillingWorkspaceQuery next = state.query.copyWith(
+    queue: BillingQueueType.pendingPayment,
+    overdueOnly: selected,
+  );
+  await ref.read(billingWorkspaceControllerProvider.notifier).applyFilters(next);
+  if (!context.mounted) {
+    return;
+  }
+  final Map<String, String> params = <String, String>{'section': 'collect'};
+  if (selected) {
+    params['overdue'] = 'yes';
+  }
+  GoRouter.of(context).replace<void>(
+    AppRoutes.billing.location(queryParameters: params),
+  );
 }
 
 Future<void> _runBillingNextAction(
@@ -746,8 +830,8 @@ class _BillingLiveDetailDialogState
             ? () => showBillingLedgerDialog(context, ref, item: item)
             : null,
       ),
-      // Inventory: Print / Download only when item is an invoice and
-      // canReadBillingDocument — do not mount disabled stubs on approvals.
+      // Inventory: invoice Print/Download; claim/pre-auth Print statement —
+      // omit when unauthorized (no disabled stubs).
       actions: <Widget>[
         if (canDocument && item.isInvoice) ...<Widget>[
           AppReportActionButton.print(
@@ -765,6 +849,17 @@ class _BillingLiveDetailDialogState
             onPressed: () => _downloadInvoiceDocument(context, ref, item),
           ),
         ],
+        if (canDocument &&
+            (item.isClaim || item.isPreAuthorization))
+          AppReportActionButton.print(
+            label: l10n.billingPrintClaimAction,
+            tooltip: l10n.billingPrintClaimTooltip,
+            onPressed: () => printBillingClaimOrPreAuth(
+              ref: ref,
+              context: context,
+              item: item,
+            ),
+          ),
       ],
     );
   }
@@ -790,6 +885,25 @@ Future<void> _showPaymentDialog(
     return;
   }
   _showMutationResult(context, ref, failure);
+  if (failure != null || !draft.issueReceipt || !context.mounted) {
+    return;
+  }
+  final BillingWorkItem receiptItem = ref
+          .read(billingWorkspaceControllerProvider)
+          .asData
+          ?.value
+          .when(
+            success: (BillingWorkspaceState state) =>
+                state.selectedItem ?? item,
+            failure: (_) => item,
+          ) ??
+      item;
+  await printBillingReceipt(
+    ref: ref,
+    context: context,
+    item: receiptItem,
+    draft: draft,
+  );
 }
 
 Future<void> _showRefundDialog(
@@ -809,6 +923,16 @@ Future<void> _showRefundDialog(
   if (draft == null || !context.mounted) {
     return;
   }
+
+  final bool shouldSubmit = await _reviewRefundSimilarity(
+    context,
+    item: item,
+    draft: draft,
+  );
+  if (!shouldSubmit || !context.mounted) {
+    return;
+  }
+
   final AppFailure? failure = await ref
       .read(billingWorkspaceControllerProvider.notifier)
       .requestRefund(draft);
@@ -816,6 +940,44 @@ Future<void> _showRefundDialog(
     return;
   }
   _showMutationResult(context, ref, failure);
+}
+
+Future<bool> _reviewRefundSimilarity(
+  BuildContext context, {
+  required BillingWorkItem item,
+  required BillingRefundDraft draft,
+}) async {
+  final BillingRefundSimilarityResult check = checkBillingRefundSimilarity(
+    invoice: item,
+    draft: draft,
+  );
+  if (!check.hasMatches) {
+    return true;
+  }
+
+  final BillingRefundSimilarityDialogResult result =
+      await showBillingRefundSimilarityDialog(
+        context,
+        invoice: item,
+        draft: draft,
+        check: check,
+      );
+  if (!context.mounted) {
+    return false;
+  }
+  switch (result.action) {
+    case BillingRefundSimilarityAction.cancel:
+      return false;
+    case BillingRefundSimilarityAction.proceed:
+      return true;
+    case BillingRefundSimilarityAction.useExisting:
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.billingRefundExistingSelectedSnackbar),
+        ),
+      );
+      return false;
+  }
 }
 
 Future<void> _showAdjustmentDialog(
@@ -835,6 +997,16 @@ Future<void> _showAdjustmentDialog(
   if (draft == null || !context.mounted) {
     return;
   }
+
+  final bool shouldSubmit = await _reviewAdjustmentSimilarity(
+    context,
+    item: item,
+    draft: draft,
+  );
+  if (!shouldSubmit || !context.mounted) {
+    return;
+  }
+
   final AppFailure? failure = await ref
       .read(billingWorkspaceControllerProvider.notifier)
       .requestAdjustment(draft);
@@ -842,6 +1014,42 @@ Future<void> _showAdjustmentDialog(
     return;
   }
   _showMutationResult(context, ref, failure);
+}
+
+Future<bool> _reviewAdjustmentSimilarity(
+  BuildContext context, {
+  required BillingWorkItem item,
+  required BillingAdjustmentDraft draft,
+}) async {
+  final BillingAdjustmentSimilarityResult check =
+      checkBillingAdjustmentSimilarity(invoice: item, draft: draft);
+  if (!check.hasMatches) {
+    return true;
+  }
+
+  final BillingAdjustmentSimilarityDialogResult result =
+      await showBillingAdjustmentSimilarityDialog(
+        context,
+        invoice: item,
+        draft: draft,
+        check: check,
+      );
+  if (!context.mounted) {
+    return false;
+  }
+  switch (result.action) {
+    case BillingAdjustmentSimilarityAction.cancel:
+      return false;
+    case BillingAdjustmentSimilarityAction.proceed:
+      return true;
+    case BillingAdjustmentSimilarityAction.useExisting:
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.billingAdjustExistingSelectedSnackbar),
+        ),
+      );
+      return false;
+  }
 }
 
 Future<void> _showVoidDialog(BuildContext context, WidgetRef ref) async {
@@ -1040,6 +1248,16 @@ Future<void> _showChargeDialog(BuildContext context, WidgetRef ref) async {
   if (draft == null || !context.mounted) {
     return;
   }
+
+  final bool shouldCreate = await _reviewChargeSimilarity(
+    context,
+    ref,
+    draft,
+  );
+  if (!shouldCreate || !context.mounted) {
+    return;
+  }
+
   final AppFailure? failure = await ref
       .read(billingWorkspaceControllerProvider.notifier)
       .createCharge(draft);
@@ -1051,15 +1269,121 @@ Future<void> _showChargeDialog(BuildContext context, WidgetRef ref) async {
     return;
   }
   // Charge creates a draft and lands on To issue (billing.md §4.1 / §7).
+  await _openToIssueQueue(context, ref);
+}
+
+Future<bool> _reviewChargeSimilarity(
+  BuildContext context,
+  WidgetRef ref,
+  BillingChargeDraft draft,
+) async {
+  final List<BillingWorkItem> candidates = await _loadChargeSimilarityCandidates(
+    ref,
+    draft,
+  );
+  if (!context.mounted) {
+    return false;
+  }
+  final BillingChargeSimilarityResult check = checkBillingChargeSimilarity(
+    draft: draft,
+    candidates: candidates,
+  );
+  if (!check.hasMatches) {
+    return true;
+  }
+
+  final BillingChargeSimilarityDialogResult result =
+      await showBillingChargeSimilarityDialog(
+        context,
+        draft: draft,
+        check: check,
+      );
+  if (!context.mounted) {
+    return false;
+  }
+  switch (result.action) {
+    case BillingChargeSimilarityAction.cancel:
+      return false;
+    case BillingChargeSimilarityAction.proceed:
+      return true;
+    case BillingChargeSimilarityAction.useExisting:
+      final BillingWorkItem? existing = result.selectedItem;
+      if (existing == null) {
+        return false;
+      }
+      await _openExistingChargeDraft(context, ref, existing);
+      return false;
+  }
+}
+
+Future<List<BillingWorkItem>> _loadChargeSimilarityCandidates(
+  WidgetRef ref,
+  BillingChargeDraft draft,
+) async {
+  final List<BillingWorkItem> candidates = <BillingWorkItem>[];
+  final AsyncValue<Result<BillingWorkspaceState>> workspace = ref.read(
+    billingWorkspaceControllerProvider,
+  );
+  final Result<BillingWorkspaceState>? current = workspace.asData?.value;
+  if (current != null) {
+    current.when(
+      success: (BillingWorkspaceState state) {
+        candidates.addAll(state.workItems.items);
+      },
+      failure: (_) {},
+    );
+  }
+
+  final String search =
+      (draft.patientDisplayId ?? draft.patientDisplayName ?? '').trim();
+  final Result<AppPage<BillingWorkItem>> drafts = await ref
+      .read(billingRepositoryProvider)
+      .listWorkItems(
+        BillingWorkspaceQuery(
+          queue: BillingQueueType.needsIssue,
+          search: search,
+        ),
+      );
+  drafts.when(
+    success: (AppPage<BillingWorkItem> page) {
+      candidates.addAll(page.items);
+    },
+    failure: (_) {},
+  );
+
+  final Map<String, BillingWorkItem> unique = <String, BillingWorkItem>{};
+  for (final BillingWorkItem item in candidates) {
+    unique[item.id] = item;
+  }
+  return unique.values.toList(growable: false);
+}
+
+Future<void> _openExistingChargeDraft(
+  BuildContext context,
+  WidgetRef ref,
+  BillingWorkItem item,
+) async {
+  await _openToIssueQueue(context, ref);
+  if (!context.mounted) {
+    return;
+  }
+  ref.read(billingWorkspaceControllerProvider.notifier).selectItem(item);
+  await _showBillingDetailDialog(
+    context,
+    ref,
+    item,
+    canWrite: canWriteBilling(ref.read(appAccessPolicyProvider)),
+  );
+}
+
+Future<void> _openToIssueQueue(BuildContext context, WidgetRef ref) async {
   final String location = AppRoutes.billing.location(
     queryParameters: const <String, String>{'section': 'issue'},
   );
   GoRouter.of(context).replace<void>(location);
-  unawaited(
-    ref
-        .read(billingWorkspaceControllerProvider.notifier)
-        .applyQueue(BillingQueueType.needsIssue),
-  );
+  await ref
+      .read(billingWorkspaceControllerProvider.notifier)
+      .applyQueue(BillingQueueType.needsIssue);
 }
 
 Future<void> _showShiftCloseDialog(BuildContext context, WidgetRef ref) async {

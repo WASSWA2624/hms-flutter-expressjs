@@ -118,7 +118,7 @@ void _stubRepository(
   );
 }
 
-Future<void> _pumpNeedsIssueTab(
+Future<GoRouter> _pumpNeedsIssueTab(
   WidgetTester tester, {
   required _MockBillingRepository repository,
   required AppAccessPolicy accessPolicy,
@@ -127,6 +127,7 @@ Future<void> _pumpNeedsIssueTab(
   List<BillingWorkItem> items = const <BillingWorkItem>[_draftInvoice],
   BillingSummary summary = _summary,
   Result<BillingWorkspaceOverview>? workspaceOverride,
+  String initialLocation = '/billing?section=issue',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -143,7 +144,7 @@ Future<void> _pumpNeedsIssueTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/billing?section=issue',
+    initialLocation: initialLocation,
     routes: <RouteBase>[
       GoRoute(
         path: '/billing',
@@ -181,6 +182,7 @@ Future<void> _pumpNeedsIssueTab(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+  return router;
 }
 
 void main() {
@@ -677,4 +679,84 @@ void main() {
     expect(find.text('Close shift'), findsNothing);
     expect(find.byTooltip('Issue this draft invoice'), findsWidgets);
   });
+
+  testWidgets(
+    'section aliases needs-issue/ready-to-issue select To issue and write section=issue',
+    (WidgetTester tester) async {
+      for (final String location in <String>[
+        '/billing?section=needs-issue',
+        '/billing?section=ready-to-issue',
+        '/billing?tab=issue',
+      ]) {
+        final GoRouter router = await _pumpNeedsIssueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            },
+          ),
+          initialLocation: location,
+        );
+
+        expect(find.textContaining('To issue'), findsWidgets);
+        expect(find.text('Issue all'), findsOneWidget);
+        expect(find.text('Charge'), findsNothing);
+        expect(router.state.uri.queryParameters['section'], 'issue');
+      }
+    },
+  );
+
+  testWidgets(
+    'To issue tooltip and warning count tone are present',
+    (WidgetTester tester) async {
+      await _pumpNeedsIssueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        ),
+      );
+
+      expect(
+        find.byTooltip(
+          'Draft invoices ready to issue to the patient or payer',
+        ),
+        findsWidgets,
+      );
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      final AppTabItem issue = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.label.contains('To issue'),
+      );
+      expect(issue.countTone, AppTabCountTone.warning);
+    },
+  );
+
+  testWidgets(
+    'authorized Detail exposes Adjust / Void / Send / Ledger / Print',
+    (WidgetTester tester) async {
+      await _pumpNeedsIssueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Ada Draft'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Adjust'), findsWidgets);
+      expect(find.text('Void'), findsWidgets);
+      expect(find.text('Send'), findsWidgets);
+      expect(find.text('View ledger'), findsOneWidget);
+      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.text('Charge'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
 }

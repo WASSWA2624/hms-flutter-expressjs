@@ -411,8 +411,6 @@ class _AccountsBooksPanelState extends ConsumerState<AccountsBooksPanel> {
     final Widget table = AppListTable<AccountsFiscalPeriod>(
       page: _page,
       isLoading: _loading || _mutating,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
       columnVisibilityController: _columnController,
       columnVisibilityStorageKey: accountsBooksTableSettingsKey,
       columnWidthStorageKey: '${accountsBooksTableSettingsKey}_cw',
@@ -553,7 +551,7 @@ class _AccountsBooksPanelState extends ConsumerState<AccountsBooksPanel> {
             ),
           ),
         ),
-        table,
+        Expanded(child: table),
       ],
     );
   }

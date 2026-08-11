@@ -62,7 +62,8 @@ class _BillingQuickChargeDialogState
       _patient = selected;
       _patientController.text = billingJoinDisplay(<String?>[
         selected.effectiveDisplayName,
-        selected.publicId ?? selected.id,
+        billingPublicLabel(selected.effectiveIdentifier) ??
+            billingPublicLabel(selected.publicId),
       ]);
     });
   }
@@ -88,6 +89,11 @@ class _BillingQuickChargeDialogState
         paymentMode: _paymentMode,
         currency: ref.read(effectiveDefaultCurrencyProvider),
         notes: billingEmptyToNull(_notesController.text),
+        patientDisplayName: patient.effectiveDisplayName.trim().isEmpty
+            ? null
+            : patient.effectiveDisplayName.trim(),
+        patientDisplayId: billingPublicLabel(patient.effectiveIdentifier) ??
+            billingPublicLabel(patient.publicId),
       ),
     );
   }

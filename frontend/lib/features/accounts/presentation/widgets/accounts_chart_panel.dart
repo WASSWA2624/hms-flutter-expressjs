@@ -292,8 +292,6 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
       page: _page,
       isLoading: _loading,
       error: _failure == null ? null : l10n.failureMessage(_failure!),
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
       columnVisibilityController: _columnController,
       columnVisibilityStorageKey: accountsChartTableSettingsKey,
       columnWidthStorageKey: accountsChartColumnWidthKey,

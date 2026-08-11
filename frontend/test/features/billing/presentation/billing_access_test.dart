@@ -1573,5 +1573,99 @@ void main() {
       expect(BillingQueueType.isPriceBookSlug('price-book'), isTrue);
       expect(BillingQueueType.isPriceBookSlug('collect'), isFalse);
     });
+
+    test('fromUri maps Open work aliases all/inbox/tab to work queue', () {
+      expect(
+        BillingWorkspaceQuery.fromUri(Uri.parse('/billing?section=work')).queue,
+        BillingQueueType.all,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(Uri.parse('/billing?section=all')).queue,
+        BillingQueueType.all,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(Uri.parse('/billing?section=inbox')).queue,
+        BillingQueueType.all,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(Uri.parse('/billing?tab=work')).queue,
+        BillingQueueType.all,
+      );
+      expect(BillingQueueType.all.sectionQueryValue, 'work');
+    });
+
+    test('fromUri maps To issue aliases needs-issue/ready-to-issue', () {
+      expect(
+        BillingWorkspaceQuery.fromUri(Uri.parse('/billing?section=issue')).queue,
+        BillingQueueType.needsIssue,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=needs-issue'),
+        ).queue,
+        BillingQueueType.needsIssue,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=ready-to-issue'),
+        ).queue,
+        BillingQueueType.needsIssue,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(Uri.parse('/billing?tab=issue')).queue,
+        BillingQueueType.needsIssue,
+      );
+      expect(BillingQueueType.needsIssue.sectionQueryValue, 'issue');
+    });
+
+    test('fromUri maps Collect due aliases including overdue filter', () {
+      expect(
+        BillingWorkspaceQuery.fromUri(Uri.parse('/billing?section=collect'))
+            .queue,
+        BillingQueueType.pendingPayment,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=awaiting-payment'),
+        ).queue,
+        BillingQueueType.pendingPayment,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=pending-payment'),
+        ).queue,
+        BillingQueueType.pendingPayment,
+      );
+      final BillingWorkspaceQuery overdue =
+          BillingWorkspaceQuery.fromUri(Uri.parse('/billing?section=overdue'));
+      expect(overdue.queue, BillingQueueType.pendingPayment);
+      expect(overdue.overdueOnly, isTrue);
+      expect(
+        BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=collect&id=INV-1&action=pay'),
+        ).invoiceNumber,
+        'INV-1',
+      );
+      expect(BillingQueueType.pendingPayment.sectionQueryValue, 'collect');
+    });
+
+    test('fromUri maps Open claims aliases claims-pending/tab=claims', () {
+      expect(
+        BillingWorkspaceQuery.fromUri(Uri.parse('/billing?section=claims'))
+            .queue,
+        BillingQueueType.claimsPending,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=claims-pending'),
+        ).queue,
+        BillingQueueType.claimsPending,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(Uri.parse('/billing?tab=claims')).queue,
+        BillingQueueType.claimsPending,
+      );
+      expect(BillingQueueType.claimsPending.sectionQueryValue, 'claims');
+    });
   });
 }

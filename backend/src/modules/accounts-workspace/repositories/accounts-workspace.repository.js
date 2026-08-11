@@ -32,7 +32,6 @@ const findInvoiceRowsForLedgers = async (where = {}) =>
             first_name: true,
             last_name: true,
             human_friendly_id: true,
-            display_id: true,
           },
         },
       },

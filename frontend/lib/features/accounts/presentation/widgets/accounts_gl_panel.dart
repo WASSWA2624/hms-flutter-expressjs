@@ -190,8 +190,6 @@ class _AccountsGlPanelState extends ConsumerState<AccountsGlPanel> {
       page: _page,
       isLoading: _loading,
       error: _failure == null ? null : l10n.failureMessage(_failure!),
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
       columnVisibilityController: _columnController,
       columnVisibilityStorageKey: accountsGlTableSettingsKey,
       columnWidthStorageKey: '${accountsGlTableSettingsKey}_cw',

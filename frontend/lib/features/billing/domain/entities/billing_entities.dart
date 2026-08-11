@@ -1011,6 +1011,9 @@ final class BillingChargeDraft {
     this.priceBookEntryId,
     this.currency,
     this.notes,
+    this.patientDisplayName,
+    this.patientDisplayId,
+    this.encounterDisplayId,
   });
 
   final String patientId;
@@ -1023,6 +1026,16 @@ final class BillingChargeDraft {
   final String? priceBookEntryId;
   final String? currency;
   final String? notes;
+
+  /// Presentation-only labels for similarity / snackbars (never wire UUIDs).
+  final String? patientDisplayName;
+  final String? patientDisplayId;
+  final String? encounterDisplayId;
+
+  num get lineAmount {
+    final num unit = num.tryParse(unitPrice.trim()) ?? 0;
+    return unit * quantity;
+  }
 }
 
 @immutable
