@@ -21,7 +21,12 @@ This file owns shipped `module_key` values, package coverage, and status; seed o
 
 ## Active Module Keys
 
-`app_shell`, `auth_session`, `general_settings`, `tenant_settings`, `facility_settings`, `access_admin`, `subscriptions`, `rooms_beds`, `patient_registry`, `opd`, `triage`, `clinical`, `nursing`, `ipd`, `icu`, `theater`, `discharge`, `emergency`, `lab`, `radiology`, `physiotherapy`, `pharmacy`, `billing`, `claims`, `hr`, `biomedical`, `operations`, `housekeeping`, `mortuary`, `communications`, `reports_audit`, `integrations`, `demo_seed`.
+`app_shell`, `auth_session`, `general_settings`, `tenant_settings`, `facility_settings`, `access_admin`, `subscriptions`, `rooms_beds`, `patient_registry`, `opd`, `triage`, `clinical`, `nursing`, `ipd`, `icu`, `theater`, `discharge`, `emergency`, `lab`, `radiology`, `physiotherapy`, `pharmacy`, `billing`, `accounts`, `claims`, `hr`, `biomedical`, `operations`, `housekeeping`, `mortuary`, `communications`, `reports_audit`, `integrations`, `demo_seed`.
+
+## Finance module notes
+
+- `billing` — cashier desk (`/billing`, subscription slug `billing-payments`): invoices, collect, claims handoff, price book.
+- `accounts` — books desk (`/accounts`, subscription slug `facility-accounts`): journals, GL, patient ledgers, chart of accounts, period open/close. Not a Billing tab; Reporting & analytics owns period KPIs.
 
 ## Planned Modules
 

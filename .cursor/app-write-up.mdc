@@ -17,7 +17,7 @@ HOSSPI HMS is the HOSSPI Hospital Management System, where each module must own 
 - Spaces and registry: rooms/wards/beds, patient registry.
 - Patient care: OPD, triage, clinical, nursing, IPD, ICU, theater, discharge, emergency/ambulance.
 - Diagnostics and meds: laboratory, radiology, physiotherapy, pharmacy.
-- Finance: billing/cashier, insurance/claims.
+- Finance: billing/cashier, accounts/books (GL, journals, patient ledgers, chart, period close), insurance/claims.
 - Support: HR, biomedical, operations, housekeeping, mortuary, notifications.
 - Cross-cutting: reports/audit, integrations, demo seed, dental.
 

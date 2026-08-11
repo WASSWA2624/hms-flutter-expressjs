@@ -33,7 +33,8 @@ Owns curated + volume demo seeding for local/demo environments. Never seed produ
 ## Scenario Coverage
 
 - Keep curated hero scenarios asserted by `verify-demo-data` (roles/emails, subscription health, communications variants, biomedical/compliance baselines, break-glass pending + **ACTIVE** approved).
-- Volume rows must diversify statuses so demo role logins see non-empty, filterable queues.
+- Accountant demo (`accountant@hosspi.com`) must resolve Accounts desk access when `facility-accounts` is entitled; HR demo users must not gain `accounts:*` from the HR role pack alone.
+- Volume rows must diversify statuses so demo role logins see non-empty, filterable queues (including Accounts open work / to-post / approvals when Accounts packs seed).
 - Prefer FK-valid related graphs and deterministic upserts (`deterministicUuid` / pack keys). Do not invent orphan foreign keys.
 
 ## Safety And Verify

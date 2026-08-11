@@ -20,6 +20,16 @@ Owns the access vocabulary and enforcement model. Always enforce permission-base
 - Module-specific actions may be added (`request`, `review`, `release`, `manage_storage`).
 - Prefer `own` / `assigned` ABAC scope over manage-all grants.
 
+## Accounts (books desk)
+
+- Keys: `accounts:read`, `accounts:write`. Map domain `accounts` → subscription module `facility-accounts` (same pattern as `billing` → `billing-payments`).
+- Route `/accounts`: (`accounts:read` ∪ `accounts:write`) ∩ `facility-accounts`. Fallback tab when other sections are unauthorized: Open work.
+- Write (Journal / Post / Reverse / Void / Send / Open period / Close period / chart mutate): `accounts:write`.
+- Approve / Reject: `accounts:write` ∩ `financial:approve`.
+- Patient ledgers browse: `accounts:read`. Pay deep-link only: (`billing:write`) ∩ `billing-payments` — do not invent accounts-only pay.
+- Do not grant Accounts via `hr:read` / `hr:write` alone. Billing cashier (`billing:*`) does not imply Accounts keys.
+- Unauthorized Accounts tabs/actions must be absent (not disabled “no access” chrome). See `prompts/accounts/08-permissions.md`.
+
 ## Access Model
 
 - Authority order: subscription → assigned modules → roles/permissions → ABAC.
@@ -45,3 +55,4 @@ Owns the access vocabulary and enforcement model. Always enforce permission-base
 
 - `modules.mdc`, `subscriptions.mdc`, `default_user_roles.mdc`, `version-disabled-screens.mdc`
 - `frontend/.cursor/permissions.mdc`, `backend/.cursor/auth-security.mdc`
+- `prompts/accounts/08-permissions.md`, `prompts/accounts/09-roles.md`, root `accounts.md` §9

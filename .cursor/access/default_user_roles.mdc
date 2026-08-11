@@ -12,14 +12,14 @@ Seed on install; see `permissions.mdc` for semantics.
 
 ## Shipped Roles
 
-- `super_admin`: platform manage; all active modules; all-scope reporting.
-- `tenant_admin`: tenant manage; all entitled modules; entitled-scope reporting.
-- `facility_admin`: facility manage; facility modules; facility reporting.
+- `super_admin`: platform manage; all active modules (including `accounts`); all-scope reporting.
+- `tenant_admin`: tenant manage; all entitled modules (including `accounts`); entitled-scope reporting.
+- `facility_admin`: facility manage; facility modules (including `accounts`); facility reporting.
 - `integration_admin`: `integrations` and `reports_audit` manage; those modules' reporting.
 - `doctor`: Dashboard, Patient Registry, OPD, IPD, ICU, Nursing, Clinical, Theater, Reports, Settings. No top-level Lab / Radiology / Pharmacy / Discharge — order and review those from Clinical (and related care modules).
 - `nurse`: nursing, triage, ward care (IPD/ICU as assigned); diagnostics assist; registry; nursing reporting.
 - `receptionist`: `patient_registry`, queues/OPD desk; billing view; reception reporting.
-- `accountant`: `billing`, `claims`; finance reporting.
+- `accountant`: `accounts` (books desk: journals, GL, patient ledgers, chart, period close), `billing`, `claims`; finance reporting. Must include `accounts:read` and `accounts:write` (and `financial:approve` where already granted).
 - `pharmacist`: `pharmacy` dispense and stock; billing view; pharmacy reporting; no Patients registry (`/patients`)—patient details only via pharmacy/dashboard embeds.
 - `laboratory_technician`: `lab` specimen and workflow; walk-in lab orders (create/reuse Lab encounters; create patients via create-lab-request when entitled); lab reporting.
 - `radiographer`: `radiology` scan acquisition; scan-scope reporting.
@@ -30,9 +30,16 @@ Seed on install; see `permissions.mdc` for semantics.
 - `housekeeper`: `housekeeping` tasks and areas; housekeeping reporting.
 - `biomedical_engineer`: `biomedical` equipment maintenance; biomedical reporting.
 - `mortuary_attendant`: `mortuary` workflow; mortuary reporting.
-- `hr_staff`: `hr` administration; HR reporting; Facility Admin users/roles/permissions tabs (full rights).
+- `hr_staff`: `hr` administration; HR reporting; Facility Admin users/roles/permissions tabs (full rights). Must **not** receive `accounts:read` / `accounts:write` or the Accounts desk — payroll may later post summary journals into Accounts without opening `/accounts`.
 - `patient`: own patient data only; own-data reporting.
 - `visitor_guest`: limited visitor info only; allowed-visitor reporting.
+
+## Accounts role matrix
+
+- **Have Accounts rights:** `accountant`, `super_admin` / platform admins, `tenant_admin`, `facility_admin` (via admin access packs).
+- **Do not have Accounts rights by default:** `hr_staff` (and HR role packs), billing-only packs, and other non-admin clinical/ops packs unless Access admin assigns `accounts:*` on a custom role.
+- Subscription module `facility-accounts` remains a second gate; role keys alone do not open `/accounts` when the module is not entitled.
+- See `prompts/accounts/09-roles.md`.
 
 ## Administration
 
@@ -44,3 +51,4 @@ Seed on install; see `permissions.mdc` for semantics.
 ## Related Rules
 
 - `modules.mdc`, `permissions.mdc`, `subscriptions.mdc`
+- `prompts/accounts/09-roles.md`, `prompts/accounts/08-permissions.md`
