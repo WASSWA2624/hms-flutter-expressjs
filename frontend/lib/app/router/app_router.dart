@@ -28,7 +28,6 @@ import 'package:hosspi_hms/features/auth/presentation/widgets/auth_shell_layout.
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/pages/billing_workspace_page.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
-import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
 import 'package:hosspi_hms/features/accounts/presentation/pages/accounts_workspace_page.dart';
 import 'package:hosspi_hms/features/biomedical/domain/entities/biomedical_entities.dart';
 import 'package:hosspi_hms/features/biomedical/presentation/pages/biomedical_workspace_page.dart';
@@ -715,8 +714,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
     _ShellDestinationRoute(
       route: AppRoutes.accounts,
       destination: ResponsiveShellDestination(
-        label: AccountsCopy.workspaceTitle,
-        shortLabel: AccountsCopy.workspaceTitle,
+        label: l10n.navigationAccountsLabel,
+        shortLabel: l10n.navigationAccountsShortLabel,
         groupLabel: billingRevenueGroup,
         icon: AppRouteIcons.accounts,
         selectedIcon: AppRouteIcons.accountsSelected,

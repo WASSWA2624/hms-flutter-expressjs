@@ -39,7 +39,7 @@ const departmentForRole = (scenarioKey, role) => {
     DENTIST: 'Outpatient',
     RADIOLOGIST: 'Radiology',
     SONOGRAPHER: 'Radiology',
-    ACCOUNTANT: 'Billing',
+    ACCOUNTANT: 'Billing', // Facility books desk; shares Billing org unit in seed
     SUPPORT_STAFF: 'Support Services',
     VISITOR_GUEST: 'Front Office',
     DOCTOR: 'Outpatient',

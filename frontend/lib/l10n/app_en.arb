@@ -2090,6 +2090,14 @@
   "@navigationBillingShortLabel": {
     "description": "Compact navigation label for the billing workspace."
   },
+  "navigationAccountsLabel": "Accounts",
+  "@navigationAccountsLabel": {
+    "description": "Navigation label for the accounts workspace."
+  },
+  "navigationAccountsShortLabel": "Accounts",
+  "@navigationAccountsShortLabel": {
+    "description": "Compact navigation label for the accounts workspace."
+  },
   "billingWorkspaceTitle": "Billing",
   "@billingWorkspaceTitle": {
     "description": "Title for the billing cashier workspace."

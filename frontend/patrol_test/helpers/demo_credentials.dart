@@ -15,6 +15,7 @@ enum DemoAccount {
   pharmacy('pharmacy@hosspi.com'),
   reception('reception@hosspi.com'),
   billing('billing@hosspi.com'),
+  accountant('accountant@hosspi.com'),
   operations('operations@hosspi.com'),
   hr('hr@hosspi.com'),
   biomed('biomed@hosspi.com'),

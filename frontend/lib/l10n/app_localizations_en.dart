@@ -1617,6 +1617,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationBillingShortLabel => 'Billing';
 
   @override
+  String get navigationAccountsLabel => 'Accounts';
+
+  @override
+  String get navigationAccountsShortLabel => 'Accounts';
+
+  @override
   String get billingWorkspaceTitle => 'Billing';
 
   @override

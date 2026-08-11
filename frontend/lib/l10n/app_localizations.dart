@@ -3100,6 +3100,18 @@ abstract class AppLocalizations {
   /// **'Billing'**
   String get navigationBillingShortLabel;
 
+  /// Navigation label for the accounts workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts'**
+  String get navigationAccountsLabel;
+
+  /// Compact navigation label for the accounts workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts'**
+  String get navigationAccountsShortLabel;
+
   /// Title for the billing cashier workspace.
   ///
   /// In en, this message translates to:

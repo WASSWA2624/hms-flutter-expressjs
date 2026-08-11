@@ -266,6 +266,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'patients',
       'emergency',
       'billing',
+      'accounts',
       'reports',
       'settings',
       'hr',
@@ -897,9 +898,10 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'process_refund',
       'close_shift',
     ],
-    // Focused shell: billing/claims/reports/settings (not patients registry).
+    // Focused shell: billing/accounts/claims/reports/settings (not patients registry).
     shortcutIds: <String>[
       'billing',
+      'accounts',
       'claims',
       'reports',
       'settings',
@@ -1887,6 +1889,9 @@ HomeDashboardProfile homeProfileForAccessPolicy(AppAccessPolicy policy) {
   } else if (has(AppPermissions.radiologyWrite) ||
       has(AppPermissions.radiologyRead)) {
     inferred = homeDashboardProfiles[AppRole.radiologyTech]!;
+  } else if (has(AppPermissions.accountsWrite) ||
+      has(AppPermissions.accountsRead)) {
+    inferred = homeDashboardProfiles[AppRole.billing]!;
   } else if (has(AppPermissions.billingWrite) ||
       has(AppPermissions.billingRead)) {
     inferred = homeDashboardProfiles[AppRole.billing]!;

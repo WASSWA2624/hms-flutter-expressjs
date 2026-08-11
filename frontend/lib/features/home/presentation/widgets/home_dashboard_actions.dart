@@ -1082,6 +1082,13 @@ const Map<String, HomeShortcutDefinition> homeShortcutLibrary =
         route: AppRoutes.billing,
         requiredPermissions: <AppPermission>[AppPermissions.billingRead],
       ),
+      'accounts': HomeShortcutDefinition(
+        id: 'accounts',
+        label: 'Accounts',
+        icon: Icons.account_balance_outlined,
+        route: AppRoutes.accounts,
+        requiredPermissions: <AppPermission>[AppPermissions.accountsRead],
+      ),
       'claims': HomeShortcutDefinition(
         id: 'claims',
         label: 'Claims',

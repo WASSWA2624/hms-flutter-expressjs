@@ -172,7 +172,8 @@ abstract final class AppRoutes {
     ...adminShellRoles,
     AppRole.billing,
   ];
-  /// Accounts desk — admins + billing until ACCOUNTANT role lands (09-roles).
+  /// Accounts desk — admins + billing-focused roles (ACCOUNTANT maps to
+  /// [AppRole.billing] with an accounts permission pack).
   static const List<AppRole> accountsWorkspaceRoles = <AppRole>[
     ...adminShellRoles,
     AppRole.billing,
